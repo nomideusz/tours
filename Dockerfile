@@ -42,12 +42,11 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S svelte -u 1001
 USER svelte
 
-# Expose port
-EXPOSE 3018
+# Expose port (will be set dynamically by CapRover)
+EXPOSE 3000
 
 # Set environment to production
 ENV NODE_ENV=production
-ENV PORT=3018
 
 # Start the application
 CMD ["node", "build"] 
