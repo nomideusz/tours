@@ -1,0 +1,266 @@
+<script lang="ts">
+	import { language, t } from '$lib/i18n.js';
+	import { switchLanguage } from '$lib/context.js';
+	import { IsMounted } from 'runed';
+	import Scan from 'lucide-svelte/icons/scan';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
+
+	interface HeaderProps {
+		user: any;
+		isAuthenticated: boolean;
+		currentUser: any;
+	}
+
+	let { user, isAuthenticated, currentUser }: HeaderProps = $props();
+
+	// Use IsMounted from Runed
+	const isMounted = new IsMounted();
+
+	// Mobile menu state
+	let mobileMenuOpen = $state(false);
+
+	// Logout loading state
+	let isLoggingOut = $state(false);
+
+	// Language switcher functions
+	function switchToEnglish(event: MouseEvent) {
+		event.preventDefault();
+		switchLanguage('en');
+	}
+
+	function switchToPolish(event: MouseEvent) {
+		event.preventDefault();
+		switchLanguage('pl');
+	}
+
+	// Handle logout with loading state
+	function handleLogout(event: Event) {
+		isLoggingOut = true;
+		// The form will continue with its default submission
+		// The loading state will be reset when the page redirects/reloads
+	}
+
+	// Close mobile menu when navigation occurs
+	export function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
+</script>
+
+<!-- Modern header with improved navigation -->
+<header class="header-sticky">
+	<div class="mx-auto max-w-screen-2xl px-6 sm:px-8 lg:px-12">
+		<div class="flex h-20 items-center justify-between">
+			<!-- Logo and branding -->
+			<div class="flex items-center">
+				<a href="/" class="flex items-center gap-2">
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+						<Scan class="h-6 w-6 text-white" />
+					</div>
+					<span class="text-2xl font-bold text-gray-900">Zaur</span>
+				</a>
+			</div>
+
+			<!-- Desktop navigation -->
+			<nav class="hidden items-center gap-8 lg:flex">
+				<a href="/#features" class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Features</a
+				>
+				<a
+					href="/#how-it-works"
+					class="font-medium text-gray-600 transition-colors hover:text-gray-900">How it Works</a
+				>
+				<a href="/#pricing" class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Pricing</a
+				>
+				<a
+					href="/#testimonials"
+					class="font-medium text-gray-600 transition-colors hover:text-gray-900">Testimonials</a
+				>
+			</nav>
+
+			<!-- Right side actions -->
+			<div class="flex items-center gap-4">
+				<!-- Auth section -->
+				{#if !isMounted.current}
+					<div class="hidden text-sm text-gray-500 md:block">{t('auth.loading', $language)}</div>
+				{:else if isAuthenticated}
+					<div class="hidden items-center gap-3 md:flex">
+						<span class="text-sm text-gray-600">
+							{currentUser?.username || currentUser?.email || 'User'}
+						</span>
+						<form action="/auth/logout" method="POST" class="inline-flex items-baseline" onsubmit={handleLogout}>
+							<button
+								type="submit"
+								disabled={isLoggingOut}
+								class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 leading-none p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+							>
+								{#if isLoggingOut}
+									<Loader2 class="h-3 w-3 animate-spin" />
+								{/if}
+								{t('auth.logout', $language)}
+							</button>
+						</form>
+					</div>
+				{:else}
+					<div class="hidden items-center gap-3 md:flex">
+						<a 
+							href="/auth/login" 
+							class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+						>
+							{t('auth.login', $language)}
+						</a>
+						<a
+							href="/auth/register"
+							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						>
+							Start Free Trial
+						</a>
+					</div>
+				{/if}
+
+				<!-- Language switcher -->
+				<div class="hidden items-center gap-1 border-l border-gray-200 pl-4 md:flex">
+					<button
+						class="rounded px-2 py-1 text-sm font-medium transition-colors {$language === 'en'
+							? 'bg-gray-100 text-gray-900'
+							: 'text-gray-600 hover:text-gray-900'}"
+						onclick={switchToEnglish}
+					>
+						EN
+					</button>
+					<button
+						class="rounded px-2 py-1 text-sm font-medium transition-colors {$language === 'pl'
+							? 'bg-gray-100 text-gray-900'
+							: 'text-gray-600 hover:text-gray-900'}"
+						onclick={switchToPolish}
+					>
+						PL
+					</button>
+				</div>
+
+				<!-- Mobile menu button -->
+				<button
+					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+					class="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+					aria-label="Toggle mobile menu"
+				>
+					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						{#if mobileMenuOpen}
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							></path>
+						{:else}
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 12h16M4 18h16"
+							></path>
+						{/if}
+					</svg>
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Mobile menu -->
+	{#if mobileMenuOpen}
+		<div class="border-t border-gray-200 lg:hidden">
+			<div class="mx-auto max-w-screen-2xl space-y-1 px-6 py-4 sm:px-8">
+				<!-- Navigation links -->
+				<a href="/#features" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Features</a
+				>
+				<a href="/#how-it-works" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>How it Works</a
+				>
+				<a href="/#pricing" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Pricing</a
+				>
+				<a href="/#testimonials" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Testimonials</a
+				>
+
+				<!-- Auth section -->
+				<div class="space-y-1 border-t border-gray-200 pt-4">
+					{#if !isMounted.current}
+						<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
+					{:else if isAuthenticated}
+						<div class="py-2 text-sm text-gray-600">
+							{currentUser?.username || currentUser?.email || 'User'}
+						</div>
+						<form action="/auth/logout" method="POST" onsubmit={handleLogout}>
+							<button
+								type="submit"
+								disabled={isLoggingOut}
+								class="flex w-full items-center gap-2 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{#if isLoggingOut}
+									<Loader2 class="h-3 w-3 animate-spin" />
+								{/if}
+								{t('auth.logout', $language)}
+							</button>
+						</form>
+					{:else}
+						<a href="/auth/login" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+							{t('auth.login', $language)}
+						</a>
+						<a
+							href="/auth/register"
+							class="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						>
+							Start Free Trial
+						</a>
+					{/if}
+				</div>
+
+				<!-- Mobile language switcher -->
+				<div class="flex gap-2 border-t border-gray-200 pt-4">
+					<button
+						class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'en'
+							? 'bg-gray-100 text-gray-900'
+							: 'text-gray-600 hover:text-gray-900'}"
+						onclick={switchToEnglish}
+					>
+						English
+					</button>
+					<button
+						class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'pl'
+							? 'bg-gray-100 text-gray-900'
+							: 'text-gray-600 hover:text-gray-900'}"
+						onclick={switchToPolish}
+					>
+						Polski
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+</header>
+
+<style lang="postcss">
+	@reference "tailwindcss";
+	.header-sticky {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 50;
+		background: white;
+		border-bottom: 1px solid #e5e7eb;
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	/* Ensure the header container has proper spacing */
+	.header-sticky > div {
+		@apply mx-auto max-w-screen-2xl px-6 sm:px-8 lg:px-12;
+	}
+
+	.header-sticky > div > div {
+		@apply flex h-20 items-center justify-between;
+	}
+</style>

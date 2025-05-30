@@ -1,0 +1,1322 @@
+[
+  {
+    "id": "_pb_users_auth_",
+    "listRule": "id = @request.auth.id",
+    "viewRule": "id = @request.auth.id",
+    "createRule": "",
+    "updateRule": "id = @request.auth.id",
+    "deleteRule": "id = @request.auth.id",
+    "name": "users",
+    "type": "auth",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cost": 0,
+        "hidden": true,
+        "id": "password901924565",
+        "max": 0,
+        "min": 8,
+        "name": "password",
+        "pattern": "",
+        "presentable": false,
+        "required": true,
+        "system": true,
+        "type": "password"
+      },
+      {
+        "autogeneratePattern": "[a-zA-Z0-9]{50}",
+        "hidden": true,
+        "id": "text2504183744",
+        "max": 60,
+        "min": 30,
+        "name": "tokenKey",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "hidden": false,
+        "id": "email3885137012",
+        "name": "email",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": true,
+        "system": true,
+        "type": "email"
+      },
+      {
+        "hidden": false,
+        "id": "bool1547992806",
+        "name": "emailVisibility",
+        "presentable": false,
+        "required": false,
+        "system": true,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "bool256245529",
+        "name": "verified",
+        "presentable": false,
+        "required": false,
+        "system": true,
+        "type": "bool"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1579384326",
+        "max": 255,
+        "min": 0,
+        "name": "name",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "file376926767",
+        "maxSelect": 1,
+        "maxSize": 0,
+        "mimeTypes": [
+          "image/jpeg",
+          "image/png",
+          "image/svg+xml",
+          "image/gif",
+          "image/webp"
+        ],
+        "name": "avatar",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": null,
+        "type": "file"
+      },
+      {
+        "hidden": false,
+        "id": "select1466534506",
+        "maxSelect": 1,
+        "name": "role",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "admin",
+          "user"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text9876543210",
+        "max": 255,
+        "min": 0,
+        "name": "businessName",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1234567890",
+        "max": 255,
+        "min": 0,
+        "name": "stripeAccountId",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1111111111",
+        "max": 50,
+        "min": 0,
+        "name": "phone",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "hidden": false,
+        "id": "url2222222222",
+        "name": "website",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "url"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text3333333333",
+        "max": 1000,
+        "min": 0,
+        "name": "description",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate2990389176",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate3332085495",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+      "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+    ],
+    "system": false,
+    "authRule": "",
+    "manageRule": null,
+    "authAlert": {
+      "enabled": true,
+      "emailTemplate": {
+        "subject": "Login from a new location",
+        "body": "<p>Hello,</p>\n<p>We noticed a login to your {APP_NAME} account from a new location.</p>\n<p>If this was you, you may disregard this email.</p>\n<p><strong>If this wasn't you, you should immediately change your {APP_NAME} account password to revoke access from all other locations.</strong></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>"
+      }
+    },
+    "oauth2": {
+      "mappedFields": {
+        "id": "",
+        "name": "name",
+        "username": "",
+        "avatarURL": "avatar"
+      },
+      "enabled": false
+    },
+    "passwordAuth": {
+      "enabled": true,
+      "identityFields": [
+        "email"
+      ]
+    },
+    "mfa": {
+      "enabled": false,
+      "duration": 1800,
+      "rule": ""
+    },
+    "otp": {
+      "enabled": false,
+      "duration": 180,
+      "length": 8,
+      "emailTemplate": {
+        "subject": "OTP for {APP_NAME}",
+        "body": "<p>Hello,</p>\n<p>Your one-time password is: <strong>{OTP}</strong></p>\n<p><i>If you didn't ask for the one-time password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>"
+      }
+    },
+    "authToken": {
+      "duration": 604800
+    },
+    "passwordResetToken": {
+      "duration": 1800
+    },
+    "emailChangeToken": {
+      "duration": 1800
+    },
+    "verificationToken": {
+      "duration": 259200
+    },
+    "fileToken": {
+      "duration": 180
+    },
+    "verificationTemplate": {
+      "subject": "Verify your {APP_NAME} email",
+      "body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>"
+    },
+    "resetPasswordTemplate": {
+      "subject": "Reset your {APP_NAME} password",
+      "body": "<p>Hello,</p>\n<p>Click on the button below to reset your password.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-password-reset/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Reset password</a>\n</p>\n<p><i>If you didn't ask to reset your password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>"
+    },
+    "confirmEmailChangeTemplate": {
+      "subject": "Confirm your {APP_NAME} new email address",
+      "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>"
+    }
+  },
+  {
+    "id": "tours_collection",
+    "listRule": "user = @request.auth.id",
+    "viewRule": "user = @request.auth.id || status = 'active'",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "user = @request.auth.id",
+    "deleteRule": "user = @request.auth.id",
+    "name": "tours",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_tours",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_name_tours",
+        "max": 255,
+        "min": 1,
+        "name": "name",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_description_tours",
+        "max": 5000,
+        "min": 1,
+        "name": "description",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "number_price_tours",
+        "max": null,
+        "min": 0,
+        "name": "price",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_duration_tours",
+        "max": null,
+        "min": 1,
+        "name": "duration",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_capacity_tours",
+        "max": null,
+        "min": 1,
+        "name": "capacity",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation_user_tours",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "user",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "file_images_tours",
+        "maxSelect": 10,
+        "maxSize": 5242880,
+        "mimeTypes": [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "name": "images",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": [
+          "100x100",
+          "300x300"
+        ],
+        "type": "file"
+      },
+      {
+        "hidden": false,
+        "id": "select_status_tours",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "active",
+          "inactive",
+          "draft"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_category_tours",
+        "max": 100,
+        "min": 0,
+        "name": "category",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_location_tours",
+        "max": 255,
+        "min": 0,
+        "name": "location",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "json_included_items_tours",
+        "maxSize": 2000000,
+        "name": "includedItems",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "hidden": false,
+        "id": "json_requirements_tours",
+        "maxSize": 2000000,
+        "name": "requirements",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_cancellation_policy_tours",
+        "max": 2000,
+        "min": 0,
+        "name": "cancellationPolicy",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_tours",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_tours",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_user_tours` ON `tours` (`user`)",
+      "CREATE INDEX `idx_status_tours` ON `tours` (`status`)"
+    ]
+  },
+  {
+    "id": "time_slots_collection",
+    "listRule": "tour.user = @request.auth.id",
+    "viewRule": "tour.user = @request.auth.id || tour.status = 'active'",
+    "createRule": "tour.user = @request.auth.id",
+    "updateRule": "tour.user = @request.auth.id",
+    "deleteRule": "tour.user = @request.auth.id",
+    "name": "time_slots",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_time_slots",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "tours_collection",
+        "hidden": false,
+        "id": "relation_tour_time_slots",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "tour",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "date_start_time_time_slots",
+        "max": "",
+        "min": "",
+        "name": "startTime",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "date_end_time_time_slots",
+        "max": "",
+        "min": "",
+        "name": "endTime",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "number_available_spots_time_slots",
+        "max": null,
+        "min": 0,
+        "name": "availableSpots",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_booked_spots_time_slots",
+        "max": null,
+        "min": 0,
+        "name": "bookedSpots",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "select_status_time_slots",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "available",
+          "full",
+          "cancelled"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "bool_is_recurring_time_slots",
+        "name": "isRecurring",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "select_recurring_pattern_time_slots",
+        "maxSelect": 1,
+        "name": "recurringPattern",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "daily",
+          "weekly",
+          "monthly"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "date_recurring_end_time_slots",
+        "max": "",
+        "min": "",
+        "name": "recurringEnd",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_time_slots",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_time_slots",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_tour_time_slots` ON `time_slots` (`tour`)",
+      "CREATE INDEX `idx_start_time_time_slots` ON `time_slots` (`startTime`)"
+    ]
+  },
+  {
+    "id": "qr_codes_collection",
+    "listRule": "user = @request.auth.id",
+    "viewRule": "user = @request.auth.id || isActive = true",
+    "createRule": "user = @request.auth.id",
+    "updateRule": "user = @request.auth.id",
+    "deleteRule": "user = @request.auth.id",
+    "name": "qr_codes",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_qr_codes",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "tours_collection",
+        "hidden": false,
+        "id": "relation_tour_qr_codes",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "tour",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation_user_qr_codes",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "user",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_code_qr_codes",
+        "max": 100,
+        "min": 1,
+        "name": "code",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_name_qr_codes",
+        "max": 255,
+        "min": 1,
+        "name": "name",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "number_scans_qr_codes",
+        "max": null,
+        "min": 0,
+        "name": "scans",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_conversions_qr_codes",
+        "max": null,
+        "min": 0,
+        "name": "conversions",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "bool_is_active_qr_codes",
+        "name": "isActive",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "json_customization_qr_codes",
+        "maxSize": 2000000,
+        "name": "customization",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_qr_codes",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_qr_codes",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_code_qr_codes` ON `qr_codes` (`code`)",
+      "CREATE INDEX `idx_user_qr_codes` ON `qr_codes` (`user`)",
+      "CREATE INDEX `idx_tour_qr_codes` ON `qr_codes` (`tour`)"
+    ]
+  },
+  {
+    "id": "bookings_collection",
+    "listRule": "tour.user = @request.auth.id",
+    "viewRule": "tour.user = @request.auth.id || customerEmail = @request.auth.email",
+    "createRule": "",
+    "updateRule": "tour.user = @request.auth.id",
+    "deleteRule": "tour.user = @request.auth.id",
+    "name": "bookings",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_bookings",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "tours_collection",
+        "hidden": false,
+        "id": "relation_tour_bookings",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "tour",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "time_slots_collection",
+        "hidden": false,
+        "id": "relation_time_slot_bookings",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "timeSlot",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "qr_codes_collection",
+        "hidden": false,
+        "id": "relation_qr_code_bookings",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "qrCode",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_customer_name_bookings",
+        "max": 255,
+        "min": 1,
+        "name": "customerName",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "hidden": false,
+        "id": "email_customer_email_bookings",
+        "name": "customerEmail",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "email"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_customer_phone_bookings",
+        "max": 50,
+        "min": 0,
+        "name": "customerPhone",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "number_participants_bookings",
+        "max": null,
+        "min": 1,
+        "name": "participants",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_total_amount_bookings",
+        "max": null,
+        "min": 0,
+        "name": "totalAmount",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "select_status_bookings",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "pending",
+          "confirmed",
+          "cancelled",
+          "completed",
+          "no_show"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_payment_id_bookings",
+        "max": 255,
+        "min": 0,
+        "name": "paymentId",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "select_payment_status_bookings",
+        "maxSelect": 1,
+        "name": "paymentStatus",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "pending",
+          "paid",
+          "failed",
+          "refunded"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_booking_reference_bookings",
+        "max": 50,
+        "min": 1,
+        "name": "bookingReference",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_special_requests_bookings",
+        "max": 1000,
+        "min": 0,
+        "name": "specialRequests",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_bookings",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_bookings",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_booking_reference_bookings` ON `bookings` (`bookingReference`)",
+      "CREATE INDEX `idx_tour_bookings` ON `bookings` (`tour`)",
+      "CREATE INDEX `idx_customer_email_bookings` ON `bookings` (`customerEmail`)",
+      "CREATE INDEX `idx_time_slot_bookings` ON `bookings` (`timeSlot`)"
+    ]
+  },
+  {
+    "id": "customers_collection",
+    "listRule": "email = @request.auth.email",
+    "viewRule": "email = @request.auth.email",
+    "createRule": "",
+    "updateRule": "email = @request.auth.email",
+    "deleteRule": "",
+    "name": "customers",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_customers",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_name_customers",
+        "max": 255,
+        "min": 1,
+        "name": "name",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "hidden": false,
+        "id": "email_email_customers",
+        "name": "email",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "email"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_phone_customers",
+        "max": 50,
+        "min": 0,
+        "name": "phone",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "bookings_collection",
+        "hidden": false,
+        "id": "relation_bookings_customers",
+        "maxSelect": null,
+        "minSelect": null,
+        "name": "bookings",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "number_total_bookings_customers",
+        "max": null,
+        "min": 0,
+        "name": "totalBookings",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_total_spent_customers",
+        "max": null,
+        "min": 0,
+        "name": "totalSpent",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_customers",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_customers",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_email_customers` ON `customers` (`email`)"
+    ]
+  },
+  {
+    "id": "payments_collection",
+    "listRule": "booking.tour.user = @request.auth.id",
+    "viewRule": "booking.tour.user = @request.auth.id",
+    "createRule": "",
+    "updateRule": "booking.tour.user = @request.auth.id",
+    "deleteRule": "",
+    "name": "payments",
+    "type": "base",
+    "system": false,
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_id_payments",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "bookings_collection",
+        "hidden": false,
+        "id": "relation_booking_payments",
+        "maxSelect": 1,
+        "minSelect": null,
+        "name": "booking",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_stripe_payment_intent_id_payments",
+        "max": 255,
+        "min": 1,
+        "name": "stripePaymentIntentId",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "number_amount_payments",
+        "max": null,
+        "min": 0,
+        "name": "amount",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_currency_payments",
+        "max": 3,
+        "min": 3,
+        "name": "currency",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "select_status_payments",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "pending",
+          "succeeded",
+          "failed",
+          "cancelled",
+          "refunded"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "number_refund_amount_payments",
+        "max": null,
+        "min": 0,
+        "name": "refundAmount",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_processing_fee_payments",
+        "max": null,
+        "min": 0,
+        "name": "processingFee",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "number_net_amount_payments",
+        "max": null,
+        "min": 0,
+        "name": "netAmount",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "number"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created_payments",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated_payments",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_stripe_payment_intent_id_payments` ON `payments` (`stripePaymentIntentId`)",
+      "CREATE INDEX `idx_booking_payments` ON `payments` (`booking`)"
+    ]
+  }
+]

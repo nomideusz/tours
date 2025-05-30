@@ -1,58 +1,67 @@
-# Svelte library
+# Tours - QR Code Booking Platform
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+A SvelteKit application that allows tour guides to create QR codes for instant tour bookings.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+## Features
 
-## Creating a project
+- QR code generation for tour bookings
+- Early access email collection with Resend integration
+- Tour management dashboard
+- Instant booking notifications
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Setup
 
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### 1. Install Dependencies
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install
 ```
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+### 2. Configure Resend (for Early Access Form)
+
+The early access form uses Resend to collect email subscriptions. See `RESEND_SETUP.md` for detailed setup instructions.
+
+Create a `.env` file in the project root:
+
+```bash
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_AUDIENCE_ID=0dc8a6e6-f1c4-4f65-8611-c380dd599bfc
+```
+
+### 3. Start Development Server
+
+```bash
+pnpm dev
+```
+
+The application will be available at `http://localhost:5173`.
+
+## Development
+
+- Everything inside `src/routes` contains the application pages
+- The early access form is in `src/routes/(app)/+page.svelte`
+- The Resend API endpoint is in `src/routes/api/early-access/+server.ts`
 
 ## Building
 
-To build your library:
+To create a production build:
 
 ```bash
-npm run package
+pnpm build
 ```
 
-To create a production version of your showcase app:
+To preview the production build:
 
 ```bash
-npm run build
+pnpm preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Resend Integration
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The early access form on the homepage automatically:
+1. Validates email addresses
+2. Adds subscribers to your Resend audience
+3. Provides user feedback on success/error
+4. Handles network errors gracefully
 
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```bash
-npm publish
-```
+When a user submits their email, it gets added to your Resend audience for future marketing campaigns.
