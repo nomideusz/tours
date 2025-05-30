@@ -48,5 +48,5 @@ EXPOSE 3000
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", "build"] 
+# Start the application (PORT will be set by CapRover)
+CMD ["sh", "-c", "echo 'Starting app on port:' $PORT && node build"] 
