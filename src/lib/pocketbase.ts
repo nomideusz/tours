@@ -2,11 +2,11 @@ import PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { Tour, TimeSlot, QRCode, Booking, Customer, Payment, User } from './types.js';
 
 // Get PocketBase URL from environment variables
-const POCKETBASE_URL = PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 // Create PocketBase client instance
 // We'll use a different approach for client vs server
