@@ -5,10 +5,8 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: { 
 		adapter: adapter({
-			// Ensure the adapter uses the PORT environment variable
-			env: {
-				port: 'PORT'
-			}
+			// Let CapRover set the port dynamically
+			out: 'build'
 		})
 	}
 };

@@ -49,4 +49,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 
 # Start the application (PORT will be set by CapRover)
-CMD ["sh", "-c", "echo 'Starting app on port:' $PORT && node build"] 
+CMD ["sh", "-c", "echo 'Environment variables:' && env | grep -E '(PORT|HOST)' && echo 'Starting with npm start...' && npm start"] 
