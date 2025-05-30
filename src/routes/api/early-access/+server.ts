@@ -1,19 +1,24 @@
 import { json } from '@sveltejs/kit';
 import { Resend } from 'resend';
 import type { RequestHandler } from './$types.js';
-import { RESEND_API_KEY, RESEND_AUDIENCE_ID } from '$env/static/private';
-// Initialize Resend with environment variable
-const resendApiKey = RESEND_API_KEY;
-const resendAudienceId = RESEND_AUDIENCE_ID;
+import { env } from '$env/dynamic/private';
 
-if (!resendApiKey || !resendAudienceId) {
-	throw new Error('RESEND_API_KEY and RESEND_AUDIENCE_ID environment variables are required');
-}
-
-const resend = new Resend(resendApiKey);
+// Get environment variables at runtime
+const resendApiKey = env.RESEND_API_KEY;
+const resendAudienceId = env.RESEND_AUDIENCE_ID;
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
+		// Check if environment variables are available
+		if (!resendApiKey || !resendAudienceId) {
+			console.error('RESEND_API_KEY and RESEND_AUDIENCE_ID environment variables are required');
+			return json(
+				{ success: false, error: 'Service configuration error' },
+				{ status: 500 }
+			);
+		}
+
+		const resend = new Resend(resendApiKey);
 		const { email }: { email: string } = await request.json();
 
 		// Validate email
