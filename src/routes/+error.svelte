@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { t, language } from '$lib/i18n.js';
 	import '../app.css'
+	import '../lib/styles/buttons.css'
 	
 	// Get the error status and message from the page store
 	$: status = $page.status;
