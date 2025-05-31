@@ -61,16 +61,21 @@ export const authFSM = new FiniteStateMachine<AuthStates, AuthEvents>('loading',
 export function updateAuthState(userValue: any) {
   console.log('Auth update triggered with value:', userValue ? 'User Logged In' : 'No User', 'Current FSM state:', authFSM.current);
   
-  // Force authentication when flag is set
+  // Force authentication when flag is set (used for OAuth2)
   if (userValue && userValue.forceAuth) {
-    console.log('Forcing transition to loggedIn state');
+    console.log('Forcing transition to loggedIn state (OAuth2 flow)');
     // Only do transitions if needed based on current state
     if (authFSM.current === 'loggedOut' || authFSM.current === 'loading') {
       authFSM.send('login');
     } else if (authFSM.current === 'loggingIn') {
       authFSM.send('finishTransition');
     }
-    // If already in loggedIn state, no transition needed
+    // Update auth store immediately for OAuth2
+    authStore.update(() => ({
+      isAuthenticated: true,
+      user: userValue,
+      state: 'loggedIn'
+    }));
     return;
   }
   
@@ -81,15 +86,40 @@ export function updateAuthState(userValue: any) {
     if (authFSM.current !== 'loggedOut' && authFSM.current !== 'loggingOut') {
       authFSM.send('logout');
     }
+    // Update auth store
+    authStore.update(() => ({
+      isAuthenticated: false,
+      user: null,
+      state: authFSM.current
+    }));
     return;
   }
   
-  // Handle the case where userValue exists
+  // Handle the case where userValue exists (normal login or OAuth2)
   console.log('User value exists, transitioning to loggingIn or loggedIn');
-  // Only send login if not already logged in or logging in
-  if (authFSM.current !== 'loggedIn' && authFSM.current !== 'loggingIn') {
-    authFSM.send('login');
+  // For OAuth2, we might need to skip the animation and go directly to loggedIn
+  const isOAuth2User = userValue.avatar || userValue.provider || userValue.external_id;
+  
+  if (isOAuth2User) {
+    console.log('OAuth2 user detected, fast-tracking to loggedIn state');
+    if (authFSM.current !== 'loggedIn') {
+      authFSM.send('login');
+      // Immediately finish transition for OAuth2
+      authFSM.send('finishTransition');
+    }
+  } else {
+    // Normal login flow
+    if (authFSM.current !== 'loggedIn' && authFSM.current !== 'loggingIn') {
+      authFSM.send('login');
+    }
   }
+  
+  // Update auth store
+  authStore.update(() => ({
+    isAuthenticated: true,
+    user: userValue,
+    state: authFSM.current
+  }));
 }
 
 // Initial state setup (after FSM is defined) - use a shorter timeout for faster initialization

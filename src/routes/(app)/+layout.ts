@@ -18,16 +18,25 @@ export const load: LayoutLoad = async ({ data }) => {
     if (pb && data.user) {
       // Wait for PocketBase to initialize
       await new Promise(resolve => setTimeout(resolve, 0));
-      // Only attempt to refresh if we have a token
-      if (!pb.authStore.isValid) {
-        try {
-          // Attempt to load auth from cookie if available
-          pb.authStore.loadFromCookie(document.cookie);
-          if (pb.authStore.isValid) {
-            await pb.collection('users').authRefresh();
+      
+      // Always try to load auth from cookie and refresh for OAuth2 compatibility
+      try {
+        // Load auth state from cookie (important for OAuth2 flows)
+        pb.authStore.loadFromCookie(document.cookie);
+        
+        // If we have a valid token or if server says user is authenticated, refresh
+        if (pb.authStore.isValid || data.isAuthenticated) {
+          await pb.collection('users').authRefresh();
+          // Ensure currentUser store is updated with fresh data
+          if (pb.authStore.record) {
+            currentUser.set(pb.authStore.record);
           }
-        } catch (e) {
-          console.error('Failed to refresh auth state:', e);
+        }
+      } catch (e) {
+        console.warn('Auth refresh failed (this is normal for new OAuth2 sessions):', e);
+        // For OAuth2 users, the auth might not be in cookie yet, so just use server data
+        if (data.isAuthenticated) {
+          currentUser.set(userWithRequiredProps);
         }
       }
     }

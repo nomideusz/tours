@@ -97,8 +97,16 @@
 
 	// Set up auth listener to update currentUser
 	const cleanup = setupAuthListener((user) => {
+		console.log('Auth listener triggered with user:', user ? 'User present' : 'No user');
 		currentUser = user;
 		updateAuthState(user);
+		
+		// Force update auth store when user changes (important for OAuth2)
+		authStore.update(() => ({
+			isAuthenticated: !!user,
+			user: user,
+			state: user ? 'loggedIn' : 'loggedOut'
+		}));
 	});
 
 	// Clean up listener on component destruction
