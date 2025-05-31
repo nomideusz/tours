@@ -13,9 +13,10 @@
 		email?: string;
 		error?: string;
 		success?: boolean;
+		redirectTo?: string;
 	};
 
-	let { form } = $props<{ form?: LoginForm }>();
+	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string } }>();
 
 	// Destructure the auth state for reactivity
 	const isLoggingIn = $derived($authState === 'loggingIn');
@@ -132,6 +133,9 @@
 				}}
 				class="space-y-6"
 			>
+				<!-- Hidden redirect field -->
+				<input type="hidden" name="redirectTo" value={form?.redirectTo || data.redirectTo} />
+				
 				<div>
 					<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
 						{t('loginPage.email', $language)}

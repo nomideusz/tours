@@ -2,27 +2,34 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
 import { updateAuthState } from '$lib/auth.js';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
+	// Get the redirect URL if provided
+	const redirectTo = url.searchParams.get('redirectTo') || '/';
+	
 	// Redirect if already logged in
 	if (locals.pb?.authStore?.isValid) {
-		console.log('User already logged in, redirecting to /');
-		throw redirect(303, '/');
+		console.log('User already logged in, redirecting to:', redirectTo);
+		throw redirect(303, redirectTo);
 	}
-	return {};
+	
+	return {
+		redirectTo
+	};
 };
 
 export const actions: Actions = {
-	default: async ({ locals, request, cookies, fetch }) => {
+	default: async ({ locals, request, cookies, fetch, url }) => {
 		const data = await request.formData();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
+		const redirectTo = data.get('redirectTo')?.toString() || '/';
 
 		if (!email) {
-			return fail(400, { email, error: 'Email is required' });
+			return fail(400, { email, redirectTo, error: 'Email is required' });
 		}
 
 		if (!password) {
-			return fail(400, { email, error: 'Password is required' });
+			return fail(400, { email, redirectTo, error: 'Password is required' });
 		}
 
 		try {
@@ -46,6 +53,7 @@ export const actions: Actions = {
 			if ((err as any).status === 400) {
 				return fail(400, {
 					email,
+					redirectTo,
 					error: 'Invalid email or password'
 				});
 			}
@@ -53,11 +61,13 @@ export const actions: Actions = {
 			// Generic error message for other errors
 			return fail(500, {
 				email,
+				redirectTo,
 				error: 'Failed to log in. Please try again later.'
 			});
 		}
 		
 		// Do the redirect outside of the try/catch to prevent it from being caught as an error
-		throw redirect(303, '/');
+		console.log('Login successful, redirecting to:', redirectTo);
+		throw redirect(303, redirectTo);
 	}
 }; 
