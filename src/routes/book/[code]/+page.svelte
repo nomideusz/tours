@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/stores';
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -137,9 +138,19 @@
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 		{#if !data.qrCode || !tour}
 			<div class="flex items-center justify-center min-h-screen">
-				<div class="text-center">
-					<h1 class="text-2xl font-bold text-gray-900 mb-2">Invalid QR Code</h1>
-					<p class="text-gray-600">This QR code is not valid or has been deactivated.</p>
+				<div class="text-center max-w-md mx-auto px-6">
+					<h1 class="text-2xl font-bold text-gray-900 mb-2">QR Code Not Found</h1>
+					<p class="text-gray-600 mb-4">This QR code could not be loaded. This might happen if:</p>
+					<ul class="text-sm text-gray-500 text-left space-y-2 mb-6">
+						<li>• The QR code has been deactivated</li>
+						<li>• The QR code doesn't exist</li>
+						<li>• There's a configuration issue with the booking system</li>
+					</ul>
+					<div class="bg-gray-100 rounded-lg p-4 text-xs text-gray-500 text-left">
+						<p class="font-semibold mb-1">Debug Info:</p>
+						<p>QR Code: {$page.params.code}</p>
+						<p>URL: {$page.url.pathname}</p>
+					</div>
 				</div>
 			</div>
 		{:else}

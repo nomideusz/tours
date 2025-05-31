@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			);
 			console.log('QR code found via public access');
 		} catch (publicError) {
-			console.log('Public access failed, trying authenticated access');
+			console.log('Public access failed:', publicError);
+			console.log('Looking for QR code:', params.code);
 			
 			// Fallback to authenticated access if available and public fails
 			if (locals?.pb?.authStore?.isValid) {
@@ -48,9 +49,10 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 		
 		// Increment scan count (only if this isn't a form submission or refresh)
 		const isFirstVisit = !url.searchParams.has('submitted');
-		if (isFirstVisit) {
+		if (isFirstVisit && locals?.pb?.authStore?.isValid) {
 			try {
-				await workingPB.collection('qr_codes').update(qrCode.id, {
+				// Only try to update if we have an authenticated instance
+				await locals.pb.collection('qr_codes').update(qrCode.id, {
 					scans: (qrCode.scans || 0) + 1
 				});
 			} catch (err) {
@@ -202,19 +204,19 @@ export const actions: Actions = {
 				availableSpots: timeSlot.availableSpots - participants
 			});
 			
-			// Increment QR code conversion count
-			await workingPB.collection('qr_codes').update(qrCode.id, {
-				conversions: (qrCode.conversions || 0) + 1
-			});
+			// Increment QR code conversion count (only if we have write access)
+			if (locals?.pb?.authStore?.isValid) {
+				try {
+					await locals.pb.collection('qr_codes').update(qrCode.id, {
+						conversions: (qrCode.conversions || 0) + 1
+					});
+				} catch (err) {
+					console.error('Failed to update QR conversions:', err);
+				}
+			}
 			
-			// In a real app, you would redirect to payment processing here
-			// For now, we'll just show a success message
-			return {
-				success: true,
-				bookingId: booking.id,
-				bookingReference,
-				totalPrice
-			};
+			// Redirect to payment page
+			throw redirect(303, `/book/${params.code}/payment?booking=${booking.id}`);
 			
 		} catch (err) {
 			console.error('Booking error:', err);

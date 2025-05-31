@@ -156,6 +156,12 @@
 						<a href="/tours" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
 							Tours
 						</a>
+						{#if currentUser?.role === 'guide' || currentUser?.role === 'admin'}
+							<span class="text-gray-300">•</span>
+							<a href="/bookings" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+								Bookings
+							</a>
+						{/if}
 						<span class="text-gray-300">•</span>
 						<a href="/profile" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
 							{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
@@ -274,6 +280,11 @@
 						<a href="/tours" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
 							My Tours
 						</a>
+						{#if currentUser?.role === 'guide' || currentUser?.role === 'admin'}
+							<a href="/bookings" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+								Bookings
+							</a>
+						{/if}
 						<a href="/profile" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
 							Profile Settings
 						</a>
