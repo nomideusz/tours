@@ -15,7 +15,7 @@ export interface User extends RecordModel {
   businessName?: string;
   stripeAccountId?: string;
   avatar?: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'guide' | 'user';
   phone?: string;
   website?: string;
   description?: string;

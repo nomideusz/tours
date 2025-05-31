@@ -3,6 +3,9 @@
 	import { authState } from '$lib/auth.js';
 	import Loader from 'lucide-svelte/icons/loader';
 	import { t, language } from '$lib/i18n.js';
+	import OAuth2Button from '$lib/components/OAuth2Button.svelte';
+	import { getAvailableOAuth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
+	import { onMount } from 'svelte';
 
 
 	// Define the type for our form data
@@ -25,6 +28,14 @@
 	// Form validation
 	let emailError = $state('');
 	let passwordError = $state('');
+
+	// OAuth2 providers
+	let availableProviders = $state<OAuth2Provider[]>([]);
+
+	// Load available OAuth2 providers
+	onMount(async () => {
+		availableProviders = await getAvailableOAuth2Providers();
+	});
 
 	// Validate form inputs
 	function validateForm() {
@@ -71,6 +82,26 @@
 		{/if}
 
 		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
+			<!-- OAuth2 Login Options -->
+			{#if availableProviders.length > 0}
+				<div class="mb-6">
+					<div class="space-y-3">
+						{#each availableProviders as provider}
+							<OAuth2Button {provider} variant="outline" />
+						{/each}
+					</div>
+					
+					<div class="relative my-6">
+						<div class="absolute inset-0 flex items-center">
+							<div class="w-full border-t border-gray-300"></div>
+						</div>
+						<div class="relative flex justify-center text-sm">
+							<span class="px-2 bg-white text-gray-500">Or continue with email</span>
+						</div>
+					</div>
+				</div>
+			{/if}
+
 			<form
 				method="POST"
 				novalidate
