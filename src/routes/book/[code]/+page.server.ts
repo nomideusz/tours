@@ -6,7 +6,7 @@ import type { TimeSlot } from '$lib/types.js';
 
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
-export const load: PageServerLoad = async ({ params, getClientAddress, url, locals }) => {
+export const load: PageServerLoad = async ({ params, url, locals }) => {
 	const pb = new PocketBase(POCKETBASE_URL);
 	
 	try {
