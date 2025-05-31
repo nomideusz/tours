@@ -22,7 +22,17 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.locals.isAdmin = false;
 
     // Load the auth store data from the request cookie string
-    event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
+    const cookies = event.request.headers.get('cookie') || '';
+    event.locals.pb.authStore.loadFromCookie(cookies);
+    
+    // Debug logging
+    console.log('Server hooks - URL:', event.url.pathname);
+    console.log('Server hooks - Auth cookies present:', !!cookies);
+    console.log('Server hooks - Auth store valid:', event.locals.pb.authStore.isValid);
+    if (event.locals.pb.authStore.isValid) {
+        console.log('Server hooks - User ID:', event.locals.pb.authStore.record?.id);
+        console.log('Server hooks - User email:', event.locals.pb.authStore.record?.email);
+    }
 
     // If the user is authenticated, set the user in locals
     if (event.locals.pb.authStore.isValid) {
@@ -62,13 +72,16 @@ export const handle: Handle = async ({ event, resolve }) => {
     const response = await resolve(event);
 
     // Send back the updated auth cookie to the client
-    response.headers.append('set-cookie', event.locals.pb.authStore.exportToCookie({
+    const authCookie = event.locals.pb.authStore.exportToCookie({
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax', // Helps with CSRF protection
         httpOnly: true,  // Prevents client-side JS from reading the cookie
         path: '/',       // Make cookie available on all routes
         maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
-    }));
+    });
+    
+    console.log('Server hooks - Setting auth cookie:', !!authCookie);
+    response.headers.append('set-cookie', authCookie);
 
     return response;
 } 

@@ -6,12 +6,11 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 
 	interface HeaderProps {
-		user: any;
 		isAuthenticated: boolean;
 		currentUser: any;
 	}
 
-	let { user, isAuthenticated, currentUser }: HeaderProps = $props();
+	let { isAuthenticated, currentUser }: HeaderProps = $props();
 
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();

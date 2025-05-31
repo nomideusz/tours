@@ -162,7 +162,6 @@
 <!-- Header Component -->
 <Header 
 	bind:this={headerRef}
-	user={data.user}
 	isAuthenticated={data.isAuthenticated}
 	currentUser={currentUser}
 />

@@ -55,15 +55,64 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
         // Show loading state (you can emit an event or use a store for this)
         console.log(`Starting OAuth2 authentication with ${provider}...`);
 
-        // Authenticate with the OAuth2 provider
-        const authData = await pb.collection('users').authWithOAuth2({ provider });
+        // Authenticate with the OAuth2 provider with explicit options
+        const authData = await pb.collection('users').authWithOAuth2({ 
+            provider,
+            // Add options to handle popup closing
+            createData: {},
+            scopes: [],
+            urlCallback: (url) => {
+                // Custom popup handling
+                const popup = window.open(
+                    url,
+                    'oauth2-popup',
+                    'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+                );
+                
+                return new Promise((resolve, reject) => {
+                    // Check if popup was blocked
+                    if (!popup || popup.closed || typeof popup.closed == 'undefined') {
+                        reject(new Error('Popup blocked. Please allow popups for this site.'));
+                        return;
+                    }
+
+                    // Poll for popup closure or completion
+                    const checkClosed = setInterval(() => {
+                        try {
+                            if (popup.closed) {
+                                clearInterval(checkClosed);
+                                // Don't reject here - the auth might have completed
+                                // Let PocketBase handle the success/failure
+                                resolve();
+                            }
+                        } catch (e) {
+                            // Cross-origin access blocked, continue polling
+                        }
+                    }, 1000);
+
+                    // Timeout after 5 minutes
+                    setTimeout(() => {
+                        clearInterval(checkClosed);
+                        if (!popup.closed) {
+                            popup.close();
+                        }
+                        reject(new Error('Authentication timed out'));
+                    }, 5 * 60 * 1000);
+                });
+            }
+        });
 
         if (authData && pb.authStore.isValid) {
             console.log('OAuth2 authentication successful:', {
                 userId: pb.authStore.record?.id,
                 email: pb.authStore.record?.email,
-                provider: provider
+                provider: provider,
+                fullUserRecord: pb.authStore.record
             });
+            
+            // Debug: Check if user was created or updated
+            console.log('Auth token:', pb.authStore.token);
+            console.log('Full auth data:', authData);
 
             // Force trigger auth store change event to sync frontend state
             // This ensures the auth state updates properly by refreshing the auth data
@@ -75,8 +124,9 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
             // Small delay to ensure auth state propagates
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Redirect to dashboard or intended page
-            await goto('/tours');
+            // Force a complete page reload to ensure server-side sync
+            // This will make the browser send the auth data to server on next request
+            window.location.reload();
             return true;
         } else {
             throw new Error('Authentication failed - no valid auth data received');
@@ -86,10 +136,10 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
         
         // Handle specific error cases
         if (error instanceof Error) {
-            if (error.message.includes('popup')) {
+            if (error.message.includes('popup') || error.message.includes('Popup blocked')) {
                 alert('Please allow popups for this site to use OAuth2 authentication.');
-            } else if (error.message.includes('cancelled')) {
-                console.log('OAuth2 authentication was cancelled by user');
+            } else if (error.message.includes('cancelled') || error.message.includes('timed out')) {
+                console.log('OAuth2 authentication was cancelled or timed out');
             } else {
                 alert(`Authentication failed: ${error.message}`);
             }
