@@ -25,13 +25,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     const cookies = event.request.headers.get('cookie') || '';
     event.locals.pb.authStore.loadFromCookie(cookies);
     
-    // Debug logging
-    console.log('Server hooks - URL:', event.url.pathname);
-    console.log('Server hooks - Auth cookies present:', !!cookies);
-    console.log('Server hooks - Auth store valid:', event.locals.pb.authStore.isValid);
-    if (event.locals.pb.authStore.isValid) {
-        console.log('Server hooks - User ID:', event.locals.pb.authStore.record?.id);
-        console.log('Server hooks - User email:', event.locals.pb.authStore.record?.email);
+    // Debug logging for auth issues (remove in production)
+    if (event.url.pathname.includes('/api/') || event.url.pathname.includes('/auth/')) {
+        console.log('Server hooks - URL:', event.url.pathname, 'Auth valid:', event.locals.pb.authStore.isValid);
     }
 
     // If the user is authenticated, set the user in locals
@@ -71,17 +67,19 @@ export const handle: Handle = async ({ event, resolve }) => {
     // Resolve the request
     const response = await resolve(event);
 
-    // Send back the updated auth cookie to the client
-    const authCookie = event.locals.pb.authStore.exportToCookie({
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax', // Helps with CSRF protection
-        httpOnly: true,  // Prevents client-side JS from reading the cookie
-        path: '/',       // Make cookie available on all routes
-        maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
-    });
-    
-    console.log('Server hooks - Setting auth cookie:', !!authCookie);
-    response.headers.append('set-cookie', authCookie);
+    // Only send auth cookie if we have valid auth data or need to clear it
+    if (event.locals.pb.authStore.isValid || 
+        (cookies && cookies.includes('pb_auth') && !event.locals.pb.authStore.isValid)) {
+        const authCookie = event.locals.pb.authStore.exportToCookie({
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax', // Helps with CSRF protection
+            httpOnly: true,  // Prevents client-side JS from reading the cookie
+            path: '/',       // Make cookie available on all routes
+            maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
+        });
+        
+        response.headers.append('set-cookie', authCookie);
+    }
 
     return response;
 } 

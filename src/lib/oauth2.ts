@@ -110,10 +110,9 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
                 fullUserRecord: pb.authStore.record
             });
             
-            // Debug: Check if user was created or updated
-            console.log('Auth token:', pb.authStore.token);
-            console.log('Full auth data:', authData);
-
+            // Debug: OAuth2 authentication completed
+            console.log('OAuth2 auth completed for:', pb.authStore.record?.email);
+            
             // Force trigger auth store change event to sync frontend state
             // This ensures the auth state updates properly by refreshing the auth data
             await pb.collection('users').authRefresh();
@@ -121,12 +120,37 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
             // Manually update the currentUser store to ensure frontend state sync
             currentUser.set(pb.authStore.record);
 
-            // Small delay to ensure auth state propagates
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Make a simple API call to let the server-side know about the auth state
+            // This should trigger the server to set the proper cookies
+            try {
+                console.log('Making server call to sync auth state...');
+                const response = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${pb.authStore.token}`
+                    },
+                    body: JSON.stringify({
+                        token: pb.authStore.token,
+                        userId: pb.authStore.record?.id
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('Auth sync successful');
+                } else {
+                    console.log('Auth sync failed:', response.status);
+                }
+            } catch (error) {
+                console.log('Auth sync error:', error);
+            }
 
-            // Force a complete page reload to ensure server-side sync
-            // This will make the browser send the auth data to server on next request
-            window.location.reload();
+            // Small delay to ensure auth state propagates
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Use SvelteKit's navigation to go to tours page
+            // This should trigger the layout to reload and sync auth state
+            await goto('/tours', { replaceState: true, invalidateAll: true });
             return true;
         } else {
             throw new Error('Authentication failed - no valid auth data received');
