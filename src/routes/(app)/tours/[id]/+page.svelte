@@ -1,33 +1,20 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { toursApi, pb } from '$lib/pocketbase.js';
+	import type { PageData } from './$types.js';
 	import type { Tour } from '$lib/types.js';
 
-	let tour = $state<Tour | null>(null);
-	let isLoading = $state(true);
+	let { data }: { data: PageData } = $props();
+	let tour = $state(data.tour);
 	let error = $state<string | null>(null);
-
-	let tourId = $derived($page.params.id);
-
-	onMount(async () => {
-		if (tourId) {
-			await loadTour();
+	
+	// Construct image URL manually since pb might be null on server
+	function getImageUrl(imageName: string) {
+		if (pb) {
+			return pb.files.getURL(tour, imageName);
 		}
-	});
-
-	async function loadTour() {
-		try {
-			isLoading = true;
-			error = null;
-			tour = await toursApi.getById(tourId);
-		} catch (err) {
-			error = 'Failed to load tour details. Please try again.';
-			console.error('Error loading tour:', err);
-		} finally {
-			isLoading = false;
-		}
+		// Fallback for server-side rendering
+		return `${data.pbUrl}/api/files/tours/${tour.id}/${imageName}`;
 	}
 
 	async function deleteTour() {
@@ -106,14 +93,7 @@
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	{#if isLoading}
-		<div class="flex items-center justify-center py-12">
-			<div class="flex items-center gap-2 text-gray-600">
-				<div class="form-spinner"></div>
-				Loading tour details...
-			</div>
-		</div>
-	{:else if error}
+	{#if error}
 		<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
 			<div class="flex">
 				<div class="text-red-600">
@@ -232,8 +212,8 @@
 							{#each tour.images as imageName}
 								<div class="aspect-w-16 aspect-h-12 rounded-lg overflow-hidden">
 									<img 
-										src={pb ? pb.files.getURL(tour, imageName) : ''} 
-										alt="Tour image"
+										src={getImageUrl(imageName)} 
+										alt="{tour.name} photo"
 										class="w-full h-48 object-cover rounded-lg border border-gray-200 hover:scale-105 transition-transform duration-200"
 									/>
 								</div>

@@ -18,12 +18,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		// Check if user owns this tour
 		if (tour.user !== locals.user.id) {
-			throw error(403, 'You do not have permission to view this tour');
+			throw error(403, 'You do not have permission to manage QR codes for this tour');
 		}
 		
 		return {
-			tour,
-			pbUrl: 'https://z.xeon.pl' // Pass PocketBase URL for image construction
+			tour
 		};
 	} catch (err) {
 		console.error('Error loading tour:', err);
@@ -33,6 +32,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if ((err as any).status) {
 			throw err;
 		}
-		throw error(500, 'Failed to load tour details');
+		throw error(500, 'Failed to load tour data');
 	}
 }; 

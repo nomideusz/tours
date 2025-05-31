@@ -2,6 +2,7 @@
 	import { language, t } from '$lib/i18n.js';
 	import { switchLanguage } from '$lib/context.js';
 	import { IsMounted } from 'runed';
+	import { onMount } from 'svelte';
 	import Scan from 'lucide-svelte/icons/scan';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 
@@ -48,6 +49,67 @@
 	function handleMobileLinkClick() {
 		mobileMenuOpen = false;
 	}
+
+	// Handle navigation links with smooth scrolling
+	function handleNavClick(event: MouseEvent, href: string) {
+		// Close mobile menu if open
+		mobileMenuOpen = false;
+		
+		// Check if it's an anchor link (starts with # or /#)
+		if (href.startsWith('#') || href.startsWith('/#')) {
+			event.preventDefault();
+			
+			// Handle both #section and /#section formats
+			const targetId = href.startsWith('/#') ? href.substring(2) : href.substring(1);
+			const target = document.getElementById(targetId);
+			
+			if (target) {
+				// If we're not on the main page, navigate there first
+				if (window.location.pathname !== '/') {
+					// Fix URL construction - href already includes the /# part
+					window.location.href = href.startsWith('/#') ? href : '/' + href;
+					return;
+				}
+				
+				// We're on the main page, smooth scroll
+				target.scrollIntoView({
+					behavior: 'smooth',
+					block: 'start'
+				});
+			} else if (window.location.pathname !== '/') {
+				// Target doesn't exist and we're not on main page, navigate to main page
+				window.location.href = href.startsWith('/#') ? href : '/' + href;
+			}
+		}
+	}
+
+	// Set up smooth scrolling for any existing anchor links on mount
+	onMount(() => {
+		// Only set up if we're on the main page
+		if (window.location.pathname === '/') {
+			document.querySelectorAll('a[href^="#"], a[href^="/#"]').forEach((element) => {
+				const anchor = element as HTMLAnchorElement;
+				// Skip if this is one of our navigation links (already handled)
+				if (anchor.closest('header')) return;
+				
+				anchor.addEventListener('click', function (e: Event) {
+					e.preventDefault();
+					const href = anchor.getAttribute('href');
+					if (href) {
+						// Handle both #section and /#section formats
+						const targetId = href.startsWith('/#') ? href.substring(2) : href.substring(1);
+						const target = document.getElementById(targetId);
+						if (target) {
+							target.scrollIntoView({
+								behavior: 'smooth',
+								block: 'start'
+							});
+						}
+					}
+				});
+			});
+		}
+	});
 </script>
 
 <!-- Modern header with improved navigation -->
@@ -66,18 +128,20 @@
 
 			<!-- Desktop navigation -->
 			<nav class="hidden items-center gap-8 lg:flex">
-				<a href="/#features" class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#features" onclick={(e) => handleNavClick(e, '/#features')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
 				<a
 					href="/#how-it-works"
+					onclick={(e) => handleNavClick(e, '/#how-it-works')}
 					class="font-medium text-gray-600 transition-colors hover:text-gray-900">How it Works</a
 				>
-				<a href="/#pricing" class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
 				<a
 					href="/#testimonials"
+					onclick={(e) => handleNavClick(e, '/#testimonials')}
 					class="font-medium text-gray-600 transition-colors hover:text-gray-900">Testimonials</a
 				>
 			</nav>
@@ -187,16 +251,16 @@
 		<div class="flex flex-col px-6 py-6 sm:px-8">
 			<!-- Navigation links -->
 			<div class="flex flex-col space-y-1 pb-4">
-				<a href="/#features" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#features" onclick={(e) => handleNavClick(e, '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
-				<a href="/#how-it-works" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#how-it-works" onclick={(e) => handleNavClick(e, '/#how-it-works')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>How it Works</a
 				>
-				<a href="/#pricing" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
-				<a href="/#testimonials" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#testimonials" onclick={(e) => handleNavClick(e, '/#testimonials')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Testimonials</a
 				>
 			</div>

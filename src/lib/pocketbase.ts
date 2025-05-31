@@ -287,6 +287,29 @@ export const toursApi = {
 // Time Slots API
 export const timeSlotsApi = {
   /**
+   * Get all time slots for current user's tours
+   * @returns Promise with array of time slots
+   */
+  getAll: async (): Promise<TimeSlot[]> => {
+    if (!browser || !pb) {
+      console.warn('PocketBase client not available');
+      return [];
+    }
+    
+    try {
+      // Get all time slots for user's tours
+      return await pb.collection('time_slots').getFullList<TimeSlot>({
+        filter: `tour.user = "${pb.authStore.record?.id}"`,
+        sort: 'startTime',
+        expand: 'tour'
+      });
+    } catch (error) {
+      console.error('Error fetching all time slots:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all time slots for a tour
    * @param tourId Tour ID
    * @returns Promise with array of time slots
@@ -415,6 +438,27 @@ export const qrCodesApi = {
   },
 
   /**
+   * Get QR code by ID
+   * @param id QR code ID
+   * @returns Promise with QR code
+   */
+  getById: async (id: string): Promise<QRCode | null> => {
+    if (!browser || !pb) {
+      console.warn('PocketBase client not available');
+      return null;
+    }
+    
+    try {
+      return await pb.collection('qr_codes').getOne<QRCode>(id, {
+        expand: 'tour,user'
+      });
+    } catch (error) {
+      console.error('Error fetching QR code by ID:', error);
+      return null;
+    }
+  },
+
+  /**
    * Create a new QR code
    * @param data QR code data
    * @returns Promise with created QR code
@@ -454,6 +498,43 @@ export const qrCodesApi = {
       }) || null;
     } catch (error) {
       console.error('Error incrementing scan count:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update QR code
+   * @param id QR code ID
+   * @param data Update data
+   * @returns Promise with updated QR code
+   */
+  update: async (id: string, data: Partial<QRCode>): Promise<QRCode> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      return await pb.collection('qr_codes').update<QRCode>(id, data);
+    } catch (error) {
+      console.error('Error updating QR code:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete QR code
+   * @param id QR code ID
+   * @returns Promise with boolean success
+   */
+  delete: async (id: string): Promise<boolean> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      return await pb.collection('qr_codes').delete(id);
+    } catch (error) {
+      console.error('Error deleting QR code:', error);
       throw error;
     }
   }

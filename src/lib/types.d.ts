@@ -8,6 +8,8 @@ export * from './i18n';
 
 // ========= ZAUR TOUR BOOKING SYSTEM TYPES =========
 
+export type UserRole = 'customer' | 'guide' | 'admin';
+
 export interface User extends RecordModel {
   id: string;
   email: string;
@@ -15,10 +17,12 @@ export interface User extends RecordModel {
   businessName?: string;
   stripeAccountId?: string;
   avatar?: string;
-  role?: 'admin' | 'guide' | 'user';
+  role: UserRole;
+  intendedRole?: 'customer' | 'guide'; // What they want to be
   phone?: string;
   website?: string;
   description?: string;
+  location?: string; // City/region for guides
   created: string;
   updated: string;
 }
@@ -63,11 +67,13 @@ export interface QRCode extends RecordModel {
   user: string; // relation to User
   code: string; // unique identifier
   name: string; // user-friendly name
+  category?: 'digital' | 'print' | 'partner' | 'event' | 'promo'; // QR code category
   scans: number;
   conversions: number;
   isActive: boolean;
   customization?: {
     color?: string;
+    backgroundColor?: string;
     logo?: string;
     style?: 'square' | 'rounded' | 'dots';
   };
@@ -118,4 +124,26 @@ export interface Payment extends RecordModel {
   netAmount: number; // amount after Stripe fees
   created: string;
   updated: string;
+}
+
+export interface GuideApplication extends RecordModel {
+  id: string;
+  user: string; // relation to User (customer)
+  businessName: string;
+  experience: string; // years or description
+  specialties: string[]; // tour types they offer
+  location: string;
+  website?: string;
+  socialMedia?: {
+    instagram?: string;
+    facebook?: string;
+  };
+  certifications?: string[];
+  whyGuide: string; // motivation/story
+  businessPlan?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'under_review';
+  adminNotes?: string;
+  appliedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string; // admin user ID
 }

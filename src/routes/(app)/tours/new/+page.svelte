@@ -81,10 +81,10 @@
 				});
 
 				const tour = await toursApi.createWithImages(formDataWithImages);
-				goto(`/tours`);
+				goto(`/tours/${tour.id}/schedule`);
 			} else {
 				const tour = await toursApi.create(cleanedData);
-				goto(`/tours`);
+				goto(`/tours/${tour.id}/schedule`);
 			}
 		} catch (err) {
 			error = 'Failed to create tour. Please try again.';

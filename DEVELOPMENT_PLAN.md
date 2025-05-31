@@ -175,11 +175,11 @@ Use TypeScript throughout and implement proper error handling."
 - `src/routes/api/upload/+server.ts` - Image upload
 
 **Acceptance Criteria:**
-- [ ] Tour guides can create tours with all details
+- [X] Tour guides can create tours with all details
 - [ ] Time slots can be set for recurring schedules
 - [ ] Calendar shows availability clearly
 - [ ] Mobile interface works smoothly
-- [ ] Image upload and display functional
+- [X] Image upload and display functional
 
 ---
 

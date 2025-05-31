@@ -1,4 +1,4 @@
-import type { Tour } from './types.js';
+import type { Tour, TimeSlot } from './types.js';
 
 export interface ValidationError {
 	field: string;
@@ -22,6 +22,16 @@ export interface TourFormData {
 	includedItems: string[];
 	requirements: string[];
 	cancellationPolicy: string;
+}
+
+export interface TimeSlotFormData {
+	startDate: string;
+	startTime: string;
+	endTime: string;
+	availableSpots: number;
+	isRecurring: boolean;
+	recurringPattern: TimeSlot['recurringPattern'];
+	recurringEnd: string;
 }
 
 // Validation rules
@@ -80,6 +90,30 @@ const VALID_CATEGORIES = ['walking', 'food', 'cultural', 'historical', 'art', 'a
 
 // Valid statuses
 const VALID_STATUSES: Tour['status'][] = ['draft', 'active', 'inactive'];
+
+// Time slot validation rules
+const TIME_SLOT_VALIDATION_RULES = {
+	startDate: {
+		required: true
+	},
+	startTime: {
+		required: true
+	},
+	endTime: {
+		required: true
+	},
+	availableSpots: {
+		required: true,
+		min: 1,
+		max: 100
+	},
+	recurringEnd: {
+		required: false
+	}
+};
+
+// Valid recurring patterns
+const VALID_RECURRING_PATTERNS: TimeSlot['recurringPattern'][] = ['daily', 'weekly', 'monthly'];
 
 export function validateTourForm(data: Partial<TourFormData>): ValidationResult {
 	const errors: ValidationError[] = [];
@@ -200,6 +234,107 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 	};
 }
 
+export function validateTimeSlotForm(data: Partial<TimeSlotFormData>, tourCapacity?: number): ValidationResult {
+	const errors: ValidationError[] = [];
+
+	// Validate start date
+	if (!data.startDate || data.startDate.trim() === '') {
+		errors.push({ field: 'startDate', message: 'Start date is required' });
+	} else {
+		const startDate = new Date(data.startDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0); // Reset time to compare just dates
+		
+		if (startDate < today) {
+			errors.push({ field: 'startDate', message: 'Start date cannot be in the past' });
+		}
+		
+		// Check if date is too far in the future (2 years)
+		const maxDate = new Date();
+		maxDate.setFullYear(maxDate.getFullYear() + 2);
+		if (startDate > maxDate) {
+			errors.push({ field: 'startDate', message: 'Start date cannot be more than 2 years in the future' });
+		}
+	}
+
+	// Validate start time
+	if (!data.startTime || data.startTime.trim() === '') {
+		errors.push({ field: 'startTime', message: 'Start time is required' });
+	}
+
+	// Validate end time
+	if (!data.endTime || data.endTime.trim() === '') {
+		errors.push({ field: 'endTime', message: 'End time is required' });
+	}
+
+	// Validate start time vs end time
+	if (data.startTime && data.endTime && data.startDate) {
+		const startDateTime = new Date(`${data.startDate}T${data.startTime}`);
+		const endDateTime = new Date(`${data.startDate}T${data.endTime}`);
+		
+		if (endDateTime <= startDateTime) {
+			errors.push({ field: 'endTime', message: 'End time must be after start time' });
+		}
+		
+		// Check minimum duration (15 minutes)
+		const durationMs = endDateTime.getTime() - startDateTime.getTime();
+		const durationMinutes = durationMs / (1000 * 60);
+		
+		if (durationMinutes < 15) {
+			errors.push({ field: 'endTime', message: 'Duration must be at least 15 minutes' });
+		}
+		
+		// Check maximum duration (24 hours)
+		if (durationMinutes > 1440) {
+			errors.push({ field: 'endTime', message: 'Duration cannot exceed 24 hours' });
+		}
+	}
+
+	// Validate available spots
+	if (data.availableSpots === undefined || data.availableSpots === null) {
+		errors.push({ field: 'availableSpots', message: 'Available spots is required' });
+	} else {
+		if (data.availableSpots < TIME_SLOT_VALIDATION_RULES.availableSpots.min) {
+			errors.push({ field: 'availableSpots', message: `Available spots must be at least ${TIME_SLOT_VALIDATION_RULES.availableSpots.min}` });
+		}
+		if (data.availableSpots > TIME_SLOT_VALIDATION_RULES.availableSpots.max) {
+			errors.push({ field: 'availableSpots', message: `Available spots must be no more than ${TIME_SLOT_VALIDATION_RULES.availableSpots.max}` });
+		}
+		
+		// Check against tour capacity if provided
+		if (tourCapacity && data.availableSpots > tourCapacity) {
+			errors.push({ field: 'availableSpots', message: `Available spots cannot exceed tour capacity (${tourCapacity})` });
+		}
+	}
+
+	// Validate recurring pattern
+	if (data.isRecurring && data.recurringPattern && !VALID_RECURRING_PATTERNS.includes(data.recurringPattern)) {
+		errors.push({ field: 'recurringPattern', message: 'Invalid recurring pattern' });
+	}
+
+	// Validate recurring end date
+	if (data.isRecurring && data.recurringEnd && data.recurringEnd.trim() !== '') {
+		const recurringEndDate = new Date(data.recurringEnd);
+		const startDate = new Date(data.startDate || '');
+		
+		if (recurringEndDate <= startDate) {
+			errors.push({ field: 'recurringEnd', message: 'Recurring end date must be after start date' });
+		}
+		
+		// Check if recurring end is too far in the future (2 years from start)
+		const maxRecurringEnd = new Date(startDate);
+		maxRecurringEnd.setFullYear(maxRecurringEnd.getFullYear() + 2);
+		if (recurringEndDate > maxRecurringEnd) {
+			errors.push({ field: 'recurringEnd', message: 'Recurring end date cannot be more than 2 years from start date' });
+		}
+	}
+
+	return {
+		isValid: errors.length === 0,
+		errors
+	};
+}
+
 // Helper function to get error message for a specific field
 export function getFieldError(errors: ValidationError[], fieldName: string): string | null {
 	const error = errors.find(err => err.field === fieldName);
@@ -225,5 +360,17 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
 		cancellationPolicy: String(data.cancellationPolicy || '').trim()
+	};
+}
+
+export function sanitizeTimeSlotFormData(data: any): TimeSlotFormData {
+	return {
+		startDate: String(data.startDate || '').trim(),
+		startTime: String(data.startTime || '').trim(),
+		endTime: String(data.endTime || '').trim(),
+		availableSpots: Number(data.availableSpots) || 1,
+		isRecurring: Boolean(data.isRecurring),
+		recurringPattern: (data.recurringPattern as TimeSlot['recurringPattern']) || 'weekly',
+		recurringEnd: String(data.recurringEnd || '').trim()
 	};
 } 

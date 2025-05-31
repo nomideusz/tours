@@ -129,17 +129,77 @@
 	}
 
 	.form-checkbox {
-		width: 1rem;
-		height: 1rem;
-		color: var(--color-primary-600);
-		border: 1px solid var(--color-gray-300);
+		width: 1.125rem;
+		height: 1.125rem;
+		border: 2px solid var(--color-gray-300);
 		border-radius: var(--radius-sm);
 		background-color: white;
+		transition: all var(--transition-fast) ease;
+		cursor: pointer;
+		position: relative;
+		appearance: none;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		/* Remove all browser focus styling */
+		outline: none !important;
+		outline-offset: 0 !important;
+		box-shadow: none;
+	}
+
+	.form-checkbox:hover {
+		border-color: var(--color-primary-400);
 	}
 
 	.form-checkbox:focus {
-		outline: none;
-		box-shadow: 0 0 0 3px var(--color-primary-100);
+		outline: none !important;
+		outline-offset: 0 !important;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+	}
+
+	.form-checkbox:focus-visible {
+		outline: none !important;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+	}
+
+	.form-checkbox:active {
+		outline: none !important;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+	}
+
+	.form-checkbox:checked {
+		border-color: var(--color-primary-600);
+		background-color: var(--color-primary-600);
+	}
+
+	.form-checkbox:checked:hover {
+		border-color: var(--color-primary-700);
+		background-color: var(--color-primary-700);
+	}
+
+	.form-checkbox:checked:focus {
+		border-color: var(--color-primary-600);
+		background-color: var(--color-primary-600);
+		box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+	}
+
+	/* Custom checkmark using CSS - properly centered */
+	.form-checkbox:checked::before {
+		content: '';
+		width: 0.3rem;
+		height: 0.6rem;
+		border: 2px solid white;
+		border-top: none;
+		border-left: none;
+		transform: rotate(45deg);
+		/* Use margin auto for perfect centering */
+		margin-top: -0.15rem;
+		margin-left: 0.05rem;
 	}
 
 	.form-radio {

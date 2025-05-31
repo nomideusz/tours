@@ -44,6 +44,7 @@
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.1.8",
 		"@types/node": "^22.15.27",
+		"@types/qrcode": "^1.5.5",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -71,6 +72,8 @@
 	"dependencies": {
 		"lucide-svelte": "^0.510.0",
 		"pocketbase": "^0.26.0",
+		"qr-code-styling": "^1.9.2",
+		"qrcode": "^1.5.4",
 		"resend": "^4.5.1",
 		"runed": "^0.26.0"
 	}
