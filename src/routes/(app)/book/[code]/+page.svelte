@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { PageData } from './$types.js';
+	import { enhance } from '$app/forms';
+	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -8,18 +9,20 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Euro from 'lucide-svelte/icons/euro';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Check from 'lucide-svelte/icons/check';
 	
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	// Booking form state
 	let selectedDate = $state<string>('');
 	let selectedTimeSlot = $state<TimeSlot | null>(null);
 	let participants = $state(1);
-	let customerName = $state('');
-	let customerEmail = $state('');
-	let customerPhone = $state('');
-	let specialRequests = $state('');
+	let customerName = $state((form as any)?.customerName || '');
+	let customerEmail = $state((form as any)?.customerEmail || '');
+	let customerPhone = $state((form as any)?.customerPhone || '');
+	let specialRequests = $state((form as any)?.specialRequests || '');
 	let isSubmitting = $state(false);
+	let showSuccess = $state(false);
 	let error = $state<string | null>(null);
 	
 	// Get tour from expanded QR code data
@@ -29,60 +32,88 @@
 		null
 	);
 	
-	// Available dates (mock data - would come from time slots)
+	// Process time slots from server or generate demo data
 	let availableDates = $state<string[]>([]);
 	let availableTimeSlots = $state<TimeSlot[]>([]);
+	let allTimeSlots = $derived(data.timeSlots?.length ? data.timeSlots : generateDemoTimeSlots());
 	
 	// Calculate total price
 	let totalPrice = $derived(tour ? participants * tour.price : 0);
 	
-	onMount(() => {
-		// Generate some available dates for demo
-		const dates: string[] = [];
+	// Show success message if booking was successful
+	$effect(() => {
+		if (form?.success) {
+			showSuccess = true;
+		}
+		if ((form as any)?.error) {
+			error = (form as any).error;
+		}
+	});
+	
+	// Generate demo time slots if none from server
+	function generateDemoTimeSlots(): TimeSlot[] {
+		if (!tour) return [];
+		
+		const slots: TimeSlot[] = [];
 		const today = new Date();
-		for (let i = 1; i <= 30; i++) {
+		
+		for (let i = 1; i <= 14; i++) {
 			const date = new Date(today);
 			date.setDate(today.getDate() + i);
-			dates.push(date.toISOString().split('T')[0]);
+			const dateStr = date.toISOString().split('T')[0];
+			
+			// Morning slot
+			slots.push({
+				id: `demo-${i}-1`,
+				tour: tour.id,
+				startTime: `${dateStr}T09:00:00`,
+				endTime: `${dateStr}T11:00:00`,
+				availableSpots: Math.floor(Math.random() * 8) + 2,
+				bookedSpots: Math.floor(Math.random() * 3),
+				status: 'available' as const,
+				isRecurring: false,
+				created: new Date().toISOString(),
+				updated: new Date().toISOString()
+			});
+			
+			// Afternoon slot
+			slots.push({
+				id: `demo-${i}-2`,
+				tour: tour.id,
+				startTime: `${dateStr}T14:00:00`,
+				endTime: `${dateStr}T16:00:00`,
+				availableSpots: Math.floor(Math.random() * 6) + 1,
+				bookedSpots: Math.floor(Math.random() * 4),
+				status: 'available' as const,
+				isRecurring: false,
+				created: new Date().toISOString(),
+				updated: new Date().toISOString()
+			});
 		}
-		availableDates = dates;
+		
+		return slots;
+	}
+	
+	onMount(() => {
+		// Extract unique dates from time slots
+		const dates = new Set<string>();
+		allTimeSlots.forEach(slot => {
+			const date = slot.startTime.split('T')[0];
+			dates.add(date);
+		});
+		availableDates = Array.from(dates).sort();
 	});
 	
 	function selectDate(date: string) {
 		selectedDate = date;
-		// Load time slots for selected date
-		// This would normally fetch from the API
+		selectedTimeSlot = null; // Reset time slot selection
 		loadTimeSlotsForDate(date);
 	}
 	
 	function loadTimeSlotsForDate(date: string) {
-		// Mock time slots - in production, fetch from API
-		availableTimeSlots = [
-			{
-				id: '1',
-				tour: tour?.id || '',
-				startTime: `${date}T09:00:00`,
-				endTime: `${date}T11:00:00`,
-				availableSpots: 7,
-				bookedSpots: 3,
-				status: 'available' as const,
-				isRecurring: false,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString()
-			},
-			{
-				id: '2',
-				tour: tour?.id || '',
-				startTime: `${date}T14:00:00`,
-				endTime: `${date}T16:00:00`,
-				availableSpots: 3,
-				bookedSpots: 7,
-				status: 'available' as const,
-				isRecurring: false,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString()
-			}
-		];
+		availableTimeSlots = allTimeSlots.filter(slot => 
+			slot.startTime.startsWith(date) && slot.availableSpots > 0
+		).sort((a, b) => a.startTime.localeCompare(b.startTime));
 	}
 	
 	function formatTime(dateString: string) {
@@ -99,34 +130,6 @@
 			month: 'long',
 			day: 'numeric'
 		});
-	}
-	
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		if (!selectedTimeSlot || !tour) return;
-		
-		error = null;
-		isSubmitting = true;
-		
-		try {
-			// Here you would submit the booking to your API
-			// For now, just show success message
-			alert('Booking submitted successfully! You will receive a confirmation email shortly.');
-			
-			// Reset form
-			selectedDate = '';
-			selectedTimeSlot = null;
-			participants = 1;
-			customerName = '';
-			customerEmail = '';
-			customerPhone = '';
-			specialRequests = '';
-		} catch (err) {
-			error = 'Failed to submit booking. Please try again.';
-			console.error('Booking error:', err);
-		} finally {
-			isSubmitting = false;
-		}
 	}
 </script>
 
@@ -185,14 +188,49 @@
 		<div class="px-4 py-6 sm:px-6">
 			<h2 class="text-xl font-semibold text-gray-900 mb-6">Book Your Tour</h2>
 			
-			{#if error}
-				<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-					<p class="text-sm text-red-600">{error}</p>
+			{#if showSuccess}
+				<!-- Success Message -->
+				<div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+					<div class="flex justify-center mb-4">
+						<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+							<Check class="w-8 h-8 text-green-600" />
+						</div>
+					</div>
+					<h3 class="text-lg font-semibold text-green-900 mb-2">Booking Successful!</h3>
+					<p class="text-sm text-green-700 mb-4">
+						Your booking has been submitted successfully. You will receive a confirmation email shortly.
+					</p>
+					{#if form?.bookingId}
+						<p class="text-xs text-green-600">
+							Booking ID: {form.bookingId}
+						</p>
+					{/if}
 				</div>
-			{/if}
-			
-			<form onsubmit={handleSubmit} class="space-y-6">
-				<!-- Date Selection -->
+			{:else}
+				{#if error}
+					<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+						<p class="text-sm text-red-600">{error}</p>
+					</div>
+				{/if}
+				
+				<form method="POST" action="?/book" use:enhance={() => {
+					isSubmitting = true;
+					return async ({ update }) => {
+						await update();
+						isSubmitting = false;
+					};
+				}} class="space-y-6">
+					<!-- Hidden inputs for form data -->
+					{#if selectedTimeSlot}
+						<input type="hidden" name="timeSlotId" value={selectedTimeSlot.id} />
+						<input type="hidden" name="participants" value={participants} />
+						<input type="hidden" name="customerName" value={customerName} />
+						<input type="hidden" name="customerEmail" value={customerEmail} />
+						<input type="hidden" name="customerPhone" value={customerPhone} />
+						<input type="hidden" name="specialRequests" value={specialRequests} />
+					{/if}
+					
+					<!-- Date Selection -->
 				<div>
 					<span class="block text-sm font-medium text-gray-700 mb-3">
 						Select Date
@@ -365,7 +403,8 @@
 						{/if}
 					</button>
 				{/if}
-			</form>
+				</form>
+			{/if}
 		</div>
 		
 		<!-- Footer -->

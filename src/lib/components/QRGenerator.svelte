@@ -21,6 +21,24 @@
 		logoUrl: ''
 	});
 	
+	// Generate suggested name based on category and tour
+	function generateSuggestedName(cat: typeof category): string {
+		const tourShortName = tour.name.length > 20 ? tour.name.substring(0, 20) + '...' : tour.name;
+		const now = new Date();
+		const month = now.toLocaleString('en', { month: 'short' });
+		const year = now.getFullYear();
+		
+		const suggestions = {
+			digital: `${tourShortName} - Social Media`,
+			print: `${tourShortName} - Flyer ${month} ${year}`,
+			partner: `${tourShortName} - Partner Link`,
+			event: `${tourShortName} - Event ${month} ${year}`,
+			promo: `${tourShortName} - Special Offer`
+		};
+		
+		return suggestions[cat];
+	}
+	
 	// Category configuration
 	const categories = [
 		{ value: 'digital', label: 'Digital/Social', icon: '📱', color: '#3B82F6' },
@@ -35,12 +53,77 @@
 	let error = $state<string | null>(null);
 	let previewUrl = $state<string | null>(null);
 	let generatedCode = $state<string | null>(null);
+	let uploadedLogoFile = $state<File | null>(null);
+	let logoPreviewUrl = $state<string | null>(null);
+	let isUploadingLogo = $state(false);
 	
 	// Generate unique code
 	function generateUniqueCode(): string {
 		const tourPrefix = tour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
 		const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
 		return `${tourPrefix}-${randomSuffix}`;
+	}
+	
+	// Handle logo file upload
+	async function handleLogoUpload(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		
+		if (!file) return;
+		
+		// Validate file type
+		if (!file.type.startsWith('image/')) {
+			error = 'Please select an image file';
+			return;
+		}
+		
+		// Validate file size (max 2MB)
+		if (file.size > 2 * 1024 * 1024) {
+			error = 'Logo file must be smaller than 2MB';
+			return;
+		}
+		
+		try {
+			isUploadingLogo = true;
+			error = null;
+			
+			uploadedLogoFile = file;
+			
+			// Create preview URL for the uploaded file
+			if (logoPreviewUrl) {
+				URL.revokeObjectURL(logoPreviewUrl);
+			}
+			logoPreviewUrl = URL.createObjectURL(file);
+			
+			// Upload to PocketBase and get the URL
+			const formData = new FormData();
+			formData.append('logo', file);
+			formData.append('user', pb?.authStore.record?.id || '');
+			
+			// Create a temporary record to store the logo (we'll use a 'temp_uploads' collection or similar)
+			// For now, we'll use the file URL directly in the QR code
+			customization.logoUrl = logoPreviewUrl;
+			
+			// Regenerate preview with new logo
+			await generatePreview();
+			
+		} catch (err) {
+			error = 'Failed to upload logo';
+			console.error('Logo upload error:', err);
+		} finally {
+			isUploadingLogo = false;
+		}
+	}
+	
+	// Remove uploaded logo
+	function removeLogo() {
+		uploadedLogoFile = null;
+		if (logoPreviewUrl) {
+			URL.revokeObjectURL(logoPreviewUrl);
+			logoPreviewUrl = null;
+		}
+		customization.logoUrl = '';
+		generatePreview();
 	}
 	
 	// Generate QR code preview
@@ -240,8 +323,18 @@
 		}
 	}
 	
+	// Update name when category changes
+	$effect(() => {
+		if (!name.trim() || name === generateSuggestedName('digital') || name === generateSuggestedName('print') || 
+		    name === generateSuggestedName('partner') || name === generateSuggestedName('event') || 
+		    name === generateSuggestedName('promo')) {
+			name = generateSuggestedName(category);
+		}
+	});
+	
 	// Initialize with preview on mount
 	onMount(() => {
+		name = generateSuggestedName(category);
 		generatePreview();
 	});
 </script>
@@ -330,7 +423,7 @@
 						required
 					/>
 					<p class="mt-1 text-xs text-gray-500">
-						Give this QR code a memorable name to track its performance
+						✨ We've suggested a name based on your category - feel free to customize it
 					</p>
 				</div>
 				
@@ -450,21 +543,86 @@
 					</div>
 				</div>
 				
-				<!-- Logo URL (optional) -->
+				<!-- Logo Upload/URL (optional) -->
 				<div>
-					<label for="qr-logo" class="form-label">
-						Logo URL <span class="text-gray-500">(optional)</span>
+					<label class="form-label">
+						Logo <span class="text-gray-500">(optional)</span>
 					</label>
-					<input
-						id="qr-logo"
-						type="url"
-						bind:value={customization.logoUrl}
-						onchange={generatePreview}
-						placeholder="https://example.com/logo.png"
-						class="form-input"
-					/>
+					
+					<!-- Logo Upload Section -->
+					<div class="space-y-3">
+						{#if uploadedLogoFile || logoPreviewUrl}
+							<!-- Show uploaded logo preview -->
+							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+								<img 
+									src={logoPreviewUrl} 
+									alt="Logo preview" 
+									class="w-12 h-12 object-contain rounded"
+								/>
+								<div class="flex-1">
+									<p class="text-sm font-medium text-gray-900">{uploadedLogoFile?.name}</p>
+									<p class="text-xs text-gray-500">
+										{uploadedLogoFile ? (uploadedLogoFile.size / 1024).toFixed(1) + ' KB' : 'Uploaded'}
+									</p>
+								</div>
+								<button
+									type="button"
+									onclick={removeLogo}
+									class="text-red-600 hover:text-red-700 p-1"
+									title="Remove logo"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</button>
+							</div>
+						{:else}
+							<!-- Upload options -->
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<!-- File Upload -->
+								<div>
+									<label class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+										<div class="flex flex-col items-center justify-center pt-5 pb-6">
+											{#if isUploadingLogo}
+												<div class="form-spinner mb-1"></div>
+												<p class="text-xs text-gray-500">Uploading...</p>
+											{:else}
+												<svg class="w-6 h-6 mb-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+												</svg>
+												<p class="text-xs text-gray-500 text-center">
+													<span class="font-semibold">Upload file</span>
+													<br>PNG, JPG up to 2MB
+												</p>
+											{/if}
+										</div>
+										<input
+											type="file"
+											accept="image/*"
+											onchange={handleLogoUpload}
+											class="hidden"
+											disabled={isUploadingLogo}
+										/>
+									</label>
+								</div>
+								
+								<!-- URL Input -->
+								<div class="flex flex-col">
+									<label class="text-xs font-medium text-gray-700 mb-1">Or paste URL</label>
+									<input
+										type="url"
+										bind:value={customization.logoUrl}
+										onchange={generatePreview}
+										placeholder="https://example.com/logo.png"
+										class="form-input h-full"
+									/>
+								</div>
+							</div>
+						{/if}
+					</div>
+					
 					<p class="mt-1 text-xs text-gray-500">
-						Add your logo to the center of the QR code
+						Add your logo to the center of the QR code. For best results, use a square image with transparent background.
 					</p>
 				</div>
 				
