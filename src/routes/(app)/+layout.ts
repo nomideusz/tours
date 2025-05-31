@@ -2,7 +2,7 @@ import type { LayoutLoad } from './$types.js';
 import { browser } from '$app/environment';
 import { currentUser, pb } from '$lib/pocketbase.js';
 
-export const load: LayoutLoad = async ({ data }) => {
+export const load: LayoutLoad = async ({ data, fetch }) => {
   // Update the currentUser store with the user data from the server
   if (browser && data.user) {
     // Add required RecordModel properties to user object
@@ -26,7 +26,17 @@ export const load: LayoutLoad = async ({ data }) => {
         
         // If we have a valid token or if server says user is authenticated, refresh
         if (pb.authStore.isValid || data.isAuthenticated) {
+          // Use SvelteKit fetch for better compatibility
+          const originalFetch = pb.beforeSend;
+          pb.beforeSend = function(url, options) {
+            return fetch(url, options);
+          };
+          
           await pb.collection('users').authRefresh();
+          
+          // Restore original fetch
+          pb.beforeSend = originalFetch;
+          
           // Ensure currentUser store is updated with fresh data
           if (pb.authStore.record) {
             currentUser.set(pb.authStore.record);

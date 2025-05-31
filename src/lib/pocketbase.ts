@@ -11,7 +11,14 @@ const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 // Create PocketBase client instance
 // We'll use a different approach for client vs server
 export const pb = browser 
-  ? new PocketBase(POCKETBASE_URL)
+  ? (() => {
+      const client = new PocketBase(POCKETBASE_URL);
+      // Load auth state from cookie on initialization
+      if (typeof document !== 'undefined') {
+        client.authStore.loadFromCookie(document.cookie);
+      }
+      return client;
+    })()
   : null; // On server, we'll use the instance from locals
 
 // In Svelte 5 Runes mode, we don't need to use a writable store
@@ -25,8 +32,13 @@ export const currentUser = writable(initialUserValue);
 // Enhanced version to properly handle auth state changes
 export function setupAuthListener(setCurrentUser: (user: any) => void) {
   if (browser && pb) {
+    // Load auth state from cookie first (important for page refreshes)
+    pb.authStore.loadFromCookie(document.cookie);
+    
     // Set the initial state immediately
     console.log('Setting up auth listener, initial auth state:', pb.authStore.isValid ? 'Logged in' : 'Logged out');
+    console.log('Auth token present:', !!pb.authStore.token);
+    console.log('Auth record present:', !!pb.authStore.record);
     
     // Immediate call to set the current user
     setCurrentUser(pb.authStore.record);
@@ -107,15 +119,69 @@ export const toursApi = {
     }
     
     try {
-      // Add current user ID
+      const userId = pb.authStore.record?.id;
+      
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Prepare data for PocketBase - convert arrays to JSON strings for JSON fields
       const tourData = {
         ...data,
-        user: pb.authStore.record?.id
+        user: userId,
+        // Convert JSON fields to strings
+        includedItems: Array.isArray(data.includedItems) ? JSON.stringify(data.includedItems) : data.includedItems,
+        requirements: Array.isArray(data.requirements) ? JSON.stringify(data.requirements) : data.requirements
       };
+
+      // Debug: Log the data being sent
+      console.log('Tour data being sent:', tourData);
       
       return await pb.collection('tours').create<Tour>(tourData);
     } catch (error) {
       console.error('Error creating tour:', error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error details:', error);
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new tour with images
+   * @param formData FormData containing tour data and images
+   * @returns Promise with created tour
+   */
+  createWithImages: async (formData: FormData): Promise<Tour> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      // Add current user ID to FormData
+      const userId = pb.authStore.record?.id;
+      
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      formData.append('user', userId);
+      
+      // Debug: Log the FormData contents
+      console.log('FormData contents:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+      
+      return await pb.collection('tours').create<Tour>(formData);
+    } catch (error) {
+      console.error('Error creating tour with images:', error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error details:', error);
+      }
       throw error;
     }
   },
@@ -132,9 +198,68 @@ export const toursApi = {
     }
     
     try {
-      return await pb.collection('tours').update<Tour>(id, data);
+      // Prepare data for PocketBase - convert arrays to JSON strings for JSON fields
+      const tourData = {
+        ...data,
+        // Convert JSON fields to strings
+        includedItems: Array.isArray(data.includedItems) ? JSON.stringify(data.includedItems) : data.includedItems,
+        requirements: Array.isArray(data.requirements) ? JSON.stringify(data.requirements) : data.requirements
+      };
+
+      // Debug: Log the data being sent
+      console.log('Tour update data being sent:', tourData);
+      
+      return await pb.collection('tours').update<Tour>(id, tourData);
     } catch (error) {
       console.error(`Error updating tour with ID ${id}:`, error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error details:', error);
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Update a tour with images
+   * @param id Tour ID
+   * @param formData FormData containing updated tour data and images
+   * @returns Promise with updated tour
+   */
+  updateWithImages: async (id: string, formData: FormData): Promise<Tour> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      // Debug: Log the FormData contents
+      console.log('Update FormData contents:');
+      const imageFields: string[] = [];
+      const imageDeleteFields: string[] = [];
+      for (const [key, value] of formData.entries()) {
+        if (key === 'images') {
+          if (typeof value === 'string') {
+            imageFields.push(`Existing: ${value}`);
+          } else {
+            imageFields.push(`New: ${(value as File).name}`);
+          }
+        } else if (key === 'images-') {
+          imageDeleteFields.push(value as string);
+        }
+        console.log(`${key}:`, value);
+      }
+      console.log('Image fields summary:', imageFields);
+      console.log('Images to delete:', imageDeleteFields);
+      
+      return await pb.collection('tours').update<Tour>(id, formData);
+    } catch (error) {
+      console.error(`Error updating tour with images for ID ${id}:`, error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error details:', error);
+      }
       throw error;
     }
   },
@@ -217,6 +342,25 @@ export const timeSlotsApi = {
       return await pb.collection('time_slots').update<TimeSlot>(id, data);
     } catch (error) {
       console.error(`Error updating time slot with ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a time slot
+   * @param id Time slot ID
+   * @returns Promise with boolean success
+   */
+  delete: async (id: string): Promise<boolean> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      await pb.collection('time_slots').delete(id);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting time slot with ID ${id}:`, error);
       throw error;
     }
   }

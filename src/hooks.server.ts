@@ -73,7 +73,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         const authCookie = event.locals.pb.authStore.exportToCookie({
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax', // Helps with CSRF protection
-            httpOnly: true,  // Prevents client-side JS from reading the cookie
+            httpOnly: false, // Allow client-side access for PocketBase auth store
             path: '/',       // Make cookie available on all routes
             maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
         });

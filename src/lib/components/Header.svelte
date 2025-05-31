@@ -89,6 +89,10 @@
 					<div class="hidden text-sm text-gray-500 md:block">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
 					<div class="hidden items-center gap-3 md:flex">
+						<a href="/tours" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+							Tours
+						</a>
+						<span class="text-gray-300">•</span>
 						<a href="/profile" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
 							{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
 						</a>
@@ -203,6 +207,9 @@
 					<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
 					<div class="flex flex-col space-y-1">
+						<a href="/tours" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+							My Tours
+						</a>
 						<a href="/profile" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
 							Profile Settings
 						</a>

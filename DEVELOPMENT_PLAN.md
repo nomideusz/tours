@@ -61,9 +61,9 @@ PUBLIC_APP_URL=
 ```
 
 **Acceptance Criteria:**
-- [ ] Project runs locally with `pnpm dev`
-- [ ] Tailwind CSS working
-- [ ] TypeScript compilation successful
+- [X] Project runs locally with `pnpm dev`
+- [X] Tailwind CSS working
+- [X] TypeScript compilation successful
 
 ---
 
@@ -102,10 +102,10 @@ model User {
 ```
 
 **Acceptance Criteria:**
-- [ ] Schema compiles without errors
-- [ ] Database migration runs successfully
-- [ ] All relationships properly defined
-- [ ] Proper indexing for performance
+- [X] Schema compiles without errors
+- [X] Database migration runs successfully
+- [X] All relationships properly defined
+- [X] Proper indexing for performance
 
 ---
 
@@ -135,11 +135,11 @@ Create all necessary route handlers, components, and stores using Svelte 5 synta
 - `src/routes/(auth)/forgot-password/+page.svelte`
 
 **Acceptance Criteria:**
-- [ ] User can register and receive verification email
-- [ ] Login/logout works correctly
-- [ ] Protected routes redirect to login
-- [ ] Auth state persists across page refreshes
-- [ ] Password reset flow functional
+- [X] User can register and receive verification email
+- [X] Login/logout works correctly
+- [X] Protected routes redirect to login
+- [X] Auth state persists across page refreshes
+- [X] Password reset flow functional
 
 ---
 

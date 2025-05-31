@@ -57,9 +57,25 @@ export const authFSM = new FiniteStateMachine<AuthStates, AuthEvents>('loading',
   }
 });
 
+// Track last update to prevent redundant calls
+let lastUserValue: any = null;
+let lastState: AuthStates | null = null;
+
 // Function to update FSM based on currentUser state with improved logging
 export function updateAuthState(userValue: any) {
+  // Skip if this is the same update
+  const currentState = authFSM.current;
+  const hasUser = !!userValue;
+  const hadUser = !!lastUserValue;
+  
+  if (lastUserValue === userValue && lastState === currentState && hasUser === hadUser) {
+    return; // Skip redundant update
+  }
+  
   console.log('Auth update triggered with value:', userValue ? 'User Logged In' : 'No User', 'Current FSM state:', authFSM.current);
+  
+  lastUserValue = userValue;
+  lastState = currentState;
   
   // Force authentication when flag is set (used for OAuth2)
   if (userValue && userValue.forceAuth) {
@@ -122,38 +138,13 @@ export function updateAuthState(userValue: any) {
   }));
 }
 
-// Initial state setup (after FSM is defined) - use a shorter timeout for faster initialization
+// Initial state setup (after FSM is defined) - rely on PocketBase auth store
 setTimeout(() => {
   console.log('Setting initial auth state');
   const currentValue = get(currentUser);
   console.log('Initial currentUser value:', currentValue ? 'Present' : 'None');
   
-  // Try to detect auth status from localStorage if available
-  try {
-    if (typeof window !== 'undefined') {
-      // Check if PocketBase has auth data in localStorage
-      const pbAuthData = localStorage.getItem('pocketbase_auth');
-      if (pbAuthData) {
-        const authData = JSON.parse(pbAuthData);
-        if (authData && authData.token) {
-          console.log('Found auth token in localStorage, initializing as logged in');
-          // Use proper transition instead of direct assignment
-          if (authFSM.current !== 'loggedIn') {
-            authFSM.send('login');
-            // Immediately transition to logged in if needed
-            if (authFSM.current === 'loggingIn') {
-              authFSM.send('finishTransition');
-            }
-          }
-          return;
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Error checking localStorage auth:', e);
-  }
-  
-  // Fall back to checking currentUser value
+  // Rely on PocketBase auth store which now loads from cookies properly
   updateAuthState(currentValue);
 }, 0);
 
