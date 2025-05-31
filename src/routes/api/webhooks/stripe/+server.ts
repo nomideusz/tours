@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { stripe } from '$lib/stripe.js';
+import { getStripe } from '$lib/stripe.server.js';
 import PocketBase from 'pocketbase';
 import { env as privateEnv } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
@@ -23,6 +23,7 @@ export const POST: RequestHandler = async ({ request }) => {
   let event: Stripe.Event;
 
   try {
+    const stripe = getStripe();
     event = stripe.webhooks.constructEvent(
       body,
       sig,

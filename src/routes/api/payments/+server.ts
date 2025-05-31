@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { stripe, createPaymentIntent } from '$lib/stripe.js';
+import { createPaymentIntent } from '$lib/stripe.server.js';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 
