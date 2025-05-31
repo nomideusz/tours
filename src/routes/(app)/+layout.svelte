@@ -237,45 +237,27 @@
 		}
 	}
 
-	/* Force scrollbar to always be visible */
-	:global(html::-webkit-scrollbar) {
-		width: 16px !important;
-	}
-
-	:global(html::-webkit-scrollbar-track) {
-		background: #f1f1f1;
-	}
-
-	:global(html::-webkit-scrollbar-thumb) {
-		background: #c1c1c1;
-		border-radius: 8px;
-	}
-
-	:global(html::-webkit-scrollbar-thumb:hover) {
-		background: #a8a8a8;
-	}
-
-	/* Custom scrollbar for body */
-	:global(body) {
+	/* Simplified scrollbar styling */
+	:global(html) {
 		scrollbar-width: thin;
 		scrollbar-color: #cbd5e0 #f7fafc;
 	}
 
-	:global(body::-webkit-scrollbar) {
+	:global(html::-webkit-scrollbar) {
 		width: 12px;
 	}
 
-	:global(body::-webkit-scrollbar-track) {
+	:global(html::-webkit-scrollbar-track) {
 		background: #f7fafc;
 	}
 
-	:global(body::-webkit-scrollbar-thumb) {
+	:global(html::-webkit-scrollbar-thumb) {
 		background-color: #cbd5e0;
 		border-radius: 6px;
-		border: 3px solid #f7fafc;
+		border: 2px solid #f7fafc;
 	}
 
-	:global(body::-webkit-scrollbar-thumb:hover) {
+	:global(html::-webkit-scrollbar-thumb:hover) {
 		background-color: #a0aec0;
 	}
 </style>

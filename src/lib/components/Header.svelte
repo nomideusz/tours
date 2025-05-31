@@ -43,6 +43,11 @@
 	export function closeMobileMenu() {
 		mobileMenuOpen = false;
 	}
+
+	// Close mobile menu when clicking on links
+	function handleMobileLinkClick() {
+		mobileMenuOpen = false;
+	}
 </script>
 
 <!-- Modern header with improved navigation -->
@@ -84,9 +89,10 @@
 					<div class="hidden text-sm text-gray-500 md:block">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
 					<div class="hidden items-center gap-3 md:flex">
-						<span class="text-sm text-gray-600">
-							{currentUser?.username || currentUser?.email || 'User'}
-						</span>
+						<a href="/profile" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+							{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
+						</a>
+						<span class="text-gray-300">•</span>
 						<form action="/auth/logout" method="POST" class="inline-flex items-baseline" onsubmit={handleLogout}>
 							<button
 								type="submit"
@@ -164,33 +170,42 @@
 			</div>
 		</div>
 	</div>
+</header>
 
-	<!-- Mobile menu -->
-	{#if mobileMenuOpen}
-		<div class="border-t border-gray-200 lg:hidden">
-			<div class="mx-auto max-w-screen-2xl space-y-1 px-6 py-4 sm:px-8">
-				<!-- Navigation links -->
-				<a href="/#features" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+<!-- Mobile menu backdrop -->
+{#if mobileMenuOpen}
+	<div class="fixed inset-0 top-20 bg-black/20 lg:hidden z-[60]" onclick={() => (mobileMenuOpen = false)}></div>
+{/if}
+
+<!-- Mobile menu -->
+{#if mobileMenuOpen}
+	<div class="fixed top-20 left-0 w-screen bg-white border-t border-gray-200 shadow-xl lg:hidden z-[70]">
+		<div class="flex flex-col px-6 py-6 sm:px-8">
+			<!-- Navigation links -->
+			<div class="flex flex-col space-y-1 pb-4">
+				<a href="/#features" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
-				<a href="/#how-it-works" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#how-it-works" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>How it Works</a
 				>
-				<a href="/#pricing" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#pricing" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
-				<a href="/#testimonials" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href="/#testimonials" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Testimonials</a
 				>
+			</div>
 
-				<!-- Auth section -->
-				<div class="space-y-1 border-t border-gray-200 pt-4">
-					{#if !isMounted.current}
-						<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
-					{:else if isAuthenticated}
-						<div class="py-2 text-sm text-gray-600">
-							{currentUser?.username || currentUser?.email || 'User'}
-						</div>
+			<!-- Auth section -->
+			<div class="flex flex-col border-t border-gray-200 pt-4 pb-4">
+				{#if !isMounted.current}
+					<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
+				{:else if isAuthenticated}
+					<div class="flex flex-col space-y-1">
+						<a href="/profile" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+							Profile Settings
+						</a>
 						<form action="/auth/logout" method="POST" onsubmit={handleLogout}>
 							<button
 								type="submit"
@@ -203,42 +218,45 @@
 								{t('auth.logout', $language)}
 							</button>
 						</form>
-					{:else}
-						<a href="/auth/login" class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+					</div>
+				{:else}
+					<div class="flex flex-col space-y-3">
+						<a href="/auth/login" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
 							{t('auth.login', $language)}
 						</a>
 						<a
 							href="/auth/register"
+							onclick={handleMobileLinkClick}
 							class="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
 						>
 							Start Free Trial
 						</a>
-					{/if}
-				</div>
+					</div>
+				{/if}
+			</div>
 
-				<!-- Mobile language switcher -->
-				<div class="flex gap-2 border-t border-gray-200 pt-4">
-					<button
-						class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'en'
-							? 'bg-gray-100 text-gray-900'
-							: 'text-gray-600 hover:text-gray-900'}"
-						onclick={switchToEnglish}
-					>
-						English
-					</button>
-					<button
-						class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'pl'
-							? 'bg-gray-100 text-gray-900'
-							: 'text-gray-600 hover:text-gray-900'}"
-						onclick={switchToPolish}
-					>
-						Polski
-					</button>
-				</div>
+			<!-- Mobile language switcher -->
+			<div class="flex flex-row gap-2 border-t border-gray-200 pt-4">
+				<button
+					class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'en'
+						? 'bg-gray-100 text-gray-900'
+						: 'text-gray-600 hover:text-gray-900'}"
+					onclick={switchToEnglish}
+				>
+					English
+				</button>
+				<button
+					class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'pl'
+						? 'bg-gray-100 text-gray-900'
+						: 'text-gray-600 hover:text-gray-900'}"
+					onclick={switchToPolish}
+				>
+					Polski
+				</button>
 			</div>
 		</div>
-	{/if}
-</header>
+	</div>
+{/if}
 
 <style lang="postcss">
 	@reference "tailwindcss";
