@@ -44,12 +44,30 @@ For the booking flow to work for anonymous users, you need to configure the foll
    - Add the rules as specified
    - Save the changes
 
+## Creating Test Data
+
+Before testing the booking flow, you need to create:
+
+1. **A Tour** (if not already created)
+2. **Time Slots** for the tour:
+   - Go to PocketBase Admin → Collections → `time_slots` → New Record
+   - Fill in:
+     - `tour`: Select your tour
+     - `startTime`: e.g., "2024-12-25 10:00:00"
+     - `endTime`: e.g., "2024-12-25 12:00:00"
+     - `availableSpots`: e.g., 10
+     - `bookedSpots`: 0
+     - `status`: "available"
+     - `isRecurring`: false
+3. **A QR Code** linked to the tour (if not already created)
+
 ## Testing Your Configuration
 
 ### Test Anonymous Access:
 1. Open an incognito/private browser window
 2. Visit `/book/[your-qr-code]`
 3. You should see the tour details and booking form
+4. You should see available time slots (if created)
 
 ### Test Authenticated Access:
 1. Log in as a tour guide
@@ -67,10 +85,17 @@ For the booking flow to work for anonymous users, you need to configure the foll
 - Check that `tours` collection has public View access
 - Verify the tour is properly linked to the QR code
 
+### "No Available Time Slots" Message
+- Check that time slots exist for the tour
+- Verify time slots have `status = "available"`
+- Check that `availableSpots > 0`
+- Ensure time slot dates are in the future
+
 ### Booking Creation Fails
 - Check that `bookings` collection has public Create access
 - Verify `time_slots` has public View access
-- Check that the time slot has available spots
+- Check that the selected time slot exists in the database (not a demo slot)
+- Ensure the time slot has available spots
 
 ### Payment Webhook Fails
 - Check that `bookings` and `payments` collections have public Update access

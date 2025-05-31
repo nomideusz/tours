@@ -12,7 +12,7 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Check from 'lucide-svelte/icons/check';
 	
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 	
 	// Booking form state
 	let selectedDate = $state<string>('');
@@ -33,17 +33,18 @@
 		null
 	);
 	
-	// Process time slots from server or generate demo data
+	// Process time slots from server
 	let availableDates = $state<string[]>([]);
 	let availableTimeSlots = $state<TimeSlot[]>([]);
-	let allTimeSlots = $derived(data.timeSlots?.length ? data.timeSlots : generateDemoTimeSlots());
+	let allTimeSlots = $derived(data.timeSlots || []);
+	let hasRealTimeSlots = $derived(data.timeSlots?.length > 0);
 	
 	// Calculate total price
 	let totalPrice = $derived(tour ? participants * tour.price : 0);
 	
 	// Show success message if booking was successful
 	$effect(() => {
-		if (form?.success) {
+		if ((form as any)?.success) {
 			showSuccess = true;
 		}
 		if ((form as any)?.error) {
@@ -212,15 +213,15 @@
 					<p class="text-sm text-green-700 mb-4">
 						Your booking has been submitted successfully. You will receive a confirmation email shortly.
 					</p>
-					{#if form?.bookingReference}
+					{#if (form as any)?.bookingReference}
 						<div class="bg-white border border-green-300 rounded-lg p-3 mb-2">
 							<p class="text-sm font-medium text-gray-900">Booking Reference</p>
-							<p class="text-lg font-mono font-bold text-green-800">{form.bookingReference}</p>
+							<p class="text-lg font-mono font-bold text-green-800">{(form as any).bookingReference}</p>
 						</div>
 					{/if}
-					{#if form?.bookingId}
+					{#if (form as any)?.bookingId}
 						<p class="text-xs text-green-600">
-							Internal ID: {form.bookingId}
+							Internal ID: {(form as any).bookingId}
 						</p>
 					{/if}
 				</div>
@@ -231,24 +232,34 @@
 					</div>
 				{/if}
 				
-				<form method="POST" action="?/book" use:enhance={() => {
-					isSubmitting = true;
-					return async ({ update }) => {
-						await update();
-						isSubmitting = false;
-					};
-				}} class="space-y-6">
-					<!-- Hidden inputs for form data -->
-					{#if selectedTimeSlot}
-						<input type="hidden" name="timeSlotId" value={selectedTimeSlot.id} />
-						<input type="hidden" name="participants" value={participants} />
-						<input type="hidden" name="customerName" value={customerName} />
-						<input type="hidden" name="customerEmail" value={customerEmail} />
-						<input type="hidden" name="customerPhone" value={customerPhone} />
-						<input type="hidden" name="specialRequests" value={specialRequests} />
-					{/if}
-					
-					<!-- Date Selection -->
+				{#if !hasRealTimeSlots}
+					<div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+						<h3 class="text-lg font-semibold text-amber-900 mb-2">No Available Time Slots</h3>
+						<p class="text-sm text-amber-700">
+							There are currently no time slots available for this tour. Please contact the tour guide directly for availability.
+						</p>
+					</div>
+				{:else}
+					<form method="POST" action="?/book" use:enhance={() => {
+						isSubmitting = true;
+						return async ({ update }) => {
+							await update();
+							isSubmitting = false;
+						};
+					}} class="space-y-6">
+						<!-- Hidden inputs for form data -->
+						{#if selectedTimeSlot}
+							<input type="hidden" name="timeSlotId" value={selectedTimeSlot.id} />
+							<input type="hidden" name="availableSpots" value={selectedTimeSlot.availableSpots} />
+							<input type="hidden" name="bookedSpots" value={selectedTimeSlot.bookedSpots || 0} />
+							<input type="hidden" name="participants" value={participants} />
+							<input type="hidden" name="customerName" value={customerName} />
+							<input type="hidden" name="customerEmail" value={customerEmail} />
+							<input type="hidden" name="customerPhone" value={customerPhone} />
+							<input type="hidden" name="specialRequests" value={specialRequests} />
+						{/if}
+						
+						<!-- Date Selection -->
 				<div>
 					<span class="block text-sm font-medium text-gray-700 mb-3">
 						Select Date
@@ -422,6 +433,7 @@
 					</button>
 				{/if}
 				</form>
+				{/if}
 			{/if}
 			</div>
 			

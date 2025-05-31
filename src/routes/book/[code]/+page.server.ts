@@ -16,6 +16,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 		
 		// Try public access first (works for anonymous users)
 		try {
+			console.log('Attempting public access for QR code:', params.code);
 			qrCode = await pb.collection('qr_codes').getFirstListItem(
 				`code = "${params.code}" && isActive = true`,
 				{ expand: 'tour,tour.user' }
@@ -23,7 +24,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			console.log('QR code found via public access');
 		} catch (publicError) {
 			console.log('Public access failed:', publicError);
-			console.log('Looking for QR code:', params.code);
+			console.log('Filter used:', `code = "${params.code}" && isActive = true`);
 			
 			// Fallback to authenticated access if available and public fails
 			if (locals?.pb?.authStore?.isValid) {
@@ -61,27 +62,60 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			}
 		}
 		
-		// Get available time slots for the tour (try public access first)
+		// Get available time slots for the tour
 		let timeSlots: TimeSlot[] = [];
+		const tourId = qrCode.expand?.tour?.id;
+		console.log('Looking for time slots for tour:', tourId);
+		
+		// Try authenticated access first if available, then fall back to public
+		const pbInstance = locals?.pb?.authStore?.isValid ? locals.pb : pb;
+		const accessType = locals?.pb?.authStore?.isValid ? 'authenticated' : 'public';
+		
 		try {
-			timeSlots = await pb.collection('time_slots').getFullList({
-				filter: `tour = "${qrCode.expand?.tour?.id}" && status = "available"`,
+			// Get all slots for this tour
+			const allTourSlots = await pbInstance.collection('time_slots').getFullList({
+				filter: `tour = "${tourId}"`,
 				sort: 'startTime'
 			});
-		} catch (err) {
-			console.error('Failed to load time slots via public access:', err);
-			// Try authenticated access if public fails and auth is available
-			if (locals?.pb?.authStore?.isValid) {
-				try {
-					timeSlots = await locals.pb.collection('time_slots').getFullList({
-						filter: `tour = "${qrCode.expand?.tour?.id}" && status = "available"`,
-						sort: 'startTime'
-					});
-				} catch (authErr) {
-					console.error('Failed to load time slots via authenticated access:', authErr);
-				}
+			console.log(`All slots for tour (${accessType}):`, allTourSlots.length);
+			
+			// Filter for available status
+			timeSlots = allTourSlots.filter(slot => slot.status === 'available') as any;
+			console.log(`Available slots after filtering (${accessType}):`, timeSlots.length);
+			
+			// If no slots found and we used public access, try authenticated
+			if (timeSlots.length === 0 && accessType === 'public' && locals?.pb?.authStore?.isValid) {
+				console.log('No public slots found, trying authenticated access...');
+				const authSlots = await locals.pb.collection('time_slots').getFullList({
+					filter: `tour = "${tourId}"`,
+					sort: 'startTime'
+				});
+				console.log('All slots for tour (authenticated fallback):', authSlots.length);
+				timeSlots = authSlots.filter(slot => slot.status === 'available') as any;
+				console.log('Available slots after filtering (authenticated fallback):', timeSlots.length);
 			}
-			// Continue without time slots - we'll generate demo ones
+		} catch (err) {
+			console.error(`Failed to load time slots via ${accessType} access:`, err);
+		}
+		
+		// Debug: Try to get all time slots without filter to see what's there
+		if (timeSlots.length === 0 && locals?.pb?.authStore?.isValid) {
+			try {
+				const allSlots = await locals.pb.collection('time_slots').getFullList({
+					expand: 'tour',
+					sort: '-created'
+				});
+				console.log('All time slots in database:', allSlots.length);
+				console.log('First few slots:', allSlots.slice(0, 3).map(s => ({
+					id: s.id,
+					tour: s.tour,
+					tourName: s.expand?.tour?.name,
+					status: s.status,
+					startTime: s.startTime
+				})));
+			} catch (debugErr) {
+				console.log('Could not fetch all slots for debugging');
+			}
 		}
 		
 		return {
@@ -106,6 +140,8 @@ export const actions: Actions = {
 		
 		const timeSlotId = formData.get('timeSlotId') as string;
 		const participants = parseInt(formData.get('participants') as string);
+		const availableSpots = parseInt(formData.get('availableSpots') as string);
+		const bookedSpots = parseInt(formData.get('bookedSpots') as string) || 0;
 		const customerName = formData.get('customerName') as string;
 		const customerEmail = formData.get('customerEmail') as string;
 		const customerPhone = formData.get('customerPhone') as string;
@@ -115,6 +151,19 @@ export const actions: Actions = {
 		if (!timeSlotId || !participants || !customerName || !customerEmail) {
 			return fail(400, {
 				error: 'Please fill in all required fields',
+				timeSlotId,
+				participants,
+				customerName,
+				customerEmail,
+				customerPhone,
+				specialRequests
+			});
+		}
+		
+		// Validate availability
+		if (availableSpots < participants) {
+			return fail(400, {
+				error: 'Not enough spots available for this time slot',
 				timeSlotId,
 				participants,
 				customerName,
@@ -161,21 +210,6 @@ export const actions: Actions = {
 				return fail(500, { error: 'Tour information not found' });
 			}
 			
-			// Get time slot to check availability
-			const timeSlot = await workingPB.collection('time_slots').getOne(timeSlotId);
-			
-			if (timeSlot.availableSpots < participants) {
-				return fail(400, {
-					error: 'Not enough spots available for this time slot',
-					timeSlotId,
-					participants,
-					customerName,
-					customerEmail,
-					customerPhone,
-					specialRequests
-				});
-			}
-			
 			// Calculate total price
 			const totalPrice = participants * tour.price;
 			
@@ -198,11 +232,18 @@ export const actions: Actions = {
 				paymentStatus: 'pending'
 			});
 			
-			// Update time slot availability
-			await workingPB.collection('time_slots').update(timeSlotId, {
-				bookedSpots: timeSlot.bookedSpots + participants,
-				availableSpots: timeSlot.availableSpots - participants
-			});
+			// Update time slot availability (only if we have write access)
+			// For anonymous users, this might fail but the booking is already created
+			try {
+				await workingPB.collection('time_slots').update(timeSlotId, {
+					bookedSpots: bookedSpots + participants,
+					availableSpots: availableSpots - participants
+				});
+			} catch (updateErr) {
+				console.error('Failed to update time slot availability:', updateErr);
+				// Don't fail the booking if we can't update the time slot
+				// This might happen for anonymous users who don't have write permissions
+			}
 			
 			// Increment QR code conversion count (only if we have write access)
 			if (locals?.pb?.authStore?.isValid) {
@@ -215,11 +256,18 @@ export const actions: Actions = {
 				}
 			}
 			
-			// Redirect to payment page
+			// Success! Log and redirect to payment page
+			console.log(`Booking created successfully! ID: ${booking.id}, Reference: ${bookingReference}`);
 			throw redirect(303, `/book/${params.code}/payment?booking=${booking.id}`);
 			
 		} catch (err) {
+			// If it's a redirect, re-throw it (this is success, not an error!)
+			if (err instanceof Response && err.status === 303) {
+				throw err;
+			}
+			
 			console.error('Booking error:', err);
+			
 			return fail(500, {
 				error: 'Failed to create booking. Please try again.',
 				timeSlotId,
