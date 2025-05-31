@@ -27,17 +27,20 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			
 			qrCode = qrCodes.find(qr => qr.code === params.code && qr.isActive);
 		} catch (authError) {
-			console.log('Authenticated access failed, trying alternative approach');
+			console.log('Authenticated access failed, trying public filter approach');
 			
-			// Alternative: Since viewRule allows "isActive = true", try to find the QR code
-			// by making a direct request using a known pattern
-			// This is a workaround for PocketBase permission limitations
-			
-			// We'll need to search differently - let's try getting by making individual record calls
-			// This won't work without knowing the ID, so we need a different approach
-			
-			// For now, let's create a simple endpoint test
-			throw error(404, `QR code '${params.code}' not found. The QR code might exist but public access is restricted. Please ensure the QR code is active and try again.`);
+			// Alternative: Try to get QR code using public filter approach
+			try {
+				qrCode = await pb.collection('qr_codes').getFirstListItem(
+					`code = "${params.code}" && isActive = true`,
+					{ expand: 'tour,tour.user' }
+				);
+				// If we found it via public access, we'll use pb instance for updates
+				authenticatedPB = pb;
+			} catch (publicError) {
+				console.log('Public access also failed');
+				throw error(404, `QR code '${params.code}' not found. The QR code might exist but access is restricted. Please ensure the QR code is active and try again.`);
+			}
 		}
 		
 		// Check if QR code was found
@@ -49,7 +52,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 		const isFirstVisit = !url.searchParams.has('submitted');
 		if (isFirstVisit) {
 			try {
-				await pb.collection('qr_codes').update(qrCode.id, {
+				await authenticatedPB.collection('qr_codes').update(qrCode.id, {
 					scans: (qrCode.scans || 0) + 1
 				});
 			} catch (err) {
@@ -61,7 +64,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 		// Get available time slots for the tour
 		let timeSlots: TimeSlot[] = [];
 		try {
-			timeSlots = await pb.collection('time_slots').getFullList({
+			timeSlots = await authenticatedPB.collection('time_slots').getFullList({
 				filter: `tour = "${qrCode.expand?.tour?.id}" && status = "available"`,
 				sort: 'startTime'
 			});
@@ -85,8 +88,15 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 };
 
 export const actions: Actions = {
-	book: async ({ request, params }) => {
+	book: async ({ request, params, locals }) => {
 		const pb = new PocketBase(POCKETBASE_URL);
+		
+		// Use authenticated PB instance if available for better access
+		let authenticatedPB = pb;
+		if (locals?.pb?.authStore?.isValid) {
+			authenticatedPB = locals.pb;
+		}
+		
 		const formData = await request.formData();
 		
 		const timeSlotId = formData.get('timeSlotId') as string;
@@ -110,10 +120,23 @@ export const actions: Actions = {
 		}
 		
 		try {
-			// Get QR code and tour info
-			const qrCode = await pb.collection('qr_codes').getFirstListItem(`code = "${params.code}"`, {
-				expand: 'tour'
-			}).catch(() => null);
+			// Get QR code and tour info - try authenticated first, then public
+			let qrCode = null;
+			try {
+				qrCode = await authenticatedPB.collection('qr_codes').getFirstListItem(`code = "${params.code}"`, {
+					expand: 'tour'
+				});
+			} catch (err) {
+				// Try public access if authenticated fails
+				qrCode = await pb.collection('qr_codes').getFirstListItem(
+					`code = "${params.code}" && isActive = true`, 
+					{ expand: 'tour' }
+				).catch(() => null);
+				// Use pb instance for subsequent operations if found via public access
+				if (qrCode) {
+					authenticatedPB = pb;
+				}
+			}
 			
 			if (!qrCode) {
 				return fail(404, { error: 'QR code not found' });
@@ -125,7 +148,7 @@ export const actions: Actions = {
 			}
 			
 			// Get time slot to check availability
-			const timeSlot = await pb.collection('time_slots').getOne(timeSlotId);
+			const timeSlot = await authenticatedPB.collection('time_slots').getOne(timeSlotId);
 			
 			if (timeSlot.availableSpots < participants) {
 				return fail(400, {
@@ -142,8 +165,11 @@ export const actions: Actions = {
 			// Calculate total price
 			const totalPrice = participants * tour.price;
 			
+			// Generate unique booking reference
+			const bookingReference = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+			
 			// Create booking
-			const booking = await pb.collection('bookings').create({
+			const booking = await authenticatedPB.collection('bookings').create({
 				tour: tour.id,
 				timeSlot: timeSlotId,
 				qrCode: qrCode.id,
@@ -151,20 +177,21 @@ export const actions: Actions = {
 				customerEmail,
 				customerPhone: customerPhone || null,
 				participants,
-				totalPrice,
+				totalAmount: totalPrice,
+				bookingReference,
 				specialRequests: specialRequests || null,
 				status: 'pending', // Will be updated after payment
 				paymentStatus: 'pending'
 			});
 			
 			// Update time slot availability
-			await pb.collection('time_slots').update(timeSlotId, {
+			await authenticatedPB.collection('time_slots').update(timeSlotId, {
 				bookedSpots: timeSlot.bookedSpots + participants,
 				availableSpots: timeSlot.availableSpots - participants
 			});
 			
 			// Increment QR code conversion count
-			await pb.collection('qr_codes').update(qrCode.id, {
+			await authenticatedPB.collection('qr_codes').update(qrCode.id, {
 				conversions: (qrCode.conversions || 0) + 1
 			});
 			
@@ -173,6 +200,7 @@ export const actions: Actions = {
 			return {
 				success: true,
 				bookingId: booking.id,
+				bookingReference,
 				totalPrice
 			};
 			

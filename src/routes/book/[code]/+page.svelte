@@ -134,58 +134,59 @@
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	{#if !data.qrCode || !tour}
-		<div class="flex items-center justify-center min-h-screen p-4">
-			<div class="text-center">
-				<h1 class="text-2xl font-bold text-gray-900 mb-2">Invalid QR Code</h1>
-				<p class="text-gray-600">This QR code is not valid or has been deactivated.</p>
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+		{#if !data.qrCode || !tour}
+			<div class="flex items-center justify-center min-h-screen">
+				<div class="text-center">
+					<h1 class="text-2xl font-bold text-gray-900 mb-2">Invalid QR Code</h1>
+					<p class="text-gray-600">This QR code is not valid or has been deactivated.</p>
+				</div>
 			</div>
-		</div>
-	{:else}
-		<!-- Hero Section -->
-		<div class="relative bg-white shadow-sm">
-			{#if imageUrl}
-				<div class="h-64 sm:h-80 bg-gray-200">
-					<img 
-						src={imageUrl} 
-						alt={tour.name}
-						class="w-full h-full object-cover"
-					/>
-				</div>
-			{/if}
-			
-			<div class="px-4 py-6 sm:px-6">
-				<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{tour.name}</h1>
-				
-				<div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
-					{#if tour.location}
-						<span class="flex items-center gap-1">
-							<MapPin class="w-4 h-4" />
-							{tour.location}
-						</span>
-					{/if}
-					<span class="flex items-center gap-1">
-						<Clock class="w-4 h-4" />
-						{Math.floor(tour.duration / 60)}h {tour.duration % 60}m
-					</span>
-					<span class="flex items-center gap-1">
-						<Users class="w-4 h-4" />
-						Max {tour.capacity} people
-					</span>
-					<span class="flex items-center gap-1 font-semibold text-gray-900">
-						<Euro class="w-4 h-4" />
-						{tour.price} per person
-					</span>
-				</div>
-				
-				{#if tour.description}
-					<p class="text-gray-700 mb-6">{tour.description}</p>
+		{:else}
+			<!-- Hero Section -->
+			<div class="relative bg-white shadow-sm rounded-lg overflow-hidden mb-8">
+				{#if imageUrl}
+					<div class="h-64 sm:h-80 bg-gray-200">
+						<img 
+							src={imageUrl} 
+							alt={tour.name}
+							class="w-full h-full object-cover"
+						/>
+					</div>
 				{/if}
+				
+				<div class="px-6 py-6 sm:px-8">
+					<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{tour.name}</h1>
+					
+					<div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+						{#if tour.location}
+							<span class="flex items-center gap-1">
+								<MapPin class="w-4 h-4" />
+								{tour.location}
+							</span>
+						{/if}
+						<span class="flex items-center gap-1">
+							<Clock class="w-4 h-4" />
+							{Math.floor(tour.duration / 60)}h {tour.duration % 60}m
+						</span>
+						<span class="flex items-center gap-1">
+							<Users class="w-4 h-4" />
+							Max {tour.capacity} people
+						</span>
+						<span class="flex items-center gap-1 font-semibold text-gray-900">
+							<Euro class="w-4 h-4" />
+							{tour.price} per person
+						</span>
+					</div>
+					
+					{#if tour.description}
+						<p class="text-gray-700 mb-6">{tour.description}</p>
+					{/if}
+				</div>
 			</div>
-		</div>
-		
-		<!-- Booking Form -->
-		<div class="px-4 py-6 sm:px-6">
+			
+			<!-- Booking Form -->
+			<div class="bg-white rounded-lg shadow-sm p-6 sm:p-8">
 			<h2 class="text-xl font-semibold text-gray-900 mb-6">Book Your Tour</h2>
 			
 			{#if showSuccess}
@@ -200,9 +201,15 @@
 					<p class="text-sm text-green-700 mb-4">
 						Your booking has been submitted successfully. You will receive a confirmation email shortly.
 					</p>
+					{#if form?.bookingReference}
+						<div class="bg-white border border-green-300 rounded-lg p-3 mb-2">
+							<p class="text-sm font-medium text-gray-900">Booking Reference</p>
+							<p class="text-lg font-mono font-bold text-green-800">{form.bookingReference}</p>
+						</div>
+					{/if}
 					{#if form?.bookingId}
 						<p class="text-xs text-green-600">
-							Booking ID: {form.bookingId}
+							Internal ID: {form.bookingId}
 						</p>
 					{/if}
 				</div>
@@ -405,11 +412,12 @@
 				{/if}
 				</form>
 			{/if}
-		</div>
-		
-		<!-- Footer -->
-		<div class="mt-12 px-4 py-6 sm:px-6 text-center text-sm text-gray-500">
-			<p>Powered by <a href="https://zaur.app" class="text-blue-600 hover:underline">Zaur</a></p>
-		</div>
-	{/if}
+			</div>
+			
+			<!-- Footer -->
+			<div class="mt-12 text-center text-sm text-gray-500">
+				<p>Powered by <a href="https://zaur.app" class="text-blue-600 hover:underline">Zaur</a></p>
+			</div>
+		{/if}
+	</div>
 </div> 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '../../app.css';
+	import '../app.css';
 	import { language, t } from '$lib/i18n.js';
 	import { initialUserValue, setupAuthListener } from '$lib/pocketbase.js';
 	import { onDestroy, onMount } from 'svelte';
@@ -17,9 +17,9 @@
 	import Footer from '$lib/components/Footer.svelte';
 
 	interface LayoutData {
-		user: any;
-		isAuthenticated: boolean;
-		isAdmin: boolean;
+		user?: any;
+		isAuthenticated?: boolean;
+		isAdmin?: boolean;
 	}
 
 	let { children, data } = $props<{ data: LayoutData }>();
@@ -27,18 +27,18 @@
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();
 
-	// Initialize auth store with initial values
+	// Initialize auth store with initial values (handle undefined data gracefully)
 	authStore.set({
-		isAuthenticated: !!data.user,
-		user: data.user || null,
-		state: data.user ? 'loggedIn' : 'loggedOut'
+		isAuthenticated: !!(data?.user),
+		user: data?.user || null,
+		state: data?.user ? 'loggedIn' : 'loggedOut'
 	});
 
 	// Initialize context with the store
 	authContext.set(authStore);
 
 	// Create a state for the current user
-	let currentUser = $state(initialUserValue || data.user || null);
+	let currentUser = $state(initialUserValue || data?.user || null);
 
 	// Create an explicitly typed variable for clarity in comparisons
 	type AuthState = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
@@ -51,7 +51,7 @@
 
 	// Update currentUser with data from server
 	$effect(() => {
-		if (data.user) {
+		if (data?.user) {
 			currentUser = data.user;
 			updateAuthState(data.user);
 		}
@@ -62,13 +62,13 @@
 		authState = authFSM.current;
 
 		// Force update to ensure UI reflects current auth state
-		if (data.isAuthenticated && authState !== 'loggedIn') {
+		if (data?.isAuthenticated && authState !== 'loggedIn') {
 			updateAuthState({ exists: true, forceAuth: true });
 		}
 
 		// Update auth store whenever auth state or user changes
 		authStore.update(() => ({
-			isAuthenticated: data.isAuthenticated || authState === 'loggedIn',
+			isAuthenticated: data?.isAuthenticated || authState === 'loggedIn',
 			user: currentUser,
 			state: authState
 		}));
@@ -76,11 +76,11 @@
 
 	// Set component as mounted and sync auth state
 	onMount(() => {
-		if (data.user) {
+		if (data?.user) {
 			currentUser = data.user;
 		}
 
-		if (data.isAuthenticated) {
+		if (data?.isAuthenticated) {
 			if (authFSM.current !== 'loggedIn') {
 				if (authFSM.current === 'loggingIn') {
 					authFSM.send('finishTransition');
@@ -88,7 +88,7 @@
 					updateAuthState({ exists: true, forceAuth: true });
 				}
 			}
-		} else if (data.isAuthenticated === false) {
+		} else if (data?.isAuthenticated === false) {
 			if (authFSM.current !== 'loggedOut' && authFSM.current !== 'loggingOut') {
 				authFSM.send('logout');
 			}
@@ -162,7 +162,7 @@
 <!-- Header Component -->
 <Header 
 	bind:this={headerRef}
-	isAuthenticated={data.isAuthenticated}
+	isAuthenticated={data?.isAuthenticated || false}
 	currentUser={currentUser}
 />
 
