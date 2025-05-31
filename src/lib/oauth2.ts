@@ -1,4 +1,4 @@
-import { pb } from './pocketbase.js';
+import { pb, currentUser } from './pocketbase.js';
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 
@@ -64,6 +64,16 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
                 email: pb.authStore.record?.email,
                 provider: provider
             });
+
+            // Force trigger auth store change event to sync frontend state
+            // This ensures the auth state updates properly by refreshing the auth data
+            await pb.collection('users').authRefresh();
+
+            // Manually update the currentUser store to ensure frontend state sync
+            currentUser.set(pb.authStore.record);
+
+            // Small delay to ensure auth state propagates
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Redirect to dashboard or intended page
             await goto('/tours');
