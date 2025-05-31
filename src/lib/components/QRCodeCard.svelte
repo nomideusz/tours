@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import type { QRCode } from '$lib/types.js';
 	import Download from 'lucide-svelte/icons/download';
 	import Copy from 'lucide-svelte/icons/copy';
@@ -30,6 +31,14 @@
 	
 	// Generate QR code URL using API
 	function getQRImageUrl() {
+		if (!browser) {
+			// Fallback for SSR - use placeholder or basic URL
+			const fallbackUrl = encodeURIComponent(`https://zaur.app/book/${qrCode.code}`);
+			const color = qrCode.customization?.color?.replace('#', '') || '000000';
+			const bgcolor = qrCode.customization?.backgroundColor?.replace('#', '') || 'FFFFFF';
+			return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${fallbackUrl}&color=${color}&bgcolor=${bgcolor}`;
+		}
+		
 		const bookingUrl = encodeURIComponent(`${window.location.origin}/book/${qrCode.code}`);
 		// Using qr-server.com as QR code generator API
 		const color = qrCode.customization?.color?.replace('#', '') || '000000';
@@ -38,12 +47,14 @@
 	}
 	
 	function copyBookingUrl() {
+		if (!browser) return;
 		const url = `${window.location.origin}/book/${qrCode.code}`;
 		navigator.clipboard.writeText(url);
 		alert('Booking URL copied to clipboard!');
 	}
 	
 	function downloadQR() {
+		if (!browser) return;
 		const link = document.createElement('a');
 		link.href = getQRImageUrl();
 		link.download = `qr-${qrCode.code}.png`;
@@ -51,6 +62,7 @@
 	}
 	
 	async function shareQR() {
+		if (!browser) return;
 		const url = `${window.location.origin}/book/${qrCode.code}`;
 		
 		if (navigator.share) {
