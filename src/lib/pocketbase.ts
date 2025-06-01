@@ -608,6 +608,18 @@ export const bookingsApi = {
     }
     
     try {
+      // Get current booking to validate payment status
+      const currentBooking = await pb.collection('bookings').getOne<Booking>(id);
+      
+      // Validate payment status for certain status changes
+      if (status === 'confirmed' && currentBooking.paymentStatus !== 'paid') {
+        throw new Error('Cannot confirm booking without completed payment');
+      }
+      
+      if (status === 'completed' && currentBooking.status !== 'confirmed') {
+        throw new Error('Can only complete confirmed bookings');
+      }
+      
       return await pb.collection('bookings').update<Booking>(id, { status });
     } catch (error) {
       console.error(`Error updating booking status for ID ${id}:`, error);

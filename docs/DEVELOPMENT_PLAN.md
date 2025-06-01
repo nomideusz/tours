@@ -176,9 +176,9 @@ Use TypeScript throughout and implement proper error handling."
 
 **Acceptance Criteria:**
 - [X] Tour guides can create tours with all details
-- [ ] Time slots can be set for recurring schedules
-- [ ] Calendar shows availability clearly
-- [ ] Mobile interface works smoothly
+- [X] Time slots can be set for recurring schedules
+- [X] Calendar shows availability clearly
+- [X] Mobile interface works smoothly
 - [X] Image upload and display functional
 
 ---

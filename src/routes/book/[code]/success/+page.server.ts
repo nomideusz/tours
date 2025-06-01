@@ -19,9 +19,9 @@ export const load: PageServerLoad = async ({ url }) => {
 			expand: 'tour,timeSlot,tour.user'
 		});
 		
-		// Verify booking is confirmed
-		if (booking.status !== 'confirmed' && booking.paymentStatus !== 'paid') {
-			throw error(400, 'Booking is not confirmed');
+		// Verify booking is confirmed AND payment is successful
+		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
+			throw error(400, 'Booking is not confirmed or payment not completed');
 		}
 		
 		return {

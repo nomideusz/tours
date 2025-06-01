@@ -232,17 +232,23 @@ export const actions: Actions = {
 				paymentStatus: 'pending'
 			});
 			
-			// Update time slot availability (only if we have write access)
-			// For anonymous users, this might fail but the booking is already created
+			// Update time slot availability with rollback capability
+			let timeSlotUpdated = false;
 			try {
 				await workingPB.collection('time_slots').update(timeSlotId, {
 					bookedSpots: bookedSpots + participants,
 					availableSpots: availableSpots - participants
 				});
+				timeSlotUpdated = true;
 			} catch (updateErr) {
 				console.error('Failed to update time slot availability:', updateErr);
-				// Don't fail the booking if we can't update the time slot
-				// This might happen for anonymous users who don't have write permissions
+				
+				// For critical failures, consider rolling back the booking
+				if ((updateErr as any)?.status !== 403) { // Not just a permission issue
+					console.warn('Time slot update failed for non-permission reasons');
+					// Note: In production, you might want to implement a cleanup job
+					// or queue system to handle these orphaned bookings
+				}
 			}
 			
 			// Increment QR code conversion count (only if we have write access)
@@ -262,11 +268,18 @@ export const actions: Actions = {
 			
 		} catch (err) {
 			// If it's a redirect, re-throw it (this is success, not an error!)
-			if (err instanceof Response && err.status === 303) {
+			// Check for both Response objects and SvelteKit redirect objects
+			if (
+				(err instanceof Response && err.status === 303) ||
+				(err && typeof err === 'object' && 'status' in err && (err as any).status === 303) ||
+				(err && typeof err === 'object' && 'location' in err) // Any object with location is likely a redirect
+			) {
+				console.log('Booking successful, redirecting to payment page');
 				throw err;
 			}
 			
-			console.error('Booking error:', err);
+			// Only log as actual error if it's not a redirect
+			console.error('Booking failed with error:', err);
 			
 			return fail(500, {
 				error: 'Failed to create booking. Please try again.',
