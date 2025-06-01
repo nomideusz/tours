@@ -298,23 +298,23 @@
 			<!-- Search -->
 			<div class="flex-1">
 				<div class="relative">
-					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+					<Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
 					<input
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search tours by name, location, or description..."
-						class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+						class="form-input pl-12"
 					/>
 				</div>
 			</div>
 
 			<!-- Filter Buttons -->
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-3">
 				<button
 					onclick={() => showFilters = !showFilters}
-					class="button-secondary button--gap button--small"
+					class="button-secondary button--gap"
 				>
-					<Filter class="h-4 w-4" />
+					<Filter class="h-5 w-5" />
 					Filters
 					{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
 						<span class="ml-1 px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
@@ -325,7 +325,7 @@
 
 				<select
 					bind:value={sortBy}
-					class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+					class="form-select"
 				>
 					<option value="recent">Most Recent</option>
 					<option value="name">Name (A-Z)</option>
@@ -372,7 +372,7 @@
 					<label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
 					<select
 						bind:value={selectedCategory}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+						class="form-select"
 					>
 						<option value="all">All Categories</option>
 						{#each tourCategories as category}
@@ -421,9 +421,9 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 			{#each filteredTours as tour (tour.id)}
-				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 group">
+				<div class="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 group relative flex flex-col h-full">
 					<!-- Tour Image -->
-					<div class="relative h-48 bg-gray-100">
+					<div class="relative h-48 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
 						{#if tour.images && tour.images[0]}
 							<img 
 								src={`https://z.xeon.pl/api/files/tours/${tour.id}/${tour.images[0]}?thumb=400x300`} 
@@ -444,8 +444,8 @@
 							</span>
 						</div>
 
-						<!-- Quick Actions on Hover -->
-						<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+						<!-- Quick Actions on Hover (Desktop) / Always Visible (Mobile) -->
+						<div class="absolute inset-0 bg-black/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
 							<button
 								onclick={() => goto(`/tours/${tour.id}`)}
 								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
@@ -471,7 +471,7 @@
 					</div>
 
 					<!-- Tour Content -->
-					<div class="p-5">
+					<div class="p-5 flex flex-col flex-grow">
 						<!-- Title and Category -->
 						<div class="mb-3">
 							<h3 class="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{tour.name}</h3>
@@ -486,7 +486,7 @@
 						{/if}
 
 						<!-- Tour Details Grid -->
-						<div class="grid grid-cols-2 gap-3 mb-4">
+						<div class="grid grid-cols-2 gap-3 mb-4 flex-grow">
 							<div class="flex items-center gap-2 text-sm text-gray-600">
 								<DollarSign class="h-4 w-4 text-gray-400" />
 								<span class="font-medium">€{tour.price}</span>
@@ -508,7 +508,7 @@
 						</div>
 
 						<!-- Action Buttons -->
-						<div class="flex items-center justify-between pt-4 border-t border-gray-100">
+						<div class="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
 							<div class="flex gap-2">
 								<button
 									onclick={() => goto(`/tours/${tour.id}/schedule`)}
@@ -534,7 +534,7 @@
 								</button>
 								
 								{#if openDropdownId === tour.id}
-									<div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+									<div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
 										<button
 											onclick={() => duplicateTour(tour)}
 											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"

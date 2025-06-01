@@ -5,6 +5,8 @@
 	import { toursApi, pb } from '$lib/pocketbase.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import type { Tour } from '$lib/types.js';
+	import { ArrowLeft, ChevronRight } from 'lucide-svelte';
+	import { AlertCircle } from 'lucide-svelte';
 
 	let tour = $state<Tour | null>(null);
 	let isLoading = $state(true);
@@ -182,50 +184,57 @@
 		</div>
 	{:else}
 		<!-- Header -->
-		<div class="flex items-center gap-4 mb-8">
-			<button 
-				onclick={() => goto(`/tours/${tourId}`)}
-				class="button--secondary button--small"
-				aria-label="Back to tour details"
-			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-				</svg>
-			</button>
-			<div>
-				<h1 class="text-3xl font-bold text-gray-900">Edit Tour</h1>
-				<p class="text-gray-600 mt-1">Update your tour details and settings</p>
+		<div class="mb-8">
+			<div class="flex items-center gap-4">
+				<button 
+					onclick={() => goto(`/tours/${tourId}`)}
+					class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+					aria-label="Back to tour details"
+				>
+					<ArrowLeft class="h-5 w-5 text-gray-600" />
+				</button>
+				<div>
+					<nav class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+						<a href="/tours" class="hover:text-primary-600">Tours</a>
+						<ChevronRight class="h-3 w-3" />
+						<a href={`/tours/${tourId}`} class="hover:text-primary-600">{tour?.name || 'Tour'}</a>
+						<ChevronRight class="h-3 w-3" />
+						<span>Edit Tour</span>
+					</nav>
+					<h1 class="text-3xl font-bold text-gray-900">Edit Tour</h1>
+					<p class="mt-1 text-gray-600">Update your tour details and settings</p>
+				</div>
 			</div>
 		</div>
 
 		{#if error}
-			<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-				<div class="flex">
-					<div class="text-red-600">
-						<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-						</svg>
-					</div>
-					<div class="ml-3">
-						<p class="text-red-800 font-medium">Error</p>
-						<p class="text-red-700 text-sm">{error}</p>
+			<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+				<div class="flex gap-3">
+					<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+					<div>
+						<p class="font-medium text-red-800">Error</p>
+						<p class="text-sm text-red-700 mt-1">{error}</p>
 					</div>
 				</div>
 			</div>
 		{/if}
 
-		<TourForm
-			bind:formData
-			bind:uploadedImages
-			{isSubmitting}
-			isEdit={true}
-			onSubmit={handleSubmit}
-			onCancel={handleCancel}
-			onImageUpload={handleImageUpload}
-			onImageRemove={removeNewImage}
-			{existingImages}
-			onExistingImageRemove={removeExistingImage}
-			{getExistingImageUrl}
-		/>
+		<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+			<div class="p-6 sm:p-8">
+				<TourForm
+					bind:formData
+					bind:uploadedImages
+					{isSubmitting}
+					isEdit={true}
+					onSubmit={handleSubmit}
+					onCancel={handleCancel}
+					onImageUpload={handleImageUpload}
+					onImageRemove={removeNewImage}
+					{existingImages}
+					onExistingImageRemove={removeExistingImage}
+					{getExistingImageUrl}
+				/>
+			</div>
+		</div>
 	{/if}
 </div> 

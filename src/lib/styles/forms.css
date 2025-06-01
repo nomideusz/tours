@@ -1,8 +1,13 @@
 /* Form Component Styles */
 @layer components {
+	/* 
+	 * Form inputs - Match button styling for consistency
+	 * Default size matches default button size (padding: 0.75rem 1.5rem)
+	 * Use .form-input--small or .form-input--large for size variants
+	 */
 	.form-input {
 		width: 100%;
-		padding: 0.75rem;
+		padding: 0.75rem 1.5rem;
 		border: 1px solid var(--color-gray-300);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
@@ -43,6 +48,17 @@
 		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 	}
 
+	/* Size modifiers for form inputs */
+	.form-input--small {
+		padding: 0.5rem 1rem;
+		font-size: var(--text-xs);
+	}
+
+	.form-input--large {
+		padding: 1rem 2rem;
+		font-size: var(--text-base);
+	}
+
 	/* Hide number input spinners */
 	.form-input[type="number"] {
 		-moz-appearance: textfield;
@@ -64,7 +80,7 @@
 
 	.form-select {
 		width: 100%;
-		padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+		padding: 0.75rem 3rem 0.75rem 1.5rem;
 		border: 1px solid var(--color-gray-300);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
@@ -72,12 +88,13 @@
 		transition: all var(--transition-fast) ease;
 		background-color: white;
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.5rem center;
+		background-position: right 0.75rem center;
 		background-repeat: no-repeat;
 		background-size: 1.5em 1.5em;
 		appearance: none;
 		-webkit-appearance: none;
 		-moz-appearance: none;
+		cursor: pointer;
 	}
 
 	.form-select:focus {
@@ -92,9 +109,24 @@
 		cursor: not-allowed;
 	}
 
+	/* Size modifiers for form selects */
+	.form-select--small {
+		padding: 0.5rem 2.5rem 0.5rem 1rem;
+		font-size: var(--text-xs);
+		background-size: 1.25em 1.25em;
+		background-position: right 0.75rem center;
+	}
+
+	.form-select--large {
+		padding: 1rem 3.5rem 1rem 2rem;
+		font-size: var(--text-base);
+		background-size: 1.75em 1.75em;
+		background-position: right 1rem center;
+	}
+
 	.form-textarea {
 		width: 100%;
-		padding: 0.75rem;
+		padding: 0.75rem 1.5rem;
 		border: 1px solid var(--color-gray-300);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
@@ -126,6 +158,19 @@
 	.form-textarea:invalid:focus {
 		border-color: var(--color-primary-500);
 		box-shadow: 0 0 0 3px var(--color-primary-100);
+	}
+
+	/* Size modifiers for form textareas */
+	.form-textarea--small {
+		padding: 0.5rem 1rem;
+		font-size: var(--text-xs);
+		min-height: 4rem;
+	}
+
+	.form-textarea--large {
+		padding: 1rem 2rem;
+		font-size: var(--text-base);
+		min-height: 8rem;
 	}
 
 	.form-checkbox {
@@ -282,5 +327,43 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	/* Utility classes for form groups */
+	.form-group {
+		display: flex;
+		gap: 0.5rem;
+		align-items: stretch;
+	}
+
+	.form-group > .form-input,
+	.form-group > .form-select {
+		flex: 1;
+	}
+
+	/* When inputs and buttons are grouped together */
+	.form-group--inline {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	/* Ensure consistent heights when grouped */
+	.form-group--inline > .form-input--small,
+	.form-group--inline > .form-select--small,
+	.form-group--inline > .button--small {
+		height: 2.25rem; /* 36px */
+	}
+
+	.form-group--inline > .form-input,
+	.form-group--inline > .form-select,
+	.form-group--inline > .button {
+		height: 2.75rem; /* 44px */
+	}
+
+	.form-group--inline > .form-input--large,
+	.form-group--inline > .form-select--large,
+	.form-group--inline > .button--large {
+		height: 3.5rem; /* 56px */
 	}
 } 
