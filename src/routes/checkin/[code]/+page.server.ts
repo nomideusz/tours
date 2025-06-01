@@ -1,8 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail } from '@sveltejs/kit';
+import { isValidTicketQRCode } from '$lib/ticket-qr.js';
+import { tryCreateAuthenticatedPB } from '$lib/admin-auth.server.js';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
-import { isValidTicketQRCode } from '$lib/ticket-qr.js';
 
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
