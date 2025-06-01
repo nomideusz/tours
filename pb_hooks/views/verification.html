@@ -1,42 +1,22 @@
 {{define "title"}}Verify Your Email - {{.appName}}{{end}}
 
 {{define "content"}}
-    <h2 style="color: #111827; margin-bottom: 20px; font-size: 24px;">Welcome to {{.appName}}!</h2>
-    
-    <p style="margin-bottom: 20px;">Hello {{.userName}},</p>
-    
-    <p style="margin-bottom: 20px;">
-        Thank you for signing up for {{.appName}}! We're excited to have you on board.
-        To complete your registration and start exploring amazing tours, please verify your email address.
-    </p>
-    
-    <div style="text-align: center; margin: 30px 0;">
-        <a href="{{.verificationUrl}}" class="btn" style="display: inline-block; padding: 14px 28px; background-color: #10b981; color: white !important; text-decoration: none; border-radius: 8px; font-weight: 600;">
-            Verify Email Address
-        </a>
-    </div>
-    
-    <div class="security-notice">
-        <strong>Important:</strong> This verification link will expire in 72 hours. Please verify your email soon to activate your account.
-    </div>
-    
-    <p style="margin-bottom: 20px;">
-        Once verified, you'll be able to:
-    </p>
-    
-    <ul style="margin-bottom: 20px; padding-left: 20px;">
-        <li>Browse and book amazing tours</li>
-        <li>Create and manage your own tour listings</li>
-        <li>Connect with fellow travelers</li>
-        <li>Access exclusive member benefits</li>
-    </ul>
-    
-    <div class="disclaimer">
-        If you didn't create an account with {{.appName}}, you can safely ignore this email.
-    </div>
-    
-    <p style="margin-bottom: 20px; font-size: 14px; color: #6b7280;">
-        If you're having trouble clicking the button above, copy and paste the following URL into your web browser:<br>
-        <a href="{{.verificationUrl}}" style="color: #10b981; word-break: break-all;">{{.verificationUrl}}</a>
-    </p>
+<h2>Verify Your Email Address</h2>
+
+<p>Hello {{.userName}},</p>
+
+<p>Welcome to {{.appName}}! To complete your account setup, please verify your email address by clicking the button below:</p>
+
+<div class="button-center">
+    <a href="{{.verificationUrl}}" class="button">Verify Email Address</a>
+</div>
+
+<p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+<div class="url-fallback">{{.verificationUrl}}</div>
+
+<p><strong>Important:</strong> This verification link will expire in 24 hours.</p>
+
+<p>If you didn't create an account with {{.appName}}, you can safely ignore this email.</p>
+
+<p style="color: #6b7280; font-size: 14px;">This verification request was made on {{.requestTime}}.</p>
 {{end}} 

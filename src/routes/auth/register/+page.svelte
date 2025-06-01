@@ -27,7 +27,7 @@
 	let email = $state(form?.email || '');
 	let password = $state(''); // Don't restore password for security reasons
 	let confirmPassword = $state('');
-	let intendedRole = $state<'customer' | 'guide'>('customer');
+	let intendedRole = $state<'user' | 'guide'>('user');
 	let businessName = $state('');
 	let location = $state('');
 
@@ -285,7 +285,7 @@
 						class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
 						disabled={isRegistering || manualLoading}
 					>
-						<option value="customer">Customer</option>
+						<option value="user">User</option>
 						<option value="guide">Guide</option>
 					</select>
 				</div>

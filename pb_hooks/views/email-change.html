@@ -1,0 +1,27 @@
+{{define "content"}}
+<h2>Confirm Email Change</h2>
+
+<p>Hello {{.userName}},</p>
+
+<p>You recently requested to change the email address for your {{.appName}} account from <strong>{{.oldEmail}}</strong> to <strong>{{.newEmail}}</strong>.</p>
+
+<p>To complete this change, please click the button below to confirm your new email address:</p>
+
+<div class="button-center">
+    <a href="{{.confirmUrl}}" class="button">Confirm Email Change</a>
+</div>
+
+<p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+<div class="url-fallback">{{.confirmUrl}}</div>
+
+<p><strong>Important:</strong> This confirmation link will expire in 24 hours.</p>
+
+<div style="background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; padding: 16px; margin: 20px 0;">
+    <h3 style="color: #d97706; margin: 0 0 8px 0; font-size: 16px;">Security Notice:</h3>
+    <p style="margin: 0; font-size: 14px;">After confirming this change, you'll need to use your new email address to sign in to your account.</p>
+</div>
+
+<p>If you didn't request this email change, please ignore this email or contact our support team immediately if you're concerned about account security.</p>
+
+<p style="color: #6b7280; font-size: 14px;">This email change request was made on {{.requestTime}}.</p>
+{{end}} 

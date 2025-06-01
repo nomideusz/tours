@@ -18,7 +18,7 @@ export const actions: Actions = {
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
 		const confirmPassword = data.get('confirmPassword')?.toString();
-		const intendedRole = data.get('intendedRole')?.toString() as 'customer' | 'guide';
+		const intendedRole = data.get('intendedRole')?.toString() as 'user' | 'guide';
 		const businessName = data.get('businessName')?.toString();
 		const location = data.get('location')?.toString();
 
@@ -62,7 +62,7 @@ export const actions: Actions = {
 				password,
 				passwordConfirm: password,
 				name,
-				role: intendedRole || 'customer', // Set role directly based on selection
+				role: intendedRole || 'user', // Set role directly based on selection
 				intendedRole,
 				...(intendedRole === 'guide' && {
 					businessName,

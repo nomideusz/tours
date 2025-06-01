@@ -1,204 +1,233 @@
 // Custom email templates for PocketBase
 // This hook intercepts the default email sending and replaces it with custom templates
 
-const APP_NAME = "Zaur"; // Change this to your app name
-const APP_URL = process.env.APP_URL || "https://zaur.app"; // Your app URL
-
-// Helper function to get user display name
-function getUserDisplayName(user) {
-    if (user.name && user.name.trim()) {
-        return user.name.trim();
-    }
-    if (user.username && user.username.trim()) {
-        return user.username.trim();
-    }
-    return user.email.split('@')[0];
-}
-
-// Helper function to format date/time
-function formatDateTime(date) {
-    return new Date(date).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short'
-    });
-}
+console.log("=== LOADING EMAIL HOOKS ===");
 
 // Hook into user password reset requests
-onRecordAfterRequestPasswordResetRequest((e) => {
-    const user = e.record;
-    const token = e.meta.token;
-    
-    // Build reset URL with proper format for SvelteKit
-    const resetUrl = `${APP_URL}/auth/reset-password?token=${token}`;
-    
-    // Prepare template data
-    const templateData = {
-        appName: APP_NAME,
-        userName: getUserDisplayName(user),
-        userEmail: user.email,
-        resetUrl: resetUrl,
-        requestTime: formatDateTime(new Date())
-    };
+onMailerRecordPasswordResetSend((e) => {
+    console.log("Password reset email requested for:", e.record.get("email"));
     
     try {
+        const appName = "Zaur";
+        const appUrl = "https://zaur.app";
+        const user = e.record;
+        const token = e.meta.token;
+        
+        // Build reset URL
+        const resetUrl = appUrl + "/auth/reset-password?token=" + token;
+        
+        // Get user display name
+        let userName = user.get("name") || user.get("username") || user.get("email").split('@')[0];
+        
+        // Prepare template data
+        const templateData = {
+            appName: appName,
+            userName: userName,
+            userEmail: user.get("email"),
+            resetUrl: resetUrl,
+            requestTime: new Date().toLocaleString()
+        };
+        
         // Render custom template
         const html = $template.loadFiles(
             `${__hooks}/views/layout.html`,
             `${__hooks}/views/reset-password.html`
         ).render(templateData);
         
-        // Send custom email
-        $mails.send({
-            to: [{
-                address: user.email,
-                name: templateData.userName
-            }],
-            subject: `Reset Your Password - ${APP_NAME}`,
-            html: html,
-        });
+        // Override the email
+        e.message.subject = "Reset Your Password - " + appName;
+        e.message.html = html;
         
-        console.log(`Custom password reset email sent to: ${user.email}`);
+        console.log("Custom password reset email template applied successfully");
+        
     } catch (error) {
-        console.error("Failed to send custom password reset email:", error);
-        // Don't throw error to prevent breaking the reset flow
-        // The default PocketBase email will be sent as fallback
+        console.error("Failed to apply custom password reset template:", error.toString());
+        // Continue with default email if custom template fails
     }
+    
+    return e.next();
 });
 
 // Hook into user verification emails
-onRecordAfterRequestVerificationRequest((e) => {
-    const user = e.record;
-    const token = e.meta.token;
-    
-    // Build verification URL
-    const verificationUrl = `${APP_URL}/auth/verify?token=${token}`;
-    
-    // Prepare template data
-    const templateData = {
-        appName: APP_NAME,
-        userName: getUserDisplayName(user),
-        userEmail: user.email,
-        verificationUrl: verificationUrl,
-        requestTime: formatDateTime(new Date())
-    };
+onMailerRecordVerificationSend((e) => {
+    console.log("Email verification requested for:", e.record.get("email"));
     
     try {
+        const appName = "Zaur";
+        const appUrl = "https://zaur.app";
+        const user = e.record;
+        const token = e.meta.token;
+        
+        // Build verification URL
+        const verificationUrl = appUrl + "/auth/verify?token=" + token;
+        
+        // Get user display name
+        let userName = user.get("name") || user.get("username") || user.get("email").split('@')[0];
+        
+        // Prepare template data
+        const templateData = {
+            appName: appName,
+            userName: userName,
+            userEmail: user.get("email"),
+            verificationUrl: verificationUrl,
+            requestTime: new Date().toLocaleString()
+        };
+        
         // Render custom template
         const html = $template.loadFiles(
             `${__hooks}/views/layout.html`,
             `${__hooks}/views/verification.html`
         ).render(templateData);
         
-        // Send custom email
-        $mails.send({
-            to: [{
-                address: user.email,
-                name: templateData.userName
-            }],
-            subject: `Verify Your Email - ${APP_NAME}`,
-            html: html,
-        });
+        // Override the email
+        e.message.subject = "Verify Your Email - " + appName;
+        e.message.html = html;
         
-        console.log(`Custom verification email sent to: ${user.email}`);
+        console.log("Custom verification email template applied successfully");
+        
     } catch (error) {
-        console.error("Failed to send custom verification email:", error);
-        // Don't throw error to prevent breaking the verification flow
+        console.error("Failed to apply custom verification template:", error.toString());
+        // Continue with default email if custom template fails
     }
+    
+    return e.next();
 });
 
-// Optional: Hook into user creation to send welcome emails
-onRecordAfterCreateRequest((e) => {
-    // Only trigger for users collection
-    if (e.record.collectionName !== "users") {
-        return;
-    }
-    
-    const user = e.record;
-    
-    // Only send welcome email if user is already verified
-    // (verification email will be sent separately if needed)
-    if (!user.verified) {
-        return;
-    }
-    
-    const templateData = {
-        appName: APP_NAME,
-        userName: getUserDisplayName(user),
-        userEmail: user.email,
-        appUrl: APP_URL
-    };
+// Hook into authentication alert emails
+onMailerRecordAuthAlertSend((e) => {
+    console.log("Auth alert email requested for:", e.record.get("email"));
     
     try {
-        // You can create a welcome.html template for this
+        const appName = "Zaur";
+        const appUrl = "https://zaur.app";
+        const user = e.record;
+        
+        // Build security URL
+        const securityUrl = appUrl + "/auth/security";
+        
+        // Get user display name
+        let userName = user.get("name") || user.get("username") || user.get("email").split('@')[0];
+        
+        // Prepare template data
+        const templateData = {
+            appName: appName,
+            userName: userName,
+            userEmail: user.get("email"),
+            securityUrl: securityUrl,
+            requestTime: new Date().toLocaleString()
+        };
+        
+        // Render custom template
         const html = $template.loadFiles(
             `${__hooks}/views/layout.html`,
-            `${__hooks}/views/welcome.html`
+            `${__hooks}/views/auth-alert.html`
         ).render(templateData);
         
-        $mails.send({
-            to: [{
-                address: user.email,
-                name: templateData.userName
-            }],
-            subject: `Welcome to ${APP_NAME}!`,
-            html: html,
-        });
+        // Override the email
+        e.message.subject = "Security Alert - " + appName;
+        e.message.html = html;
         
-        console.log(`Welcome email sent to: ${user.email}`);
+        console.log("Custom auth alert email template applied successfully");
+        
     } catch (error) {
-        console.error("Failed to send welcome email:", error);
-        // Don't throw error
+        console.error("Failed to apply custom auth alert template:", error.toString());
+        // Continue with default email if custom template fails
     }
+    
+    return e.next();
 });
 
-// Custom route for testing email templates (development only)
-routerAdd("GET", "/dev/test-email/{type}", (e) => {
-    const emailType = e.request.pathValue("type");
-    
-    // Only allow in development
-    if (process.env.NODE_ENV === "production") {
-        return e.json(403, {"error": "Not available in production"});
-    }
-    
-    const templateData = {
-        appName: APP_NAME,
-        userName: "Test User",
-        userEmail: "test@example.com",
-        resetUrl: `${APP_URL}/auth/reset-password?token=test-token-123`,
-        verificationUrl: `${APP_URL}/auth/verify?token=test-token-456`,
-        appUrl: APP_URL,
-        requestTime: formatDateTime(new Date())
-    };
-    
-    let templateFile;
-    switch(emailType) {
-        case "reset":
-            templateFile = "reset-password.html";
-            break;
-        case "verification":
-            templateFile = "verification.html";
-            break;
-        case "welcome":
-            templateFile = "welcome.html";
-            break;
-        default:
-            return e.json(400, {"error": "Invalid email type. Use 'reset', 'verification', or 'welcome'"});
-    }
+// Hook into email change confirmation emails
+onMailerRecordEmailChangeSend((e) => {
+    console.log("Email change confirmation requested for:", e.record.get("email"));
     
     try {
+        const appName = "Zaur";
+        const appUrl = "https://zaur.app";
+        const user = e.record;
+        const token = e.meta.token;
+        
+        // Build confirmation URL
+        const confirmUrl = appUrl + "/auth/confirm-email-change?token=" + token;
+        
+        // Get user display name
+        let userName = user.get("name") || user.get("username") || user.get("email").split('@')[0];
+        
+        // Get old and new email addresses
+        const oldEmail = user.get("email");
+        const newEmail = e.meta.newEmail || "your new email";
+        
+        // Prepare template data
+        const templateData = {
+            appName: appName,
+            userName: userName,
+            userEmail: user.get("email"),
+            oldEmail: oldEmail,
+            newEmail: newEmail,
+            confirmUrl: confirmUrl,
+            requestTime: new Date().toLocaleString()
+        };
+        
+        // Render custom template
         const html = $template.loadFiles(
             `${__hooks}/views/layout.html`,
-            `${__hooks}/views/${templateFile}`
+            `${__hooks}/views/email-change.html`
         ).render(templateData);
         
-        return e.html(200, html);
+        // Override the email
+        e.message.subject = "Confirm Email Change - " + appName;
+        e.message.html = html;
+        
+        console.log("Custom email change confirmation template applied successfully");
+        
     } catch (error) {
-        return e.json(500, {"error": error.message});
+        console.error("Failed to apply custom email change template:", error.toString());
+        // Continue with default email if custom template fails
     }
+    
+    return e.next();
+});
+
+// Hook into OTP (One-Time Password) emails
+onMailerRecordOTPSend((e) => {
+    console.log("OTP email requested for:", e.record.get("email"));
+    
+    try {
+        const appName = "Zaur";
+        const user = e.record;
+        
+        // Get user display name
+        let userName = user.get("name") || user.get("username") || user.get("email").split('@')[0];
+        
+        // The OTP code is in e.meta.password, and expiration time is in e.meta.otpId
+        const otpCode = e.meta.password;
+        const expirationMinutes = 10; // Default OTP expiration time
+        
+        // Prepare template data
+        const templateData = {
+            appName: appName,
+            userName: userName,
+            userEmail: user.get("email"),
+            otpCode: otpCode,
+            expirationMinutes: expirationMinutes,
+            requestTime: new Date().toLocaleString()
+        };
+        
+        // Render the template
+        const html = $template.loadFiles(`${__hooks}/views/layout.html`, `${__hooks}/views/otp.html`).render(templateData);
+        
+        // Replace the default email with our custom template
+        e.message.subject = `${appName} - Your Verification Code`;
+        e.message.html = html;
+        
+        console.log("Custom OTP email template applied successfully");
+        
+    } catch (error) {
+        console.log("Error in OTP email template:", error.message);
+        // Fall back to default template on error
+    }
+    
+    e.next();
 });
 
 console.log("Custom email templates loaded successfully!"); 

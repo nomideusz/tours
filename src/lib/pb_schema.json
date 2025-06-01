@@ -295,9 +295,9 @@
         "system": false,
         "type": "select",
         "values": [
-          "customer",
-          "guide",
-          "admin"
+          "admin",
+          "user",
+          "guide"
         ]
       },
       {
@@ -391,7 +391,7 @@
         "system": false,
         "type": "select",
         "values": [
-          "customer",
+          "user",
           "guide"
         ]
       },
@@ -1100,7 +1100,7 @@
         "name": "scans",
         "onlyInt": false,
         "presentable": false,
-        "required": true,
+        "required": false,
         "system": false,
         "type": "number"
       },
@@ -1112,7 +1112,7 @@
         "name": "conversions",
         "onlyInt": false,
         "presentable": false,
-        "required": true,
+        "required": false,
         "system": false,
         "type": "number"
       },
@@ -1168,7 +1168,7 @@
     "listRule": "",
     "viewRule": "",
     "createRule": "tour.user = @request.auth.id",
-    "updateRule": "tour.user = @request.auth.id",
+    "updateRule": "",
     "deleteRule": "tour.user = @request.auth.id",
     "name": "time_slots",
     "type": "base",
@@ -1327,7 +1327,7 @@
     "id": "tours_collection",
     "listRule": "user = @request.auth.id || status = 'active'",
     "viewRule": "user = @request.auth.id || status = 'active'",
-    "createRule": "@request.auth.id != ''",
+    "createRule": "user = @request.auth.id",
     "updateRule": "user = @request.auth.id",
     "deleteRule": "user = @request.auth.id",
     "name": "tours",

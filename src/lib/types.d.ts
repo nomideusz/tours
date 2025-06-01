@@ -8,7 +8,7 @@ export * from './i18n';
 
 // ========= ZAUR TOUR BOOKING SYSTEM TYPES =========
 
-export type UserRole = 'customer' | 'guide' | 'admin';
+export type UserRole = 'admin' | 'user' | 'guide';
 
 export interface User extends RecordModel {
   id: string;
@@ -18,7 +18,7 @@ export interface User extends RecordModel {
   stripeAccountId?: string;
   avatar?: string;
   role: UserRole;
-  intendedRole?: 'customer' | 'guide'; // What they want to be
+  intendedRole?: 'user' | 'guide'; // What they want to be
   phone?: string;
   website?: string;
   description?: string;

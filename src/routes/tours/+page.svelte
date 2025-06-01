@@ -3,15 +3,61 @@
 	import { goto } from '$app/navigation';
 	import { toursApi } from '$lib/pocketbase.js';
 	import type { Tour } from '$lib/types.js';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Plus from 'lucide-svelte/icons/plus';
+	import Search from 'lucide-svelte/icons/search';
+	import Filter from 'lucide-svelte/icons/filter';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Users from 'lucide-svelte/icons/users';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
+	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import Eye from 'lucide-svelte/icons/eye';
+	import Edit from 'lucide-svelte/icons/edit';
+	import Copy from 'lucide-svelte/icons/copy';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import MoreVertical from 'lucide-svelte/icons/more-vertical';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
 	let tours = $state<Tour[]>([]);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 	let selectedStatus = $state('all');
+	let searchQuery = $state('');
+	let showFilters = $state(false);
+	let selectedCategory = $state('all');
+	let sortBy = $state('recent');
+	let openDropdownId = $state<string | null>(null);
 
-	onMount(async () => {
-		await loadTours();
+	// Categories for filtering
+	const tourCategories = [
+		'City Tours',
+		'Nature & Adventure',
+		'Food & Wine',
+		'Cultural & Historical',
+		'Day Trips',
+		'Multi-day Tours',
+		'Private Tours',
+		'Group Tours'
+	];
+
+	onMount(() => {
+		loadTours();
+		// Close dropdown when clicking outside
+		document.addEventListener('click', handleClickOutside);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+		};
 	});
+
+	function handleClickOutside(event: MouseEvent) {
+		if (!event.target || !(event.target as Element).closest('.dropdown-container')) {
+			openDropdownId = null;
+		}
+	}
 
 	async function loadTours() {
 		try {
@@ -34,6 +80,7 @@
 		try {
 			await toursApi.delete(tourId);
 			tours = tours.filter((tour) => tour.id !== tourId);
+			openDropdownId = null;
 		} catch (err) {
 			error = 'Failed to delete tour. Please try again.';
 			console.error('Error deleting tour:', err);
@@ -58,6 +105,7 @@
 
 			const newTour = await toursApi.create(duplicatedData);
 			tours = [newTour, ...tours];
+			openDropdownId = null;
 		} catch (err) {
 			error = 'Failed to duplicate tour. Please try again.';
 			console.error('Error duplicating tour:', err);
@@ -67,204 +115,276 @@
 	function getStatusColor(status: Tour['status']) {
 		switch (status) {
 			case 'active':
-				return 'bg-green-100 text-green-800';
+				return 'bg-green-50 text-green-700 border-green-200';
 			case 'inactive':
-				return 'bg-yellow-100 text-yellow-800';
+				return 'bg-yellow-50 text-yellow-700 border-yellow-200';
 			case 'draft':
-				return 'bg-gray-100 text-gray-800';
+				return 'bg-gray-50 text-gray-700 border-gray-200';
 			default:
-				return 'bg-gray-100 text-gray-800';
+				return 'bg-gray-50 text-gray-700 border-gray-200';
 		}
 	}
 
-	function getStatusIcon(status: Tour['status']) {
+	function getStatusDot(status: Tour['status']) {
 		switch (status) {
 			case 'active':
-				return 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+				return 'bg-green-500';
 			case 'inactive':
-				return 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
+				return 'bg-yellow-500';
 			case 'draft':
-				return 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z';
+				return 'bg-gray-500';
 			default:
-				return 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+				return 'bg-gray-500';
 		}
 	}
 
-	// Filter tours based on selected status
-	let filteredTours = $derived(
-		selectedStatus === 'all' ? tours : tours.filter((tour) => tour.status === selectedStatus)
-	);
+	// Filter and sort tours
+	let filteredTours = $derived.by(() => {
+		let filtered = tours;
+
+		// Status filter
+		if (selectedStatus !== 'all') {
+			filtered = filtered.filter((tour) => tour.status === selectedStatus);
+		}
+
+		// Category filter
+		if (selectedCategory !== 'all') {
+			filtered = filtered.filter((tour) => tour.category === selectedCategory);
+		}
+
+		// Search filter
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			filtered = filtered.filter(
+				(tour) =>
+					tour.name.toLowerCase().includes(query) ||
+					tour.description?.toLowerCase().includes(query) ||
+					tour.location?.toLowerCase().includes(query)
+			);
+		}
+
+		// Sorting
+		switch (sortBy) {
+			case 'name':
+				filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+				break;
+			case 'price-low':
+				filtered = [...filtered].sort((a, b) => a.price - b.price);
+				break;
+			case 'price-high':
+				filtered = [...filtered].sort((a, b) => b.price - a.price);
+				break;
+			case 'recent':
+			default:
+				filtered = [...filtered].sort((a, b) => 
+					new Date(b.updated).getTime() - new Date(a.updated).getTime()
+				);
+		}
+
+		return filtered;
+	});
 
 	// Calculate statistics
 	let stats = $derived({
 		total: tours.length,
 		active: tours.filter((t) => t.status === 'active').length,
 		draft: tours.filter((t) => t.status === 'draft').length,
-		inactive: tours.filter((t) => t.status === 'inactive').length
+		inactive: tours.filter((t) => t.status === 'inactive').length,
+		totalRevenue: tours.reduce((sum, tour) => sum + (tour.price || 0), 0)
 	});
+
+	// Mock data for quick stats (in a real app, this would come from the backend)
+	let quickStats = $derived({
+		todayBookings: 12,
+		weekBookings: 78,
+		monthRevenue: 4250,
+		avgRating: 4.8
+	});
+
+	function toggleDropdown(tourId: string) {
+		openDropdownId = openDropdownId === tourId ? null : tourId;
+	}
 </script>
 
-<div class="mx-auto max-w-screen-2xl px-6 py-8 sm:px-8 lg:px-12">
-	<!-- Header -->
-	<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-		<div>
-			<h1 class="text-3xl font-bold text-gray-900">Your Tours</h1>
-			<p class="mt-1 text-gray-600">Manage your tour offerings and track their performance</p>
+<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+	<!-- Page Header -->
+	<div class="mb-8">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div>
+				<h1 class="text-3xl font-bold text-gray-900">Tours</h1>
+				<p class="mt-1 text-gray-600">Manage and track your tour offerings</p>
+			</div>
+			<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+				<Plus class="h-5 w-5" />
+				Create Tour
+			</button>
 		</div>
-		<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-			</svg>
-			Create New Tour
-		</button>
 	</div>
 
 	{#if error}
 		<div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-			<div class="flex">
-				<div class="text-red-600">
-					<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-						<path
-							fill-rule="evenodd"
-							d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</div>
-				<div class="ml-3">
+			<div class="flex gap-3">
+				<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+				<div>
 					<p class="font-medium text-red-800">Error</p>
-					<p class="text-sm text-red-700">{error}</p>
+					<p class="text-sm text-red-700 mt-1">{error}</p>
 				</div>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Statistics Cards -->
-	<div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-		<div class="rounded-lg border border-gray-200 bg-white p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Total Tours</p>
-					<p class="text-2xl font-bold text-gray-900">{stats.total}</p>
+	<!-- Quick Stats Dashboard -->
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+		<!-- Today's Bookings -->
+		<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+			<div class="flex items-center justify-between mb-2">
+				<div class="p-2 bg-blue-50 rounded-lg">
+					<Calendar class="h-5 w-5 text-blue-600" />
 				</div>
-				<div
-					class="flex h-8 w-8 items-center justify-center rounded-lg"
-					style="background-color: var(--color-primary-100);"
+				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
+					<TrendingUp class="h-3 w-3" />
+					+12%
+				</span>
+			</div>
+			<p class="text-2xl font-bold text-gray-900">{quickStats.todayBookings}</p>
+			<p class="text-sm text-gray-600 mt-1">Today's bookings</p>
+		</div>
+
+		<!-- This Week -->
+		<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+			<div class="flex items-center justify-between mb-2">
+				<div class="p-2 bg-purple-50 rounded-lg">
+					<BarChart3 class="h-5 w-5 text-purple-600" />
+				</div>
+				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
+					<TrendingUp class="h-3 w-3" />
+					+8%
+				</span>
+			</div>
+			<p class="text-2xl font-bold text-gray-900">{quickStats.weekBookings}</p>
+			<p class="text-sm text-gray-600 mt-1">This week</p>
+		</div>
+
+		<!-- Monthly Revenue -->
+		<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+			<div class="flex items-center justify-between mb-2">
+				<div class="p-2 bg-green-50 rounded-lg">
+					<DollarSign class="h-5 w-5 text-green-600" />
+				</div>
+				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
+					<TrendingUp class="h-3 w-3" />
+					+15%
+				</span>
+			</div>
+			<p class="text-2xl font-bold text-gray-900">€{quickStats.monthRevenue}</p>
+			<p class="text-sm text-gray-600 mt-1">This month</p>
+		</div>
+
+		<!-- Active Tours -->
+		<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+			<div class="flex items-center justify-between mb-2">
+				<div class="p-2 bg-emerald-50 rounded-lg">
+					<Eye class="h-5 w-5 text-emerald-600" />
+				</div>
+			</div>
+			<p class="text-2xl font-bold text-gray-900">{stats.active}/{stats.total}</p>
+			<p class="text-sm text-gray-600 mt-1">Active tours</p>
+		</div>
+	</div>
+
+	<!-- Search and Filters -->
+	<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+		<div class="flex flex-col lg:flex-row gap-4">
+			<!-- Search -->
+			<div class="flex-1">
+				<div class="relative">
+					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+					<input
+						type="text"
+						bind:value={searchQuery}
+						placeholder="Search tours by name, location, or description..."
+						class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+					/>
+				</div>
+			</div>
+
+			<!-- Filter Buttons -->
+			<div class="flex items-center gap-2">
+				<button
+					onclick={() => showFilters = !showFilters}
+					class="button-secondary button--gap button--small"
 				>
-					<svg
-						class="h-4 w-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						style="color: var(--color-primary-600);"
+					<Filter class="h-4 w-4" />
+					Filters
+					{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
+						<span class="ml-1 px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
+							{(selectedCategory !== 'all' ? 1 : 0) + (selectedStatus !== 'all' ? 1 : 0)}
+						</span>
+					{/if}
+				</button>
+
+				<select
+					bind:value={sortBy}
+					class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+				>
+					<option value="recent">Most Recent</option>
+					<option value="name">Name (A-Z)</option>
+					<option value="price-low">Price (Low to High)</option>
+					<option value="price-high">Price (High to Low)</option>
+				</select>
+			</div>
+		</div>
+
+		<!-- Expanded Filters -->
+		{#if showFilters}
+			<div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+					<div class="flex flex-wrap gap-2">
+						<button
+							onclick={() => selectedStatus = 'all'}
+							class="{selectedStatus === 'all' ? 'button-primary' : 'button-secondary'} button--small"
+						>
+							All Status
+						</button>
+						<button
+							onclick={() => selectedStatus = 'active'}
+							class="{selectedStatus === 'active' ? 'button-primary' : 'button-secondary'} button--small"
+						>
+							Active
+						</button>
+						<button
+							onclick={() => selectedStatus = 'draft'}
+							class="{selectedStatus === 'draft' ? 'button-primary' : 'button-secondary'} button--small"
+						>
+							Draft
+						</button>
+						<button
+							onclick={() => selectedStatus = 'inactive'}
+							class="{selectedStatus === 'inactive' ? 'button-primary' : 'button-secondary'} button--small"
+						>
+							Inactive
+						</button>
+					</div>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+					<select
+						bind:value={selectedCategory}
+						class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
 					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-						/>
-					</svg>
+						<option value="all">All Categories</option>
+						{#each tourCategories as category}
+							<option value={category}>{category}</option>
+						{/each}
+					</select>
 				</div>
 			</div>
-		</div>
-
-		<div class="rounded-lg border border-gray-200 bg-white p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Active</p>
-					<p class="text-2xl font-bold text-green-600">{stats.active}</p>
-				</div>
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-					<svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-			</div>
-		</div>
-
-		<div class="rounded-lg border border-gray-200 bg-white p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Draft</p>
-					<p class="text-2xl font-bold text-gray-600">{stats.draft}</p>
-				</div>
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-					<svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-						/>
-					</svg>
-				</div>
-			</div>
-		</div>
-
-		<div class="rounded-lg border border-gray-200 bg-white p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Inactive</p>
-					<p class="text-2xl font-bold text-yellow-600">{stats.inactive}</p>
-				</div>
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100">
-					<svg
-						class="h-4 w-4 text-yellow-600"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-			</div>
-		</div>
+		{/if}
 	</div>
 
-	<!-- Filters -->
-	<div class="mb-6 flex flex-col gap-4 sm:flex-row">
-		<div class="flex gap-2">
-			<button
-				onclick={() => (selectedStatus = 'all')}
-				class="{selectedStatus === 'all' ? 'button-primary' : 'button-secondary'} button--small"
-			>
-				All Tours
-			</button>
-			<button
-				onclick={() => (selectedStatus = 'active')}
-				class="{selectedStatus === 'active' ? 'button-primary' : 'button-secondary'} button--small"
-			>
-				Active
-			</button>
-			<button
-				onclick={() => (selectedStatus = 'draft')}
-				class="{selectedStatus === 'draft' ? 'button-primary' : 'button-secondary'} button--small"
-			>
-				Draft
-			</button>
-			<button
-				onclick={() => (selectedStatus = 'inactive')}
-				class="{selectedStatus === 'inactive'
-					? 'button-primary'
-					: 'button-secondary'} button--small"
-			>
-				Inactive
-			</button>
-		</div>
-	</div>
-
-	<!-- Tour List -->
+	<!-- Tour Cards Grid -->
 	{#if isLoading}
 		<div class="flex items-center justify-center py-12">
 			<div class="flex items-center gap-2 text-gray-600">
@@ -273,228 +393,164 @@
 			</div>
 		</div>
 	{:else if filteredTours.length === 0}
-		<div class="py-12 text-center">
-			<svg
-				class="mx-auto mb-4 h-12 w-12 text-gray-400"
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-				/>
-			</svg>
-			<h3 class="mb-2 text-lg font-semibold text-gray-900">
-				{selectedStatus === 'all' ? 'No tours yet' : `No ${selectedStatus} tours`}
-			</h3>
-			<p class="mb-4 text-gray-600">
-				{selectedStatus === 'all'
-					? 'Create your first tour to start receiving bookings'
-					: `You don't have any ${selectedStatus} tours at the moment`}
-			</p>
-			{#if selectedStatus === 'all'}
-				<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-					Create Your First Tour
-				</button>
-			{/if}
+		<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+			<div class="max-w-md mx-auto">
+				<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<Search class="h-8 w-8 text-gray-400" />
+				</div>
+				<h3 class="text-lg font-semibold text-gray-900 mb-2">
+					{searchQuery ? 'No tours found' : 'No tours yet'}
+				</h3>
+				<p class="text-gray-600 mb-6">
+					{searchQuery 
+						? 'Try adjusting your search or filters'
+						: 'Create your first tour to start receiving bookings'}
+				</p>
+				{#if !searchQuery}
+					<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+						<Plus class="h-4 w-4" />
+						Create Your First Tour
+					</button>
+				{:else}
+					<button onclick={() => { searchQuery = ''; selectedStatus = 'all'; selectedCategory = 'all'; }} class="button-secondary">
+						Clear Filters
+					</button>
+				{/if}
+			</div>
 		</div>
 	{:else}
-		<div class="grid gap-6">
+		<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 			{#each filteredTours as tour (tour.id)}
-				<div
-					class="rounded-lg border border-gray-200 bg-white p-6 transition-shadow hover:shadow-md"
-				>
-					<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-						<div class="flex-1">
-							<div class="mb-2 flex items-start justify-between">
-								<div class="flex-1">
-									<h3 class="mb-1 text-xl font-semibold text-gray-900">{tour.name}</h3>
-									<div class="mb-2 flex items-center gap-4 text-sm text-gray-600">
-										{#if tour.category}
-											<span class="flex items-center gap-1">
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-													/>
-												</svg>
-												{tour.category}
-											</span>
-										{/if}
-										{#if tour.location}
-											<span class="flex items-center gap-1">
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-													/>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-													/>
-												</svg>
-												{tour.location}
-											</span>
-										{/if}
-									</div>
-									{#if tour.description}
-										<p class="line-clamp-2 text-gray-600">{tour.description}</p>
-									{/if}
-								</div>
-								<span
-									class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium {getStatusColor(
-										tour.status
-									)} lg:hidden"
-								>
-									<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d={getStatusIcon(tour.status)}
-										/>
-									</svg>
-									{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-								</span>
+				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 group">
+					<!-- Tour Image -->
+					<div class="relative h-48 bg-gray-100">
+						{#if tour.images && tour.images[0]}
+							<img 
+								src={`https://z.xeon.pl/api/files/tours/${tour.id}/${tour.images[0]}?thumb=400x300`} 
+								alt={tour.name}
+								class="w-full h-full object-cover"
+							/>
+						{:else}
+							<div class="w-full h-full flex items-center justify-center">
+								<MapPin class="h-12 w-12 text-gray-300" />
 							</div>
-
-							<div class="flex items-center gap-6 text-sm text-gray-500">
-								<span class="flex items-center gap-1">
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-										/>
-									</svg>
-									€{tour.price} per person
-								</span>
-								<span class="flex items-center gap-1">
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-									{Math.floor(tour.duration / 60)}h {tour.duration % 60}m
-								</span>
-								<span class="flex items-center gap-1">
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-										/>
-									</svg>
-									Max {tour.capacity} people
-								</span>
-							</div>
-						</div>
-
-						<div class="flex flex-col gap-4 lg:items-end">
-							<span
-								class="hidden items-center gap-1 rounded-full px-2 py-1 text-xs font-medium lg:inline-flex {getStatusColor(
-									tour.status
-								)}"
-							>
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d={getStatusIcon(tour.status)}
-									/>
-								</svg>
+						{/if}
+						
+						<!-- Status Badge -->
+						<div class="absolute top-3 right-3">
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(tour.status)} backdrop-blur-sm">
+								<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
 								{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 							</span>
-							<div class="flex items-center gap-2">
+						</div>
+
+						<!-- Quick Actions on Hover -->
+						<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+							<button
+								onclick={() => goto(`/tours/${tour.id}`)}
+								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+								title="View details"
+							>
+								<Eye class="h-5 w-5" />
+							</button>
+							<button
+								onclick={() => goto(`/tours/${tour.id}/edit`)}
+								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+								title="Edit tour"
+							>
+								<Edit class="h-5 w-5" />
+							</button>
+							<button
+								onclick={() => goto(`/tours/${tour.id}/qr`)}
+								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+								title="QR codes"
+							>
+								<QrCode class="h-5 w-5" />
+							</button>
+						</div>
+					</div>
+
+					<!-- Tour Content -->
+					<div class="p-5">
+						<!-- Title and Category -->
+						<div class="mb-3">
+							<h3 class="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{tour.name}</h3>
+							{#if tour.category}
+								<span class="text-sm text-gray-500">{tour.category}</span>
+							{/if}
+						</div>
+
+						<!-- Description -->
+						{#if tour.description}
+							<p class="text-sm text-gray-600 mb-4 line-clamp-2">{tour.description}</p>
+						{/if}
+
+						<!-- Tour Details Grid -->
+						<div class="grid grid-cols-2 gap-3 mb-4">
+							<div class="flex items-center gap-2 text-sm text-gray-600">
+								<DollarSign class="h-4 w-4 text-gray-400" />
+								<span class="font-medium">€{tour.price}</span>
+							</div>
+							<div class="flex items-center gap-2 text-sm text-gray-600">
+								<Clock class="h-4 w-4 text-gray-400" />
+								<span>{Math.floor(tour.duration / 60)}h {tour.duration % 60}m</span>
+							</div>
+							<div class="flex items-center gap-2 text-sm text-gray-600">
+								<Users class="h-4 w-4 text-gray-400" />
+								<span>Max {tour.capacity}</span>
+							</div>
+							{#if tour.location}
+								<div class="flex items-center gap-2 text-sm text-gray-600">
+									<MapPin class="h-4 w-4 text-gray-400" />
+									<span class="truncate">{tour.location}</span>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Action Buttons -->
+						<div class="flex items-center justify-between pt-4 border-t border-gray-100">
+							<div class="flex gap-2">
 								<button
-									onclick={() => goto(`/tours/${tour.id}`)}
-									class="p-2 text-gray-400 transition-colors hover:text-blue-600"
-									title="View details"
-									aria-label="View details"
+									onclick={() => goto(`/tours/${tour.id}/schedule`)}
+									class="button-secondary button--small"
 								>
-									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-										/>
-									</svg>
+									Schedule
 								</button>
 								<button
-									onclick={() => goto(`/tours/${tour.id}/edit`)}
-									class="p-2 text-gray-400 transition-colors hover:text-blue-600"
-									title="Edit tour"
-									aria-label="Edit tour"
+									onclick={() => goto(`/tours/${tour.id}/bookings`)}
+									class="button-secondary button--small"
 								>
-									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-										/>
-									</svg>
+									Bookings
 								</button>
+							</div>
+							
+							<!-- More Options Dropdown -->
+							<div class="relative dropdown-container">
 								<button
-									onclick={() => duplicateTour(tour)}
-									class="p-2 text-gray-400 transition-colors hover:text-green-600"
-									title="Duplicate tour"
-									aria-label="Duplicate tour"
+									onclick={() => toggleDropdown(tour.id)}
+									class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
 								>
-									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-										/>
-									</svg>
+									<MoreVertical class="h-5 w-5" />
 								</button>
-								<button
-									onclick={() => deleteTour(tour.id)}
-									class="p-2 text-gray-400 transition-colors hover:text-red-600"
-									title="Delete tour"
-									aria-label="Delete tour"
-								>
-									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-										/>
-									</svg>
-								</button>
+								
+								{#if openDropdownId === tour.id}
+									<div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+										<button
+											onclick={() => duplicateTour(tour)}
+											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+										>
+											<Copy class="h-4 w-4" />
+											Duplicate
+										</button>
+										<button
+											onclick={() => deleteTour(tour.id)}
+											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+										>
+											<Trash2 class="h-4 w-4" />
+											Delete
+										</button>
+									</div>
+								{/if}
 							</div>
 						</div>
 					</div>
@@ -503,3 +559,19 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.line-clamp-1 {
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 1;
+		-webkit-box-orient: vertical;
+	}
+	
+	.line-clamp-2 {
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+</style>
