@@ -19,13 +19,28 @@ export const load: PageServerLoad = async ({ url }) => {
 			expand: 'tour,timeSlot,tour.user'
 		});
 		
-		// Verify booking is confirmed AND payment is successful
-		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
-			throw error(400, 'Booking is not confirmed or payment not completed');
+		// Check if this is a valid booking for success page
+		// Allow confirmed/paid (webhook processed) OR pending payment (payment processing)
+		const isValidForSuccess = (
+			// Booking is fully confirmed and paid (webhook processed)
+			(booking.status === 'confirmed' && booking.paymentStatus === 'paid') ||
+			// OR booking has payment in progress (user just paid, webhook hasn't processed yet)
+			(booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId)
+		);
+		
+		if (!isValidForSuccess) {
+			// Only fail if booking is clearly not payment-related (no paymentId) or has failed
+			if (!booking.paymentId || booking.paymentStatus === 'failed') {
+				throw error(400, 'Booking is not valid for confirmation page');
+			}
 		}
 		
+		// Determine if payment is still processing
+		const isPaymentProcessing = booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId;
+		
 		return {
-			booking
+			booking,
+			isPaymentProcessing
 		};
 	} catch (err) {
 		console.error('Error loading success page:', err);

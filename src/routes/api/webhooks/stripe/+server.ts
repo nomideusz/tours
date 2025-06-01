@@ -12,6 +12,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const sig = request.headers.get('stripe-signature');
 
   if (!sig) {
+    console.error('Webhook error: No signature provided');
     return json({ error: 'No signature' }, { status: 400 });
   }
 
@@ -29,6 +30,7 @@ export const POST: RequestHandler = async ({ request }) => {
       sig,
       privateEnv.STRIPE_WEBHOOK_SECRET
     );
+    console.log(`Webhook received: ${event.type} - ID: ${event.id}`);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return json({ error: 'Invalid signature' }, { status: 400 });
@@ -41,6 +43,8 @@ export const POST: RequestHandler = async ({ request }) => {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const bookingId = paymentIntent.metadata.bookingId;
+
+        console.log(`Payment succeeded for booking ${bookingId}, payment intent ${paymentIntent.id}`);
 
         if (!bookingId) {
           console.error('No bookingId in payment intent metadata');
@@ -65,6 +69,9 @@ export const POST: RequestHandler = async ({ request }) => {
               processingFee: stripeFee / 100,
               netAmount: netAmount
             });
+            console.log(`Payment record updated: ${payment.id}`);
+          } else {
+            console.warn(`No payment record found for payment intent ${paymentIntent.id}`);
           }
 
           // Update booking status
@@ -72,6 +79,8 @@ export const POST: RequestHandler = async ({ request }) => {
             status: 'confirmed',
             paymentStatus: 'paid'
           });
+          console.log(`Booking confirmed: ${bookingId} - Status: confirmed, Payment: paid`);
+
         } catch (updateError) {
           console.error('Failed to update payment/booking status:', updateError);
           // Continue processing - payment was successful even if we couldn't update the database
@@ -90,7 +99,12 @@ export const POST: RequestHandler = async ({ request }) => {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const bookingId = paymentIntent.metadata.bookingId;
 
-        if (!bookingId) break;
+        console.log(`Payment failed for booking ${bookingId}, payment intent ${paymentIntent.id}`);
+
+        if (!bookingId) {
+          console.warn('No bookingId in failed payment intent metadata');
+          break;
+        }
 
         // Update payment record
         const payments = await pb.collection('payments').getFullList({
@@ -101,12 +115,14 @@ export const POST: RequestHandler = async ({ request }) => {
           await pb.collection('payments').update(payments[0].id, {
             status: 'failed'
           });
+          console.log(`Payment record marked as failed: ${payments[0].id}`);
         }
 
         // Update booking status
         await pb.collection('bookings').update(bookingId, {
           paymentStatus: 'failed'
         });
+        console.log(`Booking payment marked as failed: ${bookingId}`);
 
         break;
       }
@@ -115,7 +131,12 @@ export const POST: RequestHandler = async ({ request }) => {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const bookingId = paymentIntent.metadata.bookingId;
 
-        if (!bookingId) break;
+        console.log(`Payment canceled for booking ${bookingId}, payment intent ${paymentIntent.id}`);
+
+        if (!bookingId) {
+          console.warn('No bookingId in canceled payment intent metadata');
+          break;
+        }
 
         // Update payment record
         const payments = await pb.collection('payments').getFullList({
@@ -126,6 +147,7 @@ export const POST: RequestHandler = async ({ request }) => {
           await pb.collection('payments').update(payments[0].id, {
             status: 'cancelled'
           });
+          console.log(`Payment record marked as cancelled: ${payments[0].id}`);
         }
 
         // Update booking status
@@ -133,15 +155,21 @@ export const POST: RequestHandler = async ({ request }) => {
           status: 'cancelled',
           paymentStatus: 'failed'
         });
+        console.log(`Booking cancelled: ${bookingId}`);
 
         // Restore time slot availability
-        const booking = await pb.collection('bookings').getOne(bookingId);
-        const timeSlot = await pb.collection('time_slots').getOne(booking.timeSlot);
-        
-        await pb.collection('time_slots').update(booking.timeSlot, {
-          bookedSpots: Math.max(0, timeSlot.bookedSpots - booking.participants),
-          availableSpots: timeSlot.availableSpots + booking.participants
-        });
+        try {
+          const booking = await pb.collection('bookings').getOne(bookingId);
+          const timeSlot = await pb.collection('time_slots').getOne(booking.timeSlot);
+          
+          await pb.collection('time_slots').update(booking.timeSlot, {
+            bookedSpots: Math.max(0, timeSlot.bookedSpots - booking.participants),
+            availableSpots: timeSlot.availableSpots + booking.participants
+          });
+          console.log(`Time slot availability restored for booking ${bookingId}`);
+        } catch (timeSlotError) {
+          console.error('Failed to restore time slot availability:', timeSlotError);
+        }
 
         break;
       }
@@ -150,6 +178,7 @@ export const POST: RequestHandler = async ({ request }) => {
         console.log(`Unhandled event type ${event.type}`);
     }
 
+    console.log(`Webhook ${event.type} processed successfully`);
     return json({ received: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
