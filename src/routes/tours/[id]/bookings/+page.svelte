@@ -20,6 +20,7 @@
 	import Filter from 'lucide-svelte/icons/filter';
 	import Search from 'lucide-svelte/icons/search';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import Ticket from 'lucide-svelte/icons/ticket';
 
 	// Extended booking type with expand data
 	interface ExpandedBooking extends Booking {
@@ -547,23 +548,49 @@
 										booking.paymentStatus === 'refunded' ? 'bg-gray-50 text-gray-700 border-gray-200' :
 										'bg-gray-50 text-gray-700 border-gray-200'
 									} border">
-										<span class="w-1.5 h-1.5 rounded-full {
-											booking.paymentStatus === 'paid' ? 'bg-emerald-500' :
-											booking.paymentStatus === 'pending' ? 'bg-amber-500' :
-											booking.paymentStatus === 'failed' ? 'bg-red-500' :
-											booking.paymentStatus === 'refunded' ? 'bg-gray-500' :
-											'bg-gray-500'
-										}"></span>
-										💳 {booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
+										<span class="mr-0.5">💳</span>
+										{booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
 									</span>
-									
-									{#if booking.qrCode}
-										<span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700">
-											QR Booking
+
+									<!-- Attendance Status Badge (for confirmed bookings) -->
+									{#if booking.status === 'confirmed' && booking.paymentStatus === 'paid'}
+										<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+											booking.attendanceStatus === 'checked_in' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+											booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+											'bg-purple-50 text-purple-700 border-purple-200'
+										} border">
+											<span class="mr-0.5">
+												{#if booking.attendanceStatus === 'checked_in'}
+													✅
+												{:else if booking.attendanceStatus === 'no_show'}
+													❌
+												{:else}
+													⏳
+												{/if}
+											</span>
+											{#if booking.attendanceStatus === 'checked_in'}
+												Checked In
+											{:else if booking.attendanceStatus === 'no_show'}
+												No Show
+											{:else}
+												Not Arrived
+											{/if}
 										</span>
 									{/if}
 								</div>
 							</div>
+
+							{#if booking.checkedInAt}
+								<p class="text-xs text-gray-500 mt-2">
+									Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', {
+										month: 'short',
+										day: 'numeric',
+										hour: 'numeric',
+										minute: '2-digit',
+										hour12: true
+									})}
+								</p>
+							{/if}
 
 							<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
 								<div class="p-3 bg-gray-50 rounded-lg">
@@ -648,6 +675,18 @@
 							{@const completeDisabled = isStatusActionDisabled(booking, 'completed') || isUpdatingStatus === booking.id}
 							{@const completeError = getStatusValidationError(booking, 'completed')}
 							<div class="flex flex-col gap-2">
+								<!-- Ticket Check-in Button (if has ticket QR code) -->
+								{#if booking.ticketQRCode}
+									<a
+										href="/checkin/{booking.ticketQRCode}"
+										target="_blank"
+										class="button-secondary button--gap button--small text-center text-indigo-600 hover:bg-indigo-50 border-indigo-200 hover:border-indigo-300"
+									>
+										<Ticket class="h-4 w-4" />
+										Check-in Ticket
+									</a>
+								{/if}
+								
 								<div class="relative">
 									<button
 										onclick={() => updateBookingStatus(booking.id, 'completed')}

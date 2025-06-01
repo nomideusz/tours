@@ -96,6 +96,11 @@ export interface Booking extends RecordModel {
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   bookingReference: string; // unique booking reference
   specialRequests?: string;
+  // New ticket QR fields
+  ticketQRCode?: string; // unique ticket identifier for scanning
+  attendanceStatus?: 'not_arrived' | 'checked_in' | 'no_show';
+  checkedInAt?: string; // timestamp when customer checked in
+  checkedInBy?: string; // guide who checked them in
   created: string;
   updated: string;
 }

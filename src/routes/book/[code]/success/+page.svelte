@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
+	import { generateTicketURL } from '$lib/ticket-qr.js';
 	import Check from 'lucide-svelte/icons/check';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -10,6 +11,8 @@
 	import Mail from 'lucide-svelte/icons/mail';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Ticket from 'lucide-svelte/icons/ticket';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -93,6 +96,10 @@
 			hour12: true
 		});
 	}
+	
+	// Check if we have a ticket QR code available
+	let hasTicket = $derived(booking.ticketQRCode && booking.status === 'confirmed' && booking.paymentStatus === 'paid');
+	let ticketURL = $derived(hasTicket ? generateTicketURL(booking.ticketQRCode) : '');
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
@@ -140,9 +147,27 @@
 						</div>
 					</div>
 					<h1 class="text-3xl font-bold text-green-900 mb-2">Booking Confirmed!</h1>
-					<p class="text-green-700">
+					<p class="text-green-700 mb-4">
 						Thank you for your booking. You'll receive a confirmation email shortly.
 					</p>
+					
+					{#if hasTicket}
+						<!-- Ticket QR Code Button -->
+						<div class="mt-6">
+							<a
+								href={ticketURL}
+								target="_blank"
+								class="inline-flex items-center gap-3 px-6 py-3 bg-white text-green-800 border-2 border-green-200 rounded-xl font-semibold hover:bg-green-50 hover:border-green-300 transition-colors"
+							>
+								<Ticket class="w-6 h-6" />
+								<span>View Your Ticket</span>
+								<ExternalLink class="w-4 h-4" />
+							</a>
+							<p class="text-sm text-green-600 mt-2">
+								Show this QR code to your guide on the day of the tour
+							</p>
+						</div>
+					{/if}
 				</div>
 			{/if}
 			
@@ -214,6 +239,9 @@
 							<li>• Please arrive 10 minutes before the tour starts</li>
 							<li>• Bring comfortable walking shoes</li>
 							<li>• Check the weather and dress appropriately</li>
+							{#if hasTicket}
+								<li>• <strong>Show your ticket QR code to your guide for check-in</strong></li>
+							{/if}
 							<li>• Contact your guide if you need to make changes</li>
 						</ul>
 					</div>
@@ -223,13 +251,27 @@
 		
 		<!-- Additional Actions -->
 		{#if !isPaymentProcessing}
-			<div class="mt-8 text-center">
-				<a 
-					href="/" 
-					class="text-sm text-gray-600 hover:text-gray-900"
-				>
-					← Book another tour
-				</a>
+			<div class="mt-8 text-center space-y-4">
+				{#if hasTicket}
+					<div>
+						<a 
+							href={ticketURL}
+							target="_blank"
+							class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+						>
+							<Ticket class="w-4 h-4" />
+							Access your ticket anytime
+						</a>
+					</div>
+				{/if}
+				<div>
+					<a 
+						href="/" 
+						class="text-sm text-gray-600 hover:text-gray-900"
+					>
+						← Book another tour
+					</a>
+				</div>
 			</div>
 		{/if}
 	</div>

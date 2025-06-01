@@ -6,7 +6,7 @@ import type { TimeSlot } from '$lib/types.js';
 
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
-export const load: PageServerLoad = async ({ params, url, locals }) => {
+export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 	const pb = new PocketBase(POCKETBASE_URL);
 	
 	try {
@@ -48,16 +48,21 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			throw error(404, `QR code '${params.code}' not found. Please ensure the QR code is active and accessible.`);
 		}
 		
-		// Increment scan count (only if this isn't a form submission or refresh)
+		// Track scan via API (works for both authenticated and anonymous users)
 		const isFirstVisit = !url.searchParams.has('submitted');
-		if (isFirstVisit && locals?.pb?.authStore?.isValid) {
+		if (isFirstVisit) {
 			try {
-				// Only try to update if we have an authenticated instance
-				await locals.pb.collection('qr_codes').update(qrCode.id, {
-					scans: (qrCode.scans || 0) + 1
+				const trackResponse = await fetch(`/api/qr/${params.code}/scan`, {
+					method: 'POST'
 				});
-			} catch (err) {
-				console.error('Failed to increment scan count:', err);
+				if (trackResponse.ok) {
+					const trackResult = await trackResponse.json();
+					console.log(`Scan tracked via API: ${trackResult.scans} total scans`);
+				} else {
+					console.error('Failed to track scan via API:', await trackResponse.text());
+				}
+			} catch (trackError) {
+				console.error('Error calling scan tracking API:', trackError);
 				// Don't fail the page load if scan tracking fails
 			}
 		}
@@ -133,7 +138,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 };
 
 export const actions: Actions = {
-	book: async ({ request, params, locals }) => {
+	book: async ({ request, params, locals, fetch }) => {
 		const pb = new PocketBase(POCKETBASE_URL);
 		
 		const formData = await request.formData();
@@ -251,15 +256,20 @@ export const actions: Actions = {
 				}
 			}
 			
-			// Increment QR code conversion count (only if we have write access)
-			if (locals?.pb?.authStore?.isValid) {
-				try {
-					await locals.pb.collection('qr_codes').update(qrCode.id, {
-						conversions: (qrCode.conversions || 0) + 1
-					});
-				} catch (err) {
-					console.error('Failed to update QR conversions:', err);
+			// Track conversion via API (works for both authenticated and anonymous users)
+			try {
+				const trackResponse = await fetch(`/api/qr/${params.code}/conversion`, {
+					method: 'POST'
+				});
+				if (trackResponse.ok) {
+					const trackResult = await trackResponse.json();
+					console.log(`Conversion tracked via API: ${trackResult.conversions} total conversions`);
+				} else {
+					console.error('Failed to track conversion via API:', await trackResponse.text());
 				}
+			} catch (trackError) {
+				console.error('Error calling conversion tracking API:', trackError);
+				// Don't fail the booking if conversion tracking fails
 			}
 			
 			// Success! Log and redirect to payment page

@@ -703,6 +703,59 @@
         "type": "text"
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_ticket_qr_code_bookings",
+        "max": 100,
+        "min": 0,
+        "name": "ticketQRCode",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "select_attendance_status_bookings",
+        "maxSelect": 1,
+        "name": "attendanceStatus",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "not_arrived",
+          "checked_in",
+          "no_show"
+        ]
+      },
+      {
+        "hidden": false,
+        "id": "date_checked_in_at_bookings",
+        "max": "",
+        "min": "",
+        "name": "checkedInAt",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation_checked_in_by_bookings",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "checkedInBy",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
         "hidden": false,
         "id": "autodate_created_bookings",
         "name": "created",
@@ -727,7 +780,8 @@
       "CREATE UNIQUE INDEX `idx_booking_reference_bookings` ON `bookings` (`bookingReference`)",
       "CREATE INDEX `idx_tour_bookings` ON `bookings` (`tour`)",
       "CREATE INDEX `idx_customer_email_bookings` ON `bookings` (`customerEmail`)",
-      "CREATE INDEX `idx_time_slot_bookings` ON `bookings` (`timeSlot`)"
+      "CREATE INDEX `idx_time_slot_bookings` ON `bookings` (`timeSlot`)",
+      "CREATE UNIQUE INDEX `idx_ticket_qr_code_bookings` ON `bookings` (`ticketQRCode`) WHERE `ticketQRCode` != ''"
     ],
     "system": false
   },
@@ -971,7 +1025,7 @@
         "name": "processingFee",
         "onlyInt": false,
         "presentable": false,
-        "required": true,
+        "required": false,
         "system": false,
         "type": "number"
       },
@@ -1124,6 +1178,23 @@
         "required": false,
         "system": false,
         "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "select_category_qr_codes",
+        "maxSelect": 1,
+        "name": "category",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "digital",
+          "print",
+          "partner",
+          "event",
+          "promo"
+        ]
       },
       {
         "hidden": false,

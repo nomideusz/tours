@@ -1,11 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getStripe } from '$lib/stripe.server.js';
-import PocketBase from 'pocketbase';
 import { env as privateEnv } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
 import type { Stripe } from 'stripe';
-
-const POCKETBASE_URL = publicEnv.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { generateTicketQRCode } from '$lib/ticket-qr.js';
+import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -36,7 +34,16 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  const pb = new PocketBase(POCKETBASE_URL);
+  // Get authenticated PocketBase instance
+  let pb;
+  try {
+    console.log('Webhook: Attempting PocketBase admin authentication...');
+    pb = await createAuthenticatedPB();
+    console.log('Webhook: PocketBase admin authentication successful');
+  } catch (authError) {
+    console.error('Webhook: Failed to authenticate with PocketBase admin:', authError);
+    return json({ error: 'Database authentication failed' }, { status: 500 });
+  }
 
   try {
     switch (event.type) {
@@ -52,13 +59,18 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         try {
+          console.log(`Webhook: Processing payment success for booking ${bookingId}...`);
+          
           // Update payment record
+          console.log(`Webhook: Looking for payment record with Stripe ID: ${paymentIntent.id}`);
           const payments = await pb.collection('payments').getFullList({
             filter: `stripePaymentIntentId = "${paymentIntent.id}"`
           });
+          console.log(`Webhook: Found ${payments.length} payment records`);
 
           if (payments.length > 0) {
             const payment = payments[0];
+            console.log(`Webhook: Updating payment record ${payment.id}`);
             
             // Calculate Stripe fees (approximate - actual fees come from balance transaction)
             const stripeFee = Math.round(paymentIntent.amount * 0.029 + 30); // 2.9% + 30 cents
@@ -69,27 +81,42 @@ export const POST: RequestHandler = async ({ request }) => {
               processingFee: stripeFee / 100,
               netAmount: netAmount
             });
-            console.log(`Payment record updated: ${payment.id}`);
+            console.log(`Webhook: Payment record updated successfully: ${payment.id} - Status: succeeded`);
           } else {
-            console.warn(`No payment record found for payment intent ${paymentIntent.id}`);
+            console.warn(`Webhook: No payment record found for payment intent ${paymentIntent.id}`);
           }
 
-          // Update booking status
-          await pb.collection('bookings').update(bookingId, {
+          // Generate ticket QR code
+          const ticketQRCode = generateTicketQRCode();
+          console.log(`Webhook: Generated ticket QR code: ${ticketQRCode} for booking ${bookingId}`);
+
+          // Update booking status with ticket QR code
+          console.log(`Webhook: Updating booking ${bookingId} with ticket QR code and status...`);
+          const updateData = {
             status: 'confirmed',
-            paymentStatus: 'paid'
-          });
-          console.log(`Booking confirmed: ${bookingId} - Status: confirmed, Payment: paid`);
+            paymentStatus: 'paid',
+            ticketQRCode: ticketQRCode,
+            attendanceStatus: 'not_arrived'
+          };
+          console.log(`Webhook: Booking update data:`, updateData);
+          
+          await pb.collection('bookings').update(bookingId, updateData);
+          console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
         } catch (updateError) {
-          console.error('Failed to update payment/booking status:', updateError);
+          console.error('Webhook: Failed to update payment/booking status:', updateError);
+          console.error('Webhook: Update error details:', {
+            error: updateError,
+            bookingId,
+            paymentIntentId: paymentIntent.id
+          });
           // Continue processing - payment was successful even if we couldn't update the database
         }
 
-        // Note: QR code conversion tracking is handled during booking creation
-        // Webhooks don't have authenticated access to update QR codes
+        // Note: QR code conversion tracking is handled during booking creation via API
+        // No need to track conversions again in webhook as they're already counted
 
-        // TODO: Send confirmation email to customer
+        // TODO: Send confirmation email to customer with ticket QR code
         // TODO: Send notification to tour guide
 
         break;
