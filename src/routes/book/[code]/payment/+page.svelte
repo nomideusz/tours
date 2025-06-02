@@ -96,7 +96,7 @@
 		const { error: stripeError } = await stripe.confirmPayment({
 			elements,
 			confirmParams: {
-				return_url: `${window.location.origin}/book/${data.qrCode.code}/success?booking=${data.booking.id}`,
+				return_url: `${window.location.origin}/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`,
 			},
 		});
 		
@@ -130,7 +130,7 @@
 		<div class="max-w-2xl mx-auto">
 			<!-- Back button -->
 			<a
-				href="/book/{data.qrCode.code}"
+				href="/book/{(data.qrCode as any).code}"
 				class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
 			>
 				<ChevronLeft class="w-4 h-4 mr-1" />

@@ -54,7 +54,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
       
       // Send email if appropriate
       if (emailType) {
-        const emailResponse = await fetch(`${POCKETBASE_URL}/api/send-manual-email`, {
+        const emailResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

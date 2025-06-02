@@ -106,10 +106,10 @@ export const POST: RequestHandler = async ({ request }) => {
           // Update booking directly and trigger emails
           await pb.collection('bookings').update(bookingId, updateData);
           
-          // Send emails via PocketBase endpoints
+          // Send emails via SvelteKit email service
           try {
             // Send confirmation email
-            const emailResponse = await fetch(`${POCKETBASE_URL}/api/send-manual-email`, {
+            const emailResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -125,10 +125,13 @@ export const POST: RequestHandler = async ({ request }) => {
             }
             
             // Send QR ticket
-            const qrResponse = await fetch(`${POCKETBASE_URL}/api/send-qr-ticket`, {
+            const qrResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ bookingId })
+              body: JSON.stringify({ 
+                bookingId,
+                emailType: 'qr-ticket'
+              })
             });
             
             if (qrResponse.ok) {
@@ -136,10 +139,9 @@ export const POST: RequestHandler = async ({ request }) => {
             } else {
               console.warn(`Webhook: Failed to send QR ticket:`, await qrResponse.text());
             }
-            
-                     } catch (emailError) {
-             console.warn('Webhook: Error sending emails:', emailError);
-           }
+          } catch (emailError) {
+            console.warn('Webhook: Error sending emails:', emailError);
+          }
           
           console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
