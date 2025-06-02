@@ -3,9 +3,21 @@ import { env } from '$env/dynamic/private';
 import { generateCheckInURL, getDisplayReference } from '$lib/ticket-qr.js';
 import type { Booking, Tour, TimeSlot } from '$lib/types.js';
 
-const resend = new Resend(env.RESEND_API_KEY);
 const FROM_EMAIL = 'noreply@auth.zaur.app';
 const FROM_NAME = 'Zaur Tours';
+
+// Lazy load Resend instance to avoid build-time errors
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    if (!env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is required');
+    }
+    resendInstance = new Resend(env.RESEND_API_KEY);
+  }
+  return resendInstance;
+}
 
 // Email template types
 export type EmailType = 'confirmation' | 'payment' | 'reminder' | 'cancelled' | 'qr-ticket';
@@ -510,10 +522,6 @@ export async function sendBookingEmail(
   data: BookingEmailData
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    if (!env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is required');
-    }
-
     let template: EmailTemplate;
 
     switch (emailType) {
@@ -536,6 +544,7 @@ export async function sendBookingEmail(
         throw new Error(`Invalid email type: ${emailType}`);
     }
 
+    const resend = getResend();
     const result = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: [data.booking.customerEmail],
@@ -560,10 +569,6 @@ export async function sendBookingEmail(
 // Test email function
 export async function sendTestEmail(): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    if (!env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is required');
-    }
-
     const testHtml = createEmailTemplate(`
       <h2>🎫 Booking System Test</h2>
       <p>Hello Zaur Team,</p>
@@ -578,6 +583,7 @@ export async function sendTestEmail(): Promise<{ success: boolean; messageId?: s
       <p>This confirms that booking confirmations, payment notifications, and QR tickets will be sent successfully.</p>
     `);
 
+    const resend = getResend();
     const result = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: ['nom@zaur.app'],
@@ -607,10 +613,6 @@ export async function sendBookingReminders(): Promise<{
   error?: string 
 }> {
   try {
-    if (!env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY environment variable is required');
-    }
-
     // This would need to be called from a cron job or API endpoint
     // For now, return a placeholder - the actual implementation would:
     // 1. Query PocketBase for bookings with tours starting tomorrow
