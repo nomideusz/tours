@@ -101,10 +101,10 @@
 	
 	$effect(() => {
 		// Check if we're on a public page
+		// Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
 		const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 		const isPublicPage = pathname.includes('/book/') || 
-							pathname.includes('/ticket/') || 
-							pathname.includes('/checkin/');
+							pathname.includes('/ticket/');
 		
 		if (!isPublicPage) {
 			cleanup = setupAuthListener((user) => {

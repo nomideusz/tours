@@ -23,9 +23,9 @@ export const handle: Handle = async ({ event, resolve }) => {
         event.locals.isAdmin = false;
 
         // Check if this is a public page
+        // Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
         const isPublicPage = event.url.pathname.includes('/book/') || 
-                            event.url.pathname.includes('/ticket/') || 
-                            event.url.pathname.includes('/checkin/');
+                            event.url.pathname.includes('/ticket/');
 
         // Load the auth store data from the request cookie string ONLY for non-public pages
         if (!isPublicPage) {
@@ -129,9 +129,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     try {
         // Check if this is a public page (re-check in case of redirects)
+        // Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
         const isPublicPage = event.url.pathname.includes('/book/') || 
-                            event.url.pathname.includes('/ticket/') || 
-                            event.url.pathname.includes('/checkin/');
+                            event.url.pathname.includes('/ticket/');
         
         // Only handle cookies for non-public pages
         if (!isPublicPage) {

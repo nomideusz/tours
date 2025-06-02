@@ -8,23 +8,49 @@ import { env } from '$env/dynamic/public';
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	const pb = locals?.pb || new PocketBase(POCKETBASE_URL);
 	const ticketCode = params.code;
 	
 	if (!ticketCode || !isValidTicketQRCode(ticketCode)) {
 		throw error(400, 'Invalid ticket code format');
 	}
 	
+	// Check if user is authenticated
+	if (!locals?.pb?.authStore?.isValid || !locals?.user) {
+		throw error(401, 'Authentication required. Please log in to access check-in functionality.');
+	}
+	
+	const pb = locals.pb;
+	const currentUser = locals.user;
+	
 	try {
-		// Find booking by ticket QR code
-		const booking = await pb.collection('bookings').getFirstListItem(
-			`ticketQRCode = "${ticketCode}"`,
-			{ expand: 'tour,timeSlot,tour.user' }
-		);
+		console.log('Looking for booking with ticket code:', ticketCode);
+		
+		// Find booking by ticket QR code using admin access for broader search
+		let booking;
+		try {
+			// Try with current user's authenticated session first
+			booking = await pb.collection('bookings').getFirstListItem(
+				`ticketQRCode = "${ticketCode}"`,
+				{ expand: 'tour,timeSlot,tour.user' }
+			);
+		} catch (bookingErr) {
+			console.log('Booking not found with user auth, trying admin access...');
+			// If not found, try with admin access (for cross-user ticket lookup)
+			const adminPb = await tryCreateAuthenticatedPB();
+			if (!adminPb) {
+				throw error(500, 'Unable to authenticate for ticket lookup');
+			}
+			booking = await adminPb.collection('bookings').getFirstListItem(
+				`ticketQRCode = "${ticketCode}"`,
+				{ expand: 'tour,timeSlot,tour.user' }
+			);
+		}
 		
 		if (!booking) {
-			throw error(404, 'Ticket not found');
+			throw error(404, 'Ticket not found. Please check the ticket code and try again.');
 		}
+		
+		console.log('Found booking:', booking.id, 'for tour:', booking.expand?.tour?.name);
 		
 		// Only show confirmed bookings
 		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
@@ -32,11 +58,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		}
 		
 		// Check if current user is authorized to check in this booking
-		const currentUser = locals?.pb?.authStore?.record;
 		const tourOwner = booking.expand?.tour?.user;
 		
-		if (!currentUser || currentUser.id !== tourOwner) {
-			throw error(403, 'You are not authorized to check in this booking');
+		if (currentUser.id !== tourOwner) {
+			throw error(403, 'You are not authorized to check in this booking. Only the tour guide can check in customers.');
 		}
 		
 		return {

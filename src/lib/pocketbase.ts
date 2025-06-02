@@ -16,9 +16,9 @@ export const pb = browser
       // Only load auth state if not on a public page
       if (typeof document !== 'undefined' && typeof window !== 'undefined') {
         const pathname = window.location.pathname;
+        // Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
         const isPublicPage = pathname.includes('/book/') || 
-                            pathname.includes('/ticket/') || 
-                            pathname.includes('/checkin/');
+                            pathname.includes('/ticket/');
         
         if (!isPublicPage) {
           client.authStore.loadFromCookie(document.cookie);

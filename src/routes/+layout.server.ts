@@ -3,9 +3,9 @@ import { redirect } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   // Check if this is a public page
+  // Note: /ticket/ is public for customers, but /checkin/ requires auth for guides  
   const isPublicPage = url.pathname.includes('/book/') || 
-                      url.pathname.includes('/ticket/') || 
-                      url.pathname.includes('/checkin/');
+                      url.pathname.includes('/ticket/');
   
   // For public pages, don't process any auth data
   if (isPublicPage) {
