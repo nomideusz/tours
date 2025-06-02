@@ -42,6 +42,38 @@ export const currentUser = writable(initialUserValue);
 // Enhanced version to properly handle auth state changes
 let isAuthListenerActive = false;
 
+// Function to reload auth state from cookies
+export function reloadAuthFromCookies() {
+  if (browser && pb && typeof document !== 'undefined') {
+    console.log('Reloading auth state from cookies...');
+    const pathname = window.location.pathname;
+    const isPublicPage = pathname.includes('/book/') || pathname.includes('/ticket/');
+    
+    if (!isPublicPage) {
+      // Force reload from cookies
+      pb.authStore.loadFromCookie(document.cookie);
+      
+      // Update the currentUser store and try to refresh the auth
+      if (pb.authStore.isValid && pb.authStore.record) {
+        console.log('Auth reloaded successfully:', pb.authStore.record.email);
+        currentUser.set(pb.authStore.record);
+        
+        // Try to refresh auth to ensure token is still valid
+        pb.collection('users').authRefresh().then(() => {
+          console.log('Auth refresh successful after cookie reload');
+          currentUser.set(pb.authStore.record);
+        }).catch((error) => {
+          console.warn('Auth refresh failed after cookie reload:', error);
+          // Don't clear auth - just log the warning
+        });
+      } else {
+        console.log('No valid auth found in cookies');
+        currentUser.set(null);
+      }
+    }
+  }
+}
+
 export function setupAuthListener(setCurrentUser: (user: any) => void) {
   if (browser && pb && !isAuthListenerActive) {
     isAuthListenerActive = true;
@@ -68,10 +100,21 @@ export function setupAuthListener(setCurrentUser: (user: any) => void) {
       currentUser.set(null);
     }
     
+    // Periodically check for cookie changes (helpful for login synchronization)
+    let lastCookieValue = document.cookie;
+    const cookieCheckInterval = setInterval(() => {
+      if (document.cookie !== lastCookieValue) {
+        lastCookieValue = document.cookie;
+        console.log('Cookie change detected, reloading auth state...');
+        reloadAuthFromCookies();
+      }
+    }, 1000); // Check every second
+    
     // Return cleanup function
     return () => {
       console.log('Cleaning up auth listener');
       isAuthListenerActive = false;
+      clearInterval(cookieCheckInterval);
       unsubscribe();
     };
   }

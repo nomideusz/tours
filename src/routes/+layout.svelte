@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { language, t } from '$lib/i18n.js';
-	import { initialUserValue, setupAuthListener, currentUser as currentUserStore } from '$lib/pocketbase.js';
+	import { initialUserValue, setupAuthListener, currentUser as currentUserStore, reloadAuthFromCookies } from '$lib/pocketbase.js';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		languageContext,
@@ -157,7 +157,7 @@
 		}
 	});
 
-	afterNavigate(({ to }) => {
+	afterNavigate(({ to, from }) => {
 		if (loadingTimer) {
 			clearTimeout(loadingTimer);
 			loadingTimer = null;
@@ -173,6 +173,19 @@
 			if (headerRef) {
 				headerRef.closeMobileMenu();
 			}
+		}
+
+		// Reload auth state from cookies after navigation
+		// This fixes the issue where client-side auth doesn't sync after server-side login
+		const isFromLogin = from?.url?.pathname?.includes('/auth/login');
+		const isToNonPublic = to?.url && !to.url.pathname.includes('/book/') && !to.url.pathname.includes('/ticket/');
+		
+		if (isFromLogin && isToNonPublic) {
+			console.log('Reloading auth after login navigation...');
+			// Small delay to ensure cookies are properly set
+			setTimeout(() => {
+				reloadAuthFromCookies();
+			}, 100);
 		}
 	});
 </script>

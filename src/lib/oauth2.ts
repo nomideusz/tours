@@ -1,4 +1,4 @@
-import { pb, currentUser } from './pocketbase.js';
+import { pb, currentUser, reloadAuthFromCookies } from './pocketbase.js';
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 
@@ -151,6 +151,12 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
             // Use SvelteKit's navigation to go to tours page
             // This should trigger the layout to reload and sync auth state
             await goto('/tours', { replaceState: true, invalidateAll: true });
+            
+            // Ensure auth state is reloaded after navigation
+            setTimeout(() => {
+                reloadAuthFromCookies();
+            }, 300);
+            
             return true;
         } else {
             throw new Error('Authentication failed - no valid auth data received');
