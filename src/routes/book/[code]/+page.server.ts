@@ -274,7 +274,12 @@ export const actions: Actions = {
 			
 			// Success! Log and redirect to payment page
 			console.log(`Booking created successfully! ID: ${booking.id}, Reference: ${bookingReference}`);
-			throw redirect(303, `/book/${params.code}/payment?booking=${booking.id}`);
+			console.log('User info:', locals?.user?.email || 'anonymous');
+			
+			// Use a try-catch to ensure proper redirect handling
+			const redirectUrl = `/book/${params.code}/payment?booking=${booking.id}`;
+			console.log('Redirecting to:', redirectUrl);
+			throw redirect(303, redirectUrl);
 			
 		} catch (err) {
 			// If it's a redirect, re-throw it (this is success, not an error!)

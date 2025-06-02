@@ -25,6 +25,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     const cookies = event.request.headers.get('cookie') || '';
     event.locals.pb.authStore.loadFromCookie(cookies);
     
+    // Log if we're processing a booking route for debugging
+    if (event.url.pathname.includes('/book/')) {
+        console.log('Server sending authenticated user:', event.locals.pb.authStore.record?.email || 'none');
+    }
+    
     // Debug logging for auth issues (remove in production)
     if (event.url.pathname.includes('/api/') || event.url.pathname.includes('/auth/')) {
         console.log('Server hooks - URL:', event.url.pathname, 'Auth valid:', event.locals.pb.authStore.isValid);
@@ -33,32 +38,53 @@ export const handle: Handle = async ({ event, resolve }) => {
     // If the user is authenticated, set the user in locals
     if (event.locals.pb.authStore.isValid) {
         try {
-            // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
-            await event.locals.pb.collection('users').authRefresh();
+            // Skip auth refresh for certain routes to avoid unnecessary overhead
+            const skipRefreshPaths = ['/api/health', '/favicon.ico', '/_app/'];
+            const shouldSkipRefresh = skipRefreshPaths.some(path => event.url.pathname.includes(path));
+            
+            if (!shouldSkipRefresh) {
+                // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
+                // Add timeout to prevent hanging
+                const authRefreshPromise = event.locals.pb.collection('users').authRefresh();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Auth refresh timeout')), 5000)
+                );
+                
+                try {
+                    await Promise.race([authRefreshPromise, timeoutPromise]);
+                } catch (refreshErr) {
+                    console.warn('Auth refresh failed or timed out:', refreshErr);
+                    // Don't throw - just continue with existing auth data
+                }
+            }
             
             // Set the user data in locals for easy access in routes
             event.locals.user = event.locals.pb.authStore.record;
             
-            // Update the last_login field to the current timestamp
-            // Only update if this is a new login session (to avoid updating on every request)
-            const currentTime = new Date().toISOString();
-            if (!event.locals.user.last_login || 
-                new Date(event.locals.user.last_login).getTime() < Date.now() - 12 * 60 * 60 * 1000) { // Only update if last login was > 12 hours ago
-                await event.locals.pb.collection('users').update(event.locals.user.id, {
-                    last_login: currentTime
-                });
-                // Update the local user record with the new last_login time
-                event.locals.user.last_login = currentTime;
-            }
-
-            // Check if user has admin role
-            // Adjust this check based on how roles are stored in your PocketBase setup
+            // Check if user has admin role before any DB updates
             event.locals.isAdmin = 
                 event.locals.user.role === 'admin' || 
                 (event.locals.user.roles && event.locals.user.roles.includes('admin')) ||
                 (event.locals.user.expand && event.locals.user.expand.roles && 
                  event.locals.user.expand.roles.some((r: any) => r.name === 'admin'));
+            
+            // Try to update last_login but don't fail if it doesn't work
+            try {
+                const currentTime = new Date().toISOString();
+                if (!event.locals.user.last_login || 
+                    new Date(event.locals.user.last_login).getTime() < Date.now() - 12 * 60 * 60 * 1000) {
+                    await event.locals.pb.collection('users').update(event.locals.user.id, {
+                        last_login: currentTime
+                    });
+                    event.locals.user.last_login = currentTime;
+                }
+            } catch (updateErr) {
+                // Log but don't fail - last_login is not critical
+                console.warn('Failed to update last_login:', updateErr);
+            }
         } catch (err) {
+            // Log the error for debugging in production
+            console.error('Auth refresh failed:', err);
             // Clear the auth store on failed refresh
             event.locals.pb.authStore.clear();
         }
