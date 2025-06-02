@@ -15,52 +15,29 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 	
 	let booking = null;
-	let pb = null;
 	
-	// Try authenticated user access first
-	if (locals?.pb?.authStore?.isValid) {
-		try {
-			console.log('Trying authenticated user access for ticket:', ticketCode);
-			booking = await locals.pb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour,timeSlot,tour.user' }
-			);
-			pb = locals.pb;
-		} catch (authErr) {
-			console.log('User authenticated access failed:', authErr);
-		}
-	}
-	
-	// If user access failed, try admin access for public ticket viewing
-	if (!booking) {
-		try {
-			console.log('Trying admin access for ticket:', ticketCode);
-			const adminPb = await tryCreateAuthenticatedPB();
-			if (adminPb) {
-				booking = await adminPb.collection('bookings').getFirstListItem(
-					`ticketQRCode = "${ticketCode}"`,
-					{ expand: 'tour,timeSlot,tour.user' }
-				);
-				pb = adminPb;
-			}
-		} catch (adminErr) {
-			console.error('Admin access failed:', adminErr);
-		}
-	}
-	
-	// Last resort: try public PocketBase instance
-	if (!booking) {
-		try {
-			console.log('Trying public access for ticket:', ticketCode);
-			pb = new PocketBase(POCKETBASE_URL);
+	// Always use admin-authenticated PB for ticket viewing (tickets need to be publicly viewable)
+	try {
+		console.log('Using admin access for public ticket viewing:', ticketCode);
+		const pb = await tryCreateAuthenticatedPB();
+		if (pb) {
 			booking = await pb.collection('bookings').getFirstListItem(
 				`ticketQRCode = "${ticketCode}"`,
 				{ expand: 'tour,timeSlot,tour.user' }
 			);
-		} catch (publicErr) {
-			console.error('All access methods failed for ticket:', ticketCode, publicErr);
-			throw error(404, 'Ticket not found. Please ensure the ticket code is valid.');
+		} else {
+			// Fallback to public PB instance if admin auth not configured
+			console.log('Admin auth not available, using public access');
+			const publicPb = new PocketBase(POCKETBASE_URL);
+			publicPb.authStore.clear();
+			booking = await publicPb.collection('bookings').getFirstListItem(
+				`ticketQRCode = "${ticketCode}"`,
+				{ expand: 'tour,timeSlot,tour.user' }
+			);
 		}
+	} catch (err) {
+		console.error('Failed to fetch ticket:', ticketCode, err);
+		throw error(404, 'Ticket not found. Please ensure the ticket code is valid.');
 	}
 	
 	if (!booking) {

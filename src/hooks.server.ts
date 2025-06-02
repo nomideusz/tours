@@ -38,16 +38,25 @@ export const handle: Handle = async ({ event, resolve }) => {
     // If the user is authenticated, set the user in locals
     if (event.locals.pb.authStore.isValid) {
         try {
-            // Skip auth refresh for certain routes to avoid unnecessary overhead
-            const skipRefreshPaths = ['/api/health', '/favicon.ico', '/_app/'];
+            // Skip auth refresh for public routes and certain paths
+            const skipRefreshPaths = [
+                '/api/health', 
+                '/favicon.ico', 
+                '/_app/',
+                '/book/',  // Skip auth refresh for booking pages
+                '/api/qr/',  // Skip for QR tracking APIs
+                '/ticket/',  // Skip for ticket pages
+                '/checkin/'  // Skip for checkin pages
+            ];
             const shouldSkipRefresh = skipRefreshPaths.some(path => event.url.pathname.includes(path));
             
-            if (!shouldSkipRefresh) {
+            // Only refresh auth for authenticated-only routes
+            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/')) {
                 // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
                 // Add timeout to prevent hanging
                 const authRefreshPromise = event.locals.pb.collection('users').authRefresh();
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Auth refresh timeout')), 5000)
+                    setTimeout(() => reject(new Error('Auth refresh timeout')), 3000)
                 );
                 
                 try {

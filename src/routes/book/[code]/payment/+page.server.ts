@@ -6,11 +6,13 @@ import { env } from '$env/dynamic/public';
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const load: PageServerLoad = async ({ params, url, locals }) => {
-	// Use authenticated PB instance if available, otherwise create a new one
-	const pb = locals?.pb || new PocketBase(POCKETBASE_URL);
+	// Always use fresh PocketBase instance for payment pages
+	const pb = new PocketBase(POCKETBASE_URL);
+	pb.authStore.clear(); // Ensure no auth state
+	
 	const bookingId = url.searchParams.get('booking');
 	
-	console.log('Payment page loading for booking:', bookingId, 'User:', locals?.user?.email || 'anonymous');
+	console.log('Payment page loading for booking:', bookingId, 'Using public access');
 	
 	if (!bookingId) {
 		throw error(400, 'Booking ID is required');

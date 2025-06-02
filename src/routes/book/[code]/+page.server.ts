@@ -7,16 +7,20 @@ import type { TimeSlot } from '$lib/types.js';
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
+	// Always use a fresh PocketBase instance for booking pages to avoid auth issues
 	const pb = new PocketBase(POCKETBASE_URL);
+	// Explicitly clear any auth state to ensure public access
+	pb.authStore.clear();
 	
 	try {
-		// For booking pages, prioritize public access to ensure anonymous users can book
+		// For booking pages, always use public access
 		let qrCode = null;
-		let workingPB = pb; // Default to public access
+		let workingPB = pb; // Always use public access
 		
-		// Try public access first (works for anonymous users)
+		// Try public access (works for both anonymous and authenticated users)
 		try {
 			console.log('Attempting public access for QR code:', params.code);
+			console.log('Auth state cleared, using public access');
 			qrCode = await pb.collection('qr_codes').getFirstListItem(
 				`code = "${params.code}" && isActive = true`,
 				{ expand: 'tour,tour.user' }
@@ -25,22 +29,8 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		} catch (publicError) {
 			console.log('Public access failed:', publicError);
 			console.log('Filter used:', `code = "${params.code}" && isActive = true`);
-			
-			// Fallback to authenticated access if available and public fails
-			if (locals?.pb?.authStore?.isValid) {
-				try {
-					const qrCodes = await locals.pb.collection('qr_codes').getFullList({
-						expand: 'tour,tour.user'
-					});
-					qrCode = qrCodes.find(qr => qr.code === params.code && qr.isActive);
-					if (qrCode) {
-						workingPB = locals.pb;
-						console.log('QR code found via authenticated access');
-					}
-				} catch (authError) {
-					console.log('Authenticated access also failed');
-				}
-			}
+			// Don't try authenticated access - if public fails, the QR code doesn't exist or isn't active
+			throw error(404, `QR code '${params.code}' not found or inactive.`);
 		}
 		
 		// Check if QR code was found
@@ -72,55 +62,21 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		const tourId = qrCode.expand?.tour?.id;
 		console.log('Looking for time slots for tour:', tourId);
 		
-		// Try authenticated access first if available, then fall back to public
-		const pbInstance = locals?.pb?.authStore?.isValid ? locals.pb : pb;
-		const accessType = locals?.pb?.authStore?.isValid ? 'authenticated' : 'public';
-		
+		// Always use public access for time slots
 		try {
-			// Get all slots for this tour
-			const allTourSlots = await pbInstance.collection('time_slots').getFullList({
+			// Get all slots for this tour using public access
+			const allTourSlots = await workingPB.collection('time_slots').getFullList({
 				filter: `tour = "${tourId}"`,
 				sort: 'startTime'
 			});
-			console.log(`All slots for tour (${accessType}):`, allTourSlots.length);
+			console.log('All slots for tour (public access):', allTourSlots.length);
 			
 			// Filter for available status
 			timeSlots = allTourSlots.filter(slot => slot.status === 'available') as any;
-			console.log(`Available slots after filtering (${accessType}):`, timeSlots.length);
-			
-			// If no slots found and we used public access, try authenticated
-			if (timeSlots.length === 0 && accessType === 'public' && locals?.pb?.authStore?.isValid) {
-				console.log('No public slots found, trying authenticated access...');
-				const authSlots = await locals.pb.collection('time_slots').getFullList({
-					filter: `tour = "${tourId}"`,
-					sort: 'startTime'
-				});
-				console.log('All slots for tour (authenticated fallback):', authSlots.length);
-				timeSlots = authSlots.filter(slot => slot.status === 'available') as any;
-				console.log('Available slots after filtering (authenticated fallback):', timeSlots.length);
-			}
+			console.log('Available slots after filtering:', timeSlots.length);
 		} catch (err) {
-			console.error(`Failed to load time slots via ${accessType} access:`, err);
-		}
-		
-		// Debug: Try to get all time slots without filter to see what's there
-		if (timeSlots.length === 0 && locals?.pb?.authStore?.isValid) {
-			try {
-				const allSlots = await locals.pb.collection('time_slots').getFullList({
-					expand: 'tour',
-					sort: '-created'
-				});
-				console.log('All time slots in database:', allSlots.length);
-				console.log('First few slots:', allSlots.slice(0, 3).map(s => ({
-					id: s.id,
-					tour: s.tour,
-					tourName: s.expand?.tour?.name,
-					status: s.status,
-					startTime: s.startTime
-				})));
-			} catch (debugErr) {
-				console.log('Could not fetch all slots for debugging');
-			}
+			console.error('Failed to load time slots:', err);
+			// Continue with empty array - the page will show "no available slots"
 		}
 		
 		return {
@@ -139,7 +95,9 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 
 export const actions: Actions = {
 	book: async ({ request, params, locals, fetch }) => {
+		// Always use fresh PocketBase instance for booking actions
 		const pb = new PocketBase(POCKETBASE_URL);
+		pb.authStore.clear(); // Ensure no auth state
 		
 		const formData = await request.formData();
 		
@@ -179,11 +137,10 @@ export const actions: Actions = {
 		}
 		
 		try {
-			// Get QR code and tour info - prioritize public access for anonymous users
+			// Get QR code and tour info using public access
 			let qrCode = null;
-			let workingPB = pb; // Default to public access
 			
-			// Try public access first
+			// Use public access
 			try {
 				qrCode = await pb.collection('qr_codes').getFirstListItem(
 					`code = "${params.code}" && isActive = true`, 
@@ -191,19 +148,8 @@ export const actions: Actions = {
 				);
 				console.log('Booking: QR code found via public access');
 			} catch (publicErr) {
-				console.log('Booking: Public access failed, trying authenticated');
-				// Fallback to authenticated if available
-				if (locals?.pb?.authStore?.isValid) {
-					try {
-						qrCode = await locals.pb.collection('qr_codes').getFirstListItem(`code = "${params.code}"`, {
-							expand: 'tour'
-						});
-						workingPB = locals.pb;
-						console.log('Booking: QR code found via authenticated access');
-					} catch (authErr) {
-						console.log('Booking: Authenticated access also failed');
-					}
-				}
+				console.log('Booking: QR code not found or not active');
+				return fail(404, { error: 'QR code not found or inactive' });
 			}
 			
 			if (!qrCode) {
@@ -222,7 +168,7 @@ export const actions: Actions = {
 			const bookingReference = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 			
 			// Create booking
-			const booking = await workingPB.collection('bookings').create({
+			const booking = await pb.collection('bookings').create({
 				tour: tour.id,
 				timeSlot: timeSlotId,
 				qrCode: qrCode.id,
@@ -240,7 +186,7 @@ export const actions: Actions = {
 			// Update time slot availability with rollback capability
 			let timeSlotUpdated = false;
 			try {
-				await workingPB.collection('time_slots').update(timeSlotId, {
+				await pb.collection('time_slots').update(timeSlotId, {
 					bookedSpots: bookedSpots + participants,
 					availableSpots: availableSpots - participants
 				});
