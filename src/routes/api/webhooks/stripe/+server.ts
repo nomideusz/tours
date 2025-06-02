@@ -1,9 +1,12 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getStripe } from '$lib/stripe.server.js';
 import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import type { Stripe } from 'stripe';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
 import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
+
+const POCKETBASE_URL = publicEnv.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -100,7 +103,22 @@ export const POST: RequestHandler = async ({ request }) => {
           };
           console.log(`Webhook: Booking update data:`, updateData);
           
-          await pb.collection('bookings').update(bookingId, updateData);
+          // Use enhanced API to automatically trigger emails
+          const response = await fetch(`${POCKETBASE_URL}/api/bookings/${bookingId}/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'confirmed',
+              paymentStatus: 'paid',
+              ticketQRCode: ticketQRCode,
+              attendanceStatus: 'not_arrived'
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to update booking via enhanced API: ${response.status}`);
+          }
+          
           console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
         } catch (updateError) {

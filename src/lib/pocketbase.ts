@@ -681,8 +681,10 @@ export const bookingsApi = {
     }
     
     try {
-      // Get current booking to validate payment status
+      // Get current booking to validate payment status and track changes
       const currentBooking = await pb.collection('bookings').getOne<Booking>(id);
+      const oldStatus = currentBooking.status;
+      const oldPaymentStatus = currentBooking.paymentStatus;
       
       // Validate payment status for certain status changes
       if (status === 'confirmed' && currentBooking.paymentStatus !== 'paid') {
@@ -693,9 +695,255 @@ export const bookingsApi = {
         throw new Error('Can only complete confirmed bookings');
       }
       
-      return await pb.collection('bookings').update<Booking>(id, { status });
+      // Update the booking
+      const updatedBooking = await pb.collection('bookings').update<Booking>(id, { status });
+      
+      // Trigger email notifications based on status changes
+      await emailNotificationsApi.handleBookingStatusChange(id, oldStatus, status, oldPaymentStatus, updatedBooking.paymentStatus);
+      
+      return updatedBooking;
     } catch (error) {
       console.error(`Error updating booking status for ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update booking payment status
+   * @param id Booking ID
+   * @param paymentStatus New payment status
+   * @returns Promise with updated booking
+   */
+  updatePaymentStatus: async (id: string, paymentStatus: Booking['paymentStatus']): Promise<Booking> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+    
+    try {
+      // Get current booking to track payment status changes
+      const currentBooking = await pb.collection('bookings').getOne<Booking>(id);
+      const oldPaymentStatus = currentBooking.paymentStatus;
+      
+      // Update the booking
+      const updatedBooking = await pb.collection('bookings').update<Booking>(id, { paymentStatus });
+      
+      // Trigger email notifications based on payment status changes
+      await emailNotificationsApi.handleBookingStatusChange(id, currentBooking.status, updatedBooking.status, oldPaymentStatus, paymentStatus);
+      
+      return updatedBooking;
+    } catch (error) {
+             console.error(`Error updating booking payment status for ID ${id}:`, error);
+       throw error;
+     }
+   },
+
+   /**
+    * Send QR ticket email for a booking
+    * @param id Booking ID
+    * @returns Promise with success boolean
+    */
+   sendQRTicket: async (id: string): Promise<boolean> => {
+     try {
+       await emailNotificationsApi.sendQRTicket(id);
+       return true;
+     } catch (error) {
+       console.error(`Error sending QR ticket for booking ${id}:`, error);
+       return false;
+     }
+   },
+
+   /**
+    * Send manual email for a booking
+    * @param id Booking ID
+    * @param emailType Type of email to send
+    * @returns Promise with success boolean
+    */
+   sendEmail: async (id: string, emailType: 'confirmation' | 'payment' | 'reminder' | 'cancelled'): Promise<boolean> => {
+     try {
+       await emailNotificationsApi.sendEmail(id, emailType);
+       return true;
+     } catch (error) {
+       console.error(`Error sending ${emailType} email for booking ${id}:`, error);
+       return false;
+     }
+   }
+ };
+
+// Email Notifications API
+export const emailNotificationsApi = {
+  /**
+   * Handle booking status and payment changes to trigger appropriate emails
+   * @param bookingId Booking ID
+   * @param oldStatus Previous booking status
+   * @param newStatus New booking status
+   * @param oldPaymentStatus Previous payment status
+   * @param newPaymentStatus New payment status
+   */
+  handleBookingStatusChange: async (
+    bookingId: string,
+    oldStatus: Booking['status'],
+    newStatus: Booking['status'],
+    oldPaymentStatus: Booking['paymentStatus'],
+    newPaymentStatus: Booking['paymentStatus']
+  ): Promise<void> => {
+    if (!browser || !pb) {
+      console.warn('PocketBase client not available for email notifications');
+      return;
+    }
+
+    try {
+      console.log(`📧 Checking email notifications for booking ${bookingId}`);
+      console.log(`Status change: ${oldStatus} -> ${newStatus}`);
+      console.log(`Payment change: ${oldPaymentStatus} -> ${newPaymentStatus}`);
+
+      // Check if booking just became confirmed and paid
+      if ((oldStatus !== 'confirmed' && newStatus === 'confirmed') && newPaymentStatus === 'paid') {
+        console.log('📧 Sending booking confirmation email...');
+        await emailNotificationsApi.sendEmail(bookingId, 'confirmation');
+      }
+      // Check if payment status changed to paid (but not first time confirmation)
+      else if (oldPaymentStatus !== 'paid' && newPaymentStatus === 'paid' && newStatus === 'confirmed') {
+        console.log('📧 Sending payment received email...');
+        await emailNotificationsApi.sendEmail(bookingId, 'payment');
+      }
+      // Check if booking was cancelled
+      else if (oldStatus !== 'cancelled' && newStatus === 'cancelled') {
+        console.log('📧 Sending booking cancelled email...');
+        await emailNotificationsApi.sendEmail(bookingId, 'cancelled');
+      }
+      // Send QR ticket for confirmed and paid bookings
+      else if (newStatus === 'confirmed' && newPaymentStatus === 'paid') {
+        console.log('📧 Sending QR ticket email...');
+        await emailNotificationsApi.sendQRTicket(bookingId);
+      }
+    } catch (error) {
+      console.error('❌ Error handling booking status change for email notifications:', error);
+      // Don't throw error - email failures shouldn't break booking updates
+    }
+  },
+
+  /**
+   * Send manual email using PocketBase API
+   * @param bookingId Booking ID
+   * @param emailType Type of email to send
+   */
+  sendEmail: async (bookingId: string, emailType: 'confirmation' | 'payment' | 'reminder' | 'cancelled'): Promise<void> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+
+    try {
+      const response = await fetch(`${POCKETBASE_URL}/api/send-manual-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId,
+          emailType
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Email API error: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ ${emailType} email sent successfully:`, result.message);
+    } catch (error) {
+      console.error(`❌ Error sending ${emailType} email:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Send QR ticket email
+   * @param bookingId Booking ID
+   */
+  sendQRTicket: async (bookingId: string): Promise<void> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+
+    try {
+      const response = await fetch(`${POCKETBASE_URL}/api/send-qr-ticket`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`QR ticket API error: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ QR ticket email sent successfully:', result.message);
+    } catch (error) {
+      console.error('❌ Error sending QR ticket email:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Send booking reminder emails (for cron jobs or manual triggers)
+   */
+  sendBookingReminders: async (): Promise<void> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+
+    try {
+      const response = await fetch(`${POCKETBASE_URL}/api/send-booking-reminders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Booking reminders API error: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Booking reminders sent successfully:', result.message);
+    } catch (error) {
+      console.error('❌ Error sending booking reminders:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Send test email to verify the system
+   */
+  sendTestEmail: async (): Promise<void> => {
+    if (!browser || !pb) {
+      throw new Error('PocketBase client not available');
+    }
+
+    try {
+      const response = await fetch(`${POCKETBASE_URL}/api/send-booking-test-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Test email API error: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Test email sent successfully:', result.message);
+    } catch (error) {
+      console.error('❌ Error sending test email:', error);
       throw error;
     }
   }
