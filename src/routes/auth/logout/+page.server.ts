@@ -1,6 +1,5 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
-import { updateAuthState } from '$lib/auth.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// This is a POST-only route, redirect GET requests
@@ -16,7 +15,6 @@ export const actions: Actions = {
 		// Logout the user
 		if (locals.pb) {
 			locals.pb.authStore.clear();
-			updateAuthState(null);
 		}
 
 		// Clear auth cookie and redirect to login

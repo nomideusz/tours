@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { language, t } from '$lib/i18n.js';
-	import { initialUserValue, setupAuthListener } from '$lib/pocketbase.js';
+	import { initialUserValue, setupAuthListener, currentUser as currentUserStore } from '$lib/pocketbase.js';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		languageContext,
@@ -37,8 +37,16 @@
 	// Initialize context with the store
 	authContext.set(authStore);
 
-	// Create a state for the current user
+	// Create a state for the current user - sync with the currentUser store
 	let currentUser = $state(initialUserValue || data?.user || null);
+	
+	// Keep local currentUser in sync with the store
+	$effect(() => {
+		const unsubscribe = currentUserStore.subscribe((user) => {
+			currentUser = user;
+		});
+		return unsubscribe;
+	});
 
 	// Create an explicitly typed variable for clarity in comparisons
 	type AuthState = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
@@ -98,6 +106,7 @@
 	// Set up auth listener to update currentUser
 	// Skip for public pages to avoid auth issues
 	let cleanup = () => {};
+	let authListenerSetup = false;
 	
 	$effect(() => {
 		// Check if we're on a public page
@@ -106,20 +115,14 @@
 		const isPublicPage = pathname.includes('/book/') || 
 							pathname.includes('/ticket/');
 		
-		if (!isPublicPage) {
+		// Only set up auth listener once and only for non-public pages
+		if (!isPublicPage && !authListenerSetup) {
+			authListenerSetup = true;
 			cleanup = setupAuthListener((user) => {
-				console.log('Auth listener triggered with user:', user ? 'User present' : 'No user');
-				currentUser = user;
-				updateAuthState(user);
-				
-				// Force update auth store when user changes (important for OAuth2)
-				authStore.update(() => ({
-					isAuthenticated: !!user,
-					user: user,
-					state: user ? 'loggedIn' : 'loggedOut'
-				}));
+				// This callback is no longer used - auth state is managed through currentUser store
+				console.log('Auth listener callback (deprecated):', user ? 'User present' : 'No user');
 			});
-		} else {
+		} else if (isPublicPage) {
 			console.log('Skipping auth listener for public page:', pathname);
 		}
 	});

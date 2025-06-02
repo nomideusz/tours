@@ -40,8 +40,12 @@ export const initialUserValue = browser && pb && pb.authStore.isValid ? pb.authS
 export const currentUser = writable(initialUserValue);
 
 // Enhanced version to properly handle auth state changes
+let isAuthListenerActive = false;
+
 export function setupAuthListener(setCurrentUser: (user: any) => void) {
-  if (browser && pb) {
+  if (browser && pb && !isAuthListenerActive) {
+    isAuthListenerActive = true;
+    
     // Load auth state from cookie first (important for page refreshes)
     pb.authStore.loadFromCookie(document.cookie);
     
@@ -50,20 +54,24 @@ export function setupAuthListener(setCurrentUser: (user: any) => void) {
     console.log('Auth token present:', !!pb.authStore.token);
     console.log('Auth record present:', !!pb.authStore.record);
     
-    // Immediate call to set the current user
-    setCurrentUser(pb.authStore.record);
-    currentUser.set(pb.authStore.record);
-    
-    // Set up the onChange listener
+    // Set up the onChange listener - ONLY update the currentUser store, not the callback
     const unsubscribe = pb.authStore.onChange((token, model) => {
       console.log('Auth store changed:', model ? 'User authenticated' : 'No user', 'Token valid:', !!token);
-      setCurrentUser(model);
+      // Only update the currentUser store - this will trigger the subscriber in auth.ts
       currentUser.set(model);
     });
+    
+    // Set initial state - only update the store, not the callback
+    if (pb.authStore.isValid && pb.authStore.record) {
+      currentUser.set(pb.authStore.record);
+    } else {
+      currentUser.set(null);
+    }
     
     // Return cleanup function
     return () => {
       console.log('Cleaning up auth listener');
+      isAuthListenerActive = false;
       unsubscribe();
     };
   }

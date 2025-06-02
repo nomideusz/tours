@@ -1,6 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
-import { updateAuthState } from '$lib/auth.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
@@ -79,9 +78,6 @@ export const actions: Actions = {
 				.authWithPassword(email, password);
 			
 			console.log('Auto-login successful after registration');
-
-			// Set auth state to logged in
-			updateAuthState({ exists: true });
 
 			console.log('Registration and auto-login successful, redirecting to app home');
 		} catch (err) {

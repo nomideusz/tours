@@ -1,6 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
-import { updateAuthState } from '$lib/auth.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	// Get the redirect URL if provided
@@ -40,9 +39,6 @@ export const actions: Actions = {
 			
 			console.log('Login successful, auth state valid:', locals.pb.authStore.isValid);
 			console.log('User data:', authData.record);
-
-			// Set auth state to logged in
-			updateAuthState({ exists: true });
 
 			// Return success response first
 			console.log('Authentication successful, redirecting to app home');
