@@ -16,23 +16,41 @@ declare global {
 const POCKETBASE_URL = process.env.POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const handle: Handle = async ({ event, resolve }) => {
-    // Initialize PocketBase with URL from environment variable
-    event.locals.pb = new PocketBase(POCKETBASE_URL);
-    event.locals.user = null;
-    event.locals.isAdmin = false;
+    try {
+        // Initialize PocketBase with URL from environment variable
+        event.locals.pb = new PocketBase(POCKETBASE_URL);
+        event.locals.user = null;
+        event.locals.isAdmin = false;
 
-    // Load the auth store data from the request cookie string
-    const cookies = event.request.headers.get('cookie') || '';
-    event.locals.pb.authStore.loadFromCookie(cookies);
-    
-    // Log if we're processing a booking route for debugging
-    if (event.url.pathname.includes('/book/')) {
-        console.log('Server sending authenticated user:', event.locals.pb.authStore.record?.email || 'none');
-    }
-    
-    // Debug logging for auth issues (remove in production)
-    if (event.url.pathname.includes('/api/') || event.url.pathname.includes('/auth/')) {
-        console.log('Server hooks - URL:', event.url.pathname, 'Auth valid:', event.locals.pb.authStore.isValid);
+        // Check if this is a public page
+        const isPublicPage = event.url.pathname.includes('/book/') || 
+                            event.url.pathname.includes('/ticket/') || 
+                            event.url.pathname.includes('/checkin/');
+
+        // Load the auth store data from the request cookie string ONLY for non-public pages
+        if (!isPublicPage) {
+            const cookies = event.request.headers.get('cookie') || '';
+            event.locals.pb.authStore.loadFromCookie(cookies);
+        } else {
+            // For public pages, explicitly clear auth to prevent any issues
+            event.locals.pb.authStore.clear();
+        }
+        
+        // Log if we're processing a booking route for debugging
+        if (event.url.pathname.includes('/book/')) {
+            console.log('Server sending authenticated user:', event.locals.pb.authStore.record?.email || 'none');
+        }
+        
+        // Debug logging for auth issues (remove in production)
+        if (event.url.pathname.includes('/api/') || event.url.pathname.includes('/auth/') || event.url.pathname.includes('/book/')) {
+            console.log('Server hooks - URL:', event.url.pathname, 'Auth valid:', event.locals.pb.authStore.isValid);
+        }
+    } catch (initErr) {
+        console.error('Error in hooks initialization:', initErr);
+        // Continue with minimal setup
+        event.locals.pb = new PocketBase(POCKETBASE_URL);
+        event.locals.user = null;
+        event.locals.isAdmin = false;
     }
 
     // If the user is authenticated, set the user in locals
@@ -100,20 +118,43 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     // Resolve the request
-    const response = await resolve(event);
+    let response;
+    try {
+        response = await resolve(event);
+    } catch (resolveErr) {
+        console.error('Error during request resolution:', resolveErr);
+        console.error('Failed URL:', event.url.pathname);
+        throw resolveErr; // Re-throw to maintain error behavior
+    }
 
-    // Only send auth cookie if we have valid auth data or need to clear it
-    if (event.locals.pb.authStore.isValid || 
-        (cookies && cookies.includes('pb_auth') && !event.locals.pb.authStore.isValid)) {
-        const authCookie = event.locals.pb.authStore.exportToCookie({
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax', // Helps with CSRF protection
-            httpOnly: false, // Allow client-side access for PocketBase auth store
-            path: '/',       // Make cookie available on all routes
-            maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
-        });
+    try {
+        // Check if this is a public page (re-check in case of redirects)
+        const isPublicPage = event.url.pathname.includes('/book/') || 
+                            event.url.pathname.includes('/ticket/') || 
+                            event.url.pathname.includes('/checkin/');
         
-        response.headers.append('set-cookie', authCookie);
+        // Only handle cookies for non-public pages
+        if (!isPublicPage) {
+            // Get cookies for cookie handling
+            const cookies = event.request.headers.get('cookie') || '';
+            
+            // Only send auth cookie if we have valid auth data or need to clear it
+            if (event.locals.pb.authStore.isValid || 
+                (cookies && cookies.includes('pb_auth') && !event.locals.pb.authStore.isValid)) {
+                const authCookie = event.locals.pb.authStore.exportToCookie({
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'Lax', // Helps with CSRF protection
+                    httpOnly: false, // Allow client-side access for PocketBase auth store
+                    path: '/',       // Make cookie available on all routes
+                    maxAge: 7 * 24 * 60 * 60 // Cookie expires in 7 days
+                });
+                
+                response.headers.append('set-cookie', authCookie);
+            }
+        }
+    } catch (cookieErr) {
+        console.error('Error setting auth cookie:', cookieErr);
+        // Don't fail the request if cookie setting fails
     }
 
     return response;

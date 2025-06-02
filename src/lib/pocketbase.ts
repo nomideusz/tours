@@ -13,9 +13,19 @@ const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 export const pb = browser 
   ? (() => {
       const client = new PocketBase(POCKETBASE_URL);
-      // Load auth state from cookie on initialization
-      if (typeof document !== 'undefined') {
-        client.authStore.loadFromCookie(document.cookie);
+      // Only load auth state if not on a public page
+      if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const isPublicPage = pathname.includes('/book/') || 
+                            pathname.includes('/ticket/') || 
+                            pathname.includes('/checkin/');
+        
+        if (!isPublicPage) {
+          client.authStore.loadFromCookie(document.cookie);
+        } else {
+          // Clear any auth state for public pages
+          client.authStore.clear();
+        }
       }
       return client;
     })()
@@ -24,7 +34,7 @@ export const pb = browser
 // In Svelte 5 Runes mode, we don't need to use a writable store
 // The currentUser will be defined directly in components using $state()
 // This is just the initial value
-export const initialUserValue = browser ? pb?.authStore.record : null;
+export const initialUserValue = browser && pb && pb.authStore.isValid ? pb.authStore.record : null;
 
 // Create a writable store for currentUser
 export const currentUser = writable(initialUserValue);

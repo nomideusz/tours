@@ -2,6 +2,21 @@ import type { LayoutServerLoad } from './$types.js';
 import { redirect } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
+  // Check if this is a public page
+  const isPublicPage = url.pathname.includes('/book/') || 
+                      url.pathname.includes('/ticket/') || 
+                      url.pathname.includes('/checkin/');
+  
+  // For public pages, don't process any auth data
+  if (isPublicPage) {
+    console.log('Layout server load: Public page, skipping auth processing');
+    return { 
+      isAuthenticated: false,
+      isAdmin: false,
+      user: null
+    };
+  }
+  
   // Use locals directly since hooks.server.ts already processed auth
   const isAuthenticated = !!locals.user;
   

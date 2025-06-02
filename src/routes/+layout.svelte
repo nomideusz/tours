@@ -96,17 +96,32 @@
 	});
 
 	// Set up auth listener to update currentUser
-	const cleanup = setupAuthListener((user) => {
-		console.log('Auth listener triggered with user:', user ? 'User present' : 'No user');
-		currentUser = user;
-		updateAuthState(user);
+	// Skip for public pages to avoid auth issues
+	let cleanup = () => {};
+	
+	$effect(() => {
+		// Check if we're on a public page
+		const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+		const isPublicPage = pathname.includes('/book/') || 
+							pathname.includes('/ticket/') || 
+							pathname.includes('/checkin/');
 		
-		// Force update auth store when user changes (important for OAuth2)
-		authStore.update(() => ({
-			isAuthenticated: !!user,
-			user: user,
-			state: user ? 'loggedIn' : 'loggedOut'
-		}));
+		if (!isPublicPage) {
+			cleanup = setupAuthListener((user) => {
+				console.log('Auth listener triggered with user:', user ? 'User present' : 'No user');
+				currentUser = user;
+				updateAuthState(user);
+				
+				// Force update auth store when user changes (important for OAuth2)
+				authStore.update(() => ({
+					isAuthenticated: !!user,
+					user: user,
+					state: user ? 'loggedIn' : 'loggedOut'
+				}));
+			});
+		} else {
+			console.log('Skipping auth listener for public page:', pathname);
+		}
 	});
 
 	// Clean up listener on component destruction
