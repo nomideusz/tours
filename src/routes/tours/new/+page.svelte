@@ -34,9 +34,36 @@
 		const target = event.target as HTMLInputElement;
 		const files = target.files;
 		if (files) {
-			// Convert FileList to Array and add to existing uploaded images
-			const newImages = Array.from(files);
-			uploadedImages = [...uploadedImages, ...newImages];
+			// Define allowed file types (must match PocketBase schema)
+			const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+			const maxFileSize = 5 * 1024 * 1024; // 5MB limit
+			
+			// Filter valid files and show errors for invalid ones
+			const validFiles: File[] = [];
+			const errors: string[] = [];
+			
+			Array.from(files).forEach(file => {
+				if (!allowedTypes.includes(file.type.toLowerCase())) {
+					errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
+				} else if (file.size > maxFileSize) {
+					errors.push(`${file.name}: File size must be less than 5MB`);
+				} else {
+					validFiles.push(file);
+				}
+			});
+			
+			// Show errors if any
+			if (errors.length > 0) {
+				alert('Some files were not added:\n\n' + errors.join('\n'));
+			}
+			
+			// Add valid files
+			if (validFiles.length > 0) {
+				uploadedImages = [...uploadedImages, ...validFiles];
+			}
+			
+			// Clear the input
+			target.value = '';
 		}
 	}
 
@@ -57,6 +84,9 @@
 				requirements: formData.requirements.filter(req => req.trim() !== '')
 			};
 
+			// Debug: Log the cleaned data
+			console.log('Cleaned form data:', cleanedData);
+
 			// If there are uploaded images, include them in the form data
 			if (uploadedImages.length > 0) {
 				const formDataWithImages = new FormData();
@@ -66,7 +96,9 @@
 					if (Array.isArray(value)) {
 						// JSON fields (includedItems, requirements) need JSON strings
 						if (key === 'includedItems' || key === 'requirements') {
-							formDataWithImages.append(key, JSON.stringify(value));
+							const jsonString = JSON.stringify(value);
+							console.log(`${key} JSON string:`, jsonString);
+							formDataWithImages.append(key, jsonString);
 						} else {
 							// Other arrays append each item separately
 							value.forEach(item => {
@@ -79,14 +111,27 @@
 				});
 
 				// Add images
-				uploadedImages.forEach((image) => {
+				uploadedImages.forEach((image, index) => {
+					console.log(`Adding image ${index}:`, image.name, image.type, image.size);
 					formDataWithImages.append('images', image);
 				});
+
+				// Debug: Log all FormData entries
+				console.log('Final FormData entries:');
+				for (const [key, value] of formDataWithImages.entries()) {
+					if (value instanceof File) {
+						console.log(`${key}:`, `File(${(value as File).name}, ${(value as File).type}, ${(value as File).size} bytes)`);
+					} else {
+						console.log(`${key}:`, value);
+					}
+				}
 
 				const tour = await toursApi.createWithImages(formDataWithImages);
 				// After creating tour, go to schedule to set up availability
 				goto(`/tours/${tour.id}/schedule`);
 			} else {
+				// Test without images first
+				console.log('Creating tour without images:', cleanedData);
 				const tour = await toursApi.create(cleanedData);
 				// After creating tour, go to schedule to set up availability
 				goto(`/tours/${tour.id}/schedule`);
@@ -94,6 +139,13 @@
 		} catch (err) {
 			error = 'Failed to create tour. Please try again.';
 			console.error('Error creating tour:', err);
+			// Log more details about the error
+			if (err && typeof err === 'object' && 'response' in err) {
+				console.error('Error response:', err.response);
+			}
+			if (err && typeof err === 'object' && 'data' in err) {
+				console.error('Error data:', err.data);
+			}
 		} finally {
 			isSubmitting = false;
 		}

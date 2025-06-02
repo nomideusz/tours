@@ -5,8 +5,9 @@
 	import { toursApi, pb } from '$lib/pocketbase.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import type { Tour } from '$lib/types.js';
-	import { ArrowLeft, ChevronRight } from 'lucide-svelte';
-	import { AlertCircle } from 'lucide-svelte';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
 	let tour = $state<Tour | null>(null);
 	let isLoading = $state(true);
@@ -76,8 +77,36 @@
 		const target = event.target as HTMLInputElement;
 		const files = target.files;
 		if (files) {
-			const newImages = Array.from(files);
-			uploadedImages = [...uploadedImages, ...newImages];
+			// Define allowed file types (must match PocketBase schema)
+			const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+			const maxFileSize = 5 * 1024 * 1024; // 5MB limit
+			
+			// Filter valid files and show errors for invalid ones
+			const validFiles: File[] = [];
+			const errors: string[] = [];
+			
+			Array.from(files).forEach(file => {
+				if (!allowedTypes.includes(file.type.toLowerCase())) {
+					errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
+				} else if (file.size > maxFileSize) {
+					errors.push(`${file.name}: File size must be less than 5MB`);
+				} else {
+					validFiles.push(file);
+				}
+			});
+			
+			// Show errors if any
+			if (errors.length > 0) {
+				alert('Some files were not added:\n\n' + errors.join('\n'));
+			}
+			
+			// Add valid files
+			if (validFiles.length > 0) {
+				uploadedImages = [...uploadedImages, ...validFiles];
+			}
+			
+			// Clear the input
+			target.value = '';
 		}
 	}
 

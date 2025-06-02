@@ -401,11 +401,11 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
 					</svg>
 					<p class="text-sm text-gray-600 mb-2">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-					<p class="text-xs text-gray-500 mb-4">PNG, JPG, WebP up to 5MB each (max 10 images)</p>
+					<p class="text-xs text-gray-500 mb-4">JPEG, PNG, WebP up to 5MB each (max 10 images)</p>
 					<input
 						type="file"
 						multiple
-						accept="image/*"
+						accept="image/jpeg,image/jpg,image/png,image/webp"
 						class="hidden"
 						id="images"
 						onchange={onImageUpload}

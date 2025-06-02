@@ -21,17 +21,72 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw error(403, 'You do not have permission to view this tour');
 		}
 		
-		// Load recent bookings for this tour (for today's check-ins)
-		const bookings = await locals.pb.collection('bookings').getFullList({
-			filter: `tour = "${params.id}" && status = "confirmed" && paymentStatus = "paid"`,
+		// Load all bookings for this tour for statistics
+		const allBookings = await locals.pb.collection('bookings').getFullList({
+			filter: `tour = "${params.id}"`,
 			expand: 'timeSlot',
-			sort: '-created',
-			limit: 50 // Limit to recent bookings
+			sort: '-created'
 		});
+
+		// Load QR codes for this tour
+		const qrCodes = await locals.pb.collection('qr_codes').getFullList({
+			filter: `tour = "${params.id}"`,
+			sort: '-created'
+		});
+
+		// Calculate statistics
+		const now = new Date();
+		const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+		
+		// Filter confirmed/paid bookings for revenue calculation
+		const confirmedBookings = allBookings.filter((b: any) => 
+			b.status === 'confirmed' && b.paymentStatus === 'paid'
+		);
+		
+		// Calculate this week's bookings
+		const thisWeekBookings = allBookings.filter((b: any) => 
+			new Date(b.created) >= oneWeekAgo && 
+			(b.status === 'confirmed' || b.status === 'pending')
+		);
+
+		// Filter for today's check-ins (upcoming confirmed bookings)
+		const upcomingBookings = allBookings.filter((b: any) => {
+			if (!b.expand?.timeSlot?.startTime) return false;
+			const tourDate = new Date(b.expand.timeSlot.startTime);
+			const today = new Date();
+			const isToday = tourDate.toDateString() === today.toDateString();
+			const isUpcoming = tourDate > today || isToday;
+			return isUpcoming && b.status === 'confirmed' && b.paymentStatus === 'paid';
+		});
+
+		// Calculate statistics
+		const stats = {
+			qrCodes: qrCodes.length,
+			activeQRCodes: qrCodes.filter((qr: any) => qr.isActive).length,
+			totalQRScans: qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0),
+			totalQRConversions: qrCodes.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0),
+			totalBookings: allBookings.length,
+			confirmedBookings: confirmedBookings.length,
+			pendingBookings: allBookings.filter((b: any) => b.status === 'pending').length,
+			cancelledBookings: allBookings.filter((b: any) => b.status === 'cancelled').length,
+			completedBookings: allBookings.filter((b: any) => b.status === 'completed').length,
+			revenue: confirmedBookings.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0),
+			totalParticipants: confirmedBookings.reduce((sum: number, b: any) => sum + (b.participants || 0), 0),
+			thisWeekBookings: thisWeekBookings.length,
+			averageBookingValue: confirmedBookings.length > 0 
+				? confirmedBookings.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0) / confirmedBookings.length 
+				: 0,
+			conversionRate: qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0) > 0 
+				? (qrCodes.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0) / qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0)) * 100
+				: 0
+		};
 
 		return {
 			tour,
-			bookings: bookings as any[],
+			bookings: upcomingBookings, // Only upcoming bookings for today's check-ins section
+			allBookings: allBookings, // All bookings for potential use
+			qrCodes: qrCodes,
+			stats,
 			pbUrl: 'https://z.xeon.pl' // Pass PocketBase URL for image construction
 		};
 	} catch (err) {

@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { toursApi } from '$lib/pocketbase.js';
 	import type { Tour } from '$lib/types.js';
+	import type { PageData } from './$types.js';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Search from 'lucide-svelte/icons/search';
@@ -22,8 +23,9 @@
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
-	let tours = $state<Tour[]>([]);
-	let isLoading = $state(true);
+	let { data }: { data: PageData } = $props();
+	let tours = $state<Tour[]>((data.tours as unknown as Tour[]) || []);
+	let isLoading = $state(false); // No longer loading since data comes from server
 	let error = $state<string | null>(null);
 	let selectedStatus = $state('all');
 	let searchQuery = $state('');
@@ -45,7 +47,6 @@
 	];
 
 	onMount(() => {
-		loadTours();
 		// Close dropdown when clicking outside
 		document.addEventListener('click', handleClickOutside);
 		return () => {
@@ -56,19 +57,6 @@
 	function handleClickOutside(event: MouseEvent) {
 		if (!event.target || !(event.target as Element).closest('.dropdown-container')) {
 			openDropdownId = null;
-		}
-	}
-
-	async function loadTours() {
-		try {
-			isLoading = true;
-			error = null;
-			tours = await toursApi.getAll();
-		} catch (err) {
-			error = 'Failed to load tours. Please try again.';
-			console.error('Error loading tours:', err);
-		} finally {
-			isLoading = false;
 		}
 	}
 
@@ -184,21 +172,19 @@
 		return filtered;
 	});
 
-	// Calculate statistics
-	let stats = $derived({
-		total: tours.length,
-		active: tours.filter((t) => t.status === 'active').length,
-		draft: tours.filter((t) => t.status === 'draft').length,
-		inactive: tours.filter((t) => t.status === 'inactive').length,
-		totalRevenue: tours.reduce((sum, tour) => sum + (tour.price || 0), 0)
-	});
-
-	// Mock data for quick stats (in a real app, this would come from the backend)
-	let quickStats = $derived({
-		todayBookings: 12,
-		weekBookings: 78,
-		monthRevenue: 4250,
-		avgRating: 4.8
+	// Use real statistics from server
+	let stats = $derived(data.stats || {
+		total: 0,
+		active: 0,
+		draft: 0,
+		inactive: 0,
+		totalRevenue: 0,
+		todayBookings: 0,
+		weekBookings: 0,
+		monthRevenue: 0,
+		totalBookings: 0,
+		confirmedBookings: 0,
+		totalParticipants: 0
 	});
 
 	function toggleDropdown(tourId: string) {
@@ -241,12 +227,8 @@
 				<div class="p-2 bg-blue-50 rounded-lg">
 					<Calendar class="h-5 w-5 text-blue-600" />
 				</div>
-				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
-					<TrendingUp class="h-3 w-3" />
-					+12%
-				</span>
 			</div>
-			<p class="text-2xl font-bold text-gray-900">{quickStats.todayBookings}</p>
+			<p class="text-2xl font-bold text-gray-900">{stats.todayBookings || 0}</p>
 			<p class="text-sm text-gray-600 mt-1">Today's bookings</p>
 		</div>
 
@@ -256,13 +238,10 @@
 				<div class="p-2 bg-purple-50 rounded-lg">
 					<BarChart3 class="h-5 w-5 text-purple-600" />
 				</div>
-				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
-					<TrendingUp class="h-3 w-3" />
-					+8%
-				</span>
 			</div>
-			<p class="text-2xl font-bold text-gray-900">{quickStats.weekBookings}</p>
+			<p class="text-2xl font-bold text-gray-900">{stats.weekBookings || 0}</p>
 			<p class="text-sm text-gray-600 mt-1">This week</p>
+			<p class="text-xs text-gray-500">{stats.totalBookings || 0} total bookings</p>
 		</div>
 
 		<!-- Monthly Revenue -->
@@ -271,13 +250,10 @@
 				<div class="p-2 bg-green-50 rounded-lg">
 					<DollarSign class="h-5 w-5 text-green-600" />
 				</div>
-				<span class="text-xs text-green-600 font-medium flex items-center gap-1">
-					<TrendingUp class="h-3 w-3" />
-					+15%
-				</span>
 			</div>
-			<p class="text-2xl font-bold text-gray-900">€{quickStats.monthRevenue}</p>
+			<p class="text-2xl font-bold text-gray-900">€{(stats.monthRevenue || 0).toFixed(2)}</p>
 			<p class="text-sm text-gray-600 mt-1">This month</p>
+			<p class="text-xs text-gray-500">{stats.totalParticipants || 0} total guests</p>
 		</div>
 
 		<!-- Active Tours -->
@@ -287,7 +263,7 @@
 					<Eye class="h-5 w-5 text-emerald-600" />
 				</div>
 			</div>
-			<p class="text-2xl font-bold text-gray-900">{stats.active}/{stats.total}</p>
+			<p class="text-2xl font-bold text-gray-900">{stats.active || 0}/{stats.total || 0}</p>
 			<p class="text-sm text-gray-600 mt-1">Active tours</p>
 		</div>
 	</div>

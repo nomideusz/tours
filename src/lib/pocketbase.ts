@@ -163,6 +163,12 @@ export const toursApi = {
         console.error('Error message:', error.message);
         console.error('Error details:', error);
       }
+      // Log PocketBase specific error details
+      if (error && typeof error === 'object') {
+        console.error('Error response:', (error as any).response);
+        console.error('Error data:', (error as any).data);
+        console.error('Error status:', (error as any).status);
+      }
       throw error;
     }
   },
@@ -199,6 +205,12 @@ export const toursApi = {
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error details:', error);
+      }
+      // Log PocketBase specific error details
+      if (error && typeof error === 'object') {
+        console.error('Error response:', (error as any).response);
+        console.error('Error data:', (error as any).data);
+        console.error('Error status:', (error as any).status);
       }
       throw error;
     }

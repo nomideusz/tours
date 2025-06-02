@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { toursApi, timeSlotsApi } from '$lib/pocketbase.js';
+	import { toursApi, timeSlotsApi, pb } from '$lib/pocketbase.js';
 	import type { Tour, TimeSlot } from '$lib/types.js';
 	import { validateTimeSlotForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -136,6 +136,11 @@
 			isSubmitting = true;
 			error = null;
 
+			// Debug logging
+			console.log('Creating time slot for tour ID:', tourId);
+			console.log('Current tour object:', tour);
+			console.log('Current user auth:', pb?.authStore?.record?.id);
+
 			const startDateTime = new Date(`${newSlotForm.startDate}T${newSlotForm.startTime}`);
 			const endDateTime = new Date(`${newSlotForm.startDate}T${newSlotForm.endTime}`);
 
@@ -151,6 +156,8 @@
 				recurringEnd: newSlotForm.isRecurring && newSlotForm.recurringEnd ? 
 					new Date(newSlotForm.recurringEnd).toISOString() : undefined
 			};
+
+			console.log('Time slot data being sent:', timeSlotData);
 
 			if (isEditMode && editingSlotId) {
 				await timeSlotsApi.update(editingSlotId, timeSlotData);
@@ -177,8 +184,26 @@
 			editingSlotId = null;
 			showAddModal = false;
 		} catch (err) {
-			error = isEditMode ? 'Failed to update time slot.' : 'Failed to create time slot.';
 			console.error('Error with time slot operation:', err);
+			
+			// Extract more specific error information
+			let errorMessage = isEditMode ? 'Failed to update time slot.' : 'Failed to create time slot.';
+			
+			if (err && typeof err === 'object') {
+				const errorObj = err as any;
+				if (errorObj.response?.message) {
+					errorMessage += ` ${errorObj.response.message}`;
+				} else if (errorObj.message) {
+					errorMessage += ` ${errorObj.message}`;
+				}
+				
+				// Check for permission issues
+				if (errorObj.status === 400 && errorObj.response?.message?.includes('create rule failure')) {
+					errorMessage = `Permission denied: The tour (${tourId}) doesn't belong to your account, or doesn't exist.`;
+				}
+			}
+			
+			error = errorMessage;
 		} finally {
 			isSubmitting = false;
 		}

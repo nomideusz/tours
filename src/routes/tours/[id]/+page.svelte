@@ -101,6 +101,37 @@
 		const files = target.files;
 		if (!files || files.length === 0 || !tour) return;
 
+		// Define allowed file types (must match PocketBase schema)
+		const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+		const maxFileSize = 5 * 1024 * 1024; // 5MB limit
+		
+		// Filter valid files and show errors for invalid ones
+		const validFiles: File[] = [];
+		const errors: string[] = [];
+		
+		Array.from(files).forEach(file => {
+			if (!allowedTypes.includes(file.type.toLowerCase())) {
+				errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
+			} else if (file.size > maxFileSize) {
+				errors.push(`${file.name}: File size must be less than 5MB`);
+			} else {
+				validFiles.push(file);
+			}
+		});
+		
+		// Show errors if any
+		if (errors.length > 0) {
+			error = 'Some files were not uploaded:\n\n' + errors.join('\n');
+			target.value = '';
+			return;
+		}
+		
+		// If no valid files, return early
+		if (validFiles.length === 0) {
+			target.value = '';
+			return;
+		}
+
 		try {
 			isUploadingImage = true;
 			error = null;
@@ -118,8 +149,8 @@
 					}
 				});
 				
-				// Add the new image
-				formData.append('images', files[0]);
+				// Add the new image (use first valid file)
+				formData.append('images', validFiles[0]);
 				
 				// Mark old image for deletion
 				formData.append('images-', currentImages[replaceImageIndex]);
@@ -130,8 +161,8 @@
 					formData.append('images', imageName);
 				});
 				
-				// Add new images
-				Array.from(files).forEach((file) => {
+				// Add new images (use all valid files)
+				validFiles.forEach((file) => {
 					formData.append('images', file);
 				});
 			}
@@ -219,34 +250,25 @@
 		}
 	}
 
-	// Mock stats (in real app, these would come from the backend)
-	let stats = $derived({
-		qrCodes: 3,
-		totalBookings: 42,
-		revenue: tour ? tour.price * 42 : 0,
-		avgRating: 4.8,
-		thisWeekBookings: 8,
-		conversionRate: 32
+	// Real statistics from server
+	let stats = $derived(data.stats || {
+		qrCodes: 0,
+		totalBookings: 0,
+		revenue: 0,
+		avgRating: 0, // TODO: Implement rating system
+		thisWeekBookings: 0,
+		conversionRate: 0
 	});
 
-	// Filter upcoming bookings for today's check-ins
-	let upcomingBookings = $derived(
-		(data.bookings || []).filter((booking: any) => {
-			if (!booking.expand?.timeSlot?.startTime) return false;
-			const tourDate = new Date(booking.expand.timeSlot.startTime);
-			const today = new Date();
-			const isToday = tourDate.toDateString() === today.toDateString();
-			const isUpcoming = tourDate > today || isToday;
-			return isUpcoming && booking.status === 'confirmed' && booking.paymentStatus === 'paid';
-		})
-	);
+	// Use upcoming bookings from server (already filtered for today's check-ins)
+	let upcomingBookings = $derived(data.bookings || []);
 </script>
 
 <!-- Hidden file input -->
 <input
 	bind:this={fileInputRef}
 	type="file"
-	accept="image/*"
+	accept="image/jpeg,image/jpg,image/png,image/webp"
 	multiple={replaceImageIndex === null}
 	onchange={handleFileChange}
 	class="hidden"
@@ -461,42 +483,54 @@
 					<span class="text-sm text-gray-600">QR Codes</span>
 					<QrCode class="h-4 w-4 text-gray-400" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">{stats.qrCodes}</p>
+				<p class="text-2xl font-bold text-gray-900">{stats.qrCodes || 0}</p>
+				<p class="text-xs text-gray-500">{stats.activeQRCodes || 0} active</p>
 			</div>
 			<div class="bg-white rounded-xl border border-gray-200 p-4">
 				<div class="flex items-center justify-between mb-1">
-					<span class="text-sm text-gray-600">Bookings</span>
+					<span class="text-sm text-gray-600">Total Bookings</span>
 					<UserCheck class="h-4 w-4 text-gray-400" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
+				<p class="text-2xl font-bold text-gray-900">{stats.totalBookings || 0}</p>
+				<p class="text-xs text-gray-500">{stats.confirmedBookings || 0} confirmed</p>
 			</div>
 			<div class="bg-white rounded-xl border border-gray-200 p-4">
 				<div class="flex items-center justify-between mb-1">
 					<span class="text-sm text-gray-600">Revenue</span>
 					<Euro class="h-4 w-4 text-gray-400" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">€{stats.revenue}</p>
+				<p class="text-2xl font-bold text-gray-900">€{(stats.revenue || 0).toFixed(2)}</p>
+				<p class="text-xs text-gray-500">
+					{#if stats.averageBookingValue && stats.averageBookingValue > 0}
+						€{stats.averageBookingValue.toFixed(2)} avg
+					{:else}
+						€0.00 avg
+					{/if}
+				</p>
 			</div>
 			<div class="bg-white rounded-xl border border-gray-200 p-4">
 				<div class="flex items-center justify-between mb-1">
 					<span class="text-sm text-gray-600">This Week</span>
 					<TrendingUp class="h-4 w-4 text-green-500" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">{stats.thisWeekBookings}</p>
+				<p class="text-2xl font-bold text-gray-900">{stats.thisWeekBookings || 0}</p>
+				<p class="text-xs text-gray-500">new bookings</p>
 			</div>
 			<div class="bg-white rounded-xl border border-gray-200 p-4">
 				<div class="flex items-center justify-between mb-1">
-					<span class="text-sm text-gray-600">Rating</span>
-					<Star class="h-4 w-4 text-yellow-500" />
+					<span class="text-sm text-gray-600">Participants</span>
+					<Users class="h-4 w-4 text-blue-500" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">{stats.avgRating}</p>
+				<p class="text-2xl font-bold text-gray-900">{stats.totalParticipants || 0}</p>
+				<p class="text-xs text-gray-500">total guests</p>
 			</div>
 			<div class="bg-white rounded-xl border border-gray-200 p-4">
 				<div class="flex items-center justify-between mb-1">
-					<span class="text-sm text-gray-600">Conversion</span>
-					<TrendingUp class="h-4 w-4 text-blue-500" />
+					<span class="text-sm text-gray-600">QR Conversion</span>
+					<TrendingUp class="h-4 w-4 text-purple-500" />
 				</div>
-				<p class="text-2xl font-bold text-gray-900">{stats.conversionRate}%</p>
+				<p class="text-2xl font-bold text-gray-900">{(stats.conversionRate || 0).toFixed(1)}%</p>
+				<p class="text-xs text-gray-500">{stats.totalQRScans || 0} scans</p>
 			</div>
 		</div>
 

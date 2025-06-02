@@ -152,3 +152,20 @@ export interface GuideApplication extends RecordModel {
   reviewedAt?: string;
   reviewedBy?: string; // admin user ID
 }
+
+export interface TourStats {
+  qrCodes: number;
+  activeQRCodes: number;
+  totalQRScans: number;
+  totalQRConversions: number;
+  totalBookings: number;
+  confirmedBookings: number;
+  pendingBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
+  revenue: number;
+  totalParticipants: number;
+  thisWeekBookings: number;
+  averageBookingValue: number;
+  conversionRate: number;
+}
