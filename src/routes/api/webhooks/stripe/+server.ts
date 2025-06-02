@@ -103,21 +103,43 @@ export const POST: RequestHandler = async ({ request }) => {
           };
           console.log(`Webhook: Booking update data:`, updateData);
           
-          // Use enhanced API to automatically trigger emails
-          const response = await fetch(`${POCKETBASE_URL}/api/bookings/${bookingId}/update-status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: 'confirmed',
-              paymentStatus: 'paid',
-              ticketQRCode: ticketQRCode,
-              attendanceStatus: 'not_arrived'
-            })
-          });
+          // Update booking directly and trigger emails
+          await pb.collection('bookings').update(bookingId, updateData);
           
-          if (!response.ok) {
-            throw new Error(`Failed to update booking via enhanced API: ${response.status}`);
-          }
+          // Send emails via PocketBase endpoints
+          try {
+            // Send confirmation email
+            const emailResponse = await fetch(`${POCKETBASE_URL}/api/send-manual-email`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId,
+                emailType: 'confirmation'
+              })
+            });
+            
+            if (emailResponse.ok) {
+              console.log(`Webhook: Confirmation email sent for booking ${bookingId}`);
+            } else {
+              console.warn(`Webhook: Failed to send confirmation email:`, await emailResponse.text());
+            }
+            
+            // Send QR ticket
+            const qrResponse = await fetch(`${POCKETBASE_URL}/api/send-qr-ticket`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId })
+            });
+            
+            if (qrResponse.ok) {
+              console.log(`Webhook: QR ticket sent for booking ${bookingId}`);
+            } else {
+              console.warn(`Webhook: Failed to send QR ticket:`, await qrResponse.text());
+            }
+            
+                     } catch (emailError) {
+             console.warn('Webhook: Error sending emails:', emailError);
+           }
           
           console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
