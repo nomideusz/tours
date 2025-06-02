@@ -21,8 +21,17 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw error(403, 'You do not have permission to view this tour');
 		}
 		
+		// Load recent bookings for this tour (for today's check-ins)
+		const bookings = await locals.pb.collection('bookings').getFullList({
+			filter: `tour = "${params.id}" && status = "confirmed" && paymentStatus = "paid"`,
+			expand: 'timeSlot',
+			sort: '-created',
+			limit: 50 // Limit to recent bookings
+		});
+
 		return {
 			tour,
+			bookings: bookings as any[],
 			pbUrl: 'https://z.xeon.pl' // Pass PocketBase URL for image construction
 		};
 	} catch (err) {

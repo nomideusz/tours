@@ -26,6 +26,9 @@
 	import Image from 'lucide-svelte/icons/image';
 	import Upload from 'lucide-svelte/icons/upload';
 	import Replace from 'lucide-svelte/icons/replace';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import User from 'lucide-svelte/icons/user';
+	import Ticket from 'lucide-svelte/icons/ticket';
 
 	let { data }: { data: PageData } = $props();
 	let tour = $state(data.tour);
@@ -225,6 +228,18 @@
 		thisWeekBookings: 8,
 		conversionRate: 32
 	});
+
+	// Filter upcoming bookings for today's check-ins
+	let upcomingBookings = $derived(
+		(data.bookings || []).filter((booking: any) => {
+			if (!booking.expand?.timeSlot?.startTime) return false;
+			const tourDate = new Date(booking.expand.timeSlot.startTime);
+			const today = new Date();
+			const isToday = tourDate.toDateString() === today.toDateString();
+			const isUpcoming = tourDate > today || isToday;
+			return isUpcoming && booking.status === 'confirmed' && booking.paymentStatus === 'paid';
+		})
+	);
 </script>
 
 <!-- Hidden file input -->
@@ -332,6 +347,112 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Today's Check-ins Section (for upcoming tours) -->
+		{#if upcomingBookings.length > 0}
+			<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+				<div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+								<UserCheck class="w-5 h-5 text-white" />
+							</div>
+							<div>
+								<h3 class="text-lg font-semibold text-gray-900">Today's Check-ins</h3>
+								<p class="text-sm text-gray-600">Upcoming tours requiring check-in</p>
+							</div>
+						</div>
+						<button
+							onclick={() => goto(`/tours/${tour?.id}/bookings?date=today`)}
+							class="button-secondary button--gap button--small"
+						>
+							View All
+							<ChevronRight class="w-4 h-4" />
+						</button>
+					</div>
+				</div>
+				
+				<div class="divide-y divide-gray-200">
+					{#each upcomingBookings.slice(0, 3) as booking}
+						<div class="px-6 py-4 hover:bg-gray-50">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-4">
+									<div class="flex-shrink-0">
+										<div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+											<User class="w-6 h-6 text-gray-600" />
+										</div>
+									</div>
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2 mb-1">
+											<p class="text-sm font-semibold text-gray-900 truncate">
+												{booking.customerName}
+											</p>
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full {
+												booking.attendanceStatus === 'checked_in' ? 'bg-green-50 text-green-700' :
+												booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700' :
+												'bg-amber-50 text-amber-700'
+											}">
+												{booking.attendanceStatus === 'checked_in' ? '✅ Checked In' :
+												 booking.attendanceStatus === 'no_show' ? '❌ No Show' : 
+												 '⏳ Awaiting'}
+											</span>
+										</div>
+										<div class="flex items-center gap-4 text-xs text-gray-500">
+											<span class="flex items-center gap-1">
+												<Clock class="w-3 h-3" />
+												{booking.expand?.timeSlot?.startTime ? 
+													new Date(booking.expand.timeSlot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : 
+													'Time TBD'}
+											</span>
+											<span class="flex items-center gap-1">
+												<Users class="w-3 h-3" />
+												{booking.participants} {booking.participants === 1 ? 'person' : 'people'}
+											</span>
+											<span class="flex items-center gap-1">
+												<Ticket class="w-3 h-3" />
+												{booking.bookingReference}
+											</span>
+										</div>
+									</div>
+								</div>
+								
+								<div class="flex items-center gap-2">
+									{#if booking.ticketQRCode && booking.attendanceStatus !== 'checked_in'}
+										<a
+											href="/checkin/{booking.ticketQRCode}"
+											target="_blank"
+											class="button-primary button--gap button--small"
+										>
+											<UserCheck class="w-4 h-4" />
+											Check In
+										</a>
+									{:else if booking.attendanceStatus === 'checked_in'}
+										<span class="text-sm font-medium text-green-600">
+											Completed
+										</span>
+									{:else}
+										<span class="text-sm text-gray-500">
+											No ticket
+										</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+				
+				{#if upcomingBookings.length > 3}
+					<div class="px-6 py-3 bg-gray-50 text-center">
+						<button
+							onclick={() => goto(`/tours/${tour?.id}/bookings?date=today`)}
+							class="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+						>
+							View {upcomingBookings.length - 3} more upcoming check-ins
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		<!-- Quick Stats Cards -->
 		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
@@ -568,9 +689,18 @@
 				<div class="bg-white rounded-xl border border-gray-200 p-6">
 					<h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
 					<div class="space-y-3">
+						<!-- QR Scanner for Check-ins -->
+						<button
+							onclick={() => goto(`/checkin-scanner?tour=${tour?.id}`)}
+							class="button-primary button--full-width button--gap button--small justify-center rounded-lg flex items-center"
+						>
+							<UserCheck class="h-4 w-4 flex-shrink-0" />
+							QR Check-in Scanner
+						</button>
+						
 						<button
 							onclick={() => goto(`/tours/${tour?.id}/qr`)}
-							class="button-primary button--full-width button--gap button--small justify-center rounded-lg flex items-center"
+							class="button-secondary button--full-width button--gap button--small justify-center rounded-lg flex items-center"
 						>
 							<QrCode class="h-4 w-4 flex-shrink-0" />
 							Manage QR Codes
@@ -587,7 +717,7 @@
 							class="button-secondary button--full-width button--gap button--small justify-center rounded-lg flex items-center"
 						>
 							<UserCheck class="h-4 w-4 flex-shrink-0" />
-							View Bookings
+							View All Bookings
 						</button>
 					</div>
 				</div>

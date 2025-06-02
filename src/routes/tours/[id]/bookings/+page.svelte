@@ -96,6 +96,17 @@
 		};
 	});
 
+	// Check URL params for initial filters
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const urlParams = new URLSearchParams(window.location.search);
+			const dateParam = urlParams.get('date');
+			if (dateParam === 'today') {
+				dateFilter = 'today';
+			}
+		}
+	});
+
 	// Update filtered bookings when filters change
 	$effect(() => {
 		let filtered = bookings;
@@ -680,10 +691,10 @@
 									<a
 										href="/checkin/{booking.ticketQRCode}"
 										target="_blank"
-										class="button-secondary button--gap button--small text-center text-indigo-600 hover:bg-indigo-50 border-indigo-200 hover:border-indigo-300"
+										class="button-primary button--gap button--small text-center"
 									>
-										<Ticket class="h-4 w-4" />
-										Check-in Ticket
+										<UserCheck class="h-4 w-4" />
+										Check In Customer
 									</a>
 								{/if}
 								
