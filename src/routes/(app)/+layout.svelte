@@ -187,12 +187,10 @@
 
 	// Update current navigation based on current page
 	$effect(() => {
-		if (typeof window !== 'undefined') {
-			const currentPath = window.location.pathname;
-			navigationItems.forEach((item) => {
-				item.current = currentPath.startsWith(item.href);
-			});
-		}
+		const currentPath = $page.url.pathname;
+		navigationItems.forEach((item) => {
+			item.current = currentPath.startsWith(item.href);
+		});
 	});
 
 	async function handleLogout(event: Event) {

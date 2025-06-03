@@ -20,6 +20,7 @@
 	import UserCheck from 'lucide-svelte/icons/user-check';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import Eye from 'lucide-svelte/icons/eye';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -399,10 +400,16 @@
 	}
 
 	function getSlotsForDate(date: Date): TimeSlot[] {
-		const dateStr = date.toDateString();
+		// Use date components for more reliable comparison
+		const targetYear = date.getFullYear();
+		const targetMonth = date.getMonth();
+		const targetDay = date.getDate();
+		
 		return timeSlots.filter(slot => {
 			const slotDate = new Date(slot.startTime);
-			return slotDate.toDateString() === dateStr;
+			return slotDate.getFullYear() === targetYear && 
+			       slotDate.getMonth() === targetMonth && 
+			       slotDate.getDate() === targetDay;
 		}).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 	}
 
@@ -420,6 +427,8 @@
 		// Add days of the month
 		for (let day = 1; day <= daysInMonth; day++) {
 			const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+			// Ensure the date is at noon to avoid timezone issues
+			date.setHours(12, 0, 0, 0);
 			const slots = getSlotsForDate(date);
 			days.push({ date, slots });
 		}
@@ -624,32 +633,89 @@
 			{ label: 'Schedule' }
 		]}
 	>
-		<button
-			onclick={() => openAddModal()}
-			class="button-primary button--gap"
-		>
-			<Plus class="h-5 w-5" />
-			Add Time Slot
-		</button>
+		<div class="flex items-center gap-3">
+			<!-- View Toggle - Mobile First -->
+			<div class="bg-white rounded-lg border border-gray-200 p-1 flex">
+				<button
+					onclick={() => viewMode = 'calendar'}
+					class="px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors text-sm {viewMode === 'calendar' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:text-gray-900'}"
+				>
+					<Calendar class="h-4 w-4" />
+					<span class="hidden sm:inline">Calendar</span>
+				</button>
+				<button
+					onclick={() => viewMode = 'list'}
+					class="px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors text-sm {viewMode === 'list' ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:text-gray-900'}"
+				>
+					<List class="h-4 w-4" />
+					<span class="hidden sm:inline">List</span>
+				</button>
+			</div>
+			
+			<button
+				onclick={() => openAddModal()}
+				class="button-primary button--gap"
+			>
+				<Plus class="h-5 w-5" />
+				<span class="hidden sm:inline">Add Time Slot</span>
+				<span class="sm:hidden">Add</span>
+			</button>
+		</div>
 	</PageHeader>
 
 	<!-- Welcome Section for New Tours -->
 	{#if showWelcome && timeSlots.length === 0}
-		<div class="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 overflow-hidden shadow-sm">
-			<div class="p-6">
-				<div class="flex items-start gap-4">
-					<div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
-						<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-						</svg>
+		<div class="mb-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200 overflow-hidden">
+			<div class="relative p-6 lg:p-8">
+				<!-- Background Pattern -->
+				<div class="absolute inset-0 opacity-5">
+					<svg class="w-full h-full" viewBox="0 0 100 100" fill="currentColor">
+						<defs>
+							<pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+								<circle cx="5" cy="5" r="1"/>
+							</pattern>
+						</defs>
+						<rect width="100" height="100" fill="url(#grid)"/>
+					</svg>
+				</div>
+				
+				<div class="relative flex flex-col lg:flex-row items-start gap-6">
+					<div class="flex-shrink-0">
+						<div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
+							🎉
+						</div>
 					</div>
-					<div class="flex-1">
-						<h3 class="text-xl font-semibold text-green-900 mb-2">🎉 Tour Created Successfully!</h3>
-						<p class="text-green-800 mb-4">
-							Great! Your tour "<strong>{tour?.name}</strong>" has been created. Now let's add some time slots so customers can book your tour.
+					
+					<div class="flex-1 min-w-0">
+						<h3 class="text-2xl font-bold text-gray-900 mb-3">
+							Tour Created Successfully!
+						</h3>
+						<p class="text-gray-700 mb-6 text-lg leading-relaxed">
+							Great! Your tour "<strong class="text-blue-600">{tour?.name}</strong>" is ready. 
+							Now let's add some time slots so customers can book your amazing experience.
 						</p>
 						
-						<!-- Quick Actions -->
+						<!-- Progress Steps - Redesigned -->
+						<div class="bg-white/80 backdrop-blur-sm rounded-xl p-4 mb-6 border border-white/50">
+							<div class="flex items-center gap-4 text-sm">
+								<div class="flex items-center gap-2">
+									<div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">1</div>
+									<span class="font-medium text-gray-900">Add time slots</span>
+								</div>
+								<ChevronRight class="h-4 w-4 text-gray-400" />
+								<div class="flex items-center gap-2">
+									<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">2</div>
+									<span class="text-gray-600">Publish tour</span>
+								</div>
+								<ChevronRight class="h-4 w-4 text-gray-400" />
+								<div class="flex items-center gap-2">
+									<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">3</div>
+									<span class="text-gray-600">Generate QR codes</span>
+								</div>
+							</div>
+						</div>
+						
+						<!-- Actions -->
 						<div class="flex flex-col sm:flex-row gap-3">
 							<button
 								onclick={() => {
@@ -669,40 +735,20 @@
 							</button>
 						</div>
 					</div>
+					
 					<button
 						onclick={() => showWelcome = false}
-						class="p-2 text-green-600 hover:text-green-800 transition-colors rounded-lg hover:bg-green-100"
+						class="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-white/50"
 					>
 						<X class="h-5 w-5" />
 					</button>
-				</div>
-			</div>
-			
-			<!-- Progress Steps -->
-			<div class="px-6 pb-6">
-				<div class="bg-white rounded-lg p-4">
-					<h4 class="text-sm font-semibold text-gray-900 mb-3">Next Steps:</h4>
-					<div class="space-y-2">
-						<div class="flex items-center gap-3 text-sm">
-							<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-xs">1</div>
-							<span class="text-gray-700">Add time slots when your tour is available</span>
-						</div>
-						<div class="flex items-center gap-3 text-sm">
-							<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-medium text-xs">2</div>
-							<span class="text-gray-600">Publish your tour to make it bookable</span>
-						</div>
-						<div class="flex items-center gap-3 text-sm">
-							<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-medium text-xs">3</div>
-							<span class="text-gray-600">Generate QR codes for marketing</span>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
 
 	{#if error}
-		<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+		<div class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4">
 			<div class="flex gap-3">
 				<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
 				<div>
@@ -713,8 +759,8 @@
 		</div>
 	{/if}
 
-	<!-- Quick Stats -->
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 items-stretch">
+	<!-- Stats Grid - Improved Responsive Design -->
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
 		<StatsCard
 			title="Total Slots"
 			value={totalSlots}
@@ -746,110 +792,140 @@
 		/>
 	</div>
 
-	<!-- View Toggle -->
-	<div class="bg-white rounded-xl border border-gray-200 p-1 inline-flex mb-6">
-		<button
-			onclick={() => viewMode = 'calendar'}
-			class="px-4 py-2 rounded-lg flex items-center gap-2 transition-colors {viewMode === 'calendar' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900'}"
-		>
-			<Calendar class="h-4 w-4" />
-			Calendar
-		</button>
-		<button
-			onclick={() => viewMode = 'list'}
-			class="px-4 py-2 rounded-lg flex items-center gap-2 transition-colors {viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900'}"
-		>
-			<List class="h-4 w-4" />
-			List
-		</button>
-	</div>
-
 	{#if isLoading}
 		<div class="bg-white rounded-xl border border-gray-200 p-8">
 			<LoadingSpinner size="large" text="Loading schedule..." centered />
 		</div>
 	{:else if viewMode === 'calendar'}
-		<!-- Calendar View -->
-		<div class="bg-white rounded-xl border border-gray-200 p-6">
+		<!-- Calendar View - Enhanced -->
+		<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
 			<!-- Calendar Header -->
-			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-lg font-semibold text-gray-900">
-					{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-				</h2>
-				<div class="flex items-center gap-2">
-					<button
-						onclick={previousMonth}
-						class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-					>
-						<ChevronLeft class="h-5 w-5 text-gray-600" />
-					</button>
-					<button
-						onclick={() => currentMonth = new Date()}
-						class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-					>
-						Today
-					</button>
-					<button
-						onclick={nextMonth}
-						class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-					>
-						<ChevronRight class="h-5 w-5 text-gray-600" />
-					</button>
+			<div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+				<div class="flex items-center justify-between">
+					<h2 class="text-xl font-bold text-gray-900">
+						{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+					</h2>
+					<div class="flex items-center gap-1">
+						<button
+							onclick={previousMonth}
+							class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+							title="Previous month"
+						>
+							<ChevronLeft class="h-5 w-5 text-gray-600" />
+						</button>
+						<button
+							onclick={() => currentMonth = new Date()}
+							class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+						>
+							Today
+						</button>
+						<button
+							onclick={nextMonth}
+							class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+							title="Next month"
+						>
+							<ChevronRight class="h-5 w-5 text-gray-600" />
+						</button>
+					</div>
 				</div>
 			</div>
 
-			<!-- Day Headers -->
-			<div class="grid grid-cols-7 gap-1 mb-2">
-				{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
-					<div class="text-center text-sm font-medium text-gray-700 py-2">
-						{day}
-					</div>
-				{/each}
-			</div>
+			<div class="p-6">
+				<!-- Day Headers -->
+				<div class="grid grid-cols-7 gap-1 mb-4">
+					{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day, i}
+						<div class="text-center text-sm font-semibold text-gray-700 py-3 {i === 0 || i === 6 ? 'text-gray-500' : ''}">
+							<span class="hidden sm:inline">{day}</span>
+							<span class="sm:hidden">{day.charAt(0)}</span>
+						</div>
+					{/each}
+				</div>
 
-			<!-- Calendar Grid -->
-			<div class="grid grid-cols-7 gap-1">
-				{#each calendarGrid as cell}
-					{#if cell}
-						<div
-							class="min-h-[100px] p-2 border rounded-lg transition-colors cursor-pointer
-								{isToday(cell.date) ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}
-								{isPast(cell.date) ? 'bg-gray-50' : 'bg-white hover:bg-gray-50'}"
-							onclick={() => !isPast(cell.date) && openAddModal(cell.date)}
-						>
-							<div class="text-sm font-medium mb-1 {isPast(cell.date) ? 'text-gray-400' : 'text-gray-900'}">
-								{cell.date.getDate()}
-							</div>
-							{#if cell.slots.length > 0}
-								<div class="space-y-1">
-									{#each cell.slots.slice(0, 3) as slot}
-										<button
-											onclick={(e) => {
-												e.stopPropagation();
-												openEditSlot(slot);
-											}}
-											class="w-full text-left px-2 py-1 rounded text-xs {getStatusColor(slot.status)} hover:opacity-80 transition-opacity"
-										>
-											{formatTime(slot.startTime)}
-											<span class="font-medium ml-1">{slot.availableSpots} left</span>
-										</button>
-									{/each}
-									{#if cell.slots.length > 3}
-										<div class="text-xs text-gray-500 text-center">
-											+{cell.slots.length - 3} more
+				<!-- Calendar Grid -->
+				<div class="grid grid-cols-7 gap-1">
+					{#each calendarGrid as cell}
+						{#if cell}
+							<div
+								class="h-[80px] sm:h-[100px] lg:h-[120px] p-2 border-2 rounded-xl transition-all cursor-pointer group relative
+									{isToday(cell.date) ? 'border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100 shadow-sm' : 'border-gray-200'}
+									{isPast(cell.date) ? 'bg-gray-50 opacity-60' : 'bg-white hover:border-blue-200 hover:shadow-md'}"
+								role="button"
+								tabindex={isPast(cell.date) ? -1 : 0}
+								onclick={() => !isPast(cell.date) && openAddModal(cell.date)}
+								onkeydown={(e) => e.key === 'Enter' && !isPast(cell.date) && openAddModal(cell.date)}
+							>
+								<!-- Date header - absolute positioned -->
+								<div class="absolute top-2 left-2 right-2 flex items-center justify-between">
+									<div class="text-sm font-bold {isPast(cell.date) ? 'text-gray-400' : isToday(cell.date) ? 'text-blue-600' : 'text-gray-900'}">
+										{cell.date.getDate()}
+									</div>
+									{#if !isPast(cell.date)}
+										<div class="opacity-0 group-hover:opacity-100 transition-opacity">
+											<Plus class="h-3 w-3 text-gray-400" />
 										</div>
 									{/if}
 								</div>
-							{/if}
-						</div>
-					{:else}
-						<div></div>
-					{/if}
-				{/each}
+								
+								<!-- Content area - absolute positioned below header -->
+								<div class="absolute top-7 left-2 right-2 bottom-1 overflow-hidden">
+									{#if cell.slots.length > 0}
+										<div class="space-y-0.5">
+											{#each cell.slots.slice(0, cell.slots.length > 2 ? 1 : 2) as slot}
+												<button
+													onclick={(e) => {
+														e.stopPropagation();
+														openEditSlot(slot);
+													}}
+													class="w-full text-left px-2 py-0.5 rounded-lg text-xs {getStatusColor(slot.status)} hover:scale-105 transition-transform font-medium"
+												>
+													<div class="truncate">
+														{formatTime(slot.startTime)}
+													</div>
+													<div class="text-xs opacity-75">
+														{slot.availableSpots} spots
+													</div>
+												</button>
+											{/each}
+											{#if cell.slots.length > 2}
+												<div class="text-xs text-gray-500 text-center font-medium py-0.5">
+													+{cell.slots.length - 1} more
+												</div>
+											{:else if cell.slots.length === 2}
+												<!-- Show second slot only if there are exactly 2 slots -->
+												<button
+													onclick={(e) => {
+														e.stopPropagation();
+														openEditSlot(cell.slots[1]);
+													}}
+													class="w-full text-left px-2 py-0.5 rounded-lg text-xs {getStatusColor(cell.slots[1].status)} hover:scale-105 transition-transform font-medium"
+												>
+													<div class="truncate">
+														{formatTime(cell.slots[1].startTime)}
+													</div>
+													<div class="text-xs opacity-75">
+														{cell.slots[1].availableSpots} spots
+													</div>
+												</button>
+											{/if}
+										</div>
+									{:else if !isPast(cell.date)}
+										<div class="flex items-center justify-center" style="height: calc(100% - 1rem);">
+											<div class="text-xs text-gray-400 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+												Click to add
+											</div>
+										</div>
+									{/if}
+								</div>
+							</div>
+						{:else}
+							<div class="min-h-[80px] sm:min-h-[100px] lg:min-h-[120px]"></div>
+						{/if}
+					{/each}
+				</div>
 			</div>
 		</div>
 	{:else}
-		<!-- List View -->
+		<!-- List View - Enhanced -->
 		{#if groupedSlots.length === 0}
 			<div class="bg-white rounded-xl border border-gray-200 p-12">
 				<EmptyState
@@ -861,56 +937,100 @@
 				/>
 			</div>
 		{:else}
-			<div class="space-y-6">
+			<div class="space-y-4">
 				{#each groupedSlots as [dateStr, slots]}
-					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-						<div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-							<h3 class="font-semibold text-gray-900">
-								{new Date(dateStr).toLocaleDateString('en-US', { 
-									weekday: 'long', 
-									month: 'long', 
-									day: 'numeric',
-									year: 'numeric'
-								})}
-							</h3>
+					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+						<div class="px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+							<div class="flex items-center justify-between">
+								<div>
+									<h3 class="font-bold text-gray-900 text-lg">
+										{new Date(dateStr).toLocaleDateString('en-US', { 
+											weekday: 'long', 
+											month: 'long', 
+											day: 'numeric'
+										})}
+									</h3>
+									<p class="text-sm text-gray-600 mt-1">
+										{slots.length} time slot{slots.length !== 1 ? 's' : ''} • 
+										{slots.reduce((sum, slot) => sum + slot.availableSpots, 0)} total spots
+									</p>
+								</div>
+								<div class="flex items-center gap-2">
+									<span class="text-sm text-gray-500">
+										{new Date(dateStr).toLocaleDateString('en-US', { 
+											year: 'numeric'
+										})}
+									</span>
+									<button
+										onclick={() => openAddModal(new Date(dateStr))}
+										class="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-white"
+										title="Add time slot for this date"
+									>
+										<Plus class="h-4 w-4" />
+									</button>
+								</div>
+							</div>
 						</div>
-						<div class="divide-y divide-gray-200">
+						
+						<div class="divide-y divide-gray-100">
 							{#each slots as slot}
-								<div class="p-6 hover:bg-gray-50 transition-colors">
-									<div class="flex items-center justify-between">
-										<div class="flex-1">
-											<div class="flex items-center gap-3 mb-2">
-												<span class="text-lg font-medium text-gray-900">
-													{formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-												</span>
-												<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(slot.status)}">
+								<div class="p-4 sm:p-6 hover:bg-gray-50 transition-colors group">
+									<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+										<div class="flex-1 min-w-0">
+											<div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+												<div class="flex items-center gap-3">
+													<div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+														<Clock class="h-6 w-6 text-blue-600" />
+													</div>
+													<div>
+														<div class="text-lg font-bold text-gray-900">
+															{formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+														</div>
+														<div class="text-sm text-gray-600">
+															{Math.floor((new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime()) / 60000)} minutes
+														</div>
+													</div>
+												</div>
+												
+												<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {getStatusColor(slot.status)} self-start sm:self-auto">
 													{slot.status.charAt(0).toUpperCase() + slot.status.slice(1)}
 												</span>
 											</div>
-											<div class="flex items-center gap-4 text-sm text-gray-600">
-												<span class="flex items-center gap-1">
+											
+											<div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+												<div class="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5">
 													<Users class="h-4 w-4" />
-													{slot.bookedSpots || 0} booked, {slot.availableSpots} available
-												</span>
+													<span class="font-medium">{slot.bookedSpots || 0} booked</span>
+													<span class="text-gray-400">of {slot.availableSpots}</span>
+												</div>
+												
 												{#if slot.isRecurring}
-													<span class="flex items-center gap-1">
+													<div class="flex items-center gap-2 bg-blue-100 text-blue-700 rounded-lg px-3 py-1.5">
 														<Clock class="h-4 w-4" />
-														Recurring {slot.recurringPattern}
-													</span>
+														<span class="font-medium">Recurring {slot.recurringPattern}</span>
+													</div>
 												{/if}
+												
+												<div class="flex items-center gap-2 text-gray-500">
+													<CalendarDays class="h-4 w-4" />
+													<span>
+														{Math.round(((slot.bookedSpots || 0) / slot.availableSpots) * 100)}% full
+													</span>
+												</div>
 											</div>
 										</div>
-										<div class="flex items-center gap-2">
+										
+										<div class="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
 											<button
 												onclick={() => openEditSlot(slot)}
-												class="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+												class="p-3 text-gray-400 hover:text-blue-600 transition-colors rounded-xl hover:bg-blue-50"
 												title="Edit time slot"
 											>
 												<Edit class="h-5 w-5" />
 											</button>
 											<button
 												onclick={() => deleteTimeSlot(slot.id)}
-												class="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-gray-100"
+												class="p-3 text-gray-400 hover:text-red-600 transition-colors rounded-xl hover:bg-red-50"
 												title="Delete time slot"
 											>
 												<Trash2 class="h-5 w-5" />
@@ -926,51 +1046,64 @@
 		{/if}
 	{/if}
 
-	<!-- Helpful Tips for Tour Status -->
+	<!-- Status Alerts - Enhanced -->
 	{#if tour?.status === 'draft'}
-		<div class="mt-8 bg-amber-50 rounded-xl border border-amber-200 p-6">
-			<div class="flex items-start gap-3">
-				<div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-					<AlertCircle class="h-4 w-4 text-amber-600" />
+		<div class="mt-8 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6 lg:p-8">
+			<div class="flex flex-col sm:flex-row items-start gap-4">
+				<div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+					<AlertCircle class="h-6 w-6 text-white" />
 				</div>
-				<div>
-					<h3 class="text-lg font-semibold text-amber-900 mb-2">Tour is in Draft Mode</h3>
-					<p class="text-sm text-amber-800 mb-3">
+				<div class="flex-1 min-w-0">
+					<h3 class="text-xl font-bold text-amber-900 mb-3">Tour is in Draft Mode</h3>
+					<p class="text-amber-800 mb-4 leading-relaxed">
 						Your tour is currently in draft status. Time slots will be saved but won't be visible to customers until you publish your tour.
 					</p>
-									<button
-					onclick={publishTour}
-					disabled={isSubmitting}
-					class="button-primary button--gap button--small"
-				>
-					{#if isSubmitting}
-						<div class="form-spinner"></div>
-						Publishing...
-					{:else}
-						Publish Tour
-					{/if}
-				</button>
+					<div class="flex flex-col sm:flex-row gap-3">
+						<button
+							onclick={publishTour}
+							disabled={isSubmitting}
+							class="button-primary button--gap"
+						>
+							{#if isSubmitting}
+								<div class="form-spinner"></div>
+								Publishing...
+							{:else}
+								<TrendingUp class="h-5 w-5" />
+								Publish Tour
+							{/if}
+						</button>
+						<a href="/tours/{tourId}" class="button-secondary">
+							<Eye class="h-4 w-4" />
+							Preview Tour
+						</a>
+					</div>
 				</div>
 			</div>
 		</div>
 	{:else if tour?.status === 'active' && totalSlots === 0}
-		<div class="mt-8 bg-blue-50 rounded-xl border border-blue-200 p-6">
-			<div class="flex items-start gap-3">
-				<div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-					<Calendar class="h-4 w-4 text-blue-600" />
+		<div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6 lg:p-8">
+			<div class="flex flex-col sm:flex-row items-start gap-4">
+				<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+					<Calendar class="h-6 w-6 text-white" />
 				</div>
-				<div>
-					<h3 class="text-lg font-semibold text-blue-900 mb-2">Tour is Live but No Time Slots</h3>
-					<p class="text-sm text-blue-800 mb-3">
+				<div class="flex-1 min-w-0">
+					<h3 class="text-xl font-bold text-blue-900 mb-3">Tour is Live but No Time Slots</h3>
+					<p class="text-blue-800 mb-4 leading-relaxed">
 						Your tour is published and visible to customers, but they can't book without available time slots.
 					</p>
-					<button
-						onclick={() => openAddModal()}
-						class="button-primary button--gap button--small"
-					>
-						<Plus class="h-4 w-4" />
-						Add Time Slots
-					</button>
+					<div class="flex flex-col sm:flex-row gap-3">
+						<button
+							onclick={() => openAddModal()}
+							class="button-primary button--gap"
+						>
+							<Plus class="h-5 w-5" />
+							Add Time Slots
+						</button>
+						<a href="/tours/{tourId}/qr" class="button-secondary">
+							<QrCode class="h-4 w-4" />
+							Generate QR Codes
+						</a>
+					</div>
 				</div>
 			</div>
 		</div>
