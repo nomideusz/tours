@@ -74,6 +74,7 @@
 		"lucide-svelte": "^0.510.0",
 		"pocketbase": "^0.26.0",
 		"qr-code-styling": "^1.9.2",
+		"qr-scanner": "^1.4.2",
 		"qrcode": "^1.5.4",
 		"resend": "^4.5.1",
 		"runed": "^0.26.0",

@@ -1,137 +1,13 @@
 <script lang="ts">
 	import '../app.css';
-	import { language, t } from '$lib/i18n.js';
-	import { initialUserValue, setupAuthListener, currentUser as currentUserStore, reloadAuthFromCookies } from '$lib/pocketbase.js';
-	import { onDestroy, onMount } from 'svelte';
-	import {
-		languageContext,
-		switchLanguage,
-		languageStore,
-		navigationContext,
-		navigationStore
-	} from '$lib/context.js';
-	import { authFSM, updateAuthState, authContext, authStore } from '$lib/auth.js';
+	import { navigationContext, navigationStore } from '$lib/context.js';
 	import { IsMounted } from 'runed';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
-	import Header from '$lib/components/Header.svelte';
-	import Footer from '$lib/components/Footer.svelte';
 
-	interface LayoutData {
-		user?: any;
-		isAuthenticated?: boolean;
-		isAdmin?: boolean;
-	}
-
-	let { children, data } = $props<{ data: LayoutData }>();
+	let { children, data } = $props<{ data?: any }>();
 
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();
-
-	// Initialize auth store with initial values (handle undefined data gracefully)
-	authStore.set({
-		isAuthenticated: !!(data?.user),
-		user: data?.user || null,
-		state: data?.user ? 'loggedIn' : 'loggedOut'
-	});
-
-	// Initialize context with the store
-	authContext.set(authStore);
-
-	// Create a state for the current user - sync with the currentUser store
-	let currentUser = $state(initialUserValue || data?.user || null);
-	
-	// Keep local currentUser in sync with the store
-	$effect(() => {
-		const unsubscribe = currentUserStore.subscribe((user) => {
-			currentUser = user;
-		});
-		return unsubscribe;
-	});
-
-	// Create an explicitly typed variable for clarity in comparisons
-	type AuthState = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
-
-	// Track auth state
-	let authState = $state<AuthState>(authFSM.current);
-
-	// Header reference for closing mobile menu
-	let headerRef: Header;
-
-	// Update currentUser with data from server
-	$effect(() => {
-		if (data?.user) {
-			currentUser = data.user;
-			updateAuthState(data.user);
-		}
-	});
-
-	// Watch for auth state changes
-	$effect(() => {
-		authState = authFSM.current;
-
-		// Force update to ensure UI reflects current auth state
-		if (data?.isAuthenticated && authState !== 'loggedIn') {
-			updateAuthState({ exists: true, forceAuth: true });
-		}
-
-		// Update auth store whenever auth state or user changes
-		authStore.update(() => ({
-			isAuthenticated: data?.isAuthenticated || authState === 'loggedIn',
-			user: currentUser,
-			state: authState
-		}));
-	});
-
-	// Set component as mounted and sync auth state
-	onMount(() => {
-		if (data?.user) {
-			currentUser = data.user;
-		}
-
-		if (data?.isAuthenticated) {
-			if (authFSM.current !== 'loggedIn') {
-				if (authFSM.current === 'loggingIn') {
-					authFSM.send('finishTransition');
-				} else {
-					updateAuthState({ exists: true, forceAuth: true });
-				}
-			}
-		} else if (data?.isAuthenticated === false) {
-			if (authFSM.current !== 'loggedOut' && authFSM.current !== 'loggingOut') {
-				authFSM.send('logout');
-			}
-		}
-	});
-
-	// Set up auth listener to update currentUser
-	// Skip for public pages to avoid auth issues
-	let cleanup = () => {};
-	let authListenerSetup = false;
-	
-	$effect(() => {
-		// Check if we're on a public page
-		// Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
-		const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-		const isPublicPage = pathname.includes('/book/') || 
-							pathname.includes('/ticket/');
-		
-		// Only set up auth listener once and only for non-public pages
-		if (!isPublicPage && !authListenerSetup) {
-			authListenerSetup = true;
-			cleanup = setupAuthListener((user) => {
-				// This callback is no longer used - auth state is managed through currentUser store
-				console.log('Auth listener callback (deprecated):', user ? 'User present' : 'No user');
-			});
-		} else if (isPublicPage) {
-			console.log('Skipping auth listener for public page:', pathname);
-		}
-	});
-
-	// Clean up listener on component destruction
-	onDestroy(cleanup);
-
-	// Set language context from the store
-	languageContext.set(languageStore);
 
 	// Set up navigation context
 	navigationContext.set(navigationStore);
@@ -169,41 +45,12 @@
 				isNavigating: false,
 				shouldShowLoader: false
 			});
-			// Close mobile menu on navigation if header ref exists
-			if (headerRef) {
-				headerRef.closeMobileMenu();
-			}
-		}
-
-		// Reload auth state from cookies after navigation
-		// This fixes the issue where client-side auth doesn't sync after server-side login
-		const isFromLogin = from?.url?.pathname?.includes('/auth/login');
-		const isToNonPublic = to?.url && !to.url.pathname.includes('/book/') && !to.url.pathname.includes('/ticket/');
-		
-		if (isFromLogin && isToNonPublic) {
-			console.log('Reloading auth after login navigation...');
-			// Small delay to ensure cookies are properly set
-			setTimeout(() => {
-				reloadAuthFromCookies();
-			}, 100);
 		}
 	});
 </script>
 
-<!-- Header Component -->
-<Header 
-	bind:this={headerRef}
-	isAuthenticated={data?.isAuthenticated || false}
-	currentUser={currentUser}
-/>
-
 <!-- Main content -->
-<main class="main pt-20">
-	{@render children()}
-</main>
-
-<!-- Modern footer -->
-<Footer />
+{@render children()}
 
 <!-- Loading indicator -->
 {#if $navigationStore.shouldShowLoader}
@@ -229,23 +76,6 @@
 		display: flex;
 		flex-direction: column;
 		position: relative;
-	}
-
-	.main {
-		min-height: calc(100vh - 80px);
-		flex: 1;
-		width: 100%;
-		max-width: 100%;
-	}
-
-	/* Ensure sections in main are full width */
-	.main > :global(section) {
-		width: 100vw;
-		position: relative;
-		left: 50%;
-		right: 50%;
-		margin-left: -50vw;
-		margin-right: -50vw;
 	}
 
 	/* Loading bar animation */

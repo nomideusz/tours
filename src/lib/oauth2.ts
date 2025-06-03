@@ -148,9 +148,9 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
             // Small delay to ensure auth state propagates
             await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Use SvelteKit's navigation to go to tours page
+            // Use SvelteKit's navigation to go to dashboard page
             // This should trigger the layout to reload and sync auth state
-            await goto('/tours', { replaceState: true, invalidateAll: true });
+            await goto('/dashboard', { replaceState: true, invalidateAll: true });
             
             // Ensure auth state is reloaded after navigation
             setTimeout(() => {

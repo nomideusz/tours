@@ -348,19 +348,6 @@
 						<p class="text-xs text-gray-500">Available for booking</p>
 					</span>
 				</label>
-				
-				<label class="flex items-center cursor-pointer">
-					<input
-						type="radio"
-						bind:group={formData.status}
-						value="inactive"
-						class="form-radio"
-					/>
-					<span class="ml-3">
-						<span class="text-sm font-medium text-gray-900">Inactive</span>
-						<p class="text-xs text-gray-500">Temporarily unavailable</p>
-					</span>
-				</label>
 			</div>
 		</div>
 

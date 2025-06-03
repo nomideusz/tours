@@ -36,7 +36,7 @@ export interface Tour extends RecordModel {
   capacity: number;
   user: string; // relation to User
   images?: string[]; // file uploads
-  status: 'active' | 'inactive' | 'draft';
+  status: 'active' | 'draft';
   category?: string;
   location?: string;
   includedItems?: string[];

@@ -132,7 +132,7 @@
 					{@const statusColor = getStatusColor(booking.status)}
 					{@const paymentBadge = getPaymentBadge(booking.paymentStatus)}
 					
-					<tr class="hover:bg-gray-50">
+					<tr class="hover:bg-gray-50 cursor-pointer" onclick={() => window.location.href = `/bookings/${booking.id}`}>
 						<td class="px-6 py-4 whitespace-nowrap">
 							<div class="text-sm font-medium text-gray-900">
 								{booking.bookingReference}
@@ -194,8 +194,12 @@
 						</td>
 						
 						<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-							<a href="/bookings/{booking.id}" class="text-blue-600 hover:text-blue-900">
-								View
+							<a 
+								href="/bookings/{booking.id}" 
+								class="text-blue-600 hover:text-blue-900 underline" 
+								onclick={(e) => e.stopPropagation()}
+							>
+								View Details
 							</a>
 						</td>
 					</tr>
