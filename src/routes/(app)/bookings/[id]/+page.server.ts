@@ -32,17 +32,18 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			throw error(403, 'You can only view bookings for your own tours');
 		}
 		
-			// Get payment information if exists
-	let payment = null;
-	if (booking.paymentId) {
-		try {
-			payment = await locals.pb.collection('payments').getOne(booking.paymentId);
-		} catch (paymentErr) {
-			console.log('Payment not found or accessible for booking', bookingId, ':', paymentErr);
-			// Payment record doesn't exist or isn't accessible - this is OK, continue without it
-			payment = null;
+					// Get payment information if exists
+		let payment = null;
+		if (booking.paymentId) {
+			try {
+				// The paymentId in booking is actually the Stripe payment ID, not PocketBase record ID
+				payment = await locals.pb.collection('payments').getFirstListItem(`stripePaymentIntentId = "${booking.paymentId}"`);
+			} catch (paymentErr) {
+				console.log('Payment not found or accessible for booking', bookingId, ':', paymentErr);
+				// Payment record doesn't exist or isn't accessible - this is OK, continue without it
+				payment = null;
+			}
 		}
-	}
 		
 		// Return parent data merged with booking data
 		return {
