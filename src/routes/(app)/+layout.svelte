@@ -222,12 +222,14 @@
 </script>
 
 <svelte:head>
-	<!-- Umami Analytics for App Pages -->
-	<script
-		defer
-		src="https://umami.zaur.app/script.js"
-		data-website-id="92ff6091-acae-433b-813b-561a4f524314"
-	></script>
+	<!-- Umami Analytics for App Pages - Production Only -->
+	{#if !import.meta.env.DEV}
+		<script
+			defer
+			src="https://umami.zaur.app/script.js"
+			data-website-id="92ff6091-acae-433b-813b-561a4f524314"
+		></script>
+	{/if}
 </svelte:head>
 
 <div class="flex h-screen bg-gray-50">
