@@ -2,6 +2,7 @@
 	import { language, t } from '$lib/i18n.js';
 	import { languageContext, languageStore } from '$lib/context.js';
 	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 
@@ -19,7 +20,75 @@
 			headerRef.closeMobileMenu();
 		}
 	});
+
+	// Get SEO data from server or provide defaults
+	const seo = $derived(data?.seo || {
+		title: 'Zaur - QR Booking for Tour Guides',
+		description: 'Professional QR code booking system for tour guides. Let tourists book and pay instantly — no apps, no friction.',
+		canonical: $page.url.href,
+		keywords: 'QR booking, tour guides, instant booking, tourism, travel'
+	});
 </script>
+
+<svelte:head>
+	<!-- Primary Meta Tags -->
+	<title>{seo.title}</title>
+	<meta name="title" content={seo.title} />
+	<meta name="description" content={seo.description} />
+	<meta name="keywords" content={seo.keywords} />
+	<meta name="author" content="Zaur" />
+	<meta name="robots" content="index, follow" />
+	<meta name="language" content="English" />
+	
+	<!-- Canonical URL -->
+	<link rel="canonical" href={seo.canonical} />
+	
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content={seo.openGraph?.type || 'website'} />
+	<meta property="og:url" content={seo.openGraph?.url || seo.canonical} />
+	<meta property="og:title" content={seo.openGraph?.title || seo.title} />
+	<meta property="og:description" content={seo.openGraph?.description || seo.description} />
+	<meta property="og:image" content={seo.openGraph?.image} />
+	<meta property="og:site_name" content={seo.openGraph?.site_name || 'Zaur'} />
+	<meta property="og:locale" content="en_US" />
+	
+	<!-- Twitter -->
+	<meta property="twitter:card" content={seo.twitter?.card || 'summary_large_image'} />
+	<meta property="twitter:url" content={seo.openGraph?.url || seo.canonical} />
+	<meta property="twitter:title" content={seo.twitter?.title || seo.title} />
+	<meta property="twitter:description" content={seo.twitter?.description || seo.description} />
+	<meta property="twitter:image" content={seo.twitter?.image || seo.openGraph?.image} />
+	
+	<!-- Additional SEO -->
+	<meta name="theme-color" content="#3B82F6" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+	<meta name="apple-mobile-web-app-title" content="Zaur" />
+	
+	<!-- Structured Data for Organization -->
+	{@html `<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "Zaur",
+		"url": "https://zaur.app",
+		"logo": "https://zaur.app/images/logo.png",
+		"description": "Professional QR code booking system for tour guides",
+		"sameAs": [
+			"https://twitter.com/zaur_app",
+			"https://linkedin.com/company/zaur"
+		],
+		"contactPoint": {
+			"@type": "ContactPoint",
+			"contactType": "customer service",
+			"url": "https://zaur.app/contact"
+		}
+	}
+	</script>`}
+	
+	<!-- Umami Analytics -->
+	<script defer src="https://umami.zaur.app/script.js" data-website-id="92ff6091-acae-433b-813b-561a4f524314"></script>
+</svelte:head>
 
 <!-- Header Component -->
 <Header 

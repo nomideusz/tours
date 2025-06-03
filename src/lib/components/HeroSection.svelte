@@ -52,7 +52,9 @@
 </script>
 
 <!-- Professional Hero Section -->
-<section class="relative bg-white pt-4 sm:pt-8 pb-12 sm:pb-20">
+<section class="relative bg-white pt-4 sm:pt-8 pb-12 sm:pb-20" 
+         role="banner" 
+         aria-label="Hero section introducing Zaur QR booking system">
 	<!-- Subtle pattern background -->
 	<div class="absolute inset-0">
 	  <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice">

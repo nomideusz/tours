@@ -79,10 +79,15 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 			// Continue with empty array - the page will show "no available slots"
 		}
 		
+		// Generate SEO data for this tour
+		const tour = qrCode.expand?.tour;
+		const seoData = generateTourSEO(tour, params.code, url.origin);
+		
 		return {
 			qrCode,
 			timeSlots,
-			pbUrl: POCKETBASE_URL
+			pbUrl: POCKETBASE_URL,
+			seo: seoData
 		};
 	} catch (err) {
 		console.error('Error loading QR code:', err);
@@ -253,4 +258,67 @@ export const actions: Actions = {
 			});
 		}
 	}
-}; 
+};
+
+function generateTourSEO(tour: any, qrCode: string, origin: string) {
+	if (!tour) {
+		return {
+			title: 'Book Tour - Zaur',
+			description: 'Book your tour instantly with our secure QR booking system.',
+			canonical: `${origin}/book/${qrCode}`,
+			keywords: 'tour booking, instant booking, QR booking'
+		};
+	}
+
+	const title = `Book ${tour.name} - Zaur`;
+	const description = tour.description 
+		? `${tour.description.substring(0, 150)}${tour.description.length > 150 ? '...' : ''} Book instantly with QR code.`
+		: `Book ${tour.name} in ${tour.location || 'an amazing location'}. Instant booking with secure payment.`;
+	
+	const image = tour.images?.[0] 
+		? `https://z.xeon.pl/api/files/${tour.collectionId}/${tour.id}/${tour.images[0]}?thumb=1200x630`
+		: `${origin}/images/og-tour-default.jpg`;
+
+	return {
+		title,
+		description,
+		canonical: `${origin}/book/${qrCode}`,
+		keywords: `${tour.name}, tour booking, ${tour.location}, instant booking, QR booking, tourism`,
+		openGraph: {
+			title,
+			description,
+			url: `${origin}/book/${qrCode}`,
+			type: 'website',
+			image,
+			site_name: 'Zaur'
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title,
+			description,
+			image
+		},
+		structuredData: {
+			'@context': 'https://schema.org',
+			'@type': 'TouristAttraction',
+			name: tour.name,
+			description: tour.description,
+			image: image,
+			location: {
+				'@type': 'Place',
+				name: tour.location
+			},
+			offers: {
+				'@type': 'Offer',
+				price: tour.price,
+				priceCurrency: 'EUR',
+				availability: 'https://schema.org/InStock',
+				url: `${origin}/book/${qrCode}`
+			},
+			provider: {
+				'@type': 'Organization',
+				name: 'Zaur'
+			}
+		}
+	};
+} 

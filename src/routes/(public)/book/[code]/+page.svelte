@@ -14,6 +14,9 @@
 	
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 	
+	// SEO data from server
+	const seo = $derived(data.seo);
+	
 	// Booking form state
 	let selectedDate = $state<string>('');
 	let selectedTimeSlot = $state<TimeSlot | null>(null);
@@ -134,6 +137,33 @@
 		});
 	}
 </script>
+
+<svelte:head>
+	{#if seo}
+		<title>{seo.title}</title>
+		<meta name="description" content={seo.description} />
+		<meta name="keywords" content={seo.keywords} />
+		<link rel="canonical" href={seo.canonical} />
+		
+		<!-- Open Graph -->
+		<meta property="og:title" content={seo.openGraph?.title} />
+		<meta property="og:description" content={seo.openGraph?.description} />
+		<meta property="og:url" content={seo.openGraph?.url} />
+		<meta property="og:type" content={seo.openGraph?.type} />
+		<meta property="og:image" content={seo.openGraph?.image} />
+		
+		<!-- Twitter -->
+		<meta name="twitter:card" content={seo.twitter?.card} />
+		<meta name="twitter:title" content={seo.twitter?.title} />
+		<meta name="twitter:description" content={seo.twitter?.description} />
+		<meta name="twitter:image" content={seo.twitter?.image} />
+		
+		<!-- Structured Data -->
+		{#if seo.structuredData}
+			{@html `<script type="application/ld+json">${JSON.stringify(seo.structuredData)}</script>`}
+		{/if}
+	{/if}
+</svelte:head>
 
 <div class="min-h-screen bg-gray-50">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
