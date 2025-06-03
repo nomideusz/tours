@@ -28,19 +28,21 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		});
 		
 		// Check if the booking belongs to a tour owned by this user
-		if (booking.expand?.tour?.user !== userId) {
+		if (!booking.expand?.tour || booking.expand.tour.user !== userId) {
 			throw error(403, 'You can only view bookings for your own tours');
 		}
 		
-		// Get payment information if exists
-		let payment = null;
+			// Get payment information if exists
+	let payment = null;
+	if (booking.paymentId) {
 		try {
-			if (booking.paymentId) {
-				payment = await locals.pb.collection('payments').getOne(booking.paymentId);
-			}
+			payment = await locals.pb.collection('payments').getOne(booking.paymentId);
 		} catch (paymentErr) {
-			console.log('Payment not found or accessible:', paymentErr);
+			console.log('Payment not found or accessible for booking', bookingId, ':', paymentErr);
+			// Payment record doesn't exist or isn't accessible - this is OK, continue without it
+			payment = null;
 		}
+	}
 		
 		// Return parent data merged with booking data
 		return {
