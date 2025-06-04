@@ -1,5 +1,7 @@
 // Shared utilities for booking data processing
 
+import { getQueryConfig } from './query-config.js';
+
 export interface ProcessedBooking {
 	id: string;
 	customerName: string;
@@ -87,7 +89,7 @@ export const BOOKING_FIELDS = 'id,customerName,customerEmail,customerPhone,parti
 
 /**
  * Fetches bookings for given tour IDs with standard processing
- * Implements batching to avoid massive queries that timeout
+ * Implements pagination and reduced query complexity to avoid timeouts
  */
 export async function fetchBookingsForTours(pb: any, tourIds: string[], options: { 
 	sort?: string;
@@ -104,67 +106,126 @@ export async function fetchBookingsForTours(pb: any, tourIds: string[], options:
 		additionalFields = ''
 	} = options;
 	
-	const fields = additionalFields ? `${BOOKING_FIELDS},${additionalFields}` : BOOKING_FIELDS;
+	// Get query configuration based on environment
+	const config = getQueryConfig();
 	
-	// Batch tours to avoid massive queries - max 5 tours per query
-	const BATCH_SIZE = 5;
+	// Use minimal fields for initial fetch to reduce query complexity
+	const minimalFields = 'id,customerName,customerEmail,participants,status,created,tour,timeSlot,totalAmount,paymentStatus';
+	
+	// Use environment-specific page size
+	const PAGE_SIZE = config.maxPageSize;
+	const MAX_PAGES = limit ? Math.ceil(limit / PAGE_SIZE) : Math.ceil(config.maxTotalRecords / PAGE_SIZE);
+	
 	const allBookings: any[] = [];
 	
-	// If we have a limit, distribute it across batches
-	const perBatchLimit = limit ? Math.ceil(limit / Math.ceil(tourIds.length / BATCH_SIZE)) : undefined;
+	console.log(`Fetching bookings for ${tourIds.length} tours using pagination`);
 	
-	console.log(`Fetching bookings for ${tourIds.length} tours in batches of ${BATCH_SIZE}`);
+	try {
+		// First approach: Try to get all bookings with a single filter
+		// but with pagination and minimal fields
+		const filter = tourIds.map(id => `tour = "${id}"`).join(' || ');
+		
+		let page = 1;
+		let hasMore = true;
+		
+		while (hasMore && page <= MAX_PAGES && (!limit || allBookings.length < limit)) {
+			try {
+				const response = await pb.collection('bookings').getList(page, PAGE_SIZE, {
+					filter,
+					sort,
+					fields: minimalFields,
+					skipTotal: true // Skip counting total records for performance
+				});
+				
+				allBookings.push(...response.items);
+				hasMore = response.items.length === PAGE_SIZE;
+				page++;
+				
+				console.log(`Page ${page - 1}: fetched ${response.items.length} bookings (total: ${allBookings.length})`);
+			} catch (pageError) {
+				console.error(`Error fetching page ${page}:`, pageError);
+				hasMore = false; // Stop pagination on error
+			}
+		}
+		
+		// If we got some results, expand the necessary relations for the fetched bookings
+		if (allBookings.length > 0) {
+			// Batch expand the relations to avoid large queries
+			const bookingIds = allBookings.slice(0, limit || allBookings.length).map(b => b.id);
+			const expandedBookings = await batchExpandBookings(pb, bookingIds, BOOKING_FIELDS);
+			
+			// Map expanded data back to our bookings
+			const expandedMap = new Map(expandedBookings.map(b => [b.id, b]));
+			const finalBookings = bookingIds
+				.map(id => expandedMap.get(id))
+				.filter(Boolean);
+			
+			return finalBookings.map(processBooking);
+		}
+		
+	} catch (error) {
+		console.error('Error with paginated approach, falling back to tour-by-tour:', error);
+		
+		// Fallback: Fetch bookings tour by tour with very small limits
+		for (const tourId of tourIds) {
+			if (limit && allBookings.length >= limit) break;
+			
+			try {
+				const tourBookings = await pb.collection('bookings').getList(1, 20, {
+					filter: `tour = "${tourId}"`,
+					sort,
+					expand: 'tour,timeSlot',
+					fields: BOOKING_FIELDS
+				});
+				
+				allBookings.push(...tourBookings.items);
+				console.log(`Tour ${tourId}: fetched ${tourBookings.items.length} bookings`);
+			} catch (tourError) {
+				console.error(`Error fetching bookings for tour ${tourId}:`, tourError);
+				// Continue with other tours
+			}
+		}
+		
+		// Apply final limit and sort
+		if (sort && allBookings.length > 0) {
+			const field = sort.startsWith('-') ? sort.slice(1) : sort;
+			const order = sort.startsWith('-') ? -1 : 1;
+			allBookings.sort((a, b) => order * (a[field] > b[field] ? 1 : -1));
+		}
+		
+		const finalBookings = limit ? allBookings.slice(0, limit) : allBookings;
+		return finalBookings.map(processBooking);
+	}
 	
-	for (let i = 0; i < tourIds.length; i += BATCH_SIZE) {
-		const batchTourIds = tourIds.slice(i, i + BATCH_SIZE);
+	return [];
+}
+
+/**
+ * Batch expand bookings with full fields to avoid large queries
+ */
+async function batchExpandBookings(pb: any, bookingIds: string[], fields: string): Promise<any[]> {
+	const config = getQueryConfig();
+	const BATCH_SIZE = config.batchSize;
+	const results: any[] = [];
+	
+	for (let i = 0; i < bookingIds.length; i += BATCH_SIZE) {
+		const batchIds = bookingIds.slice(i, i + BATCH_SIZE);
 		
 		try {
-			const query: any = {
-				filter: batchTourIds.map(id => `tour = "${id}"`).join(' || '),
+			const filter = batchIds.map(id => `id = "${id}"`).join(' || ');
+			const expandedBatch = await pb.collection('bookings').getFullList({
+				filter,
 				expand: 'tour,timeSlot',
-				sort,
 				fields
-			};
+			});
 			
-			if (perBatchLimit) {
-				query.perPage = perBatchLimit;
-			}
-			
-			const batchBookings = await pb.collection('bookings').getFullList(query);
-			allBookings.push(...batchBookings);
-			
-			console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: fetched ${batchBookings.length} bookings`);
+			results.push(...expandedBatch);
 		} catch (error) {
-			console.error(`Error fetching bookings batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
-			// Continue with other batches even if one fails
+			console.error(`Error expanding batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
 		}
 	}
 	
-	// Sort all bookings if we fetched from multiple batches
-	if (tourIds.length > BATCH_SIZE && sort) {
-		allBookings.sort((a, b) => {
-			const field = sort.startsWith('-') ? sort.slice(1) : sort;
-			const order = sort.startsWith('-') ? -1 : 1;
-			return order * (a[field] > b[field] ? 1 : -1);
-		});
-	}
-	
-	// Apply limit to final result if needed
-	const finalBookings = limit ? allBookings.slice(0, limit) : allBookings;
-	
-	// Debug: Log sample booking data
-	if (finalBookings.length > 0) {
-		console.log('Sample booking data:', {
-			id: finalBookings[0].id,
-			created: finalBookings[0].created,
-			hasTimeSlot: !!finalBookings[0].expand?.timeSlot,
-			timeSlotStartTime: finalBookings[0].expand?.timeSlot?.startTime,
-			tourName: finalBookings[0].expand?.tour?.name
-		});
-	}
-	
-	// Process all bookings for consistent structure
-	return finalBookings.map(processBooking);
+	return results;
 }
 
 /**

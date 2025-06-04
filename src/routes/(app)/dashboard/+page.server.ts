@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
 import { fetchBookingsForTours, formatRecentBooking, createTodaysSchedule, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
+import { fetchRecentBookingsForUser } from '$lib/utils/booking-queries.js';
 
 export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// Get parent layout data first
@@ -40,17 +41,33 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		
 		// Only fetch booking data if user has tours
 		if (tourIds.length > 0) {
-			// Get all bookings for user's tours using shared utility
-			// Add timeout protection for users with many tours
-			const bookingsPromise = fetchBookingsForTours(locals.pb, tourIds);
-			const timeoutPromise = new Promise<any[]>((resolve) => 
-				setTimeout(() => {
-					console.warn('Dashboard bookings fetch timed out, returning empty array');
-					resolve([]);
-				}, 10000) // 10 second timeout
-			);
+			let allBookings: ProcessedBooking[] = [];
 			
-			const allBookings = await Promise.race([bookingsPromise, timeoutPromise]);
+			// Use different strategies based on number of tours
+			if (tourIds.length > 15) {
+				// For users with many tours, use date-based filtering
+				console.log('Using optimized query for user with many tours');
+				const recentBookings = await fetchRecentBookingsForUser(locals.pb, userId, 30);
+				
+				// Process the bookings to match expected format
+				allBookings = recentBookings.map((booking: any) => ({
+					...booking,
+					effectiveDate: booking.expand?.timeSlot?.startTime || booking.created,
+					totalAmount: booking.totalAmount || 0,
+					participants: booking.participants || 1
+				}));
+			} else {
+				// For users with fewer tours, use the standard approach with timeout
+				const bookingsPromise = fetchBookingsForTours(locals.pb, tourIds);
+				const timeoutPromise = new Promise<ProcessedBooking[]>((resolve) => 
+					setTimeout(() => {
+						console.warn('Dashboard bookings fetch timed out, returning empty array');
+						resolve([]);
+					}, 8000) // 8 second timeout
+				);
+				
+				allBookings = await Promise.race([bookingsPromise, timeoutPromise]);
+			}
 			
 			// Calculate today's date
 			const today = new Date();

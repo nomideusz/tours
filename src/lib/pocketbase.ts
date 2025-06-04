@@ -674,34 +674,55 @@ export const bookingsApi = {
       
       if (tourIds.length === 0) return [];
       
-      // Batch tours to avoid massive queries - max 5 tours per query
-      const BATCH_SIZE = 5;
+      // Use pagination approach for better performance
+      const PAGE_SIZE = 30; // Small page size
+      const MAX_TOTAL = 200; // Max total bookings to fetch
       const allBookings: Booking[] = [];
       
-      console.log(`Fetching bookings for ${tourIds.length} tours in batches of ${BATCH_SIZE}`);
+      console.log(`Fetching bookings for ${tourIds.length} tours using optimized approach`);
       
-      for (let i = 0; i < tourIds.length; i += BATCH_SIZE) {
-        const batchTourIds = tourIds.slice(i, i + BATCH_SIZE);
+      // If user has many tours, use a different strategy
+      if (tourIds.length > 10) {
+        // For users with many tours, fetch recent bookings across all tours
+        let page = 1;
+        let hasMore = true;
         
-        try {
-          const filter = batchTourIds.map(id => `tour.id = "${id}"`).join(' || ');
-          
-          const batchBookings = await pb.collection('bookings').getFullList<Booking>({
-            filter: `(${filter})`,
-            sort: '-created',
-            expand: 'tour,timeSlot,qrCode'
-          });
-          
-          allBookings.push(...batchBookings);
-          console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: fetched ${batchBookings.length} bookings`);
-        } catch (error) {
-          console.error(`Error fetching bookings batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
-          // Continue with other batches even if one fails
+        while (hasMore && allBookings.length < MAX_TOTAL && page <= 10) {
+          try {
+            const response = await pb.collection('bookings').getList<Booking>(page, PAGE_SIZE, {
+              filter: tourIds.map(id => `tour.id = "${id}"`).join(' || '),
+              sort: '-created',
+              expand: 'tour,timeSlot',
+              skipTotal: true
+            });
+            
+            allBookings.push(...response.items);
+            hasMore = response.items.length === PAGE_SIZE;
+            page++;
+          } catch (error) {
+            console.error(`Error fetching page ${page}:`, error);
+            hasMore = false;
+          }
         }
+      } else {
+        // For users with fewer tours, fetch by tour
+        for (const tourId of tourIds) {
+          try {
+            const tourBookings = await pb.collection('bookings').getList<Booking>(1, 50, {
+              filter: `tour.id = "${tourId}"`,
+              sort: '-created',
+              expand: 'tour,timeSlot,qrCode'
+            });
+            
+            allBookings.push(...tourBookings.items);
+          } catch (error) {
+            console.error(`Error fetching bookings for tour ${tourId}:`, error);
+          }
+        }
+        
+        // Sort merged results
+        allBookings.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
       }
-      
-      // Sort all bookings by created date (descending)
-      allBookings.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
       
       return allBookings;
     } catch (error) {
