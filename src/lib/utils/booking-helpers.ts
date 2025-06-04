@@ -87,6 +87,7 @@ export const BOOKING_FIELDS = 'id,customerName,customerEmail,customerPhone,parti
 
 /**
  * Fetches bookings for given tour IDs with standard processing
+ * Implements batching to avoid massive queries that timeout
  */
 export async function fetchBookingsForTours(pb: any, tourIds: string[], options: { 
 	sort?: string;
@@ -105,32 +106,65 @@ export async function fetchBookingsForTours(pb: any, tourIds: string[], options:
 	
 	const fields = additionalFields ? `${BOOKING_FIELDS},${additionalFields}` : BOOKING_FIELDS;
 	
-	const query: any = {
-		filter: tourIds.map(id => `tour = "${id}"`).join(' || '),
-		expand: 'tour,timeSlot',
-		sort,
-		fields
-	};
+	// Batch tours to avoid massive queries - max 5 tours per query
+	const BATCH_SIZE = 5;
+	const allBookings: any[] = [];
 	
-	if (limit) {
-		query.perPage = limit;
+	// If we have a limit, distribute it across batches
+	const perBatchLimit = limit ? Math.ceil(limit / Math.ceil(tourIds.length / BATCH_SIZE)) : undefined;
+	
+	console.log(`Fetching bookings for ${tourIds.length} tours in batches of ${BATCH_SIZE}`);
+	
+	for (let i = 0; i < tourIds.length; i += BATCH_SIZE) {
+		const batchTourIds = tourIds.slice(i, i + BATCH_SIZE);
+		
+		try {
+			const query: any = {
+				filter: batchTourIds.map(id => `tour = "${id}"`).join(' || '),
+				expand: 'tour,timeSlot',
+				sort,
+				fields
+			};
+			
+			if (perBatchLimit) {
+				query.perPage = perBatchLimit;
+			}
+			
+			const batchBookings = await pb.collection('bookings').getFullList(query);
+			allBookings.push(...batchBookings);
+			
+			console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: fetched ${batchBookings.length} bookings`);
+		} catch (error) {
+			console.error(`Error fetching bookings batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
+			// Continue with other batches even if one fails
+		}
 	}
 	
-	const allBookings = await pb.collection('bookings').getFullList(query);
+	// Sort all bookings if we fetched from multiple batches
+	if (tourIds.length > BATCH_SIZE && sort) {
+		allBookings.sort((a, b) => {
+			const field = sort.startsWith('-') ? sort.slice(1) : sort;
+			const order = sort.startsWith('-') ? -1 : 1;
+			return order * (a[field] > b[field] ? 1 : -1);
+		});
+	}
+	
+	// Apply limit to final result if needed
+	const finalBookings = limit ? allBookings.slice(0, limit) : allBookings;
 	
 	// Debug: Log sample booking data
-	if (allBookings.length > 0) {
+	if (finalBookings.length > 0) {
 		console.log('Sample booking data:', {
-			id: allBookings[0].id,
-			created: allBookings[0].created,
-			hasTimeSlot: !!allBookings[0].expand?.timeSlot,
-			timeSlotStartTime: allBookings[0].expand?.timeSlot?.startTime,
-			tourName: allBookings[0].expand?.tour?.name
+			id: finalBookings[0].id,
+			created: finalBookings[0].created,
+			hasTimeSlot: !!finalBookings[0].expand?.timeSlot,
+			timeSlotStartTime: finalBookings[0].expand?.timeSlot?.startTime,
+			tourName: finalBookings[0].expand?.tour?.name
 		});
 	}
 	
 	// Process all bookings for consistent structure
-	return allBookings.map(processBooking);
+	return finalBookings.map(processBooking);
 }
 
 /**

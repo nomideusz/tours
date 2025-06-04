@@ -41,7 +41,16 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		// Only fetch booking data if user has tours
 		if (tourIds.length > 0) {
 			// Get all bookings for user's tours using shared utility
-			const allBookings = await fetchBookingsForTours(locals.pb, tourIds);
+			// Add timeout protection for users with many tours
+			const bookingsPromise = fetchBookingsForTours(locals.pb, tourIds);
+			const timeoutPromise = new Promise<any[]>((resolve) => 
+				setTimeout(() => {
+					console.warn('Dashboard bookings fetch timed out, returning empty array');
+					resolve([]);
+				}, 10000) // 10 second timeout
+			);
+			
+			const allBookings = await Promise.race([bookingsPromise, timeoutPromise]);
 			
 			// Calculate today's date
 			const today = new Date();

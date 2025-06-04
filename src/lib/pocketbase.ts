@@ -674,13 +674,36 @@ export const bookingsApi = {
       
       if (tourIds.length === 0) return [];
       
-      const filter = tourIds.map(id => `tour.id = "${id}"`).join(' || ');
+      // Batch tours to avoid massive queries - max 5 tours per query
+      const BATCH_SIZE = 5;
+      const allBookings: Booking[] = [];
       
-      return await pb.collection('bookings').getFullList<Booking>({
-        filter: `(${filter})`,
-        sort: '-created',
-        expand: 'tour,timeSlot,qrCode'
-      });
+      console.log(`Fetching bookings for ${tourIds.length} tours in batches of ${BATCH_SIZE}`);
+      
+      for (let i = 0; i < tourIds.length; i += BATCH_SIZE) {
+        const batchTourIds = tourIds.slice(i, i + BATCH_SIZE);
+        
+        try {
+          const filter = batchTourIds.map(id => `tour.id = "${id}"`).join(' || ');
+          
+          const batchBookings = await pb.collection('bookings').getFullList<Booking>({
+            filter: `(${filter})`,
+            sort: '-created',
+            expand: 'tour,timeSlot,qrCode'
+          });
+          
+          allBookings.push(...batchBookings);
+          console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: fetched ${batchBookings.length} bookings`);
+        } catch (error) {
+          console.error(`Error fetching bookings batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
+          // Continue with other batches even if one fails
+        }
+      }
+      
+      // Sort all bookings by created date (descending)
+      allBookings.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+      
+      return allBookings;
     } catch (error) {
       console.error('Error fetching bookings:', error);
       throw error;
