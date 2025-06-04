@@ -1,5 +1,6 @@
 import { Context } from 'runed';
 import { writable, type Writable } from 'svelte/store';
+import { browser } from '$app/environment';
 import { language, type Language } from './i18n.js';
 
 // Create a writable store for language
@@ -14,10 +15,12 @@ export function switchLanguage(lang: Language) {
     languageStore.set(lang);
 }
 
-// Subscribe to the language store to keep it synced with the language value
-language.subscribe((value: Language) => {
-    languageStore.set(value);
-});
+// Subscribe to the language store to keep it synced with the language value - only in browser
+if (browser) {
+    language.subscribe((value: Language) => {
+        languageStore.set(value);
+    });
+}
 
 // Create navigation context and store
 export interface NavigationState {

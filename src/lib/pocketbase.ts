@@ -33,8 +33,8 @@ export const pb = browser
 
 // In Svelte 5 Runes mode, we don't need to use a writable store
 // The currentUser will be defined directly in components using $state()
-// This is just the initial value
-export const initialUserValue = browser && pb && pb.authStore.isValid ? pb.authStore.record : null;
+// This is just the initial value - only set in browser
+export const initialUserValue = (browser && pb && pb.authStore.isValid) ? pb.authStore.record : null;
 
 // Create a writable store for currentUser
 export const currentUser = writable(initialUserValue);
@@ -44,7 +44,11 @@ let isAuthListenerActive = false;
 
 // Function to reload auth state from cookies
 export function reloadAuthFromCookies() {
-  if (browser && pb && typeof document !== 'undefined') {
+  if (!browser || typeof window === 'undefined' || typeof document === 'undefined' || !pb) {
+    return;
+  }
+  
+  if (pb) {
     console.log('Reloading auth state from cookies...');
     const pathname = window.location.pathname;
     const isPublicPage = pathname.includes('/book/') || pathname.includes('/ticket/');
@@ -75,7 +79,13 @@ export function reloadAuthFromCookies() {
 }
 
 export function setupAuthListener(setCurrentUser: (user: any) => void) {
-  if (browser && pb && !isAuthListenerActive) {
+  // Extra safety check for browser environment
+  if (!browser || typeof window === 'undefined' || typeof document === 'undefined') {
+    console.log('Skipping auth listener setup - not in browser environment');
+    return () => {};
+  }
+  
+  if (pb && !isAuthListenerActive) {
     isAuthListenerActive = true;
     
     // Load auth state from cookie first (important for page refreshes)

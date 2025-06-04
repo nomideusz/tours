@@ -1,6 +1,7 @@
 import { FiniteStateMachine, Context } from 'runed';
 import { currentUser } from './pocketbase.js';
 import { get, readable, writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 // Define the auth state types
 type AuthStates = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
@@ -63,6 +64,11 @@ let lastState: AuthStates | null = null;
 
 // Function to update FSM based on currentUser state with improved logging
 export function updateAuthState(userValue: any) {
+  // Only run in browser to prevent server-side issues
+  if (!browser) {
+    return;
+  }
+  
   // Skip if this is the same update
   const currentState = authFSM.current;
   const hasUser = !!userValue;
@@ -138,21 +144,23 @@ export function updateAuthState(userValue: any) {
   }));
 }
 
-// Initial state setup (after FSM is defined) - rely on PocketBase auth store
-setTimeout(() => {
-  console.log('Setting initial auth state');
-  const currentValue = get(currentUser);
-  console.log('Initial currentUser value:', currentValue ? 'Present' : 'None');
-  
-  // Rely on PocketBase auth store which now loads from cookies properly
-  updateAuthState(currentValue);
-}, 0);
+// Initial state setup (after FSM is defined) - only in browser
+if (browser) {
+  setTimeout(() => {
+    console.log('Setting initial auth state');
+    const currentValue = get(currentUser);
+    console.log('Initial currentUser value:', currentValue ? 'Present' : 'None');
+    
+    // Rely on PocketBase auth store which now loads from cookies properly
+    updateAuthState(currentValue);
+  }, 0);
 
-// Subscribe to currentUser changes to update FSM
-currentUser.subscribe((value) => {
-  console.log('currentUser store updated:', value ? 'User present' : 'No user');
-  updateAuthState(value);
-});
+  // Subscribe to currentUser changes to update FSM - only in browser
+  currentUser.subscribe((value) => {
+    console.log('currentUser store updated:', value ? 'User present' : 'No user');
+    updateAuthState(value);
+  });
+}
 
 // Create a writable store to track FSM state changes
 const authStateStore = writable<AuthStates>(authFSM.current);

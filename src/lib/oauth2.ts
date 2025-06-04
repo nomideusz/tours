@@ -46,7 +46,7 @@ export const oauth2Providers = {
 
 // OAuth2 authentication function
 export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<boolean> {
-    if (!browser || !pb) {
+    if (!browser || typeof window === 'undefined' || !pb) {
         console.warn('OAuth2 authentication can only be used in the browser with PocketBase client');
         return false;
     }
@@ -196,7 +196,7 @@ export async function getAvailableOAuth2Providers(): Promise<OAuth2Provider[]> {
 
 // Check if user is authenticated via OAuth2
 export function isOAuth2User(): boolean {
-    if (!browser || !pb || !pb.authStore.record) return false;
+    if (!browser || typeof window === 'undefined' || !pb || !pb.authStore.record) return false;
     
     // Check if user has OAuth2 data (this depends on your PocketBase schema)
     return !!(pb.authStore.record.avatar || pb.authStore.record.provider);
