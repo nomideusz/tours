@@ -116,15 +116,14 @@
 
 	function openEmailClient() {
 		const subject = encodeURIComponent(`Regarding your ${booking.expand?.tour?.name} booking`);
-		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${booking.expand?.timeSlot?.date ? formatDate(booking.expand.timeSlot.date) : 'TBD'}\nTime: ${booking.expand?.timeSlot?.startTime ? formatTime(booking.expand.timeSlot.startTime) : 'TBD'}\nParticipants: ${booking.participants}\n\nBest regards`);
+		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'}\nTime: ${booking.expand?.timeSlot?.startTime ? formatTime(booking.expand.timeSlot.startTime) : 'TBD'}\nParticipants: ${booking.participants}\n\nBest regards`);
 		
 		window.open(`mailto:${booking.customerEmail}?subject=${subject}&body=${body}`);
 	}
 
 	function getTourDateTime(): string {
-		if (booking.expand?.timeSlot?.date && booking.expand?.timeSlot?.startTime) {
-			const dateTime = `${booking.expand.timeSlot.date}T${booking.expand.timeSlot.startTime}`;
-			return formatDateTime(dateTime);
+		if (booking.expand?.timeSlot?.startTime) {
+			return formatDateTime(booking.expand.timeSlot.startTime);
 		}
 		return 'Time slot not set';
 	}
@@ -135,11 +134,11 @@
 	}
 
 	function isPastBooking(): boolean {
-		if (!booking.expand?.timeSlot?.date || !booking.expand?.timeSlot?.startTime) {
+		if (!booking.expand?.timeSlot?.startTime) {
 			return false;
 		}
 		
-		const bookingDateTime = new Date(`${booking.expand.timeSlot.date}T${booking.expand.timeSlot.startTime}`);
+		const bookingDateTime = new Date(booking.expand.timeSlot.startTime);
 		return bookingDateTime < new Date();
 	}
 

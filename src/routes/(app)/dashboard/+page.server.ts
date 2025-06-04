@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
+import { fetchBookingsForTours, formatRecentBooking, createTodaysSchedule, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
 
 export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// Get parent layout data first
@@ -39,13 +40,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		
 		// Only fetch booking data if user has tours
 		if (tourIds.length > 0) {
-			// Get all bookings for user's tours with totalAmount field
-			const allBookings = await locals.pb.collection('bookings').getFullList({
-				filter: tourIds.map(id => `tour = "${id}"`).join(' || '),
-				expand: 'tour,timeSlot',
-				sort: '-created',
-				fields: 'id,customerName,customerEmail,participants,status,created,tour,timeSlot,totalAmount,paymentStatus,expand.tour.name,expand.timeSlot.startTime,expand.timeSlot.date'
-			});
+			// Get all bookings for user's tours using shared utility
+			const allBookings = await fetchBookingsForTours(locals.pb, tourIds);
 			
 			// Calculate today's date
 			const today = new Date();
@@ -65,8 +61,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			
 			// Calculate stats from bookings
 			stats.todayBookings = allBookings.filter(booking => {
-				if (!booking.expand?.timeSlot?.date) return false;
-				const bookingDate = new Date(booking.expand.timeSlot.date);
+				if (!booking.expand?.timeSlot?.startTime) return false;
+				const bookingDate = new Date(booking.expand.timeSlot.startTime);
 				return bookingDate >= todayStart && bookingDate < todayEnd;
 			}).length;
 			
@@ -92,48 +88,18 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			
 			// Get upcoming tours (today and future)
 			stats.upcomingTours = allBookings.filter(booking => {
-				if (!booking.expand?.timeSlot?.date) return false;
-				const bookingDate = new Date(booking.expand.timeSlot.date);
+				if (!booking.expand?.timeSlot?.startTime) return false;
+				const bookingDate = new Date(booking.expand.timeSlot.startTime);
 				return bookingDate >= todayStart && booking.status === 'confirmed';
 			}).length;
 			
-			// Get recent bookings (last 5)
+			// Get recent bookings (last 5) using shared utility
 			recentBookings = allBookings
 				.slice(0, 5)
-				.map(booking => ({
-					id: booking.id,
-					customerName: booking.customerName,
-					tourName: booking.expand?.tour?.name || 'Unknown Tour',
-					date: booking.expand?.timeSlot?.date && booking.expand?.timeSlot?.startTime
-						? `${booking.expand.timeSlot.date}T${booking.expand.timeSlot.startTime}:00Z`
-						: booking.created,
-					participants: booking.participants,
-					status: booking.status
-				}));
+				.map(formatRecentBooking);
 			
-			// Get today's schedule
-			const todayBookings = allBookings.filter(booking => {
-				if (!booking.expand?.timeSlot?.date) return false;
-				const bookingDate = new Date(booking.expand.timeSlot.date);
-				return bookingDate >= todayStart && bookingDate < todayEnd && booking.status === 'confirmed';
-			});
-			
-			// Group by tour and time
-			const scheduleMap = new Map();
-			todayBookings.forEach(booking => {
-				const key = `${booking.expand?.tour?.name}-${booking.expand?.timeSlot?.startTime}`;
-				if (!scheduleMap.has(key)) {
-					scheduleMap.set(key, {
-						tourName: booking.expand?.tour?.name || 'Unknown Tour',
-						time: booking.expand?.timeSlot?.startTime || '00:00',
-						participants: 0
-					});
-				}
-				scheduleMap.get(key).participants += booking.participants;
-			});
-			
-			todaysSchedule = Array.from(scheduleMap.values())
-				.sort((a, b) => a.time.localeCompare(b.time));
+			// Get today's schedule using shared utility
+			todaysSchedule = createTodaysSchedule(allBookings);
 		}
 		
 		// Return parent data merged with dashboard-specific data

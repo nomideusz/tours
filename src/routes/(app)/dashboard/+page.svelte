@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
+	import { formatDate, formatDateMobile, getStatusColor } from '$lib/utils/date-helpers.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -34,28 +35,7 @@
 	let recentBookings = $state(data.recentBookings || []);
 	let todaysSchedule = $state(data.todaysSchedule || []);
 
-	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	}
 
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'confirmed':
-				return 'bg-green-50 text-green-700';
-			case 'pending':
-				return 'bg-yellow-50 text-yellow-700';
-			case 'cancelled':
-				return 'bg-red-50 text-red-700';
-			default:
-				return 'bg-gray-50 text-gray-700';
-		}
-	}
 
 	// Data is now loaded server-side
 </script>
@@ -239,8 +219,8 @@
 										<div class="flex items-center gap-3 sm:gap-4 text-xs overflow-x-auto" style="color: var(--text-tertiary);">
 											<span class="flex items-center gap-1 flex-shrink-0">
 												<Clock class="w-3 h-3" />
-												<span class="hidden sm:inline">{formatDate(booking.date)}</span>
-												<span class="sm:hidden">{new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+																							<span class="hidden sm:inline">{formatDate(booking.date)}</span>
+											<span class="sm:hidden">{formatDateMobile(booking.date)}</span>
 											</span>
 											<span class="flex items-center gap-1 flex-shrink-0">
 												<Users class="w-3 h-3" />

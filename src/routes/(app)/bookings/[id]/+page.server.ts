@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		// Get the booking with expanded tour and timeSlot data
 		const booking = await locals.pb.collection('bookings').getOne(bookingId, {
 			expand: 'tour,timeSlot',
-			fields: '*,expand.tour.name,expand.tour.description,expand.tour.location,expand.tour.price,expand.tour.user,expand.timeSlot.startTime,expand.timeSlot.endTime,expand.timeSlot.date'
+			fields: '*,expand.tour.name,expand.tour.description,expand.tour.location,expand.tour.price,expand.tour.user,expand.timeSlot.startTime,expand.timeSlot.endTime'
 		});
 		
 		// Check if the booking belongs to a tour owned by this user

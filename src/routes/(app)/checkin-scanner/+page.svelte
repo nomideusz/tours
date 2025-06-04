@@ -291,7 +291,7 @@
 					<div class="relative">
 						<video
 							bind:this={videoElement}
-							class="w-full aspect-video lg:aspect-[4/3] object-cover"
+							class="w-full aspect-[3/4] sm:aspect-square lg:aspect-[4/3] object-cover"
 							autoplay
 							playsinline
 							muted
