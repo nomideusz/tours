@@ -37,7 +37,13 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		if (booking.paymentId) {
 			try {
 				// The paymentId in booking is actually the Stripe payment ID, not PocketBase record ID
-				payment = await locals.pb.collection('payments').getFirstListItem(`stripePaymentIntentId = "${booking.paymentId}"`);
+				// We need to expand 'booking' to satisfy the permission rule: booking.tour.user = @request.auth.id
+				payment = await locals.pb.collection('payments').getFirstListItem(
+					`stripePaymentIntentId = "${booking.paymentId}"`,
+					{
+						expand: 'booking'
+					}
+				);
 			} catch (paymentErr) {
 				console.log('Payment not found or accessible for booking', bookingId, ':', paymentErr);
 				// Payment record doesn't exist or isn't accessible - this is OK, continue without it
