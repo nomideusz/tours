@@ -55,7 +55,7 @@
 	let activeQRCount = $derived(qrCodes.filter(qr => qr.isActive).length);
 	let totalScans = $derived(qrCodes.reduce((sum, qr) => sum + (qr.scans || 0), 0));
 	let totalConversions = $derived(qrCodes.reduce((sum, qr) => sum + (qr.conversions || 0), 0));
-	let conversionRate = $derived(totalScans > 0 ? ((totalConversions / totalScans) * 100).toFixed(1) : '0');
+	let conversionRate = $derived(totalScans > 0 ? Math.min(((totalConversions / totalScans) * 100), 100).toFixed(1) : '0');
 
 	let filteredQRCodes = $derived(
 		selectedCategory === 'all' 
@@ -570,7 +570,7 @@
 												<TrendingUp class="h-5 w-5" style="color: var(--text-secondary);" />
 											</div>
 											<p class="text-2xl font-bold" style="color: var(--text-primary);">
-												{qr.scans > 0 ? ((qr.conversions / qr.scans) * 100).toFixed(1) : '0'}%
+												{qr.scans > 0 ? Math.min(((qr.conversions / qr.scans) * 100), 100).toFixed(1) : '0'}%
 											</p>
 											<p class="text-xs font-medium" style="color: var(--text-secondary);">Conversion</p>
 										</div>

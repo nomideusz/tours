@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
 	import { pb } from '$lib/pocketbase.js';
 	import { formatEuro } from '$lib/utils/currency.js';
@@ -30,7 +29,7 @@
 	let isUpdating = $state(false);
 	let error = $state<string | null>(null);
 	let showStatusModal = $state(false);
-	let newStatus = $state(booking.status);
+	let newStatus = $state('');
 
 	function formatDateTime(dateString: string): string {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -352,7 +351,10 @@
 					
 					{#if canChangeStatus()}
 						<button
-							onclick={() => showStatusModal = true}
+							onclick={() => {
+								newStatus = booking.status;
+								showStatusModal = true;
+							}}
 							class="w-full button-secondary button--gap button--small justify-center"
 						>
 							<Edit class="h-4 w-4" />

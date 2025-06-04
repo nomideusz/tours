@@ -252,12 +252,12 @@
 							onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
 							onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
 						>
-							<item.icon
-								class="mr-3 h-5 w-5"
-								style="{item.current
-									? 'color: var(--color-primary-500);'
-									: 'color: var(--text-tertiary);'}"
-							/>
+													<item.icon
+							class="mr-3 h-5 w-5"
+							style={item.current
+								? 'color: var(--color-primary-500);'
+								: 'color: var(--text-tertiary);'}
+						/>
 							{item.name}
 						</a>
 					{/each}

@@ -35,10 +35,24 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if (qrCode.tour !== tour.id) {
 			throw error(404, 'QR code not found for this tour');
 		}
+
+		// Get recent bookings made through this QR code
+		let recentBookings: any[] = [];
+		try {
+			const bookingsResult = await locals.pb.collection('bookings').getList(1, 10, {
+				filter: `qrCode = "${qrCode.id}"`,
+				sort: '-created',
+				expand: 'timeSlot'
+			});
+			recentBookings = bookingsResult.items || [];
+		} catch (err) {
+			console.warn('Could not load bookings for QR code:', err);
+		}
 		
 		return {
 			tour,
-			qrCode
+			qrCode,
+			recentBookings
 		};
 	} catch (err) {
 		console.error('Error loading QR code details:', err);
