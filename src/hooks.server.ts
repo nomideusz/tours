@@ -22,11 +22,12 @@ export const handle: Handle = async ({ event, resolve }) => {
         event.locals.user = null;
         event.locals.isAdmin = false;
         
-        // Test PocketBase connection for non-API routes during SSR
+        // Test PocketBase connection for non-API routes during SSR (skip in production to avoid delays)
         const isSSRNavigation = event.request.headers.get('sec-fetch-dest') === 'document';
-        if (isSSRNavigation && !event.url.pathname.includes('/api/')) {
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (isSSRNavigation && !event.url.pathname.includes('/api/') && !isProduction) {
             try {
-                // Quick health check with timeout
+                // Quick health check with timeout (development only)
                 const healthPromise = event.locals.pb.health.check();
                 const healthTimeout = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('PocketBase health check timeout')), 2000)
@@ -45,8 +46,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         // Load the auth store data from the request cookie string ONLY for non-public pages
         if (!isPublicPage) {
-            const cookies = event.request.headers.get('cookie') || '';
-            event.locals.pb.authStore.loadFromCookie(cookies);
+            try {
+                const cookies = event.request.headers.get('cookie') || '';
+                event.locals.pb.authStore.loadFromCookie(cookies);
+            } catch (cookieErr) {
+                console.error('Failed to load auth from cookie:', cookieErr);
+                // Clear auth store if cookie loading fails
+                event.locals.pb.authStore.clear();
+            }
         } else {
             // For public pages, explicitly clear auth to prevent any issues
             event.locals.pb.authStore.clear();
@@ -84,14 +91,19 @@ export const handle: Handle = async ({ event, resolve }) => {
             ];
             const shouldSkipRefresh = skipRefreshPaths.some(path => event.url.pathname.includes(path));
             
-            // Only refresh auth for authenticated-only routes and avoid during SSR refresh
+            // Skip auth refresh entirely in production SSR to prevent 502 errors
+            const isProduction = process.env.NODE_ENV === 'production';
             const isSSRRefresh = event.request.headers.get('sec-fetch-dest') === 'document';
-            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/') && !isSSRRefresh) {
+            const shouldAvoidRefresh = isProduction && isSSRRefresh;
+            
+            // Only refresh auth for authenticated-only routes and avoid during SSR refresh or in production
+            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/') && !shouldAvoidRefresh) {
                 // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
-                // Add timeout to prevent hanging
+                // Add timeout to prevent hanging - shorter timeout for production
                 const authRefreshPromise = event.locals.pb.collection('users').authRefresh();
+                const timeoutMs = isProduction ? 1000 : 2000; // Shorter timeout in production
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Auth refresh timeout')), 2000)
+                    setTimeout(() => reject(new Error('Auth refresh timeout')), timeoutMs)
                 );
                 
                 try {
@@ -101,6 +113,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                     // Don't throw - just continue with existing auth data
                     // For SSR, we'll rely on the existing stored auth data
                 }
+            } else if (shouldAvoidRefresh) {
+                console.log('Skipping auth refresh in production SSR for:', event.url.pathname);
             }
             
             // Set the user data in locals for easy access in routes
@@ -114,24 +128,47 @@ export const handle: Handle = async ({ event, resolve }) => {
                  event.locals.user.expand.roles.some((r: any) => r.name === 'admin'));
             
             // Try to update last_login but don't fail if it doesn't work
-            try {
-                const currentTime = new Date().toISOString();
-                if (!event.locals.user.last_login || 
-                    new Date(event.locals.user.last_login).getTime() < Date.now() - 12 * 60 * 60 * 1000) {
-                    await event.locals.pb.collection('users').update(event.locals.user.id, {
-                        last_login: currentTime
-                    });
-                    event.locals.user.last_login = currentTime;
+            // Skip last_login updates in production SSR to avoid database writes during page load
+            if (!shouldAvoidRefresh) {
+                try {
+                    const currentTime = new Date().toISOString();
+                    if (!event.locals.user.last_login || 
+                        new Date(event.locals.user.last_login).getTime() < Date.now() - 12 * 60 * 60 * 1000) {
+                        
+                        // Add timeout for last_login update
+                        const updatePromise = event.locals.pb.collection('users').update(event.locals.user.id, {
+                            last_login: currentTime
+                        });
+                        const updateTimeout = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('last_login update timeout')), 1000)
+                        );
+                        
+                        await Promise.race([updatePromise, updateTimeout]);
+                        event.locals.user.last_login = currentTime;
+                    }
+                } catch (updateErr) {
+                    // Log but don't fail - last_login is not critical
+                    console.warn('Failed to update last_login:', updateErr);
                 }
-            } catch (updateErr) {
-                // Log but don't fail - last_login is not critical
-                console.warn('Failed to update last_login:', updateErr);
             }
         } catch (err) {
             // Log the error for debugging in production
-            console.error('Auth refresh failed:', err);
-            // Clear the auth store on failed refresh
-            event.locals.pb.authStore.clear();
+            console.error('Auth processing failed:', err);
+            console.error('URL:', event.url.pathname);
+            console.error('User agent:', event.request.headers.get('user-agent'));
+            
+            // In production, try to gracefully handle auth failures instead of clearing auth
+            const isProduction = process.env.NODE_ENV === 'production';
+            if (isProduction) {
+                console.warn('Production auth error - continuing with basic auth data to avoid 502');
+                // Keep the user data from the auth store if it exists, but mark as potentially stale
+                if (event.locals.pb.authStore.record) {
+                    event.locals.user = event.locals.pb.authStore.record;
+                }
+            } else {
+                // In development, clear the auth store on failed refresh
+                event.locals.pb.authStore.clear();
+            }
         }
     }
 
