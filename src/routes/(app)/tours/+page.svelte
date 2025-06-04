@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { toursApi } from '$lib/pocketbase.js';
+	import { toursApi, qrCodesApi } from '$lib/pocketbase.js';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -28,6 +28,7 @@
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import UserCheck from 'lucide-svelte/icons/user-check';
 
 	let { data }: { data: PageData } = $props();
 	let tours = $state<Tour[]>((data.tours as unknown as Tour[]) || []);
@@ -99,6 +100,37 @@
 			};
 
 			const newTour = await toursApi.create(duplicatedData);
+			
+			// Create a QR code for the duplicated tour
+			try {
+				const generateUniqueCode = () => {
+					const tourPrefix = newTour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
+					const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+					return `${tourPrefix}-${randomSuffix}`;
+				};
+
+				const qrData = {
+					tour: newTour.id,
+					name: `${newTour.name} - Main QR Code`,
+					category: 'digital' as const,
+					code: generateUniqueCode(),
+					scans: 0,
+					conversions: 0,
+					isActive: true,
+					customization: {
+						color: '#000000',
+						backgroundColor: '#FFFFFF',
+						style: 'square' as const
+					}
+				};
+				
+				await qrCodesApi.create(qrData);
+				console.log('QR code created for duplicated tour:', newTour.id);
+			} catch (qrError) {
+				console.error('Failed to create QR code for duplicated tour:', qrError);
+				// Continue anyway - user can create QR codes manually
+			}
+			
 			tours = [newTour, ...tours];
 			openDropdownId = null;
 		} catch (err) {
@@ -213,16 +245,18 @@
 	}
 </script>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<PageHeader 
-		title="Tours"
-		subtitle="Manage and track your tour offerings"
-	>
-		<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-			<Plus class="h-5 w-5" />
-			Create Tour
-		</button>
-	</PageHeader>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="mb-6 sm:mb-8">
+		<PageHeader 
+			title="Tours"
+			subtitle="Manage and track your tour offerings"
+		>
+			<button onclick={() => goto('/tours/new')} class="hidden sm:flex button-primary button--gap">
+				<Plus class="h-4 w-4 sm:h-5 sm:w-5" />
+				Create Tour
+			</button>
+		</PageHeader>
+	</div>
 
 	{#if error}
 		<div class="mb-6">
@@ -230,13 +264,37 @@
 		</div>
 	{/if}
 
+	<!-- Mobile Quick Actions - Prominent on mobile -->
+	<div class="lg:hidden mb-6">
+		<div class="bg-white rounded-xl border border-gray-200 p-4">
+			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+			<div class="grid grid-cols-2 gap-3">
+				<button
+					onclick={() => goto('/tours/new')}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<Plus class="h-4 w-4" />
+					New Tour
+				</button>
+				<button
+					onclick={() => goto('/checkin-scanner')}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<UserCheck class="h-4 w-4" />
+					QR Scanner
+				</button>
+			</div>
+		</div>
+	</div>
+
 	<!-- Quick Stats Dashboard -->
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 items-stretch">
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 items-stretch">
 		<StatsCard
 			title="Today's Bookings"
 			value={stats.todayBookings || 0}
 			subtitle="bookings for today"
 			icon={Calendar}
+			variant="small"
 		/>
 
 		<StatsCard
@@ -245,6 +303,7 @@
 			subtitle="{stats.totalBookings || 0} total bookings"
 			icon={BarChart3}
 			trend={stats.weekBookings > 0 ? { value: "This week", positive: true } : undefined}
+			variant="small"
 		/>
 
 		<StatsCard
@@ -253,6 +312,7 @@
 			subtitle="{stats.totalParticipants || 0} total guests"
 			icon={DollarSign}
 			trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
+			variant="small"
 		/>
 
 		<StatsCard
@@ -260,70 +320,80 @@
 			value="{stats.active || 0}/{stats.total || 0}"
 			subtitle="of total tours"
 			icon={Eye}
+			variant="small"
 		/>
 	</div>
 
 	<!-- Search and Filters -->
-	<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-		<div class="flex flex-col lg:flex-row gap-4">
+	<div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+		<div class="space-y-4">
 			<!-- Search -->
-			<div class="flex-1">
+			<div class="w-full">
 				<div class="relative">
 					{#if isFiltering}
-						<div class="absolute left-4 top-1/2 -translate-y-1/2">
+						<div class="absolute left-3 top-1/2 -translate-y-1/2">
 							<LoadingSpinner size="small" />
 						</div>
 					{:else}
-						<Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+						<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
 					{/if}
 					<input
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search tours by name, location, or description..."
-						class="form-input pl-12"
+						class="form-input w-full pl-10 sm:pl-12"
 					/>
 				</div>
 			</div>
 
-			<!-- Filter Buttons -->
-			<div class="flex items-center gap-3">
-				<button
-					onclick={() => showFilters = !showFilters}
-					class="button-secondary button--gap {showFilters ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}"
-				>
-					<Filter class="h-5 w-5" />
-					Filters
-					{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
-						<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
-							{(selectedCategory !== 'all' ? 1 : 0) + (selectedStatus !== 'all' ? 1 : 0)}
-						</span>
-					{/if}
-				</button>
-
-				{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
+			<!-- Filter Controls -->
+			<div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+				<!-- Filter Toggle & Clear Buttons -->
+				<div class="flex items-center gap-3">
 					<button
-						onclick={() => { selectedCategory = 'all'; selectedStatus = 'all'; }}
-						class="button-secondary button--small text-red-600 border-red-200 hover:bg-red-50"
+						onclick={() => showFilters = !showFilters}
+						class="button-secondary button--gap button--small {showFilters ? 'bg-blue-50 text-blue-700 border-blue-200' : ''}"
 					>
-						Clear Filters
+						<Filter class="h-4 w-4" />
+						<span class="hidden sm:inline">Filters</span>
+						<span class="sm:hidden">Filter</span>
+						{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
+							<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+								{(selectedCategory !== 'all' ? 1 : 0) + (selectedStatus !== 'all' ? 1 : 0)}
+							</span>
+						{/if}
 					</button>
-				{/if}
 
-				<select
-					bind:value={sortBy}
-					class="form-select"
-				>
-					<option value="recent">Most Recent</option>
-					<option value="name">Name (A-Z)</option>
-					<option value="price-low">Price (Low to High)</option>
-					<option value="price-high">Price (High to Low)</option>
-				</select>
+					{#if selectedCategory !== 'all' || selectedStatus !== 'all'}
+						<button
+							onclick={() => { selectedCategory = 'all'; selectedStatus = 'all'; }}
+							class="button-secondary button--gap button--small text-red-600 border-red-200 hover:bg-red-50"
+						>
+							<span class="hidden sm:inline">Clear Filters</span>
+							<span class="sm:hidden">Clear</span>
+						</button>
+					{/if}
+				</div>
+
+				<!-- Sort Dropdown -->
+				<div class="flex items-center gap-2 sm:ml-auto">
+					<span class="text-sm text-gray-600 hidden sm:inline">Sort:</span>
+					<select
+						bind:value={sortBy}
+						class="form-select form-select--small min-w-0"
+					>
+						<option value="recent">Most Recent</option>
+						<option value="name">Name (A-Z)</option>
+						<option value="price-low">Price (Low to High)</option>
+						<option value="price-high">Price (High to Low)</option>
+					</select>
+				</div>
 			</div>
 		</div>
 
 		<!-- Expanded Filters -->
 		{#if showFilters}
-			<div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
 				<div>
 					<div class="block text-sm font-medium text-gray-700 mb-2">Status</div>
 					<div class="flex flex-wrap gap-2">
@@ -353,7 +423,7 @@
 					<select
 						id="category-select"
 						bind:value={selectedCategory}
-						class="form-select"
+						class="form-select form-select--small"
 					>
 						<option value="all">All Categories</option>
 						{#each tourCategories as category}
@@ -371,7 +441,7 @@
 			<LoadingSpinner size="medium" text="Loading tours..." />
 		</div>
 	{:else if filteredTours.length === 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-12">
+		<div class="bg-white rounded-xl border border-gray-200 p-8 sm:p-12">
 			<EmptyState
 				icon={searchQuery ? Search : MapPin}
 				title={searchQuery ? 'No tours found' : 'No tours yet'}
@@ -386,7 +456,7 @@
 		</div>
 	{:else}
 		<!-- Results Counter -->
-		<div class="mb-6 flex items-center justify-between">
+		<div class="mb-4 sm:mb-6 flex items-center justify-between">
 			<p class="text-sm text-gray-600">
 				Showing {filteredTours.length} of {tours.length} tours
 				{#if searchQuery || selectedCategory !== 'all' || selectedStatus !== 'all'}
@@ -403,11 +473,11 @@
 			{/if}
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
 			{#each filteredTours as tour (tour.id)}
 				<div class="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 group relative flex flex-col h-full">
 					<!-- Tour Image -->
-					<div class="relative h-48 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
+					<div class="relative h-40 sm:h-48 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
 						{#if tour.images && tour.images[0]}
 							<img 
 								src={`https://z.xeon.pl/api/files/tours/${tour.id}/${tour.images[0]}?thumb=400x300`} 
@@ -416,49 +486,49 @@
 							/>
 						{:else}
 							<div class="w-full h-full flex items-center justify-center">
-								<MapPin class="h-12 w-12 text-gray-300" />
+								<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
 							</div>
 						{/if}
 						
 						<!-- Status Badge -->
-						<div class="absolute top-3 right-3">
-							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(tour.status)} backdrop-blur-sm">
+						<div class="absolute top-2 sm:top-3 right-2 sm:right-3">
+							<span class="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(tour.status)} backdrop-blur-sm">
 								<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
 								{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 							</span>
 						</div>
 
 						<!-- Quick Actions on Hover (Desktop) / Always Visible (Mobile) -->
-						<div class="absolute inset-0 bg-black/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+						<div class="absolute inset-0 bg-black/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
 							<button
 								onclick={() => goto(`/tours/${tour.id}`)}
 								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
 								title="View details"
 							>
-								<Eye class="h-5 w-5" />
+								<Eye class="h-4 w-4 sm:h-5 sm:w-5" />
 							</button>
 							<button
 								onclick={() => goto(`/tours/${tour.id}/edit`)}
 								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
 								title="Edit tour"
 							>
-								<Edit class="h-5 w-5" />
+								<Edit class="h-4 w-4 sm:h-5 sm:w-5" />
 							</button>
 							<button
 								onclick={() => goto(`/tours/${tour.id}/qr`)}
 								class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
 								title="QR codes"
 							>
-								<QrCode class="h-5 w-5" />
+								<QrCode class="h-4 w-4 sm:h-5 sm:w-5" />
 							</button>
 						</div>
 					</div>
 
 					<!-- Tour Content -->
-					<div class="p-5 flex flex-col flex-grow">
+					<div class="p-4 sm:p-5 flex flex-col flex-grow">
 						<!-- Title and Category -->
 						<div class="mb-3">
-							<h3 class="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{tour.name}</h3>
+							<h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{tour.name}</h3>
 							{#if tour.category}
 								<span class="text-sm text-gray-500">{tour.category}</span>
 							{/if}
@@ -472,20 +542,20 @@
 						<!-- Tour Details Grid -->
 						<div class="grid grid-cols-2 gap-3 mb-4 flex-grow">
 							<div class="flex items-center gap-2 text-sm text-gray-600">
-								<DollarSign class="h-4 w-4 text-gray-400" />
+								<DollarSign class="h-4 w-4 text-gray-400 flex-shrink-0" />
 								<span class="font-medium">€{tour.price}</span>
 							</div>
 							<div class="flex items-center gap-2 text-sm text-gray-600">
-								<Clock class="h-4 w-4 text-gray-400" />
+								<Clock class="h-4 w-4 text-gray-400 flex-shrink-0" />
 								<span>{Math.floor(tour.duration / 60)}h {tour.duration % 60}m</span>
 							</div>
 							<div class="flex items-center gap-2 text-sm text-gray-600">
-								<Users class="h-4 w-4 text-gray-400" />
+								<Users class="h-4 w-4 text-gray-400 flex-shrink-0" />
 								<span>Max {tour.capacity}</span>
 							</div>
 							{#if tour.location}
 								<div class="flex items-center gap-2 text-sm text-gray-600">
-									<MapPin class="h-4 w-4 text-gray-400" />
+									<MapPin class="h-4 w-4 text-gray-400 flex-shrink-0" />
 									<span class="truncate">{tour.location}</span>
 								</div>
 							{/if}
@@ -496,13 +566,14 @@
 							<div class="flex gap-2">
 								<button
 									onclick={() => goto(`/tours/${tour.id}`)}
-									class="button-primary button--small"
+									class="button-primary button--small text-xs sm:text-sm"
 								>
-									View Details
+									<span class="hidden sm:inline">View Details</span>
+									<span class="sm:hidden">Details</span>
 								</button>
 								<button
 									onclick={() => goto(`/tours/${tour.id}/bookings`)}
-									class="button-secondary button--small"
+									class="button-secondary button--small text-xs sm:text-sm"
 								>
 									Bookings
 								</button>
@@ -514,28 +585,28 @@
 									onclick={() => toggleDropdown(tour.id)}
 									class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
 								>
-									<MoreVertical class="h-5 w-5" />
+									<MoreVertical class="h-4 w-4 sm:h-5 sm:w-5" />
 								</button>
 								
 								{#if openDropdownId === tour.id}
-									<div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+									<div class="absolute right-0 top-full mt-1 w-44 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
 										<button
 											onclick={() => { goto(`/tours/${tour.id}/edit`); openDropdownId = null; }}
-											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
 										>
 											<Edit class="h-4 w-4" />
 											Edit Tour
 										</button>
 										<button
 											onclick={() => { goto(`/tours/${tour.id}/qr`); openDropdownId = null; }}
-											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
 										>
 											<QrCode class="h-4 w-4" />
 											QR Codes
 										</button>
 										<button
 											onclick={() => { goto(`/tours/${tour.id}/schedule`); openDropdownId = null; }}
-											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
 										>
 											<Calendar class="h-4 w-4" />
 											Schedule
@@ -543,14 +614,14 @@
 										<div class="border-t border-gray-100 my-1"></div>
 										<button
 											onclick={() => duplicateTour(tour)}
-											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
 										>
 											<Copy class="h-4 w-4" />
 											Duplicate
 										</button>
 										<button
 											onclick={() => deleteTour(tour.id)}
-											class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50"
 										>
 											<Trash2 class="h-4 w-4" />
 											Delete

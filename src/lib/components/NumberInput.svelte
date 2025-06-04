@@ -4,6 +4,7 @@
 		label: string;
 		value: number;
 		min?: number;
+		max?: number;
 		step?: number;
 		placeholder?: string;
 		required?: boolean;
@@ -12,6 +13,8 @@
 		decrementLabel?: string;
 		error?: string | null;
 		hasError?: boolean;
+		integerOnly?: boolean;
+		decimalPlaces?: number;
 	}
 
 	let {
@@ -19,6 +22,7 @@
 		label,
 		value = $bindable(),
 		min = 0,
+		max,
 		step = 1,
 		placeholder = "0",
 		required = false,
@@ -26,15 +30,63 @@
 		incrementLabel = "Increase value",
 		decrementLabel = "Decrease value",
 		error = null,
-		hasError = false
+		hasError = false,
+		integerOnly = false,
+		decimalPlaces
 	}: Props = $props();
 
 	function increment() {
-		value = Math.max(min, value + step);
+		const newValue = value + step;
+		const clampedValue = max !== undefined ? Math.min(max, Math.max(min, newValue)) : Math.max(min, newValue);
+		// Round to step precision to avoid floating point issues
+		let roundedValue = Math.round(clampedValue / step) * step;
+		
+		if (integerOnly) {
+			roundedValue = Math.round(roundedValue);
+		} else if (decimalPlaces !== undefined) {
+			roundedValue = Math.round(roundedValue * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+		}
+		
+		value = roundedValue;
 	}
 
 	function decrement() {
-		value = Math.max(min, value - step);
+		const newValue = Math.max(min, value - step);
+		// Round to step precision to avoid floating point issues
+		let roundedValue = Math.round(newValue / step) * step;
+		
+		if (integerOnly) {
+			roundedValue = Math.round(roundedValue);
+		} else if (decimalPlaces !== undefined) {
+			roundedValue = Math.round(roundedValue * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+		}
+		
+		value = roundedValue;
+	}
+
+	function handleInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		let inputValue = parseFloat(target.value);
+		
+		if (isNaN(inputValue)) {
+			inputValue = min;
+		}
+		
+		// Apply constraints
+		if (max !== undefined) {
+			inputValue = Math.min(max, inputValue);
+		}
+		inputValue = Math.max(min, inputValue);
+		
+		// Round based on requirements
+		if (integerOnly) {
+			inputValue = Math.round(inputValue);
+		} else if (decimalPlaces !== undefined) {
+			inputValue = Math.round(inputValue * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+		}
+		
+		value = inputValue;
+		target.value = inputValue.toString();
 	}
 </script>
 
@@ -49,9 +101,11 @@
 			{id}
 			bind:value
 			{min}
-			step={step.toString()}
+			max={max}
+			step={integerOnly ? "1" : step.toString()}
 			{placeholder}
 			{disabled}
+			oninput={handleInput}
 			class="form-input pr-16 {hasError ? 'error' : ''}"
 		/>
 		{#if error}

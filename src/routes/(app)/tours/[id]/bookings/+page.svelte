@@ -24,6 +24,8 @@
 	import Search from 'lucide-svelte/icons/search';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Ticket from 'lucide-svelte/icons/ticket';
+	import Plus from 'lucide-svelte/icons/plus';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 
 	// Extended booking type with expand data
 	interface ExpandedBooking extends Booking {
@@ -276,39 +278,41 @@
 	}
 </script>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<PageHeader 
-		title="Bookings Management"
-		subtitle="View and manage all bookings for this tour"
-		breadcrumbs={[
-			{ label: 'Tours', href: '/tours' },
-			{ label: data.tour.name, href: `/tours/${data.tour.id}` },
-			{ label: 'Bookings' }
-		]}
-		backUrl={`/tours/${data.tour.id}`}
-	>
-		<div class="flex items-center gap-2">
-			<button 
-				onclick={refreshBookings}
-				disabled={isLoading}
-				class="button-secondary button--gap button--small"
-			>
-				{#if isLoading}
-					<div class="form-spinner"></div>
-				{:else}
-					<RefreshCw class="h-4 w-4" />
-				{/if}
-				Refresh
-			</button>
-			<button 
-				onclick={exportBookings}
-				class="button-primary button--gap button--small"
-			>
-				<Download class="h-4 w-4" />
-				Export CSV
-			</button>
-		</div>
-	</PageHeader>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="mb-6 sm:mb-8">
+		<PageHeader 
+			title="Bookings Management"
+			subtitle="View and manage all bookings for this tour"
+			breadcrumbs={[
+				{ label: 'Tours', href: '/tours' },
+				{ label: data.tour.name, href: `/tours/${data.tour.id}` },
+				{ label: 'Bookings' }
+			]}
+			backUrl={`/tours/${data.tour.id}`}
+		>
+			<div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+				<button 
+					onclick={refreshBookings}
+					disabled={isLoading}
+					class="button-secondary button--gap button--small"
+				>
+					{#if isLoading}
+						<div class="form-spinner"></div>
+					{:else}
+						<RefreshCw class="h-4 w-4" />
+					{/if}
+					Refresh
+				</button>
+				<button 
+					onclick={exportBookings}
+					class="hidden sm:flex button-primary button--gap button--small"
+				>
+					<Download class="h-4 w-4" />
+					Export CSV
+				</button>
+			</div>
+		</PageHeader>
+	</div>
 
 	{#if error}
 		<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
@@ -323,28 +327,47 @@
 	{/if}
 
 	<!-- Payment Validation Info -->
-	<div class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-		<div class="flex gap-3">
-			<div class="p-1 bg-blue-100 rounded-lg">
-				<AlertCircle class="h-4 w-4 text-blue-600" />
+	<!-- Mobile Quick Actions - Prominent on mobile -->
+	<div class="lg:hidden mb-6">
+		<div class="bg-white rounded-xl border border-gray-200 p-4">
+			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+			<div class="grid grid-cols-2 gap-3">
+				<button
+					onclick={() => goto(`/checkin-scanner?tour=${data.tour.id}`)}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<UserCheck class="h-4 w-4" />
+					Check-in
+				</button>
+				<button
+					onclick={exportBookings}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<Download class="h-4 w-4" />
+					Export
+				</button>
 			</div>
-			<div>
-				<div class="flex items-center gap-2">
-					<p class="font-medium text-blue-800 text-sm">Payment Validation Active</p>
-					<Tooltip content="This feature prevents confirming bookings until payment is completed, ensuring you only provide services to paying customers. The 💳 badge shows payment status for each booking.">
-						<HelpCircle class="h-3 w-3 text-blue-600" />
-					</Tooltip>
-				</div>
-				<p class="text-xs text-blue-700 mt-1">
-					Booking status changes are validated against payment status. You can only confirm bookings with completed payments. 
-					Payment status is shown with a 💳 badge next to each booking.
-				</p>
+			<div class="grid grid-cols-2 gap-3 mt-3">
+				<button
+					onclick={() => goto(`/tours/${data.tour.id}/qr`)}
+					class="button-secondary button--gap button--small justify-center py-3"
+				>
+					<QrCode class="h-4 w-4" />
+					QR Codes
+				</button>
+				<button
+					onclick={() => goto('/tours/new')}
+					class="button-secondary button--gap button--small justify-center py-3"
+				>
+					<Plus class="h-4 w-4" />
+					New Tour
+				</button>
 			</div>
 		</div>
 	</div>
 
 	<!-- Statistics Cards -->
-	<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
+	<div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
 			value={stats.total}
@@ -494,131 +517,135 @@
 	{:else}
 		<div class="space-y-4">
 			{#each filteredBookings as booking (booking.id)}
-				<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-					<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-						<div class="flex-1">
-							<div class="flex items-start justify-between mb-3">
-								<div>
-									<h3 class="text-lg font-semibold text-gray-900">{booking.customerName}</h3>
-									<div class="flex items-center gap-2 mt-1 text-sm text-gray-600">
-										<span>Ref: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">{booking.bookingReference}</code></span>
-										<span>•</span>
-										<span>{booking.customerEmail}</span>
+				<div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-shadow">
+					<div class="flex flex-col gap-4">
+						<!-- Header Section -->
+						<div class="flex flex-col gap-3">
+							<div class="flex items-start justify-between">
+								<div class="min-w-0 flex-1">
+									<h3 class="text-lg font-semibold text-gray-900 truncate">{booking.customerName}</h3>
+									<div class="mt-1 space-y-1">
+										<div class="text-sm text-gray-600">
+											<span>Ref: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">{booking.bookingReference}</code></span>
+										</div>
+										<div class="text-sm text-gray-600 truncate">{booking.customerEmail}</div>
 										{#if booking.customerPhone}
-											<span>•</span>
-											<span>{booking.customerPhone}</span>
+											<div class="text-sm text-gray-600">{booking.customerPhone}</div>
 										{/if}
 									</div>
 								</div>
-								<div class="flex items-center gap-2 flex-wrap">
-									<!-- Booking Status Badge -->
-									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
-										booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :
-										booking.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-										booking.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-										booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-										'bg-gray-50 text-gray-700 border-gray-200'
-									} border">
-										<span class="w-1.5 h-1.5 rounded-full {
-											booking.status === 'confirmed' ? 'bg-green-500' :
-											booking.status === 'pending' ? 'bg-yellow-500' :
-											booking.status === 'cancelled' ? 'bg-red-500' :
-											booking.status === 'completed' ? 'bg-blue-500' :
-											'bg-gray-500'
-										}"></span>
-										{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-									</span>
-									
-									<!-- Payment Status Badge -->
-									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
-										booking.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-										booking.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-										booking.paymentStatus === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
-										booking.paymentStatus === 'refunded' ? 'bg-gray-50 text-gray-700 border-gray-200' :
-										'bg-gray-50 text-gray-700 border-gray-200'
-									} border">
-										<span class="mr-0.5">💳</span>
-										{booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
-									</span>
+							</div>
+							
+							<!-- Status Badges - Mobile Optimized -->
+							<div class="flex flex-wrap gap-2">
+								<!-- Booking Status Badge -->
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+									booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :
+									booking.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+									booking.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+									booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+									'bg-gray-50 text-gray-700 border-gray-200'
+								} border">
+									<span class="w-1.5 h-1.5 rounded-full {
+										booking.status === 'confirmed' ? 'bg-green-500' :
+										booking.status === 'pending' ? 'bg-yellow-500' :
+										booking.status === 'cancelled' ? 'bg-red-500' :
+										booking.status === 'completed' ? 'bg-blue-500' :
+										'bg-gray-500'
+									}"></span>
+									{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+								</span>
+								
+								<!-- Payment Status Badge -->
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+									booking.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+									booking.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+									booking.paymentStatus === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
+									booking.paymentStatus === 'refunded' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+									'bg-gray-50 text-gray-700 border-gray-200'
+								} border">
+									<span class="mr-0.5">💳</span>
+									{booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
+								</span>
 
-									<!-- Attendance Status Badge (for confirmed bookings) -->
-									{#if booking.status === 'confirmed' && booking.paymentStatus === 'paid'}
-										<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
-											booking.attendanceStatus === 'checked_in' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-											booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700 border-gray-200' :
-											'bg-purple-50 text-purple-700 border-purple-200'
-										} border">
-											<span class="mr-0.5">
-												{#if booking.attendanceStatus === 'checked_in'}
-													✅
-												{:else if booking.attendanceStatus === 'no_show'}
-													❌
-												{:else}
-													⏳
-												{/if}
-											</span>
+								<!-- Attendance Status Badge (for confirmed bookings) -->
+								{#if booking.status === 'confirmed' && booking.paymentStatus === 'paid'}
+									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+										booking.attendanceStatus === 'checked_in' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+										booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+										'bg-purple-50 text-purple-700 border-purple-200'
+									} border">
+										<span class="mr-0.5">
 											{#if booking.attendanceStatus === 'checked_in'}
-												Checked In
+												✅
 											{:else if booking.attendanceStatus === 'no_show'}
-												No Show
+												❌
 											{:else}
-												Not Arrived
+												⏳
 											{/if}
 										</span>
-									{/if}
-								</div>
+										{#if booking.attendanceStatus === 'checked_in'}
+											Checked In
+										{:else if booking.attendanceStatus === 'no_show'}
+											No Show
+										{:else}
+											Not Arrived
+										{/if}
+									</span>
+								{/if}
 							</div>
+												</div>
 
-							{#if booking.checkedInAt}
-								<p class="text-xs text-gray-500 mt-2">
-									Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', {
-										month: 'short',
-										day: 'numeric',
-										hour: 'numeric',
-										minute: '2-digit',
-										hour12: true
-									})}
+						{#if booking.checkedInAt}
+							<p class="text-xs text-gray-500">
+								Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', {
+									month: 'short',
+									day: 'numeric',
+									hour: 'numeric',
+									minute: '2-digit',
+									hour12: true
+								})}
+							</p>
+						{/if}
+
+						<!-- Details Grid - Mobile Optimized -->
+						<div class="grid grid-cols-2 gap-3">
+							<div class="p-3 bg-gray-50 rounded-lg">
+								<Calendar class="h-4 w-4 text-gray-400 mx-auto mb-1" />
+								<p class="text-sm font-semibold text-gray-900">
+									{booking.expand?.timeSlot?.startTime ? 
+										formatDate(booking.expand.timeSlot.startTime) : 
+										formatDate(booking.created)}
 								</p>
-							{/if}
-
-							<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<Calendar class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-									<p class="text-sm font-semibold text-gray-900">
-										{booking.expand?.timeSlot?.startTime ? 
-											formatDate(booking.expand.timeSlot.startTime) : 
-											formatDate(booking.created)}
-									</p>
-									<p class="text-xs text-gray-500">Date</p>
-								</div>
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<Clock class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-									<p class="text-sm font-semibold text-gray-900">
-										{booking.expand?.timeSlot?.startTime ? 
-											formatTime(booking.expand.timeSlot.startTime) : 
-											'Not scheduled'}
-									</p>
-									<p class="text-xs text-gray-500">Time</p>
-								</div>
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<Users class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-									<p class="text-sm font-semibold text-gray-900">{booking.participants}</p>
-									<p class="text-xs text-gray-500">Participants</p>
-								</div>
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<Euro class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-									<p class="text-sm font-semibold text-gray-900">{formatEuro(booking.totalAmount)}</p>
-									<p class="text-xs text-gray-500">Amount</p>
-								</div>
+								<p class="text-xs text-gray-500">Date</p>
 							</div>
-
-							{#if booking.specialRequests}
-								<div class="mt-3 p-3 bg-blue-50 rounded-lg">
-									<p class="text-xs text-blue-700 font-medium mb-1">Special Requests:</p>
-									<p class="text-sm text-blue-900">{booking.specialRequests}</p>
-								</div>
-							{/if}
+							<div class="p-3 bg-gray-50 rounded-lg">
+								<Clock class="h-4 w-4 text-gray-400 mx-auto mb-1" />
+								<p class="text-sm font-semibold text-gray-900">
+									{booking.expand?.timeSlot?.startTime ? 
+										formatTime(booking.expand.timeSlot.startTime) : 
+										'Not scheduled'}
+								</p>
+								<p class="text-xs text-gray-500">Time</p>
+							</div>
+							<div class="p-3 bg-gray-50 rounded-lg">
+								<Users class="h-4 w-4 text-gray-400 mx-auto mb-1" />
+								<p class="text-sm font-semibold text-gray-900">{booking.participants}</p>
+								<p class="text-xs text-gray-500">Participants</p>
+							</div>
+							<div class="p-3 bg-gray-50 rounded-lg">
+								<Euro class="h-4 w-4 text-gray-400 mx-auto mb-1" />
+								<p class="text-sm font-semibold text-gray-900">{formatEuro(booking.totalAmount)}</p>
+								<p class="text-xs text-gray-500">Amount</p>
+							</div>
 						</div>
+
+						{#if booking.specialRequests}
+							<div class="p-3 bg-blue-50 rounded-lg">
+								<p class="text-xs text-blue-700 font-medium mb-1">Special Requests:</p>
+								<p class="text-sm text-blue-900">{booking.specialRequests}</p>
+							</div>
+						{/if}
 
 						<!-- Actions -->
 						{#if booking.status === 'pending'}

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { toursApi } from '$lib/pocketbase.js';
+	import { toursApi, qrCodesApi } from '$lib/pocketbase.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import type { Tour } from '$lib/types.js';
+	import type { Tour, QRCode } from '$lib/types.js';
 	import type { ValidationError } from '$lib/validation.js';
 
 	let isSubmitting = $state(false);
@@ -84,6 +84,8 @@
 			// Debug: Log the cleaned data
 			console.log('Cleaned form data:', cleanedData);
 
+			let tour: Tour;
+
 			// If there are uploaded images, include them in the form data
 			if (uploadedImages.length > 0) {
 				const formDataWithImages = new FormData();
@@ -123,16 +125,46 @@
 					}
 				}
 
-				const tour = await toursApi.createWithImages(formDataWithImages);
-				// Show success and redirect to schedule setup
-				goto(`/tours/${tour.id}/schedule?new=true`);
+				tour = await toursApi.createWithImages(formDataWithImages);
 			} else {
 				// Test without images first
 				console.log('Creating tour without images:', cleanedData);
-				const tour = await toursApi.create(cleanedData);
-				// Show success and redirect to schedule setup
-				goto(`/tours/${tour.id}/schedule?new=true`);
+				tour = await toursApi.create(cleanedData);
 			}
+
+			// Automatically create a default QR code for the tour
+			try {
+				const generateUniqueCode = () => {
+					const tourPrefix = tour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
+					const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+					return `${tourPrefix}-${randomSuffix}`;
+				};
+
+				const qrData: Partial<QRCode> = {
+					tour: tour.id,
+					name: `${tour.name} - Main QR Code`,
+					category: 'digital', // Default to digital/social category
+					code: generateUniqueCode(),
+					scans: 0,
+					conversions: 0,
+					isActive: true,
+					customization: {
+						color: '#000000',
+						backgroundColor: '#FFFFFF',
+						style: 'square'
+					}
+				};
+				
+				await qrCodesApi.create(qrData);
+				console.log('Default QR code created successfully for tour:', tour.id);
+			} catch (qrError) {
+				// Log error but don't fail the tour creation
+				console.error('Failed to create default QR code:', qrError);
+				// Continue to redirect - the user can create QR codes manually later
+			}
+
+			// Show success and redirect to schedule setup
+			goto(`/tours/${tour.id}/schedule?new=true`);
 		} catch (err) {
 			error = 'Failed to create tour. Please try again.';
 			console.error('Error creating tour:', err);

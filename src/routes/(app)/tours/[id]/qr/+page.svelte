@@ -1,112 +1,162 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import type { PageData } from './$types.js';
-	import type { QRCode } from '$lib/types.js';
+	import { onMount, onDestroy } from 'svelte';
 	import { qrCodesApi } from '$lib/pocketbase.js';
+	import type { QRCode } from '$lib/types.js';
+	import type { PageData } from './$types.js';
 	import QRGenerator from '$lib/components/QRGenerator.svelte';
-	import StatsCard from '$lib/components/StatsCard.svelte';
+	
 	import QrCodeIcon from 'lucide-svelte/icons/qr-code';
-	import Download from 'lucide-svelte/icons/download';
+	import Plus from 'lucide-svelte/icons/plus';
 	import Eye from 'lucide-svelte/icons/eye';
 	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
-	import Plus from 'lucide-svelte/icons/plus';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Check from 'lucide-svelte/icons/check';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import ToggleLeft from 'lucide-svelte/icons/toggle-left';
 	import ToggleRight from 'lucide-svelte/icons/toggle-right';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import TrendingUp from 'lucide-svelte/icons/trending-up';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import X from 'lucide-svelte/icons/x';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	import ExternalLink from 'lucide-svelte/icons/external-link';
-	
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Filter from 'lucide-svelte/icons/filter';
+	import MoreVertical from 'lucide-svelte/icons/more-vertical';
+
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import TourHeader from '$lib/components/TourHeader.svelte';
+	import StatsCard from '$lib/components/StatsCard.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+
 	let { data }: { data: PageData } = $props();
-	
-	// QR code rendering
-	let qrCodeElements = $state<Record<string, HTMLDivElement>>({});
-	
+
 	let qrCodes = $state<QRCode[]>([]);
-	let isLoading = $state(true);
+	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let showGenerator = $state(false);
-	let selectedCategory = $state('all');
 	let copiedQRId = $state<string | null>(null);
 	let deleteConfirmId = $state<string | null>(null);
-	
-	// Stats
-	let totalScans = $derived(qrCodes.reduce((sum, qr) => sum + qr.scans, 0));
-	let totalConversions = $derived(qrCodes.reduce((sum, qr) => sum + qr.conversions, 0));
-	let conversionRate = $derived(totalScans > 0 ? ((totalConversions / totalScans) * 100).toFixed(1) : '0');
-	let activeQRCount = $derived(qrCodes.filter(qr => qr.isActive).length);
-	
-	// Category configuration
+	let qrCodeElements = $state<{ [key: string]: HTMLElement }>({});
+	let selectedCategory = $state<string>('all');
+	let showFirstQRAlert = $state(qrCodes.length === 1 && !localStorage.getItem('qr_first_time_dismissed'));
+	let showMobileActions = $state<string | null>(null);
+
+	// Categories for QR codes
 	const categories = {
-		digital: { label: 'Digital/Social', icon: '📱', color: '#3B82F6' },
-		print: { label: 'Print Materials', icon: '🖨️', color: '#10B981' },
-		partner: { label: 'Partner/Referral', icon: '🤝', color: '#F59E0B' },
-		event: { label: 'Special Events', icon: '🎉', color: '#8B5CF6' },
-		promo: { label: 'Limited Offers', icon: '🔥', color: '#EF4444' }
+		'digital': { label: 'Digital/Social', icon: '📱', color: '#3B82F6' },
+		'print': { label: 'Print Materials', icon: '🖨️', color: '#10B981' },
+		'partner': { label: 'Partner/Referral', icon: '🤝', color: '#F59E0B' },
+		'event': { label: 'Special Events', icon: '🎉', color: '#8B5CF6' },
+		'limited': { label: 'Limited Offers', icon: '🔥', color: '#EF4444' },
+		'promo': { label: 'Limited Offers', icon: '🔥', color: '#EF4444' }
 	};
-	
-	// Filtered QR codes
+
+	// Computed values for statistics
+	let activeQRCount = $derived(qrCodes.filter(qr => qr.isActive).length);
+	let totalScans = $derived(qrCodes.reduce((sum, qr) => sum + (qr.scans || 0), 0));
+	let totalConversions = $derived(qrCodes.reduce((sum, qr) => sum + (qr.conversions || 0), 0));
+	let conversionRate = $derived(totalScans > 0 ? ((totalConversions / totalScans) * 100).toFixed(1) : '0');
+
 	let filteredQRCodes = $derived(
 		selectedCategory === 'all' 
 			? qrCodes 
 			: qrCodes.filter(qr => qr.category === selectedCategory)
 	);
-	
+
 	onMount(async () => {
-		await loadQRCodes();
-	});
-	
-	// Generate QR codes when data loads or changes
-	$effect(() => {
-		if (qrCodes.length > 0) {
-			qrCodes.forEach(qr => {
-				const element = qrCodeElements[qr.id];
-				if (element) {
-					generateQRCodeDisplay(qr, element);
-				}
-			});
+		if (qrCodes.length === 0) {
+			await loadQRCodes();
 		}
+		
+		// Generate QR codes for display
+		await generateQRCodeImages();
+		
+		// Handle click outside mobile actions
+		document.addEventListener('click', handleClickOutside);
 	});
-	
+
+	onDestroy(() => {
+		// Clean up timers and event listeners
+		if (copiedQRId) {
+			copiedQRId = null;
+		}
+		document.removeEventListener('click', handleClickOutside);
+	});
+
 	async function loadQRCodes() {
 		try {
 			isLoading = true;
 			error = null;
 			const allQRCodes = await qrCodesApi.getAll();
-			// Filter QR codes for this specific tour
 			qrCodes = allQRCodes.filter(qr => qr.tour === data.tour.id);
 		} catch (err) {
-			error = 'Failed to load QR codes';
+			error = 'Failed to load QR codes.';
 			console.error('Error loading QR codes:', err);
 		} finally {
 			isLoading = false;
 		}
 	}
-	
-	async function toggleQRStatus(qr: QRCode) {
-		try {
-			await qrCodesApi.update(qr.id, { isActive: !qr.isActive });
-			await loadQRCodes(); // Reload to get updated data
-		} catch (err) {
-			error = 'Failed to update QR code status';
-			console.error('Error updating QR code:', err);
+
+	async function generateQRCodeImages() {
+		for (const qr of qrCodes) {
+			const element = qrCodeElements[qr.id];
+			if (element) {
+				const url = `${window.location.origin}/book/${qr.code}`;
+				try {
+					// Use the same colors as defined in customization, or defaults
+					const darkColor = qr.customization?.color || '#000000';
+					const lightColor = qr.customization?.backgroundColor || '#FFFFFF';
+					
+					// Use API-based QR generation to match the modal
+					const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&color=${darkColor.replace('#', '')}&bgcolor=${lightColor.replace('#', '')}`;
+					
+					const img = document.createElement('img');
+					img.src = qrApiUrl;
+					img.alt = `QR code for ${qr.name}`;
+					img.className = 'w-full h-full object-contain';
+					
+					element.innerHTML = '';
+					element.appendChild(img);
+				} catch (err) {
+					console.error('Error generating QR code:', err);
+				}
+			}
 		}
 	}
-	
+
+	async function copyBookingUrl(qrId: string, code: string) {
+		const url = `${window.location.origin}/book/${code}`;
+		try {
+			await navigator.clipboard.writeText(url);
+			copiedQRId = qrId;
+			setTimeout(() => {
+				copiedQRId = null;
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy URL:', err);
+		}
+	}
+
+	async function toggleQRStatus(qr: QRCode) {
+		try {
+			const updatedQR = await qrCodesApi.update(qr.id, {
+				isActive: !qr.isActive
+			});
+			
+			// Update the QR code in the list
+			qrCodes = qrCodes.map(q => q.id === qr.id ? updatedQR : q);
+		} catch (err) {
+			error = 'Failed to update QR code status.';
+			console.error('Error updating QR status:', err);
+		}
+	}
+
 	function initiateDelete(qrId: string) {
 		if (deleteConfirmId === qrId) {
-			// Second click - actually delete
-			performDelete(qrId);
+			deleteQRCode(qrId);
 		} else {
-			// First click - show confirmation state
 			deleteConfirmId = qrId;
-			// Reset after 3 seconds if not confirmed
+			// Reset confirmation after 3 seconds
 			setTimeout(() => {
 				if (deleteConfirmId === qrId) {
 					deleteConfirmId = null;
@@ -114,172 +164,165 @@
 			}, 3000);
 		}
 	}
-	
-	async function performDelete(qrId: string) {
+
+	async function deleteQRCode(qrId: string) {
 		try {
 			await qrCodesApi.delete(qrId);
+			qrCodes = qrCodes.filter(qr => qr.id !== qrId);
 			deleteConfirmId = null;
-			await loadQRCodes();
 		} catch (err) {
-			error = 'Failed to delete QR code';
+			error = 'Failed to delete QR code.';
 			console.error('Error deleting QR code:', err);
-			deleteConfirmId = null;
 		}
 	}
-	
-	async function copyBookingUrl(qrId: string, code: string) {
-		const url = `${window.location.origin}/book/${code}`;
-		try {
-			await navigator.clipboard.writeText(url);
-			copiedQRId = qrId;
-			// Reset after 2 seconds
-			setTimeout(() => {
-				copiedQRId = null;
-			}, 2000);
-		} catch (err) {
-			// Fallback for browsers that don't support clipboard API
-			console.error('Failed to copy to clipboard:', err);
-		}
-	}
-	
-	function onQRCodeCreated(qrCode: QRCode) {
-		showGenerator = false;
-		loadQRCodes();
-	}
-	
-	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
+
+	function formatDate(dateString: string): string {
+		const date = new Date(dateString);
+		const now = new Date();
+		const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+		
+		if (diffDays === 0) return 'Today';
+		if (diffDays === 1) return 'Yesterday';
+		if (diffDays < 7) return `${diffDays} days ago`;
+		if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+		
+		return date.toLocaleDateString('en-US', { 
+			month: 'short', 
+			day: 'numeric',
+			year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
 		});
 	}
-	
-	// Generate QR code for display
-	async function generateQRCodeDisplay(qr: QRCode, element: HTMLDivElement) {
-		if (!element) return;
+
+	function onQRCodeCreated(newQR: QRCode) {
+		qrCodes = [...qrCodes, newQR];
+		showGenerator = false;
 		
-		try {
-			// Clear existing content
-			element.innerHTML = '';
-			
-			const bookingUrl = `${window.location.origin}/book/${qr.code}`;
-			
-			if (qr.customization) {
-				// Use custom styling with qr-code-styling library
-				const QRCodeStylingModule = await import('qr-code-styling');
-				const QRCodeStyling = QRCodeStylingModule.default || QRCodeStylingModule;
-				
-				const options = {
-					width: 80,
-					height: 80,
-					type: 'canvas' as const,
-					data: bookingUrl,
-					dotsOptions: {
-						color: qr.customization.color || '#000000',
-						type: qr.customization.style === 'dots' ? 'dots' : qr.customization.style === 'rounded' ? 'rounded' : 'square'
-					},
-					backgroundOptions: {
-						color: qr.customization.backgroundColor || '#FFFFFF',
-					},
-					cornersSquareOptions: {
-						type: qr.customization.style === 'dots' ? 'dot' : qr.customization.style === 'rounded' ? 'rounded' : 'square'
-					},
-					cornersDotOptions: {
-						type: qr.customization.style === 'dots' ? 'dot' : 'square'
-					}
-				};
-				
-				const qrCodeInstance = new (QRCodeStyling as any)(options);
-				qrCodeInstance.append(element);
-			} else {
-				// Use simple img for standard QR codes
-				const img = document.createElement('img');
-				img.src = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(bookingUrl)}`;
-				img.alt = `QR Code for ${qr.name}`;
-				img.className = 'w-full h-full object-contain';
-				img.loading = 'lazy';
-				element.appendChild(img);
-			}
-		} catch (err) {
-			console.error('Error generating QR code display:', err);
-			// Fallback to simple image
-			const img = document.createElement('img');
-			img.src = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${window.location.origin}/book/${qr.code}`)}`;
-			img.alt = `QR Code for ${qr.name}`;
-			img.className = 'w-full h-full object-contain';
-			element.appendChild(img);
+		// Generate QR code image for the new QR
+		setTimeout(() => generateQRCodeImages(), 100);
+	}
+
+	// Handle click outside mobile actions
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as Element;
+		if (!target.closest('[data-mobile-actions]')) {
+			showMobileActions = null;
 		}
 	}
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<!-- Header -->
-	<div class="mb-8">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-			<div class="flex items-center gap-4">
-				<button 
-					onclick={() => goto(`/tours/${data.tour.id}`)}
-					class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-					aria-label="Back to tour"
-				>
-					<ArrowLeft class="h-5 w-5 text-gray-600" />
-				</button>
-				<div>
-					<nav class="flex items-center gap-2 text-sm text-gray-600 mb-2">
-						<a href="/tours" class="hover:text-primary-600">Tours</a>
-						<ChevronRight class="h-3 w-3" />
-						<a href="/tours/{data.tour.id}" class="hover:text-primary-600">{data.tour.name}</a>
-						<ChevronRight class="h-3 w-3" />
-						<span>QR Codes</span>
-					</nav>
-					<h1 class="text-3xl font-bold text-gray-900">QR Code Management</h1>
-					<p class="mt-1 text-gray-600">Create and track QR codes for offline marketing</p>
-				</div>
-			</div>
-			<button 
-				onclick={() => showGenerator = true} 
-				class="button-primary button--gap"
-			>
-				<Plus class="h-5 w-5" />
-				Create QR Code
-			</button>
-		</div>
-	</div>
+	<PageHeader 
+		title="QR Code Management"
+		subtitle="Create and track QR codes for offline marketing"
+		backUrl="/tours/{data.tour.id}"
+		breadcrumbs={[
+			{ label: 'Tours', href: '/tours' },
+			{ label: data.tour.name, href: `/tours/${data.tour.id}` },
+			{ label: 'QR Codes' }
+		]}
+	>
+		<!-- Tour Status & Name Indicator -->
+		<TourHeader 
+			tour={data.tour} 
+			countInfo={qrCodes.length > 0 ? {
+				icon: QrCodeIcon,
+				label: `${qrCodes.length} QR code${qrCodes.length !== 1 ? 's' : ''}`,
+				detail: activeQRCount > 0 ? `${activeQRCount} enabled` : undefined
+			} : undefined}
+		/>
+
+		<button 
+			onclick={() => showGenerator = true} 
+			class="button-primary button--gap"
+		>
+			<Plus class="h-5 w-5" />
+			<span class="hidden sm:inline">Create QR Code</span>
+			<span class="sm:hidden">Create</span>
+		</button>
+	</PageHeader>
 	
 	{#if error}
 		<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
 			<div class="flex gap-3">
 				<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-				<div>
+				<div class="flex-1">
 					<p class="font-medium text-red-800">Error</p>
 					<p class="text-sm text-red-700 mt-1">{error}</p>
 				</div>
+				<button
+					onclick={() => error = null}
+					class="text-red-400 hover:text-red-600 transition-colors"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+		</div>
+	{/if}
+	
+	<!-- First QR Code Notice -->
+	{#if qrCodes.length === 1 && showFirstQRAlert}
+		<div class="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 p-4 sm:p-6">
+			<div class="flex items-start gap-4">
+				<div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0">
+					<QrCodeIcon class="h-5 w-5 sm:h-6 sm:w-6" />
+				</div>
+				<div class="flex-1 min-w-0">
+					<h3 class="text-lg sm:text-xl font-bold text-purple-900 mb-2 sm:mb-3">🎉 Your First QR Code is Ready!</h3>
+					<p class="text-purple-800 mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base">
+						We automatically created your first QR code when you set up this tour. You can start using it right away!
+					</p>
+					<div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+						<button 
+							onclick={() => copyBookingUrl(qrCodes[0].id, qrCodes[0].code)}
+							class="button-primary button--gap button--small"
+						>
+							<Copy class="h-4 w-4" />
+							Copy Link
+						</button>
+						<button 
+							onclick={() => showGenerator = true} 
+							class="button-secondary button--gap button--small"
+						>
+							<Plus class="h-4 w-4" />
+							Create Another
+						</button>
+					</div>
+				</div>
+				
+				<button
+					onclick={() => {
+						showFirstQRAlert = false;
+						localStorage.setItem('qr_first_time_dismissed', 'true');
+					}}
+					class="p-2 text-purple-400 hover:text-purple-600 transition-colors rounded-lg hover:bg-white/50 flex-shrink-0"
+				>
+					<X class="h-4 w-4 sm:h-5 sm:w-5" />
+				</button>
 			</div>
 		</div>
 	{/if}
 	
 	<!-- Statistics Cards -->
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
 		<StatsCard
 			title="Total QR Codes"
 			value={qrCodes.length}
-			subtitle="{activeQRCount} active"
+			subtitle="{activeQRCount} enabled"
 			icon={QrCodeIcon}
-			trend={activeQRCount > 0 ? { value: `+${activeQRCount} active`, positive: true } : undefined}
+			trend={activeQRCount > 0 ? { value: `${activeQRCount} active`, positive: true } : undefined}
 		/>
 
 		<StatsCard
 			title="Total Scans"
 			value={totalScans}
-			subtitle="all time scans"
+			subtitle="all time"
 			icon={Eye}
 		/>
 
 		<StatsCard
 			title="Conversions"
 			value={totalConversions}
-			subtitle="successful bookings"
+			subtitle="bookings"
 			icon={BarChart3}
 		/>
 
@@ -291,31 +334,51 @@
 		/>
 	</div>
 	
-	<!-- Category Filter and Breakdown -->
+	<!-- Category Filter -->
 	{#if qrCodes.length > 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Filter by Category</h3>
-			<div class="flex flex-wrap gap-2">
+		<div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+			<div class="flex items-center gap-3 mb-4">
+				<Filter class="h-5 w-5 text-gray-600" />
+				<h3 class="text-lg font-semibold text-gray-900">Filter by Category</h3>
+			</div>
+			
+			<!-- Mobile: Dropdown -->
+			<div class="sm:hidden">
+				<select 
+					bind:value={selectedCategory}
+					class="form-select w-full"
+				>
+					<option value="all">All Categories ({qrCodes.length})</option>
+					{#each Object.entries(categories) as [catKey, cat]}
+						{@const categoryQRs = qrCodes.filter(qr => qr.category === catKey)}
+						{#if categoryQRs.length > 0}
+							<option value={catKey}>{cat.icon} {cat.label} ({categoryQRs.length})</option>
+						{/if}
+					{/each}
+				</select>
+			</div>
+			
+			<!-- Desktop: Buttons -->
+			<div class="hidden sm:flex flex-wrap gap-2">
 				<button
 					onclick={() => selectedCategory = 'all'}
 					class="{selectedCategory === 'all' ? 'button-primary' : 'button-secondary'} button--small"
 				>
-					All Categories
+					All Categories ({qrCodes.length})
 				</button>
 				{#each Object.entries(categories) as [catKey, cat]}
 					{@const categoryQRs = qrCodes.filter(qr => qr.category === catKey)}
-					{@const categoryScans = categoryQRs.reduce((sum, qr) => sum + qr.scans, 0)}
-					<button
-						onclick={() => selectedCategory = catKey}
-						class="button--small {selectedCategory === catKey 
-							? 'text-white border-transparent' 
-							: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-						}"
-						style="{selectedCategory === catKey ? `background-color: ${cat.color}; border-color: ${cat.color};` : ''}"
-					>
-						<span class="mr-1">{cat.icon}</span>
-						{cat.label}
-						{#if categoryQRs.length > 0}
+					{#if categoryQRs.length > 0}
+						<button
+							onclick={() => selectedCategory = catKey}
+							class="button--small {selectedCategory === catKey 
+								? 'text-white border-transparent' 
+								: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+							}"
+							style="{selectedCategory === catKey ? `background-color: ${cat.color}; border-color: ${cat.color};` : ''}"
+						>
+							<span class="mr-1">{cat.icon}</span>
+							{cat.label}
 							<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full {
 								selectedCategory === catKey 
 									? 'bg-white/20' 
@@ -323,8 +386,8 @@
 							}">
 								{categoryQRs.length}
 							</span>
-						{/if}
-					</button>
+						</button>
+					{/if}
 				{/each}
 			</div>
 		</div>
@@ -332,168 +395,260 @@
 	
 	<!-- QR Code List -->
 	{#if isLoading}
-		<div class="flex items-center justify-center py-12">
-			<div class="flex items-center gap-2 text-gray-600">
-				<div class="form-spinner"></div>
-				Loading QR codes...
+		<div class="bg-white rounded-xl border border-gray-200 p-12">
+			<div class="flex items-center justify-center">
+				<div class="flex items-center gap-2 text-gray-600">
+					<div class="form-spinner"></div>
+					Loading QR codes...
+				</div>
 			</div>
 		</div>
 	{:else if filteredQRCodes.length === 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-			<div class="max-w-md mx-auto">
-				<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-					<QrCodeIcon class="h-8 w-8 text-gray-400" />
-				</div>
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">
-					{selectedCategory === 'all' ? 'No QR codes yet' : 'No QR codes in this category'}
-				</h3>
-				<p class="text-gray-600 mb-6">
-					{selectedCategory === 'all' 
-						? 'Create your first QR code to start tracking offline marketing performance' 
-						: 'Create a QR code for this category to start tracking'}
-				</p>
-				<button 
-					onclick={() => showGenerator = true} 
-					class="button-primary button--gap"
-				>
-					<Plus class="h-4 w-4" />
-					Create Your First QR Code
-				</button>
-			</div>
+		<div class="bg-white rounded-xl border border-gray-200 p-8 sm:p-12">
+			<EmptyState
+				icon={QrCodeIcon}
+				title={selectedCategory === 'all' ? 'No QR codes yet' : 'No QR codes in this category'}
+				description={selectedCategory === 'all' 
+					? 'Create your first QR code to start tracking offline marketing performance' 
+					: 'Create a QR code for this category to start tracking'}
+				actionText="Create Your First QR Code"
+				onAction={() => showGenerator = true}
+			/>
 		</div>
 	{:else}
-		<div class="grid gap-4">
+		<!-- QR Code Cards - Unified Design -->
+		<div class="grid gap-4 lg:gap-6">
 			{#each filteredQRCodes as qr (qr.id)}
-				<div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-					<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-						<!-- QR Code Preview -->
-						<div class="flex-shrink-0">
-							<div class="w-24 h-24 bg-white border-2 border-gray-200 rounded-lg p-2 flex items-center justify-center relative">
-								<div 
-									class="w-full h-full"
-									bind:this={qrCodeElements[qr.id]}
-								></div>
-							</div>
-						</div>
-						
-						<div class="flex-1">
-							<div class="flex items-start gap-3 mb-3">
+				<div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+					<!-- Card Header -->
+					<div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+						<div class="flex items-center justify-between">
+							<div class="flex items-center gap-3 min-w-0 flex-1">
+								<!-- Category Badge -->
 								{#if qr.category && categories[qr.category]}
 									<div 
-										class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-xs font-medium"
+										class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-medium"
 										style="background-color: {categories[qr.category].color}"
 									>
 										<span>{categories[qr.category].icon}</span>
-										<span>{categories[qr.category].label}</span>
+										<span class="hidden sm:inline">{categories[qr.category].label}</span>
 									</div>
 								{/if}
-								<div class="flex-1">
-									<div class="flex items-center gap-3">
-										<h3 class="text-lg font-semibold text-gray-900">{qr.name}</h3>
+								
+								<!-- Name and Status -->
+								<div class="min-w-0 flex-1">
+									<h3 class="text-lg font-semibold text-gray-900 truncate">{qr.name}</h3>
+									<div class="flex items-center gap-2 mt-1">
 										<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
 											qr.isActive 
-												? 'bg-green-50 text-green-700 border-green-200' 
-												: 'bg-gray-50 text-gray-700 border-gray-200'
-										} border">
+												? 'bg-green-100 text-green-800' 
+												: 'bg-gray-100 text-gray-800'
+										}">
 											<span class="w-1.5 h-1.5 rounded-full {qr.isActive ? 'bg-green-500' : 'bg-gray-500'}"></span>
-											{qr.isActive ? 'Active' : 'Inactive'}
+											{qr.isActive ? 'Enabled' : 'Disabled'}
 										</span>
-									</div>
-									<div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-										<span>Code: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{qr.code}</code></span>
-										<span>•</span>
-										<span>Created {formatDate(qr.created)}</span>
+										<span class="text-xs text-gray-500">Created {formatDate(qr.created)}</span>
 									</div>
 								</div>
 							</div>
 							
-							<div class="grid grid-cols-3 gap-4 text-center">
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<div class="flex items-center justify-center gap-1 text-gray-600 mb-1">
-										<Eye class="h-4 w-4" />
-										<span class="text-xs">Scans</span>
+							<!-- Mobile Menu Toggle -->
+							<div class="sm:hidden relative" data-mobile-actions>
+								<button
+									onclick={() => showMobileActions = showMobileActions === qr.id ? null : qr.id}
+									class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+								>
+									<MoreVertical class="h-4 w-4" />
+								</button>
+								
+								{#if showMobileActions === qr.id}
+									<div class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 min-w-[180px] py-2">
+										<button
+											onclick={() => {
+												copyBookingUrl(qr.id, qr.code);
+												showMobileActions = null;
+											}}
+											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+										>
+											<Copy class="h-4 w-4" />
+											Copy URL
+										</button>
+										<a
+											href={`${window.location.origin}/book/${qr.code}`}
+											target="_blank"
+											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+											onclick={() => showMobileActions = null}
+										>
+											<ExternalLink class="h-4 w-4" />
+											Open Page
+										</a>
+										<button
+											onclick={() => {
+												toggleQRStatus(qr);
+												showMobileActions = null;
+											}}
+											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+										>
+											{#if qr.isActive}
+												<ToggleLeft class="h-4 w-4" />
+												Disable
+											{:else}
+												<ToggleRight class="h-4 w-4" />
+												Enable
+											{/if}
+										</button>
+										<div class="border-t border-gray-100 my-1"></div>
+										<button
+											onclick={() => {
+												initiateDelete(qr.id);
+												showMobileActions = null;
+											}}
+											class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+										>
+											<Trash2 class="h-4 w-4" />
+											Delete
+										</button>
 									</div>
-									<p class="text-xl font-bold text-gray-900">{qr.scans}</p>
-								</div>
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<div class="flex items-center justify-center gap-1 text-gray-600 mb-1">
-										<BarChart3 class="h-4 w-4" />
-										<span class="text-xs">Bookings</span>
-									</div>
-									<p class="text-xl font-bold text-gray-900">{qr.conversions}</p>
-								</div>
-								<div class="p-3 bg-gray-50 rounded-lg">
-									<div class="flex items-center justify-center gap-1 text-gray-600 mb-1">
-										<TrendingUp class="h-4 w-4" />
-										<span class="text-xs">Conversion</span>
-									</div>
-									<p class="text-xl font-bold text-gray-900">
-										{qr.scans > 0 ? ((qr.conversions / qr.scans) * 100).toFixed(1) : '0'}%
-									</p>
-								</div>
+								{/if}
 							</div>
 						</div>
-						
-						<div class="flex flex-col gap-3">
-							<!-- Primary Actions -->
-							<div class="flex gap-2">
-								<button
-									onclick={() => goto(`/tours/${data.tour.id}/qr/${qr.id}`)}
-									class="button-primary button--small button--gap flex-1"
-								>
-									<BarChart3 class="h-4 w-4" />
-									View Details
-								</button>
-								<button
-									onclick={() => copyBookingUrl(qr.id, qr.code)}
-									class="button-secondary button--small button--gap flex-1 {copiedQRId === qr.id ? 'bg-green-50 text-green-700 border-green-200' : ''}"
-									title="Copy booking URL"
-								>
-									{#if copiedQRId === qr.id}
-										<Check class="h-4 w-4" />
-										Copied!
-									{:else}
-										<Copy class="h-4 w-4" />
-										Copy URL
-									{/if}
-								</button>
+					</div>
+					
+					<!-- Card Content -->
+					<div class="p-6">
+						<div class="flex flex-col lg:flex-row gap-6">
+							<!-- QR Code Section -->
+							<div class="flex flex-col items-center lg:items-start">
+								<div class="w-28 h-28 bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+									<div 
+										class="w-full h-full flex items-center justify-center"
+										bind:this={qrCodeElements[qr.id]}
+									></div>
+								</div>
+								<div class="mt-3 text-center lg:text-left">
+									<p class="text-xs text-gray-500 mb-1">QR Code</p>
+									<code class="bg-gray-100 px-2 py-1 rounded-md font-mono text-xs text-gray-800">{qr.code}</code>
+								</div>
 							</div>
 							
-							<!-- Secondary Actions -->
-							<div class="flex gap-1">
-								<a
-									href={`${window.location.origin}/book/${qr.code}`}
-									target="_blank"
-									class="button-secondary button--small button--icon"
-									title="Open booking page"
-								>
-									<ExternalLink class="h-4 w-4" />
-								</a>
-								<button
-									onclick={() => toggleQRStatus(qr)}
-									class="button-secondary button--small button--icon {qr.isActive ? 'text-green-600' : 'text-gray-600'}"
-									title={qr.isActive ? 'Deactivate' : 'Activate'}
-								>
-									{#if qr.isActive}
-										<ToggleRight class="h-4 w-4" />
-									{:else}
-										<ToggleLeft class="h-4 w-4" />
-									{/if}
-								</button>
-								<button
-									onclick={() => initiateDelete(qr.id)}
-									class="button-secondary button--small {
-										deleteConfirmId === qr.id 
-											? 'bg-red-500 text-white border-red-500 hover:bg-red-600 button--gap' 
-											: 'text-red-600 hover:bg-red-50 button--icon'
-									}"
-									title={deleteConfirmId === qr.id ? 'Click to confirm deletion' : 'Delete QR code'}
-								>
-									<Trash2 class="h-4 w-4" />
-									{#if deleteConfirmId === qr.id}
-										<span class="text-xs font-medium">Confirm?</span>
-									{/if}
-								</button>
+							<!-- Stats and Actions -->
+							<div class="flex-1 space-y-6">
+								<!-- Performance Stats -->
+								<div>
+									<h4 class="text-sm font-medium text-gray-900 mb-3">Performance</h4>
+									<div class="grid grid-cols-3 gap-4">
+										<div class="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+											<div class="flex items-center justify-center text-blue-600 mb-2">
+												<Eye class="h-5 w-5" />
+											</div>
+											<p class="text-2xl font-bold text-blue-900">{qr.scans}</p>
+											<p class="text-xs text-blue-700 font-medium">Scans</p>
+										</div>
+										<div class="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+											<div class="flex items-center justify-center text-green-600 mb-2">
+												<BarChart3 class="h-5 w-5" />
+											</div>
+											<p class="text-2xl font-bold text-green-900">{qr.conversions}</p>
+											<p class="text-xs text-green-700 font-medium">Bookings</p>
+										</div>
+										<div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+											<div class="flex items-center justify-center text-purple-600 mb-2">
+												<TrendingUp class="h-5 w-5" />
+											</div>
+											<p class="text-2xl font-bold text-purple-900">
+												{qr.scans > 0 ? ((qr.conversions / qr.scans) * 100).toFixed(1) : '0'}%
+											</p>
+											<p class="text-xs text-purple-700 font-medium">Conversion</p>
+										</div>
+									</div>
+								</div>
+								
+								<!-- Actions -->
+								<div class="hidden sm:block">
+									<h4 class="text-sm font-medium text-gray-900 mb-3">Actions</h4>
+									<div class="flex flex-wrap gap-3">
+										<!-- Primary Actions -->
+										<button
+											onclick={() => goto(`/tours/${data.tour.id}/qr/${qr.id}`)}
+											class="button-primary button--gap"
+										>
+											<BarChart3 class="h-4 w-4" />
+											View Details
+										</button>
+										<button
+											onclick={() => copyBookingUrl(qr.id, qr.code)}
+											class="button-secondary button--gap {copiedQRId === qr.id ? 'bg-green-50 text-green-700 border-green-200' : ''}"
+										>
+											{#if copiedQRId === qr.id}
+												<Check class="h-4 w-4" />
+												Copied!
+											{:else}
+												<Copy class="h-4 w-4" />
+												Copy URL
+											{/if}
+										</button>
+										
+										<!-- Secondary Actions -->
+										<a
+											href={`${window.location.origin}/book/${qr.code}`}
+											target="_blank"
+											class="button-secondary button--gap"
+										>
+											<ExternalLink class="h-4 w-4" />
+											Preview
+										</a>
+										<button
+											onclick={() => toggleQRStatus(qr)}
+											class="button-secondary button--gap {qr.isActive ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}"
+										>
+											{#if qr.isActive}
+												<ToggleLeft class="h-4 w-4" />
+												Disable
+											{:else}
+												<ToggleRight class="h-4 w-4" />
+												Enable
+											{/if}
+										</button>
+										<button
+											onclick={() => initiateDelete(qr.id)}
+											class="button-secondary button--gap {
+												deleteConfirmId === qr.id 
+													? 'bg-red-500 text-white border-red-500 hover:bg-red-600' 
+													: 'text-red-600 hover:bg-red-50 hover:border-red-200'
+											}"
+										>
+											<Trash2 class="h-4 w-4" />
+											{#if deleteConfirmId === qr.id}
+												Confirm Delete
+											{:else}
+												Delete
+											{/if}
+										</button>
+									</div>
+								</div>
+								
+								<!-- Mobile Primary Actions -->
+								<div class="sm:hidden flex gap-3">
+									<button
+										onclick={() => goto(`/tours/${data.tour.id}/qr/${qr.id}`)}
+										class="button-primary button--gap flex-1"
+									>
+										<BarChart3 class="h-4 w-4" />
+										Details
+									</button>
+									<button
+										onclick={() => copyBookingUrl(qr.id, qr.code)}
+										class="button-secondary button--gap flex-1 {copiedQRId === qr.id ? 'bg-green-50 text-green-700 border-green-200' : ''}"
+									>
+										{#if copiedQRId === qr.id}
+											<Check class="h-4 w-4" />
+											Copied!
+										{:else}
+											<Copy class="h-4 w-4" />
+											Copy
+										{/if}
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -507,7 +662,7 @@
 {#if showGenerator}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
 		<div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-gray-200 flex-shrink-0">
+			<div class="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
 				<div class="flex items-center justify-between">
 					<h2 class="text-xl font-semibold text-gray-900">Create New QR Code</h2>
 					<button
@@ -518,7 +673,7 @@
 					</button>
 				</div>
 			</div>
-			<div class="p-6 overflow-y-auto flex-grow">
+			<div class="p-4 sm:p-6 overflow-y-auto flex-grow">
 				<QRGenerator tour={data.tour} onSuccess={onQRCodeCreated} />
 			</div>
 		</div>

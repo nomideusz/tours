@@ -2,6 +2,7 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import { toursApi } from '$lib/pocketbase.js';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
+import type { QRCode } from '$lib/types.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   // Check if user is authenticated
@@ -132,8 +133,41 @@ export const actions: Actions = {
         createdTour = await toursApi.create(sanitizedData);
       }
 
-      // Redirect to the tours list on success
-      throw redirect(303, '/tours');
+      // Automatically create a default QR code for the tour
+      try {
+        // Generate a unique code for the QR
+        const generateUniqueCode = () => {
+          const tourPrefix = createdTour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
+          const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+          return `${tourPrefix}-${randomSuffix}`;
+        };
+
+        const qrData = {
+          tour: createdTour.id,
+          user: locals.user.id,
+          name: `${createdTour.name} - Main QR Code`,
+          category: 'digital', // Default to digital/social category
+          code: generateUniqueCode(),
+          scans: 0,
+          conversions: 0,
+          isActive: true,
+          customization: JSON.stringify({
+            color: '#000000',
+            backgroundColor: '#FFFFFF',
+            style: 'square'
+          })
+        };
+        
+        await locals.pb.collection('qr_codes').create(qrData);
+        console.log('Default QR code created successfully for tour:', createdTour.id);
+      } catch (qrError) {
+        // Log error but don't fail the tour creation
+        console.error('Failed to create default QR code:', qrError);
+        // Optionally, you could store a flag to remind the user to create a QR code later
+      }
+
+      // Redirect to schedule setup for the new tour
+      throw redirect(303, `/tours/${createdTour.id}/schedule?new=true`);
 
     } catch (error) {
       console.error('Error creating tour:', error);

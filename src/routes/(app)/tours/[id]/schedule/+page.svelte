@@ -22,6 +22,7 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import TourHeader from '$lib/components/TourHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
@@ -39,6 +40,10 @@
 	let editingSlotId = $state<string | null>(null);
 	let viewMode = $state<'calendar' | 'list'>('calendar');
 	let selectedDate = $state<Date | null>(null);
+	let successMessage = $state<string | null>(null);
+	let showPublishConfirmation = $state(false);
+	let showDraftAlert = $state(true);
+	let showActiveAlert = $state(true);
 	
 	// Check if this is a new tour (from URL params)
 	let isNewTour = $derived($page.url.searchParams.get('new') === 'true');
@@ -71,6 +76,17 @@
 		}
 	});
 
+	// Auto-hide success message
+	$effect(() => {
+		if (successMessage) {
+			const timer = setTimeout(() => {
+				successMessage = null;
+			}, 5000); // Hide after 5 seconds
+			
+			return () => clearTimeout(timer);
+		}
+	});
+
 	// Form data for new time slot
 	let newSlotForm = $state({
 		startDate: '',
@@ -81,8 +97,6 @@
 		recurringPattern: 'weekly' as 'daily' | 'weekly' | 'monthly',
 		recurringEnd: ''
 	});
-
-
 
 	// Common durations for quick selection
 	const commonDurations = [
@@ -138,9 +152,7 @@
 	}
 
 	async function publishTour() {
-		if (!tour || !confirm('Are you sure you want to publish this tour? It will become visible to customers and available for booking.')) {
-			return;
-		}
+		if (!tour) return;
 
 		try {
 			isSubmitting = true;
@@ -154,14 +166,22 @@
 			// Update local tour state
 			tour = updatedTour;
 
-			// Show success message (you could add a toast notification here)
-			console.log('Tour published successfully!');
+			// Hide welcome alert since tour is now published
+			showWelcome = false;
+
+			// Show success message
+			successMessage = 'Tour published successfully! It\'s now visible to customers.';
+			showPublishConfirmation = false;
 		} catch (err) {
 			error = 'Failed to publish tour. Please try again.';
 			console.error('Error publishing tour:', err);
 		} finally {
 			isSubmitting = false;
 		}
+	}
+
+	function openPublishConfirmation() {
+		showPublishConfirmation = true;
 	}
 
 	async function createRecurringTimeSlots(baseSlotData: any) {
@@ -294,6 +314,15 @@
 			}
 			
 			await loadTimeSlots();
+			
+			// Show success message
+			if (isEditMode) {
+				successMessage = 'Time slot updated successfully!';
+			} else if (newSlotForm.isRecurring) {
+				successMessage = 'Recurring time slots created successfully!';
+			} else {
+				successMessage = 'Time slot created successfully!';
+			}
 			
 			// Reset form
 			newSlotForm = {
@@ -633,6 +662,17 @@
 			{ label: 'Schedule' }
 		]}
 	>
+		<!-- Tour Status & Name Indicator -->
+		{#if tour}
+			<TourHeader 
+				{tour} 
+				countInfo={tour.status === 'active' && totalSlots > 0 ? {
+					icon: Calendar,
+					label: `${totalSlots} time slot${totalSlots !== 1 ? 's' : ''}`
+				} : undefined}
+			/>
+		{/if}
+
 		<div class="flex items-center gap-3">
 			<!-- View Toggle - Mobile First -->
 			<div class="bg-white rounded-lg border border-gray-200 p-1 flex">
@@ -663,86 +703,196 @@
 		</div>
 	</PageHeader>
 
-	<!-- Welcome Section for New Tours -->
-	{#if showWelcome && timeSlots.length === 0}
-		<div class="mb-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200 overflow-hidden">
-			<div class="relative p-6 lg:p-8">
-				<!-- Background Pattern -->
-				<div class="absolute inset-0 opacity-5">
-					<svg class="w-full h-full" viewBox="0 0 100 100" fill="currentColor">
-						<defs>
-							<pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-								<circle cx="5" cy="5" r="1"/>
-							</pattern>
-						</defs>
-						<rect width="100" height="100" fill="url(#grid)"/>
-					</svg>
+	<!-- Welcome Section for New Tours - Professional Design -->
+	{#if showWelcome && timeSlots.length === 0 && tour?.status === 'draft'}
+		<div class="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-6">
+			<div class="flex flex-col sm:flex-row items-start gap-4">
+				<div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+					<div class="text-2xl">🎉</div>
 				</div>
-				
-				<div class="relative flex flex-col lg:flex-row items-start gap-6">
-					<div class="flex-shrink-0">
-						<div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
-							🎉
-						</div>
-					</div>
+				<div class="flex-1 min-w-0">
+					<h3 class="text-xl font-bold text-green-900 mb-3">🎉 Tour Created Successfully!</h3>
+					<p class="text-green-800 mb-4 leading-relaxed">
+						Great! Your tour "<strong class="text-emerald-600">{tour?.name}</strong>" is ready. 
+						Now let's add some time slots so customers can book your amazing experience.
+					</p>
 					
-					<div class="flex-1 min-w-0">
-						<h3 class="text-2xl font-bold text-gray-900 mb-3">
-							Tour Created Successfully!
-						</h3>
-						<p class="text-gray-700 mb-6 text-lg leading-relaxed">
-							Great! Your tour "<strong class="text-blue-600">{tour?.name}</strong>" is ready. 
-							Now let's add some time slots so customers can book your amazing experience.
-						</p>
-						
-						<!-- Progress Steps - Redesigned -->
-						<div class="bg-white/80 backdrop-blur-sm rounded-xl p-4 mb-6 border border-white/50">
-							<div class="flex items-center gap-4 text-sm">
-								<div class="flex items-center gap-2">
-									<div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">1</div>
-									<span class="font-medium text-gray-900">Add time slots</span>
-								</div>
-								<ChevronRight class="h-4 w-4 text-gray-400" />
-								<div class="flex items-center gap-2">
-									<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">2</div>
-									<span class="text-gray-600">Publish tour</span>
-								</div>
-								<ChevronRight class="h-4 w-4 text-gray-400" />
-								<div class="flex items-center gap-2">
-									<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">3</div>
-									<span class="text-gray-600">Generate QR codes</span>
-								</div>
+					<!-- Progress Steps - Simplified -->
+					<div class="bg-white/80 rounded-xl p-4 mb-4 border border-green-100">
+						<div class="flex items-center gap-4 text-sm">
+							<div class="flex items-center gap-2">
+								<div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">1</div>
+								<span class="font-medium text-gray-900">Add time slots</span>
+							</div>
+							<ChevronRight class="h-4 w-4 text-gray-400" />
+							<div class="flex items-center gap-2">
+								<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">2</div>
+								<span class="text-gray-600">Publish tour</span>
+							</div>
+							<ChevronRight class="h-4 w-4 text-gray-400" />
+							<div class="flex items-center gap-2">
+								<div class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-semibold text-xs">3</div>
+								<span class="text-gray-600">Share QR code</span>
 							</div>
 						</div>
-						
-						<!-- Actions -->
-						<div class="flex flex-col sm:flex-row gap-3">
-							<button
-								onclick={() => {
-									showWelcome = false;
-									openAddModal();
-								}}
-								class="button-primary button--gap"
-							>
-								<Plus class="h-5 w-5" />
-								Add Your First Time Slot
-							</button>
-							<button
-								onclick={() => showWelcome = false}
-								class="button-secondary"
-							>
-								I'll do this later
-							</button>
+					</div>
+					
+					<!-- QR Code Info - Inline -->
+					<div class="bg-white/60 rounded-lg p-3 mb-4 border border-green-100">
+						<div class="flex gap-3">
+							<QrCode class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+							<div class="text-sm">
+								<p class="font-medium text-green-800">QR Code Created Automatically!</p>
+								<p class="text-green-700">We've created your first QR code. You can create more QR codes for different marketing channels later.</p>
+							</div>
 						</div>
 					</div>
 					
-					<button
-						onclick={() => showWelcome = false}
-						class="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-white/50"
-					>
-						<X class="h-5 w-5" />
-					</button>
+					<!-- Actions -->
+					<div class="flex flex-col sm:flex-row gap-3">
+						<button
+							onclick={() => {
+								showWelcome = false;
+								openAddModal();
+							}}
+							class="button-primary button--gap"
+						>
+							<Plus class="h-5 w-5" />
+							Add Your First Time Slot
+						</button>
+						<button
+							onclick={() => goto(`/tours/${tourId}`)}
+							class="button-secondary"
+						>
+							I'll do this later
+						</button>
+					</div>
 				</div>
+				
+				<button
+					onclick={() => showWelcome = false}
+					class="flex-shrink-0 p-2 text-green-400 hover:text-green-600 transition-colors rounded-lg hover:bg-white/50"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Success Message -->
+	{#if successMessage}
+		<div class="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 animate-in slide-in-from-top-2 duration-300">
+			<div class="flex gap-3">
+				<div class="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+					<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+						<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+					</svg>
+				</div>
+				<div class="flex-1">
+					<p class="font-medium text-green-800">{successMessage}</p>
+				</div>
+				<button
+					onclick={() => successMessage = null}
+					class="text-green-400 hover:text-green-600 transition-colors"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Draft Status Alert - Moved to top for prominence -->
+	{#if tour?.status === 'draft' && showDraftAlert}
+		<div class="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6">
+			<div class="flex flex-col sm:flex-row items-start gap-4">
+				<div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+					<AlertCircle class="h-6 w-6 text-white" />
+				</div>
+				<div class="flex-1 min-w-0">
+					<h3 class="text-xl font-bold text-amber-900 mb-3">⚠️ Tour is in Draft Mode</h3>
+					<p class="text-amber-800 mb-4 leading-relaxed">
+						Your tour is currently in draft status. Time slots will be saved but <strong>won't be visible to customers</strong> until you publish your tour.
+					</p>
+					<div class="flex flex-col sm:flex-row gap-3">
+						<button
+							onclick={openPublishConfirmation}
+							disabled={isSubmitting}
+							class="button-primary button--gap"
+						>
+							{#if isSubmitting}
+								<div class="form-spinner"></div>
+								Publishing...
+							{:else}
+								<TrendingUp class="h-5 w-5" />
+								Publish Tour Now
+							{/if}
+						</button>
+						<a href="/tours/{tourId}" class="button-secondary button--gap">
+							<Eye class="h-4 w-4" />
+							Preview Tour
+						</a>
+					</div>
+				</div>
+				
+				<button
+					onclick={() => showDraftAlert = false}
+					class="flex-shrink-0 p-2 text-amber-400 hover:text-amber-600 transition-colors rounded-lg hover:bg-white/50"
+				>
+					<X class="h-5 w-5" />
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Active Tour Status Alert - Moved to top for prominence -->
+	{#if tour?.status === 'active' && totalSlots === 0 && showActiveAlert}
+		<div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
+			<div class="flex flex-col sm:flex-row items-start gap-4">
+				<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+					<Calendar class="h-6 w-6 text-white" />
+				</div>
+				<div class="flex-1 min-w-0">
+					<h3 class="text-xl font-bold text-blue-900 mb-3">🎉 Tour is Live! Add Time Slots to Accept Bookings</h3>
+					<p class="text-blue-800 mb-4 leading-relaxed">
+						Excellent! Your tour is <strong>published and visible to customers</strong>. The final step is adding time slots so customers can book your amazing experience.
+					</p>
+					
+					<!-- Quick info about what's ready -->
+					<div class="bg-white/60 rounded-lg p-3 mb-4 border border-blue-100">
+						<div class="flex gap-3">
+							<QrCode class="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+							<div class="text-sm">
+								<p class="font-medium text-blue-800">Ready to share:</p>
+								<p class="text-blue-700">Your QR codes are active and will redirect customers to the live booking page once you add time slots.</p>
+							</div>
+						</div>
+					</div>
+					
+					<div class="flex flex-col sm:flex-row gap-3">
+						<button
+							onclick={() => openAddModal()}
+							class="button-primary button--gap"
+						>
+							<Plus class="h-5 w-5" />
+							Add Time Slots Now
+						</button>
+						<a href="/tours/{tourId}" class="button-secondary button--gap">
+							<Eye class="h-4 w-4" />
+							View Tour Details
+						</a>
+						<a href="/tours/{tourId}/qr" class="button-secondary button--gap">
+							<QrCode class="h-4 w-4" />
+							Share QR Codes
+						</a>
+					</div>
+				</div>
+				
+				<button
+					onclick={() => showActiveAlert = false}
+					class="flex-shrink-0 p-2 text-blue-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-white/50"
+				>
+					<X class="h-5 w-5" />
+				</button>
 			</div>
 		</div>
 	{/if}
@@ -1046,68 +1196,7 @@
 		{/if}
 	{/if}
 
-	<!-- Status Alerts - Enhanced -->
-	{#if tour?.status === 'draft'}
-		<div class="mt-8 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6 lg:p-8">
-			<div class="flex flex-col sm:flex-row items-start gap-4">
-				<div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-					<AlertCircle class="h-6 w-6 text-white" />
-				</div>
-				<div class="flex-1 min-w-0">
-					<h3 class="text-xl font-bold text-amber-900 mb-3">Tour is in Draft Mode</h3>
-					<p class="text-amber-800 mb-4 leading-relaxed">
-						Your tour is currently in draft status. Time slots will be saved but won't be visible to customers until you publish your tour.
-					</p>
-					<div class="flex flex-col sm:flex-row gap-3">
-						<button
-							onclick={publishTour}
-							disabled={isSubmitting}
-							class="button-primary button--gap"
-						>
-							{#if isSubmitting}
-								<div class="form-spinner"></div>
-								Publishing...
-							{:else}
-								<TrendingUp class="h-5 w-5" />
-								Publish Tour
-							{/if}
-						</button>
-						<a href="/tours/{tourId}" class="button-secondary">
-							<Eye class="h-4 w-4" />
-							Preview Tour
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	{:else if tour?.status === 'active' && totalSlots === 0}
-		<div class="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6 lg:p-8">
-			<div class="flex flex-col sm:flex-row items-start gap-4">
-				<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-					<Calendar class="h-6 w-6 text-white" />
-				</div>
-				<div class="flex-1 min-w-0">
-					<h3 class="text-xl font-bold text-blue-900 mb-3">Tour is Live but No Time Slots</h3>
-					<p class="text-blue-800 mb-4 leading-relaxed">
-						Your tour is published and visible to customers, but they can't book without available time slots.
-					</p>
-					<div class="flex flex-col sm:flex-row gap-3">
-						<button
-							onclick={() => openAddModal()}
-							class="button-primary button--gap"
-						>
-							<Plus class="h-5 w-5" />
-							Add Time Slots
-						</button>
-						<a href="/tours/{tourId}/qr" class="button-secondary">
-							<QrCode class="h-4 w-4" />
-							Generate QR Codes
-						</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
+
 </div>
 
 <!-- Add/Edit Time Slot Modal -->
@@ -1559,4 +1648,120 @@
 	</div>
 {/if}
 
- 
+<!-- Publish Confirmation Modal -->
+{#if showPublishConfirmation}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+		<div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+			<!-- Header -->
+			<div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-green-200">
+				<div class="flex items-center gap-4">
+					<div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+						<TrendingUp class="h-7 w-7 text-white" />
+					</div>
+					<div>
+						<h2 class="text-2xl font-bold text-gray-900 mb-1">Publish Your Tour</h2>
+						<p class="text-green-700">Make "{tour?.name || 'your tour'}" live for customers</p>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Content -->
+			<div class="p-6">
+				<div class="space-y-6">
+					<!-- What happens section -->
+					<div>
+						<h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+							<span class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-bold">✓</span>
+							What happens when you publish:
+						</h3>
+						<div class="space-y-3 ml-8">
+							<div class="flex items-center gap-3 text-gray-700">
+								<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+								<span>Tour becomes <strong>visible to customers</strong></span>
+							</div>
+							<div class="flex items-center gap-3 text-gray-700">
+								<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+								<span>Time slots are <strong>available for booking</strong></span>
+							</div>
+							<div class="flex items-center gap-3 text-gray-700">
+								<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+								<span>QR codes will redirect to <strong>live booking page</strong></span>
+							</div>
+							<div class="flex items-center gap-3 text-gray-700">
+								<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+								<span>You'll start receiving <strong>real bookings</strong></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Current status -->
+					<div class="bg-gray-50 rounded-xl p-4">
+						<div class="grid grid-cols-2 gap-4 text-sm">
+							<div>
+								<p class="text-gray-600 mb-1">Time Slots:</p>
+								<p class="font-semibold text-gray-900">{totalSlots} created</p>
+							</div>
+							<div>
+								<p class="text-gray-600 mb-1">Capacity:</p>
+								<p class="font-semibold text-gray-900">{totalCapacity} spots available</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Ready check -->
+					{#if totalSlots === 0}
+						<div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+							<div class="flex gap-3">
+								<AlertCircle class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+								<div>
+									<p class="font-medium text-amber-800">No time slots yet</p>
+									<p class="text-sm text-amber-700 mt-1">Consider adding time slots before publishing so customers can book immediately.</p>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="bg-green-50 border border-green-200 rounded-xl p-4">
+							<div class="flex gap-3">
+								<div class="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+									<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+									</svg>
+								</div>
+								<div>
+									<p class="font-medium text-green-800">Ready to publish!</p>
+									<p class="text-sm text-green-700 mt-1">Your tour has time slots and is ready for customers.</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Actions -->
+			<div class="px-6 pb-6 border-t border-gray-200 bg-gray-50">
+				<div class="flex justify-between items-center pt-4">
+					<button
+						onclick={() => showPublishConfirmation = false}
+						class="button-secondary"
+						disabled={isSubmitting}
+					>
+						Cancel
+					</button>
+					<button
+						onclick={publishTour}
+						disabled={isSubmitting}
+						class="button-primary button--gap"
+					>
+						{#if isSubmitting}
+							<div class="form-spinner"></div>
+							Publishing...
+						{:else}
+							<TrendingUp class="h-5 w-5" />
+							Publish Tour Now
+						{/if}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}

@@ -236,8 +236,10 @@
 	}
 
 	function formatDuration(minutes: number) {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
+		// Round to handle any floating point precision issues
+		const totalMinutes = Math.round(minutes);
+		const hours = Math.floor(totalMinutes / 60);
+		const mins = totalMinutes % 60;
 		
 		if (hours === 0) {
 			return `${mins} minutes`;
@@ -272,7 +274,7 @@
 	class="hidden"
 />
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if error}
 		<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
 			<div class="flex gap-3">
@@ -296,39 +298,44 @@
 			/>
 		</div>
 	{:else}
-		<PageHeader 
-			title={tour.name}
-			subtitle={`${tour.category ? `${tour.category} • ` : ''}${tour.location ? `${tour.location} • ` : ''}Created ${new Date(tour.created).toLocaleDateString()}`}
-			backUrl="/tours"
-		>
-			<div class="flex items-center gap-3">
-				<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(tour.status)}">
-					<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
-					{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-				</span>
-				<button
-					onclick={toggleStatus}
-					disabled={isUpdatingStatus}
-					class="button-secondary button--gap button--small"
-				>
-					{#if isUpdatingStatus}
-						<div class="form-spinner"></div>
-					{:else if tour.status === 'active'}
-						<ToggleRight class="h-4 w-4" />
-					{:else}
-						<ToggleLeft class="h-4 w-4" />
-					{/if}
-					{tour.status === 'active' ? 'Save as Draft' : 'Publish Tour'}
-				</button>
-				<button
-					onclick={() => goto(`/tours/${tour?.id}/edit`)}
-					class="button-primary button--gap button--small"
-				>
-					<Edit class="h-4 w-4" />
-					Edit Tour
-				</button>
-			</div>
-		</PageHeader>
+		<div class="mb-6 sm:mb-8">
+			<PageHeader 
+				title={tour.name}
+				subtitle={`${tour.category ? `${tour.category} • ` : ''}${tour.location ? `${tour.location} • ` : ''}Created ${new Date(tour.created).toLocaleDateString()}`}
+				backUrl="/tours"
+			>
+				<div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+					<span class="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium {getStatusColor(tour.status)}">
+						<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
+						{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
+					</span>
+					<div class="flex items-center gap-2 sm:gap-3">
+						<button
+							onclick={toggleStatus}
+							disabled={isUpdatingStatus}
+							class="button-secondary button--gap button--small"
+						>
+							{#if isUpdatingStatus}
+								<div class="form-spinner"></div>
+							{:else if tour.status === 'active'}
+								<ToggleRight class="h-4 w-4" />
+							{:else}
+								<ToggleLeft class="h-4 w-4" />
+							{/if}
+							<span class="hidden sm:inline">{tour.status === 'active' ? 'Save as Draft' : 'Publish Tour'}</span>
+							<span class="sm:hidden">{tour.status === 'active' ? 'Draft' : 'Publish'}</span>
+						</button>
+						<button
+							onclick={() => goto(`/tours/${tour?.id}/edit`)}
+							class="hidden sm:flex button-primary button--gap button--small"
+						>
+							<Edit class="h-4 w-4" />
+							Edit Tour
+						</button>
+					</div>
+				</div>
+			</PageHeader>
+		</div>
 
 		<!-- Today's Check-ins Section -->
 		{#if upcomingBookings.length > 0}
@@ -446,8 +453,54 @@
 			</div>
 		{/if}
 
+		<!-- Mobile Quick Actions - Prominent on mobile -->
+	<div class="lg:hidden mb-6">
+		<div class="bg-white rounded-xl border border-gray-200 p-4">
+			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+			<div class="grid grid-cols-2 gap-3">
+				<button
+					onclick={() => goto(`/checkin-scanner?tour=${tour?.id}`)}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<UserCheck class="h-4 w-4" />
+					Check-in
+				</button>
+				<button
+					onclick={() => goto(`/tours/${tour?.id}/bookings`)}
+					class="button-primary button--gap button--small justify-center py-3"
+				>
+					<Calendar class="h-4 w-4" />
+					Bookings
+				</button>
+			</div>
+			<div class="grid grid-cols-3 gap-3 mt-3">
+				<button
+					onclick={() => goto(`/tours/${tour?.id}/qr`)}
+					class="button-secondary button--gap button--small justify-center py-3"
+				>
+					<QrCode class="h-4 w-4" />
+					QR Codes
+				</button>
+				<button
+					onclick={() => goto(`/tours/${tour?.id}/schedule`)}
+					class="button-secondary button--gap button--small justify-center py-3"
+				>
+					<CalendarDays class="h-4 w-4" />
+					Schedule
+				</button>
+				<button
+					onclick={() => goto(`/tours/${tour?.id}/edit`)}
+					class="button-secondary button--gap button--small justify-center py-3"
+				>
+					<Edit class="h-4 w-4" />
+					Edit
+				</button>
+			</div>
+		</div>
+	</div>
+
 			<!-- Quick Stats Cards -->
-	<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8 items-stretch">
+	<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 items-stretch">
 		<StatsCard
 			title="QR Codes"
 			value={stats.qrCodes || 0}
@@ -498,7 +551,7 @@
 		/>
 	</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 			<!-- Main Content -->
 			<div class="lg:col-span-2 space-y-6">
 				<!-- Tour Images -->
@@ -521,14 +574,14 @@
 								</button>
 							</div>
 						</div>
-						<div class="p-6">
-							<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+						<div class="p-4 sm:p-6">
+							<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
 								{#each tour.images as imageName, index}
 									<div class="relative group">
 										<img 
 											src={getImageUrl(imageName)} 
 											alt="{tour.name} photo"
-											class="w-full h-40 object-cover rounded-lg transition-transform duration-200"
+											class="w-full h-32 sm:h-40 object-cover rounded-lg transition-transform duration-200"
 										/>
 										
 										<!-- Hover Overlay -->
@@ -599,21 +652,21 @@
 							</div>
 						{/if}
 
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<div class="text-center p-4 bg-gray-50 rounded-lg">
-								<Euro class="h-8 w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-2xl font-bold text-gray-900">€{tour.price}</p>
-								<p class="text-sm text-gray-500">per person</p>
+						<div class="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-6">
+							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
+								<Euro class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+								<p class="text-lg sm:text-2xl font-bold text-gray-900">€{tour.price}</p>
+								<p class="text-xs sm:text-sm text-gray-500">per person</p>
 							</div>
-							<div class="text-center p-4 bg-gray-50 rounded-lg">
-								<Clock class="h-8 w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-lg font-semibold text-gray-900">{formatDuration(tour.duration)}</p>
-								<p class="text-sm text-gray-500">duration</p>
+							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
+								<Clock class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+								<p class="text-sm sm:text-lg font-semibold text-gray-900">{formatDuration(tour.duration)}</p>
+								<p class="text-xs sm:text-sm text-gray-500">duration</p>
 							</div>
-							<div class="text-center p-4 bg-gray-50 rounded-lg">
-								<Users class="h-8 w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-lg font-semibold text-gray-900">{tour.capacity}</p>
-								<p class="text-sm text-gray-500">max capacity</p>
+							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
+								<Users class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
+								<p class="text-sm sm:text-lg font-semibold text-gray-900">{tour.capacity}</p>
+								<p class="text-xs sm:text-sm text-gray-500">max capacity</p>
 							</div>
 						</div>
 					</div>
@@ -671,7 +724,7 @@
 			</div>
 
 			<!-- Sidebar -->
-			<div class="space-y-6">
+			<div class="hidden lg:block space-y-6">
 				<!-- Quick Actions -->
 				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
 					<div class="p-6 border-b border-gray-200">
@@ -727,18 +780,31 @@
 
 							<button
 								onclick={() => goto(`/tours/${tour?.id}/qr`)}
-								class="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-200 hover:bg-purple-50/50 transition-all"
+								class="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-200 hover:bg-purple-50/50 transition-all {stats.qrCodes > 0 ? 'ring-2 ring-purple-200 border-purple-300' : ''}"
 							>
 								<div class="flex items-center gap-3">
-									<div class="w-10 h-10 bg-gray-100 group-hover:bg-purple-100 rounded-lg flex items-center justify-center transition-colors">
-										<QrCode class="h-5 w-5 text-gray-600 group-hover:text-purple-600" />
+									<div class="w-10 h-10 bg-gray-100 group-hover:bg-purple-100 rounded-lg flex items-center justify-center transition-colors {stats.qrCodes > 0 ? 'bg-purple-100' : ''}">
+										<QrCode class="h-5 w-5 text-gray-600 group-hover:text-purple-600 {stats.qrCodes > 0 ? 'text-purple-600' : ''}" />
 									</div>
 									<div class="text-left">
 										<h4 class="font-medium text-gray-900">QR Codes</h4>
-										<p class="text-sm text-gray-600">{stats.qrCodes || 0} codes, {stats.activeQRCodes || 0} active</p>
+										<p class="text-sm text-gray-600">
+											{#if stats.qrCodes > 0}
+												{stats.qrCodes} code{stats.qrCodes !== 1 ? 's' : ''} ready to share
+											{:else}
+												Create marketing QR codes
+											{/if}
+										</p>
 									</div>
 								</div>
+								<div class="flex items-center gap-2">
+									{#if stats.qrCodes > 0}
+										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+											{stats.activeQRCodes} active
+										</span>
+									{/if}
 								<ChevronRight class="h-4 w-4 text-gray-400 group-hover:text-purple-600" />
+								</div>
 							</button>
 
 							<button
@@ -758,16 +824,7 @@
 							</button>
 						</div>
 
-						<!-- Quick Link to Edit -->
-						<div class="pt-4 border-t border-gray-200">
-							<button
-								onclick={() => goto(`/tours/${tour?.id}/edit`)}
-								class="button-secondary button--full-width button--gap button--small justify-center"
-							>
-								<Edit class="h-4 w-4" />
-								Edit Tour Details
-							</button>
-						</div>
+
 					</div>
 				</div>
 

@@ -189,12 +189,14 @@
 					label="Price per Person (€)"
 					bind:value={formData.price}
 					min={0.5}
+					max={99999}
 					step={0.5}
 					placeholder="0.50"
 					incrementLabel="Increase price"
 					decrementLabel="Decrease price"
 					error={getFieldError(allErrors, 'price')}
 					hasError={hasFieldError(allErrors, 'price')}
+					decimalPlaces={2}
 				/>
 
 				<NumberInput
@@ -202,12 +204,14 @@
 					label="Duration (minutes)"
 					bind:value={formData.duration}
 					min={1}
-					step={15}
+					max={1440}
+					step={1}
 					placeholder="60"
 					incrementLabel="Increase duration"
 					decrementLabel="Decrease duration"
 					error={getFieldError(allErrors, 'duration')}
 					hasError={hasFieldError(allErrors, 'duration')}
+					integerOnly={true}
 				/>
 
 				<NumberInput
@@ -215,12 +219,14 @@
 					label="Max Capacity"
 					bind:value={formData.capacity}
 					min={1}
+					max={500}
 					step={1}
 					placeholder="10"
 					incrementLabel="Increase capacity"
 					decrementLabel="Decrease capacity"
 					error={getFieldError(allErrors, 'capacity')}
 					hasError={hasFieldError(allErrors, 'capacity')}
+					integerOnly={true}
 				/>
 			</div>
 		</div>

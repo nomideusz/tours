@@ -109,7 +109,6 @@
 		}
 
 		try {
-			isInitializing = true;
 			cameraError = '';
 			
 			scanner = new QrScanner(
@@ -121,6 +120,7 @@
 					},
 					highlightScanRegion: scannerConfig.highlightScanRegion ?? true,
 					highlightCodeOutline: scannerConfig.highlightCodeOutline ?? true,
+					preferredCamera: 'environment',
 				}
 			);
 
@@ -130,8 +130,6 @@
 			console.error('Error starting scanner:', error);
 			cameraError = `Camera access denied or not available: ${error.message}`;
 			scanning = false; // Reset scanning state on error
-		} finally {
-			isInitializing = false;
 		}
 	}
 
@@ -294,6 +292,7 @@
 						<video
 							bind:this={videoElement}
 							class="w-full aspect-video lg:aspect-[4/3] object-cover"
+							autoplay
 							playsinline
 							muted
 						></video>
