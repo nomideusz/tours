@@ -38,7 +38,7 @@
 	let deleteConfirmId = $state<string | null>(null);
 	let qrCodeElements = $state<{ [key: string]: HTMLElement }>({});
 	let selectedCategory = $state<string>('all');
-	let showFirstQRAlert = $state(qrCodes.length === 1 && !localStorage.getItem('qr_first_time_dismissed'));
+	let showFirstQRAlert = $derived(qrCodes.length === 1 && (typeof window !== 'undefined' && !localStorage.getItem('qr_first_time_dismissed')));
 	let showMobileActions = $state<string | null>(null);
 
 	// Categories for QR codes
