@@ -17,7 +17,7 @@ interface ActiveTour {
 	location: string;
 }
 
-export const load: PageServerLoad = async ({ locals, url, fetch }) => {
+export const load: PageServerLoad = async ({ locals, fetch }) => {
 	// Authentication is handled by the parent layout, but double-check
 	if (!locals.user) {
 		throw error(401, 'Authentication required');
@@ -30,22 +30,6 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	}
 
 	try {
-		// Get tour ID from URL params (optional - for tour-specific scanning)
-		const tourId = url.searchParams.get('tour');
-		let tour = null;
-		
-		// If scanning for a specific tour, load tour details
-		if (tourId) {
-			try {
-				tour = await pb.collection('tours').getOne(tourId, {
-					filter: `user = "${locals.user.id}"`,
-					fields: 'id,name,status,location'
-				});
-			} catch (err) {
-				console.warn('Tour not found or access denied:', tourId);
-				// Don't throw error - just continue without tour context
-			}
-		}
 
 		// Load recent QR codes for this user (most active ones)
 		const recentQRCodes: RecentQRCode[] = [];
@@ -93,7 +77,6 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 				id: locals.user.id,
 				name: locals.user.name || locals.user.username || 'Scanner User'
 			},
-			tour,
 			recentQRCodes,
 			activeTours,
 			scannerConfig: {
@@ -115,7 +98,6 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 				id: locals.user.id,
 				name: locals.user.name || locals.user.username || 'Scanner User'
 			},
-			tour: null,
 			recentQRCodes: emptyRecentQRCodes,
 			activeTours: emptyActiveTours,
 			scannerConfig: {

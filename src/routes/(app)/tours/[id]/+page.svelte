@@ -40,7 +40,7 @@
 	let isUploadingImage = $state(false);
 	let isDeletingImage = $state<string | null>(null);
 	let fileInputRef: HTMLInputElement;
-	let replaceImageIndex: number | null = null;
+	let replaceImageIndex = $state<number | null>(null);
 	
 	// Construct image URL manually since pb might be null on server
 	function getImageUrl(imageName: string) {
@@ -464,7 +464,7 @@
 			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
-					onclick={() => goto(`/checkin-scanner?tour=${tour?.id}`)}
+					onclick={() => goto('/checkin-scanner')}
 					class="button-primary button--gap button--small justify-center py-3"
 				>
 					<UserCheck class="h-4 w-4" />
@@ -761,7 +761,7 @@
 								{/if}
 							</div>
 							<button
-								onclick={() => goto(`/checkin-scanner?tour=${tour?.id}`)}
+								onclick={() => goto('/checkin-scanner')}
 								class="button-primary button--full-width button--gap button--small justify-center"
 							>
 								<UserCheck class="h-4 w-4" />

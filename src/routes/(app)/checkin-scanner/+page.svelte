@@ -30,7 +30,6 @@
 	let isInitializing = $state(false);
 	
 	// Server data
-	let currentTour = $state(data.tour);
 	let recentQRCodes = $state(data.recentQRCodes || []);
 	let activeTours = $state(data.activeTours || []);
 	let scannerConfig = $state(data.scannerConfig || {});
@@ -212,7 +211,7 @@
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 	<PageHeader 
 		title="QR Code Scanner"
-		subtitle={currentTour ? `Scanning for: ${currentTour.name}` : "Scan QR codes to check in guests and access bookings"}
+		subtitle="Scan QR codes to check in guests and access bookings"
 	/>
 
 	{#if data.loadError}
@@ -371,35 +370,7 @@
 				</div>
 			{/if}
 
-			<!-- Quick Tour Access -->
-			{#if activeTours.length > 0}
-				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Tour Access</h3>
-					<div class="space-y-3">
-						{#each activeTours.slice(0, 3) as tour}
-							<button 
-								onclick={() => goto(`/checkin-scanner?tour=${tour.id}`)}
-								class="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left"
-								style="background: var(--bg-secondary);"
-								onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}
-								onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-							>
-								<MapPin class="h-4 w-4 text-blue-500 flex-shrink-0" />
-								<div class="flex-1 min-w-0">
-									<div class="text-sm font-medium truncate" style="color: var(--text-primary);">
-										{tour.name}
-									</div>
-									{#if tour.location}
-										<div class="text-xs truncate" style="color: var(--text-secondary);">
-											{tour.location}
-										</div>
-									{/if}
-								</div>
-							</button>
-						{/each}
-					</div>
-				</div>
-			{/if}
+
 
 			<!-- Session Scans (when not scanning, for mobile/fallback) -->
 			{#if scanHistory.length > 0 && !scanning}

@@ -333,7 +333,7 @@
 			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
-					onclick={() => goto(`/checkin-scanner?tour=${data.tour.id}`)}
+					onclick={() => goto('/checkin-scanner')}
 					class="button-primary button--gap button--small justify-center py-3"
 				>
 					<UserCheck class="h-4 w-4" />
