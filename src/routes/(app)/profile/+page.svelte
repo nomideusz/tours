@@ -11,6 +11,10 @@
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Save from 'lucide-svelte/icons/save';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
 	let { data, form } = $props();
 
@@ -18,6 +22,7 @@
 	let profileLoading = $state(false);
 	let passwordLoading = $state(false);
 	let verificationLoading = $state(false);
+	let paymentStatusLoading = $state(true);
 
 	// Form data
 	let name = $state(data.user.name);
@@ -32,6 +37,23 @@
 	let newPassword = $state('');
 	let confirmPassword = $state('');
 
+	// Payment status
+	let paymentStatus: {
+		hasAccount: boolean;
+		isSetupComplete: boolean;
+		canReceivePayments: boolean;
+		accountInfo?: {
+			businessName?: string;
+			requiresAction?: boolean;
+			[key: string]: any;
+		} | null;
+	} = $state({
+		hasAccount: false,
+		isSetupComplete: false,
+		canReceivePayments: false,
+		accountInfo: null
+	});
+
 	// Reset password form on success
 	$effect(() => {
 		if (form?.success && form?.message?.includes('Password')) {
@@ -39,7 +61,33 @@
 			newPassword = '';
 			confirmPassword = '';
 		}
+		
+		// Handle Stripe redirect
+		if (form?.success && form?.redirect) {
+			window.location.href = form.redirect;
+		}
 	});
+
+	// Load payment status
+	$effect(() => {
+		if (data.user.id) {
+			loadPaymentStatus();
+		}
+	});
+
+	async function loadPaymentStatus() {
+		try {
+			paymentStatusLoading = true;
+			const response = await fetch(`/api/payments/connect/status?userId=${data.user.id}`);
+			if (response.ok) {
+				paymentStatus = await response.json();
+			}
+		} catch (error) {
+			console.error('Failed to load payment status:', error);
+		} finally {
+			paymentStatusLoading = false;
+		}
+	}
 
 	let isSubmitting = $state(false);
 </script>
@@ -166,6 +214,102 @@
 					</button>
 				</div>
 			</form>
+		</div>
+
+		<!-- Payment Setup Section -->
+		<div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+			<div class="flex items-center gap-3 mb-6">
+				<div class="p-2 bg-green-50 rounded-lg">
+					<DollarSign class="h-5 w-5 text-green-600" />
+				</div>
+				<div>
+					<h2 class="text-lg font-semibold text-gray-900">Payment Setup</h2>
+					<p class="text-sm text-gray-600">Configure your account to receive payments from customers</p>
+				</div>
+			</div>
+
+			{#if paymentStatusLoading}
+				<div class="flex justify-center py-8">
+					<LoadingSpinner size="medium" />
+				</div>
+			{:else}
+				<div class="space-y-4">
+					<!-- Account Status -->
+					<div class="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+						{#if paymentStatus.canReceivePayments}
+							<CheckCircle class="h-5 w-5 text-green-500 mt-0.5" />
+							<div>
+								<p class="font-medium text-gray-900">Payment account active</p>
+								<p class="text-sm text-gray-600">You can receive payments from customers</p>
+								{#if paymentStatus.accountInfo?.businessName}
+									<p class="text-xs text-gray-500 mt-1">Business: {paymentStatus.accountInfo.businessName}</p>
+								{/if}
+							</div>
+						{:else if paymentStatus.hasAccount && !paymentStatus.isSetupComplete}
+							<AlertCircle class="h-5 w-5 text-amber-500 mt-0.5" />
+							<div>
+								<p class="font-medium text-gray-900">Setup incomplete</p>
+								<p class="text-sm text-gray-600">Complete your payment account setup to start receiving payments</p>
+								{#if paymentStatus.accountInfo?.requiresAction}
+									<p class="text-xs text-red-600 mt-1">Action required: Additional information needed</p>
+								{/if}
+							</div>
+						{:else}
+							<CreditCard class="h-5 w-5 text-gray-400 mt-0.5" />
+							<div>
+								<p class="font-medium text-gray-900">No payment account</p>
+								<p class="text-sm text-gray-600">Set up your account to receive payments directly from customers</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Setup Button -->
+					<div class="flex justify-end">
+						{#if !paymentStatus.hasAccount}
+							<form method="POST" action="?/setupPayments">
+								<button
+									type="submit"
+									class="button-primary button--gap"
+								>
+									<CreditCard class="h-4 w-4" />
+									Setup Payment Account
+								</button>
+							</form>
+						{:else if !paymentStatus.isSetupComplete || paymentStatus.accountInfo?.requiresAction}
+							<form method="POST" action="?/setupPayments">
+								<button
+									type="submit"
+									class="button-secondary button--gap"
+								>
+									<AlertCircle class="h-4 w-4" />
+									Complete Setup
+								</button>
+							</form>
+						{:else}
+							<form method="POST" action="?/setupPayments">
+								<button
+									type="submit"
+									class="button-secondary button--gap"
+								>
+									<CreditCard class="h-4 w-4" />
+									Manage Payment Account
+								</button>
+							</form>
+						{/if}
+					</div>
+
+					<!-- Payment Info -->
+					<div class="mt-4 p-4 bg-blue-50 rounded-lg">
+						<h4 class="font-medium text-blue-900 mb-2">How payments work</h4>
+						<ul class="text-sm text-blue-700 space-y-1">
+							<li>• Customers pay directly for tours through our secure payment system</li>
+							<li>• Payments are automatically transferred to your account (minus our platform fee)</li>
+							<li>• You'll receive payouts according to your Stripe schedule (typically 2-7 days)</li>
+							<li>• All transactions are tracked and reported for your records</li>
+						</ul>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 </div> 

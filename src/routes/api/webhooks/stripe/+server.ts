@@ -106,6 +106,41 @@ export const POST: RequestHandler = async ({ request }) => {
           // Update booking directly and trigger emails
           await pb.collection('bookings').update(bookingId, updateData);
           
+          // Transfer payment to tour guide
+          try {
+            const booking = await pb.collection('bookings').getOne(bookingId, {
+              expand: 'tour,tour.guide'
+            });
+            
+            const tourGuide = booking.expand?.tour?.expand?.guide;
+            if (tourGuide?.stripeAccountId) {
+              console.log(`Webhook: Transferring payment to tour guide ${tourGuide.id}...`);
+              
+              const stripe = getStripe();
+              const platformFeePercent = 0.10; // 10% platform fee
+              const transferAmount = Math.round(paymentIntent.amount * (1 - platformFeePercent));
+              
+              await stripe.transfers.create({
+                amount: transferAmount,
+                currency: paymentIntent.currency,
+                destination: tourGuide.stripeAccountId,
+                transfer_group: `booking_${bookingId}`,
+                metadata: {
+                  bookingId: bookingId,
+                  tourId: booking.tour,
+                  guideId: tourGuide.id
+                }
+              });
+              
+              console.log(`Webhook: Payment transferred to guide: €${transferAmount/100} (after 10% platform fee)`);
+            } else {
+              console.warn(`Webhook: Tour guide ${tourGuide?.id || 'unknown'} has no Stripe account configured`);
+            }
+          } catch (transferError) {
+            console.error('Webhook: Failed to transfer payment to guide:', transferError);
+            // Continue processing - booking is still valid even if transfer fails
+          }
+
           // Send emails via SvelteKit email service
           try {
             // Send confirmation email

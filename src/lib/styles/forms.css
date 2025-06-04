@@ -8,12 +8,13 @@
 	.form-input {
 		width: 100%;
 		padding: 0.75rem 1.5rem;
-		border: 1px solid var(--color-gray-300);
+		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
 		font-size: var(--text-sm);
 		transition: all var(--transition-fast) ease;
-		background-color: white;
+		background-color: var(--bg-input);
+		color: var(--text-primary);
 	}
 
 	.form-input:focus {
@@ -23,14 +24,15 @@
 	}
 
 	.form-input:disabled {
-		background-color: var(--color-gray-50);
-		color: var(--color-gray-500);
+		background-color: var(--bg-tertiary);
+		color: var(--text-tertiary);
 		cursor: not-allowed;
+		opacity: 0.6;
 	}
 
 	/* Override browser validation styling */
 	.form-input:invalid {
-		border-color: var(--color-gray-300);
+		border-color: var(--border-primary);
 		box-shadow: var(--shadow-xs);
 	}
 
@@ -74,19 +76,20 @@
 		display: block;
 		font-size: var(--text-sm);
 		font-weight: 500;
-		color: var(--color-gray-700);
+		color: var(--text-primary);
 		margin-bottom: 0.5rem;
 	}
 
 	.form-select {
 		width: 100%;
 		padding: 0.75rem 3rem 0.75rem 1.5rem;
-		border: 1px solid var(--color-gray-300);
+		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
 		font-size: var(--text-sm);
 		transition: all var(--transition-fast) ease;
-		background-color: white;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
 		background-position: right 0.75rem center;
 		background-repeat: no-repeat;
@@ -104,8 +107,8 @@
 	}
 
 	.form-select:disabled {
-		background-color: var(--color-gray-50);
-		color: var(--color-gray-500);
+		background-color: var(--bg-secondary);
+		color: var(--text-tertiary);
 		cursor: not-allowed;
 	}
 
@@ -127,12 +130,13 @@
 	.form-textarea {
 		width: 100%;
 		padding: 0.75rem 1.5rem;
-		border: 1px solid var(--color-gray-300);
+		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-xs);
 		font-size: var(--text-sm);
 		transition: all var(--transition-fast) ease;
-		background-color: white;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
 		resize: vertical;
 		min-height: 6rem;
 	}
@@ -144,14 +148,14 @@
 	}
 
 	.form-textarea:disabled {
-		background-color: var(--color-gray-50);
-		color: var(--color-gray-500);
+		background-color: var(--bg-secondary);
+		color: var(--text-tertiary);
 		cursor: not-allowed;
 	}
 
 	/* Override browser validation styling for textarea */
 	.form-textarea:invalid {
-		border-color: var(--color-gray-300);
+		border-color: var(--border-primary);
 		box-shadow: var(--shadow-xs);
 	}
 
@@ -176,9 +180,9 @@
 	.form-checkbox {
 		width: 1.125rem;
 		height: 1.125rem;
-		border: 2px solid var(--color-gray-300);
+		border: 2px solid var(--border-primary);
 		border-radius: var(--radius-sm);
-		background-color: white;
+		background-color: var(--bg-primary);
 		transition: all var(--transition-fast) ease;
 		cursor: pointer;
 		position: relative;
@@ -251,8 +255,8 @@
 		width: 1.125rem;
 		height: 1.125rem;
 		color: var(--color-primary-600);
-		border: 2px solid var(--color-gray-300);
-		background-color: white;
+		border: 2px solid var(--border-primary);
+		background-color: var(--bg-primary);
 		border-radius: 50%;
 		transition: all var(--transition-fast) ease;
 		cursor: pointer;

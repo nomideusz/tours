@@ -209,10 +209,10 @@
 			subtitle="Loading tour details..."
 		/>
 		
-		<div class="bg-white rounded-xl border border-gray-200 p-8">
+		<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex flex-col items-center justify-center py-12">
 				<div class="form-spinner mb-4"></div>
-				<p class="text-gray-600 text-center">Loading tour details...</p>
+				<p class="text-center" style="color: var(--text-secondary);">Loading tour details...</p>
 			</div>
 		</div>
 	{:else}
@@ -228,7 +228,7 @@
 		/>
 
 		{#if error}
-			<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 226 226); border: 1px solid rgb(252 165 165);">
 				<div class="flex gap-3">
 					<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
 					<div>
@@ -240,8 +240,8 @@
 		{/if}
 
 		<!-- Form Container -->
-		<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-			<div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-6" style="border-bottom: 1px solid var(--border-primary); background: var(--bg-secondary);">
 				<div class="flex items-center gap-3">
 					<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
 						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,8 +249,8 @@
 						</svg>
 					</div>
 					<div>
-						<h2 class="text-xl font-semibold text-gray-900">Tour Information</h2>
-						<p class="text-sm text-gray-600 mt-1">Update your tour details and make it even better</p>
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Information</h2>
+						<p class="text-sm mt-1" style="color: var(--text-secondary);">Update your tour details and make it even better</p>
 					</div>
 				</div>
 			</div>
@@ -273,16 +273,16 @@
 		</div>
 
 		<!-- Tour Status Information -->
-		<div class="mt-8 bg-gray-50 rounded-xl border border-gray-200 p-6">
-			<h3 class="text-lg font-semibold text-gray-900 mb-3">About Tour Status</h3>
+		<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">About Tour Status</h3>
 			<div class="space-y-3">
 				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-gray-600">📝</span>
+					<div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style="background: var(--bg-tertiary);">
+						<span class="text-xs font-medium" style="color: var(--text-secondary);">📝</span>
 					</div>
 					<div>
-						<p class="font-medium text-gray-900">Draft Status</p>
-						<p class="text-sm text-gray-600">Your tour is not visible to customers and won't accept bookings</p>
+						<p class="font-medium" style="color: var(--text-primary);">Draft Status</p>
+						<p class="text-sm" style="color: var(--text-secondary);">Your tour is not visible to customers and won't accept bookings</p>
 					</div>
 				</div>
 				<div class="flex items-start gap-3">
@@ -290,8 +290,8 @@
 						<span class="text-xs font-medium text-green-600">🟢</span>
 					</div>
 					<div>
-						<p class="font-medium text-gray-900">Active Status</p>
-						<p class="text-sm text-gray-600">Your tour is live and available for customer bookings</p>
+						<p class="font-medium" style="color: var(--text-primary);">Active Status</p>
+						<p class="text-sm" style="color: var(--text-secondary);">Your tour is live and available for customer bookings</p>
 					</div>
 				</div>
 			</div>

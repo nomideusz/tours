@@ -27,17 +27,12 @@
 	let email = $state(form?.email || '');
 	let password = $state(''); // Don't restore password for security reasons
 	let confirmPassword = $state('');
-	let intendedRole = $state<'user' | 'guide'>('user');
-	let businessName = $state('');
-	let location = $state('');
 
 	// Form validation
 	let nameError = $state('');
 	let emailError = $state('');
 	let passwordError = $state('');
 	let confirmPasswordError = $state('');
-	let businessNameError = $state('');
-	let locationError = $state('');
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
@@ -54,8 +49,6 @@
 		emailError = '';
 		passwordError = '';
 		confirmPasswordError = '';
-		businessNameError = '';
-		locationError = '';
 
 		let isValid = true;
 
@@ -92,18 +85,6 @@
 			isValid = false;
 		} else if (password !== confirmPassword) {
 			confirmPasswordError = 'Passwords do not match';
-			isValid = false;
-		}
-
-		// Business name validation
-		if (intendedRole === 'guide' && !businessName) {
-			businessNameError = 'Business name is required';
-			isValid = false;
-		}
-
-		// Location validation
-		if (intendedRole === 'guide' && !location) {
-			locationError = 'Location is required';
 			isValid = false;
 		}
 
@@ -273,68 +254,6 @@
 						<p class="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
 					{/if}
 				</div>
-
-				<div>
-					<label for="intendedRole" class="block text-sm font-medium text-gray-700 mb-2">
-						Intended Role
-					</label>
-					<select
-						id="intendedRole"
-						name="intendedRole"
-						bind:value={intendedRole}
-						class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-						disabled={isRegistering || manualLoading}
-					>
-						<option value="user">User</option>
-						<option value="guide">Guide</option>
-					</select>
-				</div>
-
-				{#if intendedRole === 'guide'}
-					<div>
-						<label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
-							Business Name
-						</label>
-						<input
-							type="text"
-							id="businessName"
-							name="businessName"
-							bind:value={businessName}
-							class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {businessNameError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
-							placeholder="Enter your business name"
-							disabled={isRegistering || manualLoading}
-							onblur={() => {
-								if (!businessName) businessNameError = 'Business name is required';
-								else businessNameError = '';
-							}}
-						/>
-						{#if businessNameError}
-							<p class="mt-1 text-sm text-red-600">{businessNameError}</p>
-						{/if}
-					</div>
-
-					<div>
-						<label for="location" class="block text-sm font-medium text-gray-700 mb-2">
-							Location
-						</label>
-						<input
-							type="text"
-							id="location"
-							name="location"
-							bind:value={location}
-							class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {locationError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
-							placeholder="Enter your location"
-							disabled={isRegistering || manualLoading}
-							onblur={() => {
-								if (!location) locationError = 'Location is required';
-								else locationError = '';
-							}}
-						/>
-						{#if locationError}
-							<p class="mt-1 text-sm text-red-600">{locationError}</p>
-						{/if}
-					</div>
-				{/if}
 
 				<button
 					type="submit"

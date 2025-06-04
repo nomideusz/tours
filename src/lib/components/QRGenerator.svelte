@@ -33,6 +33,14 @@
 		return suggestions[cat];
 	}
 	
+	// Get color from CSS variables
+	function getCSSColor(variable: string): string {
+		if (typeof window !== 'undefined') {
+			return getComputedStyle(document.documentElement).getPropertyValue(variable).trim() || '#3B82F6';
+		}
+		return '#3B82F6'; // fallback
+	}
+
 	// Category configuration
 	const categories = [
 		{ value: 'digital', label: 'Digital/Social', icon: '📱', color: '#3B82F6' },
@@ -43,20 +51,20 @@
 	] as const;
 	
 	// Color themes - practical options that scan well
-	const qrStyles = [
+	let qrStyles = $state([
 		{ 
 			id: 'classic', 
 			name: 'Classic', 
 			preview: '⬛', 
-			color: '#000000', 
-			backgroundColor: '#FFFFFF'
+			get color() { return getCSSColor('--text-primary') || '#000000'; },
+			get backgroundColor() { return getCSSColor('--bg-primary') || '#FFFFFF'; }
 		},
 		{ 
 			id: 'blue', 
 			name: 'Blue', 
 			preview: '🟦', 
-			color: '#3B82F6', 
-			backgroundColor: '#F8FAFC'
+			get color() { return getCSSColor('--color-primary-600') || '#3B82F6'; },
+			get backgroundColor() { return getCSSColor('--color-primary-50') || '#F8FAFC'; }
 		},
 		{ 
 			id: 'green', 
@@ -73,13 +81,13 @@
 			backgroundColor: '#FAF5FF'
 		},
 		{ 
-			id: 'dark', 
-			name: 'Dark', 
-			preview: '⬛', 
-			color: '#1F2937', 
-			backgroundColor: '#F3F4F6'
+			id: 'theme', 
+			name: 'Theme', 
+			preview: '🎨', 
+			get color() { return getCSSColor('--color-primary-600') || '#3B82F6'; },
+			get backgroundColor() { return getCSSColor('--bg-primary') || '#FFFFFF'; }
 		}
-	];
+	]);
 	
 	// UI state
 	let isGenerating = $state(false);
@@ -201,21 +209,21 @@
 </script>
 
 <div class="space-y-6">
-	{#if error}
-		<div class="bg-red-50 border border-red-200 rounded-xl p-4">
-			<p class="text-sm text-red-600">{error}</p>
-		</div>
-	{/if}
+			{#if error}
+			<div class="bg-red-50 border border-red-200 rounded-xl p-4">
+				<p class="text-sm text-red-600">{error}</p>
+			</div>
+		{/if}
 	
 	<!-- Preview Section -->
-	<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center">
-		<h3 class="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+	<div class="rounded-xl p-6 text-center" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
+		<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Preview</h3>
 		
-		<div class="inline-block bg-white p-4 rounded-xl shadow-sm">
+		<div class="inline-block p-4 rounded-xl shadow-sm" style="background: var(--bg-primary);">
 			{#if previewUrl}
 				<img src={previewUrl} alt="QR Code Preview" class="w-32 h-32 mx-auto" />
 			{:else}
-				<div class="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+				<div class="w-32 h-32 rounded-lg flex items-center justify-center" style="background: var(--bg-tertiary);">
 					<div class="form-spinner"></div>
 				</div>
 			{/if}
@@ -223,16 +231,25 @@
 		
 		{#if generatedCode}
 			<div class="mt-4 flex items-center justify-center gap-2">
-				<code class="text-xs font-mono bg-white px-3 py-1.5 rounded-lg border text-gray-600">
+				<code class="text-xs font-mono px-3 py-1.5 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--color-primary-200); color: var(--text-secondary);">
 					{window.location.origin}/book/{generatedCode}
 				</code>
 				<button
 					onclick={copyBookingUrl}
-					class="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-md hover:bg-white"
+					class="p-1.5 transition-colors rounded-md"
+					style="color: var(--text-secondary);"
+					onmouseenter={(e) => {
+						e.currentTarget.style.color = 'var(--text-primary)';
+						e.currentTarget.style.background = 'var(--bg-secondary)';
+					}}
+					onmouseleave={(e) => {
+						e.currentTarget.style.color = 'var(--text-secondary)';
+						e.currentTarget.style.background = 'transparent';
+					}}
 					title="Copy booking URL"
 				>
 					{#if copiedUrl}
-						<Check class="h-4 w-4 text-green-600" />
+						<Check class="h-4 w-4" style="color: var(--text-primary);" />
 					{:else}
 						<Copy class="h-4 w-4" />
 					{/if}
@@ -262,11 +279,17 @@
 			<label class="form-label">Category</label>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 				{#each categories as cat}
-					<label class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-sm {
+					<label class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-sm" style="{
 						category === cat.value 
-							? 'border-blue-500 bg-blue-50' 
-							: 'border-gray-200 hover:border-gray-300'
-					}">
+							? 'border-color: var(--color-primary-500); background: var(--bg-secondary);' 
+							: 'border-color: var(--border-primary); background: var(--bg-primary);'
+					}" onmouseenter="{category !== cat.value ? (e) => {
+						e.currentTarget.style.borderColor = 'var(--border-secondary)';
+						e.currentTarget.style.background = 'var(--bg-secondary)';
+					} : null}" onmouseleave="{category !== cat.value ? (e) => {
+						e.currentTarget.style.borderColor = 'var(--border-primary)';
+						e.currentTarget.style.background = 'var(--bg-primary)';
+					} : null}">
 						<input
 							type="radio"
 							name="category"
@@ -275,9 +298,9 @@
 							class="sr-only"
 						/>
 						<span class="text-xl">{cat.icon}</span>
-						<span class="font-medium text-gray-900 flex-1">{cat.label}</span>
+						<span class="font-medium flex-1" style="color: var(--text-primary);">{cat.label}</span>
 						{#if category === cat.value}
-							<div class="w-2 h-2 bg-blue-600 rounded-full"></div>
+							<div class="w-2 h-2 rounded-full" style="background: var(--color-primary-600);"></div>
 						{/if}
 					</label>
 				{/each}
@@ -289,11 +312,17 @@
 			<label class="form-label">Color Theme</label>
 			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
 				{#each qrStyles as style}
-					<label class="flex flex-col items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm {
+					<label class="flex flex-col items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm" style="{
 						selectedStyle === style.id 
-							? 'border-blue-500 bg-blue-50' 
-							: 'border-gray-200 hover:border-gray-300'
-					}">
+							? 'border-color: var(--color-primary-500); background: var(--bg-secondary);' 
+							: 'border-color: var(--border-primary); background: var(--bg-primary);'
+					}" onmouseenter="{selectedStyle !== style.id ? (e) => {
+						e.currentTarget.style.borderColor = 'var(--border-secondary)';
+						e.currentTarget.style.background = 'var(--bg-secondary)';
+					} : null}" onmouseleave="{selectedStyle !== style.id ? (e) => {
+						e.currentTarget.style.borderColor = 'var(--border-primary)';
+						e.currentTarget.style.background = 'var(--bg-primary)';
+					} : null}">
 						<input
 							type="radio"
 							name="style"
@@ -302,9 +331,9 @@
 							class="sr-only"
 						/>
 						<span class="text-xl">{style.preview}</span>
-						<span class="text-xs font-medium text-gray-900">{style.name}</span>
+						<span class="text-xs font-medium" style="color: var(--text-primary);">{style.name}</span>
 						{#if selectedStyle === style.id}
-							<div class="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+							<div class="w-1.5 h-1.5 rounded-full" style="background: var(--color-primary-600);"></div>
 						{/if}
 					</label>
 				{/each}

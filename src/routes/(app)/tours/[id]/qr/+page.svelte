@@ -336,10 +336,10 @@
 	
 	<!-- Category Filter -->
 	{#if qrCodes.length > 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+		<div class="rounded-xl p-4 sm:p-6 mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex items-center gap-3 mb-4">
-				<Filter class="h-5 w-5 text-gray-600" />
-				<h3 class="text-lg font-semibold text-gray-900">Filter by Category</h3>
+				<Filter class="h-5 w-5" style="color: var(--text-secondary);" />
+				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Filter by Category</h3>
 			</div>
 			
 			<!-- Mobile: Dropdown -->
@@ -358,7 +358,7 @@
 				</select>
 			</div>
 			
-			<!-- Desktop: Buttons -->
+								<!-- Desktop: Buttons -->
 			<div class="hidden sm:flex flex-wrap gap-2">
 				<button
 					onclick={() => selectedCategory = 'all'}
@@ -373,17 +373,22 @@
 							onclick={() => selectedCategory = catKey}
 							class="button--small {selectedCategory === catKey 
 								? 'text-white border-transparent' 
-								: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+								: 'border-gray-300'
 							}"
-							style="{selectedCategory === catKey ? `background-color: ${cat.color}; border-color: ${cat.color};` : ''}"
+							style="{selectedCategory === catKey 
+								? `background-color: ${cat.color}; border-color: ${cat.color};` 
+								: 'background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-primary);'
+							}"
+							onmouseenter="{selectedCategory !== catKey ? (e) => e.currentTarget.style.background = 'var(--bg-secondary)' : null}"
+							onmouseleave="{selectedCategory !== catKey ? (e) => e.currentTarget.style.background = 'var(--bg-primary)' : null}"
 						>
 							<span class="mr-1">{cat.icon}</span>
 							{cat.label}
 							<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full {
 								selectedCategory === catKey 
 									? 'bg-white/20' 
-									: 'bg-gray-100'
-							}">
+									: ''
+							}" style="{selectedCategory !== catKey ? 'background: var(--bg-tertiary);' : ''}">
 								{categoryQRs.length}
 							</span>
 						</button>
@@ -395,16 +400,16 @@
 	
 	<!-- QR Code List -->
 	{#if isLoading}
-		<div class="bg-white rounded-xl border border-gray-200 p-12">
+		<div class="rounded-xl p-12" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex items-center justify-center">
-				<div class="flex items-center gap-2 text-gray-600">
+				<div class="flex items-center gap-2" style="color: var(--text-secondary);">
 					<div class="form-spinner"></div>
 					Loading QR codes...
 				</div>
 			</div>
 		</div>
 	{:else if filteredQRCodes.length === 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-8 sm:p-12">
+		<div class="rounded-xl p-8 sm:p-12" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<EmptyState
 				icon={QrCodeIcon}
 				title={selectedCategory === 'all' ? 'No QR codes yet' : 'No QR codes in this category'}
@@ -419,9 +424,9 @@
 		<!-- QR Code Cards - Unified Design -->
 		<div class="grid gap-4 lg:gap-6">
 			{#each filteredQRCodes as qr (qr.id)}
-				<div class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+				<div class="rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<!-- Card Header -->
-					<div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+					<div class="px-6 py-4" style="border-bottom: 1px solid var(--border-primary); background: var(--bg-secondary);">
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-3 min-w-0 flex-1">
 								<!-- Category Badge -->
@@ -437,7 +442,7 @@
 								
 								<!-- Name and Status -->
 								<div class="min-w-0 flex-1">
-									<h3 class="text-lg font-semibold text-gray-900 truncate">{qr.name}</h3>
+									<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{qr.name}</h3>
 									<div class="flex items-center gap-2 mt-1">
 										<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
 											qr.isActive 
@@ -447,7 +452,7 @@
 											<span class="w-1.5 h-1.5 rounded-full {qr.isActive ? 'bg-green-500' : 'bg-gray-500'}"></span>
 											{qr.isActive ? 'Enabled' : 'Disabled'}
 										</span>
-										<span class="text-xs text-gray-500">Created {formatDate(qr.created)}</span>
+										<span class="text-xs" style="color: var(--text-tertiary);">Created {formatDate(qr.created)}</span>
 									</div>
 								</div>
 							</div>
@@ -456,19 +461,21 @@
 							<div class="sm:hidden relative" data-mobile-actions>
 								<button
 									onclick={() => showMobileActions = showMobileActions === qr.id ? null : qr.id}
-									class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+									class="p-2 transition-colors rounded-lg"
+									style="color: var(--text-tertiary); hover:color: var(--text-secondary); hover:background: var(--bg-tertiary);"
 								>
 									<MoreVertical class="h-4 w-4" />
 								</button>
 								
 								{#if showMobileActions === qr.id}
-									<div class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 min-w-[180px] py-2">
+									<div class="absolute right-0 top-full mt-1 rounded-xl shadow-lg z-10 min-w-[180px] py-2" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 										<button
 											onclick={() => {
 												copyBookingUrl(qr.id, qr.code);
 												showMobileActions = null;
 											}}
-											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
 										>
 											<Copy class="h-4 w-4" />
 											Copy URL
@@ -476,7 +483,8 @@
 										<a
 											href={`${window.location.origin}/book/${qr.code}`}
 											target="_blank"
-											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
 											onclick={() => showMobileActions = null}
 										>
 											<ExternalLink class="h-4 w-4" />
@@ -487,7 +495,8 @@
 												toggleQRStatus(qr);
 												showMobileActions = null;
 											}}
-											class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
 										>
 											{#if qr.isActive}
 												<ToggleLeft class="h-4 w-4" />
@@ -497,7 +506,7 @@
 												Enable
 											{/if}
 										</button>
-										<div class="border-t border-gray-100 my-1"></div>
+										<div class="my-1" style="border-top: 1px solid var(--border-primary);"></div>
 										<button
 											onclick={() => {
 												initiateDelete(qr.id);
@@ -519,15 +528,15 @@
 						<div class="flex flex-col lg:flex-row gap-6">
 							<!-- QR Code Section -->
 							<div class="flex flex-col items-center lg:items-start">
-								<div class="w-28 h-28 bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+								<div class="w-28 h-28 rounded-xl p-3 shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 									<div 
 										class="w-full h-full flex items-center justify-center"
 										bind:this={qrCodeElements[qr.id]}
 									></div>
 								</div>
 								<div class="mt-3 text-center lg:text-left">
-									<p class="text-xs text-gray-500 mb-1">QR Code</p>
-									<code class="bg-gray-100 px-2 py-1 rounded-md font-mono text-xs text-gray-800">{qr.code}</code>
+									<p class="text-xs mb-1" style="color: var(--text-tertiary);">QR Code</p>
+									<code class="px-2 py-1 rounded-md font-mono text-xs" style="background: var(--bg-tertiary); color: var(--text-primary);">{qr.code}</code>
 								</div>
 							</div>
 							
@@ -535,37 +544,37 @@
 							<div class="flex-1 space-y-6">
 								<!-- Performance Stats -->
 								<div>
-									<h4 class="text-sm font-medium text-gray-900 mb-3">Performance</h4>
+									<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Performance</h4>
 									<div class="grid grid-cols-3 gap-4">
-										<div class="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-											<div class="flex items-center justify-center text-blue-600 mb-2">
-												<Eye class="h-5 w-5" />
+										<div class="text-center p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
+											<div class="flex items-center justify-center mb-2">
+												<Eye class="h-5 w-5" style="color: var(--text-secondary);" />
 											</div>
-											<p class="text-2xl font-bold text-blue-900">{qr.scans}</p>
-											<p class="text-xs text-blue-700 font-medium">Scans</p>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{qr.scans}</p>
+											<p class="text-xs font-medium" style="color: var(--text-secondary);">Scans</p>
 										</div>
-										<div class="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-											<div class="flex items-center justify-center text-green-600 mb-2">
-												<BarChart3 class="h-5 w-5" />
+										<div class="text-center p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
+											<div class="flex items-center justify-center mb-2">
+												<BarChart3 class="h-5 w-5" style="color: var(--text-secondary);" />
 											</div>
-											<p class="text-2xl font-bold text-green-900">{qr.conversions}</p>
-											<p class="text-xs text-green-700 font-medium">Bookings</p>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{qr.conversions}</p>
+											<p class="text-xs font-medium" style="color: var(--text-secondary);">Bookings</p>
 										</div>
-										<div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
-											<div class="flex items-center justify-center text-purple-600 mb-2">
-												<TrendingUp class="h-5 w-5" />
+										<div class="text-center p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
+											<div class="flex items-center justify-center mb-2">
+												<TrendingUp class="h-5 w-5" style="color: var(--text-secondary);" />
 											</div>
-											<p class="text-2xl font-bold text-purple-900">
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">
 												{qr.scans > 0 ? ((qr.conversions / qr.scans) * 100).toFixed(1) : '0'}%
 											</p>
-											<p class="text-xs text-purple-700 font-medium">Conversion</p>
+											<p class="text-xs font-medium" style="color: var(--text-secondary);">Conversion</p>
 										</div>
 									</div>
 								</div>
 								
 								<!-- Actions -->
 								<div class="hidden sm:block">
-									<h4 class="text-sm font-medium text-gray-900 mb-3">Actions</h4>
+									<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Actions</h4>
 									<div class="flex flex-wrap gap-3">
 										<!-- Primary Actions -->
 										<button
@@ -661,13 +670,14 @@
 <!-- QR Generator Modal -->
 {#if showGenerator}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-		<div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+		<div class="rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" style="background: var(--bg-primary);">
+			<div class="p-4 sm:p-6 flex-shrink-0" style="border-bottom: 1px solid var(--border-primary);">
 				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-semibold text-gray-900">Create New QR Code</h2>
+					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Create New QR Code</h2>
 					<button
 						onclick={() => showGenerator = false}
-						class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+						class="p-2 transition-colors rounded-lg"
+						style="color: var(--text-tertiary); hover:color: var(--text-secondary); hover:background: var(--bg-tertiary);"
 					>
 						<X class="h-5 w-5" />
 					</button>

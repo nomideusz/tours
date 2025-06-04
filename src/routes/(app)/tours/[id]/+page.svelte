@@ -339,16 +339,16 @@
 
 		<!-- Today's Check-ins Section -->
 		{#if upcomingBookings.length > 0}
-			<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
-				<div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
+			<div class="rounded-xl overflow-hidden mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100" style="border-bottom: 1px solid var(--border-primary);">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-3">
 							<div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
 								<UserCheck class="w-5 h-5 text-white" />
 							</div>
 							<div>
-								<h3 class="text-lg font-semibold text-gray-900">Today's Check-ins</h3>
-								<p class="text-sm text-gray-600">Upcoming tours requiring check-in</p>
+								<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Check-ins</h3>
+								<p class="text-sm" style="color: var(--text-secondary);">Upcoming tours requiring check-in</p>
 							</div>
 						</div>
 						<button
@@ -361,32 +361,36 @@
 					</div>
 				</div>
 				
-				<div class="divide-y divide-gray-200">
+				<div style="border-color: var(--border-primary);" class="divide-y">
 					{#each upcomingBookings.slice(0, 3) as booking}
-						<div class="px-6 py-4 hover:bg-gray-50">
+						<div class="px-6 py-4 transition-colors" style="hover:background: var(--bg-secondary);">
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-4">
 									<div class="flex-shrink-0">
-										<div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-											<User class="w-6 h-6 text-gray-600" />
+										<div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: var(--bg-tertiary);">
+											<User class="w-6 h-6" style="color: var(--text-secondary);" />
 										</div>
 									</div>
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-2 mb-1">
-											<p class="text-sm font-semibold text-gray-900 truncate">
+											<p class="text-sm font-semibold truncate" style="color: var(--text-primary);">
 												{booking.customerName}
 											</p>
 											<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full {
 												booking.attendanceStatus === 'checked_in' ? 'bg-green-50 text-green-700' :
-												booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700' :
+												booking.attendanceStatus === 'no_show' ? '' :
 												'bg-amber-50 text-amber-700'
+											}" style="{
+												booking.attendanceStatus === 'checked_in' ? '' :
+												booking.attendanceStatus === 'no_show' ? 'background: var(--bg-tertiary); color: var(--text-secondary);' :
+												''
 											}">
 												{booking.attendanceStatus === 'checked_in' ? '✅ Checked In' :
 												 booking.attendanceStatus === 'no_show' ? '❌ No Show' : 
 												 '⏳ Awaiting'}
 											</span>
 										</div>
-										<div class="flex items-center gap-4 text-xs text-gray-500">
+										<div class="flex items-center gap-4 text-xs" style="color: var(--text-tertiary);">
 											<span class="flex items-center gap-1">
 												<Clock class="w-3 h-3" />
 												{booking.expand?.timeSlot?.startTime ? 
@@ -420,7 +424,7 @@
 											Completed
 										</span>
 									{:else}
-										<span class="text-sm text-gray-500">
+										<span class="text-sm" style="color: var(--text-tertiary);">
 											No ticket
 										</span>
 									{/if}
@@ -431,10 +435,11 @@
 				</div>
 				
 				{#if upcomingBookings.length > 3}
-					<div class="px-6 py-3 bg-gray-50 text-center">
+					<div class="px-6 py-3 text-center" style="background: var(--bg-secondary);">
 						<button
 							onclick={() => goto(`/tours/${tour?.id}/bookings?date=today`)}
-							class="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+							style="color: var(--color-primary-600);"
+							class="text-sm font-medium hover:opacity-80 transition-opacity"
 						>
 							View {upcomingBookings.length - 3} more upcoming check-ins
 						</button>
@@ -442,7 +447,7 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="bg-white rounded-xl border border-gray-200 p-8 mb-8">
+			<div class="rounded-xl p-8 mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<EmptyState
 					icon={UserCheck}
 					title="No Check-ins Today"
@@ -455,8 +460,8 @@
 
 		<!-- Mobile Quick Actions - Prominent on mobile -->
 	<div class="lg:hidden mb-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
-			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
 					onclick={() => goto(`/checkin-scanner?tour=${tour?.id}`)}
@@ -554,12 +559,12 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 			<!-- Main Content -->
 			<div class="lg:col-span-2 space-y-6">
-				<!-- Tour Images -->
-				{#if tour.images && tour.images.length > 0}
-					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-						<div class="p-6 border-b border-gray-200">
-							<div class="flex items-center justify-between">
-								<h2 class="text-xl font-semibold text-gray-900">Tour Images</h2>
+							<!-- Tour Images -->
+			{#if tour.images && tour.images.length > 0}
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<div class="flex items-center justify-between">
+							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Images</h2>
 								<button
 									onclick={handleImageUpload}
 									disabled={isUploadingImage}
@@ -589,7 +594,10 @@
 											<button
 												onclick={() => handleImageReplace(index)}
 												disabled={isUploadingImage || isDeletingImage === imageName}
-												class="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+												class="p-2 rounded-lg transition-colors disabled:opacity-50"
+												style="background: var(--bg-primary); color: var(--text-secondary);"
+												onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
 												title="Replace image"
 											>
 												{#if isUploadingImage && replaceImageIndex === index}
@@ -601,7 +609,8 @@
 											<button
 												onclick={() => deleteImage(imageName, index)}
 												disabled={isUploadingImage || isDeletingImage === imageName}
-												class="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+												class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+												style="background: var(--bg-primary);"
 												title="Delete image"
 											>
 												{#if isDeletingImage === imageName}
@@ -616,133 +625,133 @@
 							</div>
 						</div>
 					</div>
-				{:else}
-					<div class="bg-white rounded-xl border border-gray-200 p-8">
-						<EmptyState
-							icon={Image}
-							title="No Images"
-							description="Add images to make your tour more appealing to customers"
-							actionText={isUploadingImage ? "Uploading..." : "Upload Images"}
-							onAction={isUploadingImage ? undefined : handleImageUpload}
-						/>
-						{#if !isUploadingImage}
-							<div class="text-center mt-4">
-								<button
-									onclick={() => goto(`/tours/${tour?.id}/edit`)}
-									class="button-secondary button--gap button--small"
-								>
-									<Edit class="h-4 w-4" />
-									Edit Tour Details
-								</button>
-							</div>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Tour Details -->
-				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-					<div class="p-6 border-b border-gray-200">
-						<h2 class="text-xl font-semibold text-gray-900">Tour Details</h2>
-					</div>
-					<div class="p-6 space-y-6">
-						{#if tour.description}
-							<div>
-								<h3 class="text-sm font-medium text-gray-700 mb-2">Description</h3>
-								<p class="text-gray-900 leading-relaxed">{tour.description}</p>
-							</div>
-						{/if}
-
-						<div class="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-6">
-							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
-								<Euro class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-lg sm:text-2xl font-bold text-gray-900">€{tour.price}</p>
-								<p class="text-xs sm:text-sm text-gray-500">per person</p>
-							</div>
-							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
-								<Clock class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-sm sm:text-lg font-semibold text-gray-900">{formatDuration(tour.duration)}</p>
-								<p class="text-xs sm:text-sm text-gray-500">duration</p>
-							</div>
-							<div class="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
-								<Users class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-2" />
-								<p class="text-sm sm:text-lg font-semibold text-gray-900">{tour.capacity}</p>
-								<p class="text-xs sm:text-sm text-gray-500">max capacity</p>
-							</div>
+							{:else}
+				<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<EmptyState
+						icon={Image}
+						title="No Images"
+						description="Add images to make your tour more appealing to customers"
+						actionText={isUploadingImage ? "Uploading..." : "Upload Images"}
+						onAction={isUploadingImage ? undefined : handleImageUpload}
+					/>
+					{#if !isUploadingImage}
+						<div class="text-center mt-4">
+							<button
+								onclick={() => goto(`/tours/${tour?.id}/edit`)}
+								class="button-secondary button--gap button--small"
+							>
+								<Edit class="h-4 w-4" />
+								Edit Tour Details
+							</button>
 						</div>
+					{/if}
+				</div>
+			{/if}
+
+							<!-- Tour Details -->
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Details</h2>
+				</div>
+				<div class="p-6 space-y-6">
+					{#if tour.description}
+						<div>
+							<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Description</h3>
+							<p class="leading-relaxed" style="color: var(--text-primary);">{tour.description}</p>
+						</div>
+					{/if}
+
+											<div class="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-6">
+						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+							<Euro class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+							<p class="text-lg sm:text-2xl font-bold" style="color: var(--text-primary);">€{tour.price}</p>
+							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">per person</p>
+						</div>
+						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+							<Clock class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+							<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
+							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">duration</p>
+						</div>
+						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+							<Users class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+							<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
+							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">max capacity</p>
+						</div>
+					</div>
 					</div>
 				</div>
 
-				<!-- What's Included -->
-				{#if tour.includedItems && tour.includedItems.length > 0}
-					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-						<div class="p-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-900">What's Included</h2>
-						</div>
-						<div class="p-6">
-							<ul class="space-y-3">
-								{#each tour.includedItems as item}
-									<li class="flex items-start gap-3">
-										<Check class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-										<span class="text-gray-700">{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
+							<!-- What's Included -->
+			{#if tour.includedItems && tour.includedItems.length > 0}
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">What's Included</h2>
 					</div>
-				{/if}
+					<div class="p-6">
+						<ul class="space-y-3">
+							{#each tour.includedItems as item}
+								<li class="flex items-start gap-3">
+									<Check class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+									<span style="color: var(--text-secondary);">{item}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 
-				<!-- Requirements -->
-				{#if tour.requirements && tour.requirements.length > 0}
-					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-						<div class="p-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-900">Requirements</h2>
-						</div>
-						<div class="p-6">
-							<ul class="space-y-3">
-								{#each tour.requirements as requirement}
-									<li class="flex items-start gap-3">
-										<Info class="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-										<span class="text-gray-700">{requirement}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
+							<!-- Requirements -->
+			{#if tour.requirements && tour.requirements.length > 0}
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Requirements</h2>
 					</div>
-				{/if}
+					<div class="p-6">
+						<ul class="space-y-3">
+							{#each tour.requirements as requirement}
+								<li class="flex items-start gap-3">
+									<Info class="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+									<span style="color: var(--text-secondary);">{requirement}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 
-				<!-- Cancellation Policy -->
-				{#if tour.cancellationPolicy}
-					<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-						<div class="p-6 border-b border-gray-200">
-							<h2 class="text-xl font-semibold text-gray-900">Cancellation Policy</h2>
-						</div>
-						<div class="p-6">
-							<p class="text-gray-700 leading-relaxed">{tour.cancellationPolicy}</p>
-						</div>
+							<!-- Cancellation Policy -->
+			{#if tour.cancellationPolicy}
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
 					</div>
-				{/if}
+					<div class="p-6">
+						<p class="leading-relaxed" style="color: var(--text-secondary);">{tour.cancellationPolicy}</p>
+					</div>
+				</div>
+			{/if}
 			</div>
 
 			<!-- Sidebar -->
 			<div class="hidden lg:block space-y-6">
-				<!-- Quick Actions -->
-				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-					<div class="p-6 border-b border-gray-200">
-						<h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
-						<p class="text-sm text-gray-600 mt-1">Manage your tour efficiently</p>
-					</div>
+							<!-- Quick Actions -->
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Quick Actions</h3>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Manage your tour efficiently</p>
+				</div>
 					
 					<div class="p-6 space-y-4">
 						<!-- Primary Action - Most Important -->
-						<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4">
+						<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
 							<div class="flex items-center justify-between mb-2">
 								<div class="flex items-center gap-2">
 									<div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
 										<UserCheck class="h-4 w-4 text-white" />
 									</div>
 									<div>
-										<h4 class="font-medium text-gray-900">Guest Check-in</h4>
-										<p class="text-xs text-gray-600">Scan QR codes to check in guests</p>
+										<h4 class="font-medium" style="color: var(--text-primary);">Guest Check-in</h4>
+										<p class="text-xs" style="color: var(--text-secondary);">Scan QR codes to check in guests</p>
 									</div>
 								</div>
 								{#if upcomingBookings.length > 0}
@@ -764,31 +773,49 @@
 						<div class="grid grid-cols-1 gap-3">
 							<button
 								onclick={() => goto(`/tours/${tour?.id}/bookings`)}
-								class="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+								class="group flex items-center justify-between p-4 rounded-lg transition-all"
+								style="border: 1px solid var(--border-primary);"
+								onmouseenter={(e) => {
+									e.currentTarget.style.borderColor = '#3b82f6';
+									e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)';
+								}}
+								onmouseleave={(e) => {
+									e.currentTarget.style.borderColor = 'var(--border-primary)';
+									e.currentTarget.style.background = 'transparent';
+								}}
 							>
 								<div class="flex items-center gap-3">
-									<div class="w-10 h-10 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
-										<Calendar class="h-5 w-5 text-gray-600 group-hover:text-blue-600" />
+									<div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors" style="background: var(--bg-tertiary);">
+										<Calendar class="h-5 w-5" style="color: var(--text-secondary);" />
 									</div>
 									<div class="text-left">
-										<h4 class="font-medium text-gray-900">All Bookings</h4>
-										<p class="text-sm text-gray-600">{stats.totalBookings || 0} total bookings</p>
+										<h4 class="font-medium" style="color: var(--text-primary);">All Bookings</h4>
+										<p class="text-sm" style="color: var(--text-secondary);">{stats.totalBookings || 0} total bookings</p>
 									</div>
 								</div>
-								<ChevronRight class="h-4 w-4 text-gray-400 group-hover:text-blue-600" />
+								<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
 							</button>
 
 							<button
 								onclick={() => goto(`/tours/${tour?.id}/qr`)}
-								class="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-purple-200 hover:bg-purple-50/50 transition-all {stats.qrCodes > 0 ? 'ring-2 ring-purple-200 border-purple-300' : ''}"
+								class="group flex items-center justify-between p-4 rounded-lg transition-all {stats.qrCodes > 0 ? 'ring-2 ring-purple-200' : ''}"
+								style="border: 1px solid var(--border-primary);"
+								onmouseenter={(e) => {
+									e.currentTarget.style.borderColor = '#a855f7';
+									e.currentTarget.style.background = 'rgba(168, 85, 247, 0.05)';
+								}}
+								onmouseleave={(e) => {
+									e.currentTarget.style.borderColor = 'var(--border-primary)';
+									e.currentTarget.style.background = 'transparent';
+								}}
 							>
 								<div class="flex items-center gap-3">
-									<div class="w-10 h-10 bg-gray-100 group-hover:bg-purple-100 rounded-lg flex items-center justify-center transition-colors {stats.qrCodes > 0 ? 'bg-purple-100' : ''}">
-										<QrCode class="h-5 w-5 text-gray-600 group-hover:text-purple-600 {stats.qrCodes > 0 ? 'text-purple-600' : ''}" />
+									<div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors {stats.qrCodes > 0 ? 'bg-purple-100' : ''}" style={stats.qrCodes > 0 ? '' : 'background: var(--bg-tertiary);'}>
+										<QrCode class="h-5 w-5 {stats.qrCodes > 0 ? 'text-purple-600' : ''}" style={stats.qrCodes > 0 ? '' : 'color: var(--text-secondary);'} />
 									</div>
 									<div class="text-left">
-										<h4 class="font-medium text-gray-900">QR Codes</h4>
-										<p class="text-sm text-gray-600">
+										<h4 class="font-medium" style="color: var(--text-primary);">QR Codes</h4>
+										<p class="text-sm" style="color: var(--text-secondary);">
 											{#if stats.qrCodes > 0}
 												{stats.qrCodes} code{stats.qrCodes !== 1 ? 's' : ''} ready to share
 											{:else}
@@ -803,24 +830,33 @@
 											{stats.activeQRCodes} active
 										</span>
 									{/if}
-								<ChevronRight class="h-4 w-4 text-gray-400 group-hover:text-purple-600" />
+								<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
 								</div>
 							</button>
 
 							<button
 								onclick={() => goto(`/tours/${tour?.id}/schedule`)}
-								class="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-green-200 hover:bg-green-50/50 transition-all"
+								class="group flex items-center justify-between p-4 rounded-lg transition-all"
+								style="border: 1px solid var(--border-primary);"
+								onmouseenter={(e) => {
+									e.currentTarget.style.borderColor = '#10b981';
+									e.currentTarget.style.background = 'rgba(16, 185, 129, 0.05)';
+								}}
+								onmouseleave={(e) => {
+									e.currentTarget.style.borderColor = 'var(--border-primary)';
+									e.currentTarget.style.background = 'transparent';
+								}}
 							>
 								<div class="flex items-center gap-3">
-									<div class="w-10 h-10 bg-gray-100 group-hover:bg-green-100 rounded-lg flex items-center justify-center transition-colors">
-										<CalendarDays class="h-5 w-5 text-gray-600 group-hover:text-green-600" />
+									<div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors" style="background: var(--bg-tertiary);">
+										<CalendarDays class="h-5 w-5" style="color: var(--text-secondary);" />
 									</div>
 									<div class="text-left">
-										<h4 class="font-medium text-gray-900">Schedule</h4>
-										<p class="text-sm text-gray-600">Manage time slots</p>
+										<h4 class="font-medium" style="color: var(--text-primary);">Schedule</h4>
+										<p class="text-sm" style="color: var(--text-secondary);">Manage time slots</p>
 									</div>
 								</div>
-								<ChevronRight class="h-4 w-4 text-gray-400 group-hover:text-green-600" />
+								<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
 							</button>
 						</div>
 
@@ -829,10 +865,10 @@
 				</div>
 
 				<!-- Danger Zone -->
-				<div class="bg-white rounded-xl border border-red-200 overflow-hidden">
-					<div class="p-6 bg-red-50">
-						<h3 class="text-lg font-semibold text-red-900 mb-2">Danger Zone</h3>
-						<p class="text-sm text-red-700">
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid #fca5a5;">
+					<div class="p-6" style="background: var(--bg-secondary); border-bottom: 1px solid #fca5a5;">
+						<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Danger Zone</h3>
+						<p class="text-sm" style="color: var(--text-secondary);">
 							Deleting a tour is permanent and cannot be undone.
 						</p>
 					</div>
@@ -840,7 +876,7 @@
 						<button
 							onclick={deleteTour}
 							disabled={isDeleting}
-							class="button-danger button--full-width button--gap button--small justify-center rounded-lg flex items-center"
+							class="button--danger button--full-width button--gap button--small justify-center rounded-lg flex items-center"
 						>
 							{#if isDeleting}
 								<div class="form-spinner"></div>
@@ -857,27 +893,4 @@
 	{/if}
 </div>
 
-<style>
-	.button-danger {
-		background-color: #ef4444;
-		border: 1px solid #ef4444;
-		color: white;
-		font-weight: 500;
-		transition: all 0.2s ease;
-	}
-	
-	.button-danger:hover:not(:disabled) {
-		background-color: #dc2626;
-		border-color: #dc2626;
-	}
-	
-	.button-danger:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.button-danger .form-spinner {
-		border-color: rgba(255, 255, 255, 0.3);
-		border-top-color: white;
-	}
-</style> 
+ 

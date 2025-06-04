@@ -31,6 +31,7 @@
 	import Shield from 'lucide-svelte/icons/shield';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	interface LayoutData {
 		user?: any;
@@ -158,40 +159,36 @@
 	});
 
 	// Navigation items
-	const navigationItems = [
+	const baseNavigationItems = [
 		{
 			name: 'Dashboard',
 			href: '/dashboard',
-			icon: BarChart3,
-			current: false
+			icon: BarChart3
 		},
 		{
 			name: 'Tours',
 			href: '/tours',
-			icon: MapPin,
-			current: false
+			icon: MapPin
 		},
 		{
 			name: 'Bookings',
 			href: '/bookings',
-			icon: Calendar,
-			current: false
+			icon: Calendar
 		},
 		{
 			name: 'QR Scanner',
 			href: '/checkin-scanner',
-			icon: QrCode,
-			current: false
+			icon: QrCode
 		}
 	];
 
-	// Update current navigation based on current page
-	$effect(() => {
-		const currentPath = $page.url.pathname;
-		navigationItems.forEach((item) => {
-			item.current = currentPath.startsWith(item.href);
-		});
-	});
+	// Create reactive navigation items with current state
+	const navigationItems = $derived(
+		baseNavigationItems.map(item => ({
+			...item,
+			current: $page.url.pathname.startsWith(item.href)
+		}))
+	);
 
 	async function handleLogout(event: Event) {
 		event.preventDefault();
@@ -230,16 +227,17 @@
 	{/if}
 </svelte:head>
 
-<div class="flex h-screen bg-gray-50">
+<div class="flex h-screen" style="background: var(--bg-secondary);">
 	<!-- Sidebar -->
 	<div class="hidden lg:flex lg:flex-shrink-0">
 		<div class="flex w-64 flex-col">
 			<div
-				class="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5 pb-4"
+				class="flex flex-grow flex-col overflow-y-auto pt-5 pb-4"
+				style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
 			>
 				<!-- Logo -->
 				<div class="flex flex-shrink-0 items-center px-4">
-					<h1 class="text-xl font-bold text-gray-900">Zaur Dashboard</h1>
+					<h1 class="text-xl font-bold" style="color: var(--text-primary);">Zaur Dashboard</h1>
 				</div>
 
 				<!-- Navigation -->
@@ -247,19 +245,28 @@
 					{#each navigationItems as item}
 						<a
 							href={item.href}
-							class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors {item.current
-								? 'bg-blue-100 text-blue-900'
-								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}"
+							class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors"
+							style="{item.current
+								? 'background: var(--color-primary-100); color: var(--color-primary-900);'
+								: 'color: var(--text-secondary);'}"
+							onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
+							onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
 						>
 							<item.icon
-								class="mr-3 h-5 w-5 {item.current
-									? 'text-blue-500'
-									: 'text-gray-400 group-hover:text-gray-500'}"
+								class="mr-3 h-5 w-5"
+								style="{item.current
+									? 'color: var(--color-primary-500);'
+									: 'color: var(--text-tertiary);'}"
 							/>
 							{item.name}
 						</a>
 					{/each}
 				</nav>
+
+				<!-- Theme Toggle -->
+				<div class="px-2 pb-4">
+					<ThemeToggle />
+				</div>
 
 				<!-- User section -->
 				<div class="flex flex-shrink-0 border-t border-gray-200 p-4">

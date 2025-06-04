@@ -238,11 +238,11 @@
 					}}
 				/>
 			{:else if isInitializing}
-				<div class="bg-white rounded-xl border border-gray-200 p-8 text-center">
+				<div class="rounded-xl p-8 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<LoadingSpinner size="large" text="Initializing camera..." centered />
 				</div>
 			{:else if !scanning}
-				<div class="bg-white rounded-xl border border-gray-200 p-8">
+				<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<EmptyState
 						icon={Camera}
 						title="Start QR Scanner"
@@ -252,9 +252,9 @@
 					/>
 					
 					<!-- Instructions for non-scanning state -->
-					<div class="mt-8 bg-blue-50 rounded-xl border border-blue-200 p-6">
-						<h3 class="text-lg font-semibold text-blue-900 mb-3">How to use</h3>
-						<ul class="space-y-2 text-sm text-blue-800">
+					<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">How to use</h3>
+						<ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
 							<li class="flex items-start gap-2">
 								<span class="font-semibold">1.</span>
 								<span>Click "Start Camera" to activate the QR scanner</span>
@@ -272,12 +272,12 @@
 				</div>
 			{:else}
 				<!-- Camera View -->
-				<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-					<div class="p-4 bg-gray-50 border-b border-gray-200">
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-2">
 								<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-								<span class="text-sm font-medium text-gray-700">Scanning active</span>
+								<span class="text-sm font-medium" style="color: var(--text-primary);">Scanning active</span>
 							</div>
 							<button
 								onclick={stopScanning}
@@ -306,8 +306,8 @@
 						</div>
 					</div>
 					
-					<div class="p-4 bg-gray-50 border-t border-gray-200">
-						<p class="text-xs text-gray-600 text-center">
+					<div class="p-4" style="background: var(--bg-secondary); border-top: 1px solid var(--border-primary);">
+						<p class="text-xs text-center" style="color: var(--text-secondary);">
 							Position QR code within the frame to scan
 						</p>
 					</div>
@@ -315,14 +315,14 @@
 
 				<!-- Session Scans (when scanning) -->
 				{#if scanHistory.length > 0}
-					<div class="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-						<h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Scans</h3>
+					<div class="mt-6 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Recent Scans</h3>
 						<div class="grid gap-3">
 							{#each scanHistory.slice(0, 3) as scan, i}
-								<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-									<QrCode class="h-4 w-4 text-gray-400 flex-shrink-0" />
-									<span class="text-sm text-gray-700 font-mono truncate flex-1">{scan}</span>
-									<span class="text-xs text-gray-500">#{i + 1}</span>
+								<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<QrCode class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
+									<span class="text-sm font-mono truncate flex-1" style="color: var(--text-primary);">{scan}</span>
+									<span class="text-xs" style="color: var(--text-tertiary);">#{i + 1}</span>
 								</div>
 							{/each}
 						</div>
@@ -335,17 +335,17 @@
 		<div class="space-y-6">
 			<!-- Recent QR Codes -->
 			{#if recentQRCodes.length > 0}
-				<div class="bg-white rounded-xl border border-gray-200 p-6">
-					<h3 class="text-lg font-semibold text-gray-900 mb-4">Your QR Codes</h3>
+				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Your QR Codes</h3>
 					<div class="space-y-3">
 						{#each recentQRCodes.slice(0, 5) as qr}
-							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+							<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
 								<QrCode class="h-4 w-4 text-blue-500 flex-shrink-0" />
 								<div class="flex-1 min-w-0">
-									<div class="text-sm font-medium text-gray-900 truncate">
+									<div class="text-sm font-medium truncate" style="color: var(--text-primary);">
 										{qr.tourName}
 									</div>
-									<div class="text-xs text-gray-500 font-mono">
+									<div class="text-xs font-mono" style="color: var(--text-tertiary);">
 										{qr.code}
 									</div>
 									{#if qr.category}
@@ -357,11 +357,11 @@
 									{/if}
 								</div>
 								<div class="text-right">
-									<div class="text-xs text-gray-500 flex items-center gap-1">
+									<div class="text-xs flex items-center gap-1" style="color: var(--text-tertiary);">
 										<UserCheck class="h-3 w-3" />
 										{qr.scans}
 									</div>
-									<div class="text-xs text-gray-400 mt-1">
+									<div class="text-xs mt-1" style="color: var(--text-tertiary);">
 										{new Date(qr.created).toLocaleDateString()}
 									</div>
 								</div>
@@ -373,21 +373,24 @@
 
 			<!-- Quick Tour Access -->
 			{#if activeTours.length > 0}
-				<div class="bg-white rounded-xl border border-gray-200 p-6">
-					<h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Tour Access</h3>
+				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Tour Access</h3>
 					<div class="space-y-3">
 						{#each activeTours.slice(0, 3) as tour}
 							<a 
 								href="/checkin-scanner?tour={tour.id}"
-								class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+								class="flex items-center gap-3 p-3 rounded-lg transition-colors"
+								style="background: var(--bg-secondary);"
+								onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+								onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
 							>
 								<MapPin class="h-4 w-4 text-blue-500 flex-shrink-0" />
 								<div class="flex-1 min-w-0">
-									<div class="text-sm font-medium text-gray-900 truncate">
+									<div class="text-sm font-medium truncate" style="color: var(--text-primary);">
 										{tour.name}
 									</div>
 									{#if tour.location}
-										<div class="text-xs text-gray-500 truncate">
+										<div class="text-xs truncate" style="color: var(--text-secondary);">
 											{tour.location}
 										</div>
 									{/if}
@@ -400,14 +403,14 @@
 
 			<!-- Session Scans (when not scanning, for mobile/fallback) -->
 			{#if scanHistory.length > 0 && !scanning}
-				<div class="bg-white rounded-xl border border-gray-200 p-6">
-					<h3 class="text-lg font-semibold text-gray-900 mb-4">Session Scans</h3>
+				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Session Scans</h3>
 					<div class="space-y-3">
 						{#each scanHistory.slice(0, 5) as scan, i}
-							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-								<QrCode class="h-4 w-4 text-gray-400 flex-shrink-0" />
-								<span class="text-sm text-gray-700 font-mono truncate flex-1">{scan}</span>
-								<span class="text-xs text-gray-500">#{i + 1}</span>
+							<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<QrCode class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
+								<span class="text-sm font-mono truncate flex-1" style="color: var(--text-primary);">{scan}</span>
+								<span class="text-xs" style="color: var(--text-tertiary);">#{i + 1}</span>
 							</div>
 						{/each}
 					</div>

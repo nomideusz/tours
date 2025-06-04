@@ -74,8 +74,8 @@
 
 	<!-- Quick Actions - Prominent on mobile -->
 	<div class="lg:hidden mb-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
-			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
 					onclick={() => goto('/checkin-scanner')}
@@ -97,9 +97,9 @@
 
 	<!-- Today's Schedule - Prominent on mobile, above stats -->
 	<div class="lg:hidden mb-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex items-center justify-between mb-3">
-				<h3 class="text-base font-semibold text-gray-900">Today's Schedule</h3>
+				<h3 class="text-base font-semibold" style="color: var(--text-primary);">Today's Schedule</h3>
 				<button
 					onclick={() => goto('/bookings')}
 					class="button-secondary button--small text-xs px-2 py-1"
@@ -110,15 +110,15 @@
 			<div class="space-y-2">
 				{#if todaysSchedule.length > 0}
 					{#each todaysSchedule.slice(0, 3) as schedule}
-						<div class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+						<div class="flex items-center gap-3 p-2 rounded-lg" style="background: var(--bg-secondary);">
 							<div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
 								<Clock class="w-3 h-3 text-white" />
 							</div>
 							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-gray-900">
+								<p class="text-sm font-medium" style="color: var(--text-primary);">
 									{new Date('2024-01-01T' + schedule.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
 								</p>
-								<p class="text-xs text-gray-600 truncate">
+								<p class="text-xs truncate" style="color: var(--text-secondary);">
 									{schedule.tourName} • {schedule.participants} {schedule.participants === 1 ? 'guest' : 'guests'}
 								</p>
 							</div>
@@ -139,7 +139,7 @@
 						<div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
 							<Calendar class="w-4 h-4 text-gray-400" />
 						</div>
-						<p class="text-sm text-gray-600">No bookings today</p>
+						<p class="text-sm" style="color: var(--text-secondary);">No bookings today</p>
 					</div>
 				{/if}
 			</div>
@@ -176,6 +176,7 @@
 				value={stats.todayBookings}
 				subtitle="bookings for today"
 				icon={Calendar}
+				variant="small"
 			/>
 		</div>
 
@@ -201,10 +202,10 @@
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 		<!-- Recent Bookings -->
 		<div class="lg:col-span-2">
-			<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-				<div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-4 sm:px-6 py-4" style="border-bottom: 1px solid var(--border-primary);">
 					<div class="flex items-center justify-between">
-						<h2 class="text-lg font-semibold text-gray-900">Recent Bookings</h2>
+						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Recent Bookings</h2>
 						<button
 							onclick={() => goto('/bookings')}
 							class="button-secondary button--small"
@@ -214,10 +215,10 @@
 					</div>
 				</div>
 				
-				<div class="divide-y divide-gray-200">
+				<div style="border-color: var(--border-primary);" class="divide-y">
 					{#if recentBookings.length > 0}
 						{#each recentBookings.slice(0, 5) as booking}
-							<button class="w-full px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors text-left" onclick={() => goto(`/bookings/${booking.id}`)}>
+							<button class="w-full px-4 sm:px-6 py-4 transition-colors text-left" style="hover:background: var(--bg-secondary);" onclick={() => goto(`/bookings/${booking.id}`)}>
 								<div class="flex items-center justify-between">
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-3 mb-2">
@@ -227,15 +228,15 @@
 												</div>
 											</div>
 											<div class="flex-1 min-w-0">
-												<p class="text-sm font-medium text-gray-900 truncate">
+												<p class="text-sm font-medium truncate" style="color: var(--text-primary);">
 													{booking.customerName}
 												</p>
-												<p class="text-sm text-gray-600 truncate">
+												<p class="text-sm truncate" style="color: var(--text-secondary);">
 													{booking.tourName}
 												</p>
 											</div>
 										</div>
-										<div class="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 overflow-x-auto">
+										<div class="flex items-center gap-3 sm:gap-4 text-xs overflow-x-auto" style="color: var(--text-tertiary);">
 											<span class="flex items-center gap-1 flex-shrink-0">
 												<Clock class="w-3 h-3" />
 												<span class="hidden sm:inline">{formatDate(booking.date)}</span>
@@ -288,9 +289,9 @@
 		<!-- Desktop Sidebar -->
 		<div class="hidden lg:block space-y-6">
 			<!-- Today's Schedule -->
-			<div class="bg-white rounded-xl border border-gray-200 p-6">
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="flex items-center justify-between mb-4">
-					<h3 class="text-lg font-semibold text-gray-900">Today's Schedule</h3>
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Schedule</h3>
 					<button
 						onclick={() => goto('/bookings')}
 						class="button-secondary button--small"
@@ -301,15 +302,15 @@
 				<div class="space-y-3">
 					{#if todaysSchedule.length > 0}
 						{#each todaysSchedule.slice(0, 4) as schedule}
-							<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+							<div class="flex items-center gap-3 p-3 rounded-lg transition-colors hover:opacity-90" style="background: var(--bg-secondary);">
 								<div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
 									<Clock class="w-4 h-4 text-white" />
 								</div>
 								<div class="flex-1 min-w-0">
-									<p class="text-sm font-medium text-gray-900">
+									<p class="text-sm font-medium" style="color: var(--text-primary);">
 										{new Date('2024-01-01T' + schedule.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
 									</p>
-									<p class="text-xs text-gray-600 truncate">
+									<p class="text-xs truncate" style="color: var(--text-secondary);">
 										{schedule.tourName} • {schedule.participants} {schedule.participants === 1 ? 'guest' : 'guests'}
 									</p>
 								</div>
@@ -336,8 +337,8 @@
 			</div>
 
 			<!-- Quick Actions -->
-			<div class="bg-white rounded-xl border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
 				<div class="grid grid-cols-2 gap-3 mb-4">
 					<button
 						onclick={() => goto('/checkin-scanner')}
@@ -376,8 +377,8 @@
 
 	<!-- Mobile: Additional Quick Actions -->
 	<div class="lg:hidden mt-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
-			<h3 class="text-base font-semibold text-gray-900 mb-3">More Actions</h3>
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">More Actions</h3>
 			<div class="space-y-2">
 				<button
 					onclick={() => goto('/tours')}

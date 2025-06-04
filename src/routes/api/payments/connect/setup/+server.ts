@@ -1,0 +1,77 @@
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { getStripe } from '$lib/stripe.server.js';
+import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
+import { env as publicEnv } from '$env/dynamic/public';
+
+export const POST: RequestHandler = async ({ request, url }) => {
+    try {
+        const { userId, email, businessName } = await request.json();
+
+        if (!userId || !email) {
+            return json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Get authenticated PocketBase instance
+        let pb;
+        try {
+            pb = await createAuthenticatedPB();
+        } catch (authError) {
+            console.error('API: Failed to authenticate with PocketBase admin:', authError);
+            return json({ error: 'Database authentication failed' }, { status: 500 });
+        }
+        
+        // Get user record
+        const user = await pb.collection('users').getOne(userId);
+        
+        const stripe = getStripe();
+        let accountId = user.stripeAccountId;
+
+        // Create Stripe Connect account if it doesn't exist
+        if (!accountId) {
+            const account = await stripe.accounts.create({
+                type: 'express',
+                country: 'DE', // You can make this dynamic based on user location
+                email: email,
+                business_profile: {
+                    name: businessName || undefined,
+                    product_description: 'Tour guide services',
+                    support_email: email,
+                },
+                capabilities: {
+                    card_payments: { requested: true },
+                    transfers: { requested: true },
+                },
+            });
+
+            accountId = account.id;
+
+            // Save account ID to user record
+            await pb.collection('users').update(userId, {
+                stripeAccountId: accountId
+            });
+        }
+
+        // Check if account needs onboarding or is ready for dashboard
+        const account = await stripe.accounts.retrieve(accountId);
+        
+        let accountLink;
+        if (account.details_submitted) {
+            // Account is complete, create login link for dashboard
+            const loginLink = await stripe.accounts.createLoginLink(accountId);
+            accountLink = { url: loginLink.url };
+        } else {
+            // Account needs onboarding
+            accountLink = await stripe.accountLinks.create({
+                account: accountId,
+                refresh_url: `${url.origin}/profile?setup=refresh`,
+                return_url: `${url.origin}/profile?setup=complete`,
+                type: 'account_onboarding',
+            });
+        }
+
+        return json({ accountLink: accountLink.url });
+    } catch (error) {
+        console.error('Stripe Connect setup error:', error);
+        return json({ error: 'Failed to setup payment account' }, { status: 500 });
+    }
+}; 

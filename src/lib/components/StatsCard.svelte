@@ -1,11 +1,9 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
-	
 	interface Props {
 		title: string;
 		value: string | number;
 		subtitle?: string;
-		icon?: ComponentType;
+		icon?: any;
 		trend?: {
 			value: string;
 			positive?: boolean;
@@ -22,12 +20,12 @@
 	<a {href} class="stats-card-link">
 		<div class="stats-card stats-card--{variant}">
 			<!-- Card content -->
-			<div class="stats-card__header">
-				<span class="stats-card__title">{title}</span>
-				{#if Icon}
-					<Icon class="stats-card__icon" />
-				{/if}
-			</div>
+					<div class="stats-card__header">
+			<span class="stats-card__title">{title}</span>
+			{#if Icon}
+				<Icon class="stats-card__icon" style="color: var(--text-tertiary); stroke: var(--text-tertiary);" />
+			{/if}
+		</div>
 			
 					<div class="stats-card__content">
 			{#if value !== undefined && value !== null && value !== ''}
@@ -55,7 +53,7 @@
 		<div class="stats-card__header">
 			<span class="stats-card__title">{title}</span>
 			{#if Icon}
-				<Icon class="stats-card__icon" />
+				<Icon class="stats-card__icon" style="color: var(--text-tertiary); stroke: var(--text-tertiary);" />
 			{/if}
 		</div>
 		
@@ -84,66 +82,99 @@
 	@reference "tailwindcss";
 	
 	.stats-card {
-		@apply bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		transition: box-shadow 0.15s ease-in-out;
+	}
+	
+	.stats-card:hover {
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 	}
 	
 	.stats-card--default {
-		@apply p-6;
+		padding: 1.5rem;
 	}
 	
 	.stats-card--small {
-		@apply p-4;
+		padding: 1rem;
 	}
 	
 	.stats-card-link {
-		@apply block;
+		display: block;
 	}
 	
 	.stats-card__header {
-		@apply flex items-center justify-between mb-4;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 1rem;
 	}
 	
 	.stats-card__title {
-		@apply text-sm text-gray-600;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
 	}
 	
 	.stats-card__icon {
-		@apply h-5 w-5 text-gray-400;
+		height: 1.25rem;
+		width: 1.25rem;
+		color: var(--text-tertiary);
+	}
+	
+	.stats-card__icon :global(svg) {
+		stroke: var(--text-tertiary) !important;
+		fill: none;
+		color: var(--text-tertiary);
+	}
+	
+	.stats-card__icon :global(svg path) {
+		stroke: var(--text-tertiary) !important;
 	}
 	
 	.stats-card--small .stats-card__icon {
-		@apply h-4 w-4;
+		height: 1rem;
+		width: 1rem;
 	}
 	
 	.stats-card__content {
-		@apply space-y-1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 	
 	.stats-card__value {
-		@apply text-2xl font-bold text-gray-900;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
 	}
 	
 	.stats-card--small .stats-card__value {
-		@apply text-xl;
+		font-size: 1.25rem;
 	}
 	
 	.stats-card__subtitle {
-		@apply text-xs text-gray-500;
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
 	}
 	
 	.stats-card__trend {
-		@apply text-sm font-medium flex items-center gap-1;
+		font-size: 0.875rem;
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 	
 	.stats-card__trend--positive {
-		@apply text-green-600;
+		color: #059669;
 	}
 	
 	.stats-card__trend--negative {
-		@apply text-red-600;
+		color: #dc2626;
 	}
 	
 	.stats-card__children {
-		@apply mt-3;
+		margin-top: 0.75rem;
 	}
 </style> 

@@ -82,7 +82,7 @@
 
 		<!-- QR Code Details -->
 		<div class="mb-4 flex flex-wrap items-center gap-2">
-			<span class="text-sm text-gray-600">QR Code:</span>
+			<span class="text-sm" style="color: var(--text-secondary);">QR Code:</span>
 			{#if data.qrCode.category && categories[data.qrCode.category]}
 				<span 
 					class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-white text-xs font-medium"
@@ -100,9 +100,9 @@
 				<span class="w-1 h-1 rounded-full {data.qrCode.isActive ? 'bg-green-500' : 'bg-gray-400'}"></span>
 				{data.qrCode.isActive ? 'Enabled' : 'Disabled'}
 			</span>
-			<span class="text-gray-400">•</span>
-			<span class="text-xs text-gray-500">
-				Code: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{data.qrCode.code}</code>
+			<span style="color: var(--text-tertiary);">•</span>
+			<span class="text-xs" style="color: var(--text-tertiary);">
+				Code: <code class="px-1.5 py-0.5 rounded font-mono" style="background: var(--bg-tertiary); color: var(--text-primary);">{data.qrCode.code}</code>
 			</span>
 		</div>
 	</PageHeader>
@@ -112,81 +112,81 @@
 		<div class="lg:col-span-1">
 			<QRCodeCard qrCode={data.qrCode} size="large" />
 			
-			<!-- Quick Stats -->
-			<div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Summary</h3>
-				<div class="space-y-4">
-					<div>
-						<div class="flex justify-between items-center mb-1">
-							<span class="text-sm text-gray-600">Total Scans</span>
-							<span class="font-semibold text-gray-900">{data.qrCode.scans}</span>
-						</div>
+					<!-- Quick Stats -->
+		<div class="mt-6 rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Performance Summary</h3>
+			<div class="space-y-4">
+				<div>
+					<div class="flex justify-between items-center mb-1">
+						<span class="text-sm" style="color: var(--text-secondary);">Total Scans</span>
+						<span class="font-semibold" style="color: var(--text-primary);">{data.qrCode.scans}</span>
 					</div>
-					<div>
-						<div class="flex justify-between items-center mb-1">
-							<span class="text-sm text-gray-600">Conversions</span>
-							<span class="font-semibold text-gray-900">{data.qrCode.conversions}</span>
-						</div>
+				</div>
+				<div>
+					<div class="flex justify-between items-center mb-1">
+						<span class="text-sm" style="color: var(--text-secondary);">Conversions</span>
+						<span class="font-semibold" style="color: var(--text-primary);">{data.qrCode.conversions}</span>
 					</div>
-					<div>
-						<div class="flex justify-between items-center mb-1">
-							<span class="text-sm text-gray-600">Conversion Rate</span>
-							<span class="font-semibold text-gray-900">{conversionRate}%</span>
-						</div>
-						<div class="w-full bg-gray-200 rounded-full h-2">
-							<div 
-								class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-								style="width: {conversionRate}%"
-							></div>
-						</div>
+				</div>
+				<div>
+					<div class="flex justify-between items-center mb-1">
+						<span class="text-sm" style="color: var(--text-secondary);">Conversion Rate</span>
+						<span class="font-semibold" style="color: var(--text-primary);">{conversionRate}%</span>
+					</div>
+					<div class="w-full rounded-full h-2" style="background: var(--bg-tertiary);">
+						<div 
+							class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+							style="width: {conversionRate}%"
+						></div>
 					</div>
 				</div>
 			</div>
+		</div>
 		</div>
 		
 		<!-- Analytics -->
 		<div class="lg:col-span-2 space-y-6">
 			<!-- Scan Activity Chart -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+			<div class="rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-semibold text-gray-900">Scan Activity (Last 7 Days)</h3>
-					<BarChart3 class="w-5 h-5 text-gray-400" />
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Scan Activity (Last 7 Days)</h3>
+					<BarChart3 class="w-5 h-5" style="color: var(--text-tertiary);" />
 				</div>
 				
 				<div class="h-64 flex items-end justify-between gap-2">
 					{#each analyticsData.scansByDay as day}
 						<div class="flex-1 flex flex-col items-center">
-							<div class="w-full bg-gray-100 rounded-t relative flex items-end" style="height: 200px;">
+							<div class="w-full rounded-t relative flex items-end" style="height: 200px; background: var(--bg-tertiary);">
 								<div 
 									class="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600 relative"
 									style="height: {(day.scans / maxScans) * 100}%"
 								>
-									<span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-gray-700">
+									<span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium" style="color: var(--text-secondary);">
 										{day.scans}
 									</span>
 								</div>
 							</div>
-							<span class="mt-2 text-xs text-gray-600">{day.date}</span>
+							<span class="mt-2 text-xs" style="color: var(--text-secondary);">{day.date}</span>
 						</div>
 					{/each}
 				</div>
 			</div>
 			
 			<!-- Top Locations -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+			<div class="rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-semibold text-gray-900">Top Scan Locations</h3>
-					<Eye class="w-5 h-5 text-gray-400" />
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Top Scan Locations</h3>
+					<Eye class="w-5 h-5" style="color: var(--text-tertiary);" />
 				</div>
 				
 				<div class="space-y-4">
 					{#each analyticsData.topLocations as location}
 						<div>
 							<div class="flex justify-between items-center mb-1">
-								<span class="text-sm font-medium text-gray-700">{location.location}</span>
-								<span class="text-sm text-gray-600">{location.scans} scans</span>
+								<span class="text-sm font-medium" style="color: var(--text-secondary);">{location.location}</span>
+								<span class="text-sm" style="color: var(--text-secondary);">{location.scans} scans</span>
 							</div>
-							<div class="w-full bg-gray-200 rounded-full h-2">
+							<div class="w-full rounded-full h-2" style="background: var(--bg-tertiary);">
 								<div 
 									class="bg-green-500 h-2 rounded-full transition-all duration-300"
 									style="width: {(location.scans / analyticsData.topLocations[0].scans) * 100}%"
@@ -198,28 +198,28 @@
 			</div>
 			
 			<!-- Device Types -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+			<div class="rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="flex items-center justify-between mb-6">
-					<h3 class="text-lg font-semibold text-gray-900">Device Types</h3>
-					<TrendingUp class="w-5 h-5 text-gray-400" />
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Device Types</h3>
+					<TrendingUp class="w-5 h-5" style="color: var(--text-tertiary);" />
 				</div>
 				
 				<div class="grid grid-cols-3 gap-4 text-center">
 					{#each analyticsData.deviceTypes as device}
-						<div class="p-4 bg-gray-50 rounded-lg">
-							<div class="text-2xl font-bold text-gray-900">{device.percentage}%</div>
-							<div class="text-sm text-gray-600 mt-1">{device.type}</div>
+						<div class="p-4 rounded-lg" style="background: var(--bg-secondary);">
+							<div class="text-2xl font-bold" style="color: var(--text-primary);">{device.percentage}%</div>
+							<div class="text-sm mt-1" style="color: var(--text-secondary);">{device.type}</div>
 						</div>
 					{/each}
 				</div>
 			</div>
 			
 			<!-- Recent Bookings -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Bookings from this QR Code</h3>
-				<div class="text-center py-8 text-gray-500">
-					<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<BarChart3 class="h-8 w-8 text-gray-400" />
+			<div class="rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Recent Bookings from this QR Code</h3>
+				<div class="text-center py-8" style="color: var(--text-tertiary);">
+					<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--bg-tertiary);">
+						<BarChart3 class="h-8 w-8" style="color: var(--text-tertiary);" />
 					</div>
 					<p>No bookings yet from this QR code</p>
 					<p class="text-sm mt-1">Bookings will appear here once customers start using this QR code</p>

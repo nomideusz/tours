@@ -25,6 +25,9 @@
 		white-space: nowrap;
 		user-select: none;
 		box-shadow: var(--shadow-xs);
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border-color: var(--border-primary);
 	}
 
 	.button:focus {
@@ -96,23 +99,23 @@
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background: white;
-		color: var(--color-gray-700);
-		border: 1px solid var(--color-gray-300);
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-primary);
 		box-shadow: var(--shadow-xs);
 	}
 
 	.button-secondary:hover:not(:disabled),
 	.button--secondary:hover:not(:disabled) {
-		background-color: var(--color-gray-50);
-		border-color: var(--color-gray-400);
+		background-color: var(--bg-secondary);
+		border-color: var(--border-secondary);
 	}
 
 	.button-secondary:focus,
 	.button--secondary:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.1);
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 	}
 
 	.button-secondary:disabled,
@@ -211,7 +214,44 @@
 
 	.button--text:hover:not(:disabled) {
 		color: var(--color-primary-700);
-		background: var(--color-primary-50);
+		background: var(--color-primary-100);
+	}
+
+	/* Ghost button variation - more subtle than secondary */
+	.button--ghost {
+		background: transparent;
+		border: 1px solid transparent;
+		color: var(--text-secondary);
+		text-decoration: none;
+		padding: 0.75rem 1.5rem;
+		font-weight: 500;
+		transition: all var(--transition-fast) ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		line-height: 1.25rem;
+		cursor: pointer;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+	}
+
+	.button--ghost:hover:not(:disabled) {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.button--ghost:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+	}
+
+	.button--ghost:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	/* Button spinner */

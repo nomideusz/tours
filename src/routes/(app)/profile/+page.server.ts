@@ -20,6 +20,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             website: locals.user.website || '',
             avatar: locals.user.avatar || '',
             verified: locals.user.verified || false,
+            stripeAccountId: locals.user.stripeAccountId || '',
             // Check if user has OAuth2 login (no password)
             isOAuth2User: !!(locals.user.avatar || locals.user.name)
         }
@@ -79,6 +80,53 @@ export const actions: Actions = {
         } catch (error) {
             console.error('Profile update error:', error);
             return fail(500, { error: 'Failed to update profile. Please try again.' });
+        }
+    },
+
+    // Setup Stripe Connect account for receiving payments
+    setupPayments: async ({ locals, url }) => {
+        if (!locals.user) {
+            return fail(401, { error: 'Unauthorized' });
+        }
+
+        try {
+            console.log('Setup payments - User ID:', locals.user.id);
+            console.log('Setup payments - API URL:', `${url.origin}/api/payments/connect/setup`);
+            
+            // Call API to create/manage Stripe Connect account
+            const response = await fetch(`${url.origin}/api/payments/connect/setup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: locals.user.id,
+                    email: locals.user.email,
+                    businessName: locals.user.businessName || locals.user.name
+                })
+            });
+            
+            console.log('Setup payments - Response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                return fail(500, { error: errorData.error || 'Failed to setup payment account' });
+            }
+
+            const { accountLink } = await response.json();
+            
+            console.log('Account link received:', accountLink);
+            
+            // Return the account link for client-side redirect
+            return { 
+                success: true,
+                redirect: accountLink,
+                message: 'Redirecting to Stripe...'
+            };
+        } catch (error) {
+            if (error instanceof Response && error.status === 303) {
+                throw error; // Re-throw redirect
+            }
+            console.error('Payment setup error:', error);
+            return fail(500, { error: 'Failed to setup payment account. Please try again.' });
         }
     },
 

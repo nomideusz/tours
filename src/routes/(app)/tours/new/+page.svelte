@@ -214,28 +214,28 @@
 				<span class="font-medium text-blue-600 hidden sm:inline">Tour Details</span>
 				<span class="font-medium text-blue-600 sm:hidden">Details</span>
 			</div>
-			<div class="h-px bg-gray-300 flex-1 min-w-4"></div>
+			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
 			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-medium text-xs sm:text-sm">
+				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					2
 				</div>
-				<span class="text-gray-500 hidden sm:inline">Schedule Setup</span>
-				<span class="text-gray-500 sm:hidden">Schedule</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Schedule Setup</span>
+				<span class="sm:hidden" style="color: var(--text-tertiary);">Schedule</span>
 			</div>
-			<div class="h-px bg-gray-300 flex-1 min-w-4"></div>
+			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
 			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-medium text-xs sm:text-sm">
+				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					3
 				</div>
-				<span class="text-gray-500 hidden sm:inline">Go Live</span>
-				<span class="text-gray-500 sm:hidden">Live</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Go Live</span>
+				<span class="sm:hidden" style="color: var(--text-tertiary);">Live</span>
 			</div>
 		</div>
 	</div>
 
 	<!-- Form Container -->
-	<div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-		<div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+	<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-6" style="border-bottom: 1px solid var(--border-primary); background: var(--bg-secondary);">
 			<div class="flex items-center gap-3">
 				<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
 					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,8 +243,8 @@
 					</svg>
 				</div>
 				<div>
-					<h2 class="text-xl font-semibold text-gray-900">Tour Information</h2>
-					<p class="text-sm text-gray-600 mt-1">Provide the basic details about your tour experience</p>
+					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Information</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Provide the basic details about your tour experience</p>
 				</div>
 			</div>
 		</div>
@@ -265,25 +265,25 @@
 	</div>
 
 	<!-- Next Steps Preview -->
-	<div class="mt-8 bg-gray-50 rounded-xl border border-gray-200 p-6">
-		<h3 class="text-lg font-semibold text-gray-900 mb-3">What happens next?</h3>
+	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">What happens next?</h3>
 		<div class="space-y-3">
 			<div class="flex items-start gap-3">
 				<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
 					<span class="text-xs font-medium text-blue-600">2</span>
 				</div>
 				<div>
-					<p class="font-medium text-gray-900">Set up your schedule</p>
-					<p class="text-sm text-gray-600">Define available time slots and tour dates</p>
+					<p class="font-medium" style="color: var(--text-primary);">Set up your schedule</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Define available time slots and tour dates</p>
 				</div>
 			</div>
 			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-gray-500">3</span>
+				<div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style="background: var(--bg-tertiary);">
+					<span class="text-xs font-medium" style="color: var(--text-tertiary);">3</span>
 				</div>
 				<div>
-					<p class="font-medium text-gray-700">Generate QR codes & go live</p>
-					<p class="text-sm text-gray-600">Create marketing QR codes and activate your tour</p>
+					<p class="font-medium" style="color: var(--text-primary);">Generate QR codes & go live</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Create marketing QR codes and activate your tour</p>
 				</div>
 			</div>
 		</div>
