@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		// Get user's tours
 		const tours = await locals.pb.collection('tours').getFullList({
 			filter: `user = "${userId}"`,
-			fields: 'id,name,isActive,created'
+			fields: 'id,name,status,created'
 		});
 		
 		const tourIds = tours.map(t => t.id);
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		// Initialize stats with defaults
 		let stats = {
 			totalTours: tours.length,
-			activeTours: tours.filter(t => t.isActive).length,
+			activeTours: tours.filter(t => t.status === 'active').length,
 			todayBookings: 0,
 			weeklyRevenue: 0,
 			upcomingTours: 0,
