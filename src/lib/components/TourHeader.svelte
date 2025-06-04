@@ -42,7 +42,7 @@
 	
 	{#if countInfo}
 		<div class="flex items-center gap-1 text-sm text-gray-600">
-			<svelte:component this={countInfo.icon} class="h-4 w-4" />
+			<countInfo.icon class="h-4 w-4" />
 			<span>{countInfo.label}</span>
 			{#if countInfo.detail}
 				<span class="text-gray-400">•</span>

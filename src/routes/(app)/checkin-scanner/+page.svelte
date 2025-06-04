@@ -377,9 +377,9 @@
 					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Tour Access</h3>
 					<div class="space-y-3">
 						{#each activeTours.slice(0, 3) as tour}
-							<a 
-								href="/checkin-scanner?tour={tour.id}"
-								class="flex items-center gap-3 p-3 rounded-lg transition-colors"
+							<button 
+								onclick={() => goto(`/checkin-scanner?tour=${tour.id}`)}
+								class="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left"
 								style="background: var(--bg-secondary);"
 								onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}
 								onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
@@ -395,7 +395,7 @@
 										</div>
 									{/if}
 								</div>
-							</a>
+							</button>
 						{/each}
 					</div>
 				</div>
