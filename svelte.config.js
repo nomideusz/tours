@@ -7,7 +7,10 @@ const config = {
 		adapter: adapter({
 			// Let CapRover set the port dynamically
 			out: 'build'
-		})
+		}),
+		serviceWorker: {
+			register: true
+		}
 	}
 };
 
