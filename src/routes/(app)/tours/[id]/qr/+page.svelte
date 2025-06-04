@@ -80,7 +80,9 @@
 		if (copiedQRId) {
 			copiedQRId = null;
 		}
-		document.removeEventListener('click', handleClickOutside);
+		if (typeof window !== 'undefined') {
+			document.removeEventListener('click', handleClickOutside);
+		}
 	});
 
 	async function loadQRCodes() {
@@ -97,6 +99,8 @@
 	}
 
 	async function generateQRCodeImages() {
+		if (typeof window === 'undefined') return;
+		
 		for (const qr of qrCodes) {
 			const element = qrCodeElements[qr.id];
 			if (element) {
@@ -124,6 +128,8 @@
 	}
 
 	async function copyBookingUrl(qrId: string, code: string) {
+		if (typeof window === 'undefined') return;
+		
 		const url = `${window.location.origin}/book/${code}`;
 		try {
 			await navigator.clipboard.writeText(url);
