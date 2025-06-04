@@ -33,7 +33,13 @@ export async function createAuthenticatedPB(): Promise<PocketBase> {
   }
   
   try {
-    await pb.collection('_superusers').authWithPassword(adminEmail, adminPassword);
+    // Add timeout to prevent hanging in production
+    const authPromise = pb.collection('_superusers').authWithPassword(adminEmail, adminPassword);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Admin auth timeout')), 3000) // 3 second timeout
+    );
+    
+    await Promise.race([authPromise, timeoutPromise]);
     return pb;
   } catch (error) {
     console.error('Failed to authenticate with PocketBase admin:', error);

@@ -1,7 +1,6 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail } from '@sveltejs/kit';
 import { isValidTicketQRCode } from '$lib/ticket-qr.js';
-import { tryCreateAuthenticatedPB } from '$lib/admin-auth.server.js';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 
@@ -25,25 +24,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	try {
 		console.log('Looking for booking with ticket code:', ticketCode);
 		
-		// Find booking by ticket QR code using admin access for broader search
+		// Find booking by ticket QR code
+		// Note: Bookings are viewable without authentication according to the schema rules
+		// This allows tour guides to see any booking for check-in purposes
 		let booking;
 		try {
-			// Try with current user's authenticated session first
 			booking = await pb.collection('bookings').getFirstListItem(
 				`ticketQRCode = "${ticketCode}"`,
 				{ expand: 'tour,timeSlot,tour.user' }
 			);
 		} catch (bookingErr) {
-			console.log('Booking not found with user auth, trying admin access...');
-			// If not found, try with admin access (for cross-user ticket lookup)
-			const adminPb = await tryCreateAuthenticatedPB();
-			if (!adminPb) {
-				throw error(500, 'Unable to authenticate for ticket lookup');
-			}
-			booking = await adminPb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour,timeSlot,tour.user' }
-			);
+			console.log('Booking not found:', bookingErr);
+			throw error(404, 'Ticket not found. Please check the ticket code and try again.');
 		}
 		
 		if (!booking) {

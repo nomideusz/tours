@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types.js';
 import { error } from '@sveltejs/kit';
 import { isValidTicketQRCode } from '$lib/ticket-qr.js';
-import { tryCreateAuthenticatedPB } from '$lib/admin-auth.server.js';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/public';
 
@@ -16,25 +15,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	
 	let booking = null;
 	
-	// Always use admin-authenticated PB for ticket viewing (tickets need to be publicly viewable)
+	// Bookings have empty viewRule, so they're publicly viewable
+	// This allows customers to view their tickets without authentication
 	try {
-		console.log('Using admin access for public ticket viewing:', ticketCode);
-		const pb = await tryCreateAuthenticatedPB();
-		if (pb) {
-			booking = await pb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour,timeSlot,tour.user' }
-			);
-		} else {
-			// Fallback to public PB instance if admin auth not configured
-			console.log('Admin auth not available, using public access');
-			const publicPb = new PocketBase(POCKETBASE_URL);
-			publicPb.authStore.clear();
-			booking = await publicPb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour,timeSlot,tour.user' }
-			);
-		}
+		console.log('Fetching public ticket:', ticketCode);
+		// Use a public PocketBase instance for ticket viewing
+		const publicPb = new PocketBase(POCKETBASE_URL);
+		publicPb.authStore.clear(); // Ensure no auth is used
+		
+		booking = await publicPb.collection('bookings').getFirstListItem(
+			`ticketQRCode = "${ticketCode}"`,
+			{ expand: 'tour,timeSlot,tour.user' }
+		);
 	} catch (err) {
 		console.error('Failed to fetch ticket:', ticketCode, err);
 		throw error(404, 'Ticket not found. Please ensure the ticket code is valid.');
