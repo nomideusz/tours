@@ -62,14 +62,23 @@ export function reloadAuthFromCookies() {
         console.log('Auth reloaded successfully:', pb.authStore.record.email);
         currentUser.set(pb.authStore.record);
         
-        // Try to refresh auth to ensure token is still valid
-        pb.collection('users').authRefresh().then(() => {
-          console.log('Auth refresh successful after cookie reload');
-          currentUser.set(pb.authStore.record);
-        }).catch((error) => {
-          console.warn('Auth refresh failed after cookie reload:', error);
-          // Don't clear auth - just log the warning
-        });
+        // Try to refresh auth to ensure token is still valid - ONLY IN DEVELOPMENT
+        // Skip in production to prevent 502 errors
+        const isProduction = window.location.hostname !== 'localhost' && 
+                           !window.location.hostname.includes('127.0.0.1') &&
+                           !window.location.hostname.includes('192.168.');
+        
+        if (!isProduction) {
+          pb.collection('users').authRefresh().then(() => {
+            console.log('Auth refresh successful after cookie reload');
+            currentUser.set(pb.authStore.record);
+          }).catch((error) => {
+            console.warn('Auth refresh failed after cookie reload:', error);
+            // Don't clear auth - just log the warning
+          });
+        } else {
+          console.log('Skipping client auth refresh in production');
+        }
       } else {
         console.log('No valid auth found in cookies');
         currentUser.set(null);

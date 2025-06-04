@@ -15,6 +15,9 @@ declare global {
 // Default fallback if env var isn't set
 const POCKETBASE_URL = process.env.POCKETBASE_URL || 'https://z.xeon.pl';
 
+// Disable auth refresh completely if this env var is set
+const DISABLE_AUTH_REFRESH = process.env.DISABLE_AUTH_REFRESH === 'true';
+
 export const handle: Handle = async ({ event, resolve }) => {
     try {
         // Initialize PocketBase with URL from environment variable
@@ -92,29 +95,54 @@ export const handle: Handle = async ({ event, resolve }) => {
             const shouldSkipRefresh = skipRefreshPaths.some(path => event.url.pathname.includes(path));
             
             // Skip auth refresh entirely in production SSR to prevent 502 errors
-            const isProduction = process.env.NODE_ENV === 'production';
-            const isSSRRefresh = event.request.headers.get('sec-fetch-dest') === 'document';
+            // Check multiple ways to detect production environment
+            const isProduction = process.env.NODE_ENV === 'production' || 
+                                event.url.hostname !== 'localhost' && 
+                                !event.url.hostname.includes('127.0.0.1') &&
+                                !event.url.hostname.includes('192.168.');
+            const isSSRRefresh = !event.request.headers.get('x-sveltekit-action');
             const shouldAvoidRefresh = isProduction && isSSRRefresh;
             
-            // Only refresh auth for authenticated-only routes and avoid during SSR refresh or in production
-            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/') && !shouldAvoidRefresh) {
-                // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
-                // Add timeout to prevent hanging - shorter timeout for production
-                const authRefreshPromise = event.locals.pb.collection('users').authRefresh();
-                const timeoutMs = isProduction ? 1000 : 2000; // Shorter timeout in production
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Auth refresh timeout')), timeoutMs)
-                );
-                
+            // Debug logging for production auth refresh issues
+            if (isProduction) {
+                console.log('Production auth check:', {
+                    url: event.url.pathname,
+                    hostname: event.url.hostname,
+                    NODE_ENV: process.env.NODE_ENV,
+                    isSSRRefresh,
+                    shouldAvoidRefresh,
+                    skipRefreshPaths: shouldSkipRefresh
+                });
+            }
+            
+            // Only refresh auth for authenticated-only routes
+            // Always skip auth refresh for SSR to prevent 502 errors
+            // Also skip if DISABLE_AUTH_REFRESH env var is set
+            if (!DISABLE_AUTH_REFRESH && !shouldSkipRefresh && !event.url.pathname.includes('/api/') && !isSSRRefresh) {
+                // Wrap auth refresh in aggressive error handling
                 try {
+                    // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
+                    // Add very short timeout to prevent hanging
+                    const authRefreshPromise = event.locals.pb.collection('users').authRefresh()
+                        .catch((err: any) => {
+                            // Suppress any auth refresh errors
+                            console.warn('Auth refresh error suppressed:', err.message || err);
+                            return null;
+                        });
+                    
+                    const timeoutMs = 500; // Very short timeout
+                    const timeoutPromise = new Promise((resolve) => 
+                        setTimeout(() => resolve(null), timeoutMs)
+                    );
+                    
+                    // Don't throw on timeout - just continue
                     await Promise.race([authRefreshPromise, timeoutPromise]);
                 } catch (refreshErr) {
-                    console.warn('Auth refresh failed or timed out:', refreshErr);
-                    // Don't throw - just continue with existing auth data
-                    // For SSR, we'll rely on the existing stored auth data
+                    // Suppress all errors - auth refresh is not critical
+                    console.warn('Auth refresh completely failed:', refreshErr);
                 }
-            } else if (shouldAvoidRefresh) {
-                console.log('Skipping auth refresh in production SSR for:', event.url.pathname);
+            } else {
+                console.log('Skipping auth refresh for:', event.url.pathname, { isSSRRefresh, shouldSkipRefresh });
             }
             
             // Set the user data in locals for easy access in routes

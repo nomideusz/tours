@@ -115,7 +115,14 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider): Promise<
             
             // Force trigger auth store change event to sync frontend state
             // This ensures the auth state updates properly by refreshing the auth data
-            await pb.collection('users').authRefresh();
+            // Skip in production to prevent 502 errors
+            const isProduction = window.location.hostname !== 'localhost' && 
+                               !window.location.hostname.includes('127.0.0.1') &&
+                               !window.location.hostname.includes('192.168.');
+            
+            if (!isProduction) {
+                await pb.collection('users').authRefresh();
+            }
 
             // Manually update the currentUser store to ensure frontend state sync
             currentUser.set(pb.authStore.record);
