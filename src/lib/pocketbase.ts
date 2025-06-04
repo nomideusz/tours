@@ -487,6 +487,29 @@ export const qrCodesApi = {
   },
 
   /**
+   * Get QR codes for a specific tour (current user only)
+   * @param tourId Tour ID
+   * @returns Promise with array of QR codes
+   */
+  getByTour: async (tourId: string): Promise<QRCode[]> => {
+    if (!browser || !pb) {
+      console.warn('PocketBase client not available');
+      return [];
+    }
+    
+    try {
+      return await pb.collection('qr_codes').getFullList<QRCode>({
+        filter: `user = "${pb.authStore.record?.id}" && tour = "${tourId}"`,
+        sort: '-created',
+        expand: 'tour,user'
+      });
+    } catch (error) {
+      console.error('Error fetching QR codes for tour:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get QR code by code string
    * @param code QR code string
    * @returns Promise with QR code

@@ -87,8 +87,7 @@
 		try {
 			isLoading = true;
 			error = null;
-			const allQRCodes = await qrCodesApi.getAll();
-			qrCodes = allQRCodes.filter(qr => qr.tour === data.tour.id);
+			qrCodes = await qrCodesApi.getByTour(data.tour.id);
 		} catch (err) {
 			error = 'Failed to load QR codes.';
 			console.error('Error loading QR codes:', err);
