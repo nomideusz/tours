@@ -1,10 +1,20 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
 import { fetchBookingsForTours } from '$lib/utils/booking-helpers.js';
+import { shouldSkipInSSR } from '$lib/utils/ssr-utils.js';
 
-export const load: PageServerLoad = async ({ locals, url, parent }) => {
+export const load: PageServerLoad = async ({ locals, url, parent, request }) => {
 	// Get parent layout data first
 	const parentData = await parent();
+	
+	// EMERGENCY: Skip all operations in production SSR
+	if (shouldSkipInSSR(request)) {
+		return {
+			...parentData,
+			bookings: [],
+			isSSRSkipped: true
+		};
+	}
 	
 	// Check if user is authenticated (should already be handled by layout)
 	if (!locals.user) {

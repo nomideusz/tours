@@ -1,7 +1,17 @@
 import type { PageServerLoad } from './$types.js';
 import { redirect } from '@sveltejs/kit';
+import { shouldSkipInSSR, EMPTY_PAGE_DATA } from '$lib/utils/ssr-utils.js';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, request }) => {
+  // EMERGENCY: Skip all operations in production SSR
+  if (shouldSkipInSSR(request)) {
+    return {
+      user: locals.user || null,
+      isAuthenticated: !!locals.user,
+      ...EMPTY_PAGE_DATA
+    };
+  }
+  
   // Check if user is authenticated
   if (!locals.user) {
     console.log('Tours page: User not authenticated, redirecting to login');

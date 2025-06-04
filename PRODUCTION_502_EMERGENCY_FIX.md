@@ -95,9 +95,47 @@ Created `/api/dashboard-stats` for real statistics:
 5. Implement caching layer for frequently accessed data
 6. Add environment variables for configurable limits
 
+## Phase 2: Ultra Emergency Measures (If 502s Persist)
+
+### Additional Fixes Applied:
+
+1. **Skip ALL Database Operations in Production SSR**
+   - Created `shouldSkipInSSR()` utility
+   - Dashboard, Tours, Bookings pages now return empty data during SSR
+   - Data loads client-side after hydration
+
+2. **Fixed Remaining `getFullList()` in Dashboard**
+   - Tours query now limited to 50 (was unlimited)
+
+3. **Added 2-Second Timeout to ALL PocketBase Requests**
+   ```typescript
+   pb.beforeSend = function(url, options) {
+     options.signal = AbortSignal.timeout(2000);
+     return { url, options };
+   };
+   ```
+
+4. **Debug Endpoints Added**
+   - `/api/health-check` - Tests individual components
+   - `/api/debug-502` - Shows environment info
+   - `/test-minimal` - Bypasses all logic
+
+### Possible External Causes:
+- **Reverse Proxy Timeout** (nginx, Cloudflare) - typically 30-60s
+- **Container/Platform Timeout** (Docker, Railway, Render) - varies
+- **PocketBase Connection Issues** from production environment
+- **Rate Limiting** or connection pool exhaustion
+
+### Environment Variables to Consider:
+```bash
+DISABLE_AUTH_REFRESH=true  # Skip auth refresh entirely
+POCKETBASE_TIMEOUT=2000    # Milliseconds for DB timeout
+SKIP_SSR_QUERIES=true      # Skip all SSR database queries
+```
+
 ## Deployment Notes
 - No database changes required
-- No environment variable changes needed
-- Backwards compatible
+- Set `DISABLE_AUTH_REFRESH=true` in production
+- Monitor `/api/health-check` to identify bottlenecks
 - Can be deployed immediately
 - Will fix 502 errors for ALL authenticated routes 

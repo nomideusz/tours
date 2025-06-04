@@ -3,7 +3,31 @@ import { error, redirect } from '@sveltejs/kit';
 import { fetchBookingsForTours, formatRecentBooking, createTodaysSchedule, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
 import { fetchRecentBookingsForUser } from '$lib/utils/booking-queries.js';
 
-export const load: PageServerLoad = async ({ locals, url, parent }) => {
+export const load: PageServerLoad = async ({ locals, url, parent, request }) => {
+	// ULTRA EMERGENCY FIX: Skip everything in production SSR
+	const isProduction = process.env.NODE_ENV === 'production';
+	const isSSR = !request.headers.get('x-sveltekit-action');
+	
+	if (isProduction && isSSR) {
+		console.log('Dashboard: SKIPPING ALL OPERATIONS IN PRODUCTION SSR');
+		const parentData = await parent();
+		return {
+			...parentData,
+			stats: {
+				totalTours: 0,
+				activeTours: 0,
+				todayBookings: 0,
+				weeklyRevenue: 0,
+				upcomingTours: 0,
+				totalCustomers: 0,
+				monthlyTours: 0
+			},
+			recentBookings: [],
+			todaysSchedule: [],
+			isSSRSkipped: true
+		};
+	}
+	
 	// Get parent layout data first
 	const parentData = await parent();
 	
@@ -17,11 +41,12 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	try {
 		const userId = locals.user.id;
 		
-		// Get user's tours
-		const tours = await locals.pb.collection('tours').getFullList({
+		// EMERGENCY FIX: Use pagination for tours too
+		const toursResult = await locals.pb.collection('tours').getList(1, 50, {
 			filter: `user = "${userId}"`,
 			fields: 'id,name,status,created'
 		});
+		const tours = toursResult.items;
 		
 		const tourIds = tours.map(t => t.id);
 		

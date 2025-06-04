@@ -22,6 +22,16 @@ export const handle: Handle = async ({ event, resolve }) => {
     try {
         // Initialize PocketBase with URL from environment variable
         event.locals.pb = new PocketBase(POCKETBASE_URL);
+        
+        // EMERGENCY: Set aggressive timeout for production
+        if (process.env.NODE_ENV === 'production') {
+            // Set very short timeout for all PocketBase requests in production
+            event.locals.pb.beforeSend = function(url, options) {
+                options.signal = AbortSignal.timeout(2000); // 2 second timeout
+                return { url, options };
+            };
+        }
+        
         event.locals.user = null;
         event.locals.isAdmin = false;
         
