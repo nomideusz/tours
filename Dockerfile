@@ -47,6 +47,10 @@ EXPOSE 3000
 
 # Set environment to production
 ENV NODE_ENV=production
+# EMERGENCY: Disable auth refresh to prevent timeouts
+ENV DISABLE_AUTH_REFRESH=true
+# Set host to allow external connections
+ENV HOST=0.0.0.0
 
 # Start the application (PORT will be set by CapRover)
-CMD ["sh", "-c", "echo 'Environment variables:' && env | grep -E '(PORT|HOST)' && echo 'Starting with npm start...' && npm start"] 
+CMD ["sh", "-c", "echo 'Environment variables:' && env | grep -E '(PORT|HOST|DISABLE_AUTH_REFRESH)' && echo 'Starting with npm start...' && npm start"] 
