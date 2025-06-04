@@ -21,6 +21,22 @@ export const handle: Handle = async ({ event, resolve }) => {
         event.locals.pb = new PocketBase(POCKETBASE_URL);
         event.locals.user = null;
         event.locals.isAdmin = false;
+        
+        // Test PocketBase connection for non-API routes during SSR
+        const isSSRNavigation = event.request.headers.get('sec-fetch-dest') === 'document';
+        if (isSSRNavigation && !event.url.pathname.includes('/api/')) {
+            try {
+                // Quick health check with timeout
+                const healthPromise = event.locals.pb.health.check();
+                const healthTimeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('PocketBase health check timeout')), 2000)
+                );
+                await Promise.race([healthPromise, healthTimeout]);
+            } catch (healthErr) {
+                console.error('PocketBase connection issue during SSR:', healthErr);
+                // Continue but log the issue for debugging
+            }
+        }
 
         // Check if this is a public page
         // Note: /ticket/ is public for customers, but /checkin/ requires auth for guides
@@ -68,13 +84,14 @@ export const handle: Handle = async ({ event, resolve }) => {
             ];
             const shouldSkipRefresh = skipRefreshPaths.some(path => event.url.pathname.includes(path));
             
-            // Only refresh auth for authenticated-only routes
-            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/')) {
+            // Only refresh auth for authenticated-only routes and avoid during SSR refresh
+            const isSSRRefresh = event.request.headers.get('sec-fetch-dest') === 'document';
+            if (!shouldSkipRefresh && !event.url.pathname.includes('/api/') && !isSSRRefresh) {
                 // Get an up-to-date auth store state by verifying and refreshing the loaded auth model
                 // Add timeout to prevent hanging
                 const authRefreshPromise = event.locals.pb.collection('users').authRefresh();
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Auth refresh timeout')), 3000)
+                    setTimeout(() => reject(new Error('Auth refresh timeout')), 2000)
                 );
                 
                 try {
@@ -82,6 +99,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 } catch (refreshErr) {
                     console.warn('Auth refresh failed or timed out:', refreshErr);
                     // Don't throw - just continue with existing auth data
+                    // For SSR, we'll rely on the existing stored auth data
                 }
             }
             
@@ -124,6 +142,13 @@ export const handle: Handle = async ({ event, resolve }) => {
     } catch (resolveErr) {
         console.error('Error during request resolution:', resolveErr);
         console.error('Failed URL:', event.url.pathname);
+        console.error('Request method:', event.request.method);
+        console.error('User agent:', event.request.headers.get('user-agent'));
+        console.error('Auth valid:', event.locals.pb?.authStore?.isValid);
+        console.error('Error details:', {
+            message: resolveErr instanceof Error ? resolveErr.message : 'Unknown error',
+            stack: resolveErr instanceof Error ? resolveErr.stack : 'No stack trace'
+        });
         throw resolveErr; // Re-throw to maintain error behavior
     }
 

@@ -11,18 +11,36 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   }
 
   try {
-    // Load all tours for this user
-    const tours = await locals.pb.collection('tours').getFullList({
+    // Load all tours for this user with timeout protection
+    const toursPromise = locals.pb.collection('tours').getFullList({
       filter: `user = "${locals.user.id}"`,
       sort: '-updated'
     });
+    
+    const toursTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Tours query timeout')), 10000)
+    );
+    
+    const tours = await Promise.race([toursPromise, toursTimeout]) as any[];
 
-    // Load all bookings for this user's tours
-    const allBookings = await locals.pb.collection('bookings').getFullList({
+    // Load all bookings for this user's tours with timeout protection
+    const bookingsPromise = locals.pb.collection('bookings').getFullList({
       filter: `tour.user = "${locals.user.id}"`,
       expand: 'tour,timeSlot',
       sort: '-created'
     });
+    
+    const bookingsTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Bookings query timeout')), 10000)
+    );
+    
+         let allBookings: any[] = [];
+     try {
+       allBookings = await Promise.race([bookingsPromise, bookingsTimeout]) as any[];
+     } catch (bookingsErr) {
+       console.warn('Failed to load bookings for stats, continuing with empty array:', bookingsErr);
+       allBookings = []; // Continue with empty bookings instead of failing
+     }
 
     // Calculate statistics
     const now = new Date();

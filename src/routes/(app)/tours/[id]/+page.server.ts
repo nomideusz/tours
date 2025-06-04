@@ -8,9 +8,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	try {
-		const tour = await locals.pb.collection('tours').getOne<Tour>(params.id, {
+		// Add timeout protection for database queries
+		const tourPromise = locals.pb.collection('tours').getOne<Tour>(params.id, {
 			expand: 'user'
 		});
+		const tourTimeout = new Promise((_, reject) => 
+			setTimeout(() => reject(new Error('Tour query timeout')), 8000)
+		);
+		
+		const tour = await Promise.race([tourPromise, tourTimeout]) as Tour;
 		
 		if (!tour) {
 			throw error(404, 'Tour not found');
