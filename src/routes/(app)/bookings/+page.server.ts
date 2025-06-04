@@ -16,11 +16,12 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	try {
 		const userId = locals.user.id;
 		
-		// Get all tours for this guide
-		const tours = await locals.pb.collection('tours').getFullList({
+		// EMERGENCY FIX: Use pagination to prevent timeouts
+		const toursResult = await locals.pb.collection('tours').getList(1, 100, {
 			filter: `user = "${userId}"`,
 			fields: 'id,name'
 		});
+		const tours = toursResult.items;
 		
 		if (tours.length === 0) {
 			return {
@@ -29,9 +30,23 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			};
 		}
 		
-		// Get all bookings for the guide's tours using shared utility
+		// Get recent bookings only - don't fetch ALL bookings
+		// Fetch last 100 bookings across all tours
 		const tourIds = tours.map(t => t.id);
-		const processedBookings = await fetchBookingsForTours(locals.pb, tourIds);
+		const bookingsResult = await locals.pb.collection('bookings').getList(1, 100, {
+			filter: tourIds.slice(0, 20).map(id => `tour = "${id}"`).join(' || '), // Max 20 tours
+			expand: 'tour,timeSlot',
+			sort: '-created',
+			fields: '*,expand.tour.name,expand.tour.location,expand.timeSlot.startTime,expand.timeSlot.endTime'
+		});
+		
+		// Process bookings to match expected format
+		const processedBookings = bookingsResult.items.map((booking: any) => ({
+			...booking,
+			effectiveDate: booking.expand?.timeSlot?.startTime || booking.created,
+			totalAmount: booking.totalAmount || 0,
+			participants: booking.participants || 1
+		}));
 		
 		// Return parent data merged with bookings data
 		return {

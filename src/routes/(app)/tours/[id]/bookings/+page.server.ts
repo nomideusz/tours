@@ -22,12 +22,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw error(403, 'You do not have permission to view bookings for this tour');
 		}
 
-		// Load bookings for this specific tour
-		const bookings = await locals.pb.collection('bookings').getFullList({
+		// EMERGENCY FIX: Use pagination to prevent timeouts
+		// Load first 500 bookings (should be enough for most tours)
+		const bookingsResult = await locals.pb.collection('bookings').getList(1, 500, {
 			filter: `tour = "${params.id}"`,
 			expand: 'tour,timeSlot,qrCode',
 			sort: '-created'
 		});
+		const bookings = bookingsResult.items;
 
 		return {
 			tour,

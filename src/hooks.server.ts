@@ -155,9 +155,9 @@ export const handle: Handle = async ({ event, resolve }) => {
                 (event.locals.user.expand && event.locals.user.expand.roles && 
                  event.locals.user.expand.roles.some((r: any) => r.name === 'admin'));
             
-            // Try to update last_login but don't fail if it doesn't work
-            // Skip last_login updates in production SSR to avoid database writes during page load
-            if (!shouldAvoidRefresh) {
+            // EMERGENCY FIX: Completely skip last_login updates in production
+            // This was causing additional database writes on every request
+            if (!shouldAvoidRefresh && !isProduction) {
                 try {
                     const currentTime = new Date().toISOString();
                     if (!event.locals.user.last_login || 

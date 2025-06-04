@@ -27,18 +27,21 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw error(403, 'You do not have permission to view this tour');
 		}
 		
-		// Load all bookings for this tour for statistics
-		const allBookings = await locals.pb.collection('bookings').getFullList({
+		// EMERGENCY FIX: Use pagination to prevent timeouts
+		// Load recent bookings for statistics (last 200 should be enough)
+		const bookingsResult = await locals.pb.collection('bookings').getList(1, 200, {
 			filter: `tour = "${params.id}"`,
 			expand: 'timeSlot',
 			sort: '-created'
 		});
+		const allBookings = bookingsResult.items;
 
-		// Load QR codes for this tour
-		const qrCodes = await locals.pb.collection('qr_codes').getFullList({
+		// Load QR codes with pagination (first 50)
+		const qrResult = await locals.pb.collection('qr_codes').getList(1, 50, {
 			filter: `tour = "${params.id}"`,
 			sort: '-created'
 		});
+		const qrCodes = qrResult.items;
 
 		// Calculate statistics
 		const now = new Date();
