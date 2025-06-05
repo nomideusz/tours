@@ -9,7 +9,7 @@ const config = {
 			out: 'build'
 		}),
 		serviceWorker: {
-			register: true
+			register: false
 		}
 	}
 };
