@@ -69,12 +69,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const qrCode = {
 			id: result.qrId,
-			code: result.qrCode,
+			code: result.qrCode || '',
 			name: result.qrName || 'Untitled QR Code',
-			category: result.qrCategory,
-			scans: result.qrScans,
-			conversions: result.qrConversions,
-			isActive: result.qrIsActive,
+			category: result.qrCategory || 'digital',
+			scans: result.qrScans || 0,
+			conversions: result.qrConversions || 0,
+			isActive: result.qrIsActive || false,
 			tour: result.tourId,
 			user: result.tourUserId,
 			created: result.qrCreatedAt.toISOString(),
@@ -110,12 +110,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			
 			recentBookings = bookingsData.map(booking => ({
 				...booking,
+				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+				participants: booking.participants || 0,
+				customerName: booking.customerName || '',
+				customerEmail: booking.customerEmail || '',
 				created: booking.createdAt.toISOString(),
 				expand: {
 					timeSlot: booking.timeSlotId ? {
 						id: booking.timeSlotId,
-						startTime: booking.timeSlotStartTime?.toISOString(),
-						endTime: booking.timeSlotEndTime?.toISOString()
+						startTime: booking.timeSlotStartTime?.toISOString() || null,
+						endTime: booking.timeSlotEndTime?.toISOString() || null
 					} : null
 				}
 			}));

@@ -55,18 +55,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			id: booking.id,
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
-			totalAmount: parseFloat(booking.totalAmount),
-			participants: booking.participants,
+			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+			participants: booking.participants || 0,
 			created: booking.createdAt.toISOString(),
-			customerName: booking.customerName,
-			customerEmail: booking.customerEmail,
-			ticketQRCode: booking.ticketQRCode,
-			bookingReference: booking.bookingReference,
-			attendanceStatus: booking.attendanceStatus,
+			customerName: booking.customerName || '',
+			customerEmail: booking.customerEmail || '',
+			ticketQRCode: booking.ticketQRCode || null,
+			bookingReference: booking.bookingReference || '',
+			attendanceStatus: booking.attendanceStatus || null,
 			expand: {
 				timeSlot: booking.timeSlotId ? {
-					startTime: booking.timeSlotStartTime?.toISOString(),
-					endTime: booking.timeSlotEndTime?.toISOString()
+					startTime: booking.timeSlotStartTime?.toISOString() || null,
+					endTime: booking.timeSlotEndTime?.toISOString() || null
 				} : null
 			}
 		}));
@@ -124,7 +124,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		return {
 			tour: {
 				...tour,
-				price: parseFloat(tour.price),
+				price: tour.price ? parseFloat(tour.price) : 0,
 				createdAt: tour.createdAt.toISOString(),
 				updatedAt: tour.updatedAt.toISOString()
 			},

@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const tour = tourData[0];
 
-		// Load bookings with related data
+		// Load bookings with related data (limit to prevent timeout)
 		const bookingsData = await db
 			.select({
 				// Booking fields
@@ -62,41 +62,42 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.leftJoin(qrCodes, eq(bookings.qrCodeId, qrCodes.id))
 			.where(eq(bookings.tourId, params.id))
-			.orderBy(desc(bookings.createdAt));
+			.orderBy(desc(bookings.createdAt))
+			.limit(100); // Limit to prevent 502 timeout
 
 		// Transform to match expected format with expand structure
 		const transformedBookings = bookingsData.map(booking => ({
 			id: booking.id,
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
-			totalAmount: parseFloat(booking.totalAmount),
-			participants: booking.participants,
-			customerName: booking.customerName,
-			customerEmail: booking.customerEmail,
-			customerPhone: booking.customerPhone,
-			specialRequests: booking.specialRequests,
+			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+			participants: booking.participants || 0,
+			customerName: booking.customerName || '',
+			customerEmail: booking.customerEmail || '',
+			customerPhone: booking.customerPhone || null,
+			specialRequests: booking.specialRequests || null,
 			created: booking.createdAt.toISOString(),
 			updated: booking.updatedAt.toISOString(),
-			bookingReference: booking.bookingReference,
-			attendanceStatus: booking.attendanceStatus,
+			bookingReference: booking.bookingReference || '',
+			attendanceStatus: booking.attendanceStatus || null,
 			checkedInAt: booking.checkedInAt?.toISOString() || null,
-			ticketQRCode: booking.ticketQRCode,
+			ticketQRCode: booking.ticketQRCode || null,
 			expand: {
 				tour: {
 					...tour,
-					price: parseFloat(tour.price)
+					price: tour.price ? parseFloat(tour.price) : 0
 				},
 				timeSlot: booking.timeSlotId ? {
 					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString(),
-					endTime: booking.timeSlotEndTime?.toISOString(),
-					availableSpots: booking.timeSlotAvailableSpots,
-					bookedSpots: booking.timeSlotBookedSpots
+					startTime: booking.timeSlotStartTime?.toISOString() || null,
+					endTime: booking.timeSlotEndTime?.toISOString() || null,
+					availableSpots: booking.timeSlotAvailableSpots || 0,
+					bookedSpots: booking.timeSlotBookedSpots || 0
 				} : null,
 				qrCode: booking.qrCodeId ? {
 					id: booking.qrCodeId,
-					code: booking.qrCodeCode,
-					category: booking.qrCodeCategory
+					code: booking.qrCodeCode || '',
+					category: booking.qrCodeCategory || null
 				} : null
 			}
 		}));
@@ -104,7 +105,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		return {
 			tour: {
 				...tour,
-				price: parseFloat(tour.price)
+				price: tour.price ? parseFloat(tour.price) : 0
 			},
 			bookings: transformedBookings
 		};

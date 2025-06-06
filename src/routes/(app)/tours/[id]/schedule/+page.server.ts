@@ -36,32 +36,33 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
 
     const tour = tourResults[0];
 
-    // Load time slots for this tour
+    // Load time slots for this tour (limit to prevent timeout)
     const timeSlotsData = await db
       .select()
       .from(timeSlots)
       .where(eq(timeSlots.tourId, params.id))
-      .orderBy(desc(timeSlots.startTime));
+      .orderBy(desc(timeSlots.startTime))
+      .limit(50); // Limit to prevent 502 timeout
 
     // User is authenticated, return user data, tour ID, and tour data
     return {
       user: locals.user,
       isAuthenticated: true,
       tourId: params.id,
-      tour: {
+              tour: {
         id: tour.id,
         name: tour.name,
         description: tour.description,
-        price: parseFloat(tour.price),
-        duration: tour.duration,
-        capacity: tour.capacity,
+        price: tour.price ? parseFloat(tour.price) : 0,
+        duration: tour.duration || 0,
+        capacity: tour.capacity || 0,
         status: tour.status,
         category: tour.category,
         location: tour.location,
-        includedItems: tour.includedItems,
-        requirements: tour.requirements,
+        includedItems: tour.includedItems || [],
+        requirements: tour.requirements || [],
         cancellationPolicy: tour.cancellationPolicy,
-        images: tour.images,
+        images: tour.images || [],
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt
       },

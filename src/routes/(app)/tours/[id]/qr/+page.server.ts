@@ -26,28 +26,29 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const tour = tourData[0];
 
-		// Load QR codes for this tour
+		// Load QR codes for this tour (limit to prevent timeout)
 		const qrCodesData = await db
 			.select()
 			.from(qrCodes)
 			.where(and(
 				eq(qrCodes.tourId, params.id),
 				eq(qrCodes.userId, locals.user.id)
-			));
+			))
+			.limit(50); // Limit to prevent 502 timeout
 
 		const formattedQRCodes = qrCodesData.map(qr => ({
 			id: qr.id,
-			code: qr.code,
-			name: qr.name,
-			category: qr.category,
-			scans: qr.scans,
-			conversions: qr.conversions,
-			isActive: qr.isActive,
+			code: qr.code || '',
+			name: qr.name || 'Untitled QR Code',
+			category: qr.category || 'digital',
+			scans: qr.scans || 0,
+			conversions: qr.conversions || 0,
+			isActive: qr.isActive || false,
 			tour: qr.tourId,
 			user: qr.userId,
 			created: qr.createdAt.toISOString(),
 			updated: qr.updatedAt?.toISOString() || '',
-			customization: qr.customization
+			customization: qr.customization || {}
 		}));
 		
 		return {
