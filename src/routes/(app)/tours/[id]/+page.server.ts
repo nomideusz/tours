@@ -5,12 +5,18 @@ import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
 import { eq, and, desc, count, sum, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
+	console.log('Tour detail page load started for tour:', params.id);
+	
 	if (!locals.user) {
+		console.log('Tour detail: User not authenticated');
 		throw error(401, 'Unauthorized');
 	}
 
+	console.log('Tour detail: User authenticated:', locals.user.id);
+
 	try {
 		// Get tour with owner check
+		console.log('Fetching tour data for ID:', params.id);
 		const tourData = await db
 			.select()
 			.from(tours)
@@ -20,13 +26,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			))
 			.limit(1);
 		
+		console.log('Tour query completed, found:', tourData.length, 'tours');
+		
 		if (tourData.length === 0) {
+			console.log('Tour not found or access denied for tour:', params.id);
 			throw error(404, 'Tour not found or access denied');
 		}
 		
 		const tour = tourData[0];
+		console.log('Tour loaded successfully:', tour.name);
 
 		// Load recent bookings with time slot information (REDUCED LIMIT TO PREVENT 502)
+		console.log('Fetching bookings for tour:', params.id);
 		const allBookingsData = await db
 			.select({
 				id: bookings.id,
@@ -50,6 +61,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.orderBy(desc(bookings.createdAt))
 			.limit(10); // FURTHER REDUCED FROM 20 TO 10 TO PREVENT TIMEOUT
 
+		console.log('Bookings query completed, found:', allBookingsData.length, 'bookings');
+
 		// Transform to match expected format
 		const allBookings = allBookingsData.map(booking => ({
 			id: booking.id,
@@ -72,12 +85,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		}));
 
 		// Load QR codes (with limit to prevent timeout)
+		console.log('Fetching QR codes for tour:', params.id);
 		const qrCodesData = await db
 			.select()
 			.from(qrCodes)
 			.where(eq(qrCodes.tourId, params.id))
 			.orderBy(desc(qrCodes.createdAt))
 			.limit(10); // ADD LIMIT TO PREVENT TIMEOUT
+
+		console.log('QR codes query completed, found:', qrCodesData.length, 'QR codes');
 
 		// Calculate BASIC statistics only (avoid complex calculations)
 		const confirmedBookings = allBookings.filter(b => 
@@ -116,6 +132,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				: 0
 		};
 
+		console.log('Tour detail page load completed successfully');
+
 		return {
 			tour: {
 				...tour,
@@ -129,7 +147,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			stats
 		};
 	} catch (err) {
-		console.error('Error loading tour:', err);
+		console.error('CRITICAL ERROR loading tour detail:', err);
+		console.error('Error type:', err instanceof Error ? err.constructor.name : typeof err);
+		console.error('Error message:', err instanceof Error ? err.message : String(err));
+		console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
+		
 		if ((err as any).status === 404) {
 			throw error(404, 'Tour not found');
 		}

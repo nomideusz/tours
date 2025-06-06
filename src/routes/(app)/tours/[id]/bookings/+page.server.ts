@@ -1,32 +1,59 @@
 import type { PageServerLoad, Actions } from './$types.js';
-import { error, fail } from '@sveltejs/kit';
+import { error, redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
 import { eq, and, desc } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
+	console.log('Tour bookings page load started for tour:', params.id);
+	
+	// Get parent layout data first
+	const parentData = await parent();
+	
+	// Check if user is authenticated (should already be handled by layout)
 	if (!locals.user) {
-		throw error(401, 'Unauthorized');
+		console.log('Tour bookings: User not authenticated, redirecting to login');
+		const redirectTo = url.pathname + url.search;
+		throw redirect(303, `/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
 	}
-
+	
+	console.log('Tour bookings: User authenticated:', locals.user.id);
+	
+	// Validate that tour ID is provided
+	if (!params.id) {
+		console.error('Tour bookings: Tour ID is missing');
+		throw error(400, 'Tour ID is required');
+	}
+	
 	try {
-		// Load the tour and verify ownership
+		const userId = locals.user.id;
+		const tourId = params.id;
+		
+		console.log(`Loading bookings for tour ${tourId} by user ${userId}`);
+		
+		// Get the tour first to verify ownership
+		console.log('Fetching tour to verify ownership...');
 		const tourData = await db
 			.select()
 			.from(tours)
 			.where(and(
-				eq(tours.id, params.id),
-				eq(tours.userId, locals.user.id)
+				eq(tours.id, tourId),
+				eq(tours.userId, userId)
 			))
 			.limit(1);
 		
+		console.log('Tour query result:', tourData.length, 'tours found');
+		
 		if (tourData.length === 0) {
+			console.log('Tour not found or access denied for tour:', tourId);
 			throw error(404, 'Tour not found or access denied');
 		}
 		
 		const tour = tourData[0];
-
-		// Load bookings with related data (limit to prevent timeout)
+		console.log('Tour verified:', tour.name);
+		
+		// Get recent bookings for this specific tour
+		console.log('Fetching bookings for tour:', tourId);
 		const bookingsData = await db
 			.select({
 				// Booking fields
@@ -64,60 +91,78 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.where(eq(bookings.tourId, params.id))
 			.orderBy(desc(bookings.createdAt))
 			.limit(50); // Reduced from 100 to 50 to prevent 502 timeout
-
+		
+		console.log('Bookings query completed, found:', bookingsData.length, 'bookings');
+		
 		// Transform to match expected format with expand structure
-		const transformedBookings = bookingsData.map(booking => ({
+		const processedBookings = bookingsData.map((booking) => ({
 			id: booking.id,
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
-			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
-			participants: booking.participants || 0,
-			customerName: booking.customerName || '',
-			customerEmail: booking.customerEmail || '',
-			customerPhone: booking.customerPhone || null,
-			specialRequests: booking.specialRequests || null,
+			totalAmount: booking.totalAmount || '0',
+			participants: booking.participants || 1,
+			customerName: booking.customerName,
+			customerEmail: booking.customerEmail,
+			customerPhone: booking.customerPhone,
+			specialRequests: booking.specialRequests,
 			created: booking.createdAt.toISOString(),
 			updated: booking.updatedAt.toISOString(),
-			bookingReference: booking.bookingReference || '',
-			attendanceStatus: booking.attendanceStatus || null,
+			bookingReference: booking.bookingReference,
+			attendanceStatus: booking.attendanceStatus,
 			checkedInAt: booking.checkedInAt?.toISOString() || null,
-			ticketQRCode: booking.ticketQRCode || null,
+			ticketQRCode: booking.ticketQRCode,
 			expand: {
-				tour: {
-					...tour,
-					price: tour.price ? parseFloat(tour.price) : 0
-				},
 				timeSlot: booking.timeSlotId ? {
 					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString() || null,
-					endTime: booking.timeSlotEndTime?.toISOString() || null,
-					availableSpots: booking.timeSlotAvailableSpots || 0,
-					bookedSpots: booking.timeSlotBookedSpots || 0
+					startTime: booking.timeSlotStartTime?.toISOString(),
+					endTime: booking.timeSlotEndTime?.toISOString(),
+					availableSpots: booking.timeSlotAvailableSpots,
+					bookedSpots: booking.timeSlotBookedSpots
 				} : null,
 				qrCode: booking.qrCodeId ? {
 					id: booking.qrCodeId,
-					code: booking.qrCodeCode || '',
-					category: booking.qrCodeCategory || null
+					code: booking.qrCodeCode,
+					category: booking.qrCodeCategory
 				} : null
 			}
 		}));
-
+		
+		console.log('Tour bookings page load completed successfully');
+		
+		// Return parent data merged with bookings data
 		return {
+			...parentData,
 			tour: {
 				...tour,
-				price: tour.price ? parseFloat(tour.price) : 0
+				price: parseFloat(tour.price),
+				createdAt: tour.createdAt.toISOString(),
+				updatedAt: tour.updatedAt.toISOString()
 			},
-			bookings: transformedBookings
+			bookings: processedBookings
 		};
+		
 	} catch (err) {
-		console.error('Error loading tour bookings:', err);
-		if ((err as any).status === 404) {
+		console.error('CRITICAL ERROR loading tour bookings:', err);
+		console.error('Error details:', {
+			message: err instanceof Error ? err.message : 'Unknown error',
+			stack: err instanceof Error ? err.stack : 'No stack trace',
+			type: err instanceof Error ? err.constructor.name : typeof err,
+			status: (err as any)?.status
+		});
+		
+		if ((err as any)?.status === 404) {
 			throw error(404, 'Tour not found');
 		}
-		if ((err as any).status) {
-			throw err;
+		
+		if ((err as any)?.status) {
+			throw err; // Re-throw SvelteKit errors
 		}
-		throw error(500, 'Failed to load tour bookings');
+		
+		// Return parent data with empty bookings on error
+		return {
+			...parentData,
+			bookings: []
+		};
 	}
 };
 
