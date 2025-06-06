@@ -103,7 +103,7 @@
 				<!-- Status Badge -->
 				<div class="flex items-center gap-2">
 					<span class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full bg-white/20 text-white">
-						<svelte:component this={statusInfo.icon} class="w-4 h-4" />
+						<statusInfo.icon class="w-4 h-4" />
 						{statusInfo.text}
 					</span>
 				</div>
@@ -213,11 +213,13 @@
 						<Calendar class="w-5 h-5 text-gray-400" />
 						<div>
 							<p class="font-medium text-gray-900">
-								{formatDate(data.booking.expand?.timeSlot?.startTime)}
+								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Date TBD'}
 							</p>
 							<p class="text-sm text-gray-600">
-								{formatTime(data.booking.expand?.timeSlot?.startTime)} - 
-								{formatTime(data.booking.expand?.timeSlot?.endTime)}
+								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime 
+									? `${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}`
+									: 'Time TBD'
+								}
 							</p>
 						</div>
 					</div>
@@ -306,7 +308,7 @@
 			<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 				<div class="px-6 py-6 text-center">
 					<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center {statusInfo.class}">
-						<svelte:component this={statusInfo.icon} class="w-8 h-8 {statusInfo.iconClass}" />
+						<statusInfo.icon class="w-8 h-8 {statusInfo.iconClass}" />
 					</div>
 					<h3 class="text-lg font-semibold text-gray-900 mb-2">
 						{#if isCheckedIn}

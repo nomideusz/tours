@@ -116,7 +116,7 @@
 			<div class="px-6 py-4 border-b border-gray-200">
 				<div class="flex items-center justify-center gap-2">
 					<span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full border {statusInfo.class}">
-						<svelte:component this={statusInfo.icon} class="w-4 h-4 {statusInfo.iconClass}" />
+						<statusInfo.icon class="w-4 h-4 {statusInfo.iconClass}" />
 						{statusInfo.text}
 					</span>
 				</div>
@@ -145,11 +145,12 @@
 						<Calendar class="w-5 h-5 text-gray-400" />
 						<div>
 							<p class="font-medium text-gray-900">
-								{formatDate(data.booking.expand?.timeSlot?.startTime)}
+								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Date TBD'}
 							</p>
 							<p class="text-sm text-gray-600">
-								{formatTime(data.booking.expand?.timeSlot?.startTime)} - 
-								{formatTime(data.booking.expand?.timeSlot?.endTime)}
+								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime ? 
+									`${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}` : 
+									'Time TBD'}
 							</p>
 						</div>
 					</div>

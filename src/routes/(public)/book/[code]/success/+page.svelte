@@ -99,7 +99,7 @@
 	
 	// Check if we have a ticket QR code available
 	let hasTicket = $derived(booking.ticketQRCode && booking.status === 'confirmed' && booking.paymentStatus === 'paid');
-	let ticketURL = $derived(hasTicket ? generateTicketURL(booking.ticketQRCode) : '');
+	let ticketURL = $derived(hasTicket && booking.ticketQRCode ? generateTicketURL(booking.ticketQRCode) : '');
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
@@ -193,11 +193,13 @@
 						<Calendar class="w-5 h-5 text-gray-400 mt-0.5" />
 						<div>
 							<p class="font-medium text-gray-900">
-								{formatDate(booking.expand?.timeSlot?.startTime)}
+								{booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'Date TBD'}
 							</p>
 							<p class="text-sm text-gray-600">
-								{formatTime(booking.expand?.timeSlot?.startTime)} - 
-								{formatTime(booking.expand?.timeSlot?.endTime)}
+								{booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
+									? `${formatTime(booking.expand.timeSlot.startTime)} - ${formatTime(booking.expand.timeSlot.endTime)}`
+									: 'Time TBD'
+								}
 							</p>
 						</div>
 					</div>

@@ -32,7 +32,7 @@
 	// Get tour from expanded QR code data
 	let tour = $derived(data.qrCode.expand?.tour || null);
 	let imageUrl = $derived(tour?.images?.[0] ? 
-		`${data.pbUrl}/api/files/${tour.collectionId}/${tour.id}/${tour.images[0]}?thumb=300x300` : 
+		`/uploads/tours/${tour.id}/${tour.images[0]}` : 
 		null
 	);
 	
@@ -43,7 +43,7 @@
 	let hasRealTimeSlots = $derived(data.timeSlots?.length > 0);
 	
 	// Calculate total price
-	let totalPrice = $derived(tour ? participants * tour.price : 0);
+	let totalPrice = $derived(tour && tour.price ? participants * Number(tour.price) : 0);
 	
 	// Show success message if booking was successful
 	$effect(() => {
@@ -209,7 +209,7 @@
 						{/if}
 						<span class="flex items-center gap-1">
 							<Clock class="w-4 h-4" />
-							{Math.floor(tour.duration / 60)}h {tour.duration % 60}m
+							{tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'Duration TBD'}
 						</span>
 						<span class="flex items-center gap-1">
 							<Users class="w-4 h-4" />

@@ -159,10 +159,11 @@
 						<div>
 							<p class="text-sm text-gray-600">Date & Time</p>
 							<p class="font-medium">
-								{formatDate(data.booking.expand?.timeSlot?.startTime)}
+								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Not scheduled'}
 								<br />
-								{formatTime(data.booking.expand?.timeSlot?.startTime)} - 
-								{formatTime(data.booking.expand?.timeSlot?.endTime)}
+								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime ? 
+									`${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}` : 
+									'Time to be determined'}
 							</p>
 						</div>
 						
