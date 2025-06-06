@@ -5,31 +5,7 @@ import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc, gte } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ locals, url, parent, request }) => {
-	// ULTRA EMERGENCY FIX: Skip everything in production SSR
-	const isProduction = process.env.NODE_ENV === 'production';
-	const isSSR = !request.headers.get('x-sveltekit-action');
-	
-	if (isProduction && isSSR) {
-		console.log('Dashboard: SKIPPING ALL OPERATIONS IN PRODUCTION SSR');
-		const parentData = await parent();
-		return {
-			...parentData,
-			stats: {
-				totalTours: 0,
-				activeTours: 0,
-				todayBookings: 0,
-				weeklyRevenue: 0,
-				upcomingTours: 0,
-				totalCustomers: 0,
-				monthlyTours: 0
-			},
-			recentBookings: [],
-			todaysSchedule: [],
-			isSSRSkipped: true
-		};
-	}
-	
+export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// Get parent layout data first
 	const parentData = await parent();
 	
@@ -75,7 +51,7 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 			let allBookings: ProcessedBooking[] = [];
 			
 			try {
-				console.log(`Dashboard: Fetching minimal data for ${tourIds.length} tours`);
+				console.log(`Dashboard: Fetching data for ${tourIds.length} tours`);
 				
 				// Fetch recent bookings with tour and time slot information
 				const recentBookingsData = await db.select({
@@ -95,20 +71,20 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 				.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 				.where(eq(tours.userId, userId))
 				.orderBy(desc(bookings.createdAt))
-				.limit(5);
+				.limit(10);
 				
-							// Process for display - structure data to match what formatRecentBooking expects
-			allBookings = recentBookingsData.map((booking: any) => ({
-				...booking,
-				created: booking.createdAt, // Map to expected field name
-				effectiveDate: booking.timeSlotStartTime || booking.createdAt,
-				totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
-				participants: booking.participants || 1,
-				expand: {
-					tour: { name: booking.tourName },
-					timeSlot: { startTime: booking.timeSlotStartTime }
-				}
-			}));
+				// Process for display - structure data to match what formatRecentBooking expects
+				allBookings = recentBookingsData.map((booking: any) => ({
+					...booking,
+					created: booking.createdAt, // Map to expected field name
+					effectiveDate: booking.timeSlotStartTime || booking.createdAt,
+					totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
+					participants: booking.participants || 1,
+					expand: {
+						tour: { name: booking.tourName },
+						timeSlot: { startTime: booking.timeSlotStartTime }
+					}
+				}));
 				
 				console.log(`Dashboard: Fetched ${allBookings.length} recent bookings`);
 			} catch (err) {
@@ -116,10 +92,7 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 				allBookings = [];
 			}
 			
-			// SIMPLIFIED STATS - Don't calculate complex statistics that require all bookings
-			// These will be approximate based on the limited data we have
-			
-			// Basic calculations from the few bookings we fetched
+			// Calculate stats from the bookings data
 			const confirmedCount = allBookings.filter(b => b.status === 'confirmed').length;
 			const todayCount = allBookings.filter(b => {
 				const created = new Date(b.created);
@@ -127,29 +100,34 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 				return created.toDateString() === today.toDateString();
 			}).length;
 			
-			// Simple revenue estimate from recent bookings
+			// Calculate revenue from confirmed and paid bookings
 			const recentRevenue = allBookings
 				.filter(b => b.status === 'confirmed' && b.paymentStatus === 'paid')
 				.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 			
-			// Update stats with simplified data
+			// Update stats with calculated data
 			stats.todayBookings = todayCount;
-			stats.weeklyRevenue = recentRevenue * 10; // Rough estimate
-			stats.upcomingTours = confirmedCount; // Use confirmed bookings as proxy
-			stats.totalCustomers = allBookings.reduce((sum, b) => sum + (b.participants || 0), 0) * 20; // Rough estimate
+			stats.weeklyRevenue = recentRevenue;
+			stats.upcomingTours = confirmedCount;
+			stats.totalCustomers = allBookings.reduce((sum, b) => sum + (b.participants || 0), 0);
 			
-			// Tours created this month (this is fast, keep it)
+			// Tours created this month
 			const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 			stats.monthlyTours = userTours.filter(tour => {
 				const tourDate = new Date(tour.createdAt);
 				return tourDate >= monthStart;
 			}).length;
 			
-			// Get recent bookings (last 5) - we already have only 5
-			recentBookings = allBookings.map(formatRecentBooking);
+			// Get recent bookings for display
+			recentBookings = allBookings.slice(0, 5).map(formatRecentBooking);
 			
-			// Skip today's schedule - too expensive to calculate
-			todaysSchedule = [];
+			// Create today's schedule (simplified for now)
+			try {
+				todaysSchedule = createTodaysSchedule(allBookings);
+			} catch (err) {
+				console.error('Dashboard: Failed to create today\'s schedule:', err);
+				todaysSchedule = [];
+			}
 		}
 		
 		// Return parent data merged with dashboard-specific data

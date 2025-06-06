@@ -1,22 +1,12 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
-import { shouldSkipInSSR } from '$lib/utils/ssr-utils.js';
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ locals, url, parent, request }) => {
+export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// Get parent layout data first
 	const parentData = await parent();
-	
-	// EMERGENCY: Skip all operations in production SSR
-	if (shouldSkipInSSR(request)) {
-		return {
-			...parentData,
-			bookings: [],
-			isSSRSkipped: true
-		};
-	}
 	
 	// Check if user is authenticated (should already be handled by layout)
 	if (!locals.user) {
@@ -75,7 +65,7 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-			.where(inArray(bookings.tourId, tourIds.slice(0, 20))) // Limit to first 20 tours for performance
+			.where(inArray(bookings.tourId, tourIds))
 			.orderBy(desc(bookings.createdAt))
 			.limit(100);
 		
