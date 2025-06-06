@@ -398,8 +398,8 @@
 			<div class="flex flex-wrap gap-4 flex-1">
 				<!-- Status Filter -->
 				<div class="flex flex-col">
-					<label class="text-xs text-gray-600 mb-1">Status</label>
-					<select bind:value={selectedStatus} class="form-select form-select--small">
+					<label for="status-filter" class="text-xs text-gray-600 mb-1">Status</label>
+					<select id="status-filter" bind:value={selectedStatus} class="form-select form-select--small">
 						<option value="all">All Statuses</option>
 						<option value="pending">Pending</option>
 						<option value="confirmed">Confirmed</option>
@@ -411,8 +411,8 @@
 
 				<!-- Date Filter -->
 				<div class="flex flex-col">
-					<label class="text-xs text-gray-600 mb-1">Date</label>
-					<select bind:value={dateFilter} class="form-select form-select--small">
+					<label for="date-filter" class="text-xs text-gray-600 mb-1">Date</label>
+					<select id="date-filter" bind:value={dateFilter} class="form-select form-select--small">
 						<option value="all">All Dates</option>
 						<option value="upcoming">Upcoming</option>
 						<option value="today">Today</option>
@@ -422,10 +422,11 @@
 
 				<!-- Search -->
 				<div class="flex flex-col flex-1 min-w-64">
-					<label class="text-xs text-gray-600 mb-1">Search</label>
+					<label for="search-input" class="text-xs text-gray-600 mb-1">Search</label>
 					<div class="relative">
 						<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 						<input 
+							id="search-input"
 							type="text" 
 							bind:value={searchQuery}
 							placeholder="Search by name, email, reference..."

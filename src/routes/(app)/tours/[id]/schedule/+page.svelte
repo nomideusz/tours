@@ -1192,6 +1192,7 @@
 								bind:value={newSlotForm.startDate}
 								minDate={formatDateForInput(new Date())}
 								error={hasFieldError(validationErrors, 'startDate')}
+								onchange={() => {}}
 							/>
 							
 							{#if hasFieldError(validationErrors, 'startDate')}
@@ -1209,6 +1210,7 @@
 										required={true}
 										bind:value={newSlotForm.startTime}
 										error={hasFieldError(validationErrors, 'startTime')}
+										onchange={handleStartTimeChange}
 									/>
 									<!-- Reserved space for alignment -->
 									<div class="h-5 mt-1"></div>
@@ -1220,6 +1222,7 @@
 										required={true}
 										bind:value={newSlotForm.endTime}
 										error={hasFieldError(validationErrors, 'endTime')}
+										onchange={() => {}}
 									/>
 									<!-- Reserved space with conditional content -->
 									<div class="h-5 flex items-start">
@@ -1349,7 +1352,7 @@
 
 						<!-- Capacity Selection -->
 						<div class="bg-gray-50 rounded-xl p-4">
-							<label class="form-label mb-4 block">
+							<label for="availableSpots" class="form-label mb-4 block">
 								👥 Available Spots <span class="text-red-500">*</span>
 							</label>
 							
@@ -1709,7 +1712,7 @@
 		};
 	}}
 	class="hidden"
-/>
+></form>
 
 <!-- Delete Forms (generated for each time slot) -->
 {#each timeSlots as slot}

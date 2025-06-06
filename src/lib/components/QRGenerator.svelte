@@ -262,7 +262,7 @@
 		
 		<!-- Category -->
 		<div>
-			<label class="form-label">Category</label>
+			<div class="form-label">Category</div>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 				{#each categories as cat}
 					<label class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-sm" style="{
@@ -295,7 +295,7 @@
 		
 		<!-- Color Theme -->
 		<div>
-			<label class="form-label">Color Theme</label>
+			<div class="form-label">Color Theme</div>
 			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
 				{#each qrStyles as style}
 					<label class="flex flex-col items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm" style="{

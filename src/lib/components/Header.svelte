@@ -254,7 +254,13 @@
 
 <!-- Mobile menu backdrop -->
 {#if mobileMenuOpen}
-	<div class="fixed inset-0 top-20 bg-black/20 lg:hidden z-[60]" onclick={() => (mobileMenuOpen = false)}></div>
+	<div 
+		role="button" 
+		tabindex="-1"
+		class="fixed inset-0 top-20 bg-black/20 lg:hidden z-[60]" 
+		onclick={() => (mobileMenuOpen = false)}
+		onkeydown={(e) => e.key === 'Escape' && (mobileMenuOpen = false)}
+	></div>
 {/if}
 
 <!-- Mobile menu -->

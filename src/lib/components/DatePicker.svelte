@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -12,11 +11,13 @@
 		error = false,
 		minDate = '',
 		label = '',
-		required = false
+		required = false,
+		onchange
 	} = $props();
 
-	const dispatch = createEventDispatcher();
-
+	// Generate unique ID for this DatePicker instance
+	const instanceId = `datepicker-${Math.random().toString(36).substr(2, 9)}`;
+	
 	let isOpen = $state(false);
 	let currentMonth = $state(new Date());
 	let selectedDate = $state<Date | null>(value ? new Date(value) : null);
@@ -54,7 +55,7 @@
 		const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
 		selectedDate = date;
 		value = formatDateForInput(date);
-		dispatch('change', value);
+		onchange?.(value);
 		isOpen = false;
 	}
 
@@ -105,14 +106,14 @@
 		const today = new Date();
 		selectedDate = today;
 		value = formatDateForInput(today);
-		dispatch('change', value);
+		onchange?.(value);
 		isOpen = false;
 	}
 
 	function clearDate() {
 		selectedDate = null;
 		value = '';
-		dispatch('change', '');
+		onchange?.('');
 	}
 
 	// Close calendar when clicking outside
@@ -132,7 +133,7 @@
 
 <div class="date-picker-container relative">
 	{#if label}
-		<label class="form-label mb-2 block">
+		<label for={instanceId} class="form-label mb-2 block">
 			{label}
 			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
 		</label>
@@ -140,11 +141,13 @@
 
 	<!-- Input field -->
 	<div class="relative">
-		<button
-			type="button"
+		<div
+			role="button"
+			tabindex={disabled ? -1 : 0}
+			id={instanceId}
 			onclick={() => !disabled && (isOpen = !isOpen)}
+			onkeydown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && (isOpen = !isOpen)}
 			class="form-input pl-10 pr-10 w-full text-left {error ? 'error' : ''} {disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}"
-			{disabled}
 		>
 			<Calendar class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 			
@@ -172,7 +175,7 @@
 					<X class="h-3 w-3" />
 				</button>
 			{/if}
-		</button>
+		</div>
 	</div>
 
 	<!-- Calendar dropdown -->
@@ -249,9 +252,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.date-picker-container {
-		/* Ensure proper z-index stacking */
-	}
-</style> 

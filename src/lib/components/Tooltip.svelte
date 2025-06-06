@@ -17,8 +17,8 @@
 		children 
 	}: Props = $props();
 	
-	let triggerElement: HTMLElement;
-	let tooltipElement: HTMLElement;
+	let triggerElement = $state<HTMLElement>();
+	let tooltipElement = $state<HTMLElement>();
 	let showTooltip = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout> | null = null;
 	
@@ -104,10 +104,8 @@
 		bind:this={triggerElement}
 		onmouseenter={handleMouseEnter}
 		onmouseleave={handleMouseLeave}
-		onclick={handleClick}
-		role={trigger === 'click' ? 'button' : undefined}
-		tabindex={trigger === 'click' ? 0 : undefined}
 		class="cursor-help"
+		{...(trigger === 'click' ? { onclick: handleClick, role: 'button', tabindex: 0 } : {})}
 	>
 		{@render children()}
 	</div>
@@ -123,7 +121,3 @@
 		</div>
 	{/if}
 </div>
-
-<style lang="postcss">
-	@reference "tailwindcss";
-</style> 

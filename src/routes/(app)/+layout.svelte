@@ -203,7 +203,13 @@
 	<!-- Mobile sidebar overlay -->
 	{#if sidebarOpen}
 		<div class="fixed inset-0 z-40 flex lg:hidden">
-			<div class="bg-opacity-75 fixed inset-0 bg-gray-600" onclick={closeSidebar}></div>
+			<div 
+				role="button" 
+				tabindex="-1"
+				class="bg-opacity-75 fixed inset-0 bg-gray-600" 
+				onclick={closeSidebar}
+				onkeydown={(e) => e.key === 'Escape' && closeSidebar()}
+			></div>
 			<div class="relative flex w-full max-w-xs flex-1 flex-col bg-white">
 				<div class="absolute top-0 right-0 -mr-12 pt-2">
 					<button

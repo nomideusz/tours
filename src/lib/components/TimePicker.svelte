@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import Clock from 'lucide-svelte/icons/clock';
 	import ChevronUp from 'lucide-svelte/icons/chevron-up';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
@@ -13,10 +12,9 @@
 		error = false,
 		label = '',
 		required = false,
-		use24hour = true
+		use24hour = true,
+		onchange
 	} = $props();
-
-	const dispatch = createEventDispatcher();
 
 	// Generate unique ID for this TimePicker instance
 	const instanceId = `timepicker-${Math.random().toString(36).substr(2, 9)}`;
@@ -95,7 +93,7 @@
 
 	function selectTime() {
 		value = formatTime();
-		dispatch('change', value);
+		onchange?.(value);
 		isOpen = false;
 		openTimePickerId.set(null);
 	}
@@ -142,7 +140,7 @@
 
 	function clearTime() {
 		value = '';
-		dispatch('change', '');
+		onchange?.('');
 	}
 
 	function displayTime(): string {
@@ -177,7 +175,7 @@
 
 <div class="time-picker-container relative">
 	{#if label}
-		<label class="form-label mb-2 block">
+		<label for={instanceId} class="form-label mb-2 block">
 			{label}
 			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
 		</label>
@@ -185,8 +183,10 @@
 
 	<!-- Input field -->
 	<div class="relative">
-		<button
-			type="button"
+		<div
+			role="button"
+			tabindex={disabled ? -1 : 0}
+			id={instanceId}
 			onclick={() => {
 				if (!disabled) {
 					if (isOpen) {
@@ -198,8 +198,8 @@
 					}
 				}
 			}}
+			onkeydown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && (isOpen = !isOpen)}
 			class="form-input pl-10 pr-10 w-full text-left {error ? 'error' : ''} {disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}"
-			{disabled}
 		>
 			<Clock class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 			
@@ -219,7 +219,7 @@
 					<X class="h-3 w-3" />
 				</button>
 			{/if}
-		</button>
+		</div>
 	</div>
 
 	<!-- Time picker dropdown -->
@@ -347,8 +347,3 @@
 	{/if}
 </div>
 
-<style>
-	.time-picker-container {
-		/* Ensure proper z-index stacking */
-	}
-</style> 
