@@ -1,16 +1,7 @@
 <script lang="ts">
 	import type { Tour } from '$lib/types.js';
-	import Calendar from 'lucide-svelte/icons/calendar';
-	import QrCodeIcon from 'lucide-svelte/icons/qr-code';
-	import Users from 'lucide-svelte/icons/users';
-	import Clock from 'lucide-svelte/icons/clock';
-
 	type Props = {
 		tour: Tour;
-		/**
-		 * Optional count information to display next to the tour name
-		 * @example { icon: Calendar, label: "5 time slots", detail: "3 upcoming" }
-		 */
 		countInfo?: {
 			icon: any;
 			label: string;
