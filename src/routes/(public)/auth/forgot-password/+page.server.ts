@@ -3,6 +3,8 @@ import type { Actions, PageServerLoad } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { createPasswordResetToken } from '$lib/auth/tokens.js';
+import { sendAuthEmail } from '$lib/email.server.js';
 
 // Simple page load handler - nothing special needed here
 export const load: PageServerLoad = async () => {
@@ -11,7 +13,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
     // Default form action
-    default: async ({ request }) => {
+    default: async ({ request, url }) => {
         // Get form data
         const formData = await request.formData();
         const email = formData.get('email')?.toString();
@@ -20,18 +22,43 @@ export const actions: Actions = {
         if (!email) {
             return fail(400, { message: 'Email is required' });
         }
+
+        // Basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return fail(400, { message: 'Please enter a valid email address' });
+        }
         
         try {
             // Check if user exists (but don't reveal this to prevent email enumeration)
             const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
             
-            // TODO: Implement email sending with reset token
-            // For now, we'll just log that a reset was requested
             if (existingUser.length > 0) {
+                const user = existingUser[0];
                 console.log('Password reset requested for existing user:', email);
-                // In the future, generate a token and send email here
+                
+                // Generate password reset token
+                const token = await createPasswordResetToken(user.id);
+                
+                // Build reset URL
+                const resetUrl = `${url.origin}/auth/reset-password?token=${token}`;
+                
+                // Send password reset email
+                const emailResult = await sendAuthEmail('password-reset', {
+                    email: user.email,
+                    name: user.name,
+                    resetUrl
+                });
+                
+                if (!emailResult.success) {
+                    console.error('Failed to send password reset email:', emailResult.error);
+                    return fail(500, { message: 'Failed to send reset email. Please try again later.' });
+                }
+                
+                console.log(`✅ Password reset email sent to ${email}`);
             } else {
                 console.log('Password reset requested for non-existent user:', email);
+                // Still continue to prevent email enumeration
             }
             
             // Always return success to prevent email enumeration attacks
@@ -39,8 +66,8 @@ export const actions: Actions = {
         } catch (err) {
             console.error('Password reset error:', err);
             
-            // Still return success to prevent email enumeration attacks
-            return { success: true };
+            // Return generic error to prevent revealing system details
+            return fail(500, { message: 'An error occurred. Please try again later.' });
         }
     }
 }; 

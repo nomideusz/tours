@@ -21,11 +21,21 @@ function getResend(): Resend {
 
 // Email template types
 export type EmailType = 'confirmation' | 'payment' | 'reminder' | 'cancelled' | 'qr-ticket';
+export type AuthEmailType = 'password-reset' | 'email-verification' | 'welcome' | 'email-changed';
 
 interface BookingEmailData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+}
+
+interface AuthEmailData {
+  email: string;
+  name?: string;
+  token?: string;
+  resetUrl?: string;
+  verificationUrl?: string;
+  newEmail?: string;
 }
 
 interface EmailTemplate {
@@ -516,6 +526,175 @@ function generateQRTicketEmail(data: BookingEmailData): EmailTemplate {
   };
 }
 
+// Authentication email template generators
+function generatePasswordResetEmail(data: AuthEmailData): EmailTemplate {
+  const { email, name, resetUrl } = data;
+  const userName = name || email.split('@')[0];
+
+  const content = `
+    <h2>🔐 Password Reset Request</h2>
+    <p>Hello ${userName},</p>
+    <p>We received a request to reset your password for your Zaur Tours account. If you didn't make this request, you can safely ignore this email.</p>
+    
+    <div class="warning-box">
+        <h3 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">⚠️ Security Notice:</h3>
+        <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px;">
+            <li>This reset link will expire in 1 hour</li>
+            <li>Only use this link if you requested a password reset</li>
+            <li>Never share this link with anyone</li>
+        </ul>
+    </div>
+    
+    <div class="button-center">
+        <a href="${resetUrl}" class="button" style="background-color: #dc2626;">
+            Reset My Password
+        </a>
+    </div>
+    
+    <div class="details-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #374151;">📋 Request Details</h3>
+        <p style="margin: 5px 0;"><strong>Account:</strong> ${email}</p>
+        <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+        <p style="margin: 5px 0;"><strong>If this wasn't you:</strong> Your account is still secure. No action is needed.</p>
+    </div>
+    
+    <p>If the button doesn't work, copy and paste this link into your browser:</p>
+    <p style="word-break: break-all; color: #6b7280; font-size: 14px;">${resetUrl}</p>
+  `;
+
+  return {
+    subject: '🔐 Reset Your Password - Zaur Tours',
+    html: createEmailTemplate(content)
+  };
+}
+
+function generateEmailVerificationEmail(data: AuthEmailData): EmailTemplate {
+  const { email, name, verificationUrl } = data;
+  const userName = name || email.split('@')[0];
+
+  const content = `
+    <h2>🎉 Welcome to Zaur Tours!</h2>
+    <p>Hello ${userName},</p>
+    <p>Thank you for creating your Zaur Tours account! To get started and secure your account, please verify your email address.</p>
+    
+    <div class="highlight-box">
+        <h3 style="color: #0c4a6e; margin-top: 0; margin-bottom: 15px;">✨ Why verify your email?</h3>
+        <ul style="margin: 8px 0; padding-left: 20px; color: #0c4a6e;">
+            <li>Secure your account</li>
+            <li>Receive booking confirmations</li>
+            <li>Get important tour updates</li>
+            <li>Access all platform features</li>
+        </ul>
+    </div>
+    
+    <div class="button-center">
+        <a href="${verificationUrl}" class="button" style="background-color: #059669;">
+            Verify My Email
+        </a>
+    </div>
+    
+    <div class="details-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #374151;">🚀 What's Next?</h3>
+        <p style="margin: 0; color: #4b5563;">
+            After verification, you'll have full access to:
+        </p>
+        <ul style="margin: 8px 0; padding-left: 20px; color: #4b5563;">
+            <li>Browse and book amazing tours</li>
+            <li>Manage your bookings</li>
+            <li>Receive QR tickets</li>
+            <li>Access your dashboard</li>
+        </ul>
+    </div>
+    
+    <p>If the button doesn't work, copy and paste this link into your browser:</p>
+    <p style="word-break: break-all; color: #6b7280; font-size: 14px;">${verificationUrl}</p>
+    
+    <p>Can't wait to help you discover amazing experiences! 🌟</p>
+  `;
+
+  return {
+    subject: '🎉 Verify Your Email - Zaur Tours',
+    html: createEmailTemplate(content)
+  };
+}
+
+function generateWelcomeEmail(data: AuthEmailData): EmailTemplate {
+  const { email, name } = data;
+  const userName = name || email.split('@')[0];
+
+  const content = `
+    <h2>🎉 Welcome to Zaur Tours!</h2>
+    <p>Hello ${userName},</p>
+    <p>Your email has been verified and your account is now fully activated! Welcome to the Zaur Tours community. 🌟</p>
+    
+    <div class="highlight-box">
+        <h3 style="color: #0c4a6e; margin-top: 0; margin-bottom: 15px;">🚀 You're All Set!</h3>
+        <p style="margin: 0; color: #0c4a6e;">
+            Your adventure starts here. Explore unique tours, book unforgettable experiences, and create memories that last a lifetime.
+        </p>
+    </div>
+    
+    <div class="details-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #374151;">✨ What You Can Do Now:</h3>
+        <ul style="margin: 8px 0; padding-left: 20px; color: #4b5563;">
+            <li><strong>Browse Tours:</strong> Discover amazing experiences in your area</li>
+            <li><strong>Book Instantly:</strong> Secure your spot with our easy booking system</li>
+            <li><strong>QR Tickets:</strong> Get digital tickets delivered to your email</li>
+            <li><strong>Manage Bookings:</strong> View and manage all your tours in one place</li>
+        </ul>
+    </div>
+    
+    <div class="button-center">
+        <a href="https://zaur.app/tours" class="button">
+            Explore Tours
+        </a>
+    </div>
+    
+    <p>Ready to start your adventure? Browse our curated collection of tours and find your next unforgettable experience!</p>
+    
+    <p>Welcome aboard! 🎒</p>
+  `;
+
+  return {
+    subject: '🎉 Welcome to Zaur Tours - Your Adventure Awaits!',
+    html: createEmailTemplate(content)
+  };
+}
+
+function generateEmailChangedEmail(data: AuthEmailData): EmailTemplate {
+  const { email, name, newEmail } = data;
+  const userName = name || email.split('@')[0];
+
+  const content = `
+    <h2>📧 Email Address Updated</h2>
+    <p>Hello ${userName},</p>
+    <p>This email confirms that your Zaur Tours account email address has been successfully updated.</p>
+    
+    <div class="details-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #374151;">📋 Change Details</h3>
+        <p style="margin: 5px 0;"><strong>Previous Email:</strong> ${email}</p>
+        <p style="margin: 5px 0;"><strong>New Email:</strong> ${newEmail}</p>
+        <p style="margin: 5px 0;"><strong>Changed:</strong> ${new Date().toLocaleString()}</p>
+    </div>
+    
+    <div class="warning-box">
+        <h3 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">🔒 Security Notice:</h3>
+        <p style="margin: 0; font-size: 14px;">
+            If you didn't make this change, please contact our support team immediately at support@zaur.app
+        </p>
+    </div>
+    
+    <p>Going forward, all booking confirmations and account notifications will be sent to your new email address.</p>
+    
+    <p>Thank you for keeping your account information up to date!</p>
+  `;
+
+  return {
+    subject: '📧 Email Address Updated - Zaur Tours',
+    html: createEmailTemplate(content)
+  };
+}
+
 // Main email sending function
 export async function sendBookingEmail(
   emailType: EmailType,
@@ -626,6 +805,54 @@ export async function sendBookingReminders(): Promise<{
       success: false, 
       sent: 0, 
       found: 0,
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+// Main authentication email sending function
+export async function sendAuthEmail(
+  emailType: AuthEmailType,
+  data: AuthEmailData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    let template: EmailTemplate;
+
+    switch (emailType) {
+      case 'password-reset':
+        template = generatePasswordResetEmail(data);
+        break;
+      case 'email-verification':
+        template = generateEmailVerificationEmail(data);
+        break;
+      case 'welcome':
+        template = generateWelcomeEmail(data);
+        break;
+      case 'email-changed':
+        template = generateEmailChangedEmail(data);
+        break;
+      default:
+        throw new Error(`Invalid auth email type: ${emailType}`);
+    }
+
+    const resend = getResend();
+    const result = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [data.email],
+      subject: template.subject,
+      html: template.html
+    });
+
+    if (result.error) {
+      throw new Error(`Resend error: ${result.error.message}`);
+    }
+
+    console.log(`✅ ${emailType} email sent successfully to ${data.email}`);
+    return { success: true, messageId: result.data?.id };
+  } catch (error) {
+    console.error(`Error sending ${emailType} email:`, error);
+    return { 
+      success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }

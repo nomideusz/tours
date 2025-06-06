@@ -16,7 +16,7 @@
 		redirectTo?: string;
 	};
 
-	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string } }>();
+	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string } }>();
 
 	// Destructure the auth state for reactivity
 	const isLoggingIn = $derived($authState === 'loggingIn');
@@ -76,9 +76,9 @@
 			</p>
 		</div>
 
-		{#if form?.error}
+		{#if form?.error || data?.error}
 			<div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-				<p class="text-sm text-red-600">{form.error}</p>
+				<p class="text-sm text-red-600">{form?.error || data?.error}</p>
 			</div>
 		{/if}
 

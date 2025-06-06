@@ -1,0 +1,37 @@
+// Custom email templates for PocketBase
+// 
+// ⚠️ DISABLED - Authentication emails are now handled by SvelteKit app
+// 
+// This file has been disabled because authentication emails are now sent
+// directly from the SvelteKit application using the Resend API.
+//
+// The SvelteKit app handles:
+// - Password reset emails
+// - Email verification emails  
+// - Welcome emails
+// - Email change notifications
+//
+// To re-enable PocketBase hooks, rename this file back to main.pb.js
+// (but this is not recommended as it will create duplicate emails)
+
+console.log("=== PocketBase Email Hooks DISABLED ===");
+console.log("Authentication emails are now handled by SvelteKit app");
+console.log("See: /api/send-auth-email for the new implementation");
+
+// The original PocketBase hooks are commented out below for reference:
+
+/*
+// Hook into user password reset requests
+onMailerRecordPasswordResetSend((e) => {
+    console.log("Password reset email requested for:", e.record.get("email"));
+    // ... original code ...
+});
+
+// Hook into user verification emails
+onMailerRecordVerificationSend((e) => {
+    console.log("Email verification requested for:", e.record.get("email"));
+    // ... original code ...
+});
+
+// Additional hooks were here...
+*/ 

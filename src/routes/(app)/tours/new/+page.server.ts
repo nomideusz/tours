@@ -4,7 +4,7 @@ import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { db } from '$lib/db/connection.js';
 import { tours, qrCodes } from '$lib/db/schema/index.js';
 import { createId } from '@paralleldrive/cuid2';
-import { processAndSaveImage, initializeUploadDirs } from '$lib/utils/image-storage.js';
+import { processAndSaveImage, initializeUploadDirs, isImageStorageAvailable } from '$lib/utils/image-storage.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   // Check if user is authenticated
@@ -24,53 +24,37 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 export const actions: Actions = {
   default: async ({ request, locals }) => {
-    // Check authentication
+    // Ensure user is authenticated
     if (!locals.user) {
-      return fail(401, { error: 'Unauthorized' });
+      throw redirect(303, '/auth/login');
     }
 
     try {
+      // Get form data
       const formData = await request.formData();
       
-      // Handle included items and requirements from FormData
-      const includedItems: string[] = [];
-      const requirements: string[] = [];
-      
-      // Extract array values from FormData
-      for (const [key, value] of formData.entries()) {
-        if (key.startsWith('includedItems.')) {
-          const index = parseInt(key.split('.')[1]);
-          if (!isNaN(index) && typeof value === 'string' && value.trim()) {
-            includedItems[index] = value.trim();
-          }
-        } else if (key.startsWith('requirements.')) {
-          const index = parseInt(key.split('.')[1]);
-          if (!isNaN(index) && typeof value === 'string' && value.trim()) {
-            requirements[index] = value.trim();
-          }
+      // Get included items
+      let parsedIncludedItems: string[] = [];
+      const includedItems = formData.get('includedItems');
+      if (includedItems && typeof includedItems === 'string' && includedItems.trim()) {
+        try {
+          parsedIncludedItems = JSON.parse(includedItems) || [];
+        } catch (e) {
+          console.warn('Failed to parse included items, using empty array:', e);
+          parsedIncludedItems = [];
         }
       }
 
-      // Parse JSON fields if they exist (for API submissions)
-      let parsedIncludedItems = includedItems.filter(Boolean);
-      let parsedRequirements = requirements.filter(Boolean);
-      
-      try {
-        const includedItemsJson = formData.get('includedItems');
-        if (typeof includedItemsJson === 'string') {
-          parsedIncludedItems = JSON.parse(includedItemsJson);
+      // Get requirements
+      let parsedRequirements: string[] = [];
+      const requirements = formData.get('requirements');
+      if (requirements && typeof requirements === 'string' && requirements.trim()) {
+        try {
+          parsedRequirements = JSON.parse(requirements) || [];
+        } catch (e) {
+          console.warn('Failed to parse requirements, using empty array:', e);
+          parsedRequirements = [];
         }
-      } catch (e) {
-        // Use the array version if JSON parsing fails
-      }
-
-      try {
-        const requirementsJson = formData.get('requirements');
-        if (typeof requirementsJson === 'string') {
-          parsedRequirements = JSON.parse(requirementsJson);
-        }
-      } catch (e) {
-        // Use the array version if JSON parsing fails
       }
 
       // Prepare tour data
@@ -110,15 +94,35 @@ export const actions: Actions = {
       const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
       console.log('📸 Valid images after filtering:', validImages.length);
       
-      // Initialize upload directories
-      await initializeUploadDirs();
-      
-      // Create tour ID and process images
-      const tourId = createId();
+      // Process images with proper error handling
       const processedImages: string[] = [];
       
-      // Process and save images
       if (validImages.length > 0) {
+        // Check if image storage is available
+        const storageAvailable = await isImageStorageAvailable();
+        
+        if (!storageAvailable) {
+          console.error('❌ Image storage not available - permission issue');
+          return fail(500, {
+            error: 'Image upload unavailable',
+            message: 'Unable to upload images due to server configuration. Please contact support or try again later.'
+          });
+        }
+
+        // Initialize upload directories
+        try {
+          await initializeUploadDirs();
+        } catch (error) {
+          console.error('❌ Failed to initialize upload directories:', error);
+          return fail(500, {
+            error: 'Image upload setup failed',
+            message: 'Unable to prepare image upload directories. Please contact support.'
+          });
+        }
+        
+        // Create tour ID and process images
+        const tourId = createId();
+        
         console.log('📸 Processing', validImages.length, 'images for tour:', tourId);
         for (const imageFile of validImages) {
           try {
@@ -128,99 +132,134 @@ export const actions: Actions = {
             console.log('📸 Successfully processed image:', processed.filename);
           } catch (error) {
             console.error('📸 Image processing failed:', error);
+            
+            // Provide helpful error message based on error type
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage.includes('Permission denied') || errorMessage.includes('EACCES')) {
+              return fail(500, {
+                error: 'Permission denied',
+                message: 'Unable to save images due to server permissions. Please contact support.'
+              });
+            }
+            
             return fail(400, {
               error: 'Image upload failed',
-              message: `Failed to process image: ${imageFile.name}`
+              message: `Failed to process image: ${imageFile.name}. ${errorMessage}`
             });
           }
         }
-      } else {
-        console.log('📸 No valid images to process');
-      }
 
-      // Create tour in PostgreSQL
-      const newTour = {
-        id: tourId,
-        name: sanitizedData.name as string,
-        description: sanitizedData.description as string,
-        price: String(sanitizedData.price),
-        duration: parseInt(String(sanitizedData.duration)),
-        capacity: parseInt(String(sanitizedData.capacity)),
-        status: (sanitizedData.status as 'active' | 'draft') || 'draft',
-        category: sanitizedData.category as string || null,
-        location: sanitizedData.location as string || null,
-        includedItems: parsedIncludedItems,
-        requirements: parsedRequirements,
-        cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
-        userId: locals.user.id,
-        images: processedImages,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        // Update tourId for the new tour
+        const finalTourId = tourId;
 
-      const createdTourResult = await db.insert(tours).values(newTour).returning();
-      const createdTour = createdTourResult[0];
-
-      // Automatically create a default QR code for the tour
-      try {
-        // Generate a unique code for the QR
-        const generateUniqueCode = () => {
-          const tourPrefix = createdTour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
-          const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-          return `${tourPrefix}-${randomSuffix}`;
-        };
-
-        const qrData = {
-          id: createId(),
-          tourId: createdTour.id,
+        // Create tour in PostgreSQL
+        const newTour = {
+          id: finalTourId,
+          name: sanitizedData.name as string,
+          description: sanitizedData.description as string,
+          price: String(sanitizedData.price),
+          duration: parseInt(String(sanitizedData.duration)),
+          capacity: parseInt(String(sanitizedData.capacity)),
+          status: (sanitizedData.status as 'active' | 'draft') || 'draft',
+          category: sanitizedData.category as string || null,
+          location: sanitizedData.location as string || null,
+          includedItems: parsedIncludedItems,
+          requirements: parsedRequirements,
+          cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
           userId: locals.user.id,
-          name: `${createdTour.name} - Main QR Code`,
-          category: 'digital' as const, // Default to digital/social category
-          code: generateUniqueCode(),
-          scans: 0,
-          conversions: 0,
-          isActive: true,
-          customization: {
-            color: '#000000',
-            backgroundColor: '#FFFFFF',
-            style: 'square' as const
-          },
+          images: processedImages,
           createdAt: new Date(),
           updatedAt: new Date()
         };
-        
-        await db.insert(qrCodes).values(qrData);
-        console.log('Default QR code created successfully for tour:', createdTour.id);
-      } catch (qrError) {
-        // Log error but don't fail the tour creation
-        console.error('Failed to create default QR code:', qrError);
-        // Optionally, you could store a flag to remind the user to create a QR code later
-      }
 
-      // Redirect to schedule setup for the new tour
-      throw redirect(303, `/tours/${createdTour.id}/schedule?new=true`);
+        const createdTourResult = await db.insert(tours).values(newTour).returning();
+        const createdTour = createdTourResult[0];
+
+        console.log('✅ Tour created successfully:', createdTour.id, 'with', processedImages.length, 'images');
+
+        // Automatically create a default QR code for the tour
+        try {
+          // Generate a unique code for the QR
+          const generateUniqueCode = () => {
+            const tourPrefix = createdTour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
+            const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+            return `${tourPrefix}-${randomSuffix}`;
+          };
+
+          const qrData = {
+            id: createId(),
+            tourId: createdTour.id,
+            userId: locals.user.id,
+            name: `${createdTour.name} - Main QR Code`,
+            category: 'digital' as const, // Default to digital/social category
+            code: generateUniqueCode(),
+            scans: 0,
+            conversions: 0,
+            isActive: true,
+            customization: {
+              color: '#000000',
+              backgroundColor: '#FFFFFF',
+              style: 'square' as const
+            },
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+          await db.insert(qrCodes).values(qrData);
+          console.log('Default QR code created successfully for tour:', createdTour.id);
+        } catch (qrError) {
+          // Log error but don't fail the tour creation
+          console.error('Failed to create default QR code:', qrError);
+          // Optionally, you could store a flag to remind the user to create a QR code later
+        }
+
+        // Redirect to the newly created tour
+        throw redirect(303, `/tours/${createdTour.id}`);
+      } else {
+        // No images to process - create tour without images
+        console.log('📸 No valid images to process, creating tour without images');
+        
+        const tourId = createId();
+        
+        const newTour = {
+          id: tourId,
+          name: sanitizedData.name as string,
+          description: sanitizedData.description as string,
+          price: String(sanitizedData.price),
+          duration: parseInt(String(sanitizedData.duration)),
+          capacity: parseInt(String(sanitizedData.capacity)),
+          status: (sanitizedData.status as 'active' | 'draft') || 'draft',
+          category: sanitizedData.category as string || null,
+          location: sanitizedData.location as string || null,
+          includedItems: parsedIncludedItems,
+          requirements: parsedRequirements,
+          cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          userId: locals.user.id,
+          images: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const createdTourResult = await db.insert(tours).values(newTour).returning();
+        const createdTour = createdTourResult[0];
+
+        console.log('✅ Tour created successfully without images:', createdTour.id);
+
+        // Redirect to the newly created tour
+        throw redirect(303, `/tours/${createdTour.id}`);
+      }
 
     } catch (error) {
-      // Don't log redirects as errors
-      if (error && typeof error === 'object' && 'status' in error && error.status === 303) {
-        throw error; // Re-throw redirects
+      console.error('Tour creation error:', error);
+      
+      // If it's a redirect, don't catch it
+      if (error instanceof Response) {
+        throw error;
       }
       
-      console.error('Error creating tour:', error);
-      
-      // Handle specific database errors
-      if (error && typeof error === 'object' && 'code' in error) {
-        if (error.code === '23505') { // Unique constraint violation
-          return fail(400, {
-            error: 'Tour with this name already exists',
-            message: 'Please choose a different tour name.'
-          });
-        }
-      }
-
       return fail(500, {
-        error: 'Failed to create tour',
-        message: 'An unexpected error occurred. Please try again.'
+        error: 'Server error',
+        message: 'An unexpected error occurred while creating the tour. Please try again.'
       });
     }
   }

@@ -1,22 +1,57 @@
-import { fail, redirect } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types.js';
+import { redirect, type Actions, fail } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types.js';
 import { lucia, verifyPassword } from '$lib/auth/lucia.js';
-import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
+import { db } from '$lib/db/connection.js';
 import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	// Get the redirect URL if provided, default to dashboard for authenticated users
-	const redirectTo = url.searchParams.get('redirectTo') || '/dashboard';
-	
-	// Redirect if already logged in
 	if (locals.user) {
-		console.log('User already logged in, redirecting to:', redirectTo);
-		throw redirect(303, redirectTo);
+		throw redirect(302, '/dashboard');
 	}
-	
+
+	const redirectTo = url.searchParams.get('redirectTo') || '/dashboard';
+	const error = url.searchParams.get('error');
+	const message = url.searchParams.get('message');
+	const provider = url.searchParams.get('provider');
+
+	// Handle OAuth-specific errors
+	let errorMessage = '';
+	if (error) {
+		switch (error) {
+			case 'oauth_not_configured':
+				errorMessage = provider 
+					? `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is not properly configured. Please contact support.`
+					: 'OAuth login is not properly configured. Please contact support.';
+				break;
+			case 'oauth_invalid_state':
+				errorMessage = 'OAuth login failed due to invalid state. Please try again.';
+				break;
+			case 'oauth_user_fetch_failed':
+				errorMessage = 'Failed to get user information from OAuth provider. Please try again.';
+				break;
+			case 'oauth_no_email':
+				errorMessage = 'No email address found in your OAuth account. Please ensure your email is public or try a different login method.';
+				break;
+			case 'oauth_callback_failed':
+				errorMessage = message ? decodeURIComponent(message) : 'OAuth login failed. Please try again.';
+				break;
+			case 'oauth_github_error':
+				errorMessage = message ? decodeURIComponent(message) : 'GitHub login failed. Please try again.';
+				break;
+			case 'oauth_setup_failed':
+				errorMessage = provider 
+					? `Failed to set up ${provider} login. Please try again.`
+					: 'Failed to set up OAuth login. Please try again.';
+				break;
+			default:
+				errorMessage = message ? decodeURIComponent(message) : 'An error occurred during login. Please try again.';
+		}
+	}
+
 	return {
-		redirectTo
+		redirectTo,
+		error: errorMessage || null
 	};
 };
 
@@ -91,21 +126,16 @@ export const actions: Actions = {
 				.where(eq(users.id, user.id));
 
 			console.log('Login successful for user:', email);
-			console.log('User data:', { id: user.id, email: user.email, role: user.role });
 
-		} catch (err) {
-			console.error('Login error:', err);
-			
-			// Generic error message for other errors
+		} catch (error) {
+			console.error('Login error:', error);
 			return fail(500, {
 				email,
 				redirectTo,
-				error: 'Failed to log in. Please try again later.'
+				error: 'An unexpected error occurred. Please try again.'
 			});
 		}
-		
-		// Do the redirect outside of the try/catch to prevent it from being caught as an error
-		console.log('Login successful, redirecting to:', redirectTo);
-		throw redirect(303, redirectTo);
+
+		throw redirect(302, redirectTo);
 	}
 }; 

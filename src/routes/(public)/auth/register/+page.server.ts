@@ -6,6 +6,8 @@ import { generateId } from 'lucia';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { createEmailVerificationToken } from '$lib/auth/tokens.js';
+import { sendAuthEmail } from '$lib/email.server.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
@@ -17,7 +19,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ locals, request, cookies }) => {
+	default: async ({ locals, request, cookies, url }) => {
 		const data = await request.formData();
 		const name = data.get('name')?.toString();
 		const email = data.get('email')?.toString();
@@ -88,6 +90,7 @@ export const actions: Actions = {
 				name,
 				role: intendedRole || 'user',
 				intendedRole,
+				emailVerified: false, // Set to false initially
 				...(intendedRole === 'guide' && {
 					businessName,
 					location
@@ -98,6 +101,28 @@ export const actions: Actions = {
 			
 			await db.insert(users).values(userData);
 			console.log('User created successfully:', userId, 'with role:', intendedRole);
+			
+			// Create email verification token and send verification email
+			try {
+				const verificationToken = await createEmailVerificationToken(userId);
+				const verificationUrl = `${url.origin}/auth/verify?token=${verificationToken}`;
+				
+				const emailResult = await sendAuthEmail('email-verification', {
+					email,
+					name,
+					verificationUrl
+				});
+				
+				if (emailResult.success) {
+					console.log(`✅ Verification email sent to ${email}`);
+				} else {
+					console.warn(`⚠️ Failed to send verification email to ${email}:`, emailResult.error);
+					// Don't fail registration if email fails
+				}
+			} catch (emailError) {
+				console.warn('⚠️ Error sending verification email:', emailError);
+				// Don't fail registration if email fails
+			}
 			
 			// Create session for auto-login
 			const session = await lucia.createSession(userId, {});
