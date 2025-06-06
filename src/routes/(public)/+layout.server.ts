@@ -12,17 +12,38 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   // Handle redirects for authenticated users trying to access auth pages
   if (isAuthenticated && isAuthPage) {
     console.log('Public layout load: Authenticated user on auth page, redirecting to dashboard');
-    throw redirect(303, '/tours');
+    throw redirect(303, '/dashboard');
   }
 
   // Generate SEO metadata based on the current route
   const seoData = generateSEOData(url.pathname, url.origin);
   
+  // Map user data properly to match AuthUser interface
+  let user = null;
+  if (isAuthenticated && locals.user) {
+    const userData = locals.user;
+    user = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      businessName: userData.businessName,
+      role: userData.role,
+      avatar: userData.avatar,
+      phone: userData.phone,
+      website: userData.website,
+      description: userData.description,
+      location: userData.location,
+      emailVerified: userData.emailVerified,
+      lastLogin: userData.lastLogin
+    };
+  }
+  
   // Public layout doesn't enforce authentication
-  // Return minimal data for public pages
+  // Return properly mapped data for public pages
   return {
     isAuthenticated,
-    user: isAuthenticated ? locals.user : null,
+    isAdmin: locals.isAdmin,
+    user,
     seo: seoData
   };
 };

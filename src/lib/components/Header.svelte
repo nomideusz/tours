@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
 	import { switchLanguage } from '$lib/context.js';
+	import { logout } from '$lib/auth/client.js';
 	import { IsMounted } from 'runed';
 	import { onMount } from 'svelte';
 	import Scan from 'lucide-svelte/icons/scan';
@@ -34,10 +35,17 @@
 	}
 
 	// Handle logout with loading state
-	function handleLogout(event: Event) {
+	async function handleLogout(event: Event) {
+		event.preventDefault();
 		isLoggingOut = true;
-		// The form will continue with its default submission
-		// The loading state will be reset when the page redirects/reloads
+		
+		try {
+			await logout('/auth/login');
+		} catch (error) {
+			console.error('Logout error:', error);
+		} finally {
+			isLoggingOut = false;
+		}
 	}
 
 	// Close mobile menu when navigation occurs
@@ -164,21 +172,19 @@
 						{/if}
 						<span class="text-gray-300">•</span>
 						<a href="/profile" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-							{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
+							{currentUser?.name || currentUser?.email || 'User'}
 						</a>
 						<span class="text-gray-300">•</span>
-						<form action="/auth/logout" method="POST" class="inline-flex items-baseline" onsubmit={handleLogout}>
-							<button
-								type="submit"
-								disabled={isLoggingOut}
-								class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 leading-none p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-							>
-								{#if isLoggingOut}
-									<Loader2 class="h-3 w-3 animate-spin" />
-								{/if}
-								{t('auth.logout', $language)}
-							</button>
-						</form>
+						<button
+							onclick={handleLogout}
+							disabled={isLoggingOut}
+							class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 leading-none p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+						>
+							{#if isLoggingOut}
+								<Loader2 class="h-3 w-3 animate-spin" />
+							{/if}
+							{t('auth.logout', $language)}
+						</button>
 					</div>
 				{:else}
 					<div class="hidden items-center gap-3 md:flex">
@@ -288,18 +294,16 @@
 						<a href="/profile" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
 							Profile Settings
 						</a>
-						<form action="/auth/logout" method="POST" onsubmit={handleLogout}>
-							<button
-								type="submit"
-								disabled={isLoggingOut}
-								class="flex w-full items-center gap-2 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								{#if isLoggingOut}
-									<Loader2 class="h-3 w-3 animate-spin" />
-								{/if}
-								{t('auth.logout', $language)}
-							</button>
-						</form>
+						<button
+							onclick={handleLogout}
+							disabled={isLoggingOut}
+							class="flex w-full items-center gap-2 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{#if isLoggingOut}
+								<Loader2 class="h-3 w-3 animate-spin" />
+							{/if}
+							{t('auth.logout', $language)}
+						</button>
 					</div>
 				{:else}
 					<div class="flex flex-col space-y-3">

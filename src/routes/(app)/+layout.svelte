@@ -1,16 +1,14 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
-	import { auth, isAuthenticated, currentUser, isAdmin } from '$lib/stores/auth.js';
+	import { isAuthenticated, currentUser, isAdmin } from '$lib/stores/auth.js';
 	import { logout } from '$lib/auth/client.js';
-	import { onDestroy, onMount } from 'svelte';
 	import {
 		languageContext,
 		languageStore,
 		navigationContext,
 		navigationStore
 	} from '$lib/context.js';
-	import { IsMounted } from 'runed';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 
 	// Icons
@@ -21,25 +19,14 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import User from 'lucide-svelte/icons/user';
-	import Settings from 'lucide-svelte/icons/settings';
-	import UserCheck from 'lucide-svelte/icons/user-check';
 	import Shield from 'lucide-svelte/icons/shield';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
-	interface LayoutData {
-		user?: any;
-		isAuthenticated?: boolean;
-		isAdmin?: boolean;
-	}
+	let { children } = $props();
 
-	let { children, data } = $props<{ data: LayoutData }>();
-
-	// Use IsMounted from Runed
-	const isMounted = new IsMounted();
-
-	// Reactive values from auth stores
+	// Reactive values from auth stores (initialized by root layout)
 	let userIsAuthenticated = $derived($isAuthenticated);
 	let currentUserData = $derived($currentUser);
 	let userIsAdmin = $derived($isAdmin);
@@ -55,7 +42,7 @@
 	navigationContext.set(navigationStore);
 
 	// Close sidebar on navigation
-	afterNavigate(({ to, from }) => {
+	afterNavigate(() => {
 		sidebarOpen = false;
 	});
 

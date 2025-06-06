@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
 	import { languageContext, languageStore } from '$lib/context.js';
+	import { isAuthenticated, currentUser } from '$lib/stores/auth.js';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
@@ -10,6 +11,10 @@
 
 	// Set language context from the store
 	languageContext.set(languageStore);
+
+	// Use auth stores for reactive auth state
+	let userIsAuthenticated = $derived($isAuthenticated);
+	let currentUserData = $derived($currentUser);
 
 	// Header reference for closing mobile menu
 	let headerRef: Header;
@@ -95,8 +100,8 @@
 <!-- Header Component -->
 <Header 
 	bind:this={headerRef}
-	isAuthenticated={data?.isAuthenticated || false}
-	currentUser={data?.user || null}
+	isAuthenticated={userIsAuthenticated}
+	currentUser={currentUserData}
 />
 
 <!-- Main content -->

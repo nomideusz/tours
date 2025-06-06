@@ -19,15 +19,21 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   let isAdmin = false;
   
   if (isAuthenticated && locals.user) {
-    // Map user data to the expected format
+    // Map user data to match the AuthUser interface from auth store
     const userData = locals.user;
     user = {
       id: userData.id,
       email: userData.email,
-      username: userData.username || userData.name || userData.email,
-      avatarUrl: userData.avatarUrl,
-      created: userData.created,
-      updated: userData.updated
+      name: userData.name,
+      businessName: userData.businessName,
+      role: userData.role,
+      avatar: userData.avatar,
+      phone: userData.phone,
+      website: userData.website,
+      description: userData.description,
+      location: userData.location,
+      emailVerified: userData.emailVerified,
+      lastLogin: userData.lastLogin
     };
     
     // Pass the admin status to the client
