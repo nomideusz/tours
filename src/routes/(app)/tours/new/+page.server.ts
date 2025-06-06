@@ -250,12 +250,17 @@ export const actions: Actions = {
       }
 
     } catch (error) {
-      console.error('Tour creation error:', error);
-      
-      // If it's a redirect, don't catch it
-      if (error instanceof Response) {
+      // If it's a redirect, don't catch it - just re-throw
+      if (error instanceof Response && error.status >= 300 && error.status < 400) {
         throw error;
       }
+      
+      // Check if it's a SvelteKit redirect object
+      if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
+        throw error;
+      }
+      
+      console.error('Tour creation error:', error);
       
       return fail(500, {
         error: 'Server error',

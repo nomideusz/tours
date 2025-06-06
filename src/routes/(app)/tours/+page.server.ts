@@ -2,7 +2,7 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, qrCodes } from '$lib/db/schema/index.js';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -15,25 +15,97 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   try {
     const userId = locals.user.id;
     
-    // Fetch user's tours
-    const userTours = await db.select()
-      .from(tours)
-      .where(eq(tours.userId, userId))
-      .orderBy(desc(tours.updatedAt));
+    // Fetch user's tours with error handling
+    let userTours: typeof tours.$inferSelect[] = [];
+    try {
+      userTours = await db.select()
+        .from(tours)
+        .where(eq(tours.userId, userId))
+        .orderBy(desc(tours.updatedAt));
+    } catch (toursError) {
+      console.error('Error fetching user tours:', toursError);
+      userTours = [];
+    }
     
-    // Get aggregated booking statistics efficiently
-    const bookingStats = await db.select({
-      totalBookings: sql<number>`count(*)::int`,
-      confirmedBookings: sql<number>`count(*) filter (where ${bookings.status} = 'confirmed' and ${bookings.paymentStatus} = 'paid')::int`,
-      totalRevenue: sql<number>`coalesce(sum(case when ${bookings.status} = 'confirmed' and ${bookings.paymentStatus} = 'paid' then ${bookings.totalAmount}::numeric else 0 end), 0)`,
-      totalParticipants: sql<number>`coalesce(sum(case when ${bookings.status} = 'confirmed' and ${bookings.paymentStatus} = 'paid' then ${bookings.participants} else 0 end), 0)::int`,
-      todayBookings: sql<number>`count(*) filter (where date(${bookings.createdAt}) = current_date and (${bookings.status} = 'confirmed' or ${bookings.status} = 'pending'))::int`,
-      weekBookings: sql<number>`count(*) filter (where ${bookings.createdAt} >= current_date - interval '7 days' and (${bookings.status} = 'confirmed' or ${bookings.status} = 'pending'))::int`,
-      monthRevenue: sql<number>`coalesce(sum(case when ${bookings.createdAt} >= current_date - interval '30 days' and ${bookings.status} = 'confirmed' and ${bookings.paymentStatus} = 'paid' then ${bookings.totalAmount}::numeric else 0 end), 0)`
-    })
-    .from(bookings)
-    .innerJoin(tours, eq(bookings.tourId, tours.id))
-    .where(eq(tours.userId, userId));
+    // Get booking statistics with simpler, more compatible SQL
+    let bookingStats = [{
+      totalBookings: 0,
+      confirmedBookings: 0,
+      totalRevenue: 0,
+      totalParticipants: 0,
+      todayBookings: 0,
+      weekBookings: 0,
+      monthRevenue: 0
+    }];
+    
+    try {
+      // Get all bookings for user's tours first
+      const userBookings = await db.select()
+        .from(bookings)
+        .innerJoin(tours, eq(bookings.tourId, tours.id))
+        .where(eq(tours.userId, userId));
+      
+      // Calculate statistics in JavaScript to avoid SQL compatibility issues
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      const monthAgo = new Date(today);
+      monthAgo.setDate(monthAgo.getDate() - 30);
+      
+      let totalBookings = 0;
+      let confirmedBookings = 0;
+      let totalRevenue = 0;
+      let totalParticipants = 0;
+      let todayBookings = 0;
+      let weekBookings = 0;
+      let monthRevenue = 0;
+      
+      for (const booking of userBookings) {
+        const bookingData = booking.bookings;
+        const bookingDate = new Date(bookingData.createdAt);
+        
+        totalBookings++;
+        
+        if (bookingData.status === 'confirmed' && bookingData.paymentStatus === 'paid') {
+          confirmedBookings++;
+          totalRevenue += parseFloat(bookingData.totalAmount);
+          totalParticipants += bookingData.participants;
+        }
+        
+        if (bookingDate >= today && bookingDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)) {
+          if (bookingData.status === 'confirmed' || bookingData.status === 'pending') {
+            todayBookings++;
+          }
+        }
+        
+        if (bookingDate >= weekAgo) {
+          if (bookingData.status === 'confirmed' || bookingData.status === 'pending') {
+            weekBookings++;
+          }
+        }
+        
+        if (bookingDate >= monthAgo && bookingData.status === 'confirmed' && bookingData.paymentStatus === 'paid') {
+          monthRevenue += parseFloat(bookingData.totalAmount);
+        }
+      }
+      
+      bookingStats = [{
+        totalBookings,
+        confirmedBookings,
+        totalRevenue,
+        totalParticipants,
+        todayBookings,
+        weekBookings,
+        monthRevenue
+      }];
+      
+    } catch (statsError) {
+      console.error('Error fetching booking statistics:', statsError);
+      // bookingStats already initialized with default values
+    }
 
     const stats = {
       total: userTours.length,

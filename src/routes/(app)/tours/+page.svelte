@@ -179,7 +179,7 @@
 	}
 
 	function getImageUrl(tour: Tour | null | undefined, imagePath: string | null | undefined): string {
-		if (!tour?.id || !imagePath) return '';
+		if (!tour?.id || !imagePath || typeof imagePath !== 'string') return '';
 		
 		try {
 			// Handle old PocketBase URLs
@@ -187,7 +187,7 @@
 				return imagePath; // Return old URL as-is for backward compatibility
 			}
 			// Handle new local storage
-			return `/uploads/tours/${tour.id}/${imagePath}`;
+			return `/uploads/tours/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}`;
 		} catch (error) {
 			console.warn('Error generating image URL:', error);
 			return '';

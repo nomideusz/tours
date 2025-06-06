@@ -16,6 +16,7 @@
 		hasError?: boolean;
 		integerOnly?: boolean;
 		decimalPlaces?: number;
+		onblur?: (event: FocusEvent) => void;
 	}
 
 	let {
@@ -34,7 +35,8 @@
 		error = null,
 		hasError = false,
 		integerOnly = false,
-		decimalPlaces
+		decimalPlaces,
+		onblur
 	}: Props = $props();
 
 	function increment() {
@@ -109,6 +111,7 @@
 			{placeholder}
 			{disabled}
 			oninput={handleInput}
+			onblur={onblur}
 			class="form-input pr-16 {hasError ? 'error' : ''}"
 		/>
 		{#if error}

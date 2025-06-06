@@ -29,6 +29,8 @@
 		getExistingImageUrl?: (imageName: string) => string;
 		// Server-side validation errors
 		serverErrors?: ValidationError[];
+		// Validation trigger
+		triggerValidation?: boolean;
 	}
 
 	let {
@@ -43,7 +45,8 @@
 		existingImages = [],
 		onExistingImageRemove,
 		getExistingImageUrl,
-		serverErrors = []
+		serverErrors = [],
+		triggerValidation = false
 	}: Props = $props();
 
 	// Client-side validation state
@@ -58,8 +61,45 @@
 		}
 	});
 
+	// Trigger validation when parent requests it
+	$effect(() => {
+		if (triggerValidation) {
+			hasValidated = true;
+			const validation = validateTourForm(formData);
+			validationErrors = validation.errors;
+		}
+	});
+
 	// Combine client and server errors
 	let allErrors = $derived([...validationErrors, ...serverErrors]);
+
+	// Trigger validation when form is submitted
+	function handleSubmit() {
+		hasValidated = true;
+		const validation = validateTourForm(formData);
+		validationErrors = validation.errors;
+	}
+
+	// Trigger validation for specific field on blur
+	function validateField(fieldName: string) {
+		// Always validate if user has interacted with the form
+		hasValidated = true;
+		const validation = validateTourForm(formData);
+		validationErrors = validation.errors;
+	}
+
+	// Export validation state for parent component
+	export function isValid() {
+		const validation = validateTourForm(formData);
+		return validation.isValid;
+	}
+
+	export function validate() {
+		hasValidated = true;
+		const validation = validateTourForm(formData);
+		validationErrors = validation.errors;
+		return validation.isValid;
+	}
 
 	function addIncludedItem() {
 		formData.includedItems = [...formData.includedItems, ''];
@@ -103,6 +143,7 @@
 						bind:value={formData.name}
 						placeholder="e.g., Historic Walking Tour of Prague"
 						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+						onblur={() => validateField('name')}
 					/>
 					{#if getFieldError(allErrors, 'name')}
 						<p class="form-error">{getFieldError(allErrors, 'name')}</p>
@@ -155,6 +196,7 @@
 						rows="4"
 						placeholder="Describe your tour, what makes it special, what guests will see and experience..."
 						class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+						onblur={() => validateField('description')}
 					></textarea>
 					{#if getFieldError(allErrors, 'description')}
 						<p class="form-error">{getFieldError(allErrors, 'description')}</p>
@@ -182,6 +224,7 @@
 					error={getFieldError(allErrors, 'price')}
 					hasError={hasFieldError(allErrors, 'price')}
 					decimalPlaces={2}
+					onblur={() => validateField('price')}
 				/>
 
 				<NumberInput
@@ -198,6 +241,7 @@
 					error={getFieldError(allErrors, 'duration')}
 					hasError={hasFieldError(allErrors, 'duration')}
 					integerOnly={true}
+					onblur={() => validateField('duration')}
 				/>
 
 				<NumberInput
@@ -214,6 +258,7 @@
 					error={getFieldError(allErrors, 'capacity')}
 					hasError={hasFieldError(allErrors, 'capacity')}
 					integerOnly={true}
+					onblur={() => validateField('capacity')}
 				/>
 			</div>
 		</div>

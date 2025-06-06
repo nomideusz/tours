@@ -12,6 +12,7 @@
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
+	let triggerValidation = $state(false);
 
 	// Form data
 	let formData = $state({
@@ -120,9 +121,12 @@
 		
 		<div class="p-6 sm:p-8">
 			<form method="POST" enctype="multipart/form-data" use:enhance={() => {
+				// Trigger client-side validation before submitting
+				triggerValidation = true;
 				isSubmitting = true;
 				return async ({ result }) => {
 					isSubmitting = false;
+					triggerValidation = false;
 					if (result.type === 'redirect') {
 						goto(result.location);
 					}
@@ -137,6 +141,7 @@
 					onImageUpload={handleImageUpload}
 					onImageRemove={removeImage}
 					serverErrors={validationErrors}
+					{triggerValidation}
 				/>
 			</form>
 		</div>
