@@ -1,5 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
+import { hash } from '@node-rs/argon2';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 // Simple page load handler
 export const load: PageServerLoad = async () => {
@@ -8,7 +12,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
     // Default action for password reset form
-    default: async ({ request, locals }) => {
+    default: async ({ request }) => {
         // Get form data
         const formData = await request.formData();
         const token = formData.get('token')?.toString();
@@ -33,21 +37,13 @@ export const actions: Actions = {
         }
         
         try {
-            // Use PocketBase's confirm password reset method
-            await locals.pb.collection('users').confirmPasswordReset(
-                token,
-                password,
-                passwordConfirm
-            );
+            // TODO: Implement proper token validation and password reset
+            // For now, this is a stub that always fails since we don't have token system yet
+            console.log('Password reset attempted with token:', token);
             
-            // Return success
-            return { success: true };
+            return fail(400, { message: 'Password reset functionality is not yet implemented. Please contact support.' });
         } catch (err) {
             console.error('Password reset error:', err);
-            
-            if (err instanceof Error && err.message.includes('token')) {
-                return fail(400, { message: 'Invalid or expired reset token' });
-            }
             
             return fail(500, { 
                 message: err instanceof Error ? err.message : 'Failed to reset password' 

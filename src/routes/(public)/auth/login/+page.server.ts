@@ -1,12 +1,16 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
+import { lucia, verifyPassword } from '$lib/auth/lucia.js';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	// Get the redirect URL if provided, default to dashboard for authenticated users
 	const redirectTo = url.searchParams.get('redirectTo') || '/dashboard';
 	
 	// Redirect if already logged in
-	if (locals.pb?.authStore?.isValid) {
+	if (locals.user) {
 		console.log('User already logged in, redirecting to:', redirectTo);
 		throw redirect(303, redirectTo);
 	}
@@ -17,7 +21,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ locals, request, cookies, fetch, url }) => {
+	default: async ({ request, cookies, url }) => {
 		const data = await request.formData();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
@@ -33,20 +37,16 @@ export const actions: Actions = {
 
 		try {
 			console.log('Attempting login for:', email);
-			const authData = await locals.pb
-				.collection('users')
-				.authWithPassword(email, password);
 			
-			console.log('Login successful, auth state valid:', locals.pb.authStore.isValid);
-			console.log('User data:', authData.record);
-
-			// Return success response first
-			console.log('Authentication successful, redirecting to app home');
-		} catch (err) {
-			console.error('Login error:', err);
-
-			// Check for invalid credentials error
-			if ((err as any).status === 400) {
+			// Find user by email
+			const existingUser = await db
+				.select()
+				.from(users)
+				.where(eq(users.email, email.toLowerCase()))
+				.limit(1);
+			
+			if (existingUser.length === 0) {
+				console.log('User not found:', email);
 				return fail(400, {
 					email,
 					redirectTo,
@@ -54,6 +54,48 @@ export const actions: Actions = {
 				});
 			}
 
+			const user = existingUser[0];
+			
+			// Verify password
+			if (!user.hashedPassword) {
+				console.log('User has no password (OAuth user):', email);
+				return fail(400, {
+					email,
+					redirectTo,
+					error: 'Invalid email or password'
+				});
+			}
+			
+			const validPassword = await verifyPassword(user.hashedPassword, password);
+			if (!validPassword) {
+				console.log('Invalid password for user:', email);
+				return fail(400, {
+					email,
+					redirectTo,
+					error: 'Invalid email or password'
+				});
+			}
+
+			// Create session
+			const session = await lucia.createSession(user.id, {});
+			const sessionCookie = lucia.createSessionCookie(session.id);
+			cookies.set(sessionCookie.name, sessionCookie.value, {
+				path: ".",
+				...sessionCookie.attributes
+			});
+
+			// Update last login time
+			await db
+				.update(users)
+				.set({ lastLogin: new Date() })
+				.where(eq(users.id, user.id));
+
+			console.log('Login successful for user:', email);
+			console.log('User data:', { id: user.id, email: user.email, role: user.role });
+
+		} catch (err) {
+			console.error('Login error:', err);
+			
 			// Generic error message for other errors
 			return fail(500, {
 				email,

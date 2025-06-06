@@ -1,8 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, fail } from '@sveltejs/kit';
-import { toursApi } from '$lib/pocketbase.js';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
-import type { QRCode } from '$lib/types.js';
+import { db } from '$lib/db/connection.js';
+import { tours, qrCodes } from '$lib/db/schema/index.js';
+import { createId } from '@paralleldrive/cuid2';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   // Check if user is authenticated
@@ -100,38 +101,38 @@ export const actions: Actions = {
         });
       }
 
-      // Handle image uploads
+      // Handle image uploads - for now, images array will be empty 
+      // TODO: Implement image upload to cloud storage when needed
       const images = formData.getAll('images') as File[];
       const validImages = images.filter(img => img instanceof File && img.size > 0);
-
-      let createdTour;
+      
       if (validImages.length > 0) {
-        // Create tour with images
-        const tourFormData = new FormData();
-        
-        // Add tour data to FormData
-        Object.entries(sanitizedData).forEach(([key, value]) => {
-          if (Array.isArray(value)) {
-            if (key === 'includedItems' || key === 'requirements') {
-              tourFormData.append(key, JSON.stringify(value));
-            } else {
-              value.forEach(item => tourFormData.append(key, String(item)));
-            }
-          } else {
-            tourFormData.append(key, String(value));
-          }
-        });
-
-        // Add images
-        validImages.forEach(image => {
-          tourFormData.append('images', image);
-        });
-
-        createdTour = await toursApi.createWithImages(tourFormData);
-      } else {
-        // Create tour without images
-        createdTour = await toursApi.create(sanitizedData);
+        console.warn('Image upload not yet implemented in PostgreSQL version');
       }
+
+      // Create tour in PostgreSQL
+      const tourId = createId();
+      const newTour = {
+        id: tourId,
+        name: sanitizedData.name as string,
+        description: sanitizedData.description as string,
+        price: String(sanitizedData.price),
+        duration: parseInt(String(sanitizedData.duration)),
+        capacity: parseInt(String(sanitizedData.capacity)),
+        status: (sanitizedData.status as 'active' | 'draft') || 'draft',
+        category: sanitizedData.category as string || null,
+        location: sanitizedData.location as string || null,
+        includedItems: parsedIncludedItems,
+        requirements: parsedRequirements,
+        cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+        userId: locals.user.id,
+        images: [], // Empty for now, will implement cloud storage later
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const createdTourResult = await db.insert(tours).values(newTour).returning();
+      const createdTour = createdTourResult[0];
 
       // Automatically create a default QR code for the tour
       try {
@@ -143,22 +144,25 @@ export const actions: Actions = {
         };
 
         const qrData = {
-          tour: createdTour.id,
-          user: locals.user.id,
+          id: createId(),
+          tourId: createdTour.id,
+          userId: locals.user.id,
           name: `${createdTour.name} - Main QR Code`,
-          category: 'digital', // Default to digital/social category
+          category: 'digital' as const, // Default to digital/social category
           code: generateUniqueCode(),
           scans: 0,
           conversions: 0,
           isActive: true,
-          customization: JSON.stringify({
+          customization: {
             color: '#000000',
             backgroundColor: '#FFFFFF',
-            style: 'square'
-          })
+            style: 'square' as const
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
         };
         
-        await locals.pb.collection('qr_codes').create(qrData);
+        await db.insert(qrCodes).values(qrData);
         console.log('Default QR code created successfully for tour:', createdTour.id);
       } catch (qrError) {
         // Log error but don't fail the tour creation
@@ -170,19 +174,19 @@ export const actions: Actions = {
       throw redirect(303, `/tours/${createdTour.id}/schedule?new=true`);
 
     } catch (error) {
+      // Don't log redirects as errors
+      if (error && typeof error === 'object' && 'status' in error && error.status === 303) {
+        throw error; // Re-throw redirects
+      }
+      
       console.error('Error creating tour:', error);
       
-      // Handle specific API errors
-      if (error && typeof error === 'object' && 'status' in error) {
-        if (error.status === 400) {
+      // Handle specific database errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        if (error.code === '23505') { // Unique constraint violation
           return fail(400, {
-            error: 'Invalid tour data provided',
-            message: 'Please check your input and try again.'
-          });
-        } else if (error.status === 413) {
-          return fail(413, {
-            error: 'File too large',
-            message: 'One or more images are too large. Please use smaller images.'
+            error: 'Tour with this name already exists',
+            message: 'Please choose a different tour name.'
           });
         }
       }

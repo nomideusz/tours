@@ -2,9 +2,9 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
-	import { qrCodesApi } from '$lib/pocketbase.js';
+	import { enhance } from '$app/forms';
 	import type { QRCode } from '$lib/types.js';
-	import type { PageData } from './$types.js';
+	import type { PageData, ActionData } from './$types.js';
 	import QRGenerator from '$lib/components/QRGenerator.svelte';
 	
 	import QrCodeIcon from 'lucide-svelte/icons/qr-code';
@@ -28,11 +28,11 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	let qrCodes = $state<QRCode[]>([]);
+	let qrCodes = $state<QRCode[]>(data.qrCodes as any || []);
 	let isLoading = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
 	let showGenerator = $state(false);
 	let copiedQRId = $state<string | null>(null);
 	let deleteConfirmId = $state<string | null>(null);
@@ -40,6 +40,16 @@
 	let selectedCategory = $state<string>('all');
 	let showFirstQRAlert = $derived(qrCodes.length === 1 && (typeof window !== 'undefined' && !localStorage.getItem('qr_first_time_dismissed')));
 	let showMobileActions = $state<string | null>(null);
+
+	// Browser-only origin for preview links
+	let origin = $state('');
+	
+	// Set origin only in browser
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			origin = window.location.origin;
+		}
+	});
 
 	// Categories for QR codes
 	const categories = {
@@ -52,22 +62,18 @@
 	};
 
 	// Computed values for statistics
-	let activeQRCount = $derived(qrCodes.filter(qr => qr.isActive).length);
-	let totalScans = $derived(qrCodes.reduce((sum, qr) => sum + (qr.scans || 0), 0));
-	let totalConversions = $derived(qrCodes.reduce((sum, qr) => sum + (qr.conversions || 0), 0));
+	let activeQRCount = $derived(qrCodes.filter(qr => qr && qr.isActive).length);
+	let totalScans = $derived(qrCodes.reduce((sum, qr) => sum + ((qr && qr.scans) || 0), 0));
+	let totalConversions = $derived(qrCodes.reduce((sum, qr) => sum + ((qr && qr.conversions) || 0), 0));
 	let conversionRate = $derived(totalScans > 0 ? Math.min(((totalConversions / totalScans) * 100), 100).toFixed(1) : '0');
 
 	let filteredQRCodes = $derived(
 		selectedCategory === 'all' 
 			? qrCodes 
-			: qrCodes.filter(qr => qr.category === selectedCategory)
+			: qrCodes.filter(qr => qr && qr.category === selectedCategory)
 	);
 
 	onMount(async () => {
-		if (qrCodes.length === 0) {
-			await loadQRCodes();
-		}
-		
 		// Generate QR codes for display
 		await generateQRCodeImages();
 		
@@ -85,23 +91,13 @@
 		}
 	});
 
-	async function loadQRCodes() {
-		try {
-			isLoading = true;
-			error = null;
-			qrCodes = await qrCodesApi.getByTour(data.tour.id);
-		} catch (err) {
-			error = 'Failed to load QR codes.';
-			console.error('Error loading QR codes:', err);
-		} finally {
-			isLoading = false;
-		}
-	}
+
 
 	async function generateQRCodeImages() {
 		if (typeof window === 'undefined') return;
 		
 		for (const qr of qrCodes) {
+			if (!qr || !qr.id) continue; // Skip undefined QR codes
 			const element = qrCodeElements[qr.id];
 			if (element) {
 				const url = `${window.location.origin}/book/${qr.code}`;
@@ -142,18 +138,31 @@
 		}
 	}
 
-	async function toggleQRStatus(qr: QRCode) {
-		try {
-			const updatedQR = await qrCodesApi.update(qr.id, {
-				isActive: !qr.isActive
-			});
-			
-			// Update the QR code in the list
-			qrCodes = qrCodes.map(q => q.id === qr.id ? updatedQR : q);
-		} catch (err) {
-			error = 'Failed to update QR code status.';
-			console.error('Error updating QR status:', err);
-		}
+	let toggleForm: HTMLFormElement;
+	let deleteForm: HTMLFormElement;
+
+	function toggleQRStatus(qr: QRCode) {
+		// Create a temporary form to submit the toggle action
+		const formData = new FormData();
+		formData.append('qrId', qr.id);
+		formData.append('isActive', qr.isActive.toString());
+		
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/toggleStatus';
+		form.style.display = 'none';
+		
+		formData.forEach((value, key) => {
+			const input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = key;
+			input.value = value.toString();
+			form.appendChild(input);
+		});
+		
+		document.body.appendChild(form);
+		form.submit();
+		document.body.removeChild(form);
 	}
 
 	function initiateDelete(qrId: string) {
@@ -170,15 +179,27 @@
 		}
 	}
 
-	async function deleteQRCode(qrId: string) {
-		try {
-			await qrCodesApi.delete(qrId);
-			qrCodes = qrCodes.filter(qr => qr.id !== qrId);
-			deleteConfirmId = null;
-		} catch (err) {
-			error = 'Failed to delete QR code.';
-			console.error('Error deleting QR code:', err);
-		}
+	function deleteQRCode(qrId: string) {
+		// Create a temporary form to submit the delete action
+		const formData = new FormData();
+		formData.append('qrId', qrId);
+		
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/delete';
+		form.style.display = 'none';
+		
+		const input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'qrId';
+		input.value = qrId;
+		form.appendChild(input);
+		
+		document.body.appendChild(form);
+		form.submit();
+		document.body.removeChild(form);
+		
+		deleteConfirmId = null;
 	}
 
 	function formatDate(dateString: string): string {
@@ -198,12 +219,12 @@
 		});
 	}
 
-	function onQRCodeCreated(newQR: QRCode) {
-		qrCodes = [...qrCodes, newQR];
+	function onQRCodeCreated() {
+		// Close the generator modal
 		showGenerator = false;
 		
-		// Generate QR code image for the new QR
-		setTimeout(() => generateQRCodeImages(), 100);
+		// Reload the page to get the updated QR codes list
+		window.location.reload();
 	}
 
 	// Handle click outside mobile actions
@@ -228,7 +249,7 @@
 	>
 		<!-- Tour Status & Name Indicator -->
 		<TourHeader 
-			tour={data.tour} 
+			tour={data.tour as any} 
 			countInfo={qrCodes.length > 0 ? {
 				icon: QrCodeIcon,
 				label: `${qrCodes.length} QR code${qrCodes.length !== 1 ? 's' : ''}`,
@@ -604,7 +625,7 @@
 										
 										<!-- Secondary Actions -->
 										<a
-											href={`${window.location.origin}/book/${qr.code}`}
+											href={origin ? `${origin}/book/${qr.code}` : '#'}
 											target="_blank"
 											class="button-secondary button--gap"
 										>
@@ -689,7 +710,7 @@
 				</div>
 			</div>
 			<div class="p-4 sm:p-6 overflow-y-auto flex-grow">
-				<QRGenerator tour={data.tour} onSuccess={onQRCodeCreated} />
+				<QRGenerator tour={data.tour as any} onSuccess={onQRCodeCreated} />
 			</div>
 		</div>
 	</div>

@@ -1,47 +1,73 @@
-import type { PageServerLoad } from './$types.js';
-import { error } from '@sveltejs/kit';
-import type { Tour } from '$lib/types.js';
+import type { PageServerLoad, Actions } from './$types.js';
+import { error, redirect } from '@sveltejs/kit';
+import { db } from '$lib/db/connection.js';
+import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
+import { eq, and, desc, count, sum, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!locals.user || !locals.pb) {
+	if (!locals.user) {
 		throw error(401, 'Unauthorized');
 	}
 
 	try {
-		// Add timeout protection for database queries
-		const tourPromise = locals.pb.collection('tours').getOne<Tour>(params.id, {
-			expand: 'user'
-		});
-		const tourTimeout = new Promise((_, reject) => 
-			setTimeout(() => reject(new Error('Tour query timeout')), 8000)
-		);
+		// Get tour with owner check
+		const tourData = await db
+			.select()
+			.from(tours)
+			.where(and(
+				eq(tours.id, params.id),
+				eq(tours.userId, locals.user.id)
+			))
+			.limit(1);
 		
-		const tour = await Promise.race([tourPromise, tourTimeout]) as Tour;
-		
-		if (!tour) {
-			throw error(404, 'Tour not found');
+		if (tourData.length === 0) {
+			throw error(404, 'Tour not found or access denied');
 		}
 		
-		// Check if user owns this tour
-		if (tour.user !== locals.user.id) {
-			throw error(403, 'You do not have permission to view this tour');
-		}
-		
-		// EMERGENCY FIX: Use pagination to prevent timeouts
-		// Load recent bookings for statistics (last 200 should be enough)
-		const bookingsResult = await locals.pb.collection('bookings').getList(1, 200, {
-			filter: `tour = "${params.id}"`,
-			expand: 'timeSlot',
-			sort: '-created'
-		});
-		const allBookings = bookingsResult.items;
+		const tour = tourData[0];
 
-		// Load QR codes with pagination (first 50)
-		const qrResult = await locals.pb.collection('qr_codes').getList(1, 50, {
-			filter: `tour = "${params.id}"`,
-			sort: '-created'
-		});
-		const qrCodes = qrResult.items;
+		// Load recent bookings with time slot information (last 200)
+		const allBookingsData = await db
+			.select({
+				id: bookings.id,
+				status: bookings.status,
+				paymentStatus: bookings.paymentStatus,
+				totalAmount: bookings.totalAmount,
+				participants: bookings.participants,
+				createdAt: bookings.createdAt,
+				timeSlotId: bookings.timeSlotId,
+				timeSlotStartTime: timeSlots.startTime,
+				timeSlotEndTime: timeSlots.endTime
+			})
+			.from(bookings)
+			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.where(eq(bookings.tourId, params.id))
+			.orderBy(desc(bookings.createdAt))
+			.limit(200);
+
+		// Transform to match expected format
+		const allBookings = allBookingsData.map(booking => ({
+			id: booking.id,
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			totalAmount: booking.totalAmount,
+			participants: booking.participants,
+			created: booking.createdAt.toISOString(),
+			expand: {
+				timeSlot: booking.timeSlotId ? {
+					startTime: booking.timeSlotStartTime?.toISOString(),
+					endTime: booking.timeSlotEndTime?.toISOString()
+				} : null
+			}
+		}));
+
+		// Load QR codes (first 50)
+		const qrCodesData = await db
+			.select()
+			.from(qrCodes)
+			.where(eq(qrCodes.tourId, params.id))
+			.orderBy(desc(qrCodes.createdAt))
+			.limit(50);
 
 		// Calculate statistics
 		const now = new Date();
@@ -70,23 +96,23 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 		// Calculate statistics
 		const stats = {
-			qrCodes: qrCodes.length,
-			activeQRCodes: qrCodes.filter((qr: any) => qr.isActive).length,
-			totalQRScans: qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0),
-			totalQRConversions: qrCodes.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0),
+			qrCodes: qrCodesData.length,
+			activeQRCodes: qrCodesData.filter((qr: any) => qr.isActive).length,
+			totalQRScans: qrCodesData.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0),
+			totalQRConversions: qrCodesData.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0),
 			totalBookings: allBookings.length,
 			confirmedBookings: confirmedBookings.length,
 			pendingBookings: allBookings.filter((b: any) => b.status === 'pending').length,
 			cancelledBookings: allBookings.filter((b: any) => b.status === 'cancelled').length,
 			completedBookings: allBookings.filter((b: any) => b.status === 'completed').length,
-			revenue: confirmedBookings.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0),
+			revenue: confirmedBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
 			totalParticipants: confirmedBookings.reduce((sum: number, b: any) => sum + (b.participants || 0), 0),
 			thisWeekBookings: thisWeekBookings.length,
 			averageBookingValue: confirmedBookings.length > 0 
-				? confirmedBookings.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0) / confirmedBookings.length 
+				? confirmedBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0) / confirmedBookings.length 
 				: 0,
-			conversionRate: qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0) > 0 
-				? (qrCodes.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0) / qrCodes.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0)) * 100
+			conversionRate: qrCodesData.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0) > 0 
+				? (qrCodesData.reduce((sum: number, qr: any) => sum + (qr.conversions || 0), 0) / qrCodesData.reduce((sum: number, qr: any) => sum + (qr.scans || 0), 0)) * 100
 				: 0
 		};
 
@@ -94,9 +120,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			tour,
 			bookings: upcomingBookings, // Only upcoming bookings for today's check-ins section
 			allBookings: allBookings, // All bookings for potential use
-			qrCodes: qrCodes,
+			qrCodes: qrCodesData,
 			stats,
-			pbUrl: 'https://z.xeon.pl' // Pass PocketBase URL for image construction
+			pbUrl: 'https://z.xeon.pl' // Keep for now for any remaining image URLs
 		};
 	} catch (err) {
 		console.error('Error loading tour:', err);
@@ -107,5 +133,43 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw err;
 		}
 		throw error(500, 'Failed to load tour details');
+	}
+};
+
+export const actions: Actions = {
+	delete: async ({ params, locals }) => {
+		if (!locals.user) {
+			throw error(401, 'Unauthorized');
+		}
+
+		try {
+			// Verify ownership before deletion
+			const tourData = await db
+				.select()
+				.from(tours)
+				.where(and(
+					eq(tours.id, params.id),
+					eq(tours.userId, locals.user.id)
+				))
+				.limit(1);
+			
+			if (tourData.length === 0) {
+				throw error(404, 'Tour not found or access denied');
+			}
+
+			// Delete tour (cascade will handle related records)
+			await db
+				.delete(tours)
+				.where(and(
+					eq(tours.id, params.id),
+					eq(tours.userId, locals.user.id)
+				));
+
+		} catch (err) {
+			console.error('Error deleting tour:', err);
+			throw error(500, 'Failed to delete tour');
+		}
+
+		throw redirect(303, '/tours');
 	}
 }; 

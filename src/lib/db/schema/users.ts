@@ -1,0 +1,48 @@
+import { pgTable, text, varchar, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { createId } from '@paralleldrive/cuid2';
+
+// User role enum
+export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'guide']);
+
+// Users table (compatible with Lucia auth)
+export const users = pgTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  hashedPassword: text('hashed_password'), // Made nullable for OAuth2 users
+  name: varchar('name', { length: 255 }).notNull(),
+  businessName: varchar('business_name', { length: 255 }),
+  stripeAccountId: varchar('stripe_account_id', { length: 255 }),
+  avatar: text('avatar'), // URL to avatar image
+  role: userRoleEnum('role').notNull().default('user'),
+  intendedRole: varchar('intended_role', { length: 50 }), // 'user' | 'guide'
+  phone: varchar('phone', { length: 50 }),
+  website: varchar('website', { length: 255 }),
+  description: text('description'),
+  location: varchar('location', { length: 255 }), // City/region for guides
+  emailVerified: boolean('email_verified').notNull().default(false),
+  lastLogin: timestamp('last_login', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Sessions table for Lucia auth
+export const sessions = pgTable('sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
+});
+
+// OAuth2 accounts table
+export const oauthAccounts = pgTable('oauth_accounts', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 50 }).notNull(), // 'google', 'github', etc.
+  providerUserId: varchar('provider_user_id', { length: 255 }).notNull(), // ID from OAuth provider
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type OAuthAccount = typeof oauthAccounts.$inferSelect;
+export type NewOAuthAccount = typeof oauthAccounts.$inferInsert; 

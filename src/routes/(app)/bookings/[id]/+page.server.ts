@@ -1,5 +1,8 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots, payments } from '$lib/db/schema/index.js';
+import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	// Get parent layout data first
@@ -10,12 +13,6 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		console.log('Booking detail: User not authenticated, redirecting to login');
 		const redirectTo = url.pathname + url.search;
 		throw redirect(303, `/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-	}
-	
-	// Check PocketBase connection is working
-	if (!locals.pb) {
-		console.error('PocketBase instance not available in booking detail');
-		throw error(500, 'Database connection not available');
 	}
 	
 	// Validate that booking ID is provided
@@ -29,44 +26,121 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		
 		console.log(`Loading booking ${bookingId} for user ${userId}`);
 		
-		// Get the booking with expanded tour and timeSlot data - with timeout protection
-		// Simplified query to avoid potential field selection issues in production
-		const bookingPromise = locals.pb.collection('bookings').getOne(bookingId, {
-			expand: 'tour,timeSlot'
-		});
+		// Get the booking with expanded tour and timeSlot data
+		const bookingData = await db
+			.select({
+				// Booking fields
+				id: bookings.id,
+				status: bookings.status,
+				paymentStatus: bookings.paymentStatus,
+				paymentId: bookings.paymentId,
+				totalAmount: bookings.totalAmount,
+				participants: bookings.participants,
+				customerName: bookings.customerName,
+				customerEmail: bookings.customerEmail,
+				customerPhone: bookings.customerPhone,
+				specialRequests: bookings.specialRequests,
+				bookingReference: bookings.bookingReference,
+				ticketQRCode: bookings.ticketQRCode,
+				attendanceStatus: bookings.attendanceStatus,
+				checkedInAt: bookings.checkedInAt,
+				createdAt: bookings.createdAt,
+				updatedAt: bookings.updatedAt,
+				
+				// Tour fields
+				tourId: bookings.tourId,
+				tourName: tours.name,
+				tourDescription: tours.description,
+				tourLocation: tours.location,
+				tourPrice: tours.price,
+				tourDuration: tours.duration,
+				tourUserId: tours.userId,
+				
+				// Time slot fields
+				timeSlotId: bookings.timeSlotId,
+				timeSlotStartTime: timeSlots.startTime,
+				timeSlotEndTime: timeSlots.endTime,
+				timeSlotAvailableSpots: timeSlots.availableSpots,
+				timeSlotBookedSpots: timeSlots.bookedSpots
+			})
+			.from(bookings)
+			.leftJoin(tours, eq(bookings.tourId, tours.id))
+			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.where(eq(bookings.id, bookingId))
+			.limit(1);
 		
-		const bookingTimeout = new Promise((_, reject) => 
-			setTimeout(() => reject(new Error('Booking query timeout')), 8000)
-		);
+		if (bookingData.length === 0) {
+			throw error(404, 'Booking not found');
+		}
 		
-		const booking = await Promise.race([bookingPromise, bookingTimeout]) as any;
+		const booking = bookingData[0];
 		
 		// Check if the booking belongs to a tour owned by this user
-		if (!booking.expand?.tour || booking.expand.tour.user !== userId) {
+		if (booking.tourUserId !== userId) {
 			throw error(403, 'You can only view bookings for your own tours');
 		}
 		
-					// Get payment information if exists - with timeout protection
+		// Transform to match expected format with expand structure
+		const formattedBooking = {
+			id: booking.id,
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			paymentId: booking.paymentId,
+			totalAmount: booking.totalAmount,
+			participants: booking.participants,
+			customerName: booking.customerName,
+			customerEmail: booking.customerEmail,
+			customerPhone: booking.customerPhone,
+			specialRequests: booking.specialRequests,
+			bookingReference: booking.bookingReference,
+			ticketQRCode: booking.ticketQRCode,
+			attendanceStatus: booking.attendanceStatus,
+			checkedInAt: booking.checkedInAt?.toISOString(),
+			created: booking.createdAt.toISOString(),
+			updated: booking.updatedAt.toISOString(),
+			expand: {
+				tour: {
+					id: booking.tourId,
+					name: booking.tourName,
+					description: booking.tourDescription,
+					location: booking.tourLocation,
+					price: booking.tourPrice,
+					duration: booking.tourDuration,
+					user: booking.tourUserId
+				},
+				timeSlot: booking.timeSlotId ? {
+					id: booking.timeSlotId,
+					startTime: booking.timeSlotStartTime?.toISOString(),
+					endTime: booking.timeSlotEndTime?.toISOString(),
+					availableSpots: booking.timeSlotAvailableSpots,
+					bookedSpots: booking.timeSlotBookedSpots
+				} : null
+			}
+		};
+		
+		// Get payment information if exists
 		let payment = null;
 		if (booking.paymentId) {
 			try {
 				console.log(`Loading payment for booking ${bookingId} with paymentId: ${booking.paymentId}`);
 				
-				// The paymentId in booking is actually the Stripe payment ID, not PocketBase record ID
-				// We need to expand 'booking' to satisfy the permission rule: booking.tour.user = @request.auth.id
-				const paymentPromise = locals.pb.collection('payments').getFirstListItem(
-					`stripePaymentIntentId = "${booking.paymentId}"`,
-					{
-						expand: 'booking'
-					}
-				);
+				const paymentData = await db
+					.select()
+					.from(payments)
+					.where(eq(payments.stripePaymentIntentId, booking.paymentId))
+					.limit(1);
 				
-				const paymentTimeout = new Promise((_, reject) => 
-					setTimeout(() => reject(new Error('Payment query timeout')), 5000)
-				);
-				
-				payment = await Promise.race([paymentPromise, paymentTimeout]) as any;
-				console.log(`Payment loaded successfully for booking ${bookingId}`);
+				if (paymentData.length > 0) {
+					payment = {
+						...paymentData[0],
+						created: paymentData[0].createdAt.toISOString(),
+						updated: paymentData[0].updatedAt.toISOString(),
+						expand: {
+							booking: formattedBooking
+						}
+					};
+					console.log(`Payment loaded successfully for booking ${bookingId}`);
+				}
 			} catch (paymentErr) {
 				console.log('Payment not found or accessible for booking', bookingId, ':', paymentErr);
 				// Payment record doesn't exist or isn't accessible - this is OK, continue without it
@@ -77,8 +151,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		// Return parent data merged with booking data
 		return {
 			...parentData,
-			booking: booking as any,
-			payment: payment as any
+			booking: formattedBooking,
+			payment: payment
 		};
 		
 	} catch (err) {

@@ -11,13 +11,14 @@
 		variant?: 'default' | 'small';
 		href?: string;
 		children?: import('svelte').Snippet;
+		class?: string;
 	}
 	
-	let { title, value, subtitle, icon: Icon, trend, variant = 'default', href, children }: Props = $props();
+	let { title, value, subtitle, icon: Icon, trend, variant = 'default', href, children, class: className = '' }: Props = $props();
 </script>
 
 {#if href}
-	<a {href} class="stats-card-link">
+	<a {href} class="stats-card-link {className}">
 		<div class="stats-card stats-card--{variant}">
 			<!-- Card content -->
 					<div class="stats-card__header">
@@ -48,7 +49,7 @@
 		</div>
 	</a>
 {:else}
-	<div class="stats-card stats-card--{variant}">
+	<div class="stats-card stats-card--{variant} {className}">
 		<!-- Same content as above -->
 		<div class="stats-card__header">
 			<span class="stats-card__title">{title}</span>

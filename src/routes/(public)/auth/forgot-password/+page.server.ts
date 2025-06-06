@@ -1,5 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 // Simple page load handler - nothing special needed here
 export const load: PageServerLoad = async () => {
@@ -8,7 +11,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
     // Default form action
-    default: async ({ request, locals }) => {
+    default: async ({ request }) => {
         // Get form data
         const formData = await request.formData();
         const email = formData.get('email')?.toString();
@@ -19,24 +22,24 @@ export const actions: Actions = {
         }
         
         try {
-            // Use PocketBase's password reset request
-            await locals.pb.collection('users').requestPasswordReset(email);
+            // Check if user exists (but don't reveal this to prevent email enumeration)
+            const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
             
-            // We don't want to reveal if the email exists in our system for security
-            // So we always return success, even if the email doesn't exist
+            // TODO: Implement email sending with reset token
+            // For now, we'll just log that a reset was requested
+            if (existingUser.length > 0) {
+                console.log('Password reset requested for existing user:', email);
+                // In the future, generate a token and send email here
+            } else {
+                console.log('Password reset requested for non-existent user:', email);
+            }
+            
+            // Always return success to prevent email enumeration attacks
             return { success: true };
         } catch (err) {
-            // Log the error for debugging, but don't expose details to the user
             console.error('Password reset error:', err);
             
             // Still return success to prevent email enumeration attacks
-            // Only error out for obvious issues like network problems
-            if (err instanceof Error && 
-                (err.message.includes('network') || err.message.includes('connect'))) {
-                return fail(500, { message: 'Server error. Please try again later.' });
-            }
-            
-            // Return success even if the email doesn't exist in the database
             return { success: true };
         }
     }

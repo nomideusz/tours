@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { authenticateWithOAuth2, oauth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
+	import { authenticateWithOAuth2, oauth2ProviderInfo, type OAuth2Provider } from '$lib/oauth2.js';
 	import Loader from 'lucide-svelte/icons/loader';
 
 	// Props
@@ -7,19 +7,21 @@
 		provider, 
 		disabled = false,
 		size = 'default',
-		variant = 'default'
+		variant = 'default',
+		redirectTo
 	} = $props<{
 		provider: OAuth2Provider;
 		disabled?: boolean;
 		size?: 'small' | 'default' | 'large';
 		variant?: 'default' | 'outline';
+		redirectTo?: string;
 	}>();
 
 	// State
 	let isLoading = $state(false);
 
 	// Get provider config
-	const providerConfig = oauth2Providers[provider as keyof typeof oauth2Providers];
+	const providerConfig = oauth2ProviderInfo[provider as keyof typeof oauth2ProviderInfo];
 
 	// Handle OAuth2 authentication
 	async function handleOAuth2Login() {
@@ -27,7 +29,7 @@
 		
 		isLoading = true;
 		try {
-			await authenticateWithOAuth2(provider);
+			await authenticateWithOAuth2(provider, redirectTo);
 		} finally {
 			isLoading = false;
 		}

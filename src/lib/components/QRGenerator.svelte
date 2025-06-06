@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { enhance } from '$app/forms';
 	import type { Tour, QRCode } from '$lib/types.js';
-	import { qrCodesApi, pb } from '$lib/pocketbase.js';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Check from 'lucide-svelte/icons/check';
 	
 	interface Props {
 		tour: Tour;
-		onSuccess?: (qrCode: QRCode) => void;
+		onSuccess?: () => void;
 	}
 	
 	let { tour, onSuccess }: Props = $props();
@@ -139,56 +139,20 @@
 		}
 	}
 	
-	// Save QR code
-	async function saveQRCode() {
+	// Form validation
+	function validateForm() {
 		if (!name.trim()) {
 			error = 'Please enter a name for this QR code';
-			return;
+			return false;
 		}
 		
 		if (!generatedCode) {
 			error = 'Please generate a QR code first';
-			return;
+			return false;
 		}
 		
-		try {
-			isGenerating = true;
-			error = null;
-			
-			const userId = pb?.authStore.record?.id;
-			if (!userId) {
-				error = 'User not authenticated';
-				return;
-			}
-			
-			const selectedStyleConfig = qrStyles.find(s => s.id === selectedStyle)!;
-			
-			const qrData: Partial<QRCode> = {
-				tour: tour.id,
-				user: userId,
-				name: name.trim(),
-				category: category,
-				code: generatedCode,
-				scans: 0,
-				conversions: 0,
-				isActive: true,
-				customization: {
-					color: selectedStyleConfig.color,
-					backgroundColor: selectedStyleConfig.backgroundColor
-				}
-			};
-			
-			const qrCode = await qrCodesApi.create(qrData);
-			
-			if (onSuccess) {
-				onSuccess(qrCode);
-			}
-		} catch (err) {
-			error = 'Failed to save QR code. Please try again.';
-			console.error('Save error:', err);
-		} finally {
-			isGenerating = false;
-		}
+		error = null;
+		return true;
 	}
 	
 	// Update name when category changes
@@ -259,12 +223,34 @@
 	</div>
 	
 	<!-- Form -->
-	<form onsubmit={(e) => { e.preventDefault(); saveQRCode(); }} class="space-y-6">
+	<form method="POST" action="?/createQR" use:enhance={() => {
+		if (!validateForm()) {
+			return; // Prevent submission if validation fails
+		}
+		isGenerating = true;
+		return async ({ result }) => {
+			isGenerating = false;
+			if (result.type === 'success') {
+				if (onSuccess) {
+					onSuccess();
+				}
+			} else if (result.type === 'failure') {
+				error = (result.data?.error as string) || 'Failed to create QR code';
+			}
+		};
+	}} class="space-y-6">
+		<!-- Hidden fields for server action -->
+		<input type="hidden" name="tourId" value={tour.id} />
+		<input type="hidden" name="code" value={generatedCode || ''} />
+		<input type="hidden" name="color" value={qrStyles.find(s => s.id === selectedStyle)?.color || '#000000'} />
+		<input type="hidden" name="backgroundColor" value={qrStyles.find(s => s.id === selectedStyle)?.backgroundColor || '#FFFFFF'} />
+
 		<!-- Name -->
 		<div>
 			<label for="qr-name" class="form-label">QR Code Name</label>
 			<input
 				id="qr-name"
+				name="name"
 				type="text"
 				bind:value={name}
 				placeholder="e.g., Flyer Campaign, Business Card"

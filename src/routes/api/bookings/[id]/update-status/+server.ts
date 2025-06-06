@@ -1,9 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { bookingsApi } from '$lib/pocketbase.js';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/public';
-
-const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { db } from '$lib/db/connection.js';
+import { bookings } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ params, request }) => {
   try {
@@ -14,22 +12,38 @@ export const POST: RequestHandler = async ({ params, request }) => {
 
     const { status, paymentStatus, ticketQRCode, attendanceStatus } = await request.json();
 
-    // Initialize PocketBase for direct updates
-    const pb = new PocketBase(POCKETBASE_URL);
-
     // Get current booking
-    const currentBooking = await pb.collection('bookings').getOne(bookingId);
+    const currentBookingResult = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+    
+    if (currentBookingResult.length === 0) {
+      return json({ error: 'Booking not found' }, { status: 404 });
+    }
+    
+    const currentBooking = currentBookingResult[0];
     const oldStatus = currentBooking.status;
     const oldPaymentStatus = currentBooking.paymentStatus;
 
-    // Update booking directly (webhook context)
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (paymentStatus) updateData.paymentStatus = paymentStatus;
-    if (ticketQRCode) updateData.ticketQRCode = ticketQRCode;
-    if (attendanceStatus) updateData.attendanceStatus = attendanceStatus;
+    // Prepare update data
+    const updateData: Partial<typeof bookings.$inferInsert> = {
+      updatedAt: new Date()
+    };
+    
+    if (status !== undefined) updateData.status = status;
+    if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
+    if (ticketQRCode !== undefined) updateData.ticketQRCode = ticketQRCode;
+    if (attendanceStatus !== undefined) updateData.attendanceStatus = attendanceStatus;
 
-    const updatedBooking = await pb.collection('bookings').update(bookingId, updateData);
+    // Update booking
+    const updatedBookingResult = await db.update(bookings)
+      .set(updateData)
+      .where(eq(bookings.id, bookingId))
+      .returning();
+
+    if (updatedBookingResult.length === 0) {
+      return json({ error: 'Failed to update booking' }, { status: 500 });
+    }
+
+    const updatedBooking = updatedBookingResult[0];
 
     // Trigger appropriate email notifications
     try {
@@ -72,17 +86,8 @@ export const POST: RequestHandler = async ({ params, request }) => {
       
       // Also send QR ticket for confirmed and paid bookings
       if (newStatus === 'confirmed' && newPaymentStatus === 'paid') {
-        const qrResponse = await fetch(`${POCKETBASE_URL}/api/send-qr-ticket`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookingId })
-        });
-        
-        if (!qrResponse.ok) {
-          console.warn('Failed to send QR ticket:', await qrResponse.text());
-        } else {
-          console.log(`Successfully sent QR ticket for booking ${bookingId}`);
-        }
+        // TODO: Update this when we migrate the QR ticket endpoint
+        console.log(`QR ticket sending not yet implemented for booking ${bookingId}`);
       }
       
     } catch (emailError) {

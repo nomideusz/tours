@@ -18,7 +18,7 @@
 	// Calculate statistics
 	let stats = $derived(() => {
 		const confirmed = data.bookings.filter(b => b.status === 'confirmed');
-		const totalRevenue = confirmed.reduce((sum, b) => sum + b.totalAmount, 0);
+		const totalRevenue = confirmed.reduce((sum, b) => sum + parseFloat(b.totalAmount), 0);
 		const totalParticipants = confirmed.reduce((sum, b) => sum + b.participants, 0);
 		const upcomingCount = confirmed.filter(b => {
 			const tourDate = new Date(b.expand?.timeSlot?.startTime || b.created);
@@ -45,8 +45,8 @@
 	
 	<!-- Mobile Quick Actions - Prominent on mobile -->
 	<div class="lg:hidden mb-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
-			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
 					onclick={() => goto('/checkin-scanner')}
@@ -102,9 +102,9 @@
 	</div>
 		
 	<!-- Bookings Table -->
-	<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-		<div class="px-6 py-4 border-b border-gray-200">
-			<h2 class="text-lg font-medium text-gray-900">All Bookings</h2>
+	<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="px-6 py-4" style="border-bottom: 1px solid var(--border-primary);">
+			<h2 class="text-lg font-medium" style="color: var(--text-primary);">All Bookings</h2>
 		</div>
 		<BookingsList bookings={data.bookings as any} />
 	</div>

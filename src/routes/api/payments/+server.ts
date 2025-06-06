@@ -1,10 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { createPaymentIntent } from '$lib/stripe.server.js';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/public';
-
-const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { db } from '$lib/db/connection.js';
+import { bookings, payments, tours, users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
@@ -15,20 +14,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Initialize PocketBase
-    const pb = new PocketBase(POCKETBASE_URL);
+    // Get booking details with tour and user data
+    const bookingData = await db.select({
+      id: bookings.id,
+      totalAmount: bookings.totalAmount,
+      bookingReference: bookings.bookingReference,
+      customerEmail: bookings.customerEmail,
+      customerName: bookings.customerName,
+      tourId: bookings.tourId,
+      tourUserId: users.id
+    })
+    .from(bookings)
+    .innerJoin(tours, eq(bookings.tourId, tours.id))
+    .innerJoin(users, eq(tours.userId, users.id))
+    .where(eq(bookings.id, bookingId))
+    .limit(1);
 
-    // Get booking details
-    const booking = await pb.collection('bookings').getOne(bookingId, {
-      expand: 'tour,tour.user'
-    });
-
-    if (!booking) {
+    if (bookingData.length === 0) {
       return json({ error: 'Booking not found' }, { status: 404 });
     }
 
+    const booking = bookingData[0];
+
     // Verify amount matches booking
-    if (booking.totalAmount !== amount) {
+    if (parseFloat(booking.totalAmount) !== amount) {
       return json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
@@ -36,26 +45,31 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const paymentIntent = await createPaymentIntent(amount, currency, {
       bookingId: booking.id,
       bookingReference: booking.bookingReference,
-      tourId: booking.tour,
+      tourId: booking.tourId,
       customerEmail: booking.customerEmail,
       customerName: booking.customerName,
     });
 
     // Create payment record in database
-    const payment = await pb.collection('payments').create({
-      booking: bookingId,
+    const paymentResult = await db.insert(payments).values({
+      bookingId: bookingId,
       stripePaymentIntentId: paymentIntent.id,
-      amount: amount,
-      currency: currency,
+      amount: amount.toString(),
+      currency: currency.toUpperCase(),
       status: 'pending',
-      processingFee: 0, // Will be updated after payment
-      netAmount: amount, // Will be updated after payment
-    });
+      processingFee: '0', // Will be updated after payment
+      netAmount: amount.toString(), // Will be updated after payment
+    }).returning();
+
+    const payment = paymentResult[0];
 
     // Update booking with payment intent ID
-    await pb.collection('bookings').update(bookingId, {
-      paymentId: paymentIntent.id,
-    });
+    await db.update(bookings)
+      .set({
+        paymentId: paymentIntent.id,
+        updatedAt: new Date()
+      })
+      .where(eq(bookings.id, bookingId));
 
     return json({
       clientSecret: paymentIntent.client_secret,

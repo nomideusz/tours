@@ -1,7 +1,9 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
-import { fetchBookingsForTours, formatRecentBooking, createTodaysSchedule, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
-import { fetchRecentBookingsForUser } from '$lib/utils/booking-queries.js';
+import { formatRecentBooking, createTodaysSchedule, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
+import { db } from '$lib/db/connection.js';
+import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
+import { eq, and, desc, gte } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals, url, parent, request }) => {
 	// ULTRA EMERGENCY FIX: Skip everything in production SSR
@@ -41,19 +43,23 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 	try {
 		const userId = locals.user.id;
 		
-		// EMERGENCY FIX: Use pagination for tours too
-		const toursResult = await locals.pb.collection('tours').getList(1, 50, {
-			filter: `user = "${userId}"`,
-			fields: 'id,name,status,created'
-		});
-		const tours = toursResult.items;
+		// Fetch user's tours
+		const userTours = await db.select({
+			id: tours.id,
+			name: tours.name,
+			status: tours.status,
+			createdAt: tours.createdAt
+		})
+		.from(tours)
+		.where(eq(tours.userId, userId))
+		.limit(50);
 		
-		const tourIds = tours.map(t => t.id);
+		const tourIds = userTours.map(t => t.id);
 		
 		// Initialize stats with defaults
 		let stats = {
-			totalTours: tours.length,
-			activeTours: tours.filter(t => t.status === 'active').length,
+			totalTours: userTours.length,
+			activeTours: userTours.filter(t => t.status === 'active').length,
 			todayBookings: 0,
 			weeklyRevenue: 0,
 			upcomingTours: 0,
@@ -68,26 +74,41 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 		if (tourIds.length > 0) {
 			let allBookings: ProcessedBooking[] = [];
 			
-			// EMERGENCY PRODUCTION FIX: Skip heavy booking queries entirely
-			// Just fetch minimal recent bookings for display
 			try {
 				console.log(`Dashboard: Fetching minimal data for ${tourIds.length} tours`);
 				
-				// Only fetch 5 most recent bookings for the recent bookings display
-				const recentBookingsOnly = await locals.pb.collection('bookings').getList(1, 5, {
-					filter: tourIds.slice(0, 10).map(id => `tour = "${id}"`).join(' || '), // Max 10 tours
-					sort: '-created',
-					expand: 'tour,timeSlot',
-					fields: 'id,customerName,customerEmail,participants,status,created,tour,timeSlot,totalAmount,paymentStatus'
-				});
+				// Fetch recent bookings with tour and time slot information
+				const recentBookingsData = await db.select({
+					id: bookings.id,
+					customerName: bookings.customerName,
+					customerEmail: bookings.customerEmail,
+					participants: bookings.participants,
+					status: bookings.status,
+					createdAt: bookings.createdAt,
+					totalAmount: bookings.totalAmount,
+					paymentStatus: bookings.paymentStatus,
+					tourName: tours.name,
+					timeSlotStartTime: timeSlots.startTime
+				})
+				.from(bookings)
+				.innerJoin(tours, eq(bookings.tourId, tours.id))
+				.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+				.where(eq(tours.userId, userId))
+				.orderBy(desc(bookings.createdAt))
+				.limit(5);
 				
-				// Process for display
-				allBookings = recentBookingsOnly.items.map((booking: any) => ({
-					...booking,
-					effectiveDate: booking.expand?.timeSlot?.startTime || booking.created,
-					totalAmount: booking.totalAmount || 0,
-					participants: booking.participants || 1
-				}));
+							// Process for display - structure data to match what formatRecentBooking expects
+			allBookings = recentBookingsData.map((booking: any) => ({
+				...booking,
+				created: booking.createdAt, // Map to expected field name
+				effectiveDate: booking.timeSlotStartTime || booking.createdAt,
+				totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
+				participants: booking.participants || 1,
+				expand: {
+					tour: { name: booking.tourName },
+					timeSlot: { startTime: booking.timeSlotStartTime }
+				}
+			}));
 				
 				console.log(`Dashboard: Fetched ${allBookings.length} recent bookings`);
 			} catch (err) {
@@ -119,8 +140,8 @@ export const load: PageServerLoad = async ({ locals, url, parent, request }) => 
 			
 			// Tours created this month (this is fast, keep it)
 			const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-			stats.monthlyTours = tours.filter(tour => {
-				const tourDate = new Date(tour.created);
+			stats.monthlyTours = userTours.filter(tour => {
+				const tourDate = new Date(tour.createdAt);
 				return tourDate >= monthStart;
 			}).length;
 			

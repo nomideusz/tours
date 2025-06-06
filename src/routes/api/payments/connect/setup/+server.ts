@@ -1,7 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getStripe } from '$lib/stripe.server.js';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
-import { env as publicEnv } from '$env/dynamic/public';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
@@ -10,18 +11,15 @@ export const POST: RequestHandler = async ({ request, url }) => {
         if (!userId || !email) {
             return json({ error: 'Missing required fields' }, { status: 400 });
         }
-
-        // Get authenticated PocketBase instance
-        let pb;
-        try {
-            pb = await createAuthenticatedPB();
-        } catch (authError) {
-            console.error('API: Failed to authenticate with PocketBase admin:', authError);
-            return json({ error: 'Database authentication failed' }, { status: 500 });
-        }
         
         // Get user record
-        const user = await pb.collection('users').getOne(userId);
+        const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        
+        if (userRecords.length === 0) {
+            return json({ error: 'User not found' }, { status: 404 });
+        }
+
+        const user = userRecords[0];
         
         const stripe = getStripe();
         let accountId = user.stripeAccountId;
@@ -46,9 +44,12 @@ export const POST: RequestHandler = async ({ request, url }) => {
             accountId = account.id;
 
             // Save account ID to user record
-            await pb.collection('users').update(userId, {
-                stripeAccountId: accountId
-            });
+            await db.update(users)
+                .set({
+                    stripeAccountId: accountId,
+                    updatedAt: new Date()
+                })
+                .where(eq(users.id, userId));
         }
 
         // Check if account needs onboarding or is ready for dashboard

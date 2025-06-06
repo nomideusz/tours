@@ -20,7 +20,7 @@
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
 		isEdit?: boolean;
-		onSubmit: (e: Event) => void;
+
 		onCancel: () => void;
 		onImageUpload?: (event: Event) => void;
 		onImageRemove?: (index: number) => void;
@@ -36,7 +36,7 @@
 		uploadedImages = $bindable([]),
 		isSubmitting = false,
 		isEdit = false,
-		onSubmit,
+
 		onCancel,
 		onImageUpload,
 		onImageRemove,
@@ -81,30 +81,10 @@
 		return URL.createObjectURL(file);
 	}
 
-	function handleFormSubmit(e: Event) {
-		e.preventDefault();
-		hasValidated = true;
-		
-		// Run client-side validation
-		const validation = validateTourForm(formData);
-		validationErrors = validation.errors;
-		
-		// If validation passes, proceed with submission
-		if (validation.isValid) {
-			onSubmit(e);
-		} else {
-			// Scroll to first error
-			const firstErrorField = validation.errors[0]?.field;
-			if (firstErrorField) {
-				const element = document.getElementById(firstErrorField);
-				element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-				element?.focus();
-			}
-		}
-	}
+
 </script>
 
-<form onsubmit={handleFormSubmit} novalidate class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 	<!-- Main form content -->
 	<div class="lg:col-span-2 space-y-8">
 		<!-- Basic Information -->
@@ -119,6 +99,7 @@
 					<input
 						type="text"
 						id="name"
+						name="name"
 						bind:value={formData.name}
 						placeholder="e.g., Historic Walking Tour of Prague"
 						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
@@ -134,6 +115,7 @@
 					</label>
 					<select
 						id="category"
+						name="category"
 						bind:value={formData.category}
 						class="form-select"
 					>
@@ -155,6 +137,7 @@
 					<input
 						type="text"
 						id="location"
+						name="location"
 						bind:value={formData.location}
 						placeholder="e.g., Prague Castle Area"
 						class="form-input"
@@ -167,6 +150,7 @@
 					</label>
 					<textarea
 						id="description"
+						name="description"
 						bind:value={formData.description}
 						rows="4"
 						placeholder="Describe your tour, what makes it special, what guests will see and experience..."
@@ -186,6 +170,7 @@
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<NumberInput
 					id="price"
+					name="price"
 					label="Price per Person (€)"
 					bind:value={formData.price}
 					min={0.5}
@@ -201,6 +186,7 @@
 
 				<NumberInput
 					id="duration"
+					name="duration"
 					label="Duration (minutes)"
 					bind:value={formData.duration}
 					min={1}
@@ -216,6 +202,7 @@
 
 				<NumberInput
 					id="capacity"
+					name="capacity"
 					label="Max Capacity"
 					bind:value={formData.capacity}
 					min={1}
@@ -240,6 +227,7 @@
 					<div class="flex gap-2">
 						<input
 							type="text"
+							name="includedItems"
 							bind:value={formData.includedItems[index]}
 							placeholder="e.g., Professional guide, Historical insights, Photo stops"
 							class="form-input flex-1"
@@ -279,6 +267,7 @@
 					<div class="flex gap-2">
 						<input
 							type="text"
+							name="requirements"
 							bind:value={formData.requirements[index]}
 							placeholder="e.g., Comfortable walking shoes, Basic fitness level"
 							class="form-input flex-1"
@@ -471,4 +460,4 @@
 			</div>
 		</div>
 	</div>
-</form> 
+</div> 

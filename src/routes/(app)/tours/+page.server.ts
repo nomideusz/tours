@@ -1,6 +1,9 @@
 import type { PageServerLoad } from './$types.js';
 import { redirect } from '@sveltejs/kit';
 import { shouldSkipInSSR, EMPTY_PAGE_DATA } from '$lib/utils/ssr-utils.js';
+import { db } from '$lib/db/connection.js';
+import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
+import { eq, and, desc, gte } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals, url, request }) => {
   // EMERGENCY: Skip all operations in production SSR
@@ -21,25 +24,41 @@ export const load: PageServerLoad = async ({ locals, url, request }) => {
   }
 
   try {
-    // EMERGENCY FIX: Use pagination instead of getFullList to prevent timeouts
-    // Load first 100 tours (should be enough for most users)
-    const toursResult = await locals.pb.collection('tours').getList(1, 100, {
-      filter: `user = "${locals.user.id}"`,
-      sort: '-updated'
-    });
-    const tours = toursResult.items;
+    const userId = locals.user.id;
+    
+    // Fetch user's tours with limit for performance
+    const userTours = await db.select()
+      .from(tours)
+      .where(eq(tours.userId, userId))
+      .orderBy(desc(tours.updatedAt))
+      .limit(100);
     
     // Skip loading all bookings - too expensive for users with many tours
     // Instead, just get recent bookings for basic stats
     let allBookings: any[] = [];
     try {
       // Only fetch recent bookings (last 50) for stats calculation
-      const bookingsResult = await locals.pb.collection('bookings').getList(1, 50, {
-        filter: `tour.user = "${locals.user.id}"`,
-        expand: 'tour,timeSlot',
-        sort: '-created'
-      });
-      allBookings = bookingsResult.items;
+      const recentBookingsData = await db.select({
+        id: bookings.id,
+        status: bookings.status,
+        paymentStatus: bookings.paymentStatus,
+        createdAt: bookings.createdAt,
+        totalAmount: bookings.totalAmount,
+        participants: bookings.participants,
+        tourId: bookings.tourId
+      })
+      .from(bookings)
+      .innerJoin(tours, eq(bookings.tourId, tours.id))
+      .where(eq(tours.userId, userId))
+      .orderBy(desc(bookings.createdAt))
+      .limit(50);
+      
+      // Convert to expected format
+      allBookings = recentBookingsData.map(booking => ({
+        ...booking,
+        created: booking.createdAt,
+        totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0)
+      }));
     } catch (bookingsErr) {
       console.warn('Failed to load bookings for stats, continuing with empty array:', bookingsErr);
       allBookings = [];
@@ -80,9 +99,9 @@ export const load: PageServerLoad = async ({ locals, url, request }) => {
 
     // Calculate overall statistics
     const stats = {
-      total: tours.length,
-      active: tours.filter((t: any) => t.status === 'active').length,
-      draft: tours.filter((t: any) => t.status === 'draft').length,
+      total: userTours.length,
+      active: userTours.filter((t: any) => t.status === 'active').length,
+      draft: userTours.filter((t: any) => t.status === 'draft').length,
       totalRevenue: confirmedBookings.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0),
       todayBookings: todayBookings.length,
       weekBookings: weekBookings.length,
@@ -95,7 +114,7 @@ export const load: PageServerLoad = async ({ locals, url, request }) => {
     return {
       user: locals.user,
       isAuthenticated: true,
-      tours,
+      tours: userTours,
       stats
     };
   } catch (err) {

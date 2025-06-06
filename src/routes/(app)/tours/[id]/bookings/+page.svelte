@@ -51,7 +51,7 @@
 
 	let { data }: { data: PageData } = $props();
 	
-	let bookings = $state<ExpandedBooking[]>(data.bookings || []);
+	let bookings = $state<ExpandedBooking[]>(data.bookings as unknown as ExpandedBooking[] || []);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let selectedStatus = $state('all');

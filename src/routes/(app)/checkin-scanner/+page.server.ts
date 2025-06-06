@@ -1,5 +1,8 @@
 import type { PageServerLoad } from './$types.js';
 import { error } from '@sveltejs/kit';
+import { db } from '$lib/db/connection.js';
+import { qrCodes, tours } from '$lib/db/schema/index.js';
+import { eq, and, desc } from 'drizzle-orm';
 
 // Type definitions
 interface RecentQRCode {
@@ -23,30 +26,36 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 		throw error(401, 'Authentication required');
 	}
 
-	// Use PocketBase instance from locals (provided by hooks.server.ts)
-	const pb = locals.pb;
-	if (!pb) {
-		throw error(500, 'Database connection not available');
-	}
-
 	try {
-
 		// Load recent QR codes for this user (most active ones)
 		const recentQRCodes: RecentQRCode[] = [];
 		try {
-			const qrCodes = await pb.collection('qr_codes').getList(1, 10, {
-				filter: `user = "${locals.user.id}" && isActive = true`,
-				sort: '-scans,-created',
-				expand: 'tour'
-			});
+			const qrCodesData = await db
+				.select({
+					id: qrCodes.id,
+					code: qrCodes.code,
+					scans: qrCodes.scans,
+					createdAt: qrCodes.createdAt,
+					category: qrCodes.category,
+					tourId: qrCodes.tourId,
+					tourName: tours.name
+				})
+				.from(qrCodes)
+				.leftJoin(tours, eq(qrCodes.tourId, tours.id))
+				.where(and(
+					eq(qrCodes.userId, locals.user.id),
+					eq(qrCodes.isActive, true)
+				))
+				.orderBy(desc(qrCodes.scans), desc(qrCodes.createdAt))
+				.limit(10);
 			
-			recentQRCodes.push(...qrCodes.items.map((qr: any) => ({
+			recentQRCodes.push(...qrCodesData.map((qr) => ({
 				id: qr.id,
 				code: qr.code,
 				scans: qr.scans || 0,
-				created: qr.created,
-				tourName: qr.expand?.tour?.name || 'No Tour Linked',
-				category: qr.category
+				created: qr.createdAt.toISOString(),
+				tourName: qr.tourName || 'No Tour Linked',
+				category: qr.category || undefined
 			})));
 		} catch (err) {
 			console.warn('Could not load recent QR codes:', err);
@@ -56,16 +65,24 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 		// Load user's active tours for quick access
 		const activeTours: ActiveTour[] = [];
 		try {
-			const tours = await pb.collection('tours').getList(1, 20, {
-				filter: `user = "${locals.user.id}" && status = "active"`,
-				fields: 'id,name,location',
-				sort: 'name'
-			});
+			const toursData = await db
+				.select({
+					id: tours.id,
+					name: tours.name,
+					location: tours.location
+				})
+				.from(tours)
+				.where(and(
+					eq(tours.userId, locals.user.id),
+					eq(tours.status, 'active')
+				))
+				.orderBy(tours.name)
+				.limit(20);
 			
-			activeTours.push(...tours.items.map((tour: any) => ({
+			activeTours.push(...toursData.map((tour) => ({
 				id: tour.id,
 				name: tour.name,
-				location: tour.location
+				location: tour.location || ''
 			})));
 		} catch (err) {
 			console.warn('Could not load active tours:', err);

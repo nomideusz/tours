@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { toursApi, timeSlotsApi, pb } from '$lib/pocketbase.js';
 	import type { Tour, TimeSlot } from '$lib/types.js';
+	import type { PageData } from './$types.js';
 	import { validateTimeSlotForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
@@ -28,6 +29,8 @@
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import DatePicker from '$lib/components/DatePicker.svelte';
 	import TimePicker from '$lib/components/TimePicker.svelte';
+
+	let { data }: { data: PageData } = $props();
 
 	let tour = $state<Tour | null>(null);
 	let timeSlots = $state<TimeSlot[]>([]);
@@ -110,7 +113,7 @@
 
 	onMount(async () => {
 		if (tourId) {
-			await loadTour();
+			initializeTour();
 			await loadTimeSlots();
 			
 			// If it's a new tour and no time slots exist, show welcome guidance
@@ -120,21 +123,16 @@
 				setTimeout(() => {
 					const url = new URL(window.location.href);
 					url.searchParams.delete('new');
-					window.history.replaceState({}, '', url.toString());
+					goto(url.pathname + url.search, { replaceState: true });
 				}, 1000);
 			}
 		}
 	});
 
-	async function loadTour() {
-		try {
-			tour = await toursApi.getById(tourId);
-			if (tour) {
-				newSlotForm.availableSpots = tour.capacity;
-			}
-		} catch (err) {
-			error = 'Failed to load tour details.';
-			console.error('Error loading tour:', err);
+	function initializeTour() {
+		if (data.tour) {
+			tour = data.tour as any;
+			newSlotForm.availableSpots = data.tour.capacity;
 		}
 	}
 

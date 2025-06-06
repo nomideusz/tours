@@ -1,184 +1,36 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { toursApi, qrCodesApi } from '$lib/pocketbase.js';
+	import { enhance } from '$app/forms';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import type { Tour, QRCode } from '$lib/types.js';
+	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
 
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+	
 	let isSubmitting = $state(false);
-	let error = $state<string | null>(null);
-	let uploadedImages = $state<File[]>([]);
-	let validationErrors = $state<ValidationError[]>([]);
+	let error = $state<string | null>(form?.error || null);
+	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 
 	// Form data
 	let formData = $state({
-		name: '',
-		description: '',
-		price: 10, // reasonable default price
-		duration: 60, // in minutes
-		capacity: 10,
-		status: 'draft' as Tour['status'],
-		category: '',
-		location: '',
-		includedItems: [''],
-		requirements: [''],
-		cancellationPolicy: ''
+		name: (form as any)?.formData?.name || '',
+		description: (form as any)?.formData?.description || '',
+		price: (form as any)?.formData?.price || 10, // reasonable default price
+		duration: (form as any)?.formData?.duration || 60, // in minutes
+		capacity: (form as any)?.formData?.capacity || 10,
+		status: ((form as any)?.formData?.status as 'active' | 'draft') || 'draft',
+		category: (form as any)?.formData?.category || '',
+		location: (form as any)?.formData?.location || '',
+		includedItems: (form as any)?.formData?.includedItems || [''],
+		requirements: (form as any)?.formData?.requirements || [''],
+		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || ''
 	});
 
-	function handleImageUpload(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const files = target.files;
-		if (files) {
-			// Define allowed file types (must match PocketBase schema)
-			const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-			const maxFileSize = 5 * 1024 * 1024; // 5MB limit
-			
-			// Filter valid files and show errors for invalid ones
-			const validFiles: File[] = [];
-			const errors: string[] = [];
-			
-			Array.from(files).forEach(file => {
-				if (!allowedTypes.includes(file.type.toLowerCase())) {
-					errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
-				} else if (file.size > maxFileSize) {
-					errors.push(`${file.name}: File size must be less than 5MB`);
-				} else {
-					validFiles.push(file);
-				}
-			});
-			
-			// Show errors if any
-			if (errors.length > 0) {
-				alert('Some files were not added:\n\n' + errors.join('\n'));
-			}
-			
-			// Add valid files
-			if (validFiles.length > 0) {
-				uploadedImages = [...uploadedImages, ...validFiles];
-			}
-			
-			// Clear the input
-			target.value = '';
-		}
-	}
 
-	function removeImage(index: number) {
-		uploadedImages = uploadedImages.filter((_, i) => i !== index);
-	}
 
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		isSubmitting = true;
-		error = null;
 
-		try {
-			// Filter out empty strings from arrays
-			const cleanedData = {
-				...formData,
-				includedItems: formData.includedItems.filter(item => item.trim() !== ''),
-				requirements: formData.requirements.filter(req => req.trim() !== '')
-			};
-
-			// Debug: Log the cleaned data
-			console.log('Cleaned form data:', cleanedData);
-
-			let tour: Tour;
-
-			// If there are uploaded images, include them in the form data
-			if (uploadedImages.length > 0) {
-				const formDataWithImages = new FormData();
-				
-				// Add all form fields
-				Object.entries(cleanedData).forEach(([key, value]) => {
-					if (Array.isArray(value)) {
-						// JSON fields (includedItems, requirements) need JSON strings
-						if (key === 'includedItems' || key === 'requirements') {
-							const jsonString = JSON.stringify(value);
-							console.log(`${key} JSON string:`, jsonString);
-							formDataWithImages.append(key, jsonString);
-						} else {
-							// Other arrays append each item separately
-							value.forEach(item => {
-								formDataWithImages.append(key, String(item));
-							});
-						}
-					} else {
-						formDataWithImages.append(key, String(value));
-					}
-				});
-
-				// Add images
-				uploadedImages.forEach((image, index) => {
-					console.log(`Adding image ${index}:`, image.name, image.type, image.size);
-					formDataWithImages.append('images', image);
-				});
-
-				// Debug: Log all FormData entries
-				console.log('Final FormData entries:');
-				for (const [key, value] of formDataWithImages.entries()) {
-					if (value instanceof File) {
-						console.log(`${key}:`, `File(${(value as File).name}, ${(value as File).type}, ${(value as File).size} bytes)`);
-					} else {
-						console.log(`${key}:`, value);
-					}
-				}
-
-				tour = await toursApi.createWithImages(formDataWithImages);
-			} else {
-				// Test without images first
-				console.log('Creating tour without images:', cleanedData);
-				tour = await toursApi.create(cleanedData);
-			}
-
-			// Automatically create a default QR code for the tour
-			try {
-				const generateUniqueCode = () => {
-					const tourPrefix = tour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
-					const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-					return `${tourPrefix}-${randomSuffix}`;
-				};
-
-				const qrData: Partial<QRCode> = {
-					tour: tour.id,
-					name: `${tour.name} - Main QR Code`,
-					category: 'digital', // Default to digital/social category
-					code: generateUniqueCode(),
-					scans: 0,
-					conversions: 0,
-					isActive: true,
-					customization: {
-						color: '#000000',
-						backgroundColor: '#FFFFFF',
-						style: 'square'
-					}
-				};
-				
-				await qrCodesApi.create(qrData);
-				console.log('Default QR code created successfully for tour:', tour.id);
-			} catch (qrError) {
-				// Log error but don't fail the tour creation
-				console.error('Failed to create default QR code:', qrError);
-				// Continue to redirect - the user can create QR codes manually later
-			}
-
-			// Show success and redirect to schedule setup
-			goto(`/tours/${tour.id}/schedule?new=true`);
-		} catch (err) {
-			error = 'Failed to create tour. Please try again.';
-			console.error('Error creating tour:', err);
-			// Log more details about the error
-			if (err && typeof err === 'object' && 'response' in err) {
-				console.error('Error response:', err.response);
-			}
-			if (err && typeof err === 'object' && 'data' in err) {
-				console.error('Error data:', err.data);
-			}
-		} finally {
-			isSubmitting = false;
-		}
-	}
 
 	function handleCancel() {
 		if (confirm('Are you sure you want to cancel? Your changes will be lost.')) {
@@ -203,6 +55,19 @@
 			<ErrorAlert variant="error" title="Error" message={error} />
 		</div>
 	{/if}
+
+	<!-- Temporary Notice about Images -->
+	<div class="mb-6 rounded-xl p-4" style="background: var(--color-warning-light); border: 1px solid #fbbf24;">
+		<div class="flex gap-3">
+			<svg class="h-5 w-5 mt-0.5" style="color: var(--color-warning);" fill="currentColor" viewBox="0 0 20 20">
+				<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+			</svg>
+			<div>
+				<p class="font-medium" style="color: #92400e;">Image uploads temporarily disabled</p>
+				<p class="text-sm mt-1" style="color: #a16207;">We're working on a new image upload system. You can create tours without images for now and add them later.</p>
+			</div>
+		</div>
+	</div>
 
 	<!-- Progress Steps -->
 	<div class="mb-8">
@@ -250,17 +115,23 @@
 		</div>
 		
 		<div class="p-6 sm:p-8">
-			<TourForm
-				bind:formData
-				bind:uploadedImages
-				{isSubmitting}
-				isEdit={false}
-				onSubmit={handleSubmit}
-				onCancel={handleCancel}
-				onImageUpload={handleImageUpload}
-				onImageRemove={removeImage}
-				serverErrors={validationErrors}
-			/>
+			<form method="POST" enctype="multipart/form-data" use:enhance={() => {
+				isSubmitting = true;
+				return async ({ result }) => {
+					isSubmitting = false;
+					if (result.type === 'redirect') {
+						goto(result.location);
+					}
+				};
+			}}>
+				<TourForm
+					bind:formData
+					{isSubmitting}
+					isEdit={false}
+					onCancel={handleCancel}
+					serverErrors={validationErrors}
+				/>
+			</form>
 		</div>
 	</div>
 

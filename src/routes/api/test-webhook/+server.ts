@@ -1,7 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
+import { db } from '$lib/db/connection.js';
+import { bookings, payments } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -16,42 +18,30 @@ export const POST: RequestHandler = async ({ request }) => {
 
     console.log(`Test webhook: Processing booking ${bookingId} with payment ${paymentIntentId}`);
 
-    // Get authenticated PocketBase instance
-    let pb;
-    try {
-      console.log('Test webhook: Attempting PocketBase admin authentication...');
-      pb = await createAuthenticatedPB();
-      console.log('Test webhook: PocketBase admin authentication successful');
-    } catch (authError) {
-      console.error('Test webhook: Failed to authenticate with PocketBase admin:', authError);
-      return json({ 
-        success: false, 
-        error: 'Database authentication failed',
-        details: authError instanceof Error ? authError.message : String(authError)
-      }, { status: 500 });
-    }
-
     try {
       console.log(`Test webhook: Processing payment success for booking ${bookingId}...`);
       
       // Look for payment record
       console.log(`Test webhook: Looking for payment record with Stripe ID: ${paymentIntentId}`);
-      const payments = await pb.collection('payments').getFullList({
-        filter: `stripePaymentIntentId = "${paymentIntentId}"`
-      });
-      console.log(`Test webhook: Found ${payments.length} payment records`);
+      const paymentRecords = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, paymentIntentId));
+      console.log(`Test webhook: Found ${paymentRecords.length} payment records`);
 
       let paymentUpdateResult = null;
-      if (payments.length > 0) {
-        const payment = payments[0];
+      if (paymentRecords.length > 0) {
+        const payment = paymentRecords[0];
         console.log(`Test webhook: Updating payment record ${payment.id}`);
         
-        const paymentUpdate = await pb.collection('payments').update(payment.id, {
-          status: 'succeeded',
-          processingFee: 2.50, // Test fee
-          netAmount: 47.50 // Test amount
-        });
-        paymentUpdateResult = paymentUpdate;
+        const paymentUpdate = await db.update(payments)
+          .set({
+            status: 'succeeded',
+            processingFee: '2.50', // Test fee
+            netAmount: '47.50', // Test amount
+            updatedAt: new Date()
+          })
+          .where(eq(payments.id, payment.id))
+          .returning();
+        
+        paymentUpdateResult = paymentUpdate[0];
         console.log(`Test webhook: Payment record updated successfully: ${payment.id} - Status: succeeded`);
       } else {
         console.warn(`Test webhook: No payment record found for payment intent ${paymentIntentId}`);
@@ -64,14 +54,19 @@ export const POST: RequestHandler = async ({ request }) => {
       // Update booking status with ticket QR code
       console.log(`Test webhook: Updating booking ${bookingId} with ticket QR code and status...`);
       const updateData = {
-        status: 'confirmed',
-        paymentStatus: 'paid',
+        status: 'confirmed' as const,
+        paymentStatus: 'paid' as const,
         ticketQRCode: ticketQRCode,
-        attendanceStatus: 'not_arrived'
+        attendanceStatus: 'not_arrived' as const,
+        updatedAt: new Date()
       };
       console.log(`Test webhook: Booking update data:`, updateData);
       
-      const bookingUpdate = await pb.collection('bookings').update(bookingId, updateData);
+      const bookingUpdate = await db.update(bookings)
+        .set(updateData)
+        .where(eq(bookings.id, bookingId))
+        .returning();
+      
       console.log(`Test webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
       return json({
@@ -83,7 +78,7 @@ export const POST: RequestHandler = async ({ request }) => {
           ticketQRCode,
           paymentUpdated: !!paymentUpdateResult,
           bookingUpdated: true,
-          bookingUpdate,
+          bookingUpdate: bookingUpdate[0],
           paymentUpdate: paymentUpdateResult
         }
       });

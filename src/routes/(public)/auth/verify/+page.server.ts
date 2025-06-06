@@ -8,7 +8,7 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
     // Default action for email verification
-    default: async ({ request, locals }) => {
+    default: async ({ request }) => {
         // Get form data
         const formData = await request.formData();
         const token = formData.get('token')?.toString();
@@ -19,17 +19,13 @@ export const actions: Actions = {
         }
         
         try {
-            // Use PocketBase's confirm email verification method
-            await locals.pb.collection('users').confirmVerification(token);
+            // TODO: Implement proper token validation and email verification
+            // For now, this is a stub that always fails since we don't have verification system yet
+            console.log('Email verification attempted with token:', token);
             
-            // Return success
-            return { success: true };
+            return fail(400, { message: 'Email verification functionality is not yet implemented. Please contact support.' });
         } catch (err) {
             console.error('Email verification error:', err);
-            
-            if (err instanceof Error && err.message.includes('token')) {
-                return fail(400, { message: 'Invalid or expired verification token' });
-            }
             
             return fail(500, { 
                 message: err instanceof Error ? err.message : 'Failed to verify email' 

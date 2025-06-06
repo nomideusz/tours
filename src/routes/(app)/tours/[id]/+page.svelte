@@ -47,21 +47,15 @@
 		return `https://z.xeon.pl/api/files/tours/${tour.id}/${imageName}`;
 	}
 
-	async function deleteTour() {
+	function deleteTour() {
 		if (!tour || !confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
 			return;
 		}
-
-		try {
-			isDeleting = true;
-			await toursApi.delete(tour.id);
-			goto('/tours');
-		} catch (err) {
-			error = 'Failed to delete tour. Please try again.';
-			console.error('Error deleting tour:', err);
-		} finally {
-			isDeleting = false;
-		}
+		
+		isDeleting = true;
+		// Form will handle the submission to server action
+		const form = document.getElementById('delete-tour-form') as HTMLFormElement;
+		form?.requestSubmit();
 	}
 
 	async function toggleStatus() {
@@ -79,7 +73,7 @@
 		try {
 			isUpdatingStatus = true;
 			const updatedTour = await toursApi.update(tour.id, { status: newStatus });
-			tour = updatedTour;
+			tour = updatedTour as any;
 		} catch (err) {
 			error = 'Failed to update tour status. Please try again.';
 			console.error('Error updating tour status:', err);
@@ -170,7 +164,7 @@
 			}
 
 			const updatedTour = await toursApi.updateWithImages(tour.id, formData);
-			tour = updatedTour;
+			tour = updatedTour as any;
 			replaceImageIndex = null;
 		} catch (err) {
 			error = 'Failed to upload image. Please try again.';
@@ -204,7 +198,7 @@
 			formData.append('images-', imageName);
 
 			const updatedTour = await toursApi.updateWithImages(tour.id, formData);
-			tour = updatedTour;
+			tour = updatedTour as any;
 		} catch (err) {
 			error = 'Failed to delete image. Please try again.';
 			console.error('Error deleting image:', err);
@@ -301,7 +295,7 @@
 		<div class="mb-6 sm:mb-8">
 			<PageHeader 
 				title={tour.name}
-				subtitle={`${tour.category ? `${tour.category} • ` : ''}${tour.location ? `${tour.location} • ` : ''}Created ${new Date(tour.created).toLocaleDateString()}`}
+				subtitle={`${tour.category ? `${tour.category} • ` : ''}${tour.location ? `${tour.location} • ` : ''}Created ${new Date(tour.createdAt).toLocaleDateString()}`}
 				backUrl="/tours"
 			>
 				<div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -363,6 +357,7 @@
 				
 				<div style="border-color: var(--border-primary);" class="divide-y">
 					{#each upcomingBookings.slice(0, 3) as booking}
+						{@const b = booking as any}
 						<div class="px-6 py-4 transition-colors" style="hover:background: var(--bg-secondary);">
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-4">
@@ -374,19 +369,19 @@
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-2 mb-1">
 											<p class="text-sm font-semibold truncate" style="color: var(--text-primary);">
-												{booking.customerName}
+												{b.customerName}
 											</p>
 											<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full {
-												booking.attendanceStatus === 'checked_in' ? 'bg-green-50 text-green-700' :
-												booking.attendanceStatus === 'no_show' ? '' :
+												b.attendanceStatus === 'checked_in' ? 'bg-green-50 text-green-700' :
+												b.attendanceStatus === 'no_show' ? '' :
 												'bg-amber-50 text-amber-700'
 											}" style="{
-												booking.attendanceStatus === 'checked_in' ? '' :
-												booking.attendanceStatus === 'no_show' ? 'background: var(--bg-tertiary); color: var(--text-secondary);' :
+												b.attendanceStatus === 'checked_in' ? '' :
+												b.attendanceStatus === 'no_show' ? 'background: var(--bg-tertiary); color: var(--text-secondary);' :
 												''
 											}">
-												{booking.attendanceStatus === 'checked_in' ? '✅ Checked In' :
-												 booking.attendanceStatus === 'no_show' ? '❌ No Show' : 
+												{b.attendanceStatus === 'checked_in' ? '✅ Checked In' :
+												 b.attendanceStatus === 'no_show' ? '❌ No Show' : 
 												 '⏳ Awaiting'}
 											</span>
 										</div>
@@ -403,23 +398,23 @@
 											</span>
 											<span class="flex items-center gap-1">
 												<Ticket class="w-3 h-3" />
-												{booking.bookingReference}
+												{b.bookingReference}
 											</span>
 										</div>
 									</div>
 								</div>
 								
 								<div class="flex items-center gap-2">
-									{#if booking.ticketQRCode && booking.attendanceStatus !== 'checked_in'}
+									{#if b.ticketQRCode && b.attendanceStatus !== 'checked_in'}
 										<a
-											href="/checkin/{booking.ticketQRCode}"
+											href="/checkin/{b.ticketQRCode}"
 											target="_blank"
 											class="button-primary button--gap button--small"
 										>
 											<UserCheck class="w-4 h-4" />
 											Check In
 										</a>
-									{:else if booking.attendanceStatus === 'checked_in'}
+									{:else if b.attendanceStatus === 'checked_in'}
 										<span class="text-sm font-medium text-green-600">
 											Completed
 										</span>
@@ -873,19 +868,22 @@
 						</p>
 					</div>
 					<div class="p-6">
-						<button
-							onclick={deleteTour}
-							disabled={isDeleting}
-							class="button--danger button--full-width button--gap button--small justify-center rounded-lg flex items-center"
-						>
-							{#if isDeleting}
-								<div class="form-spinner"></div>
-								Deleting...
-							{:else}
-								<Trash2 class="h-4 w-4 flex-shrink-0" />
-								Delete Tour
-							{/if}
-						</button>
+						<form id="delete-tour-form" method="POST" action="?/delete">
+							<button
+								type="button"
+								onclick={deleteTour}
+								disabled={isDeleting}
+								class="button--danger button--full-width button--gap button--small justify-center rounded-lg flex items-center"
+							>
+								{#if isDeleting}
+									<div class="form-spinner"></div>
+									Deleting...
+								{:else}
+									<Trash2 class="h-4 w-4 flex-shrink-0" />
+									Delete Tour
+								{/if}
+							</button>
+						</form>
 					</div>
 				</div>
 			</div>

@@ -103,7 +103,7 @@
 				status: newStatus
 			});
 
-			booking = { ...booking, status: newStatus };
+			booking = { ...booking, status: newStatus as typeof booking.status };
 			showStatusModal = false;
 		} catch (err) {
 			console.error('Error updating booking status:', err);
@@ -128,7 +128,7 @@
 	}
 
 	function calculateTotal(): number {
-		const basePrice = booking.expand?.tour?.price || 0;
+		const basePrice = parseFloat(booking.expand?.tour?.price || '0');
 		return basePrice * booking.participants;
 	}
 
@@ -160,31 +160,32 @@
 		<div class="flex items-center gap-4 mb-4">
 			<button 
 				onclick={() => goto('/bookings')}
-				class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+				class="p-2 rounded-lg transition-colors"
+				style="hover:background: var(--bg-secondary);"
 				aria-label="Back to bookings"
 			>
-				<ArrowLeft class="h-5 w-5 text-gray-600" />
+				<ArrowLeft class="h-5 w-5" style="color: var(--text-secondary);" />
 			</button>
 			<div>
-				<nav class="flex items-center gap-2 text-sm text-gray-600 mb-2">
-					<a href="/dashboard" class="hover:text-primary-600">Dashboard</a>
+				<nav class="flex items-center gap-2 text-sm mb-2" style="color: var(--text-secondary);">
+					<a href="/dashboard" class="hover:text-blue-600">Dashboard</a>
 					<ChevronRight class="h-3 w-3" />
-					<a href="/bookings" class="hover:text-primary-600">Bookings</a>
+					<a href="/bookings" class="hover:text-blue-600">Bookings</a>
 					<ChevronRight class="h-3 w-3" />
 					<span>#{booking.id.slice(-8)}</span>
 				</nav>
-				<h1 class="text-3xl font-bold text-gray-900">Booking Details</h1>
-				<p class="mt-1 text-gray-600">Manage customer booking and communication</p>
+				<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Booking Details</h1>
+				<p class="mt-1" style="color: var(--text-secondary);">Manage customer booking and communication</p>
 			</div>
 		</div>
 
 		{#if error}
-			<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+			<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-light); border: 1px solid #fecaca;">
 				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
 					<div>
-						<p class="font-medium text-red-800">Error</p>
-						<p class="text-sm text-red-700 mt-1">{error}</p>
+						<p class="font-medium" style="color: #991b1b;">Error</p>
+						<p class="text-sm mt-1" style="color: #b91c1c;">{error}</p>
 					</div>
 				</div>
 			</div>
@@ -196,19 +197,19 @@
 		<!-- Booking Details -->
 		<div class="xl:col-span-2 space-y-6">
 			<!-- Booking Overview -->
-			<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-				<div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-6 py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
 					<div class="flex items-center justify-between">
-						<h2 class="text-lg font-semibold text-gray-900">Booking Overview</h2>
+						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Booking Overview</h2>
 						<div class="flex items-center gap-2">
 							{#if booking.status === 'confirmed'}
-								<CheckCircle class="h-5 w-5 text-gray-600" />
+								<CheckCircle class="h-5 w-5" style="color: var(--text-secondary);" />
 							{:else if booking.status === 'cancelled'}
-								<XCircle class="h-5 w-5 text-gray-600" />
+								<XCircle class="h-5 w-5" style="color: var(--text-secondary);" />
 							{:else if booking.status === 'completed'}
-								<CheckCircle class="h-5 w-5 text-gray-600" />
+								<CheckCircle class="h-5 w-5" style="color: var(--text-secondary);" />
 							{:else}
-								<AlertCircle class="h-5 w-5 text-gray-600" />
+								<AlertCircle class="h-5 w-5" style="color: var(--text-secondary);" />
 							{/if}
 							<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {getStatusColor(booking.status)}">
 								{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
@@ -220,58 +221,58 @@
 				<div class="p-6 space-y-4">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="space-y-3">
-							<h3 class="text-sm font-medium text-gray-700 mb-3">Tour Information</h3>
+							<h3 class="text-sm font-medium mb-3" style="color: var(--text-secondary);">Tour Information</h3>
 							<div class="flex items-center gap-3">
-								<MapPin class="h-5 w-5 text-gray-400" />
+								<MapPin class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">{booking.expand?.tour?.name || 'Unknown Tour'}</p>
-									<p class="text-sm text-gray-600">{booking.expand?.tour?.location || 'Location not set'}</p>
+									<p class="font-medium" style="color: var(--text-primary);">{booking.expand?.tour?.name || 'Unknown Tour'}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">{booking.expand?.tour?.location || 'Location not set'}</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-3">
-								<Calendar class="h-5 w-5 text-gray-400" />
+								<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">{getTourDateTime()}</p>
-									<p class="text-sm text-gray-600">
+									<p class="font-medium" style="color: var(--text-primary);">{getTourDateTime()}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">
 										{#if booking.expand?.timeSlot?.endTime}
-											Duration: {formatTime(booking.expand.timeSlot.startTime)} - {formatTime(booking.expand.timeSlot.endTime)}
+											Duration: {formatTime(booking.expand.timeSlot.startTime!)} - {formatTime(booking.expand.timeSlot.endTime)}
 										{/if}
 									</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-3">
-								<Users class="h-5 w-5 text-gray-400" />
+								<Users class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">{booking.participants} {booking.participants === 1 ? 'participant' : 'participants'}</p>
-									<p class="text-sm text-gray-600">Group size</p>
+									<p class="font-medium" style="color: var(--text-primary);">{booking.participants} {booking.participants === 1 ? 'participant' : 'participants'}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">Group size</p>
 								</div>
 							</div>
 						</div>
 
 						<div class="space-y-3">
-							<h3 class="text-sm font-medium text-gray-700 mb-3">Booking Details</h3>
+							<h3 class="text-sm font-medium mb-3" style="color: var(--text-secondary);">Booking Details</h3>
 							<div class="flex items-center gap-3">
-								<Calendar class="h-5 w-5 text-gray-400" />
+								<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">Booking #{booking.id.slice(-8)}</p>
-									<p class="text-sm text-gray-600">Created {formatDateTime(booking.created)}</p>
+									<p class="font-medium" style="color: var(--text-primary);">Booking #{booking.id.slice(-8)}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">Created {formatDateTime(booking.created)}</p>
 								</div>
 							</div>
 							{#if booking.expand?.tour?.price}
 								<div class="flex items-center gap-3">
-									<DollarSign class="h-5 w-5 text-gray-400" />
+									<DollarSign class="h-5 w-5" style="color: var(--text-tertiary);" />
 									<div>
-										<p class="font-medium text-gray-900">{formatEuro(calculateTotal())}</p>
-										<p class="text-sm text-gray-600">{formatEuro(booking.expand.tour.price)} × {booking.participants} participants</p>
+										<p class="font-medium" style="color: var(--text-primary);">{formatEuro(calculateTotal())}</p>
+										<p class="text-sm" style="color: var(--text-secondary);">{formatEuro(booking.expand.tour.price)} × {booking.participants} participants</p>
 									</div>
 								</div>
 							{/if}
 							{#if payment}
 								<div class="flex items-center gap-3">
-									<CreditCard class="h-5 w-5 text-gray-400" />
+									<CreditCard class="h-5 w-5" style="color: var(--text-tertiary);" />
 									<div>
-										<p class="font-medium text-gray-900">Payment {payment.status}</p>
-										<p class="text-sm text-gray-600">{payment.paymentMethod || 'Unknown method'}</p>
+										<p class="font-medium" style="color: var(--text-primary);">Payment {payment.status}</p>
+										<p class="text-sm" style="color: var(--text-secondary);">Payment via Stripe</p>
 									</div>
 								</div>
 							{/if}
@@ -280,35 +281,35 @@
 
 					<!-- Special Requests -->
 					{#if booking.specialRequests}
-						<div class="border-t border-gray-200 pt-4">
-							<h3 class="text-sm font-medium text-gray-700 mb-2">Special Requests</h3>
-							<p class="text-gray-900 bg-gray-50 rounded-lg p-3">{booking.specialRequests}</p>
+						<div class="pt-4" style="border-top: 1px solid var(--border-primary);">
+							<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Special Requests</h3>
+							<p class="rounded-lg p-3" style="color: var(--text-primary); background: var(--bg-secondary);">{booking.specialRequests}</p>
 						</div>
 					{/if}
 				</div>
 			</div>
 
 			<!-- Customer Information -->
-			<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-				<div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-					<h2 class="text-lg font-semibold text-gray-900">Customer Information</h2>
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-6 py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Customer Information</h2>
 				</div>
 				
 				<div class="p-6">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div class="space-y-3">
 							<div class="flex items-center gap-3">
-								<User class="h-5 w-5 text-gray-400" />
+								<User class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">{booking.customerName}</p>
-									<p class="text-sm text-gray-600">Customer name</p>
+									<p class="font-medium" style="color: var(--text-primary);">{booking.customerName}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">Customer name</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-3">
-								<Mail class="h-5 w-5 text-gray-400" />
+								<Mail class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">{booking.customerEmail}</p>
-									<p class="text-sm text-gray-600">Email address</p>
+									<p class="font-medium" style="color: var(--text-primary);">{booking.customerEmail}</p>
+									<p class="text-sm" style="color: var(--text-secondary);">Email address</p>
 								</div>
 							</div>
 						</div>
@@ -316,18 +317,18 @@
 						<div class="space-y-3">
 							{#if booking.customerPhone}
 								<div class="flex items-center gap-3">
-									<Phone class="h-5 w-5 text-gray-400" />
+									<Phone class="h-5 w-5" style="color: var(--text-tertiary);" />
 									<div>
-										<p class="font-medium text-gray-900">{booking.customerPhone}</p>
-										<p class="text-sm text-gray-600">Phone number</p>
+										<p class="font-medium" style="color: var(--text-primary);">{booking.customerPhone}</p>
+										<p class="text-sm" style="color: var(--text-secondary);">Phone number</p>
 									</div>
 								</div>
 							{/if}
 							<div class="flex items-center gap-3">
-								<Calendar class="h-5 w-5 text-gray-400" />
+								<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
 								<div>
-									<p class="font-medium text-gray-900">Customer since</p>
-									<p class="text-sm text-gray-600">{formatDate(booking.created)}</p>
+									<p class="font-medium" style="color: var(--text-primary);">Customer since</p>
+									<p class="text-sm" style="color: var(--text-secondary);">{formatDate(booking.created)}</p>
 								</div>
 							</div>
 						</div>
@@ -339,11 +340,11 @@
 		<!-- Actions Sidebar -->
 		<div class="space-y-6">
 			<!-- Status Management -->
-			<div class="bg-white rounded-xl border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Booking Status</h3>
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Booking Status</h3>
 				<div class="space-y-4">
-					<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-						<span class="text-sm font-medium text-gray-700">Current Status</span>
+					<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+						<span class="text-sm font-medium" style="color: var(--text-secondary);">Current Status</span>
 						<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border {getStatusColor(booking.status)}">
 							{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
 						</span>
@@ -361,7 +362,7 @@
 							Change Status
 						</button>
 					{:else}
-						<p class="text-xs text-gray-500 text-center p-2">
+						<p class="text-xs text-center p-2" style="color: var(--text-tertiary);">
 							Status cannot be changed for completed past bookings
 						</p>
 					{/if}
@@ -369,8 +370,8 @@
 			</div>
 
 			<!-- Communication -->
-			<div class="bg-white rounded-xl border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Communication</h3>
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Customer Communication</h3>
 				<div class="space-y-3">
 					<button
 						onclick={openEmailClient}
@@ -401,11 +402,11 @@
 			</div>
 
 			<!-- Quick Actions -->
-			<div class="bg-white rounded-xl border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
 				<div class="space-y-3">
 					<button
-						onclick={() => goto(`/tours/${booking.tour}`)}
+						onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
 						class="w-full button-secondary button--gap button--small justify-center"
 					>
 						<MapPin class="h-4 w-4" />
@@ -413,7 +414,7 @@
 					</button>
 					
 					<button
-						onclick={() => goto(`/tours/${booking.tour}/bookings`)}
+						onclick={() => goto(`/tours/${booking.expand?.tour?.id}/bookings`)}
 						class="w-full button-secondary button--gap button--small justify-center"
 					>
 						<Users class="h-4 w-4" />
@@ -428,16 +429,16 @@
 <!-- Status Change Modal -->
 {#if showStatusModal}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-		<div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
-			<div class="p-6 border-b border-gray-200">
-				<h2 class="text-xl font-semibold text-gray-900">Change Booking Status</h2>
-				<p class="text-sm text-gray-600 mt-1">Update the status of this booking</p>
+		<div class="rounded-xl shadow-2xl max-w-md w-full" style="background: var(--bg-primary);">
+			<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+				<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Change Booking Status</h2>
+				<p class="text-sm mt-1" style="color: var(--text-secondary);">Update the status of this booking</p>
 			</div>
 			
 			<div class="p-6 space-y-4">
 				<div class="space-y-3">
 					{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
-						<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors {newStatus === status ? 'border-primary-300 bg-primary-50' : 'border-gray-200'}">
+						<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors {newStatus === status ? 'border-blue-300' : ''}" style="border-color: {newStatus === status ? 'var(--color-primary-300)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'var(--bg-primary)'}; hover:background: var(--bg-secondary);">
 							<input
 								type="radio"
 								bind:group={newStatus}
@@ -446,22 +447,22 @@
 							/>
 							<div class="flex items-center gap-2">
 								{#if status === 'confirmed'}
-									<CheckCircle class="h-4 w-4 text-gray-600" />
+									<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
 								{:else if status === 'cancelled'}
-									<XCircle class="h-4 w-4 text-gray-600" />
+									<XCircle class="h-4 w-4" style="color: var(--text-secondary);" />
 								{:else if status === 'completed'}
-									<CheckCircle class="h-4 w-4 text-gray-600" />
+									<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
 								{:else}
-									<AlertCircle class="h-4 w-4 text-gray-600" />
+									<AlertCircle class="h-4 w-4" style="color: var(--text-secondary);" />
 								{/if}
-								<span class="font-medium text-gray-900 capitalize">{status}</span>
+								<span class="font-medium capitalize" style="color: var(--text-primary);">{status}</span>
 							</div>
 						</label>
 					{/each}
 				</div>
 			</div>
 			
-			<div class="p-6 border-t border-gray-200 flex justify-end gap-3">
+			<div class="p-6 flex justify-end gap-3" style="border-top: 1px solid var(--border-primary);">
 				<button
 					type="button"
 					onclick={() => {

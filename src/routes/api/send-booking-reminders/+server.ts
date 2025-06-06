@@ -1,15 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
 import { sendBookingEmail } from '$lib/email.server.js';
-import type { Booking, Tour, TimeSlot } from '$lib/types.js';
-
-// Extended booking type with expand data
-interface ExpandedBooking extends Booking {
-  expand?: {
-    tour?: Tour;
-    timeSlot?: TimeSlot;
-  };
-}
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { eq, and, gte, lte } from 'drizzle-orm';
 
 export const POST: RequestHandler = async () => {
   try {
@@ -21,32 +14,112 @@ export const POST: RequestHandler = async () => {
     const endOfTomorrow = new Date(tomorrow);
     endOfTomorrow.setHours(23, 59, 59, 999);
 
-    // Connect to PocketBase
-    const pb = await createAuthenticatedPB();
-    
     // Query for confirmed bookings with tours starting tomorrow
-    const bookings = await pb.collection('bookings').getFullList<ExpandedBooking>({
-      expand: 'tour,timeSlot',
-      filter: `status = 'confirmed' && timeSlot.startTime >= '${startOfTomorrow.toISOString()}' && timeSlot.startTime <= '${endOfTomorrow.toISOString()}'`
-    });
+    const bookingData = await db.select({
+      // Booking fields
+      id: bookings.id,
+      customerName: bookings.customerName,
+      customerEmail: bookings.customerEmail,
+      customerPhone: bookings.customerPhone,
+      participants: bookings.participants,
+      totalAmount: bookings.totalAmount,
+      status: bookings.status,
+      paymentStatus: bookings.paymentStatus,
+      bookingReference: bookings.bookingReference,
+      specialRequests: bookings.specialRequests,
+      ticketQRCode: bookings.ticketQRCode,
+      attendanceStatus: bookings.attendanceStatus,
+      checkedInAt: bookings.checkedInAt,
+      checkedInBy: bookings.checkedInBy,
+      createdAt: bookings.createdAt,
+      updatedAt: bookings.updatedAt,
+      // Tour fields
+      tourId: tours.id,
+      tourName: tours.name,
+      tourDescription: tours.description,
+      tourPrice: tours.price,
+      tourDuration: tours.duration,
+      tourCapacity: tours.capacity,
+      tourStatus: tours.status,
+      tourLocation: tours.location,
+      // TimeSlot fields
+      timeSlotId: timeSlots.id,
+      timeSlotStartTime: timeSlots.startTime,
+      timeSlotEndTime: timeSlots.endTime,
+      timeSlotAvailableSpots: timeSlots.availableSpots,
+      timeSlotBookedSpots: timeSlots.bookedSpots,
+      timeSlotStatus: timeSlots.status
+    })
+    .from(bookings)
+    .innerJoin(tours, eq(bookings.tourId, tours.id))
+    .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+    .where(and(
+      eq(bookings.status, 'confirmed'),
+      gte(timeSlots.startTime, startOfTomorrow),
+      lte(timeSlots.startTime, endOfTomorrow)
+    ));
 
-    console.log(`📅 Found ${bookings.length} confirmed bookings for tomorrow (${tomorrow.toDateString()})`);
+    console.log(`📅 Found ${bookingData.length} confirmed bookings for tomorrow (${tomorrow.toDateString()})`);
 
     let sent = 0;
     const errors: string[] = [];
 
     // Send reminder email for each booking
-    for (const booking of bookings) {
+    for (const data of bookingData) {
       try {
-        if (!booking.expand?.tour || !booking.expand?.timeSlot) {
-          errors.push(`Booking ${booking.bookingReference}: Missing tour or timeSlot data`);
-          continue;
-        }
+        // Format data to match the expected interface
+        const booking = {
+          id: data.id,
+          tour: data.tourId,
+          timeSlot: data.timeSlotId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.customerPhone || undefined,
+          participants: data.participants,
+          totalAmount: parseFloat(data.totalAmount),
+          status: data.status,
+          paymentStatus: data.paymentStatus,
+          bookingReference: data.bookingReference,
+          specialRequests: data.specialRequests || undefined,
+          ticketQRCode: data.ticketQRCode || undefined,
+          attendanceStatus: data.attendanceStatus || undefined,
+          checkedInAt: data.checkedInAt?.toISOString(),
+          checkedInBy: data.checkedInBy || undefined,
+          created: data.createdAt.toISOString(),
+          updated: data.updatedAt.toISOString(),
+        };
+
+        const tour = {
+          id: data.tourId,
+          name: data.tourName,
+          description: data.tourDescription,
+          price: parseFloat(data.tourPrice),
+          duration: data.tourDuration,
+          capacity: data.tourCapacity,
+          status: data.tourStatus,
+          location: data.tourLocation || undefined,
+          user: '', // Not needed for email functionality
+          created: '', // Not needed for email functionality
+          updated: '', // Not needed for email functionality
+        };
+
+        const timeSlot = {
+          id: data.timeSlotId,
+          tour: data.tourId,
+          startTime: data.timeSlotStartTime.toISOString(),
+          endTime: data.timeSlotEndTime.toISOString(),
+          availableSpots: data.timeSlotAvailableSpots,
+          bookedSpots: data.timeSlotBookedSpots,
+          status: data.timeSlotStatus,
+          isRecurring: false, // Not needed for email functionality
+          created: '', // Not needed for email functionality
+          updated: '', // Not needed for email functionality
+        };
 
         const emailResult = await sendBookingEmail('reminder', {
           booking,
-          tour: booking.expand.tour,
-          timeSlot: booking.expand.timeSlot
+          tour,
+          timeSlot
         });
 
         if (emailResult.success) {
@@ -58,17 +131,17 @@ export const POST: RequestHandler = async () => {
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`Booking ${booking.bookingReference}: ${errorMsg}`);
-        console.error(`❌ Error processing booking ${booking.bookingReference}:`, error);
+        errors.push(`Booking ${data.bookingReference}: ${errorMsg}`);
+        console.error(`❌ Error processing booking ${data.bookingReference}:`, error);
       }
     }
 
     const result = {
       success: true,
-      found: bookings.length,
+      found: bookingData.length,
       sent,
       errors: errors.length > 0 ? errors : undefined,
-      message: `Processed ${bookings.length} bookings, sent ${sent} reminder emails`,
+      message: `Processed ${bookingData.length} bookings, sent ${sent} reminder emails`,
       date: tomorrow.toDateString()
     };
 

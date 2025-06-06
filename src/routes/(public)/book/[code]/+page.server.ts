@@ -1,42 +1,91 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
-import PocketBase from 'pocketbase';
-import type { TimeSlot } from '$lib/types.js';
+import { db } from '$lib/db/connection.js';
+import { qrCodes, tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { eq, and } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
 
 const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
-	// Always use a fresh PocketBase instance for booking pages to avoid auth issues
-	const pb = new PocketBase(POCKETBASE_URL);
-	// Explicitly clear any auth state to ensure public access
-	pb.authStore.clear();
-	
 	try {
-		// For booking pages, always use public access
-		let qrCode = null;
-		let workingPB = pb; // Always use public access
+		// Get QR code with tour information
+		console.log('Looking for QR code:', params.code);
 		
-		// Try public access (works for both anonymous and authenticated users)
-		try {
-			console.log('Attempting public access for QR code:', params.code);
-			console.log('Auth state cleared, using public access');
-			qrCode = await pb.collection('qr_codes').getFirstListItem(
-				`code = "${params.code}" && isActive = true`,
-				{ expand: 'tour,tour.user' }
-			);
-			console.log('QR code found via public access');
-		} catch (publicError) {
-			console.log('Public access failed:', publicError);
-			console.log('Filter used:', `code = "${params.code}" && isActive = true`);
-			// Don't try authenticated access - if public fails, the QR code doesn't exist or isn't active
+		const qrCodeData = await db
+			.select({
+				// QR code fields
+				qrId: qrCodes.id,
+				qrCode: qrCodes.code,
+				qrName: qrCodes.name,
+				qrCategory: qrCodes.category,
+				qrIsActive: qrCodes.isActive,
+				qrScans: qrCodes.scans,
+				qrConversions: qrCodes.conversions,
+				qrCreatedAt: qrCodes.createdAt,
+				
+				// Tour fields
+				tourId: tours.id,
+				tourName: tours.name,
+				tourDescription: tours.description,
+				tourPrice: tours.price,
+				tourDuration: tours.duration,
+				tourCapacity: tours.capacity,
+				tourLocation: tours.location,
+				tourImages: tours.images,
+				tourCategory: tours.category,
+				tourIncludedItems: tours.includedItems,
+				tourRequirements: tours.requirements,
+				tourCancellationPolicy: tours.cancellationPolicy,
+				tourUserId: tours.userId,
+				tourCreatedAt: tours.createdAt
+			})
+			.from(qrCodes)
+			.leftJoin(tours, eq(qrCodes.tourId, tours.id))
+			.where(and(
+				eq(qrCodes.code, params.code),
+				eq(qrCodes.isActive, true)
+			))
+			.limit(1);
+		
+		if (qrCodeData.length === 0) {
 			throw error(404, `QR code '${params.code}' not found or inactive.`);
 		}
 		
-		// Check if QR code was found
-		if (!qrCode) {
-			throw error(404, `QR code '${params.code}' not found. Please ensure the QR code is active and accessible.`);
-		}
+		const qrResult = qrCodeData[0];
+		
+		// Format to match expected structure
+		const qrCode = {
+			id: qrResult.qrId,
+			code: qrResult.qrCode,
+			name: qrResult.qrName,
+			category: qrResult.qrCategory,
+			isActive: qrResult.qrIsActive,
+			scans: qrResult.qrScans,
+			conversions: qrResult.qrConversions,
+			created: qrResult.qrCreatedAt.toISOString(),
+			expand: {
+				tour: qrResult.tourId ? {
+					id: qrResult.tourId,
+					name: qrResult.tourName,
+					description: qrResult.tourDescription,
+					price: qrResult.tourPrice,
+					duration: qrResult.tourDuration,
+					capacity: qrResult.tourCapacity,
+					location: qrResult.tourLocation,
+					images: qrResult.tourImages,
+					category: qrResult.tourCategory,
+					includedItems: qrResult.tourIncludedItems,
+					requirements: qrResult.tourRequirements,
+					cancellationPolicy: qrResult.tourCancellationPolicy,
+					user: qrResult.tourUserId,
+					created: qrResult.tourCreatedAt?.toISOString(),
+					collectionId: 'tours', // For image URL compatibility
+					collectionName: 'tours'
+				} : null
+			}
+		};
 		
 		// Track scan via API (works for both authenticated and anonymous users)
 		const isFirstVisit = !url.searchParams.has('submitted');
@@ -58,25 +107,34 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		}
 		
 		// Get available time slots for the tour
-		let timeSlots: TimeSlot[] = [];
-		const tourId = qrCode.expand?.tour?.id;
+		const tourId = qrResult.tourId;
 		console.log('Looking for time slots for tour:', tourId);
 		
-		// Always use public access for time slots
-		try {
-			// Get all slots for this tour using public access
-			const allTourSlots = await workingPB.collection('time_slots').getFullList({
-				filter: `tour = "${tourId}"`,
-				sort: 'startTime'
-			});
-			console.log('All slots for tour (public access):', allTourSlots.length);
-			
-			// Filter for available status
-			timeSlots = allTourSlots.filter(slot => slot.status === 'available') as any;
-			console.log('Available slots after filtering:', timeSlots.length);
-		} catch (err) {
-			console.error('Failed to load time slots:', err);
-			// Continue with empty array - the page will show "no available slots"
+		let timeSlotsResult: any[] = [];
+		if (tourId) {
+			try {
+				const timeSlotsData = await db
+					.select()
+					.from(timeSlots)
+					.where(and(
+						eq(timeSlots.tourId, tourId),
+						eq(timeSlots.status, 'available')
+					))
+					.orderBy(timeSlots.startTime);
+				
+				timeSlotsResult = timeSlotsData.map((slot) => ({
+					...slot,
+					startTime: slot.startTime.toISOString(),
+					endTime: slot.endTime.toISOString(),
+					created: slot.createdAt.toISOString(),
+					updated: slot.updatedAt.toISOString()
+				}));
+				
+				console.log('Available slots:', timeSlotsResult.length);
+			} catch (err) {
+				console.error('Failed to load time slots:', err);
+				// Continue with empty array - the page will show "no available slots"
+			}
 		}
 		
 		// Generate SEO data for this tour
@@ -85,7 +143,7 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		
 		return {
 			qrCode,
-			timeSlots,
+			timeSlots: timeSlotsResult,
 			pbUrl: POCKETBASE_URL,
 			seo: seoData
 		};
@@ -100,10 +158,6 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 
 export const actions: Actions = {
 	book: async ({ request, params, locals, fetch }) => {
-		// Always use fresh PocketBase instance for booking actions
-		const pb = new PocketBase(POCKETBASE_URL);
-		pb.authStore.clear(); // Ensure no auth state
-		
 		const formData = await request.formData();
 		
 		const timeSlotId = formData.get('timeSlotId') as string;
@@ -142,103 +196,131 @@ export const actions: Actions = {
 		}
 		
 		try {
-			// Get QR code and tour info using public access
-			let qrCode = null;
+			// Get QR code and tour info
+			const qrCodeData = await db
+				.select({
+					qrId: qrCodes.id,
+					qrCode: qrCodes.code,
+					qrIsActive: qrCodes.isActive,
+					tourId: tours.id,
+					tourName: tours.name,
+					tourPrice: tours.price
+				})
+				.from(qrCodes)
+				.leftJoin(tours, eq(qrCodes.tourId, tours.id))
+				.where(and(
+					eq(qrCodes.code, params.code),
+					eq(qrCodes.isActive, true)
+				))
+				.limit(1);
 			
-			// Use public access
-			try {
-				qrCode = await pb.collection('qr_codes').getFirstListItem(
-					`code = "${params.code}" && isActive = true`, 
-					{ expand: 'tour' }
-				);
-				console.log('Booking: QR code found via public access');
-			} catch (publicErr) {
-				console.log('Booking: QR code not found or not active');
+			if (qrCodeData.length === 0) {
 				return fail(404, { error: 'QR code not found or inactive' });
 			}
 			
-			if (!qrCode) {
-				return fail(404, { error: 'QR code not found' });
-			}
-			const tour = qrCode.expand?.tour;
+			const qrResult = qrCodeData[0];
 			
-			if (!tour) {
+			if (!qrResult.tourId) {
 				return fail(500, { error: 'Tour information not found' });
 			}
 			
 			// Calculate total price
-			const totalPrice = participants * tour.price;
+			const totalPrice = participants * Number(qrResult.tourPrice);
 			
-			// Generate unique booking reference
+			// Generate unique booking reference and ticket QR code
 			const bookingReference = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+			const ticketQRCode = `TK-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 			
-			// Create booking
-			const booking = await pb.collection('bookings').create({
-				tour: tour.id,
-				timeSlot: timeSlotId,
-				qrCode: qrCode.id,
-				customerName,
-				customerEmail,
-				customerPhone: customerPhone || null,
-				participants,
-				totalAmount: totalPrice,
-				bookingReference,
-				specialRequests: specialRequests || null,
-				status: 'pending', // Will be updated after payment
-				paymentStatus: 'pending'
-			});
-			
-			// Update time slot availability with rollback capability
-			let timeSlotUpdated = false;
+			// Create booking with atomic transaction-like behavior
 			try {
-				await pb.collection('time_slots').update(timeSlotId, {
-					bookedSpots: bookedSpots + participants,
-					availableSpots: availableSpots - participants
-				});
-				timeSlotUpdated = true;
-			} catch (updateErr) {
-				console.error('Failed to update time slot availability:', updateErr);
+				const bookingId = createId();
+				const newBooking = {
+					id: bookingId,
+					tourId: qrResult.tourId,
+					timeSlotId: timeSlotId,
+					qrCodeId: qrResult.qrId,
+					customerName,
+					customerEmail,
+					customerPhone: customerPhone || null,
+					participants,
+					totalAmount: totalPrice.toString(),
+					bookingReference,
+					ticketQRCode,
+					specialRequests: specialRequests || null,
+					status: 'pending' as const,
+					paymentStatus: 'pending' as const,
+					attendanceStatus: 'not_arrived' as const,
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
 				
-				// For critical failures, consider rolling back the booking
-				if ((updateErr as any)?.status !== 403) { // Not just a permission issue
-					console.warn('Time slot update failed for non-permission reasons');
+				// Insert booking
+				const bookingResult = await db.insert(bookings).values(newBooking).returning();
+				const booking = bookingResult[0];
+				
+				// Update time slot availability
+				let timeSlotUpdated = false;
+				try {
+					await db
+						.update(timeSlots)
+						.set({
+							bookedSpots: bookedSpots + participants,
+							availableSpots: availableSpots - participants,
+							updatedAt: new Date()
+						})
+						.where(eq(timeSlots.id, timeSlotId));
+					timeSlotUpdated = true;
+				} catch (updateErr) {
+					console.error('Failed to update time slot availability:', updateErr);
 					// Note: In production, you might want to implement a cleanup job
 					// or queue system to handle these orphaned bookings
 				}
-			}
-			
-			// Track conversion via API (works for both authenticated and anonymous users)
-			try {
-				const trackResponse = await fetch(`/api/qr/${params.code}/conversion`, {
-					method: 'POST'
-				});
-				if (trackResponse.ok) {
-					const trackResult = await trackResponse.json();
-					console.log(`Conversion tracked via API: ${trackResult.conversions} total conversions`);
-				} else {
-					console.error('Failed to track conversion via API:', await trackResponse.text());
+				
+				// Track conversion via API
+				try {
+					const trackResponse = await fetch(`/api/qr/${params.code}/conversion`, {
+						method: 'POST'
+					});
+					if (trackResponse.ok) {
+						const trackResult = await trackResponse.json();
+						console.log(`Conversion tracked via API: ${trackResult.conversions} total conversions`);
+					} else {
+						console.error('Failed to track conversion via API:', await trackResponse.text());
+					}
+				} catch (trackError) {
+					console.error('Error calling conversion tracking API:', trackError);
+					// Don't fail the booking if conversion tracking fails
 				}
-			} catch (trackError) {
-				console.error('Error calling conversion tracking API:', trackError);
-				// Don't fail the booking if conversion tracking fails
+				
+				// Success! Log and redirect to payment page
+				console.log(`Booking created successfully! ID: ${booking.id}, Reference: ${bookingReference}`);
+				console.log('User info:', locals?.user?.email || 'anonymous');
+				
+				const redirectUrl = `/book/${params.code}/payment?booking=${booking.id}`;
+				console.log('Redirecting to:', redirectUrl);
+				throw redirect(303, redirectUrl);
+				
+			} catch (dbErr) {
+				// If it's a redirect, re-throw it (this is success, not an error!)
+				if (
+					(dbErr instanceof Response && dbErr.status === 303) ||
+					(dbErr && typeof dbErr === 'object' && 'status' in dbErr && (dbErr as any).status === 303) ||
+					(dbErr && typeof dbErr === 'object' && 'location' in dbErr)
+				) {
+					console.log('Booking successful, redirecting to payment page');
+					throw dbErr;
+				}
+				
+				console.error('Database error during booking creation:', dbErr);
+				throw dbErr;
 			}
-			
-			// Success! Log and redirect to payment page
-			console.log(`Booking created successfully! ID: ${booking.id}, Reference: ${bookingReference}`);
-			console.log('User info:', locals?.user?.email || 'anonymous');
-			
-			// Use a try-catch to ensure proper redirect handling
-			const redirectUrl = `/book/${params.code}/payment?booking=${booking.id}`;
-			console.log('Redirecting to:', redirectUrl);
-			throw redirect(303, redirectUrl);
 			
 		} catch (err) {
 			// If it's a redirect, re-throw it (this is success, not an error!)
-			// Check for both Response objects and SvelteKit redirect objects
 			if (
 				(err instanceof Response && err.status === 303) ||
 				(err && typeof err === 'object' && 'status' in err && (err as any).status === 303) ||
-				(err && typeof err === 'object' && 'location' in err) // Any object with location is likely a redirect
+				(err && typeof err === 'object' && 'location' in err)
 			) {
 				console.log('Booking successful, redirecting to payment page');
 				throw err;

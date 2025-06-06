@@ -1,6 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getStripe } from '$lib/stripe.server.js';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
     try {
@@ -10,11 +12,14 @@ export const GET: RequestHandler = async ({ url }) => {
             return json({ error: 'Missing userId parameter' }, { status: 400 });
         }
 
-        // Get authenticated PocketBase instance
-        const pb = await createAuthenticatedPB();
-        
         // Get user record
-        const user = await pb.collection('users').getOne(userId);
+        const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        
+        if (userRecords.length === 0) {
+            return json({ error: 'User not found' }, { status: 404 });
+        }
+
+        const user = userRecords[0];
         
         if (!user.stripeAccountId) {
             return json({ 

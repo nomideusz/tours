@@ -1,15 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
 import { sendBookingEmail, type EmailType } from '$lib/email.server.js';
-import type { Booking, Tour, TimeSlot } from '$lib/types.js';
-
-// Extended booking type with expand data
-interface ExpandedBooking extends Booking {
-  expand?: {
-    tour?: Tour;
-    timeSlot?: TimeSlot;
-  };
-}
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -25,21 +18,108 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'Invalid email type' }, { status: 400 });
     }
 
-    // Fetch booking data with expanded relations
-    const pb = await createAuthenticatedPB();
-    const booking = await pb.collection('bookings').getOne<ExpandedBooking>(bookingId, {
-      expand: 'tour,timeSlot'
-    });
+    // Fetch booking data with tour and time slot information
+    const bookingData = await db.select({
+      // Booking fields
+      id: bookings.id,
+      customerName: bookings.customerName,
+      customerEmail: bookings.customerEmail,
+      customerPhone: bookings.customerPhone,
+      participants: bookings.participants,
+      totalAmount: bookings.totalAmount,
+      status: bookings.status,
+      paymentStatus: bookings.paymentStatus,
+      bookingReference: bookings.bookingReference,
+      specialRequests: bookings.specialRequests,
+      ticketQRCode: bookings.ticketQRCode,
+      attendanceStatus: bookings.attendanceStatus,
+      checkedInAt: bookings.checkedInAt,
+      checkedInBy: bookings.checkedInBy,
+      createdAt: bookings.createdAt,
+      updatedAt: bookings.updatedAt,
+      // Tour fields
+      tourId: tours.id,
+      tourName: tours.name,
+      tourDescription: tours.description,
+      tourPrice: tours.price,
+      tourDuration: tours.duration,
+      tourCapacity: tours.capacity,
+      tourStatus: tours.status,
+      tourLocation: tours.location,
+      // TimeSlot fields
+      timeSlotId: timeSlots.id,
+      timeSlotStartTime: timeSlots.startTime,
+      timeSlotEndTime: timeSlots.endTime,
+      timeSlotAvailableSpots: timeSlots.availableSpots,
+      timeSlotBookedSpots: timeSlots.bookedSpots,
+      timeSlotStatus: timeSlots.status
+    })
+    .from(bookings)
+    .innerJoin(tours, eq(bookings.tourId, tours.id))
+    .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+    .where(eq(bookings.id, bookingId))
+    .limit(1);
 
-    if (!booking.expand?.tour || !booking.expand?.timeSlot) {
-      throw new Error('Booking data incomplete - missing tour or timeSlot');
+    if (bookingData.length === 0) {
+      return json({ error: 'Booking not found' }, { status: 404 });
     }
+
+    const data = bookingData[0];
+
+    // Format data to match the expected interface
+    const booking = {
+      id: data.id,
+      tour: data.tourId,
+      timeSlot: data.timeSlotId,
+      customerName: data.customerName,
+      customerEmail: data.customerEmail,
+      customerPhone: data.customerPhone || undefined,
+      participants: data.participants,
+      totalAmount: parseFloat(data.totalAmount),
+      status: data.status,
+      paymentStatus: data.paymentStatus,
+      bookingReference: data.bookingReference,
+      specialRequests: data.specialRequests || undefined,
+      ticketQRCode: data.ticketQRCode || undefined,
+      attendanceStatus: data.attendanceStatus,
+      checkedInAt: data.checkedInAt?.toISOString(),
+      checkedInBy: data.checkedInBy || undefined,
+      created: data.createdAt.toISOString(),
+      updated: data.updatedAt.toISOString(),
+    };
+
+    const tour = {
+      id: data.tourId,
+      name: data.tourName,
+      description: data.tourDescription,
+      price: parseFloat(data.tourPrice),
+      duration: data.tourDuration,
+      capacity: data.tourCapacity,
+      status: data.tourStatus,
+      location: data.tourLocation || undefined,
+      user: '', // Not needed for email functionality
+      created: '', // Not needed for email functionality
+      updated: '', // Not needed for email functionality
+    };
+
+    const timeSlot = {
+      id: data.timeSlotId,
+      tour: data.tourId,
+      startTime: data.timeSlotStartTime.toISOString(),
+      endTime: data.timeSlotEndTime.toISOString(),
+      availableSpots: data.timeSlotAvailableSpots,
+      bookedSpots: data.timeSlotBookedSpots,
+      status: data.timeSlotStatus,
+      isRecurring: false, // Not needed for email functionality
+      created: '', // Not needed for email functionality
+      updated: '', // Not needed for email functionality
+    };
 
     // Send the email
     const emailResult = await sendBookingEmail(emailType as EmailType, {
       booking,
-      tour: booking.expand.tour,
-      timeSlot: booking.expand.timeSlot
+      tour,
+      timeSlot
     });
 
     if (!emailResult.success) {

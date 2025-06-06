@@ -88,7 +88,7 @@
 				<div class="mb-6">
 					<div class="space-y-3">
 						{#each availableProviders as provider}
-							<OAuth2Button {provider} variant="outline" />
+							<OAuth2Button {provider} variant="outline" redirectTo={form?.redirectTo || data.redirectTo} />
 						{/each}
 					</div>
 					

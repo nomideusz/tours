@@ -1,9 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
+import { lucia } from '$lib/auth/lucia.js';
+import { hash } from '@node-rs/argon2';
+import { generateId } from 'lucia';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
-	if (locals.pb?.authStore?.isValid) {
+	if (locals.session) {
 		console.log('User already logged in, redirecting to dashboard');
 		throw redirect(303, '/dashboard');
 	}
@@ -11,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ locals, request }) => {
+	default: async ({ locals, request, cookies }) => {
 		const data = await request.formData();
 		const name = data.get('name')?.toString();
 		const email = data.get('email')?.toString();
@@ -55,56 +61,56 @@ export const actions: Actions = {
 		try {
 			console.log('Attempting registration for:', email, 'as', intendedRole);
 			
-			// Create user in PocketBase with role based on intention
+			// Check if user already exists
+			const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+			if (existingUser.length > 0) {
+				return fail(400, {
+					name,
+					email,
+					error: 'Email is already taken'
+				});
+			}
+			
+			// Hash password
+			const hashedPassword = await hash(password, {
+				memoryCost: 19456,
+				timeCost: 2,
+				outputLen: 32,
+				parallelism: 1
+			});
+			
+			// Create user in database
+			const userId = generateId(25);
 			const userData = {
+				id: userId,
 				email,
-				password,
-				passwordConfirm: password,
+				hashedPassword,
 				name,
-				role: intendedRole || 'user', // Set role directly based on selection
+				role: intendedRole || 'user',
 				intendedRole,
 				...(intendedRole === 'guide' && {
 					businessName,
 					location
-				})
+				}),
+				createdAt: new Date(),
+				updatedAt: new Date()
 			};
 			
-			const user = await locals.pb.collection('users').create(userData);
-			console.log('User created successfully:', user.id, 'with role:', intendedRole);
+			await db.insert(users).values(userData);
+			console.log('User created successfully:', userId, 'with role:', intendedRole);
 			
-			// Automatically log in the user after registration
-			const authData = await locals.pb
-				.collection('users')
-				.authWithPassword(email, password);
+			// Create session for auto-login
+			const session = await lucia.createSession(userId, {});
+			const sessionCookie = lucia.createSessionCookie(session.id);
+			cookies.set(sessionCookie.name, sessionCookie.value, {
+				path: ".",
+				...sessionCookie.attributes
+			});
 			
 			console.log('Auto-login successful after registration');
 
-			console.log('Registration and auto-login successful, redirecting to app home');
 		} catch (err) {
 			console.error('Registration error:', err);
-
-			// Check for specific error types
-			if ((err as any).status === 400) {
-				const errorData = (err as any).data;
-				
-				// Handle validation errors
-				if (errorData?.data?.email) {
-					return fail(400, {
-						name,
-						email,
-						error: 'Email is already taken'
-					});
-				}
-				
-				// Handle other validation errors
-				if (errorData?.message) {
-					return fail(400, {
-						name,
-						email,
-						error: errorData.message
-					});
-				}
-			}
 
 			// Generic error message for other errors
 			return fail(500, {

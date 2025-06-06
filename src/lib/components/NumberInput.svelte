@@ -1,6 +1,7 @@
 <script lang="ts">
 	interface Props {
 		id: string;
+		name?: string;
 		label: string;
 		value: number;
 		min?: number;
@@ -19,6 +20,7 @@
 
 	let {
 		id,
+		name,
 		label,
 		value = $bindable(),
 		min = 0,
@@ -99,6 +101,7 @@
 		<input
 			type="number"
 			{id}
+			{name}
 			bind:value
 			{min}
 			max={max}

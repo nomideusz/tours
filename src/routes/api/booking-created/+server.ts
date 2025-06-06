@@ -1,5 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
+import { db } from '$lib/db/connection.js';
+import { bookings } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, fetch }) => {
   try {
@@ -10,8 +12,13 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     }
 
     // Get booking details to check status
-    const pb = await createAuthenticatedPB();
-    const booking = await pb.collection('bookings').getOne(bookingId);
+    const bookingRecords = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+
+    if (bookingRecords.length === 0) {
+      return json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    const booking = bookingRecords[0];
 
     console.log(`📋 Booking created webhook: ${bookingId} - Status: ${booking.status}, Payment: ${booking.paymentStatus}`);
 

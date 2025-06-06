@@ -1,0 +1,70 @@
+Database Structure Deployment Instructions
+==========================================
+
+Generated on: 2025-06-06T18:43:02.639Z
+
+Production Configuration:
+- VPS Host: 38.242.141.113
+- Docker Container: 9508f2d239e4
+- Database User: nom
+- Database Name: postgres
+
+Files Generated:
+1. zaur_complete_structure_20250606.sql - Complete database structure (all-in-one)
+2. 01_base_structure_20250606.sql - Base tables and relationships
+3. 02_oauth_tables_20250606.sql - OAuth authentication tables
+
+Deployment Options:
+==================
+
+Option 1: Automated Deployment (Recommended)
+--------------------------------------------
+Run: node scripts/deploy-database-structure.js
+
+Option 2: Manual Deployment via SSH
+-----------------------------------
+1. Upload the SQL file to VPS:
+   scp zaur_complete_structure_20250606.sql root@38.242.141.113:/tmp/
+
+2. Execute the migration:
+   ssh root@38.242.141.113 "docker exec -i 9508f2d239e4 psql -U nom -d postgres < /tmp/zaur_complete_structure_20250606.sql"
+
+3. Verify tables were created:
+   ssh root@38.242.141.113 "docker exec -i 9508f2d239e4 psql -U nom -d postgres -c '\dt'"
+
+4. Clean up:
+   ssh root@38.242.141.113 "rm /tmp/zaur_complete_structure_20250606.sql"
+
+Option 3: Manual Deployment via Database Client
+----------------------------------------------
+1. Connect to your production database using a PostgreSQL client
+2. Execute the SQL from zaur_complete_structure_20250606.sql
+3. Verify all tables were created successfully
+
+Expected Tables After Deployment:
+================================
+- users (with nullable hashed_password for OAuth)
+- tours
+- time_slots
+- bookings
+- payments
+- qr_codes
+- sessions
+- oauth_accounts (new)
+
+Post-Deployment Checklist:
+=========================
+[ ] All tables created successfully
+[ ] Foreign key constraints are in place
+[ ] Indexes are created
+[ ] OAuth tables are present
+[ ] Application can connect to database
+[ ] Test user registration/login
+[ ] Test OAuth login flow
+
+Rollback Instructions:
+=====================
+If you need to rollback, you can drop all tables:
+DROP TABLE IF EXISTS payments, bookings, qr_codes, time_slots, tours, sessions, oauth_accounts, users CASCADE;
+
+Note: This will delete ALL data. Only use in emergencies or initial setup.

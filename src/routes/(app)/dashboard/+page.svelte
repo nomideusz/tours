@@ -156,15 +156,14 @@
 		/>
 
 		<!-- Hidden on mobile, shown on larger screens -->
-		<div class="hidden lg:block">
-			<StatsCard
-				title="Today's Bookings" 
-				value={stats.todayBookings}
-				subtitle="bookings for today"
-				icon={Calendar}
-				variant="small"
-			/>
-		</div>
+		<StatsCard
+			title="Today's Bookings" 
+			value={stats.todayBookings || 0}
+			subtitle="bookings for today"
+			icon={Calendar}
+			variant="small"
+			class="hidden lg:block"
+		/>
 
 		<StatsCard
 			title="Weekly Revenue"

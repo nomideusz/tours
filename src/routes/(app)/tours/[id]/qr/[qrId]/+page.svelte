@@ -61,7 +61,7 @@
 		]}
 	>
 		<!-- Tour Status & Name Indicator -->
-		<TourHeader tour={data.tour} />
+		<TourHeader tour={data.tour as any} />
 
 		<!-- QR Code Details -->
 		<div class="mb-4 flex flex-wrap items-center gap-2">
@@ -93,7 +93,7 @@
 	<div class="grid lg:grid-cols-3 gap-8">
 		<!-- QR Code Display -->
 		<div class="lg:col-span-1">
-			<QRCodeCard qrCode={data.qrCode} size="large" />
+			<QRCodeCard qrCode={data.qrCode as any} size="large" />
 			
 					<!-- Quick Stats -->
 		<div class="mt-6 rounded-xl shadow-sm p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">

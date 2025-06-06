@@ -2,16 +2,21 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { toursApi, pb } from '$lib/pocketbase.js';
+	import { enhance } from '$app/forms';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import type { Tour } from '$lib/types.js';
+	import type { PageData, ActionData } from './$types.js';
+	import type { ValidationError } from '$lib/validation.js';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
 	let tour = $state<Tour | null>(null);
-	let isLoading = $state(true);
+	let isLoading = $state(false); // Data is loaded server-side
 	let isSubmitting = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
+	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let uploadedImages = $state<File[]>([]);
 	let existingImages = $state<string[]>([]);
 	let imagesToDelete = $state<string[]>([]);
@@ -33,42 +38,33 @@
 		cancellationPolicy: ''
 	});
 
-	onMount(async () => {
-		if (tourId) {
-			await loadTour();
+	onMount(() => {
+		if (data.tour) {
+			initializeTour();
 		}
 	});
 
-	async function loadTour() {
-		try {
-			isLoading = true;
-			error = null;
-			tour = await toursApi.getById(tourId);
+	function initializeTour() {
+		if (data.tour) {
+			tour = data.tour as any;
 			
-			if (tour) {
-				// Populate form data with existing tour data
-				formData = {
-					name: tour.name || '',
-					description: tour.description || '',
-					price: tour.price || 0,
-					duration: tour.duration || 60,
-					capacity: tour.capacity || 10,
-					status: tour.status || 'draft',
-					category: tour.category || '',
-					location: tour.location || '',
-					includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
-					requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
-					cancellationPolicy: tour.cancellationPolicy || ''
-				};
-				
-				// Store existing images
-				existingImages = tour.images || [];
-			}
-		} catch (err) {
-			error = 'Failed to load tour details. Please try again.';
-			console.error('Error loading tour:', err);
-		} finally {
-			isLoading = false;
+			// Populate form data with existing tour data
+			formData = {
+				name: data.tour.name || '',
+				description: data.tour.description || '',
+				price: data.tour.price || 0,
+				duration: data.tour.duration || 60,
+				capacity: data.tour.capacity || 10,
+				status: data.tour.status || 'draft',
+				category: data.tour.category || '',
+				location: data.tour.location || '',
+				includedItems: data.tour.includedItems && data.tour.includedItems.length > 0 ? data.tour.includedItems : [''],
+				requirements: data.tour.requirements && data.tour.requirements.length > 0 ? data.tour.requirements : [''],
+				cancellationPolicy: data.tour.cancellationPolicy || ''
+			};
+			
+			// Store existing images
+			existingImages = data.tour.images || [];
 		}
 	}
 
@@ -121,74 +117,8 @@
 	}
 
 	function getExistingImageUrl(imageName: string): string {
-		if (!tour || !pb) return '';
-		return pb.files.getURL(tour, imageName);
-	}
-
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		isSubmitting = true;
-		error = null;
-
-		try {
-			// Filter out empty strings from arrays
-			const cleanedData = {
-				...formData,
-				includedItems: formData.includedItems.filter(item => item.trim() !== ''),
-				requirements: formData.requirements.filter(req => req.trim() !== '')
-			};
-
-			// If there are new images or images to delete, use FormData
-			if (uploadedImages.length > 0 || imagesToDelete.length > 0) {
-				const formDataWithImages = new FormData();
-				
-				// Add all form fields
-				Object.entries(cleanedData).forEach(([key, value]) => {
-					if (Array.isArray(value)) {
-						// JSON fields (includedItems, requirements) need JSON strings
-						if (key === 'includedItems' || key === 'requirements') {
-							formDataWithImages.append(key, JSON.stringify(value));
-						} else {
-							// Other arrays append each item separately
-							value.forEach(item => {
-								formDataWithImages.append(key, String(item));
-							});
-						}
-					} else {
-						formDataWithImages.append(key, String(value));
-					}
-				});
-
-				// Add existing images we want to keep (PocketBase needs explicit preservation)
-				existingImages.forEach((imageName) => {
-					// Don't include images that are marked for deletion
-					if (!imagesToDelete.includes(imageName)) {
-						formDataWithImages.append('images', imageName);
-					}
-				});
-
-				// Add new images
-				uploadedImages.forEach((image) => {
-					formDataWithImages.append('images', image);
-				});
-
-				// Mark images for deletion (add '-' prefix)
-				imagesToDelete.forEach((imageName) => {
-					formDataWithImages.append('images-', imageName);
-				});
-
-				await toursApi.updateWithImages(tourId, formDataWithImages);
-			} else {
-				await toursApi.update(tourId, cleanedData);
-			}
-
-			goto(`/tours/${tourId}`);
-		} catch (err) {
-			error = 'Failed to update tour. Please try again.';
-			console.error('Error updating tour:', err);
-		} finally {
-			isSubmitting = false;
-		}
+		// For now, return empty string since images are not implemented yet
+		return '';
 	}
 
 	function handleCancel() {
@@ -256,19 +186,29 @@
 			</div>
 			
 			<div class="p-6 sm:p-8">
-				<TourForm
-					bind:formData
-					bind:uploadedImages
-					{isSubmitting}
-					isEdit={true}
-					onSubmit={handleSubmit}
-					onCancel={handleCancel}
-					onImageUpload={handleImageUpload}
-					onImageRemove={removeNewImage}
-					{existingImages}
-					onExistingImageRemove={removeExistingImage}
-					{getExistingImageUrl}
-				/>
+				<form method="POST" enctype="multipart/form-data" use:enhance={() => {
+					isSubmitting = true;
+					return async ({ result }) => {
+						isSubmitting = false;
+						if (result.type === 'redirect') {
+							goto(result.location);
+						}
+					};
+				}}>
+					<TourForm
+						bind:formData
+						bind:uploadedImages
+						{isSubmitting}
+						isEdit={true}
+						onCancel={handleCancel}
+						onImageUpload={handleImageUpload}
+						onImageRemove={removeNewImage}
+						{existingImages}
+						onExistingImageRemove={removeExistingImage}
+						{getExistingImageUrl}
+						serverErrors={validationErrors}
+					/>
+				</form>
 			</div>
 		</div>
 

@@ -1,12 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getStripe } from '$lib/stripe.server.js';
 import { env as privateEnv } from '$env/dynamic/private';
-import { env as publicEnv } from '$env/dynamic/public';
 import type { Stripe } from 'stripe';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
-
-const POCKETBASE_URL = publicEnv.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { db } from '$lib/db/connection.js';
+import { bookings, payments, tours, timeSlots, users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -37,17 +36,6 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // Get authenticated PocketBase instance
-  let pb;
-  try {
-    console.log('Webhook: Attempting PocketBase admin authentication...');
-    pb = await createAuthenticatedPB();
-    console.log('Webhook: PocketBase admin authentication successful');
-  } catch (authError) {
-    console.error('Webhook: Failed to authenticate with PocketBase admin:', authError);
-    return json({ error: 'Database authentication failed' }, { status: 500 });
-  }
-
   try {
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -66,24 +54,25 @@ export const POST: RequestHandler = async ({ request }) => {
           
           // Update payment record
           console.log(`Webhook: Looking for payment record with Stripe ID: ${paymentIntent.id}`);
-          const payments = await pb.collection('payments').getFullList({
-            filter: `stripePaymentIntentId = "${paymentIntent.id}"`
-          });
-          console.log(`Webhook: Found ${payments.length} payment records`);
+          const paymentRecords = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, paymentIntent.id));
+          console.log(`Webhook: Found ${paymentRecords.length} payment records`);
 
-          if (payments.length > 0) {
-            const payment = payments[0];
+          if (paymentRecords.length > 0) {
+            const payment = paymentRecords[0];
             console.log(`Webhook: Updating payment record ${payment.id}`);
             
             // Calculate Stripe fees (approximate - actual fees come from balance transaction)
             const stripeFee = Math.round(paymentIntent.amount * 0.029 + 30); // 2.9% + 30 cents
             const netAmount = (paymentIntent.amount - stripeFee) / 100; // Convert back to euros
 
-            await pb.collection('payments').update(payment.id, {
-              status: 'succeeded',
-              processingFee: stripeFee / 100,
-              netAmount: netAmount
-            });
+            await db.update(payments)
+              .set({
+                status: 'succeeded',
+                processingFee: (stripeFee / 100).toString(),
+                netAmount: netAmount.toString(),
+                updatedAt: new Date()
+              })
+              .where(eq(payments.id, payment.id));
             console.log(`Webhook: Payment record updated successfully: ${payment.id} - Status: succeeded`);
           } else {
             console.warn(`Webhook: No payment record found for payment intent ${paymentIntent.id}`);
@@ -96,45 +85,62 @@ export const POST: RequestHandler = async ({ request }) => {
           // Update booking status with ticket QR code
           console.log(`Webhook: Updating booking ${bookingId} with ticket QR code and status...`);
           const updateData = {
-            status: 'confirmed',
-            paymentStatus: 'paid',
+            status: 'confirmed' as const,
+            paymentStatus: 'paid' as const,
             ticketQRCode: ticketQRCode,
-            attendanceStatus: 'not_arrived'
+            attendanceStatus: 'not_arrived' as const,
+            updatedAt: new Date()
           };
           console.log(`Webhook: Booking update data:`, updateData);
           
           // Update booking directly and trigger emails
-          await pb.collection('bookings').update(bookingId, updateData);
+          await db.update(bookings)
+            .set(updateData)
+            .where(eq(bookings.id, bookingId));
           
           // Transfer payment to tour guide
           try {
-            const booking = await pb.collection('bookings').getOne(bookingId, {
-              expand: 'tour,tour.guide'
-            });
-            
-            const tourGuide = booking.expand?.tour?.expand?.guide;
-            if (tourGuide?.stripeAccountId) {
-              console.log(`Webhook: Transferring payment to tour guide ${tourGuide.id}...`);
+            // Get booking with tour and user data
+            const bookingData = await db.select({
+              id: bookings.id,
+              tourId: bookings.tourId,
+              participants: bookings.participants,
+              timeSlotId: bookings.timeSlotId,
+              tourUserId: users.id,
+              stripeAccountId: users.stripeAccountId
+            })
+            .from(bookings)
+            .innerJoin(tours, eq(bookings.tourId, tours.id))
+            .innerJoin(users, eq(tours.userId, users.id))
+            .where(eq(bookings.id, bookingId))
+            .limit(1);
+
+            if (bookingData.length > 0) {
+              const booking = bookingData[0];
               
-              const stripe = getStripe();
-              const platformFeePercent = 0.10; // 10% platform fee
-              const transferAmount = Math.round(paymentIntent.amount * (1 - platformFeePercent));
-              
-              await stripe.transfers.create({
-                amount: transferAmount,
-                currency: paymentIntent.currency,
-                destination: tourGuide.stripeAccountId,
-                transfer_group: `booking_${bookingId}`,
-                metadata: {
-                  bookingId: bookingId,
-                  tourId: booking.tour,
-                  guideId: tourGuide.id
-                }
-              });
-              
-              console.log(`Webhook: Payment transferred to guide: €${transferAmount/100} (after 10% platform fee)`);
-            } else {
-              console.warn(`Webhook: Tour guide ${tourGuide?.id || 'unknown'} has no Stripe account configured`);
+              if (booking.stripeAccountId) {
+                console.log(`Webhook: Transferring payment to tour guide ${booking.tourUserId}...`);
+                
+                const stripe = getStripe();
+                const platformFeePercent = 0.10; // 10% platform fee
+                const transferAmount = Math.round(paymentIntent.amount * (1 - platformFeePercent));
+                
+                await stripe.transfers.create({
+                  amount: transferAmount,
+                  currency: paymentIntent.currency,
+                  destination: booking.stripeAccountId,
+                  transfer_group: `booking_${bookingId}`,
+                  metadata: {
+                    bookingId: bookingId,
+                    tourId: booking.tourId,
+                    guideId: booking.tourUserId
+                  }
+                });
+                
+                console.log(`Webhook: Payment transferred to guide: €${transferAmount/100} (after 10% platform fee)`);
+              } else {
+                console.warn(`Webhook: Tour guide ${booking.tourUserId} has no Stripe account configured`);
+              }
             }
           } catch (transferError) {
             console.error('Webhook: Failed to transfer payment to guide:', transferError);
@@ -190,12 +196,6 @@ export const POST: RequestHandler = async ({ request }) => {
           // Continue processing - payment was successful even if we couldn't update the database
         }
 
-        // Note: QR code conversion tracking is handled during booking creation via API
-        // No need to track conversions again in webhook as they're already counted
-
-        // TODO: Send confirmation email to customer with ticket QR code
-        // TODO: Send notification to tour guide
-
         break;
       }
 
@@ -211,21 +211,25 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         // Update payment record
-        const payments = await pb.collection('payments').getFullList({
-          filter: `stripePaymentIntentId = "${paymentIntent.id}"`
-        });
+        const paymentRecords = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, paymentIntent.id));
 
-        if (payments.length > 0) {
-          await pb.collection('payments').update(payments[0].id, {
-            status: 'failed'
-          });
-          console.log(`Payment record marked as failed: ${payments[0].id}`);
+        if (paymentRecords.length > 0) {
+          await db.update(payments)
+            .set({
+              status: 'failed',
+              updatedAt: new Date()
+            })
+            .where(eq(payments.id, paymentRecords[0].id));
+          console.log(`Payment record marked as failed: ${paymentRecords[0].id}`);
         }
 
         // Update booking status
-        await pb.collection('bookings').update(bookingId, {
-          paymentStatus: 'failed'
-        });
+        await db.update(bookings)
+          .set({
+            paymentStatus: 'failed',
+            updatedAt: new Date()
+          })
+          .where(eq(bookings.id, bookingId));
         console.log(`Booking payment marked as failed: ${bookingId}`);
 
         break;
@@ -243,34 +247,45 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         // Update payment record
-        const payments = await pb.collection('payments').getFullList({
-          filter: `stripePaymentIntentId = "${paymentIntent.id}"`
-        });
+        const paymentRecords = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, paymentIntent.id));
 
-        if (payments.length > 0) {
-          await pb.collection('payments').update(payments[0].id, {
-            status: 'cancelled'
-          });
-          console.log(`Payment record marked as cancelled: ${payments[0].id}`);
+        if (paymentRecords.length > 0) {
+          await db.update(payments)
+            .set({
+              status: 'cancelled',
+              updatedAt: new Date()
+            })
+            .where(eq(payments.id, paymentRecords[0].id));
+          console.log(`Payment record marked as cancelled: ${paymentRecords[0].id}`);
         }
 
         // Update booking status
-        await pb.collection('bookings').update(bookingId, {
-          status: 'cancelled',
-          paymentStatus: 'failed'
-        });
+        await db.update(bookings)
+          .set({
+            status: 'cancelled',
+            paymentStatus: 'failed',
+            updatedAt: new Date()
+          })
+          .where(eq(bookings.id, bookingId));
         console.log(`Booking cancelled: ${bookingId}`);
 
         // Restore time slot availability
         try {
-          const booking = await pb.collection('bookings').getOne(bookingId);
-          const timeSlot = await pb.collection('time_slots').getOne(booking.timeSlot);
-          
-          await pb.collection('time_slots').update(booking.timeSlot, {
-            bookedSpots: Math.max(0, timeSlot.bookedSpots - booking.participants),
-            availableSpots: timeSlot.availableSpots + booking.participants
-          });
-          console.log(`Time slot availability restored for booking ${bookingId}`);
+          const booking = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+          if (booking.length > 0) {
+            const timeSlot = await db.select().from(timeSlots).where(eq(timeSlots.id, booking[0].timeSlotId)).limit(1);
+            
+            if (timeSlot.length > 0) {
+              await db.update(timeSlots)
+                .set({
+                  bookedSpots: Math.max(0, timeSlot[0].bookedSpots - booking[0].participants),
+                  availableSpots: timeSlot[0].availableSpots + booking[0].participants,
+                  updatedAt: new Date()
+                })
+                .where(eq(timeSlots.id, booking[0].timeSlotId));
+              console.log(`Time slot availability restored for booking ${bookingId}`);
+            }
+          }
         } catch (timeSlotError) {
           console.error('Failed to restore time slot availability:', timeSlotError);
         }
