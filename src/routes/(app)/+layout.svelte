@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
-	import {
-		authFSM, 
-		updateAuthState, 
-		authContext, 
-		authStore,
-		currentUser as currentUserStore
-	} from '$lib/auth.js';
+	import { auth, isAuthenticated, currentUser, isAdmin } from '$lib/stores/auth.js';
+	import { logout } from '$lib/auth/client.js';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		languageContext,
@@ -44,84 +39,14 @@
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();
 
-	// Initialize auth store with initial values (handle undefined data gracefully)
-	authStore.set({
-		isAuthenticated: !!data?.user,
-		user: data?.user || null,
-		state: data?.user ? 'loggedIn' : 'loggedOut'
-	});
-
-	// Initialize context with the store
-	authContext.set(authStore);
-
-	// Create a state for the current user - sync with the currentUser store
-	let currentUser = $state(data?.user || null);
-
-	// Keep local currentUser in sync with the store
-	$effect(() => {
-		const unsubscribe = currentUserStore.subscribe((user) => {
-			currentUser = user;
-		});
-		return unsubscribe;
-	});
-
-	// Create an explicitly typed variable for clarity in comparisons
-	type AuthState = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
-
-	// Track auth state
-	let authState = $state<AuthState>(authFSM.current);
+	// Reactive values from auth stores
+	let userIsAuthenticated = $derived($isAuthenticated);
+	let currentUserData = $derived($currentUser);
+	let userIsAdmin = $derived($isAdmin);
 
 	// Sidebar state
 	let sidebarOpen = $state(false);
 	let isLoggingOut = $state(false);
-
-	// Update currentUser with data from server
-	$effect(() => {
-		if (data?.user) {
-			currentUser = data.user;
-			currentUserStore.set(data.user);
-			updateAuthState(data.user);
-		}
-	});
-
-	// Watch for auth state changes
-	$effect(() => {
-		authState = authFSM.current;
-
-		// Force update to ensure UI reflects current auth state
-		if (data?.isAuthenticated && authState !== 'loggedIn') {
-			updateAuthState({ exists: true, forceAuth: true });
-		}
-
-		// Update auth store whenever auth state or user changes
-		authStore.update(() => ({
-			isAuthenticated: data?.isAuthenticated || authState === 'loggedIn',
-			user: currentUser,
-			state: authState
-		}));
-	});
-
-	// Set component as mounted and sync auth state
-	onMount(() => {
-		if (data?.user) {
-			currentUser = data.user;
-			currentUserStore.set(data.user);
-		}
-
-		if (data?.isAuthenticated) {
-			if (authFSM.current !== 'loggedIn') {
-				if (authFSM.current === 'loggingIn') {
-					authFSM.send('finishTransition');
-				} else {
-					updateAuthState({ exists: true, forceAuth: true });
-				}
-			}
-		} else if (data?.isAuthenticated === false) {
-			if (authFSM.current !== 'loggedOut' && authFSM.current !== 'loggingOut') {
-				authFSM.send('logout');
-			}
-		}
-	});
 
 	// Set language context from the store
 	languageContext.set(languageStore);
@@ -132,17 +57,6 @@
 	// Close sidebar on navigation
 	afterNavigate(({ to, from }) => {
 		sidebarOpen = false;
-
-		// Reload auth state after navigation from login
-		const isFromLogin = from?.url?.pathname?.includes('/auth/login');
-
-		if (isFromLogin && data?.user) {
-			console.log('Reloading auth after login navigation...');
-			setTimeout(() => {
-				currentUserStore.set(data.user);
-				updateAuthState(data.user);
-			}, 100);
-		}
 	});
 
 	// Navigation items
@@ -183,17 +97,12 @@
 		if (isLoggingOut) return;
 
 		isLoggingOut = true;
-		authFSM.send('logout');
 
 		try {
-			// Use a form submission instead of fetch to allow server redirect
-			const form = document.createElement('form');
-			form.method = 'POST';
-			form.action = '/auth/logout';
-			document.body.appendChild(form);
-			form.submit();
+			await logout('/auth/login');
 		} catch (error) {
 			console.error('Error during logout:', error);
+		} finally {
 			isLoggingOut = false;
 		}
 	}
@@ -265,7 +174,7 @@
 						</div>
 						<div class="ml-3 min-w-0 flex-1">
 							<p class="truncate text-sm font-medium text-gray-900">
-								{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
+								{currentUserData?.name || currentUserData?.email || 'User'}
 							</p>
 							<div class="mt-1 flex items-center gap-2">
 								<a
@@ -274,7 +183,7 @@
 								>
 									Profile
 								</a>
-								{#if data?.isAdmin}
+								{#if userIsAdmin}
 									<span class="text-xs text-gray-300">•</span>
 									<a
 										href="/admin"
@@ -355,7 +264,7 @@
 						</div>
 						<div class="ml-3 min-w-0 flex-1">
 							<p class="truncate text-base font-medium text-gray-900">
-								{currentUser?.username || currentUser?.name || currentUser?.email || 'User'}
+								{currentUserData?.name || currentUserData?.email || 'User'}
 							</p>
 							<div class="mt-1 flex items-center gap-2">
 								<a
@@ -365,7 +274,7 @@
 								>
 									Profile
 								</a>
-								{#if data?.isAdmin}
+								{#if userIsAdmin}
 									<span class="text-sm text-gray-300">•</span>
 									<a
 										href="/admin"

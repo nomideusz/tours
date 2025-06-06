@@ -1,10 +1,19 @@
 <script lang="ts">
 	import '../app.css';
 	import { navigationContext, navigationStore } from '$lib/context.js';
+	import { auth } from '$lib/stores/auth.js';
 	import { IsMounted } from 'runed';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props<{ data?: any }>();
+
+	// Initialize auth store with server data
+	$effect(() => {
+		if (data) {
+			auth.initialize(data);
+		}
+	});
 
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();

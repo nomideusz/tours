@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { authState } from '$lib/auth.js';
+	import { isLoading } from '$lib/stores/auth.js';
 	import Loader from 'lucide-svelte/icons/loader';
 	import { t, language } from '$lib/i18n.js';
 	import OAuth2Button from '$lib/components/OAuth2Button.svelte';
@@ -18,9 +18,12 @@
 
 	let { form } = $props<{ form?: RegisterForm }>();
 
-	// Destructure the auth state for reactivity
-	const isRegistering = $derived($authState === 'loggingIn'); // Reuse login state
+	// Use the loading state from auth store
+	const isAuthLoading = $derived($isLoading);
 	let manualLoading = $state(false);
+
+	// Combined loading state
+	const isRegistering = $derived(isAuthLoading || manualLoading);
 
 	// Form data - use server-returned values if available
 	let name = $state(form?.name || '');
