@@ -106,7 +106,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 				.where(eq(bookings.qrCodeId, params.qrId))
 				.orderBy(desc(bookings.createdAt))
-				.limit(10);
+				.limit(5);
 			
 			recentBookings = bookingsData.map(booking => ({
 				...booking,

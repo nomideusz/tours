@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.leftJoin(qrCodes, eq(bookings.qrCodeId, qrCodes.id))
 			.where(eq(bookings.tourId, params.id))
 			.orderBy(desc(bookings.createdAt))
-			.limit(100); // Limit to prevent 502 timeout
+			.limit(50); // Reduced from 100 to 50 to prevent 502 timeout
 
 		// Transform to match expected format with expand structure
 		const transformedBookings = bookingsData.map(booking => ({

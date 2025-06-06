@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
       .from(timeSlots)
       .where(eq(timeSlots.tourId, params.id))
       .orderBy(desc(timeSlots.startTime))
-      .limit(50); // Limit to prevent 502 timeout
+      .limit(30); // Reduced from 50 to 30 to prevent 502 timeout
 
     // User is authenticated, return user data, tour ID, and tour data
     return {

@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				eq(qrCodes.tourId, params.id),
 				eq(qrCodes.userId, locals.user.id)
 			))
-			.limit(50); // Limit to prevent 502 timeout
+			.limit(25); // Reduced from 50 to 25 to prevent 502 timeout
 
 		const formattedQRCodes = qrCodesData.map(qr => ({
 			id: qr.id,
