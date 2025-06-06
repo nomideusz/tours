@@ -3,32 +3,21 @@ import { auth } from '$lib/stores/auth.js';
 
 /**
  * Client-side logout function
- * Handles form submission to logout endpoint and updates auth store
+ * Navigates to logout page which handles the logout action
  */
 export async function logout(redirectTo: string = '/auth/login') {
 	try {
 		// Set loading state
 		auth.setLoading(true);
 		
-		// Submit logout form to server
-		const response = await fetch('/auth/logout', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-			}
-		});
-		
-		// Clear auth store immediately
-		auth.clear();
-		
-		// Invalidate all data and redirect
-		await invalidateAll();
-		await goto(redirectTo, { replaceState: true });
+		// Navigate to logout page which will handle the server action
+		await goto('/auth/logout', { replaceState: true });
 		
 	} catch (error) {
 		console.error('Logout error:', error);
-		// Still clear auth store and redirect on error
+		// Fallback: clear auth store and redirect manually
 		auth.clear();
+		await invalidateAll();
 		await goto(redirectTo, { replaceState: true });
 	}
 }
