@@ -126,9 +126,6 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.2.0
-      pocketbase:
-        specifier: ^0.26.0
-        version: 0.26.0
       prettier:
         specifier: ^3.4.2
         version: 3.5.3
@@ -3399,9 +3396,6 @@ packages:
   pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
-
-  pocketbase@0.26.0:
-    resolution: {integrity: sha512-WBBeOgz4Jnrd7a1KEzSBUJqpTortKKCcp16j5KoF+4tNIyQHsmynj+qRSvS56/RVacVMbAqO8Qkfj3N84fpzEw==}
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -7441,8 +7435,6 @@ snapshots:
   picomatch@4.0.2: {}
 
   pngjs@5.0.0: {}
-
-  pocketbase@0.26.0: {}
 
   possible-typed-array-names@1.1.0: {}
 
