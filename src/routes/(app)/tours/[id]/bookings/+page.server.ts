@@ -1,5 +1,5 @@
-import type { PageServerLoad } from './$types.js';
-import { error } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types.js';
+import { error, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
 import { eq, and, desc } from 'drizzle-orm';
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const tour = tourData[0];
 
-		// Load bookings with related data (first 500)
+		// Load bookings with related data
 		const bookingsData = await db
 			.select({
 				// Booking fields
@@ -41,6 +41,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				specialRequests: bookings.specialRequests,
 				createdAt: bookings.createdAt,
 				updatedAt: bookings.updatedAt,
+				bookingReference: bookings.bookingReference,
+				attendanceStatus: bookings.attendanceStatus,
+				checkedInAt: bookings.checkedInAt,
+				ticketQRCode: bookings.ticketQRCode,
 				
 				// Time slot fields
 				timeSlotId: bookings.timeSlotId,
@@ -58,15 +62,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.leftJoin(qrCodes, eq(bookings.qrCodeId, qrCodes.id))
 			.where(eq(bookings.tourId, params.id))
-			.orderBy(desc(bookings.createdAt))
-			.limit(500);
+			.orderBy(desc(bookings.createdAt));
 
 		// Transform to match expected format with expand structure
 		const transformedBookings = bookingsData.map(booking => ({
 			id: booking.id,
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
-			totalAmount: booking.totalAmount,
+			totalAmount: parseFloat(booking.totalAmount),
 			participants: booking.participants,
 			customerName: booking.customerName,
 			customerEmail: booking.customerEmail,
@@ -74,8 +77,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			specialRequests: booking.specialRequests,
 			created: booking.createdAt.toISOString(),
 			updated: booking.updatedAt.toISOString(),
+			bookingReference: booking.bookingReference,
+			attendanceStatus: booking.attendanceStatus,
+			checkedInAt: booking.checkedInAt?.toISOString() || null,
+			ticketQRCode: booking.ticketQRCode,
 			expand: {
-				tour: tour,
+				tour: {
+					...tour,
+					price: parseFloat(tour.price)
+				},
 				timeSlot: booking.timeSlotId ? {
 					id: booking.timeSlotId,
 					startTime: booking.timeSlotStartTime?.toISOString(),
@@ -92,7 +102,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		}));
 
 		return {
-			tour,
+			tour: {
+				...tour,
+				price: parseFloat(tour.price)
+			},
 			bookings: transformedBookings
 		};
 	} catch (err) {
@@ -104,5 +117,71 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw err;
 		}
 		throw error(500, 'Failed to load tour bookings');
+	}
+};
+
+export const actions: Actions = {
+	updateStatus: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const bookingId = formData.get('bookingId') as string;
+		const newStatus = formData.get('status') as 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+
+		if (!bookingId || !newStatus) {
+			return fail(400, { error: 'Missing booking ID or status' });
+		}
+
+		try {
+			// Get booking with tour ownership check
+			const bookingData = await db
+				.select({
+					id: bookings.id,
+					status: bookings.status,
+					paymentStatus: bookings.paymentStatus
+				})
+				.from(bookings)
+				.innerJoin(tours, eq(bookings.tourId, tours.id))
+				.where(and(
+					eq(bookings.id, bookingId),
+					eq(tours.userId, locals.user.id)
+				))
+				.limit(1);
+
+			if (bookingData.length === 0) {
+				return fail(404, { error: 'Booking not found' });
+			}
+
+			const booking = bookingData[0];
+
+			// Validate status transitions
+			if (newStatus === 'confirmed' && booking.paymentStatus !== 'paid') {
+				return fail(400, { 
+					error: 'Cannot confirm booking: Payment not completed. Customer must complete payment first.' 
+				});
+			}
+
+			if (newStatus === 'completed' && booking.status !== 'confirmed') {
+				return fail(400, { 
+					error: 'Cannot complete booking: Only confirmed bookings can be marked as completed.' 
+				});
+			}
+
+			// Update booking status
+			await db
+				.update(bookings)
+				.set({ 
+					status: newStatus,
+					updatedAt: new Date()
+				})
+				.where(eq(bookings.id, bookingId));
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating booking status:', err);
+			return fail(500, { error: 'Failed to update booking status' });
+		}
 	}
 }; 

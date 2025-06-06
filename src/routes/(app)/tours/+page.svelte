@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { toursApi, qrCodesApi } from '$lib/pocketbase.js';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -9,7 +8,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import type { Tour } from '$lib/types.js';
-	import type { PageData } from './$types.js';
+	import type { PageData, ActionData } from './$types.js';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Search from 'lucide-svelte/icons/search';
@@ -27,13 +26,14 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import UserCheck from 'lucide-svelte/icons/user-check';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let tours = $state<Tour[]>((data.tours as unknown as Tour[]) || []);
-	let isLoading = $state(false); // No longer loading since data comes from server
-	let error = $state<string | null>(null);
+	let isLoading = $state(false);
+	let isDeletingId = $state<string | null>(null);
+	let isDuplicatingId = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
 	let selectedStatus = $state('all');
 	let searchQuery = $state('');
 	let showFilters = $state(false);
@@ -54,90 +54,24 @@
 		'Group Tours'
 	];
 
-	onMount(() => {
-		// Close dropdown when clicking outside
+	// Update tours when data changes
+	$effect(() => {
+		tours = (data.tours as unknown as Tour[]) || [];
+	});
+
+	// Close dropdown when clicking outside
+	$effect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (!event.target || !(event.target as Element).closest('.dropdown-container')) {
+				openDropdownId = null;
+			}
+		};
+
 		document.addEventListener('click', handleClickOutside);
 		return () => {
 			document.removeEventListener('click', handleClickOutside);
 		};
 	});
-
-	function handleClickOutside(event: MouseEvent) {
-		if (!event.target || !(event.target as Element).closest('.dropdown-container')) {
-			openDropdownId = null;
-		}
-	}
-
-	async function deleteTour(tourId: string) {
-		if (!confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
-			return;
-		}
-
-		try {
-			await toursApi.delete(tourId);
-			tours = tours.filter((tour) => tour.id !== tourId);
-			openDropdownId = null;
-		} catch (err) {
-			error = 'Failed to delete tour. Please try again.';
-			console.error('Error deleting tour:', err);
-		}
-	}
-
-	async function duplicateTour(tour: Tour) {
-		try {
-			const duplicatedData = {
-				name: `${tour.name} (Copy)`,
-				description: tour.description,
-				price: tour.price,
-				duration: tour.duration,
-				capacity: tour.capacity,
-				status: 'draft' as Tour['status'],
-				category: tour.category,
-				location: tour.location,
-				includedItems: tour.includedItems || [],
-				requirements: tour.requirements || [],
-				cancellationPolicy: tour.cancellationPolicy
-			};
-
-			const newTour = await toursApi.create(duplicatedData);
-			
-			// Create a QR code for the duplicated tour
-			try {
-				const generateUniqueCode = () => {
-					const tourPrefix = newTour.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') || 'TUR';
-					const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-					return `${tourPrefix}-${randomSuffix}`;
-				};
-
-				const qrData = {
-					tour: newTour.id,
-					name: `${newTour.name} - Main QR Code`,
-					category: 'digital' as const,
-					code: generateUniqueCode(),
-					scans: 0,
-					conversions: 0,
-					isActive: true,
-					customization: {
-						color: '#000000',
-						backgroundColor: '#FFFFFF',
-						style: 'square' as const
-					}
-				};
-				
-				await qrCodesApi.create(qrData);
-				console.log('QR code created for duplicated tour:', newTour.id);
-			} catch (qrError) {
-				console.error('Failed to create QR code for duplicated tour:', qrError);
-				// Continue anyway - user can create QR codes manually
-			}
-			
-			tours = [newTour, ...tours];
-			openDropdownId = null;
-		} catch (err) {
-			error = 'Failed to duplicate tour. Please try again.';
-			console.error('Error duplicating tour:', err);
-		}
-	}
 
 	function getStatusColor(status: Tour['status']) {
 		switch (status) {
@@ -226,7 +160,7 @@
 		return filtered;
 	});
 
-	// Use real statistics from server
+	// Use statistics from server
 	let stats = $derived(data.stats || {
 		total: 0,
 		active: 0,
@@ -264,7 +198,7 @@
 		</div>
 	{/if}
 
-	<!-- Mobile Quick Actions - Prominent on mobile -->
+	<!-- Mobile Quick Actions -->
 	<div class="lg:hidden mb-6">
 		<div class="bg-white rounded-xl border border-gray-200 p-4">
 			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
@@ -479,11 +413,10 @@
 					<!-- Tour Image -->
 					<div class="relative h-40 sm:h-48 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
 						{#if tour.images && tour.images[0]}
-							<img 
-								src={`https://z.xeon.pl/api/files/tours/${tour.id}/${tour.images[0]}?thumb=400x300`} 
-								alt={tour.name}
-								class="w-full h-full object-cover"
-							/>
+							<!-- TODO: Implement image storage and retrieval -->
+							<div class="w-full h-full flex items-center justify-center">
+								<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
+							</div>
 						{:else}
 							<div class="w-full h-full flex items-center justify-center">
 								<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
@@ -498,7 +431,7 @@
 							</span>
 						</div>
 
-						<!-- Quick Actions on Hover (Desktop) / Always Visible (Mobile) -->
+						<!-- Quick Actions on Hover -->
 						<div class="absolute inset-0 bg-black/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
 							<button
 								onclick={() => goto(`/tours/${tour.id}`)}
@@ -612,20 +545,55 @@
 											Schedule
 										</button>
 										<div class="border-t border-gray-100 my-1"></div>
-										<button
-											onclick={() => duplicateTour(tour)}
-											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-										>
-											<Copy class="h-4 w-4" />
-											Duplicate
-										</button>
-										<button
-											onclick={() => deleteTour(tour.id)}
-											class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-										>
-											<Trash2 class="h-4 w-4" />
-											Delete
-										</button>
+										<form method="POST" action="?/duplicate" use:enhance={() => {
+											isDuplicatingId = tour.id;
+											return async ({ result }) => {
+												isDuplicatingId = null;
+												if (result.type === 'success') {
+													await invalidateAll();
+												}
+											};
+										}}>
+											<input type="hidden" name="tourId" value={tour.id} />
+											<button
+												type="submit"
+												disabled={isDuplicatingId === tour.id}
+												class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+											>
+												{#if isDuplicatingId === tour.id}
+													<LoadingSpinner size="small" />
+												{:else}
+													<Copy class="h-4 w-4" />
+												{/if}
+												Duplicate
+											</button>
+										</form>
+										<form method="POST" action="?/delete" use:enhance={() => {
+											if (!confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
+												return ({ cancel }) => cancel();
+											}
+											isDeletingId = tour.id;
+											return async ({ result }) => {
+												isDeletingId = null;
+												if (result.type === 'success') {
+													await invalidateAll();
+												}
+											};
+										}}>
+											<input type="hidden" name="tourId" value={tour.id} />
+											<button
+												type="submit"
+												disabled={isDeletingId === tour.id}
+												class="w-full flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+											>
+												{#if isDeletingId === tour.id}
+													<LoadingSpinner size="small" />
+												{:else}
+													<Trash2 class="h-4 w-4" />
+												{/if}
+												Delete
+											</button>
+										</form>
 									</div>
 								{/if}
 							</div>

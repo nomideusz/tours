@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { toursApi, timeSlotsApi, pb } from '$lib/pocketbase.js';
+	import { enhance } from '$app/forms';
 	import type { Tour, TimeSlot } from '$lib/types.js';
-	import type { PageData } from './$types.js';
+	import type { PageData, ActionData } from './$types.js';
 	import { validateTimeSlotForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
@@ -30,20 +30,20 @@
 	import DatePicker from '$lib/components/DatePicker.svelte';
 	import TimePicker from '$lib/components/TimePicker.svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	let tour = $state<Tour | null>(null);
-	let timeSlots = $state<TimeSlot[]>([]);
-	let isLoading = $state(true);
+	let tour = $state<Tour | null>(data.tour as any || null);
+	let timeSlots = $state<TimeSlot[]>(data.timeSlots as any || []);
+	let isLoading = $state(false);
 	let isSubmitting = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
 	let showAddModal = $state(false);
 	let currentMonth = $state(new Date());
 	let isEditMode = $state(false);
 	let editingSlotId = $state<string | null>(null);
 	let viewMode = $state<'calendar' | 'list'>('calendar');
 	let selectedDate = $state<Date | null>(null);
-	let successMessage = $state<string | null>(null);
+	let successMessage = $state<string | null>(form?.success || null);
 	let showPublishConfirmation = $state(false);
 	let showDraftAlert = $state(true);
 	let showActiveAlert = $state(true);
@@ -63,6 +63,14 @@
 	let upcomingSlots = $derived(timeSlots.filter(slot => new Date(slot.startTime) > new Date()).length);
 	let totalCapacity = $derived(timeSlots.reduce((sum, slot) => sum + slot.availableSpots, 0));
 	let bookedSpots = $derived(timeSlots.reduce((sum, slot) => sum + (slot.bookedSpots || 0), 0));
+
+	// Update data when refreshed
+	$effect(() => {
+		tour = data.tour as any || null;
+		timeSlots = data.timeSlots as any || [];
+		error = form?.error || null;
+		successMessage = form?.success || null;
+	});
 
 	// Reactive validation
 	$effect(() => {
@@ -137,44 +145,17 @@
 	}
 
 	async function loadTimeSlots() {
-		try {
-			isLoading = true;
-			error = null;
-			timeSlots = await timeSlotsApi.getByTour(tourId);
-		} catch (err) {
-			error = 'Failed to load time slots.';
-			console.error('Error loading time slots:', err);
-		} finally {
-			isLoading = false;
-		}
+		// Data is loaded from server, just refresh the page data
+		await invalidateAll();
 	}
 
 	async function publishTour() {
 		if (!tour) return;
-
-		try {
-			isSubmitting = true;
-			error = null;
-
-			// Update tour status to active
-			const updatedTour = await toursApi.update(tourId, {
-				status: 'active'
-			});
-
-			// Update local tour state
-			tour = updatedTour;
-
-			// Hide welcome alert since tour is now published
-			showWelcome = false;
-
-			// Show success message
-			successMessage = 'Tour published successfully! It\'s now visible to customers.';
-			showPublishConfirmation = false;
-		} catch (err) {
-			error = 'Failed to publish tour. Please try again.';
-			console.error('Error publishing tour:', err);
-		} finally {
-			isSubmitting = false;
+		
+		// Use the hidden form to submit the publish action
+		const form = document.getElementById('publish-form') as HTMLFormElement;
+		if (form) {
+			form.requestSubmit();
 		}
 	}
 
@@ -182,80 +163,7 @@
 		showPublishConfirmation = true;
 	}
 
-	async function createRecurringTimeSlots(baseSlotData: any) {
-		const startDate = new Date(baseSlotData.startTime);
-		const endDate = new Date(baseSlotData.endTime);
-		const recurringEnd = newSlotForm.recurringEnd ? new Date(newSlotForm.recurringEnd) : null;
-		
-		// Calculate slot duration in minutes
-		const slotDuration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
-		
-		// Set appropriate limits based on pattern
-		const patternLimits = {
-			daily: 365,    // 1 year of daily slots
-			weekly: 52,    // 1 year of weekly slots  
-			monthly: 24    // 2 years of monthly slots
-		};
-		const maxSlots = patternLimits[newSlotForm.recurringPattern] || 52;
-		
-		const slotsToCreate = [];
-		let currentDate = new Date(startDate);
-		let count = 0;
-		
-		while (count < maxSlots) {
-			// Check if we've reached the end date
-			if (recurringEnd && currentDate > recurringEnd) {
-				break;
-			}
-			
-			// Create time slot for current date
-			const slotStart = new Date(currentDate);
-			const slotEnd = new Date(currentDate.getTime() + (slotDuration * 60 * 1000));
-			
-			const slotData = {
-				...baseSlotData,
-				startTime: slotStart.toISOString(),
-				endTime: slotEnd.toISOString(),
-				// Don't include recurring data in individual slots
-				isRecurring: false,
-				recurringPattern: undefined,
-				recurringEnd: undefined
-			};
-			
-			slotsToCreate.push(slotData);
-			
-			// Calculate next occurrence
-			switch (newSlotForm.recurringPattern) {
-				case 'daily':
-					currentDate.setDate(currentDate.getDate() + 1);
-					break;
-				case 'weekly':
-					currentDate.setDate(currentDate.getDate() + 7);
-					break;
-				case 'monthly':
-					currentDate.setMonth(currentDate.getMonth() + 1);
-					break;
-				default:
-					// Fallback to weekly
-					currentDate.setDate(currentDate.getDate() + 7);
-			}
-			
-			count++;
-		}
-		
-		// Create all slots
-		console.log(`Creating ${slotsToCreate.length} recurring time slots...`);
-		for (const slotData of slotsToCreate) {
-			try {
-				await timeSlotsApi.create(slotData);
-			} catch (err) {
-				console.error('Error creating recurring slot:', err);
-				// Continue with other slots even if one fails
-			}
-		}
-		
-		console.log(`Successfully created ${slotsToCreate.length} recurring time slots`);
-	}
+	// Recurring slot creation is now handled by the server action
 
 	async function createTimeSlot() {
 		hasValidated = true;
@@ -280,7 +188,6 @@
 			// Debug logging
 			console.log('Creating time slot for tour ID:', tourId);
 			console.log('Current tour object:', tour);
-			console.log('Current user auth:', pb?.authStore?.record?.id);
 
 			const startDateTime = new Date(`${newSlotForm.startDate}T${newSlotForm.startTime}`);
 			const endDateTime = new Date(`${newSlotForm.startDate}T${newSlotForm.endTime}`);
@@ -300,16 +207,8 @@
 
 			console.log('Time slot data being sent:', timeSlotData);
 
-			if (isEditMode && editingSlotId) {
-				await timeSlotsApi.update(editingSlotId, timeSlotData);
-			} else {
-				// Create single or multiple time slots based on recurring settings
-				if (newSlotForm.isRecurring) {
-					await createRecurringTimeSlots(timeSlotData);
-				} else {
-					await timeSlotsApi.create(timeSlotData);
-				}
-			}
+			// Form submission will handle the server action
+			// This function is just for validation now
 			
 			await loadTimeSlots();
 			
@@ -369,12 +268,10 @@
 			return;
 		}
 
-		try {
-			await timeSlotsApi.delete(slotId);
-			await loadTimeSlots();
-		} catch (err) {
-			error = 'Failed to delete time slot.';
-			console.error('Error deleting time slot:', err);
+		// Use the hidden form to submit the delete action
+		const form = document.getElementById(`delete-slot-form-${slotId}`) as HTMLFormElement;
+		if (form) {
+			form.requestSubmit();
 		}
 	}
 
@@ -1200,38 +1097,69 @@
 <!-- Add/Edit Time Slot Modal -->
 {#if showAddModal}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-		<div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-			<div class="p-6 border-b border-gray-200 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50">
+		<div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+			<!-- Modal Header -->
+			<div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-blue-200">
 				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-							{#if isEditMode}
-								<Edit class="h-5 w-5 text-white" />
-							{:else}
-								<Plus class="h-5 w-5 text-white" />
-							{/if}
+					<div class="flex items-center gap-4">
+						<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+							<Clock class="h-6 w-6 text-white" />
 						</div>
 						<div>
-							<h2 class="text-xl font-semibold text-gray-900">
-								{isEditMode ? 'Edit Time Slot' : 'Add Time Slot'}
+							<h2 class="text-2xl font-bold text-gray-900 mb-1">
+								{isEditMode ? 'Edit Time Slot' : 'Add New Time Slot'}
 							</h2>
-							{#if tour}
-								<p class="text-sm text-gray-600 mt-1">
-									Default duration: {Math.floor(tour.duration / 60)}h {tour.duration % 60}m • Capacity: {tour.capacity} people
-								</p>
-							{/if}
+							<p class="text-blue-700">
+								{#if newSlotForm.isRecurring}
+									Creating recurring time slots
+								{:else}
+									{isEditMode ? 'Update the details for this time slot' : 'Set availability for customers to book'}
+								{/if}
+							</p>
 						</div>
 					</div>
 					<button
 						onclick={cancelEdit}
-						class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+						class="p-2 rounded-lg hover:bg-white/50 transition-colors"
+						title="Close"
 					>
-						<X class="h-5 w-5" />
+						<X class="h-5 w-5 text-gray-600" />
 					</button>
 				</div>
 			</div>
-			
-			<form onsubmit={createTimeSlot} class="overflow-y-auto flex-grow">
+
+			<!-- Form Content -->
+			<form 
+				id="{isEditMode ? 'edit-slot-form' : 'create-slot-form'}"
+				method="POST"
+				action="?/{isEditMode ? 'updateSlot' : 'createSlot'}"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ result }) => {
+						isSubmitting = false;
+						if (result.type === 'success') {
+							showAddModal = false;
+							cancelEdit();
+							await invalidateAll();
+						}
+					};
+				}}
+				onsubmit={createTimeSlot}
+				class="flex-1 overflow-y-auto"
+			>
+				{#if isEditMode}
+					<input type="hidden" name="slotId" value={editingSlotId} />
+				{/if}
+				
+				<!-- Hidden form fields -->
+				<input type="hidden" name="startDate" value={newSlotForm.startDate} />
+				<input type="hidden" name="startTime" value={newSlotForm.startTime} />
+				<input type="hidden" name="endTime" value={newSlotForm.endTime} />
+				<input type="hidden" name="availableSpots" value={newSlotForm.availableSpots} />
+				<input type="hidden" name="isRecurring" value={newSlotForm.isRecurring} />
+				<input type="hidden" name="recurringPattern" value={newSlotForm.recurringPattern} />
+				<input type="hidden" name="recurringEnd" value={newSlotForm.recurringEnd} />
+
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
 					<!-- Left Column: Date & Time Selection -->
 					<div class="space-y-6">
@@ -1763,3 +1691,41 @@
 		</div>
 	</div>
 {/if}
+
+<!-- Hidden Forms -->
+<!-- Publish Form -->
+<form 
+	id="publish-form"
+	method="POST" 
+	action="?/publishTour" 
+	use:enhance={() => {
+		isSubmitting = true;
+		return async ({ result }) => {
+			isSubmitting = false;
+			if (result.type === 'success') {
+				showPublishConfirmation = false;
+				await invalidateAll();
+			}
+		};
+	}}
+	class="hidden"
+/>
+
+<!-- Delete Forms (generated for each time slot) -->
+{#each timeSlots as slot}
+	<form 
+		id="delete-slot-form-{slot.id}"
+		method="POST" 
+		action="?/deleteSlot" 
+		use:enhance={() => {
+			return async ({ result }) => {
+				if (result.type === 'success') {
+					await invalidateAll();
+				}
+			};
+		}}
+		class="hidden"
+	>
+		<input type="hidden" name="slotId" value={slot.id} />
+	</form>
+{/each}

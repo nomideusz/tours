@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { toursApi, pb } from '$lib/pocketbase.js';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { formatEuro } from '$lib/utils/currency.js';
-	import type { PageData } from './$types.js';
+	import type { PageData, ActionData } from './$types.js';
 	import type { Tour } from '$lib/types.js';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Edit from 'lucide-svelte/icons/edit';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -17,35 +16,30 @@
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	import UserCheck from 'lucide-svelte/icons/user-check';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
-	import Star from 'lucide-svelte/icons/star';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import ToggleLeft from 'lucide-svelte/icons/toggle-left';
 	import ToggleRight from 'lucide-svelte/icons/toggle-right';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Image from 'lucide-svelte/icons/image';
-	import Upload from 'lucide-svelte/icons/upload';
-	import Replace from 'lucide-svelte/icons/replace';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import User from 'lucide-svelte/icons/user';
 	import Ticket from 'lucide-svelte/icons/ticket';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let tour = $state(data.tour);
-	let error = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
 	let isDeleting = $state(false);
 	let isUpdatingStatus = $state(false);
-	let isUploadingImage = $state(false);
-	let isDeletingImage = $state<string | null>(null);
-	let fileInputRef: HTMLInputElement;
-	let replaceImageIndex = $state<number | null>(null);
 	
-	// Construct image URL manually since pb might be null on server
-	function getImageUrl(imageName: string) {
-		return `https://z.xeon.pl/api/files/tours/${tour.id}/${imageName}`;
-	}
+	// Update tour when data changes
+	$effect(() => {
+		tour = data.tour;
+		error = form?.error || null;
+	});
 
 	function deleteTour() {
 		if (!tour || !confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
@@ -53,158 +47,8 @@
 		}
 		
 		isDeleting = true;
-		// Form will handle the submission to server action
 		const form = document.getElementById('delete-tour-form') as HTMLFormElement;
 		form?.requestSubmit();
-	}
-
-	async function toggleStatus() {
-		if (!tour) return;
-
-		let newStatus: Tour['status'];
-		if (tour.status === 'active') {
-			newStatus = 'draft';
-		} else if (tour.status === 'draft') {
-			newStatus = 'active';
-		} else {
-			return;
-		}
-
-		try {
-			isUpdatingStatus = true;
-			const updatedTour = await toursApi.update(tour.id, { status: newStatus });
-			tour = updatedTour as any;
-		} catch (err) {
-			error = 'Failed to update tour status. Please try again.';
-			console.error('Error updating tour status:', err);
-		} finally {
-			isUpdatingStatus = false;
-		}
-	}
-
-	function handleImageUpload() {
-		replaceImageIndex = null;
-		fileInputRef.click();
-	}
-
-	function handleImageReplace(index: number) {
-		replaceImageIndex = index;
-		fileInputRef.click();
-	}
-
-	async function handleFileChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const files = target.files;
-		if (!files || files.length === 0 || !tour) return;
-
-		// Define allowed file types (must match PocketBase schema)
-		const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-		const maxFileSize = 5 * 1024 * 1024; // 5MB limit
-		
-		// Filter valid files and show errors for invalid ones
-		const validFiles: File[] = [];
-		const errors: string[] = [];
-		
-		Array.from(files).forEach(file => {
-			if (!allowedTypes.includes(file.type.toLowerCase())) {
-				errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
-			} else if (file.size > maxFileSize) {
-				errors.push(`${file.name}: File size must be less than 5MB`);
-			} else {
-				validFiles.push(file);
-			}
-		});
-		
-		// Show errors if any
-		if (errors.length > 0) {
-			error = 'Some files were not uploaded:\n\n' + errors.join('\n');
-			target.value = '';
-			return;
-		}
-		
-		// If no valid files, return early
-		if (validFiles.length === 0) {
-			target.value = '';
-			return;
-		}
-
-		try {
-			isUploadingImage = true;
-			error = null;
-
-			const formData = new FormData();
-			
-			if (replaceImageIndex !== null) {
-				// Replace existing image
-				const currentImages = [...(tour.images || [])];
-				
-				// Add all existing images except the one being replaced
-				currentImages.forEach((imageName, index) => {
-					if (index !== replaceImageIndex) {
-						formData.append('images', imageName);
-					}
-				});
-				
-				// Add the new image (use first valid file)
-				formData.append('images', validFiles[0]);
-				
-				// Mark old image for deletion
-				formData.append('images-', currentImages[replaceImageIndex]);
-			} else {
-				// Add new images
-				// Keep existing images
-				(tour.images || []).forEach((imageName) => {
-					formData.append('images', imageName);
-				});
-				
-				// Add new images (use all valid files)
-				validFiles.forEach((file) => {
-					formData.append('images', file);
-				});
-			}
-
-			const updatedTour = await toursApi.updateWithImages(tour.id, formData);
-			tour = updatedTour as any;
-			replaceImageIndex = null;
-		} catch (err) {
-			error = 'Failed to upload image. Please try again.';
-			console.error('Error uploading image:', err);
-		} finally {
-			isUploadingImage = false;
-			// Reset file input
-			target.value = '';
-		}
-	}
-
-	async function deleteImage(imageName: string, index: number) {
-		if (!tour || !confirm('Are you sure you want to delete this image?')) {
-			return;
-		}
-
-		try {
-			isDeletingImage = imageName;
-			error = null;
-
-			const formData = new FormData();
-			
-			// Keep all images except the one being deleted
-			(tour.images || []).forEach((name) => {
-				if (name !== imageName) {
-					formData.append('images', name);
-				}
-			});
-			
-			// Mark image for deletion
-			formData.append('images-', imageName);
-
-			const updatedTour = await toursApi.updateWithImages(tour.id, formData);
-			tour = updatedTour as any;
-		} catch (err) {
-			error = 'Failed to delete image. Please try again.';
-			console.error('Error deleting image:', err);
-		} finally {
-			isDeletingImage = null;
-		}
 	}
 
 	function getStatusColor(status: Tour['status']) {
@@ -230,7 +74,6 @@
 	}
 
 	function formatDuration(minutes: number) {
-		// Round to handle any floating point precision issues
 		const totalMinutes = Math.round(minutes);
 		const hours = Math.floor(totalMinutes / 60);
 		const mins = totalMinutes % 60;
@@ -244,29 +87,18 @@
 		}
 	}
 
-	// Real statistics from server
+	// Statistics from server
 	let stats = $derived(data.stats || {
 		qrCodes: 0,
 		totalBookings: 0,
 		revenue: 0,
-		avgRating: 0, // TODO: Implement rating system
 		thisWeekBookings: 0,
 		conversionRate: 0
 	});
 
-	// Use upcoming bookings from server (already filtered for today's check-ins)
+	// Upcoming bookings from server
 	let upcomingBookings = $derived(data.bookings || []);
 </script>
-
-<!-- Hidden file input -->
-<input
-	bind:this={fileInputRef}
-	type="file"
-	accept="image/jpeg,image/jpg,image/png,image/webp"
-	multiple={replaceImageIndex === null}
-	onchange={handleFileChange}
-	class="hidden"
-/>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if error}
@@ -304,21 +136,31 @@
 						{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 					</span>
 					<div class="flex items-center gap-2 sm:gap-3">
-						<button
-							onclick={toggleStatus}
-							disabled={isUpdatingStatus}
-							class="button-secondary button--gap button--small"
-						>
-							{#if isUpdatingStatus}
-								<div class="form-spinner"></div>
-							{:else if tour.status === 'active'}
-								<ToggleRight class="h-4 w-4" />
-							{:else}
-								<ToggleLeft class="h-4 w-4" />
-							{/if}
-							<span class="hidden sm:inline">{tour.status === 'active' ? 'Save as Draft' : 'Publish Tour'}</span>
-							<span class="sm:hidden">{tour.status === 'active' ? 'Draft' : 'Publish'}</span>
-						</button>
+						<form method="POST" action="?/toggleStatus" use:enhance={() => {
+							isUpdatingStatus = true;
+							return async ({ result }) => {
+								isUpdatingStatus = false;
+								if (result.type === 'success') {
+									await invalidateAll();
+								}
+							};
+						}}>
+							<button
+								type="submit"
+								disabled={isUpdatingStatus}
+								class="button-secondary button--gap button--small"
+							>
+								{#if isUpdatingStatus}
+									<div class="form-spinner"></div>
+								{:else if tour.status === 'active'}
+									<ToggleRight class="h-4 w-4" />
+								{:else}
+									<ToggleLeft class="h-4 w-4" />
+								{/if}
+								<span class="hidden sm:inline">{tour.status === 'active' ? 'Save as Draft' : 'Publish Tour'}</span>
+								<span class="sm:hidden">{tour.status === 'active' ? 'Draft' : 'Publish'}</span>
+							</button>
+						</form>
 						<button
 							onclick={() => goto(`/tours/${tour?.id}/edit`)}
 							class="hidden sm:flex button-primary button--gap button--small"
@@ -453,291 +295,224 @@
 			</div>
 		{/if}
 
-		<!-- Mobile Quick Actions - Prominent on mobile -->
-	<div class="lg:hidden mb-6">
-		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
-			<div class="grid grid-cols-2 gap-3">
-				<button
-					onclick={() => goto('/checkin-scanner')}
-					class="button-primary button--gap button--small justify-center py-3"
-				>
-					<UserCheck class="h-4 w-4" />
-					Check-in
-				</button>
-				<button
-					onclick={() => goto(`/tours/${tour?.id}/bookings`)}
-					class="button-primary button--gap button--small justify-center py-3"
-				>
-					<Calendar class="h-4 w-4" />
-					Bookings
-				</button>
-			</div>
-			<div class="grid grid-cols-3 gap-3 mt-3">
-				<button
-					onclick={() => goto(`/tours/${tour?.id}/qr`)}
-					class="button-secondary button--gap button--small justify-center py-3"
-				>
-					<QrCode class="h-4 w-4" />
-					QR Codes
-				</button>
-				<button
-					onclick={() => goto(`/tours/${tour?.id}/schedule`)}
-					class="button-secondary button--gap button--small justify-center py-3"
-				>
-					<CalendarDays class="h-4 w-4" />
-					Schedule
-				</button>
-				<button
-					onclick={() => goto(`/tours/${tour?.id}/edit`)}
-					class="button-secondary button--gap button--small justify-center py-3"
-				>
-					<Edit class="h-4 w-4" />
-					Edit
-				</button>
+		<!-- Mobile Quick Actions -->
+		<div class="lg:hidden mb-6">
+			<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
+				<div class="grid grid-cols-2 gap-3">
+					<button
+						onclick={() => goto('/checkin-scanner')}
+						class="button-primary button--gap button--small justify-center py-3"
+					>
+						<UserCheck class="h-4 w-4" />
+						Check-in
+					</button>
+					<button
+						onclick={() => goto(`/tours/${tour?.id}/bookings`)}
+						class="button-primary button--gap button--small justify-center py-3"
+					>
+						<Calendar class="h-4 w-4" />
+						Bookings
+					</button>
+				</div>
+				<div class="grid grid-cols-3 gap-3 mt-3">
+					<button
+						onclick={() => goto(`/tours/${tour?.id}/qr`)}
+						class="button-secondary button--gap button--small justify-center py-3"
+					>
+						<QrCode class="h-4 w-4" />
+						QR Codes
+					</button>
+					<button
+						onclick={() => goto(`/tours/${tour?.id}/schedule`)}
+						class="button-secondary button--gap button--small justify-center py-3"
+					>
+						<CalendarDays class="h-4 w-4" />
+						Schedule
+					</button>
+					<button
+						onclick={() => goto(`/tours/${tour?.id}/edit`)}
+						class="button-secondary button--gap button--small justify-center py-3"
+					>
+						<Edit class="h-4 w-4" />
+						Edit
+					</button>
+				</div>
 			</div>
 		</div>
-	</div>
 
-			<!-- Quick Stats Cards -->
-	<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 items-stretch">
-		<StatsCard
-			title="QR Codes"
-			value={stats.qrCodes || 0}
-			subtitle="{stats.activeQRCodes || 0} active"
-			icon={QrCode}
-			variant="small"
-		/>
+		<!-- Quick Stats Cards -->
+		<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 items-stretch">
+			<StatsCard
+				title="QR Codes"
+				value={stats.qrCodes || 0}
+				subtitle="{stats.activeQRCodes || 0} active"
+				icon={QrCode}
+				variant="small"
+			/>
 
-		<StatsCard
-			title="Total Bookings"
-			value={stats.totalBookings || 0}
-			subtitle="{stats.confirmedBookings || 0} confirmed"
-			icon={UserCheck}
-			variant="small"
-		/>
+			<StatsCard
+				title="Total Bookings"
+				value={stats.totalBookings || 0}
+				subtitle="{stats.confirmedBookings || 0} confirmed"
+				icon={UserCheck}
+				variant="small"
+			/>
 
-		<StatsCard
-			title="Revenue"
-			value={formatEuro(stats.revenue || 0)}
-			subtitle="{stats.averageBookingValue && stats.averageBookingValue > 0 ? formatEuro(stats.averageBookingValue) : formatEuro(0)} avg"
-			icon={Euro}
-			variant="small"
-		/>
+			<StatsCard
+				title="Revenue"
+				value={formatEuro(stats.revenue || 0)}
+				subtitle="{stats.averageBookingValue && stats.averageBookingValue > 0 ? formatEuro(stats.averageBookingValue) : formatEuro(0)} avg"
+				icon={Euro}
+				variant="small"
+			/>
 
-		<StatsCard
-			title="This Week"
-			value={stats.thisWeekBookings || 0}
-			subtitle="new bookings"
-			icon={TrendingUp}
-			variant="small"
-			trend={stats.thisWeekBookings > 0 ? { value: "This week", positive: true } : undefined}
-		/>
+			<StatsCard
+				title="This Week"
+				value={stats.thisWeekBookings || 0}
+				subtitle="new bookings"
+				icon={TrendingUp}
+				variant="small"
+				trend={stats.thisWeekBookings > 0 ? { value: "This week", positive: true } : undefined}
+			/>
 
-		<StatsCard
-			title="Participants"
-			value={stats.totalParticipants || 0}
-			subtitle="total guests"
-			icon={Users}
-			variant="small"
-		/>
+			<StatsCard
+				title="Participants"
+				value={stats.totalParticipants || 0}
+				subtitle="total guests"
+				icon={Users}
+				variant="small"
+			/>
 
-		<StatsCard
-			title="QR Conversion"
-			value="{(stats.conversionRate || 0).toFixed(1)}%"
-			subtitle="{stats.totalQRScans || 0} scans"
-			icon={TrendingUp}
-			variant="small"
-		/>
-	</div>
+			<StatsCard
+				title="QR Conversion"
+				value="{(stats.conversionRate || 0).toFixed(1)}%"
+				subtitle="{stats.totalQRScans || 0} scans"
+				icon={TrendingUp}
+				variant="small"
+			/>
+		</div>
 
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 			<!-- Main Content -->
 			<div class="lg:col-span-2 space-y-6">
-							<!-- Tour Images -->
-			{#if tour.images && tour.images.length > 0}
-				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-						<div class="flex items-center justify-between">
+				<!-- Tour Images -->
+				{#if tour.images && tour.images.length > 0}
+					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
 							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Images</h2>
-								<button
-									onclick={handleImageUpload}
-									disabled={isUploadingImage}
-									class="button-secondary button--gap button--small"
-								>
-									{#if isUploadingImage}
-										<div class="form-spinner"></div>
-									{:else}
-										<Upload class="h-4 w-4" />
-									{/if}
-									Add More
-								</button>
+						</div>
+						<div class="p-6">
+							<p class="text-sm text-gray-600">Image functionality is being updated. Images will be available soon.</p>
+						</div>
+					</div>
+				{:else}
+					<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<EmptyState
+							icon={Image}
+							title="No Images"
+							description="Add images to make your tour more appealing to customers"
+							actionText="Edit Tour"
+							onAction={() => goto(`/tours/${tour?.id}/edit`)}
+						/>
+					</div>
+				{/if}
+
+				<!-- Tour Details -->
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Details</h2>
+					</div>
+					<div class="p-6 space-y-6">
+						{#if tour.description}
+							<div>
+								<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Description</h3>
+								<p class="leading-relaxed" style="color: var(--text-primary);">{tour.description}</p>
+							</div>
+						{/if}
+
+						<div class="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-6">
+							<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+								<Euro class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+								<p class="text-lg sm:text-2xl font-bold" style="color: var(--text-primary);">€{tour.price}</p>
+								<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">per person</p>
+							</div>
+							<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+								<Clock class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+								<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
+								<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">duration</p>
+							</div>
+							<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
+								<Users class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+								<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
+								<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">max capacity</p>
 							</div>
 						</div>
-						<div class="p-4 sm:p-6">
-							<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-								{#each tour.images as imageName, index}
-									<div class="relative group">
-										<img 
-											src={getImageUrl(imageName)} 
-											alt="{tour.name} photo"
-											class="w-full h-32 sm:h-40 object-cover rounded-lg transition-transform duration-200"
-										/>
-										
-										<!-- Hover Overlay -->
-										<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center gap-2">
-											<button
-												onclick={() => handleImageReplace(index)}
-												disabled={isUploadingImage || isDeletingImage === imageName}
-												class="p-2 rounded-lg transition-colors disabled:opacity-50"
-												style="background: var(--bg-primary); color: var(--text-secondary);"
-												onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-												onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
-												title="Replace image"
-											>
-												{#if isUploadingImage && replaceImageIndex === index}
-													<div class="form-spinner"></div>
-												{:else}
-													<Replace class="h-4 w-4" />
-												{/if}
-											</button>
-											<button
-												onclick={() => deleteImage(imageName, index)}
-												disabled={isUploadingImage || isDeletingImage === imageName}
-												class="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-												style="background: var(--bg-primary);"
-												title="Delete image"
-											>
-												{#if isDeletingImage === imageName}
-													<div class="form-spinner"></div>
-												{:else}
-													<Trash2 class="h-4 w-4" />
-												{/if}
-											</button>
-										</div>
-									</div>
+					</div>
+				</div>
+
+				<!-- What's Included -->
+				{#if tour.includedItems && tour.includedItems.length > 0}
+					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">What's Included</h2>
+						</div>
+						<div class="p-6">
+							<ul class="space-y-3">
+								{#each tour.includedItems as item}
+									<li class="flex items-start gap-3">
+										<Check class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+										<span style="color: var(--text-secondary);">{item}</span>
+									</li>
 								{/each}
-							</div>
+							</ul>
 						</div>
 					</div>
-							{:else}
-				<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<EmptyState
-						icon={Image}
-						title="No Images"
-						description="Add images to make your tour more appealing to customers"
-						actionText={isUploadingImage ? "Uploading..." : "Upload Images"}
-						onAction={isUploadingImage ? undefined : handleImageUpload}
-					/>
-					{#if !isUploadingImage}
-						<div class="text-center mt-4">
-							<button
-								onclick={() => goto(`/tours/${tour?.id}/edit`)}
-								class="button-secondary button--gap button--small"
-							>
-								<Edit class="h-4 w-4" />
-								Edit Tour Details
-							</button>
-						</div>
-					{/if}
-				</div>
-			{/if}
+				{/if}
 
-							<!-- Tour Details -->
-			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Details</h2>
-				</div>
-				<div class="p-6 space-y-6">
-					{#if tour.description}
-						<div>
-							<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Description</h3>
-							<p class="leading-relaxed" style="color: var(--text-primary);">{tour.description}</p>
+				<!-- Requirements -->
+				{#if tour.requirements && tour.requirements.length > 0}
+					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Requirements</h2>
 						</div>
-					{/if}
-
-											<div class="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-6">
-						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
-							<Euro class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-							<p class="text-lg sm:text-2xl font-bold" style="color: var(--text-primary);">€{tour.price}</p>
-							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">per person</p>
-						</div>
-						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
-							<Clock class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-							<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
-							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">duration</p>
-						</div>
-						<div class="text-center p-3 sm:p-4 rounded-lg" style="background: var(--bg-secondary);">
-							<Users class="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-							<p class="text-sm sm:text-lg font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
-							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">max capacity</p>
+						<div class="p-6">
+							<ul class="space-y-3">
+								{#each tour.requirements as requirement}
+									<li class="flex items-start gap-3">
+										<Info class="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+										<span style="color: var(--text-secondary);">{requirement}</span>
+									</li>
+								{/each}
+							</ul>
 						</div>
 					</div>
-					</div>
-				</div>
+				{/if}
 
-							<!-- What's Included -->
-			{#if tour.includedItems && tour.includedItems.length > 0}
-				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">What's Included</h2>
+				<!-- Cancellation Policy -->
+				{#if tour.cancellationPolicy}
+					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
+						</div>
+						<div class="p-6">
+							<p class="leading-relaxed" style="color: var(--text-secondary);">{tour.cancellationPolicy}</p>
+						</div>
 					</div>
-					<div class="p-6">
-						<ul class="space-y-3">
-							{#each tour.includedItems as item}
-								<li class="flex items-start gap-3">
-									<Check class="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-									<span style="color: var(--text-secondary);">{item}</span>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				</div>
-			{/if}
-
-							<!-- Requirements -->
-			{#if tour.requirements && tour.requirements.length > 0}
-				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Requirements</h2>
-					</div>
-					<div class="p-6">
-						<ul class="space-y-3">
-							{#each tour.requirements as requirement}
-								<li class="flex items-start gap-3">
-									<Info class="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-									<span style="color: var(--text-secondary);">{requirement}</span>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				</div>
-			{/if}
-
-							<!-- Cancellation Policy -->
-			{#if tour.cancellationPolicy}
-				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
-					</div>
-					<div class="p-6">
-						<p class="leading-relaxed" style="color: var(--text-secondary);">{tour.cancellationPolicy}</p>
-					</div>
-				</div>
-			{/if}
+				{/if}
 			</div>
 
 			<!-- Sidebar -->
 			<div class="hidden lg:block space-y-6">
-							<!-- Quick Actions -->
-			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Quick Actions</h3>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Manage your tour efficiently</p>
-				</div>
+				<!-- Quick Actions -->
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+						<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Quick Actions</h3>
+						<p class="text-sm mt-1" style="color: var(--text-secondary);">Manage your tour efficiently</p>
+					</div>
 					
 					<div class="p-6 space-y-4">
-						<!-- Primary Action - Most Important -->
+						<!-- Primary Action -->
 						<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--color-primary-200);">
 							<div class="flex items-center justify-between mb-2">
 								<div class="flex items-center gap-2">
@@ -825,7 +600,7 @@
 											{stats.activeQRCodes} active
 										</span>
 									{/if}
-								<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
+									<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
 								</div>
 							</button>
 
@@ -854,8 +629,6 @@
 								<ChevronRight class="h-4 w-4" style="color: var(--text-tertiary);" />
 							</button>
 						</div>
-
-
 					</div>
 				</div>
 
@@ -868,7 +641,15 @@
 						</p>
 					</div>
 					<div class="p-6">
-						<form id="delete-tour-form" method="POST" action="?/delete">
+						<form id="delete-tour-form" method="POST" action="?/delete" use:enhance={() => {
+							isDeleting = true;
+							return async ({ result }) => {
+								isDeleting = false;
+								if (result.type === 'redirect') {
+									goto(result.location);
+								}
+							};
+						}}>
 							<button
 								type="button"
 								onclick={deleteTour}
@@ -876,7 +657,7 @@
 								class="button--danger button--full-width button--gap button--small justify-center rounded-lg flex items-center"
 							>
 								{#if isDeleting}
-									<div class="form-spinner"></div>
+									<LoadingSpinner size="small" />
 									Deleting...
 								{:else}
 									<Trash2 class="h-4 w-4 flex-shrink-0" />

@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import type { PageData } from './$types.js';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
+	import type { PageData, ActionData } from './$types.js';
 	import type { Booking } from '$lib/types.js';
-	import { bookingsApi } from '$lib/pocketbase.js';
 	import BookingsList from '$lib/components/BookingsList.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
@@ -44,20 +43,27 @@
 			qrCode?: {
 				id: string;
 				code: string;
+				category?: string;
 				[key: string]: any;
 			};
 		};
 	}
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	let bookings = $state<ExpandedBooking[]>(data.bookings as unknown as ExpandedBooking[] || []);
 	let isLoading = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | null>(form?.error || null);
 	let selectedStatus = $state('all');
 	let searchQuery = $state('');
-	let dateFilter = $state('all'); // 'all', 'upcoming', 'past', 'today'
+	let dateFilter = $state('all');
 	let isUpdatingStatus = $state<string | null>(null);
+
+	// Update bookings when data changes
+	$effect(() => {
+		bookings = (data.bookings as unknown as ExpandedBooking[]) || [];
+		error = form?.error || null;
+	});
 
 	// Calculate statistics reactively
 	let stats = $state({
@@ -158,60 +164,9 @@
 	});
 
 	async function refreshBookings() {
-		try {
-			isLoading = true;
-			error = null;
-			// Reload the page to get fresh data from the server
-			location.reload();
-		} catch (err) {
-			error = 'Failed to refresh bookings';
-			console.error('Error refreshing bookings:', err);
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	async function updateBookingStatus(bookingId: string, newStatus: Booking['status']) {
-		const booking = bookings.find(b => b.id === bookingId);
-		if (!booking) return;
-
-		// Check if the action is valid before showing confirmation
-		const validationError = getStatusValidationError(booking, newStatus);
-		if (validationError) {
-			error = validationError;
-			return;
-		}
-
-		if (!confirm(`Are you sure you want to mark this booking as ${newStatus}?`)) {
-			return;
-		}
-
-		try {
-			isUpdatingStatus = bookingId;
-			error = null; // Clear any previous errors
-			await bookingsApi.updateStatus(bookingId, newStatus);
-			
-			// Update local state
-			bookings = bookings.map(b => 
-				b.id === bookingId ? { ...b, status: newStatus } : b
-			);
-		} catch (err) {
-			// Handle specific validation errors from the API
-			if (err instanceof Error) {
-				if (err.message.includes('payment')) {
-					error = `Cannot ${newStatus} booking: Payment not completed. Customer must complete payment first.`;
-				} else if (err.message.includes('confirmed')) {
-					error = `Cannot ${newStatus} booking: Only confirmed bookings can be marked as completed.`;
-				} else {
-					error = `Failed to update booking status: ${err.message}`;
-				}
-			} else {
-				error = `Failed to update booking status to ${newStatus}`;
-			}
-			console.error('Error updating booking status:', err);
-		} finally {
-			isUpdatingStatus = null;
-		}
+		isLoading = true;
+		await invalidateAll();
+		isLoading = false;
 	}
 
 	// Helper function to validate status transitions
@@ -326,8 +281,7 @@
 		</div>
 	{/if}
 
-	<!-- Payment Validation Info -->
-	<!-- Mobile Quick Actions - Prominent on mobile -->
+	<!-- Mobile Quick Actions -->
 	<div class="lg:hidden mb-6">
 		<div class="bg-white rounded-xl border border-gray-200 p-4">
 			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
@@ -594,7 +548,7 @@
 									</span>
 								{/if}
 							</div>
-												</div>
+						</div>
 
 						{#if booking.checkedInAt}
 							<p class="text-xs text-gray-500">
@@ -653,19 +607,31 @@
 							{@const confirmError = getStatusValidationError(booking, 'confirmed')}
 							<div class="flex flex-col gap-2">
 								<div class="relative">
-									<button
-										onclick={() => updateBookingStatus(booking.id, 'confirmed')}
-										disabled={confirmDisabled}
-										class="button-primary button--gap button--small w-full {confirmDisabled && !isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}"
-										title={confirmError || ''}
-									>
-										{#if isUpdatingStatus === booking.id}
-											<div class="form-spinner"></div>
-										{:else}
-											<CheckCircle class="h-4 w-4" />
-										{/if}
-										Confirm
-									</button>
+									<form method="POST" action="?/updateStatus" use:enhance={() => {
+										isUpdatingStatus = booking.id;
+										return async ({ result }) => {
+											isUpdatingStatus = null;
+											if (result.type === 'success') {
+												await invalidateAll();
+											}
+										};
+									}}>
+										<input type="hidden" name="bookingId" value={booking.id} />
+										<input type="hidden" name="status" value="confirmed" />
+										<button
+											type="submit"
+											disabled={confirmDisabled}
+											class="button-primary button--gap button--small w-full {confirmDisabled && !isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}"
+											title={confirmError || ''}
+										>
+											{#if isUpdatingStatus === booking.id}
+												<div class="form-spinner"></div>
+											{:else}
+												<CheckCircle class="h-4 w-4" />
+											{/if}
+											Confirm
+										</button>
+									</form>
 									{#if confirmError && !isUpdatingStatus}
 										<div class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 px-3 py-1 text-xs text-white bg-gray-800 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
 											{confirmError}
@@ -674,18 +640,30 @@
 									{/if}
 								</div>
 								
-								<button
-									onclick={() => updateBookingStatus(booking.id, 'cancelled')}
-									disabled={isUpdatingStatus === booking.id}
-									class="button-secondary button--gap button--small text-red-600 hover:bg-red-50"
-								>
-									{#if isUpdatingStatus === booking.id}
-										<div class="form-spinner"></div>
-									{:else}
-										<XCircle class="h-4 w-4" />
-									{/if}
-									Cancel
-								</button>
+								<form method="POST" action="?/updateStatus" use:enhance={() => {
+									isUpdatingStatus = booking.id;
+									return async ({ result }) => {
+										isUpdatingStatus = null;
+										if (result.type === 'success') {
+											await invalidateAll();
+										}
+									};
+								}}>
+									<input type="hidden" name="bookingId" value={booking.id} />
+									<input type="hidden" name="status" value="cancelled" />
+									<button
+										type="submit"
+										disabled={isUpdatingStatus === booking.id}
+										class="button-secondary button--gap button--small text-red-600 hover:bg-red-50 w-full"
+									>
+										{#if isUpdatingStatus === booking.id}
+											<div class="form-spinner"></div>
+										{:else}
+											<XCircle class="h-4 w-4" />
+										{/if}
+										Cancel
+									</button>
+								</form>
 							</div>
 						{:else if booking.status === 'confirmed'}
 							{@const completeDisabled = isStatusActionDisabled(booking, 'completed') || isUpdatingStatus === booking.id}
@@ -704,19 +682,31 @@
 								{/if}
 								
 								<div class="relative">
-									<button
-										onclick={() => updateBookingStatus(booking.id, 'completed')}
-										disabled={completeDisabled}
-										class="button-primary button--gap button--small w-full {completeDisabled && !isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}"
-										title={completeError || ''}
-									>
-										{#if isUpdatingStatus === booking.id}
-											<div class="form-spinner"></div>
-										{:else}
-											<UserCheck class="h-4 w-4" />
-										{/if}
-										Mark Complete
-									</button>
+									<form method="POST" action="?/updateStatus" use:enhance={() => {
+										isUpdatingStatus = booking.id;
+										return async ({ result }) => {
+											isUpdatingStatus = null;
+											if (result.type === 'success') {
+												await invalidateAll();
+											}
+										};
+									}}>
+										<input type="hidden" name="bookingId" value={booking.id} />
+										<input type="hidden" name="status" value="completed" />
+										<button
+											type="submit"
+											disabled={completeDisabled}
+											class="button-primary button--gap button--small w-full {completeDisabled && !isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}"
+											title={completeError || ''}
+										>
+											{#if isUpdatingStatus === booking.id}
+												<div class="form-spinner"></div>
+											{:else}
+												<UserCheck class="h-4 w-4" />
+											{/if}
+											Mark Complete
+										</button>
+									</form>
 									{#if completeError && !isUpdatingStatus}
 										<div class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 px-3 py-1 text-xs text-white bg-gray-800 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
 											{completeError}
@@ -725,18 +715,30 @@
 									{/if}
 								</div>
 								
-								<button
-									onclick={() => updateBookingStatus(booking.id, 'no_show')}
-									disabled={isUpdatingStatus === booking.id}
-									class="button-secondary button--gap button--small text-orange-600 hover:bg-orange-50"
-								>
-									{#if isUpdatingStatus === booking.id}
-										<div class="form-spinner"></div>
-									{:else}
-										<AlertCircle class="h-4 w-4" />
-									{/if}
-									No Show
-								</button>
+								<form method="POST" action="?/updateStatus" use:enhance={() => {
+									isUpdatingStatus = booking.id;
+									return async ({ result }) => {
+										isUpdatingStatus = null;
+										if (result.type === 'success') {
+											await invalidateAll();
+										}
+									};
+								}}>
+									<input type="hidden" name="bookingId" value={booking.id} />
+									<input type="hidden" name="status" value="no_show" />
+									<button
+										type="submit"
+										disabled={isUpdatingStatus === booking.id}
+										class="button-secondary button--gap button--small text-orange-600 hover:bg-orange-50 w-full"
+									>
+										{#if isUpdatingStatus === booking.id}
+											<div class="form-spinner"></div>
+										{:else}
+											<AlertCircle class="h-4 w-4" />
+										{/if}
+										No Show
+									</button>
+								</form>
 							</div>
 						{:else if booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show'}
 							<div class="flex flex-col gap-2">

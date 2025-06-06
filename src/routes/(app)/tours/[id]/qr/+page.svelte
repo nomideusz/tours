@@ -142,32 +142,21 @@
 	let deleteForm: HTMLFormElement;
 
 	function toggleQRStatus(qr: QRCode) {
-		// Create a temporary form to submit the toggle action
-		const formData = new FormData();
-		formData.append('qrId', qr.id);
-		formData.append('isActive', qr.isActive.toString());
-		
-		const form = document.createElement('form');
-		form.method = 'POST';
-		form.action = '?/toggleStatus';
-		form.style.display = 'none';
-		
-		formData.forEach((value, key) => {
-			const input = document.createElement('input');
-			input.type = 'hidden';
-			input.name = key;
-			input.value = value.toString();
-			form.appendChild(input);
-		});
-		
-		document.body.appendChild(form);
-		form.submit();
-		document.body.removeChild(form);
+		// Use the hidden form with enhance
+		const form = document.getElementById(`toggle-form-${qr.id}`) as HTMLFormElement;
+		if (form) {
+			form.requestSubmit();
+		}
 	}
 
 	function initiateDelete(qrId: string) {
 		if (deleteConfirmId === qrId) {
-			deleteQRCode(qrId);
+			// Use the hidden form with enhance
+			const form = document.getElementById(`delete-form-${qrId}`) as HTMLFormElement;
+			if (form) {
+				form.requestSubmit();
+			}
+			deleteConfirmId = null;
 		} else {
 			deleteConfirmId = qrId;
 			// Reset confirmation after 3 seconds
@@ -177,29 +166,6 @@
 				}
 			}, 3000);
 		}
-	}
-
-	function deleteQRCode(qrId: string) {
-		// Create a temporary form to submit the delete action
-		const formData = new FormData();
-		formData.append('qrId', qrId);
-		
-		const form = document.createElement('form');
-		form.method = 'POST';
-		form.action = '?/delete';
-		form.style.display = 'none';
-		
-		const input = document.createElement('input');
-		input.type = 'hidden';
-		input.name = 'qrId';
-		input.value = qrId;
-		form.appendChild(input);
-		
-		document.body.appendChild(form);
-		form.submit();
-		document.body.removeChild(form);
-		
-		deleteConfirmId = null;
 	}
 
 	function formatDate(dateString: string): string {
@@ -223,8 +189,8 @@
 		// Close the generator modal
 		showGenerator = false;
 		
-		// Reload the page to get the updated QR codes list
-		window.location.reload();
+		// Just reload the data, don't reload the entire page
+		location.reload();
 	}
 
 	// Handle click outside mobile actions
@@ -500,48 +466,67 @@
 												copyBookingUrl(qr.id, qr.code);
 												showMobileActions = null;
 											}}
-											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+											class="w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors"
 											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
 										>
 											<Copy class="h-4 w-4" />
-											Copy URL
+											Copy Link
 										</button>
-										<a
-											href={`${window.location.origin}/book/${qr.code}`}
-											target="_blank"
-											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+										
+										<button
+											onclick={() => {
+												window.open(`${origin}/book/${qr.code}`, '_blank');
+												showMobileActions = null;
+											}}
+											class="w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors"
 											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
-											onclick={() => showMobileActions = null}
 										>
 											<ExternalLink class="h-4 w-4" />
-											Open Page
-										</a>
+											Preview
+										</button>
+										
+										<button
+											onclick={() => {
+												goto(`/tours/${data.tour.id}/qr/${qr.id}`);
+												showMobileActions = null;
+											}}
+											class="w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors"
+											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
+										>
+											<BarChart3 class="h-4 w-4" />
+											Analytics
+										</button>
+										
+										<div class="border-t my-1" style="border-color: var(--border-primary);"></div>
+										
 										<button
 											onclick={() => {
 												toggleQRStatus(qr);
 												showMobileActions = null;
 											}}
-											class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors"
+											class="w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors"
 											style="color: var(--text-secondary); hover:background: var(--bg-secondary);"
 										>
 											{#if qr.isActive}
-												<ToggleLeft class="h-4 w-4" />
+												<ToggleRight class="h-4 w-4" />
 												Disable
 											{:else}
-												<ToggleRight class="h-4 w-4" />
+												<ToggleLeft class="h-4 w-4" />
 												Enable
 											{/if}
 										</button>
-										<div class="my-1" style="border-top: 1px solid var(--border-primary);"></div>
+										
 										<button
 											onclick={() => {
 												initiateDelete(qr.id);
-												showMobileActions = null;
+												if (deleteConfirmId !== qr.id) {
+													showMobileActions = null;
+												}
 											}}
-											class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+											class="w-full text-left px-4 py-2 text-sm flex items-center gap-2 transition-colors text-red-600 hover:bg-red-50"
 										>
 											<Trash2 class="h-4 w-4" />
-											Delete
+											{deleteConfirmId === qr.id ? 'Confirm Delete' : 'Delete'}
 										</button>
 									</div>
 								{/if}
@@ -688,6 +673,40 @@
 						</div>
 					</div>
 				</div>
+				
+				<!-- Hidden forms for actions -->
+				<form 
+					id="toggle-form-{qr.id}"
+					method="POST" 
+					action="?/toggleStatus" 
+					use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'failure') {
+								error = (result.data?.error as string) || 'Failed to toggle QR code status';
+							}
+						};
+					}}
+					class="hidden"
+				>
+					<input type="hidden" name="qrId" value={qr.id} />
+					<input type="hidden" name="isActive" value={qr.isActive.toString()} />
+				</form>
+				
+				<form 
+					id="delete-form-{qr.id}"
+					method="POST" 
+					action="?/delete" 
+					use:enhance={() => {
+						return async ({ result }) => {
+							if (result.type === 'failure') {
+								error = (result.data?.error as string) || 'Failed to delete QR code';
+							}
+						};
+					}}
+					class="hidden"
+				>
+					<input type="hidden" name="qrId" value={qr.id} />
+				</form>
 			{/each}
 		</div>
 	{/if}

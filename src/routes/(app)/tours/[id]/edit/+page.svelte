@@ -17,9 +17,6 @@
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
-	let uploadedImages = $state<File[]>([]);
-	let existingImages = $state<string[]>([]);
-	let imagesToDelete = $state<string[]>([]);
 
 	let tourId = $derived($page.params.id);
 
@@ -62,73 +59,13 @@
 				requirements: data.tour.requirements && data.tour.requirements.length > 0 ? data.tour.requirements : [''],
 				cancellationPolicy: data.tour.cancellationPolicy || ''
 			};
-			
-			// Store existing images
-			existingImages = data.tour.images || [];
 		}
-	}
-
-	function handleImageUpload(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const files = target.files;
-		if (files) {
-			// Define allowed file types (must match PocketBase schema)
-			const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-			const maxFileSize = 5 * 1024 * 1024; // 5MB limit
-			
-			// Filter valid files and show errors for invalid ones
-			const validFiles: File[] = [];
-			const errors: string[] = [];
-			
-			Array.from(files).forEach(file => {
-				if (!allowedTypes.includes(file.type.toLowerCase())) {
-					errors.push(`${file.name}: Only JPEG, PNG, and WebP images are allowed`);
-				} else if (file.size > maxFileSize) {
-					errors.push(`${file.name}: File size must be less than 5MB`);
-				} else {
-					validFiles.push(file);
-				}
-			});
-			
-			// Show errors if any
-			if (errors.length > 0) {
-				alert('Some files were not added:\n\n' + errors.join('\n'));
-			}
-			
-			// Add valid files
-			if (validFiles.length > 0) {
-				uploadedImages = [...uploadedImages, ...validFiles];
-			}
-			
-			// Clear the input
-			target.value = '';
-		}
-	}
-
-	function removeNewImage(index: number) {
-		uploadedImages = uploadedImages.filter((_, i) => i !== index);
-	}
-
-	function removeExistingImage(imageName: string) {
-		existingImages = existingImages.filter(img => img !== imageName);
-		if (!imagesToDelete.includes(imageName)) {
-			imagesToDelete = [...imagesToDelete, imageName];
-		}
-	}
-
-	function getExistingImageUrl(imageName: string): string {
-		// For now, return empty string since images are not implemented yet
-		return '';
 	}
 
 	function handleCancel() {
 		if (confirm('Are you sure you want to cancel? Your changes will be lost.')) {
 			goto(`/tours/${tourId}`);
 		}
-	}
-
-	function getImagePreview(file: File): string {
-		return URL.createObjectURL(file);
 	}
 </script>
 
@@ -186,7 +123,7 @@
 			</div>
 			
 			<div class="p-6 sm:p-8">
-				<form method="POST" enctype="multipart/form-data" use:enhance={() => {
+				<form method="POST" use:enhance={() => {
 					isSubmitting = true;
 					return async ({ result }) => {
 						isSubmitting = false;
@@ -197,15 +134,9 @@
 				}}>
 					<TourForm
 						bind:formData
-						bind:uploadedImages
 						{isSubmitting}
 						isEdit={true}
 						onCancel={handleCancel}
-						onImageUpload={handleImageUpload}
-						onImageRemove={removeNewImage}
-						{existingImages}
-						onExistingImageRemove={removeExistingImage}
-						{getExistingImageUrl}
 						serverErrors={validationErrors}
 					/>
 				</form>
