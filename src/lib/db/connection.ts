@@ -10,13 +10,22 @@ config();
 const connectionString = process.env.DATABASE_URL || 
   `postgresql://${process.env.DATABASE_USER || 'zaur_dev'}:${process.env.DATABASE_PASSWORD || 'zaur_dev_password'}@${process.env.DATABASE_HOST || 'localhost'}:${process.env.DATABASE_PORT || '5432'}/${process.env.DATABASE_NAME || 'zaur_local'}`;
 
-// Create PostgreSQL connection
-const client = postgres(connectionString, {
-  max: 20, // Maximum number of connections
-  idle_timeout: 20, // Close connections after 20 seconds of inactivity
-  connect_timeout: 60, // Connection timeout in seconds
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
-});
+console.log('Initializing database connection...');
+
+// Create PostgreSQL connection with error handling
+let client;
+try {
+  client = postgres(connectionString, {
+    max: 10, // Reduced from 20 for production stability
+    idle_timeout: 20, // Close connections after 20 seconds of inactivity
+    connect_timeout: 10, // Reduced from 60 to fail faster
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    onnotice: () => {}, // Suppress notices
+  });
+} catch (error) {
+  console.error('Failed to create database connection:', error);
+  throw error;
+}
 
 // Create Drizzle database instance
 export const db = drizzle(client, { schema });

@@ -99,8 +99,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			activeQRCodes: qrCodesData.filter(qr => qr.isActive).length,
 			totalQRScans: qrCodesData.reduce((sum, qr) => sum + qr.scans, 0),
 			totalQRConversions: qrCodesData.reduce((sum, qr) => sum + qr.conversions, 0),
-			// Use sample size with estimation for totals
-			totalBookings: allBookings.length >= 10 ? `${allBookings.length}+` : allBookings.length,
+			// Keep as number - frontend can add "+" if needed
+			totalBookings: allBookings.length,
 			confirmedBookings: confirmedBookings.length,
 			pendingBookings: allBookings.filter(b => b.status === 'pending').length,
 			cancelledBookings: 0, // Don't calculate to save time

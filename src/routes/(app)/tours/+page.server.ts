@@ -12,16 +12,20 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     throw redirect(303, `/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
 
+  console.log('Tours page load started for user:', locals.user.id);
+
   try {
     const userId = locals.user.id;
     
     // Fetch user's tours with error handling
     let userTours: typeof tours.$inferSelect[] = [];
     try {
+      console.log('Fetching tours for user:', userId);
       userTours = await db.select()
         .from(tours)
         .where(eq(tours.userId, userId))
         .orderBy(desc(tours.updatedAt));
+      console.log(`Found ${userTours.length} tours for user ${userId}`);
     } catch (toursError) {
       console.error('Error fetching user tours:', toursError);
       userTours = [];
@@ -38,82 +42,102 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       monthRevenue: 0
     }];
     
-    try {
-      // IMPORTANT: Limit bookings to prevent 502 timeout
-      // Only fetch recent bookings for statistics (last 100)
-      const userBookings = await db.select()
-        .from(bookings)
-        .innerJoin(tours, eq(bookings.tourId, tours.id))
-        .where(eq(tours.userId, userId))
-        .orderBy(desc(bookings.createdAt))
-        .limit(100); // ADD LIMIT TO PREVENT TIMEOUT
-      
-      // Calculate statistics in JavaScript to avoid SQL compatibility issues
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      const monthAgo = new Date(today);
-      monthAgo.setDate(monthAgo.getDate() - 30);
-      
-      let totalBookings = 0;
-      let confirmedBookings = 0;
-      let totalRevenue = 0;
-      let totalParticipants = 0;
-      let todayBookings = 0;
-      let weekBookings = 0;
-      let monthRevenue = 0;
-      
-      // For total counts, we'll estimate based on the sample
-      // This is a trade-off for performance
-      const sampleSize = userBookings.length;
-      const estimationFactor = sampleSize >= 100 ? 1.5 : 1; // Estimate there might be more
-      
-      for (const booking of userBookings) {
-        const bookingData = booking.bookings;
-        const bookingDate = new Date(bookingData.createdAt);
+    // Only fetch booking stats if user has tours
+    if (userTours.length > 0) {
+      try {
+        console.log('Fetching booking statistics...');
+        // IMPORTANT: Limit bookings to prevent 502 timeout
+        // Only fetch recent bookings for statistics (last 100)
+        const userBookings = await db.select({
+          // Select specific fields to avoid confusion
+          bookingId: bookings.id,
+          bookingStatus: bookings.status,
+          paymentStatus: bookings.paymentStatus,
+          totalAmount: bookings.totalAmount,
+          participants: bookings.participants,
+          createdAt: bookings.createdAt,
+          tourId: tours.id,
+          tourUserId: tours.userId
+        })
+          .from(bookings)
+          .innerJoin(tours, eq(bookings.tourId, tours.id))
+          .where(eq(tours.userId, userId))
+          .orderBy(desc(bookings.createdAt))
+          .limit(100); // ADD LIMIT TO PREVENT TIMEOUT
         
-        totalBookings++;
+        console.log(`Found ${userBookings.length} bookings for statistics`);
         
-        if (bookingData.status === 'confirmed' && bookingData.paymentStatus === 'paid') {
-          confirmedBookings++;
-          totalRevenue += parseFloat(bookingData.totalAmount);
-          totalParticipants += bookingData.participants;
-        }
+        // Calculate statistics in JavaScript to avoid SQL compatibility issues
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        if (bookingDate >= today && bookingDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)) {
-          if (bookingData.status === 'confirmed' || bookingData.status === 'pending') {
-            todayBookings++;
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const monthAgo = new Date(today);
+        monthAgo.setDate(monthAgo.getDate() - 30);
+        
+        let totalBookings = 0;
+        let confirmedBookings = 0;
+        let totalRevenue = 0;
+        let totalParticipants = 0;
+        let todayBookings = 0;
+        let weekBookings = 0;
+        let monthRevenue = 0;
+        
+        // For total counts, we'll estimate based on the sample
+        // This is a trade-off for performance
+        const sampleSize = userBookings.length;
+        const estimationFactor = sampleSize >= 100 ? 1.5 : 1; // Estimate there might be more
+        
+        for (const booking of userBookings) {
+          const bookingDate = new Date(booking.createdAt);
+          
+          totalBookings++;
+          
+          if (booking.bookingStatus === 'confirmed' && booking.paymentStatus === 'paid') {
+            confirmedBookings++;
+            totalRevenue += parseFloat(booking.totalAmount);
+            totalParticipants += booking.participants;
+          }
+          
+          if (bookingDate >= today && bookingDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)) {
+            if (booking.bookingStatus === 'confirmed' || booking.bookingStatus === 'pending') {
+              todayBookings++;
+            }
+          }
+          
+          if (bookingDate >= weekAgo) {
+            if (booking.bookingStatus === 'confirmed' || booking.bookingStatus === 'pending') {
+              weekBookings++;
+            }
+          }
+          
+          if (bookingDate >= monthAgo && booking.bookingStatus === 'confirmed' && booking.paymentStatus === 'paid') {
+            monthRevenue += parseFloat(booking.totalAmount);
           }
         }
         
-        if (bookingDate >= weekAgo) {
-          if (bookingData.status === 'confirmed' || bookingData.status === 'pending') {
-            weekBookings++;
-          }
-        }
+        // Apply estimation factor for totals (but not for time-based stats)
+        bookingStats = [{
+          totalBookings: Math.round(totalBookings * estimationFactor),
+          confirmedBookings: Math.round(confirmedBookings * estimationFactor),
+          totalRevenue: totalRevenue * estimationFactor,
+          totalParticipants: Math.round(totalParticipants * estimationFactor),
+          todayBookings, // Don't estimate today's bookings
+          weekBookings, // Don't estimate this week's bookings
+          monthRevenue // Don't estimate this month's revenue
+        }];
         
-        if (bookingDate >= monthAgo && bookingData.status === 'confirmed' && bookingData.paymentStatus === 'paid') {
-          monthRevenue += parseFloat(bookingData.totalAmount);
-        }
+        console.log('Booking statistics calculated successfully');
+      } catch (statsError) {
+        console.error('Error fetching booking statistics:', statsError);
+        console.error('Stats error details:', {
+          message: statsError instanceof Error ? statsError.message : 'Unknown error',
+          stack: statsError instanceof Error ? statsError.stack : undefined
+        });
+        // bookingStats already initialized with default values
       }
-      
-      // Apply estimation factor for totals (but not for time-based stats)
-      bookingStats = [{
-        totalBookings: Math.round(totalBookings * estimationFactor),
-        confirmedBookings: Math.round(confirmedBookings * estimationFactor),
-        totalRevenue: totalRevenue * estimationFactor,
-        totalParticipants: Math.round(totalParticipants * estimationFactor),
-        todayBookings, // Don't estimate today's bookings
-        weekBookings, // Don't estimate this week's bookings
-        monthRevenue // Don't estimate this month's revenue
-      }];
-      
-    } catch (statsError) {
-      console.error('Error fetching booking statistics:', statsError);
-      // bookingStats already initialized with default values
     }
 
     const stats = {
@@ -129,6 +153,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       totalParticipants: bookingStats[0]?.totalParticipants || 0
     };
 
+    console.log('Tours page load completed successfully');
+
     return {
       user: locals.user,
       tours: userTours.map(tour => ({
@@ -140,8 +166,16 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       stats
     };
   } catch (err) {
-    console.error('Error loading tours data:', err);
+    console.error('CRITICAL ERROR loading tours data:', err);
+    console.error('Full error details:', {
+      message: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined,
+      type: typeof err,
+      error: err
+    });
     
+    // In production, return a valid response to prevent 502
+    // This prevents nginx from timing out
     return {
       user: locals.user,
       tours: [],
