@@ -177,6 +177,22 @@
 	function toggleDropdown(tourId: string) {
 		openDropdownId = openDropdownId === tourId ? null : tourId;
 	}
+
+	function getImageUrl(tour: Tour | null | undefined, imagePath: string | null | undefined): string {
+		if (!tour?.id || !imagePath) return '';
+		
+		try {
+			// Handle old PocketBase URLs
+			if (imagePath.startsWith('http')) {
+				return imagePath; // Return old URL as-is for backward compatibility
+			}
+			// Handle new local storage
+			return `/uploads/tours/${tour.id}/${imagePath}`;
+		} catch (error) {
+			console.warn('Error generating image URL:', error);
+			return '';
+		}
+	}
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -412,11 +428,20 @@
 				<div class="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 group relative flex flex-col h-full">
 					<!-- Tour Image -->
 					<div class="relative h-40 sm:h-48 bg-gray-100 overflow-hidden rounded-t-xl flex-shrink-0">
-						{#if tour.images && tour.images[0]}
-							<!-- TODO: Implement image storage and retrieval -->
-							<div class="w-full h-full flex items-center justify-center">
-								<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
-							</div>
+						{#if tour?.images?.[0]}
+							{@const imageUrl = getImageUrl(tour, tour.images[0])}
+							{#if imageUrl}
+								<img 
+									src={imageUrl} 
+									alt={tour.name || 'Tour'}
+									class="w-full h-full object-cover"
+									loading="lazy"
+								/>
+							{:else}
+								<div class="w-full h-full flex items-center justify-center">
+									<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
+								</div>
+							{/if}
 						{:else}
 							<div class="w-full h-full flex items-center justify-center">
 								<MapPin class="h-8 w-8 sm:h-12 sm:w-12 text-gray-300" />
@@ -570,7 +595,7 @@
 										</form>
 										<form method="POST" action="?/delete" use:enhance={() => {
 											if (!confirm('Are you sure you want to delete this tour? This action cannot be undone.')) {
-												return ({ cancel }) => cancel();
+												return;
 											}
 											isDeletingId = tour.id;
 											return async ({ result }) => {

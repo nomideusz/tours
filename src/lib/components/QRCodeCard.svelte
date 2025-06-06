@@ -30,39 +30,39 @@
 	};
 	
 	// Generate QR code URL using API
-	function getQRImageUrl() {
-		if (!browser) {
-			// Fallback for SSR - use placeholder or basic URL
-			const fallbackUrl = encodeURIComponent(`https://zaur.app/book/${qrCode.code}`);
-			const color = qrCode.customization?.color?.replace('#', '') || '000000';
-			const bgcolor = qrCode.customization?.backgroundColor?.replace('#', '') || 'FFFFFF';
-			return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${fallbackUrl}&color=${color}&bgcolor=${bgcolor}`;
+	let qrImageUrl = $state('');
+	
+	$effect(() => {
+		if (!qrCode?.code) {
+			qrImageUrl = '';
+			return;
 		}
 		
-		const bookingUrl = encodeURIComponent(`${window.location.origin}/book/${qrCode.code}`);
-		// Using qr-server.com as QR code generator API
+		// Use production URL for consistency
+		const baseUrl = browser ? window.location.origin : 'https://zaur.app';
+		const bookingUrl = encodeURIComponent(`${baseUrl}/book/${qrCode.code}`);
 		const color = qrCode.customization?.color?.replace('#', '') || '000000';
 		const bgcolor = qrCode.customization?.backgroundColor?.replace('#', '') || 'FFFFFF';
-		return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${bookingUrl}&color=${color}&bgcolor=${bgcolor}`;
-	}
+		qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${bookingUrl}&color=${color}&bgcolor=${bgcolor}`;
+	});
 	
 	function copyBookingUrl() {
-		if (!browser) return;
+		if (!browser || !qrCode?.code) return;
 		const url = `${window.location.origin}/book/${qrCode.code}`;
 		navigator.clipboard.writeText(url);
 		alert('Booking URL copied to clipboard!');
 	}
 	
 	function downloadQR() {
-		if (!browser) return;
+		if (!browser || !qrImageUrl) return;
 		const link = document.createElement('a');
-		link.href = getQRImageUrl();
+		link.href = qrImageUrl;
 		link.download = `qr-${qrCode.code}.png`;
 		link.click();
 	}
 	
 	async function shareQR() {
-		if (!browser) return;
+		if (!browser || !qrCode?.code) return;
 		const url = `${window.location.origin}/book/${qrCode.code}`;
 		
 		if (navigator.share) {
@@ -82,12 +82,13 @@
 </script>
 
 <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 text-center">
-	<div class="relative mx-auto mb-4 bg-gray-50 rounded-lg p-4 {sizeClasses[size]}">
-		<img 
-			src={getQRImageUrl()} 
-			alt="QR Code for {qrCode.name}"
-			class="w-full h-full rounded-lg"
-		/>
+	{#if qrCode?.code}
+		<div class="relative mx-auto mb-4 bg-gray-50 rounded-lg p-4 {sizeClasses[size]}">
+			<img 
+				src={qrImageUrl} 
+				alt="QR Code for {qrCode.name || 'Tour'}"
+				class="w-full h-full rounded-lg"
+			/>
 		{#if qrCode.customization?.logo}
 			<div class="absolute inset-0 flex items-center justify-center">
 				<img 
@@ -128,18 +129,23 @@
 		</div>
 	{/if}
 	
-	<div class="space-y-1">
-		<div class="flex items-center gap-2 justify-center">
-			<h4 class="font-medium text-gray-900">{qrCode.name}</h4>
-			{#if qrCode.category && categories[qrCode.category]}
-				<span 
-					class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-white"
-					style="background-color: {categories[qrCode.category].color}"
-				>
-					<span>{categories[qrCode.category].icon}</span>
-				</span>
-			{/if}
+		<div class="space-y-1">
+			<div class="flex items-center gap-2 justify-center">
+				<h4 class="font-medium text-gray-900">{qrCode.name || 'Unnamed QR Code'}</h4>
+				{#if qrCode.category && categories[qrCode.category]}
+					<span 
+						class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-white"
+						style="background-color: {categories[qrCode.category].color}"
+					>
+						<span>{categories[qrCode.category].icon}</span>
+					</span>
+				{/if}
+			</div>
+			<p class="text-sm text-gray-500">Code: {qrCode.code}</p>
 		</div>
-		<p class="text-sm text-gray-500">Code: {qrCode.code}</p>
-	</div>
+	{:else}
+		<div class="text-center text-gray-500">
+			<p>Invalid QR Code data</p>
+		</div>
+	{/if}
 </div> 

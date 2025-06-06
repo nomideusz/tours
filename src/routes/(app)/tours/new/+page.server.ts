@@ -104,7 +104,11 @@ export const actions: Actions = {
 
       // Handle image uploads
       const imageFiles = formData.getAll('images') as File[];
+      console.log('📸 Raw image files:', imageFiles.length);
+      console.log('📸 Image files details:', imageFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+      
       const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
+      console.log('📸 Valid images after filtering:', validImages.length);
       
       // Initialize upload directories
       await initializeUploadDirs();
@@ -115,18 +119,23 @@ export const actions: Actions = {
       
       // Process and save images
       if (validImages.length > 0) {
+        console.log('📸 Processing', validImages.length, 'images for tour:', tourId);
         for (const imageFile of validImages) {
           try {
+            console.log('📸 Processing image:', imageFile.name, 'size:', imageFile.size);
             const processed = await processAndSaveImage(imageFile, tourId);
             processedImages.push(processed.filename);
+            console.log('📸 Successfully processed image:', processed.filename);
           } catch (error) {
-            console.error('Image processing failed:', error);
+            console.error('📸 Image processing failed:', error);
             return fail(400, {
               error: 'Image upload failed',
               message: `Failed to process image: ${imageFile.name}`
             });
           }
         }
+      } else {
+        console.log('📸 No valid images to process');
       }
 
       // Create tour in PostgreSQL

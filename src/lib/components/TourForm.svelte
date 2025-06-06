@@ -390,6 +390,7 @@
 						accept="image/jpeg,image/jpg,image/png,image/webp"
 						class="hidden"
 						id="images"
+						name="images"
 						onchange={onImageUpload}
 					/>
 					<label
