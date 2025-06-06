@@ -81,7 +81,7 @@ export const POST: RequestHandler = async ({ request }) => {
       bookingReference: data.bookingReference,
       specialRequests: data.specialRequests || undefined,
       ticketQRCode: data.ticketQRCode || undefined,
-      attendanceStatus: data.attendanceStatus,
+      attendanceStatus: data.attendanceStatus || undefined,
       checkedInAt: data.checkedInAt?.toISOString(),
       checkedInBy: data.checkedInBy || undefined,
       created: data.createdAt.toISOString(),
