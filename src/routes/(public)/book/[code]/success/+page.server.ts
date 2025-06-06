@@ -1,12 +1,10 @@
 import type { PageServerLoad } from './$types.js';
 import { error } from '@sveltejs/kit';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/public';
-
-const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ url }) => {
-	const pb = new PocketBase(POCKETBASE_URL);
 	const bookingId = url.searchParams.get('booking');
 	
 	if (!bookingId) {
@@ -15,9 +13,56 @@ export const load: PageServerLoad = async ({ url }) => {
 	
 	try {
 		// Get booking details with all related data
-		const booking = await pb.collection('bookings').getOne(bookingId, {
-			expand: 'tour,timeSlot,tour.user'
-		});
+		const bookingData = await db
+			.select({
+				// Booking fields
+				id: bookings.id,
+				status: bookings.status,
+				paymentStatus: bookings.paymentStatus,
+				paymentId: bookings.paymentId,
+				totalAmount: bookings.totalAmount,
+				participants: bookings.participants,
+				customerName: bookings.customerName,
+				customerEmail: bookings.customerEmail,
+				customerPhone: bookings.customerPhone,
+				specialRequests: bookings.specialRequests,
+				bookingReference: bookings.bookingReference,
+				ticketQRCode: bookings.ticketQRCode,
+				createdAt: bookings.createdAt,
+				updatedAt: bookings.updatedAt,
+				
+				// Tour fields
+				tourId: bookings.tourId,
+				tourName: tours.name,
+				tourDescription: tours.description,
+				tourLocation: tours.location,
+				tourPrice: tours.price,
+				tourDuration: tours.duration,
+				tourUserId: tours.userId,
+				
+				// Time slot fields
+				timeSlotId: bookings.timeSlotId,
+				timeSlotStartTime: timeSlots.startTime,
+				timeSlotEndTime: timeSlots.endTime,
+				timeSlotAvailableSpots: timeSlots.availableSpots,
+				timeSlotBookedSpots: timeSlots.bookedSpots,
+				
+				// Tour owner fields
+				tourOwnerEmail: users.email,
+				tourOwnerName: users.name
+			})
+			.from(bookings)
+			.leftJoin(tours, eq(bookings.tourId, tours.id))
+			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.leftJoin(users, eq(tours.userId, users.id))
+			.where(eq(bookings.id, bookingId))
+			.limit(1);
+		
+		if (bookingData.length === 0) {
+			throw error(404, 'Booking not found');
+		}
+		
+		const booking = bookingData[0];
 		
 		// Check if this is a valid booking for success page
 		// Allow confirmed/paid (webhook processed) OR pending payment (payment processing)
@@ -38,8 +83,48 @@ export const load: PageServerLoad = async ({ url }) => {
 		// Determine if payment is still processing
 		const isPaymentProcessing = booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId;
 		
+		// Transform to match expected format with expand structure
+		const formattedBooking = {
+			id: booking.id,
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			paymentId: booking.paymentId,
+			totalAmount: booking.totalAmount,
+			participants: booking.participants,
+			customerName: booking.customerName,
+			customerEmail: booking.customerEmail,
+			customerPhone: booking.customerPhone,
+			specialRequests: booking.specialRequests,
+			bookingReference: booking.bookingReference,
+			ticketQRCode: booking.ticketQRCode,
+			created: booking.createdAt.toISOString(),
+			updated: booking.updatedAt.toISOString(),
+			expand: {
+				tour: {
+					id: booking.tourId,
+					name: booking.tourName,
+					description: booking.tourDescription,
+					location: booking.tourLocation,
+					price: booking.tourPrice,
+					duration: booking.tourDuration,
+					user: {
+						id: booking.tourUserId,
+						email: booking.tourOwnerEmail,
+						name: booking.tourOwnerName
+					}
+				},
+				timeSlot: booking.timeSlotId ? {
+					id: booking.timeSlotId,
+					startTime: booking.timeSlotStartTime?.toISOString(),
+					endTime: booking.timeSlotEndTime?.toISOString(),
+					availableSpots: booking.timeSlotAvailableSpots,
+					bookedSpots: booking.timeSlotBookedSpots
+				} : null
+			}
+		};
+		
 		return {
-			booking,
+			booking: formattedBooking,
 			isPaymentProcessing
 		};
 	} catch (err) {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PageData } from './$types.js';
-	import { pb } from '$lib/pocketbase.js';
+	import { enhance } from '$app/forms';
+	import type { PageData, ActionData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
 	
 	// Icons
@@ -85,31 +85,6 @@
 				return CheckCircle;
 			default:
 				return AlertCircle;
-		}
-	}
-
-	async function updateBookingStatus() {
-		if (newStatus === booking.status) {
-			showStatusModal = false;
-			return;
-		}
-
-		try {
-			isUpdating = true;
-			error = null;
-
-			// Update the booking status
-			const updatedBooking = await pb?.collection('bookings').update(booking.id, {
-				status: newStatus
-			});
-
-			booking = { ...booking, status: newStatus as typeof booking.status };
-			showStatusModal = false;
-		} catch (err) {
-			console.error('Error updating booking status:', err);
-			error = 'Failed to update booking status';
-		} finally {
-			isUpdating = false;
 		}
 	}
 
@@ -430,62 +405,85 @@
 {#if showStatusModal}
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
 		<div class="rounded-xl shadow-2xl max-w-md w-full" style="background: var(--bg-primary);">
-			<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-				<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Change Booking Status</h2>
-				<p class="text-sm mt-1" style="color: var(--text-secondary);">Update the status of this booking</p>
-			</div>
-			
-			<div class="p-6 space-y-4">
-				<div class="space-y-3">
-					{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
-						<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors {newStatus === status ? 'border-blue-300' : ''}" style="border-color: {newStatus === status ? 'var(--color-primary-300)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'var(--bg-primary)'}; hover:background: var(--bg-secondary);">
-							<input
-								type="radio"
-								bind:group={newStatus}
-								value={status}
-								class="form-radio"
-							/>
-							<div class="flex items-center gap-2">
-								{#if status === 'confirmed'}
-									<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-								{:else if status === 'cancelled'}
-									<XCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-								{:else if status === 'completed'}
-									<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-								{:else}
-									<AlertCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-								{/if}
-								<span class="font-medium capitalize" style="color: var(--text-primary);">{status}</span>
-							</div>
-						</label>
-					{/each}
+			<form
+				method="POST"
+				action="?/updateStatus"
+				use:enhance={() => {
+					isUpdating = true;
+					error = null;
+					
+					return async ({ result, update }) => {
+						isUpdating = false;
+						
+						if (result.type === 'success') {
+							booking = { ...booking, status: newStatus as typeof booking.status };
+							showStatusModal = false;
+						} else if (result.type === 'failure' && result.data) {
+							error = (result.data as any).error || 'Failed to update booking status';
+						}
+						
+						await update();
+					};
+				}}
+			>
+				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
+					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Change Booking Status</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Update the status of this booking</p>
 				</div>
-			</div>
-			
-			<div class="p-6 flex justify-end gap-3" style="border-top: 1px solid var(--border-primary);">
-				<button
-					type="button"
-					onclick={() => {
-						showStatusModal = false;
-						newStatus = booking.status;
-					}}
-					class="button-secondary"
-				>
-					Cancel
-				</button>
-				<button
-					onclick={updateBookingStatus}
-					disabled={isUpdating || newStatus === booking.status}
-					class="button-primary button--gap {isUpdating ? 'opacity-50' : ''}"
-				>
-					{#if isUpdating}
-						<div class="form-spinner"></div>
-						Updating...
-					{:else}
-						Update Status
-					{/if}
-				</button>
-			</div>
+				
+				<div class="p-6 space-y-4">
+					<div class="space-y-3">
+						{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
+							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors {newStatus === status ? 'border-blue-300' : ''}" style="border-color: {newStatus === status ? 'var(--color-primary-300)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'var(--bg-primary)'}; hover:background: var(--bg-secondary);">
+								<input
+									type="radio"
+									bind:group={newStatus}
+									name="status"
+									value={status}
+									class="form-radio"
+								/>
+								<div class="flex items-center gap-2">
+									{#if status === 'confirmed'}
+										<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
+									{:else if status === 'cancelled'}
+										<XCircle class="h-4 w-4" style="color: var(--text-secondary);" />
+									{:else if status === 'completed'}
+										<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
+									{:else}
+										<AlertCircle class="h-4 w-4" style="color: var(--text-secondary);" />
+									{/if}
+									<span class="font-medium capitalize" style="color: var(--text-primary);">{status}</span>
+								</div>
+							</label>
+						{/each}
+					</div>
+				</div>
+				
+				<div class="p-6 flex justify-end gap-3" style="border-top: 1px solid var(--border-primary);">
+					<button
+						type="button"
+						onclick={() => {
+							showStatusModal = false;
+							newStatus = booking.status;
+						}}
+						class="button-secondary"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={isUpdating || newStatus === booking.status}
+						class="button-primary button--gap {isUpdating ? 'opacity-50' : ''}"
+					>
+						{#if isUpdating}
+							<div class="form-spinner"></div>
+							Updating...
+						{:else}
+							Update Status
+						{/if}
+					</button>
+				</div>
+			</form>
 		</div>
 	</div>
 {/if}

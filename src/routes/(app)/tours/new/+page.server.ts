@@ -4,6 +4,7 @@ import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { db } from '$lib/db/connection.js';
 import { tours, qrCodes } from '$lib/db/schema/index.js';
 import { createId } from '@paralleldrive/cuid2';
+import { processAndSaveImage, initializeUploadDirs } from '$lib/utils/image-storage.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   // Check if user is authenticated
@@ -101,17 +102,34 @@ export const actions: Actions = {
         });
       }
 
-      // Handle image uploads - for now, images array will be empty 
-      // TODO: Implement image upload to cloud storage when needed
-      const images = formData.getAll('images') as File[];
-      const validImages = images.filter(img => img instanceof File && img.size > 0);
+      // Handle image uploads
+      const imageFiles = formData.getAll('images') as File[];
+      const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
       
+      // Initialize upload directories
+      await initializeUploadDirs();
+      
+      // Create tour ID and process images
+      const tourId = createId();
+      const processedImages: string[] = [];
+      
+      // Process and save images
       if (validImages.length > 0) {
-        console.warn('Image upload not yet implemented in PostgreSQL version');
+        for (const imageFile of validImages) {
+          try {
+            const processed = await processAndSaveImage(imageFile, tourId);
+            processedImages.push(processed.filename);
+          } catch (error) {
+            console.error('Image processing failed:', error);
+            return fail(400, {
+              error: 'Image upload failed',
+              message: `Failed to process image: ${imageFile.name}`
+            });
+          }
+        }
       }
 
       // Create tour in PostgreSQL
-      const tourId = createId();
       const newTour = {
         id: tourId,
         name: sanitizedData.name as string,
@@ -126,7 +144,7 @@ export const actions: Actions = {
         requirements: parsedRequirements,
         cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
         userId: locals.user.id,
-        images: [], // Empty for now, will implement cloud storage later
+        images: processedImages,
         createdAt: new Date(),
         updatedAt: new Date()
       };

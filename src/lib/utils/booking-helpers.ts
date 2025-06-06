@@ -1,6 +1,6 @@
-// Shared utilities for booking data processing
-
-import { getQueryConfig } from './query-config.js';
+/**
+ * Booking helper utilities for Drizzle/PostgreSQL data
+ */
 
 export interface ProcessedBooking {
 	id: string;
@@ -37,31 +37,21 @@ export interface ProcessedBooking {
 }
 
 /**
- * Validates and normalizes a date value with fallbacks
+ * Validates and returns a consistent date value from booking data
  */
 export function validateDate(booking: any): string {
 	let dateValue: string;
 	
+	// Priority order for date selection
 	if (booking.expand?.timeSlot?.startTime) {
 		dateValue = booking.expand.timeSlot.startTime;
-	} else if (booking.created) {
-		dateValue = booking.created;
+	} else if (booking.timeSlotStartTime) {
+		dateValue = booking.timeSlotStartTime;
 	} else if (booking.updated) {
 		dateValue = booking.updated;
+	} else if (booking.created) {
+		dateValue = booking.created;
 	} else {
-		dateValue = new Date().toISOString();
-	}
-	
-	// Validate the date
-	const testDate = new Date(dateValue);
-	if (isNaN(testDate.getTime())) {
-		console.warn('Invalid date found for booking:', {
-			bookingId: booking.id,
-			dateValue,
-			timeSlotData: booking.expand?.timeSlot,
-			created: booking.created,
-			updated: booking.updated
-		});
 		dateValue = new Date().toISOString(); // Fallback to current time
 	}
 	
@@ -69,7 +59,7 @@ export function validateDate(booking: any): string {
 }
 
 /**
- * Processes a raw booking from PocketBase into a consistent structure
+ * Processes a raw booking into a consistent structure
  */
 export function processBooking(booking: any): ProcessedBooking {
 	return {
@@ -80,152 +70,6 @@ export function processBooking(booking: any): ProcessedBooking {
 		totalAmount: booking.totalAmount || 0,
 		participants: booking.participants || 1
 	};
-}
-
-/**
- * Standard fields for booking queries
- */
-export const BOOKING_FIELDS = 'id,customerName,customerEmail,customerPhone,participants,status,created,updated,tour,timeSlot,totalAmount,paymentStatus,bookingReference,specialRequests,expand.tour.name,expand.tour.description,expand.tour.location,expand.tour.price,expand.timeSlot.startTime,expand.timeSlot.endTime';
-
-/**
- * Fetches bookings for given tour IDs with standard processing
- * Implements pagination and reduced query complexity to avoid timeouts
- */
-export async function fetchBookingsForTours(pb: any, tourIds: string[], options: { 
-	sort?: string;
-	limit?: number;
-	additionalFields?: string;
-} = {}): Promise<ProcessedBooking[]> {
-	if (tourIds.length === 0) {
-		return [];
-	}
-	
-	const {
-		sort = '-created',
-		limit,
-		additionalFields = ''
-	} = options;
-	
-	// Get query configuration based on environment
-	const config = getQueryConfig();
-	
-	// Use minimal fields for initial fetch to reduce query complexity
-	const minimalFields = 'id,customerName,customerEmail,participants,status,created,tour,timeSlot,totalAmount,paymentStatus';
-	
-	// Use environment-specific page size
-	const PAGE_SIZE = config.maxPageSize;
-	const MAX_PAGES = limit ? Math.ceil(limit / PAGE_SIZE) : Math.ceil(config.maxTotalRecords / PAGE_SIZE);
-	
-	const allBookings: any[] = [];
-	
-	console.log(`Fetching bookings for ${tourIds.length} tours using pagination`);
-	
-	try {
-		// First approach: Try to get all bookings with a single filter
-		// but with pagination and minimal fields
-		const filter = tourIds.map(id => `tour = "${id}"`).join(' || ');
-		
-		let page = 1;
-		let hasMore = true;
-		
-		while (hasMore && page <= MAX_PAGES && (!limit || allBookings.length < limit)) {
-			try {
-				const response = await pb.collection('bookings').getList(page, PAGE_SIZE, {
-					filter,
-					sort,
-					fields: minimalFields,
-					skipTotal: true // Skip counting total records for performance
-				});
-				
-				allBookings.push(...response.items);
-				hasMore = response.items.length === PAGE_SIZE;
-				page++;
-				
-				console.log(`Page ${page - 1}: fetched ${response.items.length} bookings (total: ${allBookings.length})`);
-			} catch (pageError) {
-				console.error(`Error fetching page ${page}:`, pageError);
-				hasMore = false; // Stop pagination on error
-			}
-		}
-		
-		// If we got some results, expand the necessary relations for the fetched bookings
-		if (allBookings.length > 0) {
-			// Batch expand the relations to avoid large queries
-			const bookingIds = allBookings.slice(0, limit || allBookings.length).map(b => b.id);
-			const expandedBookings = await batchExpandBookings(pb, bookingIds, BOOKING_FIELDS);
-			
-			// Map expanded data back to our bookings
-			const expandedMap = new Map(expandedBookings.map(b => [b.id, b]));
-			const finalBookings = bookingIds
-				.map(id => expandedMap.get(id))
-				.filter(Boolean);
-			
-			return finalBookings.map(processBooking);
-		}
-		
-	} catch (error) {
-		console.error('Error with paginated approach, falling back to tour-by-tour:', error);
-		
-		// Fallback: Fetch bookings tour by tour with very small limits
-		for (const tourId of tourIds) {
-			if (limit && allBookings.length >= limit) break;
-			
-			try {
-				const tourBookings = await pb.collection('bookings').getList(1, 20, {
-					filter: `tour = "${tourId}"`,
-					sort,
-					expand: 'tour,timeSlot',
-					fields: BOOKING_FIELDS
-				});
-				
-				allBookings.push(...tourBookings.items);
-				console.log(`Tour ${tourId}: fetched ${tourBookings.items.length} bookings`);
-			} catch (tourError) {
-				console.error(`Error fetching bookings for tour ${tourId}:`, tourError);
-				// Continue with other tours
-			}
-		}
-		
-		// Apply final limit and sort
-		if (sort && allBookings.length > 0) {
-			const field = sort.startsWith('-') ? sort.slice(1) : sort;
-			const order = sort.startsWith('-') ? -1 : 1;
-			allBookings.sort((a, b) => order * (a[field] > b[field] ? 1 : -1));
-		}
-		
-		const finalBookings = limit ? allBookings.slice(0, limit) : allBookings;
-		return finalBookings.map(processBooking);
-	}
-	
-	return [];
-}
-
-/**
- * Batch expand bookings with full fields to avoid large queries
- */
-async function batchExpandBookings(pb: any, bookingIds: string[], fields: string): Promise<any[]> {
-	const config = getQueryConfig();
-	const BATCH_SIZE = config.batchSize;
-	const results: any[] = [];
-	
-	for (let i = 0; i < bookingIds.length; i += BATCH_SIZE) {
-		const batchIds = bookingIds.slice(i, i + BATCH_SIZE);
-		
-		try {
-			const filter = batchIds.map(id => `id = "${id}"`).join(' || ');
-			const expandedBatch = await pb.collection('bookings').getFullList({
-				filter,
-				expand: 'tour,timeSlot',
-				fields
-			});
-			
-			results.push(...expandedBatch);
-		} catch (error) {
-			console.error(`Error expanding batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
-		}
-	}
-	
-	return results;
 }
 
 /**
@@ -262,25 +106,55 @@ export function createTodaysSchedule(bookings: ProcessedBooking[]): Array<{
 		return bookingDate >= todayStart && bookingDate < todayEnd && booking.status === 'confirmed';
 	});
 	
-	// Group by tour and time
-	const scheduleMap = new Map();
-	todayBookings.forEach(booking => {
-		const startTime = booking.expand?.timeSlot?.startTime;
-		if (!startTime) return; // Skip bookings without valid time slots
-		
-		const key = `${booking.expand?.tour?.name}-${startTime}`;
-		if (!scheduleMap.has(key)) {
-			// Extract just the time part from the datetime
-			const timeOnly = new Date(startTime).toTimeString().substring(0, 5); // HH:MM format
-			scheduleMap.set(key, {
-				tourName: booking.expand?.tour?.name || 'Unknown Tour',
-				time: timeOnly,
-				participants: 0
-			});
+	// Sort by time and format
+	return todayBookings
+		.sort((a, b) => {
+			const timeA = new Date(a.expand!.timeSlot!.startTime).getTime();
+			const timeB = new Date(b.expand!.timeSlot!.startTime).getTime();
+			return timeA - timeB;
+		})
+		.map(booking => ({
+			tourName: booking.expand!.tour!.name,
+			time: new Date(booking.expand!.timeSlot!.startTime).toLocaleTimeString('en-US', {
+				hour: '2-digit',
+				minute: '2-digit'
+			}),
+			participants: booking.participants
+		}));
+}
+
+/**
+ * Calculates booking statistics from an array of bookings
+ */
+export function calculateBookingStats(bookings: ProcessedBooking[]) {
+	const stats = {
+		total: bookings.length,
+		confirmed: 0,
+		pending: 0,
+		cancelled: 0,
+		totalRevenue: 0,
+		totalParticipants: 0
+	};
+	
+	bookings.forEach(booking => {
+		switch (booking.status) {
+			case 'confirmed':
+				stats.confirmed++;
+				break;
+			case 'pending':
+				stats.pending++;
+				break;
+			case 'cancelled':
+				stats.cancelled++;
+				break;
 		}
-		scheduleMap.get(key).participants += booking.participants;
+		
+		if (booking.status === 'confirmed' && booking.paymentStatus === 'paid') {
+			stats.totalRevenue += Number(booking.totalAmount) || 0;
+		}
+		
+		stats.totalParticipants += booking.participants;
 	});
 	
-	return Array.from(scheduleMap.values())
-		.sort((a, b) => a.time.localeCompare(b.time));
+	return stats;
 } 

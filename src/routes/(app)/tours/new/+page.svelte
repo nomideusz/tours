@@ -28,6 +28,21 @@
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || ''
 	});
 
+	// Image upload state
+	let uploadedImages: File[] = $state([]);
+
+	function handleImageUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (target.files) {
+			const newFiles = Array.from(target.files);
+			uploadedImages = [...uploadedImages, ...newFiles];
+		}
+	}
+
+	function removeImage(index: number) {
+		uploadedImages = uploadedImages.filter((_, i) => i !== index);
+	}
+
 
 
 
@@ -56,18 +71,7 @@
 		</div>
 	{/if}
 
-	<!-- Temporary Notice about Images -->
-	<div class="mb-6 rounded-xl p-4" style="background: var(--color-warning-light); border: 1px solid #fbbf24;">
-		<div class="flex gap-3">
-			<svg class="h-5 w-5 mt-0.5" style="color: var(--color-warning);" fill="currentColor" viewBox="0 0 20 20">
-				<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-			</svg>
-			<div>
-				<p class="font-medium" style="color: #92400e;">Image uploads temporarily disabled</p>
-				<p class="text-sm mt-1" style="color: #a16207;">We're working on a new image upload system. You can create tours without images for now and add them later.</p>
-			</div>
-		</div>
-	</div>
+
 
 	<!-- Progress Steps -->
 	<div class="mb-8">
@@ -126,9 +130,12 @@
 			}}>
 				<TourForm
 					bind:formData
+					bind:uploadedImages
 					{isSubmitting}
 					isEdit={false}
 					onCancel={handleCancel}
+					onImageUpload={handleImageUpload}
+					onImageRemove={removeImage}
 					serverErrors={validationErrors}
 				/>
 			</form>

@@ -4,6 +4,7 @@ import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
+import { processAndSaveImage, initializeUploadDirs, deleteImage } from '$lib/utils/image-storage.js';
 
 export const load: PageServerLoad = async ({ locals, url, params }) => {
   // Check if user is authenticated
@@ -166,14 +167,47 @@ export const actions: Actions = {
         return fail(404, { error: 'Tour not found' });
       }
 
-      // Handle image uploads - for now, keep existing images array
-      // TODO: Implement image upload to cloud storage when needed
-      const images = formData.getAll('images') as File[];
-      const validImages = images.filter(img => img instanceof File && img.size > 0);
+      const existingTour = existingTourResults[0];
+      const currentImages = existingTour.images || [];
+
+      // Handle image uploads
+      await initializeUploadDirs();
       
+      const imageFiles = formData.getAll('images') as File[];
+      const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
+      const newImages: string[] = [];
+      
+      // Process new images
       if (validImages.length > 0) {
-        console.warn('Image upload not yet implemented in PostgreSQL version');
+        for (const imageFile of validImages) {
+          try {
+            const processed = await processAndSaveImage(imageFile, params.id);
+            newImages.push(processed.filename);
+          } catch (error) {
+            console.error('Image processing failed:', error);
+            return fail(400, {
+              error: 'Image upload failed',
+              message: `Failed to process image: ${imageFile.name}`
+            });
+          }
+        }
       }
+
+      // Handle image removals
+      const imagesToRemove = formData.getAll('removeImages') as string[];
+      const updatedImages = currentImages.filter(img => !imagesToRemove.includes(img));
+      
+      // Delete removed images from storage
+      for (const imageToRemove of imagesToRemove) {
+        try {
+          await deleteImage(params.id, imageToRemove);
+        } catch (error) {
+          console.error('Failed to delete image:', error);
+        }
+      }
+
+      // Combine existing and new images
+      const finalImages = [...updatedImages, ...newImages];
 
       // Update tour in PostgreSQL
       const updateData = {
@@ -188,6 +222,7 @@ export const actions: Actions = {
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+        images: finalImages,
         updatedAt: new Date()
       };
 

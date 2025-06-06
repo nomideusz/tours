@@ -35,6 +35,32 @@
 		cancellationPolicy: ''
 	});
 
+	// Image upload state
+	let uploadedImages: File[] = $state([]);
+	let existingImages: string[] = $state([]);
+	let imagesToRemove: string[] = $state([]);
+
+	function handleImageUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (target.files) {
+			const newFiles = Array.from(target.files);
+			uploadedImages = [...uploadedImages, ...newFiles];
+		}
+	}
+
+	function removeImage(index: number) {
+		uploadedImages = uploadedImages.filter((_, i) => i !== index);
+	}
+
+	function removeExistingImage(imageName: string) {
+		imagesToRemove = [...imagesToRemove, imageName];
+		existingImages = existingImages.filter(img => img !== imageName);
+	}
+
+	function getExistingImageUrl(imageName: string): string {
+		return `/uploads/tours/${tourId}/${imageName}`;
+	}
+
 	onMount(() => {
 		if (data.tour) {
 			initializeTour();
@@ -59,6 +85,9 @@
 				requirements: data.tour.requirements && data.tour.requirements.length > 0 ? data.tour.requirements : [''],
 				cancellationPolicy: data.tour.cancellationPolicy || ''
 			};
+
+			// Initialize existing images
+			existingImages = data.tour.images || [];
 		}
 	}
 
@@ -123,7 +152,7 @@
 			</div>
 			
 			<div class="p-6 sm:p-8">
-				<form method="POST" use:enhance={() => {
+				<form method="POST" enctype="multipart/form-data" use:enhance={() => {
 					isSubmitting = true;
 					return async ({ result }) => {
 						isSubmitting = false;
@@ -132,11 +161,22 @@
 						}
 					};
 				}}>
+					<!-- Hidden input for images to remove -->
+					{#each imagesToRemove as imageToRemove}
+						<input type="hidden" name="removeImages" value={imageToRemove} />
+					{/each}
+
 					<TourForm
 						bind:formData
+						bind:uploadedImages
 						{isSubmitting}
 						isEdit={true}
 						onCancel={handleCancel}
+						onImageUpload={handleImageUpload}
+						onImageRemove={removeImage}
+						{existingImages}
+						onExistingImageRemove={removeExistingImage}
+						{getExistingImageUrl}
 						serverErrors={validationErrors}
 					/>
 				</form>

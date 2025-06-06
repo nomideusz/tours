@@ -1,5 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { lucia } from '$lib/auth/lucia.js';
+import { initializeUploadDirs } from '$lib/utils/image-storage.js';
 
 // Add type for locals
 declare global {
@@ -11,6 +12,9 @@ declare global {
         }
     }
 }
+
+// Initialize upload directories on server startup
+initializeUploadDirs().catch(console.error);
 
 export const handle: Handle = async ({ event, resolve }) => {
     // Get session ID from cookies

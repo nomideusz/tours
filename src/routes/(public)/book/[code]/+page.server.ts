@@ -1,12 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail, redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 import { db } from '$lib/db/connection.js';
 import { qrCodes, tours, timeSlots, bookings } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-
-const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
 
 export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 	try {
@@ -144,7 +141,6 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		return {
 			qrCode,
 			timeSlots: timeSlotsResult,
-			pbUrl: POCKETBASE_URL,
 			seo: seoData
 		};
 	} catch (err) {

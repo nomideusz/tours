@@ -31,14 +31,14 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let tour = $state(data.tour);
-	let error = $state<string | null>(form?.error || null);
+	let error = $state<string | null>((form as any)?.error || null);
 	let isDeleting = $state(false);
 	let isUpdatingStatus = $state(false);
 	
 	// Update tour when data changes
 	$effect(() => {
 		tour = data.tour;
-		error = form?.error || null;
+		error = (form as any)?.error || null;
 	});
 
 	function deleteTour() {
@@ -403,7 +403,26 @@
 							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Images</h2>
 						</div>
 						<div class="p-6">
-							<p class="text-sm text-gray-600">Image functionality is being updated. Images will be available soon.</p>
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+								{#each tour.images as image, index}
+									<div class="relative group rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
+										<img 
+											src="/uploads/tours/{tour.id}/{image}" 
+											alt="Tour image {index + 1}"
+											class="w-full h-48 object-cover"
+											loading="lazy"
+										/>
+										<div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+											<button 
+												onclick={() => window.open(`/uploads/tours/${tour.id}/${image}`, '_blank')}
+												class="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+											>
+												View Full Size
+											</button>
+										</div>
+									</div>
+								{/each}
+							</div>
 						</div>
 					</div>
 				{:else}

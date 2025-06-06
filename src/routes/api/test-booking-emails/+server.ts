@@ -1,6 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { createAuthenticatedPB } from '$lib/admin-auth.server.js';
 import { sendBookingEmail, sendTestEmail, type EmailType } from '$lib/email.server.js';
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 import type { Booking, Tour, TimeSlot } from '$lib/types.js';
 
 // Extended booking type with expand data
@@ -36,19 +38,92 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
         }
         
         // Fetch booking data with expanded relations
-        const pb = await createAuthenticatedPB();
-        const booking = await pb.collection('bookings').getOne<ExpandedBooking>(bookingId, {
-          expand: 'tour,timeSlot'
-        });
+        const bookingData = await db
+          .select({
+            // Booking fields
+            id: bookings.id,
+            status: bookings.status,
+            paymentStatus: bookings.paymentStatus,
+            totalAmount: bookings.totalAmount,
+            participants: bookings.participants,
+            customerName: bookings.customerName,
+            customerEmail: bookings.customerEmail,
+            customerPhone: bookings.customerPhone,
+            specialRequests: bookings.specialRequests,
+            bookingReference: bookings.bookingReference,
+            ticketQRCode: bookings.ticketQRCode,
+            createdAt: bookings.createdAt,
+            updatedAt: bookings.updatedAt,
+            
+            // Tour fields
+            tourId: bookings.tourId,
+            tourName: tours.name,
+            tourDescription: tours.description,
+            tourLocation: tours.location,
+            tourPrice: tours.price,
+            tourDuration: tours.duration,
+            
+            // Time slot fields
+            timeSlotId: bookings.timeSlotId,
+            timeSlotStartTime: timeSlots.startTime,
+            timeSlotEndTime: timeSlots.endTime,
+            timeSlotAvailableSpots: timeSlots.availableSpots,
+            timeSlotBookedSpots: timeSlots.bookedSpots
+          })
+          .from(bookings)
+          .leftJoin(tours, eq(bookings.tourId, tours.id))
+          .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+          .where(eq(bookings.id, bookingId))
+          .limit(1);
         
-        if (!booking.expand?.tour || !booking.expand?.timeSlot) {
+        if (bookingData.length === 0) {
+          throw new Error('Booking not found');
+        }
+        
+        const booking = bookingData[0];
+        
+        if (!booking.tourId || !booking.timeSlotId) {
           throw new Error('Booking data incomplete - missing tour or timeSlot');
         }
         
+        // Transform to expected format
+        const formattedBooking = {
+          id: booking.id,
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          totalAmount: booking.totalAmount,
+          participants: booking.participants,
+          customerName: booking.customerName,
+          customerEmail: booking.customerEmail,
+          customerPhone: booking.customerPhone,
+          specialRequests: booking.specialRequests,
+          bookingReference: booking.bookingReference,
+          ticketQRCode: booking.ticketQRCode,
+          created: booking.createdAt.toISOString(),
+          updated: booking.updatedAt.toISOString(),
+          expand: {
+            tour: {
+              id: booking.tourId,
+              name: booking.tourName,
+              description: booking.tourDescription,
+              location: booking.tourLocation,
+              price: booking.tourPrice,
+              duration: booking.tourDuration
+            } as unknown as Tour,
+            timeSlot: {
+              id: booking.timeSlotId,
+              startTime: booking.timeSlotStartTime?.toISOString(),
+              endTime: booking.timeSlotEndTime?.toISOString(),
+              availableSpots: booking.timeSlotAvailableSpots,
+              bookedSpots: booking.timeSlotBookedSpots
+            } as unknown as TimeSlot
+          }
+        } as unknown as ExpandedBooking;
+        
         const emailResult = await sendBookingEmail(emailType as EmailType, {
-          booking,
-          tour: booking.expand.tour,
-          timeSlot: booking.expand.timeSlot
+          booking: formattedBooking,
+          tour: formattedBooking.expand!.tour!,
+          timeSlot: formattedBooking.expand!.timeSlot!
         });
         
         if (!emailResult.success) {
@@ -63,20 +138,93 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
           return json({ error: 'bookingId is required for send-qr-ticket' }, { status: 400 });
         }
         
-        // Fetch booking data for QR ticket
-        const pbForQR = await createAuthenticatedPB();
-        const qrBooking = await pbForQR.collection('bookings').getOne<ExpandedBooking>(bookingId, {
-          expand: 'tour,timeSlot'
-        });
+        // Fetch booking data for QR ticket (same logic as above)
+        const qrBookingData = await db
+          .select({
+            // Booking fields
+            id: bookings.id,
+            status: bookings.status,
+            paymentStatus: bookings.paymentStatus,
+            totalAmount: bookings.totalAmount,
+            participants: bookings.participants,
+            customerName: bookings.customerName,
+            customerEmail: bookings.customerEmail,
+            customerPhone: bookings.customerPhone,
+            specialRequests: bookings.specialRequests,
+            bookingReference: bookings.bookingReference,
+            ticketQRCode: bookings.ticketQRCode,
+            createdAt: bookings.createdAt,
+            updatedAt: bookings.updatedAt,
+            
+            // Tour fields
+            tourId: bookings.tourId,
+            tourName: tours.name,
+            tourDescription: tours.description,
+            tourLocation: tours.location,
+            tourPrice: tours.price,
+            tourDuration: tours.duration,
+            
+            // Time slot fields
+            timeSlotId: bookings.timeSlotId,
+            timeSlotStartTime: timeSlots.startTime,
+            timeSlotEndTime: timeSlots.endTime,
+            timeSlotAvailableSpots: timeSlots.availableSpots,
+            timeSlotBookedSpots: timeSlots.bookedSpots
+          })
+          .from(bookings)
+          .leftJoin(tours, eq(bookings.tourId, tours.id))
+          .leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+          .where(eq(bookings.id, bookingId))
+          .limit(1);
         
-        if (!qrBooking.expand?.tour || !qrBooking.expand?.timeSlot) {
+        if (qrBookingData.length === 0) {
+          throw new Error('Booking not found');
+        }
+        
+        const qrBooking = qrBookingData[0];
+        
+        if (!qrBooking.tourId || !qrBooking.timeSlotId) {
           throw new Error('Booking data incomplete - missing tour or timeSlot');
         }
         
+        // Transform to expected format
+        const formattedQRBooking = {
+          id: qrBooking.id,
+          status: qrBooking.status,
+          paymentStatus: qrBooking.paymentStatus,
+          totalAmount: qrBooking.totalAmount,
+          participants: qrBooking.participants,
+          customerName: qrBooking.customerName,
+          customerEmail: qrBooking.customerEmail,
+          customerPhone: qrBooking.customerPhone,
+          specialRequests: qrBooking.specialRequests,
+          bookingReference: qrBooking.bookingReference,
+          ticketQRCode: qrBooking.ticketQRCode,
+          created: qrBooking.createdAt.toISOString(),
+          updated: qrBooking.updatedAt.toISOString(),
+          expand: {
+            tour: {
+              id: qrBooking.tourId,
+              name: qrBooking.tourName,
+              description: qrBooking.tourDescription,
+              location: qrBooking.tourLocation,
+              price: qrBooking.tourPrice,
+              duration: qrBooking.tourDuration
+            } as unknown as Tour,
+            timeSlot: {
+              id: qrBooking.timeSlotId,
+              startTime: qrBooking.timeSlotStartTime?.toISOString(),
+              endTime: qrBooking.timeSlotEndTime?.toISOString(),
+              availableSpots: qrBooking.timeSlotAvailableSpots,
+              bookedSpots: qrBooking.timeSlotBookedSpots
+            } as unknown as TimeSlot
+          }
+        } as unknown as ExpandedBooking;
+        
         const qrResult = await sendBookingEmail('qr-ticket', {
-          booking: qrBooking,
-          tour: qrBooking.expand.tour,
-          timeSlot: qrBooking.expand.timeSlot
+          booking: formattedQRBooking,
+          tour: formattedQRBooking.expand!.tour!,
+          timeSlot: formattedQRBooking.expand!.timeSlot!
         });
         
         if (!qrResult.success) {

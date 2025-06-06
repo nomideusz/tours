@@ -1,10 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail } from '@sveltejs/kit';
 import { isValidTicketQRCode } from '$lib/ticket-qr.js';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/public';
-
-const POCKETBASE_URL = env.PUBLIC_POCKETBASE_URL || 'https://z.xeon.pl';
+import { db } from '$lib/db/connection.js';
+import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const ticketCode = params.code;
@@ -14,35 +13,65 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 	
 	// Check if user is authenticated
-	if (!locals?.pb?.authStore?.isValid || !locals?.user) {
+	if (!locals?.user) {
 		throw error(401, 'Authentication required. Please log in to access check-in functionality.');
 	}
 	
-	const pb = locals.pb;
 	const currentUser = locals.user;
 	
 	try {
 		console.log('Looking for booking with ticket code:', ticketCode);
 		
-		// Find booking by ticket QR code
-		// Note: Bookings are viewable without authentication according to the schema rules
-		// This allows tour guides to see any booking for check-in purposes
-		let booking;
-		try {
-			booking = await pb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour,timeSlot,tour.user' }
-			);
-		} catch (bookingErr) {
-			console.log('Booking not found:', bookingErr);
+		// Find booking by ticket QR code with expanded tour and timeSlot data
+		const bookingData = await db
+			.select({
+				// Booking fields
+				id: bookings.id,
+				status: bookings.status,
+				paymentStatus: bookings.paymentStatus,
+				totalAmount: bookings.totalAmount,
+				participants: bookings.participants,
+				customerName: bookings.customerName,
+				customerEmail: bookings.customerEmail,
+				customerPhone: bookings.customerPhone,
+				specialRequests: bookings.specialRequests,
+				bookingReference: bookings.bookingReference,
+				ticketQRCode: bookings.ticketQRCode,
+				attendanceStatus: bookings.attendanceStatus,
+				checkedInAt: bookings.checkedInAt,
+				checkedInBy: bookings.checkedInBy,
+				createdAt: bookings.createdAt,
+				updatedAt: bookings.updatedAt,
+				
+				// Tour fields
+				tourId: bookings.tourId,
+				tourName: tours.name,
+				tourDescription: tours.description,
+				tourLocation: tours.location,
+				tourPrice: tours.price,
+				tourDuration: tours.duration,
+				tourUserId: tours.userId,
+				
+				// Time slot fields
+				timeSlotId: bookings.timeSlotId,
+				timeSlotStartTime: timeSlots.startTime,
+				timeSlotEndTime: timeSlots.endTime,
+				timeSlotAvailableSpots: timeSlots.availableSpots,
+				timeSlotBookedSpots: timeSlots.bookedSpots
+			})
+			.from(bookings)
+			.leftJoin(tours, eq(bookings.tourId, tours.id))
+			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.where(eq(bookings.ticketQRCode, ticketCode))
+			.limit(1);
+		
+		if (bookingData.length === 0) {
 			throw error(404, 'Ticket not found. Please check the ticket code and try again.');
 		}
 		
-		if (!booking) {
-			throw error(404, 'Ticket not found. Please check the ticket code and try again.');
-		}
+		const booking = bookingData[0];
 		
-		console.log('Found booking:', booking.id, 'for tour:', booking.expand?.tour?.name);
+		console.log('Found booking:', booking.id, 'for tour:', booking.tourName);
 		
 		// Only show confirmed bookings
 		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
@@ -50,17 +79,52 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		}
 		
 		// Check if current user is authorized to check in this booking
-		const tourOwner = booking.expand?.tour?.user;
-		
-		if (currentUser.id !== tourOwner) {
+		if (currentUser.id !== booking.tourUserId) {
 			throw error(403, 'You are not authorized to check in this booking. Only the tour guide can check in customers.');
 		}
 		
+		// Transform to match expected format with expand structure
+		const formattedBooking = {
+			id: booking.id,
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			totalAmount: booking.totalAmount,
+			participants: booking.participants,
+			customerName: booking.customerName,
+			customerEmail: booking.customerEmail,
+			customerPhone: booking.customerPhone,
+			specialRequests: booking.specialRequests,
+			bookingReference: booking.bookingReference,
+			ticketQRCode: booking.ticketQRCode,
+			attendanceStatus: booking.attendanceStatus,
+			checkedInAt: booking.checkedInAt?.toISOString(),
+			checkedInBy: booking.checkedInBy,
+			created: booking.createdAt.toISOString(),
+			updated: booking.updatedAt.toISOString(),
+			expand: {
+				tour: {
+					id: booking.tourId,
+					name: booking.tourName,
+					description: booking.tourDescription,
+					location: booking.tourLocation,
+					price: booking.tourPrice,
+					duration: booking.tourDuration,
+					user: booking.tourUserId
+				},
+				timeSlot: booking.timeSlotId ? {
+					id: booking.timeSlotId,
+					startTime: booking.timeSlotStartTime?.toISOString(),
+					endTime: booking.timeSlotEndTime?.toISOString(),
+					availableSpots: booking.timeSlotAvailableSpots,
+					bookedSpots: booking.timeSlotBookedSpots
+				} : null
+			}
+		};
+		
 		return {
-			booking,
+			booking: formattedBooking,
 			ticketCode,
-			currentUser,
-			pbUrl: POCKETBASE_URL
+			currentUser
 		};
 	} catch (err) {
 		console.error('Error loading check-in page:', err);
@@ -71,27 +135,38 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 export const actions: Actions = {
 	checkin: async ({ params, locals }) => {
-		const pb = locals?.pb;
-		if (!pb?.authStore?.isValid) {
+		if (!locals?.user) {
 			return fail(401, { error: 'Authentication required' });
 		}
 		
 		const ticketCode = params.code;
-		const currentUser = pb.authStore.record;
+		const currentUser = locals.user;
 		
 		if (!ticketCode || !isValidTicketQRCode(ticketCode)) {
 			return fail(400, { error: 'Invalid ticket code' });
 		}
 		
 		try {
-			// Find booking
-			const booking = await pb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour' }
-			);
+			// Find booking with tour information
+			const bookingData = await db
+				.select({
+					id: bookings.id,
+					tourUserId: tours.userId,
+					attendanceStatus: bookings.attendanceStatus
+				})
+				.from(bookings)
+				.leftJoin(tours, eq(bookings.tourId, tours.id))
+				.where(eq(bookings.ticketQRCode, ticketCode))
+				.limit(1);
+			
+			if (bookingData.length === 0) {
+				return fail(404, { error: 'Booking not found' });
+			}
+			
+			const booking = bookingData[0];
 			
 			// Verify authorization
-			if (booking.expand?.tour?.user !== currentUser?.id) {
+			if (booking.tourUserId !== currentUser.id) {
 				return fail(403, { error: 'Not authorized to check in this booking' });
 			}
 			
@@ -101,13 +176,18 @@ export const actions: Actions = {
 			}
 			
 			// Update attendance status
-			await pb.collection('bookings').update(booking.id, {
-				attendanceStatus: 'checked_in',
-				checkedInAt: new Date().toISOString(),
-				checkedInBy: currentUser?.id
-			});
+			const checkedInAt = new Date();
+			await db
+				.update(bookings)
+				.set({
+					attendanceStatus: 'checked_in',
+					checkedInAt: checkedInAt,
+					checkedInBy: currentUser.id,
+					updatedAt: new Date()
+				})
+				.where(eq(bookings.id, booking.id));
 			
-			return { success: true, checkedInAt: new Date().toISOString() };
+			return { success: true, checkedInAt: checkedInAt.toISOString() };
 		} catch (err) {
 			console.error('Check-in error:', err);
 			return fail(500, { error: 'Failed to check in customer' });
@@ -115,35 +195,49 @@ export const actions: Actions = {
 	},
 	
 	noshow: async ({ params, locals }) => {
-		const pb = locals?.pb;
-		if (!pb?.authStore?.isValid) {
+		if (!locals?.user) {
 			return fail(401, { error: 'Authentication required' });
 		}
 		
 		const ticketCode = params.code;
-		const currentUser = pb.authStore.record;
+		const currentUser = locals.user;
 		
 		if (!ticketCode || !isValidTicketQRCode(ticketCode)) {
 			return fail(400, { error: 'Invalid ticket code' });
 		}
 		
 		try {
-			// Find booking
-			const booking = await pb.collection('bookings').getFirstListItem(
-				`ticketQRCode = "${ticketCode}"`,
-				{ expand: 'tour' }
-			);
+			// Find booking with tour information
+			const bookingData = await db
+				.select({
+					id: bookings.id,
+					tourUserId: tours.userId
+				})
+				.from(bookings)
+				.leftJoin(tours, eq(bookings.tourId, tours.id))
+				.where(eq(bookings.ticketQRCode, ticketCode))
+				.limit(1);
+			
+			if (bookingData.length === 0) {
+				return fail(404, { error: 'Booking not found' });
+			}
+			
+			const booking = bookingData[0];
 			
 			// Verify authorization
-			if (booking.expand?.tour?.user !== currentUser?.id) {
+			if (booking.tourUserId !== currentUser.id) {
 				return fail(403, { error: 'Not authorized to update this booking' });
 			}
 			
 			// Update attendance status
-			await pb.collection('bookings').update(booking.id, {
-				attendanceStatus: 'no_show',
-				checkedInBy: currentUser?.id
-			});
+			await db
+				.update(bookings)
+				.set({
+					attendanceStatus: 'no_show',
+					checkedInBy: currentUser.id,
+					updatedAt: new Date()
+				})
+				.where(eq(bookings.id, booking.id));
 			
 			return { success: true, noShow: true };
 		} catch (err) {

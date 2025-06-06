@@ -1,5 +1,5 @@
-import type { PageServerLoad } from './$types.js';
-import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types.js';
+import { error, redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots, payments } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
@@ -177,5 +177,65 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		// For any other error, including timeouts
 		console.error('Server error (500) for booking:', params.id, 'Error:', err);
 		throw error(500, 'Failed to load booking details');
+	}
+};
+
+export const actions: Actions = {
+	updateStatus: async ({ request, locals, params }) => {
+		if (!locals.user) {
+			throw error(401, 'Unauthorized');
+		}
+
+		if (!params.id) {
+			throw error(400, 'Booking ID is required');
+		}
+
+		const formData = await request.formData();
+		const status = formData.get('status') as string;
+
+		if (!status || !['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
+			return fail(400, { error: 'Invalid status' });
+		}
+
+		try {
+			const userId = locals.user.id;
+			const bookingId = params.id;
+
+			// First, verify the booking belongs to a tour owned by this user
+			const bookingData = await db
+				.select({
+					id: bookings.id,
+					tourUserId: tours.userId,
+					currentStatus: bookings.status
+				})
+				.from(bookings)
+				.leftJoin(tours, eq(bookings.tourId, tours.id))
+				.where(eq(bookings.id, bookingId))
+				.limit(1);
+
+			if (bookingData.length === 0) {
+				return fail(404, { error: 'Booking not found' });
+			}
+
+			if (bookingData[0].tourUserId !== userId) {
+				return fail(403, { error: 'You can only update bookings for your own tours' });
+			}
+
+			// Update the booking status
+			await db
+				.update(bookings)
+				.set({ 
+					status: status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
+					updatedAt: new Date()
+				})
+				.where(eq(bookings.id, bookingId));
+
+			console.log(`Updated booking ${bookingId} status from ${bookingData[0].currentStatus} to ${status}`);
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating booking status:', err);
+			return fail(500, { error: 'Failed to update booking status' });
+		}
 	}
 }; 

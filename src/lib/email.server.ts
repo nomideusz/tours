@@ -615,7 +615,7 @@ export async function sendBookingReminders(): Promise<{
   try {
     // This would need to be called from a cron job or API endpoint
     // For now, return a placeholder - the actual implementation would:
-    // 1. Query PocketBase for bookings with tours starting tomorrow
+    	// 1. Query database for bookings with tours starting tomorrow
     // 2. Send reminder emails for each booking
     // 3. Return the count of emails sent
 

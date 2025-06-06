@@ -66,7 +66,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		
 		const booking = bookingData[0];
 		
-		// Format the response to match PocketBase structure
+		// Format the response with booking data
 		const response = {
 			id: booking.id,
 			customerName: booking.customerName,

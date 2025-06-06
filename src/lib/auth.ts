@@ -1,11 +1,13 @@
 import { FiniteStateMachine, Context } from 'runed';
-import { currentUser } from './pocketbase.js';
 import { get, readable, writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 // Define the auth state types
 type AuthStates = 'loggedOut' | 'loggedIn' | 'loading' | 'loggingIn' | 'loggingOut';
 type AuthEvents = 'login' | 'logout' | 'checkAuth' | 'finishTransition';
+
+// Create a writable store for the current user
+export const currentUser = writable<any>(null);
 
 // Create a writable store to hold authentication data 
 export const authStore = writable<{
@@ -98,6 +100,8 @@ export function updateAuthState(userValue: any) {
       user: userValue,
       state: 'loggedIn'
     }));
+    // Update current user store
+    currentUser.set(userValue);
     return;
   }
   
@@ -114,6 +118,8 @@ export function updateAuthState(userValue: any) {
       user: null,
       state: authFSM.current
     }));
+    // Update current user store
+    currentUser.set(null);
     return;
   }
   
@@ -142,6 +148,8 @@ export function updateAuthState(userValue: any) {
     user: userValue,
     state: authFSM.current
   }));
+  // Update current user store
+  currentUser.set(userValue);
 }
 
 // Initial state setup (after FSM is defined) - only in browser
@@ -151,7 +159,7 @@ if (browser) {
     const currentValue = get(currentUser);
     console.log('Initial currentUser value:', currentValue ? 'Present' : 'None');
     
-    // Rely on PocketBase auth store which now loads from cookies properly
+    // Update auth state based on current user value
     updateAuthState(currentValue);
   }, 0);
 

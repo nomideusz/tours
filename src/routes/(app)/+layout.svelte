@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
 	import {
-		initialUserValue,
-		setupAuthListener,
-		currentUser as currentUserStore,
-		reloadAuthFromCookies
-	} from '$lib/pocketbase.js';
+		authFSM, 
+		updateAuthState, 
+		authContext, 
+		authStore,
+		currentUser as currentUserStore
+	} from '$lib/auth.js';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		languageContext,
@@ -13,7 +14,6 @@
 		navigationContext,
 		navigationStore
 	} from '$lib/context.js';
-	import { authFSM, updateAuthState, authContext, authStore } from '$lib/auth.js';
 	import { IsMounted } from 'runed';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -55,7 +55,7 @@
 	authContext.set(authStore);
 
 	// Create a state for the current user - sync with the currentUser store
-	let currentUser = $state(initialUserValue || data?.user || null);
+	let currentUser = $state(data?.user || null);
 
 	// Keep local currentUser in sync with the store
 	$effect(() => {
@@ -79,6 +79,7 @@
 	$effect(() => {
 		if (data?.user) {
 			currentUser = data.user;
+			currentUserStore.set(data.user);
 			updateAuthState(data.user);
 		}
 	});
@@ -104,6 +105,7 @@
 	onMount(() => {
 		if (data?.user) {
 			currentUser = data.user;
+			currentUserStore.set(data.user);
 		}
 
 		if (data?.isAuthenticated) {
@@ -121,22 +123,6 @@
 		}
 	});
 
-	// Set up auth listener
-	let cleanup = () => {};
-	let authListenerSetup = false;
-
-	$effect(() => {
-		if (!authListenerSetup) {
-			authListenerSetup = true;
-			cleanup = setupAuthListener((user) => {
-				console.log('Auth listener callback (deprecated):', user ? 'User present' : 'No user');
-			});
-		}
-	});
-
-	// Clean up listener on component destruction
-	onDestroy(cleanup);
-
 	// Set language context from the store
 	languageContext.set(languageStore);
 
@@ -147,13 +133,14 @@
 	afterNavigate(({ to, from }) => {
 		sidebarOpen = false;
 
-		// Reload auth state from cookies after navigation
+		// Reload auth state after navigation from login
 		const isFromLogin = from?.url?.pathname?.includes('/auth/login');
 
-		if (isFromLogin) {
+		if (isFromLogin && data?.user) {
 			console.log('Reloading auth after login navigation...');
 			setTimeout(() => {
-				reloadAuthFromCookies();
+				currentUserStore.set(data.user);
+				updateAuthState(data.user);
 			}, 100);
 		}
 	});
