@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		
 		const tour = tourData[0];
 
-		// Load recent bookings with time slot information
+		// Load recent bookings with time slot information (REDUCED LIMIT TO PREVENT 502)
 		const allBookingsData = await db
 			.select({
 				id: bookings.id,
@@ -48,7 +48,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.where(eq(bookings.tourId, params.id))
 			.orderBy(desc(bookings.createdAt))
-			.limit(200);
+			.limit(20); // REDUCED FROM 200 TO 20 TO PREVENT TIMEOUT
 
 		// Transform to match expected format
 		const allBookings = allBookingsData.map(booking => ({
