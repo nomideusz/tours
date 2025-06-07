@@ -211,7 +211,7 @@
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `bookings-${data.tour.name}-${new Date().toISOString().split('T')[0]}.csv`;
+		a.download = `bookings-${data.tour?.name || 'tour'}-${new Date().toISOString().split('T')[0]}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	}
@@ -240,10 +240,10 @@
 			subtitle="View and manage all bookings for this tour"
 			breadcrumbs={[
 				{ label: 'Tours', href: '/tours' },
-				{ label: data.tour.name, href: `/tours/${data.tour.id}` },
+				{ label: data.tour?.name || 'Tour', href: `/tours/${data.tour?.id || ''}` },
 				{ label: 'Bookings' }
 			]}
-			backUrl={`/tours/${data.tour.id}`}
+			backUrl={`/tours/${data.tour?.id || ''}`}
 		>
 			<div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
 				<button 
@@ -303,7 +303,7 @@
 			</div>
 			<div class="grid grid-cols-2 gap-3 mt-3">
 				<button
-					onclick={() => goto(`/tours/${data.tour.id}/qr`)}
+					onclick={() => goto(`/tours/${data.tour?.id || ''}/qr`)}
 					class="button-secondary button--gap button--small justify-center py-3"
 				>
 					<QrCode class="h-4 w-4" />
