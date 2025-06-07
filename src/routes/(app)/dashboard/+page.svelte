@@ -23,7 +23,7 @@
 	let { data }: { data: PageData } = $props();
 
 	// Use real data from server (with fallbacks for type safety)
-	let stats = $state(data.stats || {
+	let stats = $derived(data.stats || {
 		totalTours: 0,
 		activeTours: 0,
 		todayBookings: 0,

@@ -161,7 +161,7 @@
 	});
 
 	// Use statistics from server
-	let stats = $state(data.stats || {
+	let stats = $derived(data.stats || {
 		total: 0,
 		active: 0,
 		draft: 0,
