@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types.js';
 import { redirect } from '@sveltejs/kit';
+import { getSharedStats } from '$lib/utils/shared-stats.js';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   // Use locals directly since hooks.server.ts already processed auth
@@ -17,6 +18,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   // Return authenticated user data from locals
   let user = null;
   let isAdmin = false;
+  let sharedStats = null;
   
   if (isAuthenticated && locals.user) {
     // Map user data to match the AuthUser interface from auth store
@@ -37,7 +39,20 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     };
     
     // Pass the admin status to the client
-    isAdmin = locals.isAdmin;
+    isAdmin = locals.isAdmin || false;
+    
+    // Load shared stats that are used across multiple pages
+    try {
+      sharedStats = await getSharedStats(userData.id);
+      console.log('App layout: Loaded shared stats for user:', userData.email);
+    } catch (error) {
+      console.error('App layout: Failed to load shared stats:', error);
+      sharedStats = {
+        totalTours: 0,
+        activeTours: 0,
+        monthlyTours: 0
+      };
+    }
     
     console.log('App layout server sending authenticated user:', user.email);
   }
@@ -45,6 +60,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   return { 
     isAuthenticated,
     isAdmin,
-    user
+    user,
+    sharedStats
   };
 }; 

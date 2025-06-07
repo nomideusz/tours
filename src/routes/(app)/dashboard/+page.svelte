@@ -1,10 +1,4 @@
 <script lang="ts">
-	// EMERGENCY FIX: Dashboard shows ESTIMATED statistics for performance.
-	// Real data was causing 502 errors for users with many tours (26+).
-	// To fetch real statistics, use the /api/dashboard-stats endpoint:
-	// const response = await fetch('/api/dashboard-stats');
-	// const realStats = await response.json();
-	
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
@@ -40,10 +34,6 @@
 	});
 	let recentBookings = $state(data.recentBookings || []);
 	let todaysSchedule = $state(data.todaysSchedule || []);
-
-
-
-	// Data is now loaded server-side
 </script>
 
 <svelte:head>
