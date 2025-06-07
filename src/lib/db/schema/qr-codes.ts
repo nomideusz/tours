@@ -1,7 +1,7 @@
 import { pgTable, text, varchar, integer, boolean, pgEnum, json, timestamp } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
-import { users } from './users';
-import { tours } from './tours';
+import { users } from './users.js';
+import { tours } from './tours.js';
 
 // QR code category enum
 export const qrCategoryEnum = pgEnum('qr_category', ['digital', 'print', 'partner', 'event', 'promo']);

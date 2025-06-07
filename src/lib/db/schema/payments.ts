@@ -1,6 +1,6 @@
 import { pgTable, text, varchar, decimal, pgEnum, timestamp } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
-import { bookings, paymentStatusEnum as bookingPaymentStatusEnum } from './bookings';
+import { bookings, paymentStatusEnum as bookingPaymentStatusEnum } from './bookings.js';
 
 // Payments table
 export const payments = pgTable('payments', {

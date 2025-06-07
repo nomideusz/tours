@@ -1,8 +1,8 @@
 import { pgTable, text, varchar, integer, decimal, pgEnum, timestamp } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
-import { tours, timeSlots } from './tours';
-import { qrCodes } from './qr-codes';
-import { users } from './users';
+import { tours, timeSlots } from './tours.js';
+import { qrCodes } from './qr-codes.js';
+import { users } from './users.js';
 
 // Booking status enum
 export const bookingStatusEnum = pgEnum('booking_status', [
