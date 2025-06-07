@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw error(401, 'Unauthorized');
 	}
 
-	console.log('Tour detail: User authenticated:', locals.user.id);
+	console.log('Tour detail: User authenticated:', locals.user.email);
 
 	try {
 		// Get tour with owner check
