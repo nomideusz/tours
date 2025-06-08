@@ -162,7 +162,7 @@
 				{:else if isAuthenticated}
 					<div class="hidden items-center gap-3 md:flex">
 						<a 
-							href="{currentUser?.username ? `/${currentUser.username}` : '/dashboard'}" 
+							href="/dashboard" 
 							class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
 						>
 							Dashboard
@@ -287,7 +287,7 @@
 				{:else if isAuthenticated}
 					<div class="flex flex-col space-y-1">
 						<a 
-							href="{currentUser?.username ? `/${currentUser.username}` : '/dashboard'}" 
+							href="/dashboard" 
 							onclick={handleMobileLinkClick} 
 							class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 						>
