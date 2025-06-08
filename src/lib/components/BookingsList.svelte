@@ -194,13 +194,24 @@
 						</td>
 						
 						<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-							<a 
-								href="/bookings/{booking.id}" 
-								class="text-blue-600 hover:text-blue-900 underline" 
-								onclick={(e) => e.stopPropagation()}
-							>
-								View Details
-							</a>
+							<div class="flex flex-col gap-1">
+								<a 
+									href="/bookings/{booking.id}" 
+									class="text-blue-600 hover:text-blue-900 underline" 
+									onclick={(e) => e.stopPropagation()}
+								>
+									View Details
+								</a>
+								{#if showTourName && booking.expand?.tour?.id}
+									<a 
+										href="/tours/{booking.expand.tour.id}/bookings" 
+										class="text-green-600 hover:text-green-900 underline text-xs" 
+										onclick={(e) => e.stopPropagation()}
+									>
+										Tour Bookings
+									</a>
+								{/if}
+							</div>
 						</td>
 					</tr>
 				{/each}

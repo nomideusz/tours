@@ -55,11 +55,30 @@ export const actions: Actions = {
             return fail(400, { error: 'Website must be a valid URL starting with http:// or https://' });
         }
 
+        // Validate username if provided
+        if (username) {
+            const { validateUsername, isUsernameAvailable } = await import('$lib/utils/username.js');
+            const validation = validateUsername(username);
+            
+            if (!validation.valid) {
+                return fail(400, { error: validation.error });
+            }
+
+            // Check if username is available (excluding current user)
+            if (username !== locals.user.username) {
+                const available = await isUsernameAvailable(username);
+                if (!available) {
+                    return fail(400, { error: 'Username is already taken' });
+                }
+            }
+        }
+
         try {
             // Update user profile
             const updatedUsers = await db.update(users)
                 .set({
                     name,
+                    username: username || locals.user.username, // Keep existing username if not provided
                     businessName,
                     description,
                     phone,
@@ -83,6 +102,7 @@ export const actions: Actions = {
                 message: 'Profile updated successfully!',
                 updatedUser: {
                     name: updatedUser.name || '',
+                    username: updatedUser.username || '',
                     businessName: updatedUser.businessName || '',
                     description: updatedUser.description || '',
                     phone: updatedUser.phone || '',

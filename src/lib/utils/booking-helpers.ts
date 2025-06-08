@@ -17,6 +17,9 @@ export interface ProcessedBooking {
 	paymentStatus?: string;
 	bookingReference?: string;
 	specialRequests?: string;
+	attendanceStatus?: string;
+	ticketQRCode?: string;
+	checkedInAt?: string;
 	effectiveDate: string; // Validated date for consistent access
 	expand?: {
 		tour?: {

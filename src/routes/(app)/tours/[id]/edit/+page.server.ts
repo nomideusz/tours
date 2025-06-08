@@ -200,64 +200,65 @@ export const actions: Actions = {
       // Delete removed images from storage
       for (const imageToRemove of imagesToRemove) {
         try {
-          await deleteImage(params.id, imageToRemove);
+          await deleteImage(imageToRemove, params.id);
         } catch (error) {
-          console.error('Failed to delete image:', error);
+          console.warn('Failed to delete image:', imageToRemove, error);
+          // Continue processing even if image deletion fails
         }
       }
 
-      // Combine existing and new images
+      // Combine existing images (minus removed ones) with new images
       const finalImages = [...updatedImages, ...newImages];
 
-      // Update tour in PostgreSQL
-      const updateData = {
-        name: sanitizedData.name as string,
-        description: sanitizedData.description as string,
-        price: String(sanitizedData.price),
-        duration: parseInt(String(sanitizedData.duration)),
-        capacity: parseInt(String(sanitizedData.capacity)),
-        status: (sanitizedData.status as 'active' | 'draft') || 'draft',
-        category: sanitizedData.category as string || null,
-        location: sanitizedData.location as string || null,
-        includedItems: parsedIncludedItems,
-        requirements: parsedRequirements,
-        cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
-        images: finalImages,
-        updatedAt: new Date()
-      };
-
-      await db
+      // Update tour in database
+      const updatedTour = await db
         .update(tours)
-        .set(updateData)
+        .set({
+          name: sanitizedData.name as string,
+          description: sanitizedData.description as string,
+          price: String(sanitizedData.price),
+          duration: parseInt(String(sanitizedData.duration)),
+          capacity: parseInt(String(sanitizedData.capacity)),
+          status: (sanitizedData.status as 'active' | 'draft') || 'draft',
+          category: sanitizedData.category as string || null,
+          location: sanitizedData.location as string || null,
+          includedItems: parsedIncludedItems,
+          requirements: parsedRequirements,
+          cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          images: finalImages,
+          updatedAt: new Date()
+        })
         .where(and(
           eq(tours.id, params.id),
           eq(tours.userId, locals.user.id)
-        ));
+        ))
+        .returning();
 
-      // Redirect to tour details page
+      if (updatedTour.length === 0) {
+        return fail(500, { error: 'Failed to update tour' });
+      }
+
+      console.log('✅ Tour updated successfully:', updatedTour[0].id);
+
+      // Redirect to tour detail page
       throw redirect(303, `/tours/${params.id}`);
 
     } catch (error) {
-      // Don't log redirects as errors
-      if (error && typeof error === 'object' && 'status' in error && error.status === 303) {
-        throw error; // Re-throw redirects
+      // If it's a redirect, don't catch it - just re-throw
+      if (error instanceof Response && error.status >= 300 && error.status < 400) {
+        throw error;
       }
       
-      console.error('Error updating tour:', error);
-      
-      // Handle specific database errors
-      if (error && typeof error === 'object' && 'code' in error) {
-        if (error.code === '23505') { // Unique constraint violation
-          return fail(400, {
-            error: 'Tour with this name already exists',
-            message: 'Please choose a different tour name.'
-          });
-        }
+      // Check if it's a SvelteKit redirect object
+      if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
+        throw error;
       }
-
+      
+      console.error('Tour update error:', error);
+      
       return fail(500, {
-        error: 'Failed to update tour',
-        message: 'An unexpected error occurred. Please try again.'
+        error: 'Server error',
+        message: 'An unexpected error occurred while updating the tour. Please try again.'
       });
     }
   }

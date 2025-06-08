@@ -1,8 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
+import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc } from 'drizzle-orm';
+import { processBooking, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	console.log('Tour bookings page load started for tour:', params.id);
@@ -78,54 +79,46 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 				timeSlotStartTime: timeSlots.startTime,
 				timeSlotEndTime: timeSlots.endTime,
 				timeSlotAvailableSpots: timeSlots.availableSpots,
-				timeSlotBookedSpots: timeSlots.bookedSpots,
-				
-				// QR code fields
-				qrCodeId: bookings.qrCodeId,
-				qrCodeCode: qrCodes.code,
-				qrCodeCategory: qrCodes.category
+				timeSlotBookedSpots: timeSlots.bookedSpots
 			})
 			.from(bookings)
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-			.leftJoin(qrCodes, eq(bookings.qrCodeId, qrCodes.id))
 			.where(eq(bookings.tourId, params.id))
 			.orderBy(desc(bookings.createdAt))
 			.limit(50); // Reduced from 100 to 50 to prevent 502 timeout
 		
 		console.log('Bookings query completed, found:', bookingsData.length, 'bookings');
 		
-		// Transform to match expected format with expand structure
-		const processedBookings = bookingsData.map((booking) => ({
-			id: booking.id,
-			status: booking.status,
-			paymentStatus: booking.paymentStatus,
-			totalAmount: booking.totalAmount || '0',
-			participants: booking.participants || 1,
-			customerName: booking.customerName,
-			customerEmail: booking.customerEmail,
-			customerPhone: booking.customerPhone,
-			specialRequests: booking.specialRequests,
-			created: booking.createdAt.toISOString(),
-			updated: booking.updatedAt.toISOString(),
-			bookingReference: booking.bookingReference,
-			attendanceStatus: booking.attendanceStatus,
-			checkedInAt: booking.checkedInAt?.toISOString() || null,
-			ticketQRCode: booking.ticketQRCode,
-			expand: {
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString(),
-					endTime: booking.timeSlotEndTime?.toISOString(),
-					availableSpots: booking.timeSlotAvailableSpots,
-					bookedSpots: booking.timeSlotBookedSpots
-				} : null,
-				qrCode: booking.qrCodeId ? {
-					id: booking.qrCodeId,
-					code: booking.qrCodeCode,
-					category: booking.qrCodeCategory
-				} : null
-			}
-		}));
+		// Transform using helper for consistency
+		const processedBookings: ProcessedBooking[] = bookingsData.map((booking) => 
+			processBooking({
+				id: booking.id,
+				status: booking.status,
+				paymentStatus: booking.paymentStatus,
+				totalAmount: booking.totalAmount || 0,
+				participants: booking.participants || 1,
+				customerName: booking.customerName,
+				customerEmail: booking.customerEmail,
+				customerPhone: booking.customerPhone,
+				specialRequests: booking.specialRequests,
+				created: booking.createdAt.toISOString(),
+				updated: booking.updatedAt.toISOString(),
+				bookingReference: booking.bookingReference,
+				attendanceStatus: booking.attendanceStatus,
+				checkedInAt: booking.checkedInAt?.toISOString() || null,
+				ticketQRCode: booking.ticketQRCode,
+				tour: tour.name,
+				expand: {
+					timeSlot: booking.timeSlotId ? {
+						id: booking.timeSlotId,
+						startTime: booking.timeSlotStartTime?.toISOString(),
+						endTime: booking.timeSlotEndTime?.toISOString(),
+						availableSpots: booking.timeSlotAvailableSpots,
+						bookedSpots: booking.timeSlotBookedSpots
+					} : undefined
+				}
+			})
+		);
 		
 		console.log('Tour bookings page load completed successfully');
 		

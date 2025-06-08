@@ -44,16 +44,16 @@
 		uploadedImages = uploadedImages.filter((_, i) => i !== index);
 	}
 
-
-
-
-
 	function handleCancel() {
 		if (confirm('Are you sure you want to cancel? Your changes will be lost.')) {
 			goto('/tours');
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Create New Tour - Zaur</title>
+</svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 	<PageHeader 
@@ -71,8 +71,6 @@
 			<ErrorAlert variant="error" title="Error" message={error} />
 		</div>
 	{/if}
-
-
 
 	<!-- Progress Steps -->
 	<div class="mb-8">

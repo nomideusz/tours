@@ -98,7 +98,11 @@
 	}
 </script>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<svelte:head>
+	<title>Edit {tour?.name || 'Tour'} - Zaur</title>
+</svelte:head>
+
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<PageHeader 
 			title="Edit Tour"
@@ -198,11 +202,11 @@
 				</div>
 				<div class="flex items-start gap-3">
 					<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-green-600">🟢</span>
+						<span class="text-xs font-medium text-green-600">✓</span>
 					</div>
 					<div>
 						<p class="font-medium" style="color: var(--text-primary);">Active Status</p>
-						<p class="text-sm" style="color: var(--text-secondary);">Your tour is live and available for customer bookings</p>
+						<p class="text-sm" style="color: var(--text-secondary);">Your tour is live and accepting bookings from customers</p>
 					</div>
 				</div>
 			</div>

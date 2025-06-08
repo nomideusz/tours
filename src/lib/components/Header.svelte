@@ -161,19 +161,16 @@
 					<div class="hidden text-sm text-gray-500 md:block">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
 					<div class="hidden items-center gap-3 md:flex">
-						<a href="/tours" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-							Tours
+						<a 
+							href="{currentUser?.username ? `/${currentUser.username}` : '/dashboard'}" 
+							class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+						>
+							Dashboard
 						</a>
-						{#if currentUser?.role === 'guide' || currentUser?.role === 'admin'}
-							<span class="text-gray-300">•</span>
-							<a href="/bookings" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-								Bookings
-							</a>
-						{/if}
 						<span class="text-gray-300">•</span>
-						<a href="/profile" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+						<span class="text-sm text-gray-600">
 							{currentUser?.name || currentUser?.email || 'User'}
-						</a>
+						</span>
 						<span class="text-gray-300">•</span>
 						<button
 							onclick={handleLogout}
@@ -289,17 +286,16 @@
 					<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
 					<div class="flex flex-col space-y-1">
-						<a href="/tours" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
-							My Tours
+						<a 
+							href="{currentUser?.username ? `/${currentUser.username}` : '/dashboard'}" 
+							onclick={handleMobileLinkClick} 
+							class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+						>
+							My Dashboard
 						</a>
-						{#if currentUser?.role === 'guide' || currentUser?.role === 'admin'}
-							<a href="/bookings" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
-								Bookings
-							</a>
-						{/if}
-						<a href="/profile" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
-							Profile Settings
-						</a>
+						<div class="py-3 text-sm text-gray-500">
+							Signed in as {currentUser?.name || currentUser?.email || 'User'}
+						</div>
 						<button
 							onclick={handleLogout}
 							disabled={isLoggingOut}

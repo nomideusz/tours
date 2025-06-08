@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate, formatDateMobile, getStatusColor } from '$lib/utils/date-helpers.js';
@@ -8,20 +9,27 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	
 	// Icons
-	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
 	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Globe from 'lucide-svelte/icons/globe';
+	import User from 'lucide-svelte/icons/user';
+	import Mail from 'lucide-svelte/icons/mail';
+	import Phone from 'lucide-svelte/icons/phone';
+	import Settings from 'lucide-svelte/icons/settings';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Map from 'lucide-svelte/icons/map';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
-	import QrCode from 'lucide-svelte/icons/qr-code';
 	import UserCheck from 'lucide-svelte/icons/user-check';
 	import Plus from 'lucide-svelte/icons/plus';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import Clock from 'lucide-svelte/icons/clock';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 
 	let { data }: { data: PageData } = $props();
 
+	const { profile } = data;
+	
 	// Use real data from server (with fallbacks for type safety)
 	let stats = $derived(data.stats || {
 		totalTours: 0,
@@ -34,18 +42,66 @@
 	});
 	let recentBookings = $state(data.recentBookings || []);
 	let todaysSchedule = $state(data.todaysSchedule || []);
+
+	// Profile URL for preview
+	const profileUrl = `https://zaur.app/${profile.username}`;
 </script>
 
 <svelte:head>
 	<title>Dashboard - Zaur</title>
+	<meta name="description" content="Your tour guide dashboard - manage tours, bookings, and view analytics" />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Personal Header -->
 	<div class="mb-6 sm:mb-8">
-		<PageHeader 
-			title="Dashboard"
-			subtitle="Welcome back! Here's what's happening with your tours."
-		/>
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div class="flex items-center gap-4">
+				<!-- Avatar -->
+				<div class="flex-shrink-0">
+					{#if profile.avatar}
+						<img 
+							src={profile.avatar} 
+							alt={profile.name}
+							class="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-200"
+						/>
+					{:else}
+						<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+							<User class="w-6 h-6 sm:w-8 sm:h-8 text-gray-600" />
+						</div>
+					{/if}
+				</div>
+				
+				<!-- Name and Username -->
+				<div>
+					<h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+						Welcome back, {profile.name}!
+					</h1>
+					<div class="flex items-center gap-2 mt-1">
+						<span class="text-blue-600 font-medium">@{profile.username}</span>
+						<a
+							href="/{profile.username}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+							title="Preview your public profile"
+						>
+							<ExternalLink class="w-4 h-4" />
+						</a>
+					</div>
+					<p class="text-sm text-gray-600 mt-1">
+						<a href="/{profile.username}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800">
+							Preview your public profile →
+						</a>
+					</p>
+				</div>
+			</div>
+			
+			<!-- Quick Profile Actions -->
+			<div class="flex gap-2">
+				<!-- to be implemented -->
+			</div>
+		</div>
 	</div>
 
 	<!-- Quick Actions - Prominent on mobile -->
@@ -122,7 +178,7 @@
 		</div>
 	</div>
 
-	<!-- Compact Stats Grid -->
+	<!-- Stats Grid -->
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<div class="lg:hidden col-span-2">
 			<!-- Mobile: Today's focus -->
@@ -175,12 +231,12 @@
 
 	<!-- Main Content Grid -->
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-		<!-- Recent Bookings -->
+		<!-- Recent Activity -->
 		<div class="lg:col-span-2">
 			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="px-4 sm:px-6 py-4" style="border-bottom: 1px solid var(--border-primary);">
 					<div class="flex items-center justify-between">
-						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Recent Bookings</h2>
+						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Recent Activity</h2>
 						<button
 							onclick={() => goto('/bookings')}
 							class="button-secondary button--small"
@@ -214,8 +270,8 @@
 										<div class="flex items-center gap-3 sm:gap-4 text-xs overflow-x-auto" style="color: var(--text-tertiary);">
 											<span class="flex items-center gap-1 flex-shrink-0">
 												<Clock class="w-3 h-3" />
-																							<span class="hidden sm:inline">{formatDate(booking.date)}</span>
-											<span class="sm:hidden">{formatDateMobile(booking.date)}</span>
+												<span class="hidden sm:inline">{formatDate(booking.date)}</span>
+												<span class="sm:hidden">{formatDateMobile(booking.date)}</span>
 											</span>
 											<span class="flex items-center gap-1 flex-shrink-0">
 												<Users class="w-3 h-3" />
@@ -250,10 +306,10 @@
 						<div class="px-4 sm:px-6 py-8">
 							<EmptyState
 								icon={Calendar}
-								title="No recent bookings"
-								description="Bookings will appear here once customers start booking your tours"
-								actionText="View All Bookings"
-								onAction={() => goto('/bookings')}
+								title="No recent activity"
+								description="Your recent bookings and activity will appear here"
+								actionText="Create Your First Tour"
+								onAction={() => goto('/tours/new')}
 							/>
 						</div>
 					{/if}
@@ -345,6 +401,65 @@
 						<Calendar class="h-4 w-4" />
 						All Bookings
 					</button>
+				</div>
+			</div>
+
+			<!-- Profile Summary -->
+			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Your Profile</h3>
+				<div class="space-y-3">
+					<div class="text-sm">
+						<div class="flex items-center gap-2 mb-1">
+							<Mail class="w-4 h-4 text-gray-400" />
+							<span style="color: var(--text-secondary);">{profile.email}</span>
+							{#if !profile.emailVerified}
+								<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Unverified</span>
+							{/if}
+						</div>
+						{#if profile.phone}
+							<div class="flex items-center gap-2 mb-1">
+								<Phone class="w-4 h-4 text-gray-400" />
+								<span style="color: var(--text-secondary);">{profile.phone}</span>
+							</div>
+						{/if}
+						{#if profile.location}
+							<div class="flex items-center gap-2 mb-1">
+								<MapPin class="w-4 h-4 text-gray-400" />
+								<span style="color: var(--text-secondary);">{profile.location}</span>
+							</div>
+						{/if}
+						{#if profile.website}
+							<div class="flex items-center gap-2">
+								<Globe class="w-4 h-4 text-gray-400" />
+								<a 
+									href={profile.website}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-blue-600 hover:text-blue-800 transition-colors"
+								>
+									Website
+								</a>
+							</div>
+						{/if}
+					</div>
+					
+					{#if profile.description}
+						<div class="pt-2 border-t" style="border-color: var(--border-secondary);">
+							<p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+								{profile.description}
+							</p>
+						</div>
+					{/if}
+
+					<div class="pt-2">
+						<button
+							onclick={() => goto('/profile')}
+							class="w-full button-secondary button--gap button--small justify-center"
+						>
+							<Settings class="h-4 w-4" />
+							Edit Profile
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

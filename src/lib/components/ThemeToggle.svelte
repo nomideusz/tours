@@ -6,6 +6,9 @@
 	import Sun from 'lucide-svelte/icons/sun';
 	import Moon from 'lucide-svelte/icons/moon';
 	import Monitor from 'lucide-svelte/icons/monitor';
+	import Tooltip from '$lib/components/Tooltip.svelte';
+
+	let { tooltipPosition = 'top' } = $props<{ tooltipPosition?: 'top' | 'bottom' }>();
 
 	let cleanup: (() => void) | undefined;
 
@@ -46,30 +49,23 @@
 		style="background: var(--bg-secondary); border-color: var(--border-primary);"
 	>
 		{#each themes as theme}
-			<button
-				onclick={() => selectTheme(theme.value)}
-				class="relative flex items-center justify-center p-2 rounded-md transition-all duration-200 group"
-				style={currentTheme === theme.value 
-					? 'background: var(--bg-primary); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);' 
-					: ''}
-				title={theme.label}
-				aria-label={`Switch to ${theme.label.toLowerCase()} theme`}
-			>
-				<theme.icon 
-					class="h-4 w-4 transition-colors duration-200" 
+			<Tooltip text={theme.label} position={tooltipPosition}>
+				<button
+					onclick={() => selectTheme(theme.value)}
+					class="flex items-center justify-center p-2 rounded-md transition-all duration-200"
 					style={currentTheme === theme.value 
-						? 'color: var(--color-primary-600);' 
-						: 'color: var(--text-tertiary);'}
-				/>
-				
-				<!-- Hover tooltip -->
-				<div 
-					class="absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10"
-					style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary);"
+						? 'background: var(--bg-primary); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);' 
+						: ''}
+					aria-label={`Switch to ${theme.label.toLowerCase()} theme`}
 				>
-					{theme.label}
-				</div>
-			</button>
+					<theme.icon 
+						class="h-4 w-4 transition-colors duration-200" 
+						style={currentTheme === theme.value 
+							? 'color: var(--color-primary-600);' 
+							: 'color: var(--text-tertiary);'}
+					/>
+				</button>
+			</Tooltip>
 		{/each}
 	</div>
 </div>

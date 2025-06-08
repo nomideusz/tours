@@ -25,12 +25,12 @@
 	let paymentStatusLoading = $state(true);
 
 	// Form data
-	let name = $state(data.user.name);
-	let username = $state(data.user.username);
-	let businessName = $state(data.user.businessName);
-	let description = $state(data.user.description);
-	let phone = $state(data.user.phone);
-	let website = $state(data.user.website);
+	let name = $state(data.user?.name || '');
+	let username = $state(data.user?.username || '');
+	let businessName = $state(data.user?.businessName || '');
+	let description = $state(data.user?.description || '');
+	let phone = $state(data.user?.phone || '');
+	let website = $state(data.user?.website || '');
 
 	// Password form data
 	let currentPassword = $state('');
@@ -54,12 +54,22 @@
 		accountInfo: null
 	});
 
-	// Reset password form on success
+	// Reset password form on success and update profile data
 	$effect(() => {
 		if (form?.success && form?.message?.includes('Password')) {
 			currentPassword = '';
 			newPassword = '';
 			confirmPassword = '';
+		}
+		
+		// Update profile form with returned data on successful profile update
+		if (form?.success && form?.updatedUser) {
+			name = form.updatedUser.name;
+			username = form.updatedUser.username;
+			businessName = form.updatedUser.businessName;
+			description = form.updatedUser.description;
+			phone = form.updatedUser.phone;
+			website = form.updatedUser.website;
 		}
 		
 		// Handle Stripe redirect
@@ -150,12 +160,17 @@
 								type="text"
 								id="username" 
 								name="username"
-								value={data.user?.username || ''}
+								bind:value={username}
 								class="form-input pl-10"
 								placeholder="Enter your username"
 								required
 							/>
 						</div>
+						{#if username}
+							<p class="text-sm text-gray-600 mt-1">
+								Your personal URL: <a href="/{username}" class="text-blue-600 hover:text-blue-800" target="_blank">zaur.app/{username}</a>
+							</p>
+						{/if}
 					</div>
 
 					<!-- Name -->
@@ -169,7 +184,7 @@
 								type="text"
 								id="name"
 								name="name" 
-								value={data.user?.name || ''}
+								bind:value={name}
 								class="form-input pl-10"
 								placeholder="Enter your full name"
 							/>
@@ -191,10 +206,70 @@
 								class="form-input pl-10"
 								placeholder="Enter your email"
 								required
+								readonly
 							/>
 						</div>
 					</div>
 
+					<!-- Business Name -->
+					<div>
+						<label for="businessName" class="form-label">
+							Business Name
+						</label>
+						<input
+							type="text"
+							id="businessName"
+							name="businessName" 
+							bind:value={businessName}
+							class="form-input"
+							placeholder="Enter your business name"
+						/>
+					</div>
+
+					<!-- Description -->
+					<div>
+						<label for="description" class="form-label">
+							Description
+						</label>
+						<textarea
+							id="description"
+							name="description" 
+							bind:value={description}
+							class="form-input"
+							placeholder="Tell us about yourself or your business"
+							rows="3"
+						></textarea>
+					</div>
+
+					<!-- Phone -->
+					<div>
+						<label for="phone" class="form-label">
+							Phone Number
+						</label>
+						<input
+							type="tel"
+							id="phone"
+							name="phone" 
+							bind:value={phone}
+							class="form-input"
+							placeholder="Enter your phone number"
+						/>
+					</div>
+
+					<!-- Website -->
+					<div>
+						<label for="website" class="form-label">
+							Website
+						</label>
+						<input
+							type="url"
+							id="website"
+							name="website" 
+							bind:value={website}
+							class="form-input"
+							placeholder="https://example.com"
+						/>
+					</div>
 
 				</div>
 
@@ -298,10 +373,11 @@
 						{/if}
 					</div>
 
+
 					<!-- Payment Info -->
-					<div class="mt-4 p-4 rounded-lg" style="background: var(--color-primary-50);">
-						<h4 class="font-medium mb-2" style="color: var(--color-primary-900);">How payments work</h4>
-						<ul class="text-sm space-y-1" style="color: var(--color-primary-700);">
+					<div class="mt-4 p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">How payments work</h3>
+						<ul class="text-sm space-y-1" style="color: var(--text-primary);">
 							<li>• Customers pay directly for tours through our secure payment system</li>
 							<li>• Payments are automatically transferred to your account (minus our platform fee)</li>
 							<li>• You'll receive payouts according to your Stripe schedule (typically 2-7 days)</li>

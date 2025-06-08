@@ -7,7 +7,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   const isAuthenticated = !!locals.user;
   
   // App layout only handles routes in the (app) group
-  // Auth routes are now in (public) group and won't reach this layout
+  // Auth routes are now at root level and won't reach this layout
   
   // For app routes, require authentication
   if (!isAuthenticated) {
@@ -27,6 +27,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       id: userData.id,
       email: userData.email,
       name: userData.name,
+      username: userData.username,
       businessName: userData.businessName,
       role: userData.role,
       avatar: userData.avatar,

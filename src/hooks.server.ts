@@ -2,16 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { lucia } from '$lib/auth/lucia.js';
 import { initializeUploadDirs } from '$lib/utils/image-storage.js';
 
-// Add type for locals
-declare global {
-    namespace App {
-        interface Locals {
-            user: any; // Lucia user object
-            session: any; // Lucia session object
-            isAdmin: boolean; // Check admin status from user role
-        }
-    }
-}
+// Types are declared in src/app.d.ts
 
 // Initialize upload directories on server startup
 initializeUploadDirs().catch(console.error);

@@ -1,8 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { tours, bookings, timeSlots, qrCodes } from '$lib/db/schema/index.js';
+import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc, count, sum, sql } from 'drizzle-orm';
+import { processBooking, calculateBookingStats, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	console.log('Tour detail page load started for tour:', params.id);
@@ -36,7 +37,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		const tour = tourData[0];
 		console.log('Tour loaded successfully:', tour.name);
 
-		// Load recent bookings with time slot information (REDUCED LIMIT TO PREVENT 502)
+		// Load recent bookings with time slot information (LIMITED TO PREVENT 502)
 		console.log('Fetching bookings for tour:', params.id);
 		const allBookingsData = await db
 			.select({
@@ -59,46 +60,38 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.where(eq(bookings.tourId, params.id))
 			.orderBy(desc(bookings.createdAt))
-			.limit(10); // FURTHER REDUCED FROM 20 TO 10 TO PREVENT TIMEOUT
+			.limit(20); // Reasonable limit to prevent timeout
 
 		console.log('Bookings query completed, found:', allBookingsData.length, 'bookings');
 
-		// Transform to match expected format
-		const allBookings = allBookingsData.map(booking => ({
-			id: booking.id,
-			status: booking.status,
-			paymentStatus: booking.paymentStatus,
-			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
-			participants: booking.participants || 0,
-			created: booking.createdAt.toISOString(),
-			customerName: booking.customerName || '',
-			customerEmail: booking.customerEmail || '',
-			ticketQRCode: booking.ticketQRCode || null,
-			bookingReference: booking.bookingReference || '',
-			attendanceStatus: booking.attendanceStatus || null,
-			expand: {
-				timeSlot: booking.timeSlotId ? {
-					startTime: booking.timeSlotStartTime?.toISOString() || null,
-					endTime: booking.timeSlotEndTime?.toISOString() || null
-				} : null
-			}
-		}));
-
-		// Load QR codes (with limit to prevent timeout)
-		console.log('Fetching QR codes for tour:', params.id);
-		const qrCodesData = await db
-			.select()
-			.from(qrCodes)
-			.where(eq(qrCodes.tourId, params.id))
-			.orderBy(desc(qrCodes.createdAt))
-			.limit(10); // ADD LIMIT TO PREVENT TIMEOUT
-
-		console.log('QR codes query completed, found:', qrCodesData.length, 'QR codes');
-
-		// Calculate BASIC statistics only (avoid complex calculations)
-		const confirmedBookings = allBookings.filter(b => 
-			b.status === 'confirmed' && b.paymentStatus === 'paid'
+		// Transform using helper for consistency
+		const allBookings: ProcessedBooking[] = allBookingsData.map(booking => 
+			processBooking({
+				id: booking.id,
+				status: booking.status,
+				paymentStatus: booking.paymentStatus,
+				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+				participants: booking.participants || 0,
+				created: booking.createdAt.toISOString(),
+				updated: booking.createdAt.toISOString(),
+				customerName: booking.customerName || '',
+				customerEmail: booking.customerEmail || '',
+				ticketQRCode: booking.ticketQRCode || null,
+				bookingReference: booking.bookingReference || '',
+				attendanceStatus: booking.attendanceStatus || null,
+				tour: tour.name,
+				expand: {
+					timeSlot: booking.timeSlotId ? {
+						id: booking.timeSlotId,
+						startTime: booking.timeSlotStartTime?.toISOString() || null,
+						endTime: booking.timeSlotEndTime?.toISOString() || null
+					} : undefined
+				}
+			})
 		);
+
+		// Calculate statistics using helper
+		const baseStats = calculateBookingStats(allBookings);
 		
 		// Filter for upcoming bookings (for check-ins)
 		const now = new Date();
@@ -109,27 +102,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			return isUpcoming && b.status === 'confirmed' && b.paymentStatus === 'paid';
 		});
 
-		// SIMPLIFIED statistics (based on limited data sample)
+		// Extended statistics
 		const stats = {
-			qrCodes: qrCodesData.length,
-			activeQRCodes: qrCodesData.filter(qr => qr.isActive).length,
-			totalQRScans: qrCodesData.reduce((sum, qr) => sum + qr.scans, 0),
-			totalQRConversions: qrCodesData.reduce((sum, qr) => sum + qr.conversions, 0),
-			// Keep as number - frontend can add "+" if needed
-			totalBookings: allBookings.length,
-			confirmedBookings: confirmedBookings.length,
-			pendingBookings: allBookings.filter(b => b.status === 'pending').length,
-			cancelledBookings: 0, // Don't calculate to save time
-			completedBookings: 0, // Don't calculate to save time
-			revenue: confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0),
-			totalParticipants: confirmedBookings.reduce((sum, b) => sum + b.participants, 0),
+			...baseStats,
 			thisWeekBookings: allBookings.filter(b => new Date(b.created) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length,
-			averageBookingValue: confirmedBookings.length > 0 
-				? confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0) / confirmedBookings.length 
-				: 0,
-			conversionRate: qrCodesData.reduce((sum, qr) => sum + qr.scans, 0) > 0 
-				? (qrCodesData.reduce((sum, qr) => sum + qr.conversions, 0) / qrCodesData.reduce((sum, qr) => sum + qr.scans, 0)) * 100
-				: 0
+			averageBookingValue: baseStats.confirmed > 0 ? baseStats.totalRevenue / baseStats.confirmed : 0,
+			checkIns: upcomingBookings.filter(b => b.attendanceStatus === 'checked_in').length,
+			noShows: allBookings.filter(b => b.attendanceStatus === 'no_show').length
 		};
 
 		console.log('Tour detail page load completed successfully');
@@ -143,7 +122,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			},
 			bookings: upcomingBookings,
 			allBookings: allBookings,
-			qrCodes: qrCodesData,
 			stats
 		};
 	} catch (err) {
@@ -198,7 +176,7 @@ export const actions: Actions = {
 
 		throw redirect(303, '/tours');
 	},
-	
+
 	toggleStatus: async ({ params, locals }) => {
 		if (!locals.user) {
 			throw error(401, 'Unauthorized');
@@ -219,9 +197,7 @@ export const actions: Actions = {
 				throw error(404, 'Tour not found or access denied');
 			}
 
-			// Toggle status
-			const currentStatus = tourData[0].status;
-			const newStatus = currentStatus === 'active' ? 'draft' : 'active';
+			const newStatus = tourData[0].status === 'active' ? 'draft' : 'active';
 
 			// Update tour status
 			await db
@@ -235,9 +211,9 @@ export const actions: Actions = {
 					eq(tours.userId, locals.user.id)
 				));
 
-			return { success: true };
+			return { success: true, newStatus };
 		} catch (err) {
-			console.error('Error updating tour status:', err);
+			console.error('Error toggling tour status:', err);
 			throw error(500, 'Failed to update tour status');
 		}
 	}

@@ -15,6 +15,13 @@
       "when": 1749235226963,
       "tag": "0001_tidy_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749319243630,
+      "tag": "0002_add-username",
+      "breakpoints": true
     }
   ]
 }

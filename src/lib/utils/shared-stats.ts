@@ -26,40 +26,8 @@ export interface ToursStats extends SharedStats {
 	totalParticipants: number;
 }
 
-// Use the same ProcessedBooking interface as booking-helpers.ts
-export interface ProcessedBooking {
-	id: string;
-	customerName: string;
-	customerEmail: string;
-	customerPhone?: string;
-	participants: number;
-	status: string;
-	created: string;
-	updated: string;
-	tour: string;
-	timeSlot?: string;
-	totalAmount: number;
-	paymentStatus?: string;
-	bookingReference?: string;
-	specialRequests?: string;
-	effectiveDate: string; // Validated date for consistent access
-	expand?: {
-		tour?: {
-			id: string;
-			name: string;
-			description?: string;
-			location?: string;
-			price?: number;
-			[key: string]: any;
-		};
-		timeSlot?: {
-			id: string;
-			startTime: string;
-			endTime: string;
-			[key: string]: any;
-		};
-	};
-}
+// Import the shared ProcessedBooking interface
+import { type ProcessedBooking } from '$lib/utils/booking-helpers.js';
 
 /**
  * Get shared stats that are used across multiple pages

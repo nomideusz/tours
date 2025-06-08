@@ -18,7 +18,6 @@ export interface User extends RecordModel {
   stripeAccountId?: string;
   avatar?: string;
   role: UserRole;
-  intendedRole?: 'user' | 'guide'; // What they want to be
   phone?: string;
   website?: string;
   description?: string;

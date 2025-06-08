@@ -21,6 +21,12 @@ export const tours = pgTable('tours', {
   includedItems: json('included_items').$type<string[]>().default([]),
   requirements: json('requirements').$type<string[]>().default([]),
   cancellationPolicy: text('cancellation_policy'),
+  
+  // Simplified QR code approach - one QR per tour
+  qrCode: varchar('qr_code', { length: 100 }).unique(), // Auto-generated tour-specific QR code
+  qrScans: integer('qr_scans').notNull().default(0), // Track QR scans
+  qrConversions: integer('qr_conversions').notNull().default(0), // Track successful bookings from QR
+  
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });

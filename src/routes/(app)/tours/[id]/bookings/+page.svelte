@@ -25,6 +25,7 @@
 	import Ticket from 'lucide-svelte/icons/ticket';
 	import Plus from 'lucide-svelte/icons/plus';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 
 	// Extended booking type with expand data
 	interface ExpandedBooking extends Booking {
@@ -38,12 +39,6 @@
 				id: string;
 				startTime: string;
 				endTime: string;
-				[key: string]: any;
-			};
-			qrCode?: {
-				id: string;
-				code: string;
-				category?: string;
 				[key: string]: any;
 			};
 		};
@@ -233,10 +228,14 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{data.tour?.name} Bookings - Zaur</title>
+</svelte:head>
+
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<div class="mb-6 sm:mb-8">
 		<PageHeader 
-			title="Bookings Management"
+			title="{data.tour?.name} Bookings"
 			subtitle="View and manage all bookings for this tour"
 			breadcrumbs={[
 				{ label: 'Tours', href: '/tours' },
@@ -246,6 +245,13 @@
 			backUrl={`/tours/${data.tour?.id || ''}`}
 		>
 			<div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+				<button 
+					onclick={() => goto('/bookings')}
+					class="button-secondary button--gap button--small"
+				>
+					<ArrowLeft class="h-4 w-4" />
+					All Bookings
+				</button>
 				<button 
 					onclick={refreshBookings}
 					disabled={isLoading}
@@ -270,12 +276,12 @@
 	</div>
 
 	{#if error}
-		<div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+		<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-light); border: 1px solid var(--border-danger);">
 			<div class="flex gap-3">
-				<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+				<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
 				<div>
-					<p class="font-medium text-red-800">Error</p>
-					<p class="text-sm text-red-700 mt-1">{error}</p>
+					<p class="font-medium" style="color: var(--text-danger);">Error</p>
+					<p class="text-sm mt-1" style="color: var(--text-danger);">{error}</p>
 				</div>
 			</div>
 		</div>
@@ -283,8 +289,8 @@
 
 	<!-- Mobile Quick Actions -->
 	<div class="lg:hidden mb-6">
-		<div class="bg-white rounded-xl border border-gray-200 p-4">
-			<h3 class="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
 					onclick={() => goto('/checkin-scanner')}
@@ -310,11 +316,11 @@
 					QR Codes
 				</button>
 				<button
-					onclick={() => goto('/tours/new')}
+					onclick={() => goto('/bookings')}
 					class="button-secondary button--gap button--small justify-center py-3"
 				>
-					<Plus class="h-4 w-4" />
-					New Tour
+					<Calendar class="h-4 w-4" />
+					All Bookings
 				</button>
 			</div>
 		</div>
@@ -388,17 +394,17 @@
 	</div>
 
 	<!-- Filters -->
-	<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+	<div class="rounded-xl p-6 mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="flex flex-col lg:flex-row lg:items-center gap-4">
 			<div class="flex items-center gap-2">
-				<Filter class="h-5 w-5 text-gray-500" />
-				<span class="text-sm font-medium text-gray-700">Filters:</span>
+				<Filter class="h-5 w-5" style="color: var(--text-tertiary);" />
+				<span class="text-sm font-medium" style="color: var(--text-secondary);">Filters:</span>
 			</div>
 			
 			<div class="flex flex-wrap gap-4 flex-1">
 				<!-- Status Filter -->
 				<div class="flex flex-col">
-					<label for="status-filter" class="text-xs text-gray-600 mb-1">Status</label>
+					<label for="status-filter" class="text-xs mb-1" style="color: var(--text-tertiary);">Status</label>
 					<select id="status-filter" bind:value={selectedStatus} class="form-select form-select--small">
 						<option value="all">All Statuses</option>
 						<option value="pending">Pending</option>
@@ -411,7 +417,7 @@
 
 				<!-- Date Filter -->
 				<div class="flex flex-col">
-					<label for="date-filter" class="text-xs text-gray-600 mb-1">Date</label>
+					<label for="date-filter" class="text-xs mb-1" style="color: var(--text-tertiary);">Date</label>
 					<select id="date-filter" bind:value={dateFilter} class="form-select form-select--small">
 						<option value="all">All Dates</option>
 						<option value="upcoming">Upcoming</option>
@@ -422,9 +428,9 @@
 
 				<!-- Search -->
 				<div class="flex flex-col flex-1 min-w-64">
-					<label for="search-input" class="text-xs text-gray-600 mb-1">Search</label>
+					<label for="search-input" class="text-xs mb-1" style="color: var(--text-tertiary);">Search</label>
 					<div class="relative">
-						<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+						<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-placeholder);" />
 						<input 
 							id="search-input"
 							type="text" 
@@ -436,7 +442,7 @@
 				</div>
 			</div>
 
-			<div class="text-sm text-gray-600">
+			<div class="text-sm" style="color: var(--text-tertiary);">
 				Showing {filteredBookings.length} of {stats.total} bookings
 			</div>
 		</div>
@@ -444,17 +450,17 @@
 
 	<!-- Bookings List -->
 	{#if filteredBookings.length === 0}
-		<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+		<div class="rounded-xl p-12 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="max-w-md mx-auto">
-				<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-					<Calendar class="h-8 w-8 text-gray-400" />
+				<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--bg-secondary);">
+					<Calendar class="h-8 w-8" style="color: var(--text-tertiary);" />
 				</div>
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
 					{selectedStatus === 'all' && searchQuery === '' && dateFilter === 'all' 
 						? 'No bookings yet' 
 						: 'No bookings match your filters'}
 				</h3>
-				<p class="text-gray-600 mb-6">
+				<p class="mb-6" style="color: var(--text-secondary);">
 					{selectedStatus === 'all' && searchQuery === '' && dateFilter === 'all'
 						? 'Bookings will appear here when customers start booking your tour'
 						: 'Try adjusting your filters to see more results'}
@@ -472,20 +478,20 @@
 	{:else}
 		<div class="space-y-4">
 			{#each filteredBookings as booking (booking.id)}
-				<div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-shadow">
+				<div class="rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<div class="flex flex-col gap-4">
 						<!-- Header Section -->
 						<div class="flex flex-col gap-3">
 							<div class="flex items-start justify-between">
 								<div class="min-w-0 flex-1">
-									<h3 class="text-lg font-semibold text-gray-900 truncate">{booking.customerName}</h3>
+									<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{booking.customerName}</h3>
 									<div class="mt-1 space-y-1">
-										<div class="text-sm text-gray-600">
-											<span>Ref: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">{booking.bookingReference}</code></span>
+										<div class="text-sm" style="color: var(--text-secondary);">
+											<span>Ref: <code class="px-1.5 py-0.5 rounded font-mono text-xs" style="background: var(--bg-secondary);">{booking.bookingReference}</code></span>
 										</div>
-										<div class="text-sm text-gray-600 truncate">{booking.customerEmail}</div>
+										<div class="text-sm truncate" style="color: var(--text-secondary);">{booking.customerEmail}</div>
 										{#if booking.customerPhone}
-											<div class="text-sm text-gray-600">{booking.customerPhone}</div>
+											<div class="text-sm" style="color: var(--text-secondary);">{booking.customerPhone}</div>
 										{/if}
 									</div>
 								</div>
@@ -494,13 +500,13 @@
 							<!-- Status Badges - Mobile Optimized -->
 							<div class="flex flex-wrap gap-2">
 								<!-- Booking Status Badge -->
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border {
 									booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :
 									booking.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
 									booking.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
 									booking.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
 									'bg-gray-50 text-gray-700 border-gray-200'
-								} border">
+								}">
 									<span class="w-1.5 h-1.5 rounded-full {
 										booking.status === 'confirmed' ? 'bg-green-500' :
 										booking.status === 'pending' ? 'bg-yellow-500' :
@@ -512,24 +518,24 @@
 								</span>
 								
 								<!-- Payment Status Badge -->
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border {
 									booking.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
 									booking.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
 									booking.paymentStatus === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
 									booking.paymentStatus === 'refunded' ? 'bg-gray-50 text-gray-700 border-gray-200' :
 									'bg-gray-50 text-gray-700 border-gray-200'
-								} border">
+								}">
 									<span class="mr-0.5">💳</span>
 									{booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)}
 								</span>
 
 								<!-- Attendance Status Badge (for confirmed bookings) -->
 								{#if booking.status === 'confirmed' && booking.paymentStatus === 'paid'}
-									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {
+									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border {
 										booking.attendanceStatus === 'checked_in' ? 'bg-blue-50 text-blue-700 border-blue-200' :
 										booking.attendanceStatus === 'no_show' ? 'bg-gray-50 text-gray-700 border-gray-200' :
 										'bg-purple-50 text-purple-700 border-purple-200'
-									} border">
+									}">
 										<span class="mr-0.5">
 											{#if booking.attendanceStatus === 'checked_in'}
 												✅
@@ -552,7 +558,7 @@
 						</div>
 
 						{#if booking.checkedInAt}
-							<p class="text-xs text-gray-500">
+							<p class="text-xs" style="color: var(--text-tertiary);">
 								Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', {
 									month: 'short',
 									day: 'numeric',
@@ -565,40 +571,40 @@
 
 						<!-- Details Grid - Mobile Optimized -->
 						<div class="grid grid-cols-2 gap-3">
-							<div class="p-3 bg-gray-50 rounded-lg">
-								<Calendar class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-								<p class="text-sm font-semibold text-gray-900">
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<Calendar class="h-4 w-4 mx-auto mb-1" style="color: var(--text-tertiary);" />
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">
 									{booking.expand?.timeSlot?.startTime ? 
 										formatDate(booking.expand.timeSlot.startTime) : 
 										formatDate(booking.created)}
 								</p>
-								<p class="text-xs text-gray-500">Date</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Date</p>
 							</div>
-							<div class="p-3 bg-gray-50 rounded-lg">
-								<Clock class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-								<p class="text-sm font-semibold text-gray-900">
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<Clock class="h-4 w-4 mx-auto mb-1" style="color: var(--text-tertiary);" />
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">
 									{booking.expand?.timeSlot?.startTime ? 
 										formatTime(booking.expand.timeSlot.startTime) : 
 										'Not scheduled'}
 								</p>
-								<p class="text-xs text-gray-500">Time</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Time</p>
 							</div>
-							<div class="p-3 bg-gray-50 rounded-lg">
-								<Users class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-								<p class="text-sm font-semibold text-gray-900">{booking.participants}</p>
-								<p class="text-xs text-gray-500">Participants</p>
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<Users class="h-4 w-4 mx-auto mb-1" style="color: var(--text-tertiary);" />
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">{booking.participants}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Participants</p>
 							</div>
-							<div class="p-3 bg-gray-50 rounded-lg">
-								<Euro class="h-4 w-4 text-gray-400 mx-auto mb-1" />
-								<p class="text-sm font-semibold text-gray-900">{formatEuro(booking.totalAmount)}</p>
-								<p class="text-xs text-gray-500">Amount</p>
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<Euro class="h-4 w-4 mx-auto mb-1" style="color: var(--text-tertiary);" />
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">{formatEuro(booking.totalAmount)}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Amount</p>
 							</div>
 						</div>
 
 						{#if booking.specialRequests}
-							<div class="p-3 bg-blue-50 rounded-lg">
-								<p class="text-xs text-blue-700 font-medium mb-1">Special Requests:</p>
-								<p class="text-sm text-blue-900">{booking.specialRequests}</p>
+							<div class="p-3 rounded-lg" style="background: var(--color-primary-50);">
+								<p class="text-xs font-medium mb-1" style="color: var(--color-primary-700);">Special Requests:</p>
+								<p class="text-sm" style="color: var(--color-primary-900);">{booking.specialRequests}</p>
 							</div>
 						{/if}
 
@@ -633,12 +639,6 @@
 											Confirm
 										</button>
 									</form>
-									{#if confirmError && !isUpdatingStatus}
-										<div class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 px-3 py-1 text-xs text-white bg-gray-800 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-											{confirmError}
-											<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-										</div>
-									{/if}
 								</div>
 								
 								<form method="POST" action="?/updateStatus" use:enhance={() => {
@@ -708,12 +708,6 @@
 											Mark Complete
 										</button>
 									</form>
-									{#if completeError && !isUpdatingStatus}
-										<div class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 px-3 py-1 text-xs text-white bg-gray-800 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-											{completeError}
-											<div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-										</div>
-									{/if}
 								</div>
 								
 								<form method="POST" action="?/updateStatus" use:enhance={() => {
@@ -743,7 +737,7 @@
 							</div>
 						{:else if booking.status === 'cancelled' || booking.status === 'completed' || booking.status === 'no_show'}
 							<div class="flex flex-col gap-2">
-								<div class="text-center text-sm text-gray-500 py-2">
+								<div class="text-center text-sm py-2" style="color: var(--text-tertiary);">
 									{#if booking.status === 'completed'}
 										✅ Tour completed
 									{:else if booking.status === 'cancelled'}

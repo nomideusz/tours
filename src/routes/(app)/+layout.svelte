@@ -10,11 +10,15 @@
 	} from '$lib/context.js';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { auth } from '$lib/stores/auth.js';
+	import AppHeader from '$lib/components/AppHeader.svelte';
+	import AppFooter from '$lib/components/AppFooter.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	// Icons
 	import Menu from 'lucide-svelte/icons/menu';
 	import X from 'lucide-svelte/icons/x';
-	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
+	import Home from 'lucide-svelte/icons/home';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -22,11 +26,18 @@
 	import Shield from 'lucide-svelte/icons/shield';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import Settings from 'lucide-svelte/icons/settings';
 
-	let { children } = $props();
+	let { children, data } = $props<{ data?: any }>();
 
-	// Reactive values from auth stores (initialized by root layout)
+	// Initialize auth store with server data
+	$effect(() => {
+		if (data) {
+			auth.initialize(data);
+		}
+	});
+
+	// Reactive values from auth stores
 	let userIsAuthenticated = $derived($isAuthenticated);
 	let currentUserData = $derived($currentUser);
 	let userIsAdmin = $derived($isAdmin);
@@ -34,6 +45,9 @@
 	// Sidebar state
 	let sidebarOpen = $state(false);
 	let isLoggingOut = $state(false);
+
+	// App title for header - always "Dashboard"
+	const pageTitle = 'Dashboard';
 
 	// Set language context from the store
 	languageContext.set(languageStore);
@@ -47,11 +61,11 @@
 	});
 
 	// Navigation items
-	const baseNavigationItems = [
+	const baseNavigationItems = $derived([
 		{
 			name: 'Dashboard',
 			href: '/dashboard',
-			icon: BarChart3
+			icon: Home
 		},
 		{
 			name: 'Tours',
@@ -59,7 +73,7 @@
 			icon: MapPin
 		},
 		{
-			name: 'Bookings',
+			name: 'All Bookings',
 			href: '/bookings',
 			icon: Calendar
 		},
@@ -68,13 +82,14 @@
 			href: '/checkin-scanner',
 			icon: QrCode
 		}
-	];
+	]);
 
 	// Create reactive navigation items with current state
 	const navigationItems = $derived(
 		baseNavigationItems.map(item => ({
 			...item,
-			current: $page.url.pathname.startsWith(item.href)
+			current: $page.url.pathname === item.href || 
+			         ($page.url.pathname.startsWith(item.href) && item.href !== '/dashboard')
 		}))
 	);
 
@@ -99,104 +114,105 @@
 	}
 </script>
 
-<svelte:head>
-	<!-- Umami Analytics for App Pages - Production Only -->
-	{#if !import.meta.env.DEV}
-		<script
-			defer
-			src="https://umami.zaur.app/script.js"
-			data-website-id="92ff6091-acae-433b-813b-561a4f524314"
-		></script>
-	{/if}
-</svelte:head>
+<!-- App Layout: Header + Sidebar + Main + Footer -->
+<div class="min-h-screen flex flex-col" style="background: var(--bg-secondary);">
+	<!-- App Header -->
+	<AppHeader 
+		{pageTitle}
+		user={currentUserData}
+		{sidebarOpen}
+		onSidebarToggle={() => sidebarOpen = !sidebarOpen}
+		onLogout={() => handleLogout(new Event('click'))}
+	/>
 
-<div class="flex h-screen" style="background: var(--bg-secondary);">
-	<!-- Sidebar -->
-	<div class="hidden lg:flex lg:flex-shrink-0">
-		<div class="flex w-64 flex-col">
-			<div
-				class="flex flex-grow flex-col overflow-y-auto pt-5 pb-4"
-				style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
-			>
-				<!-- Logo -->
-				<div class="flex flex-shrink-0 items-center px-4">
-					<h1 class="text-xl font-bold" style="color: var(--text-primary);">Zaur Dashboard</h1>
-				</div>
+	<!-- Main content area with sidebar -->
+	<div class="flex flex-1">
+		<!-- Desktop Sidebar -->
+		<div class="hidden lg:flex lg:flex-shrink-0">
+			<div class="flex w-64 flex-col">
+				<div
+					class="flex flex-grow flex-col overflow-y-auto overflow-x-hidden pt-5 pb-4"
+					style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
+				>
+					<!-- Navigation -->
+					<nav class="mt-5 flex-1 space-y-1 px-2">
+						{#each navigationItems as item}
+							<a
+								href={item.href}
+								class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors"
+								style="{item.current
+									? 'background: var(--color-primary-100); color: var(--color-primary-900);'
+									: 'color: var(--text-secondary);'}"
+								onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
+								onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
+							>
+								<item.icon
+									class="mr-3 h-5 w-5"
+									style={item.current
+										? 'color: var(--color-primary-500);'
+										: 'color: var(--text-tertiary);'}
+								/>
+								{item.name}
+							</a>
+						{/each}
+					</nav>
 
-				<!-- Navigation -->
-				<nav class="mt-8 flex-1 space-y-1 px-2">
-					{#each navigationItems as item}
-						<a
-							href={item.href}
-							class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors"
-							style="{item.current
-								? 'background: var(--color-primary-100); color: var(--color-primary-900);'
-								: 'color: var(--text-secondary);'}"
-							onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
-							onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
-						>
-													<item.icon
-							class="mr-3 h-5 w-5"
-							style={item.current
-								? 'color: var(--color-primary-500);'
-								: 'color: var(--text-tertiary);'}
-						/>
-							{item.name}
-						</a>
-					{/each}
-				</nav>
-
-				<!-- Theme Toggle -->
-				<div class="px-2 pb-4">
-					<ThemeToggle />
-				</div>
-
-				<!-- User section -->
-				<div class="flex flex-shrink-0 border-t border-gray-200 p-4">
-					<div class="flex w-full items-center">
-						<div class="flex-shrink-0">
-							<div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
-								<User class="h-4 w-4 text-white" />
-							</div>
-						</div>
-						<div class="ml-3 min-w-0 flex-1">
-							<p class="truncate text-sm font-medium text-gray-900">
-								{currentUserData?.name || currentUserData?.email || 'User'}
-							</p>
-							<div class="mt-1 flex items-center gap-2">
+					<!-- User section -->
+					<div class="flex flex-shrink-0 border-t p-4" style="border-color: var(--border-primary);">
+											<div class="flex w-full items-center justify-between">
+						<div class="flex items-center gap-2 min-w-0">
+							<Tooltip text="Edit Profile Settings" position="top-right">
 								<a
 									href="/profile"
-									class="text-xs text-gray-500 transition-colors hover:text-gray-700"
+									title=""
+									class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
+									style="color: var(--text-secondary);"
 								>
-									Profile
+									<Settings class="h-3 w-3" />
+									Settings
 								</a>
-								{#if userIsAdmin}
-									<span class="text-xs text-gray-300">•</span>
+							</Tooltip>
+							{#if userIsAdmin}
+								<span style="color: var(--text-tertiary);">•</span>
+								<Tooltip text="Admin Panel" position="top">
 									<a
 										href="/admin"
-										class="flex items-center gap-1 text-xs text-gray-500 transition-colors hover:text-gray-700"
+										title=""
+										class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
+										style="color: var(--text-secondary);"
 									>
 										<Shield class="h-3 w-3" />
 										Admin
 									</a>
-								{/if}
-							</div>
-						</div>
-						<button
-							onclick={handleLogout}
-							disabled={isLoggingOut}
-							class="ml-2 rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
-							title="Logout"
-						>
-							{#if isLoggingOut}
-								<Loader2 class="h-4 w-4 animate-spin text-gray-500" />
-							{:else}
-								<LogOut class="h-4 w-4 text-gray-500" />
+								</Tooltip>
 							{/if}
-						</button>
+						</div>
+						<Tooltip text="Sign out" position="top">
+							<button
+								onclick={handleLogout}
+								disabled={isLoggingOut}
+								class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
+								style="color: var(--text-secondary);"
+							>
+								{#if isLoggingOut}
+									<Loader2 class="h-4 w-4 animate-spin" />
+								{:else}
+									<LogOut class="h-4 w-4" />
+								{/if}
+							</button>
+						</Tooltip>
+					</div>
 					</div>
 				</div>
 			</div>
+		</div>
+
+		<!-- Main content -->
+		<div class="flex w-0 flex-1 flex-col overflow-hidden">
+			<!-- Page content -->
+			<main class="relative z-0 flex-1 overflow-y-auto focus:outline-none">
+				{@render children()}
+			</main>
 		</div>
 	</div>
 
@@ -221,13 +237,8 @@
 				</div>
 
 				<div class="h-0 flex-1 overflow-y-auto pt-5 pb-4">
-					<!-- Mobile logo -->
-					<div class="flex flex-shrink-0 items-center px-4">
-						<h1 class="text-xl font-bold text-gray-900">Zaur Dashboard</h1>
-					</div>
-
 					<!-- Mobile navigation -->
-					<nav class="mt-8 space-y-1 px-2">
+					<nav class="space-y-1 px-2">
 						{#each navigationItems as item}
 							<a
 								href={item.href}
@@ -249,77 +260,54 @@
 
 				<!-- Mobile user section -->
 				<div class="flex flex-shrink-0 border-t border-gray-200 p-4">
-					<div class="flex w-full items-center">
-						<div class="flex-shrink-0">
-							<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
-								<User class="h-5 w-5 text-white" />
-							</div>
-						</div>
-						<div class="ml-3 min-w-0 flex-1">
-							<p class="truncate text-base font-medium text-gray-900">
-								{currentUserData?.name || currentUserData?.email || 'User'}
-							</p>
-							<div class="mt-1 flex items-center gap-2">
+					<div class="flex w-full items-center justify-between">
+						<div class="flex items-center gap-3">
+							<Tooltip text="Edit Profile Settings" position="top">
 								<a
 									href="/profile"
+									title=""
 									onclick={closeSidebar}
-									class="text-sm text-gray-500 transition-colors hover:text-gray-700"
+									class="flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700"
 								>
-									Profile
+									<Settings class="h-4 w-4" />
+									Settings
 								</a>
-								{#if userIsAdmin}
-									<span class="text-sm text-gray-300">•</span>
+							</Tooltip>
+							{#if userIsAdmin}
+								<Tooltip text="Admin Panel" position="top">
 									<a
 										href="/admin"
+										title=""
 										onclick={closeSidebar}
 										class="flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700"
 									>
 										<Shield class="h-4 w-4" />
 										Admin
 									</a>
-								{/if}
-							</div>
-						</div>
-						<button
-							onclick={handleLogout}
-							disabled={isLoggingOut}
-							class="ml-2 rounded p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
-							title="Logout"
-						>
-							{#if isLoggingOut}
-								<Loader2 class="h-5 w-5 animate-spin text-gray-500" />
-							{:else}
-								<LogOut class="h-5 w-5 text-gray-500" />
+								</Tooltip>
 							{/if}
-						</button>
+						</div>
+						<Tooltip text="Sign out" position="top">
+							<button
+								onclick={handleLogout}
+								disabled={isLoggingOut}
+								class="rounded p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
+							>
+								{#if isLoggingOut}
+									<Loader2 class="h-5 w-5 animate-spin text-gray-500" />
+								{:else}
+									<LogOut class="h-5 w-5 text-gray-500" />
+								{/if}
+							</button>
+						</Tooltip>
 					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Main content -->
-	<div class="flex w-0 flex-1 flex-col overflow-hidden">
-		<!-- Top bar for mobile -->
-		<div class="lg:hidden">
-			<div class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2">
-				<button
-					onclick={() => (sidebarOpen = true)}
-					class="rounded-md p-2 transition-colors hover:bg-gray-100"
-				>
-					<Menu class="h-6 w-6 text-gray-600" />
-				</button>
-				<h1 class="text-lg font-semibold text-gray-900">Zaur Dashboard</h1>
-				<div class="w-10"></div>
-				<!-- Spacer for centering -->
-			</div>
-		</div>
-
-		<!-- Page content -->
-		<main class="relative z-0 flex-1 overflow-y-auto focus:outline-none">
-			{@render children()}
-		</main>
-	</div>
+	<!-- App Footer -->
+	<AppFooter />
 </div>
 
 <style lang="postcss">

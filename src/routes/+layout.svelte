@@ -1,27 +1,23 @@
 <script lang="ts">
 	import '../app.css';
-	import { navigationContext, navigationStore } from '$lib/context.js';
-	import { auth } from '$lib/stores/auth.js';
-	import { IsMounted } from 'runed';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { language, t } from '$lib/i18n.js';
+	import { languageContext, languageStore } from '$lib/context.js';
+	import { navigationContext, navigationStore } from '$lib/context.js';
 
 	let { children, data } = $props<{ data?: any }>();
 
-	// Initialize auth store with server data
-	$effect(() => {
-		if (data) {
-			auth.initialize(data);
-		}
+	// Set language context from the store
+	languageContext.set(languageStore);
+
+	// Loading state management for global navigation
+	let navigationState = $state({
+		pathname: '',
+		isNavigating: false,
+		shouldShowLoader: false
 	});
 
-	// Use IsMounted from Runed
-	const isMounted = new IsMounted();
-
-	// Set up navigation context
-	navigationContext.set(navigationStore);
-
-	// Track navigation changes with loading state
 	let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 	let isInitialLoad = true;
 
@@ -34,10 +30,10 @@
 		const isFullNavigation = from && to && from.url.pathname !== to.url.pathname;
 
 		if (isFullNavigation) {
-			navigationStore.update((state) => ({ ...state, isNavigating: true }));
+			navigationState.isNavigating = true;
 
 			loadingTimer = setTimeout(() => {
-				navigationStore.update((state) => ({ ...state, shouldShowLoader: true }));
+				navigationState.shouldShowLoader = true;
 			}, 400);
 		}
 	});
@@ -49,20 +45,25 @@
 		}
 
 		if (to?.url) {
-			navigationStore.set({
-				pathname: to.url.pathname,
-				isNavigating: false,
-				shouldShowLoader: false
-			});
+			navigationState.pathname = to.url.pathname;
+			navigationState.isNavigating = false;
+			navigationState.shouldShowLoader = false;
+		}
+	});
+
+	onMount(() => {
+		// Set initial navigation state
+		if (typeof window !== 'undefined') {
+			navigationState.pathname = window.location.pathname;
 		}
 	});
 </script>
 
-<!-- Main content -->
+<!-- Minimal root layout - just provides basic HTML structure -->
 {@render children()}
 
-<!-- Loading indicator -->
-{#if $navigationStore.shouldShowLoader}
+<!-- Global loading indicator -->
+{#if navigationState.shouldShowLoader}
 	<div class="fixed top-0 right-0 left-0 z-50 h-1 bg-blue-100">
 		<div class="loading-bar h-full bg-blue-600"></div>
 	</div>
@@ -70,6 +71,7 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
 	:global(html) {
 		background-color: theme(--color-gray-100);
 		scroll-behavior: smooth;

@@ -1,8 +1,8 @@
-import { pgTable, text, varchar, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, boolean, pgEnum, integer } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
 
-// User role enum
-export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'guide']);
+// Keep existing roles to avoid rewriting auth system
+export const userRoleEnum = pgEnum('user_role', ['admin', 'user']);
 
 // Users table (compatible with Lucia auth)
 export const users = pgTable('users', {
@@ -10,15 +10,20 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   hashedPassword: text('hashed_password'), // Made nullable for OAuth2 users
   name: varchar('name', { length: 255 }).notNull(),
+  username: varchar('username', { length: 50 }).unique(), // Unique username for personal routes
   businessName: varchar('business_name', { length: 255 }),
   stripeAccountId: varchar('stripe_account_id', { length: 255 }),
   avatar: text('avatar'), // URL to avatar image
-  role: userRoleEnum('role').notNull().default('user'),
-  intendedRole: varchar('intended_role', { length: 50 }), // 'user' | 'guide'
+  role: userRoleEnum('role').notNull().default('user'), // Default to user (tour guide)
   phone: varchar('phone', { length: 50 }),
   website: varchar('website', { length: 255 }),
   description: text('description'),
   location: varchar('location', { length: 255 }), // City/region for guides
+  
+  // Main QR code for the new simplified approach
+  mainQrCode: varchar('main_qr_code', { length: 100 }).unique(), // Auto-generated main QR code
+  mainQrScans: integer('main_qr_scans').notNull().default(0), // Track main QR scans
+  
   emailVerified: boolean('email_verified').notNull().default(false),
   lastLogin: timestamp('last_login', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

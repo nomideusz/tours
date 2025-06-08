@@ -1,123 +1,38 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	
-	interface Props {
-		content: string;
-		position?: 'top' | 'bottom' | 'left' | 'right';
-		trigger?: 'hover' | 'click';
-		delay?: number;
-		children: import('svelte').Snippet;
-	}
-	
 	let { 
-		content, 
-		position = 'top', 
-		trigger = 'hover', 
-		delay = 300,
-		children 
-	}: Props = $props();
-	
-	let triggerElement = $state<HTMLElement>();
-	let tooltipElement = $state<HTMLElement>();
-	let showTooltip = $state(false);
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-	
-	function getPositionClasses(position: string) {
-		switch (position) {
-			case 'bottom':
-				return {
-					tooltip: 'top-full left-1/2 transform -translate-x-1/2 mt-2',
-					arrow: 'bottom-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-b-gray-800'
-				};
-			case 'left':
-				return {
-					tooltip: 'right-full top-1/2 transform -translate-y-1/2 mr-2',
-					arrow: 'left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-800'
-				};
-			case 'right':
-				return {
-					tooltip: 'left-full top-1/2 transform -translate-y-1/2 ml-2',
-					arrow: 'right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-800'
-				};
-			case 'top':
-			default:
-				return {
-					tooltip: 'bottom-full left-1/2 transform -translate-x-1/2 mb-2',
-					arrow: 'top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800'
-				};
-		}
-	}
-	
-	let positionClasses = $derived(getPositionClasses(position));
-	
-	function handleMouseEnter() {
-		if (trigger !== 'hover') return;
-		
-		timeoutId = setTimeout(() => {
-			showTooltip = true;
-		}, delay);
-	}
-	
-	function handleMouseLeave() {
-		if (trigger !== 'hover') return;
-		
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-			timeoutId = null;
-		}
-		showTooltip = false;
-	}
-	
-	function handleClick() {
-		if (trigger !== 'click') return;
-		showTooltip = !showTooltip;
-	}
-	
-	function handleClickOutside(event: MouseEvent) {
-		if (trigger !== 'click') return;
-		if (!triggerElement || !tooltipElement) return;
-		
-		const target = event.target as Node;
-		if (!triggerElement.contains(target) && !tooltipElement.contains(target)) {
-			showTooltip = false;
-		}
-	}
-	
-	onMount(() => {
-		if (trigger === 'click') {
-			document.addEventListener('click', handleClickOutside);
-		}
-	});
-	
-	onDestroy(() => {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-		}
-		if (trigger === 'click') {
-			document.removeEventListener('click', handleClickOutside);
-		}
-	});
+		text,
+		position = 'bottom',
+		class: className = "",
+		children
+	} = $props<{
+		text: string;
+		position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+		class?: string;
+		children: any;
+	}>();
+
+	// Position classes mapping
+	const positionClasses = {
+		top: '-top-8 left-1/2 transform -translate-x-1/2',
+		bottom: 'top-12 left-1/2 transform -translate-x-1/2', 
+		left: 'top-1/2 right-12 transform -translate-y-1/2',
+		right: 'top-1/2 left-12 transform -translate-y-1/2',
+		'top-left': '-top-8 right-0',
+		'top-right': '-top-8 left-0',
+		'bottom-left': 'top-12 right-0',
+		'bottom-right': 'top-12 left-0'
+	};
 </script>
 
-<div class="relative inline-block">
-	<div
-		bind:this={triggerElement}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="cursor-help"
-		{...(trigger === 'click' ? { onclick: handleClick, role: 'button', tabindex: 0 } : {})}
-	>
-		{@render children()}
-	</div>
+<!-- Tooltip wrapper -->
+<div class="relative inline-block group {className}">
+	{@render children()}
 	
-	{#if showTooltip}
-		<div
-			bind:this={tooltipElement}
-			class="absolute z-50 px-3 py-2 text-sm text-white bg-gray-800 rounded-lg shadow-lg max-w-xs whitespace-normal {positionClasses.tooltip}"
-			role="tooltip"
-		>
-			{content}
-			<div class="absolute {positionClasses.arrow}"></div>
-		</div>
-	{/if}
-</div>
+	<!-- Custom tooltip -->
+	<div 
+		class="absolute {positionClasses[position as keyof typeof positionClasses]} px-2 py-1 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
+		style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+	>
+		{text}
+	</div>
+</div> 
