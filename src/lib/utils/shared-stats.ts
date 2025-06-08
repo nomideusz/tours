@@ -139,7 +139,7 @@ export async function getDashboardSpecificStats(userId: string, sharedStats: Sha
 		})
 		.from(bookings)
 		.innerJoin(tours, eq(bookings.tourId, tours.id))
-		.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
 		.limit(50); // Reasonable limit for stats calculation
@@ -326,7 +326,7 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 		})
 		.from(bookings)
 		.innerJoin(tours, eq(bookings.tourId, tours.id))
-		.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
 		.limit(limit);
@@ -802,7 +802,7 @@ export function createTodaysSchedule(bookings: ProcessedBooking[]) {
 		return sortedBookings.map(booking => ({
 			id: booking.id,
 			time: booking.expand?.timeSlot?.startTime,
-			tour: booking.tour,
+			tourName: booking.tour, // Map for dashboard compatibility
 			customerName: booking.customerName,
 			participants: booking.participants,
 			status: booking.status,
