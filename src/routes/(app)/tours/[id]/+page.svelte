@@ -228,11 +228,11 @@
 				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
 				<div class="grid grid-cols-2 gap-3">
 					<button
-						onclick={() => goto(`/tours/${tour?.id}/bookings`)}
+						onclick={() => goto(`/tours/${tour?.id}/schedule`)}
 						class="button-secondary button--gap justify-center"
 					>
 						<Calendar class="h-4 w-4" />
-						Bookings
+						Schedule
 					</button>
 					<button
 						onclick={() => { if (tour?.qrCode) { navigator.clipboard.writeText(generateBookingURL(tour.qrCode)); } }}
