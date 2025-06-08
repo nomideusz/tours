@@ -41,7 +41,7 @@
 				},
 				body: JSON.stringify({
 					bookingId: data.booking.id,
-					amount: data.booking.totalAmount,
+					amount: parseFloat(data.booking.totalAmount),
 					currency: 'eur',
 				}),
 			});

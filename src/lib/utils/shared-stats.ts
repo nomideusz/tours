@@ -124,7 +124,7 @@ export async function getDashboardSpecificStats(userId: string, sharedStats: Sha
 			};
 		}
 		
-		// Fetch recent bookings for stats calculation
+		// Fetch recent bookings for stats calculation (simplified query)
 		const recentBookingsData = await db.select({
 			id: bookings.id,
 			customerName: bookings.customerName,
@@ -134,15 +134,13 @@ export async function getDashboardSpecificStats(userId: string, sharedStats: Sha
 			createdAt: bookings.createdAt,
 			totalAmount: bookings.totalAmount,
 			paymentStatus: bookings.paymentStatus,
-			tourName: tours.name,
-			timeSlotStartTime: timeSlots.startTime
+			tourName: tours.name
 		})
 		.from(bookings)
 		.innerJoin(tours, eq(bookings.tourId, tours.id))
-		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
-		.limit(50); // Reasonable limit for stats calculation
+		.limit(30); // Reduced limit for better performance
 		
 		// Calculate dashboard-specific stats
 		const today = new Date();
@@ -321,17 +319,15 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 			createdAt: bookings.createdAt,
 			totalAmount: bookings.totalAmount,
 			paymentStatus: bookings.paymentStatus,
-			tourName: tours.name,
-			timeSlotStartTime: timeSlots.startTime
+			tourName: tours.name
 		})
 		.from(bookings)
 		.innerJoin(tours, eq(bookings.tourId, tours.id))
-		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
-		.limit(limit);
+		.limit(Math.min(limit, 20)); // Cap limit for performance
 		
-		// Process for display - convert to ProcessedBooking format
+		// Process for display - convert to ProcessedBooking format (simplified without time slots for performance)
 		return recentBookingsData.map((booking: any) => ({
 			id: booking.id,
 			customerName: booking.customerName,
@@ -343,17 +339,13 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 			tour: booking.tourName,
 			totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
 			paymentStatus: booking.paymentStatus,
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(),
+			effectiveDate: booking.createdAt.toISOString(), // Use booking creation date
 			expand: {
 				tour: { 
 					id: '', // We don't have tour ID in this query, but name is available
 					name: booking.tourName 
 				},
-				timeSlot: booking.timeSlotStartTime ? { 
-					id: '',
-					startTime: booking.timeSlotStartTime.toISOString(),
-					endTime: booking.timeSlotStartTime.toISOString() // Fallback
-				} : undefined
+				timeSlot: undefined // Simplified - no time slot data for dashboard
 			}
 		}));
 	} catch (error) {
@@ -383,7 +375,7 @@ export async function getTourBookingData(userId: string, tourId: string) {
 		
 		const tour = tourData[0];
 		
-		// Get booking data for this tour (limited for performance)
+		// Get booking data for this tour (without JOIN for better performance)
 		const bookingsData = await db.select({
 			id: bookings.id,
 			status: bookings.status,
@@ -392,8 +384,6 @@ export async function getTourBookingData(userId: string, tourId: string) {
 			participants: bookings.participants,
 			createdAt: bookings.createdAt,
 			timeSlotId: bookings.timeSlotId,
-			timeSlotStartTime: timeSlots.startTime,
-			timeSlotEndTime: timeSlots.endTime,
 			customerName: bookings.customerName,
 			customerEmail: bookings.customerEmail,
 			ticketQRCode: bookings.ticketQRCode,
@@ -401,35 +391,65 @@ export async function getTourBookingData(userId: string, tourId: string) {
 			attendanceStatus: bookings.attendanceStatus
 		})
 		.from(bookings)
-		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(bookings.tourId, tourId))
 		.orderBy(desc(bookings.createdAt))
-		.limit(20); // Reasonable limit to prevent timeout
+		.limit(15); // Reduced limit to prevent timeout
+		
+		// Get time slot data separately if needed
+		const timeSlotIds = [...new Set(bookingsData
+			.map(b => b.timeSlotId)
+			.filter(id => id !== null))];
+		
+		let timeSlotsMap = new Map();
+		if (timeSlotIds.length > 0) {
+			for (const timeSlotId of timeSlotIds.slice(0, 5)) { // Limit to 5 for tour detail page
+				try {
+					const timeSlotData = await db.select({
+						id: timeSlots.id,
+						startTime: timeSlots.startTime,
+						endTime: timeSlots.endTime
+					})
+					.from(timeSlots)
+					.where(eq(timeSlots.id, timeSlotId))
+					.limit(1);
+					
+					if (timeSlotData.length > 0) {
+						timeSlotsMap.set(timeSlotId, timeSlotData[0]);
+					}
+				} catch (err) {
+					console.warn('Failed to fetch time slot', timeSlotId, ':', err);
+				}
+			}
+		}
 		
 		// Process bookings data
-		const processedBookings = bookingsData.map(booking => ({
-			id: booking.id,
-			customerName: booking.customerName || '',
-			customerEmail: booking.customerEmail || '',
-			participants: booking.participants || 0,
-			status: booking.status,
-			paymentStatus: booking.paymentStatus,
-			created: booking.createdAt.toISOString(),
-			updated: booking.createdAt.toISOString(),
-			tour: tour.name,
-			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
-			bookingReference: booking.bookingReference || '',
-			ticketQRCode: booking.ticketQRCode || null,
-			attendanceStatus: booking.attendanceStatus || null,
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(),
-			expand: {
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString() || null,
-					endTime: booking.timeSlotEndTime?.toISOString() || null
-				} : undefined
-			}
-		}));
+		const processedBookings = bookingsData.map(booking => {
+			const timeSlot = booking.timeSlotId ? timeSlotsMap.get(booking.timeSlotId) : null;
+			
+			return {
+				id: booking.id,
+				customerName: booking.customerName || '',
+				customerEmail: booking.customerEmail || '',
+				participants: booking.participants || 0,
+				status: booking.status,
+				paymentStatus: booking.paymentStatus,
+				created: booking.createdAt.toISOString(),
+				updated: booking.createdAt.toISOString(),
+				tour: tour.name,
+				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+				bookingReference: booking.bookingReference || '',
+				ticketQRCode: booking.ticketQRCode || null,
+				attendanceStatus: booking.attendanceStatus || null,
+				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt.toISOString(),
+				expand: {
+					timeSlot: timeSlot ? {
+						id: booking.timeSlotId,
+						startTime: timeSlot.startTime?.toISOString() || null,
+						endTime: timeSlot.endTime?.toISOString() || null
+					} : undefined
+				}
+			};
+		});
 		
 		// Calculate stats
 		let totalBookings = processedBookings.length;
@@ -521,6 +541,7 @@ export async function getTourBookingData(userId: string, tourId: string) {
 /**
  * Get all bookings for a specific tour (for bookings management page)
  * This replaces the booking-helpers.ts functionality for tour bookings pages
+ * Optimized to prevent 502 timeouts by reducing query complexity
  */
 export async function getTourAllBookings(userId: string, tourId: string) {
 	try {
@@ -539,9 +560,8 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 		
 		const tour = tourData[0];
 		
-		// Get all booking data for this tour (increased limit for management page)
+		// Step 1: Get core booking data without JOIN (most performant)
 		const bookingsData = await db.select({
-			// Booking fields
 			id: bookings.id,
 			status: bookings.status,
 			paymentStatus: bookings.paymentStatus,
@@ -557,49 +577,76 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 			attendanceStatus: bookings.attendanceStatus,
 			checkedInAt: bookings.checkedInAt,
 			ticketQRCode: bookings.ticketQRCode,
-			
-			// Time slot fields
-			timeSlotId: bookings.timeSlotId,
-			timeSlotStartTime: timeSlots.startTime,
-			timeSlotEndTime: timeSlots.endTime,
-			timeSlotAvailableSpots: timeSlots.availableSpots,
-			timeSlotBookedSpots: timeSlots.bookedSpots
+			timeSlotId: bookings.timeSlotId
 		})
 		.from(bookings)
-		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(bookings.tourId, tourId))
 		.orderBy(desc(bookings.createdAt))
-		.limit(50); // Reasonable limit to prevent timeout
+		.limit(25); // Reduced limit to prevent timeout
 		
-		// Process bookings data with all fields for management
-		const processedBookings = bookingsData.map(booking => ({
-			id: booking.id,
-			customerName: booking.customerName || '',
-			customerEmail: booking.customerEmail || '',
-			customerPhone: booking.customerPhone || '',
-			participants: booking.participants || 1,
-			status: booking.status,
-			paymentStatus: booking.paymentStatus,
-			created: booking.createdAt.toISOString(),
-			updated: booking.updatedAt.toISOString(),
-			tour: tour.name,
-			totalAmount: booking.totalAmount || 0,
-			bookingReference: booking.bookingReference || '',
-			specialRequests: booking.specialRequests || '',
-			attendanceStatus: booking.attendanceStatus || null,
-			checkedInAt: booking.checkedInAt?.toISOString() || null,
-			ticketQRCode: booking.ticketQRCode || null,
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(),
-			expand: {
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString(),
-					endTime: booking.timeSlotEndTime?.toISOString(),
-					availableSpots: booking.timeSlotAvailableSpots,
-					bookedSpots: booking.timeSlotBookedSpots
-				} : undefined
+		// Step 2: Get time slot data separately for only the bookings that have time slots
+		const timeSlotIds = [...new Set(bookingsData
+			.map(b => b.timeSlotId)
+			.filter(id => id !== null))];
+		
+		let timeSlotsMap = new Map();
+		if (timeSlotIds.length > 0) {
+			// Fetch time slots individually to avoid complex queries
+			for (const timeSlotId of timeSlotIds.slice(0, 10)) { // Limit to 10 time slots to prevent timeout
+				try {
+					const timeSlotData = await db.select({
+						id: timeSlots.id,
+						startTime: timeSlots.startTime,
+						endTime: timeSlots.endTime,
+						availableSpots: timeSlots.availableSpots,
+						bookedSpots: timeSlots.bookedSpots
+					})
+					.from(timeSlots)
+					.where(eq(timeSlots.id, timeSlotId))
+					.limit(1);
+					
+					if (timeSlotData.length > 0) {
+						timeSlotsMap.set(timeSlotId, timeSlotData[0]);
+					}
+				} catch (err) {
+					console.warn('Failed to fetch time slot', timeSlotId, ':', err);
+				}
 			}
-		}));
+		}
+		
+		// Step 3: Process bookings data with separate time slot lookup
+		const processedBookings = bookingsData.map(booking => {
+			const timeSlot = booking.timeSlotId ? timeSlotsMap.get(booking.timeSlotId) : null;
+			
+			return {
+				id: booking.id,
+				customerName: booking.customerName || '',
+				customerEmail: booking.customerEmail || '',
+				customerPhone: booking.customerPhone || '',
+				participants: booking.participants || 1,
+				status: booking.status,
+				paymentStatus: booking.paymentStatus,
+				created: booking.createdAt.toISOString(),
+				updated: booking.updatedAt.toISOString(),
+				tour: tour.name,
+				totalAmount: booking.totalAmount || 0,
+				bookingReference: booking.bookingReference || '',
+				specialRequests: booking.specialRequests || '',
+				attendanceStatus: booking.attendanceStatus || null,
+				checkedInAt: booking.checkedInAt?.toISOString() || null,
+				ticketQRCode: booking.ticketQRCode || null,
+				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt.toISOString(),
+				expand: {
+					timeSlot: timeSlot ? {
+						id: booking.timeSlotId,
+						startTime: timeSlot.startTime?.toISOString(),
+						endTime: timeSlot.endTime?.toISOString(),
+						availableSpots: timeSlot.availableSpots,
+						bookedSpots: timeSlot.bookedSpots
+					} : undefined
+				}
+			};
+		});
 		
 		return {
 			tour: {

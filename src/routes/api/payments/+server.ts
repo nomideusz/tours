@@ -14,6 +14,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Convert amount to number for proper comparison
+    const requestAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
     // Get booking details with tour and user data
     const bookingData = await db.select({
       id: bookings.id,
@@ -36,13 +39,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     const booking = bookingData[0];
 
-    // Verify amount matches booking
-    if (parseFloat(booking.totalAmount) !== amount) {
+    // Convert booking amount to number for comparison
+    const bookingAmount = parseFloat(booking.totalAmount);
+    
+    // Verify amount matches booking (allow small floating point differences)
+    if (Math.abs(bookingAmount - requestAmount) > 0.01) {
+      console.log('Amount mismatch:', { 
+        bookingAmount, 
+        requestAmount, 
+        bookingTotalAmount: booking.totalAmount,
+        originalAmount: amount 
+      });
       return json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
     // Create payment intent with metadata
-    const paymentIntent = await createPaymentIntent(amount, currency, {
+    const paymentIntent = await createPaymentIntent(requestAmount, currency, {
       bookingId: booking.id,
       bookingReference: booking.bookingReference,
       tourId: booking.tourId,
@@ -54,11 +66,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const paymentResult = await db.insert(payments).values({
       bookingId: bookingId,
       stripePaymentIntentId: paymentIntent.id,
-      amount: amount.toString(),
+      amount: requestAmount.toString(),
       currency: currency.toUpperCase(),
       status: 'pending',
       processingFee: '0', // Will be updated after payment
-      netAmount: amount.toString(), // Will be updated after payment
+      netAmount: requestAmount.toString(), // Will be updated after payment
     }).returning();
 
     const payment = paymentResult[0];
