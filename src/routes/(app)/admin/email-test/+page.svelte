@@ -12,6 +12,9 @@
   let results: EmailResult[] = [];
   let bookingId = '';
   let emailType = 'confirmation';
+  let testBookingId = '';
+  let testingPayment = false;
+  let paymentTestResult: any;
   
   async function testEmail(action: string, data: Record<string, any> = {}) {
     if (!browser) return;
@@ -61,6 +64,57 @@
   function clearResults() {
     results = [];
   }
+
+  async function confirmTestPayment() {
+    testingPayment = true;
+    try {
+      const response = await fetch('/api/confirm-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: testBookingId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        paymentTestResult = result;
+      } else {
+        paymentTestResult = { error: result.error || 'Unknown error' };
+      }
+    } catch (error) {
+      paymentTestResult = { error: error instanceof Error ? error.message : 'Unknown error' };
+    } finally {
+      testingPayment = false;
+    }
+  }
+
+  async function checkBookingStatus() {
+    try {
+      const response = await fetch('/api/check-booking-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: testBookingId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        paymentTestResult = result;
+      } else {
+        paymentTestResult = { error: result.error || 'Unknown error' };
+      }
+    } catch (error) {
+      paymentTestResult = { error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
@@ -78,7 +132,7 @@
           <button
             class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
-            on:click={() => testEmail('test')}
+            onclick={() => testEmail('test')}
           >
             {isLoading ? 'Testing...' : '🧪 Send Test Email'}
           </button>
@@ -89,7 +143,7 @@
           <button
             class="bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
-            on:click={() => testEmail('send-reminders')}
+            onclick={() => testEmail('send-reminders')}
           >
             {isLoading ? 'Sending...' : '⏰ Send Booking Reminders'}
           </button>
@@ -135,7 +189,7 @@
           <button
             class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !bookingId}
-            on:click={() => testEmail('send-email', { bookingId, emailType })}
+            onclick={() => testEmail('send-email', { bookingId, emailType })}
           >
             {isLoading ? 'Sending...' : `📧 Send ${emailType} Email`}
           </button>
@@ -143,7 +197,7 @@
           <button
             class="bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !bookingId}
-            on:click={() => testEmail('send-qr-ticket', { bookingId })}
+            onclick={() => testEmail('send-qr-ticket', { bookingId })}
           >
             {isLoading ? 'Sending...' : '🎫 Send QR Ticket'}
           </button>
@@ -158,7 +212,7 @@
           <h2 class="text-xl font-semibold text-gray-900">Test Results</h2>
           <button
             class="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 text-sm rounded-lg transition-colors duration-200"
-            on:click={clearResults}
+            onclick={clearResults}
           >
             Clear Results
           </button>
@@ -185,5 +239,53 @@
         </div>
       </div>
     {/if}
+
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Test Payment Processing</h2>
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="mb-4">
+          <label for="bookingId" class="block text-sm font-medium text-gray-700 mb-2">
+            Booking ID
+          </label>
+          <input
+            id="bookingId"
+            type="text"
+            bind:value={testBookingId}
+            placeholder="hclq1iz6xk54omw2ul5"
+            class="form-input w-full"
+          />
+        </div>
+        
+        <div class="flex gap-3">
+          <button 
+            onclick={confirmTestPayment}
+            disabled={testingPayment || !testBookingId}
+            class="button-primary button--gap"
+          >
+            {#if testingPayment}
+              <div class="form-spinner"></div>
+              Confirming...
+            {:else}
+              Manually Confirm Payment
+            {/if}
+          </button>
+          
+          <button 
+            onclick={checkBookingStatus}
+            disabled={testingPayment || !testBookingId}
+            class="button-secondary button--gap"
+          >
+            Check Status
+          </button>
+        </div>
+        
+        {#if paymentTestResult}
+          <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 class="font-medium text-gray-900 mb-2">Result:</h4>
+            <pre class="text-sm text-gray-700 whitespace-pre-wrap">{JSON.stringify(paymentTestResult, null, 2)}</pre>
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 </div> 

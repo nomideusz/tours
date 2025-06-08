@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request }) => {
         
         const paymentUpdate = await db.update(payments)
           .set({
-            status: 'succeeded',
+            status: 'paid',
             processingFee: '2.50', // Test fee
             netAmount: '47.50', // Test amount
             updatedAt: new Date()
@@ -42,7 +42,7 @@ export const POST: RequestHandler = async ({ request }) => {
           .returning();
         
         paymentUpdateResult = paymentUpdate[0];
-        console.log(`Test webhook: Payment record updated successfully: ${payment.id} - Status: succeeded`);
+        console.log(`Test webhook: Payment record updated successfully: ${payment.id} - Status: paid`);
       } else {
         console.warn(`Test webhook: No payment record found for payment intent ${paymentIntentId}`);
       }

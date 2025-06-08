@@ -8,32 +8,38 @@ export * from './i18n';
 
 // ========= ZAUR TOUR BOOKING SYSTEM TYPES =========
 
-export type UserRole = 'admin' | 'user' | 'guide';
+// UserRole removed - using 'admin' | 'user' directly from schema
 
 export interface User extends RecordModel {
   id: string;
   email: string;
   name: string;
+  username?: string;
   businessName?: string;
   stripeAccountId?: string;
   avatar?: string;
-  role: UserRole;
+  role: 'admin' | 'user'; // matches schema enum
   phone?: string;
   website?: string;
   description?: string;
   location?: string; // City/region for guides
-  created: string;
-  updated: string;
+  // Main QR code fields
+  mainQrCode?: string;
+  mainQrScans?: number;
+  emailVerified: boolean;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tour extends RecordModel {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: string; // decimal fields return strings in Drizzle
   duration: number; // in minutes
   capacity: number;
-  user: string; // relation to User
+  userId: string; // relation to User
   images?: string[]; // file uploads
   status: 'active' | 'draft';
   category?: string;
@@ -41,13 +47,17 @@ export interface Tour extends RecordModel {
   includedItems?: string[];
   requirements?: string[];
   cancellationPolicy?: string;
-  created: string;
-  updated: string;
+  // QR code fields
+  qrCode?: string;
+  qrScans?: number;
+  qrConversions?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TimeSlot extends RecordModel {
   id: string;
-  tour: string; // relation to Tour
+  tourId: string; // relation to Tour
   startTime: string; // ISO datetime
   endTime: string; // ISO datetime
   availableSpots: number;
@@ -56,40 +66,23 @@ export interface TimeSlot extends RecordModel {
   isRecurring: boolean;
   recurringPattern?: 'daily' | 'weekly' | 'monthly';
   recurringEnd?: string; // ISO date
-  created: string;
-  updated: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface QRCode extends RecordModel {
-  id: string;
-  tour: string; // relation to Tour
-  user: string; // relation to User
-  code: string; // unique identifier
-  name: string; // user-friendly name
-  category?: 'digital' | 'print' | 'partner' | 'event' | 'promo'; // QR code category
-  scans: number;
-  conversions: number;
-  isActive: boolean;
-  customization?: {
-    color?: string;
-    backgroundColor?: string;
-    logo?: string;
-    style?: 'square' | 'rounded' | 'dots';
-  };
-  created: string;
-  updated: string;
-}
+// QRCode interface removed - using simplified QR approach with direct fields on tours and users
 
 export interface Booking extends RecordModel {
   id: string;
-  tour: string; // relation to Tour
-  timeSlot: string; // relation to TimeSlot
-  qrCode?: string; // relation to QRCode (if booked via QR)
+  tourId: string; // relation to Tour
+  timeSlotId: string; // relation to TimeSlot
+  source?: 'main_qr' | 'tour_qr' | 'direct' | 'referral' | 'social' | 'other';
+  sourceQrCode?: string; // QR code that was scanned (if any)
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
   participants: number;
-  totalAmount: number;
+  totalAmount: string; // decimal fields return strings in Drizzle
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   paymentId?: string; // Stripe payment intent ID
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
@@ -100,8 +93,8 @@ export interface Booking extends RecordModel {
   attendanceStatus?: 'not_arrived' | 'checked_in' | 'no_show';
   checkedInAt?: string; // timestamp when customer checked in
   checkedInBy?: string; // guide who checked them in
-  created: string;
-  updated: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Customer extends RecordModel {
@@ -118,16 +111,16 @@ export interface Customer extends RecordModel {
 
 export interface Payment extends RecordModel {
   id: string;
-  booking: string; // relation to Booking
+  bookingId: string; // relation to Booking
   stripePaymentIntentId: string;
-  amount: number;
+  amount: string; // decimal fields return strings in Drizzle
   currency: string;
-  status: 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'refunded';
-  refundAmount?: number;
-  processingFee: number;
-  netAmount: number; // amount after Stripe fees
-  created: string;
-  updated: string;
+  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  refundAmount?: string; // decimal fields return strings in Drizzle
+  processingFee: string; // decimal fields return strings in Drizzle
+  netAmount: string; // decimal fields return strings in Drizzle
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GuideApplication extends RecordModel {

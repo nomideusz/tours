@@ -67,13 +67,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
             await db.update(payments)
               .set({
-                status: 'succeeded',
+                status: 'paid',
                 processingFee: (stripeFee / 100).toString(),
                 netAmount: netAmount.toString(),
                 updatedAt: new Date()
               })
               .where(eq(payments.id, payment.id));
-            console.log(`Webhook: Payment record updated successfully: ${payment.id} - Status: succeeded`);
+            console.log(`Webhook: Payment record updated successfully: ${payment.id} - Status: paid`);
           } else {
             console.warn(`Webhook: No payment record found for payment intent ${paymentIntent.id}`);
           }
@@ -252,11 +252,11 @@ export const POST: RequestHandler = async ({ request }) => {
         if (paymentRecords.length > 0) {
           await db.update(payments)
             .set({
-              status: 'cancelled',
+              status: 'failed',
               updatedAt: new Date()
             })
             .where(eq(payments.id, paymentRecords[0].id));
-          console.log(`Payment record marked as cancelled: ${paymentRecords[0].id}`);
+          console.log(`Payment record marked as failed: ${paymentRecords[0].id}`);
         }
 
         // Update booking status

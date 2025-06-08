@@ -1,7 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { bookings } from '$lib/db/schema/index.js';
+import { bookings, payments } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { generateTicketQRCode } from '$lib/ticket-qr.js';
 
 export const POST: RequestHandler = async ({ params, request }) => {
   try {
@@ -10,7 +11,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
       return json({ error: 'Booking ID is required' }, { status: 400 });
     }
 
-    const { status, paymentStatus, ticketQRCode, attendanceStatus } = await request.json();
+    const body = await request.json();
+    const { status, paymentStatus, ticketQRCode, attendanceStatus, action } = body;
+
+    console.log(`Update-status: Processing booking ${bookingId} with data:`, { status, paymentStatus, ticketQRCode, attendanceStatus, action });
 
     // Get current booking
     const currentBookingResult = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1);
@@ -23,7 +27,59 @@ export const POST: RequestHandler = async ({ params, request }) => {
     const oldStatus = currentBooking.status;
     const oldPaymentStatus = currentBooking.paymentStatus;
 
-    // Prepare update data
+    console.log(`Update-status: Current booking status: ${oldStatus}, payment: ${oldPaymentStatus}`);
+
+    // Special action to manually confirm payment (for testing/debugging)
+    if (action === 'confirm_payment') {
+      const newTicketQRCode = generateTicketQRCode();
+      
+      const updateData = {
+        status: 'confirmed' as const,
+        paymentStatus: 'paid' as const,
+        ticketQRCode: newTicketQRCode,
+        attendanceStatus: 'not_arrived' as const,
+        updatedAt: new Date()
+      };
+
+      console.log(`Update-status: Manually confirming payment with data:`, updateData);
+
+      const updatedBookingResult = await db.update(bookings)
+        .set(updateData)
+        .where(eq(bookings.id, bookingId))
+        .returning();
+
+      if (updatedBookingResult.length === 0) {
+        return json({ error: 'Failed to update booking' }, { status: 500 });
+      }
+
+      // Also update the payment record if it exists
+      if (currentBooking.paymentId) {
+        try {
+                     const paymentRecords = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, currentBooking.paymentId));
+           if (paymentRecords.length > 0) {
+             await db.update(payments)
+               .set({
+                 status: 'paid',
+                 updatedAt: new Date()
+               })
+               .where(eq(payments.id, paymentRecords[0].id));
+             console.log(`Update-status: Updated payment record ${paymentRecords[0].id} to paid`);
+          }
+        } catch (paymentUpdateError) {
+          console.warn('Update-status: Failed to update payment record:', paymentUpdateError);
+        }
+      }
+
+      console.log(`Update-status: Payment manually confirmed for booking ${bookingId}`);
+      
+      return json({ 
+        ...updatedBookingResult[0],
+        action: 'payment_confirmed',
+        message: 'Payment manually confirmed'
+      });
+    }
+
+    // Prepare update data for normal updates
     const updateData: Partial<typeof bookings.$inferInsert> = {
       updatedAt: new Date()
     };
@@ -32,6 +88,8 @@ export const POST: RequestHandler = async ({ params, request }) => {
     if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
     if (ticketQRCode !== undefined) updateData.ticketQRCode = ticketQRCode;
     if (attendanceStatus !== undefined) updateData.attendanceStatus = attendanceStatus;
+
+    console.log(`Update-status: Updating booking with data:`, updateData);
 
     // Update booking
     const updatedBookingResult = await db.update(bookings)
@@ -95,6 +153,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
       // Don't fail the request if emails fail
     }
 
+    console.log(`Update-status: Successfully updated booking ${bookingId}`);
     return json(updatedBooking);
   } catch (error) {
     console.error('Error updating booking status:', error);

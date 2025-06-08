@@ -65,7 +65,7 @@ export function generateTourStructuredData(tour: any, qrCode: string, origin: st
 		name: tour.name,
 		description: tour.description,
 		image: tour.images?.[0] 
-			? `https://z.xeon.pl/api/files/${tour.collectionId}/${tour.id}/${tour.images[0]}?thumb=1200x630`
+			? `/uploads/tours/${tour.id}/${tour.images[0]}`
 			: `${origin}/images/og-tour-default.jpg`,
 		location: {
 			'@type': 'Place',

@@ -47,9 +47,7 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 					requirements: tourRecord.requirements,
 					cancellationPolicy: tourRecord.cancellationPolicy,
 					user: tourRecord.userId,
-					created: tourRecord.createdAt?.toISOString(),
-					collectionId: 'tours', // For image URL compatibility
-					collectionName: 'tours'
+					created: tourRecord.createdAt?.toISOString()
 				}
 			}
 		};
@@ -310,7 +308,7 @@ function generateTourSEO(tour: any, qrCode: string, origin: string) {
 		: `Book ${tour.name} in ${tour.location || 'an amazing location'}. Instant booking with secure payment.`;
 	
 	const image = tour.images?.[0] 
-		? `https://z.xeon.pl/api/files/${tour.collectionId}/${tour.id}/${tour.images[0]}?thumb=1200x630`
+		? `/uploads/tours/${tour.id}/${tour.images[0]}`
 		: `${origin}/images/og-tour-default.jpg`;
 
 	return {
