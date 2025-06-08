@@ -60,47 +60,25 @@
 		error = form?.error || null;
 	});
 
-	// Calculate statistics reactively
-	let stats = $state({
-		total: 0,
-		confirmed: 0,
-		pending: 0,
-		cancelled: 0,
-		completed: 0,
-		revenue: 0,
-		participants: 0,
-		upcoming: 0
+	// Use server-calculated stats (safe access)
+	let stats = $derived(() => {
+		if (!data.stats) {
+			return {
+				total: 0,
+				confirmed: 0,
+				pending: 0,
+				cancelled: 0,
+				completed: 0,
+				revenue: 0,
+				participants: 0,
+				upcoming: 0
+			};
+		}
+		return data.stats;
 	});
 
-	// Filtered bookings
+	// Filtered bookings (only frontend filtering, no calculations)
 	let filteredBookings = $state<ExpandedBooking[]>([]);
-
-	// Update stats and filtered bookings when bookings change
-	$effect(() => {
-		const confirmed = bookings.filter(b => b.status === 'confirmed');
-		const pending = bookings.filter(b => b.status === 'pending');
-		const cancelled = bookings.filter(b => b.status === 'cancelled');
-		const completed = bookings.filter(b => b.status === 'completed');
-		
-		const totalRevenue = confirmed.reduce((sum, b) => sum + b.totalAmount, 0);
-		const totalParticipants = confirmed.reduce((sum, b) => sum + b.participants, 0);
-		
-		const upcoming = bookings.filter(b => {
-			const tourDate = new Date(b.expand?.timeSlot?.startTime || b.created);
-			return tourDate > new Date() && (b.status === 'confirmed' || b.status === 'pending');
-		});
-
-		stats = {
-			total: bookings.length,
-			confirmed: confirmed.length,
-			pending: pending.length,
-			cancelled: cancelled.length,
-			completed: completed.length,
-			revenue: totalRevenue,
-			participants: totalParticipants,
-			upcoming: upcoming.length
-		};
-	});
 
 	// Check URL params for initial filters
 	$effect(() => {
@@ -212,19 +190,37 @@
 	}
 
 	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
+		try {
+			if (!dateString) return 'Date not available';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid date';
+			
+			return date.toLocaleDateString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric'
+			});
+		} catch (error) {
+			console.warn('Error formatting date:', dateString, error);
+			return 'Date not available';
+		}
 	}
 
 	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
+		try {
+			if (!dateString) return 'Time not available';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid time';
+			
+			return date.toLocaleTimeString('en-US', {
+				hour: 'numeric',
+				minute: '2-digit',
+				hour12: true
+			});
+		} catch (error) {
+			console.warn('Error formatting time:', dateString, error);
+			return 'Time not available';
+		}
 	}
 </script>
 
@@ -330,7 +326,7 @@
 	<div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
-			value={stats.total}
+			value={stats().total}
 			subtitle="all bookings"
 			icon={Calendar}
 			variant="small"
@@ -338,7 +334,7 @@
 
 		<StatsCard
 			title="Confirmed"
-			value={stats.confirmed}
+			value={stats().confirmed}
 			subtitle="paid & ready"
 			icon={CheckCircle}
 			variant="small"
@@ -346,7 +342,7 @@
 
 		<StatsCard
 			title="Pending"
-			value={stats.pending}
+			value={stats().pending}
 			subtitle="awaiting payment"
 			icon={Clock}
 			variant="small"
@@ -354,7 +350,7 @@
 
 		<StatsCard
 			title="Upcoming"
-			value={stats.upcoming}
+			value={stats().upcoming}
 			subtitle="future tours"
 			icon={TrendingUp}
 			variant="small"
@@ -362,7 +358,7 @@
 
 		<StatsCard
 			title="Revenue"
-			value={formatEuro(stats.revenue)}
+			value={formatEuro(stats().revenue)}
 			subtitle="total earned"
 			icon={Euro}
 			variant="small"
@@ -370,7 +366,7 @@
 
 		<StatsCard
 			title="Participants"
-			value={stats.participants}
+			value={stats().participants}
 			subtitle="confirmed guests"
 			icon={Users}
 			variant="small"
@@ -378,7 +374,7 @@
 
 		<StatsCard
 			title="Cancelled"
-			value={stats.cancelled}
+			value={stats().cancelled}
 			subtitle="cancelled bookings"
 			icon={XCircle}
 			variant="small"
@@ -386,7 +382,7 @@
 
 		<StatsCard
 			title="Completed"
-			value={stats.completed}
+			value={stats().completed}
 			subtitle="finished tours"
 			icon={UserCheck}
 			variant="small"
@@ -443,7 +439,7 @@
 			</div>
 
 			<div class="text-sm" style="color: var(--text-tertiary);">
-				Showing {filteredBookings.length} of {stats.total} bookings
+				Showing {filteredBookings.length} of {stats().total} bookings
 			</div>
 		</div>
 	</div>

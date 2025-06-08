@@ -31,12 +31,72 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		console.log('Loading tour bookings using shared-stats approach');
 		const tourBookingsData = await getTourAllBookings(locals.user.id, params.id);
 		
+		// Calculate stats server-side to avoid frontend complexity
+		const bookings = tourBookingsData.bookings || [];
+		let totalBookings = bookings.length;
+		let confirmed = 0;
+		let pending = 0;
+		let cancelled = 0;
+		let completed = 0;
+		let totalRevenue = 0;
+		let totalParticipants = 0;
+		let upcoming = 0;
+		const now = new Date();
+		
+		for (const booking of bookings) {
+			// Status counts
+			switch (booking.status) {
+				case 'confirmed':
+					confirmed++;
+					if (booking.paymentStatus === 'paid') {
+						const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0);
+						totalRevenue += amount;
+						totalParticipants += booking.participants || 0;
+					}
+					break;
+				case 'pending':
+					pending++;
+					break;
+				case 'cancelled':
+					cancelled++;
+					break;
+				case 'completed':
+					completed++;
+					break;
+			}
+			
+			// Check if upcoming (safe date handling)
+			if ((booking.status === 'confirmed' || booking.status === 'pending') && booking.expand?.timeSlot?.startTime) {
+				try {
+					const tourDate = new Date(booking.expand.timeSlot.startTime);
+					if (tourDate > now) {
+						upcoming++;
+					}
+				} catch (dateError) {
+					// Skip invalid dates
+					console.warn('Invalid date for booking', booking.id, ':', booking.expand.timeSlot.startTime);
+				}
+			}
+		}
+		
+		const stats = {
+			total: totalBookings,
+			confirmed,
+			pending,
+			cancelled,
+			completed,
+			revenue: totalRevenue,
+			participants: totalParticipants,
+			upcoming
+		};
+		
 		console.log('Tour bookings page load completed successfully');
 		
-		// Return parent data merged with bookings data
+		// Return parent data merged with bookings data and stats
 		return {
 			...parentData,
-			...tourBookingsData // Include tour and bookings
+			...tourBookingsData, // Include tour and bookings
+			stats // Include pre-calculated stats
 		};
 		
 	} catch (err) {
@@ -56,10 +116,20 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			throw err; // Re-throw SvelteKit errors
 		}
 		
-		// Return parent data with empty bookings on error
+		// Return parent data with empty bookings and zero stats on error
 		return {
 			...parentData,
-			bookings: []
+			bookings: [],
+			stats: {
+				total: 0,
+				confirmed: 0,
+				pending: 0,
+				cancelled: 0,
+				completed: 0,
+				revenue: 0,
+				participants: 0,
+				upcoming: 0
+			}
 		};
 	}
 };

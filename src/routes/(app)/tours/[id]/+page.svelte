@@ -80,13 +80,20 @@
 		}
 	}
 
-	function formatDuration(minutes: number): string {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		if (hours > 0) {
-			return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+	function formatDuration(minutes: number | null | undefined): string {
+		try {
+			if (!minutes || typeof minutes !== 'number') return '0m';
+			
+			const hours = Math.floor(minutes / 60);
+			const mins = minutes % 60;
+			if (hours > 0) {
+				return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+			}
+			return `${mins}m`;
+		} catch (error) {
+			console.warn('Error formatting duration:', error);
+			return '0m';
 		}
-		return `${mins}m`;
 	}
 
 	function getImageUrl(tour: { id: string } | null | undefined, imagePath: string | null | undefined): string {
@@ -105,22 +112,32 @@
 		}
 	}
 
-	// Statistics from server (using shared-stats format)
-	let stats = $derived(data.stats || {
-		total: 0,
-		confirmed: 0,
-		pending: 0,
-		cancelled: 0,
-		totalRevenue: 0,
-		totalParticipants: 0,
-		thisWeekBookings: 0,
-		averageBookingValue: 0,
-		checkIns: 0,
-		noShows: 0
+	// Statistics from server (using shared-stats format) - safe access
+	let stats = $derived(() => {
+		if (!data.stats) {
+			return {
+				total: 0,
+				confirmed: 0,
+				pending: 0,
+				cancelled: 0,
+				totalRevenue: 0,
+				totalParticipants: 0,
+				thisWeekBookings: 0,
+				averageBookingValue: 0,
+				checkIns: 0,
+				noShows: 0
+			};
+		}
+		return data.stats;
 	});
 
-	// Upcoming bookings from server
-	let upcomingBookings = $derived(data.bookings || []);
+	// Upcoming bookings from server - safe access
+	let upcomingBookings = $derived(() => {
+		if (!data.bookings || !Array.isArray(data.bookings)) {
+			return [];
+		}
+		return data.bookings;
+	});
 	
 	// QR code state
 	let copiedQR = $state(false);
@@ -431,7 +448,7 @@
 				{/if}
 
 				<!-- Today's Check-ins -->
-				{#if upcomingBookings.length > 0}
+				{#if upcomingBookings().length > 0}
 					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<div class="p-4 sm:p-6" style="border-bottom: 1px solid var(--border-primary); background: var(--bg-secondary);">
 							<div class="flex items-center justify-between">
@@ -441,7 +458,7 @@
 									</div>
 									<div>
 										<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Check-ins</h3>
-										<p class="text-sm" style="color: var(--text-secondary);">{upcomingBookings.length} upcoming bookings</p>
+										<p class="text-sm" style="color: var(--text-secondary);">{upcomingBookings().length} upcoming bookings</p>
 									</div>
 								</div>
 								<button
@@ -455,7 +472,7 @@
 						</div>
 						
 						<div class="divide-y" style="border-color: var(--border-primary);">
-							{#each upcomingBookings.slice(0, 3) as booking}
+							{#each upcomingBookings().slice(0, 3) as booking}
 								<div class="p-4 sm:p-6 flex items-center justify-between">
 									<div class="flex items-center gap-4">
 										<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -475,13 +492,13 @@
 								</div>
 							{/each}
 							
-							{#if upcomingBookings.length > 3}
+							{#if upcomingBookings().length > 3}
 								<div class="p-4 text-center">
 									<button
 										onclick={() => goto(`/tours/${tour?.id}/bookings`)}
 										class="text-sm font-medium" style="color: var(--text-tertiary);"
 									>
-										View {upcomingBookings.length - 3} more bookings
+										View {upcomingBookings().length - 3} more bookings
 									</button>
 								</div>
 							{/if}
@@ -499,26 +516,26 @@
 					
 					<StatsCard
 						title="Total Bookings"
-						value={stats.total}
-						subtitle="{stats.confirmed} confirmed"
+						value={stats().total}
+						subtitle="{stats().confirmed} confirmed"
 						icon={Calendar}
-						trend={stats.thisWeekBookings > 0 ? { value: `+${stats.thisWeekBookings} this week`, positive: true } : undefined}
+						trend={stats().thisWeekBookings > 0 ? { value: `+${stats().thisWeekBookings} this week`, positive: true } : undefined}
 						variant="small"
 					/>
 
 					<StatsCard
 						title="Revenue"
-						value={formatEuro(stats.totalRevenue)}
-						subtitle="{stats.totalParticipants} total guests"
+						value={formatEuro(stats().totalRevenue)}
+						subtitle="{stats().totalParticipants} total guests"
 						icon={DollarSign}
-						trend={stats.averageBookingValue > 0 ? { value: `€${stats.averageBookingValue.toFixed(0)} avg`, positive: true } : undefined}
+						trend={stats().averageBookingValue > 0 ? { value: `€${stats().averageBookingValue.toFixed(0)} avg`, positive: true } : undefined}
 						variant="small"
 					/>
 
 					<StatsCard
 						title="Check-ins"
-						value={stats.checkIns}
-						subtitle="{stats.noShows} no-shows"
+						value={stats().checkIns}
+						subtitle="{stats().noShows} no-shows"
 						icon={UserCheck}
 						variant="small"
 					/>
