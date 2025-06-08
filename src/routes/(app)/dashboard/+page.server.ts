@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types.js';
 import { redirect } from '@sveltejs/kit';
-import { formatRecentBooking, createTodaysSchedule } from '$lib/utils/booking-helpers.js';
-import { getDashboardSpecificStats, getRecentBookings, type SharedStats } from '$lib/utils/shared-stats.js';
+import { getDashboardSpecificStats, getRecentBookings, formatRecentBooking, createTodaysSchedule, type SharedStats } from '$lib/utils/shared-stats.js';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	// Check if user is authenticated (should already be handled by layout)
@@ -31,10 +30,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		// Get recent bookings for display
 		const recentBookingsData = await getRecentBookings(userId, 10);
 		
-		// Format recent bookings for display
+		// Format recent bookings for display using shared-stats function
 		const recentBookings = recentBookingsData.slice(0, 5).map(formatRecentBooking);
 		
-		// Create today's schedule
+		// Create today's schedule using shared-stats function
 		let todaysSchedule: any[] = [];
 		try {
 			todaysSchedule = createTodaysSchedule(recentBookingsData);

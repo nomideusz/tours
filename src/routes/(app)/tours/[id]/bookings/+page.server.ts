@@ -1,9 +1,9 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
-import { eq, and, desc } from 'drizzle-orm';
-import { processBooking, type ProcessedBooking } from '$lib/utils/booking-helpers.js';
+import { tours, bookings } from '$lib/db/schema/index.js';
+import { eq, and } from 'drizzle-orm';
+import { getTourAllBookings } from '$lib/utils/shared-stats.js';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	console.log('Tour bookings page load started for tour:', params.id);
@@ -27,111 +27,16 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	}
 	
 	try {
-		const userId = locals.user.id;
-		const tourId = params.id;
-		
-		console.log(`Loading bookings for tour ${tourId} by user ${userId}`);
-		
-		// Get the tour first to verify ownership
-		console.log('Fetching tour to verify ownership...');
-		const tourData = await db
-			.select()
-			.from(tours)
-			.where(and(
-				eq(tours.id, tourId),
-				eq(tours.userId, userId)
-			))
-			.limit(1);
-		
-		console.log('Tour query result:', tourData.length, 'tours found');
-		
-		if (tourData.length === 0) {
-			console.log('Tour not found or access denied for tour:', tourId);
-			throw error(404, 'Tour not found or access denied');
-		}
-		
-		const tour = tourData[0];
-		console.log('Tour verified:', tour.name);
-		
-		// Get recent bookings for this specific tour
-		console.log('Fetching bookings for tour:', tourId);
-		const bookingsData = await db
-			.select({
-				// Booking fields
-				id: bookings.id,
-				status: bookings.status,
-				paymentStatus: bookings.paymentStatus,
-				totalAmount: bookings.totalAmount,
-				participants: bookings.participants,
-				customerName: bookings.customerName,
-				customerEmail: bookings.customerEmail,
-				customerPhone: bookings.customerPhone,
-				specialRequests: bookings.specialRequests,
-				createdAt: bookings.createdAt,
-				updatedAt: bookings.updatedAt,
-				bookingReference: bookings.bookingReference,
-				attendanceStatus: bookings.attendanceStatus,
-				checkedInAt: bookings.checkedInAt,
-				ticketQRCode: bookings.ticketQRCode,
-				
-				// Time slot fields
-				timeSlotId: bookings.timeSlotId,
-				timeSlotStartTime: timeSlots.startTime,
-				timeSlotEndTime: timeSlots.endTime,
-				timeSlotAvailableSpots: timeSlots.availableSpots,
-				timeSlotBookedSpots: timeSlots.bookedSpots
-			})
-			.from(bookings)
-			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
-			.where(eq(bookings.tourId, params.id))
-			.orderBy(desc(bookings.createdAt))
-			.limit(50); // Reduced from 100 to 50 to prevent 502 timeout
-		
-		console.log('Bookings query completed, found:', bookingsData.length, 'bookings');
-		
-		// Transform using helper for consistency
-		const processedBookings: ProcessedBooking[] = bookingsData.map((booking) => 
-			processBooking({
-				id: booking.id,
-				status: booking.status,
-				paymentStatus: booking.paymentStatus,
-				totalAmount: booking.totalAmount || 0,
-				participants: booking.participants || 1,
-				customerName: booking.customerName,
-				customerEmail: booking.customerEmail,
-				customerPhone: booking.customerPhone,
-				specialRequests: booking.specialRequests,
-				created: booking.createdAt.toISOString(),
-				updated: booking.updatedAt.toISOString(),
-				bookingReference: booking.bookingReference,
-				attendanceStatus: booking.attendanceStatus,
-				checkedInAt: booking.checkedInAt?.toISOString() || null,
-				ticketQRCode: booking.ticketQRCode,
-				tour: tour.name,
-				expand: {
-					timeSlot: booking.timeSlotId ? {
-						id: booking.timeSlotId,
-						startTime: booking.timeSlotStartTime?.toISOString(),
-						endTime: booking.timeSlotEndTime?.toISOString(),
-						availableSpots: booking.timeSlotAvailableSpots,
-						bookedSpots: booking.timeSlotBookedSpots
-					} : undefined
-				}
-			})
-		);
+		// Use the shared stats approach to get tour and all bookings data
+		console.log('Loading tour bookings using shared-stats approach');
+		const tourBookingsData = await getTourAllBookings(locals.user.id, params.id);
 		
 		console.log('Tour bookings page load completed successfully');
 		
 		// Return parent data merged with bookings data
 		return {
 			...parentData,
-			tour: {
-				...tour,
-				price: parseFloat(tour.price),
-				createdAt: tour.createdAt.toISOString(),
-				updatedAt: tour.updatedAt.toISOString()
-			},
-			bookings: processedBookings
+			...tourBookingsData // Include tour and bookings
 		};
 		
 	} catch (err) {
@@ -143,8 +48,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			status: (err as any)?.status
 		});
 		
-		if ((err as any)?.status === 404) {
-			throw error(404, 'Tour not found');
+		if (err instanceof Error && err.message.includes('not found')) {
+			throw error(404, 'Tour not found or access denied');
 		}
 		
 		if ((err as any)?.status) {

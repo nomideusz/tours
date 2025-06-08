@@ -105,14 +105,15 @@
 		}
 	}
 
-	// Statistics from server
+	// Statistics from server (using shared-stats format)
 	let stats = $derived(data.stats || {
-		totalBookings: 0,
-		confirmedBookings: 0,
-		pendingBookings: 0,
-		revenue: 0,
-		thisWeekBookings: 0,
+		total: 0,
+		confirmed: 0,
+		pending: 0,
+		cancelled: 0,
+		totalRevenue: 0,
 		totalParticipants: 0,
+		thisWeekBookings: 0,
 		averageBookingValue: 0,
 		checkIns: 0,
 		noShows: 0
