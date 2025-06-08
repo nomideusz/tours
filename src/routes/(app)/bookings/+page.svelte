@@ -14,26 +14,7 @@
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	
 	let { data }: { data: PageData } = $props();
-	
-	// Calculate statistics
-	let stats = $derived(() => {
-		const confirmed = data.bookings.filter(b => b.status === 'confirmed');
-		const totalRevenue = confirmed.reduce((sum, b) => sum + parseFloat(b.totalAmount), 0);
-		const totalParticipants = confirmed.reduce((sum, b) => sum + b.participants, 0);
-		const upcomingCount = confirmed.filter(b => {
-			const tourDate = new Date(b.expand?.timeSlot?.startTime || b.created);
-			return tourDate > new Date();
-		}).length;
-		
-		return {
-			totalBookings: data.bookings.length,
-			confirmedBookings: confirmed.length,
-			totalRevenue,
-			totalParticipants,
-			upcomingCount
-		};
-	});
-	</script>
+</script>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<div class="mb-6 sm:mb-8">
@@ -66,19 +47,19 @@
 		</div>
 	</div>
 	
-	<!-- Statistics -->
+	<!-- Statistics - Now using server-calculated stats -->
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
-			value={stats().totalBookings}
-			subtitle="{stats().confirmedBookings} confirmed"
+			value={data.stats.totalBookings}
+			subtitle="{data.stats.confirmedBookings} confirmed"
 			icon={Calendar}
 			variant="small"
 		/>
 
 		<StatsCard
 			title="Total Revenue"
-			value={formatEuro(stats().totalRevenue)}
+			value={formatEuro(data.stats.totalRevenue)}
 			subtitle="from confirmed bookings"
 			icon={Euro}
 			variant="small"
@@ -86,7 +67,7 @@
 
 		<StatsCard
 			title="Total Participants"
-			value={stats().totalParticipants}
+			value={data.stats.totalParticipants}
 			subtitle="confirmed guests"
 			icon={Users}
 			variant="small"
@@ -94,7 +75,7 @@
 
 		<StatsCard
 			title="Upcoming Tours"
-			value={stats().upcomingCount}
+			value={data.stats.upcomingCount}
 			subtitle="future bookings"
 			icon={TrendingUp}
 			variant="small"

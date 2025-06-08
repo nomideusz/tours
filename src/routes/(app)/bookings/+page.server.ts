@@ -31,7 +31,14 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		if (userTours.length === 0) {
 			return {
 				...parentData,
-				bookings: []
+				bookings: [],
+				stats: {
+					totalBookings: 0,
+					confirmedBookings: 0,
+					totalRevenue: 0,
+					totalParticipants: 0,
+					upcomingCount: 0
+				}
 			};
 		}
 		
@@ -69,47 +76,99 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			.orderBy(desc(bookings.createdAt))
 			.limit(100);
 		
-		// Transform to match expected format with expand structure
-		const processedBookings = bookingsData.map((booking) => ({
-			id: booking.id,
-			status: booking.status,
-			paymentStatus: booking.paymentStatus,
-			totalAmount: booking.totalAmount || '0',
-			participants: booking.participants || 1,
-			customerName: booking.customerName,
-			customerEmail: booking.customerEmail,
-			customerPhone: booking.customerPhone,
-			specialRequests: booking.specialRequests,
-			created: booking.createdAt.toISOString(),
-			updated: booking.updatedAt.toISOString(),
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(),
-			expand: {
-				tour: {
-					id: booking.tourId,
-					name: booking.tourName,
-					location: booking.tourLocation
-				},
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString(),
-					endTime: booking.timeSlotEndTime?.toISOString()
-				} : null
-			}
-		}));
+		// Calculate stats server-side to avoid frontend errors
+		let totalBookings = bookingsData.length;
+		let confirmedBookings = 0;
+		let totalRevenue = 0;
+		let totalParticipants = 0;
+		let upcomingCount = 0;
+		const now = new Date();
 		
-		// Return parent data merged with bookings data
+		// Transform bookings and calculate stats simultaneously
+		const processedBookings = bookingsData.map((booking) => {
+			const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0);
+			const participants = booking.participants || 1;
+			
+			// Stats calculations with safe data access
+			if (booking.status === 'confirmed') {
+				confirmedBookings++;
+				if (booking.paymentStatus === 'paid') {
+					totalRevenue += amount;
+					totalParticipants += participants;
+				}
+			}
+			
+			// Check if upcoming (safe date handling)
+			if (booking.status === 'confirmed' && booking.timeSlotStartTime) {
+				try {
+					const tourDate = new Date(booking.timeSlotStartTime);
+					if (tourDate > now) {
+						upcomingCount++;
+					}
+				} catch (dateError) {
+					// Skip invalid dates
+					console.warn('Invalid date for booking', booking.id, ':', booking.timeSlotStartTime);
+				}
+			}
+			
+			return {
+				id: booking.id,
+				status: booking.status,
+				paymentStatus: booking.paymentStatus,
+				totalAmount: booking.totalAmount || '0',
+				participants: participants,
+				customerName: booking.customerName,
+				customerEmail: booking.customerEmail,
+				customerPhone: booking.customerPhone,
+				specialRequests: booking.specialRequests,
+				created: booking.createdAt.toISOString(),
+				updated: booking.updatedAt.toISOString(),
+				effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(),
+				expand: {
+					tour: {
+						id: booking.tourId,
+						name: booking.tourName,
+						location: booking.tourLocation
+					},
+					timeSlot: booking.timeSlotId ? {
+						id: booking.timeSlotId,
+						startTime: booking.timeSlotStartTime?.toISOString(),
+						endTime: booking.timeSlotEndTime?.toISOString()
+					} : null
+				}
+			};
+		});
+		
+		// Pre-calculated stats to avoid frontend complexity
+		const stats = {
+			totalBookings,
+			confirmedBookings,
+			totalRevenue,
+			totalParticipants,
+			upcomingCount
+		};
+		
+		// Return parent data merged with bookings data and stats
 		return {
 			...parentData,
-			bookings: processedBookings
+			bookings: processedBookings,
+			stats
 		};
 		
 	} catch (err) {
 		console.error('Error loading bookings:', err);
 		
-		// Return parent data with empty bookings on error
+		// Return parent data with empty bookings and zero stats on error
 		return {
 			...parentData,
-			bookings: []
+			bookings: [],
+			stats: {
+				totalBookings: 0,
+				confirmedBookings: 0,
+				totalRevenue: 0,
+				totalParticipants: 0,
+				upcomingCount: 0
+			}
 		};
 	}
 }; 

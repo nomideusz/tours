@@ -32,30 +32,57 @@
 	let newStatus = $state('');
 
 	function formatDateTime(dateString: string): string {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			weekday: 'long',
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		try {
+			if (!dateString) return 'Date not available';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid date';
+			
+			return date.toLocaleDateString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		} catch (error) {
+			console.warn('Error formatting date:', dateString, error);
+			return 'Date not available';
+		}
 	}
 
 	function formatDate(dateString: string): string {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			weekday: 'long',
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
+		try {
+			if (!dateString) return 'Date not available';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid date';
+			
+			return date.toLocaleDateString('en-US', {
+				weekday: 'long',
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric'
+			});
+		} catch (error) {
+			console.warn('Error formatting date:', dateString, error);
+			return 'Date not available';
+		}
 	}
 
 	function formatTime(dateString: string): string {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		try {
+			if (!dateString) return 'Time not available';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid time';
+			
+			return date.toLocaleTimeString('en-US', {
+				hour: '2-digit',
+				minute: '2-digit'
+			});
+		} catch (error) {
+			console.warn('Error formatting time:', dateString, error);
+			return 'Time not available';
+		}
 	}
 
 	function getStatusColor(status: string): string {
@@ -96,24 +123,49 @@
 	}
 
 	function getTourDateTime(): string {
-		if (booking.expand?.timeSlot?.startTime) {
-			return formatDateTime(booking.expand.timeSlot.startTime);
+		try {
+			if (booking.expand?.timeSlot?.startTime) {
+				return formatDateTime(booking.expand.timeSlot.startTime);
+			}
+			return 'Time slot not set';
+		} catch (error) {
+			console.warn('Error getting tour date time:', error);
+			return 'Time slot not set';
 		}
-		return 'Time slot not set';
 	}
 
 	function calculateTotal(): number {
-		const basePrice = parseFloat(booking.expand?.tour?.price || '0');
-		return basePrice * booking.participants;
+		try {
+			const price = booking.expand?.tour?.price;
+			if (!price) return 0;
+			
+			const basePrice = typeof price === 'string' ? parseFloat(price) : price;
+			if (isNaN(basePrice)) return 0;
+			
+			const participants = booking.participants || 1;
+			return basePrice * participants;
+		} catch (error) {
+			console.warn('Error calculating total:', error);
+			return 0;
+		}
 	}
 
 	function isPastBooking(): boolean {
-		if (!booking.expand?.timeSlot?.startTime) {
+		try {
+			if (!booking.expand?.timeSlot?.startTime) {
+				return false;
+			}
+			
+			const bookingDateTime = new Date(booking.expand.timeSlot.startTime);
+			if (isNaN(bookingDateTime.getTime())) {
+				return false;
+			}
+			
+			return bookingDateTime < new Date();
+		} catch (error) {
+			console.warn('Error checking if past booking:', error);
 			return false;
 		}
-		
-		const bookingDateTime = new Date(booking.expand.timeSlot.startTime);
-		return bookingDateTime < new Date();
 	}
 
 	function canChangeStatus(): boolean {
