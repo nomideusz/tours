@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { qrCodes, tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -10,77 +10,47 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		// Get QR code with tour information
 		console.log('Looking for QR code:', params.code);
 		
-		const qrCodeData = await db
-			.select({
-				// QR code fields
-				qrId: qrCodes.id,
-				qrCode: qrCodes.code,
-				qrName: qrCodes.name,
-				qrCategory: qrCodes.category,
-				qrIsActive: qrCodes.isActive,
-				qrScans: qrCodes.scans,
-				qrConversions: qrCodes.conversions,
-				qrCreatedAt: qrCodes.createdAt,
-				
-				// Tour fields
-				tourId: tours.id,
-				tourName: tours.name,
-				tourDescription: tours.description,
-				tourPrice: tours.price,
-				tourDuration: tours.duration,
-				tourCapacity: tours.capacity,
-				tourLocation: tours.location,
-				tourImages: tours.images,
-				tourCategory: tours.category,
-				tourIncludedItems: tours.includedItems,
-				tourRequirements: tours.requirements,
-				tourCancellationPolicy: tours.cancellationPolicy,
-				tourUserId: tours.userId,
-				tourCreatedAt: tours.createdAt
-			})
-			.from(qrCodes)
-			.leftJoin(tours, eq(qrCodes.tourId, tours.id))
-			.where(and(
-				eq(qrCodes.code, params.code),
-				eq(qrCodes.isActive, true)
-			))
+		const tourData = await db
+			.select()
+			.from(tours)
+			.where(eq(tours.qrCode, params.code))
 			.limit(1);
 		
-		if (qrCodeData.length === 0) {
-			throw error(404, `QR code '${params.code}' not found or inactive.`);
+		if (tourData.length === 0) {
+			throw error(404, `QR code '${params.code}' not found.`);
 		}
 		
-		const qrResult = qrCodeData[0];
+		const tourRecord = tourData[0];
 		
 		// Format to match expected structure
 		const qrCode = {
-			id: qrResult.qrId,
-			code: qrResult.qrCode,
-			name: qrResult.qrName,
-			category: qrResult.qrCategory,
-			isActive: qrResult.qrIsActive,
-			scans: qrResult.qrScans,
-			conversions: qrResult.qrConversions,
-			created: qrResult.qrCreatedAt.toISOString(),
+			id: tourRecord.id,
+			code: tourRecord.qrCode,
+			name: `${tourRecord.name} QR Code`,
+			category: 'digital', // Default category for simplified system
+			isActive: true, // All tour QR codes are active
+			scans: tourRecord.qrScans || 0,
+			conversions: tourRecord.qrConversions || 0,
+			created: tourRecord.createdAt.toISOString(),
 			expand: {
-				tour: qrResult.tourId ? {
-					id: qrResult.tourId,
-					name: qrResult.tourName,
-					description: qrResult.tourDescription,
-					price: qrResult.tourPrice,
-					duration: qrResult.tourDuration,
-					capacity: qrResult.tourCapacity,
-					location: qrResult.tourLocation,
-					images: qrResult.tourImages,
-					category: qrResult.tourCategory,
-					includedItems: qrResult.tourIncludedItems,
-					requirements: qrResult.tourRequirements,
-					cancellationPolicy: qrResult.tourCancellationPolicy,
-					user: qrResult.tourUserId,
-					created: qrResult.tourCreatedAt?.toISOString(),
+				tour: {
+					id: tourRecord.id,
+					name: tourRecord.name,
+					description: tourRecord.description,
+					price: tourRecord.price,
+					duration: tourRecord.duration,
+					capacity: tourRecord.capacity,
+					location: tourRecord.location,
+					images: tourRecord.images,
+					category: tourRecord.category,
+					includedItems: tourRecord.includedItems,
+					requirements: tourRecord.requirements,
+					cancellationPolicy: tourRecord.cancellationPolicy,
+					user: tourRecord.userId,
+					created: tourRecord.createdAt?.toISOString(),
 					collectionId: 'tours', // For image URL compatibility
 					collectionName: 'tours'
-				} : null
+				}
 			}
 		};
 		
@@ -104,7 +74,7 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		}
 		
 		// Get available time slots for the tour
-		const tourId = qrResult.tourId;
+		const tourId = tourRecord.id;
 		console.log('Looking for time slots for tour:', tourId);
 		
 		let timeSlotsResult: any[] = [];
@@ -192,36 +162,21 @@ export const actions: Actions = {
 		}
 		
 		try {
-			// Get QR code and tour info
-			const qrCodeData = await db
-				.select({
-					qrId: qrCodes.id,
-					qrCode: qrCodes.code,
-					qrIsActive: qrCodes.isActive,
-					tourId: tours.id,
-					tourName: tours.name,
-					tourPrice: tours.price
-				})
-				.from(qrCodes)
-				.leftJoin(tours, eq(qrCodes.tourId, tours.id))
-				.where(and(
-					eq(qrCodes.code, params.code),
-					eq(qrCodes.isActive, true)
-				))
+			// Get tour info by QR code
+			const tourData = await db
+				.select()
+				.from(tours)
+				.where(eq(tours.qrCode, params.code))
 				.limit(1);
 			
-			if (qrCodeData.length === 0) {
-				return fail(404, { error: 'QR code not found or inactive' });
+			if (tourData.length === 0) {
+				return fail(404, { error: 'QR code not found' });
 			}
 			
-			const qrResult = qrCodeData[0];
-			
-			if (!qrResult.tourId) {
-				return fail(500, { error: 'Tour information not found' });
-			}
+			const tour = tourData[0];
 			
 			// Calculate total price
-			const totalPrice = participants * Number(qrResult.tourPrice);
+			const totalPrice = participants * Number(tour.price);
 			
 			// Generate unique booking reference and ticket QR code
 			const bookingReference = `BK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -232,9 +187,10 @@ export const actions: Actions = {
 				const bookingId = createId();
 				const newBooking = {
 					id: bookingId,
-					tourId: qrResult.tourId,
+					tourId: tour.id,
 					timeSlotId: timeSlotId,
-					qrCodeId: qrResult.qrId,
+					source: 'tour_qr' as const,
+					sourceQrCode: params.code,
 					customerName,
 					customerEmail,
 					customerPhone: customerPhone || null,

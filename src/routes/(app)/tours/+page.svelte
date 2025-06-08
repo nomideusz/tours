@@ -158,14 +158,6 @@
 							<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Your Tours</h2>
 							<p class="text-sm" style="color: var(--text-secondary);">Showing {tours.length} tours</p>
 						</div>
-						<button 
-							onclick={() => goto('/srurs')}
-							class="button-secondary button--small button--gap"
-						>
-							<ExternalLink class="h-4 w-4" />
-							<span class="hidden sm:inline">View Original</span>
-							<span class="sm:hidden">Original</span>
-						</button>
 					</div>
 
 					<!-- Tours Cards -->

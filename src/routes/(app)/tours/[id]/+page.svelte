@@ -549,13 +549,7 @@
 						<BarChart3 class="h-4 w-4" />
 						Manage Bookings
 					</button>
-						<button
-							onclick={() => goto(`/srurs/${tour?.id}`)}
-							class="w-full button-secondary button--gap justify-center"
-						>
-							<ExternalLink class="h-4 w-4" />
-							View Original
-						</button>
+
 					</div>
 				</div>
 

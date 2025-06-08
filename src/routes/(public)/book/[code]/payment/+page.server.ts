@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { bookings, tours, timeSlots, qrCodes } from '$lib/db/schema/index.js';
+import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, url, locals }) => {
@@ -65,18 +65,15 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			throw redirect(302, `/book/${params.code}/success?booking=${bookingId}`);
 		}
 		
-		// Get QR code
-		const qrCodeData = await db
-			.select()
-			.from(qrCodes)
-			.where(and(
-				eq(qrCodes.code, params.code),
-				eq(qrCodes.isActive, true)
-			))
+		// Verify QR code exists in tour
+		const tourWithQR = await db
+			.select({ id: tours.id, qrCode: tours.qrCode })
+			.from(tours)
+			.where(eq(tours.qrCode, params.code))
 			.limit(1);
 		
-		if (qrCodeData.length === 0) {
-			throw error(404, 'QR code not found or inactive');
+		if (tourWithQR.length === 0) {
+			throw error(404, 'QR code not found');
 		}
 		
 		// Transform to match expected format with expand structure
@@ -113,15 +110,9 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			}
 		};
 		
-		const qrCode = {
-			...qrCodeData[0],
-			created: qrCodeData[0].createdAt.toISOString(),
-			updated: qrCodeData[0].updatedAt.toISOString()
-		};
-		
 		return {
 			booking: formattedBooking,
-			qrCode
+			qrCode: { code: params.code }
 		};
 	} catch (err) {
 		console.error('Error loading payment page:', err);

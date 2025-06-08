@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types.js';
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { qrCodes, tours } from '$lib/db/schema/index.js';
-import { eq, and, desc } from 'drizzle-orm';
+import { tours } from '$lib/db/schema/index.js';
+import { eq, and, desc, isNotNull } from 'drizzle-orm';
 
 // Type definitions
 interface RecentQRCode {
@@ -27,35 +27,27 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 	}
 
 	try {
-		// Load recent QR codes for this user (most active ones)
+		// Load recent QR codes for this user (from tours with QR codes)
 		const recentQRCodes: RecentQRCode[] = [];
 		try {
-			const qrCodesData = await db
-				.select({
-					id: qrCodes.id,
-					code: qrCodes.code,
-					scans: qrCodes.scans,
-					createdAt: qrCodes.createdAt,
-					category: qrCodes.category,
-					tourId: qrCodes.tourId,
-					tourName: tours.name
-				})
-				.from(qrCodes)
-				.leftJoin(tours, eq(qrCodes.tourId, tours.id))
+			const toursWithQR = await db
+				.select()
+				.from(tours)
 				.where(and(
-					eq(qrCodes.userId, locals.user.id),
-					eq(qrCodes.isActive, true)
+					eq(tours.userId, locals.user.id),
+					// Only tours that have QR codes
+					isNotNull(tours.qrCode)
 				))
-				.orderBy(desc(qrCodes.scans), desc(qrCodes.createdAt))
+				.orderBy(desc(tours.qrScans), desc(tours.createdAt))
 				.limit(10);
 			
-			recentQRCodes.push(...qrCodesData.map((qr) => ({
-				id: qr.id,
-				code: qr.code,
-				scans: qr.scans || 0,
-				created: qr.createdAt.toISOString(),
-				tourName: qr.tourName || 'No Tour Linked',
-				category: qr.category || undefined
+			recentQRCodes.push(...toursWithQR.map((tour) => ({
+				id: tour.id,
+				code: tour.qrCode!,
+				scans: tour.qrScans || 0,
+				created: tour.createdAt.toISOString(),
+				tourName: tour.name,
+				category: 'digital' // Default category for simplified system
 			})));
 		} catch (err) {
 			console.warn('Could not load recent QR codes:', err);
