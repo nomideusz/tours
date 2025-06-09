@@ -186,5 +186,64 @@ export const actions: Actions = {
 			console.error('Error deleting time slot:', err);
 			return fail(500, { error: 'Failed to delete time slot' });
 		}
+	},
+
+	updateCapacity: async ({ request, params, locals }) => {
+		if (!locals.user) {
+			return fail(401, { error: 'Not authenticated' });
+		}
+
+		try {
+			const formData = await request.formData();
+			const slotId = formData.get('slotId') as string;
+			const newCapacity = parseInt(formData.get('newCapacity') as string);
+
+			if (!slotId || !newCapacity) {
+				return fail(400, { error: 'Slot ID and capacity are required' });
+			}
+
+			if (newCapacity < 1 || newCapacity > 100) {
+				return fail(400, { error: 'Capacity must be between 1 and 100' });
+			}
+
+			// Check if time slot exists and verify ownership through tour
+			const [timeSlot] = await db
+				.select({
+					id: timeSlots.id,
+					bookedSpots: timeSlots.bookedSpots,
+					availableSpots: timeSlots.availableSpots,
+					tourUserId: tours.userId
+				})
+				.from(timeSlots)
+				.innerJoin(tours, eq(timeSlots.tourId, tours.id))
+				.where(eq(timeSlots.id, slotId))
+				.limit(1);
+
+			if (!timeSlot) {
+				return fail(404, { error: 'Time slot not found' });
+			}
+
+			if (timeSlot.tourUserId !== locals.user.id) {
+				return fail(403, { error: 'Not authorized' });
+			}
+
+			// Check if new capacity is sufficient for existing bookings
+			if (newCapacity < timeSlot.bookedSpots) {
+				return fail(400, { error: `Cannot set capacity to ${newCapacity}. There are already ${timeSlot.bookedSpots} bookings.` });
+			}
+
+			// Update the time slot capacity
+			await db.update(timeSlots)
+				.set({
+					availableSpots: newCapacity,
+					updatedAt: new Date()
+				})
+				.where(eq(timeSlots.id, slotId));
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error updating time slot capacity:', err);
+			return fail(500, { error: 'Failed to update time slot capacity' });
+		}
 	}
 }; 

@@ -1,5 +1,3 @@
-// Export all schema tables and types for drizzle-kit
-export * from './users.js';
-export * from './tours.js';
-export * from './bookings.js';
-export * from './payments.js'; 
+// Export all schema tables and types from the unified drizzle schema
+// This ensures consistency between migrations and runtime usage
+export * from './drizzle.js'; 

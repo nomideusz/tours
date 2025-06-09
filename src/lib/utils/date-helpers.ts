@@ -19,10 +19,7 @@ export function formatDate(dateString: string): string {
 		
 		return date.toLocaleDateString('en-US', {
 			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
+			day: 'numeric'
 		});
 	} catch (error) {
 		console.error('Error formatting date:', error, 'Date string:', dateString);

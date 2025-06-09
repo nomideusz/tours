@@ -2,68 +2,197 @@
 	import type { PageData } from './$types.js';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { formatCurrency, formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
-	import { onMount } from 'svelte';
+	import { formatEuro } from '$lib/utils/currency.js';
+	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
+	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+	import { browser } from '$app/environment';
+	
+	// Components
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import StatsCard from '$lib/components/StatsCard.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
+	
+	// Icons
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import Edit from 'lucide-svelte/icons/edit';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Share2 from 'lucide-svelte/icons/share-2';
+	import Copy from 'lucide-svelte/icons/copy';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Users from 'lucide-svelte/icons/users';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import Download from 'lucide-svelte/icons/download';
 
-	export let data: PageData;
+	let { data }: { data: PageData } = $props();
 
-	$: tour = data.tour;
-	$: tourStats = data.tourStats;
-	$: upcomingSlots = data.upcomingSlots;
-	$: recentBookings = data.recentBookings;
+	let tour = $derived(data.tour);
+	let tourStats = $derived(data.tourStats);
+	let upcomingSlots = $derived(data.upcomingSlots || []);
+	let recentBookings = $derived(data.recentBookings || []);
+	
+	// State
+	let copiedQRCode = $state(false);
+	let statusUpdating = $state(false);
 
 	// Calculate conversion rate
-	$: conversionRate = tourStats.qrScans > 0 ? (tourStats.qrConversions / tourStats.qrScans * 100) : 0;
+	let conversionRate = $derived(tourStats?.qrScans > 0 ? (tourStats.qrConversions / tourStats.qrScans * 100) : 0);
 
 	// Status badge colors
 	function getStatusColor(status: string) {
 		switch (status) {
-			case 'confirmed': return 'bg-green-100 text-green-800';
-			case 'pending': return 'bg-yellow-100 text-yellow-800';
-			case 'cancelled': return 'bg-red-100 text-red-800';
-			case 'completed': return 'bg-blue-100 text-blue-800';
-			case 'no_show': return 'bg-gray-100 text-gray-800';
-			default: return 'bg-gray-100 text-gray-800';
+			case 'confirmed': return 'bg-green-50 text-green-700 border-green-200';
+			case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+			case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
+			case 'completed': return 'bg-blue-50 text-blue-700 border-blue-200';
+			case 'no_show': return 'bg-gray-50 text-gray-700 border-gray-200';
+			default: return 'bg-gray-50 text-gray-700 border-gray-200';
+		}
+	}
+
+	function getTourStatusColor(status: string) {
+		switch (status) {
+			case 'active':
+				return 'bg-green-50 text-green-700 border-green-200';
+			case 'draft':
+				return 'bg-gray-50 text-gray-700 border-gray-200';
+			default:
+				return 'bg-gray-50 text-gray-700 border-gray-200';
+		}
+	}
+
+	function getTourStatusDot(status: string) {
+		switch (status) {
+			case 'active':
+				return 'bg-green-500';
+			case 'draft':
+				return 'bg-gray-500';
+			default:
+				return 'bg-gray-500';
 		}
 	}
 
 	function getSlotStatusColor(status: string) {
 		switch (status) {
-			case 'active': return 'bg-green-100 text-green-800';
-			case 'full': return 'bg-red-100 text-red-800';
-			case 'cancelled': return 'bg-gray-100 text-gray-800';
-			default: return 'bg-blue-100 text-blue-800';
+			case 'active': return 'bg-green-50 text-green-700 border-green-200';
+			case 'full': return 'bg-red-50 text-red-700 border-red-200';
+			case 'cancelled': return 'bg-gray-50 text-gray-700 border-gray-200';
+			default: return 'bg-blue-50 text-blue-700 border-blue-200';
 		}
+	}
+
+	function getQRImageUrl(): string {
+		if (!tour.qrCode) return '';
+		const baseURL = browser ? window.location.origin : 'https://zaur.app';
+		return generateQRImageURL(tour.qrCode, {
+			size: 200,
+			baseURL
+		});
+	}
+
+	function getImageUrl(imagePath: string | null | undefined): string {
+		if (!tour?.id || !imagePath || typeof imagePath !== 'string') return '';
+		
+		try {
+			// Handle old PocketBase URLs
+			if (imagePath.startsWith('http')) {
+				return imagePath; // Return old URL as-is for backward compatibility
+			}
+			// Handle new MinIO storage via API
+			return `/api/images/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}?size=large`;
+		} catch (error) {
+			console.warn('Error generating image URL:', error);
+			return '';
+		}
+	}
+
+	function formatDuration(minutes: number): string {
+		const hours = Math.floor(minutes / 60);
+		const mins = minutes % 60;
+		if (hours > 0) {
+			return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+		}
+		return `${mins}m`;
 	}
 
 	// Copy QR code to clipboard
-	async function copyQRCode() {
-		if (tour.qrCode) {
-			try {
-				const bookingUrl = `${window.location.origin}/book/${tour.qrCode}`;
-				await navigator.clipboard.writeText(bookingUrl);
-				// You could add a toast notification here
-			} catch (err) {
-				console.error('Failed to copy QR code:', err);
-			}
+	async function copyQRUrl() {
+		if (!browser || !tour.qrCode) return;
+		const baseURL = window.location.origin;
+		const bookingUrl = `${baseURL}/book/${tour.qrCode}`;
+		
+		try {
+			await navigator.clipboard.writeText(bookingUrl);
+			copiedQRCode = true;
+			setTimeout(() => {
+				copiedQRCode = false;
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy QR code:', err);
 		}
 	}
 
-	// Quick actions
-	function editTour() {
-		goto(`/tours/${tour.id}/edit`);
+	async function shareQR() {
+		if (!browser || !tour.qrCode) return;
+		const baseURL = window.location.origin;
+		const bookingUrl = `${baseURL}/book/${tour.qrCode}`;
+		
+		if (navigator.share) {
+			try {
+				await navigator.share({
+					title: `Book ${tour.name}`,
+					text: `Book your tour: ${tour.name}`,
+					url: bookingUrl
+				});
+			} catch (err) {
+				// Fallback to copy
+				copyQRUrl();
+			}
+		} else {
+			// Fallback to copy
+			copyQRUrl();
+		}
 	}
 
-	function manageTimes() {
-		goto(`/tours/${tour.id}/schedule`);
+	function downloadQR() {
+		if (!browser || !tour.qrCode) return;
+		const link = document.createElement('a');
+		link.href = getQRImageUrl();
+		link.download = `qr-${tour.name.replace(/[^a-zA-Z0-9]/g, '-')}.png`;
+		link.click();
 	}
 
-	function viewQR() {
-		goto(`/tours/${tour.id}/qr`);
-	}
+	async function toggleTourStatus() {
+		if (!browser || statusUpdating) return;
+		
+		const newStatus = tour.status === 'active' ? 'draft' : 'active';
+		statusUpdating = true;
 
-	function viewBookings() {
-		goto(`/bookings?tour=${tour.id}`);
+		try {
+			const response = await fetch(`/api/tours/${tour.id}/status`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ status: newStatus })
+			});
+
+			if (response.ok) {
+				// Update local state
+				tour = { ...tour, status: newStatus };
+			} else {
+				console.error('Failed to update tour status:', response.status, response.statusText);
+			}
+		} catch (error) {
+			console.error('Failed to update tour status:', error);
+		} finally {
+			statusUpdating = false;
+		}
 	}
 </script>
 
@@ -72,318 +201,427 @@
 	<meta name="description" content="Manage your {tour.name} tour - view statistics, bookings, and schedule." />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Header Section -->
-	<div class="mb-8">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-3 mb-2">
-					<button 
-						onclick={() => goto('/tours')}
-						class="text-gray-500 hover:text-gray-700 transition-colors"
-						aria-label="Back to tours"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-						</svg>
-					</button>
-					<h1 class="text-3xl font-bold text-gray-900">{tour.name}</h1>
-				</div>
-				<p class="text-gray-600 max-w-2xl">{tour.description}</p>
-			</div>
-			
-			<!-- Quick Actions -->
-			<div class="flex flex-wrap gap-3">
-				<button 
-					onclick={editTour}
-					class="button-secondary"
-				>
-					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-					</svg>
+	<div class="mb-6 sm:mb-8">
+		<PageHeader 
+			title={tour.name}
+			subtitle={tour.description}
+			breadcrumbs={[
+				{ label: 'Tours', href: '/tours' },
+				{ label: tour.name }
+			]}
+		>
+			<button onclick={() => goto('/tours')} class="hidden sm:flex button-secondary button--gap mr-4">
+				<ArrowLeft class="h-4 w-4" />
+				Back to Tours
+			</button>
+			<div class="hidden sm:flex gap-3">
+				<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--gap">
+					<Edit class="h-4 w-4" />
 					Edit Tour
 				</button>
-				<button 
-					onclick={manageTimes}
-					class="button-secondary"
-				>
-					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-					</svg>
-					Manage Times
+				<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--gap">
+					<Calendar class="h-4 w-4" />
+					Manage Schedule
 				</button>
-				<button 
-					onclick={viewQR}
-					class="button-primary"
-				>
-					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-					</svg>
-					QR Code
+			</div>
+		</PageHeader>
+		
+		<!-- Mobile Back Button -->
+		<div class="sm:hidden mb-4">
+			<button onclick={() => goto('/tours')} class="button-secondary button--gap button--small">
+				<ArrowLeft class="h-4 w-4" />
+				Back to Tours
+			</button>
+		</div>
+	</div>
+
+	<!-- Tour Status & Quick Info -->
+	<div class="mb-8 p-4 sm:p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div class="flex items-center gap-4">
+				<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
+					<button
+						onclick={() => toggleTourStatus()}
+						disabled={statusUpdating}
+						class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
+					>
+						<span class="w-2 h-2 rounded-full {getTourStatusDot(tour.status)}"></span>
+						{statusUpdating ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
+					</button>
+				</Tooltip>
+				
+				<div class="hidden sm:flex items-center gap-6 text-sm" style="color: var(--text-secondary);">
+					<div class="flex items-center gap-1">
+						<MapPin class="h-4 w-4" />
+						<span>{tour.location}</span>
+					</div>
+					<div class="flex items-center gap-1">
+						<Clock class="h-4 w-4" />
+						<span>{formatDuration(tour.duration)}</span>
+					</div>
+					<div class="flex items-center gap-1">
+						<Users class="h-4 w-4" />
+						<span>Max {tour.capacity} guests</span>
+					</div>
+					<div class="flex items-center gap-1">
+						<DollarSign class="h-4 w-4" />
+						<span>{formatEuro(tour.price)} per person</span>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Mobile Quick Actions -->
+			<div class="sm:hidden grid grid-cols-2 gap-2">
+				<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--gap justify-center">
+					<Edit class="h-4 w-4" />
+					Edit
 				</button>
+				<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--small button--gap justify-center">
+					<Calendar class="h-4 w-4" />
+					Schedule
+				</button>
+			</div>
+		</div>
+		
+		<!-- Mobile Quick Info -->
+		<div class="sm:hidden mt-4 grid grid-cols-2 gap-3 text-sm" style="color: var(--text-secondary);">
+			<div class="flex items-center gap-1">
+				<MapPin class="h-3 w-3" />
+				<span class="truncate">{tour.location}</span>
+			</div>
+			<div class="flex items-center gap-1">
+				<Clock class="h-3 w-3" />
+				<span>{formatDuration(tour.duration)}</span>
+			</div>
+			<div class="flex items-center gap-1">
+				<Users class="h-3 w-3" />
+				<span>Max {tour.capacity}</span>
+			</div>
+			<div class="flex items-center gap-1">
+				<DollarSign class="h-3 w-3" />
+				<span>{formatEuro(tour.price)}</span>
 			</div>
 		</div>
 	</div>
 
-	<!-- Statistics Grid -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-		<!-- Total Revenue -->
-		<div class="bg-white rounded-lg border border-gray-200 p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Total Revenue</p>
-					<p class="text-2xl font-bold text-gray-900">{formatCurrency(tourStats.totalRevenue)}</p>
-				</div>
-				<div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-					<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-					</svg>
-				</div>
-			</div>
-		</div>
-
-		<!-- Total Bookings -->
-		<div class="bg-white rounded-lg border border-gray-200 p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Total Bookings</p>
-					<p class="text-2xl font-bold text-gray-900">{tourStats.totalBookings}</p>
-					<p class="text-xs text-gray-500 mt-1">{tourStats.confirmedBookings} confirmed</p>
-				</div>
-				<div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-					<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-					</svg>
-				</div>
-			</div>
-		</div>
-
-		<!-- Total Participants -->
-		<div class="bg-white rounded-lg border border-gray-200 p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">Total Participants</p>
-					<p class="text-2xl font-bold text-gray-900">{tourStats.totalParticipants}</p>
-					<p class="text-xs text-gray-500 mt-1">Across all bookings</p>
-				</div>
-				<div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-					<svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-					</svg>
-				</div>
-			</div>
-		</div>
-
-		<!-- QR Performance -->
-		<div class="bg-white rounded-lg border border-gray-200 p-6">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600">QR Performance</p>
-					<p class="text-2xl font-bold text-gray-900">{conversionRate.toFixed(1)}%</p>
-					<p class="text-xs text-gray-500 mt-1">{tourStats.qrScans} scans, {tourStats.qrConversions} bookings</p>
-				</div>
-				<div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-					<svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-					</svg>
-				</div>
-			</div>
+	<!-- Performance Statistics -->
+	<div class="mb-8">
+		<h2 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Performance Overview</h2>
+		<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+			<StatsCard
+				title="Total Revenue"
+				value={formatEuro(tourStats?.totalRevenue || 0)}
+				subtitle="all time earnings"
+				icon={DollarSign}
+				variant="small"
+			/>
+			
+			<StatsCard
+				title="Total Bookings"
+				value={tourStats?.totalBookings || 0}
+				subtitle="{tourStats?.confirmedBookings || 0} confirmed"
+				icon={BarChart3}
+				variant="small"
+			/>
+			
+			<StatsCard
+				title="Participants"
+				value={tourStats?.totalParticipants || 0}
+				subtitle="guests served"
+				icon={Users}
+				variant="small"
+			/>
+			
+			<StatsCard
+				title="Conversion Rate"
+				value="{conversionRate.toFixed(1)}%"
+				subtitle="{tourStats?.qrScans || 0} scans, {tourStats?.qrConversions || 0} bookings"
+				icon={TrendingUp}
+				variant="small"
+			/>
 		</div>
 	</div>
 
 	<!-- Main Content Grid -->
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-		<!-- Tour Information -->
-		<div class="lg:col-span-1">
-			<div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-				<h2 class="text-lg font-semibold text-gray-900 mb-4">Tour Information</h2>
-				
-				<div class="space-y-4">
-					<div>
-						<label class="text-sm font-medium text-gray-600">Price</label>
-						<p class="text-lg font-semibold text-gray-900">{formatCurrency(tour.price)}</p>
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+		
+		<!-- Left Column: Tour Visual & QR -->
+		<div class="lg:col-span-1 space-y-6">
+			
+			<!-- Tour Images -->
+			{#if tour.images && tour.images.length > 0}
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<h3 class="font-semibold" style="color: var(--text-primary);">Tour Gallery</h3>
 					</div>
-					
-					<div>
-						<label class="text-sm font-medium text-gray-600">Duration</label>
-						<p class="text-gray-900">{tour.duration} minutes</p>
-					</div>
-					
-					<div>
-						<label class="text-sm font-medium text-gray-600">Max Group Size</label>
-						<p class="text-gray-900">{tour.capacity} people</p>
-					</div>
-					
-					<div>
-						<label class="text-sm font-medium text-gray-600">Location</label>
-						<p class="text-gray-900">{tour.location}</p>
-					</div>
-					
-					{#if tour.qrCode}
-					<div>
-						<label class="text-sm font-medium text-gray-600">QR Code</label>
-						<div class="flex items-center gap-2 mt-1">
-							<code class="text-sm bg-gray-100 px-2 py-1 rounded">{tour.qrCode}</code>
-							<button 
-								onclick={copyQRCode}
-								class="text-blue-600 hover:text-blue-700 transition-colors"
-								title="Copy booking URL"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-								</svg>
-							</button>
+					<div class="p-4">
+						<div class="grid gap-3">
+							{#each tour.images.slice(0, 3) as imagePath, index}
+								{@const imageUrl = getImageUrl(imagePath)}
+								{#if imageUrl}
+									<div class="aspect-video rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
+										<img 
+											src={imageUrl} 
+											alt="{tour.name} - Image {index + 1}"
+											class="w-full h-full object-cover"
+											loading="lazy"
+										/>
+									</div>
+								{/if}
+							{/each}
+							{#if tour.images.length > 3}
+								<div class="text-center py-2">
+									<span class="text-sm" style="color: var(--text-secondary);">
+										+{tour.images.length - 3} more images
+									</span>
+								</div>
+							{/if}
 						</div>
 					</div>
-					{/if}
-					
-					<div>
-						<label class="text-sm font-medium text-gray-600">Created</label>
-						<p class="text-gray-900">{formatDate(tour.created)}</p>
+				</div>
+			{/if}
+
+			<!-- QR Code Section -->
+			{#if tour.qrCode}
+				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<h3 class="font-semibold" style="color: var(--text-primary);">QR Code</h3>
+						<p class="text-sm mt-1" style="color: var(--text-secondary);">Share this code for bookings</p>
+					</div>
+					<div class="p-6 text-center">
+						<div class="inline-block p-4 rounded-xl" style="background: var(--bg-secondary);">
+							<img 
+								src={getQRImageUrl()} 
+								alt="QR Code for {tour.name}"
+								class="w-40 h-40 mx-auto"
+								loading="lazy"
+							/>
+						</div>
+						
+						<div class="mt-4">
+							<p class="text-sm font-medium mb-3" style="color: var(--text-primary);">{tour.qrCode}</p>
+							<div class="flex justify-center gap-2">
+								<Tooltip text="Copy booking URL" position="top">
+									<button
+										onclick={() => copyQRUrl()}
+										class="button-secondary button--small button--icon"
+									>
+										<Copy class="h-4 w-4" />
+									</button>
+								</Tooltip>
+								<Tooltip text="Share booking link" position="top">
+									<button
+										onclick={() => shareQR()}
+										class="button-secondary button--small button--icon"
+									>
+										<Share2 class="h-4 w-4" />
+									</button>
+								</Tooltip>
+								<Tooltip text="Download QR code" position="top">
+									<button
+										onclick={() => downloadQR()}
+										class="button-secondary button--small button--icon"
+									>
+										<Download class="h-4 w-4" />
+									</button>
+								</Tooltip>
+								<Tooltip text="Preview booking page" position="top">
+									<a
+										href="/book/{tour.qrCode}"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="button-secondary button--small button--icon"
+									>
+										<ExternalLink class="h-4 w-4" />
+									</a>
+								</Tooltip>
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 
 			<!-- Quick Stats -->
-			<div class="bg-white rounded-lg border border-gray-200 p-6">
-				<h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
-				
-				<div class="space-y-3">
-					<div class="flex justify-between">
-						<span class="text-gray-600">Today's Bookings</span>
-						<span class="font-medium">{tourStats.todayBookings}</span>
-					</div>
-					<div class="flex justify-between">
-						<span class="text-gray-600">This Week</span>
-						<span class="font-medium">{tourStats.weekBookings}</span>
-					</div>
-					<div class="flex justify-between">
-						<span class="text-gray-600">This Month</span>
-						<span class="font-medium">{tourStats.monthBookings}</span>
-					</div>
-					<div class="flex justify-between">
-						<span class="text-gray-600">Pending Bookings</span>
-						<span class="font-medium text-yellow-600">{tourStats.pendingBookings}</span>
-					</div>
-					<div class="flex justify-between">
-						<span class="text-gray-600">Total Time Slots</span>
-						<span class="font-medium">{tourStats.totalSlots}</span>
-					</div>
-					<div class="flex justify-between">
-						<span class="text-gray-600">Upcoming Slots</span>
-						<span class="font-medium text-green-600">{tourStats.upcomingSlots}</span>
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Quick Stats</h3>
+				</div>
+				<div class="p-4">
+					<div class="space-y-3">
+						<div class="flex justify-between">
+							<span style="color: var(--text-secondary);">Today's Bookings</span>
+							<span class="font-medium" style="color: var(--text-primary);">{tourStats?.todayBookings || 0}</span>
+						</div>
+						<div class="flex justify-between">
+							<span style="color: var(--text-secondary);">This Week</span>
+							<span class="font-medium" style="color: var(--text-primary);">{tourStats?.weekBookings || 0}</span>
+						</div>
+						<div class="flex justify-between">
+							<span style="color: var(--text-secondary);">This Month</span>
+							<span class="font-medium" style="color: var(--text-primary);">{tourStats?.monthBookings || 0}</span>
+						</div>
+						<div class="flex justify-between">
+							<span style="color: var(--text-secondary);">Pending Bookings</span>
+							<span class="font-medium text-yellow-600">{tourStats?.pendingBookings || 0}</span>
+						</div>
+						<div class="flex justify-between">
+							<span style="color: var(--text-secondary);">Upcoming Slots</span>
+							<span class="font-medium text-green-600">{tourStats?.upcomingSlots || 0}</span>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Upcoming Time Slots & Recent Bookings -->
+		<!-- Right Column: Upcoming Slots & Recent Bookings -->
 		<div class="lg:col-span-2 space-y-6">
+			
 			<!-- Upcoming Time Slots -->
-			<div class="bg-white rounded-lg border border-gray-200 p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-lg font-semibold text-gray-900">Upcoming Time Slots</h2>
-					<button 
-						onclick={manageTimes}
-						class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
-					>
-						Manage All →
-					</button>
-				</div>
-				
-				{#if upcomingSlots.length > 0}
-					<div class="space-y-3">
-						{#each upcomingSlots as slot}
-							<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-								<div>
-									<p class="font-medium text-gray-900">
-										{formatDate(slot.startTime)} at {formatTime(slot.startTime)}
-									</p>
-									<p class="text-sm text-gray-600">
-										{slot.bookedSpots}/{slot.availableSpots} spots booked
-									</p>
-								</div>
-								<div class="flex items-center gap-3">
-									<span class="px-2 py-1 text-xs font-medium rounded-full {getSlotStatusColor(slot.status)}">
-										{slot.status}
-									</span>
-									<div class="w-16 bg-gray-200 rounded-full h-2">
-										<div 
-											class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-											style="width: {(slot.bookedSpots / slot.availableSpots) * 100}%"
-										></div>
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="text-center py-8">
-						<svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-						</svg>
-						<p class="text-gray-600 mb-4">No upcoming time slots scheduled</p>
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold" style="color: var(--text-primary);">Upcoming Time Slots</h3>
 						<button 
-							onclick={manageTimes}
-							class="button-primary"
+							onclick={() => goto(`/tours/${tour.id}/schedule`)}
+							class="button-secondary button--small"
 						>
-							Add Time Slots
+							Manage All
 						</button>
 					</div>
-				{/if}
+				</div>
+				<div class="p-4 sm:p-6">
+					{#if upcomingSlots.length > 0}
+						<div class="space-y-4">
+							{#each upcomingSlots as slot}
+								<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex-1">
+										<p class="font-medium" style="color: var(--text-primary);">
+											{formatDate(slot.startTime)} • {formatTime(slot.startTime)}
+										</p>
+										<p class="text-sm mt-1" style="color: var(--text-secondary);">
+											{slot.bookedSpots} of {tour.capacity} spots booked
+										</p>
+									</div>
+									<div class="flex items-center gap-3">
+										<span class="px-2 py-1 text-xs font-medium rounded-full border {getSlotStatusColor(slot.status)}">
+											{slot.status}
+										</span>
+										<div class="w-16 h-2 rounded-full" style="background: var(--bg-tertiary);">
+											<div 
+												class="h-2 rounded-full transition-all duration-300"
+												style="width: {tour.capacity > 0 ? Math.min((slot.bookedSpots / tour.capacity) * 100, 100) : 0}%; background: var(--color-primary-600);"
+											></div>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-center py-12">
+							<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+								<Calendar class="w-8 h-8" style="color: var(--text-tertiary);" />
+							</div>
+							<p class="font-medium mb-2" style="color: var(--text-primary);">No upcoming time slots</p>
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">Schedule time slots to start receiving bookings</p>
+							<button 
+								onclick={() => goto(`/tours/${tour.id}/schedule`)}
+								class="button-primary button--gap"
+							>
+								<Calendar class="h-4 w-4" />
+								Add Time Slots
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Recent Bookings -->
-			<div class="bg-white rounded-lg border border-gray-200 p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-lg font-semibold text-gray-900">Recent Bookings</h2>
-					<button 
-						onclick={viewBookings}
-						class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
-					>
-						View All →
-					</button>
-				</div>
-				
-				{#if recentBookings.length > 0}
-					<div class="space-y-3">
-						{#each recentBookings as booking}
-							<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-								<div class="flex-1">
-									<div class="flex items-center gap-3 mb-1">
-										<p class="font-medium text-gray-900">{booking.customerName}</p>
-										<span class="px-2 py-1 text-xs font-medium rounded-full {getStatusColor(booking.status)}">
-											{booking.status}
-										</span>
-									</div>
-									<p class="text-sm text-gray-600">{booking.customerEmail}</p>
-									<p class="text-xs text-gray-500">
-										{booking.participants} participant{booking.participants !== 1 ? 's' : ''} • 
-										{formatCurrency(booking.totalAmount)} • 
-										{formatDateTime(booking.createdAt)}
-									</p>
-								</div>
-								<div class="text-right">
-									<p class="text-sm font-medium text-gray-900">#{booking.bookingReference}</p>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="text-center py-8">
-						<svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-						</svg>
-						<p class="text-gray-600 mb-4">No bookings yet</p>
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 						<button 
-							onclick={viewQR}
-							class="button-primary"
+							onclick={() => goto(`/bookings?tour=${tour.id}`)}
+							class="button-secondary button--small"
 						>
-							Share QR Code
+							View All
 						</button>
 					</div>
-				{/if}
+				</div>
+				<div class="p-4 sm:p-6">
+					{#if recentBookings.length > 0}
+						<div class="space-y-4">
+							{#each recentBookings as booking}
+								<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-3 mb-2">
+											<p class="font-medium truncate" style="color: var(--text-primary);">{booking.customerName}</p>
+											<span class="px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 {getStatusColor(booking.status)}">
+												{booking.status}
+											</span>
+										</div>
+										<p class="text-sm truncate" style="color: var(--text-secondary);">{booking.customerEmail}</p>
+										<div class="flex items-center gap-3 mt-1 text-xs" style="color: var(--text-tertiary);">
+											<span>{booking.participants} guest{booking.participants !== 1 ? 's' : ''}</span>
+											<span>•</span>
+											<span>{formatEuro(booking.totalAmount)}</span>
+											<span>•</span>
+											<span>{formatDate(booking.createdAt)}</span>
+										</div>
+									</div>
+									<div class="text-right flex-shrink-0 ml-4">
+										<p class="text-sm font-medium" style="color: var(--text-primary);">#{booking.bookingReference}</p>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-center py-12">
+							<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+								<BarChart3 class="w-8 h-8" style="color: var(--text-tertiary);" />
+							</div>
+							<p class="font-medium mb-2" style="color: var(--text-primary);">No bookings yet</p>
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">Share your QR code to start receiving bookings</p>
+							<button 
+								onclick={() => shareQR()}
+								class="button-primary button--gap"
+							>
+								<Share2 class="h-4 w-4" />
+								Share QR Code
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>
-</div> 
+</div>
+
+<!-- Copy Success Toast -->
+{#if copiedQRCode}
+	<div class="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-md flex items-center gap-3 slide-in-from-right" style="background: var(--bg-primary); border: 1px solid var(--color-success); color: var(--text-primary);">
+		<div class="w-5 h-5 rounded-full flex items-center justify-center" style="background: var(--color-success-light);">
+			<CheckCircle class="w-3 h-3" style="color: var(--color-success);" />
+		</div>
+		<span class="text-sm font-medium">Booking URL copied</span>
+	</div>
+{/if}
+
+<style>
+	@keyframes slide-in-from-right {
+		from {
+			transform: translateX(100%);
+			opacity: 0;
+		}
+		to {
+			transform: translateX(0);
+			opacity: 1;
+		}
+	}
+
+	.slide-in-from-right {
+		animation: slide-in-from-right 0.3s ease-out;
+	}
+</style> 
