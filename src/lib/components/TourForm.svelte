@@ -31,6 +31,12 @@
 		serverErrors?: ValidationError[];
 		// Validation trigger
 		triggerValidation?: boolean;
+		// Booking constraints for capacity validation
+		bookingConstraints?: {
+			maxBookedSpots: number;
+			minimumCapacity: number;
+			canReduceCapacity: boolean;
+		};
 	}
 
 	let {
@@ -46,7 +52,8 @@
 		onExistingImageRemove,
 		getExistingImageUrl,
 		serverErrors = [],
-		triggerValidation = false
+		triggerValidation = false,
+		bookingConstraints
 	}: Props = $props();
 
 	// Client-side validation state
@@ -249,7 +256,7 @@
 					name="capacity"
 					label="Max Capacity"
 					bind:value={formData.capacity}
-					min={1}
+					min={bookingConstraints?.minimumCapacity || 1}
 					max={500}
 					step={1}
 					placeholder="10"
@@ -260,6 +267,14 @@
 					integerOnly={true}
 					onblur={() => validateField('capacity')}
 				/>
+				{#if bookingConstraints?.maxBookedSpots > 0}
+					<div class="md:col-span-3 mt-2">
+						<p class="text-xs" style="color: var(--text-secondary);">
+							⚠️ Minimum capacity: <strong>{bookingConstraints.minimumCapacity}</strong> 
+							(you have {bookingConstraints.maxBookedSpots} people booked in your busiest time slot)
+						</p>
+					</div>
+				{/if}
 			</div>
 		</div>
 

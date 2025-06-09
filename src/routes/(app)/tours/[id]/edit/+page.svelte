@@ -17,6 +17,7 @@
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
+	let capacityError = $state((form as any)?.capacityError || null);
 
 	let tourId = $derived($page.params.id);
 
@@ -135,6 +136,33 @@
 					<div>
 						<p class="font-medium text-red-800">Error</p>
 						<p class="text-sm text-red-700 mt-1">{error}</p>
+						{#if capacityError}
+							<p class="text-sm text-red-700 mt-2">
+								<strong>Capacity Issue:</strong> You tried to set capacity to {capacityError.attempted}, 
+								but you need at least {capacityError.minimum} spots due to existing bookings.
+							</p>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Capacity Warning (if bookings exist) -->
+		{#if data.bookingConstraints?.maxBookedSpots > 0}
+			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 243 199); border: 1px solid rgb(252 211 77);">
+				<div class="flex gap-3">
+					<AlertCircle class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+					<div>
+						<p class="font-medium text-amber-800">Capacity Constraints</p>
+						<p class="text-sm text-amber-700 mt-1">
+							You have <strong>{data.bookingConstraints.maxBookedSpots} people booked</strong> in your busiest time slot.
+							You can only reduce capacity to <strong>{data.bookingConstraints.maxBookedSpots} or higher</strong>.
+						</p>
+						{#if !data.bookingConstraints.canReduceCapacity}
+							<p class="text-sm text-amber-700 mt-1">
+								<em>Your tour is at maximum booking capacity. You can increase capacity but cannot reduce it.</em>
+							</p>
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -183,6 +211,7 @@
 						onExistingImageRemove={removeExistingImage}
 						{getExistingImageUrl}
 						serverErrors={validationErrors}
+						bookingConstraints={data.bookingConstraints}
 					/>
 				</form>
 			</div>
