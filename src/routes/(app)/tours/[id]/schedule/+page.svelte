@@ -1,192 +1,111 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
-	import { browser } from '$app/environment';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import TimeSlotManager from '$lib/components/TimeSlotManager.svelte';
+	import TimeSlotForm from '$lib/components/TimeSlotForm.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
+	import Plus from 'lucide-svelte/icons/plus';
+	import Edit2 from 'lucide-svelte/icons/edit-2';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
-	import { createId } from '@paralleldrive/cuid2';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	let tour = $derived(data.tour);
 	let timeSlots = $state(data.timeSlots || []);
-	let isLoading = $state(false);
-	let error = $state<string | null>(null);
+	let showCreateForm = $state(false);
+	let editingSlot = $state<TimeSlot | null>(null);
+	let error = $state<string | null>(form?.error || null);
 
-	// Handle slot creation
-	async function handleSlotCreated(slot: Partial<TimeSlot>) {
-		if (!browser) return;
-		
-		isLoading = true;
-		error = null;
+	// Sort slots by start time
+	let sortedSlots = $derived(
+		[...timeSlots].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+	);
 
-		try {
-			// Use SvelteKit's action approach with proper form submission
-			const formData = new FormData();
-			formData.append('slot', JSON.stringify(slot));
-
-			const response = await fetch(`/tours/${tour.id}/schedule?/create-slot`, {
-				method: 'POST',
-				body: formData
-			});
-
-			// Get the response as text first to handle SvelteKit serialization
-			const responseText = await response.text();
-			let result;
-			
-			try {
-				result = JSON.parse(responseText);
-			} catch {
-				// If JSON parsing fails, it might be a redirect or error
-				throw new Error('Invalid server response');
-			}
-
-			if (result.type === 'success') {
-				// Since SvelteKit serializes the response, reconstruct the slot from the input data
-				const newSlot = {
-					id: createId(),
-					tourId: slot.tourId!,
-					startTime: slot.startTime!,
-					endTime: slot.endTime!,
-					availableSpots: slot.availableSpots!,
-					bookedSpots: 0,
-					status: 'available' as const,
-					isRecurring: false,
-					recurringPattern: null,
-					recurringEnd: null,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString()
-				};
-				timeSlots = [...timeSlots, newSlot];
-			} else {
-				error = result.error || 'Failed to create time slot';
-			}
-		} catch (err) {
-			console.error('Error creating slot:', err);
-			error = 'Failed to create time slot. Please try again.';
-		} finally {
-			isLoading = false;
-		}
+	function formatDateTime(dateString: string): string {
+		const date = new Date(dateString);
+		return date.toLocaleDateString('en-US', {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true
+		});
 	}
 
-	// Handle slot update
-	async function handleSlotUpdated(slot: TimeSlot) {
-		if (!browser) return;
+	function formatTimeRange(startTime: string, endTime: string): string {
+		const start = new Date(startTime);
+		const end = new Date(endTime);
 		
-		isLoading = true;
-		error = null;
-
-		try {
-			const response = await fetch(`/tours/${tour.id}/schedule?/update-slot`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					slot: JSON.stringify(slot)
-				})
-			});
-
-			const result = await response.json();
-			
-			if (result.type === 'success') {
-				// Update the slot in the list
-				const updatedSlot = result.data?.slot || result.slot;
-				if (updatedSlot) {
-					timeSlots = timeSlots.map(s => s.id === slot.id ? updatedSlot : s);
-				} else {
-					error = 'Unexpected server response format';
-				}
-			} else {
-				error = result.error || 'Failed to update time slot';
-			}
-		} catch (err) {
-			console.error('Error updating slot:', err);
-			error = 'Failed to update time slot. Please try again.';
-		} finally {
-			isLoading = false;
-		}
+		const startStr = start.toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true
+		});
+		
+		const endStr = end.toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true
+		});
+		
+		return `${startStr} - ${endStr}`;
 	}
 
-	// Handle slot deletion
-	async function handleSlotDeleted(slotId: string) {
-		if (!browser) return;
-		
-		isLoading = true;
-		error = null;
-
-		try {
-			const response = await fetch(`/tours/${tour.id}/schedule?/delete-slot`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					slotId
-				})
-			});
-
-			const result = await response.json();
-			
-			if (result.type === 'success') {
-				// Remove the slot from the list
-				timeSlots = timeSlots.filter(slot => slot.id !== slotId);
-			} else {
-				error = result.error || 'Failed to delete time slot';
-			}
-		} catch (err) {
-			console.error('Error deleting slot:', err);
-			error = 'Failed to delete time slot. Please try again.';
-		} finally {
-			isLoading = false;
-		}
+	function getAvailabilityText(slot: TimeSlot): string {
+		const available = slot.availableSpots - slot.bookedSpots;
+		return `${slot.bookedSpots} booked, ${available} available`;
 	}
 
-	// Handle bulk creation
-	async function handleBulkCreate(slots: Partial<TimeSlot>[]) {
-		if (!browser) return;
+	function getStatusColor(slot: TimeSlot): string {
+		if (slot.bookedSpots >= slot.availableSpots) return '#EF4444'; // Red - full
+		if (slot.bookedSpots > 0) return '#F59E0B'; // Amber - partial
+		return '#10B981'; // Green - available
+	}
+
+	function handleCreateSuccess() {
+		showCreateForm = false;
+		// Reload the page to get fresh data
+		window.location.reload();
+	}
+
+	function handleEditSuccess() {
+		editingSlot = null;
+		// Reload the page to get fresh data
+		window.location.reload();
+	}
+
+	function startEdit(slot: TimeSlot) {
+		editingSlot = slot;
+		showCreateForm = false;
+	}
+
+	function cancelEdit() {
+		editingSlot = null;
+		showCreateForm = false;
+	}
+
+	async function deleteSlot(slotId: string) {
+		if (!confirm('Are you sure you want to delete this time slot?')) return;
 		
-		isLoading = true;
-		error = null;
-
-		try {
-			const response = await fetch(`/tours/${tour.id}/schedule?/bulk-create`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					slots: JSON.stringify(slots)
-				})
-			});
-
-			const result = await response.json();
-			
-			if (result.type === 'success') {
-				// Add all new slots to the list
-				const newSlots = result.data?.slots || result.slots || [];
-				if (newSlots.length > 0) {
-					timeSlots = [...timeSlots, ...newSlots];
-				} else {
-					error = 'No slots returned from server';
-				}
-			} else {
-				error = result.error || 'Failed to create time slots';
-			}
-		} catch (err) {
-			console.error('Error bulk creating slots:', err);
-			error = 'Failed to create time slots. Please try again.';
-		} finally {
-			isLoading = false;
-		}
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = `?/delete-slot`;
+		
+		const input = document.createElement('input');
+		input.type = 'hidden';
+		input.name = 'slotId';
+		input.value = slotId;
+		form.appendChild(input);
+		
+		document.body.appendChild(form);
+		form.submit();
 	}
 </script>
 
@@ -274,42 +193,128 @@
 		</div>
 	</div>
 
-	<!-- Time Slot Manager -->
-	<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-6">
-			<TimeSlotManager
-				tourId={tour.id}
+	<!-- Create New Slot Button -->
+	{#if !showCreateForm && !editingSlot}
+		<div class="mb-6">
+			<button 
+				onclick={() => { showCreateForm = true; editingSlot = null; }}
+				class="button-primary button--gap"
+			>
+				<Plus class="h-4 w-4" />
+				Add Time Slot
+			</button>
+		</div>
+	{/if}
+
+	<!-- Create Form -->
+	{#if showCreateForm}
+		<div class="mb-8 p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Create New Time Slot</h3>
+			<TimeSlotForm
 				tourCapacity={tour.capacity}
-				existingSlots={timeSlots as unknown as TimeSlot[]}
-				{isLoading}
-				onSlotCreated={handleSlotCreated}
-				onSlotUpdated={handleSlotUpdated}
-				onSlotDeleted={handleSlotDeleted}
-				onBulkCreate={handleBulkCreate}
+				onCancel={cancelEdit}
+				onSuccess={handleCreateSuccess}
 			/>
 		</div>
-	</div>
+	{/if}
 
-	<!-- Quick Tips -->
-	<div class="mt-8 p-6 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<h3 class="font-semibold mb-3" style="color: var(--text-primary);">💡 Schedule Management Tips</h3>
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" style="color: var(--text-secondary);">
-			<div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Single Time Slots</h4>
-				<ul class="space-y-1">
-					<li>• Perfect for one-off tours or special events</li>
-					<li>• Set specific dates and times manually</li>
-					<li>• Customize capacity per slot if needed</li>
-				</ul>
-			</div>
-			<div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Bulk Creation</h4>
-				<ul class="space-y-1">
-					<li>• Create multiple slots across date ranges</li>
-					<li>• Choose specific days of the week</li>
-					<li>• Set multiple time slots per day</li>
-				</ul>
-			</div>
+	<!-- Edit Form -->
+	{#if editingSlot}
+		<div class="mb-8 p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Edit Time Slot</h3>
+			<TimeSlotForm
+				slot={editingSlot}
+				tourCapacity={tour.capacity}
+				isEdit={true}
+				onCancel={cancelEdit}
+				onSuccess={handleEditSuccess}
+			/>
+		</div>
+	{/if}
+
+	<!-- Time Slots List -->
+	<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-6">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
+				Scheduled Time Slots ({timeSlots.length})
+			</h3>
+			
+			{#if sortedSlots.length === 0}
+				<div class="text-center py-12">
+					<Calendar class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
+					<p class="text-lg font-medium mb-2" style="color: var(--text-primary);">No time slots scheduled</p>
+					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+						Create your first time slot to start accepting bookings for this tour.
+					</p>
+					<button 
+						onclick={() => { showCreateForm = true; editingSlot = null; }}
+						class="button-primary button--gap"
+					>
+						<Plus class="h-4 w-4" />
+						Add Time Slot
+					</button>
+				</div>
+			{:else}
+				<div class="space-y-4">
+					{#each sortedSlots as slot (slot.id)}
+						<div class="p-4 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+							<div class="flex items-center justify-between">
+								<div class="flex-1">
+									<div class="flex items-center gap-4 mb-2">
+										<h4 class="font-medium" style="color: var(--text-primary);">
+											{formatDateTime(slot.startTime)}
+										</h4>
+										<div class="flex items-center gap-2">
+											<div 
+												class="w-2 h-2 rounded-full"
+												style="background-color: {getStatusColor(slot)};"
+											></div>
+											<span class="text-sm" style="color: var(--text-secondary);">
+												{slot.status}
+											</span>
+										</div>
+									</div>
+									<p class="text-sm mb-1" style="color: var(--text-secondary);">
+										{formatTimeRange(slot.startTime, slot.endTime)}
+									</p>
+									<p class="text-sm" style="color: var(--text-tertiary);">
+										{getAvailabilityText(slot)}
+									</p>
+								</div>
+								
+								<div class="flex items-center gap-2">
+									<button
+										onclick={() => startEdit(slot)}
+										class="p-2 rounded-lg transition-colors"
+										style="color: var(--text-tertiary); hover:background: var(--bg-tertiary);"
+										title="Edit slot"
+									>
+										<Edit2 class="h-4 w-4" />
+									</button>
+									
+									{#if slot.bookedSpots === 0}
+										<button
+											onclick={() => deleteSlot(slot.id)}
+											class="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50"
+											title="Delete slot"
+										>
+											<Trash2 class="h-4 w-4" />
+										</button>
+									{:else}
+										<button
+											class="p-2 rounded-lg opacity-50 cursor-not-allowed"
+											title="Cannot delete slot with bookings"
+											disabled
+										>
+											<Trash2 class="h-4 w-4 text-gray-400" />
+										</button>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 </div> 

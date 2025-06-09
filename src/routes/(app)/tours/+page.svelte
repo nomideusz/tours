@@ -7,7 +7,7 @@
 		getTourStatusColor,
 		getTourStatusDot,
 		getImageUrl
-	} from '$lib/utils/tour-helpers.js';
+	} from '$lib/utils/tour-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';

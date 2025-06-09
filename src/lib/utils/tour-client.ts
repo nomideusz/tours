@@ -1,6 +1,13 @@
 /**
- * Shared utility functions for tour-related operations
- * This consolidates common functionality used across tour routes
+ * Client-side tour utilities
+ * 
+ * This file contains client-side utilities for tour operations including:
+ * - Formatting functions (duration, currency, dates)
+ * - UI helper functions (status colors, display logic)
+ * - Image URL generation
+ * - Calculation utilities (conversion rates, capacity)
+ * 
+ * For server-side utilities (database, validation), see tour-server.ts
  */
 
 import type { Tour } from '$lib/types.js';

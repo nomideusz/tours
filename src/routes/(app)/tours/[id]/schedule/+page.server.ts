@@ -2,8 +2,13 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, timeSlots } from '$lib/db/schema/index.js';
-import { eq, and, gte, desc } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { 
+  loadTourWithOwnership, 
+  loadTourWithTimeSlots, 
+  validateSlotCapacity 
+} from '$lib/server/tour-server.js';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	// Get parent layout data first
@@ -24,42 +29,13 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		const userId = locals.user.id;
 		const tourId = params.id;
 
-		// Load tour data and verify ownership
-		const [tour] = await db
-			.select()
-			.from(tours)
-			.where(and(
-				eq(tours.id, tourId),
-				eq(tours.userId, userId)
-			))
-			.limit(1);
-
-		if (!tour) {
-			throw error(404, 'Tour not found or you do not have permission to view it');
-		}
-
-		// Load all time slots for this tour
-		const tourTimeSlots = await db
-			.select()
-			.from(timeSlots)
-			.where(eq(timeSlots.tourId, tourId))
-			.orderBy(timeSlots.startTime);
+		// Load tour with time slots using shared utility
+		const { tour, timeSlots } = await loadTourWithTimeSlots(tourId, userId);
 
 		return {
 			...parentData,
-			tour: {
-				...tour,
-				price: parseFloat(tour.price),
-				created: tour.createdAt.toISOString(),
-				updated: tour.updatedAt.toISOString()
-			},
-			timeSlots: tourTimeSlots.map(slot => ({
-				...slot,
-				startTime: slot.startTime.toISOString(),
-				endTime: slot.endTime.toISOString(),
-				createdAt: slot.createdAt.toISOString(),
-				updatedAt: slot.updatedAt.toISOString()
-			}))
+			tour,
+			timeSlots
 		};
 	} catch (err) {
 		console.error('Error loading tour schedule page:', err);
@@ -76,34 +52,35 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 export const actions: Actions = {
 	'create-slot': async ({ request, locals, params }) => {
 		if (!locals.user || !params.id) {
-			throw error(401, 'Unauthorized');
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		try {
 			const formData = await request.formData();
-			const slotData = JSON.parse(formData.get('slot') as string);
+			const startTime = formData.get('startTime') as string;
+			const endTime = formData.get('endTime') as string;
+			const availableSpots = parseInt(formData.get('availableSpots') as string);
 
-			// Verify tour ownership
-			const [tour] = await db
-				.select()
-				.from(tours)
-				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
-				))
-				.limit(1);
-
-			if (!tour) {
-				throw error(404, 'Tour not found');
+			if (!startTime || !endTime || isNaN(availableSpots)) {
+				return { success: false, error: 'Missing required fields' };
 			}
 
-			// Create new time slot - default to tour capacity if not specified
+			// Verify tour ownership and load tour data
+			const tour = await loadTourWithOwnership(params.id, locals.user.id);
+
+			// Validate available spots using shared utility
+			const slotValidation = validateSlotCapacity(availableSpots, tour.capacity);
+			if (!slotValidation.isValid) {
+				return { success: false, error: slotValidation.error };
+			}
+
+			// Create new time slot
 			const newSlot = {
 				id: createId(),
 				tourId: params.id,
-				startTime: new Date(slotData.startTime),
-				endTime: new Date(slotData.endTime),
-				availableSpots: slotData.availableSpots || tour.capacity,
+				startTime: new Date(startTime),
+				endTime: new Date(endTime),
+				availableSpots,
 				bookedSpots: 0,
 				status: 'available' as const,
 				createdAt: new Date(),
@@ -115,56 +92,72 @@ export const actions: Actions = {
 			return { success: true, slot: newSlot };
 		} catch (err) {
 			console.error('Error creating time slot:', err);
-			throw error(500, 'Failed to create time slot');
+			return { success: false, error: 'Failed to create time slot' };
 		}
 	},
 
 	'update-slot': async ({ request, locals, params }) => {
 		if (!locals.user || !params.id) {
-			throw error(401, 'Unauthorized');
+			return { success: false, error: 'Unauthorized' };
 		}
 
 		try {
 			const formData = await request.formData();
-			const slotData = JSON.parse(formData.get('slot') as string);
+			const slotId = formData.get('slotId') as string;
+			const startTime = formData.get('startTime') as string;
+			const endTime = formData.get('endTime') as string;
+			const availableSpots = parseInt(formData.get('availableSpots') as string);
 
-			// Verify tour ownership
-			const [tour] = await db
+			if (!slotId || !startTime || !endTime || isNaN(availableSpots)) {
+				return { success: false, error: 'Missing required fields' };
+			}
+
+			// Verify tour ownership and load tour data
+			const tour = await loadTourWithOwnership(params.id, locals.user.id);
+
+			// Get current slot to check booked spots
+			const [currentSlot] = await db
 				.select()
-				.from(tours)
+				.from(timeSlots)
 				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
+					eq(timeSlots.id, slotId),
+					eq(timeSlots.tourId, params.id)
 				))
 				.limit(1);
 
-			if (!tour) {
-				throw error(404, 'Tour not found');
+			if (!currentSlot) {
+				return { success: false, error: 'Time slot not found' };
+			}
+
+			// Validate available spots using shared utility
+			const slotValidation = validateSlotCapacity(availableSpots, tour.capacity, currentSlot.bookedSpots);
+			if (!slotValidation.isValid) {
+				return { success: false, error: slotValidation.error };
 			}
 
 			// Update time slot
 			const updatedSlot = await db
 				.update(timeSlots)
 				.set({
-					startTime: new Date(slotData.startTime),
-					endTime: new Date(slotData.endTime),
-					availableSpots: slotData.availableSpots,
+					startTime: new Date(startTime),
+					endTime: new Date(endTime),
+					availableSpots,
 					updatedAt: new Date()
 				})
 				.where(and(
-					eq(timeSlots.id, slotData.id),
+					eq(timeSlots.id, slotId),
 					eq(timeSlots.tourId, params.id)
 				))
 				.returning();
 
 			if (updatedSlot.length === 0) {
-				throw error(404, 'Time slot not found');
+				return { success: false, error: 'Time slot not found' };
 			}
 
 			return { success: true, slot: updatedSlot[0] };
 		} catch (err) {
 			console.error('Error updating time slot:', err);
-			throw error(500, 'Failed to update time slot');
+			return { success: false, error: 'Failed to update time slot' };
 		}
 	},
 

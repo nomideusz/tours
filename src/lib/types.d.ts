@@ -64,8 +64,8 @@ export interface TimeSlot extends RecordModel {
   bookedSpots: number;
   status: 'available' | 'full' | 'cancelled';
   isRecurring: boolean;
-  recurringPattern?: 'daily' | 'weekly' | 'monthly';
-  recurringEnd?: string; // ISO date
+  recurringPattern: 'daily' | 'weekly' | 'monthly' | null;
+  recurringEnd: Date | null;
   createdAt: string;
   updatedAt: string;
 }

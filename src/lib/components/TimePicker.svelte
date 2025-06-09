@@ -66,11 +66,11 @@
 
 	// Common time presets
 	const quickTimes = [
-		{ label: '9AM', hour: 9, minute: 0 },
-		{ label: '11AM', hour: 11, minute: 0 },
-		{ label: '2PM', hour: 14, minute: 0 },
-		{ label: '4PM', hour: 16, minute: 0 },
-		{ label: '6PM', hour: 18, minute: 0 }
+		{ label: '09:00', hour: 9, minute: 0 },
+		{ label: '11:00', hour: 11, minute: 0 },
+		{ label: '14:00', hour: 14, minute: 0 },
+		{ label: '16:00', hour: 16, minute: 0 },
+		{ label: '18:00', hour: 18, minute: 0 }
 	];
 
 	// Generate hours array
@@ -175,9 +175,9 @@
 
 <div class="time-picker-container relative">
 	{#if label}
-		<label for={instanceId} class="form-label mb-2 block">
+		<label for={instanceId} class="form-label">
 			{label}
-			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
+			{#if required}<span style="color: var(--color-error);" class="ml-1">*</span>{/if}
 		</label>
 	{/if}
 
@@ -199,11 +199,18 @@
 				}
 			}}
 			onkeydown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && (isOpen = !isOpen)}
-			class="form-input pl-10 pr-10 w-full text-left {error ? 'error' : ''} {disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}"
+			class="form-input w-full text-left {error ? 'error' : ''}"
+			style="{disabled 
+				? 'opacity: 0.5; cursor: not-allowed;' 
+				: 'cursor: pointer;'
+			} padding-left: 2.5rem; padding-right: 2.5rem;"
 		>
-			<Clock class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+			<Clock 
+				class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" 
+				style="color: var(--text-tertiary);" 
+			/>
 			
-			<span class={value ? 'text-gray-900' : 'text-gray-500'}>
+			<span style="color: {value ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 				{displayTime()}
 			</span>
 
@@ -214,7 +221,16 @@
 						e.stopPropagation();
 						clearTime();
 					}}
-					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded transition-colors"
+					style="color: var(--text-tertiary);"
+					onmouseenter={(e) => {
+						e.currentTarget.style.color = 'var(--text-secondary)';
+						e.currentTarget.style.background = 'var(--bg-tertiary)';
+					}}
+					onmouseleave={(e) => {
+						e.currentTarget.style.color = 'var(--text-tertiary)';
+						e.currentTarget.style.background = 'transparent';
+					}}
 				>
 					<X class="h-3 w-3" />
 				</button>
@@ -224,16 +240,30 @@
 
 	<!-- Time picker dropdown -->
 	{#if isOpen}
-		<div class="absolute top-full left-0 mt-1 w-80 max-h-96 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-50 p-4">
+		<div 
+			class="absolute top-full left-0 mt-1 w-80 max-h-96 overflow-y-auto rounded-lg shadow-lg border p-4 z-50"
+			style="background: var(--bg-primary); border-color: var(--border-primary);"
+		>
 			<!-- Quick time presets -->
 			<div class="mb-3">
-				<p class="text-sm font-medium text-gray-700 mb-2">Quick Select</p>
+				<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Quick Select</p>
 				<div class="grid grid-cols-5 gap-1">
 					{#each quickTimes as preset}
 						<button
 							type="button"
 							onclick={() => selectQuickTime(preset.hour, preset.minute)}
-							class="px-2 py-2 text-xs bg-gray-50 hover:bg-blue-50 hover:text-blue-700 rounded border border-gray-200 hover:border-blue-300 transition-all text-center font-medium"
+							class="px-2 py-2 text-xs rounded border transition-all text-center font-medium"
+							style="background: var(--bg-secondary); color: var(--text-primary); border-color: var(--border-primary);"
+							onmouseenter={(e) => {
+								e.currentTarget.style.background = 'var(--color-primary-50)';
+								e.currentTarget.style.color = 'var(--color-primary-700)';
+								e.currentTarget.style.borderColor = 'var(--color-primary-300)';
+							}}
+							onmouseleave={(e) => {
+								e.currentTarget.style.background = 'var(--bg-secondary)';
+								e.currentTarget.style.color = 'var(--text-primary)';
+								e.currentTarget.style.borderColor = 'var(--border-primary)';
+							}}
 						>
 							{preset.label}
 						</button>
@@ -242,8 +272,8 @@
 			</div>
 
 			<!-- Time selection -->
-			<div class="border-t border-gray-200 pt-3">
-				<p class="text-sm font-medium text-gray-700 mb-2">Custom Time</p>
+			<div class="border-t pt-3" style="border-color: var(--border-primary);">
+				<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Custom Time</p>
 				
 				<div class="flex items-center justify-center gap-3">
 					<!-- Hours -->
@@ -251,13 +281,19 @@
 						<button
 							type="button"
 							onclick={() => adjustHour(1)}
-							class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+							class="p-1 transition-colors"
+							style="color: var(--text-tertiary);"
+							onmouseenter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
 						>
 							<ChevronUp class="h-3 w-3" />
 						</button>
 						
-						<div class="w-12 h-8 flex items-center justify-center bg-gray-50 rounded border border-gray-200 my-1">
-							<span class="text-sm font-mono font-medium">
+						<div 
+							class="w-12 h-8 flex items-center justify-center rounded border my-1"
+							style="background: var(--bg-secondary); border-color: var(--border-primary);"
+						>
+							<span class="text-sm font-mono font-medium" style="color: var(--text-primary);">
 								{use24hour ? selectedHour.toString().padStart(2, '0') : selectedHour}
 							</span>
 						</div>
@@ -265,29 +301,38 @@
 						<button
 							type="button"
 							onclick={() => adjustHour(-1)}
-							class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+							class="p-1 transition-colors"
+							style="color: var(--text-tertiary);"
+							onmouseenter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
 						>
 							<ChevronDown class="h-3 w-3" />
 						</button>
 						
-						<span class="text-xs text-gray-500">Hour</span>
+						<span class="text-xs" style="color: var(--text-tertiary);">Hour</span>
 					</div>
 
 					<!-- Separator -->
-					<div class="text-lg font-bold text-gray-400 mb-4">:</div>
+					<div class="text-lg font-bold mb-4" style="color: var(--text-tertiary);">:</div>
 
 					<!-- Minutes -->
 					<div class="flex flex-col items-center">
 						<button
 							type="button"
 							onclick={() => adjustMinute(15)}
-							class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+							class="p-1 transition-colors"
+							style="color: var(--text-tertiary);"
+							onmouseenter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
 						>
 							<ChevronUp class="h-3 w-3" />
 						</button>
 						
-						<div class="w-12 h-8 flex items-center justify-center bg-gray-50 rounded border border-gray-200 my-1">
-							<span class="text-sm font-mono font-medium">
+						<div 
+							class="w-12 h-8 flex items-center justify-center rounded border my-1"
+							style="background: var(--bg-secondary); border-color: var(--border-primary);"
+						>
+							<span class="text-sm font-mono font-medium" style="color: var(--text-primary);">
 								{selectedMinute.toString().padStart(2, '0')}
 							</span>
 						</div>
@@ -295,12 +340,15 @@
 						<button
 							type="button"
 							onclick={() => adjustMinute(-15)}
-							class="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+							class="p-1 transition-colors"
+							style="color: var(--text-tertiary);"
+							onmouseenter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
 						>
 							<ChevronDown class="h-3 w-3" />
 						</button>
 						
-						<span class="text-xs text-gray-500">Min</span>
+						<span class="text-xs" style="color: var(--text-tertiary);">Min</span>
 					</div>
 
 					<!-- AM/PM for 12-hour format -->
@@ -310,27 +358,47 @@
 								<button
 									type="button"
 									onclick={() => selectedPeriod = 'AM'}
-									class="px-2 py-1 text-xs rounded {selectedPeriod === 'AM' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition-colors"
+									class="px-2 py-1 text-xs rounded transition-colors"
+									style="{selectedPeriod === 'AM' 
+										? 'background: var(--color-primary-600); color: white;' 
+										: 'background: var(--bg-secondary); color: var(--text-primary);'
+									}"
+									onmouseenter={selectedPeriod !== 'AM' ? (e) => {
+										e.currentTarget.style.background = 'var(--bg-tertiary)';
+									} : null}
+									onmouseleave={selectedPeriod !== 'AM' ? (e) => {
+										e.currentTarget.style.background = 'var(--bg-secondary)';
+									} : null}
 								>
 									AM
 								</button>
 								<button
 									type="button"
 									onclick={() => selectedPeriod = 'PM'}
-									class="px-2 py-1 text-xs rounded {selectedPeriod === 'PM' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition-colors"
+									class="px-2 py-1 text-xs rounded transition-colors"
+									style="{selectedPeriod === 'PM' 
+										? 'background: var(--color-primary-600); color: white;' 
+										: 'background: var(--bg-secondary); color: var(--text-primary);'
+									}"
+									onmouseenter={selectedPeriod !== 'PM' ? (e) => {
+										e.currentTarget.style.background = 'var(--bg-tertiary)';
+									} : null}
+									onmouseleave={selectedPeriod !== 'PM' ? (e) => {
+										e.currentTarget.style.background = 'var(--bg-secondary)';
+									} : null}
 								>
 									PM
 								</button>
 							</div>
 							
-							<span class="text-xs text-gray-500">Period</span>
+							<span class="text-xs" style="color: var(--text-tertiary);">Period</span>
 						</div>
 					{/if}
 				</div>
 
 				<!-- Action buttons -->
-				<div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-					<div class="text-sm text-gray-600">
+				<div class="flex justify-between items-center mt-3 pt-3 border-t" style="border-color: var(--border-primary);">
+					<div class="text-sm" style="color: var(--text-secondary);">
 						<span class="font-medium">{formatTime()}</span>
 					</div>
 					

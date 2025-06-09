@@ -1,10 +1,16 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { tours, timeSlots } from '$lib/db/schema/index.js';
-import { eq, and, max } from 'drizzle-orm';
+import { tours } from '$lib/db/schema/index.js';
+import { eq, and } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/minio-image-storage.js';
+import { 
+  loadTourWithOwnership, 
+  getBookingConstraints, 
+  validateCapacityChange, 
+  updateTimeSlotsCapacity 
+} from '$lib/server/tour-server.js';
 
 export const load: PageServerLoad = async ({ locals, url, params }) => {
   // Check if user is authenticated
@@ -21,29 +27,11 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
   }
 
   try {
-    // Load tour data from Drizzle
-    const tourResults = await db
-      .select()
-      .from(tours)
-      .where(and(
-        eq(tours.id, params.id),
-        eq(tours.userId, locals.user.id)
-      ))
-      .limit(1);
+    // Load tour and verify ownership
+    const tour = await loadTourWithOwnership(params.id, locals.user.id);
 
-    if (tourResults.length === 0) {
-      throw error(404, 'Tour not found');
-    }
-
-    const tour = tourResults[0];
-
-    // Get maximum booked spots to inform capacity constraints
-    const maxBookedResult = await db
-      .select({ maxBooked: max(timeSlots.bookedSpots) })
-      .from(timeSlots)
-      .where(eq(timeSlots.tourId, params.id));
-    
-    const maxBookedSpots = maxBookedResult[0]?.maxBooked || 0;
+    // Get booking constraints
+    const bookingConstraints = await getBookingConstraints(params.id, tour.capacity);
 
     // User is authenticated, return user data, tour ID, and tour data
     return {
@@ -67,11 +55,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt
       },
-      bookingConstraints: {
-        maxBookedSpots,
-        canReduceCapacity: tour.capacity > maxBookedSpots,
-        minimumCapacity: maxBookedSpots
-      }
+      bookingConstraints
     };
   } catch (err) {
     console.error('Error loading tour:', err);
@@ -168,25 +152,15 @@ export const actions: Actions = {
 
       // Additional capacity validation - check if we can reduce capacity
       const newCapacity = parseInt(String(sanitizedData.capacity));
+      const bookingConstraints = await getBookingConstraints(params.id, newCapacity);
+      const capacityValidation = validateCapacityChange(newCapacity, bookingConstraints.maxBookedSpots);
       
-      // Find the maximum booked spots across all time slots for this tour
-      const maxBookedResult = await db
-        .select({ maxBooked: max(timeSlots.bookedSpots) })
-        .from(timeSlots)
-        .where(eq(timeSlots.tourId, params.id));
-      
-      const maxBookedSpots = maxBookedResult[0]?.maxBooked || 0;
-      
-      if (newCapacity < maxBookedSpots) {
+      if (!capacityValidation.isValid) {
         return fail(400, {
           error: 'Capacity validation failed',
-          message: `Cannot reduce capacity to ${newCapacity}. You have ${maxBookedSpots} people booked in one or more time slots. Cancel bookings first or increase capacity.`,
+          message: capacityValidation.error,
           formData: sanitizedData,
-          capacityError: {
-            attempted: newCapacity,
-            minimum: maxBookedSpots,
-            reason: 'existing_bookings'
-          }
+          capacityError: capacityValidation.capacityError
         });
       }
 
@@ -277,13 +251,7 @@ export const actions: Actions = {
 
       // Update existing time slots to match new tour capacity
       // This ensures all time slots reflect the updated capacity
-      await db
-        .update(timeSlots)
-        .set({
-          availableSpots: newCapacity,
-          updatedAt: new Date()
-        })
-        .where(eq(timeSlots.tourId, params.id));
+      await updateTimeSlotsCapacity(params.id, newCapacity);
 
       console.log('✅ Tour updated successfully:', updatedTour[0].id);
       console.log('✅ Time slots updated to new capacity:', newCapacity);

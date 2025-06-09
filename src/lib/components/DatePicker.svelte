@@ -133,9 +133,9 @@
 
 <div class="date-picker-container relative">
 	{#if label}
-		<label for={instanceId} class="form-label mb-2 block">
+		<label for={instanceId} class="form-label">
 			{label}
-			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
+			{#if required}<span style="color: var(--color-error);" class="ml-1">*</span>{/if}
 		</label>
 	{/if}
 
@@ -147,11 +147,18 @@
 			id={instanceId}
 			onclick={() => !disabled && (isOpen = !isOpen)}
 			onkeydown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && (isOpen = !isOpen)}
-			class="form-input pl-10 pr-10 w-full text-left {error ? 'error' : ''} {disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300'}"
+			class="form-input w-full text-left {error ? 'error' : ''}"
+			style="{disabled 
+				? 'opacity: 0.5; cursor: not-allowed;' 
+				: 'cursor: pointer;'
+			} padding-left: 2.5rem; padding-right: 2.5rem;"
 		>
-			<Calendar class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+			<Calendar 
+				class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" 
+				style="color: var(--text-tertiary);" 
+			/>
 			
-			<span class={selectedDate ? 'text-gray-900' : 'text-gray-500'}>
+			<span style="color: {selectedDate ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 				{selectedDate 
 					? selectedDate.toLocaleDateString('en-US', { 
 						weekday: 'short', 
@@ -170,7 +177,16 @@
 						e.stopPropagation();
 						clearDate();
 					}}
-					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded transition-colors"
+					style="color: var(--text-tertiary);"
+					onmouseenter={(e) => {
+						e.currentTarget.style.color = 'var(--text-secondary)';
+						e.currentTarget.style.background = 'var(--bg-tertiary)';
+					}}
+					onmouseleave={(e) => {
+						e.currentTarget.style.color = 'var(--text-tertiary)';
+						e.currentTarget.style.background = 'transparent';
+					}}
 				>
 					<X class="h-3 w-3" />
 				</button>
@@ -180,25 +196,34 @@
 
 	<!-- Calendar dropdown -->
 	{#if isOpen}
-		<div class="absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 p-4">
+		<div 
+			class="absolute top-full left-0 mt-1 w-80 rounded-lg shadow-lg border p-4 z-50"
+			style="background: var(--bg-primary); border-color: var(--border-primary);"
+		>
 			<!-- Calendar header -->
 			<div class="flex items-center justify-between mb-4">
 				<button
 					type="button"
 					onclick={previousMonth}
-					class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+					class="p-2 rounded-lg transition-colors"
+					style="color: var(--text-secondary);"
+					onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+					onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
 				>
-					<ChevronLeft class="h-4 w-4 text-gray-600" />
+					<ChevronLeft class="h-4 w-4" />
 				</button>
 				
 				<div class="flex items-center gap-2">
-					<h3 class="text-lg font-semibold text-gray-900">
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">
 						{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
 					</h3>
 					<button
 						type="button"
 						onclick={goToToday}
-						class="px-2 py-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+						class="px-2 py-1 text-xs font-medium transition-colors"
+						style="color: var(--color-primary-600);"
+						onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-700)'}
+						onmouseleave={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
 					>
 						Today
 					</button>
@@ -207,16 +232,19 @@
 				<button
 					type="button"
 					onclick={nextMonth}
-					class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+					class="p-2 rounded-lg transition-colors"
+					style="color: var(--text-secondary);"
+					onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+					onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
 				>
-					<ChevronRight class="h-4 w-4 text-gray-600" />
+					<ChevronRight class="h-4 w-4" />
 				</button>
 			</div>
 
 			<!-- Day headers -->
 			<div class="grid grid-cols-7 gap-1 mb-2">
 				{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
-					<div class="text-center text-xs font-medium text-gray-500 py-2">
+					<div class="text-center text-xs font-medium py-2" style="color: var(--text-tertiary);">
 						{day}
 					</div>
 				{/each}
@@ -230,17 +258,25 @@
 							type="button"
 							onclick={() => !isPastDate(day) && selectDate(day)}
 							disabled={isPastDate(day)}
-							class="
-								relative h-8 w-8 text-sm rounded-lg transition-all
-								{isSelected(day) 
-									? 'bg-blue-600 text-white font-medium' 
-									: isToday(day) 
-										? 'bg-blue-50 text-blue-700 font-medium border border-blue-200' 
-										: isPastDate(day)
-											? 'text-gray-300 cursor-not-allowed'
-											: 'text-gray-700 hover:bg-gray-100'
+							class="relative h-8 w-8 text-sm rounded-lg transition-all"
+							style="{isSelected(day) 
+								? 'background: var(--color-primary-600); color: white; font-weight: 500;' 
+								: isToday(day) 
+									? 'background: var(--color-primary-50); color: var(--color-primary-700); font-weight: 500; border: 1px solid var(--color-primary-200);' 
+									: isPastDate(day)
+										? 'color: var(--text-tertiary); cursor: not-allowed;'
+										: 'color: var(--text-primary);'
+							}"
+							onmouseenter={!isSelected(day) && !isPastDate(day) ? (e) => {
+								if (!isToday(day)) {
+									e.currentTarget.style.background = 'var(--bg-secondary)';
 								}
-							"
+							} : null}
+							onmouseleave={!isSelected(day) && !isPastDate(day) ? (e) => {
+								if (!isToday(day)) {
+									e.currentTarget.style.background = 'transparent';
+								}
+							} : null}
 						>
 							{day}
 						</button>

@@ -13,7 +13,7 @@
 		getSlotStatusColor,
 		getTourImageUrl,
 		calculateConversionRate
-	} from '$lib/utils/tour-helpers.js';
+	} from '$lib/utils/tour-client.js';
 	import { browser } from '$app/environment';
 	
 	// Components

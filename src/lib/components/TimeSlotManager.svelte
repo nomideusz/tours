@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatDateTime, formatDate, formatTime } from '$lib/utils/date-helpers.js';
-	import { getSlotStatusColor } from '$lib/utils/tour-helpers.js';
+	import { getSlotStatusColor } from '$lib/utils/tour-client.js';
     import Plus from 'lucide-svelte/icons/plus';
     import Calendar from 'lucide-svelte/icons/calendar';
     import Clock from 'lucide-svelte/icons/clock';
