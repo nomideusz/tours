@@ -5,6 +5,15 @@
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+	import { 
+		formatDuration,
+		getTourStatusColor,
+		getTourStatusDot,
+		getBookingStatusColor,
+		getSlotStatusColor,
+		getTourImageUrl,
+		calculateConversionRate
+	} from '$lib/utils/tour-helpers.js';
 	import { browser } from '$app/environment';
 	
 	// Components
@@ -40,51 +49,8 @@
 	let copiedQRCode = $state(false);
 	let statusUpdating = $state(false);
 
-	// Calculate conversion rate
-	let conversionRate = $derived(tourStats?.qrScans > 0 ? (tourStats.qrConversions / tourStats.qrScans * 100) : 0);
-
-	// Status badge colors
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'confirmed': return 'bg-green-50 text-green-700 border-green-200';
-			case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-			case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
-			case 'completed': return 'bg-blue-50 text-blue-700 border-blue-200';
-			case 'no_show': return 'bg-gray-50 text-gray-700 border-gray-200';
-			default: return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
-	}
-
-	function getTourStatusColor(status: string) {
-		switch (status) {
-			case 'active':
-				return 'bg-green-50 text-green-700 border-green-200';
-			case 'draft':
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-			default:
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
-	}
-
-	function getTourStatusDot(status: string) {
-		switch (status) {
-			case 'active':
-				return 'bg-green-500';
-			case 'draft':
-				return 'bg-gray-500';
-			default:
-				return 'bg-gray-500';
-		}
-	}
-
-	function getSlotStatusColor(status: string) {
-		switch (status) {
-			case 'active': return 'bg-green-50 text-green-700 border-green-200';
-			case 'full': return 'bg-red-50 text-red-700 border-red-200';
-			case 'cancelled': return 'bg-gray-50 text-gray-700 border-gray-200';
-			default: return 'bg-blue-50 text-blue-700 border-blue-200';
-		}
-	}
+	// Calculate conversion rate using shared utility
+	let conversionRate = $derived(calculateConversionRate(tourStats?.qrScans || 0, tourStats?.qrConversions || 0));
 
 	function getQRImageUrl(): string {
 		if (!tour.qrCode) return '';
@@ -95,29 +61,9 @@
 		});
 	}
 
+	// Image URL helper using shared utility
 	function getImageUrl(imagePath: string | null | undefined): string {
-		if (!tour?.id || !imagePath || typeof imagePath !== 'string') return '';
-		
-		try {
-			// Handle old PocketBase URLs
-			if (imagePath.startsWith('http')) {
-				return imagePath; // Return old URL as-is for backward compatibility
-			}
-			// Handle new MinIO storage via API
-			return `/api/images/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}?size=large`;
-		} catch (error) {
-			console.warn('Error generating image URL:', error);
-			return '';
-		}
-	}
-
-	function formatDuration(minutes: number): string {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		if (hours > 0) {
-			return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-		}
-		return `${mins}m`;
+		return getTourImageUrl(tour?.id || '', imagePath, 'large');
 	}
 
 	// Copy QR code to clipboard
@@ -558,7 +504,7 @@
 									<div class="flex-1 min-w-0">
 										<div class="flex items-center gap-3 mb-2">
 											<p class="font-medium truncate" style="color: var(--text-primary);">{booking.customerName}</p>
-											<span class="px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 {getStatusColor(booking.status)}">
+											<span class="px-2 py-1 text-xs font-medium rounded-full border flex-shrink-0 {getBookingStatusColor(booking.status)}">
 												{booking.status}
 											</span>
 										</div>

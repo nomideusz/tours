@@ -1,6 +1,7 @@
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc, gte, count } from 'drizzle-orm';
+import { formatEuro } from '$lib/utils/currency.js';
 
 export interface SharedStats {
 	totalTours: number;

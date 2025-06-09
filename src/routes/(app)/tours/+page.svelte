@@ -2,6 +2,12 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
+	import { 
+		formatDuration,
+		getTourStatusColor,
+		getTourStatusDot,
+		getImageUrl
+	} from '$lib/utils/tour-helpers.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -54,52 +60,7 @@
 		tours = (data.tours as unknown as Tour[]) || [];
 	});
 
-	function getStatusColor(status: Tour['status']) {
-		switch (status) {
-			case 'active':
-				return 'bg-green-50 text-green-700 border-green-200';
-			case 'draft':
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-			default:
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
-	}
-
-	function getStatusDot(status: Tour['status']) {
-		switch (status) {
-			case 'active':
-				return 'bg-green-500';
-			case 'draft':
-				return 'bg-gray-500';
-			default:
-				return 'bg-gray-500';
-		}
-	}
-
-	function getImageUrl(tour: Tour | null | undefined, imagePath: string | null | undefined): string {
-		if (!tour?.id || !imagePath || typeof imagePath !== 'string') return '';
-		
-		try {
-			// Handle old PocketBase URLs
-			if (imagePath.startsWith('http')) {
-				return imagePath; // Return old URL as-is for backward compatibility
-			}
-			// Handle new MinIO storage via API
-			return `/api/images/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}?size=medium`;
-		} catch (error) {
-			console.warn('Error generating image URL:', error);
-			return '';
-		}
-	}
-
-	function formatDuration(minutes: number): string {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		if (hours > 0) {
-			return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-		}
-		return `${mins}m`;
-	}
+	// Utility functions are now imported from shared utilities
 
 	function getQRImageUrl(tour: Tour): string {
 		if (!tour.qrCode) return '';
@@ -294,9 +255,9 @@
 											<button
 												onclick={() => toggleTourStatus(tour)}
 												disabled={statusUpdating === tour.id}
-												class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getStatusColor(tour.status)}"
+												class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
 											>
-												<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
+												<span class="w-1.5 h-1.5 rounded-full {getTourStatusDot(tour.status)}"></span>
 												{statusUpdating === tour.id ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 											</button>
 										</Tooltip>
@@ -443,9 +404,9 @@
 													<button
 														onclick={() => toggleTourStatus(tour)}
 														disabled={statusUpdating === tour.id}
-														class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getStatusColor(tour.status)}"
+														class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
 													>
-														<span class="w-1.5 h-1.5 rounded-full {getStatusDot(tour.status)}"></span>
+														<span class="w-1.5 h-1.5 rounded-full {getTourStatusDot(tour.status)}"></span>
 														{statusUpdating === tour.id ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 													</button>
 												</Tooltip>

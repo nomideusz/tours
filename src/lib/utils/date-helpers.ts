@@ -41,17 +41,6 @@ export function formatDateMobile(dateString: string): string {
 }
 
 /**
- * Currency formatting
- */
-export function formatCurrency(amount: number | string): string {
-	const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-	return new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency: 'USD'
-	}).format(numAmount);
-}
-
-/**
  * Time formatting (e.g., "2:30 PM")
  */
 export function formatTime(dateString: string | Date): string {

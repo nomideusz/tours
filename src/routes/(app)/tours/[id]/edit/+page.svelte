@@ -58,6 +58,7 @@
 	}
 
 	function getExistingImageUrl(imageName: string): string {
+		// Use shared utility for consistency
 		return `/api/images/${tourId}/${imageName}?size=medium`;
 	}
 
