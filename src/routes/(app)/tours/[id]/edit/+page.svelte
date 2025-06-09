@@ -58,7 +58,7 @@
 	}
 
 	function getExistingImageUrl(imageName: string): string {
-		return `/uploads/tours/${tourId}/${imageName}`;
+		return `/api/images/${tourId}/${imageName}?size=medium`;
 	}
 
 	onMount(() => {
@@ -120,7 +120,7 @@
 			title="Edit Tour"
 			subtitle="Update your tour details and settings"
 			breadcrumbs={[
-				{ label: 'Tours', href: '/tours' },
+				{ label: 'Tours Management', href: '/tours' },
 				{ label: tour?.name || 'Tour', href: `/tours/${tourId}` },
 				{ label: 'Edit' }
 			]}

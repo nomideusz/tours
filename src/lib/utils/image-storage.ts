@@ -296,25 +296,11 @@ async function cleanupImageFiles(tourId: string, filenames: string[]): Promise<v
 
 /**
  * Generate image URL for serving
+ * @deprecated Use MinIO image storage instead via /api/images/ endpoint
  */
 export function getImageUrl(tourId: string, filename: string, size: 'original' | 'thumbnail' | 'medium' | 'large' = 'medium'): string {
-  let actualFilename: string;
-  
-  switch (size) {
-    case 'thumbnail':
-      actualFilename = `thumb_${filename}`;
-      break;
-    case 'medium':
-      actualFilename = `med_${filename}`;
-      break;
-    case 'large':
-      actualFilename = `large_${filename}`;
-      break;
-    default:
-      actualFilename = filename;
-  }
-  
-  return `/uploads/tours/${tourId}/${actualFilename}`;
+  // Redirect to MinIO API endpoint instead of file system
+  return `/api/images/${tourId}/${filename}?size=${size}`;
 }
 
 /**

@@ -152,7 +152,7 @@
 			subtitle={`Manage time slots for ${data.tour.name}`}
 			backUrl={`/tours/${data.tour.id}`}
 			breadcrumbs={[
-				{ label: 'Tours', href: '/tours' },
+				{ label: 'Tours Management', href: '/tours' },
 				{ label: data.tour.name, href: `/tours/${data.tour.id}` },
 				{ label: 'Schedule' }
 			]}

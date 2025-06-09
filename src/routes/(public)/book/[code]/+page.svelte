@@ -32,7 +32,7 @@
 	// Get tour from expanded QR code data
 	let tour = $derived(data.qrCode.expand?.tour || null);
 	let imageUrl = $derived(tour?.images?.[0] ? 
-		`/uploads/tours/${tour.id}/${tour.images[0]}` : 
+		`/api/images/${tour.id}/${tour.images[0]}?size=large` : 
 		null
 	);
 	
@@ -70,29 +70,29 @@
 			// Morning slot
 			slots.push({
 				id: `demo-${i}-1`,
-				tour: tour.id,
+				tourId: tour.id,
 				startTime: `${dateStr}T09:00:00`,
 				endTime: `${dateStr}T11:00:00`,
 				availableSpots: Math.floor(Math.random() * 8) + 2,
 				bookedSpots: Math.floor(Math.random() * 3),
 				status: 'available' as const,
 				isRecurring: false,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString()
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
 			});
 			
 			// Afternoon slot
 			slots.push({
 				id: `demo-${i}-2`,
-				tour: tour.id,
+				tourId: tour.id,
 				startTime: `${dateStr}T14:00:00`,
 				endTime: `${dateStr}T16:00:00`,
 				availableSpots: Math.floor(Math.random() * 6) + 1,
 				bookedSpots: Math.floor(Math.random() * 4),
 				status: 'available' as const,
 				isRecurring: false,
-				created: new Date().toISOString(),
-				updated: new Date().toISOString()
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString()
 			});
 		}
 		

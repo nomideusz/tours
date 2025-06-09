@@ -44,6 +44,44 @@ export function formatDateMobile(dateString: string): string {
 }
 
 /**
+ * Currency formatting
+ */
+export function formatCurrency(amount: number | string): string {
+	const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD'
+	}).format(numAmount);
+}
+
+/**
+ * Time formatting (e.g., "2:30 PM")
+ */
+export function formatTime(dateString: string | Date): string {
+	const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+	return new Intl.DateTimeFormat('en-US', {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true
+	}).format(date);
+}
+
+/**
+ * Date and time formatting (e.g., "Jan 15, 2024 at 2:30 PM")
+ */
+export function formatDateTime(dateString: string | Date): string {
+	const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+	return new Intl.DateTimeFormat('en-US', {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true
+	}).format(date);
+}
+
+/**
  * Standard status color mapping
  */
 export function getStatusColor(status: string): string {

@@ -4,7 +4,7 @@ import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
-import { processAndSaveImage, initializeUploadDirs, deleteImage } from '$lib/utils/image-storage.js';
+import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/minio-image-storage.js';
 
 export const load: PageServerLoad = async ({ locals, url, params }) => {
   // Check if user is authenticated
@@ -171,7 +171,7 @@ export const actions: Actions = {
       const currentImages = existingTour.images || [];
 
       // Handle image uploads
-      await initializeUploadDirs();
+      await initializeImageStorage();
       
       const imageFiles = formData.getAll('images') as File[];
       const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);

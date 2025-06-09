@@ -63,12 +63,12 @@
 	// Navigation items
 	const baseNavigationItems = $derived([
 		{
-			name: 'Dashboard',
+			name: 'Operations Center',
 			href: '/dashboard',
 			icon: Home
 		},
 		{
-			name: 'Tours',
+			name: 'Tours Management',
 			href: '/tours',
 			icon: MapPin
 		},

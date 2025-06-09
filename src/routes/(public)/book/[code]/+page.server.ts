@@ -308,7 +308,7 @@ function generateTourSEO(tour: any, qrCode: string, origin: string) {
 		: `Book ${tour.name} in ${tour.location || 'an amazing location'}. Instant booking with secure payment.`;
 	
 	const image = tour.images?.[0] 
-		? `/uploads/tours/${tour.id}/${tour.images[0]}`
+		? `${origin}/api/images/${tour.id}/${tour.images[0]}?size=large`
 		: `${origin}/images/og-tour-default.jpg`;
 
 	return {

@@ -65,7 +65,7 @@ export function generateTourStructuredData(tour: any, qrCode: string, origin: st
 		name: tour.name,
 		description: tour.description,
 		image: tour.images?.[0] 
-			? `/uploads/tours/${tour.id}/${tour.images[0]}`
+			? `${origin}/api/images/${tour.id}/${tour.images[0]}?size=large`
 			: `${origin}/images/og-tour-default.jpg`,
 		location: {
 			'@type': 'Place',

@@ -61,7 +61,7 @@
 		subtitle="Set up your tour details and start receiving bookings"
 		backUrl="/tours"
 		breadcrumbs={[
-			{ label: 'Tours', href: '/tours' },
+			{ label: 'Tours Management', href: '/tours' },
 			{ label: 'Create New Tour' }
 		]}
 	/>

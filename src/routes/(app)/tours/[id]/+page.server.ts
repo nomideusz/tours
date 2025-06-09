@@ -1,125 +1,149 @@
-import type { PageServerLoad, Actions } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { tours } from '$lib/db/schema/index.js';
-import { eq, and } from 'drizzle-orm';
-import { getTourBookingData } from '$lib/utils/shared-stats.js';
+import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { eq, and, gte, desc, count, sql } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ params, locals, parent }) => {
-	console.log('Tour detail page load started for tour:', params.id);
-	
-	if (!locals.user) {
-		console.log('Tour detail: User not authenticated');
-		throw error(401, 'Unauthorized');
-	}
-
-	console.log('Tour detail: User authenticated:', locals.user.email);
-
+export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	// Get parent layout data first
 	const parentData = await parent();
+	
+	// Check if user is authenticated
+	if (!locals.user) {
+		const redirectTo = url.pathname + url.search;
+		throw redirect(303, `/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+	}
+
+	// Validate that tour ID is provided
+	if (!params.id) {
+		throw error(400, 'Tour ID is required');
+	}
 
 	try {
-		// Use the shared stats approach to get tour data, bookings, and stats
-		console.log('Loading tour booking data using shared-stats approach');
-		const tourBookingData = await getTourBookingData(locals.user.id, params.id);
-		
-		console.log('Tour detail page load completed successfully');
+		const userId = locals.user.id;
+		const tourId = params.id;
+
+		// Load tour data and verify ownership
+		const [tour] = await db
+			.select()
+			.from(tours)
+			.where(and(
+				eq(tours.id, tourId),
+				eq(tours.userId, userId)
+			))
+			.limit(1);
+
+		if (!tour) {
+			throw error(404, 'Tour not found or you do not have permission to view it');
+		}
+
+		// Get current date for filtering
+		const now = new Date();
+		const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const startOfWeek = new Date(startOfToday);
+		startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+		// Get upcoming time slots (next 10)
+		const upcomingSlots = await db
+			.select({
+				id: timeSlots.id,
+				startTime: timeSlots.startTime,
+				endTime: timeSlots.endTime,
+				availableSpots: timeSlots.availableSpots,
+				bookedSpots: timeSlots.bookedSpots,
+				status: timeSlots.status
+			})
+			.from(timeSlots)
+			.where(and(
+				eq(timeSlots.tourId, tourId),
+				gte(timeSlots.startTime, now)
+			))
+			.orderBy(timeSlots.startTime)
+			.limit(10);
+
+		// Get recent bookings (last 10)
+		const recentBookings = await db
+			.select({
+				id: bookings.id,
+				customerName: bookings.customerName,
+				customerEmail: bookings.customerEmail,
+				participants: bookings.participants,
+				totalAmount: bookings.totalAmount,
+				status: bookings.status,
+				bookingReference: bookings.bookingReference,
+				createdAt: bookings.createdAt
+			})
+			.from(bookings)
+			.where(eq(bookings.tourId, tourId))
+			.orderBy(desc(bookings.createdAt))
+			.limit(10);
+
+		// Calculate tour-specific statistics
+		const [tourStats] = await db
+			.select({
+				totalBookings: count(bookings.id),
+				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`,
+				todayBookings: sql<number>`COALESCE(SUM(CASE WHEN DATE(${bookings.createdAt}) = DATE(NOW()) THEN 1 ELSE 0 END), 0)`,
+				weekBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.createdAt} >= ${startOfWeek.toISOString()} THEN 1 ELSE 0 END), 0)`,
+				monthBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.createdAt} >= ${startOfMonth.toISOString()} THEN 1 ELSE 0 END), 0)`,
+				confirmedBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'confirmed' THEN 1 ELSE 0 END), 0)`,
+				pendingBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'pending' THEN 1 ELSE 0 END), 0)`
+			})
+			.from(bookings)
+			.where(eq(bookings.tourId, tourId));
+
+		// Get total time slots count
+		const [timeSlotsCount] = await db
+			.select({
+				totalSlots: count(timeSlots.id),
+				upcomingSlots: sql<number>`COALESCE(SUM(CASE WHEN ${timeSlots.startTime} >= NOW() THEN 1 ELSE 0 END), 0)`
+			})
+			.from(timeSlots)
+			.where(eq(timeSlots.tourId, tourId));
 
 		return {
-			...parentData, // Include shared stats and user data from layout
-			...tourBookingData // Include tour, bookings, and stats
+			...parentData,
+			tour: {
+				...tour,
+				price: parseFloat(tour.price),
+				created: tour.createdAt.toISOString(),
+				updated: tour.updatedAt.toISOString()
+			},
+			tourStats: {
+				totalBookings: Number(tourStats?.totalBookings || 0),
+				totalRevenue: Number(tourStats?.totalRevenue || 0),
+				totalParticipants: Number(tourStats?.totalParticipants || 0),
+				todayBookings: Number(tourStats?.todayBookings || 0),
+				weekBookings: Number(tourStats?.weekBookings || 0),
+				monthBookings: Number(tourStats?.monthBookings || 0),
+				confirmedBookings: Number(tourStats?.confirmedBookings || 0),
+				pendingBookings: Number(tourStats?.pendingBookings || 0),
+				totalSlots: Number(timeSlotsCount?.totalSlots || 0),
+				upcomingSlots: Number(timeSlotsCount?.upcomingSlots || 0),
+				qrScans: tour.qrScans || 0,
+				qrConversions: tour.qrConversions || 0
+			},
+			upcomingSlots: upcomingSlots.map(slot => ({
+				...slot,
+				startTime: slot.startTime.toISOString(),
+				endTime: slot.endTime.toISOString()
+			})),
+			recentBookings: recentBookings.map(booking => ({
+				...booking,
+				totalAmount: parseFloat(booking.totalAmount),
+				createdAt: booking.createdAt.toISOString()
+			}))
 		};
 	} catch (err) {
-		console.error('CRITICAL ERROR loading tour detail:', err);
-		console.error('Error type:', err instanceof Error ? err.constructor.name : typeof err);
-		console.error('Error message:', err instanceof Error ? err.message : String(err));
-		console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
+		console.error('Error loading tour details page:', err);
 		
-		if (err instanceof Error && err.message.includes('not found')) {
-			throw error(404, 'Tour not found or access denied');
-		}
-		if ((err as any).status) {
+		// Re-throw SvelteKit errors (like 404, 403)
+		if (err && typeof err === 'object' && 'status' in err) {
 			throw err;
 		}
+		
 		throw error(500, 'Failed to load tour details');
-	}
-};
-
-export const actions: Actions = {
-	delete: async ({ params, locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
-
-		try {
-			// Verify ownership before deletion
-			const tourData = await db
-				.select()
-				.from(tours)
-				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
-				))
-				.limit(1);
-			
-			if (tourData.length === 0) {
-				throw error(404, 'Tour not found or access denied');
-			}
-
-			// Delete tour (cascade will handle related records)
-			await db
-				.delete(tours)
-				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
-				));
-
-		} catch (err) {
-			console.error('Error deleting tour:', err);
-			throw error(500, 'Failed to delete tour');
-		}
-
-		throw redirect(303, '/tours');
-	},
-
-	toggleStatus: async ({ params, locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
-
-		try {
-			// Get current tour status
-			const tourData = await db
-				.select({ status: tours.status })
-				.from(tours)
-				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
-				))
-				.limit(1);
-			
-			if (tourData.length === 0) {
-				throw error(404, 'Tour not found or access denied');
-			}
-
-			const newStatus = tourData[0].status === 'active' ? 'draft' : 'active';
-
-			// Update tour status
-			await db
-				.update(tours)
-				.set({ 
-					status: newStatus,
-					updatedAt: new Date()
-				})
-				.where(and(
-					eq(tours.id, params.id),
-					eq(tours.userId, locals.user.id)
-				));
-
-			return { success: true, newStatus };
-		} catch (err) {
-			console.error('Error toggling tour status:', err);
-			throw error(500, 'Failed to update tour status');
-		}
 	}
 }; 

@@ -6,6 +6,8 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import type { Tour } from '$lib/types.js';
+	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+	import { browser } from '$app/environment';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -21,10 +23,12 @@
 	import Edit from 'lucide-svelte/icons/edit';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import MoreHorizontal from 'lucide-svelte/icons/more-horizontal';
+	import Copy from 'lucide-svelte/icons/copy';
 
 	let { data }: { data: PageData } = $props();
 
 	let tours = $state<Tour[]>((data.tours as unknown as Tour[]) || []);
+	let copiedQRCode = $state<string | null>(null);
 
 	// Use stats from server (with fallbacks for type safety)
 	let stats = $derived(data.stats || {
@@ -76,8 +80,8 @@
 			if (imagePath.startsWith('http')) {
 				return imagePath; // Return old URL as-is for backward compatibility
 			}
-			// Handle new local storage
-			return `/uploads/tours/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}`;
+			// Handle new MinIO storage via API
+			return `/api/images/${encodeURIComponent(tour.id)}/${encodeURIComponent(imagePath)}?size=medium`;
 		} catch (error) {
 			console.warn('Error generating image URL:', error);
 			return '';
@@ -92,17 +96,39 @@
 		}
 		return `${mins}m`;
 	}
+
+	function getQRImageUrl(tour: Tour): string {
+		if (!tour.qrCode) return '';
+		const baseURL = browser ? window.location.origin : 'https://zaur.app';
+		return generateQRImageURL(tour.qrCode, {
+			size: 150,
+			baseURL
+		});
+	}
+
+	function copyQRUrl(tour: Tour) {
+		if (!browser || !tour.qrCode) return;
+		const baseURL = window.location.origin;
+		const bookingUrl = `${baseURL}/book/${tour.qrCode}`;
+		navigator.clipboard.writeText(bookingUrl);
+		
+		// Show feedback
+		copiedQRCode = tour.qrCode;
+		setTimeout(() => {
+			copiedQRCode = null;
+		}, 2000);
+	}
 </script>
 
 <svelte:head>
-	<title>Tours - Zaur</title>
+	<title>Tours Management - Zaur</title>
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<div class="mb-6 sm:mb-8">
 		<PageHeader 
-			title="Tours"
-			subtitle="Manage and track your tour offerings with improved performance"
+			title="Tours Management"
+			subtitle="Manage your tour offerings, track performance, and grow your business"
 		>
 			<button onclick={() => goto('/tours/new')} class="hidden sm:flex button-primary button--gap">
 				<Plus class="h-4 w-4 sm:h-5 sm:w-5" />
@@ -111,10 +137,10 @@
 		</PageHeader>
 	</div>
 
-	<!-- Quick Actions - Mobile -->
+	<!-- Business Actions - Mobile -->
 	<div class="lg:hidden mb-6">
 		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
+			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Management Actions</h3>
 			<div class="grid grid-cols-2 gap-3">
 				<button
 					onclick={() => goto('/tours/new')}
@@ -124,11 +150,11 @@
 					New Tour
 				</button>
 				<button
-					onclick={() => goto('/checkin-scanner')}
-					class="button-primary button--gap button--small justify-center py-3"
+					onclick={() => goto('/dashboard')}
+					class="button-secondary button--gap button--small justify-center py-3"
 				>
-					<Eye class="h-4 w-4" />
-					QR Scanner
+					<Clock class="h-4 w-4" />
+					Today's Ops
 				</button>
 			</div>
 		</div>
@@ -219,7 +245,7 @@
 													</div>
 
 													<!-- Quick Metrics -->
-													<div class="grid grid-cols-3 gap-4 mb-4">
+													<div class="grid grid-cols-4 gap-3 mb-4">
 														<div class="text-center">
 															<div class="flex items-center justify-center mb-1">
 																<DollarSign class="h-4 w-4" style="color: var(--text-tertiary);" />
@@ -240,6 +266,13 @@
 															</div>
 															<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
 															<p class="text-xs" style="color: var(--text-tertiary);">Max guests</p>
+														</div>
+														<div class="text-center">
+															<div class="flex items-center justify-center mb-1">
+																<QrCode class="h-4 w-4" style="color: var(--text-tertiary);" />
+															</div>
+															<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
+															<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
 														</div>
 													</div>
 
@@ -265,14 +298,49 @@
 
 												<!-- QR Code & Actions -->
 												<div class="flex flex-col items-center gap-3 flex-shrink-0">
-													<!-- QR Code Placeholder -->
-													<div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-														<QrCode class="h-6 w-6 sm:h-8 sm:w-8" style="color: var(--text-tertiary);" />
-													</div>
-													<p class="text-xs text-center" style="color: var(--text-tertiary);">Main QR</p>
+													<!-- QR Code -->
+													{#if tour.qrCode}
+														<div class="relative">
+															<button
+																onclick={() => copyQRUrl(tour)}
+																class="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-lg"
+																style="border: 1px solid var(--border-primary);"
+																title="Click to copy booking URL"
+															>
+																<img 
+																	src={getQRImageUrl(tour)} 
+																	alt="QR Code for {tour.name}"
+																	class="w-full h-full object-cover transition-opacity group-hover:opacity-75"
+																	loading="lazy"
+																/>
+																<!-- Copy icon overlay -->
+																<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+																	<div class="bg-white bg-opacity-90 rounded-full p-1.5 shadow-md">
+																		<Copy class="h-3 w-3 text-gray-700" />
+																	</div>
+																</div>
+															</button>
+														</div>
+														
+														<!-- Copy feedback toast -->
+														{#if copiedQRCode === tour.qrCode}
+															<div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-600 text-white text-sm px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
+																<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+																	<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+																</svg>
+																Booking URL copied!
+															</div>
+														{/if}
+														<p class="text-xs text-center" style="color: var(--text-tertiary);">{tour.qrCode}</p>
+													{:else}
+														<div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+															<QrCode class="h-6 w-6 sm:h-8 sm:w-8" style="color: var(--text-tertiary);" />
+														</div>
+														<p class="text-xs text-center" style="color: var(--text-tertiary);">No QR</p>
+													{/if}
 
 																						<!-- Actions -->
-									<div class="flex flex-col sm:flex-row gap-2">
+									<div class="flex flex-col gap-2">
 										<button
 											onclick={() => goto(`/tours/${tour.id}`)}
 											class="button-primary button--small px-3 py-2"
@@ -287,6 +355,18 @@
 											<Edit class="h-3 w-3 sm:h-4 sm:w-4" />
 											<span class="hidden sm:inline ml-1">Edit</span>
 										</button>
+										{#if tour.qrCode}
+											<a
+												href="/book/{tour.qrCode}"
+												target="_blank"
+												rel="noopener noreferrer"
+												class="button-secondary button--small px-3 py-2"
+												title="Preview booking page"
+											>
+												<ExternalLink class="h-3 w-3 sm:h-4 sm:w-4" />
+												<span class="hidden sm:inline ml-1">Preview</span>
+											</a>
+										{/if}
 									</div>
 
 													<!-- More Options -->
@@ -305,45 +385,44 @@
 			{/if}
 		</div>
 
-		<!-- Stats Grid - Second on mobile, First on desktop -->
-		<div class="order-2 lg:order-1 mb-6 lg:mb-8">
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-				<StatsCard
-					title="Total Tours"
-					value={stats.totalTours}
-					subtitle="{stats.activeTours} active"
-					icon={MapPin}
-					trend={stats.monthlyTours > 0 ? { value: `+${stats.monthlyTours} this month`, positive: true } : undefined}
-					variant="small"
-				/>
+			<!-- Tours Performance - Second on mobile, First on desktop -->
+	<div class="order-2 lg:order-1 mb-6 lg:mb-8">
+		<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+			<StatsCard
+				title="Total Tours"
+				value={stats.totalTours}
+				subtitle="{stats.activeTours} active"
+				icon={MapPin}
+				trend={stats.monthlyTours > 0 ? { value: `+${stats.monthlyTours} this month`, positive: true } : undefined}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Today's Bookings" 
-					value={stats.todayBookings}
-					subtitle="bookings for today"
-					icon={Calendar}
-					variant="small"
-				/>
+			<StatsCard
+				title="Total Bookings"
+				value={stats.totalBookings}
+				subtitle="all time"
+				icon={BarChart3}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Weekly Bookings"
-					value={stats.weekBookings}
-					subtitle="{stats.totalBookings} total bookings"
-					icon={BarChart3}
-					trend={stats.weekBookings > 0 ? { value: "This week", positive: true } : undefined}
-					variant="small"
-				/>
+			<StatsCard
+				title="Monthly Revenue"
+				value={formatEuro(stats.monthRevenue)}
+				subtitle="this month"
+				icon={DollarSign}
+				trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Monthly Revenue"
-					value={formatEuro(stats.monthRevenue)}
-					subtitle="{stats.totalParticipants} total guests"
-					icon={DollarSign}
-					trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
-					variant="small"
-				/>
-			</div>
+			<StatsCard
+				title="Total Participants"
+				value={stats.totalParticipants}
+				subtitle="all guests served"
+				icon={Users}
+				variant="small"
+			/>
 		</div>
+	</div>
 
 	</div>
 </div>

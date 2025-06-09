@@ -4,7 +4,7 @@ import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { createId } from '@paralleldrive/cuid2';
-import { processAndSaveImage, initializeUploadDirs, isImageStorageAvailable } from '$lib/utils/image-storage.js';
+import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } from '$lib/utils/minio-image-storage.js';
 import { generateTourQRCode } from '$lib/utils/qr-generation.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -110,14 +110,14 @@ export const actions: Actions = {
           });
         }
 
-        // Initialize upload directories
+        // Initialize MinIO storage
         try {
-          await initializeUploadDirs();
+          await initializeImageStorage();
         } catch (error) {
-          console.error('❌ Failed to initialize upload directories:', error);
+          console.error('❌ Failed to initialize MinIO storage:', error);
           return fail(500, {
             error: 'Image upload setup failed',
-            message: 'Unable to prepare image upload directories. Please contact support.'
+            message: 'Unable to prepare image upload storage. Please contact support.'
           });
         }
         
