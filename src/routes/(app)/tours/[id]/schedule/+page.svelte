@@ -26,33 +26,97 @@
 	let error = $state<string | null>(form?.error || null);
 
 	// Filter future and current slots, then sort by start time
-	let futureSlots = $derived(
-		timeSlots.filter(slot => new Date(slot.startTime) >= new Date())
-	);
+	// Use a more conservative approach for SSR safety
+	let futureSlots = $derived((() => {
+		try {
+			if (!timeSlots || timeSlots.length === 0) return [];
+			
+			const now = new Date();
+			return timeSlots.filter(slot => {
+				try {
+					if (!slot?.startTime) return false;
+					const slotDate = new Date(slot.startTime);
+					return !isNaN(slotDate.getTime()) && slotDate >= now;
+				} catch {
+					return false;
+				}
+			});
+		} catch {
+			return timeSlots || [];
+		}
+	})());
 
 	// Sort slots by start time
-	let sortedSlots = $derived(
-		[...futureSlots].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-	);
+	let sortedSlots = $derived((() => {
+		try {
+			if (!futureSlots || futureSlots.length === 0) return [];
+			
+			return [...futureSlots].sort((a, b) => {
+				try {
+					const dateA = new Date(a.startTime);
+					const dateB = new Date(b.startTime);
+					
+					if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+					return dateA.getTime() - dateB.getTime();
+				} catch {
+					return 0;
+				}
+			});
+		} catch {
+			return futureSlots || [];
+		}
+	})());
 
 	// Get upcoming slots (next 3)
-	let upcomingSlots = $derived(
-		sortedSlots.filter(slot => new Date(slot.startTime) > new Date()).slice(0, 3)
-	);
+	let upcomingSlots = $derived((() => {
+		try {
+			if (!sortedSlots || sortedSlots.length === 0) return [];
+			
+			const now = new Date();
+			return sortedSlots.filter(slot => {
+				try {
+					if (!slot?.startTime) return false;
+					const slotDate = new Date(slot.startTime);
+					return !isNaN(slotDate.getTime()) && slotDate > now;
+				} catch {
+					return false;
+				}
+			}).slice(0, 3);
+		} catch {
+			return [];
+		}
+	})());
 
 	// Calculate total booked spots today
 	let todayBookings = $derived(() => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		
-		return sortedSlots
-			.filter(slot => {
-				const slotDate = new Date(slot.startTime);
-				return slotDate >= today && slotDate < tomorrow;
-			})
-			.reduce((total, slot) => total + slot.bookedSpots, 0);
+		try {
+			if (!sortedSlots || sortedSlots.length === 0) return 0;
+			
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			const tomorrow = new Date(today);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			
+			return sortedSlots
+				.filter(slot => {
+					try {
+						if (!slot?.startTime) return false;
+						const slotDate = new Date(slot.startTime);
+						return !isNaN(slotDate.getTime()) && slotDate >= today && slotDate < tomorrow;
+					} catch {
+						return false;
+					}
+				})
+				.reduce((total, slot) => {
+					try {
+						return total + (slot.bookedSpots || 0);
+					} catch {
+						return total;
+					}
+				}, 0);
+		} catch {
+			return 0;
+		}
 	});
 
 	function formatDateTime(dateString: string | undefined): string {
@@ -177,7 +241,7 @@
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title="{tour.name} Schedule"
-			secondaryInfo="{futureSlots.length} upcoming slots"
+			secondaryInfo="{futureSlots?.length || 0} upcoming slots"
 			quickActions={[
 				{
 					label: 'Add Slot',
@@ -329,13 +393,13 @@
 	{/if}
 
 	<!-- 3. Upcoming Slots - Critical for Daily Operations -->
-	{#if upcomingSlots.length > 0 && !showCreateForm && !editingSlot}
+	{#if upcomingSlots?.length > 0 && !showCreateForm && !editingSlot}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">Next Upcoming Slots</h3>
 					<span class="text-xs" style="color: var(--color-primary-600);">
-						{upcomingSlots.length} coming up
+						{upcomingSlots?.length || 0} coming up
 					</span>
 				</div>
 			</div>
@@ -397,7 +461,7 @@
 					<div class="text-xs" style="color: var(--text-secondary);">Base Price</div>
 				</div>
 				<div>
-					<div class="text-lg font-bold" style="color: var(--text-primary);">{futureSlots.length}</div>
+					<div class="text-lg font-bold" style="color: var(--text-primary);">{futureSlots?.length || 0}</div>
 					<div class="text-xs" style="color: var(--text-secondary);">Upcoming</div>
 				</div>
 			</div>
@@ -426,7 +490,7 @@
 						<div class="flex items-center justify-center mb-2">
 							<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
 						</div>
-						<p class="text-sm font-semibold" style="color: var(--text-primary);">{futureSlots.length}</p>
+						<p class="text-sm font-semibold" style="color: var(--text-primary);">{futureSlots?.length || 0}</p>
 						<p class="text-xs" style="color: var(--text-tertiary);">Upcoming Slots</p>
 					</div>
 					<div class="text-center">
@@ -446,9 +510,9 @@
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
 				<h3 class="font-semibold" style="color: var(--text-primary);">
-					Upcoming Time Slots ({futureSlots.length})
+					Upcoming Time Slots ({futureSlots?.length || 0})
 				</h3>
-				{#if futureSlots.length > 0 && !showCreateForm && !editingSlot}
+				{#if futureSlots?.length > 0 && !showCreateForm && !editingSlot}
 					<button onclick={handleAddSlot} class="button-secondary button--small">
 						<Plus class="h-3 w-3 mr-1" />
 						Add
@@ -457,7 +521,7 @@
 			</div>
 		</div>
 		<div class="p-4">
-			{#if sortedSlots.length === 0}
+			{#if !sortedSlots || sortedSlots.length === 0}
 				<div class="text-center py-8">
 					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
 					<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">No time slots scheduled</p>
