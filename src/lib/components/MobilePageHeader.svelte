@@ -4,7 +4,7 @@
 	interface QuickAction {
 		label: string;
 		icon: ComponentType;
-		onClick: () => void;
+		onclick: () => void;
 		variant?: 'primary' | 'secondary';
 		size?: 'small' | 'icon';
 	}
@@ -26,7 +26,7 @@
 		title: string;
 		statusButton?: {
 			label: string;
-			onClick: () => void;
+			onclick: () => void;
 			disabled?: boolean;
 			color: string;
 			dotColor: string;
@@ -47,7 +47,7 @@
 			<div class="flex items-center gap-2 mt-1">
 				{#if statusButton}
 					<button
-						onclick={statusButton.onClick}
+						onclick={statusButton.onclick}
 						disabled={statusButton.disabled}
 						title={statusButton.tooltip}
 						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 {statusButton.color}"
@@ -69,7 +69,7 @@
 		<div class="flex gap-2 mb-4">
 			{#each quickActions as action}
 				<button 
-					onclick={action.onClick} 
+					onclick={action.onclick} 
 					class="flex-1 button-{action.variant || 'secondary'} button--small button--gap justify-center"
 					class:button--icon={action.size === 'icon'}
 					class:flex-none={action.size === 'icon'}

@@ -172,19 +172,19 @@
 					{
 						label: 'Save',
 						icon: Save,
-						onClick: handleSave,
+						onclick: handleSave,
 						variant: 'primary'
 					},
 					{
 						label: 'Cancel',
 						icon: X,
-						onClick: handleCancel,
+						onclick: handleCancel,
 						variant: 'secondary'
 					},
 					...(tour?.status === 'active' ? [{
 						label: 'Preview',
 						icon: ExternalLink,
-						onClick: () => window.open(`/book/${tour?.qrCode}`, '_blank'),
+						onclick: () => window.open(`/book/${tour?.qrCode}`, '_blank'),
 						variant: 'secondary' as const,
 						size: 'icon' as const
 					}] : [])

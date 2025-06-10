@@ -130,13 +130,13 @@
 				{
 					label: shouldActivate ? 'Create & Go Live' : 'Save Draft',
 					icon: shouldActivate ? CheckCircle : FileText,
-					onClick: shouldActivate ? handleSaveAndActivate : handleSaveAsDraft,
+					onclick: shouldActivate ? handleSaveAndActivate : handleSaveAsDraft,
 					variant: shouldActivate ? 'primary' : 'secondary'
 				},
 				...(shouldActivate ? [] : [{
 					label: 'Save & Activate',
 					icon: CheckCircle,
-					onClick: handleSaveAndActivate,
+					onclick: handleSaveAndActivate,
 					variant: 'primary' as const
 				}])
 			]}

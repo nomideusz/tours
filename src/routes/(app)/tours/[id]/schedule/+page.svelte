@@ -50,35 +50,50 @@
 			.reduce((total, slot) => total + slot.bookedSpots, 0);
 	});
 
-	function formatDateTime(dateString: string): string {
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		});
+	function formatDateTime(dateString: string | undefined): string {
+		if (!dateString) return 'No date';
+		try {
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid date';
+			return date.toLocaleDateString('en-US', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false
+			});
+		} catch (error) {
+			console.warn('Error formatting date:', dateString);
+			return 'Invalid date';
+		}
 	}
 
-	function formatTimeRange(startTime: string, endTime: string): string {
-		const start = new Date(startTime);
-		const end = new Date(endTime);
-		
-		const startStr = start.toLocaleTimeString('en-US', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		});
-		
-		const endStr = end.toLocaleTimeString('en-US', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		});
-		
-		return `${startStr} - ${endStr}`;
+	function formatTimeRange(startTime: string | undefined, endTime: string | undefined): string {
+		if (!startTime || !endTime) return 'No time';
+		try {
+			const start = new Date(startTime);
+			const end = new Date(endTime);
+			
+			if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid time';
+			
+			const startStr = start.toLocaleTimeString('en-US', {
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false
+			});
+			
+			const endStr = end.toLocaleTimeString('en-US', {
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false
+			});
+			
+			return `${startStr} - ${endStr}`;
+		} catch (error) {
+			console.warn('Error formatting time range:', startTime, endTime);
+			return 'Invalid time';
+		}
 	}
 
 	function getAvailabilityText(slot: TimeSlot): string {
@@ -153,13 +168,13 @@
 				{
 					label: 'Add Slot',
 					icon: Plus,
-					onClick: handleAddSlot,
+					onclick: handleAddSlot,
 					variant: 'primary'
 				},
 				{
 					label: 'Back',
 					icon: ArrowLeft,
-					onClick: () => goto(`/tours/${tour.id}`),
+					onclick: () => goto(`/tours/${tour.id}`),
 					variant: 'secondary',
 					size: 'icon'
 				}

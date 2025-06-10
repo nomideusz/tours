@@ -152,13 +152,13 @@
 				{
 					label: 'New Draft',
 					icon: Plus,
-					onClick: () => goto('/tours/new'),
+					onclick: () => goto('/tours/new'),
 					variant: 'secondary'
 				},
 				{
 					label: 'Create & Go Live',
 					icon: Plus,
-					onClick: () => goto('/tours/new?activate=true'),
+					onclick: () => goto('/tours/new?activate=true'),
 					variant: 'primary'
 				}
 			]}
