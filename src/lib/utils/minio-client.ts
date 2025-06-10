@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/private';
 // MinIO configuration
 const MINIO_CONFIG = {
   endPoint: env.MINIO_ENDPOINT || 'srv-captain--minio',
-  port: parseInt(env.MINIO_PORT || '9000'),
+  port: env.MINIO_PORT ? parseInt(env.MINIO_PORT) : undefined, // Don't specify port if not set (use default based on SSL)
   useSSL: env.MINIO_USE_SSL === 'true' || false,
   accessKey: env.MINIO_ROOT_USER || 'minioadmin',
   secretKey: env.MINIO_ROOT_PASSWORD || 'minioadmin'
