@@ -149,7 +149,7 @@
 </script>
 
 <!-- App Layout: Header + Sidebar + Main + Footer -->
-<div class="min-h-screen flex flex-col" style="background: var(--bg-secondary);">
+<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
 	<!-- App Header - Hide hamburger menu on mobile since we're using bottom nav -->
 	<AppHeader 
 		{pageTitle}
@@ -161,7 +161,7 @@
 	/>
 
 	<!-- Main content area with sidebar -->
-	<div class="flex flex-1">
+	<div class="flex flex-1 min-w-0">
 		<!-- Desktop Sidebar -->
 		<div class="hidden lg:flex lg:flex-shrink-0">
 			<div class="flex w-64 flex-col">
@@ -174,7 +174,7 @@
 						{#each navigationItems as item}
 							<a
 								href={item.href}
-								class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors"
+								class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors min-w-0"
 								style={item.current
 									? 'background: var(--color-primary-100); color: var(--color-primary-900);'
 									: 'color: var(--text-secondary);'}
@@ -182,42 +182,42 @@
 								onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
 							>
 								<item.icon
-									class="mr-3 h-5 w-5"
+									class="mr-3 h-5 w-5 flex-shrink-0"
 									style={item.current
 										? 'color: var(--color-primary-500);'
 										: 'color: var(--text-tertiary);'}
 								/>
-								{item.name}
+								<span class="truncate">{item.name}</span>
 							</a>
 						{/each}
 					</nav>
 
 					<!-- User section -->
 					<div class="flex flex-shrink-0 border-t p-4" style="border-color: var(--border-primary);">
-						<div class="flex w-full items-center justify-between">
-							<div class="flex items-center gap-2 min-w-0">
+						<div class="flex w-full items-center justify-between min-w-0">
+							<div class="flex items-center gap-2 min-w-0 flex-1">
 								<Tooltip text="Edit Profile Settings" position="top-right">
 									<a
 										href="/profile"
 										title=""
-										class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
+										class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600 flex-shrink-0"
 										style="color: var(--text-secondary);"
 									>
 										<Settings class="h-3 w-3" />
-										Settings
+										<span class="hidden xl:inline">Settings</span>
 									</a>
 								</Tooltip>
 								{#if userIsAdmin}
-									<span style="color: var(--text-tertiary);">•</span>
+									<span style="color: var(--text-tertiary);" class="hidden xl:inline">•</span>
 									<Tooltip text="Admin Panel" position="top">
 										<a
 											href="/admin"
 											title=""
-											class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
+											class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600 flex-shrink-0"
 											style="color: var(--text-secondary);"
 										>
 											<Shield class="h-3 w-3" />
-											Admin
+											<span class="hidden xl:inline">Admin</span>
 										</a>
 									</Tooltip>
 								{/if}
@@ -226,7 +226,7 @@
 								<button
 									onclick={handleLogout}
 									disabled={isLoggingOut}
-									class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
+									class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50 flex-shrink-0"
 									style="color: var(--text-secondary);"
 								>
 									{#if isLoggingOut}
@@ -243,32 +243,32 @@
 		</div>
 
 		<!-- Main content -->
-		<div class="flex w-0 flex-1 flex-col overflow-hidden">
+		<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0">
 			<!-- Page content with bottom padding on mobile for bottom nav -->
-			<main class="relative z-0 flex-1 overflow-y-auto focus:outline-none pb-20 lg:pb-0">
+			<main class="relative z-0 flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0">
 				{@render children()}
 			</main>
 		</div>
 	</div>
 
 	<!-- Mobile Bottom Navigation -->
-	<div class="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t" style="background: var(--bg-primary); border-color: var(--border-primary);">
-		<nav class="flex">
+	<div class="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary);">
+		<nav class="flex min-w-0">
 			{#each mobileNavItems as item}
 				<a
 					href={item.href}
-					class="flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors"
+					class="flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0"
 					style={item.active 
 						? 'color: var(--color-primary-600);' 
 						: 'color: var(--text-tertiary);'}
 				>
 					<item.icon 
-						class="h-6 w-6 mb-1" 
+						class="h-6 w-6 mb-1 flex-shrink-0" 
 						style={item.active 
 							? 'color: var(--color-primary-600);' 
 							: 'color: var(--text-tertiary);'}
 					/>
-					<span class="truncate">{item.name}</span>
+					<span class="truncate text-center w-full">{item.name}</span>
 				</a>
 			{/each}
 		</nav>
