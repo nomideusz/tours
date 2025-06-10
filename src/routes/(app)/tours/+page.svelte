@@ -36,11 +36,13 @@
 
 	let { data }: { data: PageData } = $props();
 
-	let tours = $state<Tour[]>((data.tours as unknown as Tour[]) || []);
 	let copiedQRCode = $state<string | null>(null);
 	let expandedTour = $state<string | null>(null);
 	let statusUpdating = $state<string | null>(null);
 
+	// Use data directly from server with proper type casting
+	let tours = $derived((data.tours as unknown as Tour[]) || []);
+	
 	// Use stats from server (with fallbacks for type safety)
 	let stats = $derived(data.stats || {
 		totalTours: 0,
@@ -54,11 +56,6 @@
 		totalBookings: 0,
 		confirmedBookings: 0,
 		totalParticipants: 0
-	});
-
-	// Update tours when data changes
-	$effect(() => {
-		tours = (data.tours as unknown as Tour[]) || [];
 	});
 
 	// Utility functions are now imported from shared utilities
@@ -127,11 +124,8 @@
 			});
 
 			if (response.ok) {
-				const result = await response.json();
-				// Update local state
-				tours = tours.map(t => 
-					t.id === tour.id ? { ...t, status: newStatus } : t
-				);
+				// Reload the page to refresh data
+				window.location.reload();
 			} else {
 				console.error('Failed to update tour status:', response.status, response.statusText);
 			}
