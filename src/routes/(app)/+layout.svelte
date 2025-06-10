@@ -9,15 +9,13 @@
 		navigationStore
 	} from '$lib/context.js';
 	import { afterNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { auth } from '$lib/stores/auth.js';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	// Icons
-	import Menu from 'lucide-svelte/icons/menu';
-	import X from 'lucide-svelte/icons/x';
 	import Home from 'lucide-svelte/icons/home';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -38,13 +36,15 @@
 	});
 
 	// Reactive values from auth stores
-	let userIsAuthenticated = $derived($isAuthenticated);
 	let currentUserData = $derived($currentUser);
 	let userIsAdmin = $derived($isAdmin);
 
 	// Sidebar state (desktop only now)
 	let sidebarOpen = $state(false);
 	let isLoggingOut = $state(false);
+	
+	// Current pathname for navigation
+	let currentPath = $state(browser ? window.location.pathname : '/dashboard');
 
 	// App title for header - always "Dashboard"
 	const pageTitle = 'Dashboard';
@@ -55,9 +55,12 @@
 	// Set up navigation context
 	navigationContext.set(navigationStore);
 
-	// Close sidebar on navigation
+	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
 		sidebarOpen = false;
+		if (browser) {
+			currentPath = window.location.pathname;
+		}
 	});
 
 	// Navigation items for desktop sidebar
@@ -90,31 +93,31 @@
 			name: 'Dashboard',
 			href: '/dashboard',
 			icon: Home,
-			active: $page.url.pathname === '/dashboard'
+			active: currentPath === '/dashboard'
 		},
 		{
 			name: 'Scanner',
 			href: '/checkin-scanner',
 			icon: QrCode,
-			active: $page.url.pathname === '/checkin-scanner'
+			active: currentPath === '/checkin-scanner'
 		},
 		{
 			name: 'Bookings',
 			href: '/bookings',
 			icon: Calendar,
-			active: $page.url.pathname.startsWith('/bookings')
+			active: currentPath.startsWith('/bookings')
 		},
 		{
 			name: 'Tours',
 			href: '/tours',
 			icon: MapPin,
-			active: $page.url.pathname.startsWith('/tours')
+			active: currentPath.startsWith('/tours')
 		},
 		{
 			name: 'Profile',
 			href: '/profile',
 			icon: User,
-			active: $page.url.pathname === '/profile'
+			active: currentPath === '/profile'
 		}
 	]);
 
@@ -122,8 +125,8 @@
 	const navigationItems = $derived(
 		baseNavigationItems.map(item => ({
 			...item,
-			current: $page.url.pathname === item.href || 
-			         ($page.url.pathname.startsWith(item.href) && item.href !== '/dashboard')
+			current: currentPath === item.href || 
+			         (currentPath.startsWith(item.href) && item.href !== '/dashboard')
 		}))
 	);
 
@@ -143,9 +146,6 @@
 		}
 	}
 
-	function closeSidebar() {
-		sidebarOpen = false;
-	}
 </script>
 
 <!-- App Layout: Header + Sidebar + Main + Footer -->
@@ -175,9 +175,9 @@
 							<a
 								href={item.href}
 								class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors"
-								style="{item.current
+								style={item.current
 									? 'background: var(--color-primary-100); color: var(--color-primary-900);'
-									: 'color: var(--text-secondary);'}"
+									: 'color: var(--text-secondary);'}
 								onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
 								onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
 							>
@@ -258,15 +258,15 @@
 				<a
 					href={item.href}
 					class="flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors"
-					style="{item.active 
+					style={item.active 
 						? 'color: var(--color-primary-600);' 
-						: 'color: var(--text-tertiary);'}"
+						: 'color: var(--text-tertiary);'}
 				>
 					<item.icon 
 						class="h-6 w-6 mb-1" 
-						style="{item.active 
+						style={item.active 
 							? 'color: var(--color-primary-600);' 
-							: 'color: var(--text-tertiary);'}"
+							: 'color: var(--text-tertiary);'}
 					/>
 					<span class="truncate">{item.name}</span>
 				</a>

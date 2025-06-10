@@ -32,12 +32,10 @@
 	import Copy from 'lucide-svelte/icons/copy';
 	import Share2 from 'lucide-svelte/icons/share-2';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
-	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 
 	let { data }: { data: PageData } = $props();
 
 	let copiedQRCode = $state<string | null>(null);
-	let expandedTour = $state<string | null>(null);
 	let statusUpdating = $state<string | null>(null);
 
 	// Use data directly from server with proper type casting
@@ -102,10 +100,6 @@
 			// Fallback to copy
 			copyQRUrl(tour);
 		}
-	}
-
-	function toggleTourExpansion(tourId: string) {
-		expandedTour = expandedTour === tourId ? null : tourId;
 	}
 
 	async function toggleTourStatus(tour: Tour) {
@@ -285,18 +279,22 @@
 										class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
 										style="border: 1px solid var(--border-primary);"
 									>
-										{#if copiedQRCode === tour.qrCode}
-											<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-												<CheckCircle class="h-6 w-6" style="color: var(--color-success);" />
-											</div>
-										{:else}
-											<img 
-												src={getQRImageUrl(tour)} 
-												alt="QR Code for {tour.name}"
-												class="w-full h-full object-cover"
-												loading="lazy"
-											/>
-										{/if}
+																			{#if copiedQRCode === tour.qrCode}
+										<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+											<CheckCircle class="h-6 w-6" style="color: var(--color-success);" />
+										</div>
+									{:else if browser}
+										<img 
+											src={getQRImageUrl(tour)} 
+											alt="QR Code for {tour.name}"
+											class="w-full h-full object-cover"
+											loading="lazy"
+										/>
+									{:else}
+										<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
+											<QrCode class="h-6 w-6" style="color: var(--text-tertiary);" />
+										</div>
+									{/if}
 									</button>
 								</Tooltip>
 							{:else}
@@ -476,24 +474,28 @@
 															class="qr-button relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-lg"
 															style="border: 1px solid var(--border-primary);"
 														>
-															{#if copiedQRCode === tour.qrCode}
-																<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-																	<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
+																													{#if copiedQRCode === tour.qrCode}
+															<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+																<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
+															</div>
+														{:else if browser}
+															<img 
+																src={getQRImageUrl(tour)} 
+																alt="QR Code for {tour.name}"
+																class="w-full h-full object-cover transition-opacity"
+																loading="lazy"
+															/>
+															<!-- Copy icon overlay -->
+															<div class="qr-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
+																<div class="bg-white bg-opacity-90 rounded-full p-2 shadow-md">
+																	<Copy class="h-4 w-4 text-gray-700" />
 																</div>
-															{:else}
-																<img 
-																	src={getQRImageUrl(tour)} 
-																	alt="QR Code for {tour.name}"
-																	class="w-full h-full object-cover transition-opacity"
-																	loading="lazy"
-																/>
-																<!-- Copy icon overlay -->
-																<div class="qr-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
-																	<div class="bg-white bg-opacity-90 rounded-full p-2 shadow-md">
-																		<Copy class="h-4 w-4 text-gray-700" />
-																	</div>
-																</div>
-															{/if}
+															</div>
+														{:else}
+															<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
+																<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
+															</div>
+														{/if}
 														</button>
 													</Tooltip>
 												</div>
