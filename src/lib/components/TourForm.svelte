@@ -219,6 +219,9 @@
 				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
 			</div>
 			<div class="p-4">
+				<!-- Hidden status field for form submission -->
+				<input type="hidden" name="status" bind:value={formData.status} />
+				
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div class="md:col-span-2">
 						<label for="name" class="form-label">
