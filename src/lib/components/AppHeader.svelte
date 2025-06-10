@@ -13,6 +13,7 @@
 		sidebarOpen = false,
 		onSidebarToggle = () => {},
 		onLogout = () => {},
+		showSidebarToggle = true,
 		class: className = ""
 	} = $props<{
 		pageTitle: string;
@@ -20,6 +21,7 @@
 		sidebarOpen?: boolean;
 		onSidebarToggle?: () => void;
 		onLogout?: () => void;
+		showSidebarToggle?: boolean;
 		class?: string;
 	}>();
 
@@ -33,13 +35,15 @@
 		<!-- Left: Mobile menu + Page title -->
 		<div class="flex items-center gap-3">
 			<!-- Mobile menu button -->
-			<button
-				onclick={onSidebarToggle}
-				class="lg:hidden p-2 -ml-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-				aria-label="Open sidebar"
-			>
-				<Menu class="h-5 w-5" />
-			</button>
+			{#if showSidebarToggle}
+				<button
+					onclick={onSidebarToggle}
+					class="lg:hidden p-2 -ml-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+					aria-label="Open sidebar"
+				>
+					<Menu class="h-5 w-5" />
+				</button>
+			{/if}
 			
 			<!-- Page title - clickable home link -->
 			<a 
@@ -53,9 +57,7 @@
 		<!-- Right: User actions -->
 		<div class="flex items-center gap-2">
 			<!-- Theme Toggle -->
-			<div class="hidden sm:block">
-				<ThemeToggle tooltipPosition="bottom" />
-			</div>
+			<ThemeToggle tooltipPosition="bottom" />
 
 			<!-- Notifications (placeholder) -->
 			<Tooltip text="Notifications">

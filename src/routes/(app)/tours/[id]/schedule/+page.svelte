@@ -33,9 +33,9 @@
 			weekday: 'short',
 			month: 'short',
 			day: 'numeric',
-			hour: 'numeric',
+			hour: '2-digit',
 			minute: '2-digit',
-			hour12: true
+			hour12: false
 		});
 	}
 
@@ -44,15 +44,15 @@
 		const end = new Date(endTime);
 		
 		const startStr = start.toLocaleTimeString('en-US', {
-			hour: 'numeric',
+			hour: '2-digit',
 			minute: '2-digit',
-			hour12: true
+			hour12: false
 		});
 		
 		const endStr = end.toLocaleTimeString('en-US', {
-			hour: 'numeric',
+			hour: '2-digit',
 			minute: '2-digit',
-			hour12: true
+			hour12: false
 		});
 		
 		return `${startStr} - ${endStr}`;

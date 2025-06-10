@@ -143,7 +143,7 @@
 </script>
 
 <svelte:head>
-	<title>Business Management - Zaur</title>
+	<title>Tours - Zaur</title>
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">

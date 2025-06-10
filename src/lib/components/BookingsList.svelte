@@ -44,7 +44,7 @@
 		return new Date(dateString).toLocaleTimeString('en-US', {
 			hour: 'numeric',
 			minute: '2-digit',
-			hour12: true,
+									hour12: false,
 		});
 	}
 	
@@ -138,7 +138,7 @@
 								{booking.bookingReference}
 							</div>
 							<div class="text-xs text-gray-500">
-								{new Date(booking.created).toLocaleDateString()}
+								{new Date(booking.createdAt).toLocaleDateString()}
 							</div>
 						</td>
 						
@@ -153,12 +153,12 @@
 						<td class="px-6 py-4 whitespace-nowrap">
 							<div class="text-sm text-gray-900 flex items-center gap-1">
 								<Calendar class="w-4 h-4 text-gray-400" />
-								{formatDate(booking.expand?.timeSlot?.startTime || booking.created)}
+								{formatDate(booking.expand?.timeSlot?.startTime || booking.createdAt)}
 							</div>
 							<div class="text-xs text-gray-500 flex items-center gap-1 mt-1">
 								<Clock class="w-3 h-3 text-gray-400" />
-								{formatTime(booking.expand?.timeSlot?.startTime || booking.created)} - 
-								{formatTime(booking.expand?.timeSlot?.endTime || booking.created)}
+								{formatTime(booking.expand?.timeSlot?.startTime || booking.createdAt)} - 
+								{formatTime(booking.expand?.timeSlot?.endTime || booking.createdAt)}
 							</div>
 						</td>
 						

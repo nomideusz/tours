@@ -320,15 +320,21 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 			createdAt: bookings.createdAt,
 			totalAmount: bookings.totalAmount,
 			paymentStatus: bookings.paymentStatus,
-			tourName: tours.name
+			timeSlotId: bookings.timeSlotId,
+			tourName: tours.name,
+			tourId: tours.id,
+			// TimeSlot fields
+			timeSlotStartTime: timeSlots.startTime,
+			timeSlotEndTime: timeSlots.endTime
 		})
 		.from(bookings)
 		.innerJoin(tours, eq(bookings.tourId, tours.id))
+		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
 		.limit(Math.min(limit, 20)); // Cap limit for performance
 		
-		// Process for display - convert to ProcessedBooking format (simplified without time slots for performance)
+		// Process for display - convert to ProcessedBooking format with timeSlot data for dashboard
 		return recentBookingsData.map((booking: any) => ({
 			id: booking.id,
 			customerName: booking.customerName,
@@ -340,13 +346,17 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 			tour: booking.tourName,
 			totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
 			paymentStatus: booking.paymentStatus,
-			effectiveDate: booking.createdAt.toISOString(), // Use booking creation date
+			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(), // Use timeSlot start time if available
 			expand: {
 				tour: { 
-					id: '', // We don't have tour ID in this query, but name is available
+					id: booking.tourId,
 					name: booking.tourName 
 				},
-				timeSlot: undefined // Simplified - no time slot data for dashboard
+				timeSlot: booking.timeSlotId ? {
+					id: booking.timeSlotId,
+					startTime: booking.timeSlotStartTime?.toISOString() || null,
+					endTime: booking.timeSlotEndTime?.toISOString() || null
+				} : undefined
 			}
 		}));
 	} catch (error) {
@@ -823,20 +833,27 @@ export function formatRecentBooking(booking: ProcessedBooking) {
 /**
  * Create today's schedule from recent bookings data
  * This replaces the createTodaysSchedule function from booking-helpers.ts
+ * 
+ * Note: This function now includes bookings from the last 48 hours to account for timezone differences
+ * The frontend can further filter based on the user's actual timezone
  */
 export function createTodaysSchedule(bookings: ProcessedBooking[]) {
 	try {
-		const today = new Date();
-		const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-		const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+		const now = new Date();
+		// Expand the time window to include last 48 hours to account for timezone differences
+		// This ensures bookings don't get filtered out due to server/client timezone mismatch
+		const timeWindow = new Date(now.getTime() - 48 * 60 * 60 * 1000); // 48 hours ago
+		const futureWindow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 		
-		// Filter for today's bookings that have time slots
+		// Filter for recent bookings that have time slots
 		const todaysBookings = bookings.filter(booking => {
 			if (!booking.expand?.timeSlot?.startTime) return false;
 			
 			const bookingDate = new Date(booking.expand.timeSlot.startTime);
-			return bookingDate >= todayStart && bookingDate < todayEnd && 
-				   (booking.status === 'confirmed' || booking.status === 'pending');
+			const isInTimeWindow = bookingDate >= timeWindow && bookingDate <= futureWindow;
+			const isConfirmedOrPending = booking.status === 'confirmed' || booking.status === 'pending';
+			
+			return isInTimeWindow && isConfirmedOrPending;
 		});
 		
 		// Sort by time

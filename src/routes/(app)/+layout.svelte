@@ -42,7 +42,7 @@
 	let currentUserData = $derived($currentUser);
 	let userIsAdmin = $derived($isAdmin);
 
-	// Sidebar state
+	// Sidebar state (desktop only now)
 	let sidebarOpen = $state(false);
 	let isLoggingOut = $state(false);
 
@@ -60,10 +60,10 @@
 		sidebarOpen = false;
 	});
 
-	// Navigation items
+	// Navigation items for desktop sidebar
 	const baseNavigationItems = $derived([
 		{
-			name: 'Operations Center',
+			name: 'Dashboard',
 			href: '/dashboard',
 			icon: Home
 		},
@@ -84,7 +84,41 @@
 		}
 	]);
 
-	// Create reactive navigation items with current state
+	// Mobile bottom navigation items (prioritized for tour guides)
+	const mobileNavItems = $derived([
+		{
+			name: 'Dashboard',
+			href: '/dashboard',
+			icon: Home,
+			active: $page.url.pathname === '/dashboard'
+		},
+		{
+			name: 'Scanner',
+			href: '/checkin-scanner',
+			icon: QrCode,
+			active: $page.url.pathname === '/checkin-scanner'
+		},
+		{
+			name: 'Bookings',
+			href: '/bookings',
+			icon: Calendar,
+			active: $page.url.pathname.startsWith('/bookings')
+		},
+		{
+			name: 'Tours',
+			href: '/tours',
+			icon: MapPin,
+			active: $page.url.pathname.startsWith('/tours')
+		},
+		{
+			name: 'Profile',
+			href: '/profile',
+			icon: User,
+			active: $page.url.pathname === '/profile'
+		}
+	]);
+
+	// Create reactive navigation items with current state for desktop
 	const navigationItems = $derived(
 		baseNavigationItems.map(item => ({
 			...item,
@@ -116,13 +150,14 @@
 
 <!-- App Layout: Header + Sidebar + Main + Footer -->
 <div class="min-h-screen flex flex-col" style="background: var(--bg-secondary);">
-	<!-- App Header -->
+	<!-- App Header - Hide hamburger menu on mobile since we're using bottom nav -->
 	<AppHeader 
 		{pageTitle}
 		user={currentUserData}
-		{sidebarOpen}
-		onSidebarToggle={() => sidebarOpen = !sidebarOpen}
+		sidebarOpen={false}
+		onSidebarToggle={() => {}} 
 		onLogout={() => handleLogout(new Event('click'))}
+		showSidebarToggle={false}
 	/>
 
 	<!-- Main content area with sidebar -->
@@ -159,49 +194,49 @@
 
 					<!-- User section -->
 					<div class="flex flex-shrink-0 border-t p-4" style="border-color: var(--border-primary);">
-											<div class="flex w-full items-center justify-between">
-						<div class="flex items-center gap-2 min-w-0">
-							<Tooltip text="Edit Profile Settings" position="top-right">
-								<a
-									href="/profile"
-									title=""
-									class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
-									style="color: var(--text-secondary);"
-								>
-									<Settings class="h-3 w-3" />
-									Settings
-								</a>
-							</Tooltip>
-							{#if userIsAdmin}
-								<span style="color: var(--text-tertiary);">•</span>
-								<Tooltip text="Admin Panel" position="top">
+						<div class="flex w-full items-center justify-between">
+							<div class="flex items-center gap-2 min-w-0">
+								<Tooltip text="Edit Profile Settings" position="top-right">
 									<a
-										href="/admin"
+										href="/profile"
 										title=""
 										class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
 										style="color: var(--text-secondary);"
 									>
-										<Shield class="h-3 w-3" />
-										Admin
+										<Settings class="h-3 w-3" />
+										Settings
 									</a>
 								</Tooltip>
-							{/if}
-						</div>
-						<Tooltip text="Sign out" position="top">
-							<button
-								onclick={handleLogout}
-								disabled={isLoggingOut}
-								class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
-								style="color: var(--text-secondary);"
-							>
-								{#if isLoggingOut}
-									<Loader2 class="h-4 w-4 animate-spin" />
-								{:else}
-									<LogOut class="h-4 w-4" />
+								{#if userIsAdmin}
+									<span style="color: var(--text-tertiary);">•</span>
+									<Tooltip text="Admin Panel" position="top">
+										<a
+											href="/admin"
+											title=""
+											class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600"
+											style="color: var(--text-secondary);"
+										>
+											<Shield class="h-3 w-3" />
+											Admin
+										</a>
+									</Tooltip>
 								{/if}
-							</button>
-						</Tooltip>
-					</div>
+							</div>
+							<Tooltip text="Sign out" position="top">
+								<button
+									onclick={handleLogout}
+									disabled={isLoggingOut}
+									class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50"
+									style="color: var(--text-secondary);"
+								>
+									{#if isLoggingOut}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										<LogOut class="h-4 w-4" />
+									{/if}
+								</button>
+							</Tooltip>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -209,105 +244,40 @@
 
 		<!-- Main content -->
 		<div class="flex w-0 flex-1 flex-col overflow-hidden">
-			<!-- Page content -->
-			<main class="relative z-0 flex-1 overflow-y-auto focus:outline-none">
+			<!-- Page content with bottom padding on mobile for bottom nav -->
+			<main class="relative z-0 flex-1 overflow-y-auto focus:outline-none pb-20 lg:pb-0">
 				{@render children()}
 			</main>
 		</div>
 	</div>
 
-	<!-- Mobile sidebar overlay -->
-	{#if sidebarOpen}
-		<div class="fixed inset-0 z-40 flex lg:hidden">
-			<div 
-				role="button" 
-				tabindex="-1"
-				class="bg-opacity-75 fixed inset-0 bg-gray-600" 
-				onclick={closeSidebar}
-				onkeydown={(e) => e.key === 'Escape' && closeSidebar()}
-			></div>
-			<div class="relative flex w-full max-w-xs flex-1 flex-col bg-white">
-				<div class="absolute top-0 right-0 -mr-12 pt-2">
-					<button
-						onclick={closeSidebar}
-						class="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
-					>
-						<X class="h-6 w-6 text-white" />
-					</button>
-				</div>
+	<!-- Mobile Bottom Navigation -->
+	<div class="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t" style="background: var(--bg-primary); border-color: var(--border-primary);">
+		<nav class="flex">
+			{#each mobileNavItems as item}
+				<a
+					href={item.href}
+					class="flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors"
+					style="{item.active 
+						? 'color: var(--color-primary-600);' 
+						: 'color: var(--text-tertiary);'}"
+				>
+					<item.icon 
+						class="h-6 w-6 mb-1" 
+						style="{item.active 
+							? 'color: var(--color-primary-600);' 
+							: 'color: var(--text-tertiary);'}"
+					/>
+					<span class="truncate">{item.name}</span>
+				</a>
+			{/each}
+		</nav>
+	</div>
 
-				<div class="h-0 flex-1 overflow-y-auto pt-5 pb-4">
-					<!-- Mobile navigation -->
-					<nav class="space-y-1 px-2">
-						{#each navigationItems as item}
-							<a
-								href={item.href}
-								onclick={closeSidebar}
-								class="group flex items-center rounded-md px-2 py-2 text-base font-medium transition-colors {item.current
-									? 'bg-blue-100 text-blue-900'
-									: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}"
-							>
-								<item.icon
-									class="mr-4 h-6 w-6 {item.current
-										? 'text-blue-500'
-										: 'text-gray-400 group-hover:text-gray-500'}"
-								/>
-								{item.name}
-							</a>
-						{/each}
-					</nav>
-				</div>
-
-				<!-- Mobile user section -->
-				<div class="flex flex-shrink-0 border-t border-gray-200 p-4">
-					<div class="flex w-full items-center justify-between">
-						<div class="flex items-center gap-3">
-							<Tooltip text="Edit Profile Settings" position="top">
-								<a
-									href="/profile"
-									title=""
-									onclick={closeSidebar}
-									class="flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700"
-								>
-									<Settings class="h-4 w-4" />
-									Settings
-								</a>
-							</Tooltip>
-							{#if userIsAdmin}
-								<Tooltip text="Admin Panel" position="top">
-									<a
-										href="/admin"
-										title=""
-										onclick={closeSidebar}
-										class="flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700"
-									>
-										<Shield class="h-4 w-4" />
-										Admin
-									</a>
-								</Tooltip>
-							{/if}
-						</div>
-						<Tooltip text="Sign out" position="top">
-							<button
-								onclick={handleLogout}
-								disabled={isLoggingOut}
-								class="rounded p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
-							>
-								{#if isLoggingOut}
-									<Loader2 class="h-5 w-5 animate-spin text-gray-500" />
-								{:else}
-									<LogOut class="h-5 w-5 text-gray-500" />
-								{/if}
-							</button>
-						</Tooltip>
-					</div>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- App Footer -->
-	<AppFooter />
+	<!-- App Footer - Hide on mobile since we have bottom nav -->
+	<div class="hidden lg:block">
+		<AppFooter />
+	</div>
 </div>
 
 <style lang="postcss">

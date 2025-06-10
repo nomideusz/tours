@@ -41,19 +41,19 @@ export function formatDateMobile(dateString: string): string {
 }
 
 /**
- * Time formatting (e.g., "2:30 PM")
+ * Time formatting (e.g., "14:30")
  */
 export function formatTime(dateString: string | Date): string {
 	const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
 	return new Intl.DateTimeFormat('en-US', {
-		hour: 'numeric',
+		hour: '2-digit',
 		minute: '2-digit',
-		hour12: true
+		hour12: false
 	}).format(date);
 }
 
 /**
- * Date and time formatting (e.g., "Jan 15, 2024 at 2:30 PM")
+ * Date and time formatting (e.g., "Jan 15, 2024 at 14:30")
  */
 export function formatDateTime(dateString: string | Date): string {
 	const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -61,9 +61,9 @@ export function formatDateTime(dateString: string | Date): string {
 		month: 'short',
 		day: 'numeric',
 		year: 'numeric',
-		hour: 'numeric',
+		hour: '2-digit',
 		minute: '2-digit',
-		hour12: true
+		hour12: false
 	}).format(date);
 }
 

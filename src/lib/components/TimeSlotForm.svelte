@@ -284,7 +284,7 @@
 			if (result.type === 'success') {
 				onSuccess?.();
 			} else if (result.type === 'failure') {
-				error = result.data?.message || 'Failed to save time slot';
+				error = (result.data as any)?.message || 'Failed to save time slot';
 			} else {
 				error = 'An unexpected error occurred';
 			}
