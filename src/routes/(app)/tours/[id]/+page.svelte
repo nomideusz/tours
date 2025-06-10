@@ -577,7 +577,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	/* No custom styles needed - using design system */
-</style> 

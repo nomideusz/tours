@@ -160,56 +160,6 @@
 
 </script>
 
-<style>
-	/* Mobile touch optimization */
-	.touch-manipulation {
-		touch-action: manipulation;
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		user-select: none;
-	}
-
-	/* Ensure proper aspect ratio for mobile image previews */
-	.aspect-square {
-		aspect-ratio: 1 / 1;
-	}
-
-	/* Fallback for browsers that don't support aspect-ratio */
-	@supports not (aspect-ratio: 1 / 1) {
-		.aspect-square::before {
-			content: '';
-			display: block;
-			padding-top: 100%;
-		}
-		
-		.aspect-square > * {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-		}
-	}
-
-	/* Mobile file input enhancement */
-	@media (max-width: 640px) {
-		#images-upload {
-			/* Ensure file input is accessible on mobile */
-			opacity: 0;
-			position: absolute;
-			z-index: -1;
-		}
-		
-		label[for="images-upload"] {
-			/* Make label more touch-friendly on mobile */
-			min-height: 44px;
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-		}
-	}
-</style>
-
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 	<!-- Main form content -->
 	<div class="lg:col-span-2 space-y-8">
@@ -614,4 +564,54 @@
 		</div>
 	</div>
 </div>
-</div> 
+</div>
+
+<style>
+	/* Mobile touch optimization */
+	.touch-manipulation {
+		touch-action: manipulation;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+
+	/* Ensure proper aspect ratio for mobile image previews */
+	.aspect-square {
+		aspect-ratio: 1 / 1;
+	}
+
+	/* Fallback for browsers that don't support aspect-ratio */
+	@supports not (aspect-ratio: 1 / 1) {
+		.aspect-square::before {
+			content: '';
+			display: block;
+			padding-top: 100%;
+		}
+		
+		.aspect-square > * {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	/* Mobile file input enhancement */
+	@media (max-width: 640px) {
+		#images-upload {
+			/* Ensure file input is accessible on mobile */
+			opacity: 0;
+			position: absolute;
+			z-index: -1;
+		}
+		
+		label[for="images-upload"] {
+			/* Make label more touch-friendly on mobile */
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+</style>

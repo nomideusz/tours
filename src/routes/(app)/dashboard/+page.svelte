@@ -408,7 +408,3 @@
 	</div>
 
 </div>
-
-<style lang="postcss">
-	@reference "tailwindcss";
-</style> 
