@@ -161,7 +161,7 @@
 			title={tour.name}
 			statusButton={{
 				label: statusUpdating ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1),
-				onClick: toggleTourStatus,
+				onclick: toggleTourStatus,
 				disabled: statusUpdating,
 				color: getTourStatusColor(tour.status),
 				dotColor: getTourStatusDot(tour.status),
@@ -172,19 +172,19 @@
 				{
 					label: 'Edit',
 					icon: Edit,
-					onClick: () => goto(`/tours/${tour.id}/edit`),
+					onclick: () => goto(`/tours/${tour.id}/edit`),
 					variant: 'secondary'
 				},
 				{
 					label: 'Schedule',
 					icon: Calendar,
-					onClick: () => goto(`/tours/${tour.id}/schedule`),
+					onclick: () => goto(`/tours/${tour.id}/schedule`),
 					variant: 'primary'
 				},
 				{
 					label: 'Share',
 					icon: Share2,
-					onClick: shareQR,
+					onclick: shareQR,
 					variant: 'secondary',
 					size: 'icon'
 				}

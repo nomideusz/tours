@@ -234,7 +234,7 @@ export async function deleteImages(tourId: string, filenames: string[]): Promise
 }
 
 /**
- * Get presigned URL for an image
+ * Get image URL - serves through SvelteKit API to avoid presigned URL issues
  */
 export async function getImageUrl(
   tourId: string, 
@@ -242,15 +242,8 @@ export async function getImageUrl(
   size: 'original' | 'thumbnail' | 'medium' | 'large' = 'medium'
 ): Promise<string> {
   try {
-    const extension = filename.split('.').pop();
-    const nameWithoutExt = filename.replace(`.${extension}`, '');
-    
-    const sizePrefix = size === 'thumbnail' ? 'thumb' : size === 'medium' ? 'med' : size;
-    const objectName = size === 'original' 
-      ? getObjectName(tourId, filename)
-      : getObjectName(tourId, `${nameWithoutExt}.${extension}`, sizePrefix);
-    
-    return await getPresignedUrl(objectName, 7 * 24 * 60 * 60); // 7 days expiry
+    // Return URL to SvelteKit API endpoint instead of direct MinIO presigned URL
+    return `/api/images/${tourId}/${filename}?size=${size}`;
   } catch (error) {
     console.error(`❌ Failed to get image URL for ${filename}:`, error);
     throw new Error(`Failed to get image URL: ${error}`);

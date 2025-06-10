@@ -1,6 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { getImageUrl } from '$lib/utils/minio-image-storage.js';
 
 export const GET: RequestHandler = async ({ params, url }) => {
   const { tourId, filename } = params;
@@ -22,8 +21,18 @@ export const GET: RequestHandler = async ({ params, url }) => {
       ? sizeParam as 'original' | 'thumbnail' | 'medium' | 'large'
       : 'medium';
 
-    // Get presigned URL from MinIO
-    const presignedUrl = await getImageUrl(tourId, filename, size);
+    // Get the object name for MinIO
+    const extension = filename.split('.').pop();
+    const nameWithoutExt = filename.replace(`.${extension}`, '');
+    
+    const sizePrefix = size === 'thumbnail' ? 'thumb' : size === 'medium' ? 'med' : size;
+    const objectName = size === 'original' 
+      ? `tours/${tourId}/${filename}`
+      : `tours/${tourId}/${sizePrefix}_${nameWithoutExt}.${extension}`;
+
+    // Get presigned URL from MinIO using internal endpoint
+    const { getPresignedUrl } = await import('$lib/utils/minio-client.js');
+    const presignedUrl = await getPresignedUrl(objectName, 7 * 24 * 60 * 60);
     
     // Redirect to the presigned URL
     throw redirect(302, presignedUrl);
