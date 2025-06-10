@@ -161,6 +161,44 @@
 		cursor: not-allowed;
 	}
 
+	/* Success button variant */
+	.button-success {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: all var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background-color: #10B981;
+		color: white;
+		border: 1px solid #10B981;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-success:hover:not(:disabled) {
+		background-color: #059669;
+		border-color: #059669;
+	}
+
+	.button-success:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+	}
+
+	.button-success:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
 	/* Button modifiers */
 	.button--full-width,
 	.button-primary.button--full-width,
@@ -188,7 +226,8 @@
 	.button--small,
 	.button-primary.button--small,
 	.button-secondary.button--small,
-	.button--danger.button--small {
+	.button--danger.button--small,
+	.button-success.button--small {
 		padding: 0.5rem 1rem;
 		font-size: var(--text-xs);
 		line-height: 1.25rem;

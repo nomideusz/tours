@@ -8,6 +8,7 @@
 	interface Props {
 		slot?: TimeSlot;
 		tourCapacity: number;
+		tourDuration?: number;
 		isEdit?: boolean;
 		onCancel?: () => void;
 		onSuccess?: () => void;
@@ -16,6 +17,7 @@
 	let {
 		slot,
 		tourCapacity,
+		tourDuration = 120, // Default to 2 hours if not provided
 		isEdit = false,
 		onCancel,
 		onSuccess
@@ -42,10 +44,17 @@
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		
+		// Calculate default end time based on tour duration
+		const defaultStartMinutes = 10 * 60; // 10:00 in minutes
+		const defaultEndMinutes = defaultStartMinutes + tourDuration;
+		const defaultEndHour = Math.floor(defaultEndMinutes / 60);
+		const defaultEndMin = defaultEndMinutes % 60;
+		const defaultEndTime = `${String(defaultEndHour).padStart(2, '0')}:${String(defaultEndMin).padStart(2, '0')}`;
+		
 		return {
 			startDate: tomorrow.toISOString().split('T')[0],
 			startTime: '10:00',
-			endTime: '12:00',
+			endTime: defaultEndTime,
 			availableSpots: tourCapacity,
 			isRecurring: false,
 			recurringPattern: 'weekly' as const,
@@ -69,14 +78,17 @@
 		return 1;
 	});
 
-	// Auto-update end time when start time changes (2 hour default duration)
+	// Auto-update end time when start time changes (use tour duration)
 	function handleStartTimeChange(newStartTime: string) {
 		if (newStartTime && !isEdit) { // Only auto-update for new slots
 			const [hours, minutes] = newStartTime.split(':').map(Number);
-			const endHours = hours + 2;
-			const endMinutes = minutes;
 			
-			// Handle hour overflow
+			// Calculate end time based on tour duration
+			const totalMinutes = hours * 60 + minutes + tourDuration;
+			const endHours = Math.floor(totalMinutes / 60);
+			const endMinutes = totalMinutes % 60;
+			
+			// Handle hour overflow (next day)
 			if (endHours >= 24) {
 				formData.endTime = `${String(endHours - 24).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 			} else {

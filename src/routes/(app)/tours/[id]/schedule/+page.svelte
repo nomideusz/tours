@@ -25,9 +25,14 @@
 	let editingSlot = $state<TimeSlot | null>(null);
 	let error = $state<string | null>(form?.error || null);
 
+	// Filter future and current slots, then sort by start time
+	let futureSlots = $derived(
+		timeSlots.filter(slot => new Date(slot.startTime) >= new Date())
+	);
+
 	// Sort slots by start time
 	let sortedSlots = $derived(
-		[...timeSlots].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+		[...futureSlots].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
 	);
 
 	// Get upcoming slots (next 3)
@@ -98,6 +103,9 @@
 
 	function getAvailabilityText(slot: TimeSlot): string {
 		const available = slot.availableSpots - slot.bookedSpots;
+		if (available === 0) {
+			return `${slot.bookedSpots} booked, fully booked`;
+		}
 		return `${slot.bookedSpots} booked, ${available} available`;
 	}
 
@@ -105,6 +113,12 @@
 		if (slot.bookedSpots >= slot.availableSpots) return '#EF4444'; // Red - full
 		if (slot.bookedSpots > 0) return '#F59E0B'; // Amber - partial
 		return '#10B981'; // Green - available
+	}
+
+	function getStatusText(slot: TimeSlot): string {
+		if (slot.bookedSpots >= slot.availableSpots) return 'full';
+		if (slot.bookedSpots > 0) return 'partial';
+		return 'available';
 	}
 
 	function handleCreateSuccess() {
@@ -163,7 +177,7 @@
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title="{tour.name} Schedule"
-			secondaryInfo="{timeSlots.length} slots"
+			secondaryInfo="{futureSlots.length} upcoming slots"
 			quickActions={[
 				{
 					label: 'Add Slot',
@@ -283,6 +297,7 @@
 			<div class="p-4">
 				<TimeSlotForm
 					tourCapacity={tour.capacity}
+					tourDuration={tour.duration}
 					onCancel={cancelEdit}
 					onSuccess={handleCreateSuccess}
 				/>
@@ -304,6 +319,7 @@
 				<TimeSlotForm
 					slot={editingSlot}
 					tourCapacity={tour.capacity}
+					tourDuration={tour.duration}
 					isEdit={true}
 					onCancel={cancelEdit}
 					onSuccess={handleEditSuccess}
@@ -381,8 +397,8 @@
 					<div class="text-xs" style="color: var(--text-secondary);">Base Price</div>
 				</div>
 				<div>
-					<div class="text-lg font-bold" style="color: var(--text-primary);">{timeSlots.length}</div>
-					<div class="text-xs" style="color: var(--text-secondary);">Time Slots</div>
+					<div class="text-lg font-bold" style="color: var(--text-primary);">{futureSlots.length}</div>
+					<div class="text-xs" style="color: var(--text-secondary);">Upcoming</div>
 				</div>
 			</div>
 
@@ -410,8 +426,8 @@
 						<div class="flex items-center justify-center mb-2">
 							<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
 						</div>
-						<p class="text-sm font-semibold" style="color: var(--text-primary);">{timeSlots.length}</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">Scheduled Times</p>
+						<p class="text-sm font-semibold" style="color: var(--text-primary);">{futureSlots.length}</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">Upcoming Slots</p>
 					</div>
 					<div class="text-center">
 						<div class="flex items-center justify-center mb-2">
@@ -430,9 +446,9 @@
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
 				<h3 class="font-semibold" style="color: var(--text-primary);">
-					All Time Slots ({timeSlots.length})
+					Upcoming Time Slots ({futureSlots.length})
 				</h3>
-				{#if timeSlots.length > 0 && !showCreateForm && !editingSlot}
+				{#if futureSlots.length > 0 && !showCreateForm && !editingSlot}
 					<button onclick={handleAddSlot} class="button-secondary button--small">
 						<Plus class="h-3 w-3 mr-1" />
 						Add
@@ -469,7 +485,7 @@
 												style="background-color: {getStatusColor(slot)};"
 											></div>
 											<span class="text-xs" style="color: var(--text-secondary);">
-												{slot.status}
+												{getStatusText(slot)}
 											</span>
 										</div>
 									</div>
