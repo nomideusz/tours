@@ -1,16 +1,30 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
 	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 	import { stripePublicKey } from '$lib/stripe.js';
+	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Shield from 'lucide-svelte/icons/shield';
 	import Lock from 'lucide-svelte/icons/lock';
 	
 	let { data }: { data: PageData } = $props();
+	
+	// Set tour owner in store for header to use
+	$effect(() => {
+		if (data.tourOwner?.username && data.tourOwner?.name) {
+			tourOwnerStore.set({
+				username: data.tourOwner.username,
+				name: data.tourOwner.name
+			});
+		}
+		
+		// Clean up when component is destroyed
+		return () => {
+			tourOwnerStore.set(null);
+		};
+	});
 	
 	let stripe: Stripe | null = $state(null);
 	let elements: StripeElements | null = $state(null);
@@ -125,30 +139,30 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-		<div class="max-w-2xl mx-auto">
-			<!-- Back button -->
-			<a
-				href="/book/{(data.qrCode as any).code}"
-				class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6"
-			>
-				<ChevronLeft class="w-4 h-4 mr-1" />
-				Back to booking
-			</a>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="max-w-2xl mx-auto">
+		<!-- Back button -->
+		<a
+			href="/book/{(data.qrCode as any).code}"
+			class="inline-flex items-center text-sm mb-6 hover:underline" 
+			style="color: var(--text-secondary);"
+		>
+			<ChevronLeft class="w-4 h-4 mr-1" />
+			Back to booking
+		</a>
+		
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+							<!-- Header -->
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h1 class="text-2xl font-bold" style="color: var(--text-primary);">Complete Your Payment</h1>
+				<p class="mt-2 text-sm" style="color: var(--text-secondary);">
+					Secure payment powered by Stripe
+				</p>
+			</div>
 			
-			<div class="bg-white rounded-lg shadow-sm">
-				<!-- Header -->
-				<div class="px-6 py-6 border-b border-gray-200">
-					<h1 class="text-2xl font-bold text-gray-900">Complete Your Payment</h1>
-					<p class="mt-2 text-sm text-gray-600">
-						Secure payment powered by Stripe
-					</p>
-				</div>
-				
-				<!-- Booking Summary -->
-				<div class="px-6 py-6 border-b border-gray-200">
-					<h2 class="text-lg font-semibold text-gray-900 mb-4">Booking Summary</h2>
+			<!-- Booking Summary -->
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold mb-4" style="color: var(--text-primary);">Booking Summary</h2>
 					
 					<div class="space-y-3">
 						<div>
@@ -187,7 +201,7 @@
 				</div>
 				
 				<!-- Payment Form -->
-				<div class="px-6 py-6">
+				<div class="p-4">
 					{#if error}
 						<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
 							<p class="text-sm text-red-600">{error}</p>
@@ -234,10 +248,5 @@
 				</div>
 			</div>
 			
-			<!-- Footer -->
-			<div class="mt-8 text-center text-sm text-gray-500">
-				<p>Powered by <a href="https://zaur.app" class="text-blue-600 hover:underline">Zaur</a></p>
-			</div>
-		</div>
 	</div>
 </div> 

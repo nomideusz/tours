@@ -97,23 +97,23 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<div class="max-w-lg mx-auto">
 		<!-- Mobile-first ticket design -->
-		<div class="bg-white shadow-xl">
+		<div style="background: var(--bg-primary);" class="shadow-xl rounded-xl overflow-hidden">
 			<!-- Header -->
-			<div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8 text-white text-center">
+			<div class="px-6 py-8 text-white text-center" style="background: var(--color-primary-600);">
 				<div class="flex justify-center mb-4">
 					<div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
 						<Ticket class="w-8 h-8" />
 					</div>
 				</div>
 				<h1 class="text-2xl font-bold mb-2">Your Tour Ticket</h1>
-				<p class="text-blue-100">Show this QR code to your guide</p>
+				<p class="text-white/80">Show this QR code to your guide</p>
 			</div>
 			
 			<!-- Ticket Status -->
-			<div class="px-6 py-4 border-b border-gray-200">
+			<div class="px-6 py-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-center gap-2">
 					<span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full border {statusInfo.class}">
 						<statusInfo.icon class="w-4 h-4 {statusInfo.iconClass}" />
@@ -123,31 +123,31 @@
 			</div>
 			
 			<!-- QR Code -->
-			<div class="px-6 py-8 text-center border-b border-gray-200">
-				<div class="w-64 h-64 mx-auto bg-white border-2 border-gray-200 rounded-xl p-4 mb-4">
+			<div class="px-6 py-8 text-center border-b" style="border-color: var(--border-primary);">
+				<div class="w-64 h-64 mx-auto rounded-xl p-4 mb-4" style="background: var(--bg-primary); border: 2px solid var(--border-primary);">
 					<div bind:this={qrCodeElement} class="w-full h-full"></div>
 				</div>
-				<p class="text-sm text-gray-600 mb-2">Ticket Code</p>
-				<p class="text-xl font-mono font-bold text-gray-900">{getDisplayReference(data.ticketCode)}</p>
+				<p class="text-sm mb-2" style="color: var(--text-secondary);">Ticket Code</p>
+				<p class="text-xl font-mono font-bold" style="color: var(--text-primary);">{getDisplayReference(data.ticketCode)}</p>
 			</div>
 			
 			<!-- Tour Details -->
 			<div class="px-6 py-6 space-y-4">
 				<div>
-					<h2 class="text-xl font-bold text-gray-900 mb-1">{data.booking.expand?.tour?.name}</h2>
+					<h2 class="text-xl font-bold mb-1" style="color: var(--text-primary);">{data.booking.expand?.tour?.name}</h2>
 					{#if data.booking.expand?.tour?.description}
-						<p class="text-sm text-gray-600">{data.booking.expand?.tour?.description}</p>
+						<p class="text-sm" style="color: var(--text-secondary);">{data.booking.expand?.tour?.description}</p>
 					{/if}
 				</div>
 				
 				<div class="grid gap-4">
 					<div class="flex items-center gap-3">
-						<Calendar class="w-5 h-5 text-gray-400" />
+						<Calendar class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">
+							<p class="font-medium" style="color: var(--text-primary);">
 								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Date TBD'}
 							</p>
-							<p class="text-sm text-gray-600">
+							<p class="text-sm" style="color: var(--text-secondary);">
 								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime ? 
 									`${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}` : 
 									'Time TBD'}
@@ -157,76 +157,76 @@
 					
 					{#if data.booking.expand?.tour?.location}
 						<div class="flex items-start gap-3">
-							<MapPin class="w-5 h-5 text-gray-400 mt-1" />
+							<MapPin class="w-5 h-5 mt-1" style="color: var(--text-tertiary);" />
 							<div>
-								<p class="font-medium text-gray-900">Meeting Point</p>
-								<p class="text-sm text-gray-600">{data.booking.expand?.tour?.location}</p>
+								<p class="font-medium" style="color: var(--text-primary);">Meeting Point</p>
+								<p class="text-sm" style="color: var(--text-secondary);">{data.booking.expand?.tour?.location}</p>
 							</div>
 						</div>
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Users class="w-5 h-5 text-gray-400" />
+						<Users class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">
+							<p class="font-medium" style="color: var(--text-primary);">
 								{data.booking.participants} {data.booking.participants === 1 ? 'participant' : 'participants'}
 							</p>
-							<p class="text-sm text-gray-600">€{data.booking.totalAmount} total</p>
+							<p class="text-sm" style="color: var(--text-secondary);">€{data.booking.totalAmount} total</p>
 						</div>
 					</div>
 				</div>
 			</div>
 			
 			<!-- Customer Details -->
-			<div class="px-6 py-6 bg-gray-50 border-t border-gray-200">
-				<h3 class="font-semibold text-gray-900 mb-4">Booking Details</h3>
+			<div class="px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+				<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Booking Details</h3>
 				<div class="space-y-3 text-sm">
 					<div class="flex items-center gap-3">
-						<User class="w-4 h-4 text-gray-400" />
-						<span class="text-gray-900">{data.booking.customerName}</span>
+						<User class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<span style="color: var(--text-primary);">{data.booking.customerName}</span>
 					</div>
 					<div class="flex items-center gap-3">
-						<Mail class="w-4 h-4 text-gray-400" />
-						<span class="text-gray-900">{data.booking.customerEmail}</span>
+						<Mail class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<span style="color: var(--text-primary);">{data.booking.customerEmail}</span>
 					</div>
 					{#if data.booking.customerPhone}
 						<div class="flex items-center gap-3">
-							<Phone class="w-4 h-4 text-gray-400" />
-							<span class="text-gray-900">{data.booking.customerPhone}</span>
+							<Phone class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span style="color: var(--text-primary);">{data.booking.customerPhone}</span>
 						</div>
 					{/if}
 					<div class="flex items-center gap-3">
-						<Ticket class="w-4 h-4 text-gray-400" />
-						<span class="text-gray-900">Ref: {data.booking.bookingReference}</span>
+						<Ticket class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<span style="color: var(--text-primary);">Ref: {data.booking.bookingReference}</span>
 					</div>
 				</div>
 				
 				{#if data.booking.specialRequests}
-					<div class="mt-4 p-3 bg-blue-50 rounded-lg">
-						<p class="text-sm font-medium text-blue-900 mb-1">Special Requests:</p>
-						<p class="text-sm text-blue-800">{data.booking.specialRequests}</p>
+					<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50);">
+						<p class="text-sm font-medium mb-1" style="color: var(--color-primary-900);">Special Requests:</p>
+						<p class="text-sm" style="color: var(--color-primary-800);">{data.booking.specialRequests}</p>
 					</div>
 				{/if}
 			</div>
 			
 			<!-- Important Notes -->
-			<div class="px-6 py-6 border-t border-gray-200">
-				<h3 class="font-semibold text-gray-900 mb-3">Important Information</h3>
-				<ul class="text-sm text-gray-600 space-y-2">
+			<div class="px-6 py-6 border-t" style="border-color: var(--border-primary);">
+				<h3 class="font-semibold mb-3" style="color: var(--text-primary);">Important Information</h3>
+				<ul class="text-sm space-y-2" style="color: var(--text-secondary);">
 					<li class="flex gap-2">
-						<span class="text-blue-600">•</span>
+						<span style="color: var(--color-primary-600);">•</span>
 						<span>Please arrive 10 minutes before the tour starts</span>
 					</li>
 					<li class="flex gap-2">
-						<span class="text-blue-600">•</span>
+						<span style="color: var(--color-primary-600);">•</span>
 						<span>Show this QR code to your guide for check-in</span>
 					</li>
 					<li class="flex gap-2">
-						<span class="text-blue-600">•</span>
+						<span style="color: var(--color-primary-600);">•</span>
 						<span>Bring comfortable walking shoes and weather-appropriate clothing</span>
 					</li>
 					<li class="flex gap-2">
-						<span class="text-blue-600">•</span>
+						<span style="color: var(--color-primary-600);">•</span>
 						<span>Contact your guide if you need to make any changes</span>
 					</li>
 				</ul>

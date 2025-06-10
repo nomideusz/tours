@@ -85,18 +85,18 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
-	<div class="max-w-2xl mx-auto px-4 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="max-w-2xl mx-auto">
 		<!-- Header -->
-		<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-			<div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-6 text-white">
+		<div class="rounded-xl overflow-hidden mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-6 py-6 text-white" style="background: var(--color-primary-600);">
 				<div class="flex items-center gap-3 mb-3">
 					<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
 						<UserCheck class="w-6 h-6" />
 					</div>
 					<div>
 						<h1 class="text-xl font-bold">Customer Check-in</h1>
-						<p class="text-indigo-100 text-sm">{data.booking.expand?.tour?.name}</p>
+						<p class="text-white/80 text-sm">{data.booking.expand?.tour?.name}</p>
 					</div>
 				</div>
 				
@@ -110,8 +110,8 @@
 			</div>
 			
 			{#if form?.success}
-				<div class="px-6 py-4 bg-green-50 border-b border-green-200">
-					<div class="flex items-center gap-2 text-green-800">
+				<div class="px-6 py-4 border-b" style="background: var(--color-success-50); border-color: var(--color-success-200);">
+					<div class="flex items-center gap-2" style="color: var(--color-success-800);">
 						<CheckCircle class="w-5 h-5" />
 						<span class="font-medium">
 							{#if form.noShow}
@@ -122,7 +122,7 @@
 						</span>
 					</div>
 					{#if form.checkedInAt}
-						<p class="text-sm text-green-600 mt-1">
+						<p class="text-sm mt-1" style="color: var(--color-success-600);">
 							Checked in at {formatDateTime(form.checkedInAt)}
 						</p>
 					{/if}
@@ -130,8 +130,8 @@
 			{/if}
 			
 			{#if form?.error}
-				<div class="px-6 py-4 bg-red-50 border-b border-red-200">
-					<div class="flex items-center gap-2 text-red-800">
+				<div class="px-6 py-4 border-b" style="background: var(--color-danger-50); border-color: var(--color-danger-200);">
+					<div class="flex items-center gap-2" style="color: var(--color-danger-800);">
 						<AlertCircle class="w-5 h-5" />
 						<span class="font-medium">{form.error}</span>
 					</div>
@@ -140,82 +140,82 @@
 		</div>
 		
 		<!-- Customer Information -->
-		<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-			<div class="px-6 py-4 border-b border-gray-200">
-				<h2 class="text-lg font-semibold text-gray-900">Customer Information</h2>
+		<div class="rounded-xl overflow-hidden mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-6 py-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Customer Information</h2>
 			</div>
 			
 			<div class="px-6 py-6">
 				<div class="grid gap-4">
 					<div class="flex items-center gap-3">
-						<User class="w-5 h-5 text-gray-400" />
+						<User class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-semibold text-gray-900 text-lg">{data.booking.customerName}</p>
-							<p class="text-sm text-gray-600">Primary contact</p>
+							<p class="font-semibold text-lg" style="color: var(--text-primary);">{data.booking.customerName}</p>
+							<p class="text-sm" style="color: var(--text-secondary);">Primary contact</p>
 						</div>
 					</div>
 					
 					<div class="flex items-center gap-3">
-						<Mail class="w-5 h-5 text-gray-400" />
+						<Mail class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">{data.booking.customerEmail}</p>
-							<p class="text-sm text-gray-600">Email address</p>
+							<p class="font-medium" style="color: var(--text-primary);">{data.booking.customerEmail}</p>
+							<p class="text-sm" style="color: var(--text-secondary);">Email address</p>
 						</div>
 					</div>
 					
 					{#if data.booking.customerPhone}
 						<div class="flex items-center gap-3">
-							<Phone class="w-5 h-5 text-gray-400" />
+							<Phone class="w-5 h-5" style="color: var(--text-tertiary);" />
 							<div>
-								<p class="font-medium text-gray-900">{data.booking.customerPhone}</p>
-								<p class="text-sm text-gray-600">Phone number</p>
+								<p class="font-medium" style="color: var(--text-primary);">{data.booking.customerPhone}</p>
+								<p class="text-sm" style="color: var(--text-secondary);">Phone number</p>
 							</div>
 						</div>
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Users class="w-5 h-5 text-gray-400" />
+						<Users class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">
+							<p class="font-medium" style="color: var(--text-primary);">
 								{data.booking.participants} {data.booking.participants === 1 ? 'participant' : 'participants'}
 							</p>
-							<p class="text-sm text-gray-600">Group size</p>
+							<p class="text-sm" style="color: var(--text-secondary);">Group size</p>
 						</div>
 					</div>
 					
 					<div class="flex items-center gap-3">
-						<Ticket class="w-5 h-5 text-gray-400" />
+						<Ticket class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">{data.booking.bookingReference}</p>
-							<p class="text-sm text-gray-600">Booking reference</p>
+							<p class="font-medium" style="color: var(--text-primary);">{data.booking.bookingReference}</p>
+							<p class="text-sm" style="color: var(--text-secondary);">Booking reference</p>
 						</div>
 					</div>
 				</div>
 				
 				{#if data.booking.specialRequests}
-					<div class="mt-6 p-4 bg-blue-50 rounded-lg">
-						<h3 class="font-medium text-blue-900 mb-2">Special Requests</h3>
-						<p class="text-sm text-blue-800">{data.booking.specialRequests}</p>
+					<div class="mt-6 p-4 rounded-lg" style="background: var(--color-primary-50);">
+						<h3 class="font-medium mb-2" style="color: var(--color-primary-900);">Special Requests</h3>
+						<p class="text-sm" style="color: var(--color-primary-800);">{data.booking.specialRequests}</p>
 					</div>
 				{/if}
 			</div>
 		</div>
 		
 		<!-- Tour Details -->
-		<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-			<div class="px-6 py-4 border-b border-gray-200">
-				<h2 class="text-lg font-semibold text-gray-900">Tour Details</h2>
+		<div class="rounded-xl overflow-hidden mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-6 py-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Tour Details</h2>
 			</div>
 			
 			<div class="px-6 py-6">
 				<div class="grid gap-4">
 					<div class="flex items-center gap-3">
-						<Calendar class="w-5 h-5 text-gray-400" />
+						<Calendar class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">
+							<p class="font-medium" style="color: var(--text-primary);">
 								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Date TBD'}
 							</p>
-							<p class="text-sm text-gray-600">
+							<p class="text-sm" style="color: var(--text-secondary);">
 								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime 
 									? `${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}`
 									: 'Time TBD'
@@ -226,19 +226,19 @@
 					
 					{#if data.booking.expand?.tour?.location}
 						<div class="flex items-start gap-3">
-							<MapPin class="w-5 h-5 text-gray-400 mt-1" />
+							<MapPin class="w-5 h-5 mt-1" style="color: var(--text-tertiary);" />
 							<div>
-								<p class="font-medium text-gray-900">Meeting Point</p>
-								<p class="text-sm text-gray-600">{data.booking.expand?.tour?.location}</p>
+								<p class="font-medium" style="color: var(--text-primary);">Meeting Point</p>
+								<p class="text-sm" style="color: var(--text-secondary);">{data.booking.expand?.tour?.location}</p>
 							</div>
 						</div>
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Euro class="w-5 h-5 text-gray-400" />
+						<Euro class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium text-gray-900">€{data.booking.totalAmount}</p>
-							<p class="text-sm text-gray-600">Total amount paid</p>
+							<p class="font-medium" style="color: var(--text-primary);">€{data.booking.totalAmount}</p>
+							<p class="text-sm" style="color: var(--text-secondary);">Total amount paid</p>
 						</div>
 					</div>
 				</div>
@@ -247,10 +247,10 @@
 		
 		<!-- Check-in Actions -->
 		{#if canTakeAction}
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-				<div class="px-6 py-4 border-b border-gray-200">
-					<h2 class="text-lg font-semibold text-gray-900">Check-in Actions</h2>
-					<p class="text-sm text-gray-600 mt-1">Mark the customer's attendance status</p>
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-6 py-4 border-b" style="border-color: var(--border-primary);">
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Check-in Actions</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Mark the customer's attendance status</p>
 				</div>
 				
 				<div class="px-6 py-6">
@@ -289,7 +289,8 @@
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								class="w-full button-secondary text-red-600 hover:bg-red-50 border-red-200 hover:border-red-300 button--gap justify-center py-3"
+								class="w-full button-secondary button--gap justify-center py-3"
+								style="color: var(--color-danger-600); border-color: var(--color-danger-200);"
 							>
 								{#if isSubmitting}
 									<div class="form-spinner"></div>
@@ -305,19 +306,19 @@
 			</div>
 		{:else}
 			<!-- Already Processed -->
-			<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="px-6 py-6 text-center">
 					<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center {statusInfo.class}">
 						<statusInfo.icon class="w-8 h-8 {statusInfo.iconClass}" />
 					</div>
-					<h3 class="text-lg font-semibold text-gray-900 mb-2">
+					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
 						{#if isCheckedIn}
 							Customer Checked In
 						{:else}
 							Customer Marked as No Show
 						{/if}
 					</h3>
-					<p class="text-gray-600">
+					<p style="color: var(--text-secondary);">
 						{#if isCheckedIn && data.booking.checkedInAt}
 							Checked in at {formatDateTime(data.booking.checkedInAt)}
 						{:else}

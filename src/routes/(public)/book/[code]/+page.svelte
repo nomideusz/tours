@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
-	import { page } from '$app/stores';
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
+	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -13,6 +13,21 @@
 	import Check from 'lucide-svelte/icons/check';
 	
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
+	
+	// Set tour owner in store for header to use
+	$effect(() => {
+		if (data.tourOwner?.username && data.tourOwner?.name) {
+			tourOwnerStore.set({
+				username: data.tourOwner.username,
+				name: data.tourOwner.name
+			});
+		}
+		
+		// Clean up when component is destroyed
+		return () => {
+			tourOwnerStore.set(null);
+		};
+	});
 	
 	// SEO data from server
 	const seo = $derived(data.seo);
@@ -66,34 +81,6 @@
 			const date = new Date(today);
 			date.setDate(today.getDate() + i);
 			const dateStr = date.toISOString().split('T')[0];
-			
-			// Morning slot
-			slots.push({
-				id: `demo-${i}-1`,
-				tourId: tour.id,
-				startTime: `${dateStr}T09:00:00`,
-				endTime: `${dateStr}T11:00:00`,
-				availableSpots: Math.floor(Math.random() * 8) + 2,
-				bookedSpots: Math.floor(Math.random() * 3),
-				status: 'available' as const,
-				isRecurring: false,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString()
-			});
-			
-			// Afternoon slot
-			slots.push({
-				id: `demo-${i}-2`,
-				tourId: tour.id,
-				startTime: `${dateStr}T14:00:00`,
-				endTime: `${dateStr}T16:00:00`,
-				availableSpots: Math.floor(Math.random() * 6) + 1,
-				bookedSpots: Math.floor(Math.random() * 4),
-				status: 'available' as const,
-				isRecurring: false,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString()
-			});
 		}
 		
 		return slots;
@@ -165,8 +152,8 @@
 	{/if}
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="max-w-2xl mx-auto">
 		{#if !data.qrCode || !tour}
 			<div class="flex items-center justify-center min-h-screen">
 				<div class="text-center max-w-md mx-auto px-6">
@@ -179,61 +166,64 @@
 					</ul>
 					<div class="bg-gray-100 rounded-lg p-4 text-xs text-gray-500 text-left">
 						<p class="font-semibold mb-1">Debug Info:</p>
-						<p>QR Code: {$page.params.code}</p>
-						<p>URL: {$page.url.pathname}</p>
+						<p>QR Code: {data.qrCode?.code || 'Unknown'}</p>
+						<p>Current booking page</p>
 					</div>
 				</div>
 			</div>
 		{:else}
-			<!-- Hero Section -->
-			<div class="relative bg-white shadow-sm rounded-lg overflow-hidden mb-8">
-				{#if imageUrl}
-					<div class="h-64 sm:h-80 bg-gray-200">
-						<img 
-							src={imageUrl} 
-							alt={tour.name}
-							class="w-full h-full object-cover"
-						/>
-					</div>
-				{/if}
-				
-				<div class="px-6 py-6 sm:px-8">
-					<h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{tour.name}</h1>
-					
-					<div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
-						{#if tour.location}
-							<span class="flex items-center gap-1">
-								<MapPin class="w-4 h-4" />
-								{tour.location}
-							</span>
-						{/if}
-						<span class="flex items-center gap-1">
-							<Clock class="w-4 h-4" />
-							{tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'Duration TBD'}
-						</span>
-						<span class="flex items-center gap-1">
-							<Users class="w-4 h-4" />
-							Max {tour.capacity} people
-						</span>
-						<span class="flex items-center gap-1 font-semibold text-gray-900">
-							<Euro class="w-4 h-4" />
-							{tour.price} per person
-						</span>
-					</div>
-					
-					{#if tour.description}
-						<p class="text-gray-700 mb-6">{tour.description}</p>
-					{/if}
+					<!-- Hero Section -->
+		<div class="mb-6 rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			{#if imageUrl}
+				<div class="h-64 sm:h-80" style="background: var(--bg-secondary);">
+					<img 
+						src={imageUrl} 
+						alt={tour.name}
+						class="w-full h-full object-cover"
+					/>
 				</div>
-			</div>
+			{/if}
 			
-			<!-- Booking Form -->
-			<div class="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">Book Your Tour</h2>
+			<div class="p-4 sm:p-6">
+				<h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--text-primary);">{tour.name}</h1>
+				
+				<div class="flex flex-wrap gap-4 text-sm mb-4" style="color: var(--text-secondary);">
+					{#if tour.location}
+						<span class="flex items-center gap-1">
+							<MapPin class="w-4 h-4" />
+							{tour.location}
+						</span>
+					{/if}
+					<span class="flex items-center gap-1">
+						<Clock class="w-4 h-4" />
+						{tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'Duration TBD'}
+					</span>
+					<span class="flex items-center gap-1">
+						<Users class="w-4 h-4" />
+						Max {tour.capacity} people
+					</span>
+					<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
+						<Euro class="w-4 h-4" />
+						{tour.price} per person
+					</span>
+				</div>
+				
+				{#if tour.description}
+					<p class="mb-4" style="color: var(--text-primary);">{tour.description}</p>
+				{/if}
+			</div>
+		</div>
+			
+					<!-- Booking Form -->
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">Book Your Tour</h2>
+			</div>
+			<div class="p-4 sm:p-6">
 			
 			{#if showSuccess}
 				<!-- Success Message -->
-				<div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+				<div class="mb-6 rounded-lg p-6 text-center" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
 					<div class="flex justify-center mb-4">
 						<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
 							<Check class="w-8 h-8 text-green-600" />
@@ -466,11 +456,8 @@
 				{/if}
 			{/if}
 			</div>
+		</div>
 			
-			<!-- Footer -->
-			<div class="mt-12 text-center text-sm text-gray-500">
-				<p>Powered by <a href="https://zaur.app" class="text-blue-600 hover:underline">Zaur</a></p>
-			</div>
-		{/if}
+	{/if}
 	</div>
 </div> 

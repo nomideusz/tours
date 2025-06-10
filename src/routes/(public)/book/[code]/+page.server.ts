@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { tours, timeSlots, bookings, users } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -11,8 +11,32 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		console.log('Looking for QR code:', params.code);
 		
 		const tourData = await db
-			.select()
+			.select({
+				// Tour fields
+				id: tours.id,
+				name: tours.name,
+				description: tours.description,
+				price: tours.price,
+				duration: tours.duration,
+				capacity: tours.capacity,
+				location: tours.location,
+				images: tours.images,
+				category: tours.category,
+				includedItems: tours.includedItems,
+				requirements: tours.requirements,
+				cancellationPolicy: tours.cancellationPolicy,
+				userId: tours.userId,
+				qrCode: tours.qrCode,
+				qrScans: tours.qrScans,
+				qrConversions: tours.qrConversions,
+				createdAt: tours.createdAt,
+				
+				// User fields
+				userUsername: users.username,
+				userName: users.name
+			})
 			.from(tours)
+			.leftJoin(users, eq(tours.userId, users.id))
 			.where(eq(tours.qrCode, params.code))
 			.limit(1);
 		
@@ -109,7 +133,11 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		return {
 			qrCode,
 			timeSlots: timeSlotsResult,
-			seo: seoData
+			seo: seoData,
+			tourOwner: {
+				username: tourRecord.userUsername,
+				name: tourRecord.userName
+			}
 		};
 	} catch (err) {
 		console.error('Error loading QR code:', err);

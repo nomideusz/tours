@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 
 	// Simple logo/brand
 	const isAuthPage = $derived($page.route.id?.includes('/auth/'));
@@ -12,13 +13,23 @@
 		<div class="flex items-center justify-between h-16">
 			<!-- Logo/Brand -->
 			<div class="flex items-center">
-				<a href="/" class="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-					<svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-						<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
-						<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
-					</svg>
-					<span>Zaur</span>
-				</a>
+				{#if $tourOwnerStore?.username}
+					<a href="/{$tourOwnerStore.username}" class="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+						<svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
+							<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
+						</svg>
+						<span>{$tourOwnerStore.username}</span>
+					</a>
+				{:else}
+					<a href="/" class="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+						<svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
+							<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
+						</svg>
+						<span>Zaur</span>
+					</a>
+				{/if}
 			</div>
 
 			<!-- Navigation based on page type -->

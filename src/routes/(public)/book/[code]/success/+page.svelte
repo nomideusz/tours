@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
 	import { generateTicketURL } from '$lib/ticket-qr.js';
+	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import Check from 'lucide-svelte/icons/check';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -15,6 +16,21 @@
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	
 	let { data }: { data: PageData } = $props();
+	
+	// Set tour owner in store for header to use
+	$effect(() => {
+		if (data.tourOwner?.username && data.tourOwner?.name) {
+			tourOwnerStore.set({
+				username: data.tourOwner.username,
+				name: data.tourOwner.name
+			});
+		}
+		
+		// Clean up when component is destroyed
+		return () => {
+			tourOwnerStore.set(null);
+		};
+	});
 	
 	let isPolling = $state(false);
 	let pollCount = $state(0);
@@ -102,10 +118,10 @@
 	let ticketURL = $derived(hasTicket && booking.ticketQRCode ? generateTicketURL(booking.ticketQRCode) : '');
 </script>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<div class="max-w-2xl mx-auto">
 		<!-- Success Message -->
-		<div class="bg-white rounded-lg shadow-sm overflow-hidden">
+		<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			{#if isPaymentProcessing || isPolling}
 				<!-- Payment Processing State -->
 				<div class="bg-blue-50 px-6 py-8 text-center">

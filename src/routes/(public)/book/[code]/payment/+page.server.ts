@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types.js';
 import { error, redirect } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
-import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, url, locals }) => {
@@ -39,17 +39,23 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 				tourLocation: tours.location,
 				tourPrice: tours.price,
 				tourDuration: tours.duration,
+				tourUserId: tours.userId,
 				
 				// Time slot fields
 				timeSlotId: bookings.timeSlotId,
 				timeSlotStartTime: timeSlots.startTime,
 				timeSlotEndTime: timeSlots.endTime,
 				timeSlotAvailableSpots: timeSlots.availableSpots,
-				timeSlotBookedSpots: timeSlots.bookedSpots
+				timeSlotBookedSpots: timeSlots.bookedSpots,
+				
+				// Tour owner fields
+				tourOwnerUsername: users.username,
+				tourOwnerName: users.name
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.leftJoin(users, eq(tours.userId, users.id))
 			.where(eq(bookings.id, bookingId))
 			.limit(1);
 		
@@ -98,7 +104,12 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 					description: booking.tourDescription,
 					location: booking.tourLocation,
 					price: booking.tourPrice,
-					duration: booking.tourDuration
+					duration: booking.tourDuration,
+					user: {
+						id: booking.tourUserId,
+						username: booking.tourOwnerUsername,
+						name: booking.tourOwnerName
+					}
 				},
 				timeSlot: booking.timeSlotId ? {
 					id: booking.timeSlotId,
@@ -112,7 +123,11 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 		
 		return {
 			booking: formattedBooking,
-			qrCode: { code: params.code }
+			qrCode: { code: params.code },
+			tourOwner: {
+				username: booking.tourOwnerUsername,
+				name: booking.tourOwnerName
+			}
 		};
 	} catch (err) {
 		console.error('Error loading payment page:', err);

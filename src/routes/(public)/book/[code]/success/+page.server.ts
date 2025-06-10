@@ -49,7 +49,8 @@ export const load: PageServerLoad = async ({ url }) => {
 				
 				// Tour owner fields
 				tourOwnerEmail: users.email,
-				tourOwnerName: users.name
+				tourOwnerName: users.name,
+				tourOwnerUsername: users.username
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
@@ -110,7 +111,8 @@ export const load: PageServerLoad = async ({ url }) => {
 					user: {
 						id: booking.tourUserId,
 						email: booking.tourOwnerEmail,
-						name: booking.tourOwnerName
+						name: booking.tourOwnerName,
+						username: booking.tourOwnerUsername
 					}
 				},
 				timeSlot: booking.timeSlotId ? {
@@ -125,7 +127,11 @@ export const load: PageServerLoad = async ({ url }) => {
 		
 		return {
 			booking: formattedBooking,
-			isPaymentProcessing
+			isPaymentProcessing,
+			tourOwner: {
+				username: booking.tourOwnerUsername,
+				name: booking.tourOwnerName
+			}
 		};
 	} catch (err) {
 		console.error('Error loading success page:', err);
