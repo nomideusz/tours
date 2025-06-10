@@ -1,67 +1,31 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
-	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
-	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Camera from 'lucide-svelte/icons/camera';
-	import UserCheck from 'lucide-svelte/icons/user-check';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Scan from 'lucide-svelte/icons/scan';
-	import Clock from 'lucide-svelte/icons/clock';
-	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Play from 'lucide-svelte/icons/play';
+	import Square from 'lucide-svelte/icons/square';
+	import RotateCcw from 'lucide-svelte/icons/rotate-ccw';
 	import type { PageData } from './$types.js';
 
 	let { data }: { data: PageData } = $props();
 	
 	// QR Scanner types and state
 	let videoElement: HTMLVideoElement | undefined = $state();
-	let canvasElement: HTMLCanvasElement | undefined = $state();
 	let scanning = $state(false);
 	let cameraError = $state('');
 	let lastScanResult = $state('');
 	let lastScanTime = $state(0);
-	let scanHistory = $state<string[]>([]);
 	let isInitializing = $state(false);
 	
 	// Server data
-	let recentQRCodes = $state(data.recentQRCodes || []);
-	let activeTours = $state(data.activeTours || []);
 	let scannerConfig = $state(data.scannerConfig || {});
-
-	// QR Code categories configuration
-	const categories = {
-		'Digital/Social': { icon: '📱', color: '#3B82F6' },
-		'Print Materials': { icon: '🖨️', color: '#10B981' },
-		'Partner/Referral': { icon: '🤝', color: '#F59E0B' },
-		'Special Events': { icon: '🎉', color: '#8B5CF6' },
-		'Limited Offers': { icon: '🔥', color: '#EF4444' }
-	};
-
-	function getCategoryDisplay(category: string) {
-		// Handle case variations and partial matches
-		const normalizedCategory = category.toLowerCase();
-		
-		if (normalizedCategory.includes('digital') || normalizedCategory.includes('social')) {
-			return categories['Digital/Social'];
-		} else if (normalizedCategory.includes('print')) {
-			return categories['Print Materials'];
-		} else if (normalizedCategory.includes('partner') || normalizedCategory.includes('referral')) {
-			return categories['Partner/Referral'];
-		} else if (normalizedCategory.includes('event')) {
-			return categories['Special Events'];
-		} else if (normalizedCategory.includes('limited') || normalizedCategory.includes('offer')) {
-			return categories['Limited Offers'];
-		}
-		
-		// Fallback for unknown categories
-		return { icon: '🏷️', color: '#6B7280' };
-	}
 
 	// Import QR scanner dynamically to avoid SSR issues
 	let QrScanner: any = null;
@@ -141,6 +105,11 @@
 		scanning = false;
 	}
 
+	function resetScanner() {
+		stopScanning();
+		cameraError = '';
+	}
+
 	async function handleScanResult(data: string) {
 		const now = Date.now();
 		
@@ -151,9 +120,6 @@
 
 		lastScanResult = data;
 		lastScanTime = now;
-		
-		// Add to scan history
-		scanHistory = [data, ...scanHistory.slice(0, 9)]; // Keep last 10 scans
 		
 		console.log('QR Code scanned:', data);
 		
@@ -208,188 +174,169 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<PageHeader 
-		title="QR Code Scanner"
-		subtitle="Scan QR codes to check in guests and access bookings"
-	/>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Mobile-First Header -->
+	<div class="mb-6 sm:mb-8">
+		<!-- Mobile Compact Header -->
+		<MobilePageHeader
+			title="QR Scanner"
+			secondaryInfo={scanning ? "Camera Active" : "Ready to Scan"}
+			quickActions={[
+				...(scanning ? [{
+					label: 'Stop',
+					icon: Square,
+					onclick: stopScanning,
+					variant: 'danger' as const
+				}] : [{
+					label: 'Start Camera',
+					icon: Play,
+					onclick: startScanning,
+					variant: 'primary' as const
+				}]),
+				...(cameraError ? [{
+					label: 'Reset',
+					icon: RotateCcw,
+					onclick: resetScanner,
+					variant: 'secondary' as const
+				}] : [])
+			]}
+			infoItems={[
+				{
+					icon: Camera,
+					label: 'Status',
+					value: scanning ? 'Scanning' : cameraError ? 'Error' : 'Ready'
+				},
+				{
+					icon: Scan,
+					label: 'Mode',
+					value: 'Check-in Only'
+				}
+			]}
+		/>
 
-	{#if data.loadError}
-		<div class="mb-8">
-			<ErrorAlert variant="warning" message={data.loadError} />
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="QR Code Scanner"
+				subtitle="Scan QR codes to check in guests"
+			/>
 		</div>
-	{/if}
+	</div>
 
-	<!-- Main Content Grid -->
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-		<!-- Scanner Section -->
-		<div class="lg:col-span-2">
-			{#if cameraError}
-				<EmptyState
-					icon={AlertCircle}
-					title="Camera Error"
-					description={cameraError}
-					variant="error"
-					actionText="Try Again"
-					onAction={() => {
-						cameraError = '';
-						startScanning();
-					}}
-				/>
-			{:else if isInitializing}
-				<div class="rounded-xl p-8 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<LoadingSpinner size="large" text="Initializing camera..." centered />
-				</div>
-			{:else if !scanning}
-				<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<EmptyState
-						icon={Camera}
-						title="Start QR Scanner"
-						description="Click the button below to start scanning QR codes for guest check-ins"
-						actionText="Start Camera"
-						onAction={startScanning}
-					/>
-					
-					<!-- Instructions for non-scanning state -->
-					<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">How to use</h3>
-						<ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
-							<li class="flex items-start gap-2">
-								<span class="font-semibold">1.</span>
-								<span>Click "Start Camera" to activate the QR scanner</span>
-							</li>
-							<li class="flex items-start gap-2">
-								<span class="font-semibold">2.</span>
-								<span>Point your camera at a guest's QR code ticket</span>
-							</li>
-							<li class="flex items-start gap-2">
-								<span class="font-semibold">3.</span>
-								<span>The system will automatically check them in</span>
-							</li>
-						</ul>
+	<!-- Scanner Card -->
+	<div class="max-w-2xl mx-auto">
+		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary); background: var(--bg-secondary);">
+				<div class="flex items-center gap-3">
+					<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+						<Camera class="w-5 h-5 text-white" />
+					</div>
+					<div>
+						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Guest Check-in Scanner</h2>
+						<p class="text-sm mt-1" style="color: var(--text-secondary);">Point camera at guest QR codes</p>
 					</div>
 				</div>
-			{:else}
-				<!-- Camera View -->
-				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-2">
-								<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-								<span class="text-sm font-medium" style="color: var(--text-primary);">Scanning active</span>
-							</div>
-							<button
-								onclick={stopScanning}
-								class="text-sm text-red-600 hover:text-red-700 font-medium"
-							>
-								Stop
+			</div>
+			
+			<div class="p-4 sm:p-6">
+				{#if cameraError}
+					<div class="text-center py-8">
+						<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+							<AlertCircle class="w-8 h-8 text-red-600" />
+						</div>
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Camera Error</h3>
+						<p class="text-sm mb-6" style="color: var(--text-secondary);">{cameraError}</p>
+						<div class="flex gap-3 justify-center">
+							<button onclick={resetScanner} class="button-secondary button--gap">
+								<RotateCcw class="h-4 w-4" />
+								Reset Scanner
+							</button>
+							<button onclick={startScanning} class="button-primary button--gap">
+								<Camera class="h-4 w-4" />
+								Try Again
 							</button>
 						</div>
 					</div>
-					
+				{:else if isInitializing}
+					<div class="text-center py-12">
+						<LoadingSpinner size="large" text="Initializing camera..." centered />
+					</div>
+				{:else if !scanning}
+					<div class="text-center py-8">
+						<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+							<Camera class="w-8 h-8 text-blue-600" />
+						</div>
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Ready to Scan</h3>
+						<p class="text-sm mb-6" style="color: var(--text-secondary);">Start the camera to scan guest QR codes for check-in</p>
+						<button onclick={startScanning} class="button-primary button--gap">
+							<Play class="h-4 w-4" />
+							Start Camera
+						</button>
+					</div>
+				{:else}
+					<!-- Camera View -->
 					<div class="relative">
 						<video
 							bind:this={videoElement}
-							class="w-full aspect-[3/4] sm:aspect-square lg:aspect-[4/3] object-cover"
+							class="w-full aspect-square object-cover rounded-lg"
 							autoplay
 							playsinline
 							muted
 						></video>
 						
 						<!-- Scanning overlay -->
-						<div class="absolute inset-0 pointer-events-none">
-							<div class="absolute inset-4 border-2 border-white/50 rounded-lg"></div>
+						<div class="absolute inset-0 pointer-events-none rounded-lg">
+							<div class="absolute inset-8 border-2 border-white/50 rounded-lg"></div>
 							<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
 								<Scan class="h-8 w-8 text-white/70 animate-pulse" />
 							</div>
 						</div>
-					</div>
-					
-					<div class="p-4" style="background: var(--bg-secondary); border-top: 1px solid var(--border-primary);">
-						<p class="text-xs text-center" style="color: var(--text-secondary);">
-							Position QR code within the frame to scan
-						</p>
-					</div>
-				</div>
-
-				<!-- Session Scans (when scanning) -->
-				{#if scanHistory.length > 0}
-					<div class="mt-6 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Recent Scans</h3>
-						<div class="grid gap-3">
-							{#each scanHistory.slice(0, 3) as scan, i}
-								<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<QrCode class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
-									<span class="text-sm font-mono truncate flex-1" style="color: var(--text-primary);">{scan}</span>
-									<span class="text-xs" style="color: var(--text-tertiary);">#{i + 1}</span>
+						
+						<!-- Scanner status -->
+						<div class="absolute top-4 left-4 right-4">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2 px-3 py-2 rounded-full bg-black/50 backdrop-blur-sm">
+									<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+									<span class="text-white text-sm font-medium">Scanning</span>
 								</div>
-							{/each}
+								<button
+									onclick={stopScanning}
+									class="px-3 py-2 rounded-full bg-red-500/90 backdrop-blur-sm text-white text-sm font-medium hover:bg-red-600/90 transition-colors"
+								>
+									Stop
+								</button>
+							</div>
 						</div>
 					</div>
+					
+					<!-- Instructions below camera -->
+					<div class="mt-4 p-4 rounded-lg text-center" style="background: var(--bg-secondary);">
+						<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Position QR code within the frame</p>
+						<p class="text-xs" style="color: var(--text-secondary);">Scanner will automatically detect and process codes</p>
+					</div>
 				{/if}
-			{/if}
+			</div>
 		</div>
 
-		<!-- Sidebar -->
-		<div class="space-y-6">
-			<!-- Recent QR Codes -->
-			{#if recentQRCodes.length > 0}
-				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Your QR Codes</h3>
-					<div class="space-y-3">
-						{#each recentQRCodes.slice(0, 5) as qr}
-							<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<QrCode class="h-4 w-4 text-blue-500 flex-shrink-0" />
-								<div class="flex-1 min-w-0">
-									<div class="text-sm font-medium truncate" style="color: var(--text-primary);">
-										{qr.tourName}
-									</div>
-									<div class="text-xs font-mono" style="color: var(--text-tertiary);">
-										{qr.code}
-									</div>
-									{#if qr.category}
-										{@const categoryDisplay = getCategoryDisplay(qr.category)}
-										<div class="text-xs flex items-center gap-1" style="color: {categoryDisplay.color}">
-											<span>{categoryDisplay.icon}</span>
-											<span>{qr.category}</span>
-										</div>
-									{/if}
-								</div>
-								<div class="text-right">
-									<div class="text-xs flex items-center gap-1" style="color: var(--text-tertiary);">
-										<UserCheck class="h-3 w-3" />
-										{qr.scans}
-									</div>
-									<div class="text-xs mt-1" style="color: var(--text-tertiary);">
-										{new Date(qr.created).toLocaleDateString()}
-									</div>
-								</div>
-							</div>
-						{/each}
+		<!-- Tips Card -->
+		{#if !scanning}
+			<div class="mt-6 rounded-xl p-4 sm:p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+				<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Scanner Tips</h3>
+				<div class="space-y-2 text-sm" style="color: var(--text-secondary);">
+					<div class="flex items-start gap-2">
+						<span class="font-semibold text-blue-600">•</span>
+						<span>Hold your device steady and ensure good lighting</span>
+					</div>
+					<div class="flex items-start gap-2">
+						<span class="font-semibold text-blue-600">•</span>
+						<span>Position the QR code fully within the scanning frame</span>
+					</div>
+					<div class="flex items-start gap-2">
+						<span class="font-semibold text-blue-600">•</span>
+						<span>Scanner works with booking tickets and tour QR codes</span>
 					</div>
 				</div>
-			{/if}
-
-
-
-			<!-- Session Scans (when not scanning, for mobile/fallback) -->
-			{#if scanHistory.length > 0 && !scanning}
-				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Session Scans</h3>
-					<div class="space-y-3">
-						{#each scanHistory.slice(0, 5) as scan, i}
-							<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<QrCode class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
-								<span class="text-sm font-mono truncate flex-1" style="color: var(--text-primary);">{scan}</span>
-								<span class="text-xs" style="color: var(--text-tertiary);">#{i + 1}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
-</div>
-
-<!-- Hidden canvas for QR processing -->
-<canvas bind:this={canvasElement} class="hidden"></canvas> 
+</div> 

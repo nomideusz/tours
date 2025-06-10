@@ -6,8 +6,8 @@ const MINIO_CONFIG = {
   endPoint: env.MINIO_ENDPOINT || 'srv-captain--minio',
   port: parseInt(env.MINIO_PORT || '9000'),
   useSSL: env.MINIO_USE_SSL === 'true' || false,
-  accessKey: env.MINIO_ACCESS_KEY || 'minioadmin',
-  secretKey: env.MINIO_SECRET_KEY || 'minioadmin'
+  accessKey: env.MINIO_ROOT_USER || 'minioadmin',
+  secretKey: env.MINIO_ROOT_PASSWORD || 'minioadmin'
 };
 
 const BUCKET_NAME = env.MINIO_BUCKET_NAME || 'tour-images';

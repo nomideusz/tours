@@ -1,11 +1,11 @@
 import type { Handle } from '@sveltejs/kit';
 import { lucia } from '$lib/auth/lucia.js';
-import { initializeUploadDirs } from '$lib/utils/image-storage.js';
+import { initializeImageStorage } from '$lib/utils/minio-image-storage.js';
 
 // Types are declared in src/app.d.ts
 
-// Initialize upload directories on server startup
-initializeUploadDirs().catch(console.error);
+// Initialize MinIO storage on server startup
+initializeImageStorage().catch(console.error);
 
 export const handle: Handle = async ({ event, resolve }) => {
     // Get session ID from cookies
