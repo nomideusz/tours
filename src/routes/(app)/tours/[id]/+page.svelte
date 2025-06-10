@@ -13,6 +13,13 @@
 		getTourImageUrl,
 		calculateConversionRate
 	} from '$lib/utils/tour-client.js';
+	import { 
+		formatSlotDateTime,
+		getSlotAvailabilityText,
+		getSlotStatusColor as getSlotStatusColorFromSlot,
+		getSlotStatusText,
+		getUpcomingSlots
+	} from '$lib/utils/time-slot-client.js';
 	import { browser } from '$app/environment';
 	
 	// Components
@@ -420,15 +427,19 @@
 							<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
 								<div class="flex-1 min-w-0">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">
-										{formatDate(slot.startTime)} • {formatTime(slot.startTime)}
+										{formatSlotDateTime(slot.startTime)}
 									</p>
 									<p class="text-xs mt-1" style="color: var(--text-secondary);">
-										{slot.bookedSpots}/{tour.capacity} booked
+										{getSlotAvailabilityText(slot)}
 									</p>
 								</div>
 								<div class="flex items-center gap-2">
-									<span class="px-2 py-1 text-xs rounded-full {getSlotStatusColor(slot.status)}">
-										{slot.status}
+									<div 
+										class="w-2 h-2 rounded-full"
+										style="background-color: {getSlotStatusColorFromSlot(slot)};"
+									></div>
+									<span class="text-xs" style="color: var(--text-secondary);">
+										{getSlotStatusText(slot)}
 									</span>
 								</div>
 							</div>

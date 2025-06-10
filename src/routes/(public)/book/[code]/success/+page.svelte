@@ -4,6 +4,7 @@
 	import type { PageData } from './$types.js';
 	import { generateTicketURL } from '$lib/ticket-qr.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import Check from 'lucide-svelte/icons/check';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -105,13 +106,7 @@
 		});
 	}
 	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	}
+
 	
 	// Check if we have a ticket QR code available
 	let hasTicket = $derived(booking.ticketQRCode && booking.status === 'confirmed' && booking.paymentStatus === 'paid');
@@ -213,7 +208,7 @@
 							</p>
 							<p class="text-sm text-gray-600">
 								{booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
-									? `${formatTime(booking.expand.timeSlot.startTime)} - ${formatTime(booking.expand.timeSlot.endTime)}`
+									? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
 									: 'Time TBD'
 								}
 							</p>

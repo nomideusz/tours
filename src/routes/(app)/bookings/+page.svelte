@@ -4,6 +4,7 @@
 	import BookingsList from '$lib/components/BookingsList.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Euro from 'lucide-svelte/icons/euro';
@@ -17,38 +18,61 @@
 </script>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Mobile-First Header -->
 	<div class="mb-6 sm:mb-8">
-		<PageHeader 
+		<!-- Mobile Compact Header -->
+		<MobilePageHeader
 			title="All Bookings"
-			subtitle="Manage your tour bookings and view payment status"
+			secondaryInfo="{data.stats.totalBookings} total bookings"
+			quickActions={[
+				{
+					label: 'QR Scanner',
+					icon: UserCheck,
+					onclick: () => goto('/checkin-scanner'),
+					variant: 'primary'
+				},
+				{
+					label: 'New Tour',
+					icon: Plus,
+					onclick: () => goto('/tours/new'),
+					variant: 'secondary'
+				}
+			]}
+			infoItems={[
+				{
+					icon: Calendar,
+					label: 'Total',
+					value: `${data.stats.totalBookings} bookings`
+				},
+				{
+					icon: Euro,
+					label: 'Revenue',
+					value: formatEuro(data.stats.totalRevenue)
+				},
+				{
+					icon: Users,
+					label: 'Participants',
+					value: `${data.stats.totalParticipants} people`
+				},
+				{
+					icon: TrendingUp,
+					label: 'Upcoming',
+					value: `${data.stats.upcomingCount} tours`
+				}
+			]}
 		/>
-	</div>
-	
-	<!-- Mobile Quick Actions - Prominent on mobile -->
-	<div class="lg:hidden mb-6">
-		<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Quick Actions</h3>
-			<div class="grid grid-cols-2 gap-3">
-				<button
-					onclick={() => goto('/checkin-scanner')}
-					class="button-primary button--gap button--small justify-center py-3"
-				>
-					<UserCheck class="h-4 w-4" />
-					QR Scanner
-				</button>
-				<button
-					onclick={() => goto('/tours/new')}
-					class="button-primary button--gap button--small justify-center py-3"
-				>
-					<Plus class="h-4 w-4" />
-					New Tour
-				</button>
-			</div>
+
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="All Bookings"
+				subtitle="Manage your tour bookings and view payment status"
+			/>
 		</div>
 	</div>
 	
-	<!-- Statistics - Now using server-calculated stats -->
-	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
+	<!-- Statistics - Desktop Only (Mobile shows in header) -->
+	<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
 			value={data.stats.totalBookings}

@@ -4,6 +4,14 @@
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { 
+		formatSlotDateTime,
+		formatSlotTimeRange,
+		getSlotAvailabilityText,
+		getSlotStatusText,
+		getSlotStatusColor,
+		isSlotFull
+	} from '$lib/utils/time-slot-client.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -104,16 +112,8 @@
 	
 	function loadTimeSlotsForDate(date: string) {
 		availableTimeSlots = allTimeSlots.filter(slot => 
-			slot.startTime.startsWith(date) && slot.availableSpots > 0
+			slot.startTime.startsWith(date) && !isSlotFull(slot)
 		).sort((a, b) => a.startTime.localeCompare(b.startTime));
-	}
-	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
 	}
 	
 	function formatDate(dateString: string) {
@@ -317,26 +317,35 @@
 						</span>
 						<div class="space-y-2">
 							{#each availableTimeSlots as slot}
-								{@const spotsLeft = slot.availableSpots}
+								{@const availableSpots = slot.availableSpots - slot.bookedSpots}
 								<button
 									type="button"
 									onclick={() => selectedTimeSlot = slot}
-									disabled={spotsLeft < participants}
+									disabled={availableSpots < participants}
 									class="w-full p-4 rounded-lg border text-left transition-colors {
 										selectedTimeSlot?.id === slot.id
 											? 'bg-blue-50 border-blue-500'
-											: spotsLeft < participants
+											: availableSpots < participants
 											? 'bg-gray-50 border-gray-200 opacity-50 cursor-not-allowed'
 											: 'bg-white border-gray-200 hover:border-gray-300'
 									}"
 								>
 									<div class="flex items-center justify-between">
-										<div>
-											<div class="font-semibold">
-												{formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+										<div class="flex-1">
+											<div class="flex items-center gap-2 mb-1">
+												<div class="font-semibold">
+													{formatSlotTimeRange(slot.startTime, slot.endTime)}
+												</div>
+												<div 
+													class="w-2 h-2 rounded-full"
+													style="background-color: {getSlotStatusColor(slot)};"
+												></div>
+												<span class="text-xs text-gray-500">
+													{getSlotStatusText(slot)}
+												</span>
 											</div>
 											<div class="text-sm text-gray-600">
-												{spotsLeft} spots left
+												{getSlotAvailabilityText(slot)}
 											</div>
 										</div>
 										{#if selectedTimeSlot?.id === slot.id}

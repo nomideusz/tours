@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
 import { eq, and, gte, desc, count, sql } from 'drizzle-orm';
+import { getUpcomingTimeSlots, getTimeSlotStats } from '$lib/utils/time-slot-server.js';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	// Get parent layout data first
@@ -44,23 +45,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 		startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
 		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-		// Get upcoming time slots (next 10)
-		const upcomingSlots = await db
-			.select({
-				id: timeSlots.id,
-				startTime: timeSlots.startTime,
-				endTime: timeSlots.endTime,
-				availableSpots: timeSlots.availableSpots,
-				bookedSpots: timeSlots.bookedSpots,
-				status: timeSlots.status
-			})
-			.from(timeSlots)
-			.where(and(
-				eq(timeSlots.tourId, tourId),
-				gte(timeSlots.startTime, now)
-			))
-			.orderBy(timeSlots.startTime)
-			.limit(10);
+		// Get upcoming time slots (next 10) using shared utility
+		const upcomingSlots = await getUpcomingTimeSlots(tourId, 10);
 
 		// Get recent bookings (last 10)
 		const recentBookings = await db
@@ -94,14 +80,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			.from(bookings)
 			.where(eq(bookings.tourId, tourId));
 
-		// Get total time slots count
-		const [timeSlotsCount] = await db
-			.select({
-				totalSlots: count(timeSlots.id),
-				upcomingSlots: sql<number>`COALESCE(SUM(CASE WHEN ${timeSlots.startTime} >= NOW() THEN 1 ELSE 0 END), 0)`
-			})
-			.from(timeSlots)
-			.where(eq(timeSlots.tourId, tourId));
+		// Get time slot statistics using shared utility
+		const timeSlotStats = await getTimeSlotStats(tourId);
 
 		return {
 			...parentData,
@@ -120,16 +100,12 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 				monthBookings: Number(tourStats?.monthBookings || 0),
 				confirmedBookings: Number(tourStats?.confirmedBookings || 0),
 				pendingBookings: Number(tourStats?.pendingBookings || 0),
-				totalSlots: Number(timeSlotsCount?.totalSlots || 0),
-				upcomingSlots: Number(timeSlotsCount?.upcomingSlots || 0),
+				totalSlots: timeSlotStats.totalSlots,
+				upcomingSlots: timeSlotStats.upcomingSlots,
 				qrScans: tour.qrScans || 0,
 				qrConversions: tour.qrConversions || 0
 			},
-			upcomingSlots: upcomingSlots.map(slot => ({
-				...slot,
-				startTime: slot.startTime.toISOString(),
-				endTime: slot.endTime.toISOString()
-			})),
+			upcomingSlots,
 			recentBookings: recentBookings.map(booking => ({
 				...booking,
 				totalAmount: parseFloat(booking.totalAmount),

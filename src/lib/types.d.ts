@@ -65,7 +65,7 @@ export interface TimeSlot extends RecordModel {
   status: 'available' | 'full' | 'cancelled';
   isRecurring: boolean;
   recurringPattern: 'daily' | 'weekly' | 'monthly' | null;
-  recurringEnd: Date | null;
+  recurringEnd: string | null; // ISO datetime string like other date fields
   createdAt: string;
   updatedAt: string;
 }

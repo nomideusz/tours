@@ -150,7 +150,8 @@ export async function loadTourWithTimeSlots(tourId: string, userId: string) {
 			startTime: slot.startTime.toISOString(),
 			endTime: slot.endTime.toISOString(),
 			createdAt: slot.createdAt.toISOString(),
-			updatedAt: slot.updatedAt.toISOString()
+			updatedAt: slot.updatedAt.toISOString(),
+			recurringEnd: slot.recurringEnd?.toISOString() || null
 		}))
 	};
 } 

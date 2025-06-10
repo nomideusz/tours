@@ -16,6 +16,15 @@
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
+	import { 
+		formatSlotDateTime,
+		getSlotAvailabilityText,
+		getSlotStatusColor,
+		getSlotStatusText,
+		sortSlotsByTime,
+		getUpcomingSlots,
+		getTodayBookedSpots
+	} from '$lib/utils/time-slot-client.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -25,87 +34,14 @@
 	let editingSlot = $state<TimeSlot | null>(null);
 	let error = $state<string | null>(form?.error || null);
 
-	// Sort slots by start time
-	let sortedSlots = $derived(
-		[...timeSlots].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-	);
+	// Sort slots by start time using shared utility
+	let sortedSlots = $derived(sortSlotsByTime(timeSlots));
 
-	// Get upcoming slots (next 3)
-	let upcomingSlots = $derived(
-		sortedSlots.filter(slot => new Date(slot.startTime) > new Date()).slice(0, 3)
-	);
+	// Get upcoming slots (next 3) using shared utility
+	let upcomingSlots = $derived(getUpcomingSlots(timeSlots, 3));
 
-	// Calculate total booked spots today
-	let todayBookings = $derived(() => {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		
-		return sortedSlots
-			.filter(slot => {
-				const slotDate = new Date(slot.startTime);
-				return slotDate >= today && slotDate < tomorrow;
-			})
-			.reduce((total, slot) => total + slot.bookedSpots, 0);
-	});
-
-	function formatDateTime(dateString: string | undefined): string {
-		if (!dateString) return 'No date';
-		try {
-			const date = new Date(dateString);
-			if (isNaN(date.getTime())) return 'Invalid date';
-			return date.toLocaleDateString('en-US', {
-				weekday: 'short',
-				month: 'short',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
-		} catch (error) {
-			console.warn('Error formatting date:', dateString);
-			return 'Invalid date';
-		}
-	}
-
-	function formatTimeRange(startTime: string | undefined, endTime: string | undefined): string {
-		if (!startTime || !endTime) return 'No time';
-		try {
-			const start = new Date(startTime);
-			const end = new Date(endTime);
-			
-			if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid time';
-			
-			const startStr = start.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
-			
-			const endStr = end.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
-			
-			return `${startStr} - ${endStr}`;
-		} catch (error) {
-			console.warn('Error formatting time range:', startTime, endTime);
-			return 'Invalid time';
-		}
-	}
-
-	function getAvailabilityText(slot: TimeSlot): string {
-		const available = slot.availableSpots - slot.bookedSpots;
-		return `${slot.bookedSpots} booked, ${available} available`;
-	}
-
-	function getStatusColor(slot: TimeSlot): string {
-		if (slot.bookedSpots >= slot.availableSpots) return '#EF4444'; // Red - full
-		if (slot.bookedSpots > 0) return '#F59E0B'; // Amber - partial
-		return '#10B981'; // Green - available
-	}
+	// Calculate total booked spots today using shared utility
+	let todayBookings = $derived(getTodayBookedSpots(timeSlots));
 
 	function handleCreateSuccess() {
 		showCreateForm = false;
@@ -183,7 +119,7 @@
 				{
 					icon: Calendar,
 					label: 'Today',
-					value: `${todayBookings()} bookings`
+					value: `${todayBookings} bookings`
 				},
 				{
 					icon: Clock,
@@ -326,28 +262,28 @@
 			<div class="p-4">
 				<div class="space-y-3">
 					{#each upcomingSlots as slot}
-						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium" style="color: var(--text-primary);">
-									{formatDateTime(slot.startTime)}
-								</p>
-								<p class="text-xs mt-1" style="color: var(--text-secondary);">
-									{getAvailabilityText(slot)}
-								</p>
+													<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<div class="flex-1 min-w-0">
+									<p class="text-sm font-medium" style="color: var(--text-primary);">
+										{formatSlotDateTime(slot.startTime)}
+									</p>
+									<p class="text-xs mt-1" style="color: var(--text-secondary);">
+										{getSlotAvailabilityText(slot)}
+									</p>
+								</div>
+								<div class="flex items-center gap-2">
+									<div 
+										class="w-2 h-2 rounded-full"
+										style="background-color: {getSlotStatusColor(slot)};"
+									></div>
+									<button
+										onclick={() => startEdit(slot)}
+										class="button-secondary button--small button--icon"
+									>
+										<Edit2 class="h-3 w-3" />
+									</button>
+								</div>
 							</div>
-							<div class="flex items-center gap-2">
-								<div 
-									class="w-2 h-2 rounded-full"
-									style="background-color: {getStatusColor(slot)};"
-								></div>
-								<button
-									onclick={() => startEdit(slot)}
-									class="button-secondary button--small button--icon"
-								>
-									<Edit2 class="h-3 w-3" />
-								</button>
-							</div>
-						</div>
 					{/each}
 				</div>
 			</div>
@@ -461,20 +397,20 @@
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2 mb-1">
 										<h4 class="text-sm font-medium truncate" style="color: var(--text-primary);">
-											{formatDateTime(slot.startTime)}
+											{formatSlotDateTime(slot.startTime)}
 										</h4>
 										<div class="flex items-center gap-1">
 											<div 
 												class="w-2 h-2 rounded-full"
-												style="background-color: {getStatusColor(slot)};"
+												style="background-color: {getSlotStatusColor(slot)};"
 											></div>
 											<span class="text-xs" style="color: var(--text-secondary);">
-												{slot.status}
+												{getSlotStatusText(slot)}
 											</span>
 										</div>
 									</div>
 									<p class="text-xs" style="color: var(--text-tertiary);">
-										{getAvailabilityText(slot)}
+										{getSlotAvailabilityText(slot)}
 									</p>
 								</div>
 								

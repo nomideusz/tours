@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types.js';
 	import { generateCheckInURL, getDisplayReference } from '$lib/ticket-qr.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -55,13 +56,7 @@
 		});
 	}
 	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	}
+
 	
 	function getStatusInfo(attendanceStatus: string) {
 		switch (attendanceStatus) {
@@ -149,7 +144,7 @@
 							</p>
 							<p class="text-sm" style="color: var(--text-secondary);">
 								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime ? 
-									`${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}` : 
+									formatSlotTimeRange(data.booking.expand.timeSlot.startTime, data.booking.expand.timeSlot.endTime) : 
 									'Time TBD'}
 							</p>
 						</div>

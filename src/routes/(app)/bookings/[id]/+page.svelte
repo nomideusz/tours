@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -69,21 +70,7 @@
 		}
 	}
 
-	function formatTime(dateString: string): string {
-		try {
-			if (!dateString) return 'Time not available';
-			const date = new Date(dateString);
-			if (isNaN(date.getTime())) return 'Invalid time';
-			
-			return date.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-		} catch (error) {
-			console.warn('Error formatting time:', dateString, error);
-			return 'Time not available';
-		}
-	}
+
 
 	function getStatusColor(status: string): string {
 		switch (status) {
@@ -117,7 +104,10 @@
 
 	function openEmailClient() {
 		const subject = encodeURIComponent(`Regarding your ${booking.expand?.tour?.name} booking`);
-		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'}\nTime: ${booking.expand?.timeSlot?.startTime ? formatTime(booking.expand.timeSlot.startTime) : 'TBD'}\nParticipants: ${booking.participants}\n\nBest regards`);
+		const timeText = booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
+			? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
+			: 'TBD';
+		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'}\nTime: ${timeText}\nParticipants: ${booking.participants}\n\nBest regards`);
 		
 		window.open(`mailto:${booking.customerEmail}?subject=${subject}&body=${body}`);
 	}
@@ -261,8 +251,8 @@
 								<div>
 									<p class="font-medium" style="color: var(--text-primary);">{getTourDateTime()}</p>
 									<p class="text-sm" style="color: var(--text-secondary);">
-										{#if booking.expand?.timeSlot?.endTime}
-											Duration: {formatTime(booking.expand.timeSlot.startTime!)} - {formatTime(booking.expand.timeSlot.endTime)}
+										{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+											Duration: {formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 										{/if}
 									</p>
 								</div>

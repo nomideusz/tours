@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Booking } from '$lib/types.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -9,7 +10,19 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	
-	interface ExpandedBooking extends Booking {
+	interface ExpandedBooking {
+		id: string;
+		status: string;
+		paymentStatus: string;
+		totalAmount: string;
+		participants: number;
+		customerName: string;
+		customerEmail: string;
+		customerPhone?: string;
+		specialRequests?: string;
+		bookingReference: string;
+		created?: string;
+		createdAt?: string;
 		expand?: {
 			tour?: {
 				id: string;
@@ -33,19 +46,20 @@
 	let { bookings, showTourName = true }: Props = $props();
 	
 	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-		});
-	}
-	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-									hour12: false,
-		});
+		try {
+			if (!dateString) return 'No date';
+			const date = new Date(dateString);
+			if (isNaN(date.getTime())) return 'Invalid date';
+			
+			return date.toLocaleDateString('en-US', {
+				weekday: 'short',
+				month: 'short',
+				day: 'numeric',
+			});
+		} catch (error) {
+			console.warn('Error formatting date:', dateString, error);
+			return 'Invalid date';
+		}
 	}
 	
 	function getStatusIcon(status: string) {
@@ -138,7 +152,7 @@
 								{booking.bookingReference}
 							</div>
 							<div class="text-xs text-gray-500">
-								{new Date(booking.createdAt).toLocaleDateString()}
+								{formatDate(booking.created || booking.createdAt || '')}
 							</div>
 						</td>
 						
@@ -153,12 +167,13 @@
 						<td class="px-6 py-4 whitespace-nowrap">
 							<div class="text-sm text-gray-900 flex items-center gap-1">
 								<Calendar class="w-4 h-4 text-gray-400" />
-								{formatDate(booking.expand?.timeSlot?.startTime || booking.createdAt)}
+								{formatDate(booking.expand?.timeSlot?.startTime || booking.created || booking.createdAt || '')}
 							</div>
 							<div class="text-xs text-gray-500 flex items-center gap-1 mt-1">
 								<Clock class="w-3 h-3 text-gray-400" />
-								{formatTime(booking.expand?.timeSlot?.startTime || booking.createdAt)} - 
-								{formatTime(booking.expand?.timeSlot?.endTime || booking.createdAt)}
+								{booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
+									? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
+									: 'Time TBD'}
 							</div>
 						</td>
 						
@@ -204,11 +219,11 @@
 								</a>
 								{#if showTourName && booking.expand?.tour?.id}
 									<a 
-										href="/tours/{booking.expand.tour.id}/bookings" 
+										href="/tours/{booking.expand.tour.id}" 
 										class="text-green-600 hover:text-green-900 underline text-xs" 
 										onclick={(e) => e.stopPropagation()}
 									>
-										Tour Bookings
+										View Tour
 									</a>
 								{/if}
 							</div>

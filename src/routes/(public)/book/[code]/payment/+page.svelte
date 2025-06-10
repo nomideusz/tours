@@ -4,6 +4,7 @@
 	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 	import { stripePublicKey } from '$lib/stripe.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Shield from 'lucide-svelte/icons/shield';
@@ -129,14 +130,6 @@
 			year: 'numeric',
 		});
 	}
-	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true,
-		});
-	}
 </script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -176,7 +169,7 @@
 								{data.booking.expand?.timeSlot?.startTime ? formatDate(data.booking.expand.timeSlot.startTime) : 'Not scheduled'}
 								<br />
 								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime ? 
-									`${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}` : 
+									formatSlotTimeRange(data.booking.expand.timeSlot.startTime, data.booking.expand.timeSlot.endTime) : 
 									'Time to be determined'}
 							</p>
 						</div>

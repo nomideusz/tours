@@ -118,7 +118,7 @@
 								</h4>
 								<div class="flex items-center gap-2 mt-1">
 									<span class="text-xs" style="color: var(--text-secondary);">
-										{formatDateMobile(schedule.startTime)} • {formatDate(schedule.startTime)}
+										{formatDateMobile(schedule.time)} • {formatDate(schedule.time)}
 									</span>
 									<span class="text-xs" style="color: var(--text-tertiary);">•</span>
 									<span class="text-xs" style="color: var(--text-secondary);">

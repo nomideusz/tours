@@ -2,6 +2,7 @@
 	import type { PageData } from './$types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { generateQRImageURL, generateBookingURL } from '$lib/utils/qr-generation.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import User from 'lucide-svelte/icons/user';
 	import Building from 'lucide-svelte/icons/building';
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -40,13 +41,7 @@
 		});
 	}
 	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	}
+
 	
 	function formatDuration(minutes: number) {
 		const hours = Math.floor(minutes / 60);
@@ -218,9 +213,9 @@
 															<div class="font-medium" style="color: var(--text-primary);">
 																{formatDate(slot.startTime)}
 															</div>
-															<div style="color: var(--text-secondary);">
-																{formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-															</div>
+																													<div style="color: var(--text-secondary);">
+															{formatSlotTimeRange(slot.startTime, slot.endTime)}
+														</div>
 															<div class="text-xs mt-1" style="color: var(--text-tertiary);">
 																{slot.availableSpots - slot.bookedSpots} spots available
 															</div>

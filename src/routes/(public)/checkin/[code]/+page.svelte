@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types.js';
 	import { getDisplayReference } from '$lib/ticket-qr.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -30,13 +31,7 @@
 		});
 	}
 	
-	function formatTime(dateString: string) {
-		return new Date(dateString).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		});
-	}
+
 	
 	function formatDateTime(dateString: string) {
 		return new Date(dateString).toLocaleString('en-US', {
