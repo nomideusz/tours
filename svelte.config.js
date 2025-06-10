@@ -10,6 +10,10 @@ const config = {
 		}),
 		serviceWorker: {
 			register: true
+		},
+		// Increase body size limit for image uploads (10MB)
+		bodySize: {
+			max: 10 * 1024 * 1024 // 10MB in bytes
 		}
 	}
 };
