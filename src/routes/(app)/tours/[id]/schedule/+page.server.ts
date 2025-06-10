@@ -83,9 +83,6 @@ export const actions: Actions = {
 				availableSpots,
 				bookedSpots: 0,
 				status: 'available' as const,
-				isRecurring: false,
-				recurringPattern: null,
-				recurringEnd: null,
 				createdAt: new Date(),
 				updatedAt: new Date()
 			};
@@ -247,9 +244,6 @@ export const actions: Actions = {
 				availableSpots: slotData.availableSpots || tour.capacity,
 				bookedSpots: 0,
 				status: 'available' as const,
-				isRecurring: false,
-				recurringPattern: null,
-				recurringEnd: null,
 				createdAt: new Date(),
 				updatedAt: new Date()
 			}));
