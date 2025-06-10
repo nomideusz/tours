@@ -1,6 +1,5 @@
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
-	import type { Tour } from '$lib/types.js';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 
 	interface Props {
@@ -10,7 +9,7 @@
 			price: number;
 			duration: number;
 			capacity: number;
-			status: Tour['status'];
+			status: 'active' | 'draft';
 			category: string;
 			location: string;
 			includedItems: string[];
@@ -20,6 +19,7 @@
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
 		isEdit?: boolean;
+		submitButtonText?: string;
 
 		onCancel: () => void;
 		onImageUpload?: (event: Event) => void;
@@ -44,6 +44,7 @@
 		uploadedImages = $bindable([]),
 		isSubmitting = false,
 		isEdit = false,
+		submitButtonText = '',
 
 		onCancel,
 		onImageUpload,
@@ -58,20 +59,27 @@
 
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
-	let hasValidated = $state(false);
+	let touchedFields = $state<Set<string>>(new Set());
 
-	// Reactive validation - validate on form data changes after first validation attempt
+	// Reactive validation - only validate touched fields after interaction
 	$effect(() => {
-		if (hasValidated) {
+		if (touchedFields.size > 0) {
 			const validation = validateTourForm(formData);
-			validationErrors = validation.errors;
+			// Only show errors for fields that have been touched
+			validationErrors = validation.errors.filter(error => touchedFields.has(error.field));
 		}
 	});
 
 	// Trigger validation when parent requests it
 	$effect(() => {
 		if (triggerValidation) {
-			hasValidated = true;
+			// Mark all required fields as touched when form is submitted
+			touchedFields.add('name');
+			touchedFields.add('description');
+			touchedFields.add('price');
+			touchedFields.add('duration');
+			touchedFields.add('capacity');
+			
 			const validation = validateTourForm(formData);
 			validationErrors = validation.errors;
 		}
@@ -82,17 +90,24 @@
 
 	// Trigger validation when form is submitted
 	function handleSubmit() {
-		hasValidated = true;
+		// Mark all required fields as touched
+		touchedFields.add('name');
+		touchedFields.add('description');
+		touchedFields.add('price');
+		touchedFields.add('duration');
+		touchedFields.add('capacity');
+		
 		const validation = validateTourForm(formData);
 		validationErrors = validation.errors;
 	}
 
 	// Trigger validation for specific field on blur
 	function validateField(fieldName: string) {
-		// Always validate if user has interacted with the form
-		hasValidated = true;
-		const validation = validateTourForm(formData);
-		validationErrors = validation.errors;
+		// Mark this field as touched
+		touchedFields.add(fieldName);
+		
+		// Validation will automatically run due to the reactive effect above
+		// No need to manually validate here
 	}
 
 	// Export validation state for parent component
@@ -102,7 +117,13 @@
 	}
 
 	export function validate() {
-		hasValidated = true;
+		// Mark all required fields as touched
+		touchedFields.add('name');
+		touchedFields.add('description');
+		touchedFields.add('price');
+		touchedFields.add('duration');
+		touchedFields.add('capacity');
+		
 		const validation = validateTourForm(formData);
 		validationErrors = validation.errors;
 		return validation.isValid;
@@ -128,93 +149,157 @@
 		return URL.createObjectURL(file);
 	}
 
+	// Mobile-specific file input handling for better compatibility
+	function triggerFileInput() {
+		const fileInput = document.getElementById('images-upload') as HTMLInputElement;
+		if (fileInput) {
+			fileInput.click();
+		}
+	}
+
 
 </script>
+
+<style>
+	/* Mobile touch optimization */
+	.touch-manipulation {
+		touch-action: manipulation;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+
+	/* Ensure proper aspect ratio for mobile image previews */
+	.aspect-square {
+		aspect-ratio: 1 / 1;
+	}
+
+	/* Fallback for browsers that don't support aspect-ratio */
+	@supports not (aspect-ratio: 1 / 1) {
+		.aspect-square::before {
+			content: '';
+			display: block;
+			padding-top: 100%;
+		}
+		
+		.aspect-square > * {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+	}
+
+	/* Mobile file input enhancement */
+	@media (max-width: 640px) {
+		#images-upload {
+			/* Ensure file input is accessible on mobile */
+			opacity: 0;
+			position: absolute;
+			z-index: -1;
+		}
+		
+		label[for="images-upload"] {
+			/* Make label more touch-friendly on mobile */
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+</style>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 	<!-- Main form content -->
 	<div class="lg:col-span-2 space-y-8">
 		<!-- Basic Information -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
-			
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<div class="md:col-span-2">
-					<label for="name" class="form-label">
-						Tour Name *
-					</label>
-					<input
-						type="text"
-						id="name"
-						name="name"
-						bind:value={formData.name}
-						placeholder="e.g., Historic Walking Tour of Prague"
-						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
-						onblur={() => validateField('name')}
-					/>
-					{#if getFieldError(allErrors, 'name')}
-						<p class="form-error">{getFieldError(allErrors, 'name')}</p>
-					{/if}
-				</div>
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
+			</div>
+			<div class="p-4">
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<div class="md:col-span-2">
+						<label for="name" class="form-label">
+							Tour Name *
+						</label>
+						<input
+							type="text"
+							id="name"
+							name="name"
+							bind:value={formData.name}
+							placeholder="e.g., Historic Walking Tour of Prague"
+							class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+							onblur={() => validateField('name')}
+						/>
+						{#if getFieldError(allErrors, 'name')}
+							<p class="form-error">{getFieldError(allErrors, 'name')}</p>
+						{/if}
+					</div>
 
-				<div>
-					<label for="category" class="form-label">
-						Category
-					</label>
-					<select
-						id="category"
-						name="category"
-						bind:value={formData.category}
-						class="form-select"
-					>
-						<option value="">Select category</option>
-						<option value="walking">Walking Tour</option>
-						<option value="food">Food Tour</option>
-						<option value="cultural">Cultural Tour</option>
-						<option value="historical">Historical Tour</option>
-						<option value="art">Art Tour</option>
-						<option value="adventure">Adventure Tour</option>
-						<option value="other">Other</option>
-					</select>
-				</div>
+					<div>
+						<label for="category" class="form-label">
+							Category
+						</label>
+						<select
+							id="category"
+							name="category"
+							bind:value={formData.category}
+							class="form-select"
+						>
+							<option value="">Select category</option>
+							<option value="walking">Walking Tour</option>
+							<option value="food">Food Tour</option>
+							<option value="cultural">Cultural Tour</option>
+							<option value="historical">Historical Tour</option>
+							<option value="art">Art Tour</option>
+							<option value="adventure">Adventure Tour</option>
+							<option value="other">Other</option>
+						</select>
+					</div>
 
-				<div>
-					<label for="location" class="form-label">
-						Location
-					</label>
-					<input
-						type="text"
-						id="location"
-						name="location"
-						bind:value={formData.location}
-						placeholder="e.g., Prague Castle Area"
-						class="form-input"
-					/>
-				</div>
+					<div>
+						<label for="location" class="form-label">
+							Location
+						</label>
+						<input
+							type="text"
+							id="location"
+							name="location"
+							bind:value={formData.location}
+							placeholder="e.g., Prague Castle Area"
+							class="form-input"
+						/>
+					</div>
 
-				<div class="md:col-span-2">
-					<label for="description" class="form-label">
-						Description *
-					</label>
-					<textarea
-						id="description"
-						name="description"
-						bind:value={formData.description}
-						rows="4"
-						placeholder="Describe your tour, what makes it special, what guests will see and experience..."
-						class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
-						onblur={() => validateField('description')}
-					></textarea>
-					{#if getFieldError(allErrors, 'description')}
-						<p class="form-error">{getFieldError(allErrors, 'description')}</p>
-					{/if}
+					<div class="md:col-span-2">
+						<label for="description" class="form-label">
+							Description *
+						</label>
+						<textarea
+							id="description"
+							name="description"
+							bind:value={formData.description}
+							rows="4"
+							placeholder="Describe your tour, what makes it special, what guests will see and experience..."
+							class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+							onblur={() => validateField('description')}
+						></textarea>
+						{#if getFieldError(allErrors, 'description')}
+							<p class="form-error">{getFieldError(allErrors, 'description')}</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Pricing & Logistics -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">Pricing & Logistics</h2>
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
+			</div>
+			<div class="p-4">
 			
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<NumberInput
@@ -267,7 +352,7 @@
 					integerOnly={true}
 					onblur={() => validateField('capacity')}
 				/>
-				{#if bookingConstraints?.maxBookedSpots > 0}
+				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
 					<div class="md:col-span-3 mt-2">
 						<p class="text-xs" style="color: var(--text-secondary);">
 							⚠️ Minimum capacity: <strong>{bookingConstraints.minimumCapacity}</strong> 
@@ -277,10 +362,14 @@
 				{/if}
 			</div>
 		</div>
+	</div>
 
 		<!-- What's Included -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">What's Included</h2>
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">What's Included</h2>
+			</div>
+			<div class="p-4">
 			
 			<div class="space-y-3">
 				{#each formData.includedItems as item, index (index)}
@@ -317,10 +406,14 @@
 				</button>
 			</div>
 		</div>
+	</div>
 
 		<!-- Requirements -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">Requirements</h2>
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">Requirements</h2>
+			</div>
+			<div class="p-4">
 			
 			<div class="space-y-3">
 				{#each formData.requirements as requirement, index (index)}
@@ -357,76 +450,51 @@
 				</button>
 			</div>
 		</div>
+	</div>
 
 		<!-- Cancellation Policy -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h2 class="text-xl font-semibold text-gray-900 mb-6">Cancellation Policy</h2>
-			
-			<textarea
-				bind:value={formData.cancellationPolicy}
-				rows="3"
-				placeholder="e.g., Free cancellation up to 24 hours before the tour. 50% refund for cancellations between 24-12 hours. No refund for cancellations within 12 hours."
-				class="form-textarea"
-			></textarea>
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
+			</div>
+			<div class="p-4">
+				<textarea
+					bind:value={formData.cancellationPolicy}
+					rows="3"
+					placeholder="e.g., Free cancellation up to 24 hours before the tour. 50% refund for cancellations between 24-12 hours. No refund for cancellations within 12 hours."
+					class="form-textarea"
+				></textarea>
+			</div>
 		</div>
 	</div>
 
 	<!-- Sidebar -->
 	<div class="space-y-6">
-		<!-- Status -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-			<h3 class="text-lg font-semibold text-gray-900 mb-4">Status</h3>
-			
-			<div class="space-y-3">
-				<label class="flex items-center cursor-pointer">
-					<input
-						type="radio"
-						bind:group={formData.status}
-						value="draft"
-						class="form-radio"
-					/>
-					<span class="ml-3">
-						<span class="text-sm font-medium text-gray-900">Draft</span>
-						<p class="text-xs text-gray-500">Not visible to customers</p>
-					</span>
-				</label>
-				
-				<label class="flex items-center cursor-pointer">
-					<input
-						type="radio"
-						bind:group={formData.status}
-						value="active"
-						class="form-radio"
-					/>
-					<span class="ml-3">
-						<span class="text-sm font-medium text-gray-900">Active</span>
-						<p class="text-xs text-gray-500">Available for booking</p>
-					</span>
-				</label>
-			</div>
-		</div>
-
 		<!-- Tour Images -->
 		{#if onImageUpload && onImageRemove}
-			<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-				<h3 class="text-lg font-semibold text-gray-900 mb-4">Tour Images</h3>
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Images</h3>
+				</div>
+				<div class="p-4">
 				
 				<!-- Existing Images (for edit mode) -->
 				{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
 					<div class="mb-6">
 						<h4 class="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
-						<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+						<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
 							{#each existingImages as imageName, index (imageName)}
-								<div class="relative group">
+								<div class="relative group aspect-square">
 									<img 
 										src={getExistingImageUrl(imageName)} 
 										alt="Tour image {index + 1}"
-										class="w-full h-24 object-cover rounded-lg border border-gray-200"
+										class="w-full h-full object-cover rounded-lg border border-gray-200"
+										loading="lazy"
 									/>
 									<button
 										type="button"
 										onclick={() => onExistingImageRemove && onExistingImageRemove(imageName)}
-										class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+										class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center touch-manipulation"
 										aria-label="Remove image"
 									>
 										×
@@ -438,62 +506,92 @@
 				{/if}
 				
 				<!-- Image Upload Area -->
-				<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+				<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
 					<svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
 					</svg>
 					<p class="text-sm text-gray-600 mb-2">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
 					<p class="text-xs text-gray-500 mb-4">JPEG, PNG, WebP up to 5MB each (max 10 images)</p>
+					
+					<!-- Mobile-optimized file input -->
 					<input
 						type="file"
 						multiple
 						accept="image/jpeg,image/jpg,image/png,image/webp"
 						class="hidden"
-						id="images"
+						id="images-upload"
 						name="images"
 						onchange={onImageUpload}
+						capture="environment"
 					/>
+					
+					<!-- Mobile-friendly upload button -->
 					<label
-						for="images"
-						class="button-secondary cursor-pointer"
+						for="images-upload"
+						class="button-secondary cursor-pointer inline-flex items-center gap-2 touch-manipulation"
 					>
-						Choose Files
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+						</svg>
+						<span class="sm:hidden">Add Photos</span>
+						<span class="hidden sm:inline">Choose Files</span>
 					</label>
+
+					<!-- Alternative button for iOS Safari compatibility -->
+					<button
+						type="button"
+						onclick={triggerFileInput}
+						class="sm:hidden mt-2 button-secondary button--small inline-flex items-center gap-2 touch-manipulation"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+						</svg>
+						Take Photo / Choose File
+					</button>
+					
+					<!-- Alternative: Direct tap area for mobile -->
+					<div class="sm:hidden mt-3">
+						<p class="text-xs text-gray-500">Tap button above to take photos or select from gallery</p>
+					</div>
 				</div>
 
 				<!-- Image Previews -->
 				{#if uploadedImages && uploadedImages.length > 0}
 					<div class="mt-6">
 						<h4 class="text-sm font-medium text-gray-700 mb-3">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
-						<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+						<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
 							{#each uploadedImages as image, index (index)}
-								<div class="relative group">
+								<div class="relative group aspect-square">
 									<img 
 										src={getImagePreview(image)} 
 										alt="Tour preview {index + 1}"
-										class="w-full h-24 object-cover rounded-lg border border-gray-200"
+										class="w-full h-full object-cover rounded-lg border border-gray-200"
+										loading="lazy"
 									/>
 									<button
 										type="button"
 										onclick={() => onImageRemove && onImageRemove(index)}
-										class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+										class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center touch-manipulation"
 										aria-label="Remove image"
 									>
 										×
 									</button>
-									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg">
-										{image.name.length > 20 ? image.name.substring(0, 20) + '...' : image.name}
+									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+										{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
 									</div>
 								</div>
 							{/each}
 						</div>
 					</div>
 				{/if}
+				</div>
 			</div>
 		{/if}
 
 		<!-- Action Buttons -->
-		<div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4">
 			<div class="space-y-3">
 				<button
 					type="submit"
@@ -502,12 +600,13 @@
 				>
 					{#if isSubmitting}
 						<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+						Saving...
 					{:else}
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
 						</svg>
+						{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
 					{/if}
-					{isSubmitting ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save Changes' : 'Create Tour')}
 				</button>
 				
 				<button
@@ -521,4 +620,5 @@
 			</div>
 		</div>
 	</div>
+</div>
 </div> 

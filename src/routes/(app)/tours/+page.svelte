@@ -12,6 +12,7 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import type { Tour } from '$lib/types.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { browser } from '$app/environment';
@@ -147,227 +148,215 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Mobile-First Header -->
 	<div class="mb-6 sm:mb-8">
-		<PageHeader 
-			title="Tours"
-			subtitle="Manage your tour catalog, track performance, and grow your business"
-		>
-			<button onclick={() => goto('/tours/new')} class="hidden sm:flex button-primary button--gap">
-				<Plus class="h-4 w-4 sm:h-5 sm:w-5" />
-				Create Tour
-			</button>
-		</PageHeader>
-	</div>
+		<!-- Mobile Compact Header -->
+		<MobilePageHeader
+			title="Tours Management"
+			secondaryInfo="{tours.length} tours"
+			quickActions={[
+				{
+					label: 'New Draft',
+					icon: Plus,
+					onClick: () => goto('/tours/new'),
+					variant: 'secondary'
+				},
+				{
+					label: 'Create & Go Live',
+					icon: Plus,
+					onClick: () => goto('/tours/new?activate=true'),
+					variant: 'primary'
+				}
+			]}
+			infoItems={[
+				{
+					icon: MapPin,
+					label: 'Total',
+					value: `${stats.totalTours} tours`
+				},
+				{
+					icon: BarChart3,
+					label: 'Active',
+					value: `${stats.activeTours} active`
+				},
+				{
+					icon: DollarSign,
+					label: 'Revenue',
+					value: formatEuro(stats.monthRevenue)
+				},
+				{
+					icon: Users,
+					label: 'Bookings',
+					value: `${stats.monthRevenue > 0 ? stats.totalBookings : 0} total`
+				}
+			]}
+		/>
 
-	<!-- Mobile Quick Actions -->
-	<div class="sm:hidden mb-6">
-		<div class="grid grid-cols-2 gap-3">
-			<button
-				onclick={() => goto('/tours/new')}
-				class="button-primary button--gap button--small justify-center py-3"
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Tours Management"
+				subtitle="Manage your tour catalog, track performance, and grow your business"
 			>
-				<Plus class="h-4 w-4" />
-				New Tour
-			</button>
-			<button
-				onclick={() => goto('/dashboard')}
-				class="button-secondary button--gap button--small justify-center py-3"
-			>
-				<Clock class="h-4 w-4" />
-				Operations
-			</button>
-		</div>
-	</div>
-
-	<!-- Performance Overview -->
-	<div class="mb-8">
-		<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-			<StatsCard
-				title="Total Tours"
-				value={stats.totalTours}
-				subtitle="{stats.activeTours} active"
-				icon={MapPin}
-				trend={stats.monthlyTours > 0 ? { value: `+${stats.monthlyTours} this month`, positive: true } : undefined}
-				variant="small"
-			/>
-
-			<StatsCard
-				title="Total Bookings"
-				value={stats.totalBookings}
-				subtitle="all time"
-				icon={BarChart3}
-				variant="small"
-			/>
-
-			<StatsCard
-				title="Monthly Revenue"
-				value={formatEuro(stats.monthRevenue)}
-				subtitle="this month"
-				icon={DollarSign}
-				trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
-				variant="small"
-			/>
-
-			<StatsCard
-				title="Total Participants"
-				value={stats.totalParticipants}
-				subtitle="all guests served"
-				icon={Users}
-				variant="small"
-			/>
+				<div class="flex gap-3">
+					<button onclick={() => goto('/tours/new')} class="button-secondary button--gap">
+						<Plus class="h-4 w-4" />
+						New Draft
+					</button>
+					<button onclick={() => goto('/tours/new?activate=true')} class="button-primary button--gap">
+						<Plus class="h-4 w-4" />
+						Create & Go Live
+					</button>
+				</div>
+			</PageHeader>
 		</div>
 	</div>
 
 	<!-- Tours Section -->
 	{#if tours.length === 0}
-		<div class="rounded-xl p-8 sm:p-12" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<EmptyState
-				icon={MapPin}
-				title="No tours yet"
-				description="Create your first tour to start receiving bookings and tracking performance"
-				actionText="Create Your First Tour"
-				onAction={() => goto('/tours/new')}
-			/>
+		<div class="rounded-xl p-8 sm:p-12 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="max-w-md mx-auto">
+				<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+					<MapPin class="h-8 w-8 text-blue-600" />
+				</div>
+				<h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+					No tours yet
+				</h3>
+				<p class="text-sm mb-6" style="color: var(--text-secondary);">
+					Create your first tour to start receiving bookings and tracking performance
+				</p>
+				<div class="flex flex-col sm:flex-row gap-3 justify-center">
+					<button onclick={() => goto('/tours/new')} class="button-secondary button--gap">
+						<Plus class="h-4 w-4" />
+						Start with Draft
+					</button>
+					<button onclick={() => goto('/tours/new?activate=true')} class="button-primary button--gap">
+						<Plus class="h-4 w-4" />
+						Create & Go Live
+					</button>
+				</div>
+			</div>
 		</div>
 	{:else}
-		<!-- Section Header -->
-		<div class="flex items-center justify-between mb-6">
-			<div>
-				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Your Tours</h2>
-				<p class="text-sm" style="color: var(--text-secondary);">Showing {tours.length} tours</p>
+		<!-- Performance Overview - Hidden on Mobile, Show on Desktop -->
+		<div class="hidden sm:block mb-8">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Performance Overview</h3>
+			<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+				<StatsCard
+					title="Total Tours"
+					value={stats.totalTours}
+					subtitle="{stats.activeTours} active"
+					icon={MapPin}
+					trend={stats.monthlyTours > 0 ? { value: `+${stats.monthlyTours} this month`, positive: true } : undefined}
+					variant="small"
+				/>
+				<StatsCard
+					title="Total Bookings"
+					value={stats.totalBookings}
+					subtitle="all time"
+					icon={BarChart3}
+					variant="small"
+				/>
+				<StatsCard
+					title="Monthly Revenue"
+					value={formatEuro(stats.monthRevenue)}
+					subtitle="this month"
+					icon={DollarSign}
+					trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
+					variant="small"
+				/>
+				<StatsCard
+					title="Total Participants"
+					value={stats.totalParticipants}
+					subtitle="all guests served"
+					icon={Users}
+					variant="small"
+				/>
 			</div>
 		</div>
 
-		<!-- Tours Grid -->
-		<div class="grid gap-4 sm:gap-6">
+		<!-- Tours List -->
+		<div class="space-y-4">
 			{#each tours as tour (tour.id)}
 				<div class="rounded-xl transition-all duration-200 hover:shadow-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					
-					<!-- Mobile Layout -->
-					<div class="block sm:hidden">
-						<div class="p-4 rounded-xl">
-							<!-- Header Row -->
-							<div class="flex items-start justify-between mb-3">
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center gap-2 mb-1">
-										<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
-										<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
-											<button
-												onclick={() => toggleTourStatus(tour)}
-												disabled={statusUpdating === tour.id}
-												class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
-											>
-												<span class="w-1.5 h-1.5 rounded-full {getTourStatusDot(tour.status)}"></span>
-												{statusUpdating === tour.id ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-											</button>
-										</Tooltip>
-									</div>
-									{#if tour.location}
-										<div class="flex items-center gap-1 text-sm" style="color: var(--text-secondary);">
-											<MapPin class="h-3 w-3" />
-											<span class="truncate">{tour.location}</span>
-										</div>
-									{/if}
+					<!-- Mobile Layout - Simplified -->
+					<div class="sm:hidden p-4">
+						<div class="flex items-start gap-3">
+							<!-- QR Code -->
+							{#if tour.qrCode}
+								<Tooltip text="Tap to copy booking URL" position="top">
+									<button
+										onclick={() => copyQRUrl(tour)}
+										class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
+										style="border: 1px solid var(--border-primary);"
+									>
+										{#if copiedQRCode === tour.qrCode}
+											<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+												<CheckCircle class="h-6 w-6" style="color: var(--color-success);" />
+											</div>
+										{:else}
+											<img 
+												src={getQRImageUrl(tour)} 
+												alt="QR Code for {tour.name}"
+												class="w-full h-full object-cover"
+												loading="lazy"
+											/>
+										{/if}
+									</button>
+								</Tooltip>
+							{:else}
+								<div class="flex-shrink-0 w-16 h-16 rounded-lg flex items-center justify-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<QrCode class="h-6 w-6" style="color: var(--text-tertiary);" />
 								</div>
-								
-								<!-- Mobile QR Code -->
-								{#if tour.qrCode}
-									<div class="flex-shrink-0 ml-3">
-										<Tooltip text="Tap to copy booking URL" position="bottom-left">
-											<button
-												onclick={() => copyQRUrl(tour)}
-												class="w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
-												style="border: 1px solid var(--border-primary);"
-											>
-												<img 
-													src={getQRImageUrl(tour)} 
-													alt="QR Code for {tour.name}"
-													class="w-full h-full object-cover"
-													loading="lazy"
-												/>
-											</button>
-										</Tooltip>
-										<p class="text-xs text-center mt-1" style="color: var(--text-tertiary);">{tour.qrCode}</p>
-									</div>
-								{/if}
-							</div>
+							{/if}
 
-							<!-- Key Metrics Row -->
-							<div class="grid grid-cols-4 gap-2 mb-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<div class="text-center">
-									<p class="text-sm font-bold" style="color: var(--text-primary);">€{tour.price}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Price</p>
-								</div>
-								<div class="text-center">
-									<p class="text-sm font-bold" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Duration</p>
-								</div>
-								<div class="text-center">
-									<p class="text-sm font-bold" style="color: var(--text-primary);">{tour.capacity}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Max guests</p>
-								</div>
-								<div class="text-center">
-									<p class="text-sm font-bold" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
-								</div>
-							</div>
-
-							<!-- Action Buttons -->
-							<div class="grid grid-cols-2 gap-2">
-								<button
-									onclick={() => goto(`/tours/${tour.id}`)}
-									class="button-primary button--small button--gap justify-center py-3"
-								>
-									<Eye class="h-4 w-4" />
-									View & Stats
-								</button>
-								<button
-									onclick={() => goto(`/tours/${tour.id}/schedule`)}
-									class="button-secondary button--small button--gap justify-center py-3"
-								>
-									<Calendar class="h-4 w-4" />
-									Schedule
-								</button>
-							</div>
-
-							<!-- Secondary Actions -->
-							<div class="grid grid-cols-3 gap-2 mt-2">
-								<button
-									onclick={() => goto(`/tours/${tour.id}/edit`)}
-									class="button-secondary button--small px-3 py-2 justify-center"
-								>
-									<Edit class="h-3 w-3" />
-									<span class="ml-1 text-xs">Edit</span>
-								</button>
-								{#if tour.qrCode}
-									<Tooltip text="Share booking link" position="top">
+							<!-- Tour Info -->
+							<div class="flex-1 min-w-0">
+								<div class="flex items-start justify-between mb-2">
+									<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
+									<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 										<button
-											onclick={() => shareQR(tour)}
-											class="button-secondary button--small px-3 py-2 justify-center"
+											onclick={() => toggleTourStatus(tour)}
+											disabled={statusUpdating === tour.id}
+											class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 {getTourStatusColor(tour.status)}"
 										>
-											<Share2 class="h-3 w-3" />
-											<span class="ml-1 text-xs">Share</span>
+											<span class="w-1.5 h-1.5 rounded-full {getTourStatusDot(tour.status)}"></span>
+											{statusUpdating === tour.id ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
 										</button>
 									</Tooltip>
-									<a
-										href="/book/{tour.qrCode}"
-										target="_blank"
-										rel="noopener noreferrer"
-										class="button-secondary button--small px-3 py-2 justify-center"
-									>
-										<ExternalLink class="h-3 w-3" />
-										<span class="ml-1 text-xs">Preview</span>
-									</a>
-								{:else}
-									<div class="col-span-2"></div>
-								{/if}
+								</div>
+
+								<!-- Key Info -->
+								<div class="flex items-center gap-3 text-sm mb-3" style="color: var(--text-secondary);">
+									<span class="font-medium">{formatEuro(tour.price)}</span>
+									<span>•</span>
+									<span>{formatDuration(tour.duration)}</span>
+									<span>•</span>
+									<span>{tour.capacity} max</span>
+								</div>
+
+								<!-- Actions -->
+								<div class="flex gap-2">
+									<button onclick={() => goto(`/tours/${tour.id}`)} class="flex-1 button-primary button--small button--gap justify-center">
+										<Eye class="h-3 w-3" />
+										View
+									</button>
+									<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="flex-1 button-secondary button--small button--gap justify-center">
+										<Calendar class="h-3 w-3" />
+										Schedule
+									</button>
+									<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--icon">
+										<Edit class="h-3 w-3" />
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					<!-- Desktop Layout -->
+					<!-- Desktop Layout - Unchanged but cleaned up -->
 					<div class="hidden sm:block">
-						<div class="p-6 rounded-xl">
+						<div class="p-6">
 							<div class="flex gap-6">
 								<!-- Tour Image -->
 								<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0" style="background: var(--bg-secondary);">
@@ -468,24 +457,15 @@
 
 											<!-- Actions Row -->
 											<div class="flex items-center gap-3">
-												<button
-													onclick={() => goto(`/tours/${tour.id}`)}
-													class="button-primary button--small button--gap"
-												>
+												<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
 													<Eye class="h-4 w-4" />
 													View Details
 												</button>
-												<button
-													onclick={() => goto(`/tours/${tour.id}/schedule`)}
-													class="button-secondary button--small button--gap"
-												>
+												<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 													<Calendar class="h-4 w-4" />
 													Schedule
 												</button>
-												<button
-													onclick={() => goto(`/tours/${tour.id}/edit`)}
-													class="button-secondary button--small button--gap"
-												>
+												<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--gap">
 													<Edit class="h-4 w-4" />
 													Edit
 												</button>
@@ -502,18 +482,24 @@
 															class="qr-button relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-lg"
 															style="border: 1px solid var(--border-primary);"
 														>
-															<img 
-																src={getQRImageUrl(tour)} 
-																alt="QR Code for {tour.name}"
-																class="w-full h-full object-cover transition-opacity"
-																loading="lazy"
-															/>
-															<!-- Copy icon overlay -->
-															<div class="qr-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
-																<div class="bg-white bg-opacity-90 rounded-full p-2 shadow-md">
-																	<Copy class="h-4 w-4 text-gray-700" />
+															{#if copiedQRCode === tour.qrCode}
+																<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+																	<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
 																</div>
-															</div>
+															{:else}
+																<img 
+																	src={getQRImageUrl(tour)} 
+																	alt="QR Code for {tour.name}"
+																	class="w-full h-full object-cover transition-opacity"
+																	loading="lazy"
+																/>
+																<!-- Copy icon overlay -->
+																<div class="qr-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity">
+																	<div class="bg-white bg-opacity-90 rounded-full p-2 shadow-md">
+																		<Copy class="h-4 w-4 text-gray-700" />
+																	</div>
+																</div>
+															{/if}
 														</button>
 													</Tooltip>
 												</div>
@@ -561,13 +547,11 @@
 	{/if}
 </div>
 
-<!-- Copy Success Toast -->
+<!-- Copy Success Feedback - Simplified -->
 {#if copiedQRCode}
-	<div class="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-md flex items-center gap-3 animate-in slide-in-from-right duration-300" style="background: var(--bg-primary); border: 1px solid var(--color-success); color: var(--text-primary);">
-		<div class="w-5 h-5 rounded-full flex items-center justify-center" style="background: var(--color-success-light);">
-			<CheckCircle class="w-3 h-3" style="color: var(--color-success);" />
-		</div>
-		<span class="text-sm font-medium">Booking URL copied</span>
+	<div class="fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-right duration-300" style="background: var(--color-success); color: white;">
+		<CheckCircle class="w-4 h-4" />
+		<span class="text-sm font-medium">Copied!</span>
 	</div>
 {/if}
 

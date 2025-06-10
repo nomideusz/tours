@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types.js';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
@@ -261,7 +260,7 @@
 					<div class="hidden sm:flex items-center gap-6 text-sm" style="color: var(--text-secondary);">
 						<div class="flex items-center gap-1">
 							<MapPin class="h-4 w-4" />
-							<span>{tour.location}</span>
+							<span>{tour.location || 'Not specified'}</span>
 						</div>
 						<div class="flex items-center gap-1">
 							<Clock class="h-4 w-4" />
@@ -276,18 +275,6 @@
 							<span>{formatEuro(tour.price)} per person</span>
 						</div>
 					</div>
-				</div>
-				
-				<!-- Desktop Quick Actions -->
-				<div class="hidden sm:flex gap-3">
-					<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--gap">
-						<Edit class="h-4 w-4" />
-						Edit Tour
-					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--gap">
-						<Calendar class="h-4 w-4" />
-						Manage Schedule
-					</button>
 				</div>
 			</div>
 		</div>

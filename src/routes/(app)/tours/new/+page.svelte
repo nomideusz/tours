@@ -1,11 +1,22 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { browser } from '$app/environment';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
+	
+	// Icons
+	import Save from 'lucide-svelte/icons/save';
+	import X from 'lucide-svelte/icons/x';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import Eye from 'lucide-svelte/icons/eye';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import Clock from 'lucide-svelte/icons/clock';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -13,6 +24,10 @@
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let triggerValidation = $state(false);
+	let showCancelModal = $state(false);
+
+	// Check if we should auto-activate based on URL parameter
+	let shouldActivate = $derived(browser && new URLSearchParams(window.location.search).get('activate') === 'true');
 
 	// Form data
 	let formData = $state({
@@ -27,6 +42,13 @@
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || ''
+	});
+
+	// Update status based on shouldActivate
+	$effect(() => {
+		if (!(form as any)?.formData?.status) {
+			formData.status = shouldActivate ? 'active' : 'draft';
+		}
 	});
 
 	// Image upload state
@@ -45,26 +67,132 @@
 	}
 
 	function handleCancel() {
-		if (confirm('Are you sure you want to cancel? Your changes will be lost.')) {
-			goto('/tours');
+		showCancelModal = true;
+	}
+
+	function confirmCancel() {
+		goto('/tours');
+	}
+
+	function handleSave() {
+		if (isSubmitting) return;
+		
+		// Trigger form submission
+		const form = document.querySelector('form');
+		if (form) {
+			form.requestSubmit();
 		}
 	}
+
+	function handleSaveAsDraft() {
+		if (isSubmitting) return;
+		
+		// Set status to draft and submit
+		formData.status = 'draft';
+		handleSave();
+	}
+
+	function handleSaveAndActivate() {
+		if (isSubmitting) return;
+		
+		// Set status to active and submit
+		formData.status = 'active';
+		handleSave();
+	}
+
+	// Calculate form completion for mobile header
+	let formCompletion = $derived(() => {
+		const requiredFields = [formData.name, formData.description, formData.price, formData.duration, formData.capacity];
+		const completedFields = requiredFields.filter(field => field && String(field).trim()).length;
+		const percentage = Math.round((completedFields / requiredFields.length) * 100);
+		return { completed: completedFields, total: requiredFields.length, percentage };
+	});
+
+	// Derived values for template
+	let completionStats = $derived(formCompletion());
+	let pageTitle = $derived(shouldActivate ? 'Create & Go Live' : 'Create Tour');
+	let pageSubtitle = $derived(shouldActivate ? 'Create your tour and make it live immediately' : 'Create your tour as a draft first');
+	let submitButtonText = $derived(shouldActivate ? 'Create & Go Live' : 'Save Draft');
 </script>
 
 <svelte:head>
 	<title>Create New Tour - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<PageHeader 
-		title="Create New Tour"
-		subtitle="Set up your tour details and start receiving bookings"
-		backUrl="/tours"
-		breadcrumbs={[
-			{ label: 'Tours Management', href: '/tours' },
-			{ label: 'Create New Tour' }
-		]}
-	/>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Mobile-First Header -->
+	<div class="mb-6 sm:mb-8">
+		<!-- Mobile Compact Header -->
+		<MobilePageHeader
+			title={pageTitle}
+			secondaryInfo={shouldActivate ? "Going Live" : "Step 1 of 3"}
+			quickActions={[
+				{
+					label: shouldActivate ? 'Create & Go Live' : 'Save Draft',
+					icon: shouldActivate ? CheckCircle : FileText,
+					onClick: shouldActivate ? handleSaveAndActivate : handleSaveAsDraft,
+					variant: shouldActivate ? 'primary' : 'secondary'
+				},
+				...(shouldActivate ? [] : [{
+					label: 'Save & Activate',
+					icon: CheckCircle,
+					onClick: handleSaveAndActivate,
+					variant: 'primary' as const
+				}])
+			]}
+			infoItems={[
+				{
+					icon: Eye,
+					label: 'Progress',
+					value: `${completionStats.completed}/${completionStats.total} fields`
+				},
+				{
+					icon: FileText,
+					label: 'Name',
+					value: formData.name ? '✓ Set' : 'Required'
+				},
+				{
+					icon: Clock,
+					label: 'Duration',
+					value: formData.duration ? `${formData.duration}min` : 'Required'
+				},
+				{
+					icon: Eye,
+					label: 'Price',
+					value: formData.price ? `€${formData.price}` : 'Required'
+				}
+			]}
+		/>
+
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title={pageTitle}
+				subtitle={pageSubtitle}
+				breadcrumbs={[
+					{ label: 'Tours', href: '/tours' },
+					{ label: pageTitle }
+				]}
+			>
+				<div class="hidden sm:flex gap-3">
+					<button onclick={handleCancel} class="button-secondary button--gap">
+						<X class="h-4 w-4" />
+						Cancel
+					</button>
+					{#if !shouldActivate}
+						<button onclick={handleSaveAsDraft} class="button-secondary button--gap">
+							<FileText class="h-4 w-4" />
+							Save Draft
+						</button>
+					{/if}
+					<button onclick={handleSaveAndActivate} class="button-primary button--gap">
+						<CheckCircle class="h-4 w-4" />
+						{shouldActivate ? 'Create & Go Live' : 'Save & Activate'}
+					</button>
+				</div>
+			</PageHeader>
+		</div>
+	</div>
 
 	{#if error}
 		<div class="mb-6">
@@ -72,8 +200,8 @@
 		</div>
 	{/if}
 
-	<!-- Progress Steps -->
-	<div class="mb-8">
+	<!-- Progress Steps - Desktop Only -->
+	<div class="hidden sm:block mb-8">
 		<div class="flex items-center gap-2 sm:gap-4 text-sm">
 			<div class="flex items-center gap-2">
 				<div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm">
@@ -134,6 +262,7 @@
 					bind:formData
 					bind:uploadedImages
 					{isSubmitting}
+					{submitButtonText}
 					isEdit={false}
 					onCancel={handleCancel}
 					onImageUpload={handleImageUpload}
@@ -163,10 +292,46 @@
 					<span class="text-xs font-medium" style="color: var(--text-tertiary);">3</span>
 				</div>
 				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Generate QR codes & go live</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Create marketing QR codes and activate your tour</p>
+					<p class="font-medium" style="color: var(--text-primary);">Share & start accepting bookings</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Your QR code is automatically created - just share it to get bookings</p>
 				</div>
 			</div>
 		</div>
 	</div>
-</div> 
+
+	<!-- Save Options Explanation -->
+	<div class="mt-6 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">Save Options</h3>
+		<div class="space-y-3">
+			<div class="flex items-start gap-3">
+				<div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center mt-0.5">
+					<span class="text-xs font-medium text-amber-600">📝</span>
+				</div>
+				<div>
+					<p class="font-medium" style="color: var(--text-primary);">Save Draft</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Your tour is saved but not visible to customers. Perfect for working on it later.</p>
+				</div>
+			</div>
+			<div class="flex items-start gap-3">
+				<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+					<span class="text-xs font-medium text-green-600">✓</span>
+				</div>
+				<div>
+					<p class="font-medium" style="color: var(--text-primary);">Save & Activate</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Your tour goes live immediately and customers can start booking.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Confirmation Modal -->
+<ConfirmationModal
+	bind:isOpen={showCancelModal}
+	title="Cancel tour creation?"
+	message="Are you sure you want to cancel creating this tour? Your entered information will be lost."
+	confirmText="Yes, cancel"
+	cancelText="Keep working"
+	variant="warning"
+	onConfirm={confirmCancel}
+/> 

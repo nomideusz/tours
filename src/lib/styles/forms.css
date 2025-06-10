@@ -112,6 +112,15 @@
 		cursor: not-allowed;
 	}
 
+	.form-select.error {
+		border-color: var(--color-error);
+	}
+
+	.form-select.error:focus {
+		border-color: var(--color-error);
+		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+	}
+
 	/* Size modifiers for form selects */
 	.form-select--small {
 		padding: 0.5rem 2.5rem 0.5rem 1rem;
@@ -162,6 +171,15 @@
 	.form-textarea:invalid:focus {
 		border-color: var(--color-primary-500);
 		box-shadow: 0 0 0 3px var(--color-primary-100);
+	}
+
+	.form-textarea.error {
+		border-color: var(--color-error);
+	}
+
+	.form-textarea.error:focus {
+		border-color: var(--color-error);
+		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 	}
 
 	/* Size modifiers for form textareas */

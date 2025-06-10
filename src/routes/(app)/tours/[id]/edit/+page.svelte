@@ -1,14 +1,19 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import type { Tour } from '$lib/types.js';
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Save from 'lucide-svelte/icons/save';
+	import X from 'lucide-svelte/icons/x';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Eye from 'lucide-svelte/icons/eye';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -18,8 +23,9 @@
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let capacityError = $state((form as any)?.capacityError || null);
+	let showCancelModal = $state(false);
 
-	let tourId = $derived($page.params.id);
+	let tourId = $derived(data.tour?.id || '');
 
 	// Form data
 	let formData = $state({
@@ -94,8 +100,33 @@
 	}
 
 	function handleCancel() {
-		if (confirm('Are you sure you want to cancel? Your changes will be lost.')) {
-			goto(`/tours/${tourId}`);
+		showCancelModal = true;
+	}
+
+	function confirmCancel() {
+		goto(`/tours/${tourId}`);
+	}
+
+	function handleSave() {
+		if (isSubmitting) return;
+		
+		// Trigger form submission
+		const form = document.querySelector('form');
+		if (form) {
+			form.requestSubmit();
+		}
+	}
+
+	function getTourStatusInfo() {
+		if (!tour) return { color: 'bg-gray-100 text-gray-700', label: 'Unknown' };
+		
+		switch (tour.status) {
+			case 'active':
+				return { color: 'bg-green-100 text-green-700', label: 'Active' };
+			case 'draft':
+				return { color: 'bg-yellow-100 text-yellow-700', label: 'Draft' };
+			default:
+				return { color: 'bg-gray-100 text-gray-700', label: 'Unknown' };
 		}
 	}
 </script>
@@ -106,10 +137,23 @@
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
-		<PageHeader 
-			title="Edit Tour"
-			subtitle="Loading tour details..."
-		/>
+		<!-- Mobile Loading Header -->
+		<div class="mb-6 sm:mb-8">
+			<MobilePageHeader
+				title="Edit Tour"
+				secondaryInfo="Loading..."
+				quickActions={[]}
+				infoItems={[]}
+			/>
+			
+			<!-- Desktop Loading Header -->
+			<div class="hidden sm:block">
+				<PageHeader 
+					title="Edit Tour"
+					subtitle="Loading tour details..."
+				/>
+			</div>
+		</div>
 		
 		<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex flex-col items-center justify-center py-12">
@@ -118,16 +162,81 @@
 			</div>
 		</div>
 	{:else}
-		<PageHeader 
-			title="Edit Tour"
-			subtitle="Update your tour details and settings"
-			breadcrumbs={[
-				{ label: 'Tours Management', href: '/tours' },
-				{ label: tour?.name || 'Tour', href: `/tours/${tourId}` },
-				{ label: 'Edit' }
-			]}
-			backUrl={`/tours/${tourId}`}
-		/>
+		<!-- Mobile-First Header -->
+		<div class="mb-6 sm:mb-8">
+			<!-- Mobile Compact Header -->
+			<MobilePageHeader
+				title="Edit {tour?.name || 'Tour'}"
+				secondaryInfo={getTourStatusInfo().label}
+				quickActions={[
+					{
+						label: 'Save',
+						icon: Save,
+						onClick: handleSave,
+						variant: 'primary'
+					},
+					{
+						label: 'Cancel',
+						icon: X,
+						onClick: handleCancel,
+						variant: 'secondary'
+					},
+					...(tour?.status === 'active' ? [{
+						label: 'Preview',
+						icon: ExternalLink,
+						onClick: () => window.open(`/book/${tour?.qrCode}`, '_blank'),
+						variant: 'secondary' as const,
+						size: 'icon' as const
+					}] : [])
+				]}
+				infoItems={[
+					{
+						icon: Eye,
+						label: 'Price',
+						value: `€${tour?.price || 0}`
+					},
+					{
+						icon: AlertCircle,
+						label: 'Duration',
+						value: `${tour?.duration || 0}min`
+					},
+					{
+						icon: Eye,
+						label: 'Capacity',
+						value: `${tour?.capacity || 0} max`
+					},
+					{
+						icon: AlertCircle,
+						label: 'Status',
+						value: getTourStatusInfo().label
+					}
+				]}
+			/>
+
+			<!-- Desktop Header -->
+			<div class="hidden sm:block">
+				<PageHeader 
+					title="Edit Tour"
+					subtitle="Update your tour details and settings"
+					breadcrumbs={[
+						{ label: 'Tours', href: '/tours' },
+						{ label: tour?.name || 'Tour', href: `/tours/${tourId}` },
+						{ label: 'Edit' }
+					]}
+				>
+					<div class="hidden sm:flex gap-3">
+						<button onclick={handleCancel} class="button-secondary button--gap">
+							<X class="h-4 w-4" />
+							Cancel
+						</button>
+						<button onclick={handleSave} class="button-primary button--gap">
+							<Save class="h-4 w-4" />
+							Save Changes
+						</button>
+					</div>
+				</PageHeader>
+			</div>
+		</div>
 
 		{#if error}
 			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 226 226); border: 1px solid rgb(252 165 165);">
@@ -167,6 +276,58 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- Current Status & Save Actions -->
+		<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">Current Status & Save Options</h3>
+			
+			<!-- Current Status -->
+			<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="flex items-center gap-3">
+					<div class="w-8 h-8 rounded-full flex items-center justify-center {tour?.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
+						<span class="text-sm font-medium {tour?.status === 'active' ? 'text-green-600' : 'text-amber-600'}">
+							{tour?.status === 'active' ? '✓' : '📝'}
+						</span>
+					</div>
+					<div>
+						<p class="font-semibold" style="color: var(--text-primary);">
+							Currently: {tour?.status === 'active' ? 'Active' : 'Draft'}
+						</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{tour?.status === 'active' ? 'Your tour is live and accepting bookings' : 'Your tour is saved but not visible to customers'}
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Save Actions Explanation -->
+			<div class="space-y-3">
+				<div class="flex items-start gap-3">
+					<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+						<span class="text-xs font-medium text-blue-600">💾</span>
+					</div>
+					<div>
+						<p class="font-medium" style="color: var(--text-primary);">Save Changes</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{tour?.status === 'active' ? 'Keep your tour active with the updated information' : 'Keep your tour as draft with the updated information'}
+						</p>
+					</div>
+				</div>
+				{#if tour?.status === 'draft'}
+					<div class="flex items-start gap-3">
+						<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+							<span class="text-xs font-medium text-green-600">🚀</span>
+						</div>
+						<div>
+							<p class="font-medium" style="color: var(--text-primary);">Want to go live?</p>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								Save your changes, then use the status button in the header to activate your tour.
+							</p>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
 
 		<!-- Form Container -->
 		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -216,30 +377,18 @@
 				</form>
 			</div>
 		</div>
-
-		<!-- Tour Status Information -->
-		<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">About Tour Status</h3>
-			<div class="space-y-3">
-				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style="background: var(--bg-tertiary);">
-						<span class="text-xs font-medium" style="color: var(--text-secondary);">📝</span>
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Draft Status</p>
-						<p class="text-sm" style="color: var(--text-secondary);">Your tour is not visible to customers and won't accept bookings</p>
-					</div>
-				</div>
-				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-green-600">✓</span>
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Active Status</p>
-						<p class="text-sm" style="color: var(--text-secondary);">Your tour is live and accepting bookings from customers</p>
-					</div>
-				</div>
-			</div>
-		</div>
 	{/if}
-</div> 
+</div>
+
+<!-- Confirmation Modal -->
+<ConfirmationModal
+	bind:isOpen={showCancelModal}
+	title="Cancel editing?"
+	message="Are you sure you want to cancel editing this tour? Your unsaved changes will be lost."
+	confirmText="Yes, cancel"
+	cancelText="Keep editing"
+	variant="warning"
+	onConfirm={confirmCancel}
+	onCancel={() => {}}
+	onClose={() => {}}
+/> 
