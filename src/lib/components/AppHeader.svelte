@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import Bell from 'lucide-svelte/icons/bell';
 	import Menu from 'lucide-svelte/icons/menu';
 	import User from 'lucide-svelte/icons/user';
@@ -29,6 +28,14 @@
 	let hasNotifications = false;
 </script>
 
+<style>
+	.logo-serif {
+		font-family: Georgia, 'Times New Roman', serif;
+		font-weight: 400;
+		letter-spacing: -0.025em;
+	}
+</style>
+
 <!-- Minimal App Header -->
 <header class="bg-white border-b border-gray-200 {className}">
 	<div class="flex items-center justify-between px-4 py-3">
@@ -48,7 +55,7 @@
 			<!-- Page title - clickable home link -->
 			<a 
 				href="/dashboard"
-				class="text-lg font-semibold text-gray-900 lg:text-xl hover:text-gray-700 transition-colors"
+				class="text-lg font-normal text-gray-900 lg:text-xl hover:text-gray-700 transition-colors logo-serif"
 			>
 				{pageTitle}
 			</a>

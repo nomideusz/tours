@@ -13,23 +13,9 @@
 		<div class="flex items-center justify-between h-16">
 			<!-- Logo/Brand -->
 			<div class="flex items-center">
-				{#if $tourOwnerStore?.username}
-					<a href="/{$tourOwnerStore.username}" class="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-						<svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
-							<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
-						</svg>
-						<span>{$tourOwnerStore.username}</span>
-					</a>
-				{:else}
-					<a href="/" class="flex items-center gap-2 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-						<svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
-							<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
-						</svg>
-						<span>Zaur</span>
-					</a>
-				{/if}
+				<a href="/" class="text-xl font-normal text-gray-900 logo-serif hover:text-gray-700 transition-colors">
+					zaur.app
+				</a>
 			</div>
 
 			<!-- Navigation based on page type -->
@@ -52,9 +38,9 @@
 						</a>
 					{/if}
 				{:else if isBookingPage || isProfilePage}
-					<!-- Booking/Profile page navigation -->
+					<!-- Booking/Profile page navigation - minimal, no redundant branding -->
 					<div class="text-sm text-gray-600">
-						Powered by <a href="/" class="font-medium text-blue-600 hover:text-blue-800 transition-colors">Zaur</a>
+						<!-- Removed redundant "Powered by" since logo is already in header -->
 					</div>
 				{:else}
 					<!-- Default navigation -->
@@ -69,4 +55,10 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
+	.logo-serif {
+		font-family: Georgia, 'Times New Roman', serif;
+		font-weight: 400;
+		letter-spacing: -0.025em;
+	}
 </style> 

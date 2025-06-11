@@ -47,7 +47,7 @@
 	let currentPath = $state(browser ? window.location.pathname : '/dashboard');
 
 	// App title for header - always "Dashboard"
-	const pageTitle = 'Dashboard';
+	const pageTitle = 'zaur.app';
 
 	// Set language context from the store
 	languageContext.set(languageStore);

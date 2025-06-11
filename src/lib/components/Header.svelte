@@ -4,7 +4,6 @@
 	import { logout } from '$lib/auth/client.js';
 	import { IsMounted } from 'runed';
 	import { onMount } from 'svelte';
-	import Scan from 'lucide-svelte/icons/scan';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 
 	interface HeaderProps {
@@ -126,11 +125,8 @@
 		<div class="flex h-20 items-center justify-between">
 			<!-- Logo and branding -->
 			<div class="flex items-center">
-				<a href="/" class="flex items-center gap-2">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-						<Scan class="h-6 w-6 text-white" />
-					</div>
-					<span class="text-2xl font-bold text-gray-900">Zaur</span>
+				<a href="/" class="text-2xl font-normal text-gray-900 logo-serif hover:text-gray-700 transition-colors">
+					zaur.app
 				</a>
 			</div>
 
@@ -348,6 +344,13 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
+	.logo-serif {
+		font-family: Georgia, 'Times New Roman', serif;
+		font-weight: 400;
+		letter-spacing: -0.025em;
+	}
+	
 	.header-sticky {
 		position: fixed;
 		top: 0;
