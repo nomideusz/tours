@@ -15,6 +15,10 @@
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import { onMount } from 'svelte';
+	import { toastError, toastSuccess } from '$lib/utils/toast';
+	import { browser } from '$app/environment';
+	import { detectCountry } from '$lib/utils/country-detector';
 
 	let { data, form } = $props();
 
@@ -31,11 +35,13 @@
 	let description = $state(data.user?.description || '');
 	let phone = $state(data.user?.phone || '');
 	let website = $state(data.user?.website || '');
+	let country = $state(data.user?.country || '');
 
 	// Password form data
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
+	let passwordError = $state('');
 
 	// Payment status
 	let paymentStatus: {
@@ -70,6 +76,7 @@
 			description = form.updatedUser.description;
 			phone = form.updatedUser.phone;
 			website = form.updatedUser.website;
+			country = form.updatedUser.country;
 		}
 		
 		// Handle Stripe redirect
@@ -100,6 +107,13 @@
 	}
 
 	let isSubmitting = $state(false);
+
+	// If no country is set, detect it on client-side
+	onMount(() => {
+		if (!country && browser) {
+			country = detectCountry();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -269,6 +283,38 @@
 							class="form-input"
 							placeholder="https://example.com"
 						/>
+					</div>
+
+					<!-- Country -->
+					<div>
+						<label for="country" class="form-label">
+							Country
+						</label>
+						<select
+							id="country"
+							name="country"
+							class="form-select cursor-pointer"
+							bind:value={country}
+						>
+							<option value="">Select your country</option>
+							<option value="AT">Austria</option>
+							<option value="BE">Belgium</option>
+							<option value="DE">Germany</option>
+							<option value="DK">Denmark</option>
+							<option value="ES">Spain</option>
+							<option value="FI">Finland</option>
+							<option value="FR">France</option>
+							<option value="GB">United Kingdom</option>
+							<option value="IE">Ireland</option>
+							<option value="IT">Italy</option>
+							<option value="NL">Netherlands</option>
+							<option value="NO">Norway</option>
+							<option value="PL">Poland</option>
+							<option value="PT">Portugal</option>
+							<option value="SE">Sweden</option>
+							<option value="CH">Switzerland</option>
+							<!-- Add more EU/EEA countries as needed -->
+						</select>
 					</div>
 
 				</div>

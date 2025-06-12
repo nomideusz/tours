@@ -20,6 +20,7 @@ export const users = pgTable('users', {
   role: userRoleEnum('role').notNull().default('user'),
   phone: varchar('phone', { length: 50 }),
   website: varchar('website', { length: 255 }),
+  country: text('country'),
   description: text('description'),
   location: varchar('location', { length: 255 }),
   

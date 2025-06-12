@@ -118,43 +118,51 @@
 			</div>
 			
 			<!-- Profile Link Section -->
-			<div class="rounded-lg p-3 flex items-center justify-between" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
-				<div class="flex items-center gap-2 min-w-0 flex-1">
-					<Link class="h-4 w-4 text-blue-600 flex-shrink-0" />
-					<span class="text-sm font-medium truncate" style="color: var(--text-secondary);">
-						Your public profile:
-					</span>
-					<a 
-						href="/{profile.username}" 
-						target="_blank" 
-						rel="noopener noreferrer"
-						class="text-sm font-mono text-blue-600 hover:text-blue-800 transition-colors truncate"
-					>
-						{profileUrl}
-					</a>
-				</div>
-				<div class="flex items-center gap-2 flex-shrink-0">
-					<a
-						href="/{profile.username}"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="button-secondary button--small"
-					>
-						<ExternalLink class="h-3 w-3" />
-						<span class="hidden sm:inline ml-1">View</span>
-					</a>
-					<button
-						onclick={copyProfileLink}
-						class="button-primary button--small {profileLinkCopied ? 'button-success' : ''}"
-					>
-						{#if profileLinkCopied}
-							<CheckCircle class="h-3 w-3" />
-							<span class="hidden sm:inline ml-1">Copied!</span>
-						{:else}
-							<Copy class="h-3 w-3" />
-							<span class="hidden sm:inline ml-1">Copy</span>
-						{/if}
-					</button>
+			<div class="rounded-lg p-3" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
+				<div class="flex flex-col sm:flex-row sm:items-center gap-3">
+					<div class="flex items-center gap-2 min-w-0 flex-1">
+						<Link class="h-4 w-4 flex-shrink-0" style="color: var(--color-primary-600);" />
+						<span class="text-sm font-medium" style="color: var(--text-secondary);">
+							Your public profile:
+						</span>
+					</div>
+					
+					<div class="flex items-center gap-2 flex-1 min-w-0">
+						<div class="flex-1 overflow-hidden">
+							<a 
+								href="/{profile.username}" 
+								target="_blank" 
+								rel="noopener noreferrer"
+								class="text-sm font-mono truncate block"
+								style="color: var(--color-primary-600); text-overflow: ellipsis;"
+							>
+								{profileUrl}
+							</a>
+						</div>
+						
+						<div class="flex items-center gap-2 flex-shrink-0">
+							<a
+								href="/{profile.username}"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="button-secondary button--small button--icon"
+								title="View your profile"
+							>
+								<ExternalLink class="h-3 w-3" />
+							</a>
+							<button
+								onclick={copyProfileLink}
+								class="button-primary button--small button--icon {profileLinkCopied ? 'button-success' : ''}"
+								title={profileLinkCopied ? "Copied!" : "Copy URL"}
+							>
+								{#if profileLinkCopied}
+									<CheckCircle class="h-3 w-3" />
+								{:else}
+									<Copy class="h-3 w-3" />
+								{/if}
+							</button>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

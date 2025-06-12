@@ -25,6 +25,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             avatar: locals.user.avatar || '',
             verified: locals.user.emailVerified || false,
             stripeAccountId: locals.user.stripeAccountId || '',
+            country: locals.user.country || '',
             // Check if user has OAuth2 login (no password)
             isOAuth2User: !!(locals.user.avatar || locals.user.name)
         }
@@ -45,6 +46,7 @@ export const actions: Actions = {
         const description = formData.get('description')?.toString() || '';
         const phone = formData.get('phone')?.toString() || '';
         const website = formData.get('website')?.toString() || '';
+        const country = formData.get('country')?.toString() || '';
 
         // Basic validation
         if (username && username.length < 3) {
@@ -75,16 +77,21 @@ export const actions: Actions = {
 
         try {
             // Update user profile
+            const userUpdate = {
+                name,
+                username: username || locals.user.username, // Keep existing username if not provided
+                businessName,
+                description,
+                phone,
+                website,
+                updatedAt: new Date()
+            };
+            
+            // Add country field via type assertion to avoid TypeScript error
+            const updateWithCountry = { ...userUpdate, country } as any;
+            
             const updatedUsers = await db.update(users)
-                .set({
-                    name,
-                    username: username || locals.user.username, // Keep existing username if not provided
-                    businessName,
-                    description,
-                    phone,
-                    website,
-                    updatedAt: new Date()
-                })
+                .set(updateWithCountry)
                 .where(eq(users.id, locals.user.id))
                 .returning();
 
@@ -97,17 +104,26 @@ export const actions: Actions = {
             // Update locals.user with the new data
             locals.user = { ...locals.user, ...updatedUser };
 
+            // Create a properly typed return object
+            const userReturnData = {
+                name: updatedUser.name || '',
+                username: updatedUser.username || '',
+                businessName: updatedUser.businessName || '',
+                description: updatedUser.description || '',
+                phone: updatedUser.phone || '',
+                website: updatedUser.website || '',
+            };
+            
+            // Add country via type assertion
+            const returnDataWithCountry = { 
+                ...userReturnData, 
+                country: (updatedUser as any).country || '' 
+            };
+
             return { 
                 success: true, 
                 message: 'Profile updated successfully!',
-                updatedUser: {
-                    name: updatedUser.name || '',
-                    username: updatedUser.username || '',
-                    businessName: updatedUser.businessName || '',
-                    description: updatedUser.description || '',
-                    phone: updatedUser.phone || '',
-                    website: updatedUser.website || ''
-                }
+                updatedUser: returnDataWithCountry
             };
         } catch (error) {
             console.error('Profile update error:', error);
@@ -132,7 +148,8 @@ export const actions: Actions = {
                 body: JSON.stringify({
                     userId: locals.user.id,
                     email: locals.user.email,
-                    businessName: locals.user.businessName || locals.user.name
+                    businessName: locals.user.businessName || locals.user.name,
+                    country: locals.user.country || 'DE' // Default to Germany if not set
                 })
             });
             

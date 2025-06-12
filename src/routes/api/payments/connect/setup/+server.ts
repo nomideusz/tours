@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
-        const { userId, email, businessName } = await request.json();
+        const { userId, email, businessName, country } = await request.json();
 
         if (!userId || !email) {
             return json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
         if (!accountId) {
             const account = await stripe.accounts.create({
                 type: 'express',
-                country: 'DE', // You can make this dynamic based on user location
+                country: country || 'DE', // Use provided country or default to Germany
                 email: email,
                 business_profile: {
                     name: businessName || undefined,

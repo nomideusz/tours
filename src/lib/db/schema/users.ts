@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   role: userRoleEnum('role').notNull().default('user'), // Default to user (tour guide)
   phone: varchar('phone', { length: 50 }),
   website: varchar('website', { length: 255 }),
+  country: text('country'), // Country code for the user
   description: text('description'),
   location: varchar('location', { length: 255 }), // City/region for guides
   
@@ -27,7 +28,7 @@ export const users = pgTable('users', {
   emailVerified: boolean('email_verified').notNull().default(false),
   lastLogin: timestamp('last_login', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 // Sessions table for Lucia auth

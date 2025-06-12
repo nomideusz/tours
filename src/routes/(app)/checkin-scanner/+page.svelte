@@ -186,7 +186,7 @@
 					label: 'Stop',
 					icon: Square,
 					onclick: stopScanning,
-					variant: 'danger' as const
+					variant: 'secondary' as const
 				}] : [{
 					label: 'Start Camera',
 					icon: Play,
@@ -228,7 +228,7 @@
 		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary); background: var(--bg-secondary);">
 				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+					<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-600);">
 						<Camera class="w-5 h-5 text-white" />
 					</div>
 					<div>
@@ -241,8 +241,8 @@
 			<div class="p-4 sm:p-6">
 				{#if cameraError}
 					<div class="text-center py-8">
-						<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-							<AlertCircle class="w-8 h-8 text-red-600" />
+						<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-error-light);">
+							<AlertCircle class="w-8 h-8" style="color: var(--color-error);" />
 						</div>
 						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Camera Error</h3>
 						<p class="text-sm mb-6" style="color: var(--text-secondary);">{cameraError}</p>
@@ -263,8 +263,8 @@
 					</div>
 				{:else if !scanning}
 					<div class="text-center py-8">
-						<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-							<Camera class="w-8 h-8 text-blue-600" />
+						<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-primary-50);">
+							<Camera class="w-8 h-8" style="color: var(--color-primary-600);" />
 						</div>
 						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Ready to Scan</h3>
 						<p class="text-sm mb-6" style="color: var(--text-secondary);">Start the camera to scan guest QR codes for check-in</p>
@@ -296,12 +296,12 @@
 						<div class="absolute top-4 left-4 right-4">
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-2 px-3 py-2 rounded-full bg-black/50 backdrop-blur-sm">
-									<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+									<div class="w-2 h-2 rounded-full animate-pulse" style="background: var(--color-success);"></div>
 									<span class="text-white text-sm font-medium">Scanning</span>
 								</div>
 								<button
 									onclick={stopScanning}
-									class="px-3 py-2 rounded-full bg-red-500/90 backdrop-blur-sm text-white text-sm font-medium hover:bg-red-600/90 transition-colors"
+									class="button--small button--danger rounded-full px-3 py-2 backdrop-blur-sm"
 								>
 									Stop
 								</button>
@@ -324,19 +324,33 @@
 				<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Scanner Tips</h3>
 				<div class="space-y-2 text-sm" style="color: var(--text-secondary);">
 					<div class="flex items-start gap-2">
-						<span class="font-semibold text-blue-600">•</span>
+						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
 						<span>Hold your device steady and ensure good lighting</span>
 					</div>
 					<div class="flex items-start gap-2">
-						<span class="font-semibold text-blue-600">•</span>
+						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
 						<span>Position the QR code fully within the scanning frame</span>
 					</div>
 					<div class="flex items-start gap-2">
-						<span class="font-semibold text-blue-600">•</span>
+						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
 						<span>Scanner works with booking tickets and tour QR codes</span>
 					</div>
 				</div>
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>
+
+<style>
+	/* Scanner hover styles */
+	.hover\:bg-blue-600\/90:hover {
+		background-color: var(--color-primary-600);
+		opacity: 0.9;
+	}
+
+	/* Fix QR scanner sizing issue */
+	:global(.qr-scanner-region-box-container) {
+		max-width: 100%;
+		z-index: 5;
+	}
+</style> 
