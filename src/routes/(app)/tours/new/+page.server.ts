@@ -184,8 +184,8 @@ export const actions: Actions = {
 
         console.log('✅ Tour created successfully:', createdTour.id, 'with', processedImages.length, 'images', 'and QR code:', qrCode);
 
-        // Redirect to the newly created tour
-        throw redirect(303, `/tours/${createdTour.id}`);
+        // Redirect to the newly created tour with success flag
+        throw redirect(303, `/tours/${createdTour.id}?created=true`);
       } else {
         // No images to process - create tour without images
         console.log('📸 No valid images to process, creating tour without images');
@@ -222,8 +222,8 @@ export const actions: Actions = {
 
         console.log('✅ Tour created successfully without images:', createdTour.id, 'with QR code:', qrCode);
 
-        // Redirect to the newly created tour
-        throw redirect(303, `/tours/${createdTour.id}`);
+        // Redirect to the newly created tour with success flag
+        throw redirect(303, `/tours/${createdTour.id}?created=true`);
       }
 
     } catch (error) {

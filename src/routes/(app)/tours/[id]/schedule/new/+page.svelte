@@ -6,6 +6,7 @@
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -23,6 +24,9 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+
+	// Get query client for invalidation
+	const queryClient = useQueryClient();
 
 	// Get data from load function
 	let { data } = $props();
@@ -183,8 +187,11 @@
 				throw new Error(errorData.error || 'Failed to create time slot');
 			}
 			
-			// Redirect back to schedule
-			goto(`/tours/${tourId}/schedule`);
+			// Invalidate the schedule query so it refreshes immediately
+			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			
+			// Redirect back to schedule with success flag
+			goto(`/tours/${tourId}/schedule?slotCreated=true`);
 			
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to create time slot';

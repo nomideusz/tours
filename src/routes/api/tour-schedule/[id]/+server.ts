@@ -43,6 +43,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 				id: timeSlots.id,
 				startTime: timeSlots.startTime,
 				endTime: timeSlots.endTime,
+				availableSpots: timeSlots.availableSpots,
 				bookedSpots: timeSlots.bookedSpots,
 				status: timeSlots.status,
 				createdAt: timeSlots.createdAt
@@ -91,15 +92,27 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			const endTime = slot.endTime ? new Date(slot.endTime) : new Date();
 			const isPast = startTime < now;
 			
+			// Use slot's availableSpots if set, otherwise use tour capacity
+			const slotCapacity = slot.availableSpots || tour.capacity;
+			// Use actual booking count instead of bookedSpots field
+			const bookedSpots = bookingData.totalBookings;
+			const availableSpots = Math.max(0, slotCapacity - bookedSpots);
+			
+			// Debug logging
+			if (bookingData.totalBookings > 0) {
+				console.log(`Slot ${slot.id}: availableSpots=${slot.availableSpots}, tourCapacity=${tour.capacity}, slotCapacity=${slotCapacity}, bookings=${bookedSpots}, participants=${bookingData.totalParticipants}`);
+			}
+			
 			return {
 				id: slot.id,
 				startTime: slot.startTime ? slot.startTime.toISOString() : new Date().toISOString(),
 				endTime: slot.endTime ? slot.endTime.toISOString() : new Date().toISOString(),
-				bookedSpots: slot.bookedSpots || 0,
+				capacity: slotCapacity,
+				bookedSpots: bookedSpots,
 				status: slot.status || 'active',
 				isPast,
 				isUpcoming: !isPast,
-				availableSpots: Math.max(0, tour.capacity - (slot.bookedSpots || 0)),
+				availableSpots: availableSpots,
 				...bookingData,
 				created: slot.createdAt ? slot.createdAt.toISOString() : new Date().toISOString()
 			};
@@ -114,6 +127,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			upcomingSlots: upcomingSlots.length,
 			pastSlots: pastSlots.length,
 			totalBookings: processedTimeSlots.reduce((sum, slot) => sum + slot.totalBookings, 0),
+			pendingBookings: processedTimeSlots.reduce((sum, slot) => sum + slot.pendingBookings, 0),
 			totalParticipants: processedTimeSlots.reduce((sum, slot) => sum + slot.totalParticipants, 0),
 			averageBookingRate: processedTimeSlots.length > 0 
 				? Math.round((processedTimeSlots.filter(slot => slot.totalBookings > 0).length / processedTimeSlots.length) * 100)

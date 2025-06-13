@@ -10,6 +10,10 @@
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
 	
+	// TanStack Query
+	import { useQueryClient } from '@tanstack/svelte-query';
+	import { queryKeys } from '$lib/queries/shared-stats.js';
+	
 	// Icons
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
@@ -19,6 +23,9 @@
 	import Clock from 'lucide-svelte/icons/clock';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	
+	// TanStack Query client for cache invalidation
+	const queryClient = useQueryClient();
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
@@ -36,19 +43,12 @@
 		price: (form as any)?.formData?.price || 10, // reasonable default price
 		duration: (form as any)?.formData?.duration || 60, // in minutes
 		capacity: (form as any)?.formData?.capacity || 10,
-		status: ((form as any)?.formData?.status as 'active' | 'draft') || 'draft',
+		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
 		category: (form as any)?.formData?.category || '',
 		location: (form as any)?.formData?.location || '',
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || ''
-	});
-
-	// Update status based on shouldActivate
-	$effect(() => {
-		if (!(form as any)?.formData?.status) {
-			formData.status = shouldActivate ? 'active' : 'draft';
-		}
 	});
 
 	// Image upload state
@@ -124,21 +124,22 @@
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
-			title={pageTitle}
-			secondaryInfo={shouldActivate ? "Going Live" : "Step 1 of 3"}
+			title="Create Tour"
+			secondaryInfo="New Tour"
 			quickActions={[
 				{
-					label: shouldActivate ? 'Create & Go Live' : 'Save Draft',
-					icon: shouldActivate ? CheckCircle : FileText,
-					onclick: shouldActivate ? handleSaveAndActivate : handleSaveAsDraft,
-					variant: shouldActivate ? 'primary' : 'secondary'
+					label: 'Save & Continue',
+					icon: Save,
+					onclick: handleSave,
+					variant: 'primary',
+					disabled: isSubmitting
 				},
-				...(shouldActivate ? [] : [{
-					label: 'Save & Activate',
-					icon: CheckCircle,
-					onclick: handleSaveAndActivate,
-					variant: 'primary' as const
-				}])
+				{
+					label: 'Cancel',
+					icon: X,
+					onclick: handleCancel,
+					variant: 'secondary'
+				}
 			]}
 			infoItems={[
 				{
@@ -167,11 +168,11 @@
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
 			<PageHeader 
-				title={pageTitle}
-				subtitle={pageSubtitle}
+				title="Create New Tour"
+				subtitle="Set up your tour details and start accepting bookings"
 				breadcrumbs={[
 					{ label: 'Tours', href: '/tours' },
-					{ label: pageTitle }
+					{ label: 'Create Tour' }
 				]}
 			>
 				<div class="hidden sm:flex gap-3">
@@ -179,15 +180,9 @@
 						<X class="h-4 w-4" />
 						Cancel
 					</button>
-					{#if !shouldActivate}
-						<button onclick={handleSaveAsDraft} class="button-secondary button--gap">
-							<FileText class="h-4 w-4" />
-							Save Draft
-						</button>
-					{/if}
-					<button onclick={handleSaveAndActivate} class="button-primary button--gap">
-						<CheckCircle class="h-4 w-4" />
-						{shouldActivate ? 'Create & Go Live' : 'Save & Activate'}
+					<button onclick={handleSave} class="button-primary button--gap" disabled={isSubmitting}>
+						<Save class="h-4 w-4" />
+						Save & Continue
 					</button>
 				</div>
 			</PageHeader>
@@ -215,7 +210,7 @@
 				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					2
 				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Schedule Setup</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Set Schedule</span>
 				<span class="sm:hidden" style="color: var(--text-tertiary);">Schedule</span>
 			</div>
 			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
@@ -223,8 +218,8 @@
 				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					3
 				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Go Live</span>
-				<span class="sm:hidden" style="color: var(--text-tertiary);">Live</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Activate & Share</span>
+				<span class="sm:hidden" style="color: var(--text-tertiary);">Activate</span>
 			</div>
 		</div>
 	</div>
@@ -254,6 +249,11 @@
 					isSubmitting = false;
 					triggerValidation = false;
 					if (result.type === 'redirect') {
+						// Invalidate tours queries before redirecting to ensure fresh data
+						await Promise.all([
+							queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
+							queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
+						]);
 						goto(result.location);
 					}
 				};
@@ -262,13 +262,14 @@
 					bind:formData
 					bind:uploadedImages
 					{isSubmitting}
-					{submitButtonText}
+					submitButtonText="Save & Continue"
 					isEdit={false}
 					onCancel={handleCancel}
 					onImageUpload={handleImageUpload}
 					onImageRemove={removeImage}
 					serverErrors={validationErrors}
 					{triggerValidation}
+					hideStatusField={true}
 				/>
 			</form>
 		</div>
@@ -279,49 +280,55 @@
 		<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">What happens next?</h3>
 		<div class="space-y-3">
 			<div class="flex items-start gap-3">
+				<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+					<span class="text-xs font-medium text-green-600">✓</span>
+				</div>
+				<div>
+					<p class="font-medium" style="color: var(--text-primary);">Tour will be saved as draft</p>
+					<p class="text-sm" style="color: var(--text-secondary);">You can preview and test everything before going live</p>
+				</div>
+			</div>
+			<div class="flex items-start gap-3">
 				<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
 					<span class="text-xs font-medium text-blue-600">2</span>
 				</div>
 				<div>
 					<p class="font-medium" style="color: var(--text-primary);">Set up your schedule</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Define available time slots and tour dates</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Add available time slots when you can run the tour</p>
 				</div>
 			</div>
 			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style="background: var(--bg-tertiary);">
-					<span class="text-xs font-medium" style="color: var(--text-tertiary);">3</span>
+				<div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mt-0.5">
+					<span class="text-xs font-medium text-purple-600">3</span>
 				</div>
 				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Share & start accepting bookings</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Your QR code is automatically created - just share it to get bookings</p>
+					<p class="font-medium" style="color: var(--text-primary);">Activate when ready</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Make your tour live and share the QR code to get bookings</p>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Save Options Explanation -->
+	<!-- Simplified Save Option -->
 	<div class="mt-6 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">Save Options</h3>
-		<div class="space-y-3">
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-amber-600">📝</span>
-				</div>
-				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Save Draft</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Your tour is saved but not visible to customers. Perfect for working on it later.</p>
-				</div>
+		<div class="flex items-center gap-3 mb-3">
+			<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+				<Save class="h-4 w-4 text-blue-600" />
 			</div>
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-green-600">✓</span>
-				</div>
-				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Save & Activate</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Your tour goes live immediately and customers can start booking.</p>
-				</div>
-			</div>
+			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Smart Save Process</h3>
 		</div>
+		<p class="text-sm" style="color: var(--text-secondary);">
+			We'll save your tour as a draft first, so you can:
+		</p>
+		<ul class="mt-2 space-y-1 text-sm" style="color: var(--text-secondary);">
+			<li>• Preview how it looks to customers</li>
+			<li>• Set up your schedule with available time slots</li>
+			<li>• Test the booking flow</li>
+			<li>• Activate it when you're 100% ready</li>
+		</ul>
+		<p class="mt-3 text-sm font-medium" style="color: var(--text-primary);">
+			Don't worry - you can activate your tour anytime with just one click!
+		</p>
 	</div>
 </div>
 

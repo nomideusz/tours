@@ -39,35 +39,65 @@
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});
 	
+	// State
+	let statusFilter = $state<'all' | 'confirmed' | 'pending' | 'cancelled'>('all');
+	let searchQuery = $state('');
+	
 	// Derive data from query and filter by tour ID
 	let allBookings = $derived($allBookingsQuery.data || []);
-	let bookings = $derived(allBookings.filter((b: any) => b.tourId === tourId || b.tour?.id === tourId));
-	let tour = $derived(bookings.length > 0 ? { name: bookings[0].tour || bookings[0].tourName } : null);
+	let tourBookings = $derived(allBookings.filter((b: any) => b.tourId === tourId || b.tour?.id === tourId));
+	
+	// Apply filters
+	let filteredBookings = $derived(() => {
+		let result = tourBookings;
+		
+		// Status filter
+		if (statusFilter !== 'all') {
+			result = result.filter((b: any) => b.status === statusFilter);
+		}
+		
+		// Search filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			result = result.filter((b: any) => 
+				b.customerName?.toLowerCase().includes(query) ||
+				b.customerEmail?.toLowerCase().includes(query) ||
+				b.bookingCode?.toLowerCase().includes(query)
+			);
+		}
+		
+		return result;
+	});
+	
+	let bookings = $derived(filteredBookings());
+	let tour = $derived(bookings.length > 0 || tourBookings.length > 0 ? { name: tourBookings[0]?.tour || tourBookings[0]?.tourName } : null);
 	let isLoading = $derived($allBookingsQuery.isLoading);
 	let isError = $derived($allBookingsQuery.isError);
 	
-	// Calculate stats from bookings
+	// Calculate stats from all tour bookings (not filtered)
 	let stats = $derived(() => {
-		const confirmed = bookings.filter((b: any) => b.status === 'confirmed');
-		const pending = bookings.filter((b: any) => b.status === 'pending');
+		const confirmed = tourBookings.filter((b: any) => b.status === 'confirmed');
+		const pending = tourBookings.filter((b: any) => b.status === 'pending');
+		const cancelled = tourBookings.filter((b: any) => b.status === 'cancelled');
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
-		const todayBookings = bookings.filter((b: any) => {
+		const todayBookings = tourBookings.filter((b: any) => {
 			const bookingDate = new Date(b.created);
 			bookingDate.setHours(0, 0, 0, 0);
 			return bookingDate.getTime() === today.getTime();
 		});
 		
-		const upcomingBookings = bookings.filter((b: any) => {
+		const upcomingBookings = tourBookings.filter((b: any) => {
 			const bookingDate = new Date(b.effectiveDate);
 			return bookingDate > new Date() && (b.status === 'confirmed' || b.status === 'pending');
 		});
 		
 		return {
-			total: bookings.length,
+			total: tourBookings.length,
 			confirmed: confirmed.length,
 			pending: pending.length,
+			cancelled: cancelled.length,
 			todayCount: todayBookings.length,
 			upcoming: upcomingBookings.length,
 			revenue: confirmed.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
@@ -194,7 +224,25 @@
 		</div>
 	{/if}
 	
-	<!-- Quick Stats - Desktop Only -->
+	<!-- Quick Stats - Enhanced Layout -->
+	<div class="grid grid-cols-2 sm:hidden gap-3 mb-4">
+		<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<div class="flex items-center gap-2 mb-1">
+				<Calendar class="h-4 w-4" style="color: var(--text-tertiary);" />
+				<span class="text-xs" style="color: var(--text-tertiary);">Total</span>
+			</div>
+			<p class="text-lg font-bold" style="color: var(--text-primary);">{stats().total}</p>
+		</div>
+		<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<div class="flex items-center gap-2 mb-1">
+				<Euro class="h-4 w-4" style="color: var(--text-tertiary);" />
+				<span class="text-xs" style="color: var(--text-tertiary);">Revenue</span>
+			</div>
+			<p class="text-lg font-bold" style="color: var(--text-primary);">{formatEuro(stats().revenue)}</p>
+		</div>
+	</div>
+	
+	<!-- Desktop Stats -->
 	<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
@@ -230,14 +278,68 @@
 		/>
 	</div>
 	
+	<!-- Filters and Search -->
+	<div class="mb-4 space-y-3">
+		<!-- Status Filter Tabs -->
+		<div class="flex gap-1 p-1 rounded-lg overflow-x-auto" style="background: var(--bg-secondary);">
+			<button
+				onclick={() => statusFilter = 'all'}
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'all' ? 'bg-white shadow-sm' : ''}"
+				style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+			>
+				All ({stats().total})
+			</button>
+			<button
+				onclick={() => statusFilter = 'confirmed'}
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'confirmed' ? 'bg-white shadow-sm' : ''}"
+				style="color: {statusFilter === 'confirmed' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+			>
+				Confirmed ({stats().confirmed})
+			</button>
+			<button
+				onclick={() => statusFilter = 'pending'}
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'pending' ? 'bg-white shadow-sm' : ''}"
+				style="color: {statusFilter === 'pending' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+			>
+				Pending ({stats().pending})
+			</button>
+			<button
+				onclick={() => statusFilter = 'cancelled'}
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'cancelled' ? 'bg-white shadow-sm' : ''}"
+				style="color: {statusFilter === 'cancelled' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+			>
+				Cancelled ({stats().cancelled})
+			</button>
+		</div>
+		
+		<!-- Search -->
+		<div class="relative">
+			<input
+				type="search"
+				bind:value={searchQuery}
+				placeholder="Search by name, email, or booking code..."
+				class="form-input pl-10"
+			/>
+			<div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+				<svg class="h-4 w-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+				</svg>
+			</div>
+		</div>
+	</div>
+	
 	<!-- Bookings List -->
 	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Tour Bookings</h3>
-				<span class="text-sm" style="color: var(--text-secondary);">
-					{stats().total} total
-				</span>
+				<h3 class="font-semibold" style="color: var(--text-primary);">
+					{searchQuery || statusFilter !== 'all' ? `Filtered Bookings (${bookings.length})` : 'Tour Bookings'}
+				</h3>
+				{#if bookings.length > 0}
+					<span class="text-sm" style="color: var(--text-secondary);">
+						{bookings.length} {bookings.length === 1 ? 'result' : 'results'}
+					</span>
+				{/if}
 			</div>
 		</div>
 		

@@ -37,6 +37,8 @@
 			minimumCapacity: number;
 			canReduceCapacity: boolean;
 		};
+		// Hide status field for new tour creation
+		hideStatusField?: boolean;
 	}
 
 	let {
@@ -54,7 +56,8 @@
 		getExistingImageUrl,
 		serverErrors = [],
 		triggerValidation = false,
-		bookingConstraints
+		bookingConstraints,
+		hideStatusField = false
 	}: Props = $props();
 
 	// Client-side validation state

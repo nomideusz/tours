@@ -256,8 +256,8 @@ export const actions: Actions = {
       console.log('✅ Tour updated successfully:', updatedTour[0].id);
       console.log('✅ Time slots updated to new capacity:', newCapacity);
 
-      // Redirect to tour detail page
-      throw redirect(303, `/tours/${params.id}`);
+      // Redirect to tour detail page with success flag
+      throw redirect(303, `/tours/${params.id}?edited=true`);
 
     } catch (error) {
       // If it's a redirect, don't catch it - just re-throw

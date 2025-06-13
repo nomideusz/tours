@@ -6,6 +6,7 @@
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { useQueryClient } from '@tanstack/svelte-query';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -23,6 +24,9 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Info from 'lucide-svelte/icons/info';
+
+	// Get query client for invalidation
+	const queryClient = useQueryClient();
 
 	// Get data from load function
 	let { data } = $props();
@@ -64,7 +68,7 @@
 		startTime: '',
 		endTime: '',
 		capacity: 0,
-		status: 'available' as 'available' | 'cancelled',
+		status: 'active' as 'active' | 'cancelled',
 		notes: ''
 	});
 
@@ -77,8 +81,8 @@
 			formData.date = startDate.toISOString().split('T')[0];
 			formData.startTime = startDate.toTimeString().slice(0, 5);
 			formData.endTime = endDate.toTimeString().slice(0, 5);
-			formData.capacity = currentSlot.availableSpots;
-			formData.status = currentSlot.status === 'cancelled' ? 'cancelled' : 'available';
+			formData.capacity = currentSlot.capacity || tour?.capacity || 10;
+			formData.status = currentSlot.status === 'cancelled' ? 'cancelled' : 'active';
 			formData.notes = currentSlot.notes || '';
 		}
 	});
@@ -165,8 +169,11 @@
 				throw new Error(errorData.error || 'Failed to update time slot');
 			}
 			
-			// Redirect back to schedule
-			goto(`/tours/${tourId}/schedule`);
+			// Invalidate the schedule query so it refreshes immediately
+			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			
+			// Redirect back to schedule with success flag
+			goto(`/tours/${tourId}/schedule?slotUpdated=true`);
 			
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to update time slot';
@@ -191,8 +198,11 @@
 				throw new Error(errorData.error || 'Failed to delete time slot');
 			}
 			
-			// Redirect back to schedule
-			goto(`/tours/${tourId}/schedule`);
+			// Invalidate the schedule query so it refreshes immediately
+			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			
+			// Redirect back to schedule with success flag
+			goto(`/tours/${tourId}/schedule?slotDeleted=true`);
 			
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to delete time slot';
@@ -284,7 +294,7 @@
 					{
 						icon: Users,
 						label: 'Bookings',
-						value: `${currentSlot.bookedSpots}/${currentSlot.availableSpots}`
+						value: `${currentSlot.bookedSpots || 0}/${currentSlot.capacity || tour.capacity}`
 					},
 					{
 						icon: conflicts.length > 0 ? AlertCircle : CheckCircle,
@@ -487,7 +497,7 @@
 					<div>
 						<label for="edit-status" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Status</label>
 						<select id="edit-status" bind:value={formData.status} class="form-select w-full">
-							<option value="available">Available</option>
+							<option value="active">Active</option>
 							<option value="cancelled">Cancelled</option>
 						</select>
 						{#if formData.status === 'cancelled' && hasBookings}

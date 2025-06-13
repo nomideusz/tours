@@ -42,7 +42,7 @@
 		danger: {
 			iconColor: 'text-red-600',
 			iconBg: 'bg-red-100',
-			confirmButton: 'button-danger'
+			confirmButton: 'button--danger'
 		},
 		warning: {
 			iconColor: 'text-amber-600',

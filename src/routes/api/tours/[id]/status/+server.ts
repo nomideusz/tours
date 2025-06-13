@@ -7,11 +7,11 @@ import { eq, and } from 'drizzle-orm';
 export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 	// Check authentication
 	if (!locals.user) {
-		return error(401, 'Unauthorized');
+		throw error(401, 'Unauthorized');
 	}
 
 	if (!params.id) {
-		return error(400, 'Tour ID is required');
+		throw error(400, 'Tour ID is required');
 	}
 
 	try {
@@ -19,7 +19,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 
 		// Validate status value
 		if (!status || !['active', 'draft'].includes(status)) {
-			return error(400, 'Invalid status. Must be "active" or "draft"');
+			throw error(400, 'Invalid status. Must be "active" or "draft"');
 		}
 
 		// Check if tour exists and belongs to user
@@ -33,7 +33,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 			.limit(1);
 
 		if (existingTourResults.length === 0) {
-			return error(404, 'Tour not found');
+			throw error(404, 'Tour not found');
 		}
 
 		// Update tour status
@@ -50,7 +50,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 			.returning();
 
 		if (updatedTours.length === 0) {
-			return error(500, 'Failed to update tour status');
+			throw error(500, 'Failed to update tour status');
 		}
 
 		const updatedTour = updatedTours[0];
@@ -66,6 +66,6 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 
 	} catch (err) {
 		console.error('Error updating tour status:', err);
-		return error(500, 'Failed to update tour status');
+		throw error(500, 'Failed to update tour status');
 	}
 }; 
