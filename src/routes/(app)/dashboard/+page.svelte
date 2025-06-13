@@ -119,28 +119,18 @@
 			
 			<!-- Profile Link Section -->
 			<div class="rounded-lg p-3" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
-				<div class="flex flex-col sm:flex-row sm:items-center gap-3">
-					<div class="flex items-center gap-2 min-w-0 flex-1">
-						<Link class="h-4 w-4 flex-shrink-0" style="color: var(--color-primary-600);" />
-						<span class="text-sm font-medium" style="color: var(--text-secondary);">
-							Your public profile:
-						</span>
-					</div>
-					
-					<div class="flex items-center gap-2 flex-1 min-w-0">
-						<div class="flex-1 overflow-hidden">
-							<a 
-								href="/{profile.username}" 
-								target="_blank" 
-								rel="noopener noreferrer"
-								class="text-sm font-mono truncate block"
-								style="color: var(--color-primary-600); text-overflow: ellipsis;"
-							>
-								{profileUrl}
-							</a>
+				<div class="flex flex-col gap-3">
+					<!-- Label with icon - same on all screen sizes -->
+					<div class="flex items-center justify-between w-full">
+						<div class="flex items-center gap-2">
+							<Link class="h-4 w-4 flex-shrink-0" style="color: var(--color-primary-600);" />
+							<span class="text-sm font-medium" style="color: var(--text-secondary);">
+								Your public profile
+							</span>
 						</div>
 						
-						<div class="flex items-center gap-2 flex-shrink-0">
+						<!-- Action buttons -->
+						<div class="flex items-center gap-2">
 							<a
 								href="/{profile.username}"
 								target="_blank"
@@ -162,6 +152,19 @@
 								{/if}
 							</button>
 						</div>
+					</div>
+					
+					<!-- Full URL display on all screens -->
+					<div class="w-full bg-white bg-opacity-50 rounded px-2 py-1 overflow-x-auto no-scrollbar">
+						<a 
+							href="/{profile.username}" 
+							target="_blank" 
+							rel="noopener noreferrer"
+							class="text-sm font-mono whitespace-nowrap block"
+							style="color: var(--color-primary-600);"
+						>
+							{profileUrl}
+						</a>
 					</div>
 				</div>
 			</div>
