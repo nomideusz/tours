@@ -42,18 +42,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     // Pass the admin status to the client
     isAdmin = locals.isAdmin || false;
     
-    // Load shared stats that are used across multiple pages
-    try {
-      sharedStats = await getSharedStats(userData.id);
-      console.log('App layout: Loaded shared stats for user:', userData.email);
-    } catch (error) {
-      console.error('App layout: Failed to load shared stats:', error);
-      sharedStats = {
-        totalTours: 0,
-        activeTours: 0,
-        monthlyTours: 0
-      };
-    }
+    // Stats moved to client-side TanStack Query to avoid 502 timeouts
+    sharedStats = {
+      totalTours: 0,
+      activeTours: 0,
+      monthlyTours: 0
+    };
     
     console.log('App layout server sending authenticated user:', user.email);
   }
