@@ -1,4 +1,9 @@
 {
   "schemaVersion": 2,
-  "dockerfilePath": "./Dockerfile"
+  "dockerfilePath": "./Dockerfile",
+  "nginxConfig": {
+    "proxy_read_timeout": "300s",
+    "proxy_connect_timeout": "300s",
+    "proxy_send_timeout": "300s"
+  }
 } 

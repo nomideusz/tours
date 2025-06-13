@@ -72,7 +72,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			.from(bookings)
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.where(eq(bookings.tourId, tourId))
-			.orderBy(desc(bookings.createdAt));
+			.orderBy(desc(bookings.createdAt))
+			.limit(500); // Limit to prevent performance issues
 
 		// Calculate tour-specific stats
 		let totalBookings = tourBookings.length;
