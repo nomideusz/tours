@@ -1,2 +1,1 @@
-// Root layout configuration
-export const csr = true; 
+// Root layout configuration - keep SSR for marketing pages 

@@ -13,4 +13,7 @@ export const load = async () => {
 	});
 
 	return { queryClient };
-}; 
+};
+
+// App layout configuration - CSR for authenticated pages
+export const csr = true; 
