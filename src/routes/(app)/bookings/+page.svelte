@@ -29,8 +29,8 @@
 	
 	// TanStack Query for bookings data
 	const bookingsQuery = createQuery({
-		queryKey: queryKeys.recentBookings(100),
-		queryFn: () => queryFunctions.fetchRecentBookings(100),
+		queryKey: queryKeys.recentBookings(50), // Reduced from 100 to avoid timeouts
+		queryFn: () => queryFunctions.fetchRecentBookings(50),
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});

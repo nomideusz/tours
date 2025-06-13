@@ -80,12 +80,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) || 0 : (booking.totalAmount || 0),
 				paymentStatus: booking.paymentStatus || 'pending',
 				effectiveDate: createdAtStr, // Simple fallback for now
-				// Minimal time slot info - will be fetched separately if needed
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: null,
-					endTime: null
-				} : undefined
+				// Don't include timeSlot at all if we don't have the data
+				timeSlot: undefined
 			};
 		});
 		
