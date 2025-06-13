@@ -6,6 +6,8 @@ import { eq, desc, inArray } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	try {
+		console.log('[recent-bookings-simple] Request started', { userId: locals.user?.id });
+		
 		if (!locals.user) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
 		}
@@ -18,19 +20,24 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		if (isNaN(limit) || limit < 1 || limit > 200) {
 			return json({ error: 'Invalid limit parameter' }, { status: 400 });
 		}
+		
+		console.log('[recent-bookings-simple] Fetching bookings with limit:', limit);
 
 		// Step 1: Get user's tour IDs first
-		const userTours = await db.select({ id: tours.id })
+		console.log('[recent-bookings-simple] Step 1: Getting user tours');
+		const userTours = await db.select({ id: tours.id, name: tours.name })
 			.from(tours)
 			.where(eq(tours.userId, locals.user.id));
 		
 		const tourIds = userTours.map(t => t.id);
+		console.log('[recent-bookings-simple] Found tours:', tourIds.length);
 		
 		if (tourIds.length === 0) {
 			return json([]); // No tours, no bookings
 		}
 
 		// Step 2: Get bookings for those tours (simple query, no joins)
+		console.log('[recent-bookings-simple] Step 2: Getting bookings');
 		const bookingsData = await db.select({
 			id: bookings.id,
 			tourId: bookings.tourId,
@@ -47,21 +54,14 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		.where(inArray(bookings.tourId, tourIds))
 		.orderBy(desc(bookings.createdAt))
 		.limit(Math.min(limit, 100));
+		
+		console.log('[recent-bookings-simple] Found bookings:', bookingsData.length);
 
-		// Step 3: Get tour names in a simple map
-		const tourMap = new Map(userTours.map(t => [t.id, t]));
-		
-		// Get tour details for the bookings
-		const tourDetails = await db.select({
-			id: tours.id,
-			name: tours.name
-		})
-		.from(tours)
-		.where(eq(tours.userId, locals.user.id));
-		
-		const tourNameMap = new Map(tourDetails.map(t => [t.id, t.name]));
+		// Step 3: Create tour name map from already fetched data
+		const tourNameMap = new Map(userTours.map(t => [t.id, t.name]));
 
 		// Step 4: Process bookings with safe date handling
+		console.log('[recent-bookings-simple] Step 4: Processing bookings');
 		const processedBookings = bookingsData.map(booking => {
 			// Safe date conversion
 			const createdAt = booking.createdAt ? new Date(booking.createdAt) : new Date();
@@ -84,6 +84,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				timeSlot: undefined
 			};
 		});
+		
+		console.log('[recent-bookings-simple] Returning processed bookings:', processedBookings.length);
 		
 		return json(processedBookings, {
 			headers: {
