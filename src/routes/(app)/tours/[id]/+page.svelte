@@ -11,7 +11,8 @@
 		getBookingStatusColor,
 		getSlotStatusColor,
 		getTourImageUrl,
-		calculateConversionRate
+		calculateConversionRate,
+		toggleTourStatus
 	} from '$lib/utils/tour-client.js';
 	import { 
 		formatSlotDateTime,
@@ -126,29 +127,17 @@
 		link.click();
 	}
 
-	async function toggleTourStatus() {
+	async function handleTourStatusToggle() {
 		if (!browser || statusUpdating) return;
-		
-		const newStatus = tour.status === 'active' ? 'draft' : 'active';
 		statusUpdating = true;
-
+		
 		try {
-			const response = await fetch(`/api/tours/${tour.id}/status`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ status: newStatus })
-			});
-
-			if (response.ok) {
+			const newStatus = await toggleTourStatus(tour);
+			
+			if (newStatus) {
 				// Update local state
 				tour = { ...tour, status: newStatus };
-			} else {
-				console.error('Failed to update tour status:', response.status, response.statusText);
 			}
-		} catch (error) {
-			console.error('Failed to update tour status:', error);
 		} finally {
 			statusUpdating = false;
 		}
@@ -168,7 +157,7 @@
 			title={tour.name}
 			statusButton={{
 				label: statusUpdating ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1),
-				onclick: toggleTourStatus,
+				onclick: handleTourStatusToggle,
 				disabled: statusUpdating,
 				color: getTourStatusColor(tour.status),
 				dotColor: getTourStatusDot(tour.status),
@@ -176,6 +165,12 @@
 			}}
 			secondaryInfo={formatEuro(tour.price)}
 			quickActions={[
+				{
+					label: 'Bookings',
+					icon: Users,
+					onclick: () => goto(`/tours/${tour.id}/bookings`),
+					variant: 'primary'
+				},
 				{
 					label: 'Edit',
 					icon: Edit,
@@ -186,7 +181,7 @@
 					label: 'Schedule',
 					icon: Calendar,
 					onclick: () => goto(`/tours/${tour.id}/schedule`),
-					variant: 'primary'
+					variant: 'secondary'
 				},
 				{
 					label: 'Share',
@@ -235,11 +230,15 @@
 					Back to Tours
 				</button>
 				<div class="hidden sm:flex gap-3">
+					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-primary button--gap">
+						<Users class="h-4 w-4" />
+						View Bookings
+					</button>
 					<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--gap">
 						<Edit class="h-4 w-4" />
 						Edit Tour
 					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--gap">
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--gap">
 						<Calendar class="h-4 w-4" />
 						Manage Schedule
 					</button>
@@ -255,7 +254,7 @@
 				<div class="flex items-center gap-4">
 					<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 						<button
-							onclick={() => toggleTourStatus()}
+							onclick={() => handleTourStatusToggle()}
 							disabled={statusUpdating}
 							class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
 						>
@@ -462,7 +461,7 @@
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
-					<button onclick={() => goto(`/bookings?tour=${tour.id}`)} class="text-xs" style="color: var(--color-primary-600);">
+					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="text-xs" style="color: var(--color-primary-600);">
 						View All
 					</button>
 				</div>

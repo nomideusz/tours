@@ -6,7 +6,8 @@
 		formatDuration,
 		getTourStatusColor,
 		getTourStatusDot,
-		getImageUrl
+		getImageUrl,
+		toggleTourStatus
 	} from '$lib/utils/tour-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
@@ -39,7 +40,7 @@
 	let statusUpdating = $state<string | null>(null);
 
 	// Use data directly from server with proper type casting
-	let tours = $derived((data.tours as unknown as Tour[]) || []);
+	let tours = $state((data.tours as unknown as Tour[]) || []);
 	
 	// Use stats from server (with fallbacks for type safety)
 	let stats = $derived(data.stats || {
@@ -102,29 +103,19 @@
 		}
 	}
 
-	async function toggleTourStatus(tour: Tour) {
+	async function handleTourStatusToggle(tour: Tour) {
 		if (!browser || statusUpdating) return;
-		
-		const newStatus = tour.status === 'active' ? 'draft' : 'active';
 		statusUpdating = tour.id;
-
+		
 		try {
-			const response = await fetch(`/api/tours/${tour.id}/status`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ status: newStatus })
-			});
-
-			if (response.ok) {
-				// Reload the page to refresh data
-				window.location.reload();
-			} else {
-				console.error('Failed to update tour status:', response.status, response.statusText);
+			const newStatus = await toggleTourStatus(tour);
+			
+			if (newStatus) {
+				// Update local state
+				tours = tours.map(t => 
+					t.id === tour.id ? { ...t, status: newStatus } : t
+				);
 			}
-		} catch (error) {
-			console.error('Failed to update tour status:', error);
 		} finally {
 			statusUpdating = null;
 		}
@@ -311,7 +302,7 @@
 									<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
 									<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 										<button
-											onclick={() => toggleTourStatus(tour)}
+											onclick={() => handleTourStatusToggle(tour)}
 											disabled={statusUpdating === tour.id}
 											class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 {getTourStatusColor(tour.status)}"
 										>
@@ -336,9 +327,9 @@
 										<Eye class="h-3 w-3" />
 										View
 									</button>
-									<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="flex-1 button-secondary button--small button--gap justify-center">
-										<Calendar class="h-3 w-3" />
-										Schedule
+									<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="flex-1 button-secondary button--small button--gap justify-center">
+										<Users class="h-3 w-3" />
+										Bookings
 									</button>
 									<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--icon">
 										<Edit class="h-3 w-3" />
@@ -385,7 +376,7 @@
 												<h3 class="text-lg font-semibold" style="color: var(--text-primary);">{tour.name}</h3>
 												<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 													<button
-														onclick={() => toggleTourStatus(tour)}
+														onclick={() => handleTourStatusToggle(tour)}
 														disabled={statusUpdating === tour.id}
 														class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
 													>
@@ -454,6 +445,10 @@
 												<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
 													<Eye class="h-4 w-4" />
 													View Details
+												</button>
+												<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
+													<Users class="h-4 w-4" />
+													Bookings
 												</button>
 												<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 													<Calendar class="h-4 w-4" />
