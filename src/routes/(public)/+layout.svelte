@@ -4,6 +4,7 @@
 	import { auth } from '$lib/stores/auth.js';
 	import PublicHeader from '$lib/components/PublicHeader.svelte';
 	import PublicFooter from '$lib/components/PublicFooter.svelte';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -18,16 +19,19 @@
 	});
 </script>
 
-<!-- Public Layout: Minimal header + main + footer -->
-<div class="min-h-screen flex flex-col">
-	<PublicHeader />
-	
-	<main class="flex-1">
-		{@render children()}
-	</main>
-	
-	<PublicFooter />
-</div>
+<!-- TanStack Query Provider for Public -->
+<QueryClientProvider client={data.queryClient}>
+	<!-- Public Layout: Minimal header + main + footer -->
+	<div class="min-h-screen flex flex-col">
+		<PublicHeader />
+		
+		<main class="flex-1">
+			{@render children()}
+		</main>
+		
+		<PublicFooter />
+	</div>
+</QueryClientProvider>
 
 <style lang="postcss">
 	@reference "tailwindcss";

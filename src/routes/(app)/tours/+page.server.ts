@@ -5,8 +5,8 @@ import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { eq, desc } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ locals, url, parent }) => {
-	// Get parent layout data first
+export const load: PageServerLoad = async ({ locals, url, parent, fetch }) => {
+	// Get parent layout data first (includes queryClient for prefetching)
 	const parentData = await parent();
 	
 	// Check if user is authenticated
@@ -35,15 +35,38 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			.orderBy(desc(tours.updatedAt))
 			.limit(100); // Reasonable limit to prevent 502 errors
 
+		const formattedTours = userTours.map(tour => ({
+			...tour,
+			price: parseFloat(tour.price),
+			created: tour.createdAt.toISOString(),
+			updated: tour.updatedAt.toISOString()
+		}));
+
+		// Prefetch data for TanStack Query if queryClient is available
+		if ((parentData as any).queryClient) {
+			try {
+				// Prefetch tours stats using the API endpoint
+				await (parentData as any).queryClient.prefetchQuery({
+					queryKey: ['toursStats'],
+					queryFn: async () => (await fetch('/api/tours-stats')).json(),
+					staleTime: 2 * 60 * 1000, // 2 minutes
+				});
+
+				// Prefetch user tours using the API endpoint
+				await (parentData as any).queryClient.prefetchQuery({
+					queryKey: ['userTours'],
+					queryFn: async () => (await fetch('/api/tours')).json(),
+					staleTime: 1 * 60 * 1000, // 1 minute
+				});
+			} catch (prefetchError) {
+				console.log('Tours page: TanStack Query prefetch failed (continuing with SSR data):', prefetchError);
+			}
+		}
+
 		return {
 			...parentData,
 			stats: toursStats, // This includes both shared and tours-specific stats
-			tours: userTours.map(tour => ({
-				...tour,
-				price: parseFloat(tour.price),
-				created: tour.createdAt.toISOString(),
-				updated: tour.updatedAt.toISOString()
-			}))
+			tours: formattedTours
 		};
 	} catch (err) {
 		console.error('Error loading tours page:', err);

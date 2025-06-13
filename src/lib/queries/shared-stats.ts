@@ -20,7 +20,9 @@ export const queryFunctions = {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/shared-stats');
-		if (!response.ok) throw new Error('Failed to fetch shared stats');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch shared stats: ${response.status} ${response.statusText}`);
+		}
 		return response.json();
 	},
 
@@ -29,7 +31,9 @@ export const queryFunctions = {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/dashboard-stats');
-		if (!response.ok) throw new Error('Failed to fetch dashboard stats');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch dashboard stats: ${response.status} ${response.statusText}`);
+		}
 		return response.json();
 	},
 
@@ -38,7 +42,9 @@ export const queryFunctions = {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/tours-stats');
-		if (!response.ok) throw new Error('Failed to fetch tours stats');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch tours stats: ${response.status} ${response.statusText}`);
+		}
 		return response.json();
 	},
 
@@ -47,7 +53,9 @@ export const queryFunctions = {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch(`/api/recent-bookings?limit=${limit}`);
-		if (!response.ok) throw new Error('Failed to fetch recent bookings');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch recent bookings: ${response.status} ${response.statusText}`);
+		}
 		return response.json();
 	},
 
@@ -56,7 +64,9 @@ export const queryFunctions = {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/tours');
-		if (!response.ok) throw new Error('Failed to fetch tours');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch tours: ${response.status} ${response.statusText}`);
+		}
 		return response.json();
 	},
 };

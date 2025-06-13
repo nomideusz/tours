@@ -6,16 +6,20 @@
 		formatDuration,
 		getTourStatusColor,
 		getTourStatusDot,
-		getImageUrl
+		getImageUrl,
+		toggleTourStatus
 	} from '$lib/utils/tour-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import type { Tour } from '$lib/types.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { browser } from '$app/environment';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -32,17 +36,33 @@
 	import Copy from 'lucide-svelte/icons/copy';
 	import Share2 from 'lucide-svelte/icons/share-2';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
 	let { data }: { data: PageData } = $props();
+
+	// TanStack Query queries
+	const toursStatsQuery = createQuery({
+		queryKey: queryKeys.toursStats,
+		queryFn: queryFunctions.fetchToursStats,
+		staleTime: 2 * 60 * 1000, // 2 minutes
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+		initialData: data.stats // Use server data as initial data
+	});
+
+	const userToursQuery = createQuery({
+		queryKey: queryKeys.userTours,
+		queryFn: queryFunctions.fetchUserTours,
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+		initialData: data.tours // Use server data as initial data
+	});
 
 	let copiedQRCode = $state<string | null>(null);
 	let statusUpdating = $state<string | null>(null);
 
-	// Use data directly from server with proper type casting
-	let tours = $derived((data.tours as unknown as Tour[]) || []);
-	
-	// Use stats from server (with fallbacks for type safety)
-	let stats = $derived(data.stats || {
+	// Use TanStack Query data with fallbacks
+	let tours = $derived(($userToursQuery.data as unknown as Tour[]) || []);
+	let stats = $derived($toursStatsQuery.data || {
 		totalTours: 0,
 		activeTours: 0,
 		draftTours: 0,
@@ -55,6 +75,10 @@
 		confirmedBookings: 0,
 		totalParticipants: 0
 	});
+
+	// Loading states
+	let isLoading = $derived($toursStatsQuery.isLoading || $userToursQuery.isLoading);
+	let isError = $derived($toursStatsQuery.isError || $userToursQuery.isError);
 
 	// Utility functions are now imported from shared utilities
 
@@ -102,32 +126,30 @@
 		}
 	}
 
-	async function toggleTourStatus(tour: Tour) {
+	async function handleTourStatusToggle(tour: Tour) {
 		if (!browser || statusUpdating) return;
-		
-		const newStatus = tour.status === 'active' ? 'draft' : 'active';
 		statusUpdating = tour.id;
-
+		
 		try {
-			const response = await fetch(`/api/tours/${tour.id}/status`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ status: newStatus })
-			});
-
-			if (response.ok) {
-				// Reload the page to refresh data
-				window.location.reload();
-			} else {
-				console.error('Failed to update tour status:', response.status, response.statusText);
+			const newStatus = await toggleTourStatus(tour);
+			
+			if (newStatus) {
+				// Invalidate and refetch queries after mutation
+				await Promise.all([
+					$toursStatsQuery.refetch(),
+					$userToursQuery.refetch()
+				]);
 			}
-		} catch (error) {
-			console.error('Failed to update tour status:', error);
 		} finally {
 			statusUpdating = null;
 		}
+	}
+
+	function handleRefresh() {
+		Promise.all([
+			$toursStatsQuery.refetch(),
+			$userToursQuery.refetch()
+		]);
 	}
 
 	
@@ -138,8 +160,32 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Loading and Error States -->
+	{#if isError}
+		<div class="rounded-xl p-6 mb-6" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-danger-100);">
+						<ExternalLink class="h-4 w-4" style="color: var(--color-danger-600);" />
+					</div>
+					<div>
+						<p class="font-medium" style="color: var(--color-danger-900);">Failed to load data</p>
+						<p class="text-sm" style="color: var(--color-danger-700);">There was an error loading your tours and statistics.</p>
+					</div>
+				</div>
+				<button
+					onclick={handleRefresh}
+					class="button-secondary button--small"
+				>
+					<RefreshCw class="h-4 w-4" />
+					Retry
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Mobile-First Header -->
-	<div class="mb-6 sm:mb-8">
+	<div class="mb-6 sm:mb-8 {isLoading ? 'opacity-75' : ''}">
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title="Tours Management"
@@ -189,6 +235,14 @@
 				subtitle="Manage your tour catalog, track performance, and grow your business"
 			>
 				<div class="flex gap-3">
+					<button 
+						onclick={handleRefresh}
+						class="button-secondary button--small"
+						disabled={isLoading}
+					>
+						<RefreshCw class="h-4 w-4 {isLoading ? 'animate-spin' : ''}" />
+						{isLoading ? 'Loading...' : 'Refresh'}
+					</button>
 					<button onclick={() => goto('/tours/new')} class="button-secondary button--gap">
 						<Plus class="h-4 w-4" />
 						New Draft
@@ -311,7 +365,7 @@
 									<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
 									<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 										<button
-											onclick={() => toggleTourStatus(tour)}
+											onclick={() => handleTourStatusToggle(tour)}
 											disabled={statusUpdating === tour.id}
 											class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 {getTourStatusColor(tour.status)}"
 										>
@@ -336,9 +390,9 @@
 										<Eye class="h-3 w-3" />
 										View
 									</button>
-									<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="flex-1 button-secondary button--small button--gap justify-center">
-										<Calendar class="h-3 w-3" />
-										Schedule
+									<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="flex-1 button-secondary button--small button--gap justify-center">
+										<Users class="h-3 w-3" />
+										Bookings
 									</button>
 									<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--icon">
 										<Edit class="h-3 w-3" />
@@ -385,7 +439,7 @@
 												<h3 class="text-lg font-semibold" style="color: var(--text-primary);">{tour.name}</h3>
 												<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
 													<button
-														onclick={() => toggleTourStatus(tour)}
+														onclick={() => handleTourStatusToggle(tour)}
 														disabled={statusUpdating === tour.id}
 														class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
 													>
@@ -454,6 +508,10 @@
 												<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
 													<Eye class="h-4 w-4" />
 													View Details
+												</button>
+												<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
+													<Users class="h-4 w-4" />
+													Bookings
 												</button>
 												<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 													<Calendar class="h-4 w-4" />

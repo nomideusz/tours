@@ -14,6 +14,7 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
 
 	// Icons
 	import Home from 'lucide-svelte/icons/home';
@@ -148,17 +149,19 @@
 
 </script>
 
-<!-- App Layout: Header + Sidebar + Main + Footer -->
-<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
-	<!-- App Header - Hide hamburger menu on mobile since we're using bottom nav -->
-	<AppHeader 
-		{pageTitle}
-		user={currentUserData}
-		sidebarOpen={false}
-		onSidebarToggle={() => {}} 
-		onLogout={() => handleLogout(new Event('click'))}
-		showSidebarToggle={false}
-	/>
+<!-- TanStack Query Provider for App -->
+<QueryClientProvider client={data.queryClient}>
+	<!-- App Layout: Header + Sidebar + Main + Footer -->
+	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
+		<!-- App Header - Hide hamburger menu on mobile since we're using bottom nav -->
+		<AppHeader 
+			{pageTitle}
+			user={currentUserData}
+			sidebarOpen={false}
+			onSidebarToggle={() => {}} 
+			onLogout={() => handleLogout(new Event('click'))}
+			showSidebarToggle={false}
+		/>
 
 	<!-- Main content area with sidebar -->
 	<div class="flex flex-1 min-w-0">
@@ -278,4 +281,5 @@
 	<div class="hidden lg:block">
 		<AppFooter />
 	</div>
-</div>
+	</div>
+</QueryClientProvider>
