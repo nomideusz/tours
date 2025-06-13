@@ -11,6 +11,7 @@ export const queryKeys = {
 	recentBookings: (limit?: number) => ['recentBookings', limit] as const,
 	userTours: ['userTours'] as const,
 	tourDetails: (tourId: string) => ['tourDetails', tourId] as const,
+	tourSchedule: (tourId: string) => ['tourSchedule', tourId] as const,
 } as const;
 
 // Query functions that call our API endpoints
@@ -67,6 +68,17 @@ export const queryFunctions = {
 		const response = await fetch(`/api/tour-details/${tourId}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch tour details: ${response.status} ${response.statusText}`);
+		}
+		return response.json();
+	},
+
+	// Fetch tour schedule
+	async fetchTourSchedule(tourId: string) {
+		if (!browser) throw new Error('Client-side only');
+		
+		const response = await fetch(`/api/tour-schedule/${tourId}`);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch tour schedule: ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
