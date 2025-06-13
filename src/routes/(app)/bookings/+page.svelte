@@ -27,10 +27,14 @@
 	
 
 	
-	// TanStack Query for bookings data
+	// State for pagination
+	let currentPage = $state(1);
+	let pageSize = $state(20);
+	
+	// TanStack Query for bookings data with pagination
 	const bookingsQuery = createQuery({
-		queryKey: queryKeys.recentBookings(10), // Same as dashboard to avoid timeouts
-		queryFn: () => queryFunctions.fetchRecentBookings(10),
+		queryKey: queryKeys.recentBookings(currentPage * pageSize),
+		queryFn: () => queryFunctions.fetchRecentBookings(currentPage * pageSize),
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});
@@ -84,6 +88,11 @@
 	// Refresh function
 	function handleRefresh() {
 		$bookingsQuery.refetch();
+	}
+	
+	// Load more bookings
+	function loadMore() {
+		currentPage += 1;
 	}
 	
 </script>
@@ -331,6 +340,24 @@
 			<div class="p-8 text-center">
 				<Loader2 class="w-8 h-8 mx-auto mb-2 animate-spin" style="color: var(--text-tertiary);" />
 				<p class="text-sm" style="color: var(--text-secondary);">Loading bookings...</p>
+			</div>
+		{/if}
+		
+		<!-- Load More Button -->
+		{#if bookings.length >= currentPage * pageSize && bookings.length > 0}
+			<div class="p-4 border-t" style="border-color: var(--border-primary);">
+				<button
+					onclick={loadMore}
+					disabled={isLoading}
+					class="w-full button-secondary button--small"
+				>
+					{#if isLoading}
+						<Loader2 class="h-4 w-4 animate-spin mr-2" />
+						Loading...
+					{:else}
+						Load More Bookings
+					{/if}
+				</button>
 			</div>
 		{/if}
 	</div>

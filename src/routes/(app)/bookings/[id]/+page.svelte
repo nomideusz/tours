@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
-	import type { PageData, ActionData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -25,11 +28,28 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Edit from 'lucide-svelte/icons/edit';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
 
-	let { data }: { data: PageData } = $props();
+	// Get booking ID from URL
+	const bookingId = $derived($page.params.id);
 	
-	let booking = $state(data.booking);
-	let payment = $state(data.payment);
+	// TanStack Query for booking data
+	const bookingQuery = createQuery({
+		queryKey: ['booking', bookingId],
+		queryFn: async () => {
+			const response = await fetch(`/api/bookings/${bookingId}`);
+			if (!response.ok) throw new Error('Failed to fetch booking');
+			return response.json();
+		},
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	});
+	
+	// Derive data from query
+	let booking = $derived($bookingQuery.data?.booking || null);
+	let payment = $derived($bookingQuery.data?.payment || null);
+	let isLoading = $derived($bookingQuery.isLoading);
+	let isError = $derived($bookingQuery.isError);
 	let isUpdating = $state(false);
 	let error = $state<string | null>(null);
 	let showStatusModal = $state(false);
@@ -118,11 +138,31 @@
 </script>
 
 <svelte:head>
-	<title>{booking.customerName} - Booking Details | Zaur</title>
-	<meta name="description" content="Manage booking details for {booking.customerName}" />
+	<title>{booking?.customerName || 'Loading'} - Booking Details | Zaur</title>
+	<meta name="description" content="Manage booking details for {booking?.customerName || 'customer'}" />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Loading State -->
+	{#if isLoading}
+		<div class="p-8 text-center">
+			<Loader2 class="w-8 h-8 mx-auto mb-2 animate-spin" style="color: var(--text-tertiary);" />
+			<p class="text-sm" style="color: var(--text-secondary);">Loading booking details...</p>
+		</div>
+	<!-- Error State -->
+	{:else if isError || !booking}
+		<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+			<div class="flex items-center justify-between">
+				<div>
+					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load booking</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please try refreshing the page.</p>
+				</div>
+				<button onclick={() => goto('/bookings')} class="button-secondary button--small">
+					Back to Bookings
+				</button>
+			</div>
+		</div>
+	{:else}
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Header -->
@@ -494,6 +534,7 @@
 		</div>
 	</div>
 {/if}
+</div>
 
 <style lang="postcss">
 	@reference "tailwindcss";
