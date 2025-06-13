@@ -43,12 +43,12 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 			customerEmail: booking.customerEmail,
 			participants: booking.participants || 1,
 			status: booking.status,
-			created: booking.createdAt.toISOString(),
-			updated: booking.createdAt.toISOString(), // Use created as fallback
+			created: booking.createdAt?.toISOString() || new Date().toISOString(),
+			updated: booking.createdAt?.toISOString() || new Date().toISOString(), // Use created as fallback
 			tour: booking.tourName,
 			totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
 			paymentStatus: booking.paymentStatus,
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt.toISOString(), // Use timeSlot start time if available
+			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(), // Use timeSlot start time if available
 			expand: {
 				tour: { 
 					id: booking.tourId,
@@ -146,14 +146,14 @@ export async function getTourBookingData(userId: string, tourId: string) {
 				participants: booking.participants || 0,
 				status: booking.status,
 				paymentStatus: booking.paymentStatus,
-				created: booking.createdAt.toISOString(),
-				updated: booking.createdAt.toISOString(),
+				created: booking.createdAt?.toISOString() || new Date().toISOString(),
+				updated: booking.createdAt?.toISOString() || new Date().toISOString(),
 				tour: tour.name,
 				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
 				bookingReference: booking.bookingReference || '',
 				ticketQRCode: booking.ticketQRCode || null,
 				attendanceStatus: booking.attendanceStatus || null,
-				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt.toISOString(),
+				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(),
 				expand: {
 					timeSlot: timeSlot ? {
 						id: booking.timeSlotId,
@@ -237,8 +237,8 @@ export async function getTourBookingData(userId: string, tourId: string) {
 			tour: {
 				...tour,
 				price: tour.price ? parseFloat(tour.price) : 0,
-				createdAt: tour.createdAt.toISOString(),
-				updatedAt: tour.updatedAt.toISOString()
+				createdAt: tour.createdAt?.toISOString() || new Date().toISOString(),
+				updatedAt: tour.updatedAt?.toISOString() || new Date().toISOString()
 			},
 			bookings: upcomingBookings, // Return only upcoming bookings for display
 			allBookings: processedBookings, // Return all bookings for stats
@@ -339,8 +339,8 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 				participants: booking.participants || 1,
 				status: booking.status,
 				paymentStatus: booking.paymentStatus,
-				created: booking.createdAt.toISOString(),
-				updated: booking.updatedAt.toISOString(),
+				created: booking.createdAt?.toISOString() || new Date().toISOString(),
+				updated: booking.updatedAt?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(),
 				tour: tour.name,
 				totalAmount: booking.totalAmount || 0,
 				bookingReference: booking.bookingReference || '',
@@ -348,7 +348,7 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 				attendanceStatus: booking.attendanceStatus || null,
 				checkedInAt: booking.checkedInAt?.toISOString() || null,
 				ticketQRCode: booking.ticketQRCode || null,
-				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt.toISOString(),
+				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(),
 				expand: {
 					timeSlot: timeSlot ? {
 						id: booking.timeSlotId,
@@ -364,9 +364,9 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 		return {
 			tour: {
 				...tour,
-				price: parseFloat(tour.price),
-				createdAt: tour.createdAt.toISOString(),
-				updatedAt: tour.updatedAt.toISOString()
+				price: tour.price ? parseFloat(tour.price) : 0,
+				createdAt: tour.createdAt?.toISOString() || new Date().toISOString(),
+				updatedAt: tour.updatedAt?.toISOString() || new Date().toISOString()
 			},
 			bookings: processedBookings
 		};
@@ -453,8 +453,8 @@ export async function getBookingDetails(userId: string, bookingId: string) {
 			ticketQRCode: booking.ticketQRCode,
 			attendanceStatus: booking.attendanceStatus,
 			checkedInAt: booking.checkedInAt?.toISOString(),
-			created: booking.createdAt.toISOString(),
-			updated: booking.updatedAt.toISOString(),
+			created: booking.createdAt?.toISOString() || new Date().toISOString(),
+			updated: booking.updatedAt?.toISOString() || new Date().toISOString(),
 			expand: {
 				tour: {
 					id: booking.tourId,

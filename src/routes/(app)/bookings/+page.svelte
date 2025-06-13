@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { formatEuro } from '$lib/utils/currency.js';
-	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
+	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-	import type { PageData } from './$types.js';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -24,12 +23,9 @@
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Clock from 'lucide-svelte/icons/clock';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import XCircle from 'lucide-svelte/icons/x-circle';
 	
-	let { data }: { data: PageData } = $props();
+
 	
 	// TanStack Query for bookings data
 	const bookingsQuery = createQuery({
@@ -52,14 +48,26 @@
 		today.setHours(0, 0, 0, 0);
 		
 		const todayBookings = bookings.filter((b: any) => {
-			const bookingDate = new Date(b.created);
-			bookingDate.setHours(0, 0, 0, 0);
-			return bookingDate.getTime() === today.getTime();
+			if (!b.created) return false;
+			try {
+				const bookingDate = new Date(b.created);
+				if (isNaN(bookingDate.getTime())) return false;
+				bookingDate.setHours(0, 0, 0, 0);
+				return bookingDate.getTime() === today.getTime();
+			} catch {
+				return false;
+			}
 		});
 		
 		const upcomingBookings = bookings.filter((b: any) => {
-			const bookingDate = new Date(b.effectiveDate);
-			return bookingDate > new Date() && (b.status === 'confirmed' || b.status === 'pending');
+			if (!b.effectiveDate) return false;
+			try {
+				const bookingDate = new Date(b.effectiveDate);
+				if (isNaN(bookingDate.getTime())) return false;
+				return bookingDate > new Date() && (b.status === 'confirmed' || b.status === 'pending');
+			} catch {
+				return false;
+			}
 		});
 		
 		return {
@@ -78,37 +86,6 @@
 		$bookingsQuery.refetch();
 	}
 	
-	// Get status color
-	function getStatusColor(status: string): string {
-		switch (status) {
-			case 'confirmed':
-				return 'bg-green-50 text-green-700 border-green-200';
-			case 'pending':
-				return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-			case 'cancelled':
-				return 'bg-red-50 text-red-700 border-red-200';
-			case 'completed':
-				return 'bg-blue-50 text-blue-700 border-blue-200';
-			default:
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
-	}
-	
-	// Get status icon
-	function getStatusIcon(status: string) {
-		switch (status) {
-			case 'confirmed':
-				return CheckCircle;
-			case 'pending':
-				return AlertCircle;
-			case 'cancelled':
-				return XCircle;
-			case 'completed':
-				return CheckCircle;
-			default:
-				return AlertCircle;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -249,7 +226,7 @@
 		<div class="divide-y" style="border-color: var(--border-primary);">
 			{#if bookings.length > 0}
 				{#each bookings as booking}
-					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" onclick={() => goto(`/bookings/${booking.id}`)}>
+					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}>
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
 							<div class="flex items-start justify-between mb-2">
@@ -258,7 +235,7 @@
 										{booking.customerName}
 									</h4>
 									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
-										{booking.tourName || 'Unknown Tour'}
+										{booking.tour || booking.tourName || 'Unknown Tour'}
 									</p>
 								</div>
 								<span class="ml-2 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
@@ -293,7 +270,7 @@
 										</h4>
 										<div class="flex items-center gap-2 mt-1">
 											<span class="text-xs" style="color: var(--text-secondary);">
-												{booking.tourName || 'Unknown Tour'}
+												{booking.tour || booking.tourName || 'Unknown Tour'}
 											</span>
 											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
 											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">

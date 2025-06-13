@@ -87,9 +87,9 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			...parentData,
 			tour: {
 				...tour,
-				price: parseFloat(tour.price),
-				created: tour.createdAt.toISOString(),
-				updated: tour.updatedAt.toISOString()
+				price: tour.price ? parseFloat(tour.price) : 0,
+				created: tour.createdAt?.toISOString() || new Date().toISOString(),
+				updated: tour.updatedAt?.toISOString() || new Date().toISOString()
 			},
 			tourStats: {
 				totalBookings: Number(tourStats?.totalBookings || 0),
@@ -107,16 +107,16 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			},
 			upcomingSlots: upcomingSlots.map(slot => ({
 				...slot,
-				startTime: slot.startTime.toISOString(),
-				endTime: slot.endTime.toISOString(),
-				createdAt: slot.createdAt.toISOString(),
-				updatedAt: slot.updatedAt.toISOString(),
-				recurringEnd: slot.recurringEnd ? slot.recurringEnd.toISOString() : null
+				startTime: slot.startTime?.toISOString() || new Date().toISOString(),
+				endTime: slot.endTime?.toISOString() || new Date().toISOString(),
+				createdAt: slot.createdAt?.toISOString() || new Date().toISOString(),
+				updatedAt: slot.updatedAt?.toISOString() || new Date().toISOString(),
+				recurringEnd: slot.recurringEnd?.toISOString() || null
 			})),
 			recentBookings: recentBookings.map(booking => ({
 				...booking,
-				totalAmount: parseFloat(booking.totalAmount),
-				createdAt: booking.createdAt.toISOString()
+				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+				createdAt: booking.createdAt?.toISOString() || new Date().toISOString()
 			}))
 		};
 	} catch (err) {
