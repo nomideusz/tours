@@ -39,7 +39,7 @@
 	let statusUpdating = $state<string | null>(null);
 
 	// Use data directly from server with proper type casting
-	let tours = $state((data.tours as unknown as Tour[]) || []);
+	let tours = $derived((data.tours as unknown as Tour[]) || []);
 	
 	// Use stats from server (with fallbacks for type safety)
 	let stats = $derived(data.stats || {
@@ -118,10 +118,8 @@
 			});
 
 			if (response.ok) {
-				// Update local state instead of reloading
-				tours = tours.map(t => 
-					t.id === tour.id ? { ...t, status: newStatus } : t
-				);
+				// Reload the page to refresh data
+				window.location.reload();
 			} else {
 				console.error('Failed to update tour status:', response.status, response.statusText);
 			}
