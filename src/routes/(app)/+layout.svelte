@@ -15,6 +15,8 @@
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
+
 
 	// Icons
 	import Home from 'lucide-svelte/icons/home';
@@ -282,4 +284,5 @@
 		<AppFooter />
 	</div>
 	</div>
+	<SvelteQueryDevtools />
 </QueryClientProvider>

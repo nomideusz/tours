@@ -46,7 +46,8 @@
 		queryFn: queryFunctions.fetchToursStats,
 		staleTime: 2 * 60 * 1000, // 2 minutes
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		initialData: data.stats // Use server data as initial data
+		// Remove initialData to test pure API-only approach
+		// initialData: data.stats 
 	});
 
 	const userToursQuery = createQuery({
@@ -54,7 +55,8 @@
 		queryFn: queryFunctions.fetchUserTours,
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		initialData: data.tours // Use server data as initial data
+		// Remove initialData to test pure API-only approach
+		// initialData: data.tours 
 	});
 
 	let copiedQRCode = $state<string | null>(null);
