@@ -20,9 +20,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 		// Format tours data to match expected client format
 		const formattedTours = userTours.map(tour => ({
 			...tour,
-			price: parseFloat(tour.price),
-			created: tour.createdAt.toISOString(),
-			updated: tour.updatedAt.toISOString()
+			price: tour.price ? parseFloat(tour.price) : 0,
+			created: tour.createdAt?.toISOString() || new Date().toISOString(),
+			updated: tour.updatedAt?.toISOString() || new Date().toISOString()
 		}));
 		
 		return json(formattedTours, {

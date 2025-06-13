@@ -31,8 +31,13 @@ export async function getSharedStats(userId: string): Promise<SharedStats> {
 		// Tours created this month
 		const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 		const monthlyTours = userTours.filter(tour => {
-			const tourDate = new Date(tour.createdAt);
-			return tourDate >= monthStart;
+			if (!tour.createdAt) return false;
+			try {
+				const tourDate = new Date(tour.createdAt);
+				return !isNaN(tourDate.getTime()) && tourDate >= monthStart;
+			} catch {
+				return false;
+			}
 		}).length;
 		
 		return {
@@ -98,14 +103,24 @@ export async function getDashboardSpecificStats(userId: string, sharedStats: Sha
 		const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 		
 		const todayBookings = recentBookingsData.filter(b => {
-			const created = new Date(b.createdAt);
-			return created >= todayStart;
+			if (!b.createdAt) return false;
+			try {
+				const created = new Date(b.createdAt);
+				return !isNaN(created.getTime()) && created >= todayStart;
+			} catch {
+				return false;
+			}
 		}).length;
 		
 		const weeklyRevenue = recentBookingsData
 			.filter(b => {
-				const created = new Date(b.createdAt);
-				return created >= weekAgo && b.status === 'confirmed' && b.paymentStatus === 'paid';
+				if (!b.createdAt) return false;
+				try {
+					const created = new Date(b.createdAt);
+					return !isNaN(created.getTime()) && created >= weekAgo && b.status === 'confirmed' && b.paymentStatus === 'paid';
+				} catch {
+					return false;
+				}
 			})
 			.reduce((sum, b) => {
 				const amount = typeof b.totalAmount === 'string' ? parseFloat(b.totalAmount) : (b.totalAmount || 0);
@@ -198,7 +213,14 @@ export async function getToursSpecificStats(userId: string, sharedStats: SharedS
 		let totalParticipants = 0;
 		
 		for (const booking of recentBookingsData) {
-			const bookingDate = new Date(booking.createdAt);
+			if (!booking.createdAt) continue;
+			let bookingDate: Date;
+			try {
+				bookingDate = new Date(booking.createdAt);
+				if (isNaN(bookingDate.getTime())) continue;
+			} catch {
+				continue;
+			}
 			const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0);
 			
 			if (booking.status === 'confirmed' && booking.paymentStatus === 'paid') {

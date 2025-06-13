@@ -84,8 +84,8 @@ export const POST: RequestHandler = async ({ request }) => {
       attendanceStatus: data.attendanceStatus || undefined,
       checkedInAt: data.checkedInAt?.toISOString(),
       checkedInBy: data.checkedInBy || undefined,
-      created: data.createdAt.toISOString(),
-      updated: data.updatedAt.toISOString(),
+      created: data.createdAt?.toISOString() || new Date().toISOString(),
+      updated: data.updatedAt?.toISOString() || new Date().toISOString(),
     };
 
     const tour = {
@@ -105,8 +105,8 @@ export const POST: RequestHandler = async ({ request }) => {
     const timeSlot = {
       id: data.timeSlotId,
       tour: data.tourId,
-      startTime: data.timeSlotStartTime.toISOString(),
-      endTime: data.timeSlotEndTime.toISOString(),
+      startTime: data.timeSlotStartTime?.toISOString() || new Date().toISOString(),
+      endTime: data.timeSlotEndTime?.toISOString() || new Date().toISOString(),
       availableSpots: data.timeSlotAvailableSpots,
       bookedSpots: data.timeSlotBookedSpots,
       status: data.timeSlotStatus,
