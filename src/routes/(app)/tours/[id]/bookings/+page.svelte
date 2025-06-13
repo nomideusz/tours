@@ -4,7 +4,6 @@
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-	import type { PageData } from './$types.js';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -19,7 +18,6 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Euro from 'lucide-svelte/icons/euro';
 	import Users from 'lucide-svelte/icons/users';
-	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -27,31 +25,25 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import XCircle from 'lucide-svelte/icons/x-circle';
 	import QrCode from 'lucide-svelte/icons/qr-code';
-	
-	let { data }: { data: PageData } = $props();
 	
 	// Get tour ID from URL
 	const tourId = $derived($page.params.id);
 	
-	// TanStack Query for tour-specific bookings
-	const tourBookingsQuery = createQuery({
-		queryKey: ['tourBookings', tourId],
-		queryFn: async () => {
-			const response = await fetch(`/api/tours/${tourId}/bookings`);
-			if (!response.ok) throw new Error('Failed to fetch tour bookings');
-			return response.json();
-		},
+	// TanStack Query using the same working endpoint as dashboard
+	const allBookingsQuery = createQuery({
+		queryKey: queryKeys.recentBookings(100),
+		queryFn: () => queryFunctions.fetchRecentBookings(100),
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});
 	
-	// Derive data from query
-	let bookings = $derived($tourBookingsQuery.data?.bookings || []);
-	let tour = $derived($tourBookingsQuery.data?.tour || data.tour);
-	let isLoading = $derived($tourBookingsQuery.isLoading);
-	let isError = $derived($tourBookingsQuery.isError);
+	// Derive data from query and filter by tour ID
+	let allBookings = $derived($allBookingsQuery.data || []);
+	let bookings = $derived(allBookings.filter((b: any) => b.tourId === tourId || b.tour?.id === tourId));
+	let tour = $derived(bookings.length > 0 ? { name: bookings[0].tour || bookings[0].tourName } : null);
+	let isLoading = $derived($allBookingsQuery.isLoading);
+	let isError = $derived($allBookingsQuery.isError);
 	
 	// Calculate stats from bookings
 	let stats = $derived(() => {
@@ -84,7 +76,7 @@
 	
 	// Refresh function
 	function handleRefresh() {
-		$tourBookingsQuery.refetch();
+		$allBookingsQuery.refetch();
 	}
 	
 	// Get status color
@@ -251,7 +243,7 @@
 		<div class="divide-y" style="border-color: var(--border-primary);">
 			{#if bookings.length > 0}
 				{#each bookings as booking}
-					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" onclick={() => goto(`/bookings/${booking.id}`)}>
+					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}>
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
 							<div class="flex items-start justify-between mb-2">
