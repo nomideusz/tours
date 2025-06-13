@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { PageData } from './$types.js';
 	import { goto } from '$app/navigation';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
@@ -22,6 +21,10 @@
 		getUpcomingSlots
 	} from '$lib/utils/time-slot-client.js';
 	import { browser } from '$app/environment';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -46,12 +49,24 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Download from 'lucide-svelte/icons/download';
 
-	let { data }: { data: PageData } = $props();
+	// Get data from load function
+	let { data } = $props();
+	let tourId = $derived(data.tourId);
+	
+	// TanStack Query for tour details
+	let tourQuery = $derived(createQuery({
+		queryKey: queryKeys.tourDetails(tourId),
+		queryFn: () => queryFunctions.fetchTourDetails(tourId),
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	}));
 
-	let tour = $derived(data.tour);
-	let tourStats = $derived(data.tourStats);
-	let upcomingSlots = $derived(data.upcomingSlots || []);
-	let recentBookings = $derived(data.recentBookings || []);
+	let tour = $derived($tourQuery.data?.tour || null);
+	let tourStats = $derived($tourQuery.data?.tourStats || {});
+	let upcomingSlots = $derived($tourQuery.data?.upcomingSlots || []);
+	let recentBookings = $derived($tourQuery.data?.recentBookings || []);
+	let isLoading = $derived($tourQuery.isLoading);
+	let isError = $derived($tourQuery.isError);
 	
 	// State
 	let copiedQRCode = $state(false);
@@ -145,13 +160,31 @@
 </script>
 
 <svelte:head>
-	<title>{tour.name} - Tour Details | Zaur</title>
-	<meta name="description" content="Manage your {tour.name} tour - view statistics, bookings, and schedule." />
+	<title>{tour?.name || 'Tour'} - Tour Details | Zaur</title>
+	<meta name="description" content="Manage your {tour?.name || 'tour'} - view statistics, bookings, and schedule." />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<!-- Compact Mobile Header + Desktop Header -->
-	<div class="mb-6 sm:mb-8">
+	{#if isLoading}
+		<div class="p-8 text-center">
+			<div class="form-spinner mb-4"></div>
+			<p class="text-sm" style="color: var(--text-secondary);">Loading tour details...</p>
+		</div>
+	{:else if isError || !tour}
+		<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+			<div class="flex items-center justify-between">
+				<div>
+					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load tour</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please try refreshing the page.</p>
+				</div>
+				<button onclick={() => goto('/tours')} class="button-secondary button--small">
+					Back to Tours
+				</button>
+			</div>
+		</div>
+	{:else}
+		<!-- Compact Mobile Header + Desktop Header -->
+		<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title={tour.name}
@@ -586,4 +619,5 @@
 			</div>
 		</div>
 	{/if}
+{/if}
 </div>

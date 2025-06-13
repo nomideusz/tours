@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+
 	import { goto } from '$app/navigation';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatDate } from '$lib/utils/date-helpers.js';
@@ -27,8 +27,9 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	
-	// Get tour ID from URL
-	const tourId = $derived($page.params.id);
+	// Get data from load function
+	let { data } = $props();
+	let tourId = $derived(data.tourId);
 	
 	// TanStack Query using the same working endpoint as dashboard
 	const allBookingsQuery = createQuery({

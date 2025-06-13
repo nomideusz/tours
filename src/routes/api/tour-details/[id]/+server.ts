@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { getTourBookingData } from '$lib/utils/booking-helpers.js';
-import { getUpcomingTimeSlots, getTimeSlotStats } from '$lib/utils/tour-helpers-server.js';
+import { db } from '$lib/db/connection.js';
+import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { eq, and, gte, desc, count, sql } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals, params }) => {
 	try {
@@ -10,61 +11,113 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 		}
 
 		if (!params.id) {
-			return json({ error: 'Tour ID is required' }, { status: 400 });
+			return json({ error: 'Tour ID required' }, { status: 400 });
 		}
 
-		// Use the safe booking-helpers function that handles dates properly
-		const tourData = await getTourBookingData(locals.user.id, params.id);
-		
-		// Get upcoming slots with safe date handling
-		const upcomingSlots = await getUpcomingTimeSlots(params.id, 10);
-		
-		// Get time slot stats
-		const timeSlotStats = await getTimeSlotStats(params.id);
-		
-		// Safely format the response
-		const response = {
-			tour: tourData.tour,
-			stats: {
-				...tourData.stats,
-				totalSlots: timeSlotStats.total,
-				upcomingSlots: timeSlotStats.upcoming,
-				qrScans: tourData.tour.qrScans || 0,
-				qrConversions: tourData.tour.qrConversions || 0,
-				// Add additional stats that might be expected
-				todayBookings: tourData.stats.thisWeekBookings || 0,
-				weekBookings: tourData.stats.thisWeekBookings || 0
-			},
-			upcomingSlots: upcomingSlots.map(slot => {
-				// Safe date handling for slots
-				const startDate = slot.startTime ? new Date(slot.startTime) : null;
-				const endDate = slot.endTime ? new Date(slot.endTime) : null;
-				
-				return {
-					...slot,
-					startTime: startDate && !isNaN(startDate.getTime()) 
-						? startDate.toISOString() 
-						: null,
-					endTime: endDate && !isNaN(endDate.getTime()) 
-						? endDate.toISOString() 
-						: null
-				};
-			}),
-			recentBookings: tourData.bookings.slice(0, 10)
-		};
-		
-		return json(response, {
-			headers: {
-				'Cache-Control': 'max-age=60, stale-while-revalidate=30' // 1 min cache
-			}
-		});
-	} catch (error) {
-		console.error('Error fetching tour details:', error);
-		
-		if (error instanceof Error && error.message.includes('not found')) {
+		const tourId = params.id;
+		const userId = locals.user.id;
+
+		// Step 1: Get tour data (simple query, no JOINs)
+		const [tour] = await db
+			.select()
+			.from(tours)
+			.where(and(
+				eq(tours.id, tourId),
+				eq(tours.userId, userId)
+			))
+			.limit(1);
+
+		if (!tour) {
 			return json({ error: 'Tour not found' }, { status: 404 });
 		}
-		
-		return json({ error: 'Internal server error' }, { status: 500 });
+
+		// Step 2: Get upcoming time slots (simple query)
+		const now = new Date();
+		const upcomingSlots = await db
+			.select({
+				id: timeSlots.id,
+				startTime: timeSlots.startTime,
+				endTime: timeSlots.endTime,
+				bookedSpots: timeSlots.bookedSpots,
+				status: timeSlots.status
+			})
+			.from(timeSlots)
+			.where(and(
+				eq(timeSlots.tourId, tourId),
+				gte(timeSlots.startTime, now)
+			))
+			.orderBy(timeSlots.startTime)
+			.limit(10);
+
+		// Step 3: Get recent bookings (simple query)
+		const recentBookings = await db
+			.select({
+				id: bookings.id,
+				customerName: bookings.customerName,
+				customerEmail: bookings.customerEmail,
+				participants: bookings.participants,
+				totalAmount: bookings.totalAmount,
+				status: bookings.status,
+				createdAt: bookings.createdAt
+			})
+			.from(bookings)
+			.where(eq(bookings.tourId, tourId))
+			.orderBy(desc(bookings.createdAt))
+			.limit(10);
+
+		// Step 4: Calculate stats (simple aggregations)
+		const [tourStats] = await db
+			.select({
+				totalBookings: count(bookings.id),
+				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`,
+				confirmedBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'confirmed' THEN 1 ELSE 0 END), 0)`,
+				pendingBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'pending' THEN 1 ELSE 0 END), 0)`
+			})
+			.from(bookings)
+			.where(eq(bookings.tourId, tourId));
+
+		// Step 5: Process data safely
+		const processedTour = {
+			...tour,
+			price: tour.price ? parseFloat(tour.price) : 0,
+			created: tour.createdAt ? tour.createdAt.toISOString() : new Date().toISOString(),
+			updated: tour.updatedAt ? tour.updatedAt.toISOString() : new Date().toISOString()
+		};
+
+		const processedUpcomingSlots = upcomingSlots.map(slot => ({
+			...slot,
+			startTime: slot.startTime ? slot.startTime.toISOString() : new Date().toISOString(),
+			endTime: slot.endTime ? slot.endTime.toISOString() : new Date().toISOString()
+		}));
+
+		const processedRecentBookings = recentBookings.map(booking => ({
+			...booking,
+			totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+			createdAt: booking.createdAt ? booking.createdAt.toISOString() : new Date().toISOString()
+		}));
+
+		const processedTourStats = {
+			totalBookings: Number(tourStats?.totalBookings || 0),
+			totalRevenue: Number(tourStats?.totalRevenue || 0),
+			totalParticipants: Number(tourStats?.totalParticipants || 0),
+			confirmedBookings: Number(tourStats?.confirmedBookings || 0),
+			pendingBookings: Number(tourStats?.pendingBookings || 0),
+			totalSlots: upcomingSlots.length,
+			upcomingSlots: upcomingSlots.length,
+			qrScans: tour.qrScans || 0,
+			qrConversions: tour.qrConversions || 0
+		};
+
+		return json({
+			tour: processedTour,
+			tourStats: processedTourStats,
+			upcomingSlots: processedUpcomingSlots,
+			recentBookings: processedRecentBookings
+		});
+
+	} catch (error) {
+		console.error('Tour details API error:', error);
+		return json({ error: 'Server error' }, { status: 500 });
 	}
 }; 
