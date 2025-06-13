@@ -166,12 +166,6 @@
 			secondaryInfo={formatEuro(tour.price)}
 			quickActions={[
 				{
-					label: 'Bookings',
-					icon: Users,
-					onclick: () => goto(`/tours/${tour.id}/bookings`),
-					variant: 'primary'
-				},
-				{
 					label: 'Edit',
 					icon: Edit,
 					onclick: () => goto(`/tours/${tour.id}/edit`),
@@ -181,7 +175,7 @@
 					label: 'Schedule',
 					icon: Calendar,
 					onclick: () => goto(`/tours/${tour.id}/schedule`),
-					variant: 'secondary'
+					variant: 'primary'
 				},
 				{
 					label: 'Share',
@@ -230,15 +224,11 @@
 					Back to Tours
 				</button>
 				<div class="hidden sm:flex gap-3">
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-primary button--gap">
-						<Users class="h-4 w-4" />
-						View Bookings
-					</button>
 					<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--gap">
 						<Edit class="h-4 w-4" />
 						Edit Tour
 					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--gap">
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--gap">
 						<Calendar class="h-4 w-4" />
 						Manage Schedule
 					</button>
@@ -461,7 +451,7 @@
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="text-xs" style="color: var(--color-primary-600);">
+					<button onclick={() => goto(`/bookings?tour=${tour.id}`)} class="text-xs" style="color: var(--color-primary-600);">
 						View All
 					</button>
 				</div>
