@@ -88,8 +88,8 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 			tour: {
 				...tour,
 				price: tour.price ? parseFloat(tour.price) : 0,
-				created: tour.createdAt?.toISOString() || new Date().toISOString(),
-				updated: tour.updatedAt?.toISOString() || new Date().toISOString()
+				created: tour.createdAt ? (new Date(tour.createdAt).toISOString()) : new Date().toISOString(),
+				updated: tour.updatedAt ? (new Date(tour.updatedAt).toISOString()) : new Date().toISOString()
 			},
 			tourStats: {
 				totalBookings: Number(tourStats?.totalBookings || 0),
@@ -105,19 +105,31 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 				qrScans: tour.qrScans || 0,
 				qrConversions: tour.qrConversions || 0
 			},
-			upcomingSlots: upcomingSlots.map(slot => ({
-				...slot,
-				startTime: slot.startTime?.toISOString() || new Date().toISOString(),
-				endTime: slot.endTime?.toISOString() || new Date().toISOString(),
-				createdAt: slot.createdAt?.toISOString() || new Date().toISOString(),
-				updatedAt: slot.updatedAt?.toISOString() || new Date().toISOString(),
-				recurringEnd: slot.recurringEnd?.toISOString() || null
-			})),
-			recentBookings: recentBookings.map(booking => ({
-				...booking,
-				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
-				createdAt: booking.createdAt?.toISOString() || new Date().toISOString()
-			}))
+			upcomingSlots: upcomingSlots.map(slot => {
+				const startDate = slot.startTime ? new Date(slot.startTime) : new Date();
+				const endDate = slot.endTime ? new Date(slot.endTime) : new Date();
+				const createdDate = slot.createdAt ? new Date(slot.createdAt) : new Date();
+				const updatedDate = slot.updatedAt ? new Date(slot.updatedAt) : new Date();
+				const recurringEndDate = slot.recurringEnd ? new Date(slot.recurringEnd) : null;
+				
+				return {
+					...slot,
+					startTime: !isNaN(startDate.getTime()) ? startDate.toISOString() : new Date().toISOString(),
+					endTime: !isNaN(endDate.getTime()) ? endDate.toISOString() : new Date().toISOString(),
+					createdAt: !isNaN(createdDate.getTime()) ? createdDate.toISOString() : new Date().toISOString(),
+					updatedAt: !isNaN(updatedDate.getTime()) ? updatedDate.toISOString() : new Date().toISOString(),
+					recurringEnd: recurringEndDate && !isNaN(recurringEndDate.getTime()) ? recurringEndDate.toISOString() : null
+				};
+			}),
+			recentBookings: recentBookings.map(booking => {
+				const createdDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
+				
+				return {
+					...booking,
+					totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
+					createdAt: !isNaN(createdDate.getTime()) ? createdDate.toISOString() : new Date().toISOString()
+				};
+			})
 		};
 	} catch (err) {
 		console.error('Error loading tour details page:', err);
