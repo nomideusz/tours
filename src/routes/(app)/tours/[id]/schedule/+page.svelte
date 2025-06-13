@@ -138,33 +138,6 @@
 		}
 	}
 
-	function formatTimeRange(startTime: string | undefined, endTime: string | undefined): string {
-		if (!startTime || !endTime) return 'No time';
-		try {
-			const start = new Date(startTime);
-			const end = new Date(endTime);
-			
-			if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Invalid time';
-			
-			const startStr = start.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
-			
-			const endStr = end.toLocaleTimeString('en-US', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
-			
-			return `${startStr} - ${endStr}`;
-		} catch (error) {
-			console.warn('Error formatting time range:', startTime, endTime);
-			return 'Invalid time';
-		}
-	}
-
 	function getAvailabilityText(slot: TimeSlot): string {
 		const available = slot.availableSpots - slot.bookedSpots;
 		if (available === 0) {
