@@ -6,28 +6,16 @@ import type { SharedStats, DashboardStats, ToursStats } from '$lib/utils/shared-
 
 // Query keys for consistent caching
 export const queryKeys = {
-	sharedStats: ['sharedStats'] as const,
 	dashboardStats: ['dashboardStats'] as const,
 	toursStats: ['toursStats'] as const,
 	recentBookings: (limit?: number) => ['recentBookings', limit] as const,
 	userTours: ['userTours'] as const,
 } as const;
 
-// Query functions that match our server-side utilities
+// Query functions that call our API endpoints
 export const queryFunctions = {
-	// Fetch shared stats (used across multiple pages)
-	async fetchSharedStats(): Promise<SharedStats> {
-		if (!browser) throw new Error('Client-side only');
-		
-		const response = await fetch('/api/shared-stats');
-		if (!response.ok) {
-			throw new Error(`Failed to fetch shared stats: ${response.status} ${response.statusText}`);
-		}
-		return response.json();
-	},
-
 	// Fetch dashboard-specific stats
-	async fetchDashboardStats(): Promise<DashboardStats> {
+	async fetchDashboardStats() {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/dashboard-stats');
@@ -38,7 +26,7 @@ export const queryFunctions = {
 	},
 
 	// Fetch tours-specific stats
-	async fetchToursStats(): Promise<ToursStats> {
+	async fetchToursStats() {
 		if (!browser) throw new Error('Client-side only');
 		
 		const response = await fetch('/api/tours-stats');

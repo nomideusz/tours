@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from './schema/index.js';
+import * as schema from './schema/drizzle.js';
 import { config } from 'dotenv';
 
 // Load environment variables from .env file
@@ -34,4 +34,4 @@ export const db = drizzle(client, { schema });
 export { client };
 
 // Export schema for type safety
-export * from './schema/index.js'; 
+export * from './schema/drizzle.js'; 

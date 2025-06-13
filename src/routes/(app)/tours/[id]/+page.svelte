@@ -13,7 +13,7 @@
 		getTourImageUrl,
 		calculateConversionRate,
 		toggleTourStatus
-	} from '$lib/utils/tour-client.js';
+	} from '$lib/utils/tour-helpers-client.js';
 	import { 
 		formatSlotDateTime,
 		getSlotAvailabilityText,

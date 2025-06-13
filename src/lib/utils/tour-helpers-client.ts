@@ -1,16 +1,15 @@
 /**
  * Client-side tour utilities
  * 
- * This file contains client-side utilities for tour operations including:
- * - Formatting functions (duration, currency, dates)
- * - UI helper functions (status colors, display logic)
- * - Image URL generation
- * - Calculation utilities (conversion rates, capacity)
- * 
- * For server-side utilities (database, validation), see tour-server.ts
+ * This file contains all client-safe tour utilities that can be used in browser code.
+ * No database imports or server-side dependencies.
  */
 
 import type { Tour } from '$lib/types.js';
+
+// ============================================
+// FORMATTING FUNCTIONS
+// ============================================
 
 /**
  * Format duration in minutes to human-readable format
@@ -23,6 +22,19 @@ export function formatDuration(minutes: number): string {
 	}
 	return `${mins}m`;
 }
+
+/**
+ * Format tour price with currency
+ */
+export function formatTourPrice(price: number | string): string {
+	const num = typeof price === 'string' ? parseFloat(price) : price;
+	if (isNaN(num)) return '€0.00';
+	return `€${num.toFixed(2)}`;
+}
+
+// ============================================
+// UI HELPER FUNCTIONS
+// ============================================
 
 /**
  * Get status color classes for tour status badges
@@ -88,8 +100,12 @@ export function getSlotStatusColor(status: string): string {
 	}
 }
 
+// ============================================
+// IMAGE UTILITIES
+// ============================================
+
 /**
- * Generate image URL for tour images (handles both old PocketBase and new MinIO storage)
+ * Generate image URL for tour images (uses MinIO storage via API)
  */
 export function getTourImageUrl(
 	tourId: string, 
@@ -101,11 +117,11 @@ export function getTourImageUrl(
 	}
 	
 	try {
-		// Handle old PocketBase URLs
+		// Handle old PocketBase URLs for backward compatibility
 		if (imagePath.startsWith('http')) {
-			return imagePath; // Return old URL as-is for backward compatibility
+			return imagePath;
 		}
-		// Handle new MinIO storage via API
+		// MinIO storage via API endpoint
 		return `/api/images/${encodeURIComponent(tourId)}/${encodeURIComponent(imagePath)}?size=${size}`;
 	} catch (error) {
 		console.warn('Error generating image URL:', error);
@@ -121,12 +137,34 @@ export function getImageUrl(tour: Tour | null | undefined, imagePath: string | n
 	return getTourImageUrl(tour.id, imagePath);
 }
 
+// ============================================
+// CALCULATION UTILITIES
+// ============================================
+
 /**
  * Calculate conversion rate percentage
  */
 export function calculateConversionRate(scans: number, conversions: number): number {
 	return scans > 0 ? (conversions / scans * 100) : 0;
 }
+
+/**
+ * Get tour capacity utilization percentage
+ */
+export function getCapacityUtilization(bookedSpots: number, totalCapacity: number): number {
+	return totalCapacity > 0 ? Math.min((bookedSpots / totalCapacity) * 100, 100) : 0;
+}
+
+/**
+ * Check if a tour is bookable
+ */
+export function isTourBookable(tour: Tour, hasAvailableSlots: boolean = true): boolean {
+	return tour.status === 'active' && hasAvailableSlots;
+}
+
+// ============================================
+// CLIENT-SIDE API FUNCTIONS
+// ============================================
 
 /**
  * Toggle tour status between 'active' and 'draft'
@@ -156,28 +194,4 @@ export async function toggleTourStatus(tour: { id: string; status: 'active' | 'd
 		console.error('Failed to update tour status:', error);
 		return null;
 	}
-}
-
-/**
- * Get tour capacity utilization percentage for a time slot
- */
-export function getCapacityUtilization(bookedSpots: number, totalCapacity: number): number {
-	return totalCapacity > 0 ? Math.min((bookedSpots / totalCapacity) * 100, 100) : 0;
-}
-
-/**
- * Check if a tour is bookable (active status and has available slots)
- */
-export function isTourBookable(tour: Tour, hasAvailableSlots: boolean = true): boolean {
-	return tour.status === 'active' && hasAvailableSlots;
-}
-
-/**
- * Format tour price with currency
- */
-export function formatTourPrice(price: number | string): string {
-	// Re-export formatEuro for convenience
-	const num = typeof price === 'string' ? parseFloat(price) : price;
-	if (isNaN(num)) return '€0.00';
-	return `€${num.toFixed(2)}`;
 } 

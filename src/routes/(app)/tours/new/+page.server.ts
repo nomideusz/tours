@@ -4,7 +4,7 @@ import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { createId } from '@paralleldrive/cuid2';
-import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } from '$lib/utils/minio-image-storage.js';
+import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } from '$lib/utils/image-storage.js';
 import { generateTourQRCode } from '$lib/utils/qr-generation.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {

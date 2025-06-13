@@ -8,7 +8,7 @@
 		getTourStatusDot,
 		getImageUrl,
 		toggleTourStatus
-	} from '$lib/utils/tour-client.js';
+	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';

@@ -12,8 +12,8 @@
 
 	// TanStack Query for shared stats
 	const sharedStatsQuery = createQuery({
-		queryKey: queryKeys.sharedStats,
-		queryFn: queryFunctions.fetchSharedStats,
+		queryKey: queryKeys.dashboardStats,
+		queryFn: queryFunctions.fetchDashboardStats,
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		gcTime: 10 * 60 * 1000,   // 10 minutes
 	});

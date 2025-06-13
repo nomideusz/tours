@@ -22,9 +22,10 @@ This document outlines the consolidated utility functions to eliminate duplicati
 - `generateBookingURL(qrCode)` - Generate booking URLs
 - `generateQRImageURL(qrCode, options)` - Generate QR code image URLs
 
-### `/lib/utils/tour-helpers.ts` (NEW)
-Consolidates tour-specific functionality:
+### `/lib/utils/tour-helpers-client.ts` (NEW)
+Client-safe tour utilities (no database imports):
 - `formatDuration(minutes)` - Format duration in human-readable format
+- `formatTourPrice(price)` - Format price with Euro currency
 - `getTourStatusColor(status)` - Tour status badge colors
 - `getTourStatusDot(status)` - Tour status indicator dots
 - `getBookingStatusColor(status)` - Booking status badge colors
@@ -34,17 +35,62 @@ Consolidates tour-specific functionality:
 - `calculateConversionRate(scans, conversions)` - Calculate QR code conversion rates
 - `getCapacityUtilization(bookedSpots, totalCapacity)` - Calculate capacity utilization
 - `isTourBookable(tour, hasAvailableSlots)` - Check if tour is bookable
+- `toggleTourStatus(tour)` - Toggle tour status via API
 
-### `/lib/utils/shared-stats.ts`
+### `/lib/utils/tour-helpers-server.ts` (NEW)
+Server-only tour utilities (requires database):
+- `loadTourWithOwnership(tourId, userId)` - Verify ownership and load tour
+- `getMaxBookedSpots(tourId)` - Get max booked spots across time slots
+- `getBookingConstraints(tourId, currentCapacity)` - Get booking constraints
+- `validateCapacityChange(newCapacity, maxBookedSpots)` - Validate capacity changes
+- `updateTimeSlotsCapacity(tourId, newCapacity)` - Update all time slots capacity
+- `getUpcomingTimeSlots(tourId, limit)` - Get upcoming time slots
+- `getTimeSlotStats(tourId)` - Get time slot statistics
+
+### `/lib/utils/tour-helpers.ts` (REFACTORED)
+Re-exports from both client and server files for backward compatibility.
+**Important**: Import directly from `-client` or `-server` files instead to avoid bundling issues.
+
+### `/lib/utils/booking-types.ts` (NEW)
+Type definitions for stats and bookings:
+- `SharedStats` - Base stats interface used across pages
+- `DashboardStats` - Dashboard-specific stats interface
+- `ToursStats` - Tours page-specific stats interface
+- `ProcessedBooking` - Processed booking data interface
+
+### `/lib/utils/stats-helpers.ts` (NEW)
+Statistics calculation functions:
 - `getSharedStats(userId)` - Common statistics across pages
 - `getDashboardSpecificStats(userId, sharedStats)` - Dashboard-specific metrics
 - `getToursSpecificStats(userId, sharedStats)` - Tours page-specific metrics
+
+### `/lib/utils/booking-helpers.ts` (NEW)
+Booking data fetching and processing:
 - `getRecentBookings(userId, limit)` - Recent bookings for dashboard
 - `getTourBookingData(userId, tourId)` - Tour-specific booking data
 - `getTourAllBookings(userId, tourId)` - All bookings for a tour
 - `getBookingDetails(userId, bookingId)` - Individual booking details
+- `formatRecentBooking(booking)` - Format booking for dashboard display
+- `createTodaysSchedule(bookings)` - Create today's schedule from bookings
+
+### `/lib/utils/shared-stats.ts` (REFACTORED)
+Now re-exports from the split modules for backward compatibility. The original 881-line file has been split into:
+- `booking-types.ts` - Type definitions
+- `stats-helpers.ts` - Stats calculation functions
+- `booking-helpers.ts` - Booking data functions
 
 ## Migration Changes
+
+### Recent Refactoring:
+1. **shared-stats.ts split**: Split 881-line file into focused modules
+   - `booking-types.ts` - Type definitions
+   - `stats-helpers.ts` - Stats calculation functions
+   - `booking-helpers.ts` - Booking data operations
+   
+2. **tour-helpers.ts split**: Separated client and server code to fix "Buffer is not defined" error
+   - `tour-helpers-client.ts` - Browser-safe utilities (no database imports)
+   - `tour-helpers-server.ts` - Server-only utilities (with database access)
+   - Prevents server-side code from being bundled for browser
 
 ### Removed Duplications:
 1. **Currency formatting conflict**: Removed USD `formatCurrency` from `date-helpers.ts` - project uses Euro formatting from `currency.ts`

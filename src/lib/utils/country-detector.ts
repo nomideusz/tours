@@ -45,7 +45,7 @@ const TIMEZONE_TO_COUNTRY: Record<string, string> = {
 /**
  * Default country if we can't detect anything else
  */
-const DEFAULT_COUNTRY = 'DE';
+const DEFAULT_COUNTRY = 'PL';
 
 /**
  * Detects the user's probable country based on browser information

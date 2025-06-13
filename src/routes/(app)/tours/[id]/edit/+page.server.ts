@@ -4,13 +4,13 @@ import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
-import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/minio-image-storage.js';
+import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/image-storage.js';
 import { 
-  loadTourWithOwnership, 
-  getBookingConstraints, 
-  validateCapacityChange, 
-  updateTimeSlotsCapacity 
-} from '$lib/server/tour-server.js';
+	loadTourWithOwnership, 
+		getBookingConstraints,
+	validateCapacityChange,
+	updateTimeSlotsCapacity
+} from '$lib/utils/tour-helpers-server.js';
 
 export const load: PageServerLoad = async ({ locals, url, params }) => {
   // Check if user is authenticated

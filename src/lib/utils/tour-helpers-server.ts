@@ -1,19 +1,14 @@
 /**
  * Server-side tour utilities
  * 
- * This file contains server-side utilities for tour operations including:
- * - Database operations (loading tours, time slots)
- * - Ownership verification and authentication
- * - Capacity and booking validation
- * - Server-side business logic
- * 
- * For client-side utilities (formatting, display logic), see tour-client.ts
+ * This file contains server-only tour utilities that require database access.
+ * These functions should only be imported in +page.server.ts, +server.ts files, or other server-side code.
  */
 
-import { error } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { tours, timeSlots } from '$lib/db/schema/index.js';
-import { eq, and, max } from 'drizzle-orm';
+import { eq, and, max, gte } from 'drizzle-orm';
+import { error } from '@sveltejs/kit';
 
 /**
  * Verify tour ownership and load tour data
@@ -80,38 +75,6 @@ export function validateCapacityChange(newCapacity: number, maxBookedSpots: numb
 }
 
 /**
- * Validate time slot capacity against tour capacity and existing bookings
- */
-export function validateSlotCapacity(
-	availableSpots: number, 
-	tourCapacity: number, 
-	currentBookedSpots: number = 0
-) {
-	if (availableSpots < currentBookedSpots) {
-		return {
-			isValid: false,
-			error: `Cannot reduce available spots to ${availableSpots}. You have ${currentBookedSpots} people already booked for this time slot.`
-		};
-	}
-
-	if (availableSpots > tourCapacity) {
-		return {
-			isValid: false,
-			error: `Available spots cannot exceed tour capacity of ${tourCapacity}`
-		};
-	}
-
-	if (availableSpots < 1) {
-		return {
-			isValid: false,
-			error: 'Available spots must be at least 1'
-		};
-	}
-
-	return { isValid: true };
-}
-
-/**
  * Update all time slots to match new tour capacity
  */
 export async function updateTimeSlotsCapacity(tourId: string, newCapacity: number) {
@@ -125,33 +88,50 @@ export async function updateTimeSlotsCapacity(tourId: string, newCapacity: numbe
 }
 
 /**
- * Load tour with time slots for schedule page
+ * Get upcoming time slots for a tour
  */
-export async function loadTourWithTimeSlots(tourId: string, userId: string) {
-	// Load tour and verify ownership
-	const tour = await loadTourWithOwnership(tourId, userId);
-
-	// Load all time slots for this tour
-	const tourTimeSlots = await db
+export async function getUpcomingTimeSlots(tourId: string, limit: number = 10) {
+	const now = new Date();
+	
+	const slots = await db
 		.select()
 		.from(timeSlots)
-		.where(eq(timeSlots.tourId, tourId))
-		.orderBy(timeSlots.startTime);
+		.where(and(
+			eq(timeSlots.tourId, tourId),
+			timeSlots.startTime ? gte(timeSlots.startTime, now) : undefined
+		))
+		.orderBy(timeSlots.startTime)
+		.limit(limit);
+	
+	return slots;
+}
 
+/**
+ * Get time slot statistics for a tour
+ */
+export async function getTimeSlotStats(tourId: string) {
+	const now = new Date();
+	
+	// Get all time slots for the tour
+	const allSlots = await db
+		.select()
+		.from(timeSlots)
+		.where(eq(timeSlots.tourId, tourId));
+	
+	// Calculate stats
+	const total = allSlots.length;
+	const upcoming = allSlots.filter(slot => slot.startTime && slot.startTime > now).length;
+	const past = allSlots.filter(slot => slot.startTime && slot.startTime <= now).length;
+	const availableSlots = allSlots.filter(slot => 
+		slot.status === 'available' && 
+		slot.startTime && 
+		slot.startTime > now
+	).length;
+	
 	return {
-		tour: {
-			...tour,
-			price: parseFloat(tour.price),
-			created: tour.createdAt.toISOString(),
-			updated: tour.updatedAt.toISOString()
-		},
-		timeSlots: tourTimeSlots.map(slot => ({
-			...slot,
-			startTime: slot.startTime.toISOString(),
-			endTime: slot.endTime.toISOString(),
-			createdAt: slot.createdAt.toISOString(),
-			updatedAt: slot.updatedAt.toISOString(),
-			recurringEnd: slot.recurringEnd?.toISOString() || null
-		}))
+		total,
+		upcoming,
+		past,
+		available: availableSlots
 	};
 } 

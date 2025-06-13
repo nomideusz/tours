@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
 import { eq, and, gte, desc, count, sql } from 'drizzle-orm';
-import { getUpcomingTimeSlots, getTimeSlotStats } from '$lib/utils/time-slot-server.js';
+import { getUpcomingTimeSlots, getTimeSlotStats } from '$lib/utils/tour-helpers-server.js';
 
 export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 	// Get parent layout data first
@@ -100,12 +100,19 @@ export const load: PageServerLoad = async ({ locals, url, params, parent }) => {
 				monthBookings: Number(tourStats?.monthBookings || 0),
 				confirmedBookings: Number(tourStats?.confirmedBookings || 0),
 				pendingBookings: Number(tourStats?.pendingBookings || 0),
-				totalSlots: timeSlotStats.totalSlots,
-				upcomingSlots: timeSlotStats.upcomingSlots,
+				totalSlots: timeSlotStats.total,
+				upcomingSlots: timeSlotStats.upcoming,
 				qrScans: tour.qrScans || 0,
 				qrConversions: tour.qrConversions || 0
 			},
-			upcomingSlots,
+			upcomingSlots: upcomingSlots.map(slot => ({
+				...slot,
+				startTime: slot.startTime.toISOString(),
+				endTime: slot.endTime.toISOString(),
+				createdAt: slot.createdAt.toISOString(),
+				updatedAt: slot.updatedAt.toISOString(),
+				recurringEnd: slot.recurringEnd ? slot.recurringEnd.toISOString() : null
+			})),
 			recentBookings: recentBookings.map(booking => ({
 				...booking,
 				totalAmount: parseFloat(booking.totalAmount),

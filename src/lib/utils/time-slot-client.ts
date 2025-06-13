@@ -16,10 +16,10 @@ import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.
 /**
  * Format time slot date and time with consistent display format
  */
-export function formatSlotDateTime(dateString: string | undefined): string {
-	if (!dateString) return 'No date';
+export function formatSlotDateTime(dateInput: string | Date | undefined): string {
+	if (!dateInput) return 'No date';
 	try {
-		const date = new Date(dateString);
+		const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
 		if (isNaN(date.getTime())) return 'Invalid date';
 		return date.toLocaleDateString('en-US', {
 			weekday: 'short',
@@ -30,7 +30,7 @@ export function formatSlotDateTime(dateString: string | undefined): string {
 			hour12: false
 		});
 	} catch (error) {
-		console.warn('Error formatting slot date:', dateString);
+		console.warn('Error formatting slot date:', dateInput);
 		return 'Invalid date';
 	}
 }

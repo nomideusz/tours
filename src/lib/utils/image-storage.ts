@@ -1,13 +1,15 @@
-import { writeFile, mkdir, unlink, access } from 'fs/promises';
-import { existsSync, constants } from 'fs';
-import path from 'path';
 import { createId } from '@paralleldrive/cuid2';
 import sharp from 'sharp';
-import { env } from '$env/dynamic/private';
+import {
+  initializeMinIOBucket,
+  isMinIOAvailable,
+  uploadToMinIO,
+  deleteFromMinIO,
+  getPresignedUrl,
+  listObjects
+} from './minio-client.js';
 
-// Configuration - allow override via environment variables
-const UPLOAD_DIR = env.UPLOAD_DIR || 'static/uploads';
-const TOURS_DIR = path.join(UPLOAD_DIR, 'tours');
+// Configuration
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
@@ -30,101 +32,23 @@ export interface ProcessedImage {
 }
 
 /**
- * Check if directory has write permissions
+ * Initialize MinIO storage
  */
-async function hasWritePermission(dir: string): Promise<boolean> {
+export async function initializeImageStorage(): Promise<void> {
   try {
-    await access(dir, constants.W_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Initialize upload directories with permission checks
- */
-export async function initializeUploadDirs(): Promise<void> {
-  try {
-    // Check if upload directory exists and is writable
-    if (!existsSync(UPLOAD_DIR)) {
-      try {
-        await mkdir(UPLOAD_DIR, { recursive: true });
-        console.log('✅ Upload directory created:', UPLOAD_DIR);
-      } catch (error) {
-        console.error('❌ Failed to create upload directory:', UPLOAD_DIR);
-        console.error('Error:', error);
-        throw new Error(`Cannot create upload directory: ${UPLOAD_DIR}. Please check permissions.`);
-      }
-    }
-
-    // Check write permissions
-    const hasWriteAccess = await hasWritePermission(UPLOAD_DIR);
-    if (!hasWriteAccess) {
-      console.error('❌ No write permission for upload directory:', UPLOAD_DIR);
-      throw new Error(`No write permission for upload directory: ${UPLOAD_DIR}. Please check file system permissions.`);
-    }
-
-    // Create tours subdirectory
-    if (!existsSync(TOURS_DIR)) {
-      try {
-        await mkdir(TOURS_DIR, { recursive: true });
-        console.log('✅ Tours directory created:', TOURS_DIR);
-      } catch (error) {
-        console.error('❌ Failed to create tours directory:', TOURS_DIR);
-        throw new Error(`Cannot create tours directory: ${TOURS_DIR}. Please check permissions.`);
-      }
-    }
-
-    console.log('✅ Upload directories initialized successfully');
+    await initializeMinIOBucket();
+    console.log('✅ MinIO image storage initialized successfully');
   } catch (error) {
-    console.error('❌ Failed to initialize upload directories:', error);
-    
-    // In production, provide helpful error message
-    if (process.env.NODE_ENV === 'production') {
-      console.error(`
-🚨 PRODUCTION DEPLOYMENT ERROR:
-The application cannot write to the file system for image uploads.
-
-Solutions:
-1. Set UPLOAD_DIR environment variable to a writable directory
-2. Ensure the container/server has write permissions to the upload directory
-3. Consider using cloud storage (AWS S3, Google Cloud Storage) for production
-4. Mount a volume with write permissions for uploads
-
-Current upload directory: ${UPLOAD_DIR}
-Current working directory: ${process.cwd()}
-`);
-    }
-    
+    console.error('❌ Failed to initialize MinIO image storage:', error);
     throw error;
   }
 }
 
 /**
- * Create tour-specific directory with permission checks
+ * Check if MinIO storage is available
  */
-async function ensureTourDirectory(tourId: string): Promise<string> {
-  const tourDir = path.join(TOURS_DIR, tourId);
-  
-  if (!existsSync(tourDir)) {
-    try {
-      await mkdir(tourDir, { recursive: true });
-      console.log('✅ Tour directory created:', tourDir);
-    } catch (error) {
-      console.error('❌ Failed to create tour directory:', tourDir);
-      console.error('Error:', error);
-      throw new Error(`Cannot create tour directory: ${tourDir}. Please check permissions.`);
-    }
-  }
-
-  // Verify write permissions
-  const hasWriteAccess = await hasWritePermission(tourDir);
-  if (!hasWriteAccess) {
-    throw new Error(`No write permission for tour directory: ${tourDir}. Please check file system permissions.`);
-  }
-
-  return tourDir;
+export async function isImageStorageAvailable(): Promise<boolean> {
+  return await isMinIOAvailable();
 }
 
 /**
@@ -150,13 +74,25 @@ export function validateImageFile(file: File): { isValid: boolean; error?: strin
  * Generate unique filename while preserving extension
  */
 export function generateImageFilename(originalName: string): string {
-  const extension = path.extname(originalName).toLowerCase();
+  const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg';
   const id = createId();
-  return `${id}${extension}`;
+  return `${id}.${extension}`;
 }
 
 /**
- * Process and save image with multiple sizes
+ * Get object name for MinIO storage
+ */
+function getObjectName(tourId: string, filename: string, size?: string): string {
+  if (size && size !== 'original') {
+    const extension = filename.split('.').pop();
+    const nameWithoutExt = filename.replace(`.${extension}`, '');
+    return `tours/${tourId}/${size}_${nameWithoutExt}.${extension}`;
+  }
+  return `tours/${tourId}/${filename}`;
+}
+
+/**
+ * Process and save image with multiple sizes to MinIO
  */
 export async function processAndSaveImage(
   file: File, 
@@ -171,15 +107,6 @@ export async function processAndSaveImage(
   // Generate filename
   const filename = generateImageFilename(file.name);
   
-  // Ensure tour directory exists and is writable
-  let tourDir: string;
-  try {
-    tourDir = await ensureTourDirectory(tourId);
-  } catch (error) {
-    console.error('Image processing failed:', error);
-    throw error;
-  }
-
   // Convert File to Buffer
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -199,45 +126,51 @@ export async function processAndSaveImage(
   };
 
   try {
-    // Save original
-    const originalPath = path.join(tourDir, sizes.original);
-    await writeFile(originalPath, buffer);
-    console.log(`✅ Saved original: ${sizes.original}`);
+    // Upload original
+    const originalObjectName = getObjectName(tourId, sizes.original);
+    await uploadToMinIO(buffer, originalObjectName, file.type, buffer.length);
+    console.log(`✅ Uploaded original: ${sizes.original}`);
 
-    // Generate and save thumbnail
-    const thumbnailPath = path.join(tourDir, sizes.thumbnail);
-    await image
+    // Generate and upload thumbnail
+    const thumbnailBuffer = await image
       .resize(IMAGE_SIZES.thumbnail.width, IMAGE_SIZES.thumbnail.height, {
         fit: 'cover',
         position: 'center'
       })
       .jpeg({ quality: 80 })
-      .toFile(thumbnailPath);
-    console.log(`✅ Saved thumbnail: ${sizes.thumbnail}`);
+      .toBuffer();
+    
+    const thumbnailObjectName = getObjectName(tourId, filename, 'thumb');
+    await uploadToMinIO(thumbnailBuffer, thumbnailObjectName, 'image/jpeg', thumbnailBuffer.length);
+    console.log(`✅ Uploaded thumbnail: ${sizes.thumbnail}`);
 
-    // Generate and save medium size
-    const mediumPath = path.join(tourDir, sizes.medium);
-    await image
+    // Generate and upload medium size
+    const mediumBuffer = await image
       .resize(IMAGE_SIZES.medium.width, IMAGE_SIZES.medium.height, {
         fit: 'inside',
         withoutEnlargement: true
       })
       .jpeg({ quality: 85 })
-      .toFile(mediumPath);
-    console.log(`✅ Saved medium: ${sizes.medium}`);
+      .toBuffer();
+    
+    const mediumObjectName = getObjectName(tourId, filename, 'med');
+    await uploadToMinIO(mediumBuffer, mediumObjectName, 'image/jpeg', mediumBuffer.length);
+    console.log(`✅ Uploaded medium: ${sizes.medium}`);
 
-    // Generate and save large size
-    const largePath = path.join(tourDir, sizes.large);
-    await image
+    // Generate and upload large size
+    const largeBuffer = await image
       .resize(IMAGE_SIZES.large.width, IMAGE_SIZES.large.height, {
         fit: 'inside',
         withoutEnlargement: true
       })
       .jpeg({ quality: 90 })
-      .toFile(largePath);
-    console.log(`✅ Saved large: ${sizes.large}`);
+      .toBuffer();
+    
+    const largeObjectName = getObjectName(tourId, filename, 'large');
+    await uploadToMinIO(largeBuffer, largeObjectName, 'image/jpeg', largeBuffer.length);
+    console.log(`✅ Uploaded large: ${sizes.large}`);
 
-    console.log(`🎉 Successfully processed all sizes for: ${filename}`);
+    console.log(`🎉 Successfully processed and uploaded all sizes for: ${filename}`);
 
     return {
       filename,
@@ -248,81 +181,117 @@ export async function processAndSaveImage(
   } catch (error) {
     console.error(`❌ Image processing failed for ${filename}:`, error);
     
-    // Clean up any files that might have been created
-    await cleanupImageFiles(tourId, Object.values(sizes));
-    
-    // Provide helpful error message
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('EACCES') || errorMessage.includes('permission denied')) {
-      throw new Error(`Permission denied: Cannot write image files. Please check file system permissions for: ${tourDir}`);
+    // Clean up any partially uploaded files
+    try {
+      await deleteImage(tourId, filename);
+    } catch (cleanupError) {
+      console.error('❌ Failed to cleanup after processing error:', cleanupError);
     }
     
-    throw new Error(`Image processing failed: ${errorMessage}`);
+    throw new Error(`Image processing failed: ${error}`);
   }
 }
 
 /**
- * Delete image files from storage
+ * Delete image and all its sizes from MinIO
  */
 export async function deleteImage(tourId: string, filename: string): Promise<void> {
-  const sizes = [
-    filename,
-    `thumb_${filename}`,
-    `med_${filename}`,
-    `large_${filename}`
-  ];
+  try {
+    const extension = filename.split('.').pop();
+    const nameWithoutExt = filename.replace(`.${extension}`, '');
+    
+    // Delete all sizes
+    const sizes = ['original', 'thumb', 'med', 'large'];
+    const deletePromises = sizes.map(size => {
+      const objectName = size === 'original' 
+        ? getObjectName(tourId, filename)
+        : getObjectName(tourId, `${nameWithoutExt}.${extension}`, size);
+      
+      return deleteFromMinIO(objectName).catch(error => {
+        console.warn(`⚠️ Failed to delete ${objectName}:`, error);
+      });
+    });
 
-  await cleanupImageFiles(tourId, sizes);
-}
-
-/**
- * Clean up image files (helper function)
- */
-async function cleanupImageFiles(tourId: string, filenames: string[]): Promise<void> {
-  const tourDir = path.join(TOURS_DIR, tourId);
-  
-  for (const filename of filenames) {
-    try {
-      const filePath = path.join(tourDir, filename);
-      if (existsSync(filePath)) {
-        await unlink(filePath);
-        console.log(`🗑️ Deleted: ${filename}`);
-      }
-    } catch (error) {
-      console.error(`Failed to delete file ${filename}:`, error);
-    }
+    await Promise.all(deletePromises);
+    console.log(`✅ Deleted all sizes for image: ${filename}`);
+  } catch (error) {
+    console.error(`❌ Failed to delete image ${filename}:`, error);
+    throw new Error(`Image deletion failed: ${error}`);
   }
 }
 
 /**
- * Generate image URL for serving
- * @deprecated Use MinIO image storage instead via /api/images/ endpoint
+ * Delete multiple images
  */
-export function getImageUrl(tourId: string, filename: string, size: 'original' | 'thumbnail' | 'medium' | 'large' = 'medium'): string {
-  // Redirect to MinIO API endpoint instead of file system
-  return `/api/images/${tourId}/${filename}?size=${size}`;
+export async function deleteImages(tourId: string, filenames: string[]): Promise<void> {
+  const deletePromises = filenames.map(filename => 
+    deleteImage(tourId, filename).catch(error => {
+      console.error(`❌ Failed to delete ${filename}:`, error);
+    })
+  );
+  
+  await Promise.all(deletePromises);
 }
 
 /**
- * Get all image URLs for a filename
+ * Get image URL - serves through SvelteKit API to avoid presigned URL issues
  */
-export function getAllImageUrls(tourId: string, filename: string) {
-  return {
-    original: getImageUrl(tourId, filename, 'original'),
-    thumbnail: getImageUrl(tourId, filename, 'thumbnail'),
-    medium: getImageUrl(tourId, filename, 'medium'),
-    large: getImageUrl(tourId, filename, 'large')
-  };
-}
-
-/**
- * Check if image storage is available
- */
-export async function isImageStorageAvailable(): Promise<boolean> {
+export async function getImageUrl(
+  tourId: string, 
+  filename: string, 
+  size: 'original' | 'thumbnail' | 'medium' | 'large' = 'medium'
+): Promise<string> {
   try {
-    await initializeUploadDirs();
-    return true;
-  } catch {
-    return false;
+    // Return URL to SvelteKit API endpoint instead of direct MinIO presigned URL
+    return `/api/images/${tourId}/${filename}?size=${size}`;
+  } catch (error) {
+    console.error(`❌ Failed to get image URL for ${filename}:`, error);
+    throw new Error(`Failed to get image URL: ${error}`);
+  }
+}
+
+/**
+ * Get all size URLs for an image
+ */
+export async function getAllImageUrls(tourId: string, filename: string) {
+  try {
+    const [original, thumbnail, medium, large] = await Promise.all([
+      getImageUrl(tourId, filename, 'original'),
+      getImageUrl(tourId, filename, 'thumbnail'),
+      getImageUrl(tourId, filename, 'medium'),
+      getImageUrl(tourId, filename, 'large')
+    ]);
+
+    return {
+      original,
+      thumbnail,
+      medium,
+      large
+    };
+  } catch (error) {
+    console.error(`❌ Failed to get all image URLs for ${filename}:`, error);
+    throw new Error(`Failed to get image URLs: ${error}`);
+  }
+}
+
+/**
+ * List all images for a tour
+ */
+export async function listTourImages(tourId: string): Promise<string[]> {
+  try {
+    const prefix = `tours/${tourId}/`;
+    const objects = await listObjects(prefix);
+    
+    // Filter to get only original images (not thumbnail, medium, large variants)
+    const originalImages = objects
+      .filter(name => name.startsWith(prefix))
+      .map(name => name.replace(prefix, ''))
+      .filter(name => !name.startsWith('thumb_') && !name.startsWith('med_') && !name.startsWith('large_'))
+      .sort();
+    
+    return originalImages;
+  } catch (error) {
+    console.error(`❌ Failed to list images for tour ${tourId}:`, error);
+    throw new Error(`Failed to list tour images: ${error}`);
   }
 } 

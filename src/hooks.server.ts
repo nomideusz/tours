@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { lucia } from '$lib/auth/lucia.js';
-import { initializeImageStorage } from '$lib/utils/minio-image-storage.js';
+import { initializeImageStorage } from '$lib/utils/image-storage.js';
 
 // Types are declared in src/app.d.ts
 
