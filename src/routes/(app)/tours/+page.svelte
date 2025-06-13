@@ -327,9 +327,9 @@
 										<Eye class="h-3 w-3" />
 										View
 									</button>
-									<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="flex-1 button-secondary button--small button--gap justify-center">
-										<Calendar class="h-3 w-3" />
-										Schedule
+									<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="flex-1 button-secondary button--small button--gap justify-center">
+										<Users class="h-3 w-3" />
+										Bookings
 									</button>
 									<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--icon">
 										<Edit class="h-3 w-3" />
@@ -445,6 +445,10 @@
 												<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
 													<Eye class="h-4 w-4" />
 													View Details
+												</button>
+												<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
+													<Users class="h-4 w-4" />
+													Bookings
 												</button>
 												<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 													<Calendar class="h-4 w-4" />
