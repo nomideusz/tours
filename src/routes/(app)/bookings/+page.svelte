@@ -343,7 +343,7 @@
 		{/if}
 		
 		<!-- Load More Button -->
-		{#if bookings.length >= pageSize && bookings.length > 0 && pageSize < 100}
+		{#if bookings.length === pageSize && bookings.length > 0 && pageSize < 100}
 			<div class="p-4 border-t" style="border-color: var(--border-primary);">
 				<button
 					onclick={loadMore}
@@ -354,7 +354,7 @@
 						<Loader2 class="h-4 w-4 animate-spin mr-2" />
 						Loading...
 					{:else}
-						Load More Bookings ({pageSize + 10} total)
+						Load More Bookings
 					{/if}
 				</button>
 			</div>

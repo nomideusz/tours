@@ -125,19 +125,25 @@
 	}
 
 	async function handleTourStatusToggle(tour: Tour) {
-		if (!browser || statusUpdating) return;
+		if (!browser || statusUpdating === tour.id) return;
 		statusUpdating = tour.id;
 		
 		try {
+			console.log('Toggling status for tour:', tour.id, 'from', tour.status);
 			const newStatus = await toggleTourStatus(tour);
+			console.log('New status received:', newStatus);
 			
 			if (newStatus) {
 				// Invalidate and refetch queries after mutation
+				console.log('Refetching queries...');
 				await Promise.all([
 					$toursStatsQuery.refetch(),
 					$userToursQuery.refetch()
 				]);
+				console.log('Queries refetched successfully');
 			}
+		} catch (error) {
+			console.error('Failed to toggle tour status:', error);
 		} finally {
 			statusUpdating = null;
 		}
