@@ -392,14 +392,14 @@
 											</span>
 										</div>
 										<p class="text-xs mb-1" style="color: var(--text-secondary);">
-											{booking.tourName}
+											{booking.tourName || booking.tour || 'Unknown Tour'}
 										</p>
 										<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
-											<span>{formatDate(booking.date)}</span>
+											<span>{formatDate(booking.effectiveDate || booking.created)}</span>
 											<span>•</span>
 											<span>{booking.participants} guests</span>
 											<span>•</span>
-											<span>{formatEuro(booking.amount)}</span>
+											<span>{formatEuro(booking.totalAmount || 0)}</span>
 										</div>
 									</div>
 									<div class="flex items-center gap-2 ml-3">
