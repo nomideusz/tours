@@ -41,8 +41,8 @@ export const queryFunctions = {
 	async fetchRecentBookings(limit: number = 10) {
 		if (!browser) throw new Error('Client-side only');
 		
-		// Temporarily use simplified endpoint to avoid 502 errors
-		const response = await fetch(`/api/recent-bookings-simple?limit=${limit}`);
+		// Use minimal endpoint to test performance
+		const response = await fetch(`/api/recent-bookings-minimal?limit=${limit}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch recent bookings: ${response.status} ${response.statusText}`);
 		}

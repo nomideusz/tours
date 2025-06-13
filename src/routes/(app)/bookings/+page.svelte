@@ -27,14 +27,13 @@
 	
 
 	
-	// State for pagination
-	let currentPage = $state(1);
-	let pageSize = $state(20);
+	// State for pagination - start very conservative
+	let pageSize = $state(10);
 	
 	// TanStack Query for bookings data with pagination - reactive to page changes
 	let bookingsQuery = $derived(createQuery({
-		queryKey: queryKeys.recentBookings(currentPage * pageSize),
-		queryFn: () => queryFunctions.fetchRecentBookings(currentPage * pageSize),
+		queryKey: queryKeys.recentBookings(pageSize),
+		queryFn: () => queryFunctions.fetchRecentBookings(pageSize),
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	}));
@@ -90,9 +89,9 @@
 		$bookingsQuery.refetch();
 	}
 	
-	// Load more bookings
+	// Load more bookings - increase page size instead of page number
 	function loadMore() {
-		currentPage += 1;
+		pageSize += 10; // Add 10 more bookings each time
 	}
 	
 </script>
@@ -344,7 +343,7 @@
 		{/if}
 		
 		<!-- Load More Button -->
-		{#if bookings.length >= currentPage * pageSize && bookings.length > 0}
+		{#if bookings.length >= pageSize && bookings.length > 0 && pageSize < 100}
 			<div class="p-4 border-t" style="border-color: var(--border-primary);">
 				<button
 					onclick={loadMore}
@@ -355,7 +354,7 @@
 						<Loader2 class="h-4 w-4 animate-spin mr-2" />
 						Loading...
 					{:else}
-						Load More Bookings
+						Load More Bookings ({pageSize + 10} total)
 					{/if}
 				</button>
 			</div>
