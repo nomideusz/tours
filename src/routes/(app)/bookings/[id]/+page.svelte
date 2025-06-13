@@ -39,9 +39,10 @@
 	
 	// TanStack Query for booking data
 	const bookingQuery = createQuery({
-		queryKey: ['booking', bookingId],
+		queryKey: ['booking', window.location.pathname.split('/').pop()],
 		queryFn: async () => {
-			const response = await fetch(`/api/bookings/${bookingId}`);
+			const currentBookingId = window.location.pathname.split('/').pop();
+			const response = await fetch(`/api/bookings/${currentBookingId}`);
 			if (!response.ok) throw new Error('Failed to fetch booking');
 			return response.json();
 		},

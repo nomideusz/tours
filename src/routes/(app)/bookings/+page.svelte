@@ -31,13 +31,13 @@
 	let currentPage = $state(1);
 	let pageSize = $state(20);
 	
-	// TanStack Query for bookings data with pagination
-	const bookingsQuery = createQuery({
+	// TanStack Query for bookings data with pagination - reactive to page changes
+	let bookingsQuery = $derived(createQuery({
 		queryKey: queryKeys.recentBookings(currentPage * pageSize),
 		queryFn: () => queryFunctions.fetchRecentBookings(currentPage * pageSize),
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-	});
+	}));
 	
 	// Derive data from query
 	let bookings = $derived($bookingsQuery.data || []);
