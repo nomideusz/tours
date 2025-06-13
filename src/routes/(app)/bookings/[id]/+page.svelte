@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	
+	// Get data from load function
+	let { data } = $props();
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
@@ -29,26 +32,20 @@
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 
-	// Get booking ID from URL pathname
-	const bookingId = $derived(() => {
-		if (typeof window !== 'undefined') {
-			return window.location.pathname.split('/').pop();
-		}
-		return '';
-	});
+	// Get booking ID from load function
+	let bookingId = $derived(data.bookingId);
 	
 	// TanStack Query for booking data
-	const bookingQuery = createQuery({
-		queryKey: ['booking', window.location.pathname.split('/').pop()],
+	let bookingQuery = $derived(createQuery({
+		queryKey: ['booking', bookingId],
 		queryFn: async () => {
-			const currentBookingId = window.location.pathname.split('/').pop();
-			const response = await fetch(`/api/bookings/${currentBookingId}`);
+			const response = await fetch(`/api/bookings/${bookingId}`);
 			if (!response.ok) throw new Error('Failed to fetch booking');
 			return response.json();
 		},
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-	});
+	}));
 	
 	// Derive data from query
 	let booking = $derived($bookingQuery.data?.booking || null);
