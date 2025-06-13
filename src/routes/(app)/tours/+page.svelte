@@ -38,7 +38,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
-	let { data }: { data: PageData } = $props();
+	// Note: No server data needed - pure API-only approach
 
 	// TanStack Query queries
 	const toursStatsQuery = createQuery({
@@ -46,8 +46,6 @@
 		queryFn: queryFunctions.fetchToursStats,
 		staleTime: 2 * 60 * 1000, // 2 minutes
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		// Remove initialData to test pure API-only approach
-		// initialData: data.stats 
 	});
 
 	const userToursQuery = createQuery({
@@ -55,8 +53,6 @@
 		queryFn: queryFunctions.fetchUserTours,
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		// Remove initialData to test pure API-only approach
-		// initialData: data.tours 
 	});
 
 	let copiedQRCode = $state<string | null>(null);

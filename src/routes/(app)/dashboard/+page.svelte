@@ -8,6 +8,10 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	
+	// TanStack Query for API-only data fetching
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Globe from 'lucide-svelte/icons/globe';
@@ -28,19 +32,41 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Link from 'lucide-svelte/icons/link';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
 	let { data }: { data: PageData } = $props();
 
-	const { profile } = data;
+	// TanStack Query for dashboard data
+	const dashboardStatsQuery = createQuery({
+		queryKey: queryKeys.dashboardStats,
+		queryFn: queryFunctions.fetchDashboardStats,
+		staleTime: 2 * 60 * 1000, // 2 minutes
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	});
+
+	const recentBookingsQuery = createQuery({
+		queryKey: queryKeys.recentBookings(10),
+		queryFn: () => queryFunctions.fetchRecentBookings(10),
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	});
+
+	// Get profile from layout data (this stays server-side since it's needed for auth)
+	const profile = $derived(data.profile || data.user);
 	
-	// Focus on today/this week stats only
-	let stats = $derived(data.stats || {
+	// Use TanStack Query data with fallbacks
+	let stats = $derived($dashboardStatsQuery.data || {
 		todayBookings: 0,
 		weeklyRevenue: 0,
 		upcomingTours: 0,
 		totalCustomers: 0,
 	});
-	let recentBookings = $state(data.recentBookings || []);
+	let recentBookings = $derived($recentBookingsQuery.data || []);
+	
+	// Loading states
+	let isLoading = $derived($dashboardStatsQuery.isLoading || $recentBookingsQuery.isLoading);
+	let isError = $derived($dashboardStatsQuery.isError || $recentBookingsQuery.isError);
 	
 	// Profile link state
 	let profileLinkCopied = $state(false);
@@ -48,21 +74,27 @@
 	// Get the full profile URL
 	const profileUrl = $derived(`${$page.url.origin}/${profile.username}`);
 	
-	// Filter today's schedule on the client side to handle timezone properly
+	// Create today's schedule from recent bookings
 	let todaysSchedule = $derived(
 		(() => {
-			const allSchedule = data.todaysSchedule || [];
 			const now = new Date();
 			const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 			const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 			
-			return allSchedule.filter(schedule => {
-				if (!schedule.time) return false;
-				
-				const scheduleDate = new Date(schedule.time);
-				const scheduleLocalDate = new Date(scheduleDate.getTime());
-				return scheduleLocalDate >= todayStart && scheduleLocalDate < todayEnd;
-			});
+					return recentBookings
+			.filter((booking: any) => {
+				if (!booking.effectiveDate) return false;
+				const bookingDate = new Date(booking.effectiveDate);
+				return bookingDate >= todayStart && bookingDate < todayEnd;
+			})
+			.map((booking: any) => ({
+				time: booking.effectiveDate,
+				tourName: booking.tour || 'Unknown Tour',
+				participants: booking.participants || 0,
+				customerName: booking.customerName,
+				status: booking.status
+			}))
+				.slice(0, 4); // Limit to 4 items
 		})()
 	);
 	
@@ -77,6 +109,14 @@
 		} catch (err) {
 			console.error('Failed to copy link:', err);
 		}
+	}
+
+	// Refresh data function
+	function handleRefresh() {
+		Promise.all([
+			$dashboardStatsQuery.refetch(),
+			$recentBookingsQuery.refetch()
+		]);
 	}
 </script>
 
@@ -103,6 +143,20 @@
 						})}
 					</p>
 				</div>
+				
+				<!-- Refresh Button -->
+				<button
+					onclick={handleRefresh}
+					disabled={isLoading}
+					class="button-secondary button--small"
+				>
+					{#if isLoading}
+						<Loader2 class="h-4 w-4 animate-spin" />
+					{:else}
+						<RefreshCw class="h-4 w-4" />
+					{/if}
+					{isLoading ? 'Loading...' : 'Refresh'}
+				</button>
 				
 				<!-- Quick Scanner Access - Single Button -->
 				{#if todaysSchedule.length > 0}
