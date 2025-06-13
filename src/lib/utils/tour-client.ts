@@ -129,36 +129,6 @@ export function calculateConversionRate(scans: number, conversions: number): num
 }
 
 /**
- * Toggle tour status between 'active' and 'draft'
- * @returns Promise with the new status or null if request failed
- */
-export async function toggleTourStatus(tour: { id: string; status: 'active' | 'draft' }): Promise<'active' | 'draft' | null> {
-	if (!tour?.id) return null;
-	
-	const newStatus = tour.status === 'active' ? 'draft' : 'active';
-	
-	try {
-		const response = await fetch(`/api/tours/${tour.id}/status`, {
-			method: 'PATCH',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ status: newStatus })
-		});
-
-		if (response.ok) {
-			return newStatus;
-		} else {
-			console.error('Failed to update tour status:', response.status, response.statusText);
-			return null;
-		}
-	} catch (error) {
-		console.error('Failed to update tour status:', error);
-		return null;
-	}
-}
-
-/**
  * Get tour capacity utilization percentage for a time slot
  */
 export function getCapacityUtilization(bookedSpots: number, totalCapacity: number): number {
