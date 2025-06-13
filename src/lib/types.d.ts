@@ -23,6 +23,7 @@ export interface User extends RecordModel {
   website?: string;
   description?: string;
   location?: string; // City/region for guides
+  country?: string;
   // Main QR code fields
   mainQrCode?: string;
   mainQrScans?: number;
