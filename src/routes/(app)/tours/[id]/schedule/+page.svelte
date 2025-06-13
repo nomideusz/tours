@@ -126,7 +126,7 @@
 			<!-- Mobile Header -->
 			<MobilePageHeader
 				title="Schedule"
-				secondaryInfo="{tour.name}"
+				secondaryInfo={tour.name}
 				quickActions={[
 					{
 						label: 'Add Slot',
