@@ -34,7 +34,7 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 		.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 		.where(eq(tours.userId, userId))
 		.orderBy(desc(bookings.createdAt))
-		.limit(Math.min(limit, 20)); // Cap limit for performance
+		.limit(Math.min(limit, 50)); // Increased cap but still reasonable
 		
 		// Process for display - convert to ProcessedBooking format with timeSlot data for dashboard
 		return recentBookingsData.map((booking: any) => {
