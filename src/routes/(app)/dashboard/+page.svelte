@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
+	import { browser } from '$app/environment';
 	import { formatEuro } from '$lib/utils/currency.js';
-	import { formatDate, formatDateMobile, getStatusColor } from '$lib/utils/date-helpers.js';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
 	
 	// TanStack Query for API-only data fetching
 	import { createQuery } from '@tanstack/svelte-query';
@@ -14,21 +12,13 @@
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Globe from 'lucide-svelte/icons/globe';
-	import User from 'lucide-svelte/icons/user';
-	import Mail from 'lucide-svelte/icons/mail';
-	import Phone from 'lucide-svelte/icons/phone';
-	import Settings from 'lucide-svelte/icons/settings';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
-	import UserCheck from 'lucide-svelte/icons/user-check';
 	import Plus from 'lucide-svelte/icons/plus';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
-	import Clock from 'lucide-svelte/icons/clock';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Link from 'lucide-svelte/icons/link';
@@ -53,7 +43,7 @@
 	});
 
 	// Get profile from layout data (this stays server-side since it's needed for auth)
-	const profile = $derived(data.profile || data.user);
+	const profile = $derived(data.user || { username: '', email: '', name: '' });
 	
 	// Use TanStack Query data with fallbacks
 	let stats = $derived($dashboardStatsQuery.data || {
@@ -72,7 +62,7 @@
 	let profileLinkCopied = $state(false);
 	
 	// Get the full profile URL
-	const profileUrl = $derived(`${$page.url.origin}/${profile.username}`);
+	const profileUrl = $derived(browser ? `${window.location.origin}/${profile.username}` : '');
 	
 	// Create today's schedule from recent bookings
 	let todaysSchedule = $derived(

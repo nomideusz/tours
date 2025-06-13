@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { formatEuro } from '$lib/utils/currency.js';
-	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
+	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import type { PageData } from './$types.js';
 	
@@ -21,28 +22,36 @@
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
-	import QrCode from 'lucide-svelte/icons/qr-code';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Clock from 'lucide-svelte/icons/clock';
-	import MapPin from 'lucide-svelte/icons/map-pin';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import XCircle from 'lucide-svelte/icons/x-circle';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	
 	let { data }: { data: PageData } = $props();
 	
-	// TanStack Query for bookings data
-	const bookingsQuery = createQuery({
-		queryKey: queryKeys.recentBookings(100),
-		queryFn: () => queryFunctions.fetchRecentBookings(100),
+	// Get tour ID from URL
+	const tourId = $derived($page.params.id);
+	
+	// TanStack Query for tour-specific bookings
+	const tourBookingsQuery = createQuery({
+		queryKey: ['tourBookings', tourId],
+		queryFn: async () => {
+			const response = await fetch(`/api/tours/${tourId}/bookings`);
+			if (!response.ok) throw new Error('Failed to fetch tour bookings');
+			return response.json();
+		},
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});
 	
 	// Derive data from query
-	let bookings = $derived($bookingsQuery.data || []);
-	let isLoading = $derived($bookingsQuery.isLoading);
-	let isError = $derived($bookingsQuery.isError);
+	let bookings = $derived($tourBookingsQuery.data?.bookings || []);
+	let tour = $derived($tourBookingsQuery.data?.tour || data.tour);
+	let isLoading = $derived($tourBookingsQuery.isLoading);
+	let isError = $derived($tourBookingsQuery.isError);
 	
 	// Calculate stats from bookings
 	let stats = $derived(() => {
@@ -75,7 +84,7 @@
 	
 	// Refresh function
 	function handleRefresh() {
-		$bookingsQuery.refetch();
+		$tourBookingsQuery.refetch();
 	}
 	
 	// Get status color
@@ -93,27 +102,11 @@
 				return 'bg-gray-50 text-gray-700 border-gray-200';
 		}
 	}
-	
-	// Get status icon
-	function getStatusIcon(status: string) {
-		switch (status) {
-			case 'confirmed':
-				return CheckCircle;
-			case 'pending':
-				return AlertCircle;
-			case 'cancelled':
-				return XCircle;
-			case 'completed':
-				return CheckCircle;
-			default:
-				return AlertCircle;
-		}
-	}
 </script>
 
 <svelte:head>
-	<title>Bookings - Zaur</title>
-	<meta name="description" content="Manage all your tour bookings and customer reservations" />
+	<title>{tour?.name} Bookings - Zaur</title>
+	<meta name="description" content="Manage bookings for {tour?.name} tour" />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -121,8 +114,8 @@
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Header -->
 		<MobilePageHeader
-			title="Bookings"
-			secondaryInfo="{stats().total} total"
+			title="{tour?.name} Bookings"
+			secondaryInfo="{stats().total} bookings"
 			quickActions={[
 				{
 					label: 'Scanner',
@@ -140,14 +133,14 @@
 			]}
 			infoItems={[
 				{
-					icon: Calendar,
-					label: 'Today',
-					value: `${stats().todayCount} new`
-				},
-				{
 					icon: AlertCircle,
 					label: 'Pending',
 					value: `${stats().pending}`
+				},
+				{
+					icon: CheckCircle,
+					label: 'Confirmed',
+					value: `${stats().confirmed}`
 				},
 				{
 					icon: Euro,
@@ -155,9 +148,9 @@
 					value: formatEuro(stats().revenue)
 				},
 				{
-					icon: TrendingUp,
-					label: 'Upcoming',
-					value: `${stats().upcoming}`
+					icon: Users,
+					label: 'Guests',
+					value: `${stats().participants}`
 				}
 			]}
 		/>
@@ -165,9 +158,18 @@
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
 			<PageHeader 
-				title="Bookings"
-				subtitle="Manage all your tour bookings and customer reservations"
+				title="{tour?.name} Bookings"
+				subtitle="View and manage all bookings for this tour"
+				breadcrumbs={[
+					{ label: 'Tours', href: '/tours' },
+					{ label: tour?.name || 'Tour', href: `/tours/${tourId}` },
+					{ label: 'Bookings' }
+				]}
 			>
+				<button onclick={() => goto(`/tours/${tourId}`)} class="button-secondary button--gap mr-3">
+					<ArrowLeft class="h-4 w-4" />
+					Back to Tour
+				</button>
 				<button
 					onclick={handleRefresh}
 					disabled={isLoading}
@@ -219,9 +221,9 @@
 		/>
 		
 		<StatsCard
-			title="Total Revenue"
+			title="Tour Revenue"
 			value={formatEuro(stats().revenue)}
-			subtitle="confirmed bookings"
+			subtitle="from this tour"
 			icon={Euro}
 			variant="small"
 		/>
@@ -229,7 +231,7 @@
 		<StatsCard
 			title="Total Guests"
 			value={stats().participants}
-			subtitle="confirmed participants"
+			subtitle="participants"
 			icon={Users}
 			variant="small"
 		/>
@@ -239,7 +241,7 @@
 	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
+				<h3 class="font-semibold" style="color: var(--text-primary);">Tour Bookings</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
 					{stats().total} total
 				</span>
@@ -258,7 +260,7 @@
 										{booking.customerName}
 									</h4>
 									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
-										{booking.tourName || 'Unknown Tour'}
+										{formatDate(booking.effectiveDate)}
 									</p>
 								</div>
 								<span class="ml-2 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
@@ -269,8 +271,12 @@
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
 									<span class="flex items-center gap-1">
-										<Calendar class="h-3 w-3" />
-										{formatDate(booking.effectiveDate)}
+										<Clock class="h-3 w-3" />
+										{#if booking.timeSlot?.startTime && booking.timeSlot?.endTime}
+											{formatSlotTimeRange(booking.timeSlot.startTime, booking.timeSlot.endTime)}
+										{:else}
+											Time TBD
+										{/if}
 									</span>
 									<span class="flex items-center gap-1">
 										<Users class="h-3 w-3" />
@@ -293,7 +299,7 @@
 										</h4>
 										<div class="flex items-center gap-2 mt-1">
 											<span class="text-xs" style="color: var(--text-secondary);">
-												{booking.tourName || 'Unknown Tour'}
+												{formatDate(booking.effectiveDate)}
 											</span>
 											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
 											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
@@ -343,9 +349,15 @@
 				<div class="p-8 text-center">
 					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings yet</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">
-						Start sharing your tours to get your first bookings!
+					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+						This tour doesn't have any bookings yet.
 					</p>
+					<button
+						onclick={() => goto(`/tours/${tourId}`)}
+						class="button-primary button--small"
+					>
+						View Tour Details
+					</button>
 				</div>
 			{/if}
 		</div>

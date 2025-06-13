@@ -16,9 +16,9 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import { onMount } from 'svelte';
-	import { toastError, toastSuccess } from '$lib/utils/toast';
+	import { toastError, toastSuccess } from '$lib/utils/toast.js';
 	import { browser } from '$app/environment';
-	import { detectCountry } from '$lib/utils/country-detector';
+	import { detectCountry } from '$lib/utils/country-detector.js';
 
 	let { data, form } = $props();
 

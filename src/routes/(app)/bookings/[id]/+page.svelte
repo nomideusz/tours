@@ -4,10 +4,14 @@
 	import type { PageData, ActionData } from './$types.js';
 	import { formatEuro } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
+	
+	// Components
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import User from 'lucide-svelte/icons/user';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Phone from 'lucide-svelte/icons/phone';
@@ -20,7 +24,6 @@
 	import XCircle from 'lucide-svelte/icons/x-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Edit from 'lucide-svelte/icons/edit';
-	import MessageCircle from 'lucide-svelte/icons/message-circle';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 
 	let { data }: { data: PageData } = $props();
@@ -31,44 +34,6 @@
 	let error = $state<string | null>(null);
 	let showStatusModal = $state(false);
 	let newStatus = $state('');
-
-	function formatDateTime(dateString: string): string {
-		try {
-			if (!dateString) return 'Date not available';
-			const date = new Date(dateString);
-			if (isNaN(date.getTime())) return 'Invalid date';
-			
-			return date.toLocaleDateString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			});
-		} catch (error) {
-			console.warn('Error formatting date:', dateString, error);
-			return 'Date not available';
-		}
-	}
-
-	function formatDate(dateString: string): string {
-		try {
-			if (!dateString) return 'Date not available';
-			const date = new Date(dateString);
-			if (isNaN(date.getTime())) return 'Invalid date';
-			
-			return date.toLocaleDateString('en-US', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			});
-		} catch (error) {
-			console.warn('Error formatting date:', dateString, error);
-			return 'Date not available';
-		}
-	}
 
 
 
@@ -84,21 +49,6 @@
 				return 'bg-blue-50 text-blue-700 border-blue-200';
 			default:
 				return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
-	}
-
-	function getStatusIcon(status: string) {
-		switch (status) {
-			case 'confirmed':
-				return CheckCircle;
-			case 'pending':
-				return AlertCircle;
-			case 'cancelled':
-				return XCircle;
-			case 'completed':
-				return CheckCircle;
-			default:
-				return AlertCircle;
 		}
 	}
 
@@ -168,71 +118,108 @@
 </script>
 
 <svelte:head>
-	<title>Booking Details - Zaur</title>
+	<title>{booking.customerName} - Booking Details | Zaur</title>
+	<meta name="description" content="Manage booking details for {booking.customerName}" />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Header -->
-	<div class="mb-8">
-		<div class="flex items-center gap-4 mb-4">
-			<button 
-				onclick={() => goto('/bookings')}
-				class="p-2 rounded-lg transition-colors"
-				style="hover:background: var(--bg-secondary);"
-				aria-label="Back to bookings"
+	<div class="mb-6 sm:mb-8">
+		<!-- Mobile Header -->
+		<MobilePageHeader
+			title={booking.customerName}
+			statusButton={{
+				label: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+				onclick: () => {
+					if (canChangeStatus()) {
+						newStatus = booking.status;
+						showStatusModal = true;
+					}
+				},
+				disabled: !canChangeStatus(),
+				color: getStatusColor(booking.status),
+				dotColor: getStatusColor(booking.status),
+				tooltip: canChangeStatus() ? 'Click to change status' : 'Cannot change status for completed past bookings'
+			}}
+			secondaryInfo={`${booking.expand?.tour?.name || 'Unknown Tour'} • ${formatEuro(calculateTotal())}`}
+			quickActions={[
+				{
+					label: 'Email',
+					icon: Mail,
+					onclick: openEmailClient,
+					variant: 'primary'
+				},
+				{
+					label: 'Tour',
+					icon: MapPin,
+					onclick: () => goto(`/tours/${booking.expand?.tour?.id}`),
+					variant: 'secondary'
+				}
+			]}
+			infoItems={[
+				{
+					icon: Calendar,
+					label: 'Date',
+					value: booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'
+				},
+				{
+					icon: Clock,
+					label: 'Time',
+					value: booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
+						? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
+						: 'TBD'
+				},
+				{
+					icon: Users,
+					label: 'Guests',
+					value: `${booking.participants}`
+				},
+				{
+					icon: CreditCard,
+					label: 'Payment',
+					value: payment?.status || 'Pending'
+				}
+			]}
+		/>
+		
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Booking Details"
+				subtitle={`${booking.customerName} • ${booking.expand?.tour?.name || 'Unknown Tour'}`}
+				breadcrumbs={[
+					{ label: 'Bookings', href: '/bookings' },
+					{ label: `#${booking.id.slice(-8)}` }
+				]}
 			>
-				<ArrowLeft class="h-5 w-5" style="color: var(--text-secondary);" />
-			</button>
-			<div>
-				<nav class="flex items-center gap-2 text-sm mb-2" style="color: var(--text-secondary);">
-					<a href="/dashboard" class="hover:text-blue-600">Dashboard</a>
-					<ChevronRight class="h-3 w-3" />
-					<a href="/bookings" class="hover:text-blue-600">Bookings</a>
-					<ChevronRight class="h-3 w-3" />
-					<span>#{booking.id.slice(-8)}</span>
-				</nav>
-				<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Booking Details</h1>
-				<p class="mt-1" style="color: var(--text-secondary);">Manage customer booking and communication</p>
-			</div>
+				<button onclick={() => goto('/bookings')} class="button-secondary button--gap">
+					<ArrowLeft class="h-4 w-4" />
+					Back to Bookings
+				</button>
+			</PageHeader>
 		</div>
-
-		{#if error}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-light); border: 1px solid #fecaca;">
-				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
-					<div>
-						<p class="font-medium" style="color: #991b1b;">Error</p>
-						<p class="text-sm mt-1" style="color: #b91c1c;">{error}</p>
-					</div>
-				</div>
-			</div>
-		{/if}
 	</div>
 
+	{#if error}
+		<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-light); border: 1px solid #fecaca;">
+			<div class="flex gap-3">
+				<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
+				<div>
+					<p class="font-medium" style="color: #991b1b;">Error</p>
+					<p class="text-sm mt-1" style="color: #b91c1c;">{error}</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Main Content -->
-	<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+	<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 		<!-- Booking Details -->
 		<div class="xl:col-span-2 space-y-6">
 			<!-- Booking Overview -->
 			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="px-6 py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
-					<div class="flex items-center justify-between">
-						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Booking Overview</h2>
-						<div class="flex items-center gap-2">
-							{#if booking.status === 'confirmed'}
-								<CheckCircle class="h-5 w-5" style="color: var(--text-secondary);" />
-							{:else if booking.status === 'cancelled'}
-								<XCircle class="h-5 w-5" style="color: var(--text-secondary);" />
-							{:else if booking.status === 'completed'}
-								<CheckCircle class="h-5 w-5" style="color: var(--text-secondary);" />
-							{:else}
-								<AlertCircle class="h-5 w-5" style="color: var(--text-secondary);" />
-							{/if}
-							<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border {getStatusColor(booking.status)}">
-								{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-							</span>
-						</div>
-					</div>
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Booking Overview</h2>
 				</div>
 				
 				<div class="p-6 space-y-4">
@@ -289,7 +276,7 @@
 									<CreditCard class="h-5 w-5" style="color: var(--text-tertiary);" />
 									<div>
 										<p class="font-medium" style="color: var(--text-primary);">Payment {payment.status}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">Payment via Stripe</p>
+										<p class="text-sm" style="color: var(--text-secondary);">Via Stripe</p>
 									</div>
 								</div>
 							{/if}
@@ -356,6 +343,38 @@
 
 		<!-- Actions Sidebar -->
 		<div class="space-y-6">
+			<!-- Quick Actions - Mobile shown via MobilePageHeader -->
+			<div class="hidden sm:block rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
+				<div class="space-y-3">
+					<button
+						onclick={openEmailClient}
+						class="w-full button-primary button--gap button--small justify-center"
+					>
+						<Mail class="h-4 w-4" />
+						Send Email
+					</button>
+					
+					{#if booking.customerPhone}
+						<a
+							href="tel:{booking.customerPhone}"
+							class="w-full button-secondary button--gap button--small justify-center inline-flex"
+						>
+							<Phone class="h-4 w-4" />
+							Call Customer
+						</a>
+					{/if}
+
+					<button
+						onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
+						class="w-full button-secondary button--gap button--small justify-center"
+					>
+						<MapPin class="h-4 w-4" />
+						View Tour
+					</button>
+				</div>
+			</div>
+
 			<!-- Status Management -->
 			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Booking Status</h3>
@@ -383,60 +402,6 @@
 							Status cannot be changed for completed past bookings
 						</p>
 					{/if}
-				</div>
-			</div>
-
-			<!-- Communication -->
-			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Customer Communication</h3>
-				<div class="space-y-3">
-					<button
-						onclick={openEmailClient}
-						class="w-full button-primary button--gap button--small justify-center"
-					>
-						<Mail class="h-4 w-4" />
-						Send Email
-					</button>
-					
-					{#if booking.customerPhone}
-						<a
-							href="tel:{booking.customerPhone}"
-							class="w-full button-secondary button--gap button--small justify-center inline-flex"
-						>
-							<Phone class="h-4 w-4" />
-							Call Customer
-						</a>
-					{/if}
-
-					<a
-						href="sms:{booking.customerPhone || booking.customerEmail}"
-						class="w-full button-secondary button--gap button--small justify-center inline-flex"
-					>
-						<MessageCircle class="h-4 w-4" />
-						Send SMS
-					</a>
-				</div>
-			</div>
-
-			<!-- Quick Actions -->
-			<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
-				<div class="space-y-3">
-					<button
-						onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
-						class="w-full button-secondary button--gap button--small justify-center"
-					>
-						<MapPin class="h-4 w-4" />
-						View Tour Details
-					</button>
-					
-					<button
-						onclick={() => goto(`/tours/${booking.expand?.tour?.id}/bookings`)}
-						class="w-full button-secondary button--gap button--small justify-center"
-					>
-						<Users class="h-4 w-4" />
-						All Tour Bookings
-					</button>
 				</div>
 			</div>
 		</div>

@@ -7,6 +7,7 @@
 		onclick: () => void;
 		variant?: 'primary' | 'secondary';
 		size?: 'small' | 'icon';
+		disabled?: boolean;
 	}
 
 	interface InfoItem {
@@ -70,6 +71,7 @@
 			{#each quickActions as action}
 				<button 
 					onclick={action.onclick} 
+					disabled={action.disabled}
 					class="flex-1 button-{action.variant || 'secondary'} button--small button--gap justify-center"
 					class:button--icon={action.size === 'icon'}
 					class:flex-none={action.size === 'icon'}
