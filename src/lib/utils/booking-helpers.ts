@@ -37,30 +37,56 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 		.limit(Math.min(limit, 20)); // Cap limit for performance
 		
 		// Process for display - convert to ProcessedBooking format with timeSlot data for dashboard
-		return recentBookingsData.map((booking: any) => ({
-			id: booking.id,
-			customerName: booking.customerName,
-			customerEmail: booking.customerEmail,
-			participants: booking.participants || 1,
-			status: booking.status,
-			created: booking.createdAt?.toISOString() || new Date().toISOString(),
-			updated: booking.createdAt?.toISOString() || new Date().toISOString(), // Use created as fallback
-			tour: booking.tourName,
-			totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0),
-			paymentStatus: booking.paymentStatus,
-			effectiveDate: booking.timeSlotStartTime?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(), // Use timeSlot start time if available
-			expand: {
-				tour: { 
-					id: booking.tourId,
-					name: booking.tourName 
-				},
-				timeSlot: booking.timeSlotId ? {
-					id: booking.timeSlotId,
-					startTime: booking.timeSlotStartTime?.toISOString() || null,
-					endTime: booking.timeSlotEndTime?.toISOString() || null
-				} : undefined
+		return recentBookingsData.map((booking: any) => {
+			// Safe date conversion with null checks
+			const createdAtDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
+			const createdAtStr = !isNaN(createdAtDate.getTime()) ? createdAtDate.toISOString() : new Date().toISOString();
+			
+			// Handle time slot dates safely
+			let startTimeStr = null;
+			let endTimeStr = null;
+			let effectiveDateStr = createdAtStr;
+			
+			if (booking.timeSlotStartTime) {
+				const startDate = new Date(booking.timeSlotStartTime);
+				if (!isNaN(startDate.getTime())) {
+					startTimeStr = startDate.toISOString();
+					effectiveDateStr = startTimeStr;
+				}
 			}
-		}));
+			
+			if (booking.timeSlotEndTime) {
+				const endDate = new Date(booking.timeSlotEndTime);
+				if (!isNaN(endDate.getTime())) {
+					endTimeStr = endDate.toISOString();
+				}
+			}
+			
+			return {
+				id: booking.id,
+				customerName: booking.customerName || '',
+				customerEmail: booking.customerEmail || '',
+				participants: booking.participants || 1,
+				status: booking.status || 'pending',
+				created: createdAtStr,
+				updated: createdAtStr, // Use created as fallback
+				tour: booking.tourName || 'Unknown Tour',
+				totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) || 0 : (booking.totalAmount || 0),
+				paymentStatus: booking.paymentStatus || 'pending',
+				effectiveDate: effectiveDateStr,
+				expand: {
+					tour: { 
+						id: booking.tourId || '',
+						name: booking.tourName || 'Unknown Tour'
+					},
+					timeSlot: booking.timeSlotId && startTimeStr ? {
+						id: booking.timeSlotId,
+						startTime: startTimeStr,
+						endTime: endTimeStr
+					} : undefined
+				}
+			};
+		});
 	} catch (error) {
 		console.error('Error fetching recent bookings:', error);
 		return [];
@@ -139,27 +165,48 @@ export async function getTourBookingData(userId: string, tourId: string) {
 		const processedBookings = bookingsData.map(booking => {
 			const timeSlot = booking.timeSlotId ? timeSlotsMap.get(booking.timeSlotId) : null;
 			
+			// Safe date conversion
+			const createdAtDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
+			const createdAtStr = !isNaN(createdAtDate.getTime()) ? createdAtDate.toISOString() : new Date().toISOString();
+			
+			// Handle time slot dates safely
+			let effectiveDateStr = createdAtStr;
+			let timeSlotData = undefined;
+			
+			if (timeSlot) {
+				const startDate = timeSlot.startTime ? new Date(timeSlot.startTime) : null;
+				const endDate = timeSlot.endTime ? new Date(timeSlot.endTime) : null;
+				
+				const startTimeStr = startDate && !isNaN(startDate.getTime()) ? startDate.toISOString() : null;
+				const endTimeStr = endDate && !isNaN(endDate.getTime()) ? endDate.toISOString() : null;
+				
+				if (startTimeStr) {
+					effectiveDateStr = startTimeStr;
+					timeSlotData = {
+						id: booking.timeSlotId,
+						startTime: startTimeStr,
+						endTime: endTimeStr
+					};
+				}
+			}
+			
 			return {
 				id: booking.id,
 				customerName: booking.customerName || '',
 				customerEmail: booking.customerEmail || '',
 				participants: booking.participants || 0,
-				status: booking.status,
-				paymentStatus: booking.paymentStatus,
-				created: booking.createdAt?.toISOString() || new Date().toISOString(),
-				updated: booking.createdAt?.toISOString() || new Date().toISOString(),
-				tour: tour.name,
+				status: booking.status || 'pending',
+				paymentStatus: booking.paymentStatus || 'pending',
+				created: createdAtStr,
+				updated: createdAtStr,
+				tour: tour.name || 'Unknown Tour',
 				totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount) : 0,
 				bookingReference: booking.bookingReference || '',
 				ticketQRCode: booking.ticketQRCode || null,
 				attendanceStatus: booking.attendanceStatus || null,
-				effectiveDate: timeSlot?.startTime?.toISOString() || booking.createdAt?.toISOString() || new Date().toISOString(),
+				effectiveDate: effectiveDateStr,
 				expand: {
-					timeSlot: timeSlot ? {
-						id: booking.timeSlotId,
-						startTime: timeSlot.startTime?.toISOString() || null,
-						endTime: timeSlot.endTime?.toISOString() || null
-					} : undefined
+					timeSlot: timeSlotData
 				}
 			};
 		});
@@ -233,12 +280,16 @@ export async function getTourBookingData(userId: string, tourId: string) {
 			noShows
 		};
 		
+		// Safe tour date conversion
+		const tourCreatedAt = tour.createdAt ? new Date(tour.createdAt) : new Date();
+		const tourUpdatedAt = tour.updatedAt ? new Date(tour.updatedAt) : tourCreatedAt;
+		
 		return {
 			tour: {
 				...tour,
 				price: tour.price ? parseFloat(tour.price) : 0,
-				createdAt: tour.createdAt?.toISOString() || new Date().toISOString(),
-				updatedAt: tour.updatedAt?.toISOString() || new Date().toISOString()
+				createdAt: !isNaN(tourCreatedAt.getTime()) ? tourCreatedAt.toISOString() : new Date().toISOString(),
+				updatedAt: !isNaN(tourUpdatedAt.getTime()) ? tourUpdatedAt.toISOString() : new Date().toISOString()
 			},
 			bookings: upcomingBookings, // Return only upcoming bookings for display
 			allBookings: processedBookings, // Return all bookings for stats

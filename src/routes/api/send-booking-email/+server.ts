@@ -69,13 +69,13 @@ export const POST: RequestHandler = async ({ request }) => {
     // Format data to match the expected interface
     const booking = {
       id: data.id,
-      tour: data.tourId,
-      timeSlot: data.timeSlotId,
+      tourId: data.tourId,
+      timeSlotId: data.timeSlotId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       customerPhone: data.customerPhone || undefined,
       participants: data.participants,
-      totalAmount: parseFloat(data.totalAmount),
+      totalAmount: data.totalAmount,
       status: data.status,
       paymentStatus: data.paymentStatus,
       bookingReference: data.bookingReference,
@@ -84,35 +84,37 @@ export const POST: RequestHandler = async ({ request }) => {
       attendanceStatus: data.attendanceStatus || undefined,
       checkedInAt: data.checkedInAt?.toISOString(),
       checkedInBy: data.checkedInBy || undefined,
-      created: data.createdAt?.toISOString() || new Date().toISOString(),
-      updated: data.updatedAt?.toISOString() || new Date().toISOString(),
+      createdAt: data.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: data.updatedAt?.toISOString() || new Date().toISOString(),
     };
 
     const tour = {
       id: data.tourId,
       name: data.tourName,
       description: data.tourDescription,
-      price: parseFloat(data.tourPrice),
+      price: data.tourPrice,
       duration: data.tourDuration,
       capacity: data.tourCapacity,
       status: data.tourStatus,
       location: data.tourLocation || undefined,
-      user: '', // Not needed for email functionality
-      created: '', // Not needed for email functionality
-      updated: '', // Not needed for email functionality
+      userId: '', // Not needed for email functionality
+      createdAt: new Date().toISOString(), // Not needed for email functionality
+      updatedAt: new Date().toISOString(), // Not needed for email functionality
     };
 
     const timeSlot = {
       id: data.timeSlotId,
-      tour: data.tourId,
+      tourId: data.tourId,
       startTime: data.timeSlotStartTime?.toISOString() || new Date().toISOString(),
       endTime: data.timeSlotEndTime?.toISOString() || new Date().toISOString(),
       availableSpots: data.timeSlotAvailableSpots,
       bookedSpots: data.timeSlotBookedSpots,
       status: data.timeSlotStatus,
-      isRecurring: false, // Not needed for email functionality
-      created: '', // Not needed for email functionality
-      updated: '', // Not needed for email functionality
+      isRecurring: false,
+      recurringPattern: null,
+      recurringEnd: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     // Send the email
