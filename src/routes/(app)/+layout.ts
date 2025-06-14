@@ -16,4 +16,4 @@ export const load = async () => {
 };
 
 // App layout configuration - CSR for authenticated pages
-export const csr = true; 
+export const ssr = false; 
