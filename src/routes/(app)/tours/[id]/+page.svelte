@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { 
@@ -317,7 +317,7 @@
 				dotColor: getTourStatusDot(tour.status),
 				tooltip: `Click to ${tour.status === 'active' ? 'deactivate' : 'activate'} tour`
 			}}
-			secondaryInfo={formatEuro(tour.price)}
+			secondaryInfo={$globalCurrencyFormatter(tour.price)}
 			quickActions={[
 				{
 					label: 'Bookings',
@@ -432,7 +432,7 @@
 						</div>
 						<div class="flex items-center gap-1">
 							<DollarSign class="h-4 w-4" />
-							<span>{formatEuro(tour.price)} per person</span>
+							<span>{$globalCurrencyFormatter(tour.price)} per person</span>
 						</div>
 					</div>
 				</div>
@@ -610,7 +610,7 @@
 				{/if}
 				<div class="flex items-center justify-between">
 					<span class="text-sm" style="color: var(--text-secondary);">Price</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">{formatEuro(tour.price)} per person</span>
+					<span class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)} per person</span>
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-sm" style="color: var(--text-secondary);">Duration</span>
@@ -739,7 +739,7 @@
 									<div class="flex items-center gap-2 mt-1">
 										<span class="text-xs" style="color: var(--text-secondary);">{booking.participants} guests</span>
 										<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-										<span class="text-xs" style="color: var(--text-secondary);">{formatEuro(booking.totalAmount)}</span>
+										<span class="text-xs" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.totalAmount)}</span>
 									</div>
 								</div>
 								<span class="px-2 py-1 text-xs rounded-full {getBookingStatusColor(booking.status)}">
@@ -767,7 +767,7 @@
 		<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 			<StatsCard
 				title="Total Revenue"
-				value={formatEuro(tourStats?.totalRevenue || 0)}
+				value={$globalCurrencyFormatter(tourStats?.totalRevenue || 0)}
 				subtitle="all time earnings"
 				icon={DollarSign}
 				variant="small"

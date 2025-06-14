@@ -35,6 +35,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       website: userData.website,
       description: userData.description,
       location: userData.location,
+      currency: userData.currency,
       emailVerified: userData.emailVerified,
       lastLogin: userData.lastLogin
     };

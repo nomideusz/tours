@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	
@@ -137,7 +137,7 @@
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: formatEuro(stats().revenue)
+					value: $globalCurrencyFormatter(stats().revenue)
 				},
 				{
 					icon: TrendingUp,
@@ -205,7 +205,7 @@
 		
 		<StatsCard
 			title="Total Revenue"
-			value={formatEuro(stats().revenue)}
+								value={$globalCurrencyFormatter(stats().revenue)}
 			subtitle="confirmed bookings"
 			icon={Euro}
 			variant="small"
@@ -263,7 +263,7 @@
 									</span>
 								</div>
 								<span class="text-sm font-medium" style="color: var(--text-primary);">
-									{formatEuro(booking.totalAmount)}
+									{$globalCurrencyFormatter(booking.totalAmount)}
 								</span>
 							</div>
 						</div>
@@ -297,7 +297,7 @@
 							<div class="flex items-center gap-6">
 								<div class="text-right">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">
-										{formatEuro(booking.totalAmount)}
+										{$globalCurrencyFormatter(booking.totalAmount)}
 									</p>
 									<p class="text-xs" style="color: var(--text-secondary);">
 										{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'}

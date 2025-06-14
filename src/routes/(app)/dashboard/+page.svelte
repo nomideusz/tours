@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	
@@ -312,7 +312,7 @@
 
 		<StatsCard
 			title="Week Revenue"
-			value={formatEuro(stats.weeklyRevenue)}
+									value={$globalCurrencyFormatter(stats.weeklyRevenue)}
 			subtitle="last 7 days"
 			icon={DollarSign}
 			trend={stats.weeklyRevenue > 0 ? { value: "This week", positive: true } : undefined}
@@ -399,7 +399,7 @@
 											<span>•</span>
 											<span>{booking.participants} guests</span>
 											<span>•</span>
-											<span>{formatEuro(booking.totalAmount || 0)}</span>
+											<span>{$globalCurrencyFormatter(booking.totalAmount || 0)}</span>
 										</div>
 									</div>
 									<div class="flex items-center gap-2 ml-3">
@@ -498,7 +498,7 @@
 					<div class="space-y-3">
 						<div class="flex items-center justify-between">
 							<span class="text-sm" style="color: var(--text-secondary);">Revenue</span>
-							<span class="font-semibold" style="color: var(--text-primary);">{formatEuro(stats.weeklyRevenue)}</span>
+							<span class="font-semibold" style="color: var(--text-primary);">{$globalCurrencyFormatter(stats.weeklyRevenue)}</span>
 						</div>
 						<div class="flex items-center justify-between">
 							<span class="text-sm" style="color: var(--text-secondary);">Guests</span>

@@ -11,6 +11,7 @@
 	import { afterNavigate } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { auth } from '$lib/stores/auth.js';
+	import { setUserCurrencyFromServer } from '$lib/stores/currency.js';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
@@ -35,6 +36,10 @@
 	$effect(() => {
 		if (data) {
 			auth.initialize(data);
+			// Initialize user currency if available
+			if (data.user?.currency) {
+				setUserCurrencyFromServer(data.user.currency);
+			}
 		}
 	});
 
@@ -155,27 +160,29 @@
 <QueryClientProvider client={data.queryClient}>
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
 	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
-		<!-- App Header - Hide hamburger menu on mobile since we're using bottom nav -->
-		<AppHeader 
-			{pageTitle}
-			user={currentUserData}
-			sidebarOpen={false}
-			onSidebarToggle={() => {}} 
-			onLogout={() => handleLogout(new Event('click'))}
-			showSidebarToggle={false}
-		/>
+		<!-- App Header - Fixed at top -->
+		<div class="fixed top-0 left-0 right-0 z-50">
+			<AppHeader 
+				{pageTitle}
+				user={currentUserData}
+				sidebarOpen={false}
+				onSidebarToggle={() => {}} 
+				onLogout={() => handleLogout(new Event('click'))}
+				showSidebarToggle={false}
+			/>
+		</div>
 
 	<!-- Main content area with sidebar -->
-	<div class="flex flex-1 min-w-0">
-		<!-- Desktop Sidebar -->
-		<div class="hidden lg:flex lg:flex-shrink-0">
-			<div class="flex w-64 flex-col">
+	<div class="flex flex-1 min-w-0 pt-16">
+		<!-- Desktop Sidebar - Fixed position -->
+		<div class="hidden lg:block">
+			<div class="fixed left-0 w-64 flex flex-col" style="top: 4rem; height: calc(100vh - 4rem);">
 				<div
-					class="flex flex-grow flex-col overflow-y-auto overflow-x-hidden pt-5 pb-4"
+					class="flex flex-col h-full pt-5"
 					style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
 				>
-					<!-- Navigation -->
-					<nav class="mt-5 flex-1 space-y-1 px-2">
+					<!-- Navigation - Scrollable area -->
+					<nav class="flex-1 overflow-y-auto space-y-1 px-2 mt-5 min-h-0">
 						{#each navigationItems as item}
 							<a
 								href={item.href}
@@ -197,8 +204,8 @@
 						{/each}
 					</nav>
 
-					<!-- User section -->
-					<div class="flex flex-shrink-0 border-t p-4" style="border-color: var(--border-primary);">
+					<!-- User section - Sticky at bottom -->
+					<div class="flex-shrink-0 border-t p-4" style="border-color: var(--border-primary);">
 						<div class="flex w-full items-center justify-between min-w-0">
 							<div class="flex items-center gap-2 min-w-0 flex-1">
 								<Tooltip text="Edit Profile Settings" position="top-right">
@@ -248,7 +255,7 @@
 		</div>
 
 		<!-- Main content -->
-		<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0">
+		<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-64">
 			<!-- Page content with bottom padding on mobile for bottom nav -->
 			<main class="relative z-0 flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0">
 				{@render children()}
@@ -280,7 +287,7 @@
 	</div>
 
 	<!-- App Footer - Hide on mobile since we have bottom nav -->
-	<div class="hidden lg:block">
+	<div class="hidden lg:block lg:pl-64">
 		<AppFooter />
 	</div>
 	</div>

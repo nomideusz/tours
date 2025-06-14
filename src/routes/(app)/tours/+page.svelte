@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
 		formatDuration,
 		getTourStatusColor,
@@ -449,7 +449,7 @@
 				{
 					icon: DollarSign,
 					label: 'Revenue',
-					value: formatEuro(stats.monthRevenue)
+					value: $globalCurrencyFormatter(stats.monthRevenue)
 				},
 				{
 					icon: Users,
@@ -617,7 +617,7 @@
 
 				<StatsCard
 					title="Monthly Revenue"
-					value={formatEuro(stats.monthRevenue)}
+											value={$globalCurrencyFormatter(stats.monthRevenue)}
 					subtitle="this month"
 					icon={DollarSign}
 					trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
@@ -741,7 +741,7 @@
 											{tour.location}
 										</p>
 									{/if}
-									<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{formatEuro(tour.price)}</p>
+									<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
 								</div>
 							</div>
 
@@ -900,7 +900,7 @@
 										{/if}
 										<div class="flex items-center gap-1">
 											<DollarSign class="h-4 w-4" />
-											{formatEuro(tour.price)}
+											{$globalCurrencyFormatter(tour.price)}
 										</div>
 										<div class="flex items-center gap-1">
 											<Clock class="h-4 w-4" />

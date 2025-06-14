@@ -4,7 +4,7 @@
 	
 	// Get data from load function
 	let { data } = $props();
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
 	
@@ -184,7 +184,7 @@
 					dotColor: getStatusColor(booking.status),
 					tooltip: canChangeStatus() ? 'Click to change status' : 'Cannot change status for completed past bookings'
 				}}
-				secondaryInfo={`${booking.expand?.tour?.name || 'Unknown Tour'} • ${formatEuro(calculateTotal())}`}
+				secondaryInfo={`${booking.expand?.tour?.name || 'Unknown Tour'} • ${$globalCurrencyFormatter(calculateTotal())}`}
 				quickActions={[
 					{
 						label: 'Email',
@@ -309,8 +309,8 @@
 									<div class="flex items-center gap-3">
 										<DollarSign class="h-5 w-5" style="color: var(--text-tertiary);" />
 										<div>
-											<p class="font-medium" style="color: var(--text-primary);">{formatEuro(calculateTotal())}</p>
-											<p class="text-sm" style="color: var(--text-secondary);">{formatEuro(booking.expand.tour.price)} × {booking.participants} participants</p>
+											<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(calculateTotal())}</p>
+											<p class="text-sm" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.expand.tour.price)} × {booking.participants} participants</p>
 										</div>
 									</div>
 								{/if}

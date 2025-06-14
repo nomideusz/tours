@@ -23,6 +23,7 @@ export const users = pgTable('users', {
   country: text('country'),
   description: text('description'),
   location: varchar('location', { length: 255 }),
+  currency: varchar('currency', { length: 3 }).notNull().default('EUR'),
   
   // Main QR code for simplified approach
   mainQrCode: varchar('main_qr_code', { length: 100 }).unique(),

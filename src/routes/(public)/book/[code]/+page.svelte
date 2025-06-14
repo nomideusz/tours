@@ -4,6 +4,7 @@
 	import type { PageData, ActionData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
 		formatSlotDateTime,
 		formatSlotTimeRange,
@@ -438,11 +439,11 @@
 					<div class="bg-gray-50 rounded-lg p-4">
 						<div class="flex justify-between items-center mb-2">
 							<span class="text-gray-600">Tour price</span>
-							<span>€{tour.price} × {participants}</span>
+							<span>{$globalCurrencyFormatter(tour.price)} × {participants}</span>
 						</div>
 						<div class="flex justify-between items-center font-semibold text-lg">
 							<span>Total</span>
-							<span>€{totalPrice}</span>
+							<span>{$globalCurrencyFormatter(totalPrice)}</span>
 						</div>
 					</div>
 					

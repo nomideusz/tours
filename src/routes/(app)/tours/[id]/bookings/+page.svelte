@@ -1,7 +1,7 @@
 <script lang="ts">
 
 	import { goto } from '$app/navigation';
-	import { formatEuro } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	
@@ -168,7 +168,7 @@
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: formatEuro(stats().revenue)
+					value: $globalCurrencyFormatter(stats().revenue)
 				},
 				{
 					icon: Users,
@@ -238,7 +238,7 @@
 				<Euro class="h-4 w-4" style="color: var(--text-tertiary);" />
 				<span class="text-xs" style="color: var(--text-tertiary);">Revenue</span>
 			</div>
-			<p class="text-lg font-bold" style="color: var(--text-primary);">{formatEuro(stats().revenue)}</p>
+							<p class="text-lg font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(stats().revenue)}</p>
 		</div>
 	</div>
 	
@@ -263,7 +263,7 @@
 		
 		<StatsCard
 			title="Tour Revenue"
-			value={formatEuro(stats().revenue)}
+			value={$globalCurrencyFormatter(stats().revenue)}
 			subtitle="from this tour"
 			icon={Euro}
 			variant="small"
@@ -379,7 +379,7 @@
 									</span>
 								</div>
 								<span class="text-sm font-medium" style="color: var(--text-primary);">
-									{formatEuro(booking.totalAmount)}
+									{$globalCurrencyFormatter(booking.totalAmount)}
 								</span>
 							</div>
 						</div>
@@ -413,7 +413,7 @@
 							<div class="flex items-center gap-6">
 								<div class="text-right">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">
-										{formatEuro(booking.totalAmount)}
+										{$globalCurrencyFormatter(booking.totalAmount)}
 									</p>
 									<p class="text-xs" style="color: var(--text-secondary);">
 										{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'}

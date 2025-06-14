@@ -26,6 +26,8 @@ export const load: PageServerLoad = async ({ locals }) => {
             verified: locals.user.emailVerified || false,
             stripeAccountId: locals.user.stripeAccountId || '',
             country: locals.user.country || '',
+            currency: locals.user.currency || 'EUR',
+            role: locals.user.role || 'user',
             // Check if user has OAuth2 login (no password)
             isOAuth2User: !!(locals.user.avatar || locals.user.name)
         }
@@ -47,6 +49,7 @@ export const actions: Actions = {
         const phone = formData.get('phone')?.toString() || '';
         const website = formData.get('website')?.toString() || '';
         const country = formData.get('country')?.toString() || '';
+        const currency = formData.get('currency')?.toString() || 'EUR';
 
         // Basic validation
         if (username && username.length < 3) {
@@ -76,6 +79,12 @@ export const actions: Actions = {
         }
 
         try {
+            // Validate currency
+            const validCurrencies = ['EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK'];
+            if (!validCurrencies.includes(currency)) {
+                return fail(400, { error: 'Invalid currency selected' });
+            }
+
             // Update user profile
             const userUpdate = {
                 name,
@@ -84,14 +93,13 @@ export const actions: Actions = {
                 description,
                 phone,
                 website,
+                country,
+                currency,
                 updatedAt: new Date()
             };
             
-            // Add country field via type assertion to avoid TypeScript error
-            const updateWithCountry = { ...userUpdate, country } as any;
-            
             const updatedUsers = await db.update(users)
-                .set(updateWithCountry)
+                .set(userUpdate)
                 .where(eq(users.id, locals.user.id))
                 .returning();
 
@@ -112,18 +120,14 @@ export const actions: Actions = {
                 description: updatedUser.description || '',
                 phone: updatedUser.phone || '',
                 website: updatedUser.website || '',
-            };
-            
-            // Add country via type assertion
-            const returnDataWithCountry = { 
-                ...userReturnData, 
-                country: (updatedUser as any).country || '' 
+                country: updatedUser.country || '',
+                currency: updatedUser.currency || 'EUR',
             };
 
             return { 
                 success: true, 
                 message: 'Profile updated successfully!',
-                updatedUser: returnDataWithCountry
+                updatedUser: userReturnData
             };
         } catch (error) {
             console.error('Profile update error:', error);

@@ -23,13 +23,13 @@ export function formatDuration(minutes: number): string {
 	return `${mins}m`;
 }
 
+import { formatCurrency } from '$lib/utils/currency.js';
+
 /**
  * Format tour price with currency
  */
 export function formatTourPrice(price: number | string): string {
-	const num = typeof price === 'string' ? parseFloat(price) : price;
-	if (isNaN(num)) return '€0.00';
-	return `€${num.toFixed(2)}`;
+	return formatCurrency(price);
 }
 
 // ============================================

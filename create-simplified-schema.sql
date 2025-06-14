@@ -45,8 +45,10 @@ CREATE TABLE users (
     role user_role NOT NULL DEFAULT 'user',
     phone VARCHAR(50),
     website VARCHAR(255),
+    country TEXT,
     description TEXT,
     location VARCHAR(255),
+    currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
     
     -- Main QR code for simplified approach
     main_qr_code VARCHAR(100) UNIQUE,

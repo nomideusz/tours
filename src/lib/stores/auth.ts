@@ -13,6 +13,7 @@ export interface AuthUser {
 	website?: string;
 	description?: string;
 	location?: string;
+	currency?: string;
 	emailVerified?: boolean;
 	lastLogin?: Date;
 }

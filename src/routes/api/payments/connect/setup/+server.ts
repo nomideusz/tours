@@ -21,6 +21,9 @@ export const POST: RequestHandler = async ({ request, url }) => {
 
         const user = userRecords[0];
         
+        // Use the most current country data from the database
+        const userCountry = user.country || country || 'DE';
+        
         const stripe = getStripe();
         let accountId = user.stripeAccountId;
 
@@ -28,7 +31,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
         if (!accountId) {
             const account = await stripe.accounts.create({
                 type: 'express',
-                country: country || 'DE', // Use provided country or default to Germany
+                country: userCountry,
                 email: email,
                 business_profile: {
                     name: businessName || undefined,
