@@ -16,9 +16,17 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       
       // Function to send SSE message
       const sendMessage = (data: any) => {
-        const message = `data: ${JSON.stringify(data)}\n\n`;
-        controller.enqueue(encoder.encode(message));
+        try {
+          const message = `data: ${JSON.stringify(data)}\n\n`;
+          controller.enqueue(encoder.encode(message));
+        } catch (error) {
+          console.error(`Failed to send SSE message to user ${userId}:`, error);
+          connections.delete(userId);
+        }
       };
+
+      // Store connection for this user (store the sendMessage function)
+      connections.set(userId, sendMessage as any);
 
       // Send initial connection message
       sendMessage({
@@ -26,10 +34,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
         timestamp: new Date().toISOString(),
         userId
       });
-
-      // Store connection for this user
-      const writer = controller;
-      connections.set(userId, writer as any);
 
       // Set up heartbeat to keep connection alive
       const heartbeat = setInterval(() => {

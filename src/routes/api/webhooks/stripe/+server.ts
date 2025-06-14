@@ -181,6 +181,19 @@ export const POST: RequestHandler = async ({ request }) => {
             } else {
               console.warn(`Webhook: Failed to send QR ticket:`, await qrResponse.text());
             }
+
+            // Send booking notification email to tour guide
+            const guideEmailResponse = await fetch(`${new URL(request.url).origin}/api/send-guide-booking-email`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookingId })
+            });
+            
+            if (guideEmailResponse.ok) {
+              console.log(`Webhook: Guide notification email sent for booking ${bookingId}`);
+            } else {
+              console.warn(`Webhook: Failed to send guide notification email:`, await guideEmailResponse.text());
+            }
           } catch (emailError) {
             console.warn('Webhook: Error sending emails:', emailError);
           }

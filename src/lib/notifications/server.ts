@@ -7,12 +7,10 @@ export const connections = new Map<string, WritableStreamDefaultWriter>();
 
 // Function to send notification to specific user (called from webhook)
 export async function sendNotificationToUser(userId: string, notification: any) {
-  const connection = connections.get(userId);
-  if (connection) {
+  const sendMessage = connections.get(userId);
+  if (sendMessage) {
     try {
-      const encoder = new TextEncoder();
-      const message = `data: ${JSON.stringify(notification)}\n\n`;
-      await (connection as any).enqueue(encoder.encode(message));
+      (sendMessage as any)(notification);
       console.log(`✅ SSE notification sent to user ${userId}:`, notification.type);
       return true;
     } catch (error) {
