@@ -18,6 +18,8 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
+	import { themeStore } from '$lib/stores/theme.js';
+	import { onMount } from 'svelte';
 
 
 	// Icons
@@ -156,6 +158,55 @@
 			isLoggingOut = false;
 		}
 	}
+
+	// Theme communication with embedded widgets
+	onMount(() => {
+		let currentTheme: 'light' | 'dark' = 'light';
+		
+		// Subscribe to theme changes and notify embedded widgets
+		const unsubscribe = themeStore.subscribe(theme => {
+			const effectiveTheme = themeStore.getEffective(theme);
+			currentTheme = effectiveTheme;
+			
+			// Notify all embedded widgets about theme change
+			const iframes = document.querySelectorAll('iframe[src*="/embed/"]');
+			iframes.forEach(iframe => {
+				const iframeWindow = (iframe as HTMLIFrameElement).contentWindow;
+				if (iframeWindow) {
+					try {
+						iframeWindow.postMessage({
+							type: 'theme-change',
+							theme: effectiveTheme
+						}, '*');
+					} catch (e) {
+						// Ignore cross-origin errors
+					}
+				}
+			});
+		});
+		
+		// Listen for theme requests from embedded widgets
+		const handleMessage = (event: MessageEvent) => {
+			if (event.data.type === 'request-theme') {
+				// Send current theme to requesting widget
+				try {
+					(event.source as Window)?.postMessage({
+						type: 'theme-change',
+						theme: currentTheme
+					}, '*');
+				} catch (e) {
+					// Ignore cross-origin errors
+				}
+			}
+		};
+		
+		window.addEventListener('message', handleMessage);
+		
+		return () => {
+			unsubscribe();
+			window.removeEventListener('message', handleMessage);
+		};
+	});
 
 </script>
 

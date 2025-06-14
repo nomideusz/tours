@@ -165,7 +165,7 @@
 	function getEmbedCode(): string {
 		if (!browser || !tour.qrCode) return '';
 		const baseURL = window.location.origin;
-		return `<iframe src="${baseURL}/embed/book/${tour.qrCode}" width="100%" height="220" frameborder="0" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"></iframe>`;
+		return `<iframe src="${baseURL}/embed/book/${tour.qrCode}?theme=auto" width="100%" height="220" frameborder="0" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border: none;"></iframe>`;
 	}
 
 	async function copyEmbedCode() {
@@ -838,7 +838,7 @@
 				<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Preview:</h4>
 				<div class="border rounded-lg overflow-hidden" style="border-color: var(--border-primary);">
 					<iframe
-						src="/embed/book/{tour.qrCode}"
+						src="/embed/book/{tour.qrCode}?theme=auto"
 						width="100%"
 						height="220"
 						frameborder="0"
@@ -872,13 +872,15 @@
 			</div>
 			
 			<!-- Integration Tips -->
-			<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-				<h5 class="text-sm font-medium mb-2" style="color: var(--color-primary-900);">💡 Integration Tips:</h5>
-				<ul class="text-xs space-y-1" style="color: var(--color-primary-800);">
+			<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+				<h5 class="text-sm font-medium mb-2" style="color: var(--text-primary);">💡 Integration Tips:</h5>
+				<ul class="text-xs space-y-1" style="color: var(--text-secondary);">
 					<li>• Copy the code above and paste it into your website's HTML</li>
 					<li>• The widget is responsive and will adapt to your site's design</li>
+					<li>• Supports automatic dark/light mode based on user preferences</li>
 					<li>• Customers can book without leaving your website</li>
 					<li>• All bookings will appear in your dashboard as usual</li>
+					<li>• Change <code>?theme=auto</code> to <code>?theme=dark</code> or <code>?theme=light</code> for fixed themes</li>
 				</ul>
 			</div>
 		</div>

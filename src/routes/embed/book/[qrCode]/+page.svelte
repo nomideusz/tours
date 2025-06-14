@@ -45,16 +45,177 @@
 			window.parent.open(`${window.location.origin}/book/${qrCode}`, '_blank');
 		}
 	}
+	
+	// Theme detection - check if parent prefers dark mode
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			// Check for theme parameter in URL
+			const urlParams = new URLSearchParams(window.location.search);
+			const themeParam = urlParams.get('theme');
+			
+			console.log('Widget theme initialization:', { themeParam });
+			
+			// Apply initial theme
+			const applyTheme = (theme: 'light' | 'dark') => {
+				if (theme === 'dark') {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				} else {
+					document.documentElement.removeAttribute('data-theme');
+				}
+			};
+			
+			// Determine initial theme
+			if (themeParam === 'dark') {
+				console.log('Using dark theme (explicit)');
+				applyTheme('dark');
+			} else if (themeParam === 'light') {
+				console.log('Using light theme (explicit)');
+				applyTheme('light');
+			} else if (themeParam === 'auto') {
+				// Auto-detect from system
+				const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const effectiveTheme = prefersDark ? 'dark' : 'light';
+				console.log('Using auto theme:', effectiveTheme);
+				applyTheme(effectiveTheme);
+				
+				// Listen for system theme changes
+				const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+				const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+					applyTheme(e.matches ? 'dark' : 'light');
+				};
+				mediaQuery.addEventListener('change', handleSystemThemeChange);
+			} else {
+				// Default to light theme for widgets
+				console.log('Using light theme (default)');
+				applyTheme('light');
+			}
+			
+			// Listen for theme changes from parent window (for embedded widgets)
+			const handleMessage = (event: MessageEvent) => {
+				if (event.data.type === 'theme-change') {
+					console.log('Received theme change from parent:', event.data.theme);
+					applyTheme(event.data.theme);
+				}
+			};
+			
+			window.addEventListener('message', handleMessage);
+			
+			// Request current theme from parent if embedded
+			if (window.parent !== window) {
+				window.parent.postMessage({ type: 'request-theme' }, '*');
+			}
+			
+			return () => {
+				window.removeEventListener('message', handleMessage);
+			};
+		}
+	});
 </script>
 
 <svelte:head>
 	<title>{tour?.name || 'Tour'} - Book Now</title>
 	<meta name="description" content="Book {tour?.name || 'this tour'} - {tour?.description || 'Experience something amazing'}" />
 	<style>
+		/* Inline CSS variables for reliable iframe loading */
+		:root {
+			/* Professional Color Palette */
+			--color-primary-50: #eff6ff;
+			--color-primary-100: #dbeafe;
+			--color-primary-200: #bfdbfe;
+			--color-primary-300: #93c5fd;
+			--color-primary-400: #60a5fa;
+			--color-primary-500: #3b82f6;
+			--color-primary-600: #2563eb;
+			--color-primary-700: #1d4ed8;
+			--color-primary-800: #1e40af;
+			--color-primary-900: #1e3a8a;
+			
+			/* Neutral Grays */
+			--color-gray-50: #f9fafb;
+			--color-gray-100: #f3f4f6;
+			--color-gray-200: #e5e7eb;
+			--color-gray-300: #d1d5db;
+			--color-gray-400: #9ca3af;
+			--color-gray-500: #6b7280;
+			--color-gray-600: #4b5563;
+			--color-gray-700: #374151;
+			--color-gray-800: #1f2937;
+			--color-gray-900: #111827;
+			
+			/* Semantic Colors */
+			--color-success: #10b981;
+			--color-success-light: #d1fae5;
+			--color-error: #ef4444;
+			--color-error-light: #fee2e2;
+			
+			/* Typography */
+			--font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			
+			/* Font Sizes */
+			--text-xs: 0.75rem;
+			--text-sm: 0.875rem;
+			--text-base: 1rem;
+			--text-lg: 1.125rem;
+			
+			/* Line Heights */
+			--leading-tight: 1.25;
+			--leading-normal: 1.5;
+			
+			/* Spacing Scale */
+			--space-1: 0.25rem;
+			--space-2: 0.5rem;
+			--space-3: 0.75rem;
+			--space-4: 1rem;
+			--space-8: 2rem;
+			
+			/* Border Radius */
+			--radius-sm: 0.125rem;
+			--radius-md: 0.5rem;
+			--radius-lg: 0.75rem;
+			--radius-xl: 1rem;
+			
+			/* Shadows */
+			--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+			
+			/* Transitions */
+			--transition-fast: 150ms;
+			
+			/* Light theme semantic colors */
+			--bg-primary: #ffffff;
+			--bg-secondary: var(--color-gray-50);
+			--text-primary: var(--color-gray-900);
+			--text-secondary: var(--color-gray-600);
+			--text-tertiary: var(--color-gray-500);
+			--border-primary: var(--color-gray-200);
+		}
+
+		/* Dark mode overrides */
+		[data-theme="dark"] {
+			--color-gray-50: #0f1419;
+			--color-gray-100: #1c2128;
+			--color-gray-200: #30363d;
+			--color-gray-300: #484f58;
+			--color-gray-400: #656d76;
+			--color-gray-500: #8b949e;
+			--color-gray-600: #b1bac4;
+			--color-gray-700: #c9d1d9;
+			--color-gray-800: #f0f6fc;
+			--color-gray-900: #ffffff;
+
+			--bg-primary: #0d1117;
+			--bg-secondary: #161b22;
+			--text-primary: #f0f6fc;
+			--text-secondary: #c9d1d9;
+			--text-tertiary: #b1bac4;
+			--border-primary: #30363d;
+		}
+
 		body {
 			margin: 0;
 			padding: 0;
-			font-family: system-ui, -apple-system, sans-serif;
+			font-family: var(--font-sans);
+			background: var(--bg-primary);
+			color: var(--text-primary);
 		}
 	</style>
 </svelte:head>
@@ -132,12 +293,12 @@
 					
 					<div class="widget-actions">
 						{#if tour.status === 'active'}
-							<button class="book-button" onclick={handleBookNow}>
+							<button class="button-primary button--gap button--small widget-book-button" onclick={handleBookNow}>
 								<Calendar size={16} />
 								Book Now
 							</button>
 						{:else}
-							<button class="book-button book-button--draft" onclick={handleBookNow}>
+							<button class="button-secondary button--gap button--small widget-book-button" onclick={handleBookNow}>
 								<Calendar size={16} />
 								Contact Us
 							</button>
@@ -159,10 +320,11 @@
 	.embed-widget {
 		width: 100%;
 		height: 100%;
-		background: white;
-		border-radius: 8px;
+		background: var(--bg-primary);
+		border-radius: var(--radius-lg);
 		overflow: hidden;
-		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-family: var(--font-sans);
+		color: var(--text-primary);
 	}
 	
 	.loading-state, .error-state, .inactive-state {
@@ -171,19 +333,19 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
-		padding: 2rem;
+		padding: var(--space-8);
 		text-align: center;
-		color: #6b7280;
+		color: var(--text-secondary);
 	}
 	
 	.loading-state .spinner {
 		width: 24px;
 		height: 24px;
-		border: 2px solid #e5e7eb;
-		border-top: 2px solid #3b82f6;
+		border: 2px solid var(--border-primary);
+		border-top: 2px solid var(--color-primary-600);
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-4);
 	}
 	
 	@keyframes spin {
@@ -191,15 +353,15 @@
 	}
 	
 	.error-state h3, .inactive-state h3 {
-		margin: 0 0 0.5rem 0;
-		color: #dc2626;
-		font-size: 1.125rem;
+		margin: 0 0 var(--space-2) 0;
+		color: var(--color-error);
+		font-size: var(--text-lg);
 		font-weight: 600;
 	}
 	
 	.error-state p, .inactive-state p {
 		margin: 0;
-		font-size: 0.875rem;
+		font-size: var(--text-sm);
 	}
 	
 	.tour-widget {
@@ -207,10 +369,11 @@
 		min-height: 220px;
 		display: flex;
 		flex-direction: column;
-		background: #ffffff;
-		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		background: var(--bg-primary);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-md);
 		overflow: hidden;
+		border: 1px solid var(--border-primary);
 	}
 	
 	.widget-content {
@@ -223,7 +386,7 @@
 		width: 120px;
 		height: 180px;
 		flex-shrink: 0;
-		background: #f8fafc;
+		background: var(--bg-secondary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -238,23 +401,23 @@
 	}
 	
 	.tour-image--placeholder {
-		color: #cbd5e1;
+		color: var(--text-tertiary);
 	}
 	
 	.status-overlay {
 		position: absolute;
-		top: 8px;
-		left: 8px;
-		right: 8px;
+		top: var(--space-2);
+		left: var(--space-2);
+		right: var(--space-2);
 		display: flex;
 		justify-content: center;
 	}
 	
 	.status-badge {
-		background: rgba(0, 0, 0, 0.7);
+		background: rgba(0, 0, 0, 0.8);
 		color: white;
-		padding: 4px 8px;
-		border-radius: 4px;
+		padding: var(--space-1) var(--space-2);
+		border-radius: var(--radius-sm);
 		font-size: 10px;
 		font-weight: 600;
 		text-transform: uppercase;
@@ -263,7 +426,7 @@
 	
 	.tour-info {
 		flex: 1;
-		padding: 16px;
+		padding: var(--space-4);
 		display: flex;
 		flex-direction: column;
 		min-width: 0;
@@ -278,15 +441,15 @@
 	}
 	
 	.tour-header {
-		margin-bottom: 8px;
+		margin-bottom: var(--space-2);
 	}
 	
 	.tour-title {
-		margin: 0 0 4px 0;
-		font-size: 16px;
+		margin: 0 0 var(--space-1) 0;
+		font-size: var(--text-base);
 		font-weight: 700;
-		color: #1f2937;
-		line-height: 1.3;
+		color: var(--text-primary);
+		line-height: var(--leading-tight);
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
@@ -294,38 +457,38 @@
 	}
 	
 	.tour-price {
-		font-size: 18px;
+		font-size: var(--text-lg);
 		font-weight: 700;
-		color: #059669;
-		margin-bottom: 8px;
+		color: var(--color-success);
+		margin-bottom: var(--space-2);
 	}
 	
 	.tour-meta {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-		margin-bottom: 8px;
+		gap: var(--space-2);
+		margin-bottom: var(--space-2);
 	}
 	
 	.meta-item {
 		display: flex;
 		align-items: center;
-		gap: 4px;
+		gap: var(--space-1);
 		font-size: 11px;
-		color: #6b7280;
+		color: var(--text-secondary);
 		font-weight: 500;
 	}
 	
 	.meta-item :global(svg) {
-		color: #9ca3af;
+		color: var(--text-tertiary);
 		flex-shrink: 0;
 	}
 	
 	.tour-description {
 		margin: 0;
-		font-size: 13px;
-		color: #6b7280;
-		line-height: 1.5;
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+		line-height: var(--leading-normal);
 		max-height: 39px; /* 2 lines * 1.5 line-height * 13px font-size */
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -338,66 +501,34 @@
 		margin-top: auto;
 	}
 	
-	.book-button {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
+	.widget-book-button {
 		width: 100%;
-		padding: 10px 16px;
-		background: #3b82f6;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-size: 14px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s ease;
 		letter-spacing: 0.025em;
 	}
 	
-	.book-button:hover {
-		background: #2563eb;
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-	}
-	
-	.book-button:active {
-		transform: translateY(0);
-	}
-	
-	.book-button--draft {
-		background: #6b7280;
-	}
-	
-	.book-button--draft:hover {
-		background: #4b5563;
-		box-shadow: 0 4px 12px rgba(107, 114, 128, 0.25);
-	}
-	
 	.widget-footer {
-		border-top: 1px solid #f1f5f9;
-		padding: 8px 16px;
-		background: #f8fafc;
+		border-top: 1px solid var(--border-primary);
+		padding: var(--space-2) var(--space-4);
+		background: var(--bg-secondary);
 	}
 	
 	.powered-by {
 		margin: 0;
 		text-align: center;
 		font-size: 10px;
-		color: #94a3b8;
+		color: var(--text-tertiary);
 		font-weight: 500;
 	}
 	
 	.zaur-link {
-		color: #3b82f6;
+		color: var(--color-primary-600);
 		text-decoration: none;
 		font-weight: 600;
-		transition: color 0.2s ease;
+		transition: color var(--transition-fast) ease;
 	}
 	
 	.zaur-link:hover {
-		color: #2563eb;
+		color: var(--color-primary-700);
 		text-decoration: underline;
 	}
 	
@@ -413,15 +544,15 @@
 		}
 		
 		.tour-info {
-			padding: 12px;
+			padding: var(--space-3);
 		}
 		
 		.tour-title {
-			font-size: 15px;
+			font-size: var(--text-sm);
 		}
 		
 		.tour-price {
-			font-size: 16px;
+			font-size: var(--text-base);
 		}
 		
 		.meta-item {
@@ -432,28 +563,23 @@
 			font-size: 12px;
 		}
 		
-		.book-button {
-			padding: 8px 12px;
-			font-size: 13px;
-		}
-		
 		.widget-footer {
-			padding: 6px 12px;
+			padding: var(--space-1) var(--space-3);
 		}
 	}
 	
 	@media (max-width: 320px) {
 		.tour-meta {
 			flex-direction: column;
-			gap: 4px;
+			gap: var(--space-1);
 		}
 		
 		.tour-title {
-			font-size: 14px;
+			font-size: var(--text-xs);
 		}
 		
 		.tour-price {
-			font-size: 15px;
+			font-size: var(--text-sm);
 		}
 	}
 </style> 
