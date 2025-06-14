@@ -2,9 +2,10 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { sendEmail } from '$lib/email.server.js';
 import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+import { formatCurrency } from '$lib/utils/currency.js';
+import { Resend } from 'resend';
+import { env } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -58,7 +59,7 @@ export const POST: RequestHandler = async ({ request }) => {
       : 'TBD';
 
     // Format total amount
-    const formattedAmount = globalCurrencyFormatter(parseFloat(data.totalAmount || '0'));
+    const formattedAmount = formatCurrency(parseFloat(data.totalAmount || '0'));
 
     // Create email content
     const subject = `🎉 New Booking Received - ${data.tourName}`;
@@ -163,24 +164,23 @@ Zaur - Tour Booking Platform
 Visit your dashboard: https://zaur.app/dashboard
     `;
 
-    // Send email to tour guide
-    const emailResult = await sendEmail({
+    // Send email to tour guide using Resend
+    const resend = new Resend(env.RESEND_API_KEY);
+    
+    const emailResult = await resend.emails.send({
+      from: 'noreply@auth.zaur.app',
       to: data.guideEmail,
       subject,
       html: htmlContent,
       text: textContent
     });
 
-    if (!emailResult.success) {
-      throw new Error(emailResult.error || 'Failed to send email');
-    }
-
     console.log(`✅ Guide notification email sent successfully for booking ${bookingId} to ${data.guideEmail}`);
 
     return json({
       success: true,
       message: 'Guide notification email sent successfully',
-      messageId: emailResult.messageId,
+      messageId: emailResult.data?.id,
       recipient: data.guideEmail
     });
 
