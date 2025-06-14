@@ -42,7 +42,7 @@ export function useNotifications() {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 SSE message received:', data.type);
+          console.log('📨 SSE message received:', data.type, data);
 
           switch (data.type) {
             case 'connected':
@@ -51,9 +51,11 @@ export function useNotifications() {
 
             case 'heartbeat':
               // Silent heartbeat - just keep connection alive
+              console.log('💓 SSE heartbeat received');
               break;
 
             case 'new_booking':
+              console.log('🎉 Processing new booking notification:', data);
               handleNewBookingNotification(data);
               break;
 
@@ -61,14 +63,15 @@ export function useNotifications() {
             case 'payment_received':
             case 'system':
             case 'info':
+              console.log('📝 Adding notification to store:', data);
               notificationActions.add(data);
               break;
 
             default:
-              console.log('❓ Unknown SSE message type:', data.type);
+              console.log('❓ Unknown SSE message type:', data.type, data);
           }
         } catch (error) {
-          console.error('❌ Error parsing SSE message:', error);
+          console.error('❌ Error parsing SSE message:', error, event.data);
         }
       };
 
@@ -106,15 +109,18 @@ export function useNotifications() {
   }
 
   function handleNewBookingNotification(data: any) {
-    console.log('🎉 New booking notification:', data);
+    console.log('🎉 New booking notification received:', data);
     
     // Add notification to store
+    console.log('📝 Adding new booking notification to store...');
     notificationActions.add(data);
     
     // Show browser notification if permitted
+    console.log('🔔 Attempting to show browser notification...');
     showBrowserNotification(data);
     
     // Play notification sound (optional)
+    console.log('🔊 Playing notification sound...');
     playNotificationSound();
     
     // Invalidate relevant queries to refresh data

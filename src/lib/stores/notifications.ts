@@ -42,13 +42,18 @@ export const isConnected = derived(notificationStore, ($store) => $store.connect
 export const notificationActions = {
   // Add a new notification
   add: (notification: Omit<Notification, 'read'>) => {
-    notificationStore.update(state => ({
-      ...state,
-      notifications: [
-        { ...notification, read: false },
-        ...state.notifications
-      ].slice(0, 50) // Keep only last 50 notifications
-    }));
+    console.log('🔔 Adding notification to store:', notification);
+    notificationStore.update(state => {
+      const newState = {
+        ...state,
+        notifications: [
+          { ...notification, read: false },
+          ...state.notifications
+        ].slice(0, 50) // Keep only last 50 notifications
+      };
+      console.log('📊 Updated notification store:', newState.notifications.length, 'notifications');
+      return newState;
+    });
   },
 
   // Mark notification as read
