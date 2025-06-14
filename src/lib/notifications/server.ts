@@ -1,0 +1,75 @@
+import { db } from '$lib/db/connection.js';
+import { tours } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
+
+// Store active SSE connections by user ID
+export const connections = new Map<string, WritableStreamDefaultWriter>();
+
+// Function to send notification to specific user (called from webhook)
+export async function sendNotificationToUser(userId: string, notification: any) {
+  const connection = connections.get(userId);
+  if (connection) {
+    try {
+      const encoder = new TextEncoder();
+      const message = `data: ${JSON.stringify(notification)}\n\n`;
+      await (connection as any).enqueue(encoder.encode(message));
+      console.log(`✅ SSE notification sent to user ${userId}:`, notification.type);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to send SSE notification to user ${userId}:`, error);
+      connections.delete(userId);
+      return false;
+    }
+  }
+  return false;
+}
+
+// Function to broadcast booking notifications (called from webhook/API)
+export async function broadcastBookingNotification(bookingData: any) {
+  try {
+    // Get tour owner ID
+    const tourOwner = await db.select({ userId: tours.userId })
+      .from(tours)
+      .where(eq(tours.id, bookingData.tourId))
+      .limit(1);
+
+    if (tourOwner.length === 0) {
+      console.warn('No tour owner found for booking notification');
+      return false;
+    }
+
+    const userId = tourOwner[0].userId;
+    
+    const notification = {
+      type: 'new_booking',
+      id: `booking_${bookingData.id}`,
+      timestamp: new Date().toISOString(),
+      title: 'New Booking!',
+      message: `${bookingData.customerName} booked ${bookingData.tourName}`,
+      data: {
+        bookingId: bookingData.id,
+        tourId: bookingData.tourId,
+        tourName: bookingData.tourName,
+        customerName: bookingData.customerName,
+        participants: bookingData.participants,
+        totalAmount: bookingData.totalAmount,
+        status: bookingData.status
+      },
+      actions: [
+        {
+          label: 'View Booking',
+          url: `/bookings/${bookingData.id}`
+        },
+        {
+          label: 'View Tour',
+          url: `/tours/${bookingData.tourId}`
+        }
+      ]
+    };
+
+    return await sendNotificationToUser(userId, notification);
+  } catch (error) {
+    console.error('Error broadcasting booking notification:', error);
+    return false;
+  }
+} 

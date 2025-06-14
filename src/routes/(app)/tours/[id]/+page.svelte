@@ -72,6 +72,7 @@
 	
 	// State
 	let copiedQRCode = $state(false);
+	let copiedEmbedCode = $state(false);
 	let statusUpdating = $state(false);
 
 	// Calculate conversion rate using shared utility
@@ -157,6 +158,27 @@
 			}
 		} finally {
 			statusUpdating = false;
+		}
+	}
+
+	// Embed widget functions
+	function getEmbedCode(): string {
+		if (!browser || !tour.qrCode) return '';
+		const baseURL = window.location.origin;
+		return `<iframe src="${baseURL}/embed/book/${tour.qrCode}" width="100%" height="220" frameborder="0" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);"></iframe>`;
+	}
+
+	async function copyEmbedCode() {
+		if (!browser) return;
+		
+		try {
+			await navigator.clipboard.writeText(getEmbedCode());
+			copiedEmbedCode = true;
+			setTimeout(() => {
+				copiedEmbedCode = false;
+			}, 2000);
+		} catch (err) {
+			console.error('Failed to copy embed code:', err);
 		}
 	}
 </script>
@@ -796,7 +818,73 @@
 		</div>
 	</div>
 
-	<!-- 6. Tour Gallery - Visual Content (Lowest Priority) -->
+	<!-- 6. Website Embed Widget -->
+	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<div class="flex items-center justify-between">
+				<h3 class="font-semibold" style="color: var(--text-primary);">Website Embed Widget</h3>
+				<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+					Easy Integration
+				</span>
+			</div>
+		</div>
+		<div class="p-4">
+			<p class="text-sm mb-4" style="color: var(--text-secondary);">
+				Add this booking widget to your website to allow customers to book directly without leaving your site.
+			</p>
+			
+			<!-- Widget Preview -->
+			<div class="mb-4">
+				<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Preview:</h4>
+				<div class="border rounded-lg overflow-hidden" style="border-color: var(--border-primary);">
+					<iframe
+						src="/embed/book/{tour.qrCode}"
+						width="100%"
+						height="220"
+						frameborder="0"
+						title="Booking widget for {tour.name}"
+						class="bg-white"
+					></iframe>
+				</div>
+			</div>
+			
+			<!-- Embed Code -->
+			<div>
+				<div class="flex items-center justify-between mb-2">
+					<h4 class="text-sm font-medium" style="color: var(--text-primary);">Embed Code:</h4>
+					<button 
+						onclick={() => copyEmbedCode()}
+						class="button-secondary button--small button--gap"
+						class:opacity-50={copiedEmbedCode}
+					>
+						{#if copiedEmbedCode}
+							<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+							Copied!
+						{:else}
+							<Copy class="h-3 w-3" />
+							Copy Code
+						{/if}
+					</button>
+				</div>
+				<div class="relative">
+					<pre class="text-xs p-3 rounded-lg overflow-x-auto" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary);">{getEmbedCode()}</pre>
+				</div>
+			</div>
+			
+			<!-- Integration Tips -->
+			<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+				<h5 class="text-sm font-medium mb-2" style="color: var(--color-primary-900);">💡 Integration Tips:</h5>
+				<ul class="text-xs space-y-1" style="color: var(--color-primary-800);">
+					<li>• Copy the code above and paste it into your website's HTML</li>
+					<li>• The widget is responsive and will adapt to your site's design</li>
+					<li>• Customers can book without leaving your website</li>
+					<li>• All bookings will appear in your dashboard as usual</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<!-- 7. Tour Gallery - Visual Content (Lowest Priority) -->
 	{#if tour.images && tour.images.length > 0}
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">

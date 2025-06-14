@@ -5,6 +5,7 @@
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
 	
 	let { 
 		pageTitle, 
@@ -24,8 +25,7 @@
 		class?: string;
 	}>();
 
-	// Show notifications badge (placeholder for future notifications)
-	let hasNotifications = false;
+	// Notifications are now handled by the NotificationPanel component
 </script>
 
 <style>
@@ -66,17 +66,8 @@
 			<!-- Theme Toggle -->
 			<ThemeToggle tooltipPosition="bottom" />
 
-			<!-- Notifications (placeholder) -->
-			<Tooltip text="Notifications">
-				<button
-					class="relative p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-				>
-					<Bell class="h-5 w-5" />
-					{#if hasNotifications}
-						<span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-					{/if}
-				</button>
-			</Tooltip>
+			<!-- Notifications -->
+			<NotificationPanel tooltipPosition="bottom-left" />
 
 			<!-- User menu -->
 			<div class="flex items-center gap-2 pl-2 border-l border-gray-200">

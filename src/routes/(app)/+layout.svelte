@@ -16,7 +16,8 @@
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
-	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
+	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
 
 
 	// Icons
@@ -138,6 +139,8 @@
 		}))
 	);
 
+	// Real-time notifications will be initialized after QueryClientProvider is ready
+
 	async function handleLogout(event: Event) {
 		event.preventDefault();
 
@@ -158,6 +161,9 @@
 
 <!-- TanStack Query Provider for App -->
 <QueryClientProvider client={data.queryClient}>
+	<!-- Initialize notifications within QueryClient context -->
+	<NotificationInitializer />
+	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
 	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
 		<!-- App Header - Fixed at top -->

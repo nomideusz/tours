@@ -138,7 +138,7 @@
 				<button
 					onclick={handleRefresh}
 					disabled={isLoading}
-					class="button-secondary button--small"
+					class="button-secondary button--small button--gap"
 				>
 					{#if isLoading}
 						<Loader2 class="h-4 w-4 animate-spin" />

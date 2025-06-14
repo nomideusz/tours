@@ -6,6 +6,7 @@ import { generateTicketQRCode } from '$lib/ticket-qr.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { broadcastBookingNotification } from '$lib/notifications/server.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -185,6 +186,47 @@ export const POST: RequestHandler = async ({ request }) => {
           }
           
           console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
+
+          // Send real-time notification to tour owner
+          try {
+            // Get booking details for notification
+            const fullBookingData = await db.select({
+              bookingId: bookings.id,
+              customerName: bookings.customerName, 
+              customerEmail: bookings.customerEmail,
+              participants: bookings.participants,
+              totalAmount: bookings.totalAmount,
+              status: bookings.status,
+              tourId: tours.id,
+              tourName: tours.name
+            })
+            .from(bookings)
+            .innerJoin(tours, eq(bookings.tourId, tours.id))
+            .where(eq(bookings.id, bookingId))
+            .limit(1);
+
+            if (fullBookingData.length > 0) {
+              const bookingNotificationData = {
+                id: fullBookingData[0].bookingId,
+                tourId: fullBookingData[0].tourId,
+                tourName: fullBookingData[0].tourName,
+                customerName: fullBookingData[0].customerName,
+                customerEmail: fullBookingData[0].customerEmail,
+                participants: fullBookingData[0].participants,
+                totalAmount: fullBookingData[0].totalAmount,
+                status: fullBookingData[0].status
+              };
+
+              const notificationSent = await broadcastBookingNotification(bookingNotificationData);
+              if (notificationSent) {
+                console.log(`Webhook: Real-time notification sent for booking ${bookingId}`);
+              } else {
+                console.warn(`Webhook: Failed to send real-time notification for booking ${bookingId}`);
+              }
+            }
+          } catch (notificationError) {
+            console.warn('Webhook: Error sending real-time notification:', notificationError);
+          }
 
         } catch (updateError) {
           console.error('Webhook: Failed to update payment/booking status:', updateError);
