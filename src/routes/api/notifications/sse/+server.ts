@@ -8,25 +8,41 @@ export const GET: RequestHandler = async ({ locals, url }) => {
   }
 
   const userId = locals.user.id;
+  console.log(`🔍 SSE connection established for user: "${userId}" (type: ${typeof userId})`);
   
   // Create SSE stream
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
       
+      let isControllerClosed = false;
+      
       // Function to send SSE message
       const sendMessage = (data: any) => {
+        if (isControllerClosed) {
+          console.log(`SSE controller already closed for user ${userId}, skipping message`);
+          connections.delete(userId);
+          return;
+        }
+        
         try {
           const message = `data: ${JSON.stringify(data)}\n\n`;
           controller.enqueue(encoder.encode(message));
         } catch (error) {
-          console.error(`Failed to send SSE message to user ${userId}:`, error);
+          if (error instanceof Error && (error as any).code === 'ERR_INVALID_STATE') {
+            console.log(`SSE controller closed for user ${userId}, marking as closed`);
+            isControllerClosed = true;
+          } else {
+            console.error(`Failed to send SSE message to user ${userId}:`, error);
+          }
           connections.delete(userId);
         }
       };
 
       // Store connection for this user (store the sendMessage function)
       connections.set(userId, sendMessage as any);
+      console.log(`🔍 SSE connection stored for user: "${userId}"`);
+      console.log(`🔍 Total active connections:`, connections.size);
 
       // Send initial connection message
       sendMessage({
@@ -37,6 +53,13 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
       // Set up heartbeat to keep connection alive
       const heartbeat = setInterval(() => {
+        // Check if connection still exists before sending heartbeat
+        if (!connections.has(userId)) {
+          console.log(`SSE connection no longer exists for user ${userId}, clearing heartbeat`);
+          clearInterval(heartbeat);
+          return;
+        }
+        
         try {
           sendMessage({
             type: 'heartbeat',
@@ -51,6 +74,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
       // Clean up on close
       const cleanup = () => {
+        isControllerClosed = true;
         clearInterval(heartbeat);
         connections.delete(userId);
         console.log(`SSE connection closed for user ${userId}`);

@@ -20,7 +20,7 @@
 	}>();
 
 	let showPanel = $state(false);
-	let panelElement: HTMLElement;
+	let panelElement = $state<HTMLElement>();
 
 	function getNotificationIcon(type: string) {
 		switch (type) {
@@ -118,7 +118,7 @@
 		<div
 			bind:this={panelElement}
 			use:clickOutside={handleClickOutside}
-			class="absolute {tooltipPosition === 'bottom-left' ? 'left-0' : tooltipPosition === 'bottom-right' ? 'right-0' : 'left-1/2 -translate-x-1/2'} top-full mt-2 w-80 max-w-sm bg-white rounded-xl shadow-xl border border-gray-200 z-50"
+			class="fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-200 z-50"
 			transition:fly={{ y: -10, duration: 200 }}
 		>
 			<!-- Header -->

@@ -7,6 +7,9 @@ export const connections = new Map<string, WritableStreamDefaultWriter>();
 
 // Function to send notification to specific user (called from webhook)
 export async function sendNotificationToUser(userId: string, notification: any) {
+  console.log(`🔍 Looking for SSE connection for user: "${userId}" (type: ${typeof userId})`);
+  console.log(`🔍 Available connections:`, Array.from(connections.keys()));
+  
   const sendMessage = connections.get(userId);
   if (sendMessage) {
     try {
@@ -18,6 +21,8 @@ export async function sendNotificationToUser(userId: string, notification: any) 
       connections.delete(userId);
       return false;
     }
+  } else {
+    console.log(`❌ No SSE connection found for user ${userId}`);
   }
   return false;
 }
@@ -37,6 +42,7 @@ export async function broadcastBookingNotification(bookingData: any) {
     }
 
     const userId = tourOwner[0].userId;
+    console.log(`🔍 Broadcasting notification to tour owner: "${userId}" (type: ${typeof userId})`);
     
     const notification = {
       type: 'new_booking',
