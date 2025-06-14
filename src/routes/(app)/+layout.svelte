@@ -21,7 +21,6 @@
 	import { themeStore } from '$lib/stores/theme.js';
 	import { onMount } from 'svelte';
 
-
 	// Icons
 	import Home from 'lucide-svelte/icons/home';
 	import MapPin from 'lucide-svelte/icons/map-pin';

@@ -39,7 +39,7 @@
 	const profileQuery = createQuery({
 		queryKey: queryKeys.profile,
 		queryFn: queryFunctions.fetchProfile,
-		staleTime: 30 * 1000, // 30 seconds - reasonable for profile data
+		staleTime: 0, // Always consider data stale to ensure fresh data on refresh
 		gcTime: 5 * 60 * 1000, // 5 minutes cache
 		refetchOnWindowFocus: true,
 		refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
@@ -237,19 +237,6 @@
 			}
 
 			if (result.success) {
-				// Update form fields immediately with the returned data
-				if (result.updatedUser) {
-					name = result.updatedUser.name || '';
-					username = result.updatedUser.username || '';
-					businessName = result.updatedUser.businessName || '';
-					description = result.updatedUser.description || '';
-					phone = result.updatedUser.phone || '';
-					website = result.updatedUser.website || '';
-					country = result.updatedUser.country || '';
-					currency = result.updatedUser.currency || 'EUR';
-					console.log('✅ Updated form fields immediately:', { country, currency });
-				}
-				
 				// Update the currency store
 				userCurrency.set(currency as Currency);
 				
@@ -257,15 +244,14 @@
 				selectedAvatar = null;
 				avatarPreview = '';
 				
-				// Update the query cache with the fresh data immediately
-				queryClient.setQueryData(queryKeys.profile, (oldData: any) => {
-					const updatedData = { ...oldData, ...result.updatedUser };
-					console.log('🔄 Cache updated with:', updatedData);
-					return updatedData;
-				});
+				// Force remove all cached data and refetch immediately
+				queryClient.removeQueries({ queryKey: queryKeys.profile });
 				
-				// Invalidate to ensure next fetch gets fresh data
-				queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+				// Immediately refetch the profile data
+				await queryClient.refetchQueries({ 
+					queryKey: queryKeys.profile,
+					type: 'active'
+				});
 				
 				// Show inline success feedback
 				profileSaved = true;

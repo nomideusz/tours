@@ -52,7 +52,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		return json(userData, {
 			headers: {
-				'Cache-Control': 'max-age=60, stale-while-revalidate=30' // 1 min cache, 30s stale
+				'Cache-Control': 'no-cache, no-store, must-revalidate' // Always fetch fresh data
 			}
 		});
 	} catch (error) {
