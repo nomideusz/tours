@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { t, language } from '$lib/i18n.js';
-	import Loader from 'lucide-svelte/icons/loader';
 	import User from 'lucide-svelte/icons/user';
 	import Lock from 'lucide-svelte/icons/lock';
 	import Mail from 'lucide-svelte/icons/mail';
@@ -11,7 +8,6 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import Calendar from 'lucide-svelte/icons/calendar';
 	import Save from 'lucide-svelte/icons/save';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
@@ -25,14 +21,68 @@
 	import Building from 'lucide-svelte/icons/building';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Copy from 'lucide-svelte/icons/copy';
-	import FileText from 'lucide-svelte/icons/file-text';
 	import { onMount } from 'svelte';
 	import { toastError, toastSuccess } from '$lib/utils/toast.js';
 	import { browser } from '$app/environment';
 	import { detectCountry } from '$lib/utils/country-detector.js';
 	import { userCurrency, setUserCurrencyFromServer, SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
+	import Upload from 'lucide-svelte/icons/upload';
+	import X from 'lucide-svelte/icons/x';
 
-	let { data, form } = $props();
+	// TanStack Query
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	// TanStack Query client for invalidation
+	const queryClient = useQueryClient();
+
+	// TanStack Query for profile data
+	const profileQuery = createQuery({
+		queryKey: queryKeys.profile,
+		queryFn: queryFunctions.fetchProfile,
+		staleTime: 30 * 1000, // 30 seconds - reasonable for profile data
+		gcTime: 5 * 60 * 1000, // 5 minutes cache
+		refetchOnWindowFocus: true,
+		refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
+	});
+
+	const profileStatsQuery = createQuery({
+		queryKey: queryKeys.profileStats,
+		queryFn: queryFunctions.fetchProfileStats,
+		staleTime: 2 * 60 * 1000, // 2 minutes
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	});
+
+	// Derive data from queries
+	let user = $derived($profileQuery.data || {});
+	let profileStats = $derived.by(() => {
+		const rawStats = $profileStatsQuery.data;
+		if (!rawStats) {
+			return {
+				totalTours: 0,
+				activeTours: 0,
+				totalBookings: 0,
+				totalRevenue: 0,
+				totalParticipants: 0,
+				accountAge: 0
+			};
+		}
+		
+		// Map the API response to expected format
+		const mappedStats = {
+			totalTours: rawStats.totalTours || 0,
+			activeTours: rawStats.activeTours || 0,
+			totalBookings: rawStats.upcomingTours || 0, // Use upcomingTours as a proxy for total bookings
+			totalRevenue: rawStats.weeklyRevenue || 0, // Weekly revenue
+			totalParticipants: rawStats.totalCustomers || 0, // Total unique customers
+			accountAge: rawStats.monthlyTours || 0 // Monthly tours created
+		};
+		
+		console.log('📊 Profile stats mapping:', { rawStats, mappedStats });
+		return mappedStats;
+	});
+
+	let isLoading = $derived($profileQuery.isLoading || $profileStatsQuery.isLoading);
+	let isError = $derived($profileQuery.isError || $profileStatsQuery.isError);
 
 	// Loading states
 	let profileLoading = $state(false);
@@ -40,15 +90,47 @@
 	let verificationLoading = $state(false);
 	let paymentStatusLoading = $state(true);
 
-	// Form data
-	let name = $state(data.user?.name || '');
-	let username = $state(data.user?.username || '');
-	let businessName = $state(data.user?.businessName || '');
-	let description = $state(data.user?.description || '');
-	let phone = $state(data.user?.phone || '');
-	let website = $state(data.user?.website || '');
-	let country = $state(data.user?.country || '');
-	let currency = $state(data.user?.currency || 'EUR');
+	// Form data - initialized with reactive updates from query data
+	let name = $state('');
+	let username = $state('');
+	let businessName = $state('');
+	let description = $state('');
+	let phone = $state('');
+	let website = $state('');
+	let country = $state('');
+	let currency = $state('EUR');
+
+	// Derived values to ensure proper defaults
+	let displayCountry = $derived(country || user?.country || '');
+	let displayCurrency = $derived(currency || user?.currency || 'EUR');
+
+	// Track if form has been initialized to prevent overwriting user changes
+	let formInitialized = $state(false);
+
+	// Update form data when user data is loaded (only on first load)
+	$effect(() => {
+		if (user && Object.keys(user).length > 0 && !formInitialized) {
+			// Update form data only on initial load
+			name = user.name || '';
+			username = user.username || '';
+			businessName = user.businessName || '';
+			description = user.description || '';
+			phone = user.phone || '';
+			website = user.website || '';
+			country = user.country || '';
+			currency = user.currency || 'EUR';
+			avatarLoadError = false; // Reset avatar error on data load
+			formInitialized = true; // Mark as initialized
+			console.log('📋 Form data initialized from user:', { 
+				userCountry: user.country, 
+				userCurrency: user.currency, 
+				userCountryType: typeof user.country,
+				userCurrencyType: typeof user.currency,
+				formCountry: country, 
+				formCurrency: currency 
+			});
+		}
+	});
 
 	// Password form data
 	let currentPassword = $state('');
@@ -73,60 +155,31 @@
 		accountInfo: null
 	});
 
-	// Profile stats
-	let profileStats = $state({
-		totalTours: 0,
-		activeTours: 0,
-		totalBookings: 0,
-		totalRevenue: 0,
-		totalGuests: 0,
-		accountAge: 0
-	});
-
 	// Profile link state
 	let profileLinkCopied = $state(false);
-	let profileStatsLoading = $state(true);
 
-	// Reset password form on success and update profile data
-	$effect(() => {
-		if (form?.success && form?.message?.includes('Password')) {
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
-		}
-		
-		// Update profile form with returned data on successful profile update
-		if (form?.success && form?.updatedUser) {
-			name = form.updatedUser.name;
-			username = form.updatedUser.username;
-			businessName = form.updatedUser.businessName;
-			description = form.updatedUser.description;
-			phone = form.updatedUser.phone;
-			website = form.updatedUser.website;
-			country = form.updatedUser.country;
-			currency = form.updatedUser.currency;
-			// Update the currency store
-			userCurrency.set(currency as Currency);
-		}
-		
-		// Handle Stripe redirect
-		if (form?.success && form?.redirect) {
-			window.location.href = form.redirect;
-		}
-	});
+	// Avatar upload state
+	let selectedAvatar: File | null = $state(null);
+	let avatarPreview = $state('');
+	let avatarInputElement: HTMLInputElement | undefined = $state();
+	let avatarLoadError = $state(false);
 
-	// Load data
+	// Error and success states
+	let errorMessage = $state('');
+	let profileSaved = $state(false);
+	let passwordChanged = $state(false);
+
+	// Load payment status when user data is available
 	$effect(() => {
-		if (data.user.id) {
+		if (user?.id) {
 			loadPaymentStatus();
-			loadProfileStats();
 		}
 	});
 
 	async function loadPaymentStatus() {
 		try {
 			paymentStatusLoading = true;
-			const response = await fetch(`/api/payments/connect/status?userId=${data.user.id}`);
+			const response = await fetch(`/api/payments/connect/status?userId=${user.id}`);
 			if (response.ok) {
 				paymentStatus = await response.json();
 			}
@@ -134,28 +187,6 @@
 			console.error('Failed to load payment status:', error);
 		} finally {
 			paymentStatusLoading = false;
-		}
-	}
-
-	async function loadProfileStats() {
-		try {
-			profileStatsLoading = true;
-			const response = await fetch(`/api/dashboard-stats?userId=${data.user.id}`);
-			if (response.ok) {
-				const stats = await response.json();
-				profileStats = {
-					totalTours: stats.totalTours || 0,
-					activeTours: stats.activeTours || 0,
-					totalBookings: stats.totalBookings || 0,
-					totalRevenue: stats.totalRevenue || 0,
-					totalGuests: stats.totalParticipants || 0,
-					accountAge: 0
-				};
-			}
-		} catch (error) {
-			console.error('Failed to load profile stats:', error);
-		} finally {
-			profileStatsLoading = false;
 		}
 	}
 
@@ -174,13 +205,193 @@
 		}
 	}
 
-	let isSubmitting = $state(false);
+	// Profile update function
+	async function updateProfile() {
+		profileLoading = true;
+		errorMessage = '';
+
+		try {
+			const formData = new FormData();
+			formData.append('name', name);
+			formData.append('username', username);
+			formData.append('businessName', businessName);
+			formData.append('description', description);
+			formData.append('phone', phone);
+			formData.append('website', website);
+			formData.append('country', country);
+			formData.append('currency', currency);
+			
+			if (selectedAvatar) {
+				formData.append('avatar', selectedAvatar);
+			}
+
+			const response = await fetch('/api/profile/update', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to update profile');
+			}
+
+			if (result.success) {
+				// Update form fields immediately with the returned data
+				if (result.updatedUser) {
+					name = result.updatedUser.name || '';
+					username = result.updatedUser.username || '';
+					businessName = result.updatedUser.businessName || '';
+					description = result.updatedUser.description || '';
+					phone = result.updatedUser.phone || '';
+					website = result.updatedUser.website || '';
+					country = result.updatedUser.country || '';
+					currency = result.updatedUser.currency || 'EUR';
+					console.log('✅ Updated form fields immediately:', { country, currency });
+				}
+				
+				// Update the currency store
+				userCurrency.set(currency as Currency);
+				
+				// Clear avatar upload state on successful update
+				selectedAvatar = null;
+				avatarPreview = '';
+				
+				// Update the query cache with the fresh data immediately
+				queryClient.setQueryData(queryKeys.profile, (oldData: any) => {
+					const updatedData = { ...oldData, ...result.updatedUser };
+					console.log('🔄 Cache updated with:', updatedData);
+					return updatedData;
+				});
+				
+				// Invalidate to ensure next fetch gets fresh data
+				queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+				
+				// Show inline success feedback
+				profileSaved = true;
+				setTimeout(() => {
+					profileSaved = false;
+				}, 3000);
+			}
+		} catch (error) {
+			console.error('Profile update error:', error);
+			errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+		} finally {
+			profileLoading = false;
+		}
+	}
+
+	// Password change function
+	async function changePassword() {
+		passwordLoading = true;
+		passwordError = '';
+		errorMessage = '';
+
+		try {
+			const formData = new FormData();
+			formData.append('currentPassword', currentPassword);
+			formData.append('newPassword', newPassword);
+			formData.append('confirmPassword', confirmPassword);
+
+			const response = await fetch('/api/profile/change-password', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to change password');
+			}
+
+			if (result.success) {
+				currentPassword = '';
+				newPassword = '';
+				confirmPassword = '';
+				
+				// Show inline success feedback
+				passwordChanged = true;
+				setTimeout(() => {
+					passwordChanged = false;
+				}, 3000);
+			}
+		} catch (error) {
+			console.error('Password change error:', error);
+			passwordError = error instanceof Error ? error.message : 'Failed to change password';
+		} finally {
+			passwordLoading = false;
+		}
+	}
+
+	// Payment setup function
+	async function setupPayments() {
+		try {
+			const response = await fetch('/api/payments/connect/setup', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					userId: user.id,
+					email: user.email,
+					businessName: user.businessName || user.name,
+					country: user.country || 'DE'
+				})
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to setup payment account');
+			}
+
+			const { accountLink } = await response.json();
+			window.location.href = accountLink;
+		} catch (error) {
+			console.error('Payment setup error:', error);
+			errorMessage = error instanceof Error ? error.message : 'Failed to setup payment account';
+		}
+	}
+
+	// Avatar upload functions
+	function onAvatarSelect(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		
+		if (file) {
+			// Validate file type and size
+			const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+			if (!validTypes.includes(file.type)) {
+				toastError('Please select a valid image file (JPEG, PNG, or WebP)');
+				return;
+			}
+			
+			if (file.size > 2 * 1024 * 1024) { // 2MB limit
+				toastError('Avatar image must be smaller than 2MB');
+				return;
+			}
+			
+			selectedAvatar = file;
+			
+			// Create preview
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				avatarPreview = e.target?.result as string;
+			};
+			reader.readAsDataURL(file);
+		}
+	}
+
+	function removeAvatar() {
+		selectedAvatar = null;
+		avatarPreview = '';
+		if (avatarInputElement) {
+			avatarInputElement.value = '';
+		}
+	}
 
 	// Initialize currency store and detect country on client-side
 	onMount(() => {
 		// Set user currency in store from server data
-		if (data.user?.currency) {
-			setUserCurrencyFromServer(data.user.currency);
+		if (user?.currency) {
+			setUserCurrencyFromServer(user.currency);
 		}
 		
 		// If no country is set, detect it on client-side
@@ -194,13 +405,24 @@
 	<title>Profile Settings - Zaur</title>
 </svelte:head>
 
+{#if isLoading}
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+		<div class="flex justify-center items-center py-12">
+			<LoadingSpinner size="large" text="Loading profile..." />
+		</div>
+	</div>
+{:else if isError}
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+		<ErrorAlert variant="error" message="Failed to load profile data. Please refresh the page." />
+	</div>
+{:else}
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Mobile-First Header -->
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title="Profile Settings"
-			secondaryInfo={data.user?.name || 'Profile'}
+			secondaryInfo={user?.name || 'Profile'}
 			quickActions={[
 				{
 					label: 'View Public',
@@ -226,7 +448,7 @@
 				{
 					icon: Mail,
 					label: 'Email',
-					value: data.user?.verified ? 'Verified' : 'Unverified'
+					value: user?.verified ? 'Verified' : 'Unverified'
 				},
 				{
 					icon: MapPin,
@@ -268,69 +490,49 @@
 		</div>
 	</div>
 
-	<!-- Success/Error Messages -->
-	{#if form?.error}
+	<!-- Error Messages -->
+	{#if errorMessage}
 		<div class="mb-6">
-			<ErrorAlert variant="error" message={form.error} />
-		</div>
-	{/if}
-
-	{#if form?.success}
-		<div class="mb-6">
-			<ErrorAlert variant="info" title="Success" message="Profile updated successfully!" />
+			<ErrorAlert variant="error" message={errorMessage} />
 		</div>
 	{/if}
 
 	<!-- Profile Stats Overview -->
 	<div class="hidden sm:block mb-6">
-		{#if profileStatsLoading}
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-				{#each Array(4) as _}
-					<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="animate-pulse">
-							<div class="h-4 bg-gray-200 rounded mb-2"></div>
-							<div class="h-6 bg-gray-200 rounded mb-1"></div>
-							<div class="h-3 bg-gray-200 rounded w-2/3"></div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		{:else}
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-				<StatsCard
-					title="Tours Created"
-					value={profileStats.totalTours}
-					subtitle="{profileStats.activeTours} active"
-					icon={MapPin}
-					trend={profileStats.activeTours > 0 ? { value: `${profileStats.activeTours} active`, positive: true } : undefined}
-					variant="small"
-				/>
+		<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+			<StatsCard
+				title="Tours Created"
+				value={profileStats.totalTours || 0}
+				subtitle="{profileStats.activeTours || 0} active"
+				icon={MapPin}
+				trend={(profileStats.activeTours || 0) > 0 ? { value: `${profileStats.activeTours} active`, positive: true } : undefined}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Total Bookings"
-					value={profileStats.totalBookings}
-					subtitle="all time"
-					icon={Users}
-					variant="small"
-				/>
+			<StatsCard
+				title="Upcoming Tours"
+				value={profileStats.totalBookings}
+				subtitle="scheduled"
+				icon={Users}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Revenue Earned"
-					value={`€${profileStats.totalRevenue}`}
-					subtitle="total earnings"
-					icon={DollarSign}
-					variant="small"
-				/>
+			<StatsCard
+				title="Revenue Earned"
+				value={`${SUPPORTED_CURRENCIES[currency as Currency]?.symbol || '€'}${profileStats.totalRevenue || 0}`}
+				subtitle="weekly earnings"
+				icon={DollarSign}
+				variant="small"
+			/>
 
-				<StatsCard
-					title="Guests Served"
-					value={profileStats.totalGuests}
-					subtitle="{profileStats.accountAge} days active"
-					icon={Activity}
-					variant="small"
-				/>
-			</div>
-		{/if}
+			<StatsCard
+				title="Guests Served"
+				value={profileStats.totalParticipants}
+				subtitle="{profileStats.accountAge} days active"
+				icon={Activity}
+				variant="small"
+			/>
+		</div>
 	</div>
 
 	<!-- Main Content Grid -->
@@ -351,17 +553,7 @@
 					</div>
 				</div>
 				<div class="p-4 sm:p-6">
-					<form 
-						method="POST" 
-						action="?/updateProfile"
-						use:enhance={() => {
-							isSubmitting = true;
-							return async ({ update }) => {
-								await update();
-								isSubmitting = false;
-							};
-						}}
-					>
+					<form onsubmit={(e) => { e.preventDefault(); updateProfile(); }}>
 						<div class="space-y-6">
 							<!-- Username -->
 							<div>
@@ -385,6 +577,77 @@
 										Your personal URL: <a href="/{username}" class="text-blue-600 hover:text-blue-800" target="_blank">zaur.app/{username}</a>
 									</p>
 								{/if}
+							</div>
+
+							<!-- Avatar Upload -->
+							<div>
+								<label for="avatar" class="form-label">
+									Profile Avatar
+								</label>
+								<div class="flex items-start gap-4">
+									<!-- Current Avatar Display -->
+									<div class="flex-shrink-0">
+										<div class="w-20 h-20 rounded-full overflow-hidden" style="background: var(--bg-secondary); border: 2px solid var(--border-primary);">
+											{#if avatarPreview}
+												<img src={avatarPreview} alt="Avatar preview" class="w-full h-full object-cover" />
+											{:else if user?.avatar && !avatarLoadError}
+												<img 
+													src={user.avatar} 
+													alt="Current avatar" 
+													class="w-full h-full object-cover"
+													onerror={() => avatarLoadError = true}
+												/>
+											{:else}
+												<div class="w-full h-full flex items-center justify-center">
+													<User class="h-8 w-8" style="color: var(--text-tertiary);" />
+												</div>
+											{/if}
+										</div>
+									</div>
+									
+									<!-- Upload Controls -->
+									<div class="flex-1 space-y-3">
+										<div class="flex gap-2">
+											<input
+												type="file"
+												id="avatar"
+												name="avatar"
+												accept="image/jpeg,image/jpg,image/png,image/webp"
+												class="hidden"
+												onchange={onAvatarSelect}
+												bind:this={avatarInputElement}
+											/>
+											<label
+												for="avatar"
+												class="button-secondary button--gap button--small cursor-pointer"
+											>
+												<Upload class="h-3 w-3" />
+												Choose Avatar
+											</label>
+											
+											{#if selectedAvatar || avatarPreview}
+												<button
+													type="button"
+													onclick={removeAvatar}
+													class="button--danger button--gap button--small"
+												>
+													<X class="h-3 w-3" />
+													Remove
+												</button>
+											{/if}
+										</div>
+										
+										<p class="text-xs" style="color: var(--text-tertiary);">
+											Upload a square image (JPEG, PNG, WebP) up to 2MB. Image will be automatically cropped to fit.
+										</p>
+										
+										{#if selectedAvatar}
+											<p class="text-xs" style="color: var(--color-success);">
+												✓ Ready to upload: {selectedAvatar.name}
+											</p>
+										{/if}
+									</div>
+								</div>
 							</div>
 
 							<!-- Name -->
@@ -416,7 +679,7 @@
 										type="email"
 										id="email"
 										name="email"
-										value={data.user?.email || ''}
+										value={user?.email || ''}
 										class="form-input pl-10"
 										placeholder="Enter your email"
 										required
@@ -495,6 +758,7 @@
 									name="country"
 									class="form-select cursor-pointer"
 									bind:value={country}
+									onchange={() => console.log('Country changed to:', country)}
 								>
 									<option value="">Select your country</option>
 									<option value="AT">Austria</option>
@@ -538,17 +802,28 @@
 									This will be used for all price displays throughout the app
 								</p>
 							</div>
+
+
 						</div>
 
 						<!-- Submit Button -->
-						<div class="flex justify-end pt-6 mt-8" style="border-top: 1px solid var(--border-primary);">
+						<div class="flex items-center justify-end gap-3 pt-6 mt-8" style="border-top: 1px solid var(--border-primary);">
+							{#if profileSaved}
+								<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
+									<CheckCircle class="h-4 w-4" />
+									Profile updated successfully!
+								</div>
+							{/if}
 							<button
 								type="submit"
-								disabled={isSubmitting}
+								disabled={profileLoading}
 								class="button-primary button--gap"
 							>
-								{#if isSubmitting}
+								{#if profileLoading}
 									<LoadingSpinner size="small" variant="white" text="Saving..." />
+								{:else if profileSaved}
+									<CheckCircle class="h-4 w-4" />
+									Saved!
 								{:else}
 									<Save class="h-4 w-4" />
 									Save Changes
@@ -560,7 +835,7 @@
 			</div>
 
 			<!-- Security Section -->
-			{#if !data.user?.isOAuth2User}
+			{#if !user?.isOAuth2User}
 				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<div class="p-4 border-b" style="border-color: var(--border-primary);">
 						<div class="flex items-center gap-3">
@@ -574,18 +849,12 @@
 						</div>
 					</div>
 					<div class="p-4 sm:p-6">
-						<form 
-							method="POST" 
-							action="?/changePassword"
-							use:enhance={() => {
-								passwordLoading = true;
-								return async ({ update }) => {
-									await update();
-									passwordLoading = false;
-								};
-							}}
-						>
+						<form onsubmit={(e) => { e.preventDefault(); changePassword(); }}>
 							<div class="space-y-4">
+								{#if passwordError}
+									<ErrorAlert variant="error" message={passwordError} />
+								{/if}
+
 								<div>
 									<label for="currentPassword" class="form-label">Current Password</label>
 									<div class="relative">
@@ -634,7 +903,13 @@
 									</div>
 								</div>
 
-								<div class="flex justify-end pt-4">
+								<div class="flex items-center justify-end gap-3 pt-4">
+									{#if passwordChanged}
+										<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
+											<CheckCircle class="h-4 w-4" />
+											Password changed successfully!
+										</div>
+									{/if}
 									<button
 										type="submit"
 										disabled={passwordLoading}
@@ -642,6 +917,9 @@
 									>
 										{#if passwordLoading}
 											<LoadingSpinner size="small" text="Changing..." />
+										{:else if passwordChanged}
+											<CheckCircle class="h-4 w-4" />
+											Changed!
 										{:else}
 											<Shield class="h-4 w-4" />
 											Change Password
@@ -665,14 +943,21 @@
 				<div class="p-4 space-y-4">
 					<div class="flex items-center gap-3">
 						<div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
-							{#if data.user?.avatar}
-								<img src={data.user.avatar} alt="Avatar" class="w-full h-full rounded-full object-cover" />
+							{#if avatarPreview}
+								<img src={avatarPreview} alt="Avatar preview" class="w-full h-full rounded-full object-cover" />
+							{:else if user?.avatar && !avatarLoadError}
+								<img 
+									src={user.avatar} 
+									alt="Avatar" 
+									class="w-full h-full rounded-full object-cover"
+									onerror={() => avatarLoadError = true}
+								/>
 							{:else}
 								<User class="h-6 w-6" style="color: var(--text-secondary);" />
 							{/if}
 						</div>
 						<div class="flex-1 min-w-0">
-							<p class="font-medium truncate" style="color: var(--text-primary);">{data.user?.name || 'No name set'}</p>
+							<p class="font-medium truncate" style="color: var(--text-primary);">{user?.name || 'No name set'}</p>
 							<p class="text-sm truncate" style="color: var(--text-secondary);">@{username || 'username-required'}</p>
 						</div>
 					</div>
@@ -680,8 +965,8 @@
 					<div class="space-y-2 text-sm">
 						<div class="flex items-center gap-2">
 							<Mail class="h-4 w-4" style="color: var(--text-tertiary);" />
-							<span style="color: var(--text-secondary);">{data.user?.email}</span>
-							{#if data.user?.verified}
+							<span style="color: var(--text-secondary);">{user?.email}</span>
+							{#if user?.verified}
 								<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
 							{/if}
 						</div>
@@ -767,35 +1052,29 @@
 							<!-- Setup Button -->
 							<div class="flex justify-center">
 								{#if !paymentStatus.hasAccount}
-									<form method="POST" action="?/setupPayments">
-										<button
-											type="submit"
-											class="button-primary button--gap button--small"
-										>
-											<CreditCard class="h-3 w-3" />
-											Setup Payments
-										</button>
-									</form>
+									<button
+										onclick={setupPayments}
+										class="button-primary button--gap button--small"
+									>
+										<CreditCard class="h-3 w-3" />
+										Setup Payments
+									</button>
 								{:else if !paymentStatus.isSetupComplete || paymentStatus.accountInfo?.requiresAction}
-									<form method="POST" action="?/setupPayments">
-										<button
-											type="submit"
-											class="button-secondary button--gap button--small"
-										>
-											<AlertCircle class="h-3 w-3" />
-											Complete Setup
-										</button>
-									</form>
+									<button
+										onclick={setupPayments}
+										class="button-secondary button--gap button--small"
+									>
+										<AlertCircle class="h-3 w-3" />
+										Complete Setup
+									</button>
 								{:else}
-									<form method="POST" action="?/setupPayments">
-										<button
-											type="submit"
-											class="button-secondary button--gap button--small"
-										>
-											<CreditCard class="h-3 w-3" />
-											Manage Account
-										</button>
-									</form>
+									<button
+										onclick={setupPayments}
+										class="button-secondary button--gap button--small"
+									>
+										<CreditCard class="h-3 w-3" />
+										Manage Account
+									</button>
 								{/if}
 							</div>
 						</div>
@@ -811,7 +1090,7 @@
 				<div class="p-4 space-y-3 text-sm">
 					<div class="flex justify-between">
 						<span style="color: var(--text-secondary);">Account Type</span>
-						<span style="color: var(--text-primary);">{data.user?.role === 'admin' ? 'Administrator' : 'Tour Guide'}</span>
+						<span style="color: var(--text-primary);">{user?.role === 'admin' ? 'Administrator' : 'Tour Guide'}</span>
 					</div>
 					<div class="flex justify-between">
 						<span style="color: var(--text-secondary);">Member Since</span>
@@ -819,9 +1098,9 @@
 					</div>
 					<div class="flex justify-between">
 						<span style="color: var(--text-secondary);">Email Status</span>
-						<span style="color: var(--text-primary);">{data.user?.verified ? 'Verified' : 'Unverified'}</span>
+						<span style="color: var(--text-primary);">{user?.verified ? 'Verified' : 'Unverified'}</span>
 					</div>
-					{#if data.user?.isOAuth2User}
+					{#if user?.isOAuth2User}
 						<div class="flex justify-between">
 							<span style="color: var(--text-secondary);">Login Method</span>
 							<span style="color: var(--text-primary);">OAuth2</span>
@@ -831,4 +1110,5 @@
 			</div>
 		</div>
 	</div>
-</div> 
+</div>
+{/if} 
