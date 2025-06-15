@@ -177,4 +177,19 @@ export const payments = pgTable('payments', {
   netAmount: decimal('net_amount', { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Notifications table  
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'new_booking', 'booking_cancelled', 'payment_received', 'system', 'info'
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  data: text('data'), // JSON string for additional data
+  actions: text('actions'), // JSON string for action buttons
+  read: boolean('read').notNull().default(false),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }); 

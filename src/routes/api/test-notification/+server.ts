@@ -9,48 +9,46 @@ export const POST: RequestHandler = async ({ locals }) => {
 
   const userId = locals.user.id;
   
-  // Create a test notification
-  const testNotification = {
-    type: 'new_booking',
-    id: `test_${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    title: 'Test SSE Notification',
-    message: 'This is a test notification sent via SSE to verify the connection works',
-    data: {
-      bookingId: 'test-booking',
-      tourId: 'test-tour',
-      tourName: 'Test Tour',
-      customerName: 'Test Customer'
-    },
-    actions: [
-      {
-        label: 'View Test',
-        url: '/dashboard'
-      }
-    ]
-  };
-
-  console.log(`🧪 Test notification requested for user: ${userId}`);
-  
   try {
+    console.log('🧪 Creating test notification for user:', userId);
+    
+    const testNotification = {
+      type: 'new_booking',
+      id: `test_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      title: 'Test Notification!',
+      message: 'This is a test notification to verify the hybrid system works.',
+      data: {
+        bookingId: 'test-booking-123',
+        tourId: 'test-tour-456',
+        tourName: 'Test Tour',
+        customerName: 'Test Customer',
+        participants: 2,
+        totalAmount: 50.00,
+        status: 'confirmed'
+      },
+      actions: [
+        {
+          label: 'View Test',
+          url: '/dashboard'
+        }
+      ]
+    };
+
+    console.log('📤 Sending test notification via hybrid system...');
     const success = await sendNotificationToUser(userId, testNotification);
     
-    if (success) {
-      return json({ 
-        success: true, 
-        message: 'Test notification sent successfully via SSE',
-        notification: testNotification
-      });
-    } else {
-      return json({ 
-        success: false, 
-        error: 'Failed to send test notification - no active SSE connection found'
-      }, { status: 400 });
-    }
+    return json({
+      success: true,
+      message: 'Test notification sent successfully via hybrid system (DB + SSE)',
+      notification: testNotification,
+      sseDelivered: success
+    });
+
   } catch (error) {
-    console.error('Error sending test notification:', error);
-    return json({ 
-      success: false, 
+    console.error('❌ Error sending test notification:', error);
+    return json({
+      success: false,
       error: 'Failed to send test notification',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });

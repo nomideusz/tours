@@ -1,64 +1,64 @@
 import { onMount, onDestroy } from 'svelte';
 import { browser } from '$app/environment';
-import { notificationActions, type Notification } from '$lib/stores/notifications.js';
+import { notificationActions, notifications, type Notification } from '$lib/stores/notifications.js';
 import { useQueryClient } from '@tanstack/svelte-query';
 import { queryKeys } from '$lib/queries/shared-stats.js';
 
 export function useNotifications() {
   let eventSource: EventSource | null = null;
   let reconnectTimeout: NodeJS.Timeout | null = null;
-  let reconnectAttempts = 0;
-  const maxReconnectAttempts = 10; // Increased from 5
-  let lastHeartbeat = Date.now();
   let healthCheckInterval: NodeJS.Timeout | null = null;
-  let isConnecting = false; // Prevent multiple concurrent connections
+  let pollingInterval: NodeJS.Timeout | null = null;
+  let reconnectAttempts = 0;
+  let lastHeartbeat = Date.now();
+  let isConnecting = false;
+  
+  const maxReconnectAttempts = 10;
+  const heartbeatTimeout = 60000; // 60 seconds
+  const healthCheckInterval_ms = 15000; // 15 seconds
+  const pollingInterval_ms = 30000; // 30 seconds fallback polling
   const queryClient = useQueryClient();
 
   function cleanup() {
-    // Close existing EventSource
+    console.log('🧹 Cleaning up existing connections and intervals...');
+    
     if (eventSource) {
       console.log('🧹 Closing existing SSE connection...');
       eventSource.close();
       eventSource = null;
     }
     
-    // Clear reconnect timeout
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
       reconnectTimeout = null;
     }
     
-    // Clear health check interval
     if (healthCheckInterval) {
       clearInterval(healthCheckInterval);
       healthCheckInterval = null;
     }
     
-    notificationActions.setConnected(false);
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+    
+    isConnecting = false;
   }
 
   function connect() {
-    if (!browser) return;
-    
-    // Prevent multiple concurrent connection attempts
-    if (isConnecting) {
-      console.log('🔄 Connection already in progress, skipping...');
-      return;
-    }
+    if (!browser || isConnecting) return;
     
     isConnecting = true;
-
-    // Clean up existing connection and intervals
-    cleanup();
-
     console.log('🔄 Creating new SSE connection...');
-
+    
+    cleanup();
+    
     try {
       console.log('🔗 Establishing SSE connection for notifications...');
-      notificationActions.setError(null);
       
-      // Try using absolute URL to potentially bypass service worker issues
-      const sseUrl = `${window.location.origin}/api/notifications/sse`;
+      // Use absolute URL to bypass service worker issues
+      const sseUrl = 'https://zaur.app/api/notifications/sse';
       eventSource = new EventSource(sseUrl, {
         withCredentials: true
       });
@@ -66,134 +66,176 @@ export function useNotifications() {
       console.log('📡 EventSource created:', {
         url: eventSource.url,
         readyState: eventSource.readyState,
-        withCredentials: eventSource.withCredentials
+        withCredentials: true
       });
 
       eventSource.onopen = () => {
         console.log('✅ SSE connection established');
         console.log('🔗 EventSource readyState:', eventSource?.readyState);
         console.log('🔗 EventSource URL:', eventSource?.url);
-        notificationActions.setConnected(true);
+        
         reconnectAttempts = 0;
         lastHeartbeat = Date.now();
-        isConnecting = false; // Connection completed
+        isConnecting = false;
         
-        // Clear any reconnect timeout (should already be cleared by cleanup)
-        if (reconnectTimeout) {
-          clearTimeout(reconnectTimeout);
-          reconnectTimeout = null;
-        }
+        notificationActions.setConnected(true);
+        notificationActions.setError(null);
         
-        // Start health check (only if we don't already have one)
-        if (!healthCheckInterval) {
-          console.log('🏥 Starting health check interval...');
-          healthCheckInterval = setInterval(() => {
-            const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-            console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
-            // If no heartbeat for 60 seconds, force reconnect
-            if (timeSinceLastHeartbeat > 60000) {
-              console.warn('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
-              connect();
-            }
-          }, 15000); // Check every 15 seconds
-        }
+        // Start health check
+        startHealthCheck();
+        
+        // Stop polling since SSE is working
+        stopPolling();
       };
 
       eventSource.onmessage = (event) => {
-        console.log('📨 Raw SSE event received:', {
-          data: event.data,
-          lastEventId: event.lastEventId,
-          origin: event.origin,
-          type: event.type
-        });
+        console.log('📨 Raw SSE event received:', event);
+        console.log('📨 Event data:', event.data);
         
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 SSE message parsed successfully:', data.type, data);
-
-          switch (data.type) {
-            case 'connected':
-              console.log('🎉 SSE connected for user:', data.userId);
-              break;
-
-            case 'heartbeat':
-              console.log('💓 SSE heartbeat received');
-              lastHeartbeat = Date.now();
-              break;
-
-            case 'new_booking':
-              console.log('🎉 Processing new booking notification:', data);
-              handleNewBookingNotification(data);
-              break;
-
-            case 'booking_cancelled':
-            case 'payment_received':
-            case 'system':
-            case 'info':
-              console.log('📝 Adding notification to store:', data);
-              notificationActions.add(data);
-              break;
-
-            default:
-              console.log('❓ Unknown SSE message type:', data.type, data);
+          console.log('📨 Parsed SSE data:', data);
+          
+          if (data.type === 'heartbeat') {
+            console.log('💓 Heartbeat received');
+            lastHeartbeat = Date.now();
+            return;
           }
+          
+          if (data.type === 'connected') {
+            console.log('🔗 Connection confirmation received');
+            lastHeartbeat = Date.now();
+            return;
+          }
+          
+          // Handle actual notifications
+          console.log('🔔 Processing notification:', data.type);
+          handleNewBookingNotification(data);
+          
         } catch (error) {
           console.error('❌ Error parsing SSE message:', error);
           console.error('❌ Raw event data:', event.data);
-          console.error('❌ Event object:', event);
-          console.error('❌ Full error stack:', error instanceof Error ? error.stack : error);
-          
-          // Don't close connection on parse error, just log it
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('❌ SSE connection error:', error);
-        console.error('❌ SSE readyState:', eventSource?.readyState);
-        console.error('❌ SSE url:', eventSource?.url);
-        console.error('❌ Error event details:', {
+        console.log('❌ SSE connection error:', error);
+        console.log('❌ SSE readyState:', eventSource?.readyState);
+        console.log('❌ SSE url:', eventSource?.url);
+        console.log('❌ Error event details:', {
           type: error.type,
           target: error.target,
           currentTarget: error.currentTarget,
           eventPhase: error.eventPhase,
           bubbles: error.bubbles,
           cancelable: error.cancelable,
+          defaultPrevented: error.defaultPrevented,
+          composed: error.composed,
+          isTrusted: error.isTrusted,
           timeStamp: error.timeStamp
         });
         
-        // Check if this is a specific type of error
-        if (eventSource?.readyState === EventSource.CLOSED) {
-          console.error('❌ EventSource closed unexpectedly');
-        } else if (eventSource?.readyState === EventSource.CONNECTING) {
-          console.error('❌ EventSource stuck in connecting state');
-        }
-        
+        isConnecting = false;
         notificationActions.setConnected(false);
-        isConnecting = false; // Reset connection flag
         
-        // Don't reconnect immediately if we just connected successfully
-        // This prevents rapid reconnection loops
-        const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-        if (timeSinceLastHeartbeat < 5000) {
-          console.warn('⚠️ Error occurred shortly after connection, waiting longer before reconnect...');
-          setTimeout(() => attemptReconnect(), 5000);
-        } else {
+        if (eventSource?.readyState === EventSource.CLOSED) {
+          console.log('❌ EventSource closed unexpectedly');
+          
+          // Start polling as fallback
+          startPolling();
+          
+          // Attempt to reconnect
           attemptReconnect();
         }
       };
 
     } catch (error) {
       console.error('❌ Failed to create SSE connection:', error);
-      notificationActions.setError('Failed to connect to notification service');
-      isConnecting = false; // Reset connection flag
-      attemptReconnect();
+      isConnecting = false;
+      notificationActions.setConnected(false);
+      notificationActions.setError('Failed to establish connection');
+      
+      // Start polling as fallback
+      startPolling();
+    }
+  }
+
+  function startHealthCheck() {
+    if (healthCheckInterval) return;
+    
+    console.log('🏥 Starting health check interval...');
+    healthCheckInterval = setInterval(() => {
+      const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+      console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
+      
+      if (timeSinceLastHeartbeat > heartbeatTimeout) {
+        console.log('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
+        
+        // Start polling as fallback
+        startPolling();
+        
+        // Force reconnect
+        connect();
+      }
+    }, healthCheckInterval_ms);
+  }
+
+  function startPolling() {
+    if (pollingInterval) return;
+    
+    console.log('🔄 Starting notification polling as fallback...');
+    
+    // Poll immediately
+    pollNotifications();
+    
+    // Then poll every 30 seconds
+    pollingInterval = setInterval(() => {
+      pollNotifications();
+    }, pollingInterval_ms);
+  }
+
+  function stopPolling() {
+    if (pollingInterval) {
+      console.log('⏹️ Stopping notification polling (SSE working)');
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
+  async function pollNotifications() {
+    try {
+      console.log('📡 Polling for notifications...');
+      
+      const response = await fetch('/api/notifications/poll', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Polling failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📡 Polling response:', data);
+      
+      if (data.success && data.notifications?.length > 0) {
+        console.log(`📬 Found ${data.notifications.length} notifications via polling`);
+        
+                 // Process each notification
+         data.notifications.forEach((notification: any) => {
+           console.log('📬 Adding notification from polling:', notification.id);
+           handleNewBookingNotification(notification);
+         });
+      }
+      
+    } catch (error) {
+      console.error('❌ Notification polling failed:', error);
     }
   }
 
   function attemptReconnect() {
     if (reconnectAttempts >= maxReconnectAttempts) {
       console.warn('⚠️ Max SSE reconnection attempts reached');
-      notificationActions.setError('Connection lost. Please refresh the page.');
+      notificationActions.setError('Connection lost. Using polling fallback.');
       return;
     }
 
@@ -288,54 +330,60 @@ export function useNotifications() {
 
   function playNotificationSound() {
     if (!browser) return;
-
+    
     try {
-      // Create a subtle notification sound
+      // Create a simple notification sound
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-
+      
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-
+      
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
       oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
+      
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.2);
     } catch (error) {
-      // Ignore audio errors - not critical
-      console.debug('Notification sound failed:', error);
+      console.warn('Could not play notification sound:', error);
+    }
+  }
+
+  function requestNotificationPermission() {
+    if (!browser || !('Notification' in window)) return;
+    
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('🔔 Notification permission:', permission);
+      });
     }
   }
 
   function disconnect() {
+    console.log('🔌 Disconnecting notifications...');
     cleanup();
-    isConnecting = false;
-    console.log('🔌 SSE connection disconnected');
+    notificationActions.setConnected(false);
   }
 
-  // Request notification permission
-  function requestNotificationPermission() {
-    if (!browser || !('Notification' in window)) return Promise.resolve('denied');
+  // Initialize
+  if (browser) {
+    requestNotificationPermission();
+    connect();
     
-    if (Notification.permission === 'default') {
-      return Notification.requestPermission();
-    }
-    
-    return Promise.resolve(Notification.permission);
+    // Start with polling as immediate fallback
+    setTimeout(() => {
+      if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+        console.log('🔄 SSE not ready, starting polling fallback...');
+        startPolling();
+      }
+    }, 5000); // Give SSE 5 seconds to connect
   }
 
   onMount(() => {
-    connect();
-    
-    // Request notification permission on mount
-    requestNotificationPermission().then(permission => {
-      console.log('🔔 Notification permission:', permission);
-    });
-
     // Reconnect when tab becomes visible (user returns)
     const handleVisibilityChange = () => {
       if (!document.hidden && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
@@ -358,6 +406,6 @@ export function useNotifications() {
   return {
     connect,
     disconnect,
-    requestNotificationPermission
+    cleanup
   };
 } 

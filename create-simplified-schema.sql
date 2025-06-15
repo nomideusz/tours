@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS bookings CASCADE;
 DROP TABLE IF EXISTS time_slots CASCADE;
 DROP TABLE IF EXISTS tours CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS oauth_accounts CASCADE;
 DROP TABLE IF EXISTS email_verification_tokens CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
@@ -182,6 +183,21 @@ CREATE TABLE payments (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Notifications table (for hybrid SSE + polling notification system)
+CREATE TABLE notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL, -- 'new_booking', 'booking_cancelled', 'payment_received', 'system', 'info'
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data TEXT, -- JSON string for additional data
+    actions TEXT, -- JSON string for action buttons
+    read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- Create indexes for performance
 
 -- Users indexes
@@ -243,6 +259,12 @@ CREATE INDEX idx_payments_stripe_payment_intent_id ON payments(stripe_payment_in
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_created_at ON payments(created_at);
 
+-- Notifications indexes
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX idx_notifications_read ON notifications(read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at);
+
 -- Create triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -258,6 +280,7 @@ CREATE TRIGGER update_tours_updated_at BEFORE UPDATE ON tours FOR EACH ROW EXECU
 CREATE TRIGGER update_time_slots_updated_at BEFORE UPDATE ON time_slots FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Add constraints for data validation
 ALTER TABLE tours ADD CONSTRAINT check_price_positive CHECK (price >= 0);
@@ -300,7 +323,7 @@ SELECT
     tableowner
 FROM pg_tables 
 WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions')
+    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications')
 ORDER BY tablename;
 
 -- Show created indexes
@@ -310,5 +333,5 @@ SELECT
     indexdef
 FROM pg_indexes 
 WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions')
+    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications')
 ORDER BY tablename, indexname; 
