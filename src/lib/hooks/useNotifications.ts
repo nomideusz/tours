@@ -60,6 +60,12 @@ export function useNotifications() {
       eventSource = new EventSource('/api/notifications/sse', {
         withCredentials: true
       });
+      
+      console.log('📡 EventSource created:', {
+        url: eventSource.url,
+        readyState: eventSource.readyState,
+        withCredentials: eventSource.withCredentials
+      });
 
       eventSource.onopen = () => {
         console.log('✅ SSE connection established');
