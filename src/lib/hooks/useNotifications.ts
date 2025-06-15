@@ -57,7 +57,9 @@ export function useNotifications() {
       console.log('🔗 Establishing SSE connection for notifications...');
       notificationActions.setError(null);
       
-      eventSource = new EventSource('/api/notifications/sse', {
+      // Try using absolute URL to potentially bypass service worker issues
+      const sseUrl = `${window.location.origin}/api/notifications/sse`;
+      eventSource = new EventSource(sseUrl, {
         withCredentials: true
       });
       
@@ -149,12 +151,35 @@ export function useNotifications() {
         console.error('❌ SSE connection error:', error);
         console.error('❌ SSE readyState:', eventSource?.readyState);
         console.error('❌ SSE url:', eventSource?.url);
+        console.error('❌ Error event details:', {
+          type: error.type,
+          target: error.target,
+          currentTarget: error.currentTarget,
+          eventPhase: error.eventPhase,
+          bubbles: error.bubbles,
+          cancelable: error.cancelable,
+          timeStamp: error.timeStamp
+        });
+        
+        // Check if this is a specific type of error
+        if (eventSource?.readyState === EventSource.CLOSED) {
+          console.error('❌ EventSource closed unexpectedly');
+        } else if (eventSource?.readyState === EventSource.CONNECTING) {
+          console.error('❌ EventSource stuck in connecting state');
+        }
+        
         notificationActions.setConnected(false);
         isConnecting = false; // Reset connection flag
         
-        // Always attempt reconnect on error (don't wait for CLOSED state)
-        // The connection might be in an error state but not officially closed
-        attemptReconnect();
+        // Don't reconnect immediately if we just connected successfully
+        // This prevents rapid reconnection loops
+        const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+        if (timeSinceLastHeartbeat < 5000) {
+          console.warn('⚠️ Error occurred shortly after connection, waiting longer before reconnect...');
+          setTimeout(() => attemptReconnect(), 5000);
+        } else {
+          attemptReconnect();
+        }
       };
 
     } catch (error) {
