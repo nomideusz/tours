@@ -9,20 +9,24 @@ export const connections = new Map<string, WritableStreamDefaultWriter>();
 export async function sendNotificationToUser(userId: string, notification: any) {
   console.log(`🔍 Looking for SSE connection for user: "${userId}" (type: ${typeof userId})`);
   console.log(`🔍 Available connections:`, Array.from(connections.keys()));
+  console.log(`🔍 Notification data being sent:`, JSON.stringify(notification, null, 2));
   
   const sendMessage = connections.get(userId);
   if (sendMessage) {
     try {
+      console.log(`📡 Attempting to send SSE message to user ${userId}...`);
       (sendMessage as any)(notification);
-      console.log(`✅ SSE notification sent to user ${userId}:`, notification.type);
+      console.log(`✅ SSE notification sent successfully to user ${userId}:`, notification.type);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send SSE notification to user ${userId}:`, error);
+      console.error(`❌ Error details:`, error);
       connections.delete(userId);
       return false;
     }
   } else {
     console.log(`❌ No SSE connection found for user ${userId}`);
+    console.log(`❌ This usually means the user is not connected or the connection was lost`);
   }
   return false;
 }

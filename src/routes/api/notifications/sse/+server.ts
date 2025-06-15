@@ -26,8 +26,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
         }
         
         try {
+          console.log(`📤 Sending SSE message to user ${userId}:`, data.type, data);
           const message = `data: ${JSON.stringify(data)}\n\n`;
           controller.enqueue(encoder.encode(message));
+          console.log(`✅ SSE message enqueued successfully for user ${userId}`);
         } catch (error) {
           if (error instanceof Error && (error as any).code === 'ERR_INVALID_STATE') {
             console.log(`SSE controller closed for user ${userId}, marking as closed`);

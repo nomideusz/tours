@@ -8,7 +8,9 @@ export function useNotifications() {
   let eventSource: EventSource | null = null;
   let reconnectTimeout: NodeJS.Timeout | null = null;
   let reconnectAttempts = 0;
-  const maxReconnectAttempts = 5;
+  const maxReconnectAttempts = 10; // Increased from 5
+  let lastHeartbeat = Date.now();
+  let healthCheckInterval: NodeJS.Timeout | null = null;
   const queryClient = useQueryClient();
 
   function connect() {
@@ -31,12 +33,26 @@ export function useNotifications() {
         console.log('✅ SSE connection established');
         notificationActions.setConnected(true);
         reconnectAttempts = 0;
+        lastHeartbeat = Date.now();
         
         // Clear any reconnect timeout
         if (reconnectTimeout) {
           clearTimeout(reconnectTimeout);
           reconnectTimeout = null;
         }
+        
+        // Start health check
+        if (healthCheckInterval) {
+          clearInterval(healthCheckInterval);
+        }
+        healthCheckInterval = setInterval(() => {
+          const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+          // If no heartbeat for 60 seconds, force reconnect
+          if (timeSinceLastHeartbeat > 60000) {
+            console.warn('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
+            connect();
+          }
+        }, 15000); // Check every 15 seconds
       };
 
       eventSource.onmessage = (event) => {
@@ -53,6 +69,7 @@ export function useNotifications() {
             case 'heartbeat':
               // Silent heartbeat - just keep connection alive
               console.log('💓 SSE heartbeat received');
+              lastHeartbeat = Date.now();
               break;
 
             case 'new_booking':
@@ -79,11 +96,13 @@ export function useNotifications() {
 
       eventSource.onerror = (error) => {
         console.error('❌ SSE connection error:', error);
+        console.error('❌ SSE readyState:', eventSource?.readyState);
+        console.error('❌ SSE url:', eventSource?.url);
         notificationActions.setConnected(false);
         
-        if (eventSource?.readyState === EventSource.CLOSED) {
-          attemptReconnect();
-        }
+        // Always attempt reconnect on error (don't wait for CLOSED state)
+        // The connection might be in an error state but not officially closed
+        attemptReconnect();
       };
 
     } catch (error) {
@@ -223,6 +242,11 @@ export function useNotifications() {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
       reconnectTimeout = null;
+    }
+    
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = null;
     }
     
     notificationActions.setConnected(false);

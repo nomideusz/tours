@@ -102,53 +102,26 @@
 		showPanel = false;
 	}
 
-	// Temporary test function to verify notification system
-	function testNotification() {
-		console.log('🧪 Testing notification system...');
-		notificationActions.add({
-			id: `test_${Date.now()}`,
-			type: 'new_booking',
-			title: 'Test Notification',
-			message: 'This is a test notification to verify the system works',
-			timestamp: new Date().toISOString(),
-			actions: [
-				{
-					label: 'Test Action',
-					url: '/dashboard'
-				}
-			]
-		});
-	}
+
 </script>
 
 <div class="relative">
 	<!-- Notification Bell Button -->
-	<div class="flex items-center gap-2">
-		<!-- Temporary test button -->
-		<button
-			onclick={testNotification}
-			class="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-			title="Test Notification"
-		>
-			Test
-		</button>
-		
-		<button
-			onclick={() => showPanel = !showPanel}
-			class="relative p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-			title="Notifications"
-		>
-			<Bell class="h-5 w-5" />
-			{#if $unreadCount > 0}
-				<span 
-					class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium"
-					transition:scale={{ duration: 200 }}
-				>
-					{$unreadCount > 99 ? '99+' : $unreadCount}
-				</span>
-			{/if}
-		</button>
-	</div>
+	<button
+		onclick={() => showPanel = !showPanel}
+		class="relative p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+		title="Notifications"
+	>
+		<Bell class="h-5 w-5" />
+		{#if $unreadCount > 0}
+			<span 
+				class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium"
+				transition:scale={{ duration: 200 }}
+			>
+				{$unreadCount > 99 ? '99+' : $unreadCount}
+			</span>
+		{/if}
+	</button>
 
 	<!-- Notification Panel -->
 	{#if showPanel}
