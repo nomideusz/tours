@@ -3,9 +3,13 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
+import { 
+	processAndSaveAvatar, 
+	deleteAvatar, 
+	getAvatarUrl,
+	isAvatarStorageAvailable,
+	initializeAvatarStorage
+} from '$lib/utils/avatar-storage.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
@@ -20,39 +24,47 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ error: 'No avatar file provided' }, { status: 400 });
 		}
 
-		// Validate file type
-		const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-		if (!validTypes.includes(avatar.type)) {
-			return json({ error: 'Invalid file type. Please use JPEG, PNG, or WebP.' }, { status: 400 });
+		// Check if avatar storage is available
+		const storageAvailable = await isAvatarStorageAvailable();
+		
+		if (!storageAvailable) {
+			return json({
+				error: 'Avatar upload unavailable',
+				message: 'Unable to upload avatar. Please try again later.'
+			}, { status: 500 });
 		}
 
-		// Validate file size (2MB limit)
-		if (avatar.size > 2 * 1024 * 1024) {
-			return json({ error: 'File too large. Maximum size is 2MB.' }, { status: 400 });
+		// Initialize avatar storage
+		await initializeAvatarStorage();
+		
+		// Delete old avatar if it exists and is not an OAuth2 avatar (external URL)
+		if (locals.user.avatar && !locals.user.avatar.startsWith('http')) {
+			try {
+				// Extract filename from current avatar URL (assumes format /api/avatars/userId/filename)
+				const avatarUrlParts = locals.user.avatar.split('/');
+				const oldFilename = avatarUrlParts[avatarUrlParts.length - 1]?.split('?')[0];
+				if (oldFilename) {
+					await deleteAvatar(locals.user.id, oldFilename);
+				}
+			} catch (deleteError) {
+				console.warn('Failed to delete old avatar:', deleteError);
+				// Continue with upload even if old avatar deletion fails
+			}
 		}
-
-		// Generate unique filename
-		const fileExtension = avatar.name.split('.').pop();
-		const fileName = `${randomUUID()}.${fileExtension}`;
-		const uploadDir = join(process.cwd(), 'static', 'uploads', 'avatars');
-		const filePath = join(uploadDir, fileName);
-
-		// Ensure upload directory exists
-		await mkdir(uploadDir, { recursive: true });
-
-		// Save file
-		const buffer = Buffer.from(await avatar.arrayBuffer());
-		await writeFile(filePath, buffer);
+		
+		// Process and save new avatar using MinIO
+		const processedAvatar = await processAndSaveAvatar(avatar, locals.user.id);
+		const avatarUrl = await getAvatarUrl(locals.user.id, processedAvatar.filename, 'medium');
 
 		// Update user avatar in database
-		const avatarUrl = `/uploads/avatars/${fileName}`;
-		
 		await db.update(users)
 			.set({ 
 				avatar: avatarUrl,
 				updatedAt: new Date()
 			})
 			.where(eq(users.id, locals.user.id));
+
+		console.log(`✅ Avatar uploaded successfully: ${avatarUrl}`);
 
 		return json({ 
 			success: true, 
@@ -62,7 +74,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	} catch (error) {
 		console.error('Avatar upload error:', error);
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ 
+			error: 'Avatar upload failed', 
+			message: error instanceof Error ? error.message : 'Internal server error'
+		}, { status: 500 });
 	}
 };
 
@@ -70,6 +85,22 @@ export const DELETE: RequestHandler = async ({ locals }) => {
 	try {
 		if (!locals.user) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Delete existing avatar from MinIO if it exists and is not an OAuth2 avatar
+		if (locals.user.avatar && !locals.user.avatar.startsWith('http')) {
+			try {
+				// Extract filename from current avatar URL
+				const avatarUrlParts = locals.user.avatar.split('/');
+				const filename = avatarUrlParts[avatarUrlParts.length - 1]?.split('?')[0];
+				if (filename) {
+					await deleteAvatar(locals.user.id, filename);
+					console.log(`✅ Deleted avatar from storage: ${filename}`);
+				}
+			} catch (deleteError) {
+				console.warn('Failed to delete avatar from storage:', deleteError);
+				// Continue with database update even if file deletion fails
+			}
 		}
 
 		// Remove avatar from database (set to null)
@@ -87,6 +118,9 @@ export const DELETE: RequestHandler = async ({ locals }) => {
 
 	} catch (error) {
 		console.error('Avatar removal error:', error);
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ 
+			error: 'Avatar removal failed',
+			message: error instanceof Error ? error.message : 'Internal server error'
+		}, { status: 500 });
 	}
 }; 

@@ -2,7 +2,10 @@ import { Lucia } from 'lucia';
 import { DrizzlePostgreSQLAdapter } from '@lucia-auth/adapter-drizzle';
 import { dev } from '$app/environment';
 import { db } from '$lib/db/connection.js';
-import { users, sessions, type User as DatabaseUser } from '$lib/db/schema/index.js';
+import { users, sessions } from '$lib/db/schema/index.js';
+
+// Infer User type from the users table
+type DatabaseUser = typeof users.$inferSelect;
 
 // Create Lucia adapter for Drizzle + PostgreSQL
 const adapter = new DrizzlePostgreSQLAdapter(db, sessions, users);
