@@ -160,8 +160,18 @@
 			// Continue anyway
 		}
 		
-		// Navigate to check-in page
-		goto(`/checkin/${qrCode}`);
+		// Navigate to check-in page - use window.location.href to ensure proper route group crossing
+		try {
+			console.log('Navigating to check-in page:', `/checkin/${qrCode}`);
+			
+			// Use window.location.href instead of goto() to ensure proper navigation
+			// between route groups ((app) to (public))
+			window.location.href = `/checkin/${qrCode}`;
+		} catch (error) {
+			console.error('Navigation error:', error);
+			// Fallback to direct navigation
+			window.location.href = `/checkin/${qrCode}`;
+		}
 	}
 
 	onDestroy(() => {
