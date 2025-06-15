@@ -11,17 +11,47 @@ export function useNotifications() {
   const maxReconnectAttempts = 10; // Increased from 5
   let lastHeartbeat = Date.now();
   let healthCheckInterval: NodeJS.Timeout | null = null;
+  let isConnecting = false; // Prevent multiple concurrent connections
   const queryClient = useQueryClient();
 
-  function connect() {
-    if (!browser) return;
-
-    // Clean up existing connection
+  function cleanup() {
+    // Close existing EventSource
     if (eventSource) {
-      console.log('🔄 Closing existing SSE connection before creating new one');
+      console.log('🧹 Closing existing SSE connection...');
       eventSource.close();
       eventSource = null;
     }
+    
+    // Clear reconnect timeout
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
+    }
+    
+    // Clear health check interval
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = null;
+    }
+    
+    notificationActions.setConnected(false);
+  }
+
+  function connect() {
+    if (!browser) return;
+    
+    // Prevent multiple concurrent connection attempts
+    if (isConnecting) {
+      console.log('🔄 Connection already in progress, skipping...');
+      return;
+    }
+    
+    isConnecting = true;
+
+    // Clean up existing connection and intervals
+    cleanup();
+
+    console.log('🔄 Creating new SSE connection...');
 
     try {
       console.log('🔗 Establishing SSE connection for notifications...');
@@ -38,26 +68,27 @@ export function useNotifications() {
         notificationActions.setConnected(true);
         reconnectAttempts = 0;
         lastHeartbeat = Date.now();
+        isConnecting = false; // Connection completed
         
-        // Clear any reconnect timeout
+        // Clear any reconnect timeout (should already be cleared by cleanup)
         if (reconnectTimeout) {
           clearTimeout(reconnectTimeout);
           reconnectTimeout = null;
         }
         
-        // Start health check
-        if (healthCheckInterval) {
-          clearInterval(healthCheckInterval);
+        // Start health check (only if we don't already have one)
+        if (!healthCheckInterval) {
+          console.log('🏥 Starting health check interval...');
+          healthCheckInterval = setInterval(() => {
+            const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+            console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
+            // If no heartbeat for 60 seconds, force reconnect
+            if (timeSinceLastHeartbeat > 60000) {
+              console.warn('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
+              connect();
+            }
+          }, 15000); // Check every 15 seconds
         }
-        healthCheckInterval = setInterval(() => {
-          const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-          console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
-          // If no heartbeat for 60 seconds, force reconnect
-          if (timeSinceLastHeartbeat > 60000) {
-            console.warn('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
-            connect();
-          }
-        }, 15000); // Check every 15 seconds
       };
 
       eventSource.onmessage = (event) => {
@@ -113,6 +144,7 @@ export function useNotifications() {
         console.error('❌ SSE readyState:', eventSource?.readyState);
         console.error('❌ SSE url:', eventSource?.url);
         notificationActions.setConnected(false);
+        isConnecting = false; // Reset connection flag
         
         // Always attempt reconnect on error (don't wait for CLOSED state)
         // The connection might be in an error state but not officially closed
@@ -122,6 +154,7 @@ export function useNotifications() {
     } catch (error) {
       console.error('❌ Failed to create SSE connection:', error);
       notificationActions.setError('Failed to connect to notification service');
+      isConnecting = false; // Reset connection flag
       attemptReconnect();
     }
   }
@@ -248,23 +281,9 @@ export function useNotifications() {
   }
 
   function disconnect() {
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
-    
-    if (reconnectTimeout) {
-      clearTimeout(reconnectTimeout);
-      reconnectTimeout = null;
-    }
-    
-    if (healthCheckInterval) {
-      clearInterval(healthCheckInterval);
-      healthCheckInterval = null;
-    }
-    
-    notificationActions.setConnected(false);
-    console.log('🔌 SSE connection closed');
+    cleanup();
+    isConnecting = false;
+    console.log('🔌 SSE connection disconnected');
   }
 
   // Request notification permission
