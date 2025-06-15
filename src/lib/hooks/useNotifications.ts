@@ -18,7 +18,9 @@ export function useNotifications() {
 
     // Clean up existing connection
     if (eventSource) {
+      console.log('🔄 Closing existing SSE connection before creating new one');
       eventSource.close();
+      eventSource = null;
     }
 
     try {
@@ -31,6 +33,8 @@ export function useNotifications() {
 
       eventSource.onopen = () => {
         console.log('✅ SSE connection established');
+        console.log('🔗 EventSource readyState:', eventSource?.readyState);
+        console.log('🔗 EventSource URL:', eventSource?.url);
         notificationActions.setConnected(true);
         reconnectAttempts = 0;
         lastHeartbeat = Date.now();
@@ -47,6 +51,7 @@ export function useNotifications() {
         }
         healthCheckInterval = setInterval(() => {
           const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+          console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
           // If no heartbeat for 60 seconds, force reconnect
           if (timeSinceLastHeartbeat > 60000) {
             console.warn('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
@@ -56,10 +61,16 @@ export function useNotifications() {
       };
 
       eventSource.onmessage = (event) => {
+        console.log('📨 Raw SSE event received:', {
+          data: event.data,
+          lastEventId: event.lastEventId,
+          origin: event.origin,
+          type: event.type
+        });
+        
         try {
-          console.log('📨 Raw SSE message received:', event.data);
           const data = JSON.parse(event.data);
-          console.log('📨 SSE message received:', data.type, data);
+          console.log('📨 SSE message parsed successfully:', data.type, data);
 
           switch (data.type) {
             case 'connected':
@@ -67,7 +78,6 @@ export function useNotifications() {
               break;
 
             case 'heartbeat':
-              // Silent heartbeat - just keep connection alive
               console.log('💓 SSE heartbeat received');
               lastHeartbeat = Date.now();
               break;
@@ -89,8 +99,12 @@ export function useNotifications() {
               console.log('❓ Unknown SSE message type:', data.type, data);
           }
         } catch (error) {
-          console.error('❌ Error parsing SSE message:', error, event.data);
-          console.error('❌ Full error details:', error);
+          console.error('❌ Error parsing SSE message:', error);
+          console.error('❌ Raw event data:', event.data);
+          console.error('❌ Event object:', event);
+          console.error('❌ Full error stack:', error instanceof Error ? error.stack : error);
+          
+          // Don't close connection on parse error, just log it
         }
       };
 
