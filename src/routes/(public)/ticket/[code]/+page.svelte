@@ -29,15 +29,20 @@
 	let isLoading = $derived($ticketQuery.isLoading);
 	let queryError = $derived($ticketQuery.error);
 	
-	let qrCodeElement = $state<HTMLDivElement>();
+	let qrCodeElement = $state<HTMLCanvasElement>();
 	
 	// Generate QR code for check-in when booking is loaded
 	$effect(() => {
 		if (booking && qrCodeElement) {
+			console.log('Generating QR code for ticket:', data.ticketCode);
+			console.log('QR code element:', qrCodeElement);
+			
 			// Generate QR code pointing to check-in URL for guides
 			const checkInURL = generateCheckInURL(data.ticketCode);
+			console.log('Check-in URL:', checkInURL);
 			
 			import('qrcode').then(QRCode => {
+				console.log('QRCode library loaded:', QRCode);
 				QRCode.default.toCanvas(qrCodeElement, checkInURL, {
 					width: 256,
 					margin: 1,
@@ -45,8 +50,16 @@
 						dark: '#000000',
 						light: '#FFFFFF'
 					}
+				}).then(() => {
+					console.log('QR code generated successfully');
+				}).catch((error) => {
+					console.error('QR code generation failed:', error);
 				});
+			}).catch((error) => {
+				console.error('Failed to import qrcode library:', error);
 			});
+		} else {
+			console.log('QR code generation skipped:', { booking: !!booking, qrCodeElement: !!qrCodeElement });
 		}
 	});
 	
@@ -156,7 +169,7 @@
 				<!-- QR Code -->
 				<div class="px-6 py-8 text-center border-b" style="border-color: var(--border-primary);">
 					<div class="w-64 h-64 mx-auto rounded-xl p-4 mb-4" style="background: var(--bg-primary); border: 2px solid var(--border-primary);">
-						<div bind:this={qrCodeElement} class="w-full h-full"></div>
+						<canvas bind:this={qrCodeElement} class="w-full h-full"></canvas>
 					</div>
 					<p class="text-sm mb-2" style="color: var(--text-secondary);">Ticket Code</p>
 					<p class="text-xl font-mono font-bold" style="color: var(--text-primary);">{getDisplayReference(data.ticketCode)}</p>
