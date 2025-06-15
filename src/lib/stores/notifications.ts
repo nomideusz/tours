@@ -41,7 +41,7 @@ export const isConnected = derived(notificationStore, ($store) => $store.connect
 // Actions
 export const notificationActions = {
   // Add a new notification
-  add: (notification: Omit<Notification, 'read'>) => {
+  add: (notification: Omit<Notification, 'read'> | Notification) => {
     console.log('🔔 Adding notification to store:', notification);
     
     // Validate notification data
@@ -51,36 +51,107 @@ export const notificationActions = {
     }
     
     notificationStore.update(state => {
-      const newNotification = { ...notification, read: false };
-      const newState = {
-        ...state,
-        notifications: [
+      // Check if the notification already exists to avoid duplicates
+      const existingIndex = state.notifications.findIndex(n => n.id === notification.id);
+      
+      const newNotification = { 
+        ...notification, 
+        read: 'read' in notification ? notification.read : false // Preserve read status if provided, default to false
+      };
+      
+      let newNotifications;
+      if (existingIndex >= 0) {
+        // Update existing notification (useful for read status updates)
+        newNotifications = [...state.notifications];
+        newNotifications[existingIndex] = newNotification;
+        console.log('📊 Updated existing notification:', newNotification.id, 'read:', newNotification.read);
+      } else {
+        // Add new notification
+        newNotifications = [
           newNotification,
           ...state.notifications
-        ].slice(0, 50) // Keep only last 50 notifications
+        ].slice(0, 50); // Keep only last 50 notifications
+        console.log('📊 Added new notification:', newNotification.id, 'read:', newNotification.read);
+      }
+      
+      const newState = {
+        ...state,
+        notifications: newNotifications
       };
       console.log('📊 Updated notification store:', newState.notifications.length, 'notifications');
-      console.log('📊 New notification added:', newNotification);
       return newState;
     });
   },
 
   // Mark notification as read
-  markAsRead: (id: string) => {
+  markAsRead: async (id: string) => {
+    // Optimistically update the UI first
     notificationStore.update(state => ({
       ...state,
       notifications: state.notifications.map(n => 
         n.id === id ? { ...n, read: true } : n
       )
     }));
+
+    // Then update the database
+    if (browser) {
+      try {
+        const response = await fetch('/api/notifications/mark-read', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ notificationId: id })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to mark notification as read');
+        }
+
+        console.log('✅ Notification marked as read in database:', id);
+      } catch (error) {
+        console.error('❌ Failed to mark notification as read in database:', error);
+        // Revert the optimistic update on error
+        notificationStore.update(state => ({
+          ...state,
+          notifications: state.notifications.map(n => 
+            n.id === id ? { ...n, read: false } : n
+          )
+        }));
+      }
+    }
   },
 
   // Mark all notifications as read
-  markAllAsRead: () => {
+  markAllAsRead: async () => {
+    // Optimistically update the UI first
     notificationStore.update(state => ({
       ...state,
       notifications: state.notifications.map(n => ({ ...n, read: true }))
     }));
+
+    // Then update the database
+    if (browser) {
+      try {
+        const response = await fetch('/api/notifications/mark-read', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ markAll: true })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to mark all notifications as read');
+        }
+
+        console.log('✅ All notifications marked as read in database');
+      } catch (error) {
+        console.error('❌ Failed to mark all notifications as read in database:', error);
+        // Note: We don't revert all notifications on error as it would be complex
+        // The user can refresh to get the correct state
+      }
+    }
   },
 
   // Remove a notification
@@ -115,48 +186,22 @@ export const notificationActions = {
     }));
   },
 
-  // Load notifications from localStorage (for persistence)
+  // Load notifications from localStorage (DEPRECATED - now using database)
   load: () => {
-    if (!browser) return;
-    
-    try {
-      const stored = localStorage.getItem('zaur_notifications');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        notificationStore.update(state => ({
-          ...state,
-          notifications: parsed.notifications || []
-        }));
-      }
-    } catch (error) {
-      console.warn('Failed to load notifications from localStorage:', error);
-    }
+    console.log('⚠️ localStorage load called - now using database instead');
+    // No longer loading from localStorage since we use database
   },
 
-  // Save notifications to localStorage (handled by auto-subscription below)
+  // Save notifications to localStorage (DEPRECATED - now using database)
   save: () => {
-    // This function is kept for API compatibility but localStorage saving
-    // is now handled automatically by the subscription at the bottom
+    console.log('⚠️ localStorage save called - now using database instead');
+    // No longer saving to localStorage since we use database
   }
 };
 
-// Auto-save to localStorage
+// Auto-save to localStorage DISABLED - now using database
 if (browser) {
-  notificationActions.load();
-  let hasSubscribed = false;
-  
-  notificationStore.subscribe((state) => {
-    if (!hasSubscribed) {
-      hasSubscribed = true;
-      return; // Skip first subscription call to avoid immediate save
-    }
-    
-    try {
-      localStorage.setItem('zaur_notifications', JSON.stringify({
-        notifications: state.notifications.slice(0, 20) // Save only 20 most recent
-      }));
-    } catch (error) {
-      console.warn('Failed to save notifications to localStorage:', error);
-    }
-  });
+  console.log('📚 Notifications now managed via database, localStorage disabled');
+  // No longer using localStorage - notifications are managed via database
+  // The useNotifications hook will load initial data from API on startup
 } 

@@ -220,15 +220,52 @@ export function useNotifications() {
       if (data.success && data.notifications?.length > 0) {
         console.log(`📬 Found ${data.notifications.length} notifications via polling`);
         
-                 // Process each notification
-         data.notifications.forEach((notification: any) => {
-           console.log('📬 Adding notification from polling:', notification.id);
-           handleNewBookingNotification(notification);
-         });
+        // Process each notification, preserving read status from database
+        data.notifications.forEach((notification: any) => {
+          console.log('📬 Adding notification from polling:', notification.id, 'read:', notification.read);
+          
+          // Add to store preserving read status (don't trigger browser notifications for existing ones)
+          notificationActions.add(notification);
+        });
       }
       
     } catch (error) {
       console.error('❌ Notification polling failed:', error);
+    }
+  }
+
+  async function loadInitialNotifications() {
+    try {
+      console.log('📚 Loading initial notifications from database...');
+      
+      const response = await fetch('/api/notifications/poll', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Initial load failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📚 Initial notifications response:', data);
+      
+      if (data.success && data.notifications?.length > 0) {
+        console.log(`📚 Loading ${data.notifications.length} notifications with read status`);
+        
+        // Clear existing notifications first to avoid mixing localStorage with database
+        notificationActions.clear();
+        
+        // Add each notification preserving read status from database
+        data.notifications.forEach((notification: any) => {
+          console.log('📚 Loading notification:', notification.id, 'read:', notification.read);
+          notificationActions.add(notification);
+        });
+        
+        console.log('✅ Initial notifications loaded successfully');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to load initial notifications:', error);
     }
   }
 
@@ -372,15 +409,31 @@ export function useNotifications() {
   // Initialize
   if (browser) {
     requestNotificationPermission();
-    connect();
     
-    // Start with polling as immediate fallback
-    setTimeout(() => {
-      if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
-        console.log('🔄 SSE not ready, starting polling fallback...');
-        startPolling();
-      }
-    }, 5000); // Give SSE 5 seconds to connect
+    // Load initial notifications from database first
+    loadInitialNotifications().then(() => {
+      console.log('📚 Initial notifications loaded, starting SSE connection...');
+      connect();
+      
+      // Start with polling as immediate fallback
+      setTimeout(() => {
+        if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+          console.log('🔄 SSE not ready, starting polling fallback...');
+          startPolling();
+        }
+      }, 5000); // Give SSE 5 seconds to connect
+    }).catch((error) => {
+      console.error('❌ Failed to load initial notifications, continuing with SSE:', error);
+      connect();
+      
+      // Start with polling as immediate fallback
+      setTimeout(() => {
+        if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+          console.log('🔄 SSE not ready, starting polling fallback...');
+          startPolling();
+        }
+      }, 5000); // Give SSE 5 seconds to connect
+    });
   }
 
   onMount(() => {

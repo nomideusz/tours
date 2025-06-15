@@ -60,9 +60,9 @@
 		}
 	}
 
-	function handleNotificationClick(notification: any) {
+	async function handleNotificationClick(notification: any) {
 		// Mark as read
-		notificationActions.markAsRead(notification.id);
+		await notificationActions.markAsRead(notification.id);
 		
 		// Navigate to the first action URL if available
 		if (notification.actions && notification.actions.length > 0) {
@@ -90,8 +90,8 @@
 		}
 	}
 
-	function handleMarkAllRead() {
-		notificationActions.markAllAsRead();
+	async function handleMarkAllRead() {
+		await notificationActions.markAllAsRead();
 	}
 
 	function handleClearAll() {
