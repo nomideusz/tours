@@ -214,7 +214,8 @@ export function useNotifications() {
         console.log(`📬 Found ${data.notifications.length} notifications via polling`);
         
         // Process each notification, preserving read status from database
-        data.notifications.forEach((notification: any) => {
+        // For polling, add in reverse order since add() prepends to array
+        data.notifications.reverse().forEach((notification: any) => {
           console.log('📬 Adding notification from polling:', notification.id, 'read:', notification.read);
           
           // Add to store preserving read status (don't trigger browser notifications for existing ones)
@@ -248,8 +249,9 @@ export function useNotifications() {
         // Clear existing notifications first to avoid mixing localStorage with database
         notificationActions.clear();
         
-        // Add each notification preserving read status from database
-        data.notifications.forEach((notification: any) => {
+        // Add notifications in reverse order since add() prepends to array
+        // API returns newest first, but we need to add oldest first to maintain correct order
+        data.notifications.reverse().forEach((notification: any) => {
           console.log('📚 Loading notification:', notification.id, 'read:', notification.read);
           notificationActions.add(notification);
         });

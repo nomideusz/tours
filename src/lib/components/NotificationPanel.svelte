@@ -94,8 +94,8 @@
 		await notificationActions.markAllAsRead();
 	}
 
-	function handleClearAll() {
-		notificationActions.clear();
+	async function handleClearAll() {
+		await notificationActions.clear();
 	}
 
 	function handleClickOutside() {

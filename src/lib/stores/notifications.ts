@@ -163,11 +163,32 @@ export const notificationActions = {
   },
 
   // Clear all notifications
-  clear: () => {
+  clear: async () => {
+    // Optimistically update the UI first
     notificationStore.update(state => ({
       ...state,
       notifications: []
     }));
+
+    // Then delete from database
+    if (browser) {
+      try {
+        const response = await fetch('/api/notifications/clear', {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to clear notifications from database');
+        }
+
+        console.log('✅ All notifications cleared from database');
+      } catch (error) {
+        console.error('❌ Failed to clear notifications from database:', error);
+        // Note: We don't revert the UI update since clearing locally is still useful
+        // The user would see them again on refresh, but that's acceptable fallback behavior
+      }
+    }
   },
 
   // Set connection status
