@@ -34,6 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const currency = currencyValue || locals.user.currency || 'EUR';
 		
 		const avatarFile = formData.get('avatar') as File;
+		const avatarValue = formData.get('avatar')?.toString(); // Check if avatar is being explicitly removed
 
 		console.log('📝 Profile update - form data:', {
 			formCountry: countryValue,
@@ -41,7 +42,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			finalCountry: country,
 			finalCurrency: currency,
 			existingCountry: locals.user.country,
-			existingCurrency: locals.user.currency
+			existingCurrency: locals.user.currency,
+			avatarValue: avatarValue,
+			avatarFile: avatarFile
 		});
 
 		// Basic validation
@@ -77,10 +80,32 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ error: 'Invalid currency selected' }, { status: 400 });
 		}
 
-		// Handle avatar upload if provided
+		// Handle avatar upload/removal
 		let newAvatarUrl = locals.user.avatar; // Keep existing avatar by default
 		
-		if (avatarFile && avatarFile instanceof File && avatarFile.size > 0) {
+		// Check if avatar is being explicitly removed (empty string)
+		if (avatarValue === '') {
+			console.log('🗑️ Removing avatar for user:', locals.user.id);
+			
+			// Delete old avatar if it exists and is not an OAuth2 avatar (external URL)
+			if (locals.user.avatar && !locals.user.avatar.startsWith('http')) {
+				try {
+					// Extract filename from current avatar URL (assumes format /api/avatars/userId/filename)
+					const avatarUrlParts = locals.user.avatar.split('/');
+					const oldFilename = avatarUrlParts[avatarUrlParts.length - 1]?.split('?')[0];
+					if (oldFilename) {
+						await deleteAvatar(locals.user.id, oldFilename);
+						console.log('✅ Old avatar deleted successfully');
+					}
+				} catch (deleteError) {
+					console.warn('Failed to delete old avatar:', deleteError);
+					// Continue with removal even if old avatar deletion fails
+				}
+			}
+			
+			// Set avatar to null/empty
+			newAvatarUrl = '';
+		} else if (avatarFile && avatarFile instanceof File && avatarFile.size > 0) {
 			try {
 				// Check if avatar storage is available
 				const storageAvailable = await isAvatarStorageAvailable();

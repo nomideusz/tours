@@ -29,6 +29,14 @@
 	import Upload from 'lucide-svelte/icons/upload';
 	import X from 'lucide-svelte/icons/x';
 
+	// Profile Components
+	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';
+	import PersonalInfoForm from '$lib/components/profile/PersonalInfoForm.svelte';
+	import PasswordChangeForm from '$lib/components/profile/PasswordChangeForm.svelte';
+	import ProfileSummary from '$lib/components/profile/ProfileSummary.svelte';
+	import PaymentSetup from '$lib/components/profile/PaymentSetup.svelte';
+	import AccountInfo from '$lib/components/profile/AccountInfo.svelte';
+
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
@@ -121,6 +129,19 @@
 			currency = user.currency || 'EUR';
 			avatarLoadError = false; // Reset avatar error on data load
 			formInitialized = true; // Mark as initialized
+			
+			// Store original form data to track changes
+			originalFormData = {
+				name: user.name || '',
+				username: user.username || '',
+				businessName: user.businessName || '',
+				description: user.description || '',
+				phone: user.phone || '',
+				website: user.website || '',
+				country: user.country || '',
+				currency: user.currency || 'EUR'
+			};
+			
 			console.log('📋 Form data initialized from user:', { 
 				userCountry: user.country, 
 				userCurrency: user.currency, 
@@ -129,6 +150,16 @@
 				formCountry: country, 
 				formCurrency: currency 
 			});
+		}
+	});
+
+	// Track unsaved changes
+	$effect(() => {
+		if (formInitialized && originalFormData && Object.keys(originalFormData).length > 0) {
+			const currentFormData = {
+				name, username, businessName, description, phone, website, country, currency
+			};
+			hasUnsavedChanges = JSON.stringify(currentFormData) !== JSON.stringify(originalFormData);
 		}
 	});
 
@@ -168,6 +199,14 @@
 	let errorMessage = $state('');
 	let profileSaved = $state(false);
 	let passwordChanged = $state(false);
+	let avatarSaved = $state(false);
+	let avatarRemoved = $state(false);
+	let personalInfoSaved = $state(false);
+	let businessInfoSaved = $state(false);
+
+	// Track if form has unsaved changes
+	let hasUnsavedChanges = $state(false);
+	let originalFormData = $state<any>({});
 
 	// Load payment status when user data is available
 	$effect(() => {
@@ -205,8 +244,8 @@
 		}
 	}
 
-	// Profile update function
-	async function updateProfile() {
+	// Personal info update function
+	async function updatePersonalInfo() {
 		profileLoading = true;
 		errorMessage = '';
 
@@ -220,10 +259,6 @@
 			formData.append('website', website);
 			formData.append('country', country);
 			formData.append('currency', currency);
-			
-			if (selectedAvatar) {
-				formData.append('avatar', selectedAvatar);
-			}
 
 			const response = await fetch('/api/profile/update', {
 				method: 'POST',
@@ -233,35 +268,32 @@
 			const result = await response.json();
 
 			if (!response.ok) {
-				throw new Error(result.error || 'Failed to update profile');
+				throw new Error(result.error || 'Failed to update personal information');
 			}
 
 			if (result.success) {
 				// Update the currency store
 				userCurrency.set(currency as Currency);
 				
-				// Clear avatar upload state on successful update
-				selectedAvatar = null;
-				avatarPreview = '';
+				// Update original form data to reflect saved state
+				originalFormData = { name, username, businessName, description, phone, website, country, currency };
 				
 				// Force remove all cached data and refetch immediately
 				queryClient.removeQueries({ queryKey: queryKeys.profile });
-				
-				// Immediately refetch the profile data
 				await queryClient.refetchQueries({ 
 					queryKey: queryKeys.profile,
 					type: 'active'
 				});
 				
 				// Show inline success feedback
-				profileSaved = true;
+				personalInfoSaved = true;
 				setTimeout(() => {
-					profileSaved = false;
+					personalInfoSaved = false;
 				}, 3000);
 			}
 		} catch (error) {
-			console.error('Profile update error:', error);
-			errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+			console.error('Personal info update error:', error);
+			errorMessage = error instanceof Error ? error.message : 'Failed to update personal information';
 		} finally {
 			profileLoading = false;
 		}
@@ -337,7 +369,7 @@
 	}
 
 	// Avatar upload functions
-	function onAvatarSelect(event: Event) {
+	async function onAvatarSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 		
@@ -362,15 +394,133 @@
 				avatarPreview = e.target?.result as string;
 			};
 			reader.readAsDataURL(file);
+			
+			// Auto-save avatar immediately
+			await saveAvatarOnly();
 		}
 	}
 
-	function removeAvatar() {
-		selectedAvatar = null;
-		avatarPreview = '';
-		if (avatarInputElement) {
-			avatarInputElement.value = '';
+	// Auto-save avatar function
+	async function saveAvatarOnly() {
+		if (!selectedAvatar) return;
+		
+		try {
+			const formData = new FormData();
+			formData.append('avatar', selectedAvatar);
+
+			const response = await fetch('/api/profile/avatar', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to update avatar');
+			}
+
+			if (result.success) {
+				// Clear selected file
+				selectedAvatar = null;
+				
+				// Show success feedback immediately
+				avatarSaved = true;
+				setTimeout(() => {
+					avatarSaved = false;
+				}, 3000);
+				
+				// Refresh profile data in background without showing loading
+				setTimeout(async () => {
+					await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+					// Clear preview after a delay to ensure new data loads
+					setTimeout(() => {
+						avatarPreview = '';
+					}, 1000);
+				}, 500);
+			}
+		} catch (error) {
+			console.error('Avatar update error:', error);
+			toastError(error instanceof Error ? error.message : 'Failed to update avatar');
 		}
+	}
+
+	async function removeAvatar() {
+		try {
+			const formData = new FormData();
+			formData.append('avatar', ''); // Send empty avatar to remove it
+
+			const response = await fetch('/api/profile/update', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to remove avatar');
+			}
+
+			if (result.success) {
+				// Clear local state
+				selectedAvatar = null;
+				avatarPreview = '';
+				if (avatarInputElement) {
+					avatarInputElement.value = '';
+				}
+
+				// Refresh profile data
+				await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+				
+				// Show success feedback for removal
+				avatarRemoved = true;
+				setTimeout(() => {
+					avatarRemoved = false;
+				}, 3000);
+			}
+		} catch (error) {
+			console.error('Avatar removal error:', error);
+			toastError(error instanceof Error ? error.message : 'Failed to remove avatar');
+		}
+	}
+
+	// Country to currency mapping for new users
+	const countryCurrencyMap: Record<string, string> = {
+		'US': 'USD',
+		'GB': 'GBP', 
+		'UK': 'GBP',
+		'JP': 'JPY',
+		'CA': 'CAD',
+		'AU': 'AUD',
+		'CH': 'CHF',
+		'SE': 'SEK',
+		'NO': 'NOK',
+		'DK': 'DKK',
+		'PL': 'PLN',
+		'CZ': 'CZK',
+		'DE': 'EUR',
+		'FR': 'EUR',
+		'IT': 'EUR',
+		'ES': 'EUR',
+		'NL': 'EUR',
+		'BE': 'EUR',
+		'AT': 'EUR',
+		'PT': 'EUR',
+		'IE': 'EUR',
+		'FI': 'EUR',
+		'GR': 'EUR',
+		'LU': 'EUR',
+		'MT': 'EUR',
+		'CY': 'EUR',
+		'SK': 'EUR',
+		'SI': 'EUR',
+		'EE': 'EUR',
+		'LV': 'EUR',
+		'LT': 'EUR'
+	};
+
+	// Function to get currency for country
+	function getCurrencyForCountry(countryCode: string): string {
+		return countryCurrencyMap[countryCode] || 'EUR';
 	}
 
 	// Initialize currency store and detect country on client-side
@@ -382,7 +532,15 @@
 		
 		// If no country is set, detect it on client-side
 		if (!country && browser) {
-			country = detectCountry();
+			const detectedCountry = detectCountry();
+			country = detectedCountry;
+			
+			// If user has no existing currency preference, set it based on detected country
+			if (!user?.currency && detectedCountry) {
+				const suggestedCurrency = getCurrencyForCountry(detectedCountry);
+				currency = suggestedCurrency;
+				console.log(`💱 Setting initial currency to ${suggestedCurrency} based on detected country ${detectedCountry}`);
+			}
 		}
 	});
 </script>
@@ -538,563 +696,117 @@
 						</div>
 					</div>
 				</div>
-				<div class="p-4 sm:p-6">
-					<form onsubmit={(e) => { e.preventDefault(); updateProfile(); }}>
-						<div class="space-y-6">
-							<!-- Username -->
-							<div>
-								<label for="username" class="form-label">
-									Username
-								</label>
-								<div class="relative">
-									<User class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-									<input
-										type="text"
-										id="username" 
-										name="username"
-										bind:value={username}
-										class="form-input pl-10"
-										placeholder="Enter your username"
-										required
-									/>
-								</div>
-								{#if username}
-									<p class="text-sm text-gray-600 mt-1">
-										Your personal URL: <a href="/{username}" class="text-blue-600 hover:text-blue-800" target="_blank">zaur.app/{username}</a>
-									</p>
-								{/if}
+				<div class="p-4 sm:p-6 space-y-8">
+					<!-- Avatar Section -->
+					<ProfileAvatar
+						{user}
+						{avatarPreview}
+						{avatarSaved}
+						{avatarRemoved}
+						{avatarLoadError}
+						onAvatarSelect={onAvatarSelect}
+						onRemoveAvatar={removeAvatar}
+					/>
+
+					<!-- Personal Information Form -->
+					<PersonalInfoForm
+						{user}
+						bind:name
+						bind:username
+						bind:businessName
+						bind:description
+						bind:phone
+						bind:website
+						bind:country
+						bind:currency
+						onSubmit={updatePersonalInfo}
+						loading={profileLoading}
+					/>
+
+					<!-- Submit Button -->
+					<div class="flex items-center justify-end gap-3 pt-6 mt-8" style="border-top: 1px solid var(--border-primary);">
+						{#if personalInfoSaved}
+							<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
+								<CheckCircle class="h-4 w-4" />
+								Profile updated successfully!
 							</div>
-
-							<!-- Avatar Upload -->
-							<div>
-								<label for="avatar" class="form-label">
-									Profile Avatar
-								</label>
-								<div class="flex items-start gap-4">
-									<!-- Current Avatar Display -->
-									<div class="flex-shrink-0">
-										<div class="w-20 h-20 rounded-full overflow-hidden" style="background: var(--bg-secondary); border: 2px solid var(--border-primary);">
-											{#if avatarPreview}
-												<img src={avatarPreview} alt="Avatar preview" class="w-full h-full object-cover" />
-											{:else if user?.avatar && !avatarLoadError}
-												<img 
-													src={user.avatar} 
-													alt="Current avatar" 
-													class="w-full h-full object-cover"
-													onerror={() => avatarLoadError = true}
-												/>
-											{:else}
-												<div class="w-full h-full flex items-center justify-center">
-													<User class="h-8 w-8" style="color: var(--text-tertiary);" />
-												</div>
-											{/if}
-										</div>
-									</div>
-									
-									<!-- Upload Controls -->
-									<div class="flex-1 space-y-3">
-										<div class="flex gap-2">
-											<input
-												type="file"
-												id="avatar"
-												name="avatar"
-												accept="image/jpeg,image/jpg,image/png,image/webp"
-												class="hidden"
-												onchange={onAvatarSelect}
-												bind:this={avatarInputElement}
-											/>
-											<label
-												for="avatar"
-												class="button-secondary button--gap button--small cursor-pointer"
-											>
-												<Upload class="h-3 w-3" />
-												Choose Avatar
-											</label>
-											
-											{#if selectedAvatar || avatarPreview}
-												<button
-													type="button"
-													onclick={removeAvatar}
-													class="button--danger button--gap button--small"
-												>
-													<X class="h-3 w-3" />
-													Remove
-												</button>
-											{/if}
-										</div>
-										
-										<p class="text-xs" style="color: var(--text-tertiary);">
-											Upload a square image (JPEG, PNG, WebP) up to 2MB. Image will be automatically cropped to fit.
-										</p>
-										
-										{#if selectedAvatar}
-											<p class="text-xs" style="color: var(--color-success);">
-												✓ Ready to upload: {selectedAvatar.name}
-											</p>
-										{/if}
-									</div>
-								</div>
-							</div>
-
-							<!-- Name -->
-							<div>
-								<label for="name" class="form-label">
-									Full Name
-								</label>
-								<div class="relative">
-									<User class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-									<input
-										type="text"
-										id="name"
-										name="name" 
-										bind:value={name}
-										class="form-input pl-10"
-										placeholder="Enter your full name"
-									/>
-								</div>
-							</div>
-
-							<!-- Email -->
-							<div>
-								<label for="email" class="form-label">
-									Email Address
-								</label>
-								<div class="relative">
-									<Mail class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-									<input
-										type="email"
-										id="email"
-										name="email"
-										value={user?.email || ''}
-										class="form-input pl-10"
-										placeholder="Enter your email"
-										required
-										readonly
-									/>
-								</div>
-							</div>
-
-							<!-- Business Name -->
-							<div>
-								<label for="businessName" class="form-label">
-									Business Name
-								</label>
-								<input
-									type="text"
-									id="businessName"
-									name="businessName" 
-									bind:value={businessName}
-									class="form-input"
-									placeholder="Enter your business name"
-								/>
-							</div>
-
-							<!-- Description -->
-							<div>
-								<label for="description" class="form-label">
-									Description
-								</label>
-								<textarea
-									id="description"
-									name="description" 
-									bind:value={description}
-									class="form-input"
-									placeholder="Tell us about yourself or your business"
-									rows="3"
-								></textarea>
-							</div>
-
-							<!-- Phone -->
-							<div>
-								<label for="phone" class="form-label">
-									Phone Number
-								</label>
-								<input
-									type="tel"
-									id="phone"
-									name="phone" 
-									bind:value={phone}
-									class="form-input"
-									placeholder="Enter your phone number"
-								/>
-							</div>
-
-							<!-- Website -->
-							<div>
-								<label for="website" class="form-label">
-									Website
-								</label>
-								<input
-									type="url"
-									id="website"
-									name="website" 
-									bind:value={website}
-									class="form-input"
-									placeholder="https://example.com"
-								/>
-							</div>
-
-							<!-- Country -->
-							<div>
-								<label for="country" class="form-label">
-									Country
-								</label>
-								<select
-									id="country"
-									name="country"
-									class="form-select cursor-pointer"
-									bind:value={country}
-									onchange={() => console.log('Country changed to:', country)}
-								>
-									<option value="">Select your country</option>
-									<option value="AT">Austria</option>
-									<option value="BE">Belgium</option>
-									<option value="DE">Germany</option>
-									<option value="DK">Denmark</option>
-									<option value="ES">Spain</option>
-									<option value="FI">Finland</option>
-									<option value="FR">France</option>
-									<option value="GB">United Kingdom</option>
-									<option value="IE">Ireland</option>
-									<option value="IT">Italy</option>
-									<option value="NL">Netherlands</option>
-									<option value="NO">Norway</option>
-									<option value="PL">Poland</option>
-									<option value="PT">Portugal</option>
-									<option value="SE">Sweden</option>
-									<option value="CH">Switzerland</option>
-								</select>
-							</div>
-
-							<!-- Currency -->
-							<div>
-								<label for="currency" class="form-label">
-									Preferred Currency
-								</label>
-								<select
-									id="currency"
-									name="currency"
-									class="form-select cursor-pointer"
-									bind:value={currency}
-									onchange={() => userCurrency.set(currency as Currency)}
-								>
-									{#each Object.values(SUPPORTED_CURRENCIES) as currencyInfo}
-										<option value={currencyInfo.code}>
-											{currencyInfo.symbol} {currencyInfo.name} ({currencyInfo.code})
-										</option>
-									{/each}
-								</select>
-								<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-									This will be used for all price displays throughout the app
-								</p>
-							</div>
-
-
-						</div>
-
-						<!-- Submit Button -->
-						<div class="flex items-center justify-end gap-3 pt-6 mt-8" style="border-top: 1px solid var(--border-primary);">
-							{#if profileSaved}
-								<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
-									<CheckCircle class="h-4 w-4" />
-									Profile updated successfully!
-								</div>
+						{/if}
+						<button
+							onclick={updatePersonalInfo}
+							disabled={profileLoading}
+							class="button-primary button--gap"
+						>
+							{#if profileLoading}
+								<LoadingSpinner size="small" variant="white" text="Saving..." />
+							{:else if personalInfoSaved}
+								<CheckCircle class="h-4 w-4" />
+								Saved!
+							{:else}
+								<Save class="h-4 w-4" />
+								Save Changes
 							{/if}
-							<button
-								type="submit"
-								disabled={profileLoading}
-								class="button-primary button--gap"
-							>
-								{#if profileLoading}
-									<LoadingSpinner size="small" variant="white" text="Saving..." />
-								{:else if profileSaved}
-									<CheckCircle class="h-4 w-4" />
-									Saved!
-								{:else}
-									<Save class="h-4 w-4" />
-									Save Changes
-								{/if}
-							</button>
-						</div>
-					</form>
+						</button>
+					</div>
 				</div>
 			</div>
 
 			<!-- Security Section -->
 			{#if !user?.isOAuth2User}
-				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<div class="flex items-center gap-3">
-							<div class="p-2 rounded-lg" style="background: var(--color-warning-50);">
-								<Lock class="h-4 w-4" style="color: var(--color-warning-600);" />
-							</div>
-							<div>
-								<h2 class="font-semibold" style="color: var(--text-primary);">Security Settings</h2>
-								<p class="text-sm" style="color: var(--text-secondary);">Change your password and security preferences</p>
-							</div>
-						</div>
-					</div>
-					<div class="p-4 sm:p-6">
-						<form onsubmit={(e) => { e.preventDefault(); changePassword(); }}>
-							<div class="space-y-4">
-								{#if passwordError}
-									<ErrorAlert variant="error" message={passwordError} />
-								{/if}
-
-								<div>
-									<label for="currentPassword" class="form-label">Current Password</label>
-									<div class="relative">
-										<Lock class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-										<input
-											type="password"
-											id="currentPassword"
-											name="currentPassword"
-											bind:value={currentPassword}
-											class="form-input pl-10"
-											placeholder="Enter current password"
-											required
-										/>
-									</div>
-								</div>
-
-								<div>
-									<label for="newPassword" class="form-label">New Password</label>
-									<div class="relative">
-										<Lock class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-										<input
-											type="password"
-											id="newPassword"
-											name="newPassword"
-											bind:value={newPassword}
-											class="form-input pl-10"
-											placeholder="Enter new password"
-											required
-										/>
-									</div>
-								</div>
-
-								<div>
-									<label for="confirmPassword" class="form-label">Confirm New Password</label>
-									<div class="relative">
-										<Lock class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-										<input
-											type="password"
-											id="confirmPassword"
-											name="confirmPassword"
-											bind:value={confirmPassword}
-											class="form-input pl-10"
-											placeholder="Confirm new password"
-											required
-										/>
-									</div>
-								</div>
-
-								<div class="flex items-center justify-end gap-3 pt-4">
-									{#if passwordChanged}
-										<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
-											<CheckCircle class="h-4 w-4" />
-											Password changed successfully!
-										</div>
-									{/if}
-									<button
-										type="submit"
-										disabled={passwordLoading}
-										class="button-secondary button--gap"
-									>
-										{#if passwordLoading}
-											<LoadingSpinner size="small" text="Changing..." />
-										{:else if passwordChanged}
-											<CheckCircle class="h-4 w-4" />
-											Changed!
-										{:else}
-											<Shield class="h-4 w-4" />
-											Change Password
-										{/if}
-									</button>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
+				<PasswordChangeForm
+					bind:currentPassword
+					bind:newPassword
+					bind:confirmPassword
+					{passwordError}
+					{passwordChanged}
+					{passwordLoading}
+					onSubmit={changePassword}
+				/>
 			{/if}
 		</div>
 
 		<!-- Sidebar -->
 		<div class="space-y-6">
 			<!-- Profile Summary -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Profile Summary</h3>
-				</div>
-				<div class="p-4 space-y-4">
-					<div class="flex items-center gap-3">
-						<div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
-							{#if avatarPreview}
-								<img src={avatarPreview} alt="Avatar preview" class="w-full h-full rounded-full object-cover" />
-							{:else if user?.avatar && !avatarLoadError}
-								<img 
-									src={user.avatar} 
-									alt="Avatar" 
-									class="w-full h-full rounded-full object-cover"
-									onerror={() => avatarLoadError = true}
-								/>
-							{:else}
-								<User class="h-6 w-6" style="color: var(--text-secondary);" />
-							{/if}
-						</div>
-						<div class="flex-1 min-w-0">
-							<p class="font-medium truncate" style="color: var(--text-primary);">{user?.name || 'No name set'}</p>
-							<p class="text-sm truncate" style="color: var(--text-secondary);">@{username || 'username-required'}</p>
-						</div>
-					</div>
-
-					<div class="space-y-2 text-sm">
-						<div class="flex items-center gap-2">
-							<Mail class="h-4 w-4" style="color: var(--text-tertiary);" />
-							<span style="color: var(--text-secondary);">{user?.email}</span>
-							{#if user?.verified}
-								<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
-							{/if}
-						</div>
-
-						{#if businessName}
-							<div class="flex items-center gap-2">
-								<Building class="h-4 w-4" style="color: var(--text-tertiary);" />
-								<span style="color: var(--text-secondary);">{businessName}</span>
-							</div>
-						{/if}
-
-						{#if phone}
-							<div class="flex items-center gap-2">
-								<Phone class="h-4 w-4" style="color: var(--text-tertiary);" />
-								<span style="color: var(--text-secondary);">{phone}</span>
-							</div>
-						{/if}
-
-						{#if website}
-							<div class="flex items-center gap-2">
-								<Globe class="h-4 w-4" style="color: var(--text-tertiary);" />
-								<a href={website} target="_blank" class="text-blue-600 hover:text-blue-800 truncate">{website}</a>
-							</div>
-						{/if}
-					</div>
-
-					{#if username}
-						<div class="pt-3 border-t" style="border-color: var(--border-primary);">
-							<div class="flex items-center justify-between">
-								<span class="text-sm" style="color: var(--text-secondary);">Public Profile</span>
-								<button onclick={() => window.open(`/${username}`, '_blank')} class="text-xs" style="color: var(--color-primary-600);">
-									View Live
-								</button>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<ProfileSummary
+				{user}
+				{username}
+				{businessName}
+				{phone}
+				{website}
+				{avatarPreview}
+				{avatarLoadError}
+			/>
 
 			<!-- Payment Setup Section -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<div class="flex items-center gap-3">
-						<div class="p-2 rounded-lg" style="background: var(--color-success-light);">
-							<DollarSign class="h-4 w-4" style="color: var(--color-success);" />
-						</div>
-						<div>
-							<h3 class="font-semibold" style="color: var(--text-primary);">Payment Setup</h3>
-							<p class="text-xs" style="color: var(--text-secondary);">Accept customer payments</p>
-						</div>
-					</div>
-				</div>
-				<div class="p-4">
-					{#if paymentStatusLoading}
-						<div class="flex justify-center py-4">
-							<LoadingSpinner size="small" />
-						</div>
-					{:else}
-						<div class="space-y-4">
-							<!-- Account Status -->
-							<div class="flex items-start gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-								{#if paymentStatus.canReceivePayments}
-									<CheckCircle class="h-4 w-4 mt-0.5" style="color: var(--color-success);" />
-									<div>
-										<p class="text-sm font-medium" style="color: var(--text-primary);">Active</p>
-										<p class="text-xs" style="color: var(--text-secondary);">Ready to accept payments</p>
-									</div>
-								{:else if paymentStatus.hasAccount && !paymentStatus.isSetupComplete}
-									<AlertCircle class="h-4 w-4 mt-0.5" style="color: var(--color-warning);" />
-									<div>
-										<p class="text-sm font-medium" style="color: var(--text-primary);">Setup incomplete</p>
-										<p class="text-xs" style="color: var(--text-secondary);">Complete setup required</p>
-									</div>
-								{:else}
-									<CreditCard class="h-4 w-4 mt-0.5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="text-sm font-medium" style="color: var(--text-primary);">Not set up</p>
-										<p class="text-xs" style="color: var(--text-secondary);">Set up payment account</p>
-									</div>
-								{/if}
-							</div>
-
-							<!-- Setup Button -->
-							<div class="flex justify-center">
-								{#if !paymentStatus.hasAccount}
-									<button
-										onclick={setupPayments}
-										class="button-primary button--gap button--small"
-									>
-										<CreditCard class="h-3 w-3" />
-										Setup Payments
-									</button>
-								{:else if !paymentStatus.isSetupComplete || paymentStatus.accountInfo?.requiresAction}
-									<button
-										onclick={setupPayments}
-										class="button-secondary button--gap button--small"
-									>
-										<AlertCircle class="h-3 w-3" />
-										Complete Setup
-									</button>
-								{:else}
-									<button
-										onclick={setupPayments}
-										class="button-secondary button--gap button--small"
-									>
-										<CreditCard class="h-3 w-3" />
-										Manage Account
-									</button>
-								{/if}
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<PaymentSetup
+				{paymentStatus}
+				{paymentStatusLoading}
+				onSetupPayments={setupPayments}
+			/>
 
 			<!-- Account Info -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Account Info</h3>
-				</div>
-				<div class="p-4 space-y-3 text-sm">
-					<div class="flex justify-between">
-						<span style="color: var(--text-secondary);">Account Type</span>
-						<span style="color: var(--text-primary);">{user?.role === 'admin' ? 'Administrator' : 'Tour Guide'}</span>
-					</div>
-					<div class="flex justify-between">
-						<span style="color: var(--text-secondary);">Member Since</span>
-						<span style="color: var(--text-primary);">Recently</span>
-					</div>
-					<div class="flex justify-between">
-						<span style="color: var(--text-secondary);">Email Status</span>
-						<span style="color: var(--text-primary);">{user?.verified ? 'Verified' : 'Unverified'}</span>
-					</div>
-					{#if user?.isOAuth2User}
-						<div class="flex justify-between">
-							<span style="color: var(--text-secondary);">Login Method</span>
-							<span style="color: var(--text-primary);">OAuth2</span>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<AccountInfo {user} />
 		</div>
 	</div>
+
+	<!-- Floating Save Button for Unsaved Changes -->
+	{#if hasUnsavedChanges}
+		<div class="fixed bottom-6 right-6 z-50">
+			<button
+				onclick={updatePersonalInfo}
+				disabled={profileLoading}
+				class="button-primary button--gap shadow-xl"
+				style="border-radius: 50px; padding: 12px 24px;"
+			>
+				{#if profileLoading}
+					<LoadingSpinner size="small" variant="white" />
+					Saving...
+				{:else}
+					<Save class="h-4 w-4" />
+					Save Changes
+				{/if}
+			</button>
+		</div>
+	{/if}
 </div>
 {/if} 
