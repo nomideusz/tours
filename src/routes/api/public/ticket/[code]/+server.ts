@@ -8,7 +8,11 @@ import { eq } from 'drizzle-orm';
 export const GET: RequestHandler = async ({ params }) => {
 	const ticketCode = params.code;
 	
+	console.log(`Ticket API called with code: ${ticketCode}`);
+	console.log(`Is valid ticket code: ${isValidTicketQRCode(ticketCode)}`);
+	
 	if (!ticketCode || !isValidTicketQRCode(ticketCode)) {
+		console.log(`Rejecting invalid ticket code: ${ticketCode}`);
 		return json({ error: 'Invalid ticket code format' }, { status: 400 });
 	}
 	
@@ -62,14 +66,25 @@ export const GET: RequestHandler = async ({ params }) => {
 			.where(eq(bookings.ticketQRCode, ticketCode))
 			.limit(1);
 		
+		console.log(`Found ${bookingData.length} bookings for ticket code: ${ticketCode}`);
+		
 		if (bookingData.length === 0) {
+			console.log(`No booking found for ticket code: ${ticketCode}`);
 			return json({ error: 'Ticket not found' }, { status: 404 });
 		}
 		
 		const booking = bookingData[0];
 		
+		console.log(`Booking found:`, {
+			id: booking.id,
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			ticketQRCode: booking.ticketQRCode
+		});
+		
 		// Only show confirmed bookings
 		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
+			console.log(`Booking not confirmed/paid: status=${booking.status}, paymentStatus=${booking.paymentStatus}`);
 			return json({ error: 'Ticket is not valid or payment is incomplete' }, { status: 400 });
 		}
 		

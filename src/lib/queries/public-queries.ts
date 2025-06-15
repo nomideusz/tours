@@ -101,12 +101,18 @@ export function createPublicTicketQuery(ticketCode: string) {
 	return createQuery({
 		queryKey: ['public', 'ticket', ticketCode],
 		queryFn: async () => {
+			console.log(`TanStack Query fetching ticket: ${ticketCode}`);
 			const response = await fetch(`/api/public/ticket/${ticketCode}`);
+			console.log(`Ticket API response status: ${response.status}`);
+			
 			if (!response.ok) {
 				const error = await response.json().catch(() => ({ error: 'Failed to load ticket' }));
-				throw new Error(error.error || 'Failed to load ticket');
+				console.log(`Ticket API error:`, error);
+				throw new Error(error.error || `Failed to parse URL from /api/public/ticket/${ticketCode}`);
 			}
-			return response.json();
+			const data = await response.json();
+			console.log(`Ticket API success:`, data);
+			return data;
 		},
 		refetchInterval: 10000, // 10 seconds - frequent for attendance status updates
 		refetchOnWindowFocus: true,
