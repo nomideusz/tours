@@ -41,6 +41,7 @@ export function useNotifications() {
 
       eventSource.onmessage = (event) => {
         try {
+          console.log('📨 Raw SSE message received:', event.data);
           const data = JSON.parse(event.data);
           console.log('📨 SSE message received:', data.type, data);
 
@@ -72,6 +73,7 @@ export function useNotifications() {
           }
         } catch (error) {
           console.error('❌ Error parsing SSE message:', error, event.data);
+          console.error('❌ Full error details:', error);
         }
       };
 
@@ -111,27 +113,52 @@ export function useNotifications() {
   function handleNewBookingNotification(data: any) {
     console.log('🎉 New booking notification received:', data);
     
+    // Validate notification data
+    if (!data.id || !data.title || !data.message || !data.timestamp) {
+      console.error('❌ Invalid notification data structure:', data);
+      return;
+    }
+    
     // Add notification to store
     console.log('📝 Adding new booking notification to store...');
-    notificationActions.add(data);
+    try {
+      notificationActions.add(data);
+      console.log('✅ Notification added to store successfully');
+    } catch (error) {
+      console.error('❌ Error adding notification to store:', error);
+      return;
+    }
     
     // Show browser notification if permitted
     console.log('🔔 Attempting to show browser notification...');
-    showBrowserNotification(data);
+    try {
+      showBrowserNotification(data);
+    } catch (error) {
+      console.error('❌ Error showing browser notification:', error);
+    }
     
     // Play notification sound (optional)
     console.log('🔊 Playing notification sound...');
-    playNotificationSound();
+    try {
+      playNotificationSound();
+    } catch (error) {
+      console.error('❌ Error playing notification sound:', error);
+    }
     
     // Invalidate relevant queries to refresh data
-    queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
-    queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-    
-    // If on dashboard, also refresh tour-specific data
-    if (data.data?.tourId) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(data.data.tourId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(data.data.tourId) });
+    try {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+      
+      // If on dashboard, also refresh tour-specific data
+      if (data.data?.tourId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(data.data.tourId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(data.data.tourId) });
+      }
+      console.log('✅ Query invalidation completed');
+    } catch (error) {
+      console.error('❌ Error invalidating queries:', error);
     }
   }
 

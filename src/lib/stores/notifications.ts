@@ -43,15 +43,24 @@ export const notificationActions = {
   // Add a new notification
   add: (notification: Omit<Notification, 'read'>) => {
     console.log('🔔 Adding notification to store:', notification);
+    
+    // Validate notification data
+    if (!notification.id || !notification.title || !notification.message || !notification.timestamp) {
+      console.error('❌ Invalid notification data, missing required fields:', notification);
+      return;
+    }
+    
     notificationStore.update(state => {
+      const newNotification = { ...notification, read: false };
       const newState = {
         ...state,
         notifications: [
-          { ...notification, read: false },
+          newNotification,
           ...state.notifications
         ].slice(0, 50) // Keep only last 50 notifications
       };
       console.log('📊 Updated notification store:', newState.notifications.length, 'notifications');
+      console.log('📊 New notification added:', newNotification);
       return newState;
     });
   },
@@ -124,26 +133,30 @@ export const notificationActions = {
     }
   },
 
-  // Save notifications to localStorage
+  // Save notifications to localStorage (handled by auto-subscription below)
   save: () => {
-    if (!browser) return;
-    
-    notificationStore.subscribe(state => {
-      try {
-        localStorage.setItem('zaur_notifications', JSON.stringify({
-          notifications: state.notifications.slice(0, 20) // Save only 20 most recent
-        }));
-      } catch (error) {
-        console.warn('Failed to save notifications to localStorage:', error);
-      }
-    });
+    // This function is kept for API compatibility but localStorage saving
+    // is now handled automatically by the subscription at the bottom
   }
 };
 
 // Auto-save to localStorage
 if (browser) {
   notificationActions.load();
-  notificationStore.subscribe(() => {
-    notificationActions.save();
+  let hasSubscribed = false;
+  
+  notificationStore.subscribe((state) => {
+    if (!hasSubscribed) {
+      hasSubscribed = true;
+      return; // Skip first subscription call to avoid immediate save
+    }
+    
+    try {
+      localStorage.setItem('zaur_notifications', JSON.stringify({
+        notifications: state.notifications.slice(0, 20) // Save only 20 most recent
+      }));
+    } catch (error) {
+      console.warn('Failed to save notifications to localStorage:', error);
+    }
   });
 } 
