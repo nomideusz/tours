@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
-	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { 
+		formatSlotTimeRange,
+		getScheduleSlotStatusColor,
+		getScheduleSlotStatusText,
+		getScheduleSlotStatusIcon
+	} from '$lib/utils/time-slot-client.js';
 	import { browser } from '$app/environment';
 	
 	// TanStack Query
@@ -91,29 +96,7 @@
 		$tourQuery.refetch();
 	}
 
-	function getSlotStatusColor(slot: any): string {
-		if (slot.isPast) return 'bg-gray-50 text-gray-600 border-gray-200';
-		if (slot.status === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
-		if (slot.availableSpots === 0) return 'bg-orange-50 text-orange-700 border-orange-200';
-		if (slot.totalBookings > 0) return 'bg-blue-50 text-blue-700 border-blue-200';
-		return 'bg-green-50 text-green-700 border-green-200';
-	}
 
-	function getSlotStatusText(slot: any): string {
-		if (slot.isPast) return 'Completed';
-		if (slot.status === 'cancelled') return 'Cancelled';
-		if (slot.availableSpots === 0) return 'Fully Booked';
-		if (slot.totalBookings > 0) return `${slot.availableSpots} spots left`;
-		return 'Available';
-	}
-
-	function getSlotStatusIcon(slot: any) {
-		if (slot.isPast) return Clock;
-		if (slot.status === 'cancelled') return XCircle;
-		if (slot.availableSpots === 0) return AlertCircle;
-		if (slot.totalBookings > 0) return Users;
-		return CheckCircle;
-	}
 
 	function getBookingRateColor(rate: number): string {
 		if (rate >= 80) return 'text-green-600';
@@ -168,7 +151,7 @@
 	// Calculate slot occupancy percentage
 	function getOccupancyPercentage(slot: any): number {
 		if (!slot.capacity || slot.capacity === 0) return 0;
-		return Math.round((slot.bookedSpots / slot.capacity) * 100);
+		return Math.round((slot.totalParticipants / slot.capacity) * 100);
 	}
 </script>
 
@@ -294,7 +277,7 @@
 		</div>
 
 		<!-- Success Banners -->
-		{#if browser && $page.url.searchParams.get('slotCreated') === 'true'}
+		{#if browser && page.url.searchParams.get('slotCreated') === 'true'}
 			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
 				<div class="flex items-center gap-3">
 					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
@@ -310,7 +293,7 @@
 			</div>
 		{/if}
 		
-		{#if browser && $page.url.searchParams.get('slotUpdated') === 'true'}
+		{#if browser && page.url.searchParams.get('slotUpdated') === 'true'}
 			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
 				<div class="flex items-center gap-3">
 					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
@@ -326,7 +309,7 @@
 			</div>
 		{/if}
 		
-		{#if browser && $page.url.searchParams.get('slotDeleted') === 'true'}
+		{#if browser && page.url.searchParams.get('slotDeleted') === 'true'}
 			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
 				<div class="flex items-center gap-3">
 					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
@@ -428,16 +411,17 @@
 											{formatSlotTimeRange(slot.startTime, slot.endTime)}
 										</p>
 										<p class="text-xs mt-0.5 {getOccupancyColor(getOccupancyPercentage(slot))}" style="color: var(--text-secondary);">
-											{slot.bookedSpots}/{slot.capacity} bookings ({getOccupancyPercentage(slot)}%)
+											{slot.totalParticipants}/{slot.capacity} participants ({getOccupancyPercentage(slot)}%)
 										</p>
 									</div>
-									<button
-										onclick={() => quickCheckIn(slot.id)}
-										class="button-secondary button--small button--icon"
-										title="Quick check-in"
-									>
+									<Tooltip text="Quick check-in">
+										<button
+											onclick={() => quickCheckIn(slot.id)}
+											class="button-secondary button--small button--icon"
+										>
 										<UserCheck class="h-3 w-3" />
-									</button>
+										</button>
+									</Tooltip>
 								</div>
 								{#if slot.totalBookings > 0}
 									<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
@@ -533,8 +517,8 @@
 													{formatSlotTimeRange(slot.startTime, slot.endTime)}
 												</p>
 											</div>
-											<span class="ml-2 px-2 py-1 text-xs rounded-full border {getSlotStatusColor(slot)}">
-												{getSlotStatusText(slot)}
+																		<span class="ml-2 px-2 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
+								{getScheduleSlotStatusText(slot)}
 											</span>
 										</div>
 										
@@ -543,7 +527,7 @@
 												<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
 													<span class="flex items-center gap-1">
 														<Users class="h-3 w-3" />
-														{slot.bookedSpots}/{slot.capacity}
+														{slot.totalParticipants}/{slot.capacity}
 													</span>
 													<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
 														{getOccupancyPercentage(slot)}%
@@ -551,9 +535,11 @@
 												</div>
 												<div class="flex gap-1">
 													{#if slot.isUpcoming}
-														<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon" title="Check-in">
+														<Tooltip text="Check-in">
+															<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon">
 															<UserCheck class="h-3 w-3" />
-														</button>
+															</button>
+														</Tooltip>
 													{/if}
 													<button onclick={() => goto(`/tours/${tourId}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
 														<Edit class="h-3 w-3" />
@@ -611,7 +597,7 @@
 													<div class="flex items-center gap-1">
 														<Users class="h-4 w-4" />
 														<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
-															{slot.bookedSpots}/{slot.capacity} ({getOccupancyPercentage(slot)}%)
+															{slot.totalParticipants}/{slot.capacity} ({getOccupancyPercentage(slot)}%)
 														</span>
 													</div>
 												</Tooltip>
@@ -654,8 +640,8 @@
 										</div>
 										
 										<div class="flex items-center gap-3">
-											<span class="px-3 py-1 text-xs rounded-full border {getSlotStatusColor(slot)}">
-												{getSlotStatusText(slot)}
+											<span class="px-3 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
+												{getScheduleSlotStatusText(slot)}
 											</span>
 											
 											<div class="flex gap-1">

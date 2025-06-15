@@ -142,10 +142,27 @@ export function getImageUrl(tour: Tour | null | undefined, imagePath: string | n
 // ============================================
 
 /**
- * Calculate conversion rate percentage
+ * Calculate conversion rate percentage (capped at 100% for display)
  */
 export function calculateConversionRate(scans: number, conversions: number): number {
-	return scans > 0 ? (conversions / scans * 100) : 0;
+	if (scans === 0) return conversions > 0 ? 100 : 0; // If no scans but conversions exist, show 100%
+	const rate = (conversions / scans) * 100;
+	return Math.min(rate, 100); // Cap at 100% for better UX
+}
+
+/**
+ * Get conversion rate display text with context
+ */
+export function getConversionRateText(scans: number, conversions: number): string {
+	if (scans === 0 && conversions === 0) return '0%';
+	if (scans === 0 && conversions > 0) return '100%*'; // Asterisk indicates special case
+	
+	const actualRate = (conversions / scans) * 100;
+	if (actualRate > 100) {
+		return '100%+'; // Plus sign indicates it's capped
+	}
+	
+	return `${Math.round(actualRate)}%`;
 }
 
 /**
@@ -187,7 +204,7 @@ export function getTourBookingStatus(tour: Tour) {
 		return {
 			status: 'no-slots' as const,
 			label: 'No Time Slots',
-			description: 'Add slots to accept bookings',
+			description: 'Tour is not accepting bookings',
 			color: 'var(--color-warning-600)',
 			bgColor: 'var(--color-warning-50)',
 			borderColor: 'var(--color-warning-200)',
@@ -200,7 +217,7 @@ export function getTourBookingStatus(tour: Tour) {
 	return {
 		status: 'bookable' as const,
 		label: 'Accepting Bookings',
-		description: `${tour.upcomingSlots} slots available`,
+		description: `${tour.upcomingSlots} scheduled slot(s)`,
 		color: 'var(--color-success-600)',
 		bgColor: 'var(--color-success-50)',
 		borderColor: 'var(--color-success-200)',

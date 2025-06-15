@@ -92,15 +92,17 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			const endTime = slot.endTime ? new Date(slot.endTime) : new Date();
 			const isPast = startTime < now;
 			
-			// Use slot's availableSpots if set, otherwise use tour capacity
+			// slot.availableSpots in DB = capacity (max people who can book)
+			// slot.bookedSpots in DB = currently booked spots (should match totalBookings)
 			const slotCapacity = slot.availableSpots || tour.capacity;
-			// Use actual booking count instead of bookedSpots field
-			const bookedSpots = bookingData.totalBookings;
-			const availableSpots = Math.max(0, slotCapacity - bookedSpots);
+			
+			// Use database bookedSpots if available, fallback to calculated totalBookings
+			const bookedSpots = slot.bookedSpots || bookingData.totalBookings;
+			const remainingSpots = Math.max(0, slotCapacity - bookedSpots);
 			
 			// Debug logging
 			if (bookingData.totalBookings > 0) {
-				console.log(`Slot ${slot.id}: availableSpots=${slot.availableSpots}, tourCapacity=${tour.capacity}, slotCapacity=${slotCapacity}, bookings=${bookedSpots}, participants=${bookingData.totalParticipants}`);
+				console.log(`Slot ${slot.id}: DB_capacity=${slot.availableSpots}, DB_booked=${slot.bookedSpots}, calculated_bookings=${bookingData.totalBookings}, remaining=${remainingSpots}`);
 			}
 			
 			return {
@@ -112,7 +114,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 				status: slot.status || 'active',
 				isPast,
 				isUpcoming: !isPast,
-				availableSpots: availableSpots,
+				availableSpots: remainingSpots,
 				...bookingData,
 				created: slot.createdAt ? slot.createdAt.toISOString() : new Date().toISOString()
 			};

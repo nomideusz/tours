@@ -191,6 +191,10 @@
 			// Invalidate the schedule query so it refreshes immediately
 			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
 			
+			// Invalidate tours list since new slot affects upcomingSlots count
+			await queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+			
 			// Invalidate public booking page cache since availability changed
 			if (tour?.qrCode) {
 				invalidatePublicTourData(queryClient, tour.qrCode);

@@ -205,4 +205,38 @@ export function formatSlotForDesktop(slot: TimeSlot): {
 		availability: getSlotAvailabilityText(slot),
 		utilization: getSlotUtilization(slot)
 	};
+}
+
+/**
+ * Get status color for schedule page slots (with totalBookings, isPast, etc.)
+ */
+export function getScheduleSlotStatusColor(slot: any): string {
+	if (slot.isPast) return 'bg-gray-50 text-gray-600 border-gray-200';
+	if (slot.status === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
+	if (slot.availableSpots === 0) return 'bg-orange-50 text-orange-700 border-orange-200';
+	if (slot.totalBookings > 0) return 'bg-blue-50 text-blue-700 border-blue-200';
+	return 'bg-green-50 text-green-700 border-green-200';
+}
+
+/**
+ * Get status text for schedule page slots (with totalBookings, isPast, etc.)
+ */
+export function getScheduleSlotStatusText(slot: any): string {
+	if (slot.isPast) return 'Completed';
+	if (slot.status === 'cancelled') return 'Cancelled';
+	if (slot.availableSpots === 0) return 'Fully Booked';
+	if (slot.totalBookings > 0) return `${slot.availableSpots} spots left`;
+	return 'Available';
+}
+
+/**
+ * Get status icon name for schedule page slots (with totalBookings, isPast, etc.)
+ * Returns the icon name as a string for use with dynamic imports
+ */
+export function getScheduleSlotStatusIcon(slot: any): string {
+	if (slot.isPast) return 'Clock';
+	if (slot.status === 'cancelled') return 'XCircle';
+	if (slot.availableSpots === 0) return 'AlertCircle';
+	if (slot.totalBookings > 0) return 'Users';
+	return 'CheckCircle';
 } 

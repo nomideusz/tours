@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -16,20 +15,35 @@
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Eye from 'lucide-svelte/icons/eye';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 
-	let { data, form }: { data: PageData & { tour?: any; bookingConstraints?: any }; form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
 	const queryClient = useQueryClient();
+	let tourId = $derived(data.tourId);
+	
+	// TanStack Query for tour details
+	let tourQuery = $derived(createQuery({
+		queryKey: queryKeys.tourDetails(tourId),
+		queryFn: () => queryFunctions.fetchTourDetails(tourId),
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	}));
 
-	let tour = $state<Tour | null>(null);
-	let isLoading = $state(false); // Data is loaded server-side
+	let tour = $derived($tourQuery.data?.tour || null);
+	let isLoading = $derived($tourQuery.isLoading);
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let capacityError = $state((form as any)?.capacityError || null);
 	let showCancelModal = $state(false);
 
-	let tourId = $derived(data.tour?.id || '');
+	// Booking constraints - fetch separately
+	let bookingConstraints = $state<any>(null);
+	let constraintsLoading = $state(false);
 
 	// Form data
 	let formData = $state({
@@ -73,34 +87,56 @@
 		return `/api/images/${tourId}/${imageName}?size=medium`;
 	}
 
-	onMount(() => {
-		if (data.tour) {
+	// Initialize form when tour data loads
+	$effect(() => {
+		if (tour && !isLoading) {
 			initializeTour();
 		}
 	});
 
-	function initializeTour() {
-		if (data.tour) {
-			tour = data.tour as any;
-			
-			// Populate form data with existing tour data
-			formData = {
-				name: data.tour.name || '',
-				description: data.tour.description || '',
-				price: data.tour.price || 0,
-				duration: data.tour.duration || 60,
-				capacity: data.tour.capacity || 10,
-				status: data.tour.status || 'draft',
-				category: data.tour.category || '',
-				location: data.tour.location || '',
-				includedItems: data.tour.includedItems && data.tour.includedItems.length > 0 ? data.tour.includedItems : [''],
-				requirements: data.tour.requirements && data.tour.requirements.length > 0 ? data.tour.requirements : [''],
-				cancellationPolicy: data.tour.cancellationPolicy || ''
-			};
-
-			// Initialize existing images
-			existingImages = data.tour.images || [];
+	// Fetch booking constraints when tour loads
+	$effect(() => {
+		if (tour && !constraintsLoading) {
+			fetchBookingConstraints();
 		}
+	});
+
+	async function fetchBookingConstraints() {
+		if (!tour) return;
+		
+		constraintsLoading = true;
+		try {
+			const response = await fetch(`/api/tours/${tourId}/booking-constraints`);
+			if (response.ok) {
+				bookingConstraints = await response.json();
+			}
+		} catch (err) {
+			console.error('Failed to fetch booking constraints:', err);
+		} finally {
+			constraintsLoading = false;
+		}
+	}
+
+	function initializeTour() {
+		if (!tour) return;
+		
+		// Populate form data with existing tour data
+		formData = {
+			name: tour.name || '',
+			description: tour.description || '',
+			price: tour.price || 0,
+			duration: tour.duration || 60,
+			capacity: tour.capacity || 10,
+			status: tour.status || 'draft',
+			category: tour.category || '',
+			location: tour.location || '',
+			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
+			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
+			cancellationPolicy: tour.cancellationPolicy || ''
+		};
+
+		// Initialize existing images
+		existingImages = tour.images || [];
 	}
 
 	function handleCancel() {
@@ -261,17 +297,17 @@
 		{/if}
 
 		<!-- Capacity Warning (if bookings exist) -->
-		{#if data.bookingConstraints?.maxBookedSpots > 0}
+		{#if bookingConstraints?.maxBookedSpots > 0}
 			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 243 199); border: 1px solid rgb(252 211 77);">
 				<div class="flex gap-3">
 					<AlertCircle class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
 					<div>
 						<p class="font-medium text-amber-800">Capacity Constraints</p>
 						<p class="text-sm text-amber-700 mt-1">
-							You have <strong>{data.bookingConstraints.maxBookedSpots} people booked</strong> in your busiest time slot.
-							You can only reduce capacity to <strong>{data.bookingConstraints.maxBookedSpots} or higher</strong>.
+							You have <strong>{bookingConstraints.maxBookedSpots} people booked</strong> in your busiest time slot.
+							You can only reduce capacity to <strong>{bookingConstraints.maxBookedSpots} or higher</strong>.
 						</p>
-						{#if !data.bookingConstraints.canReduceCapacity}
+						{#if !bookingConstraints.canReduceCapacity}
 							<p class="text-sm text-amber-700 mt-1">
 								<em>Your tour is at maximum booking capacity. You can increase capacity but cannot reduce it.</em>
 							</p>
@@ -355,9 +391,15 @@
 					return async ({ result }) => {
 						isSubmitting = false;
 						if (result.type === 'redirect') {
+							// Invalidate all tour-related queries to ensure fresh data
+							queryClient.invalidateQueries({ queryKey: ['userTours'] });
+							queryClient.invalidateQueries({ queryKey: ['toursStats'] });
+							queryClient.invalidateQueries({ queryKey: ['tourDetails', tourId] });
+							queryClient.invalidateQueries({ queryKey: ['tourSchedule', tourId] });
+							
 							// Invalidate public booking page cache
-							if (data.tour?.qrCode) {
-								invalidatePublicTourData(queryClient, data.tour.qrCode);
+							if (tour?.qrCode) {
+								invalidatePublicTourData(queryClient, tour.qrCode);
 							}
 							goto(result.location);
 						}
@@ -380,7 +422,7 @@
 						onExistingImageRemove={removeExistingImage}
 						{getExistingImageUrl}
 						serverErrors={validationErrors}
-						bookingConstraints={data.bookingConstraints}
+						bookingConstraints={bookingConstraints}
 					/>
 				</form>
 			</div>

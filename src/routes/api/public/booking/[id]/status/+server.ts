@@ -65,18 +65,33 @@ export const GET: RequestHandler = async ({ params }) => {
 		
 		const booking = bookingData[0];
 		
+		console.log(`Booking status API called for ${bookingId}:`, {
+			status: booking.status,
+			paymentStatus: booking.paymentStatus,
+			paymentId: booking.paymentId,
+			hasPaymentId: !!booking.paymentId
+		});
+		
 		// Check if this is a valid booking for status checking
 		// Allow confirmed/paid (webhook processed) OR pending payment (payment processing)
 		const isValidForStatus = (
 			// Booking is fully confirmed and paid (webhook processed)
 			(booking.status === 'confirmed' && booking.paymentStatus === 'paid') ||
 			// OR booking has payment in progress (user just paid, webhook hasn't processed yet)
-			(booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId) ||
+			(booking.status === 'pending' && booking.paymentStatus === 'pending') ||
 			// OR payment has failed
 			(booking.paymentStatus === 'failed')
 		);
 		
+		console.log(`Booking ${bookingId} validation:`, {
+			isValidForStatus,
+			confirmedAndPaid: booking.status === 'confirmed' && booking.paymentStatus === 'paid',
+			pendingPayment: booking.status === 'pending' && booking.paymentStatus === 'pending',
+			paymentFailed: booking.paymentStatus === 'failed'
+		});
+		
 		if (!isValidForStatus) {
+			console.log(`Booking ${bookingId} rejected - invalid status combination`);
 			return json({ error: 'Booking status cannot be checked' }, { status: 400 });
 		}
 		

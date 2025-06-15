@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import type { PageData } from './$types.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
@@ -9,7 +9,9 @@
 		getTourStatusDot,
 		getImageUrl,
 		toggleTourStatus,
-		getTourBookingStatus
+		getTourBookingStatus,
+		calculateConversionRate,
+		getConversionRateText
 	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
@@ -358,10 +360,7 @@
 		]);
 	}
 
-	function calculateConversionRate(qrScans: number, qrConversions: number): number {
-		if (qrScans === 0 || qrConversions === 0) return 0;
-		return (qrConversions / qrScans) * 100;
-	}
+
 
 	function toggleActionMenu(tourId: string) {
 		actionMenuOpen = actionMenuOpen === tourId ? null : tourId;
@@ -370,8 +369,8 @@
 	// Force refetch when page is mounted or when coming from tour creation
 	onMount(() => {
 		// Check if we're coming from tour creation or need a refresh
-		const shouldRefresh = $page.url.searchParams.get('refresh') === 'true' || 
-							 $page.url.searchParams.get('created') === 'true';
+		const shouldRefresh = page.url.searchParams.get('refresh') === 'true' || 
+							 page.url.searchParams.get('created') === 'true';
 		
 		if (shouldRefresh || !$userToursQuery.data) {
 			// Force immediate refetch of both queries
@@ -382,7 +381,7 @@
 
 	// Also refetch when navigating to this page
 	$effect(() => {
-		if (browser && $page.url.pathname === '/tours') {
+		if (browser && page.url.pathname === '/tours') {
 			// Small delay to ensure navigation is complete
 			setTimeout(() => {
 				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
@@ -681,7 +680,10 @@
 									<div class="flex items-start justify-between mb-1">
 										<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
 										<div class="flex items-center gap-1 ml-2">
-											<div class="relative group">
+											<Tooltip 
+												text={getTourBookingStatus(tour).description}
+												position="top"
+											>
 												<div 
 													class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
 													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
@@ -692,52 +694,46 @@
 														<PlusCircle class="w-3 h-3 opacity-60" />
 													{/if}
 												</div>
-												<!-- Tooltip -->
-												<div class="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-													{getTourBookingStatus(tour).description}
-													{#if getTourBookingStatus(tour).status === 'no-slots'}
-														<br><span class="text-blue-600">Click to add time slots</span>
-													{:else if getTourBookingStatus(tour).status === 'draft'}
-														<br><span class="text-blue-600">Click to activate tour</span>
-													{/if}
-												</div>
-											</div>
+											</Tooltip>
 											
 											<!-- Action Button -->
 											{#if getTourBookingStatus(tour).status === 'draft'}
-												<button
-													onclick={() => handleTourStatusToggle(tour)}
-													disabled={statusUpdating === tour.id}
-													class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-													title="Activate tour"
-												>
+												<Tooltip text="Activate tour">
+													<button
+														onclick={() => handleTourStatusToggle(tour)}
+														disabled={statusUpdating === tour.id}
+														class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+													>
 													{#if statusUpdating === tour.id}
 														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
 													{:else}
 														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
 													{/if}
-												</button>
+													</button>
+												</Tooltip>
 											{:else if getTourBookingStatus(tour).status === 'no-slots'}
-												<button
-													onclick={() => goto(`/tours/${tour.id}/schedule`)}
-													class="p-1 rounded-md hover:bg-gray-100 transition-colors"
-													title="Add time slots"
-												>
+												<Tooltip text="Add time slots">
+													<button
+														onclick={() => goto(`/tours/${tour.id}/schedule`)}
+														class="p-1 rounded-md hover:bg-gray-100 transition-colors"
+													>
 													<PlusCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
-												</button>
+													</button>
+												</Tooltip>
 											{:else}
-												<button
-													onclick={() => handleTourStatusToggle(tour)}
-													disabled={statusUpdating === tour.id}
-													class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-													title="Set to draft"
-												>
+												<Tooltip text="Set to draft">
+													<button
+														onclick={() => handleTourStatusToggle(tour)}
+														disabled={statusUpdating === tour.id}
+														class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+													>
 													{#if statusUpdating === tour.id}
 														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
 													{:else}
 														<Edit class="w-3 h-3" style="color: var(--text-tertiary);" />
 													{/if}
-												</button>
+													</button>
+												</Tooltip>
 											{/if}
 											<div class="relative action-menu-container">
 												<button
@@ -794,7 +790,7 @@
 									<p class="text-xs" style="color: var(--text-tertiary);">max guests</p>
 								</div>
 								<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
-									<p class="text-sm font-semibold text-green-600">{calculateConversionRate(tour.qrScans || 0, tour.qrConversions || 0).toFixed(0)}%</p>
+									<p class="text-sm font-semibold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
 									<p class="text-xs" style="color: var(--text-tertiary);">conversion</p>
 								</div>
 							</div>
@@ -855,7 +851,7 @@
 										<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
 									</div>
 									<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-										<p class="text-lg font-bold text-green-600">{calculateConversionRate(tour.qrScans || 0, tour.qrConversions || 0).toFixed(0)}%</p>
+										<p class="text-lg font-bold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
 										<p class="text-xs" style="color: var(--text-tertiary);">conversion</p>
 									</div>
 								</div>
@@ -904,7 +900,10 @@
 									<div class="flex items-center gap-3 mb-2">
 										<h3 class="text-xl font-semibold" style="color: var(--text-primary);">{tour.name}</h3>
 										<div class="flex items-center gap-2">
-											<div class="relative group">
+											<Tooltip 
+												text={getTourBookingStatus(tour).description}
+												position="top"
+											>
 												<div 
 													class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200"
 													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
@@ -917,26 +916,17 @@
 														<CheckCircle class="w-4 h-4 opacity-60" />
 													{/if}
 												</div>
-												<!-- Tooltip -->
-												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-													{getTourBookingStatus(tour).description}
-													{#if getTourBookingStatus(tour).status === 'no-slots'}
-														<br><span class="text-blue-600">Add time slots to accept bookings</span>
-													{:else if getTourBookingStatus(tour).status === 'draft'}
-														<br><span class="text-blue-600">Activate to make visible to customers</span>
-													{/if}
-												</div>
-											</div>
+											</Tooltip>
 											
 											<!-- Action Buttons -->
 											<div class="flex items-center gap-1">
 												{#if getTourBookingStatus(tour).status === 'draft'}
-													<button
-														onclick={() => handleTourStatusToggle(tour)}
-														disabled={statusUpdating === tour.id}
-														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
-														title="Activate tour"
-													>
+													<Tooltip text="Activate tour to make it visible to customers" position="top">
+														<button
+															onclick={() => handleTourStatusToggle(tour)}
+															disabled={statusUpdating === tour.id}
+															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
+														>
 														{#if statusUpdating === tour.id}
 															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
 															<span>Activating...</span>
@@ -944,23 +934,25 @@
 															<CheckCircle class="w-3 h-3" />
 															<span>Activate</span>
 														{/if}
-													</button>
+														</button>
+													</Tooltip>
 												{:else if getTourBookingStatus(tour).status === 'no-slots'}
-													<button
-														onclick={() => goto(`/tours/${tour.id}/schedule`)}
-														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
-														title="Add time slots"
-													>
+													<Tooltip text="Add time slots to start accepting bookings" position="top">
+														<button
+															onclick={() => goto(`/tours/${tour.id}/schedule`)}
+															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
+														>
 														<PlusCircle class="w-3 h-3" />
 														<span>Add Slots</span>
-													</button>
+														</button>
+													</Tooltip>
 												{:else}
-													<button
-														onclick={() => handleTourStatusToggle(tour)}
-														disabled={statusUpdating === tour.id}
-														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
-														title="Set to draft"
-													>
+													<Tooltip text="Set tour to draft (hide from customers)" position="top">
+														<button
+															onclick={() => handleTourStatusToggle(tour)}
+															disabled={statusUpdating === tour.id}
+															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
+														>
 														{#if statusUpdating === tour.id}
 															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
 															<span>Updating...</span>
@@ -968,7 +960,8 @@
 															<Edit class="w-3 h-3" />
 															<span>Draft</span>
 														{/if}
-													</button>
+														</button>
+													</Tooltip>
 												{/if}
 											</div>
 										</div>
@@ -1049,7 +1042,7 @@
 							<div class="grid grid-cols-3 gap-4 mb-4">
 								<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
 									<BarChart3 class="h-5 w-5 mx-auto mb-1" style="color: var(--text-tertiary);" />
-									<p class="text-lg font-semibold text-green-600">{calculateConversionRate(tour.qrScans || 0, tour.qrConversions || 0).toFixed(0)}%</p>
+									<p class="text-lg font-semibold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
 									<p class="text-xs" style="color: var(--text-tertiary);">conversion rate</p>
 								</div>
 								<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">

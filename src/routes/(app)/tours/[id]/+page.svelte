@@ -12,6 +12,7 @@
 		getSlotStatusColor,
 		getTourImageUrl,
 		calculateConversionRate,
+		getConversionRateText,
 		toggleTourStatus,
 		getTourBookingStatus
 	} from '$lib/utils/tour-helpers-client.js';
@@ -598,7 +599,7 @@
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">QR Code & Booking Link</h3>
 					<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-						{tourStats?.qrScans || 0} scans • {conversionRate.toFixed(0)}% conversion
+						{tourStats?.qrScans || 0} scans • {getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)} conversion
 					</span>
 				</div>
 			</div>

@@ -2,7 +2,7 @@ import type { PageLoad } from './$types.js';
 
 export const load: PageLoad = async ({ params, url, parent }) => {
 	const { queryClient } = await parent();
-	const bookingId = url.searchParams.get('booking_id');
+	const bookingId = url.searchParams.get('booking');
 	
 	// Prefetch booking status for faster page load
 	if (bookingId) {
