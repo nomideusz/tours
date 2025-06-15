@@ -12,7 +12,8 @@
 		getSlotStatusColor,
 		getTourImageUrl,
 		calculateConversionRate,
-		toggleTourStatus
+		toggleTourStatus,
+		getTourBookingStatus
 	} from '$lib/utils/tour-helpers-client.js';
 	import { 
 		formatSlotDateTime,
@@ -50,6 +51,8 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Download from 'lucide-svelte/icons/download';
 	import Plus from 'lucide-svelte/icons/plus';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import PlusCircle from 'lucide-svelte/icons/plus-circle';
 
 	// Get data from load function
 	let { data } = $props();
@@ -329,67 +332,131 @@
 		<!-- Compact Mobile Header + Desktop Header -->
 		<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
-		<MobilePageHeader
-			title={tour.name}
-			statusButton={{
-				label: statusUpdating ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1),
-				onclick: handleTourStatusToggle,
-				disabled: statusUpdating,
-				color: getTourStatusColor(tour.status),
-				dotColor: getTourStatusDot(tour.status),
-				tooltip: `Click to ${tour.status === 'active' ? 'deactivate' : 'activate'} tour`
-			}}
-			secondaryInfo={$globalCurrencyFormatter(tour.price)}
-			quickActions={[
-				{
-					label: 'Bookings',
-					icon: Users,
-					onclick: () => goto(`/tours/${tour.id}/bookings`),
-					variant: 'primary'
-				},
-				{
-					label: 'Edit',
-					icon: Edit,
-					onclick: () => goto(`/tours/${tour.id}/edit`),
-					variant: 'secondary'
-				},
-				{
-					label: 'Schedule',
-					icon: Calendar,
-					onclick: () => goto(`/tours/${tour.id}/schedule`),
-					variant: 'secondary'
-				},
-				{
-					label: 'Share',
-					icon: Share2,
-					onclick: shareQR,
-					variant: 'secondary',
-					size: 'icon'
-				}
-			]}
-			infoItems={[
-				{
-					icon: MapPin,
-					label: 'Location',
-					value: tour.location || 'Not specified'
-				},
-				{
-					icon: Clock,
-					label: 'Duration',
-					value: formatDuration(tour.duration)
-				},
-				{
-					icon: Users,
-					label: 'Capacity',
-					value: `Max ${tour.capacity}`
-				},
-				{
-					icon: BarChart3,
-					label: 'Bookings',
-					value: `${tourStats?.totalBookings || 0} total`
-				}
-			]}
-		/>
+		<div class="sm:hidden mb-6">
+			<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<!-- Header Row -->
+				<div class="flex items-center justify-between mb-4">
+					<div class="flex-1">
+						<h1 class="text-xl font-bold" style="color: var(--text-primary);">{tour.name}</h1>
+						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+					</div>
+					
+					<!-- Booking Status -->
+					<div class="flex items-center gap-2">
+						<div class="relative group">
+							<div 
+								class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium border transition-all duration-200"
+								style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
+							>
+								<div class="w-1.5 h-1.5 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
+								<span>{getTourBookingStatus(tour).label}</span>
+								{#if getTourBookingStatus(tour).status === 'no-slots'}
+									<PlusCircle class="w-3 h-3 opacity-60" />
+								{/if}
+							</div>
+							<!-- Tooltip -->
+							<div class="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
+								{getTourBookingStatus(tour).description}
+								{#if getTourBookingStatus(tour).status === 'no-slots'}
+									<br><span class="text-blue-600">Add time slots to accept bookings</span>
+								{:else if getTourBookingStatus(tour).status === 'draft'}
+									<br><span class="text-blue-600">Activate to make visible to customers</span>
+								{/if}
+							</div>
+						</div>
+						
+						<!-- Action Button -->
+						{#if getTourBookingStatus(tour).status === 'draft'}
+							<button
+								onclick={() => handleTourStatusToggle()}
+								disabled={statusUpdating}
+								class="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+								title="Activate tour"
+							>
+								{#if statusUpdating}
+									<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
+								{:else}
+									<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
+								{/if}
+							</button>
+						{:else if getTourBookingStatus(tour).status === 'no-slots'}
+							<button
+								onclick={() => goto(`/tours/${tour.id}/schedule`)}
+								class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+								title="Add time slots"
+							>
+								<PlusCircle class="w-4 h-4" style="color: var(--color-warning-600);" />
+							</button>
+						{:else}
+							<button
+								onclick={() => handleTourStatusToggle()}
+								disabled={statusUpdating}
+								class="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+								title="Set to draft"
+							>
+								{#if statusUpdating}
+									<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
+								{:else}
+									<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
+								{/if}
+							</button>
+						{/if}
+					</div>
+				</div>
+				
+				<!-- Quick Actions -->
+				<div class="grid grid-cols-2 gap-3">
+					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-primary button--small button--gap">
+						<Users class="h-4 w-4" />
+						Bookings
+					</button>
+					<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--gap">
+						<Edit class="h-4 w-4" />
+						Edit
+					</button>
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
+						<Calendar class="h-4 w-4" />
+						Schedule
+					</button>
+					<button onclick={() => shareQR()} class="button-secondary button--small button--gap">
+						<Share2 class="h-4 w-4" />
+						Share
+					</button>
+				</div>
+				
+				<!-- Info Grid -->
+				<div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t" style="border-color: var(--border-primary);">
+					<div class="text-center p-2">
+						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
+							<MapPin class="h-3 w-3" />
+							<span>Location</span>
+						</div>
+						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{tour.location || 'Not specified'}</p>
+					</div>
+					<div class="text-center p-2">
+						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
+							<Clock class="h-3 w-3" />
+							<span>Duration</span>
+						</div>
+						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
+					</div>
+					<div class="text-center p-2">
+						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
+							<Users class="h-3 w-3" />
+							<span>Capacity</span>
+						</div>
+						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">Max {tour.capacity}</p>
+					</div>
+					<div class="text-center p-2">
+						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
+							<BarChart3 class="h-3 w-3" />
+							<span>Bookings</span>
+						</div>
+						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{tourStats?.totalBookings || 0} total</p>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
@@ -428,18 +495,78 @@
 		<div class="hidden sm:block p-4 sm:p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div class="flex items-center gap-4">
-					<Tooltip text="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour" position="top">
-						<button
-							onclick={() => handleTourStatusToggle()}
-							disabled={statusUpdating}
-							class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed {getTourStatusColor(tour.status)}"
-						>
-							<span class="w-2 h-2 rounded-full {getTourStatusDot(tour.status)}"></span>
-							{statusUpdating ? 'Updating...' : tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-						</button>
-					</Tooltip>
+					<!-- Booking Status -->
+					<div class="flex items-center gap-3">
+						<div class="relative group">
+							<div 
+								class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200"
+								style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
+							>
+								<div class="w-2 h-2 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
+								<span>{getTourBookingStatus(tour).label}</span>
+								{#if getTourBookingStatus(tour).status === 'no-slots'}
+									<AlertTriangle class="w-4 h-4 opacity-60" />
+								{:else if getTourBookingStatus(tour).status === 'bookable'}
+									<CheckCircle class="w-4 h-4 opacity-60" />
+								{/if}
+							</div>
+							<!-- Tooltip -->
+							<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
+								{getTourBookingStatus(tour).description}
+								{#if getTourBookingStatus(tour).status === 'no-slots'}
+									<br><span class="text-blue-600">Add time slots to accept bookings</span>
+								{:else if getTourBookingStatus(tour).status === 'draft'}
+									<br><span class="text-blue-600">Activate to make visible to customers</span>
+								{/if}
+							</div>
+						</div>
+						
+						<!-- Action Buttons -->
+						<div class="flex items-center gap-2">
+							{#if getTourBookingStatus(tour).status === 'draft'}
+								<button
+									onclick={() => handleTourStatusToggle()}
+									disabled={statusUpdating}
+									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
+									title="Activate tour"
+								>
+									{#if statusUpdating}
+										<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+										<span>Activating...</span>
+									{:else}
+										<CheckCircle class="w-3 h-3" />
+										<span>Activate</span>
+									{/if}
+								</button>
+							{:else if getTourBookingStatus(tour).status === 'no-slots'}
+								<button
+									onclick={() => goto(`/tours/${tour.id}/schedule`)}
+									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
+									title="Add time slots"
+								>
+									<PlusCircle class="w-3 h-3" />
+									<span>Add Slots</span>
+								</button>
+							{:else}
+								<button
+									onclick={() => handleTourStatusToggle()}
+									disabled={statusUpdating}
+									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
+									title="Set to draft"
+								>
+									{#if statusUpdating}
+										<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+										<span>Updating...</span>
+									{:else}
+										<Edit class="w-3 h-3" />
+										<span>Draft</span>
+									{/if}
+								</button>
+							{/if}
+						</div>
+					</div>
 					
-					<div class="hidden sm:flex items-center gap-6 text-sm" style="color: var(--text-secondary);">
+					<div class="hidden lg:flex items-center gap-6 text-sm" style="color: var(--text-secondary);">
 						<div class="flex items-center gap-1">
 							<MapPin class="h-4 w-4" />
 							<span>{tour.location || 'Not specified'}</span>

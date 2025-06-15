@@ -162,6 +162,66 @@ export function isTourBookable(tour: Tour, hasAvailableSlots: boolean = true): b
 	return tour.status === 'active' && hasAvailableSlots;
 }
 
+/**
+ * Get booking status information for a tour
+ */
+export function getTourBookingStatus(tour: Tour) {
+	const isDraft = tour.status === 'draft';
+	const hasSlots = (tour.upcomingSlots || 0) > 0;
+	
+	if (isDraft) {
+		return {
+			status: 'draft' as const,
+			label: 'Draft',
+			description: 'Not visible to customers',
+			color: 'var(--text-tertiary)',
+			bgColor: 'var(--bg-tertiary)',
+			borderColor: 'var(--border-secondary)',
+			dotColor: 'bg-gray-400',
+			canBook: false,
+			icon: 'draft'
+		};
+	}
+	
+	if (!hasSlots) {
+		return {
+			status: 'no-slots' as const,
+			label: 'No Time Slots',
+			description: 'Add slots to accept bookings',
+			color: 'var(--color-warning-600)',
+			bgColor: 'var(--color-warning-50)',
+			borderColor: 'var(--color-warning-200)',
+			dotColor: 'bg-yellow-400',
+			canBook: false,
+			icon: 'warning'
+		};
+	}
+	
+	return {
+		status: 'bookable' as const,
+		label: 'Accepting Bookings',
+		description: `${tour.upcomingSlots} slots available`,
+		color: 'var(--color-success-600)',
+		bgColor: 'var(--color-success-50)',
+		borderColor: 'var(--color-success-200)',
+		dotColor: 'bg-green-400',
+		canBook: true,
+		icon: 'success'
+	};
+}
+
+/**
+ * Get the appropriate icon component for booking status
+ */
+export function getBookingStatusIcon(status: string) {
+	switch (status) {
+		case 'draft': return 'edit';
+		case 'no-slots': return 'alert-triangle';
+		case 'bookable': return 'check-circle';
+		default: return 'circle';
+	}
+}
+
 // ============================================
 // CLIENT-SIDE API FUNCTIONS
 // ============================================

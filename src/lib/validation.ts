@@ -89,7 +89,7 @@ const VALIDATION_RULES = {
 const VALID_CATEGORIES = ['walking', 'food', 'cultural', 'historical', 'art', 'adventure', 'other'];
 
 // Valid statuses
-const VALID_STATUSES: Tour['status'][] = ['draft', 'active', 'inactive'];
+const VALID_STATUSES: Tour['status'][] = ['draft', 'active'];
 
 // Time slot validation rules
 const TIME_SLOT_VALIDATION_RULES = {

@@ -52,6 +52,8 @@ export interface Tour extends RecordModel {
   qrCode?: string;
   qrScans?: number;
   qrConversions?: number;
+  // Booking availability
+  upcomingSlots?: number; // number of available upcoming time slots
   createdAt: string;
   updatedAt: string;
 }

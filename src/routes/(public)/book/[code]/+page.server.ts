@@ -37,6 +37,8 @@ export const actions: Actions = {
 			});
 		}
 
+		let booking;
+		
 		try {
 			// Get tour by QR code
 			const tourData = await db
@@ -130,7 +132,7 @@ export const actions: Actions = {
 				ticketQRCode
 			}).returning();
 
-			const booking = bookingResult[0];
+			booking = bookingResult[0];
 
 			// Update time slot booked spots
 			await db.update(timeSlots)
@@ -159,17 +161,7 @@ export const actions: Actions = {
 				status: booking.status
 			}).catch(console.error);
 
-			console.log(`✅ Booking ${booking.bookingReference} created successfully, redirecting to payment`);
-
-			// Redirect to payment page
-			throw redirect(303, `/book/${qrCode}/payment?booking=${booking.id}`);
-
 		} catch (error) {
-			// If it's a redirect, re-throw it (this is the successful case)
-			if (error instanceof Response && error.status === 303) {
-				throw error;
-			}
-
 			console.error('💥 Booking creation error:', error);
 			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 
@@ -181,5 +173,9 @@ export const actions: Actions = {
 				specialRequests
 			});
 		}
+
+		// If we get here, booking was successful - redirect to payment
+		console.log(`✅ Booking ${booking.bookingReference} created successfully, redirecting to payment`);
+		redirect(303, `/book/${qrCode}/payment?booking=${booking.id}`);
 	}
 }; 

@@ -82,7 +82,8 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			...tour,
 			price: tour.price ? parseFloat(tour.price) : 0,
 			created: tour.createdAt ? tour.createdAt.toISOString() : new Date().toISOString(),
-			updated: tour.updatedAt ? tour.updatedAt.toISOString() : new Date().toISOString()
+			updated: tour.updatedAt ? tour.updatedAt.toISOString() : new Date().toISOString(),
+			upcomingSlots: upcomingSlots.filter(slot => slot.status === 'available').length
 		};
 
 		const processedUpcomingSlots = upcomingSlots.map(slot => ({

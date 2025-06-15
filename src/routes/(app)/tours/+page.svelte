@@ -8,7 +8,8 @@
 		getTourStatusColor,
 		getTourStatusDot,
 		getImageUrl,
-		toggleTourStatus
+		toggleTourStatus,
+		getTourBookingStatus
 	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
@@ -52,6 +53,7 @@
 	import Activity from 'lucide-svelte/icons/activity';
 	import Package from 'lucide-svelte/icons/package';
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import PlusCircle from 'lucide-svelte/icons/plus-circle';
 
 	// TanStack Query client for invalidation
 	const queryClient = useQueryClient();
@@ -679,28 +681,64 @@
 									<div class="flex items-start justify-between mb-1">
 										<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
 										<div class="flex items-center gap-1 ml-2">
-											<button
-												onclick={() => handleTourStatusToggle(tour)}
-												disabled={statusUpdating === tour.id}
-												class="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 {
-													statusSuccess === tour.id 
-														? 'bg-green-100 text-green-700 border-green-300' 
-														: getTourStatusColor(tour.status)
-												}"
-											>
-												{#if statusUpdating === tour.id}
-													<div class="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></div>
-													<span>...</span>
-												{:else if statusSuccess === tour.id}
-													<CheckCircle class="w-2.5 h-2.5 text-green-600" />
-													<span>✓</span>
-												{:else}
-													<span class="w-1.5 h-1.5 rounded-full {getTourStatusDot(tour.status)} transition-colors duration-200"></span>
-													<span class="transition-colors duration-200">
-														{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-													</span>
-												{/if}
-											</button>
+											<div class="relative group">
+												<div 
+													class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
+												>
+													<div class="w-1.5 h-1.5 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
+													<span>{getTourBookingStatus(tour).label}</span>
+													{#if getTourBookingStatus(tour).status === 'no-slots'}
+														<PlusCircle class="w-3 h-3 opacity-60" />
+													{/if}
+												</div>
+												<!-- Tooltip -->
+												<div class="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
+													{getTourBookingStatus(tour).description}
+													{#if getTourBookingStatus(tour).status === 'no-slots'}
+														<br><span class="text-blue-600">Click to add time slots</span>
+													{:else if getTourBookingStatus(tour).status === 'draft'}
+														<br><span class="text-blue-600">Click to activate tour</span>
+													{/if}
+												</div>
+											</div>
+											
+											<!-- Action Button -->
+											{#if getTourBookingStatus(tour).status === 'draft'}
+												<button
+													onclick={() => handleTourStatusToggle(tour)}
+													disabled={statusUpdating === tour.id}
+													class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+													title="Activate tour"
+												>
+													{#if statusUpdating === tour.id}
+														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+													{:else}
+														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+													{/if}
+												</button>
+											{:else if getTourBookingStatus(tour).status === 'no-slots'}
+												<button
+													onclick={() => goto(`/tours/${tour.id}/schedule`)}
+													class="p-1 rounded-md hover:bg-gray-100 transition-colors"
+													title="Add time slots"
+												>
+													<PlusCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
+												</button>
+											{:else}
+												<button
+													onclick={() => handleTourStatusToggle(tour)}
+													disabled={statusUpdating === tour.id}
+													class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+													title="Set to draft"
+												>
+													{#if statusUpdating === tour.id}
+														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+													{:else}
+														<Edit class="w-3 h-3" style="color: var(--text-tertiary);" />
+													{/if}
+												</button>
+											{/if}
 											<div class="relative action-menu-container">
 												<button
 													class="p-1 rounded-md hover:bg-gray-100 transition-colors"
@@ -865,31 +903,75 @@
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-3 mb-2">
 										<h3 class="text-xl font-semibold" style="color: var(--text-primary);">{tour.name}</h3>
-										<button
-											onclick={() => handleTourStatusToggle(tour)}
-											disabled={statusUpdating === tour.id}
-											class="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 {
-												statusSuccess === tour.id 
-													? 'bg-green-100 text-green-700 border-green-300' 
-													: getTourStatusColor(tour.status)
-											}"
-										>
-											{#if statusUpdating === tour.id}
-												<div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
-												<span>Updating...</span>
-											{:else if statusSuccess === tour.id}
-												<CheckCircle class="w-3 h-3 text-green-600" />
-												<span>Updated!</span>
-											{:else}
-												<span class="w-2 h-2 rounded-full {getTourStatusDot(tour.status)} transition-colors duration-200"></span>
-												<span class="transition-colors duration-200">
-													{tour.status.charAt(0).toUpperCase() + tour.status.slice(1)}
-												</span>
-												<span class="text-xs opacity-60 group-hover:opacity-100 transition-opacity duration-200">
-													{tour.status === 'active' ? '→ Draft' : '→ Active'}
-												</span>
-											{/if}
-										</button>
+										<div class="flex items-center gap-2">
+											<div class="relative group">
+												<div 
+													class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200"
+													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
+												>
+													<div class="w-2 h-2 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
+													<span>{getTourBookingStatus(tour).label}</span>
+													{#if getTourBookingStatus(tour).status === 'no-slots'}
+														<AlertTriangle class="w-4 h-4 opacity-60" />
+													{:else if getTourBookingStatus(tour).status === 'bookable'}
+														<CheckCircle class="w-4 h-4 opacity-60" />
+													{/if}
+												</div>
+												<!-- Tooltip -->
+												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
+													{getTourBookingStatus(tour).description}
+													{#if getTourBookingStatus(tour).status === 'no-slots'}
+														<br><span class="text-blue-600">Add time slots to accept bookings</span>
+													{:else if getTourBookingStatus(tour).status === 'draft'}
+														<br><span class="text-blue-600">Activate to make visible to customers</span>
+													{/if}
+												</div>
+											</div>
+											
+											<!-- Action Buttons -->
+											<div class="flex items-center gap-1">
+												{#if getTourBookingStatus(tour).status === 'draft'}
+													<button
+														onclick={() => handleTourStatusToggle(tour)}
+														disabled={statusUpdating === tour.id}
+														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
+														title="Activate tour"
+													>
+														{#if statusUpdating === tour.id}
+															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+															<span>Activating...</span>
+														{:else}
+															<CheckCircle class="w-3 h-3" />
+															<span>Activate</span>
+														{/if}
+													</button>
+												{:else if getTourBookingStatus(tour).status === 'no-slots'}
+													<button
+														onclick={() => goto(`/tours/${tour.id}/schedule`)}
+														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
+														title="Add time slots"
+													>
+														<PlusCircle class="w-3 h-3" />
+														<span>Add Slots</span>
+													</button>
+												{:else}
+													<button
+														onclick={() => handleTourStatusToggle(tour)}
+														disabled={statusUpdating === tour.id}
+														class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
+														title="Set to draft"
+													>
+														{#if statusUpdating === tour.id}
+															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+															<span>Updating...</span>
+														{:else}
+															<Edit class="w-3 h-3" />
+															<span>Draft</span>
+														{/if}
+													</button>
+												{/if}
+											</div>
+										</div>
 									</div>
 									<div class="flex items-center gap-4 text-sm mb-2" style="color: var(--text-secondary);">
 										{#if tour.location}

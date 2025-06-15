@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
@@ -312,9 +313,22 @@
 						{:else}
 							<form method="POST" action="?/book" use:enhance={() => {
 								isSubmitting = true;
-								return async ({ update }) => {
-									await update();
+								return async ({ result, update }) => {
 									isSubmitting = false;
+									
+									if (result.type === 'redirect') {
+										// Successful booking - redirect to payment
+										goto(result.location);
+									} else if (result.type === 'failure') {
+										// Form validation errors
+										await update();
+									} else if (result.type === 'error') {
+										// Server error  
+										error = 'Failed to create booking. Please try again.';
+									} else {
+										// Default case
+										await update();
+									}
 								};
 							}} class="space-y-6">
 								<!-- Hidden inputs for form data -->
