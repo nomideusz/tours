@@ -73,69 +73,11 @@
 		return countryPhoneCodes[countryCode] || '+1';
 	}
 
-	// Phone number formatting - now preserves + sign
-	function formatPhoneNumber(value: string): string {
-		// Preserve + at the beginning and remove other non-digits
-		const hasPlus = value.startsWith('+');
-		const digits = value.replace(/[^\d+]/g, '').replace(/\+(?!^)/g, ''); // Keep + only at start
-		
-		// If it starts with +, handle international format
-		if (hasPlus) {
-			const numbersOnly = digits.slice(1); // Remove the +
-			
-			if (numbersOnly.length === 0) return '+';
-			if (numbersOnly.length < 4) return `+${numbersOnly}`;
-			
-			// Try to format based on common patterns
-			if (numbersOnly.length >= 10) {
-				// Assume last 10 digits are the main number
-				const countryCode = numbersOnly.slice(0, -10);
-				const mainNumber = numbersOnly.slice(-10);
-				
-				if (mainNumber.length === 10) {
-					return `+${countryCode} (${mainNumber.slice(0, 3)}) ${mainNumber.slice(3, 6)}-${mainNumber.slice(6)}`;
-				}
-			}
-			
-			// Partial international formatting
-			return `+${numbersOnly}`;
-		} else {
-			// Domestic format
-			if (digits.length < 4) return digits;
-			
-			// US/domestic format: (123) 456-7890
-			if (digits.length === 10) {
-				return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-			}
-			// Partial formatting
-			if (digits.length > 6) {
-				return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-			}
-			if (digits.length > 3) {
-				return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-			}
-			
-			return digits;
-		}
-	}
-
+	// Simplified phone number handling - allow free-form input
 	function handlePhoneInput(event: Event) {
 		const target = event.target as HTMLInputElement;
-		const cursorPosition = target.selectionStart;
-		const oldValue = target.value;
-		
-		// Format the phone number
-		const formatted = formatPhoneNumber(oldValue);
-		phone = formatted;
-		
-		// Maintain cursor position
-		setTimeout(() => {
-			if (cursorPosition !== null) {
-				const diff = formatted.length - oldValue.length;
-				const newPosition = Math.max(0, cursorPosition + diff);
-				target.setSelectionRange(newPosition, newPosition);
-			}
-		}, 0);
+		// Just update the value without complex formatting
+		phone = target.value;
 	}
 
 	// Auto-add country code when phone field is focused and empty
