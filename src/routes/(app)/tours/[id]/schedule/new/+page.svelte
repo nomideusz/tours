@@ -7,6 +7,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { useQueryClient } from '@tanstack/svelte-query';
+	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -189,6 +190,11 @@
 			
 			// Invalidate the schedule query so it refreshes immediately
 			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			
+			// Invalidate public booking page cache since availability changed
+			if (tour?.qrCode) {
+				invalidatePublicTourData(queryClient, tour.qrCode);
+			}
 			
 			// Redirect back to schedule with success flag
 			goto(`/tours/${tourId}/schedule?slotCreated=true`);

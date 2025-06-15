@@ -5,7 +5,7 @@
 	import { stripePublicKey } from '$lib/stripe.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Shield from 'lucide-svelte/icons/shield';
@@ -188,7 +188,7 @@
 						<div class="pt-3 border-t">
 							<div class="flex justify-between items-center">
 								<p class="text-lg font-semibold">Total Amount</p>
-								<p class="text-lg font-semibold">{$globalCurrencyFormatter(data.booking.totalAmount)}</p>
+								<p class="text-lg font-semibold">{formatTourOwnerCurrency(data.booking.totalAmount)}</p>
 							</div>
 						</div>
 					</div>
@@ -218,7 +218,7 @@
 									Processing payment...
 								{:else}
 									<Lock class="w-5 h-5" />
-									Pay €{data.booking.totalAmount}
+									Pay {formatTourOwnerCurrency(data.booking.totalAmount)}
 								{/if}
 							</button>
 						</form>

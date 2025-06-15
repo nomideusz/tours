@@ -3,11 +3,12 @@
 	import type { PageData, ActionData } from './$types.js';
 	import { getDisplayReference } from '$lib/ticket-qr.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Users from 'lucide-svelte/icons/users';
-	import Euro from 'lucide-svelte/icons/euro';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Phone from 'lucide-svelte/icons/phone';
 	import Mail from 'lucide-svelte/icons/mail';
 	import User from 'lucide-svelte/icons/user';
@@ -212,7 +213,7 @@
 							</p>
 							<p class="text-sm" style="color: var(--text-secondary);">
 								{data.booking.expand?.timeSlot?.startTime && data.booking.expand?.timeSlot?.endTime 
-									? `${formatTime(data.booking.expand.timeSlot.startTime)} - ${formatTime(data.booking.expand.timeSlot.endTime)}`
+									? formatSlotTimeRange(data.booking.expand.timeSlot.startTime, data.booking.expand.timeSlot.endTime)
 									: 'Time TBD'
 								}
 							</p>
@@ -230,9 +231,9 @@
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Euro class="w-5 h-5" style="color: var(--text-tertiary);" />
+						<DollarSign class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
-							<p class="font-medium" style="color: var(--text-primary);">€{data.booking.totalAmount}</p>
+							<p class="font-medium" style="color: var(--text-primary);">{formatTourOwnerCurrency(data.booking.totalAmount)}</p>
 							<p class="text-sm" style="color: var(--text-secondary);">Total amount paid</p>
 						</div>
 					</div>

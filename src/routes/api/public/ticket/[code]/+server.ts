@@ -1,25 +1,25 @@
-import type { PageServerLoad } from './$types.js';
-import { error } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
+import type { RequestHandler } from './$types.js';
+import { isValidTicketQRCode } from '$lib/ticket-qr.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ url }) => {
-	const bookingId = url.searchParams.get('booking');
+export const GET: RequestHandler = async ({ params }) => {
+	const ticketCode = params.code;
 	
-	if (!bookingId) {
-		throw error(400, 'Booking ID is required');
+	if (!ticketCode || !isValidTicketQRCode(ticketCode)) {
+		return json({ error: 'Invalid ticket code format' }, { status: 400 });
 	}
 	
 	try {
-		// Get booking details with all related data
+		// Get booking with expanded tour, timeSlot, and tour owner data
 		const bookingData = await db
 			.select({
 				// Booking fields
 				id: bookings.id,
 				status: bookings.status,
 				paymentStatus: bookings.paymentStatus,
-				paymentId: bookings.paymentId,
 				totalAmount: bookings.totalAmount,
 				participants: bookings.participants,
 				customerName: bookings.customerName,
@@ -28,6 +28,8 @@ export const load: PageServerLoad = async ({ url }) => {
 				specialRequests: bookings.specialRequests,
 				bookingReference: bookings.bookingReference,
 				ticketQRCode: bookings.ticketQRCode,
+				attendanceStatus: bookings.attendanceStatus,
+				checkedInAt: bookings.checkedInAt,
 				createdAt: bookings.createdAt,
 				updatedAt: bookings.updatedAt,
 				
@@ -50,46 +52,32 @@ export const load: PageServerLoad = async ({ url }) => {
 				// Tour owner fields
 				tourOwnerEmail: users.email,
 				tourOwnerName: users.name,
-				tourOwnerUsername: users.username
+				tourOwnerUsername: users.username,
+				tourOwnerCurrency: users.currency
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.leftJoin(users, eq(tours.userId, users.id))
-			.where(eq(bookings.id, bookingId))
+			.where(eq(bookings.ticketQRCode, ticketCode))
 			.limit(1);
 		
 		if (bookingData.length === 0) {
-			throw error(404, 'Booking not found');
+			return json({ error: 'Ticket not found' }, { status: 404 });
 		}
 		
 		const booking = bookingData[0];
 		
-		// Check if this is a valid booking for success page
-		// Allow confirmed/paid (webhook processed) OR pending payment (payment processing)
-		const isValidForSuccess = (
-			// Booking is fully confirmed and paid (webhook processed)
-			(booking.status === 'confirmed' && booking.paymentStatus === 'paid') ||
-			// OR booking has payment in progress (user just paid, webhook hasn't processed yet)
-			(booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId)
-		);
-		
-		if (!isValidForSuccess) {
-			// Only fail if booking is clearly not payment-related (no paymentId) or has failed
-			if (!booking.paymentId || booking.paymentStatus === 'failed') {
-				throw error(400, 'Booking is not valid for confirmation page');
-			}
+		// Only show confirmed bookings
+		if (booking.status !== 'confirmed' || booking.paymentStatus !== 'paid') {
+			return json({ error: 'Ticket is not valid or payment is incomplete' }, { status: 400 });
 		}
-		
-		// Determine if payment is still processing
-		const isPaymentProcessing = booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId;
 		
 		// Transform to match expected format with expand structure
 		const formattedBooking = {
 			id: booking.id,
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
-			paymentId: booking.paymentId,
 			totalAmount: booking.totalAmount,
 			participants: booking.participants,
 			customerName: booking.customerName,
@@ -98,6 +86,8 @@ export const load: PageServerLoad = async ({ url }) => {
 			specialRequests: booking.specialRequests,
 			bookingReference: booking.bookingReference,
 			ticketQRCode: booking.ticketQRCode,
+			attendanceStatus: booking.attendanceStatus,
+			checkedInAt: booking.checkedInAt?.toISOString(),
 			created: booking.createdAt.toISOString(),
 			updated: booking.updatedAt.toISOString(),
 			expand: {
@@ -111,8 +101,7 @@ export const load: PageServerLoad = async ({ url }) => {
 					user: {
 						id: booking.tourUserId,
 						email: booking.tourOwnerEmail,
-						name: booking.tourOwnerName,
-						username: booking.tourOwnerUsername
+						name: booking.tourOwnerName
 					}
 				},
 				timeSlot: booking.timeSlotId ? {
@@ -125,17 +114,18 @@ export const load: PageServerLoad = async ({ url }) => {
 			}
 		};
 		
-		return {
+		return json({
 			booking: formattedBooking,
-			isPaymentProcessing,
 			tourOwner: {
 				username: booking.tourOwnerUsername,
-				name: booking.tourOwnerName
-			}
-		};
+				name: booking.tourOwnerName,
+				currency: booking.tourOwnerCurrency
+			},
+			ticketCode
+		});
+		
 	} catch (err) {
-		console.error('Error loading success page:', err);
-		if ((err as any).status) throw err;
-		throw error(500, 'Failed to load booking confirmation');
+		console.error('Error fetching public ticket data:', err);
+		return json({ error: 'Failed to load ticket data' }, { status: 500 });
 	}
 }; 

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { PageData } from './$types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { createPublicProfileQuery } from '$lib/queries/public-queries.js';
+	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import { generateQRImageURL, generateBookingURL } from '$lib/utils/qr-generation.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import User from 'lucide-svelte/icons/user';
@@ -10,13 +12,23 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
-	import Euro from 'lucide-svelte/icons/euro';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
 	let { data }: { data: PageData } = $props();
 	
-	const { profile, tours, totalTours } = data;
+	// Use TanStack Query for real-time data
+	let profileQuery = $derived(createPublicProfileQuery(data.username));
+	
+	// Get data from TanStack Query
+	let profile = $derived($profileQuery.data?.profile || null);
+	let tours = $derived($profileQuery.data?.tours || []);
+	let totalTours = $derived($profileQuery.data?.totalTours || 0);
+	let isLoading = $derived($profileQuery.isLoading);
+	let queryError = $derived($profileQuery.error);
 	
 	// Set tour owner in store for header to use
 	$effect(() => {
@@ -53,8 +65,12 @@
 	}
 	
 	function getNextTimeSlots(timeSlots: any[], limit = 3) {
+		const now = new Date();
 		return timeSlots
-			.filter(slot => slot.availableSpots > slot.bookedSpots)
+			.filter(slot => 
+				slot.availableSpots > slot.bookedSpots &&
+				new Date(slot.startTime) > now // Ensure slot is in the future
+			)
 			.slice(0, limit);
 	}
 	
@@ -72,11 +88,46 @@
 </script>
 
 <svelte:head>
-	<title>Book Tours with {profile.name} (@{profile.username})</title>
-	<meta name="description" content="Book tours with {profile.name}. {profile.description || `Professional tour guide offering ${totalTours} tours.`}" />
+	<title>Book Tours with {profile?.name || data.username} (@{data.username})</title>
+	<meta name="description" content="Book tours with {profile?.name || data.username}. {profile?.description || `Professional tour guide offering ${totalTours} tours.`}" />
 </svelte:head>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	{#if isLoading}
+		<!-- Loading State -->
+		<div class="flex items-center justify-center min-h-[400px]">
+			<div class="text-center">
+				<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
+				<p class="text-lg font-medium" style="color: var(--text-primary);">Loading profile...</p>
+				<p class="text-sm" style="color: var(--text-secondary);">Please wait while we fetch the latest tour information</p>
+			</div>
+		</div>
+	{:else if queryError}
+		<!-- Error State -->
+		<div class="flex items-center justify-center min-h-[400px]">
+			<div class="text-center max-w-md mx-auto px-6">
+				<AlertCircle class="w-16 h-16 mx-auto mb-4" style="color: var(--color-danger-600);" />
+				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
+				<p class="mb-4" style="color: var(--text-secondary);">
+					The profile @{data.username} could not be found or is not available.
+				</p>
+				<button 
+					onclick={() => $profileQuery.refetch()}
+					class="button-primary"
+				>
+					Try Again
+				</button>
+			</div>
+		</div>
+	{:else if !profile}
+		<!-- Profile Not Found -->
+		<div class="flex items-center justify-center min-h-[400px]">
+			<div class="text-center max-w-md mx-auto px-6">
+				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
+				<p class="mb-4" style="color: var(--text-secondary);">The profile @{data.username} does not exist or is not available.</p>
+			</div>
+		</div>
+	{:else}
 	<!-- Profile Header -->
 	<div class="rounded-xl overflow-hidden mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="px-6 py-8 text-white" style="background: var(--color-primary-600);">
@@ -194,8 +245,8 @@
 									</div>
 									
 									<div class="flex items-center gap-2 text-xl font-bold" style="color: var(--color-primary-600);">
-										<Euro class="w-6 h-6" />
-										<span>{tour.price} per person</span>
+										<DollarSign class="w-6 h-6" />
+										<span>{formatTourOwnerCurrency(tour.price, profile?.currency)} per person</span>
 									</div>
 								</div>
 								
@@ -308,7 +359,7 @@
 				</div>
 				<div class="text-center">
 					<div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center" style="background: var(--color-primary-50);">
-						<Euro class="w-6 h-6" style="color: var(--color-primary-600);" />
+						<DollarSign class="w-6 h-6" style="color: var(--color-primary-600);" />
 					</div>
 					<h3 class="font-medium mb-2" style="color: var(--text-primary);">3. Pay & Confirm</h3>
 					<p class="text-sm" style="color: var(--text-secondary);">Complete payment and receive your booking confirmation</p>
@@ -316,6 +367,7 @@
 			</div>
 		</div>
 	</div>
+	{/if}
 </div>
 
 <style>

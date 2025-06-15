@@ -136,4 +136,15 @@ export function createReactiveCurrency(amount: number | string, options?: {
 	return derived(userCurrency, ($currency) => {
 		return formatCurrency(amount, { ...options, currency: $currency });
 	});
+}
+
+/**
+ * Format currency using tour owner's currency preference (for public routes)
+ * Falls back to EUR if no currency is provided
+ */
+export function formatTourOwnerCurrency(amount: number | string, ownerCurrency?: string): string {
+	const currency = (ownerCurrency && ownerCurrency in SUPPORTED_CURRENCIES) 
+		? ownerCurrency as Currency 
+		: 'EUR';
+	return formatCurrency(amount, { currency });
 } 

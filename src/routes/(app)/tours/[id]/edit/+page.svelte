@@ -9,13 +9,17 @@
 	import type { Tour } from '$lib/types.js';
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
+	import { useQueryClient } from '@tanstack/svelte-query';
+	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Eye from 'lucide-svelte/icons/eye';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { data, form }: { data: PageData & { tour?: any; bookingConstraints?: any }; form: ActionData } = $props();
+	
+	const queryClient = useQueryClient();
 
 	let tour = $state<Tour | null>(null);
 	let isLoading = $state(false); // Data is loaded server-side
@@ -351,6 +355,10 @@
 					return async ({ result }) => {
 						isSubmitting = false;
 						if (result.type === 'redirect') {
+							// Invalidate public booking page cache
+							if (data.tour?.qrCode) {
+								invalidatePublicTourData(queryClient, data.tour.qrCode);
+							}
 							goto(result.location);
 						}
 					};
