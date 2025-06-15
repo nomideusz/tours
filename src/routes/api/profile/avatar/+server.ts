@@ -64,4 +64,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		console.error('Avatar upload error:', error);
 		return json({ error: 'Internal server error' }, { status: 500 });
 	}
+};
+
+export const DELETE: RequestHandler = async ({ locals }) => {
+	try {
+		if (!locals.user) {
+			return json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		// Remove avatar from database (set to null)
+		await db.update(users)
+			.set({ 
+				avatar: null,
+				updatedAt: new Date()
+			})
+			.where(eq(users.id, locals.user.id));
+
+		return json({ 
+			success: true, 
+			message: 'Avatar removed successfully'
+		});
+
+	} catch (error) {
+		console.error('Avatar removal error:', error);
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 }; 

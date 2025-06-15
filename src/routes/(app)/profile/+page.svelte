@@ -194,6 +194,7 @@
 	let avatarPreview = $state('');
 	let avatarInputElement: HTMLInputElement | undefined = $state();
 	let avatarLoadError = $state(false);
+	let uploadingAvatar = $state(false);
 
 	// Error and success states
 	let errorMessage = $state('');
@@ -388,7 +389,7 @@
 			
 			selectedAvatar = file;
 			
-			// Create preview
+			// Create preview immediately for instant feedback
 			const reader = new FileReader();
 			reader.onload = (e) => {
 				avatarPreview = e.target?.result as string;
@@ -405,6 +406,7 @@
 		if (!selectedAvatar) return;
 		
 		try {
+			uploadingAvatar = true;
 			const formData = new FormData();
 			formData.append('avatar', selectedAvatar);
 
@@ -423,63 +425,72 @@
 				// Clear selected file
 				selectedAvatar = null;
 				
-				// Show success feedback immediately
+				// Update the user avatar URL immediately for instant feedback
+				if (result.avatar) {
+					// Force refresh profile data immediately
+					await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+					
+					// Keep the preview until the actual data loads, then clear it
+					setTimeout(() => {
+						avatarPreview = '';
+						avatarLoadError = false; // Reset any previous load errors
+					}, 2000);
+				}
+				
+				// Show success feedback
 				avatarSaved = true;
 				setTimeout(() => {
 					avatarSaved = false;
 				}, 3000);
-				
-				// Refresh profile data in background without showing loading
-				setTimeout(async () => {
-					await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
-					// Clear preview after a delay to ensure new data loads
-					setTimeout(() => {
-						avatarPreview = '';
-					}, 1000);
-				}, 500);
 			}
 		} catch (error) {
 			console.error('Avatar update error:', error);
 			toastError(error instanceof Error ? error.message : 'Failed to update avatar');
+			// Clear preview on error
+			avatarPreview = '';
+		} finally {
+			uploadingAvatar = false;
 		}
 	}
 
 	async function removeAvatar() {
 		try {
+			uploadingAvatar = true;
+			
+			// Create form data to remove avatar
 			const formData = new FormData();
-			formData.append('avatar', ''); // Send empty avatar to remove it
+			formData.append('remove', 'true'); // Signal to remove avatar
 
-			const response = await fetch('/api/profile/update', {
-				method: 'POST',
-				body: formData
+			const response = await fetch('/api/profile/avatar', {
+				method: 'DELETE'
 			});
 
-			const result = await response.json();
-
 			if (!response.ok) {
+				const result = await response.json();
 				throw new Error(result.error || 'Failed to remove avatar');
 			}
 
-			if (result.success) {
-				// Clear local state
-				selectedAvatar = null;
-				avatarPreview = '';
-				if (avatarInputElement) {
-					avatarInputElement.value = '';
-				}
-
-				// Refresh profile data
-				await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
-				
-				// Show success feedback for removal
-				avatarRemoved = true;
-				setTimeout(() => {
-					avatarRemoved = false;
-				}, 3000);
+			// Clear local state immediately for instant feedback
+			selectedAvatar = null;
+			avatarPreview = '';
+			avatarLoadError = false;
+			if (avatarInputElement) {
+				avatarInputElement.value = '';
 			}
+
+			// Refresh profile data
+			await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+			
+			// Show success feedback for removal
+			avatarRemoved = true;
+			setTimeout(() => {
+				avatarRemoved = false;
+			}, 3000);
 		} catch (error) {
 			console.error('Avatar removal error:', error);
 			toastError(error instanceof Error ? error.message : 'Failed to remove avatar');
+		} finally {
+			uploadingAvatar = false;
 		}
 	}
 
@@ -704,6 +715,7 @@
 						{avatarSaved}
 						{avatarRemoved}
 						{avatarLoadError}
+						{uploadingAvatar}
 						onAvatarSelect={onAvatarSelect}
 						onRemoveAvatar={removeAvatar}
 					/>
