@@ -60,7 +60,7 @@ export async function getAvailableOAuth2Providers(): Promise<OAuth2Provider[]> {
     try {
         // Return the providers we have configured
         // In a real app, you might want to check server configuration
-        return ['google', 'github'];
+        return ['google'];
     } catch (error) {
         console.error('Failed to fetch available OAuth2 providers:', error);
         return [];

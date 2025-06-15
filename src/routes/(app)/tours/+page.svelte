@@ -675,39 +675,46 @@
 									{/if}
 								</div>
 								
-								<!-- Header with Status and Actions -->
-								<div class="flex-1 min-w-0">
-									<div class="flex items-start justify-between mb-1">
-										<h3 class="text-lg font-semibold truncate" style="color: var(--text-primary);">{tour.name}</h3>
-										<div class="flex items-center gap-1 ml-2">
+								<!-- Header Content - Stacked for mobile -->
+								<div class="flex-1 min-w-0 space-y-2">
+									<!-- Title - Full width, wrappable -->
+									<div>
+										<h3 class="text-lg font-semibold leading-tight" style="color: var(--text-primary);">{tour.name}</h3>
+									</div>
+									
+									<!-- Status & Actions Row -->
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-2">
 											<Tooltip 
 												text={getTourBookingStatus(tour).description}
 												position="top"
 											>
 												<div 
-													class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
+													class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200"
 													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
 												>
 													<div class="w-1.5 h-1.5 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
-													<span>{getTourBookingStatus(tour).label}</span>
+													<span class="text-xs">{getTourBookingStatus(tour).label}</span>
 													{#if getTourBookingStatus(tour).status === 'no-slots'}
 														<PlusCircle class="w-3 h-3 opacity-60" />
 													{/if}
 												</div>
 											</Tooltip>
-											
-											<!-- Action Button -->
+										</div>
+										
+										<!-- Quick Actions -->
+										<div class="flex items-center gap-1">
 											{#if getTourBookingStatus(tour).status === 'draft'}
 												<Tooltip text="Activate tour">
 													<button
 														onclick={() => handleTourStatusToggle(tour)}
 														disabled={statusUpdating === tour.id}
-														class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
 													>
 													{#if statusUpdating === tour.id}
-														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+														<div class="w-3.5 h-3.5 rounded-full border border-current border-t-transparent animate-spin"></div>
 													{:else}
-														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+														<CheckCircle class="w-3.5 h-3.5" style="color: var(--color-success-600);" />
 													{/if}
 													</button>
 												</Tooltip>
@@ -715,9 +722,9 @@
 												<Tooltip text="Add time slots">
 													<button
 														onclick={() => goto(`/tours/${tour.id}/schedule`)}
-														class="p-1 rounded-md hover:bg-gray-100 transition-colors"
+														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
 													>
-													<PlusCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
+													<PlusCircle class="w-3.5 h-3.5" style="color: var(--color-warning-600);" />
 													</button>
 												</Tooltip>
 											{:else}
@@ -725,22 +732,22 @@
 													<button
 														onclick={() => handleTourStatusToggle(tour)}
 														disabled={statusUpdating === tour.id}
-														class="p-1 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
 													>
 													{#if statusUpdating === tour.id}
-														<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
+														<div class="w-3.5 h-3.5 rounded-full border border-current border-t-transparent animate-spin"></div>
 													{:else}
-														<Edit class="w-3 h-3" style="color: var(--text-tertiary);" />
+														<Edit class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
 													{/if}
 													</button>
 												</Tooltip>
 											{/if}
 											<div class="relative action-menu-container">
 												<button
-													class="p-1 rounded-md hover:bg-gray-100 transition-colors"
+													class="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
 													onclick={() => toggleActionMenu(tour.id)}
 												>
-													<MoreVertical class="h-3 w-3" style="color: var(--text-tertiary);" />
+													<MoreVertical class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
 												</button>
 												{#if actionMenuOpen === tour.id}
 													<div 
@@ -769,13 +776,17 @@
 											</div>
 										</div>
 									</div>
-									{#if tour.location}
-										<p class="text-sm flex items-center gap-1 truncate" style="color: var(--text-secondary);">
-											<MapPin class="h-3 w-3 flex-shrink-0" />
-											{tour.location}
-										</p>
-									{/if}
-									<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+									
+									<!-- Location & Price Row -->
+									<div class="space-y-1">
+										{#if tour.location}
+											<p class="text-sm flex items-center gap-1" style="color: var(--text-secondary);">
+												<MapPin class="h-3 w-3 flex-shrink-0" />
+												<span class="truncate">{tour.location}</span>
+											</p>
+										{/if}
+										<p class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+									</div>
 								</div>
 							</div>
 
