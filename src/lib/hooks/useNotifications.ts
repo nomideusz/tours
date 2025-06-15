@@ -13,7 +13,7 @@ export function useNotifications() {
   let lastHeartbeat = Date.now();
   let isConnecting = false;
   
-  const maxReconnectAttempts = 10;
+  const maxReconnectAttempts = 5; // Reduced from 10 to prevent spam
   const heartbeatTimeout = 60000; // 60 seconds
   const healthCheckInterval_ms = 15000; // 15 seconds
   const pollingInterval_ms = 30000; // 30 seconds fallback polling
@@ -57,8 +57,8 @@ export function useNotifications() {
     try {
       console.log('🔗 Establishing SSE connection for notifications...');
       
-      // Use absolute URL to bypass service worker issues
-      const sseUrl = 'https://zaur.app/api/notifications/sse';
+      // Use relative URL for current environment (works in both dev and production)
+      const sseUrl = '/api/notifications/sse';
       eventSource = new EventSource(sseUrl, {
         withCredentials: true
       });
@@ -119,32 +119,25 @@ export function useNotifications() {
       };
 
       eventSource.onerror = (error) => {
-        console.log('❌ SSE connection error:', error);
-        console.log('❌ SSE readyState:', eventSource?.readyState);
-        console.log('❌ SSE url:', eventSource?.url);
-        console.log('❌ Error event details:', {
-          type: error.type,
-          target: error.target,
-          currentTarget: error.currentTarget,
-          eventPhase: error.eventPhase,
-          bubbles: error.bubbles,
-          cancelable: error.cancelable,
-          defaultPrevented: error.defaultPrevented,
-          composed: error.composed,
-          isTrusted: error.isTrusted,
-          timeStamp: error.timeStamp
-        });
+        // Reduce noise in development - only log first few failures
+        if (reconnectAttempts < 3) {
+          console.log('❌ SSE connection error:', error);
+          console.log('❌ SSE readyState:', eventSource?.readyState);
+          console.log('❌ SSE url:', eventSource?.url);
+        }
         
         isConnecting = false;
         notificationActions.setConnected(false);
         
         if (eventSource?.readyState === EventSource.CLOSED) {
-          console.log('❌ EventSource closed unexpectedly');
+          if (reconnectAttempts < 3) {
+            console.log('❌ EventSource closed unexpectedly');
+          }
           
           // Start polling as fallback
           startPolling();
           
-          // Attempt to reconnect
+          // Attempt to reconnect with backoff
           attemptReconnect();
         }
       };

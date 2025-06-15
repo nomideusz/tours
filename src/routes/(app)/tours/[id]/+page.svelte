@@ -21,7 +21,11 @@
 		getSlotAvailabilityText,
 		getSlotStatusColor as getSlotStatusColorFromSlot,
 		getSlotStatusText,
-		getUpcomingSlots
+		getUpcomingSlots,
+		formatSlotTimeRange,
+		getScheduleSlotStatusColor,
+		getScheduleSlotStatusText,
+		getScheduleSlotStatusIcon
 	} from '$lib/utils/time-slot-client.js';
 	import { browser } from '$app/environment';
 	
@@ -54,6 +58,7 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import PlusCircle from 'lucide-svelte/icons/plus-circle';
+	import UserCheck from 'lucide-svelte/icons/user-check';
 
 	// Get data from load function
 	let { data } = $props();
@@ -67,20 +72,50 @@
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	}));
 
+	// Also fetch schedule data for proper slot information (like the schedule page does)
+	let scheduleQuery = $derived(createQuery({
+		queryKey: queryKeys.tourSchedule(tourId),
+		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
+		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true, // Refetch when user returns to tab
+	}));
+
 	let tour = $derived($tourQuery.data?.tour || null);
 	let tourStats = $derived($tourQuery.data?.tourStats || {});
-	let upcomingSlots = $derived($tourQuery.data?.upcomingSlots || []);
+	// Use schedule data for richer slot information
+	let allTimeSlots = $derived($scheduleQuery.data?.timeSlots || []);
+	let upcomingSlots = $derived(allTimeSlots.filter((slot: any) => slot.isUpcoming));
 	let recentBookings = $derived($tourQuery.data?.recentBookings || []);
-	let isLoading = $derived($tourQuery.isLoading);
-	let isError = $derived($tourQuery.isError);
+	let isLoading = $derived($tourQuery.isLoading || $scheduleQuery.isLoading);
+	let isError = $derived($tourQuery.isError || $scheduleQuery.isError);
 	
 	// State
 	let copiedQRCode = $state(false);
 	let copiedEmbedCode = $state(false);
 	let statusUpdating = $state(false);
+	let mobileTab = $state('qr'); // 'qr' or 'widget'
 
 	// Calculate conversion rate using shared utility
 	let conversionRate = $derived(calculateConversionRate(tourStats?.qrScans || 0, tourStats?.qrConversions || 0));
+
+	// Calculate slot occupancy percentage (same as schedule page)
+	function getOccupancyPercentage(slot: any): number {
+		if (!slot.capacity || slot.capacity === 0) return 0;
+		return Math.round((slot.totalParticipants / slot.capacity) * 100);
+	}
+
+	function getOccupancyColor(percentage: number): string {
+		if (percentage >= 90) return 'text-red-600 font-semibold';
+		if (percentage >= 70) return 'text-orange-600 font-medium';
+		if (percentage >= 50) return 'text-blue-600';
+		return 'text-green-600';
+	}
+
+	function quickCheckIn(slotId: string) {
+		// Navigate to check-in scanner with pre-selected slot
+		goto(`/checkin-scanner?slot=${slotId}`);
+	}
 
 	function getQRImageUrl(): string {
 		if (!tour.qrCode) return '';
@@ -592,110 +627,225 @@
 
 	<!-- Mobile-First Content Layout -->
 	
-	<!-- 1. QR Code Section - Most Important for Tour Guides -->
+	<!-- 1. Booking & Sharing Section - Most Important for Tour Guides -->
 	{#if tour.qrCode}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">QR Code & Booking Link</h3>
+					<h3 class="font-semibold" style="color: var(--text-primary);">Booking & Sharing</h3>
 					<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
 						{tourStats?.qrScans || 0} scans • {getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)} conversion
 					</span>
 				</div>
 			</div>
 			<div class="p-4">
-				<!-- Mobile: Horizontal QR Layout -->
-				<div class="sm:hidden flex items-center gap-4">
-					<div class="flex-shrink-0">
-						<Tooltip text="Tap to copy booking URL" position="right">
-							<button
-								onclick={() => copyQRUrl()}
-								class="relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
-								style="border: 1px solid var(--border-primary);"
-							>
-								{#if copiedQRCode}
-									<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-										<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
-									</div>
-								{:else if browser}
-									<img 
-										src={getQRImageUrl()} 
-										alt="QR Code for {tour.name}"
-										class="w-full h-full object-cover"
-										loading="lazy"
-									/>
-								{:else}
-									<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
-										<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
-									</div>
-								{/if}
-							</button>
-						</Tooltip>
+				<!-- Mobile Layout: Tabbed Interface -->
+				<div class="sm:hidden">
+					<div class="flex mb-4 rounded-lg p-1" style="background: var(--bg-secondary);">
+						<button 
+							onclick={() => mobileTab = 'qr'}
+							class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200"
+							class:active={mobileTab === 'qr'}
+							style="color: {mobileTab === 'qr' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {mobileTab === 'qr' ? 'var(--bg-primary)' : 'transparent'};"
+						>
+							QR Code
+						</button>
+						<button 
+							onclick={() => mobileTab = 'widget'}
+							class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200"
+							class:active={mobileTab === 'widget'}
+							style="color: {mobileTab === 'widget' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {mobileTab === 'widget' ? 'var(--bg-primary)' : 'transparent'};"
+						>
+							Website Widget
+						</button>
 					</div>
-					<div class="flex-1 min-w-0">
-						<p class="text-sm font-medium mb-2 break-all" style="color: var(--text-primary);">{getBookingUrl()}</p>
-						<div class="flex gap-2">
-							<button onclick={() => copyQRUrl()} class="flex-1 button-primary button--small button--gap justify-center" class:opacity-50={copiedQRCode}>
-								{#if copiedQRCode}
-									<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
-									Copied!
-								{:else}
-									<Copy class="h-3 w-3" />
-									Copy Link
-								{/if}
-							</button>
-							<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
-								<Share2 class="h-3 w-3" />
-							</button>
-							<a
-								href="/book/{tour.qrCode}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class="button-secondary button--small button--icon"
-							>
-								<ExternalLink class="h-3 w-3" />
-							</a>
+					
+					{#if mobileTab === 'qr'}
+						<!-- QR Code Tab -->
+						<div class="flex items-center gap-4">
+							<div class="flex-shrink-0">
+								<Tooltip text="Tap to copy booking URL" position="right">
+									<button
+										onclick={() => copyQRUrl()}
+										class="relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
+										style="border: 1px solid var(--border-primary);"
+									>
+										{#if copiedQRCode}
+											<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+												<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
+											</div>
+										{:else if browser}
+											<img 
+												src={getQRImageUrl()} 
+												alt="QR Code for {tour.name}"
+												class="w-full h-full object-cover"
+												loading="lazy"
+											/>
+										{:else}
+											<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
+												<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
+											</div>
+										{/if}
+									</button>
+								</Tooltip>
+							</div>
+							<div class="flex-1 min-w-0">
+								<p class="text-sm font-medium mb-2 break-all" style="color: var(--text-primary);">{getBookingUrl()}</p>
+								<div class="flex gap-2">
+									<button onclick={() => copyQRUrl()} class="flex-1 button-primary button--small button--gap justify-center" class:opacity-50={copiedQRCode}>
+										{#if copiedQRCode}
+											<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+											Copied!
+										{:else}
+											<Copy class="h-3 w-3" />
+											Copy Link
+										{/if}
+									</button>
+									<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
+										<Share2 class="h-3 w-3" />
+									</button>
+									<a
+										href="/book/{tour.qrCode}"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="button-secondary button--small button--icon"
+									>
+										<ExternalLink class="h-3 w-3" />
+									</a>
+								</div>
+							</div>
 						</div>
-					</div>
-				</div>
-
-				<!-- Desktop: Centered QR Layout -->
-				<div class="hidden sm:block text-center">
-					<div class="inline-block p-4 rounded-xl" style="background: var(--bg-secondary);">
-						<img 
-							src={getQRImageUrl()} 
-							alt="QR Code for {tour.name}"
-							class="w-40 h-40 mx-auto"
-							loading="lazy"
-						/>
-					</div>
-					<div class="mt-4">
-						<p class="text-sm font-medium mb-3 break-all text-center" style="color: var(--text-primary);">{getBookingUrl()}</p>
-						<div class="flex justify-center gap-2">
-							<Tooltip text="Copy booking URL" position="top">
-								<button onclick={() => copyQRUrl()} class="button-secondary button--small button--icon" class:opacity-50={copiedQRCode}>
-									{#if copiedQRCode}
-										<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
+					{:else}
+						<!-- Widget Tab -->
+						<div class="space-y-4">
+							<div>
+								<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Website Booking Widget</h4>
+								<p class="text-xs mb-3" style="color: var(--text-secondary);">
+									Embed this widget on your website for direct bookings
+								</p>
+								<iframe
+									src="/embed/book/{tour.qrCode}?theme=auto"
+									width="100%"
+									height="320"
+									frameborder="0"
+									title="Booking widget for {tour.name}"
+									class="bg-white rounded-lg"
+									style="border: none;"
+								></iframe>
+							</div>
+							<div>
+								<button 
+									onclick={() => copyEmbedCode()}
+									class="w-full button-secondary button--small button--gap justify-center"
+									class:opacity-50={copiedEmbedCode}
+								>
+									{#if copiedEmbedCode}
+										<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+										Embed Code Copied!
 									{:else}
-										<Copy class="h-4 w-4" />
+										<Copy class="h-3 w-3" />
+										Copy Embed Code
 									{/if}
 								</button>
-							</Tooltip>
-							<Tooltip text="Share booking link" position="top">
-								<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
-									<Share2 class="h-4 w-4" />
+							</div>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Desktop Layout: Optimized Equal Height -->
+				<div class="hidden sm:block">
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+						<!-- QR Code Section -->
+						<div class="flex flex-col">
+							<h4 class="text-sm font-medium mb-4" style="color: var(--text-primary);">QR Code & Direct Link</h4>
+							<div class="flex-1 flex flex-col justify-center p-6 rounded-xl" style="background: var(--bg-secondary);">
+								<div class="text-center">
+									<div class="inline-block p-3 rounded-lg mb-4" style="background: var(--bg-primary);">
+										<img 
+											src={getQRImageUrl()} 
+											alt="QR Code for {tour.name}"
+											class="w-28 h-28 mx-auto"
+											loading="lazy"
+										/>
+									</div>
+									<p class="text-xs font-medium break-all px-3 py-2 rounded-md mb-4" style="color: var(--text-primary); background: var(--bg-primary);">{getBookingUrl()}</p>
+									<div class="flex justify-center gap-2">
+										<Tooltip text="Copy booking URL" position="top">
+											<button onclick={() => copyQRUrl()} class="button-secondary button--small button--icon" class:opacity-50={copiedQRCode}>
+												{#if copiedQRCode}
+													<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
+												{:else}
+													<Copy class="h-4 w-4" />
+												{/if}
+											</button>
+										</Tooltip>
+										<Tooltip text="Share booking link" position="top">
+											<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
+												<Share2 class="h-4 w-4" />
+											</button>
+										</Tooltip>
+										<Tooltip text="Download QR code" position="top">
+											<button onclick={() => downloadQR()} class="button-secondary button--small button--icon">
+												<Download class="h-4 w-4" />
+											</button>
+										</Tooltip>
+										<Tooltip text="Preview booking page" position="top">
+											<a href="/book/{tour.qrCode}" target="_blank" rel="noopener noreferrer" class="button-secondary button--small button--icon">
+												<ExternalLink class="h-4 w-4" />
+											</a>
+										</Tooltip>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Website Widget Section -->
+						<div class="flex flex-col">
+							<h4 class="text-sm font-medium mb-4" style="color: var(--text-primary);">Website Booking Widget</h4>
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">
+								Add this widget to your website for seamless direct bookings
+							</p>
+							
+							<!-- Widget Preview -->
+							<div class="flex-1 mb-4">
+								<iframe
+									src="/embed/book/{tour.qrCode}?theme=auto"
+									width="100%"
+									height="100%"
+									frameborder="0"
+									title="Booking widget for {tour.name}"
+									class="bg-white rounded-lg"
+									style="border: none; min-height: 280px;"
+								></iframe>
+							</div>
+							
+							<!-- Embed Code Action -->
+							<div class="space-y-3">
+								<button 
+									onclick={() => copyEmbedCode()}
+									class="w-full button-secondary button--small button--gap justify-center"
+									class:opacity-50={copiedEmbedCode}
+								>
+									{#if copiedEmbedCode}
+										<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+										Embed Code Copied!
+									{:else}
+										<Copy class="h-3 w-3" />
+										Copy HTML Embed Code
+									{/if}
 								</button>
-							</Tooltip>
-							<Tooltip text="Download QR code" position="top">
-								<button onclick={() => downloadQR()} class="button-secondary button--small button--icon">
-									<Download class="h-4 w-4" />
-								</button>
-							</Tooltip>
-							<Tooltip text="Preview booking page" position="top">
-								<a href="/book/{tour.qrCode}" target="_blank" rel="noopener noreferrer" class="button-secondary button--small button--icon">
-									<ExternalLink class="h-4 w-4" />
-								</a>
-							</Tooltip>
+								
+								<!-- Quick Tips -->
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<p class="text-xs font-medium mb-1" style="color: var(--text-primary);">💡 Integration Tips:</p>
+									<ul class="text-xs space-y-0.5" style="color: var(--text-secondary);">
+										<li>• Responsive design adapts to any website</li>
+										<li>• Automatic theme detection (dark/light)</li>
+										<li>• Direct bookings without redirects</li>
+										<li>• All bookings appear in your dashboard</li>
+									</ul>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -836,23 +986,143 @@
 				{#if upcomingSlots.length > 0}
 					<div class="space-y-3">
 						{#each upcomingSlots.slice(0, 3) as slot}
-							<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<div class="flex-1 min-w-0">
-									<p class="text-sm font-medium" style="color: var(--text-primary);">
-										{formatSlotDateTime(slot.startTime)}
-									</p>
-									<p class="text-xs mt-1" style="color: var(--text-secondary);">
-										{getSlotAvailabilityText(slot)}
-									</p>
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+								<!-- Mobile Layout -->
+								<div class="sm:hidden">
+									<div class="flex items-center justify-between mb-2">
+										<div class="flex-1 min-w-0">
+											<h4 class="text-sm font-medium" style="color: var(--text-primary);">
+												{formatDate(slot.startTime)}
+											</h4>
+											<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
+												{formatSlotTimeRange(slot.startTime, slot.endTime)}
+											</p>
+										</div>
+										<span class="ml-2 px-2 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
+											{getScheduleSlotStatusText(slot)}
+										</span>
+									</div>
+									
+									<div class="space-y-2">
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
+												<span class="flex items-center gap-1">
+													<Users class="h-3 w-3" />
+													{slot.totalParticipants}/{slot.capacity}
+												</span>
+												<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
+													{getOccupancyPercentage(slot)}%
+												</span>
+											</div>
+											<div class="flex gap-1">
+												{#if slot.isUpcoming}
+													<Tooltip text="Check-in">
+														<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon">
+															<UserCheck class="h-3 w-3" />
+														</button>
+													</Tooltip>
+												{/if}
+												<button onclick={() => goto(`/tours/${tour.id}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+													<Edit class="h-3 w-3" />
+												</button>
+											</div>
+										</div>
+										
+										{#if slot.totalBookings > 0}
+											<div class="text-xs p-2 rounded" style="background: var(--bg-tertiary);">
+												<div class="flex items-center justify-between mb-1">
+													<span style="color: var(--text-secondary);">Bookings:</span>
+													<span style="color: var(--text-primary);">{slot.totalBookings}</span>
+												</div>
+												<div class="flex gap-2">
+													<span class="text-green-600">{slot.confirmedBookings} confirmed</span>
+													{#if slot.pendingBookings > 0}
+														<span class="text-orange-600">{slot.pendingBookings} pending</span>
+													{/if}
+												</div>
+											</div>
+										{/if}
+									</div>
 								</div>
-								<div class="flex items-center gap-2">
-									<div 
-										class="w-2 h-2 rounded-full"
-										style="background-color: {getSlotStatusColorFromSlot(slot)};"
-									></div>
-									<span class="text-xs" style="color: var(--text-secondary);">
-										{getSlotStatusText(slot)}
-									</span>
+
+								<!-- Desktop Layout -->
+								<div class="hidden sm:block">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-6">
+											<div class="min-w-[140px]">
+												<h4 class="text-sm font-medium" style="color: var(--text-primary);">
+													{formatDate(slot.startTime)}
+												</h4>
+												<p class="text-xs mt-1" style="color: var(--text-secondary);">
+													{formatSlotTimeRange(slot.startTime, slot.endTime)}
+												</p>
+											</div>
+											
+											<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
+												<Tooltip text="Occupancy">
+													<div class="flex items-center gap-1">
+														<Users class="h-4 w-4" />
+														<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
+															{slot.totalParticipants}/{slot.capacity} ({getOccupancyPercentage(slot)}%)
+														</span>
+													</div>
+												</Tooltip>
+												
+												{#if slot.totalBookings > 0}
+													<div class="flex items-center gap-3">
+														<Tooltip text="Total bookings">
+															<div class="flex items-center gap-1">
+																<BarChart3 class="h-4 w-4" />
+																<span>{slot.totalBookings}</span>
+															</div>
+														</Tooltip>
+														<Tooltip text="Confirmed bookings">
+															<div class="flex items-center gap-1">
+																<CheckCircle class="h-4 w-4 text-green-600" />
+																<span>{slot.confirmedBookings}</span>
+															</div>
+														</Tooltip>
+														{#if slot.pendingBookings > 0}
+															<Tooltip text="Pending bookings">
+																<div class="flex items-center gap-1">
+																	<Clock class="h-4 w-4 text-orange-600" />
+																	<span>{slot.pendingBookings}</span>
+																</div>
+															</Tooltip>
+														{/if}
+													</div>
+												{:else}
+													<span class="text-xs" style="color: var(--text-tertiary);">No bookings</span>
+												{/if}
+											</div>
+										</div>
+										
+										<div class="flex items-center gap-3">
+											<span class="px-3 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
+												{getScheduleSlotStatusText(slot)}
+											</span>
+											
+											<div class="flex gap-1">
+												{#if slot.isUpcoming}
+													<Tooltip text="Quick check-in">
+														<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon">
+															<UserCheck class="h-4 w-4" />
+														</button>
+													</Tooltip>
+												{/if}
+												<Tooltip text="View bookings">
+													<button onclick={() => goto(`/tours/${tour.id}/bookings?slot=${slot.id}`)} class="button-secondary button--small button--icon">
+														<Users class="h-4 w-4" />
+													</button>
+												</Tooltip>
+												<Tooltip text="Edit time slot">
+													<button onclick={() => goto(`/tours/${tour.id}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+														<Edit class="h-4 w-4" />
+													</button>
+												</Tooltip>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						{/each}
@@ -946,75 +1216,9 @@
 		</div>
 	</div>
 
-	<!-- 6. Website Embed Widget -->
-	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-4 border-b" style="border-color: var(--border-primary);">
-			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Website Embed Widget</h3>
-				<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-					Easy Integration
-				</span>
-			</div>
-		</div>
-		<div class="p-4">
-			<p class="text-sm mb-4" style="color: var(--text-secondary);">
-				Add this booking widget to your website to allow customers to book directly without leaving your site.
-			</p>
-			
-			<!-- Widget Preview -->
-			<div class="mb-4">
-				<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Preview:</h4>
-				<div class="border rounded-lg overflow-hidden" style="border-color: var(--border-primary);">
-					<iframe
-						src="/embed/book/{tour.qrCode}?theme=auto"
-						width="100%"
-						height="220"
-						frameborder="0"
-						title="Booking widget for {tour.name}"
-						class="bg-white"
-					></iframe>
-				</div>
-			</div>
-			
-			<!-- Embed Code -->
-			<div>
-				<div class="flex items-center justify-between mb-2">
-					<h4 class="text-sm font-medium" style="color: var(--text-primary);">Embed Code:</h4>
-					<button 
-						onclick={() => copyEmbedCode()}
-						class="button-secondary button--small button--gap"
-						class:opacity-50={copiedEmbedCode}
-					>
-						{#if copiedEmbedCode}
-							<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
-							Copied!
-						{:else}
-							<Copy class="h-3 w-3" />
-							Copy Code
-						{/if}
-					</button>
-				</div>
-				<div class="relative">
-					<pre class="text-xs p-3 rounded-lg overflow-x-auto" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary);">{getEmbedCode()}</pre>
-				</div>
-			</div>
-			
-			<!-- Integration Tips -->
-			<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-				<h5 class="text-sm font-medium mb-2" style="color: var(--text-primary);">💡 Integration Tips:</h5>
-				<ul class="text-xs space-y-1" style="color: var(--text-secondary);">
-					<li>• Copy the code above and paste it into your website's HTML</li>
-					<li>• The widget is responsive and will adapt to your site's design</li>
-					<li>• Supports automatic dark/light mode based on user preferences</li>
-					<li>• Customers can book without leaving your website</li>
-					<li>• All bookings will appear in your dashboard as usual</li>
-					<li>• Change <code>?theme=auto</code> to <code>?theme=dark</code> or <code>?theme=light</code> for fixed themes</li>
-				</ul>
-			</div>
-		</div>
-	</div>
 
-	<!-- 7. Tour Gallery - Visual Content (Lowest Priority) -->
+
+	<!-- 6. Tour Gallery - Visual Content (Lowest Priority) -->
 	{#if tour.images && tour.images.length > 0}
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">

@@ -69,8 +69,10 @@ export function formatSlotTimeRange(startTime: string | undefined, endTime: stri
  * Get availability text for a time slot
  */
 export function getSlotAvailabilityText(slot: TimeSlot): string {
-	const available = slot.availableSpots - slot.bookedSpots;
-	return `${slot.bookedSpots} booked, ${available} available`;
+	const bookedSpots = slot.bookedSpots || 0;
+	const availableSpots = slot.availableSpots || 0;
+	const available = Math.max(0, availableSpots - bookedSpots);
+	return `${bookedSpots} booked, ${available} available`;
 }
 
 /**
