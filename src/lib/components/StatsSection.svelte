@@ -1,3 +1,11 @@
+<!--
+  TODO: For production launch, replace mock stats with real data from API:
+  - Connect to /api/public-stats endpoint
+  - Show actual user count, bookings, etc.
+  - Only show when numbers are meaningful (>10 users, >50 bookings)
+  - Consider showing growth metrics instead of absolute numbers
+-->
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 

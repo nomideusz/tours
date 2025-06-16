@@ -53,9 +53,6 @@
 							>How it Works</a
 						>
 					</li>
-					<li>
-						<a href="/demo" class="text-gray-400 transition-colors hover:text-white">Demo</a>
-					</li>
 				</ul>
 			</div>
 
@@ -66,15 +63,7 @@
 						<a href="/about" class="text-gray-400 transition-colors hover:text-white">About Us</a>
 					</li>
 					<li>
-						<a href="/blog" class="text-gray-400 transition-colors hover:text-white">Blog</a>
-					</li>
-					<li>
-						<a href="/contact" class="text-gray-400 transition-colors hover:text-white">Contact</a
-						>
-					</li>
-					<li>
-						<a href="/careers" class="text-gray-400 transition-colors hover:text-white">Careers</a
-						>
+						<a href="/contact" class="text-gray-400 transition-colors hover:text-white">Contact</a>
 					</li>
 				</ul>
 			</div>
@@ -83,19 +72,13 @@
 				<h3 class="mb-4 font-semibold">Support</h3>
 				<ul class="space-y-2">
 					<li>
-						<a href="/help" class="text-gray-400 transition-colors hover:text-white"
+						<a href="/contact" class="text-gray-400 transition-colors hover:text-white"
 							>Help Center</a
 						>
 					</li>
 					<li>
-						<a href="/guides" class="text-gray-400 transition-colors hover:text-white">Guides</a>
-					</li>
-					<li>
-						<a href="/api" class="text-gray-400 transition-colors hover:text-white">API Docs</a>
-					</li>
-					<li>
-						<a href="/status" class="text-gray-400 transition-colors hover:text-gray-900"
-							>System Status</a
+						<a href="/auth/register" class="text-gray-400 transition-colors hover:text-white"
+							>Early Access</a
 						>
 					</li>
 				</ul>

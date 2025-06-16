@@ -143,11 +143,6 @@
 				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
-				<a
-					href="/#testimonials"
-					onclick={(e) => handleNavClick(e, '/#testimonials')}
-					class="font-medium text-gray-600 transition-colors hover:text-gray-900">Testimonials</a
-				>
 			</nav>
 
 			<!-- Right side actions -->
@@ -191,13 +186,13 @@
 							href="/auth/register"
 							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
 						>
-							Start Free Trial
+							Start for Free
 						</a>
 					</div>
 				{/if}
 
-				<!-- Language switcher -->
-				<div class="hidden items-center gap-1 border-l border-gray-200 pl-4 md:flex">
+				<!-- Language switcher - Hidden for now -->
+				<!-- <div class="hidden items-center gap-1 border-l border-gray-200 pl-4 md:flex">
 					<button
 						class="rounded px-2 py-1 text-sm font-medium transition-colors {$language === 'en'
 							? 'bg-gray-100 text-gray-900'
@@ -214,7 +209,7 @@
 					>
 						PL
 					</button>
-				</div>
+				</div> -->
 
 				<!-- Mobile menu button -->
 				<button
@@ -271,9 +266,6 @@
 				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
-				<a href="/#testimonials" onclick={(e) => handleNavClick(e, '/#testimonials')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Testimonials</a
-				>
 			</div>
 
 			<!-- Auth section -->
@@ -313,14 +305,14 @@
 							onclick={handleMobileLinkClick}
 							class="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
 						>
-							Start Free Trial
+							Start for Free
 						</a>
 					</div>
 				{/if}
 			</div>
 
-			<!-- Mobile language switcher -->
-			<div class="flex flex-row gap-2 border-t border-gray-200 pt-4">
+			<!-- Mobile language switcher - Hidden for now -->
+			<!-- <div class="flex flex-row gap-2 border-t border-gray-200 pt-4">
 				<button
 					class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'en'
 						? 'bg-gray-100 text-gray-900'
@@ -337,7 +329,7 @@
 				>
 					Polski
 				</button>
-			</div>
+			</div> -->
 		</div>
 	</div>
 {/if}

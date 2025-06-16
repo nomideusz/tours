@@ -125,17 +125,13 @@
   
 	  <!-- Additional trust element -->
 	  <div class="mt-16 text-center">
-		<p class="text-gray-600 mb-6">Trusted by leading tour operators in</p>
+		<p class="text-gray-600 mb-6">Perfect for tour guides in</p>
 		<div class="flex flex-wrap justify-center items-center gap-8">
-		  <span class="text-gray-400 font-medium">Barcelona</span>
+		  <span class="text-gray-400 font-medium">Any European City</span>
 		  <span class="text-gray-400">•</span>
-		  <span class="text-gray-400 font-medium">Rome</span>
+		  <span class="text-gray-400 font-medium">All Tour Types</span>
 		  <span class="text-gray-400">•</span>
-		  <span class="text-gray-400 font-medium">Paris</span>
-		  <span class="text-gray-400">•</span>
-		  <span class="text-gray-400 font-medium">London</span>
-		  <span class="text-gray-400">•</span>
-		  <span class="text-gray-400 font-medium">Berlin</span>
+		  <span class="text-gray-400 font-medium">Any Group Size</span>
 		</div>
 	  </div>
 	</div>

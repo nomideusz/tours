@@ -117,7 +117,7 @@
 				</ul>
 				
 				<button class="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors cursor-pointer">
-					Start Free Trial
+												Start for Free
 				</button>
 			</div>
 			

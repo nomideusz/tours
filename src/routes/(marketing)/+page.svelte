@@ -1,9 +1,9 @@
 <script lang="ts">
 	import HeroSection from '$lib/components/HeroSection.svelte';
-	import StatsSection from '$lib/components/StatsSection.svelte';
+	// import StatsSection from '$lib/components/StatsSection.svelte'; // HIDDEN: Contains mock data (127+ guides, €92k revenue)
 	import HowItWorksSection from '$lib/components/HowItWorksSection.svelte';
 	import FeaturesSection from '$lib/components/FeaturesSection.svelte';
-	import TestimonialsSection from '$lib/components/TestimonialsSection.svelte';
+	// import TestimonialsSection from '$lib/components/TestimonialsSection.svelte'; // HIDDEN: Contains fake testimonials
 	import PricingSection from '$lib/components/PricingSection.svelte';
 	import FinalCtaSection from '$lib/components/FinalCtaSection.svelte';
 </script>
@@ -23,7 +23,7 @@
 			"@type": "Offer",
 			"price": "0",
 			"priceCurrency": "EUR",
-			"description": "Free to start, pay per booking"
+			"description": "Free to start, monthly subscription"
 		},
 		"featureList": [
 			"QR Code Generation",
@@ -58,13 +58,15 @@
 
 <HeroSection />
 
-<StatsSection />
+<!-- HIDDEN FOR PUBLIC LAUNCH: Contains mock data -->
+<!-- <StatsSection /> -->
 
 <HowItWorksSection />
 
 <FeaturesSection />
 
-<TestimonialsSection />
+<!-- HIDDEN FOR PUBLIC LAUNCH: Contains fake testimonials -->
+<!-- <TestimonialsSection /> -->
 
 <PricingSection />
 

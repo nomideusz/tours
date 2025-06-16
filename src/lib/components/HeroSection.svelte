@@ -133,17 +133,9 @@
 		</div>
 		
 		<!-- Social proof - mobile optimized -->
-		<div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-2 text-xs sm:text-sm text-gray-600 px-4 sm:px-0">
-		  <div class="flex -space-x-2">
-			{#each Array(4) as _, i}
-			  <img 
-				src="https://i.pravatar.cc/32?img={i + 10}" 
-				alt="User" 
-				class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white bg-gray-200"
-			  />
-			{/each}
-		  </div>
-		  <span class="text-center sm:ml-3">Trusted by 500+ tour guides worldwide</span>
+		<div class="flex flex-col items-center justify-center gap-3 text-xs sm:text-sm text-gray-600 px-4 sm:px-0">
+		  <span class="text-center">🚀 Join the waitlist for early access</span>
+		  <span class="text-center text-gray-500">Be among the first tour guides to try Zaur</span>
 		</div>
 	  </div>
   
