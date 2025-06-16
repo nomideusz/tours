@@ -130,7 +130,13 @@
 					use:enhance={({ formData, cancel }) => {
 						isLoading = true;
 
-						return async ({ update }) => {
+						return async ({ result, update }) => {
+							// Let SvelteKit handle redirects automatically
+							if (result.type === 'redirect') {
+								// Don't call update() for redirects, let SvelteKit handle it
+								return;
+							}
+							
 							await update({ reset: false });
 							isLoading = false;
 						};

@@ -8,6 +8,7 @@
 	import type { Tour } from '$lib/types.js';
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
+	import { validateTourForm } from '$lib/validation.js';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
@@ -39,6 +40,7 @@
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let capacityError = $state((form as any)?.capacityError || null);
+	let triggerValidation = $state(false);
 	let showCancelModal = $state(false);
 
 	// Booking constraints - fetch separately
@@ -65,11 +67,81 @@
 	let existingImages: string[] = $state([]);
 	let imagesToRemove: string[] = $state([]);
 
+	// Image validation constants (matching server-side)
+	const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+	const MAX_IMAGES = 10;
+	const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+	let imageUploadErrors: string[] = $state([]);
+
+	function validateImageFile(file: File): { isValid: boolean; error?: string } {
+		if (!file || !(file instanceof File)) {
+			return { isValid: false, error: 'Invalid file' };
+		}
+
+		if (file.size > MAX_FILE_SIZE) {
+			return { isValid: false, error: `File too large (max 5MB): ${file.name}` };
+		}
+
+		if (!ALLOWED_TYPES.includes(file.type)) {
+			return { isValid: false, error: `Invalid file type: ${file.name}. Allowed: JPEG, PNG, WebP` };
+		}
+
+		return { isValid: true };
+	}
+
 	function handleImageUpload(event: Event) {
 		const target = event.target as HTMLInputElement;
-		if (target.files) {
-			const newFiles = Array.from(target.files);
-			uploadedImages = [...uploadedImages, ...newFiles];
+		if (!target.files) return;
+
+		const newFiles = Array.from(target.files);
+		const validFiles: File[] = [];
+		const errors: string[] = [];
+
+		// Calculate current total (existing + new uploaded images)
+		const currentTotal = existingImages.length + uploadedImages.length;
+		
+		// Check total count limit
+		if (currentTotal + newFiles.length > MAX_IMAGES) {
+			errors.push(`Too many images. Maximum ${MAX_IMAGES} images allowed. You have ${currentTotal} and tried to add ${newFiles.length} more.`);
+		}
+
+		// Validate each file
+		for (const file of newFiles) {
+			const validation = validateImageFile(file);
+			if (validation.isValid) {
+				// Check for duplicates by name (both in existing and uploaded)
+				const isDuplicateInUploaded = uploadedImages.some(existing => existing.name === file.name);
+				const isDuplicateInExisting = existingImages.some(existing => existing.includes(file.name.split('.')[0]));
+				
+				if (!isDuplicateInUploaded && !isDuplicateInExisting) {
+					validFiles.push(file);
+				} else {
+					errors.push(`Duplicate file: ${file.name}`);
+				}
+			} else {
+				errors.push(validation.error!);
+			}
+		}
+
+		// Only add files if we won't exceed the limit
+		const remainingSlots = MAX_IMAGES - currentTotal;
+		const finalFiles = validFiles.slice(0, remainingSlots);
+		if (finalFiles.length < validFiles.length) {
+			errors.push(`Some files were skipped to stay within the ${MAX_IMAGES} image limit.`);
+		}
+
+		// Update state
+		uploadedImages = [...uploadedImages, ...finalFiles];
+		imageUploadErrors = errors;
+
+		// Clear the input so the same files can be selected again if needed
+		target.value = '';
+
+		// Auto-clear errors after 5 seconds
+		if (errors.length > 0) {
+			setTimeout(() => {
+				imageUploadErrors = [];
+			}, 5000);
 		}
 	}
 
@@ -386,11 +458,39 @@
 			</div>
 			
 			<div class="p-6 sm:p-8">
-				<form method="POST" enctype="multipart/form-data" use:enhance={() => {
+				<!-- Image Upload Errors -->
+				{#if imageUploadErrors.length > 0}
+					<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+						<div class="flex gap-3">
+							<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+							<div class="flex-1">
+								<p class="font-medium" style="color: var(--color-error-900);">Image Upload Issues</p>
+								<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
+									{#each imageUploadErrors as error}
+										<li>• {error}</li>
+									{/each}
+								</ul>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<form method="POST" enctype="multipart/form-data" novalidate onsubmit={(e) => {
+					// Force immediate validation by directly calling validateTourForm
+					const validation = validateTourForm(formData);
+					if (!validation.isValid) {
+						e.preventDefault();
+						// Trigger validation in TourForm component
+						triggerValidation = true;
+						return false;
+					}
+					
 					isSubmitting = true;
-					return async ({ result }) => {
-						isSubmitting = false;
-						if (result.type === 'redirect') {
+				}} use:enhance={() => {
+									return async ({ result }) => {
+					isSubmitting = false;
+					triggerValidation = false;
+					if (result.type === 'redirect') {
 							// Invalidate all tour-related queries to ensure fresh data
 							queryClient.invalidateQueries({ queryKey: ['userTours'] });
 							queryClient.invalidateQueries({ queryKey: ['toursStats'] });
@@ -421,7 +521,9 @@
 						{existingImages}
 						onExistingImageRemove={removeExistingImage}
 						{getExistingImageUrl}
-						serverErrors={validationErrors}
+						{imageUploadErrors}
+						serverErrors={[]}
+						{triggerValidation}
 						bookingConstraints={bookingConstraints}
 					/>
 				</form>

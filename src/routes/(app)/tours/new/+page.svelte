@@ -9,6 +9,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
+	import { validateTourForm } from '$lib/validation.js';
 	
 	// TanStack Query
 	import { useQueryClient } from '@tanstack/svelte-query';
@@ -21,6 +22,7 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Clock from 'lucide-svelte/icons/clock';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -34,7 +36,7 @@
 	let showCancelModal = $state(false);
 
 	// Check if we should auto-activate based on URL parameter
-	let shouldActivate = $derived(browser && new URLSearchParams(window.location.search).get('activate') === 'true');
+	let shouldActivate = browser && new URLSearchParams(window.location.search).get('activate') === 'true';
 
 	// Form data
 	let formData = $state({
@@ -53,12 +55,75 @@
 
 	// Image upload state
 	let uploadedImages: File[] = $state([]);
+	let imageUploadErrors: string[] = $state([]);
+
+	// Image validation constants (matching server-side)
+	const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+	const MAX_IMAGES = 10;
+	const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+	function validateImageFile(file: File): { isValid: boolean; error?: string } {
+		if (!file || !(file instanceof File)) {
+			return { isValid: false, error: 'Invalid file' };
+		}
+
+		if (file.size > MAX_FILE_SIZE) {
+			return { isValid: false, error: `File too large (max 5MB): ${file.name}` };
+		}
+
+		if (!ALLOWED_TYPES.includes(file.type)) {
+			return { isValid: false, error: `Invalid file type: ${file.name}. Allowed: JPEG, PNG, WebP` };
+		}
+
+		return { isValid: true };
+	}
 
 	function handleImageUpload(event: Event) {
 		const target = event.target as HTMLInputElement;
-		if (target.files) {
-			const newFiles = Array.from(target.files);
-			uploadedImages = [...uploadedImages, ...newFiles];
+		if (!target.files) return;
+
+		const newFiles = Array.from(target.files);
+		const validFiles: File[] = [];
+		const errors: string[] = [];
+
+		// Check total count limit
+		if (uploadedImages.length + newFiles.length > MAX_IMAGES) {
+			errors.push(`Too many images. Maximum ${MAX_IMAGES} images allowed. You have ${uploadedImages.length} and tried to add ${newFiles.length} more.`);
+		}
+
+		// Validate each file
+		for (const file of newFiles) {
+			const validation = validateImageFile(file);
+			if (validation.isValid) {
+				// Check for duplicates by name
+				if (!uploadedImages.some(existing => existing.name === file.name)) {
+					validFiles.push(file);
+				} else {
+					errors.push(`Duplicate file: ${file.name}`);
+				}
+			} else {
+				errors.push(validation.error!);
+			}
+		}
+
+		// Only add files if we won't exceed the limit
+		const finalFiles = validFiles.slice(0, MAX_IMAGES - uploadedImages.length);
+		if (finalFiles.length < validFiles.length) {
+			errors.push(`Some files were skipped to stay within the ${MAX_IMAGES} image limit.`);
+		}
+
+		// Update state
+		uploadedImages = [...uploadedImages, ...finalFiles];
+		imageUploadErrors = errors;
+
+		// Clear the input so the same files can be selected again if needed
+		target.value = '';
+
+		// Auto-clear errors after 5 seconds
+		if (errors.length > 0) {
+			setTimeout(() => {
+				imageUploadErrors = [];
+			}, 5000);
 		}
 	}
 
@@ -241,10 +306,35 @@
 		</div>
 		
 		<div class="p-6 sm:p-8">
-			<form method="POST" enctype="multipart/form-data" use:enhance={() => {
-				// Trigger client-side validation before submitting
-				triggerValidation = true;
+			<!-- Image Upload Errors -->
+			{#if imageUploadErrors.length > 0}
+				<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+					<div class="flex gap-3">
+						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+						<div class="flex-1">
+							<p class="font-medium" style="color: var(--color-error-900);">Image Upload Issues</p>
+							<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
+								{#each imageUploadErrors as error}
+									<li>• {error}</li>
+								{/each}
+							</ul>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<form method="POST" enctype="multipart/form-data" novalidate onsubmit={(e) => {
+				// Force immediate validation by directly calling validateTourForm
+				const validation = validateTourForm(formData);
+				if (!validation.isValid) {
+					e.preventDefault();
+					// Trigger validation in TourForm component
+					triggerValidation = true;
+					return false;
+				}
+				
 				isSubmitting = true;
+			}} use:enhance={() => {
 				return async ({ result }) => {
 					isSubmitting = false;
 					triggerValidation = false;
@@ -267,7 +357,8 @@
 					onCancel={handleCancel}
 					onImageUpload={handleImageUpload}
 					onImageRemove={removeImage}
-					serverErrors={validationErrors}
+					{imageUploadErrors}
+					serverErrors={form?.validationErrors || []}
 					{triggerValidation}
 					hideStatusField={true}
 				/>
@@ -275,60 +366,50 @@
 		</div>
 	</div>
 
-	<!-- Next Steps Preview -->
+	<!-- Next Steps & Process -->
 	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">What happens next?</h3>
-		<div class="space-y-3">
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-green-600">✓</span>
-				</div>
-				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Tour will be saved as draft</p>
-					<p class="text-sm" style="color: var(--text-secondary);">You can preview and test everything before going live</p>
-				</div>
-			</div>
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-blue-600">2</span>
-				</div>
-				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Set up your schedule</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Add available time slots when you can run the tour</p>
-				</div>
-			</div>
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-purple-600">3</span>
-				</div>
-				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Activate when ready</p>
-					<p class="text-sm" style="color: var(--text-secondary);">Make your tour live and share the QR code to get bookings</p>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Simplified Save Option -->
-	<div class="mt-6 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<div class="flex items-center gap-3 mb-3">
+		<div class="flex items-center gap-3 mb-4">
 			<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
 				<Save class="h-4 w-4 text-blue-600" />
 			</div>
-			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Smart Save Process</h3>
+			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Your Tour Journey</h3>
 		</div>
-		<p class="text-sm" style="color: var(--text-secondary);">
-			We'll save your tour as a draft first, so you can:
+		
+		<p class="text-sm mb-4" style="color: var(--text-secondary);">
+			We'll save your tour as a <strong>draft first</strong>, giving you complete control over when to go live.
 		</p>
-		<ul class="mt-2 space-y-1 text-sm" style="color: var(--text-secondary);">
-			<li>• Preview how it looks to customers</li>
-			<li>• Set up your schedule with available time slots</li>
-			<li>• Test the booking flow</li>
-			<li>• Activate it when you're 100% ready</li>
-		</ul>
-		<p class="mt-3 text-sm font-medium" style="color: var(--text-primary);">
-			Don't worry - you can activate your tour anytime with just one click!
-		</p>
+		
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
+				<div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3">
+					<span class="text-sm font-semibold text-green-600">1</span>
+				</div>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Save as Draft</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">Preview and test everything before customers see it</p>
+			</div>
+			
+			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
+				<div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+					<span class="text-sm font-semibold text-blue-600">2</span>
+				</div>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Add Schedule</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">Set up time slots when you're available to run tours</p>
+			</div>
+			
+			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
+				<div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+					<span class="text-sm font-semibold text-purple-600">3</span>
+				</div>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Go Live</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">Activate your tour and start accepting bookings</p>
+			</div>
+		</div>
+		
+		<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50);">
+			<p class="text-sm" style="color: var(--color-primary-700);">
+				<strong>✨ Pro tip:</strong> You can activate your tour instantly with one click, or take your time to perfect everything first!
+			</p>
+		</div>
 	</div>
 </div>
 

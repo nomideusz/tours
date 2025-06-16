@@ -27,6 +27,8 @@
 		existingImages?: string[];
 		onExistingImageRemove?: (imageName: string) => void;
 		getExistingImageUrl?: (imageName: string) => string;
+		// Image upload errors
+		imageUploadErrors?: string[];
 		// Server-side validation errors
 		serverErrors?: ValidationError[];
 		// Validation trigger
@@ -54,6 +56,7 @@
 		existingImages = [],
 		onExistingImageRemove,
 		getExistingImageUrl,
+		imageUploadErrors = [],
 		serverErrors = [],
 		triggerValidation = false,
 		bookingConstraints,
@@ -64,14 +67,8 @@
 	let validationErrors = $state<ValidationError[]>([]);
 	let touchedFields = $state<Set<string>>(new Set());
 
-	// Reactive validation - only validate touched fields after interaction
-	$effect(() => {
-		if (touchedFields.size > 0) {
-			const validation = validateTourForm(formData);
-			// Only show errors for fields that have been touched
-			validationErrors = validation.errors.filter(error => touchedFields.has(error.field));
-		}
-	});
+	// Note: Reactive validation is handled by individual field validation functions
+	// to avoid conflicts and ensure consistent error state management
 
 	// Trigger validation when parent requests it
 	$effect(() => {
@@ -83,8 +80,25 @@
 			touchedFields.add('duration');
 			touchedFields.add('capacity');
 			
+			// Validate all fields using the same field-specific approach
 			const validation = validateTourForm(formData);
-			validationErrors = validation.errors;
+			const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+			
+			// Clear all validation errors first
+			validationErrors = [];
+			
+			// Add errors for each field that has issues
+			requiredFields.forEach(fieldName => {
+				const fieldError = validation.errors.find(error => error.field === fieldName);
+				if (fieldError) {
+					validationErrors = [...validationErrors, fieldError];
+				}
+			});
+
+			// Scroll to first error on mobile if validation failed
+			if (!validation.isValid) {
+				scrollToFirstError();
+			}
 		}
 	});
 
@@ -100,17 +114,70 @@
 		touchedFields.add('duration');
 		touchedFields.add('capacity');
 		
+		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		validationErrors = validation.errors;
+		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+		
+		// Clear all validation errors first
+		validationErrors = [];
+		
+		// Add errors for each field that has issues
+		requiredFields.forEach(fieldName => {
+			const fieldError = validation.errors.find(error => error.field === fieldName);
+			if (fieldError) {
+				validationErrors = [...validationErrors, fieldError];
+			}
+		});
 	}
 
-	// Trigger validation for specific field on blur
-	function validateField(fieldName: string) {
-		// Mark this field as touched
+	// Debounced validation timeout
+	let validationTimeout: NodeJS.Timeout | null = null;
+
+	// Real-time field validation (on input with debouncing)
+	function validateFieldRealtime(fieldName: string) {
 		touchedFields.add(fieldName);
 		
-		// Validation will automatically run due to the reactive effect above
-		// No need to manually validate here
+		// Clear existing timeout
+		if (validationTimeout) {
+			clearTimeout(validationTimeout);
+		}
+		
+		// Debounce validation to avoid excessive calls while typing
+		validationTimeout = setTimeout(() => {
+			// Re-validate the specific field and update errors
+			const validation = validateTourForm(formData);
+			
+			// Remove any existing errors for this field
+			validationErrors = validationErrors.filter(error => error.field !== fieldName);
+			
+			// Add new error if field is invalid
+			const fieldError = validation.errors.find(error => error.field === fieldName);
+			if (fieldError) {
+				validationErrors = [...validationErrors, fieldError];
+			}
+		}, 500); // 500ms delay for typing
+	}
+
+	// Trigger validation for specific field on blur (immediate)
+	function validateField(fieldName: string) {
+		touchedFields.add(fieldName);
+		
+		// Clear any pending debounced validation
+		if (validationTimeout) {
+			clearTimeout(validationTimeout);
+		}
+		
+		// Immediate validation on blur
+		const validation = validateTourForm(formData);
+		
+		// Remove any existing errors for this field
+		validationErrors = validationErrors.filter(error => error.field !== fieldName);
+		
+		// Add new error if field is invalid
+		const fieldError = validation.errors.find(error => error.field === fieldName);
+		if (fieldError) {
+			validationErrors = [...validationErrors, fieldError];
+		}
 	}
 
 	// Export validation state for parent component
@@ -120,6 +187,12 @@
 	}
 
 	export function validate() {
+		// Clear any pending debounced validation to ensure immediate validation
+		if (validationTimeout) {
+			clearTimeout(validationTimeout);
+			validationTimeout = null;
+		}
+		
 		// Mark all required fields as touched
 		touchedFields.add('name');
 		touchedFields.add('description');
@@ -127,11 +200,334 @@
 		touchedFields.add('duration');
 		touchedFields.add('capacity');
 		
+		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		validationErrors = validation.errors;
+		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+		
+		// Clear all validation errors first
+		validationErrors = [];
+		
+		// Add errors for each field that has issues
+		requiredFields.forEach(fieldName => {
+			const fieldError = validation.errors.find(error => error.field === fieldName);
+			if (fieldError) {
+				validationErrors = [...validationErrors, fieldError];
+			}
+		});
+
+		// Scroll to first error on mobile if validation failed
+		if (!validation.isValid) {
+			scrollToFirstError();
+		}
+		
 		return validation.isValid;
 	}
 
+	// Smart list management for included items
+	function handleIncludedItemInput(index: number, event: Event) {
+		const target = event.target as HTMLInputElement;
+		const value = target.value;
+		
+		// Update the value
+		formData.includedItems[index] = value;
+		
+		// Auto-cleanup: remove empty items (except the last one)
+		if (index < formData.includedItems.length - 1 && !value.trim()) {
+			setTimeout(() => {
+				if (formData.includedItems[index] === '' && index < formData.includedItems.length - 1) {
+					formData.includedItems = formData.includedItems.filter((_, i) => i !== index);
+				}
+			}, 500); // Small delay to avoid removing while user is still typing
+		}
+	}
+
+	function handleIncludedItemBlur(index: number, event: Event) {
+		const target = event.target as HTMLInputElement;
+		const value = target.value.trim();
+		
+		// Auto-expand: if this is the last item and it has content, add a new empty item
+		if (index === formData.includedItems.length - 1 && value) {
+			formData.includedItems = [...formData.includedItems, ''];
+		}
+	}
+
+	function handleIncludedItemKeyDown(index: number, event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault(); // Prevent form submission
+			const currentValue = formData.includedItems[index]?.trim();
+			
+			// If current field has content and it's the last field, add new field and focus it
+			if (currentValue && index === formData.includedItems.length - 1) {
+				formData.includedItems = [...formData.includedItems, ''];
+				
+				// Focus the new field after DOM update
+				setTimeout(() => {
+					const nextInput = document.querySelector(`input[name="includedItems"]:nth-of-type(${index + 2})`) as HTMLInputElement;
+					if (nextInput) {
+						nextInput.focus();
+					}
+				}, 10);
+			}
+		}
+		
+		if (event.key === 'Tab') {
+			const currentValue = formData.includedItems[index]?.trim();
+			
+			// If current field has content and it's the last field, add new field
+			if (currentValue && index === formData.includedItems.length - 1) {
+				formData.includedItems = [...formData.includedItems, ''];
+				// Don't prevent default for Tab - let it naturally focus the next field
+			}
+		}
+		
+		// Handle backspace on empty field to remove it
+		if (event.key === 'Backspace' && !formData.includedItems[index] && formData.includedItems.length > 1) {
+			event.preventDefault();
+			formData.includedItems = formData.includedItems.filter((_, i) => i !== index);
+			
+			// Focus previous field
+			setTimeout(() => {
+				const prevIndex = Math.max(0, index - 1);
+				const prevInput = document.querySelector(`input[name="includedItems"]:nth-of-type(${prevIndex + 1})`) as HTMLInputElement;
+				if (prevInput) {
+					prevInput.focus();
+				}
+			}, 10);
+		}
+	}
+
+	// Smart list management for requirements
+	function handleRequirementInput(index: number, event: Event) {
+		const target = event.target as HTMLInputElement;
+		const value = target.value;
+		
+		// Update the value
+		formData.requirements[index] = value;
+		
+		// Auto-cleanup: remove empty items (except the last one)
+		if (index < formData.requirements.length - 1 && !value.trim()) {
+			setTimeout(() => {
+				if (formData.requirements[index] === '' && index < formData.requirements.length - 1) {
+					formData.requirements = formData.requirements.filter((_, i) => i !== index);
+				}
+			}, 500); // Small delay to avoid removing while user is still typing
+		}
+	}
+
+	function handleRequirementBlur(index: number, event: Event) {
+		const target = event.target as HTMLInputElement;
+		const value = target.value.trim();
+		
+		// Auto-expand: if this is the last item and it has content, add a new empty item
+		if (index === formData.requirements.length - 1 && value) {
+			formData.requirements = [...formData.requirements, ''];
+		}
+	}
+
+	function handleRequirementKeyDown(index: number, event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault(); // Prevent form submission
+			const currentValue = formData.requirements[index]?.trim();
+			
+			// If current field has content and it's the last field, add new field and focus it
+			if (currentValue && index === formData.requirements.length - 1) {
+				formData.requirements = [...formData.requirements, ''];
+				
+				// Focus the new field after DOM update
+				setTimeout(() => {
+					const nextInput = document.querySelector(`input[name="requirements"]:nth-of-type(${index + 2})`) as HTMLInputElement;
+					if (nextInput) {
+						nextInput.focus();
+					}
+				}, 10);
+			}
+		}
+		
+		if (event.key === 'Tab') {
+			const currentValue = formData.requirements[index]?.trim();
+			
+			// If current field has content and it's the last field, add new field
+			if (currentValue && index === formData.requirements.length - 1) {
+				formData.requirements = [...formData.requirements, ''];
+				// Don't prevent default for Tab - let it naturally focus the next field
+			}
+		}
+		
+		// Handle backspace on empty field to remove it
+		if (event.key === 'Backspace' && !formData.requirements[index] && formData.requirements.length > 1) {
+			event.preventDefault();
+			formData.requirements = formData.requirements.filter((_, i) => i !== index);
+			
+			// Focus previous field
+			setTimeout(() => {
+				const prevIndex = Math.max(0, index - 1);
+				const prevInput = document.querySelector(`input[name="requirements"]:nth-of-type(${prevIndex + 1})`) as HTMLInputElement;
+				if (prevInput) {
+					prevInput.focus();
+				}
+			}, 10);
+		}
+	}
+
+	// Get smart placeholder text based on position
+	function getIncludedItemPlaceholder(index: number): string {
+		const placeholders = [
+			"e.g., Professional tour guide",
+			"e.g., Historical insights and stories", 
+			"e.g., Photo opportunities at key spots",
+			"e.g., Small group experience (max 12 people)",
+			"e.g., Route map and recommendations",
+			"Add another item..."
+		];
+		return placeholders[Math.min(index, placeholders.length - 1)];
+	}
+
+	function getRequirementPlaceholder(index: number): string {
+		const placeholders = [
+			"e.g., Comfortable walking shoes",
+			"e.g., Basic fitness level required",
+			"e.g., Weather-appropriate clothing",
+			"e.g., Ability to walk for 2+ hours",
+			"e.g., Must be 16+ years old",
+			"Add another requirement..."
+		];
+		return placeholders[Math.min(index, placeholders.length - 1)];
+	}
+
+	// Cancellation Policy Templates
+	let selectedPolicyTemplate = $state('');
+	let showCustomPolicy = $state(false);
+	
+	const policyTemplates = [
+		{
+			id: 'flexible',
+			name: '🟢 Flexible',
+			description: 'Free cancellation up to 24 hours',
+			policy: 'Free cancellation up to 24 hours before the tour starts. Full refund guaranteed. For cancellations within 24 hours, 50% refund will be provided.'
+		},
+		{
+			id: 'moderate',
+			name: '🟡 Moderate', 
+			description: 'Free cancellation up to 48 hours',
+			policy: 'Free cancellation up to 48 hours before the tour starts. For cancellations between 48-24 hours: 50% refund. For cancellations within 24 hours: no refund.'
+		},
+		{
+			id: 'strict',
+			name: '🔴 Strict',
+			description: 'Free cancellation up to 7 days',
+			policy: 'Free cancellation up to 7 days before the tour starts. For cancellations between 7-3 days: 50% refund. For cancellations within 3 days: no refund.'
+		},
+		{
+			id: 'weather',
+			name: '🌦️ Weather-Dependent',
+			description: 'Flexible for weather conditions',
+			policy: 'Free cancellation up to 24 hours before the tour starts. Tours may be cancelled due to severe weather conditions with full refund. Alternative dates will be offered when possible.'
+		},
+		{
+			id: 'group',
+			name: '👥 Group-Friendly',
+			description: 'Flexible for group bookings',
+			policy: 'Free cancellation up to 48 hours before the tour starts. For group bookings (5+ people), free cancellation up to 72 hours. Partial cancellations allowed with 24-hour notice.'
+		}
+	];
+
+	function selectPolicyTemplate(templateId: string) {
+		const template = policyTemplates.find(t => t.id === templateId);
+		if (template) {
+			selectedPolicyTemplate = templateId;
+			formData.cancellationPolicy = template.policy;
+			showCustomPolicy = false;
+		}
+	}
+
+	function enableCustomPolicy() {
+		selectedPolicyTemplate = '';
+		showCustomPolicy = true;
+		// Keep existing policy text if any
+	}
+
+	// Initialize policy template selection based on existing policy
+	$effect(() => {
+		if (formData.cancellationPolicy && !selectedPolicyTemplate && !showCustomPolicy) {
+			// Check if current policy matches any template
+			const matchingTemplate = policyTemplates.find(t => t.policy === formData.cancellationPolicy);
+			if (matchingTemplate) {
+				selectedPolicyTemplate = matchingTemplate.id;
+			} else if (formData.cancellationPolicy.trim()) {
+				showCustomPolicy = true;
+			}
+		}
+	});
+
+	// Sticky save button state
+	let showStickySave = $state(false);
+	let saveButtonRef: HTMLElement | null = null;
+
+	// Monitor scroll position to show/hide sticky save button
+	function handleScroll() {
+		if (typeof window === 'undefined' || !saveButtonRef) return;
+		
+		const saveButtonRect = saveButtonRef.getBoundingClientRect();
+		const isButtonVisible = saveButtonRect.top >= 0 && saveButtonRect.bottom <= window.innerHeight;
+		
+		// Show sticky button when original is not visible and user has scrolled down
+		showStickySave = !isButtonVisible && window.scrollY > 200;
+	}
+
+	// Set up scroll listener
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			window.addEventListener('scroll', handleScroll, { passive: true });
+			window.addEventListener('resize', handleScroll, { passive: true });
+			
+			return () => {
+				window.removeEventListener('scroll', handleScroll);
+				window.removeEventListener('resize', handleScroll);
+			};
+		}
+	});
+
+	// Handle sticky save button click
+	function handleStickySave() {
+		const form = document.querySelector('form');
+		if (form) {
+			form.requestSubmit();
+		}
+	}
+
+	// Calculate form completion percentage
+	let formProgress = $derived(() => {
+		const requiredFields = [
+			formData.name,
+			formData.description,
+			formData.price,
+			formData.duration,
+			formData.capacity
+		];
+		
+		const optionalFields = [
+			formData.category,
+			formData.location,
+			formData.cancellationPolicy,
+			formData.includedItems.filter(item => item.trim()).length > 0,
+			formData.requirements.filter(req => req.trim()).length > 0
+		];
+		
+		const completedRequired = requiredFields.filter(field => 
+			field !== null && field !== undefined && String(field).trim() !== ''
+		).length;
+		
+		const completedOptional = optionalFields.filter(field => 
+			field !== null && field !== undefined && field !== false && String(field).trim() !== ''
+		).length;
+		
+		const requiredProgress = (completedRequired / requiredFields.length) * 70; // 70% for required
+		const optionalProgress = (completedOptional / optionalFields.length) * 30; // 30% for optional
+		
+		return Math.round(requiredProgress + optionalProgress);
+	});
+
+	// Legacy functions for backward compatibility (kept for any existing references)
 	function addIncludedItem() {
 		formData.includedItems = [...formData.includedItems, ''];
 	}
@@ -160,10 +556,82 @@
 		}
 	}
 
+	// Mobile error handling - scroll to first error
+	function scrollToFirstError() {
+		if (typeof window === 'undefined') return;
+		
+		// Wait for DOM to update
+		setTimeout(() => {
+			const firstErrorField = document.querySelector('.form-input.error, .form-textarea.error, .form-select.error');
+			if (firstErrorField) {
+				// Scroll with some offset for mobile header
+				const yOffset = -100; // Adjust based on your mobile header height
+				const y = firstErrorField.getBoundingClientRect().top + window.pageYOffset + yOffset;
+				window.scrollTo({ top: y, behavior: 'smooth' });
+			}
+		}, 100);
+	}
+
+	// Enhanced validation functions with mobile scroll
+	function validateFieldRealtimeWithScroll(fieldName: string) {
+		validateFieldRealtime(fieldName);
+	}
+
+	function validateFieldWithScroll(fieldName: string) {
+		validateField(fieldName);
+	}
+
+	// Enhanced validate function for mobile
+	export function validateWithMobileSupport() {
+		const isValid = validate();
+		if (!isValid) {
+			scrollToFirstError();
+		}
+		return isValid;
+	}
+
 
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+	<!-- Mobile Error Summary - Only show on mobile when errors exist -->
+	{#if allErrors.length > 0}
+		<div class="lg:hidden mb-4 rounded-xl p-4 sticky top-4 z-10" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+			<div class="flex items-start gap-3">
+				<div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+					<svg class="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+					</svg>
+				</div>
+				<div class="flex-1 min-w-0">
+					<p class="font-medium text-sm" style="color: var(--color-error-900);">
+						Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'}:
+					</p>
+					<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
+						{#each allErrors as error}
+							<li class="flex items-start gap-2">
+								<span class="text-xs mt-0.5">•</span>
+								<button 
+									type="button"
+									onclick={() => {
+										const field = document.getElementById(error.field);
+										if (field) {
+											field.focus();
+											field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										}
+									}}
+									class="text-left underline hover:no-underline"
+								>
+									{error.message}
+								</button>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Main form content -->
 	<div class="lg:col-span-2 space-y-8">
 		<!-- Basic Information -->
@@ -172,8 +640,10 @@
 				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
 			</div>
 			<div class="p-4">
-				<!-- Hidden status field for form submission -->
-				<input type="hidden" name="status" bind:value={formData.status} />
+				<!-- Hidden status field for form submission (when not showing visible toggle) -->
+				{#if !isEdit || hideStatusField}
+					<input type="hidden" name="status" bind:value={formData.status} />
+				{/if}
 				
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div class="md:col-span-2">
@@ -187,10 +657,11 @@
 							bind:value={formData.name}
 							placeholder="e.g., Historic Walking Tour of Prague"
 							class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+							oninput={() => validateFieldRealtime('name')}
 							onblur={() => validateField('name')}
 						/>
 						{#if getFieldError(allErrors, 'name')}
-							<p class="form-error">{getFieldError(allErrors, 'name')}</p>
+							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'name')}</p>
 						{/if}
 					</div>
 
@@ -240,15 +711,96 @@
 							rows="4"
 							placeholder="Describe your tour, what makes it special, what guests will see and experience..."
 							class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+							oninput={() => validateFieldRealtime('description')}
 							onblur={() => validateField('description')}
 						></textarea>
 						{#if getFieldError(allErrors, 'description')}
-							<p class="form-error">{getFieldError(allErrors, 'description')}</p>
+							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'description')}</p>
 						{/if}
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<!-- Tour Status (Edit Mode Only) -->
+		{#if isEdit && !hideStatusField}
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h2 class="font-semibold" style="color: var(--text-primary);">Tour Status</h2>
+				</div>
+				<div class="p-4">
+					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
+								<span class="text-lg">
+									{formData.status === 'active' ? '🟢' : '📝'}
+								</span>
+							</div>
+							<div>
+								<h3 class="font-medium" style="color: var(--text-primary);">
+									{formData.status === 'active' ? 'Tour is Active' : 'Tour is Draft'}
+								</h3>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									{formData.status === 'active' 
+										? 'Your tour is live and accepting bookings' 
+										: 'Your tour is saved but not visible to customers'}
+								</p>
+							</div>
+						</div>
+						
+						<div class="flex items-center gap-3">
+							<label class="relative inline-flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									name="status"
+									checked={formData.status === 'active'}
+									onchange={(e) => {
+										const target = e.target as HTMLInputElement;
+										formData.status = target.checked ? 'active' : 'draft';
+									}}
+									class="sr-only peer"
+								/>
+								<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+								<span class="ml-3 text-sm font-medium" style="color: var(--text-primary);">
+									{formData.status === 'active' ? 'Active' : 'Draft'}
+								</span>
+							</label>
+						</div>
+					</div>
+					
+					<!-- Status Change Warning -->
+					{#if formData.status === 'active'}
+						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+							<div class="flex items-start gap-2">
+								<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+								<div>
+									<p class="text-sm font-medium" style="color: var(--color-success-900);">Tour will be activated</p>
+									<p class="text-xs mt-1" style="color: var(--color-success-700);">
+										When you save, your tour will be live and customers can book it immediately.
+									</p>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-start gap-2">
+								<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+								</svg>
+								<div>
+									<p class="text-sm font-medium" style="color: var(--color-warning-900);">Tour will remain draft</p>
+									<p class="text-xs mt-1" style="color: var(--color-warning-700);">
+										Your tour will be saved but customers won't be able to see or book it yet.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Pricing & Logistics -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -323,103 +875,219 @@
 		<!-- What's Included -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">What's Included</h2>
+				<div class="flex items-center justify-between">
+					<h2 class="font-semibold" style="color: var(--text-primary);">What's Included</h2>
+					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
+						Press Enter to add more
+					</div>
+				</div>
 			</div>
 			<div class="p-4">
-			
-			<div class="space-y-3">
-				{#each formData.includedItems as item, index (index)}
-					<div class="flex gap-2">
-						<input
-							type="text"
-							name="includedItems"
-							bind:value={formData.includedItems[index]}
-							placeholder="e.g., Professional guide, Historical insights, Photo stops"
-							class="form-input flex-1"
-						/>
-						{#if formData.includedItems.length > 1}
-							<button
-								type="button"
-								onclick={() => removeIncludedItem(index)}
-								class="p-2 text-red-600 hover:text-red-800 transition-colors"
-								aria-label="Remove included item"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-								</svg>
-							</button>
-						{/if}
-					</div>
-				{/each}
+				<div class="space-y-3">
+					{#each formData.includedItems as item, index (index)}
+						<div class="flex gap-2 group">
+							<div class="flex-1 relative">
+								<input
+									type="text"
+									name="includedItems"
+									value={formData.includedItems[index]}
+									placeholder={getIncludedItemPlaceholder(index)}
+									class="form-input w-full transition-all duration-200 {index === formData.includedItems.length - 1 && !item ? 'ring-1 ring-blue-200' : ''}"
+									oninput={(e) => handleIncludedItemInput(index, e)}
+									onblur={(e) => handleIncludedItemBlur(index, e)}
+									onkeydown={(e) => handleIncludedItemKeyDown(index, e)}
+								/>
+								{#if index === formData.includedItems.length - 1 && !item}
+									<div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style="color: var(--text-tertiary);">
+										↵ Enter
+									</div>
+								{/if}
+							</div>
+							{#if formData.includedItems.length > 1 && (item || index < formData.includedItems.length - 1)}
+								<button
+									type="button"
+									onclick={() => removeIncludedItem(index)}
+									class="p-2 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+									aria-label="Remove included item"
+									tabindex="-1"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</button>
+							{/if}
+						</div>
+					{/each}
+				</div>
 				
-				<button
-					type="button"
-					onclick={addIncludedItem}
-					class="text-sm font-medium transition-colors"
-					style="color: var(--color-primary-600);"
-				>
-					+ Add another item
-				</button>
+				<!-- Helpful tip -->
+				<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-xs" style="color: var(--text-secondary);">
+						💡 <strong>Tip:</strong> Just start typing and press Enter to add more items. Empty items are automatically removed.
+					</p>
+				</div>
 			</div>
 		</div>
-	</div>
 
 		<!-- Requirements -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Requirements</h2>
+				<div class="flex items-center justify-between">
+					<h2 class="font-semibold" style="color: var(--text-primary);">Requirements</h2>
+					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
+						Press Enter to add more
+					</div>
+				</div>
 			</div>
 			<div class="p-4">
-			
-			<div class="space-y-3">
-				{#each formData.requirements as requirement, index (index)}
-					<div class="flex gap-2">
-						<input
-							type="text"
-							name="requirements"
-							bind:value={formData.requirements[index]}
-							placeholder="e.g., Comfortable walking shoes, Basic fitness level"
-							class="form-input flex-1"
-						/>
-						{#if formData.requirements.length > 1}
-							<button
-								type="button"
-								onclick={() => removeRequirement(index)}
-								class="p-2 text-red-600 hover:text-red-800 transition-colors"
-								aria-label="Remove requirement"
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-								</svg>
-							</button>
-						{/if}
-					</div>
-				{/each}
+				<div class="space-y-3">
+					{#each formData.requirements as requirement, index (index)}
+						<div class="flex gap-2 group">
+							<div class="flex-1 relative">
+								<input
+									type="text"
+									name="requirements"
+									value={formData.requirements[index]}
+									placeholder={getRequirementPlaceholder(index)}
+									class="form-input w-full transition-all duration-200 {index === formData.requirements.length - 1 && !requirement ? 'ring-1 ring-blue-200' : ''}"
+									oninput={(e) => handleRequirementInput(index, e)}
+									onblur={(e) => handleRequirementBlur(index, e)}
+									onkeydown={(e) => handleRequirementKeyDown(index, e)}
+								/>
+								{#if index === formData.requirements.length - 1 && !requirement}
+									<div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style="color: var(--text-tertiary);">
+										↵ Enter
+									</div>
+								{/if}
+							</div>
+							{#if formData.requirements.length > 1 && (requirement || index < formData.requirements.length - 1)}
+								<button
+									type="button"
+									onclick={() => removeRequirement(index)}
+									class="p-2 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+									aria-label="Remove requirement"
+									tabindex="-1"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</button>
+							{/if}
+						</div>
+					{/each}
+				</div>
 				
-				<button
-					type="button"
-					onclick={addRequirement}
-					class="text-sm font-medium transition-colors"
-					style="color: var(--color-primary-600);"
-				>
-					+ Add another requirement
-				</button>
+				<!-- Helpful tip -->
+				<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-xs" style="color: var(--text-secondary);">
+						💡 <strong>Tip:</strong> Just start typing and press Enter to add more requirements. Empty items are automatically removed.
+					</p>
+				</div>
 			</div>
 		</div>
-	</div>
 
 		<!-- Cancellation Policy -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
+				<div class="flex items-center justify-between">
+					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
+					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
+						{showCustomPolicy ? 'Custom' : selectedPolicyTemplate ? 'Template' : 'Choose'}
+					</div>
+				</div>
 			</div>
 			<div class="p-4">
-				<textarea
-					bind:value={formData.cancellationPolicy}
-					rows="3"
-					placeholder="e.g., Free cancellation up to 24 hours before the tour. 50% refund for cancellations between 24-12 hours. No refund for cancellations within 12 hours."
-					class="form-textarea"
-				></textarea>
+				{#if !showCustomPolicy}
+					<!-- Policy Templates - Minimal Design -->
+					<div class="space-y-3 mb-4">
+						<p class="text-sm mb-4" style="color: var(--text-secondary);">Choose a cancellation policy:</p>
+						
+						<!-- Template Options as Radio-style List -->
+						<div class="space-y-2">
+							{#each policyTemplates as template}
+								<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm {selectedPolicyTemplate === template.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}">
+									<input
+										type="radio"
+										name="policyTemplate"
+										value={template.id}
+										checked={selectedPolicyTemplate === template.id}
+										onchange={() => selectPolicyTemplate(template.id)}
+										class="form-radio mt-0.5"
+									/>
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2 mb-1">
+											<span class="text-sm">{template.name.split(' ')[0]}</span>
+											<span class="font-medium text-sm" style="color: var(--text-primary);">
+												{template.name.substring(2)}
+											</span>
+										</div>
+										<p class="text-xs mb-2" style="color: var(--text-secondary);">{template.description}</p>
+										{#if selectedPolicyTemplate === template.id}
+											<div class="mt-2 p-2 rounded text-xs" style="background: var(--bg-secondary); color: var(--text-tertiary);">
+												{template.policy}
+											</div>
+										{/if}
+									</div>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Custom Policy Option -->
+					<div class="pt-4 border-t" style="border-color: var(--border-primary);">
+						<button
+							type="button"
+							onclick={enableCustomPolicy}
+							class="w-full p-3 rounded-lg border border-dashed transition-colors text-center hover:bg-gray-50"
+							style="border-color: var(--border-primary);"
+						>
+							<div class="flex items-center justify-center gap-2 mb-1">
+								<svg class="w-4 h-4" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+								</svg>
+								<span class="font-medium text-sm" style="color: var(--text-primary);">Write Custom Policy</span>
+							</div>
+							<p class="text-xs" style="color: var(--text-secondary);">Create your own cancellation terms</p>
+						</button>
+					</div>
+				{:else}
+					<!-- Custom Policy Editor -->
+					<div class="space-y-4">
+						<div class="flex items-center justify-between">
+							<h3 class="font-medium" style="color: var(--text-primary);">Custom Cancellation Policy</h3>
+							<button
+								type="button"
+								onclick={() => { showCustomPolicy = false; selectedPolicyTemplate = ''; }}
+								class="text-sm px-3 py-1.5 rounded-md transition-colors button-secondary button--small"
+							>
+								← Back to Templates
+							</button>
+						</div>
+						
+						<textarea
+							name="cancellationPolicy"
+							bind:value={formData.cancellationPolicy}
+							rows="4"
+							placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
+							class="form-textarea"
+						></textarea>
+						
+						<!-- Custom Policy Tips -->
+						<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+							<p class="text-xs font-medium mb-2" style="color: var(--text-primary);">💡 Tips for a good cancellation policy:</p>
+							<ul class="text-xs space-y-1" style="color: var(--text-secondary);">
+								<li>• Specify exact time limits (e.g., "24 hours before tour starts")</li>
+								<li>• Be clear about refund percentages</li>
+								<li>• Mention weather or emergency exceptions</li>
+								<li>• Consider group booking flexibility</li>
+								<li>• Keep it simple and easy to understand</li>
+							</ul>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Hidden input for form submission -->
+				<input type="hidden" name="cancellationPolicy" bind:value={formData.cancellationPolicy} />
 			</div>
 		</div>
 	</div>
@@ -502,6 +1170,27 @@
 					</div>
 				</div>
 
+				<!-- Mobile Image Upload Errors - Show directly in upload section -->
+				{#if imageUploadErrors && imageUploadErrors.length > 0}
+					<div class="mt-4 p-3 rounded-lg sm:hidden" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+						<div class="flex items-start gap-2">
+							<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
+							</svg>
+							<div class="flex-1">
+								<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
+								<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
+									{#each imageUploadErrors as error}
+										<li>• {error}</li>
+									{/each}
+								</ul>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+
+
 				<!-- Image Previews -->
 				{#if uploadedImages && uploadedImages.length > 0}
 					<div class="mt-6">
@@ -540,18 +1229,26 @@
 			<div class="p-4">
 			<div class="space-y-3">
 				<button
+					bind:this={saveButtonRef}
 					type="submit"
 					disabled={isSubmitting}
 					class="button-primary button--full-width button--gap"
 				>
 					{#if isSubmitting}
 						<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-						Saving...
+						{formData.status === 'active' && isEdit ? 'Activating...' : 'Saving...'}
 					{:else}
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-						</svg>
-						{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
+						{#if formData.status === 'active' && isEdit}
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							Save & Activate Tour
+						{:else}
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+							</svg>
+							{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
+						{/if}
 					{/if}
 				</button>
 				
@@ -567,6 +1264,65 @@
 		</div>
 	</div>
 </div>
+
+<!-- Minimal Floating Save Button (appears when scrolled down) -->
+{#if showStickySave}
+	<div class="fixed z-50 transition-all duration-300 ease-out floating-save-container">
+		<!-- Single elegant floating button with integrated progress -->
+		<button
+			type="button"
+			onclick={handleStickySave}
+			disabled={isSubmitting}
+			class="floating-save-btn group"
+			title="{isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Save Tour')} • {formProgress()}% complete"
+			aria-label="{isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Save Tour')}"
+		>
+			<!-- Progress ring (subtle, integrated) -->
+			<div class="absolute inset-0 rounded-full">
+				<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+					<circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-200 opacity-30" />
+					<circle 
+						cx="18" cy="18" r="16" 
+						fill="none" 
+						stroke="currentColor" 
+						stroke-width="1.5" 
+						class="text-white transition-all duration-300"
+						stroke-dasharray="100.53"
+						stroke-dashoffset="{100.53 - (100.53 * formProgress() / 100)}"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</div>
+			
+			<!-- Button content -->
+			<div class="relative flex items-center justify-center">
+				{#if isSubmitting}
+					<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+				{:else}
+					<svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+					</svg>
+				{/if}
+			</div>
+			
+			<!-- Tooltip on hover (desktop only) -->
+			<div class="floating-save-tooltip">
+				<div class="tooltip-content">
+					<span class="font-medium">
+						{#if isSubmitting}
+							Saving...
+						{:else if formData.status === 'active' && isEdit}
+							Save & Activate
+						{:else}
+							{isEdit ? 'Save Changes' : 'Save Tour'}
+						{/if}
+					</span>
+					<span class="text-xs opacity-75">{formProgress()}% complete</span>
+				</div>
+			</div>
+		</button>
+	</div>
+{/if}
 </div>
 
 <style>
@@ -615,6 +1371,148 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
+		}
+	}
+
+	/* Minimal Floating Save Button */
+	.floating-save-container {
+		bottom: 2rem;
+		right: 2rem;
+	}
+
+	/* Mobile positioning - account for bottom navigation */
+	@media (max-width: 767px) {
+		.floating-save-container {
+			bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+			right: 1.5rem;
+		}
+	}
+
+	/* Desktop positioning - align with form content */
+	@media (min-width: 1024px) {
+		.floating-save-container {
+			right: max(2rem, calc((100vw - 80rem) / 2 + 2rem));
+		}
+	}
+
+	.floating-save-btn {
+		position: relative;
+		width: 3rem;
+		height: 3rem;
+		border-radius: 50%;
+		border: none;
+		cursor: pointer;
+		color: white;
+		background: var(--color-primary-600);
+		box-shadow: 
+			0 4px 12px rgba(0, 0, 0, 0.15),
+			0 2px 4px rgba(0, 0, 0, 0.1);
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		backdrop-filter: blur(8px);
+	}
+
+	.floating-save-btn:hover {
+		transform: translateY(-2px) scale(1.05);
+		box-shadow: 
+			0 8px 20px rgba(0, 0, 0, 0.2),
+			0 4px 8px rgba(0, 0, 0, 0.15);
+		background: var(--color-primary-700);
+	}
+
+	.floating-save-btn:active {
+		transform: translateY(-1px) scale(1.02);
+	}
+
+	.floating-save-btn:disabled {
+		opacity: 0.8;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.floating-save-btn:disabled:hover {
+		transform: none;
+		box-shadow: 
+			0 4px 12px rgba(0, 0, 0, 0.15),
+			0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	/* Elegant tooltip */
+	.floating-save-tooltip {
+		position: absolute;
+		right: calc(100% + 0.75rem);
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0;
+		visibility: hidden;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	.tooltip-content {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		box-shadow: 
+			0 4px 12px rgba(0, 0, 0, 0.1),
+			0 2px 4px rgba(0, 0, 0, 0.06);
+		white-space: nowrap;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+	}
+
+	/* Show tooltip on hover (desktop only) */
+	@media (min-width: 768px) {
+		.floating-save-btn:hover .floating-save-tooltip {
+			opacity: 1;
+			visibility: visible;
+			transform: translateY(-50%) translateX(-0.25rem);
+		}
+	}
+
+	/* Hide tooltip on mobile */
+	@media (max-width: 767px) {
+		.floating-save-tooltip {
+			display: none;
+		}
+	}
+
+	/* Mobile-enhanced error styling */
+	@media (max-width: 768px) {
+		.mobile-error-enhanced {
+			font-size: 1rem;
+			font-weight: 500;
+			padding: 0.5rem 0.75rem;
+			border-radius: 0.5rem;
+			border-left: 4px solid var(--color-error-500);
+			background: var(--color-error-50);
+			color: var(--color-error-800);
+			margin-top: 0.75rem;
+			box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+		}
+		
+		/* Make error fields more prominent on mobile */
+		.form-input.error,
+		.form-textarea.error,
+		.form-select.error {
+			border-color: var(--color-error-500);
+			box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 0 0 3px rgba(239, 68, 68, 0.1);
+			outline: none;
+		}
+		
+		/* Sticky error summary styling */
+		.sticky {
+			backdrop-filter: blur(8px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		}
+		
+		/* Adjust floating button position on mobile to avoid keyboard */
+		.floating-save-btn {
+			margin-bottom: env(keyboard-inset-height, 0);
 		}
 	}
 </style>
