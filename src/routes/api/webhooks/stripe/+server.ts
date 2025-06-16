@@ -7,6 +7,7 @@ import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { broadcastBookingNotification } from '$lib/notifications/server.js';
+import { updateUserSubscription } from '$lib/stripe-subscriptions.server.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -345,6 +346,41 @@ export const POST: RequestHandler = async ({ request }) => {
           console.error('Failed to restore time slot availability:', timeSlotError);
         }
 
+        break;
+      }
+
+      // Subscription events
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`Subscription ${event.type}: ${subscription.id} for customer ${subscription.customer}`);
+
+        try {
+          await updateUserSubscription(subscription.customer as string, subscription);
+          console.log(`Subscription updated successfully: ${subscription.id}`);
+        } catch (error) {
+          console.error('Failed to update user subscription:', error);
+        }
+
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as any;
+        if (invoice.subscription) {
+          console.log(`Invoice payment succeeded for subscription: ${invoice.subscription}`);
+          // Subscription is automatically active, no additional action needed
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as any;
+        if (invoice.subscription) {
+          console.log(`Invoice payment failed for subscription: ${invoice.subscription}`);
+          // Stripe will handle retry logic and eventual subscription cancellation
+        }
         break;
       }
 

@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Drop existing enums
+DROP TYPE IF EXISTS subscription_status CASCADE;
+DROP TYPE IF EXISTS subscription_plan CASCADE;
 DROP TYPE IF EXISTS booking_source CASCADE;
 DROP TYPE IF EXISTS attendance_status CASCADE;
 DROP TYPE IF EXISTS payment_status CASCADE;
@@ -32,6 +34,10 @@ CREATE TYPE booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'comple
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
 CREATE TYPE attendance_status AS ENUM ('not_arrived', 'checked_in', 'no_show');
 CREATE TYPE booking_source AS ENUM ('main_qr', 'tour_qr', 'direct', 'referral', 'social', 'other');
+
+-- Create subscription enums
+CREATE TYPE subscription_plan AS ENUM ('free', 'starter_pro', 'professional', 'agency');
+CREATE TYPE subscription_status AS ENUM ('active', 'canceled', 'past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing');
 
 -- Users table
 CREATE TABLE users (
@@ -54,6 +60,16 @@ CREATE TABLE users (
     -- Main QR code for simplified approach
     main_qr_code VARCHAR(100) UNIQUE,
     main_qr_scans INTEGER NOT NULL DEFAULT 0,
+    
+    -- Subscription fields
+    subscription_plan subscription_plan NOT NULL DEFAULT 'free',
+    subscription_status subscription_status,
+    subscription_cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    subscription_current_period_end TIMESTAMP WITH TIME ZONE,
+    stripe_customer_id VARCHAR(255),
+    stripe_subscription_id VARCHAR(255),
+    monthly_bookings_used INTEGER NOT NULL DEFAULT 0,
+    monthly_bookings_reset_at TIMESTAMP WITH TIME ZONE,
     
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     last_login TIMESTAMP WITH TIME ZONE,
@@ -205,6 +221,11 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_main_qr_code ON users(main_qr_code);
+CREATE INDEX idx_users_subscription_plan ON users(subscription_plan);
+CREATE INDEX idx_users_subscription_status ON users(subscription_status);
+CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
+CREATE INDEX idx_users_stripe_subscription_id ON users(stripe_subscription_id);
+CREATE INDEX idx_users_monthly_bookings_reset_at ON users(monthly_bookings_reset_at);
 CREATE INDEX idx_users_created_at ON users(created_at);
 
 -- Sessions indexes
@@ -283,6 +304,7 @@ CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Add constraints for data validation
+ALTER TABLE users ADD CONSTRAINT check_monthly_bookings_used_positive CHECK (monthly_bookings_used >= 0);
 ALTER TABLE tours ADD CONSTRAINT check_price_positive CHECK (price >= 0);
 ALTER TABLE tours ADD CONSTRAINT check_duration_positive CHECK (duration > 0);
 ALTER TABLE tours ADD CONSTRAINT check_capacity_positive CHECK (capacity > 0);

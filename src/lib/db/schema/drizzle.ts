@@ -7,6 +7,12 @@ import { createId } from '@paralleldrive/cuid2';
 // User role enum
 export const userRoleEnum = pgEnum('user_role', ['admin', 'user']);
 
+// Subscription plan enum
+export const subscriptionPlanEnum = pgEnum('subscription_plan', ['free', 'starter_pro', 'professional', 'agency']);
+
+// Subscription status enum
+export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled', 'past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing']);
+
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -28,6 +34,19 @@ export const users = pgTable('users', {
   // Main QR code for simplified approach
   mainQrCode: varchar('main_qr_code', { length: 100 }).unique(),
   mainQrScans: integer('main_qr_scans').notNull().default(0),
+  
+  // Subscription fields
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  subscriptionPlan: subscriptionPlanEnum('subscription_plan').notNull().default('free'),
+  subscriptionStatus: subscriptionStatusEnum('subscription_status').default('active'),
+  subscriptionId: varchar('subscription_id', { length: 255 }),
+  subscriptionCurrentPeriodStart: timestamp('subscription_current_period_start', { withTimezone: true }),
+  subscriptionCurrentPeriodEnd: timestamp('subscription_current_period_end', { withTimezone: true }),
+  subscriptionCancelAtPeriodEnd: boolean('subscription_cancel_at_period_end').notNull().default(false),
+  
+  // Usage tracking for plan limits
+  monthlyBookingsUsed: integer('monthly_bookings_used').notNull().default(0),
+  monthlyBookingsResetAt: timestamp('monthly_bookings_reset_at', { withTimezone: true }),
   
   emailVerified: boolean('email_verified').notNull().default(false),
   lastLogin: timestamp('last_login', { withTimezone: true }),

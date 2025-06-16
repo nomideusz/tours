@@ -94,6 +94,11 @@
 			name: 'QR Scanner',
 			href: '/checkin-scanner',
 			icon: QrCode
+		},
+		{
+			name: 'Subscription',
+			href: '/dashboard/subscription',
+			icon: Settings
 		}
 	]);
 

@@ -43,6 +43,13 @@
       "when": 1749951885245,
       "tag": "0005_faithful_synch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1750034738606,
+      "tag": "0006_overrated_venom",
+      "breakpoints": true
     }
   ]
 }

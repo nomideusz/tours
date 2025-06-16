@@ -16,6 +16,13 @@ export interface AuthUser {
 	currency?: string;
 	emailVerified?: boolean;
 	lastLogin?: Date;
+	// Subscription fields
+	subscriptionPlan?: 'free' | 'starter_pro' | 'professional' | 'agency';
+	subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing';
+	subscriptionCancelAtPeriodEnd?: boolean;
+	subscriptionCurrentPeriodEnd?: string;
+	monthlyBookingsUsed?: number;
+	monthlyBookingsResetAt?: string;
 }
 
 export interface AuthSession {
