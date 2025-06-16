@@ -96,9 +96,23 @@
 
 	function handleImageUpload(event: Event) {
 		const target = event.target as HTMLInputElement;
-		if (!target.files) return;
+		console.log('🔍 Image upload event triggered (edit mode)');
+		console.log('🔍 Target:', target);
+		console.log('🔍 Target files:', target.files);
+		
+		if (!target.files || target.files.length === 0) {
+			console.log('❌ No files selected');
+			return;
+		}
 
 		const newFiles = Array.from(target.files);
+		console.log('📁 Raw files from input:', newFiles.map(f => ({
+			name: f.name,
+			size: f.size,
+			type: f.type,
+			lastModified: f.lastModified
+		})));
+
 		const validFiles: File[] = [];
 		const errors: string[] = [];
 
@@ -112,7 +126,11 @@
 
 		// Validate each file
 		for (const file of newFiles) {
+			console.log(`🔍 Validating file: ${file.name} (${file.size} bytes, ${file.type})`);
+			
 			const validation = validateImageFile(file);
+			console.log(`✅ Validation result for ${file.name}:`, validation);
+			
 			if (validation.isValid) {
 				// Check for duplicates by name (both in existing and uploaded)
 				const isDuplicateInUploaded = uploadedImages.some(existing => existing.name === file.name);
@@ -120,11 +138,14 @@
 				
 				if (!isDuplicateInUploaded && !isDuplicateInExisting) {
 					validFiles.push(file);
+					console.log(`✅ Added ${file.name} to valid files`);
 				} else {
 					errors.push(`Duplicate file: ${file.name}`);
+					console.log(`❌ Duplicate file: ${file.name}`);
 				}
 			} else {
 				errors.push(validation.error!);
+				console.log(`❌ Invalid file: ${file.name} - ${validation.error}`);
 			}
 		}
 
@@ -134,6 +155,9 @@
 		if (finalFiles.length < validFiles.length) {
 			errors.push(`Some files were skipped to stay within the ${MAX_IMAGES} image limit.`);
 		}
+
+		console.log(`📊 Final results: ${finalFiles.length} valid files, ${errors.length} errors`);
+		console.log('📊 Final files:', finalFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
 
 		// Update state
 		uploadedImages = [...uploadedImages, ...finalFiles];
@@ -496,11 +520,18 @@
 					}
 					
 					isSubmitting = true;
-				}} use:enhance={() => {
-									return async ({ result }) => {
-					isSubmitting = false;
-					triggerValidation = false;
-					if (result.type === 'redirect') {
+				}} use:enhance={({ formData }) => {
+					// Manually append uploaded images to form data
+					console.log('📤 Enhancing form submission (edit mode) with', uploadedImages.length, 'images');
+					uploadedImages.forEach((file, index) => {
+						console.log(`📤 Adding image ${index + 1}:`, { name: file.name, size: file.size, type: file.type });
+						formData.append('images', file);
+					});
+					
+					return async ({ result }) => {
+						isSubmitting = false;
+						triggerValidation = false;
+						if (result.type === 'redirect') {
 							// Invalidate all tour-related queries to ensure fresh data
 							queryClient.invalidateQueries({ queryKey: ['userTours'] });
 							queryClient.invalidateQueries({ queryKey: ['toursStats'] });

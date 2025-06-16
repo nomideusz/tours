@@ -11,7 +11,9 @@
 		toggleTourStatus,
 		getTourBookingStatus,
 		calculateConversionRate,
-		getConversionRateText
+		getConversionRateText,
+		getTourDisplayPrice,
+		getTourDisplayPriceFormatted
 	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
@@ -776,7 +778,7 @@
 											{/if}
 											<div class="flex items-center gap-1">
 												<DollarSign class="h-3 w-3" />
-												<span>{$globalCurrencyFormatter(tour.price)}</span>
+												<span>{getTourDisplayPriceFormatted(tour)}</span>
 											</div>
 											<div class="flex items-center gap-1">
 												<Clock class="h-3 w-3" />

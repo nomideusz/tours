@@ -8,6 +8,7 @@
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
 	import { formatParticipantDisplayDetailed } from '$lib/utils/participant-display.js';
+	import { getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -104,14 +105,15 @@
 	function calculateTotal(): number {
 		if (!booking) return 0;
 		try {
-			const price = booking.expand?.tour?.price;
-			if (!price) return 0;
+			// Use the actual total amount that was calculated and stored when booking was created
+			// This handles both regular pricing and pricing tiers correctly
+			const totalAmount = booking.totalAmount;
+			if (!totalAmount) return 0;
 			
-			const basePrice = typeof price === 'string' ? parseFloat(price) : price;
-			if (isNaN(basePrice)) return 0;
+			const amount = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
+			if (isNaN(amount)) return 0;
 			
-			const participants = booking.participants || 1;
-			return basePrice * participants;
+			return amount;
 		} catch (error) {
 			console.warn('Error calculating total:', error);
 			return 0;
@@ -325,8 +327,16 @@
 														{booking.participantBreakdown.children} children × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers.child)}
 													{/if}
 												</p>
+											{:else if booking.expand?.tour?.enablePricingTiers && booking.participantBreakdown}
+												<!-- Fallback for pricing tiers without detailed breakdown -->
+												<p class="text-sm" style="color: var(--text-secondary);">
+													{booking.participantBreakdown.adults || 0} adults × {getTourDisplayPriceFormatted(booking.expand.tour)}
+													{#if booking.participantBreakdown.children > 0}
+														+ {booking.participantBreakdown.children} children × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers?.child || 0)}
+													{/if}
+												</p>
 											{:else}
-												<p class="text-sm" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.expand.tour.price)} × {booking.participants} participants</p>
+												<p class="text-sm" style="color: var(--text-secondary);">{getTourDisplayPriceFormatted(booking.expand.tour)} × {booking.participants} participants</p>
 											{/if}
 										</div>
 									</div>

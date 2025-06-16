@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
+	import { formatDuration, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { getTourImageUrl } from '$lib/utils/tour-helpers-client.js';
 	
 	// TanStack Query
@@ -296,7 +296,7 @@
 								{/if}
 							</div>
 							
-							<div class="tour-price">{$globalCurrencyFormatter(tour.price)}</div>
+							<div class="tour-price">{getTourDisplayPriceFormatted(tour)}</div>
 						</div>
 						
 						<!-- Meta information with better spacing -->

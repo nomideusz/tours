@@ -6,6 +6,7 @@
  */
 
 import type { Tour } from '$lib/types.js';
+import { formatCurrency, formatTourOwnerCurrency } from '$lib/utils/currency.js';
 
 // ============================================
 // FORMATTING FUNCTIONS
@@ -23,7 +24,34 @@ export function formatDuration(minutes: number): string {
 	return `${mins}m`;
 }
 
-import { formatCurrency } from '$lib/utils/currency.js';
+/**
+ * Get the display price for a tour, handling pricing tiers correctly
+ */
+export function getTourDisplayPrice(tour: Tour): number {
+	// If pricing tiers are enabled, use adult price as the display price
+	if (tour.enablePricingTiers && tour.pricingTiers?.adult) {
+		return parseFloat(tour.pricingTiers.adult.toString());
+	}
+	
+	// Otherwise use the regular price field
+	return parseFloat(tour.price.toString()) || 0;
+}
+
+/**
+ * Get formatted display price for a tour
+ */
+export function getTourDisplayPriceFormatted(tour: Tour): string {
+	const price = getTourDisplayPrice(tour);
+	return formatCurrency(price);
+}
+
+/**
+ * Get formatted display price for a tour with tour owner's currency
+ */
+export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurrency?: string): string {
+	const price = getTourDisplayPrice(tour);
+	return formatTourOwnerCurrency(price, ownerCurrency);
+}
 
 /**
  * Format tour price with currency

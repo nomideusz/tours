@@ -14,7 +14,9 @@
 		calculateConversionRate,
 		getConversionRateText,
 		toggleTourStatus,
-		getTourBookingStatus
+		getTourBookingStatus,
+		getTourDisplayPrice,
+		getTourDisplayPriceFormatted
 	} from '$lib/utils/tour-helpers-client.js';
 	import { 
 		formatSlotDateTime,
@@ -370,7 +372,7 @@
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title={tour.name}
-			secondaryInfo="{$globalCurrencyFormatter(tour.price)} per person"
+			secondaryInfo="{getTourDisplayPriceFormatted(tour)} per person"
 			statusButton={{
 				label: getTourBookingStatus(tour).label,
 				color: getTourBookingStatus(tour).color,
@@ -547,7 +549,7 @@
 							<DollarSign class="h-3 w-3" />
 							<span>Price</span>
 						</div>
-						<p class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+						<p class="text-sm font-medium" style="color: var(--text-primary);">{getTourDisplayPriceFormatted(tour)}</p>
 					</div>
 				</div>
 			</div>
@@ -839,7 +841,7 @@
 				{/if}
 				<div class="flex items-center justify-between">
 					<span class="text-sm" style="color: var(--text-secondary);">Price</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)} per person</span>
+					<span class="text-sm font-medium" style="color: var(--text-primary);">{getTourDisplayPriceFormatted(tour)} per person</span>
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-sm" style="color: var(--text-secondary);">Duration</span>

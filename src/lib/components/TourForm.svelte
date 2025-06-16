@@ -790,10 +790,11 @@
 						</div>
 						
 						<div class="flex items-center gap-3">
+							<!-- Hidden input to send the actual status value -->
+							<input type="hidden" name="status" bind:value={formData.status} />
 							<label class="relative inline-flex items-center cursor-pointer">
 								<input
 									type="checkbox"
-									name="status"
 									checked={formData.status === 'active'}
 									onchange={(e) => {
 										const target = e.target as HTMLInputElement;
@@ -1345,6 +1346,7 @@
 						type="file"
 						multiple
 						accept="image/jpeg,image/jpg,image/png,image/webp"
+						capture="environment"
 						class="hidden"
 						id="images-upload"
 						name="images"

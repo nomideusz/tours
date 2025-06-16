@@ -51,6 +51,11 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         return { error: 'User not found' };
 
     } catch (err) {
+        // Re-throw redirects so SvelteKit can handle them properly
+        if (err && typeof err === 'object' && 'status' in err && err.status === 302) {
+            throw err;
+        }
+        
         console.error('Email verification error:', err);
         return { error: 'Failed to verify email. Please try again or contact support.' };
     }
@@ -103,6 +108,11 @@ export const actions: Actions = {
             return fail(404, { error: 'User not found' });
 
         } catch (err) {
+            // Re-throw redirects so SvelteKit can handle them properly
+            if (err && typeof err === 'object' && 'status' in err && err.status === 302) {
+                throw err;
+            }
+            
             console.error('Email verification error:', err);
             return fail(500, { error: 'Failed to verify email. Please try again or contact support.' });
         }

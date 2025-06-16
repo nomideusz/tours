@@ -3,6 +3,7 @@
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { createPublicProfileQuery } from '$lib/queries/public-queries.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
+	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
 	import { generateQRImageURL, generateBookingURL } from '$lib/utils/qr-generation.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import User from 'lucide-svelte/icons/user';
@@ -246,7 +247,7 @@
 									
 									<div class="flex items-center gap-2 text-xl font-bold" style="color: var(--color-primary-600);">
 										<DollarSign class="w-6 h-6" />
-										<span>{formatTourOwnerCurrency(tour.price, profile?.currency)} per person</span>
+										<span>{getTourDisplayPriceFormattedWithCurrency(tour, profile?.currency)} per person</span>
 									</div>
 								</div>
 								

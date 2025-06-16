@@ -6,6 +6,7 @@
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
+	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
 	import { createPublicTourQuery, createTimeSlotAvailabilityQuery } from '$lib/queries/public-queries.js';
 	import { 
 		formatSlotDateTime,
@@ -292,7 +293,7 @@
 						{:else}
 							<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
 								<DollarSign class="w-4 h-4" />
-								{formatTourOwnerCurrency(tour.price, tourOwner?.currency)} per person
+								{getTourDisplayPriceFormattedWithCurrency(tour, tourOwner?.currency)} per person
 							</span>
 						{/if}
 					</div>
@@ -437,7 +438,7 @@
 																{/if}
 															{:else}
 																<p class="text-sm font-medium" style="color: var(--color-primary-600);">
-																	{formatTourOwnerCurrency(tour.price, tourOwner?.currency)}
+																	{getTourDisplayPriceFormattedWithCurrency(tour, tourOwner?.currency)}
 																</p>
 															{/if}
 														</div>
