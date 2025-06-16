@@ -6,11 +6,7 @@ const config = {
 	kit: { 
 		adapter: adapter({
 			// Let CapRover set the port dynamically
-			out: 'build',
-			// Increase body size limit for image uploads (10MB)
-			bodyParser: {
-				sizeLimit: '10mb'
-			}
+			out: 'build'
 		}),
 		serviceWorker: {
 			register: true

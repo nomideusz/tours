@@ -74,7 +74,7 @@
 
 	// Image validation constants (matching server-side)
 	const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-	const MAX_IMAGES = 10;
+	const MAX_IMAGES = 5; // Reduced from 10 to 5 for better performance
 	const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 	let imageUploadErrors: string[] = $state([]);
 
@@ -122,6 +122,16 @@
 		// Check total count limit
 		if (currentTotal + newFiles.length > MAX_IMAGES) {
 			errors.push(`Too many images. Maximum ${MAX_IMAGES} images allowed. You have ${currentTotal} and tried to add ${newFiles.length} more.`);
+		}
+
+		// Check total size limit (warn at 8MB to leave buffer for form data)
+		const currentUploadedSize = uploadedImages.reduce((sum, file) => sum + file.size, 0);
+		const newFilesSize = newFiles.reduce((sum, file) => sum + file.size, 0);
+		const totalSize = currentUploadedSize + newFilesSize;
+		const maxTotalSize = 8 * 1024 * 1024; // 8MB warning threshold
+		
+		if (totalSize > maxTotalSize) {
+			errors.push(`Total upload size too large (${Math.round(totalSize / 1024 / 1024)}MB). Please reduce image sizes or use fewer images. Maximum recommended: 8MB total.`);
 		}
 
 		// Validate each file
@@ -528,23 +538,31 @@
 						formData.append('images', file);
 					});
 					
-					return async ({ result }) => {
-						isSubmitting = false;
-						triggerValidation = false;
-						if (result.type === 'redirect') {
-							// Invalidate all tour-related queries to ensure fresh data
-							queryClient.invalidateQueries({ queryKey: ['userTours'] });
-							queryClient.invalidateQueries({ queryKey: ['toursStats'] });
-							queryClient.invalidateQueries({ queryKey: ['tourDetails', tourId] });
-							queryClient.invalidateQueries({ queryKey: ['tourSchedule', tourId] });
-							
-							// Invalidate public booking page cache
-							if (tour?.qrCode) {
-								invalidatePublicTourData(queryClient, tour.qrCode);
+											return async ({ result }) => {
+							isSubmitting = false;
+							triggerValidation = false;
+							if (result.type === 'redirect') {
+								// Invalidate all tour-related queries to ensure fresh data
+								queryClient.invalidateQueries({ queryKey: ['userTours'] });
+								queryClient.invalidateQueries({ queryKey: ['toursStats'] });
+								queryClient.invalidateQueries({ queryKey: ['tourDetails', tourId] });
+								queryClient.invalidateQueries({ queryKey: ['tourSchedule', tourId] });
+								
+								// Invalidate public booking page cache
+								if (tour?.qrCode) {
+									invalidatePublicTourData(queryClient, tour.qrCode);
+								}
+								goto(result.location);
+							} else if (result.type === 'failure') {
+								// Handle server errors (like file size limits)
+								console.error('Form submission failed:', result);
+								if (result.status === 413) {
+									error = 'Upload too large. Please reduce image sizes or use fewer images. Maximum total upload size is 10MB.';
+								} else {
+									error = (result.data as any)?.error || 'An error occurred while updating your tour. Please try again.';
+								}
 							}
-							goto(result.location);
-						}
-					};
+						};
 				}}>
 					<!-- Hidden input for images to remove -->
 					{#each imagesToRemove as imageToRemove}
