@@ -44,11 +44,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
                 console.warn('⚠️ Error sending welcome email:', emailError);
             }
             
-            return { 
-                success: true, 
-                message: 'Email verified successfully! Welcome to Zaur Tours.',
-                userName: user[0].name
-            };
+            // Redirect immediately after successful verification
+            throw redirect(302, '/dashboard');
         }
 
         return { error: 'User not found' };

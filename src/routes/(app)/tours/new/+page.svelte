@@ -175,9 +175,9 @@
 
 	// Derived values for template
 	let completionStats = $derived(formCompletion());
-	let pageTitle = $derived(shouldActivate ? 'Create & Go Live' : 'Create Tour');
-	let pageSubtitle = $derived(shouldActivate ? 'Create your tour and make it live immediately' : 'Create your tour as a draft first');
-	let submitButtonText = $derived(shouldActivate ? 'Create & Go Live' : 'Save Draft');
+	let pageTitle = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Create Tour');
+	let pageSubtitle = $derived(formData.status === 'active' ? 'Create your tour and make it live immediately' : 'Create your tour as a draft first');
+	let submitButtonText = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Save as Draft');
 </script>
 
 <svelte:head>
@@ -193,7 +193,7 @@
 			secondaryInfo="New Tour"
 			quickActions={[
 				{
-					label: 'Save & Continue',
+					label: submitButtonText,
 					icon: Save,
 					onclick: handleSave,
 					variant: 'primary',
@@ -247,7 +247,7 @@
 					</button>
 					<button onclick={handleSave} class="button-primary button--gap" disabled={isSubmitting}>
 						<Save class="h-4 w-4" />
-						Save & Continue
+						{submitButtonText}
 					</button>
 				</div>
 			</PageHeader>
@@ -352,7 +352,7 @@
 					bind:formData
 					bind:uploadedImages
 					{isSubmitting}
-					submitButtonText="Save & Continue"
+					submitButtonText={submitButtonText}
 					isEdit={false}
 					onCancel={handleCancel}
 					onImageUpload={handleImageUpload}
@@ -366,17 +366,117 @@
 		</div>
 	</div>
 
+	<!-- Tour Status & Save Options -->
+	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Tour Status & Save Options</h3>
+		
+		<!-- Status Toggle -->
+		<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div class="w-8 h-8 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
+						<span class="text-sm font-medium {formData.status === 'active' ? 'text-green-600' : 'text-amber-600'}">
+							{formData.status === 'active' ? '🟢' : '📝'}
+						</span>
+					</div>
+					<div>
+						<p class="font-semibold" style="color: var(--text-primary);">
+							{formData.status === 'active' ? 'Create as Active Tour' : 'Create as Draft'}
+						</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{formData.status === 'active' ? 'Your tour will be live and accepting bookings immediately' : 'Your tour will be saved but not visible to customers'}
+						</p>
+					</div>
+				</div>
+				
+				<!-- iOS-style Toggle Switch with Labels -->
+				<div class="flex items-center gap-3">
+					<span class="text-sm font-medium transition-colors {formData.status === 'draft' ? 'text-amber-600' : 'text-gray-400'}" style="color: {formData.status === 'draft' ? 'var(--color-warning-600)' : 'var(--text-tertiary)'};">
+						Draft
+					</span>
+					<label class="relative inline-flex items-center cursor-pointer group">
+						<input
+							type="checkbox"
+							checked={formData.status === 'active'}
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								formData.status = target.checked ? 'active' : 'draft';
+							}}
+							class="sr-only peer"
+						/>
+						<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 group-hover:peer-checked:bg-green-600"></div>
+						<!-- Tooltip on hover -->
+						<div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+							{formData.status === 'active' ? 'Switch to Draft' : 'Activate Tour'}
+						</div>
+					</label>
+					<span class="text-sm font-medium transition-colors {formData.status === 'active' ? 'text-green-600' : 'text-gray-400'}" style="color: {formData.status === 'active' ? 'var(--color-success-600)' : 'var(--text-tertiary)'};">
+						Active
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Save Actions Explanation -->
+		<div class="space-y-3 mb-6">
+			<div class="flex items-start gap-3">
+				<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+					<span class="text-xs font-medium text-blue-600">💾</span>
+				</div>
+				<div>
+					<p class="font-medium" style="color: var(--text-primary);">
+						{formData.status === 'active' ? 'Create & Go Live' : 'Save as Draft'}
+					</p>
+					<p class="text-sm" style="color: var(--text-secondary);">
+						{formData.status === 'active' 
+							? 'Your tour will be created and immediately available for bookings' 
+							: 'Save your tour safely and activate it later when you\'re ready'}
+					</p>
+				</div>
+			</div>
+			{#if formData.status === 'active'}
+				<div class="flex items-start gap-3">
+					<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+						<span class="text-xs font-medium text-green-600">⚡</span>
+					</div>
+					<div>
+						<p class="font-medium" style="color: var(--text-primary);">Ready to accept bookings</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							Customers will be able to find and book your tour immediately after creation
+						</p>
+					</div>
+				</div>
+			{:else}
+				<div class="flex items-start gap-3">
+					<div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center mt-0.5">
+						<span class="text-xs font-medium text-amber-600">🔒</span>
+					</div>
+					<div>
+						<p class="font-medium" style="color: var(--text-primary);">Private until activated</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							You can add schedule, test everything, and activate when you're ready
+						</p>
+					</div>
+				</div>
+			{/if}
+		</div>
+	</div>
+
 	<!-- Next Steps & Process -->
 	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 		<div class="flex items-center gap-3 mb-4">
 			<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
 				<Save class="h-4 w-4 text-blue-600" />
 			</div>
-			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Your Tour Journey</h3>
+			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+				{formData.status === 'active' ? 'Going Live Process' : 'Your Tour Journey'}
+			</h3>
 		</div>
 		
 		<p class="text-sm mb-4" style="color: var(--text-secondary);">
-			We'll save your tour as a <strong>draft first</strong>, giving you complete control over when to go live.
+			{formData.status === 'active' 
+				? 'Your tour will be created and immediately available for bookings.'
+				: 'We\'ll save your tour as a <strong>draft first</strong>, giving you complete control over when to go live.'}
 		</p>
 		
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
