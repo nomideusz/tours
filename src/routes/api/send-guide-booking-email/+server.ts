@@ -7,6 +7,31 @@ import { formatCurrency } from '$lib/utils/currency.js';
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
+// Helper function to format participant display for guide emails
+function formatParticipantDisplayForGuide(participants: number, participantBreakdown: any): string {
+  if (participantBreakdown && typeof participantBreakdown === 'object') {
+    const breakdown = participantBreakdown as { adults: number; children: number };
+    const parts = [];
+    
+    if (breakdown.adults > 0) {
+      parts.push(`${breakdown.adults} adult${breakdown.adults === 1 ? '' : 's'}`);
+    }
+    
+    if (breakdown.children > 0) {
+      parts.push(`${breakdown.children} child${breakdown.children === 1 ? '' : 'ren'}`);
+    }
+    
+    if (parts.length === 0) {
+      return `${participants} ${participants === 1 ? 'person' : 'people'}`;
+    }
+    
+    return `${parts.join(' + ')} (${participants} total)`;
+  }
+  
+  // Fallback to simple participant count
+  return `${participants} ${participants === 1 ? 'person' : 'people'}`;
+}
+
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { bookingId } = await request.json();
@@ -23,6 +48,7 @@ export const POST: RequestHandler = async ({ request }) => {
       customerEmail: bookings.customerEmail,
       customerPhone: bookings.customerPhone,
       participants: bookings.participants,
+      participantBreakdown: bookings.participantBreakdown,
       totalAmount: bookings.totalAmount,
       bookingReference: bookings.bookingReference,
       specialRequests: bookings.specialRequests,
@@ -93,7 +119,7 @@ export const POST: RequestHandler = async ({ request }) => {
               </div>
               <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                 <span style="font-weight: 600; color: #374151;">Participants:</span>
-                <span style="color: #6b7280;">${data.participants} ${data.participants === 1 ? 'person' : 'people'}</span>
+                <span style="color: #6b7280;">${formatParticipantDisplayForGuide(data.participants, data.participantBreakdown)}</span>
               </div>
               <div style="display: flex; justify-content: space-between; padding: 8px 0;">
                 <span style="font-weight: 600; color: #374151;">Total Amount:</span>
@@ -146,7 +172,7 @@ Tour: ${data.tourName}
 Reference: ${data.bookingReference}
 Date: ${tourDate}
 Time: ${tourTime}
-Participants: ${data.participants} ${data.participants === 1 ? 'person' : 'people'}
+Participants: ${formatParticipantDisplayForGuide(data.participants, data.participantBreakdown)}
 Total Amount: ${formattedAmount}
 
 CUSTOMER INFORMATION

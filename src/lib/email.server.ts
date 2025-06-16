@@ -297,6 +297,31 @@ function createEmailTemplate(content: string): string {
 </html>`;
 }
 
+// Helper function to format participant display
+function formatParticipantDisplay(booking: Booking): string {
+  if (booking.participantBreakdown && typeof booking.participantBreakdown === 'object') {
+    const breakdown = booking.participantBreakdown as { adults: number; children: number };
+    const parts = [];
+    
+    if (breakdown.adults > 0) {
+      parts.push(`${breakdown.adults} adult${breakdown.adults === 1 ? '' : 's'}`);
+    }
+    
+    if (breakdown.children > 0) {
+      parts.push(`${breakdown.children} child${breakdown.children === 1 ? '' : 'ren'}`);
+    }
+    
+    if (parts.length === 0) {
+      return `${booking.participants} participant${booking.participants === 1 ? '' : 's'}`;
+    }
+    
+    return `${parts.join(' + ')} (${booking.participants} total)`;
+  }
+  
+  // Fallback to simple participant count
+  return `${booking.participants} participant${booking.participants === 1 ? '' : 's'}`;
+}
+
 // Email template generators
 function generateConfirmationEmail(data: BookingEmailData): EmailTemplate {
   const { booking, tour, timeSlot } = data;
@@ -322,7 +347,7 @@ function generateConfirmationEmail(data: BookingEmailData): EmailTemplate {
         <p style="margin: 5px 0;"><strong>Reference:</strong> ${booking.bookingReference}</p>
         <p style="margin: 5px 0;"><strong>Tour:</strong> ${tourName}</p>
         <p style="margin: 5px 0;"><strong>Date & Time:</strong> ${startTime.toLocaleString()}</p>
-        <p style="margin: 5px 0;"><strong>Participants:</strong> ${booking.participants}</p>
+        <p style="margin: 5px 0;"><strong>Participants:</strong> ${formatParticipantDisplay(booking)}</p>
         <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${booking.totalAmount}</p>
         ${meetingPoint ? `<p style="margin: 5px 0;"><strong>Meeting Point:</strong> ${meetingPoint}</p>` : ''}
     </div>
@@ -411,7 +436,7 @@ function generateReminderEmail(data: BookingEmailData): EmailTemplate {
         <p style="margin: 5px 0;"><strong>Reference:</strong> ${booking.bookingReference}</p>
         <p style="margin: 5px 0;"><strong>Tour:</strong> ${tourName}</p>
         <p style="margin: 5px 0;"><strong>Date & Time:</strong> ${startTime.toLocaleString()}</p>
-        <p style="margin: 5px 0;"><strong>Participants:</strong> ${booking.participants}</p>
+        <p style="margin: 5px 0;"><strong>Participants:</strong> ${formatParticipantDisplay(booking)}</p>
         ${meetingPoint ? `<p style="margin: 5px 0;"><strong>Meeting Point:</strong> ${meetingPoint}</p>` : ''}
     </div>
     

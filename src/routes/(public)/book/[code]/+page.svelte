@@ -103,6 +103,8 @@
 	let selectedDate = $state<string>('');
 	let selectedTimeSlot = $state<TimeSlot | null>(null);
 	let participants = $state(1);
+	let adultParticipants = $state(1);
+	let childParticipants = $state(0);
 	let customerName = $state((form as any)?.customerName || '');
 	let customerEmail = $state((form as any)?.customerEmail || '');
 	let customerPhone = $state((form as any)?.customerPhone || '');
@@ -122,8 +124,26 @@
 	let availableTimeSlots = $state<TimeSlot[]>([]);
 	let hasRealTimeSlots = $derived(allTimeSlots?.length > 0);
 	
-	// Calculate total price
-	let totalPrice = $derived(tour?.price ? participants * parseFloat(tour.price) : 0);
+	// Calculate total price based on pricing model
+	let totalPrice = $derived(() => {
+		if (!tour) return 0;
+		
+		if (tour.enablePricingTiers && tour.pricingTiers) {
+			// Pricing tiers enabled - calculate based on adult/child breakdown
+			const adultPrice = parseFloat(tour.pricingTiers.adult) || 0;
+			const childPrice = parseFloat(tour.pricingTiers.child) || 0;
+			return (adultParticipants * adultPrice) + (childParticipants * childPrice);
+		} else {
+			// Single pricing - use traditional calculation
+			return participants * parseFloat(tour.price);
+		}
+	});
+	
+	// Get the actual price value for display
+	let displayPrice = $derived(totalPrice());
+	
+	// Total participant count for validation
+	let totalParticipants = $derived(tour?.enablePricingTiers ? adultParticipants + childParticipants : participants);
 	
 	// Process available dates when time slots change
 	$effect(() => {
@@ -259,10 +279,22 @@
 							<Users class="w-4 h-4" />
 							Max {tour.capacity} people
 						</span>
-						<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
-							<DollarSign class="w-4 h-4" />
-							{formatTourOwnerCurrency(tour.price, tourOwner?.currency)} per person
-						</span>
+						{#if tour.enablePricingTiers && tour.pricingTiers}
+							<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
+								<DollarSign class="w-4 h-4" />
+								Adults: {formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
+								{#if parseFloat(tour.pricingTiers.child) > 0}
+									• Children: {formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency)}
+								{:else}
+									• Children: Free
+								{/if}
+							</span>
+						{:else}
+							<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
+								<DollarSign class="w-4 h-4" />
+								{formatTourOwnerCurrency(tour.price, tourOwner?.currency)} per person
+							</span>
+						{/if}
 					</div>
 					
 					{#if tour.description}
@@ -336,6 +368,17 @@
 									<input type="hidden" name="timeSlotId" value={selectedTimeSlot.id} />
 									<input type="hidden" name="availableSpots" value={selectedTimeSlot.availableSpots} />
 									<input type="hidden" name="bookedSpots" value={selectedTimeSlot.bookedSpots || 0} />
+									
+									<!-- Participant data based on pricing model -->
+									{#if tour.enablePricingTiers && tour.pricingTiers}
+										<input type="hidden" name="totalParticipants" value={totalParticipants} />
+										<input type="hidden" name="participantBreakdown" value={JSON.stringify({
+											adults: adultParticipants,
+											children: childParticipants
+										})} />
+									{:else}
+										<input type="hidden" name="totalParticipants" value={participants} />
+									{/if}
 								{/if}
 								
 								<!-- Date Selection -->
@@ -379,9 +422,24 @@
 															</p>
 														</div>
 														<div class="text-right">
-															<p class="text-sm font-medium" style="color: var(--color-primary-600);">
-																{formatTourOwnerCurrency(tour.price, tourOwner?.currency)}
-															</p>
+															{#if tour.enablePricingTiers && tour.pricingTiers}
+																<p class="text-xs font-medium" style="color: var(--color-primary-600);">
+																	Adults: {formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
+																</p>
+																{#if parseFloat(tour.pricingTiers.child) > 0}
+																	<p class="text-xs" style="color: var(--color-primary-600);">
+																		Children: {formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency)}
+																	</p>
+																{:else}
+																	<p class="text-xs" style="color: var(--color-primary-600);">
+																		Children: Free
+																	</p>
+																{/if}
+															{:else}
+																<p class="text-sm font-medium" style="color: var(--color-primary-600);">
+																	{formatTourOwnerCurrency(tour.price, tourOwner?.currency)}
+																</p>
+															{/if}
 														</div>
 													</div>
 												</button>
@@ -392,21 +450,72 @@
 								
 								<!-- Participants -->
 								{#if selectedTimeSlot}
-									<div>
-										<label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
-											Number of Participants
-										</label>
-										<select
-											bind:value={participants}
-											name="participants"
-											class="form-select w-full"
-											required
-										>
-											{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots, 10)}, (_, i) => i + 1) as num}
-												<option value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
-											{/each}
-										</select>
-									</div>
+									{#if tour.enablePricingTiers && tour.pricingTiers}
+										<!-- Pricing Tiers: Adult/Child Selection -->
+										<div class="space-y-4">
+											<h3 class="text-sm font-medium" style="color: var(--text-primary);">Number of Participants</h3>
+											
+											<div class="grid grid-cols-2 gap-4">
+												<div>
+													<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+														Adults ({formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)} each)
+													</label>
+													<select
+														bind:value={adultParticipants}
+														name="adultParticipants"
+														class="form-select w-full"
+														required
+													>
+														{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots, 10)}, (_, i) => i + 1) as num}
+															<option value={num}>{num}</option>
+														{/each}
+													</select>
+												</div>
+												
+												<div>
+													<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+														Children ({parseFloat(tour.pricingTiers.child) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) + ' each' : 'Free'})
+													</label>
+													<select
+														bind:value={childParticipants}
+														name="childParticipants"
+														class="form-select w-full"
+													>
+														{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots - adultParticipants + 1, 11)}, (_, i) => i) as num}
+															<option value={num}>{num}</option>
+														{/each}
+													</select>
+												</div>
+											</div>
+											
+											<div class="text-sm p-3 rounded-lg" style="background: var(--bg-secondary); color: var(--text-secondary);">
+												Total: {totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
+												{#if totalParticipants > (selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots)}
+													<span class="text-red-600 font-medium">
+														• Exceeds available spots ({selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots} remaining)
+													</span>
+												{/if}
+											</div>
+										</div>
+									{:else}
+										<!-- Single Pricing: Traditional Selection -->
+										<div>
+											<label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
+												Number of Participants
+											</label>
+											<select
+												bind:value={participants}
+												name="participants"
+												class="form-select w-full"
+												required
+											>
+												{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots, 10)}, (_, i) => i + 1) as num}
+													<option value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
+												{/each}
+											</select>
+										</div>
+									{/if}
+								{/if}
 									
 									<!-- Customer Information -->
 									<div class="space-y-4">
@@ -466,16 +575,34 @@
 									
 									<!-- Total Price -->
 									<div class="border-t pt-4" style="border-color: var(--border-primary);">
+										{#if tour.enablePricingTiers && tour.pricingTiers && (adultParticipants > 0 || childParticipants > 0)}
+											<!-- Pricing Breakdown -->
+											<div class="space-y-2 mb-3">
+												{#if adultParticipants > 0}
+													<div class="flex justify-between text-sm" style="color: var(--text-secondary);">
+														<span>{adultParticipants} Adult{adultParticipants === 1 ? '' : 's'} × {formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}</span>
+														<span>{formatTourOwnerCurrency(adultParticipants * parseFloat(tour.pricingTiers.adult), tourOwner?.currency)}</span>
+													</div>
+												{/if}
+												{#if childParticipants > 0}
+													<div class="flex justify-between text-sm" style="color: var(--text-secondary);">
+														<span>{childParticipants} Child{childParticipants === 1 ? '' : 'ren'} × {parseFloat(tour.pricingTiers.child) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) : 'Free'}</span>
+														<span>{formatTourOwnerCurrency(childParticipants * parseFloat(tour.pricingTiers.child), tourOwner?.currency)}</span>
+													</div>
+												{/if}
+											</div>
+										{/if}
+										
 										<div class="flex justify-between items-center text-lg font-semibold">
 											<span style="color: var(--text-primary);">Total Price</span>
-											<span style="color: var(--color-primary-600);">{formatTourOwnerCurrency(totalPrice, tourOwner?.currency)}</span>
+											<span style="color: var(--color-primary-600);">{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}</span>
 										</div>
 									</div>
 									
 									<!-- Submit Button -->
 									<button
 										type="submit"
-										disabled={isSubmitting || !customerName || !customerEmail}
+										disabled={isSubmitting || !customerName || !customerEmail || !selectedTimeSlot || totalParticipants > (selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots) || totalParticipants === 0}
 										class="w-full button-primary button--gap justify-center py-4 text-base"
 									>
 										{#if isSubmitting}
@@ -483,10 +610,9 @@
 											Processing...
 										{:else}
 											<ChevronRight class="w-5 h-5" />
-											Book Now - {formatTourOwnerCurrency(totalPrice, tourOwner?.currency)}
+											Book Now - {formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
 										{/if}
 									</button>
-								{/if}
 							</form>
 						{/if}
 					{/if}

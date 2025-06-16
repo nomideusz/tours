@@ -129,6 +129,10 @@ CREATE TABLE tours (
     requirements JSON DEFAULT '[]',
     cancellation_policy TEXT,
     
+    -- Pricing tiers for adult/child pricing
+    enable_pricing_tiers BOOLEAN NOT NULL DEFAULT FALSE,
+    pricing_tiers JSON, -- { "adult": 25.00, "child": 15.00 }
+    
     -- Simplified QR code approach - one QR per tour
     qr_code VARCHAR(100) UNIQUE,
     qr_scans INTEGER NOT NULL DEFAULT 0,
@@ -168,6 +172,7 @@ CREATE TABLE bookings (
     customer_email VARCHAR(255) NOT NULL,
     customer_phone VARCHAR(50),
     participants INTEGER NOT NULL,
+    participant_breakdown JSON, -- { "adults": 2, "children": 1 } for pricing tiers
     total_amount DECIMAL(10, 2) NOT NULL,
     status booking_status NOT NULL DEFAULT 'pending',
     payment_id VARCHAR(255),
@@ -253,6 +258,7 @@ CREATE INDEX idx_tours_user_id ON tours(user_id);
 CREATE INDEX idx_tours_status ON tours(status);
 CREATE INDEX idx_tours_category ON tours(category);
 CREATE INDEX idx_tours_qr_code ON tours(qr_code);
+CREATE INDEX idx_tours_enable_pricing_tiers ON tours(enable_pricing_tiers);
 CREATE INDEX idx_tours_created_at ON tours(created_at);
 CREATE INDEX idx_tours_updated_at ON tours(updated_at);
 

@@ -51,6 +51,8 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         includedItems: tour.includedItems,
         requirements: tour.requirements,
         cancellationPolicy: tour.cancellationPolicy,
+        enablePricingTiers: tour.enablePricingTiers,
+        pricingTiers: tour.pricingTiers,
         images: tour.images,
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt
@@ -121,6 +123,20 @@ export const actions: Actions = {
         // Use the array version if JSON parsing fails
       }
 
+      // Get pricing tiers
+      const enablePricingTiers = formData.get('enablePricingTiers') === 'on' || formData.get('enablePricingTiers') === 'true';
+      let pricingTiers = null;
+      
+      if (enablePricingTiers) {
+        const adultPrice = formData.get('pricingTiers.adult');
+        const childPrice = formData.get('pricingTiers.child');
+        
+        pricingTiers = {
+          adult: adultPrice ? parseFloat(String(adultPrice)) : 0,
+          child: childPrice ? parseFloat(String(childPrice)) : 0
+        };
+      }
+
       // Prepare tour data
       const tourData = {
         name: formData.get('name'),
@@ -133,7 +149,9 @@ export const actions: Actions = {
         location: formData.get('location'),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
-        cancellationPolicy: formData.get('cancellationPolicy')
+        cancellationPolicy: formData.get('cancellationPolicy'),
+        enablePricingTiers,
+        pricingTiers
       };
 
       // Sanitize the data
@@ -236,6 +254,8 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
+          pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
           images: finalImages,
           updatedAt: new Date()
         })

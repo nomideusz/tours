@@ -5,6 +5,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	
@@ -472,7 +473,7 @@
 												<span>{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}</span>
 											{/if}
 											<span>•</span>
-											<span>{booking.participants} guests</span>
+											<span>{formatParticipantDisplayCompact(booking)} guests</span>
 											<span>•</span>
 											<span>{$globalCurrencyFormatter(booking.totalAmount || 0)}</span>
 										</div>

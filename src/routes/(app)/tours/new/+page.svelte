@@ -50,7 +50,12 @@
 		location: (form as any)?.formData?.location || '',
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],
-		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || ''
+		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || '',
+		enablePricingTiers: (form as any)?.formData?.enablePricingTiers || false,
+		pricingTiers: (form as any)?.formData?.pricingTiers || {
+			adult: 10, // default to same as price
+			child: 0
+		}
 	});
 
 	// Image upload state

@@ -4,6 +4,7 @@
 	import { getDisplayReference } from '$lib/ticket-qr.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
+	import { formatParticipantDisplay } from '$lib/utils/participant-display.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -173,7 +174,7 @@
 						<Users class="w-5 h-5" style="color: var(--text-tertiary);" />
 						<div>
 							<p class="font-medium" style="color: var(--text-primary);">
-								{data.booking.participants} {data.booking.participants === 1 ? 'participant' : 'participants'}
+								{formatParticipantDisplay(data.booking)}
 							</p>
 							<p class="text-sm" style="color: var(--text-secondary);">Group size</p>
 						</div>

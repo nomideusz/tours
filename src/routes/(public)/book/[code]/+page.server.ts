@@ -20,11 +20,33 @@ export const actions: Actions = {
 
 		// Extract form data
 		const timeSlotId = formData.get('timeSlotId') as string;
-		const participants = parseInt(formData.get('participants') as string);
+		const totalParticipants = parseInt(formData.get('totalParticipants') as string);
+		const participantBreakdownStr = formData.get('participantBreakdown') as string;
+		const legacyParticipants = formData.get('participants') as string; // For backward compatibility
 		const customerName = formData.get('customerName') as string;
 		const customerEmail = formData.get('customerEmail') as string;
 		const customerPhone = formData.get('customerPhone') as string;
 		const specialRequests = formData.get('specialRequests') as string;
+		
+		// Handle participant data (new pricing tiers vs legacy single pricing)
+		let participants: number;
+		let participantBreakdown: { adults: number; children: number } | null = null;
+		
+		if (totalParticipants && participantBreakdownStr) {
+			// New pricing tiers format
+			participants = totalParticipants;
+			try {
+				participantBreakdown = JSON.parse(participantBreakdownStr);
+			} catch (e) {
+				console.error('Failed to parse participant breakdown:', e);
+				participantBreakdown = null;
+			}
+		} else if (legacyParticipants) {
+			// Legacy single pricing format
+			participants = parseInt(legacyParticipants);
+		} else {
+			participants = 0;
+		}
 
 		// Validate required fields
 		if (!timeSlotId || !participants || !customerName || !customerEmail) {
@@ -105,8 +127,24 @@ export const actions: Actions = {
 				});
 			}
 
-			// Calculate total amount
-			const totalAmount = (parseFloat(tour.price) * participants).toFixed(2);
+			// Calculate total amount based on pricing model
+			let totalAmount: string;
+			
+			if (tour.enablePricingTiers && tour.pricingTiers && participantBreakdown) {
+				// Pricing tiers calculation
+				const adultPrice = tour.pricingTiers.adult || 0;
+				const childPrice = tour.pricingTiers.child || 0;
+				const adultTotal = participantBreakdown.adults * adultPrice;
+				const childTotal = participantBreakdown.children * childPrice;
+				totalAmount = (adultTotal + childTotal).toFixed(2);
+				
+				console.log(`💰 Pricing tiers calculation: ${participantBreakdown.adults} adults × €${adultPrice} + ${participantBreakdown.children} children × €${childPrice} = €${totalAmount}`);
+			} else {
+				// Single pricing calculation
+				totalAmount = (parseFloat(tour.price) * participants).toFixed(2);
+				
+				console.log(`💰 Single pricing calculation: ${participants} participants × €${tour.price} = €${totalAmount}`);
+			}
 
 			// Generate booking reference and ticket QR code
 			const bookingReference = `BK-${createId().slice(0, 8).toUpperCase()}`;
@@ -124,6 +162,7 @@ export const actions: Actions = {
 				customerEmail,
 				customerPhone: customerPhone || null,
 				participants,
+				participantBreakdown: participantBreakdown,
 				totalAmount,
 				status: 'pending',
 				paymentStatus: 'pending',

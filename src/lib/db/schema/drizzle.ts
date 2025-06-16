@@ -108,6 +108,13 @@ export const tours = pgTable('tours', {
   requirements: json('requirements').$type<string[]>().default([]),
   cancellationPolicy: text('cancellation_policy'),
   
+  // Pricing tiers
+  enablePricingTiers: boolean('enable_pricing_tiers').notNull().default(false),
+  pricingTiers: json('pricing_tiers').$type<{
+    adult: number;
+    child?: number;
+  }>(),
+  
   // Simplified QR code approach
   qrCode: varchar('qr_code', { length: 100 }).unique(),
   qrScans: integer('qr_scans').notNull().default(0),
@@ -168,6 +175,11 @@ export const bookings = pgTable('bookings', {
   customerPhone: varchar('customer_phone', { length: 50 }),
   participants: integer('participants').notNull(),
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
+  // Pricing breakdown for tiers
+  participantBreakdown: json('participant_breakdown').$type<{
+    adults: number;
+    children?: number;
+  }>(),
   status: bookingStatusEnum('status').notNull().default('pending'),
   paymentId: varchar('payment_id', { length: 255 }),
   paymentStatus: paymentStatusEnum('payment_status').notNull().default('pending'),

@@ -4,6 +4,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -371,7 +372,7 @@
 									</span>
 									<span class="flex items-center gap-1">
 										<Users class="h-3 w-3" />
-										{booking.participants}
+										{formatParticipantDisplayCompact(booking)}
 									</span>
 								</div>
 								<span class="text-sm font-medium" style="color: var(--text-primary);">

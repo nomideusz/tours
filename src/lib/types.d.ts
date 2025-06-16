@@ -48,6 +48,12 @@ export interface Tour extends RecordModel {
   includedItems?: string[];
   requirements?: string[];
   cancellationPolicy?: string;
+  // Pricing tiers
+  enablePricingTiers?: boolean;
+  pricingTiers?: {
+    adult: number;
+    child?: number;
+  };
   // QR code fields
   qrCode?: string;
   qrScans?: number;
@@ -86,6 +92,11 @@ export interface Booking extends RecordModel {
   customerPhone?: string;
   participants: number;
   totalAmount: string; // decimal fields return strings in Drizzle
+  // Pricing breakdown for tiers
+  participantBreakdown?: {
+    adults: number;
+    children?: number;
+  };
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   paymentId?: string; // Stripe payment intent ID
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';

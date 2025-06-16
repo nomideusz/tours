@@ -22,6 +22,11 @@ export interface TourFormData {
 	includedItems: string[];
 	requirements: string[];
 	cancellationPolicy: string;
+	enablePricingTiers?: boolean;
+	pricingTiers?: {
+		adult: number;
+		child?: number;
+	};
 }
 
 export interface TimeSlotFormData {
@@ -144,15 +149,46 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		}
 	}
 
-	// Validate price
-	if (data.price === undefined || data.price === null) {
-		errors.push({ field: 'price', message: 'Price is required' });
-	} else {
-		if (data.price < VALIDATION_RULES.price.min) {
-			errors.push({ field: 'price', message: `Price must be at least €${VALIDATION_RULES.price.min}` });
+	// Validate price (only if pricing tiers are disabled)
+	if (!data.enablePricingTiers) {
+		if (data.price === undefined || data.price === null) {
+			errors.push({ field: 'price', message: 'Price is required' });
+		} else {
+			if (data.price < VALIDATION_RULES.price.min) {
+				errors.push({ field: 'price', message: `Price must be at least €${VALIDATION_RULES.price.min}` });
+			}
+			if (data.price > VALIDATION_RULES.price.max) {
+				errors.push({ field: 'price', message: `Price must be no more than €${VALIDATION_RULES.price.max}` });
+			}
 		}
-		if (data.price > VALIDATION_RULES.price.max) {
-			errors.push({ field: 'price', message: `Price must be no more than €${VALIDATION_RULES.price.max}` });
+	}
+
+	// Validate pricing tiers (if enabled)
+	if (data.enablePricingTiers) {
+		if (!data.pricingTiers) {
+			errors.push({ field: 'pricingTiers', message: 'Pricing tiers are required when enabled' });
+		} else {
+			// Validate adult price
+			if (data.pricingTiers.adult === undefined || data.pricingTiers.adult === null) {
+				errors.push({ field: 'pricingTiers.adult', message: 'Adult price is required' });
+			} else {
+				if (data.pricingTiers.adult < VALIDATION_RULES.price.min) {
+					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be at least €${VALIDATION_RULES.price.min}` });
+				}
+				if (data.pricingTiers.adult > VALIDATION_RULES.price.max) {
+					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be no more than €${VALIDATION_RULES.price.max}` });
+				}
+			}
+
+			// Validate child price (optional, but if provided must be valid)
+			if (data.pricingTiers.child !== undefined && data.pricingTiers.child !== null) {
+				if (data.pricingTiers.child < 0) {
+					errors.push({ field: 'pricingTiers.child', message: 'Child price cannot be negative' });
+				}
+				if (data.pricingTiers.child > VALIDATION_RULES.price.max) {
+					errors.push({ field: 'pricingTiers.child', message: `Child price must be no more than €${VALIDATION_RULES.price.max}` });
+				}
+			}
 		}
 	}
 
@@ -359,7 +395,12 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		location: String(data.location || '').trim(),
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
-		cancellationPolicy: String(data.cancellationPolicy || '').trim()
+		cancellationPolicy: String(data.cancellationPolicy || '').trim(),
+		enablePricingTiers: Boolean(data.enablePricingTiers),
+		pricingTiers: data.pricingTiers ? {
+			adult: Number(data.pricingTiers.adult) || 0,
+			child: Number(data.pricingTiers.child) || 0
+		} : undefined
 	};
 }
 

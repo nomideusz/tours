@@ -15,6 +15,11 @@
 			includedItems: string[];
 			requirements: string[];
 			cancellationPolicy: string;
+			enablePricingTiers: boolean;
+			pricingTiers: {
+				adult: number;
+				child?: number;
+			};
 		};
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
@@ -590,6 +595,42 @@
 		return isValid;
 	}
 
+	// Pricing tiers toggle handler
+	function handlePricingTiersToggle() {
+		if (formData.enablePricingTiers) {
+			// Initialize pricing tiers with current price as adult price
+			formData.pricingTiers = {
+				adult: formData.price || 0,
+				child: 0
+			};
+		} else {
+			// When switching back to single pricing, use adult price as the main price
+			if (formData.pricingTiers.adult > 0) {
+				formData.price = formData.pricingTiers.adult;
+			}
+			// Reset pricing tiers
+			formData.pricingTiers = {
+				adult: 0,
+				child: 0
+			};
+		}
+	}
+
+	// State for child price to handle undefined values
+	let childPrice = $state(0);
+
+	// Sync child price with formData
+	$effect(() => {
+		childPrice = formData.pricingTiers?.child ?? 0;
+	});
+
+	// Update formData when child price changes
+	$effect(() => {
+		if (formData.pricingTiers) {
+			formData.pricingTiers.child = childPrice;
+		}
+	});
+
 
 </script>
 
@@ -810,22 +851,48 @@
 			<div class="p-4">
 			
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<NumberInput
-					id="price"
-					name="price"
-					label="Price per Person (€)"
-					bind:value={formData.price}
-					min={0.5}
-					max={99999}
-					step={0.5}
-					placeholder="0.50"
-					incrementLabel="Increase price"
-					decrementLabel="Decrease price"
-					error={getFieldError(allErrors, 'price')}
-					hasError={hasFieldError(allErrors, 'price')}
-					decimalPlaces={2}
-					onblur={() => validateField('price')}
-				/>
+				<!-- Only show single price field when pricing tiers are disabled -->
+				{#if !formData.enablePricingTiers}
+					<NumberInput
+						id="price"
+						name="price"
+						label="Price per Person (€)"
+						bind:value={formData.price}
+						min={0.5}
+						max={99999}
+						step={0.5}
+						placeholder="0.50"
+						incrementLabel="Increase price"
+						decrementLabel="Decrease price"
+						error={getFieldError(allErrors, 'price')}
+						hasError={hasFieldError(allErrors, 'price')}
+						decimalPlaces={2}
+						onblur={() => validateField('price')}
+					/>
+				{:else}
+					<!-- Show pricing summary when tiers are enabled -->
+					<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<div class="flex items-center gap-2 mb-2">
+							<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+								<span class="text-xs font-semibold text-blue-600">💰</span>
+							</div>
+							<h4 class="font-medium" style="color: var(--text-primary);">Pricing Tiers</h4>
+						</div>
+						<div class="space-y-1 text-sm">
+							<div class="flex justify-between">
+								<span style="color: var(--text-secondary);">Adult:</span>
+								<span style="color: var(--text-primary);">€{formData.pricingTiers.adult || 0}</span>
+							</div>
+							<div class="flex justify-between">
+								<span style="color: var(--text-secondary);">Child:</span>
+								<span style="color: var(--text-primary);">€{formData.pricingTiers.child || 0}</span>
+							</div>
+						</div>
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							Configure below in Pricing Tiers section
+						</p>
+					</div>
+				{/if}
 
 				<NumberInput
 					id="duration"
@@ -869,6 +936,142 @@
 					</div>
 				{/if}
 			</div>
+		</div>
+	</div>
+
+	<!-- Pricing Tiers -->
+	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<div class="flex items-center justify-between">
+				<div>
+					<h2 class="font-semibold" style="color: var(--text-primary);">Pricing Tiers</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Set different prices for adults and children</p>
+				</div>
+				<div class="flex items-center gap-3">
+					<span class="text-sm font-medium transition-colors {!formData.enablePricingTiers ? 'text-gray-600' : 'text-gray-400'}" style="color: {!formData.enablePricingTiers ? 'var(--text-primary)' : 'var(--text-tertiary)'};">
+						Single Price
+					</span>
+					<label class="relative inline-flex items-center cursor-pointer group">
+						<input
+							type="checkbox"
+							name="enablePricingTiers"
+							bind:checked={formData.enablePricingTiers}
+							onchange={handlePricingTiersToggle}
+							class="sr-only peer"
+						/>
+						<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 group-hover:peer-checked:bg-blue-600"></div>
+						<!-- Tooltip on hover -->
+						<div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+							{formData.enablePricingTiers ? 'Switch to Single Price' : 'Enable Pricing Tiers'}
+						</div>
+					</label>
+					<span class="text-sm font-medium transition-colors {formData.enablePricingTiers ? 'text-blue-600' : 'text-gray-400'}" style="color: {formData.enablePricingTiers ? 'var(--color-primary-600)' : 'var(--text-tertiary)'};">
+						Pricing Tiers
+					</span>
+				</div>
+			</div>
+		</div>
+		<div class="p-4">
+			{#if !formData.enablePricingTiers}
+				<!-- Single Price Mode -->
+				<div class="text-center py-8">
+					<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Single Price for Everyone</h3>
+					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+						Currently using <strong>€{formData.price}</strong> per person regardless of age
+					</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">
+						Enable pricing tiers above to set different prices for adults and children
+					</p>
+				</div>
+			{:else}
+				<!-- Pricing Tiers Mode -->
+				<div class="space-y-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+							<div class="flex items-center gap-2 mb-3">
+								<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+									<span class="text-sm font-semibold text-blue-600">👨</span>
+								</div>
+								<div>
+									<h4 class="font-medium" style="color: var(--text-primary);">Adult Price</h4>
+									<p class="text-xs" style="color: var(--text-secondary);">Ages 13 and above</p>
+								</div>
+							</div>
+							<NumberInput
+								id="adultPrice"
+								name="pricingTiers.adult"
+								label="Adult Price (€)"
+								bind:value={formData.pricingTiers.adult}
+								min={0.5}
+								max={99999}
+								step={0.5}
+								placeholder="0.50"
+								incrementLabel="Increase adult price"
+								decrementLabel="Decrease adult price"
+								decimalPlaces={2}
+							/>
+						</div>
+
+						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+							<div class="flex items-center gap-2 mb-3">
+								<div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+									<span class="text-sm font-semibold text-green-600">👶</span>
+								</div>
+								<div>
+									<h4 class="font-medium" style="color: var(--text-primary);">Child Price</h4>
+									<p class="text-xs" style="color: var(--text-secondary);">Ages 3-12 (optional)</p>
+								</div>
+							</div>
+							<NumberInput
+								id="childPrice"
+								name="pricingTiers.child"
+								label="Child Price (€)"
+								bind:value={childPrice}
+								min={0}
+								max={99999}
+								step={0.5}
+								placeholder="0.00 (free)"
+								incrementLabel="Increase child price"
+								decrementLabel="Decrease child price"
+								decimalPlaces={2}
+							/>
+						</div>
+					</div>
+
+					<!-- Pricing Summary -->
+					<div class="p-4 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+						<h4 class="font-medium mb-2" style="color: var(--color-primary-900);">Pricing Summary</h4>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+							<div class="flex justify-between">
+								<span style="color: var(--color-primary-700);">Adults (13+):</span>
+								<span class="font-medium" style="color: var(--color-primary-900);">
+									€{formData.pricingTiers.adult || '0.00'}
+								</span>
+							</div>
+							<div class="flex justify-between">
+								<span style="color: var(--color-primary-700);">Children (3-12):</span>
+								<span class="font-medium" style="color: var(--color-primary-900);">
+									{#if formData.pricingTiers.child && formData.pricingTiers.child > 0}
+										€{formData.pricingTiers.child}
+									{:else}
+										Free
+									{/if}
+								</span>
+							</div>
+						</div>
+						<div class="mt-3 pt-3 border-t" style="border-color: var(--color-primary-200);">
+							<p class="text-xs" style="color: var(--color-primary-600);">
+								<strong>Note:</strong> Children under 3 are always free. If child price is not set or is €0, children aged 3-12 will be free.
+							</p>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 

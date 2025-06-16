@@ -59,7 +59,12 @@
 		location: '',
 		includedItems: [''],
 		requirements: [''],
-		cancellationPolicy: ''
+		cancellationPolicy: '',
+		enablePricingTiers: false,
+		pricingTiers: {
+			adult: 0,
+			child: 0
+		}
 	});
 
 	// Image upload state
@@ -204,7 +209,12 @@
 			location: tour.location || '',
 			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
 			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
-			cancellationPolicy: tour.cancellationPolicy || ''
+			cancellationPolicy: tour.cancellationPolicy || '',
+			enablePricingTiers: tour.enablePricingTiers || false,
+			pricingTiers: tour.pricingTiers || {
+				adult: parseFloat(tour.price) || 0,
+				child: 0
+			}
 		};
 
 		// Initialize existing images

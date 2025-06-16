@@ -7,6 +7,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
+	import { formatParticipantDisplayDetailed } from '$lib/utils/participant-display.js';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -219,7 +220,7 @@
 					{
 						icon: Users,
 						label: 'Guests',
-						value: `${booking.participants}`
+						value: formatParticipantDisplayDetailed(booking)
 					},
 					{
 						icon: CreditCard,
@@ -294,7 +295,7 @@
 								<div class="flex items-center gap-3">
 									<Users class="h-5 w-5" style="color: var(--text-tertiary);" />
 									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{booking.participants} {booking.participants === 1 ? 'participant' : 'participants'}</p>
+										<p class="font-medium" style="color: var(--text-primary);">{formatParticipantDisplayDetailed(booking)}</p>
 										<p class="text-sm" style="color: var(--text-secondary);">Group size</p>
 									</div>
 								</div>
@@ -314,7 +315,19 @@
 										<DollarSign class="h-5 w-5" style="color: var(--text-tertiary);" />
 										<div>
 											<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(calculateTotal())}</p>
-											<p class="text-sm" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.expand.tour.price)} × {booking.participants} participants</p>
+											{#if booking.participantBreakdown && booking.expand?.tour?.enablePricingTiers && booking.expand?.tour?.pricingTiers}
+												<p class="text-sm" style="color: var(--text-secondary);">
+													{#if booking.participantBreakdown.adults > 0}
+														{booking.participantBreakdown.adults} adults × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers.adult)}
+													{/if}
+													{#if booking.participantBreakdown.children > 0}
+														{#if booking.participantBreakdown.adults > 0} + {/if}
+														{booking.participantBreakdown.children} children × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers.child)}
+													{/if}
+												</p>
+											{:else}
+												<p class="text-sm" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.expand.tour.price)} × {booking.participants} participants</p>
+											{/if}
 										</div>
 									</div>
 								{/if}

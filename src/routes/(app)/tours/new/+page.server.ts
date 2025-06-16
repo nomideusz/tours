@@ -58,6 +58,20 @@ export const actions: Actions = {
         }
       }
 
+      // Get pricing tiers
+      const enablePricingTiers = formData.get('enablePricingTiers') === 'on' || formData.get('enablePricingTiers') === 'true';
+      let pricingTiers = null;
+      
+      if (enablePricingTiers) {
+        const adultPrice = formData.get('pricingTiers.adult');
+        const childPrice = formData.get('pricingTiers.child');
+        
+        pricingTiers = {
+          adult: adultPrice ? parseFloat(String(adultPrice)) : 0,
+          child: childPrice ? parseFloat(String(childPrice)) : 0
+        };
+      }
+
       // Prepare tour data
       const tourData = {
         name: formData.get('name'),
@@ -70,7 +84,9 @@ export const actions: Actions = {
         location: formData.get('location'),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
-        cancellationPolicy: formData.get('cancellationPolicy')
+        cancellationPolicy: formData.get('cancellationPolicy'),
+        enablePricingTiers,
+        pricingTiers
       };
 
       // Sanitize the data
@@ -170,6 +186,8 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
+          pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
           userId: locals.user.id,
           images: processedImages,
           qrCode: qrCode,
@@ -208,6 +226,8 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
+          pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
           userId: locals.user.id,
           images: [],
           qrCode: qrCode,
