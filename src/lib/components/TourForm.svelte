@@ -1346,7 +1346,6 @@
 						type="file"
 						multiple
 						accept="image/jpeg,image/jpg,image/png,image/webp"
-						capture="environment"
 						class="hidden"
 						id="images-upload"
 						name="images"
