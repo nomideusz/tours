@@ -117,7 +117,7 @@ export async function getDashboardSpecificStats(userId: string, sharedStats: Sha
 				if (!b.createdAt) return false;
 				try {
 					const created = new Date(b.createdAt);
-					return !isNaN(created.getTime()) && created >= weekAgo && b.status === 'confirmed' && b.paymentStatus === 'paid';
+					return !isNaN(created.getTime()) && created >= weekAgo && (b.status === 'confirmed' || b.status === 'completed') && b.paymentStatus === 'paid';
 				} catch {
 					return false;
 				}
@@ -223,7 +223,7 @@ export async function getToursSpecificStats(userId: string, sharedStats: SharedS
 			}
 			const amount = typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : (booking.totalAmount || 0);
 			
-			if (booking.status === 'confirmed' && booking.paymentStatus === 'paid') {
+			if ((booking.status === 'confirmed' || booking.status === 'completed') && booking.paymentStatus === 'paid') {
 				confirmedBookings++;
 				totalRevenue += amount;
 				totalParticipants += booking.participants || 0;
@@ -241,7 +241,7 @@ export async function getToursSpecificStats(userId: string, sharedStats: SharedS
 				}
 			}
 			
-			if (bookingDate >= monthAgo && booking.status === 'confirmed' && booking.paymentStatus === 'paid') {
+			if (bookingDate >= monthAgo && (booking.status === 'confirmed' || booking.status === 'completed') && booking.paymentStatus === 'paid') {
 				monthRevenue += amount;
 			}
 		}

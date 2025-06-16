@@ -2,7 +2,7 @@
 
 	import { goto } from '$app/navigation';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDate } from '$lib/utils/date-helpers.js';
+	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	
 	// TanStack Query
@@ -31,10 +31,14 @@
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
 	
-	// TanStack Query using the same working endpoint as dashboard
-	const allBookingsQuery = createQuery({
-		queryKey: queryKeys.recentBookings(100),
-		queryFn: () => queryFunctions.fetchRecentBookings(100),
+	// TanStack Query for tour-specific bookings
+	const tourBookingsQuery = createQuery({
+		queryKey: ['tour-bookings', tourId],
+		queryFn: async () => {
+			const response = await fetch(`/api/tours/${tourId}/bookings`);
+			if (!response.ok) throw new Error('Failed to fetch tour bookings');
+			return response.json();
+		},
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	});
@@ -43,9 +47,10 @@
 	let statusFilter = $state<'all' | 'confirmed' | 'pending' | 'cancelled'>('all');
 	let searchQuery = $state('');
 	
-	// Derive data from query and filter by tour ID
-	let allBookings = $derived($allBookingsQuery.data || []);
-	let tourBookings = $derived(allBookings.filter((b: any) => b.tourId === tourId || b.tour?.id === tourId));
+	// Derive data from query
+	let tourData = $derived($tourBookingsQuery.data || null);
+	let tour = $derived(tourData?.tour || null);
+	let tourBookings = $derived(tourData?.bookings || []);
 	
 	// Apply filters
 	let filteredBookings = $derived(() => {
@@ -70,15 +75,16 @@
 	});
 	
 	let bookings = $derived(filteredBookings());
-	let tour = $derived(bookings.length > 0 || tourBookings.length > 0 ? { name: tourBookings[0]?.tour || tourBookings[0]?.tourName } : null);
-	let isLoading = $derived($allBookingsQuery.isLoading);
-	let isError = $derived($allBookingsQuery.isError);
+	let isLoading = $derived($tourBookingsQuery.isLoading);
+	let isError = $derived($tourBookingsQuery.isError);
 	
 	// Calculate stats from all tour bookings (not filtered)
 	let stats = $derived(() => {
 		const confirmed = tourBookings.filter((b: any) => b.status === 'confirmed');
+		const completed = tourBookings.filter((b: any) => b.status === 'completed');
 		const pending = tourBookings.filter((b: any) => b.status === 'pending');
 		const cancelled = tourBookings.filter((b: any) => b.status === 'cancelled');
+		const revenueBookings = tourBookings.filter((b: any) => b.status === 'confirmed' || b.status === 'completed');
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
@@ -96,34 +102,19 @@
 		return {
 			total: tourBookings.length,
 			confirmed: confirmed.length,
+			completed: completed.length,
 			pending: pending.length,
 			cancelled: cancelled.length,
 			todayCount: todayBookings.length,
 			upcoming: upcomingBookings.length,
-			revenue: confirmed.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
-			participants: confirmed.reduce((sum: number, b: any) => sum + (Number(b.participants) || 0), 0)
+			revenue: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
+			participants: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.participants) || 0), 0)
 		};
 	});
 	
 	// Refresh function
 	function handleRefresh() {
-		$allBookingsQuery.refetch();
-	}
-	
-	// Get status color
-	function getStatusColor(status: string): string {
-		switch (status) {
-			case 'confirmed':
-				return 'bg-green-50 text-green-700 border-green-200';
-			case 'pending':
-				return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-			case 'cancelled':
-				return 'bg-red-50 text-red-700 border-red-200';
-			case 'completed':
-				return 'bg-blue-50 text-blue-700 border-blue-200';
-			default:
-				return 'bg-gray-50 text-gray-700 border-gray-200';
-		}
+		$tourBookingsQuery.refetch();
 	}
 </script>
 
@@ -358,9 +349,14 @@
 										{formatDate(booking.effectiveDate)}
 									</p>
 								</div>
-								<span class="ml-2 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-									{booking.status}
-								</span>
+								<div class="ml-2 flex flex-col gap-1">
+									<span class="px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+										{booking.status}
+									</span>
+									<span class="px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+										💳 {booking.paymentStatus || 'pending'}
+									</span>
+								</div>
 							</div>
 							
 							<div class="flex items-center justify-between">
@@ -421,9 +417,14 @@
 								</div>
 								
 								<div class="flex items-center gap-3">
-									<span class="px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-										{booking.status}
-									</span>
+									<div class="flex flex-col gap-1">
+										<span class="px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+											{booking.status}
+										</span>
+										<span class="px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+											💳 {booking.paymentStatus || 'pending'}
+										</span>
+									</div>
 									
 									<button
 										onclick={(e) => {

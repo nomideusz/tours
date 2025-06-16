@@ -3,9 +3,10 @@
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
+	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	
 	// TanStack Query for API-only data fetching
 	import { createQuery } from '@tanstack/svelte-query';
@@ -25,6 +26,8 @@
 	import Link from 'lucide-svelte/icons/link';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import UserCheck from 'lucide-svelte/icons/user-check';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 
 	let { data }: { data: PageData } = $props();
 
@@ -79,12 +82,15 @@
 				return bookingDate >= todayStart && bookingDate < todayEnd;
 			})
 			.map((booking: any) => ({
+				id: booking.id,
 				time: booking.effectiveDate,
 				tourName: booking.tour || 'Unknown Tour',
+				tourId: booking.tourId,
 				participants: booking.participants || 0,
 				customerName: booking.customerName,
 				status: booking.status,
-				timeSlot: booking.expand?.timeSlot
+				timeSlot: booking.expand?.timeSlot,
+				expand: booking.expand
 			}))
 				.slice(0, 4); // Limit to 4 items
 		})()
@@ -116,6 +122,17 @@
 	<title>Dashboard - Zaur</title>
 	<meta name="description" content="Your daily operations center - today's schedule, bookings, and quick actions" />
 </svelte:head>
+
+<style>
+	.schedule-item .schedule-actions {
+		opacity: 0;
+		transition: opacity 0.2s ease-in-out;
+	}
+	
+	.schedule-item:hover .schedule-actions {
+		opacity: 1;
+	}
+</style>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Operations Header -->
@@ -177,26 +194,28 @@
 						
 						<!-- Action buttons -->
 						<div class="flex items-center gap-2">
-							<a
-								href="/{profile.username}"
-								target="_blank"
-								rel="noopener noreferrer"
-								class="button-secondary button--small button--icon"
-								title="View your profile"
-							>
-								<ExternalLink class="h-3 w-3" />
-							</a>
-							<button
-								onclick={copyProfileLink}
-								class="button-primary button--small button--icon {profileLinkCopied ? 'button-success' : ''}"
-								title={profileLinkCopied ? "Copied!" : "Copy URL"}
-							>
-								{#if profileLinkCopied}
-									<CheckCircle class="h-3 w-3" />
-								{:else}
-									<Copy class="h-3 w-3" />
-								{/if}
-							</button>
+							<Tooltip text="View your profile" position="top">
+								<a
+									href="/{profile.username}"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="button-secondary button--small button--icon"
+								>
+									<ExternalLink class="h-3 w-3" />
+								</a>
+							</Tooltip>
+							<Tooltip text={profileLinkCopied ? "Copied!" : "Copy URL"} position="top">
+								<button
+									onclick={copyProfileLink}
+									class="button-primary button--small button--icon {profileLinkCopied ? 'button-success' : ''}"
+								>
+									{#if profileLinkCopied}
+										<CheckCircle class="h-3 w-3" />
+									{:else}
+										<Copy class="h-3 w-3" />
+									{/if}
+								</button>
+							</Tooltip>
 						</div>
 					</div>
 					
@@ -223,18 +242,29 @@
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">Today's Schedule</h3>
-					<span class="text-sm" style="color: var(--text-secondary);">
-						{todaysSchedule.length} {todaysSchedule.length === 1 ? 'tour' : 'tours'} today
-					</span>
+					<div class="flex items-center gap-3">
+						<span class="text-sm" style="color: var(--text-secondary);">
+							{todaysSchedule.length} {todaysSchedule.length === 1 ? 'tour' : 'tours'} today
+						</span>
+						<button onclick={() => goto('/bookings')} class="button-secondary button--small button--gap">
+							<Calendar class="h-3 w-3" />
+							All Bookings
+						</button>
+					</div>
 				</div>
 			</div>
 			<div class="p-4">
 				<div class="space-y-3">
 					{#each todaysSchedule.slice(0, 4) as schedule}
-						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors schedule-item" style="background: var(--bg-secondary);">
 							<div class="flex-1 min-w-0">
 								<h4 class="text-sm font-medium truncate" style="color: var(--text-primary);">
-									{schedule.tourName}
+									<button 
+										onclick={() => goto(`/tours/${schedule.expand?.tour?.id || schedule.tourId}`)} 
+										class="hover:underline text-left"
+									>
+										{schedule.tourName}
+									</button>
 								</h4>
 								<div class="flex items-center gap-2 mt-1">
 									<span class="text-xs font-medium" style="color: var(--text-secondary);">
@@ -248,20 +278,52 @@
 									<span class="text-xs" style="color: var(--text-secondary);">
 										{schedule.participants || 0} guests
 									</span>
+									{#if schedule.customerName}
+										<span class="text-xs" style="color: var(--text-tertiary);">•</span>
+										<button 
+											onclick={() => goto(`/bookings/${schedule.id}`)} 
+											class="text-xs hover:underline" style="color: var(--text-secondary);"
+										>
+											{schedule.customerName}
+										</button>
+									{/if}
 								</div>
 							</div>
 							<div class="flex items-center gap-2">
 								<span class="px-2 py-1 text-xs rounded-full {getStatusColor(schedule.status)}">
 									{schedule.status}
 								</span>
+								<div class="flex items-center gap-1 schedule-actions">
+									{#if schedule.status === 'confirmed'}
+										<Tooltip text="Quick Check-in" position="top">
+											<button
+												onclick={() => goto('/checkin-scanner')}
+												class="button-secondary button--small p-1"
+											>
+												<UserCheck class="h-3 w-3" />
+											</button>
+										</Tooltip>
+									{/if}
+									<Tooltip text="View Booking" position="top">
+										<button
+											onclick={() => goto(`/bookings/${schedule.id}`)}
+											class="button-secondary button--small p-1"
+										>
+											<ArrowRight class="h-3 w-3" />
+										</button>
+									</Tooltip>
+								</div>
 							</div>
 						</div>
 					{/each}
 					{#if todaysSchedule.length > 4}
 						<div class="text-center pt-2">
-							<span class="text-xs" style="color: var(--text-tertiary);">
-								+ {todaysSchedule.length - 4} more tours today
-							</span>
+							<button 
+								onclick={() => goto('/bookings')} 
+								class="text-xs hover:underline" style="color: var(--text-tertiary);"
+							>
+								+ {todaysSchedule.length - 4} more tours today - View all bookings
+							</button>
 						</div>
 					{/if}
 				</div>
@@ -396,12 +458,19 @@
 											<span class="px-2 py-1 text-xs rounded-full {getStatusColor(booking.status)}">
 												{booking.status}
 											</span>
+											<span class="px-2 py-1 text-xs rounded-full {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+												💳 {booking.paymentStatus || 'pending'}
+											</span>
 										</div>
 										<p class="text-xs mb-1" style="color: var(--text-secondary);">
 											{booking.tourName || booking.tour || 'Unknown Tour'}
 										</p>
 										<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
 											<span>{formatDate(booking.effectiveDate || booking.created)}</span>
+											{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+												<span>•</span>
+												<span>{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}</span>
+											{/if}
 											<span>•</span>
 											<span>{booking.participants} guests</span>
 											<span>•</span>

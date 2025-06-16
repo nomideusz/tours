@@ -124,7 +124,7 @@
 		cursor: not-allowed;
 	}
 
-	.button--danger {
+	.button--danger, .button-danger {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -145,18 +145,18 @@
 		box-shadow: var(--shadow-xs);
 	}
 
-	.button--danger:hover:not(:disabled) {
+	.button--danger:hover:not(:disabled), .button-danger:hover:not(:disabled) {
 		background-color: #dc2626;
 		border-color: #dc2626;
 	}
 
-	.button--danger:focus {
+	.button--danger:focus, .button-danger:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
 		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 	}
 
-	.button--danger:disabled {
+	.button--danger:disabled, .button-danger:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
@@ -203,21 +203,24 @@
 	.button--full-width,
 	.button-primary.button--full-width,
 	.button-secondary.button--full-width,
-	.button--danger.button--full-width {
+	.button--danger.button--full-width,
+	.button-danger.button--full-width {
 		width: 100%;
 	}
 
 	.button--gap,
 	.button-primary.button--gap,
 	.button-secondary.button--gap,
-	.button--danger.button--gap {
+	.button--danger.button--gap,
+	.button-danger.button--gap {
 		gap: 0.5rem;
 	}
 
 	.button--large,
 	.button-primary.button--large,
 	.button-secondary.button--large,
-	.button--danger.button--large {
+	.button--danger.button--large,
+	.button-danger.button--large {
 		padding: 1rem 2rem;
 		font-size: var(--text-base);
 		line-height: 1.5rem;
@@ -227,6 +230,7 @@
 	.button-primary.button--small,
 	.button-secondary.button--small,
 	.button--danger.button--small,
+	.button-danger.button--small,
 	.button-success.button--small {
 		padding: 0.5rem 1rem;
 		font-size: var(--text-xs);

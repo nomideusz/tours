@@ -468,29 +468,65 @@
 					error = null;
 					
 					return async ({ result, update }) => {
-						isUpdating = false;
-						
 						if (result.type === 'success') {
-							// Update local state
-							booking = { ...booking, status: newStatus as typeof booking.status };
+							// Immediate optimistic updates - update all caches before server response
+							const oldStatus = booking.status;
+							const updatedStatus = newStatus as typeof booking.status;
+							
+							// 1. Update local state immediately
+							booking = { ...booking, status: updatedStatus };
 							showStatusModal = false;
 							
-							// Invalidate related queries for immediate UI updates
-							await Promise.all([
-								// Invalidate this booking's data
+							// 2. Optimistically update all query caches immediately
+							// Update this booking's cache
+							queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
+								if (oldData?.booking) {
+									return {
+										...oldData,
+										booking: { ...oldData.booking, status: updatedStatus }
+									};
+								}
+								return oldData;
+							});
+							
+							// Update recent bookings cache
+							queryClient.setQueriesData({ queryKey: ['recentBookings'], exact: false }, (oldData: any) => {
+								if (Array.isArray(oldData)) {
+									return oldData.map((b: any) => 
+										b.id === bookingId ? { ...b, status: updatedStatus } : b
+									);
+								}
+								return oldData;
+							});
+							
+							// Update tour bookings cache
+							queryClient.setQueriesData({ queryKey: ['tour-bookings'], exact: false }, (oldData: any) => {
+								if (oldData?.bookings) {
+									return {
+										...oldData,
+										bookings: oldData.bookings.map((b: any) => 
+											b.id === bookingId ? { ...b, status: updatedStatus } : b
+										)
+									};
+								}
+								return oldData;
+							});
+							
+							// 3. Then invalidate queries to fetch fresh data in background
+							Promise.all([
 								queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
-								// Invalidate ALL recent bookings queries (any limit)
-								queryClient.invalidateQueries({ 
-									queryKey: ['recentBookings'], 
-									exact: false // This will match all recentBookings queries regardless of limit
-								}),
-								// Invalidate dashboard stats that depend on booking statuses
+								queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
+								queryClient.invalidateQueries({ queryKey: ['tour-bookings'], exact: false }),
 								queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
-							]);
+							]).catch((invalidationError) => {
+								console.warn('Background refetch failed:', invalidationError);
+							});
+							
 						} else if (result.type === 'failure' && result.data) {
 							error = (result.data as any).error || 'Failed to update booking status';
 						}
 						
+						isUpdating = false;
 						await update();
 					};
 				}}

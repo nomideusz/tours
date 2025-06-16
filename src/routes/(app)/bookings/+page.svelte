@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
+	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	
 	// TanStack Query
@@ -18,6 +18,7 @@
 	import Euro from 'lucide-svelte/icons/euro';
 	import Users from 'lucide-svelte/icons/users';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -56,7 +57,9 @@
 	// Calculate stats from ALL bookings, not just the paginated ones
 	let stats = $derived(() => {
 		const confirmed = allBookings.filter((b: any) => b.status === 'confirmed');
+		const completed = allBookings.filter((b: any) => b.status === 'completed');
 		const pending = allBookings.filter((b: any) => b.status === 'pending');
+		const revenueBookings = allBookings.filter((b: any) => b.status === 'confirmed' || b.status === 'completed');
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
@@ -86,11 +89,12 @@
 		return {
 			total: allBookings.length,
 			confirmed: confirmed.length,
+			completed: completed.length,
 			pending: pending.length,
 			todayCount: todayBookings.length,
 			upcoming: upcomingBookings.length,
-			revenue: confirmed.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
-			participants: confirmed.reduce((sum: number, b: any) => sum + (Number(b.participants) || 0), 0)
+			revenue: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
+			participants: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.participants) || 0), 0)
 		};
 	});
 	
@@ -257,9 +261,14 @@
 										{booking.tour || booking.tourName || 'Unknown Tour'}
 									</p>
 								</div>
-								<span class="ml-2 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-									{booking.status}
-								</span>
+								<div class="ml-2 flex flex-col gap-1">
+									<span class="px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+										{booking.status}
+									</span>
+									<span class="px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+										💳 {booking.paymentStatus || 'pending'}
+									</span>
+								</div>
 							</div>
 							
 							<div class="flex items-center justify-between">
@@ -337,9 +346,14 @@
 								</div>
 								
 								<div class="flex items-center gap-3">
-									<span class="px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-										{booking.status}
-									</span>
+									<div class="flex flex-col gap-1">
+										<span class="px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+											{booking.status}
+										</span>
+										<span class="px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+											💳 {booking.paymentStatus || 'pending'}
+										</span>
+									</div>
 									
 									<button
 										onclick={(e) => {

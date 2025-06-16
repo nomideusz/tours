@@ -78,7 +78,27 @@ export function getStatusColor(status: string): string {
 			return 'bg-yellow-50 text-yellow-700';
 		case 'cancelled':
 			return 'bg-red-50 text-red-700';
+		case 'completed':
+			return 'bg-blue-50 text-blue-700';
 		default:
 			return 'bg-gray-50 text-gray-700';
+	}
+}
+
+/**
+ * Payment status color mapping
+ */
+export function getPaymentStatusColor(paymentStatus: string): string {
+	switch (paymentStatus) {
+		case 'paid':
+			return 'bg-green-50 text-green-700';
+		case 'pending':
+			return 'bg-orange-50 text-orange-700';
+		case 'failed':
+			return 'bg-red-50 text-red-700';
+		case 'refunded':
+			return 'bg-gray-50 text-gray-700';
+		default:
+			return 'bg-orange-50 text-orange-700';
 	}
 } 

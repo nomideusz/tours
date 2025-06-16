@@ -247,8 +247,8 @@ export async function getTourBookingData(userId: string, tourId: string) {
 					break;
 			}
 			
-			// Revenue calculation (only confirmed and paid)
-			if (booking.status === 'confirmed' && booking.paymentStatus === 'paid') {
+			// Revenue calculation (confirmed, completed bookings)
+			if ((booking.status === 'confirmed' || booking.status === 'completed') && booking.paymentStatus === 'paid') {
 				totalRevenue += booking.totalAmount;
 				totalParticipants += booking.participants;
 			}
