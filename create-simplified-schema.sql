@@ -62,12 +62,13 @@ CREATE TABLE users (
     main_qr_scans INTEGER NOT NULL DEFAULT 0,
     
     -- Subscription fields
+    stripe_customer_id VARCHAR(255),
     subscription_plan subscription_plan NOT NULL DEFAULT 'free',
     subscription_status subscription_status,
-    subscription_cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+    subscription_id VARCHAR(255),
+    subscription_current_period_start TIMESTAMP WITH TIME ZONE,
     subscription_current_period_end TIMESTAMP WITH TIME ZONE,
-    stripe_customer_id VARCHAR(255),
-    stripe_subscription_id VARCHAR(255),
+    subscription_cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
     monthly_bookings_used INTEGER NOT NULL DEFAULT 0,
     monthly_bookings_reset_at TIMESTAMP WITH TIME ZONE,
     
@@ -224,7 +225,7 @@ CREATE INDEX idx_users_main_qr_code ON users(main_qr_code);
 CREATE INDEX idx_users_subscription_plan ON users(subscription_plan);
 CREATE INDEX idx_users_subscription_status ON users(subscription_status);
 CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
-CREATE INDEX idx_users_stripe_subscription_id ON users(stripe_subscription_id);
+CREATE INDEX idx_users_subscription_id ON users(subscription_id);
 CREATE INDEX idx_users_monthly_bookings_reset_at ON users(monthly_bookings_reset_at);
 CREATE INDEX idx_users_created_at ON users(created_at);
 
