@@ -200,14 +200,73 @@
 		}
 	});
 
-	// Position dropdown relative to menu button
+	// Position dropdown relative to menu button with viewport boundary checks
 	function positionDropdown(node: HTMLElement, tourId: string) {
 		const menuButton = document.getElementById(`menu-${tourId}`);
-		if (menuButton) {
+		if (!menuButton) return { destroy() {} };
+		
+		// Wait for next frame to ensure node is in DOM
+		requestAnimationFrame(() => {
 			const rect = menuButton.getBoundingClientRect();
-			node.style.top = `${rect.bottom + 4}px`;
-			node.style.right = `${window.innerWidth - rect.right}px`;
-		}
+			const nodeRect = node.getBoundingClientRect();
+			const dropdownHeight = nodeRect.height || 200; // Use actual height or fallback
+			const dropdownWidth = nodeRect.width || 192; // Use actual width or fallback
+			
+			const viewportHeight = window.innerHeight;
+			const viewportWidth = window.innerWidth;
+			const padding = 8; // Safe padding from edges
+			
+			// Reset positioning
+			node.style.top = 'auto';
+			node.style.bottom = 'auto';
+			node.style.left = 'auto';
+			node.style.right = 'auto';
+			
+			// Vertical positioning with mobile-specific logic
+			const spaceBelow = viewportHeight - rect.bottom - padding;
+			const spaceAbove = rect.top - padding;
+			
+			if (spaceBelow >= dropdownHeight) {
+				// Enough space below
+				node.style.top = `${rect.bottom + 4}px`;
+			} else if (spaceAbove >= dropdownHeight) {
+				// Not enough space below, but enough above
+				node.style.bottom = `${viewportHeight - rect.top + 4}px`;
+			} else {
+				// Not enough space in either direction, position to fit best
+				if (spaceBelow > spaceAbove) {
+					// More space below, position at bottom with max height
+					node.style.top = `${rect.bottom + 4}px`;
+					node.style.maxHeight = `${spaceBelow}px`;
+					node.style.overflowY = 'auto';
+				} else {
+					// More space above, position at top with max height
+					node.style.bottom = `${viewportHeight - rect.top + 4}px`;
+					node.style.maxHeight = `${spaceAbove}px`;
+					node.style.overflowY = 'auto';
+				}
+			}
+			
+			// Horizontal positioning - prioritize staying on screen
+			const spaceRight = viewportWidth - rect.right;
+			const spaceLeft = rect.left;
+			
+			// Try to align dropdown's right edge with button's right edge
+			const desiredLeft = rect.right - dropdownWidth;
+			
+			if (desiredLeft >= padding) {
+				// Enough space to right-align dropdown with button
+				node.style.left = `${desiredLeft}px`;
+			} else if (rect.left + dropdownWidth <= viewportWidth - padding) {
+				// Not enough space for right-align, try left-align with button
+				node.style.left = `${rect.left}px`;
+			} else {
+				// Not enough space on either side, position from right edge with padding
+				node.style.right = `${padding}px`;
+				node.style.left = 'auto';
+				node.style.width = `${Math.min(dropdownWidth, viewportWidth - (2 * padding))}px`;
+			}
+		});
 		
 		return {
 			destroy() {}
@@ -850,7 +909,7 @@
 		<div 
 			transition:scale={{ duration: 200, start: 0.95 }}
 			class="fixed w-48 rounded-lg shadow-lg z-50 overflow-hidden dropdown-menu" 
-			style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+			style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-width: calc(100vw - 16px);"
 			use:positionDropdown={tour.id}
 		>
 			<button
