@@ -365,134 +365,71 @@
 			</div>
 		{/if}
 		
-		<!-- Compact Mobile Header + Desktop Header -->
+		<!-- Header Section -->
 		<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
-		<div class="sm:hidden mb-6">
-			<div class="rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<!-- Header Row -->
-				<div class="flex items-center justify-between mb-4">
-					<div class="flex-1">
-						<h1 class="text-xl font-bold" style="color: var(--text-primary);">{tour.name}</h1>
-						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
-					</div>
-					
-					<!-- Booking Status -->
-					<div class="flex items-center gap-2">
-						<div class="relative group">
-							<div 
-								class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium border transition-all duration-200"
-								style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
-							>
-								<div class="w-1.5 h-1.5 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
-								<span>{getTourBookingStatus(tour).label}</span>
-								{#if getTourBookingStatus(tour).status === 'no-slots'}
-									<PlusCircle class="w-3 h-3 opacity-60" />
-								{/if}
-							</div>
-							<!-- Tooltip -->
-							<div class="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-								{getTourBookingStatus(tour).description}
-								{#if getTourBookingStatus(tour).status === 'no-slots'}
-									<br><span class="text-blue-600">Add time slots to accept bookings</span>
-								{:else if getTourBookingStatus(tour).status === 'draft'}
-									<br><span class="text-blue-600">Activate to make visible to customers</span>
-								{/if}
-							</div>
-						</div>
-						
-						<!-- Action Button -->
-						{#if getTourBookingStatus(tour).status === 'draft'}
-							<button
-								onclick={() => handleTourStatusToggle()}
-								disabled={statusUpdating}
-								class="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-								title="Activate tour"
-							>
-								{#if statusUpdating}
-									<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
-								{:else}
-									<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
-								{/if}
-							</button>
-						{:else if getTourBookingStatus(tour).status === 'no-slots'}
-							<button
-								onclick={() => goto(`/tours/${tour.id}/schedule`)}
-								class="p-2 rounded-md hover:bg-gray-100 transition-colors"
-								title="Add time slots"
-							>
-								<PlusCircle class="w-4 h-4" style="color: var(--color-warning-600);" />
-							</button>
-						{:else}
-							<button
-								onclick={() => handleTourStatusToggle()}
-								disabled={statusUpdating}
-								class="p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-								title="Set to draft"
-							>
-								{#if statusUpdating}
-									<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
-								{:else}
-									<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
-								{/if}
-							</button>
-						{/if}
-					</div>
-				</div>
-				
-				<!-- Quick Actions -->
-				<div class="grid grid-cols-2 gap-3">
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-primary button--small button--gap">
-						<Users class="h-4 w-4" />
-						Bookings
-					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--gap">
-						<Edit class="h-4 w-4" />
-						Edit
-					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
-						<Calendar class="h-4 w-4" />
-						Schedule
-					</button>
-					<button onclick={() => shareQR()} class="button-secondary button--small button--gap">
-						<Share2 class="h-4 w-4" />
-						Share
-					</button>
-				</div>
-				
-				<!-- Info Grid -->
-				<div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t" style="border-color: var(--border-primary);">
-					<div class="text-center p-2">
-						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
-							<MapPin class="h-3 w-3" />
-							<span>Location</span>
-						</div>
-						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{tour.location || 'Not specified'}</p>
-					</div>
-					<div class="text-center p-2">
-						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
-							<Clock class="h-3 w-3" />
-							<span>Duration</span>
-						</div>
-						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
-					</div>
-					<div class="text-center p-2">
-						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
-							<Users class="h-3 w-3" />
-							<span>Capacity</span>
-						</div>
-						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">Max {tour.capacity}</p>
-					</div>
-					<div class="text-center p-2">
-						<div class="flex items-center justify-center gap-1 text-xs" style="color: var(--text-tertiary);">
-							<BarChart3 class="h-3 w-3" />
-							<span>Bookings</span>
-						</div>
-						<p class="text-sm font-medium mt-1" style="color: var(--text-primary);">{tourStats?.totalBookings || 0} total</p>
-					</div>
-				</div>
-			</div>
-		</div>
+		<MobilePageHeader
+			title={tour.name}
+			secondaryInfo="{$globalCurrencyFormatter(tour.price)} per person"
+			statusButton={{
+				label: getTourBookingStatus(tour).label,
+				color: getTourBookingStatus(tour).color,
+				dotColor: getTourBookingStatus(tour).dotColor,
+				tooltip: getTourBookingStatus(tour).description,
+				onclick: getTourBookingStatus(tour).status === 'draft' ? () => handleTourStatusToggle() : 
+						getTourBookingStatus(tour).status === 'no-slots' ? () => goto(`/tours/${tour.id}/schedule`) : 
+						() => handleTourStatusToggle(),
+				disabled: statusUpdating
+			}}
+			quickActions={[
+				{
+					label: 'Bookings',
+					icon: Users,
+					onclick: () => goto(`/tours/${tour.id}/bookings`),
+					variant: 'primary'
+				},
+				{
+					label: 'Edit',
+					icon: Edit,
+					onclick: () => goto(`/tours/${tour.id}/edit`),
+					variant: 'secondary'
+				},
+				{
+					label: 'Schedule',
+					icon: Calendar,
+					onclick: () => goto(`/tours/${tour.id}/schedule`),
+					variant: 'secondary'
+				},
+				{
+					label: 'Share',
+					icon: Share2,
+					onclick: () => shareQR(),
+					variant: 'secondary'
+				}
+			]}
+			infoItems={[
+				{
+					icon: MapPin,
+					label: 'Location',
+					value: tour.location || 'Not specified'
+				},
+				{
+					icon: Clock,
+					label: 'Duration',
+					value: formatDuration(tour.duration)
+				},
+				{
+					icon: Users,
+					label: 'Capacity',
+					value: `Max ${tour.capacity}`
+				},
+				{
+					icon: BarChart3,
+					label: 'Bookings',
+					value: `${tourStats?.totalBookings || 0} total`
+				}
+			]}
+		/>
 
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
@@ -528,97 +465,89 @@
 
 	<!-- Desktop Tour Status & Quick Info -->
 	<div class="mb-8">
-		<div class="hidden sm:block p-4 sm:p-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-				<div class="flex items-center gap-4">
-					<!-- Booking Status -->
+		<div class="hidden sm:block rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="flex items-center justify-between">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Status</h3>
 					<div class="flex items-center gap-3">
-						<div class="relative group">
-							<div 
-								class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200"
-								style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
-							>
-								<div class="w-2 h-2 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
-								<span>{getTourBookingStatus(tour).label}</span>
-								{#if getTourBookingStatus(tour).status === 'no-slots'}
-									<AlertTriangle class="w-4 h-4 opacity-60" />
-								{:else if getTourBookingStatus(tour).status === 'bookable'}
-									<CheckCircle class="w-4 h-4 opacity-60" />
-								{/if}
-							</div>
-							<!-- Tooltip -->
-							<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs whitespace-nowrap rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50" style="background: var(--bg-primary); border: 1px solid var(--border-primary); color: var(--text-primary);">
-								{getTourBookingStatus(tour).description}
-								{#if getTourBookingStatus(tour).status === 'no-slots'}
-									<br><span class="text-blue-600">Add time slots to accept bookings</span>
-								{:else if getTourBookingStatus(tour).status === 'draft'}
-									<br><span class="text-blue-600">Activate to make visible to customers</span>
-								{/if}
-							</div>
-						</div>
-						
-						<!-- Action Buttons -->
+						<!-- Status Indicator -->
 						<div class="flex items-center gap-2">
-							{#if getTourBookingStatus(tour).status === 'draft'}
-								<button
-									onclick={() => handleTourStatusToggle()}
-									disabled={statusUpdating}
-									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
-									title="Activate tour"
-								>
-									{#if statusUpdating}
-										<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
-										<span>Activating...</span>
-									{:else}
-										<CheckCircle class="w-3 h-3" />
-										<span>Activate</span>
-									{/if}
-								</button>
+							{#if tour.status === 'draft'}
+								<div class="w-2 h-2 rounded-full bg-gray-400"></div>
+								<span class="text-sm" style="color: var(--text-secondary);">Draft</span>
 							{:else if getTourBookingStatus(tour).status === 'no-slots'}
-								<button
-									onclick={() => goto(`/tours/${tour.id}/schedule`)}
-									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
-									title="Add time slots"
-								>
-									<PlusCircle class="w-3 h-3" />
-									<span>Add Slots</span>
-								</button>
+								<div class="w-2 h-2 rounded-full bg-orange-400"></div>
+								<span class="text-sm" style="color: var(--text-secondary);">Active • No time slots</span>
 							{:else}
-								<button
-									onclick={() => handleTourStatusToggle()}
-									disabled={statusUpdating}
-									class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
-									title="Set to draft"
-								>
-									{#if statusUpdating}
-										<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
-										<span>Updating...</span>
-									{:else}
-										<Edit class="w-3 h-3" />
-										<span>Draft</span>
-									{/if}
-								</button>
+								<div class="w-2 h-2 rounded-full bg-green-400"></div>
+								<span class="text-sm" style="color: var(--text-secondary);">Active • Ready to book</span>
 							{/if}
 						</div>
+						
+						<!-- Primary Action -->
+						{#if getTourBookingStatus(tour).status === 'draft'}
+							<button
+								onclick={() => handleTourStatusToggle()}
+								disabled={statusUpdating}
+								class="button-success button--small button--gap"
+							>
+								{#if statusUpdating}
+									<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+									<span>Activating...</span>
+								{:else}
+									<CheckCircle class="w-4 h-4" />
+									<span>Activate</span>
+								{/if}
+							</button>
+						{:else if getTourBookingStatus(tour).status === 'no-slots'}
+							<button 
+								onclick={() => goto(`/tours/${tour.id}/schedule/new`)}
+								class="button-primary button--small button--gap"
+							>
+								<Plus class="w-4 h-4" />
+								<span>Add Slots</span>
+							</button>
+						{:else}
+							<button 
+								onclick={() => goto(`/tours/${tour.id}/schedule`)}
+								class="button-secondary button--small button--gap"
+							>
+								<Calendar class="w-4 h-4" />
+								<span>Schedule</span>
+							</button>
+						{/if}
 					</div>
-					
-					<div class="hidden lg:flex items-center gap-6 text-sm" style="color: var(--text-secondary);">
-						<div class="flex items-center gap-1">
-							<MapPin class="h-4 w-4" />
-							<span>{tour.location || 'Not specified'}</span>
+				</div>
+			</div>
+			<div class="p-4">
+				<div class="grid grid-cols-4 gap-4 text-center">
+					<div>
+						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
+							<MapPin class="h-3 w-3" />
+							<span>Location</span>
 						</div>
-						<div class="flex items-center gap-1">
-							<Clock class="h-4 w-4" />
-							<span>{formatDuration(tour.duration)}</span>
+						<p class="text-sm font-medium" style="color: var(--text-primary);">{tour.location || 'Not specified'}</p>
+					</div>
+					<div>
+						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
+							<Clock class="h-3 w-3" />
+							<span>Duration</span>
 						</div>
-						<div class="flex items-center gap-1">
-							<Users class="h-4 w-4" />
-							<span>Max {tour.capacity} guests</span>
+						<p class="text-sm font-medium" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
+					</div>
+					<div>
+						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
+							<Users class="h-3 w-3" />
+							<span>Capacity</span>
 						</div>
-						<div class="flex items-center gap-1">
-							<DollarSign class="h-4 w-4" />
-							<span>{$globalCurrencyFormatter(tour.price)} per person</span>
+						<p class="text-sm font-medium" style="color: var(--text-primary);">Max {tour.capacity}</p>
+					</div>
+					<div>
+						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
+							<DollarSign class="h-3 w-3" />
+							<span>Price</span>
 						</div>
+						<p class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
 					</div>
 				</div>
 			</div>
@@ -857,7 +786,7 @@
 	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Quick Stats</h3>
+				<h3 class="font-semibold" style="color: var(--text-primary);">Today's Operations</h3>
 				<div class="flex gap-2">
 					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 						<Calendar class="h-3 w-3" />
@@ -871,22 +800,22 @@
 			</div>
 		</div>
 		<div class="p-4">
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-				<div>
-					<div class="text-lg font-bold" style="color: var(--text-primary);">{tourStats?.todayBookings || 0}</div>
-					<div class="text-xs" style="color: var(--text-secondary);">Today's Bookings</div>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.todayBookings || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">Today's bookings</p>
 				</div>
-				<div>
-					<div class="text-lg font-bold" style="color: var(--color-warning-600);">{tourStats?.pendingBookings || 0}</div>
-					<div class="text-xs" style="color: var(--text-secondary);">Pending</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold text-orange-600">{tourStats?.pendingBookings || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">Pending</p>
 				</div>
-				<div>
-					<div class="text-lg font-bold" style="color: var(--color-success);">{tourStats?.upcomingSlots || 0}</div>
-					<div class="text-xs" style="color: var(--text-secondary);">Upcoming Slots</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold text-green-600">{tourStats?.upcomingSlots || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">Upcoming slots</p>
 				</div>
-				<div>
-					<div class="text-lg font-bold" style="color: var(--text-primary);">{tourStats?.weekBookings || 0}</div>
-					<div class="text-xs" style="color: var(--text-secondary);">This Week</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.weekBookings || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">This week</p>
 				</div>
 			</div>
 		</div>
@@ -1182,37 +1111,29 @@
 	</div>
 
 	<!-- 5. Performance Statistics - Analytics -->
-	<div class="mb-6">
-		<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Performance Overview</h3>
-		<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-			<StatsCard
-				title="Total Revenue"
-				value={$globalCurrencyFormatter(tourStats?.totalRevenue || 0)}
-				subtitle="all time earnings"
-				icon={DollarSign}
-				variant="small"
-			/>
-			<StatsCard
-				title="Total Bookings"
-				value={tourStats?.totalBookings || 0}
-				subtitle="{tourStats?.confirmedBookings || 0} confirmed"
-				icon={BarChart3}
-				variant="small"
-			/>
-			<StatsCard
-				title="Participants"
-				value={tourStats?.totalParticipants || 0}
-				subtitle="guests served"
-				icon={Users}
-				variant="small"
-			/>
-			<StatsCard
-				title="Conversion Rate"
-				value="{conversionRate.toFixed(1)}%"
-				subtitle="{tourStats?.qrScans || 0} scans, {tourStats?.qrConversions || 0} bookings"
-				icon={TrendingUp}
-				variant="small"
-			/>
+	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<h3 class="font-semibold" style="color: var(--text-primary);">Performance Overview</h3>
+		</div>
+		<div class="p-4">
+			<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold" style="color: var(--text-primary);">{$globalCurrencyFormatter(tourStats?.totalRevenue || 0)}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">Total revenue</p>
+				</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.totalBookings || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">{tourStats?.confirmedBookings || 0} confirmed</p>
+				</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.totalParticipants || 0}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">Guests served</p>
+				</div>
+				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
+					<p class="text-lg font-semibold text-green-600">{getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)}</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">{tourStats?.qrScans || 0} scans</p>
+				</div>
+			</div>
 		</div>
 	</div>
 

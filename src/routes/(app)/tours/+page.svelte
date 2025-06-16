@@ -186,7 +186,7 @@
 
 	// Close action menus when clicking outside
 	function handleClickOutside(event: MouseEvent) {
-		if (actionMenuOpen && !(event.target as HTMLElement).closest('.action-menu-container')) {
+		if (actionMenuOpen && !(event.target as HTMLElement).closest('.action-menu-container') && !(event.target as HTMLElement).closest('.dropdown-menu')) {
 			actionMenuOpen = null;
 		}
 	}
@@ -199,6 +199,20 @@
 			};
 		}
 	});
+
+	// Position dropdown relative to menu button
+	function positionDropdown(node: HTMLElement, tourId: string) {
+		const menuButton = document.getElementById(`menu-${tourId}`);
+		if (menuButton) {
+			const rect = menuButton.getBoundingClientRect();
+			node.style.top = `${rect.bottom + 4}px`;
+			node.style.right = `${window.innerWidth - rect.right}px`;
+		}
+		
+		return {
+			destroy() {}
+		};
+	}
 
 	function getQRImageUrl(tour: Tour): string {
 		if (!tour.qrCode) return '';
@@ -640,10 +654,10 @@
 			{#each filteredTours() as tour, index (tour.id)}
 				<div 
 					in:fly={{ y: 20, duration: 300, delay: index * 50 }}
-					class="rounded-xl relative" 
+					class="rounded-xl transition-all duration-200 {tour.status === 'draft' ? 'opacity-75' : ''}" 
 					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 				>
-					<!-- Error Feedback Only (Success is shown in button) -->
+					<!-- Error Feedback -->
 					{#if tourFeedback[tour.id] && tourFeedback[tour.id].type === 'error'}
 						<div 
 							transition:fly={{ y: -10, duration: 200 }}
@@ -654,441 +668,172 @@
 						</div>
 					{/if}
 					
-					<!-- Mobile Layout -->
-					<div class="sm:hidden">
-						<div class="p-4 space-y-4">
-							<!-- Tour Image & Header -->
-							<div class="flex gap-3">
-								<!-- Tour Image -->
-								<div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
-									{#if tour.images && tour.images[0]}
-										<img 
-											src={getTourImageUrl(tour)} 
-											alt={tour.name}
-											class="w-full h-full object-cover"
-											loading="lazy"
-										/>
-									{:else}
-										<div class="w-full h-full flex items-center justify-center">
-											<MapPin class="h-6 w-6" style="color: var(--text-tertiary);" />
-										</div>
-									{/if}
-								</div>
-								
-								<!-- Header Content - Stacked for mobile -->
-								<div class="flex-1 min-w-0 space-y-2">
-									<!-- Title - Full width, wrappable -->
-									<div>
-										<h3 class="text-lg font-semibold leading-tight" style="color: var(--text-primary);">{tour.name}</h3>
-									</div>
-									
-									<!-- Status & Actions Row -->
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-2">
-											<Tooltip 
-												text={getTourBookingStatus(tour).description}
-												position="top"
-											>
-												<div 
-													class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200"
-													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
-												>
-													<div class="w-1.5 h-1.5 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
-													<span class="text-xs">{getTourBookingStatus(tour).label}</span>
-													{#if getTourBookingStatus(tour).status === 'no-slots'}
-														<PlusCircle class="w-3 h-3 opacity-60" />
-													{/if}
-												</div>
-											</Tooltip>
-										</div>
-										
-										<!-- Quick Actions -->
-										<div class="flex items-center gap-1">
-											{#if getTourBookingStatus(tour).status === 'draft'}
-												<Tooltip text="Activate tour">
-													<button
-														onclick={() => handleTourStatusToggle(tour)}
-														disabled={statusUpdating === tour.id}
-														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-													>
-													{#if statusUpdating === tour.id}
-														<div class="w-3.5 h-3.5 rounded-full border border-current border-t-transparent animate-spin"></div>
-													{:else}
-														<CheckCircle class="w-3.5 h-3.5" style="color: var(--color-success-600);" />
-													{/if}
-													</button>
-												</Tooltip>
-											{:else if getTourBookingStatus(tour).status === 'no-slots'}
-												<Tooltip text="Add time slots">
-													<button
-														onclick={() => goto(`/tours/${tour.id}/schedule`)}
-														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-													>
-													<PlusCircle class="w-3.5 h-3.5" style="color: var(--color-warning-600);" />
-													</button>
-												</Tooltip>
-											{:else}
-												<Tooltip text="Set to draft">
-													<button
-														onclick={() => handleTourStatusToggle(tour)}
-														disabled={statusUpdating === tour.id}
-														class="p-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
-													>
-													{#if statusUpdating === tour.id}
-														<div class="w-3.5 h-3.5 rounded-full border border-current border-t-transparent animate-spin"></div>
-													{:else}
-														<Edit class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
-													{/if}
-													</button>
-												</Tooltip>
-											{/if}
-											<div class="relative action-menu-container">
-												<button
-													class="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-													onclick={() => toggleActionMenu(tour.id)}
-												>
-													<MoreVertical class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
-												</button>
-												{#if actionMenuOpen === tour.id}
-													<div 
-														transition:scale={{ duration: 200, start: 0.95 }}
-														class="absolute right-0 mt-1 w-40 rounded-lg shadow-lg z-40 overflow-hidden" 
-														style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-													>
-														<button
-															onclick={() => goto(`/tours/${tour.id}/edit`)}
-															class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 flex items-center gap-2 transition-colors"
-															style="color: var(--text-primary);"
-														>
-															<Edit class="h-3 w-3" />
-															Edit
-														</button>
-														<button
-															onclick={() => handleDeleteTour(tour)}
-															class="w-full px-3 py-2 text-left text-xs hover:bg-red-50 flex items-center gap-2 transition-colors"
-															style="color: var(--color-danger-600);"
-														>
-															<Trash2 class="h-3 w-3" />
-															Delete
-														</button>
-													</div>
-												{/if}
-											</div>
-										</div>
-									</div>
-									
-									<!-- Location & Price Row -->
-									<div class="space-y-1">
-										{#if tour.location}
-											<p class="text-sm flex items-center gap-1" style="color: var(--text-secondary);">
-												<MapPin class="h-3 w-3 flex-shrink-0" />
-												<span class="truncate">{tour.location}</span>
-											</p>
-										{/if}
-										<p class="text-sm font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
-									</div>
-								</div>
-							</div>
-
-							<!-- Quick Stats -->
-							<div class="grid grid-cols-3 gap-3">
-								<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
-									<p class="text-sm font-semibold" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">duration</p>
-								</div>
-								<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
-									<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">max guests</p>
-								</div>
-								<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
-									<p class="text-sm font-semibold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">conversion</p>
-								</div>
-							</div>
-
-							<!-- QR Code & Quick Actions -->
-							{#if tour.qrCode}
-								<div class="flex items-center gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<button
-										onclick={() => copyQRUrl(tour)}
-										class="w-12 h-12 rounded-lg overflow-hidden border transition-colors {copiedQRCode === tour.qrCode ? 'border-green-500' : 'border-gray-200'}"
-									>
-										{#if copiedQRCode === tour.qrCode}
-											<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-												<CheckCircle class="h-5 w-5" style="color: var(--color-success);" />
-											</div>
-										{:else if browser}
-											<img 
-												src={getQRImageUrl(tour)} 
-												alt="QR Code for {tour.name}"
-												class="w-full h-full object-cover"
-												loading="lazy"
-											/>
-										{:else}
-											<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-tertiary);">
-												<QrCode class="h-5 w-5" style="color: var(--text-tertiary);" />
-											</div>
-										{/if}
-									</button>
-									<div class="flex-1">
-										<p class="text-sm font-medium" style="color: var(--text-primary);">QR Code</p>
-										<p class="text-xs" style="color: var(--text-tertiary);">Tap to copy booking URL</p>
-									</div>
-									<div class="flex gap-2">
-										<Tooltip text="Share" position="top">
-											<button onclick={() => shareQR(tour)} class="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center">
-												<Share2 class="h-4 w-4" style="color: var(--text-tertiary);" />
-											</button>
-										</Tooltip>
-										<Tooltip text="Preview" position="top">
-											<a
-												href="/book/{tour.qrCode}"
-												target="_blank"
-												rel="noopener noreferrer"
-												class="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center"
-											>
-												<ExternalLink class="h-4 w-4" style="color: var(--text-tertiary);" />
-											</a>
-										</Tooltip>
-									</div>
-								</div>
-							{/if}
-
-							<!-- Performance Stats -->
-							{#if (tour.qrScans && tour.qrScans > 0) || (tour.qrConversions && tour.qrConversions > 0)}
-								<div class="grid grid-cols-2 gap-3">
-									<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-										<p class="text-lg font-bold" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-										<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
-									</div>
-									<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-										<p class="text-lg font-bold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
-										<p class="text-xs" style="color: var(--text-tertiary);">conversion</p>
-									</div>
-								</div>
-							{/if}
-
-							<!-- Action Buttons -->
-							<div class="grid grid-cols-3 gap-2">
-								<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
-									<Eye class="h-4 w-4" />
-									Details
-								</button>
-								<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
-									<Calendar class="h-4 w-4" />
-									Schedule
-								</button>
-								<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
-									<Users class="h-4 w-4" />
-									Bookings
-								</button>
-							</div>
-						</div>
-					</div>
-
-					<!-- Desktop Layout -->
-					<div class="hidden sm:block">
-						<div class="p-6">
-							<div class="flex gap-4 mb-4">
-								<!-- Tour Image -->
-								<div class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
-									{#if tour.images && tour.images[0]}
-										<img 
-											src={getTourImageUrl(tour)} 
-											alt={tour.name}
-											class="w-full h-full object-cover"
-											loading="lazy"
-										/>
-									{:else}
-										<div class="w-full h-full flex items-center justify-center">
-											<MapPin class="h-8 w-8" style="color: var(--text-tertiary);" />
-										</div>
-									{/if}
-								</div>
-								
-								<!-- Tour Info -->
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center gap-3 mb-2">
-										<h3 class="text-xl font-semibold" style="color: var(--text-primary);">{tour.name}</h3>
-										<div class="flex items-center gap-2">
-											<Tooltip 
-												text={getTourBookingStatus(tour).description}
-												position="top"
-											>
-												<div 
-													class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200"
-													style="color: {getTourBookingStatus(tour).color}; background: {getTourBookingStatus(tour).bgColor}; border-color: {getTourBookingStatus(tour).borderColor};"
-												>
-													<div class="w-2 h-2 rounded-full {getTourBookingStatus(tour).dotColor}"></div>
-													<span>{getTourBookingStatus(tour).label}</span>
-													{#if getTourBookingStatus(tour).status === 'no-slots'}
-														<AlertTriangle class="w-4 h-4 opacity-60" />
-													{:else if getTourBookingStatus(tour).status === 'bookable'}
-														<CheckCircle class="w-4 h-4 opacity-60" />
-													{/if}
-												</div>
-											</Tooltip>
-											
-											<!-- Action Buttons -->
-											<div class="flex items-center gap-1">
-												{#if getTourBookingStatus(tour).status === 'draft'}
-													<Tooltip text="Activate tour to make it visible to customers" position="top">
-														<button
-															onclick={() => handleTourStatusToggle(tour)}
-															disabled={statusUpdating === tour.id}
-															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-green-50 border border-green-200 text-green-700"
-														>
-														{#if statusUpdating === tour.id}
-															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
-															<span>Activating...</span>
-														{:else}
-															<CheckCircle class="w-3 h-3" />
-															<span>Activate</span>
-														{/if}
-														</button>
-													</Tooltip>
-												{:else if getTourBookingStatus(tour).status === 'no-slots'}
-													<Tooltip text="Add time slots to start accepting bookings" position="top">
-														<button
-															onclick={() => goto(`/tours/${tour.id}/schedule`)}
-															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-orange-50 border border-orange-200 text-orange-700"
-														>
-														<PlusCircle class="w-3 h-3" />
-														<span>Add Slots</span>
-														</button>
-													</Tooltip>
-												{:else}
-													<Tooltip text="Set tour to draft (hide from customers)" position="top">
-														<button
-															onclick={() => handleTourStatusToggle(tour)}
-															disabled={statusUpdating === tour.id}
-															class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-gray-50 border border-gray-200 text-gray-700"
-														>
-														{#if statusUpdating === tour.id}
-															<div class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></div>
-															<span>Updating...</span>
-														{:else}
-															<Edit class="w-3 h-3" />
-															<span>Draft</span>
-														{/if}
-														</button>
-													</Tooltip>
-												{/if}
-											</div>
-										</div>
-									</div>
-									<div class="flex items-center gap-4 text-sm mb-2" style="color: var(--text-secondary);">
-										{#if tour.location}
-											<div class="flex items-center gap-1">
-												<MapPin class="h-4 w-4" />
-												{tour.location}
-											</div>
-										{/if}
-										<div class="flex items-center gap-1">
-											<DollarSign class="h-4 w-4" />
-											{$globalCurrencyFormatter(tour.price)}
-										</div>
-										<div class="flex items-center gap-1">
-											<Clock class="h-4 w-4" />
-											{formatDuration(tour.duration)}
-										</div>
-										<div class="flex items-center gap-1">
-											<Users class="h-4 w-4" />
-											{tour.capacity} max
-										</div>
-									</div>
-									{#if tour.description}
-										<p class="text-sm line-clamp-1" style="color: var(--text-secondary);">
-											{tour.description}
-										</p>
-									{/if}
-								</div>
-								
-								<!-- QR Code Section -->
-								{#if tour.qrCode}
-									<div class="flex items-center gap-3">
-										<button
-											onclick={() => copyQRUrl(tour)}
-											class="w-16 h-16 rounded-lg overflow-hidden border transition-colors {copiedQRCode === tour.qrCode ? 'border-green-500' : 'border-gray-200'}"
-										>
-											{#if copiedQRCode === tour.qrCode}
-												<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-													<CheckCircle class="h-6 w-6" style="color: var(--color-success);" />
-												</div>
-											{:else if browser}
-												<img 
-													src={getQRImageUrl(tour)} 
-													alt="QR Code for {tour.name}"
-													class="w-full h-full object-cover"
-													loading="lazy"
-												/>
-											{:else}
-												<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-tertiary);">
-													<QrCode class="h-6 w-6" style="color: var(--text-tertiary);" />
-												</div>
-											{/if}
-										</button>
-										<div class="flex gap-2">
-											<Tooltip text="Share" position="top">
-												<button onclick={() => shareQR(tour)} class="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center">
-													<Share2 class="h-4 w-4" style="color: var(--text-tertiary);" />
-												</button>
-											</Tooltip>
-											<Tooltip text="Preview" position="top">
-												<a
-													href="/book/{tour.qrCode}"
-													target="_blank"
-													rel="noopener noreferrer"
-													class="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center"
-												>
-													<ExternalLink class="h-4 w-4" style="color: var(--text-tertiary);" />
-												</a>
-											</Tooltip>
-										</div>
+					<div class="p-4 sm:p-6">
+						<!-- Header Row -->
+						<div class="flex items-start gap-4 mb-4">
+							<!-- Tour Image -->
+							<div class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
+								{#if tour.images && tour.images[0]}
+									<img 
+										src={getTourImageUrl(tour)} 
+										alt={tour.name}
+										class="w-full h-full object-cover"
+										loading="lazy"
+									/>
+								{:else}
+									<div class="w-full h-full flex items-center justify-center">
+										<MapPin class="h-6 w-6 sm:h-8 sm:w-8" style="color: var(--text-tertiary);" />
 									</div>
 								{/if}
 							</div>
-
-							<!-- Performance Metrics -->
-							<div class="grid grid-cols-3 gap-4 mb-4">
-								<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<BarChart3 class="h-5 w-5 mx-auto mb-1" style="color: var(--text-tertiary);" />
-									<p class="text-lg font-semibold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">conversion rate</p>
-								</div>
-								<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<QrCode class="h-5 w-5 mx-auto mb-1" style="color: var(--text-tertiary);" />
-									<p class="text-lg font-semibold" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
-								</div>
-								<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<Users class="h-5 w-5 mx-auto mb-1" style="color: var(--text-tertiary);" />
-									<p class="text-lg font-semibold" style="color: var(--text-primary);">{tour.qrConversions || 0}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">bookings</p>
+							
+							<!-- Tour Info -->
+							<div class="flex-1 min-w-0">
+								<div class="flex items-start justify-between gap-3 mb-2">
+									<div class="flex-1 min-w-0">
+										<h3 class="text-lg sm:text-xl font-semibold mb-1" style="color: var(--text-primary);">{tour.name}</h3>
+										
+										<!-- Status Indicator -->
+										<div class="flex items-center gap-2 mb-2">
+											{#if tour.status === 'draft'}
+												<div class="w-2 h-2 rounded-full bg-gray-400"></div>
+												<span class="text-sm" style="color: var(--text-secondary);">Draft</span>
+											{:else if getTourBookingStatus(tour).status === 'no-slots'}
+												<div class="w-2 h-2 rounded-full bg-orange-400"></div>
+												<span class="text-sm" style="color: var(--text-secondary);">Active • No time slots</span>
+											{:else}
+												<div class="w-2 h-2 rounded-full bg-green-400"></div>
+												<span class="text-sm" style="color: var(--text-secondary);">Active • {tour.upcomingSlots} slot{tour.upcomingSlots !== 1 ? 's' : ''}</span>
+											{/if}
+										</div>
+										
+										<!-- Tour Details -->
+										<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
+											{#if tour.location}
+												<div class="flex items-center gap-1">
+													<MapPin class="h-3 w-3" />
+													<span class="truncate">{tour.location}</span>
+												</div>
+											{/if}
+											<div class="flex items-center gap-1">
+												<DollarSign class="h-3 w-3" />
+												<span>{$globalCurrencyFormatter(tour.price)}</span>
+											</div>
+											<div class="flex items-center gap-1">
+												<Clock class="h-3 w-3" />
+												<span>{formatDuration(tour.duration)}</span>
+											</div>
+											<div class="flex items-center gap-1">
+												<Users class="h-3 w-3" />
+												<span>{tour.capacity}</span>
+											</div>
+										</div>
+									</div>
+									
+									<!-- QR Code (Desktop) -->
+									{#if tour.qrCode}
+										<div class="hidden sm:block flex-shrink-0">
+											<button
+												onclick={() => copyQRUrl(tour)}
+												class="w-12 h-12 rounded-lg overflow-hidden border transition-colors {copiedQRCode === tour.qrCode ? 'border-green-500' : 'border-gray-200'}"
+											>
+												{#if copiedQRCode === tour.qrCode}
+													<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+														<CheckCircle class="h-5 w-5" style="color: var(--color-success);" />
+													</div>
+												{:else if browser}
+													<img 
+														src={getQRImageUrl(tour)} 
+														alt="QR Code for {tour.name}"
+														class="w-full h-full object-cover"
+														loading="lazy"
+													/>
+												{:else}
+													<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-tertiary);">
+														<QrCode class="h-5 w-5" style="color: var(--text-tertiary);" />
+													</div>
+												{/if}
+											</button>
+										</div>
+									{/if}
 								</div>
 							</div>
+						</div>
 
-							<!-- Action Buttons -->
+						<!-- Stats Row (Mobile: 2 cols, Desktop: 4 cols) -->
+						<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+							<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">QR scans</p>
+							</div>
+							<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
+								<p class="text-sm font-semibold text-green-600">{getConversionRateText(tour.qrScans || 0, tour.qrConversions || 0)}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">conversion</p>
+							</div>
+							<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.qrConversions || 0}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">bookings</p>
+							</div>
+							<div class="text-center p-2 rounded-lg" style="background: var(--bg-secondary);">
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.capacity}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">capacity</p>
+							</div>
+						</div>
+
+						<!-- Actions Row -->
+						<div class="flex items-center justify-between gap-3">
+							<!-- Primary Action -->
 							<div class="flex items-center gap-2">
-								<button onclick={() => goto(`/tours/${tour.id}`)} class="button-primary button--small button--gap">
+								{#if tour.status === 'draft'}
+									<button
+										onclick={() => handleTourStatusToggle(tour)}
+										disabled={statusUpdating === tour.id}
+										class="button-success button--small button--gap"
+									>
+										{#if statusUpdating === tour.id}
+											<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+											<span>Activating...</span>
+										{:else}
+											<CheckCircle class="w-4 h-4" />
+											<span>Activate</span>
+										{/if}
+									</button>
+								{:else if getTourBookingStatus(tour).status === 'no-slots'}
+									<button 
+										onclick={() => goto(`/tours/${tour.id}/schedule/new`)}
+										class="button-primary button--small button--gap"
+									>
+										<Plus class="w-4 h-4" />
+										<span>Add Slots</span>
+									</button>
+								{:else}
+									<button 
+										onclick={() => goto(`/tours/${tour.id}/schedule`)}
+										class="button-secondary button--small button--gap"
+									>
+										<Calendar class="w-4 h-4" />
+										<span>Schedule</span>
+									</button>
+								{/if}
+								
+								<!-- Secondary Actions -->
+								<button onclick={() => goto(`/tours/${tour.id}`)} class="button-secondary button--small button--gap">
 									<Eye class="h-4 w-4" />
-									Details
+									<span class="hidden sm:inline">Details</span>
 								</button>
 								<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
 									<Users class="h-4 w-4" />
-									Bookings
+									<span class="hidden sm:inline">Bookings</span>
 								</button>
-								<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
-									<Calendar class="h-4 w-4" />
-									Schedule
-								</button>
-								<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="button-secondary button--small button--gap">
-									<Edit class="h-4 w-4" />
-									Edit
-								</button>
-								<button onclick={() => handleDeleteTour(tour)} class="button--danger button--small button--gap">
-									<Trash2 class="h-4 w-4" />
-									Delete
+							</div>
+							
+							<!-- Menu -->
+							<div class="relative action-menu-container" id="menu-{tour.id}">
+								<button
+									class="button-secondary button--small button--icon"
+									onclick={() => toggleActionMenu(tour.id)}
+								>
+									<MoreVertical class="h-4 w-4" />
 								</button>
 							</div>
 						</div>
@@ -1098,6 +843,85 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Dropdown Menus (positioned outside cards to avoid opacity inheritance) -->
+{#each filteredTours() as tour (tour.id)}
+	{#if actionMenuOpen === tour.id}
+		<div 
+			transition:scale={{ duration: 200, start: 0.95 }}
+			class="fixed w-48 rounded-lg shadow-lg z-50 overflow-hidden dropdown-menu" 
+			style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+			use:positionDropdown={tour.id}
+		>
+			<button
+				onclick={() => {
+					actionMenuOpen = null;
+					goto(`/tours/${tour.id}/edit`);
+				}}
+				class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors"
+				style="color: var(--text-primary);"
+			>
+				<Edit class="h-4 w-4" />
+				Edit Tour
+			</button>
+			{#if tour.qrCode}
+				<button
+					onclick={() => {
+						actionMenuOpen = null;
+						shareQR(tour);
+					}}
+					class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors"
+					style="color: var(--text-primary);"
+				>
+					<Share2 class="h-4 w-4" />
+					Share QR Code
+				</button>
+				<a
+					href="/book/{tour.qrCode}"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 transition-colors"
+					style="color: var(--text-primary);"
+				>
+					<ExternalLink class="h-4 w-4" />
+					Preview Booking Page
+				</a>
+			{/if}
+			{#if tour.status === 'active'}
+				<button
+					onclick={() => {
+						actionMenuOpen = null;
+						handleTourStatusToggle(tour);
+					}}
+					disabled={statusUpdating === tour.id}
+					class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+					class:opacity-50={statusUpdating === tour.id}
+					class:hover:bg-gray-50={statusUpdating !== tour.id}
+					style="color: var(--text-secondary);"
+				>
+					{#if statusUpdating === tour.id}
+						<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
+					{:else}
+						<Package class="h-4 w-4" />
+					{/if}
+					Set to Draft
+				</button>
+			{/if}
+			<hr style="border-color: var(--border-primary);" />
+			<button
+				onclick={() => {
+					actionMenuOpen = null;
+					handleDeleteTour(tour);
+				}}
+				class="w-full px-3 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-2 transition-colors"
+				style="color: var(--color-danger-600);"
+			>
+				<Trash2 class="h-4 w-4" />
+				Delete Tour
+			</button>
+		</div>
+	{/if}
+{/each}
 
 <!-- Enhanced Delete Confirmation Modal -->
 <ConfirmationModal

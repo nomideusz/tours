@@ -12,8 +12,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		const limitParam = url.searchParams.get('limit');
 		const limit = limitParam ? parseInt(limitParam, 10) : 10;
 		
-		// Validate limit
-		if (isNaN(limit) || limit < 1 || limit > 100) {
+		// Validate limit - allow higher limits for comprehensive stats
+		if (isNaN(limit) || limit < 1 || limit > 1000) {
 			return json({ error: 'Invalid limit parameter' }, { status: 400 });
 		}
 

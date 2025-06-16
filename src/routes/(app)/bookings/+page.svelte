@@ -27,8 +27,16 @@
 	
 
 	
-	// State for pagination - start very conservative
-	let pageSize = $state(10);
+	// State for pagination - show more bookings by default
+	let pageSize = $state(50);
+	
+	// Separate query for ALL bookings (for stats calculation)
+	let allBookingsQuery = $derived(createQuery({
+		queryKey: queryKeys.recentBookings(1000), // Get a large number for stats
+		queryFn: () => queryFunctions.fetchRecentBookings(1000),
+		staleTime: 1 * 60 * 1000, // 1 minute
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+	}));
 	
 	// TanStack Query for bookings data with pagination - reactive to page changes
 	let bookingsQuery = $derived(createQuery({
@@ -38,19 +46,21 @@
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	}));
 	
-	// Derive data from query
-	let bookings = $derived($bookingsQuery.data || []);
+	// Derive data from queries
+	let allBookings = $derived($allBookingsQuery.data || []); // For stats calculation
+	let bookings = $derived($bookingsQuery.data || []); // For display
 	let isLoading = $derived($bookingsQuery.isLoading);
 	let isError = $derived($bookingsQuery.isError);
+	let isStatsLoading = $derived($allBookingsQuery.isLoading);
 	
-	// Calculate stats from bookings
+	// Calculate stats from ALL bookings, not just the paginated ones
 	let stats = $derived(() => {
-		const confirmed = bookings.filter((b: any) => b.status === 'confirmed');
-		const pending = bookings.filter((b: any) => b.status === 'pending');
+		const confirmed = allBookings.filter((b: any) => b.status === 'confirmed');
+		const pending = allBookings.filter((b: any) => b.status === 'pending');
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
-		const todayBookings = bookings.filter((b: any) => {
+		const todayBookings = allBookings.filter((b: any) => {
 			if (!b.created) return false;
 			try {
 				const bookingDate = new Date(b.created);
@@ -62,7 +72,7 @@
 			}
 		});
 		
-		const upcomingBookings = bookings.filter((b: any) => {
+		const upcomingBookings = allBookings.filter((b: any) => {
 			if (!b.effectiveDate) return false;
 			try {
 				const bookingDate = new Date(b.effectiveDate);
@@ -74,7 +84,7 @@
 		});
 		
 		return {
-			total: bookings.length,
+			total: allBookings.length,
 			confirmed: confirmed.length,
 			pending: pending.length,
 			todayCount: todayBookings.length,
@@ -84,9 +94,10 @@
 		};
 	});
 	
-	// Refresh function
+	// Refresh function - refresh both queries
 	function handleRefresh() {
 		$bookingsQuery.refetch();
+		$allBookingsQuery.refetch();
 	}
 	
 	// Load more bookings - increase page size instead of page number
@@ -107,7 +118,7 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Bookings"
-			secondaryInfo="{stats().total} total"
+			secondaryInfo="{isStatsLoading ? 'Loading...' : `${stats().total} total`}"
 			quickActions={[
 				{
 					label: 'Scanner',
@@ -120,29 +131,29 @@
 					icon: RefreshCw,
 					onclick: handleRefresh,
 					variant: 'secondary',
-					disabled: isLoading
+					disabled: isLoading || isStatsLoading
 				}
 			]}
 			infoItems={[
 				{
 					icon: Calendar,
 					label: 'Today',
-					value: `${stats().todayCount} new`
+					value: isStatsLoading ? '...' : `${stats().todayCount} new`
 				},
 				{
 					icon: AlertCircle,
 					label: 'Pending',
-					value: `${stats().pending}`
+					value: isStatsLoading ? '...' : `${stats().pending}`
 				},
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: $globalCurrencyFormatter(stats().revenue)
+					value: isStatsLoading ? '...' : $globalCurrencyFormatter(stats().revenue)
 				},
 				{
 					icon: TrendingUp,
 					label: 'Upcoming',
-					value: `${stats().upcoming}`
+					value: isStatsLoading ? '...' : `${stats().upcoming}`
 				}
 			]}
 		/>
@@ -155,10 +166,10 @@
 			>
 				<button
 					onclick={handleRefresh}
-					disabled={isLoading}
+					disabled={isLoading || isStatsLoading}
 					class="button-secondary button--gap"
 				>
-					{#if isLoading}
+					{#if isLoading || isStatsLoading}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{:else}
 						<RefreshCw class="h-4 w-4" />
@@ -188,33 +199,33 @@
 	<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
 		<StatsCard
 			title="Total Bookings"
-			value={stats().total}
-			subtitle="{stats().confirmed} confirmed"
+			value={isStatsLoading ? '...' : stats().total}
+			subtitle={isStatsLoading ? 'Loading...' : `${stats().confirmed} confirmed`}
 			icon={Calendar}
 			variant="small"
 		/>
 		
 		<StatsCard
 			title="Pending Review"
-			value={stats().pending}
-			subtitle="need attention"
+			value={isStatsLoading ? '...' : stats().pending}
+			subtitle={isStatsLoading ? 'Loading...' : "need attention"}
 			icon={AlertCircle}
-			trend={stats().pending > 0 ? { value: 'Action needed', positive: false } : undefined}
+			trend={isStatsLoading ? undefined : (stats().pending > 0 ? { value: 'Action needed', positive: false } : undefined)}
 			variant="small"
 		/>
 		
 		<StatsCard
 			title="Total Revenue"
-								value={$globalCurrencyFormatter(stats().revenue)}
-			subtitle="confirmed bookings"
+			value={isStatsLoading ? '...' : $globalCurrencyFormatter(stats().revenue)}
+			subtitle={isStatsLoading ? 'Loading...' : "confirmed bookings"}
 			icon={Euro}
 			variant="small"
 		/>
 		
 		<StatsCard
 			title="Total Guests"
-			value={stats().participants}
-			subtitle="confirmed participants"
+			value={isStatsLoading ? '...' : stats().participants}
+			subtitle={isStatsLoading ? 'Loading...' : "confirmed participants"}
 			icon={Users}
 			variant="small"
 		/>
@@ -226,7 +237,7 @@
 			<div class="flex items-center justify-between">
 				<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
-					{stats().total} total
+					{isStatsLoading ? 'Loading...' : `${stats().total} total`}
 				</span>
 			</div>
 		</div>
@@ -255,7 +266,19 @@
 								<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
 									<span class="flex items-center gap-1">
 										<Calendar class="h-3 w-3" />
-										{formatDate(booking.effectiveDate)}
+										{#if booking.expand?.timeSlot?.startTime}
+											{formatDate(booking.expand.timeSlot.startTime)}
+										{:else}
+											{formatDate(booking.created)}
+										{/if}
+									</span>
+									<span class="flex items-center gap-1">
+										<Clock class="h-3 w-3" />
+										{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+											{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
+										{:else}
+											Time TBD
+										{/if}
 									</span>
 									<span class="flex items-center gap-1">
 										<Users class="h-3 w-3" />
@@ -282,9 +305,18 @@
 											</span>
 											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
 											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
+												<Calendar class="h-3 w-3" />
+												{#if booking.expand?.timeSlot?.startTime}
+													{formatDate(booking.expand.timeSlot.startTime)}
+												{:else}
+													{formatDate(booking.created)}
+												{/if}
+											</span>
+											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
+											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
 												<Clock class="h-3 w-3" />
-												{#if booking.timeSlot?.startTime && booking.timeSlot?.endTime}
-													{formatSlotTimeRange(booking.timeSlot.startTime, booking.timeSlot.endTime)}
+												{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+													{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 												{:else}
 													Time TBD
 												{/if}

@@ -388,12 +388,12 @@
 
 		<!-- Today's Slots - Quick Overview -->
 		{#if todaySlots().length > 0}
-			<div class="mb-6 rounded-xl" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-				<div class="p-4 border-b" style="border-color: var(--color-primary-200);">
+			<div class="mb-6 rounded-xl" style="background: var(--bg-tertiary); border: 1px solid var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<Clock class="h-5 w-5" style="color: var(--color-primary-600);" />
-							<h3 class="font-semibold" style="color: var(--color-primary-900);">Today's Schedule</h3>
+							<Clock class="h-5 w-5" style="color: var(--text-primary);" />
+							<h3 class="font-semibold" style="color: var(--text-primary);">Today's Schedule</h3>
 						</div>
 						<button onclick={() => goto('/checkin-scanner')} class="button-primary button--small button--gap">
 							<QrCode class="h-4 w-4" />
@@ -467,7 +467,7 @@
 					<button onclick={clearSelection} class="button-secondary button--small">
 						Clear
 					</button>
-					<button onclick={bulkDelete} class="button-danger button--small">
+					<button onclick={bulkDelete} class="button--danger button--gap button--small">
 						<Trash2 class="h-4 w-4" />
 						Delete
 					</button>

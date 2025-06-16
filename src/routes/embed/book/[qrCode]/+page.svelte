@@ -13,6 +13,10 @@
 	import Users from 'lucide-svelte/icons/users';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Info from 'lucide-svelte/icons/info';
+	
+	// Components
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	
 	let { data } = $props();
 	let qrCode = $derived($page.params.qrCode);
@@ -35,6 +39,9 @@
 	let isLoading = $derived($tourQuery.isLoading);
 	let isError = $derived($tourQuery.isError);
 	
+	// Modal state
+	let showContactModal = $state(false);
+	
 	function getImageUrl(imagePath: string | null | undefined): string {
 		return getTourImageUrl(tour?.id || '', imagePath, 'medium');
 	}
@@ -44,6 +51,18 @@
 		if (typeof window !== 'undefined') {
 			window.parent.open(`${window.location.origin}/book/${qrCode}`, '_blank');
 		}
+	}
+	
+	function handleContactUs() {
+		// Show the contact modal instead of browser alert
+		showContactModal = true;
+	}
+	
+	function handleVisitWebsite() {
+		if (typeof window !== 'undefined') {
+			window.parent.open('https://zaur.app', '_blank');
+		}
+		showContactModal = false;
 	}
 	
 	// Theme detection - check if parent prefers dark mode
@@ -234,7 +253,7 @@
 	{:else}
 		<div class="tour-widget">
 			<div class="widget-content">
-				<!-- Left side: Tour image -->
+				<!-- Tour image with improved aspect ratio -->
 				{#if tour.images && tour.images.length > 0}
 					<div class="tour-image">
 						<img 
@@ -250,7 +269,7 @@
 					</div>
 				{:else}
 					<div class="tour-image tour-image--placeholder">
-						<MapPin size={24} />
+						<MapPin size={28} />
 						{#if tour.status === 'draft'}
 							<div class="status-overlay">
 								<span class="status-badge">Coming Soon</span>
@@ -259,48 +278,64 @@
 					</div>
 				{/if}
 				
-				<!-- Right side: Tour info -->
+				<!-- Tour info with improved layout -->
 				<div class="tour-info">
-					<div class="tour-content-top">
+					<div class="tour-content">
+						<!-- Header section -->
 						<div class="tour-header">
 							<h3 class="tour-title">{tour.name}</h3>
+							
+							<!-- Status indicator with consistent design -->
+							<div class="tour-status">
+								{#if tour.status === 'draft'}
+									<div class="status-dot status-dot--draft"></div>
+									<span class="status-text">Coming Soon</span>
+								{:else}
+									<div class="status-dot status-dot--active"></div>
+									<span class="status-text">Available</span>
+								{/if}
+							</div>
+							
 							<div class="tour-price">{$globalCurrencyFormatter(tour.price)}</div>
 						</div>
 						
+						<!-- Meta information with better spacing -->
 						<div class="tour-meta">
 							{#if tour.duration}
-								<span class="meta-item">
-									<Clock size={12} />
-									{formatDuration(tour.duration)}
-								</span>
+								<div class="meta-item">
+									<Clock size={14} />
+									<span>{formatDuration(tour.duration)}</span>
+								</div>
 							{/if}
-							<span class="meta-item">
-								<Users size={12} />
-								{tour.capacity} max
-							</span>
+							<div class="meta-item">
+								<Users size={14} />
+								<span>{tour.capacity} max</span>
+							</div>
 							{#if tour.location}
-								<span class="meta-item">
-									<MapPin size={12} />
-									{tour.location}
-								</span>
+								<div class="meta-item">
+									<MapPin size={14} />
+									<span>{tour.location}</span>
+								</div>
 							{/if}
 						</div>
 						
+						<!-- Description with better typography -->
 						{#if tour.description}
 							<p class="tour-description">{tour.description}</p>
 						{/if}
 					</div>
 					
+					<!-- Action button positioned on the right on desktop -->
 					<div class="widget-actions">
 						{#if tour.status === 'active'}
-							<button class="button-primary button--gap button--small widget-book-button" onclick={handleBookNow}>
+							<button class="widget-book-button widget-book-button--primary" onclick={handleBookNow}>
 								<Calendar size={16} />
-								Book Now
+								<span>Book Now</span>
 							</button>
 						{:else}
-							<button class="button-secondary button--gap button--small widget-book-button" onclick={handleBookNow}>
+							<button class="widget-book-button widget-book-button--secondary" onclick={handleContactUs}>
 								<Calendar size={16} />
-								Contact Us
+								<span>Contact Us</span>
 							</button>
 						{/if}
 					</div>
@@ -316,15 +351,30 @@
 	{/if}
 </div>
 
+<!-- Contact Modal -->
+<ConfirmationModal
+	bind:isOpen={showContactModal}
+	title="Tour Not Available for Online Booking"
+	message="This tour is currently not accepting online bookings. To inquire about availability or book this tour, please contact the tour guide directly or check back later as this tour may become available."
+	confirmText="Visit Website"
+	cancelText="Close"
+	variant="info"
+	icon={Info}
+	onConfirm={handleVisitWebsite}
+/>
+
 <style>
 	.embed-widget {
 		width: 100%;
-		height: 100%;
+		min-height: 240px;
 		background: var(--bg-primary);
 		border-radius: var(--radius-lg);
-		overflow: hidden;
 		font-family: var(--font-sans);
 		color: var(--text-primary);
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		box-sizing: border-box;
 	}
 	
 	.loading-state, .error-state, .inactive-state {
@@ -365,26 +415,23 @@
 	}
 	
 	.tour-widget {
-		height: 100%;
-		min-height: 220px;
 		display: flex;
 		flex-direction: column;
 		background: var(--bg-primary);
 		border-radius: var(--radius-xl);
 		box-shadow: var(--shadow-md);
-		overflow: hidden;
 		border: 1px solid var(--border-primary);
+		min-height: 240px;
 	}
 	
 	.widget-content {
-		flex: 1;
 		display: flex;
-		min-height: 180px;
+		flex: 1;
 	}
 	
 	.tour-image {
-		width: 120px;
-		height: 180px;
+		width: 140px;
+		min-height: 200px;
 		flex-shrink: 0;
 		background: var(--bg-secondary);
 		display: flex;
@@ -392,6 +439,7 @@
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
+		border-radius: var(--radius-lg) 0 0 0;
 	}
 	
 	.tour-image img {
@@ -414,7 +462,7 @@
 	}
 	
 	.status-badge {
-		background: rgba(0, 0, 0, 0.8);
+		background: rgba(0, 0, 0, 0.85);
 		color: white;
 		padding: var(--space-1) var(--space-2);
 		border-radius: var(--radius-sm);
@@ -422,31 +470,34 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		backdrop-filter: blur(4px);
 	}
 	
 	.tour-info {
 		flex: 1;
 		padding: var(--space-4);
 		display: flex;
-		flex-direction: column;
 		min-width: 0;
-		min-height: 180px;
-		justify-content: space-between;
+		gap: var(--space-4);
 	}
 	
-	.tour-content-top {
+	.tour-content {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		gap: var(--space-3);
+		min-width: 0;
 	}
 	
 	.tour-header {
-		margin-bottom: var(--space-2);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
 	}
 	
 	.tour-title {
-		margin: 0 0 var(--space-1) 0;
-		font-size: var(--text-base);
+		margin: 0;
+		font-size: var(--text-lg);
 		font-weight: 700;
 		color: var(--text-primary);
 		line-height: var(--leading-tight);
@@ -456,25 +507,50 @@
 		overflow: hidden;
 	}
 	
+	.tour-status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	
+	.status-dot--draft {
+		background: var(--color-gray-400);
+	}
+	
+	.status-dot--active {
+		background: var(--color-success);
+	}
+	
+	.status-text {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+	
 	.tour-price {
-		font-size: var(--text-lg);
+		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--color-success);
-		margin-bottom: var(--space-2);
 	}
 	
 	.tour-meta {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-2);
-		margin-bottom: var(--space-2);
+		gap: var(--space-3);
 	}
 	
 	.meta-item {
 		display: flex;
 		align-items: center;
 		gap: var(--space-1);
-		font-size: 11px;
+		font-size: var(--text-xs);
 		color: var(--text-secondary);
 		font-weight: 500;
 	}
@@ -486,10 +562,10 @@
 	
 	.tour-description {
 		margin: 0;
-		font-size: var(--text-xs);
+		font-size: var(--text-sm);
 		color: var(--text-secondary);
 		line-height: var(--leading-normal);
-		max-height: 39px; /* 2 lines * 1.5 line-height * 13px font-size */
+		max-height: 42px; /* 2 lines * 1.5 line-height * 14px font-size */
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
@@ -498,12 +574,51 @@
 	}
 	
 	.widget-actions {
-		margin-top: auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
 	}
 	
 	.widget-book-button {
-		width: 100%;
+		padding: 12px 20px;
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: 600;
 		letter-spacing: 0.025em;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		border: none;
+		cursor: pointer;
+		transition: all var(--transition-fast) ease;
+		text-decoration: none;
+		white-space: nowrap;
+		min-width: 120px;
+	}
+	
+	.widget-book-button--primary {
+		background: var(--color-primary-600);
+		color: white;
+	}
+	
+	.widget-book-button--primary:hover {
+		background: var(--color-primary-700);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+	}
+	
+	.widget-book-button--secondary {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-primary);
+	}
+	
+	.widget-book-button--secondary:hover {
+		background: var(--color-gray-100);
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-md);
 	}
 	
 	.widget-footer {
@@ -532,27 +647,75 @@
 		text-decoration: underline;
 	}
 	
-	/* Responsive adjustments */
+	/* Tablet and smaller screens */
+	@media (max-width: 768px) {
+		.tour-info {
+			flex-direction: column;
+			gap: var(--space-3);
+		}
+		
+		.widget-actions {
+			width: 100%;
+		}
+		
+		.widget-book-button {
+			width: 100%;
+		}
+	}
+	
+	/* Mobile screens */
 	@media (max-width: 480px) {
+		.embed-widget {
+			height: auto !important;
+			min-height: 280px;
+			max-height: none !important;
+		}
+		
+		.tour-widget {
+			height: auto;
+			min-height: auto;
+		}
+		
 		.widget-content {
 			flex-direction: column;
+			flex: none;
 		}
 		
 		.tour-image {
 			width: 100%;
-			height: 100px;
+			height: 80px;
+			min-height: 80px;
+			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 		}
 		
 		.tour-info {
-			padding: var(--space-3);
+			padding: var(--space-2);
+			flex-direction: column;
+			gap: var(--space-1);
+			flex: none;
+		}
+		
+		.tour-content {
+			gap: var(--space-1);
+			flex: none;
+		}
+		
+		.tour-header {
+			gap: 4px;
 		}
 		
 		.tour-title {
 			font-size: var(--text-sm);
+			-webkit-line-clamp: 1;
 		}
 		
 		.tour-price {
 			font-size: var(--text-base);
+		}
+		
+		.tour-meta {
+			gap: var(--space-1);
+			flex-wrap: wrap;
 		}
 		
 		.meta-item {
@@ -560,26 +723,92 @@
 		}
 		
 		.tour-description {
-			font-size: 12px;
+			font-size: 11px;
+			-webkit-line-clamp: 1;
+			max-height: 14px;
+		}
+		
+		.widget-actions {
+			width: 100%;
+			flex-shrink: 0;
+			padding: var(--space-1) 0 0 0;
+		}
+		
+		.widget-book-button {
+			width: 100%;
+			padding: 12px 16px;
+			font-size: var(--text-xs);
+			min-width: auto;
 		}
 		
 		.widget-footer {
-			padding: var(--space-1) var(--space-3);
+			padding: 6px var(--space-2);
+			flex-shrink: 0;
+		}
+		
+		.powered-by {
+			font-size: 9px;
 		}
 	}
 	
-	@media (max-width: 320px) {
+	/* Very small screens */
+	@media (max-width: 360px) {
+		.embed-widget {
+			min-height: 240px;
+		}
+		
+		.tour-image {
+			height: 60px;
+			min-height: 60px;
+		}
+		
+		.tour-info {
+			padding: 8px;
+			gap: 4px;
+		}
+		
+		.tour-content {
+			gap: 4px;
+		}
+		
+		.tour-header {
+			gap: 2px;
+		}
+		
 		.tour-meta {
 			flex-direction: column;
-			gap: var(--space-1);
+			gap: 2px;
+			align-items: flex-start;
 		}
 		
 		.tour-title {
-			font-size: var(--text-xs);
+			font-size: 12px;
+			-webkit-line-clamp: 1;
 		}
 		
 		.tour-price {
 			font-size: var(--text-sm);
+		}
+		
+		.tour-description {
+			display: none;
+		}
+		
+		.widget-actions {
+			padding: 4px 0 0 0;
+		}
+		
+		.widget-book-button {
+			padding: 10px 12px;
+			font-size: 11px;
+		}
+		
+		.widget-footer {
+			padding: 4px 8px;
+		}
+		
+		.powered-by {
+			font-size: 8px;
 		}
 	}
 </style> 

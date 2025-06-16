@@ -9,7 +9,8 @@
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
 	
 	// TanStack Query
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { queryKeys } from '$lib/queries/shared-stats.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -34,6 +35,9 @@
 
 	// Get booking ID from load function
 	let bookingId = $derived(data.bookingId);
+	
+	// Query client for invalidation
+	const queryClient = useQueryClient();
 	
 	// TanStack Query for booking data
 	let bookingQuery = $derived(createQuery({
@@ -467,8 +471,22 @@
 						isUpdating = false;
 						
 						if (result.type === 'success') {
+							// Update local state
 							booking = { ...booking, status: newStatus as typeof booking.status };
 							showStatusModal = false;
+							
+							// Invalidate related queries for immediate UI updates
+							await Promise.all([
+								// Invalidate this booking's data
+								queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
+								// Invalidate ALL recent bookings queries (any limit)
+								queryClient.invalidateQueries({ 
+									queryKey: ['recentBookings'], 
+									exact: false // This will match all recentBookings queries regardless of limit
+								}),
+								// Invalidate dashboard stats that depend on booking statuses
+								queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+							]);
 						} else if (result.type === 'failure' && result.data) {
 							error = (result.data as any).error || 'Failed to update booking status';
 						}

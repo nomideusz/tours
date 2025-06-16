@@ -4,6 +4,7 @@
 	import { browser } from '$app/environment';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	
 	// TanStack Query for API-only data fetching
@@ -82,7 +83,8 @@
 				tourName: booking.tour || 'Unknown Tour',
 				participants: booking.participants || 0,
 				customerName: booking.customerName,
-				status: booking.status
+				status: booking.status,
+				timeSlot: booking.expand?.timeSlot
 			}))
 				.slice(0, 4); // Limit to 4 items
 		})()
@@ -236,7 +238,11 @@
 								</h4>
 								<div class="flex items-center gap-2 mt-1">
 									<span class="text-xs font-medium" style="color: var(--text-secondary);">
-										{formatDate(schedule.time)}
+										{#if schedule.timeSlot?.startTime && schedule.timeSlot?.endTime}
+											{formatSlotTimeRange(schedule.timeSlot.startTime, schedule.timeSlot.endTime)}
+										{:else}
+											{formatDate(schedule.time)}
+										{/if}
 									</span>
 									<span class="text-xs" style="color: var(--text-tertiary);">•</span>
 									<span class="text-xs" style="color: var(--text-secondary);">
