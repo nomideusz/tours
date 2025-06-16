@@ -350,17 +350,60 @@ export const POST: RequestHandler = async ({ request }) => {
       }
 
       // Subscription events
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
+      case 'customer.subscription.created': {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`Subscription ${event.type}: ${subscription.id} for customer ${subscription.customer}`);
+        console.log(`Subscription created: ${subscription.id} for customer ${subscription.customer}`);
+
+        try {
+          await updateUserSubscription(subscription.customer as string, subscription);
+          console.log(`Subscription created successfully: ${subscription.id}`);
+        } catch (error) {
+          console.error('Failed to create user subscription:', error);
+        }
+
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`Subscription updated: ${subscription.id} for customer ${subscription.customer}`);
 
         try {
           await updateUserSubscription(subscription.customer as string, subscription);
           console.log(`Subscription updated successfully: ${subscription.id}`);
         } catch (error) {
           console.error('Failed to update user subscription:', error);
+        }
+
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`Subscription deleted: ${subscription.id} for customer ${subscription.customer}`);
+
+        try {
+          // When subscription is deleted, reset user to free plan
+          const userRecords = await db.select().from(users).where(eq(users.stripeCustomerId, subscription.customer as string));
+          
+          if (userRecords.length > 0) {
+            await db.update(users)
+              .set({
+                subscriptionPlan: 'free',
+                subscriptionStatus: null,
+                subscriptionCancelAtPeriodEnd: false,
+                subscriptionCurrentPeriodEnd: null,
+                subscriptionId: null,
+                monthlyBookingsUsed: 0,
+                monthlyBookingsResetAt: null,
+                updatedAt: new Date()
+              })
+              .where(eq(users.id, userRecords[0].id));
+            
+            console.log(`User ${userRecords[0].id} subscription reset to free plan`);
+          }
+        } catch (error) {
+          console.error('Failed to handle subscription deletion:', error);
         }
 
         break;
