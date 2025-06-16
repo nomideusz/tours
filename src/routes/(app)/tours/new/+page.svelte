@@ -7,6 +7,7 @@
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
 	import { validateTourForm } from '$lib/validation.js';
@@ -566,6 +567,23 @@
 		</div>
 	</div>
 </div>
+
+<!-- Floating Save Button -->
+{#if formData.name.trim() !== '' || formData.description.trim() !== '' || uploadedImages.length > 0}
+	<button
+		onclick={handleSave}
+		disabled={isSubmitting}
+		class="floating-save-btn"
+		style="position: fixed; bottom: 2rem; right: 2rem; z-index: 50;"
+		title={isSubmitting ? 'Creating Tour...' : 'Save Tour'}
+	>
+		{#if isSubmitting}
+			<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+		{:else}
+			<Save class="w-5 h-5" />
+		{/if}
+	</button>
+{/if}
 
 <!-- Confirmation Modal -->
 <ConfirmationModal

@@ -1613,6 +1613,9 @@
 			0 2px 4px rgba(0, 0, 0, 0.1);
 		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 		backdrop-filter: blur(8px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.floating-save-btn:hover {

@@ -29,6 +29,7 @@
 	import Upload from 'lucide-svelte/icons/upload';
 	import X from 'lucide-svelte/icons/x';
 
+
 	// Profile Components
 	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';
 	import PersonalInfoForm from '$lib/components/profile/PersonalInfoForm.svelte';
@@ -130,8 +131,8 @@
 			avatarLoadError = false; // Reset avatar error on data load
 			formInitialized = true; // Mark as initialized
 			
-			// Store original form data to track changes
-			originalFormData = {
+			// Store original form data to track changes (deep copy to prevent reference issues)
+			originalFormData = JSON.parse(JSON.stringify({
 				name: user.name || '',
 				username: user.username || '',
 				businessName: user.businessName || '',
@@ -140,7 +141,7 @@
 				website: user.website || '',
 				country: user.country || '',
 				currency: user.currency || 'EUR'
-			};
+			}));
 			
 			console.log('📋 Form data initialized from user:', { 
 				userCountry: user.country, 
@@ -153,14 +154,27 @@
 		}
 	});
 
-	// Track unsaved changes
-	$effect(() => {
-		if (formInitialized && originalFormData && Object.keys(originalFormData).length > 0) {
-			const currentFormData = {
-				name, username, businessName, description, phone, website, country, currency
-			};
-			hasUnsavedChanges = JSON.stringify(currentFormData) !== JSON.stringify(originalFormData);
+	// Track unsaved changes using derived value (more reliable than $effect for this use case)
+	let hasUnsavedChanges = $derived.by(() => {
+		if (!formInitialized || !originalFormData || Object.keys(originalFormData).length === 0) {
+			console.log('🔍 Form not initialized yet or no original data');
+			return false;
 		}
+		
+		const currentFormData = {
+			name, username, businessName, description, phone, website, country, currency
+		};
+		const hasChanges = JSON.stringify(currentFormData) !== JSON.stringify(originalFormData);
+		
+		// Debug logging
+		console.log('🔍 Profile changes check:', {
+			formInitialized,
+			hasChanges,
+			currentFormData,
+			originalFormData
+		});
+		
+		return hasChanges;
 	});
 
 	// Password form data
@@ -205,8 +219,7 @@
 	let personalInfoSaved = $state(false);
 	let businessInfoSaved = $state(false);
 
-	// Track if form has unsaved changes
-	let hasUnsavedChanges = $state(false);
+	// Track original form data for change detection
 	let originalFormData = $state<any>({});
 
 	// Load payment status when user data is available
@@ -276,8 +289,8 @@
 				// Update the currency store
 				userCurrency.set(currency as Currency);
 				
-				// Update original form data to reflect saved state
-				originalFormData = { name, username, businessName, description, phone, website, country, currency };
+				// Update original form data to reflect saved state (deep copy to prevent reference issues)
+				originalFormData = JSON.parse(JSON.stringify({ name, username, businessName, description, phone, website, country, currency }));
 				
 				// Force remove all cached data and refetch immediately
 				queryClient.removeQueries({ queryKey: queryKeys.profile });
@@ -735,30 +748,13 @@
 						loading={profileLoading}
 					/>
 
-					<!-- Submit Button -->
-					<div class="flex items-center justify-end gap-3 pt-6 mt-8" style="border-top: 1px solid var(--border-primary);">
-						{#if personalInfoSaved}
-							<div class="flex items-center gap-2 text-sm" style="color: var(--color-success);">
-								<CheckCircle class="h-4 w-4" />
-								Profile updated successfully!
-							</div>
-						{/if}
-						<button
-							onclick={updatePersonalInfo}
-							disabled={profileLoading}
-							class="button-primary button--gap"
-						>
-							{#if profileLoading}
-								<LoadingSpinner size="small" variant="white" text="Saving..." />
-							{:else if personalInfoSaved}
-								<CheckCircle class="h-4 w-4" />
-								Saved!
-							{:else}
-								<Save class="h-4 w-4" />
-								Save Changes
-							{/if}
-						</button>
-					</div>
+					<!-- Success Message (when saved) -->
+					{#if personalInfoSaved}
+						<div class="flex items-center justify-center gap-2 text-sm pt-6 mt-8" style="color: var(--color-success); border-top: 1px solid var(--border-primary);">
+							<CheckCircle class="h-4 w-4" />
+							Profile updated successfully!
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -801,24 +797,88 @@
 		</div>
 	</div>
 
-	<!-- Floating Save Button for Unsaved Changes -->
+	<!-- Floating Save Button -->
 	{#if hasUnsavedChanges}
-		<div class="fixed bottom-6 right-6 z-50">
+		<div class="fixed z-50 transition-all duration-300 ease-out floating-save-container">
 			<button
 				onclick={updatePersonalInfo}
 				disabled={profileLoading}
-				class="button-primary button--gap shadow-xl"
-				style="border-radius: 50px; padding: 12px 24px;"
+				class="floating-save-btn"
+				title={profileLoading ? 'Saving...' : personalInfoSaved ? 'Saved!' : 'Save Changes'}
 			>
 				{#if profileLoading}
-					<LoadingSpinner size="small" variant="white" />
-					Saving...
+					<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
 				{:else}
-					<Save class="h-4 w-4" />
-					Save Changes
+					<Save class="w-4 h-4" />
 				{/if}
 			</button>
 		</div>
 	{/if}
 </div>
-{/if} 
+{/if}
+
+<style lang="postcss">
+	@reference "tailwindcss";
+	
+	/* Floating Save Button Positioning */
+	.floating-save-container {
+		bottom: 2rem;
+		right: 2rem;
+	}
+
+	/* Mobile positioning - account for bottom navigation */
+	@media (max-width: 767px) {
+		.floating-save-container {
+			bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+			right: 1.5rem;
+		}
+	}
+
+	/* Desktop positioning - align with form content */
+	@media (min-width: 1024px) {
+		.floating-save-container {
+			right: max(2rem, calc((100vw - 80rem) / 2 + 2rem));
+		}
+	}
+
+	/* Floating Save Button Styling */
+	.floating-save-btn {
+		position: relative;
+		width: 3rem;
+		height: 3rem;
+		border-radius: 50%;
+		border: none;
+		cursor: pointer;
+		color: white;
+		background: var(--color-primary-600);
+		box-shadow: 
+			0 4px 12px rgba(0, 0, 0, 0.15),
+			0 2px 4px rgba(0, 0, 0, 0.1);
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		backdrop-filter: blur(8px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.floating-save-btn:hover:not(:disabled) {
+		background: var(--color-primary-700);
+		transform: translateY(-1px);
+		box-shadow: 
+			0 6px 16px rgba(0, 0, 0, 0.2),
+			0 3px 6px rgba(0, 0, 0, 0.15);
+	}
+
+	.floating-save-btn:active:not(:disabled) {
+		transform: translateY(0);
+		box-shadow: 
+			0 2px 8px rgba(0, 0, 0, 0.15),
+			0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.floating-save-btn:disabled {
+		opacity: 0.8;
+		cursor: not-allowed;
+	}
+</style>
+ 

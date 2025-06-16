@@ -367,5 +367,21 @@
 				</p>
 			</div>
 		</div>
+
+		<!-- Save Button -->
+		<div class="flex justify-end pt-6 mt-6" style="border-top: 1px solid var(--border-primary);">
+			<button
+				type="submit"
+				disabled={loading}
+				class="button-primary"
+			>
+				{#if loading}
+					<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+					Saving...
+				{:else}
+					Save Changes
+				{/if}
+			</button>
+		</div>
 	</form>
 </div> 

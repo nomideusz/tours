@@ -5,6 +5,7 @@ import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { consumeEmailVerificationToken } from '$lib/auth/tokens.js';
 import { sendAuthEmail } from '$lib/email.server.js';
+import { sendNotificationToUser } from '$lib/notifications/server.js';
 
 // Simple page load handler
 export const load: PageServerLoad = async ({ url, locals }) => {
@@ -42,6 +43,24 @@ export const load: PageServerLoad = async ({ url, locals }) => {
                 }
             } catch (emailError) {
                 console.warn('⚠️ Error sending welcome email:', emailError);
+            }
+            
+            // Send success notification
+            try {
+                await sendNotificationToUser(userId, {
+                    type: 'info',
+                    id: `email_verified_${userId}_${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    title: '✅ Email Verified',
+                    message: 'Your email has been successfully verified! Welcome to Zaur Tours.',
+                    data: {
+                        userId: userId,
+                        email: user[0].email
+                    }
+                });
+                console.log(`✅ Verification success notification sent to ${user[0].email}`);
+            } catch (notificationError) {
+                console.warn('⚠️ Error sending verification notification:', notificationError);
             }
             
             // Redirect immediately after successful verification
@@ -99,6 +118,25 @@ export const actions: Actions = {
                     }
                 } catch (emailError) {
                     console.warn('⚠️ Error sending welcome email:', emailError);
+                }
+                
+                // Send success notification
+                try {
+                    await sendNotificationToUser(userId, {
+                        type: 'info',
+                        id: `email_verified_${userId}_${Date.now()}`,
+                        timestamp: new Date().toISOString(),
+                        title: '✅ Email Verified',
+                        message: 'Your email has been successfully verified! Welcome to Zaur Tours.',
+                        data: {
+                            userId: userId,
+                            email: user[0].email
+                        }
+                    });
+                    console.log(`✅ Verification success notification sent to ${user[0].email}`);
+                } catch (notificationError) {
+                    console.warn('⚠️ Error sending verification notification:', notificationError);
+                    // Don't fail the verification if notification fails
                 }
                 
                 // Redirect to dashboard after successful verification
