@@ -23,7 +23,11 @@
 	}
 
 	function goHome() {
-		goto('/');
+		if (isAuthenticated) {
+			goto('/dashboard');
+		} else {
+			goto('/');
+		}
 	}
 
 	// Check if user is authenticated (simple check for common auth patterns)
@@ -90,7 +94,7 @@
 						<a href="/tours" class="block text-blue-600 hover:text-blue-700">My Tours</a>
 						<a href="/bookings" class="block text-blue-600 hover:text-blue-700">Bookings</a>
 					{:else}
-						<a href="/" class="block text-blue-600 hover:text-blue-700">Home</a>
+						<a href="/?view=home" class="block text-blue-600 hover:text-blue-700">Home</a>
 						<a href="/auth/login" class="block text-blue-600 hover:text-blue-700">Login</a>
 						<a href="/auth/register" class="block text-blue-600 hover:text-blue-700">Sign Up</a>
 					{/if}

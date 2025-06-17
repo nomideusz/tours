@@ -19,14 +19,12 @@
 			<div class="flex items-center gap-4 text-sm">
 				<Tooltip text="Get help and documentation" position="top-right">
 					<a 
-						href="https://help.zaur.app" 
-						target="_blank"
+						href="/help"
 						title=""
 						class="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
 					>
 						<CircleHelp class="h-4 w-4" />
 						Help Center
-						<ExternalLink class="h-3 w-3" />
 					</a>
 				</Tooltip>
 				

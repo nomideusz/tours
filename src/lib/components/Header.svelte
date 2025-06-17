@@ -125,22 +125,22 @@
 		<div class="flex h-20 items-center justify-between">
 			<!-- Logo and branding -->
 			<div class="flex items-center">
-				<a href="/" class="text-2xl font-normal text-gray-900 logo-serif hover:text-gray-700 transition-colors">
+				<a href={isAuthenticated ? '/?view=home' : '/'} class="text-2xl font-normal text-gray-900 logo-serif hover:text-gray-700 transition-colors">
 					zaur.app
 				</a>
 			</div>
 
 			<!-- Desktop navigation -->
 			<nav class="hidden items-center gap-8 lg:flex">
-				<a href="/#features" onclick={(e) => handleNavClick(e, '/#features')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
 				<a
-					href="/#how-it-works"
-					onclick={(e) => handleNavClick(e, '/#how-it-works')}
+					href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'}
+					onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')}
 					class="font-medium text-gray-600 transition-colors hover:text-gray-900">How it Works</a
 				>
-				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
 			</nav>
@@ -257,13 +257,13 @@
 		<div class="flex flex-col px-6 py-6 sm:px-8">
 			<!-- Navigation links -->
 			<div class="flex flex-col space-y-1 pb-4">
-				<a href="/#features" onclick={(e) => handleNavClick(e, '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
-				<a href="/#how-it-works" onclick={(e) => handleNavClick(e, '/#how-it-works')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>How it Works</a
 				>
-				<a href="/#pricing" onclick={(e) => handleNavClick(e, '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
 				>
 			</div>

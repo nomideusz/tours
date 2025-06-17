@@ -1,6 +1,26 @@
+import { redirect } from '@sveltejs/kit';
+
 export const load = async ({ url, locals }: { url: URL; locals: any }) => {
 	// Use locals directly since hooks.server.ts already processed auth
 	const isAuthenticated = !!locals.user;
+	
+	// Redirect authenticated users from root path to dashboard
+	// Allow them to access marketing pages if they add ?view=home query parameter
+	if (isAuthenticated && url.pathname === '/' && !url.searchParams.has('view')) {
+		console.log('Marketing layout: Redirecting authenticated user to dashboard', { 
+			pathname: url.pathname, 
+			searchParams: Object.fromEntries(url.searchParams.entries()) 
+		});
+		throw redirect(302, '/dashboard');
+	}
+	
+	// Debug log for when users access with view parameter
+	if (isAuthenticated && url.pathname === '/' && url.searchParams.has('view')) {
+		console.log('Marketing layout: Allowing authenticated user to view marketing page', { 
+			pathname: url.pathname, 
+			searchParams: Object.fromEntries(url.searchParams.entries()) 
+		});
+	}
 	
 	// Generate SEO data based on route
 	const pathname = url.pathname;

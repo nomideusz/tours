@@ -28,6 +28,10 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	
+	// Date and Time Components
+	import DatePicker from '$lib/components/DatePicker.svelte';
+	import TimePicker from '$lib/components/TimePicker.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -659,11 +663,23 @@
 							<div class="space-y-2">
 								{#each dailyPattern.times as time, index}
 									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
-										<span class="text-sm" style="color: var(--text-secondary);">to</span>
-										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.startTime}
+												placeholder="Start time"
+												onchange={() => {}}
+											/>
+										</div>
+										<span class="text-sm flex-shrink-0" style="color: var(--text-secondary);">to</span>
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.endTime}
+												placeholder="End time"
+												onchange={() => {}}
+											/>
+										</div>
 										{#if dailyPattern.times.length > 1}
-											<button type="button" onclick={() => removeDailyTime(index)} class="button-secondary button--small button--icon">
+											<button type="button" onclick={() => removeDailyTime(index)} class="button-secondary button--small button--icon flex-shrink-0">
 												<Trash2 class="h-3 w-3" />
 											</button>
 										{/if}
@@ -678,13 +694,18 @@
 
 						<!-- Date Range -->
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<div>
-								<label class="form-label">Start Date</label>
-								<input type="date" bind:value={dailyPattern.startDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={dailyPattern.startDate}
+									label="Start Date"
+									placeholder="Select start date"
+									minDate={new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 							<div>
 								<label class="form-label">Duration</label>
-								<select bind:value={dailyPattern.duration} class="form-select text-sm">
+								<select bind:value={dailyPattern.duration} class="form-select text-sm w-full">
 									<option value="1week">Next week</option>
 									<option value="2weeks">Next 2 weeks</option>
 									<option value="1month">Next month</option>
@@ -696,9 +717,14 @@
 						</div>
 
 						{#if dailyPattern.duration === 'custom'}
-							<div>
-								<label class="form-label">End Date</label>
-								<input type="date" bind:value={dailyPattern.customEndDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={dailyPattern.customEndDate}
+									label="End Date"
+									placeholder="Select end date"
+									minDate={dailyPattern.startDate || new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 						{/if}
 					</div>
@@ -713,11 +739,23 @@
 							<div class="space-y-2">
 								{#each weekendPattern.times as time, index}
 									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
-										<span class="text-sm" style="color: var(--text-secondary);">to</span>
-										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.startTime}
+												placeholder="Start time"
+												onchange={() => {}}
+											/>
+										</div>
+										<span class="text-sm flex-shrink-0" style="color: var(--text-secondary);">to</span>
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.endTime}
+												placeholder="End time"
+												onchange={() => {}}
+											/>
+										</div>
 										{#if weekendPattern.times.length > 1}
-											<button type="button" onclick={() => removeWeekendTime(index)} class="button-secondary button--small button--icon">
+											<button type="button" onclick={() => removeWeekendTime(index)} class="button-secondary button--small button--icon flex-shrink-0">
 												<Trash2 class="h-3 w-3" />
 											</button>
 										{/if}
@@ -732,13 +770,18 @@
 
 						<!-- Date Range -->
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<div>
-								<label class="form-label">Start Date</label>
-								<input type="date" bind:value={weekendPattern.startDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={weekendPattern.startDate}
+									label="Start Date"
+									placeholder="Select start date"
+									minDate={new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 							<div>
 								<label class="form-label">Duration</label>
-								<select bind:value={weekendPattern.duration} class="form-select text-sm">
+								<select bind:value={weekendPattern.duration} class="form-select text-sm w-full">
 									<option value="1week">Next week</option>
 									<option value="2weeks">Next 2 weeks</option>
 									<option value="1month">Next month</option>
@@ -750,9 +793,14 @@
 						</div>
 
 						{#if weekendPattern.duration === 'custom'}
-							<div>
-								<label class="form-label">End Date</label>
-								<input type="date" bind:value={weekendPattern.customEndDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={weekendPattern.customEndDate}
+									label="End Date"
+									placeholder="Select end date"
+									minDate={weekendPattern.startDate || new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 						{/if}
 					</div>
@@ -804,11 +852,23 @@
 							<div class="space-y-2">
 								{#each customPattern.times as time, index}
 									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
-										<span class="text-sm" style="color: var(--text-secondary);">to</span>
-										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.startTime}
+												placeholder="Start time"
+												onchange={() => {}}
+											/>
+										</div>
+										<span class="text-sm flex-shrink-0" style="color: var(--text-secondary);">to</span>
+										<div class="w-full">
+											<TimePicker
+												bind:value={time.endTime}
+												placeholder="End time"
+												onchange={() => {}}
+											/>
+										</div>
 										{#if customPattern.times.length > 1}
-											<button type="button" onclick={() => removeCustomTime(index)} class="button-secondary button--small button--icon">
+											<button type="button" onclick={() => removeCustomTime(index)} class="button-secondary button--small button--icon flex-shrink-0">
 												<Trash2 class="h-3 w-3" />
 											</button>
 										{/if}
@@ -823,13 +883,18 @@
 
 						<!-- Date Range -->
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<div>
-								<label class="form-label">Start Date</label>
-								<input type="date" bind:value={customPattern.startDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={customPattern.startDate}
+									label="Start Date"
+									placeholder="Select start date"
+									minDate={new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 							<div>
 								<label class="form-label">Duration</label>
-								<select bind:value={customPattern.duration} class="form-select text-sm">
+								<select bind:value={customPattern.duration} class="form-select text-sm w-full">
 									<option value="1week">Next week</option>
 									<option value="2weeks">Next 2 weeks</option>
 									<option value="1month">Next month</option>
@@ -841,9 +906,14 @@
 						</div>
 
 						{#if customPattern.duration === 'custom'}
-							<div>
-								<label class="form-label">End Date</label>
-								<input type="date" bind:value={customPattern.customEndDate} class="form-input text-sm" />
+							<div class="w-full">
+								<DatePicker
+									bind:value={customPattern.customEndDate}
+									label="End Date"
+									placeholder="Select end date"
+									minDate={customPattern.startDate || new Date().toISOString().split('T')[0]}
+									onchange={() => {}}
+								/>
 							</div>
 						{/if}
 					</div>
@@ -855,12 +925,31 @@
 						<div class="space-y-3">
 							{#each manualSlots as slot, index}
 								<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-									<input type="date" bind:value={slot.date} class="form-input text-sm" style="width: 140px;" />
-									<input type="time" bind:value={slot.startTime} class="form-input text-sm" style="width: 100px;" />
-									<span class="text-sm" style="color: var(--text-secondary);">to</span>
-									<input type="time" bind:value={slot.endTime} class="form-input text-sm" style="width: 100px;" />
+									<div class="w-full">
+										<DatePicker
+											bind:value={slot.date}
+											placeholder="Select date"
+											minDate={new Date().toISOString().split('T')[0]}
+											onchange={() => {}}
+										/>
+									</div>
+									<div class="w-full">
+										<TimePicker
+											bind:value={slot.startTime}
+											placeholder="Start time"
+											onchange={() => {}}
+										/>
+									</div>
+									<span class="text-sm flex-shrink-0" style="color: var(--text-secondary);">to</span>
+									<div class="w-full">
+										<TimePicker
+											bind:value={slot.endTime}
+											placeholder="End time"
+											onchange={() => {}}
+										/>
+									</div>
 									{#if manualSlots.length > 1}
-										<button type="button" onclick={() => removeManualSlot(index)} class="button-secondary button--small button--icon">
+										<button type="button" onclick={() => removeManualSlot(index)} class="button-secondary button--small button--icon flex-shrink-0">
 											<Trash2 class="h-3 w-3" />
 										</button>
 									{/if}
@@ -887,165 +976,46 @@
 		{/if}
 	</div>
 
-	<!-- Tour Status & Save Options -->
+	<!-- Tour Status & Save -->
 	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Tour Status & Save Options</h3>
-		
-		<!-- Status Toggle -->
-		<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<div class="w-8 h-8 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
-						<span class="text-sm font-medium {formData.status === 'active' ? 'text-green-600' : 'text-amber-600'}">
-							{formData.status === 'active' ? '🟢' : '📝'}
-						</span>
-					</div>
-					<div>
-						<p class="font-semibold" style="color: var(--text-primary);">
-							{formData.status === 'active' ? 'Create as Active Tour' : 'Create as Draft'}
-						</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							{formData.status === 'active' ? 'Your tour will be live and accepting bookings immediately' : 'Your tour will be saved but not visible to customers'}
-						</p>
-					</div>
-				</div>
-				
-				<!-- iOS-style Toggle Switch with Labels -->
-				<div class="flex items-center gap-3">
-					<span class="text-sm font-medium transition-colors {formData.status === 'draft' ? 'text-amber-600' : 'text-gray-400'}" style="color: {formData.status === 'draft' ? 'var(--color-warning-600)' : 'var(--text-tertiary)'};">
-						Draft
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-3">
+				<div class="w-8 h-8 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
+					<span class="text-sm {formData.status === 'active' ? 'text-green-600' : 'text-amber-600'}">
+						{formData.status === 'active' ? '🟢' : '📝'}
 					</span>
-					<label class="relative inline-flex items-center cursor-pointer group">
-						<input
-							type="checkbox"
-							checked={formData.status === 'active'}
-							onchange={(e) => {
-								const target = e.target as HTMLInputElement;
-								formData.status = target.checked ? 'active' : 'draft';
-							}}
-							class="sr-only peer"
-						/>
-						<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 group-hover:peer-checked:bg-green-600"></div>
-						<!-- Tooltip on hover -->
-						<div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-							{formData.status === 'active' ? 'Switch to Draft' : 'Activate Tour'}
-						</div>
-					</label>
-					<span class="text-sm font-medium transition-colors {formData.status === 'active' ? 'text-green-600' : 'text-gray-400'}" style="color: {formData.status === 'active' ? 'var(--color-success-600)' : 'var(--text-tertiary)'};">
-						Active
-					</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- Save Actions Explanation -->
-		<div class="space-y-3 mb-6">
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-					<span class="text-xs font-medium text-blue-600">💾</span>
 				</div>
 				<div>
-					<p class="font-medium" style="color: var(--text-primary);">
-						{formData.status === 'active' ? 'Create & Go Live' : 'Save as Draft'}
+					<p class="font-semibold" style="color: var(--text-primary);">
+						{formData.status === 'active' ? 'Go Live Immediately' : 'Save as Draft'}
 					</p>
 					<p class="text-sm" style="color: var(--text-secondary);">
-						{formData.status === 'active' 
-							? 'Your tour will be created and immediately available for bookings' 
-							: 'Save your tour safely and activate it later when you\'re ready'}
+						{formData.status === 'active' ? 'Accept bookings right away' : 'Activate later when ready'}
 					</p>
 				</div>
 			</div>
-			{#if formData.status === 'active'}
-				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-green-600">⚡</span>
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Ready to accept bookings</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							Customers will be able to find and book your tour immediately after creation
-						</p>
-					</div>
-				</div>
-			{:else}
-				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-amber-600">🔒</span>
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Private until activated</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							You can add schedule, test everything, and activate when you're ready
-						</p>
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Next Steps & Process -->
-	<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-		<div class="flex items-center gap-3 mb-4">
-			<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-				<Save class="h-4 w-4 text-blue-600" />
-			</div>
-			<h3 class="text-lg font-semibold" style="color: var(--text-primary);">
-				{formData.status === 'active' ? 'Going Live Process' : 'Your Tour Journey'}
-			</h3>
-		</div>
-		
-		<p class="text-sm mb-4" style="color: var(--text-secondary);">
-			{enableScheduling && selectedPattern
-				? 'Your tour will be created with initial time slots and will be ready for bookings!'
-				: formData.status === 'active' 
-				? 'Your tour will be created and you can add time slots next.'
-				: 'We\'ll save your tour as a <strong>draft first</strong>, giving you complete control over when to go live.'}
-		</p>
-		
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
-				<div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3">
-					<span class="text-sm font-semibold text-green-600">1</span>
-				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Create Tour</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">Save tour details and generate QR code for sharing</p>
-			</div>
 			
-			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
-				<div class="w-10 h-10 {enableScheduling && selectedPattern ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mb-3">
-					{#if enableScheduling && selectedPattern}
-						<CheckCircle class="w-4 h-4 text-green-600" />
-					{:else}
-						<span class="text-sm font-semibold text-blue-600">2</span>
-					{/if}
-				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">
-					{enableScheduling && selectedPattern ? 'Schedule Added' : 'Add Schedule'}
-				</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">
-					{enableScheduling && selectedPattern 
-						? 'Time slots will be created automatically'
-						: 'Set up time slots when you\'re available to run tours'}
-				</p>
+			<!-- Toggle Switch -->
+			<div class="flex items-center gap-3">
+				<span class="text-sm font-medium" style="color: {formData.status === 'draft' ? 'var(--color-warning-600)' : 'var(--text-tertiary)'};">
+					Draft
+				</span>
+				<label class="relative inline-flex items-center cursor-pointer">
+					<input
+						type="checkbox"
+						checked={formData.status === 'active'}
+						onchange={(e) => {
+							const target = e.target as HTMLInputElement;
+							formData.status = target.checked ? 'active' : 'draft';
+						}}
+						class="sr-only peer"
+					/>
+					<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+				</label>
+				<span class="text-sm font-medium" style="color: {formData.status === 'active' ? 'var(--color-success-600)' : 'var(--text-tertiary)'};">
+					Active
+				</span>
 			</div>
-			
-			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
-				<div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3">
-					<span class="text-sm font-semibold text-purple-600">3</span>
-				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Start Booking</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">Share your QR code and accept customer bookings</p>
-			</div>
-		</div>
-		
-		<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50);">
-			<p class="text-sm" style="color: var(--color-primary-700);">
-				<strong>✨ Pro tip:</strong> {enableScheduling && selectedPattern === 'custom' 
-					? 'Custom patterns are perfect for regular schedules like "every Tuesday and Thursday at 2pm" or "weekends only"!'
-					: enableScheduling && selectedPattern 
-					? 'Pattern-based scheduling will create multiple time slots automatically - you can always modify them later!'
-					: 'You can activate your tour instantly with one click, or take your time to perfect everything first!'}
-			</p>
 		</div>
 	</div>
 </div>

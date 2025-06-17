@@ -3,6 +3,7 @@
 	import Menu from 'lucide-svelte/icons/menu';
 	import User from 'lucide-svelte/icons/user';
 	import LogOut from 'lucide-svelte/icons/log-out';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
@@ -63,6 +64,27 @@
 
 		<!-- Right: User actions -->
 		<div class="flex items-center gap-2">
+			<!-- Public Site Link -->
+			<Tooltip text="View Public Site">
+				<button
+					onclick={() => window.location.href = '/?view=home'}
+					class="hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+				>
+					<ExternalLink class="h-4 w-4" />
+					<span>Public Site</span>
+				</button>
+			</Tooltip>
+			
+			<!-- Mobile Public Site Link (Icon Only) -->
+			<Tooltip text="View Public Site">
+				<button
+					onclick={() => window.location.href = '/?view=home'}
+					class="sm:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+				>
+					<ExternalLink class="h-4 w-4" />
+				</button>
+			</Tooltip>
+
 			<!-- Theme Toggle -->
 			<ThemeToggle tooltipPosition="bottom" />
 

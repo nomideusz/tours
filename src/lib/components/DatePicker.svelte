@@ -151,7 +151,7 @@
 			style="{disabled 
 				? 'opacity: 0.5; cursor: not-allowed;' 
 				: 'cursor: pointer;'
-			} padding-left: 2.5rem; padding-right: 2.5rem;"
+			} padding-left: 2.5rem; padding-right: {selectedDate ? '2.5rem' : '1.5rem'};"
 		>
 			<Calendar 
 				class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" 
@@ -197,7 +197,7 @@
 	<!-- Calendar dropdown -->
 	{#if isOpen}
 		<div 
-			class="absolute top-full left-0 mt-1 w-80 rounded-lg shadow-lg border p-4 z-50"
+			class="absolute top-full left-0 mt-1 w-full min-w-80 max-w-sm rounded-lg shadow-lg border p-4 z-50"
 			style="background: var(--bg-primary); border-color: var(--border-primary);"
 		>
 			<!-- Calendar header -->

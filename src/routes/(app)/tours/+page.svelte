@@ -29,6 +29,7 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -99,32 +100,41 @@
 	let actionMenuOpen = $state<string | null>(null);
 	let deletedTourName = $state<string | null>(null);
 
-	// Use TanStack Query data with fallbacks - make mutable for local updates
+	// Initialize state variables (like tour details page pattern)
 	let tours = $state<Tour[]>([]);
 	let stats = $state({
 		totalTours: 0,
 		activeTours: 0,
 		draftTours: 0,
-		monthlyTours: 0,
-		totalRevenue: 0,
-		todayBookings: 0,
-		weekBookings: 0,
-		monthRevenue: 0,
 		totalBookings: 0,
+		pendingBookings: 0,
 		confirmedBookings: 0,
-		totalParticipants: 0
+		totalParticipants: 0,
+		monthlyTours: 0,
+		monthRevenue: 0
 	});
-	
-	// Update local state when query data changes
+
+	// Track manual updates to prevent $effect overrides
+	let lastManualUpdateTime = $state(0);
+
+	// Sync with query data but don't override recent manual updates
 	$effect(() => {
 		if ($userToursQuery.data) {
-			tours = ($userToursQuery.data as unknown as Tour[]) || [];
+			const timeSinceManualUpdate = Date.now() - lastManualUpdateTime;
+			// Only update if no recent manual changes (1 second protection window)
+			if (timeSinceManualUpdate > 1000) {
+				tours = ($userToursQuery.data as unknown as Tour[]) || [];
+			}
 		}
 	});
 	
 	$effect(() => {
 		if ($toursStatsQuery.data) {
-			stats = $toursStatsQuery.data || stats;
+			const timeSinceManualUpdate = Date.now() - lastManualUpdateTime;
+			// Only update if no recent manual changes (1 second protection window)
+			if (timeSinceManualUpdate > 1000) {
+				stats = $toursStatsQuery.data || stats;
+			}
 		}
 	});
 
@@ -338,35 +348,37 @@
 			const newStatus = await toggleTourStatus(tour);
 			
 			if (newStatus) {
-				// Update local state immediately - this triggers reactivity
-				tours = tours.map(t => 
-					t.id === tour.id 
-						? { ...t, status: newStatus }
-						: t
-				);
+				// Set timestamp to prevent $effect overrides
+				lastManualUpdateTime = Date.now();
 				
-				// Update stats locally too
+				// Update local state directly (like tour details page)
+				tours = tours.map(t => t.id === tour.id ? { ...t, status: newStatus } : t);
+				
+				// Update stats too
 				if (newStatus === 'active') {
 					stats = { ...stats, activeTours: stats.activeTours + 1, draftTours: Math.max(0, stats.draftTours - 1) };
 				} else {
 					stats = { ...stats, activeTours: Math.max(0, stats.activeTours - 1), draftTours: stats.draftTours + 1 };
 				}
 				
-				// Show brief success state
-				statusSuccess = tour.id;
-				setTimeout(() => {
-					statusSuccess = null;
-				}, 1500);
+				// Update TanStack Query caches directly to avoid "stale" status
+				queryClient.setQueryData(queryKeys.userTours, tours);
+				queryClient.setQueryData(queryKeys.toursStats, stats);
 				
-				// Optionally refetch in background to ensure consistency
-				setTimeout(() => {
-					queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-					queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-				}, 100);
+				// Update tour details cache if it exists  
+				const currentTourDetails = queryClient.getQueryData(queryKeys.tourDetails(tour.id)) as any;
+				if (currentTourDetails?.tour) {
+					queryClient.setQueryData(queryKeys.tourDetails(tour.id), {
+						...currentTourDetails,
+						tour: { ...currentTourDetails.tour, status: newStatus }
+					});
+				}
+				
+				// Also invalidate public data if tour has QR code
+				if (tour.qrCode) {
+					invalidatePublicTourData(queryClient, tour.qrCode);
+				}
 			}
-		} catch (error) {
-			console.error('Failed to toggle tour status:', error);
-			showTourFeedback(tour.id, 'error', parseErrorMessage(error));
 		} finally {
 			statusUpdating = null;
 		}
@@ -397,28 +409,15 @@
 				throw new Error(parseErrorMessage(errorData));
 			}
 			
-			// Immediately update local state for instant UI feedback
-			tours = tours.filter(t => t.id !== tourToDeleteId);
-			
-			// Update stats immediately
-			stats = {
-				...stats,
-				totalTours: Math.max(0, stats.totalTours - 1),
-				activeTours: tourToDeleteStatus === 'active' ? Math.max(0, stats.activeTours - 1) : stats.activeTours,
-				draftTours: tourToDeleteStatus === 'draft' ? Math.max(0, stats.draftTours - 1) : stats.draftTours
-			};
-			
 			showDeleteModal = false;
 			tourToDelete = null;
 			
 			// Show success feedback inline instead of toast
 			deletedTourName = tourToDeleteName;
 			
-			// Invalidate queries in background to ensure consistency
-			setTimeout(() => {
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			}, 100);
+			// Immediately invalidate queries to refresh data
+			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
 			
 		} catch (error) {
 			console.error('Failed to delete tour:', error);
@@ -434,8 +433,6 @@
 			queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
 		]);
 	}
-
-
 
 	function toggleActionMenu(tourId: string) {
 		actionMenuOpen = actionMenuOpen === tourId ? null : tourId;

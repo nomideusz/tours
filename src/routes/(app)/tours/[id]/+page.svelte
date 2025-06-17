@@ -32,8 +32,9 @@
 	import { browser } from '$app/environment';
 	
 	// TanStack Query
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -65,6 +66,9 @@
 	// Get data from load function
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
+	
+	// TanStack Query client for invalidation
+	const queryClient = useQueryClient();
 	
 	// TanStack Query for tour details
 	let tourQuery = $derived(createQuery({
@@ -196,6 +200,17 @@
 			if (newStatus) {
 				// Update local state
 				tour = { ...tour, status: newStatus };
+				
+				// Immediately invalidate queries to ensure fresh data across all pages
+				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tour.id) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tour.id) });
+				
+				// Also invalidate public data if tour has QR code
+				if (tour.qrCode) {
+					invalidatePublicTourData(queryClient, tour.qrCode);
+				}
 			}
 		} finally {
 			statusUpdating = false;

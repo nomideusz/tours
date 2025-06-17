@@ -12,10 +12,10 @@
 
 	let cleanup: (() => void) | undefined;
 
-	const themes: { value: Theme; label: string; icon: any }[] = [
+	const themes: { value: Theme; label: string; icon: any; mobileHidden?: boolean }[] = [
 		{ value: 'light', label: 'Light', icon: Sun },
 		{ value: 'dark', label: 'Dark', icon: Moon },
-		{ value: 'system', label: 'System', icon: Monitor }
+		{ value: 'system', label: 'System', icon: Monitor, mobileHidden: true }
 	];
 
 	// Get current theme
@@ -52,7 +52,7 @@
 			<Tooltip text={theme.label} position={tooltipPosition}>
 				<button
 					onclick={() => selectTheme(theme.value)}
-					class="flex items-center justify-center p-2 rounded-md transition-all duration-200"
+					class="flex items-center justify-center p-2 rounded-md transition-all duration-200 {theme.mobileHidden ? 'hidden sm:flex' : ''}"
 					style={currentTheme === theme.value 
 						? 'background: var(--bg-primary); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);' 
 						: ''}
