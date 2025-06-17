@@ -2,10 +2,169 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, fail } from '@sveltejs/kit';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { db } from '$lib/db/connection.js';
-import { tours } from '$lib/db/schema/index.js';
+import { tours, timeSlots } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } from '$lib/utils/image-storage.js';
 import { generateTourQRCode } from '$lib/utils/qr-generation.js';
+
+// Helper function to create schedule slots based on pattern data
+async function createScheduleSlots(tourId: string, scheduleData: any, userId: string) {
+  if (!scheduleData.selectedPattern) return;
+
+  // Get tour capacity
+  const [tour] = await db.select({ capacity: tours.capacity }).from(tours).where(eq(tours.id, tourId)).limit(1);
+  const tourCapacity = tour?.capacity || 10;
+
+  const slotsToCreate = [];
+  const now = new Date();
+
+  try {
+    switch (scheduleData.selectedPattern) {
+      case 'daily': {
+        const pattern = scheduleData.dailyPattern;
+        if (!pattern.startDate || !pattern.times?.length) break;
+
+        const startDate = new Date(pattern.startDate);
+        const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
+
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          for (const time of pattern.times) {
+            const slotStart = new Date(date);
+            const slotEnd = new Date(date);
+            setTimeFromString(slotStart, time.startTime);
+            setTimeFromString(slotEnd, time.endTime);
+
+            if (slotStart > now) {
+              slotsToCreate.push(createSlotObject(tourId, slotStart, slotEnd, tourCapacity));
+            }
+          }
+        }
+        break;
+      }
+
+      case 'weekend': {
+        const pattern = scheduleData.weekendPattern;
+        if (!pattern.startDate || !pattern.times?.length) break;
+
+        const startDate = new Date(pattern.startDate);
+        const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
+
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          const dayOfWeek = date.getDay();
+          if (dayOfWeek === 0 || dayOfWeek === 6) { // Sunday or Saturday
+            for (const time of pattern.times) {
+              const slotStart = new Date(date);
+              const slotEnd = new Date(date);
+              setTimeFromString(slotStart, time.startTime);
+              setTimeFromString(slotEnd, time.endTime);
+
+              if (slotStart > now) {
+                slotsToCreate.push(createSlotObject(tourId, slotStart, slotEnd, tourCapacity));
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case 'custom': {
+        const pattern = scheduleData.customPattern;
+        if (!pattern.startDate || !pattern.times?.length || !pattern.selectedDays?.length) break;
+
+        const startDate = new Date(pattern.startDate);
+        const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
+        const dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          const dayOfWeek = date.getDay();
+          const dayName = Object.keys(dayMap).find(key => dayMap[key as keyof typeof dayMap] === dayOfWeek);
+          
+          if (dayName && pattern.selectedDays.includes(dayName)) {
+            for (const time of pattern.times) {
+              const slotStart = new Date(date);
+              const slotEnd = new Date(date);
+              setTimeFromString(slotStart, time.startTime);
+              setTimeFromString(slotEnd, time.endTime);
+
+              if (slotStart > now) {
+                slotsToCreate.push(createSlotObject(tourId, slotStart, slotEnd, tourCapacity));
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case 'manual': {
+        const slots = scheduleData.manualSlots;
+        if (!slots?.length) break;
+
+        for (const slot of slots) {
+          if (!slot.date || !slot.startTime || !slot.endTime) continue;
+
+          const slotStart = new Date(`${slot.date}T${slot.startTime}`);
+          const slotEnd = new Date(`${slot.date}T${slot.endTime}`);
+
+          if (slotStart > now && slotEnd > slotStart) {
+            slotsToCreate.push(createSlotObject(tourId, slotStart, slotEnd, tourCapacity));
+          }
+        }
+        break;
+      }
+    }
+
+    // Insert all slots if any were created
+    if (slotsToCreate.length > 0) {
+      await db.insert(timeSlots).values(slotsToCreate);
+      console.log(`✅ Created ${slotsToCreate.length} time slots for tour ${tourId}`);
+    }
+
+  } catch (error) {
+    console.error('Error creating schedule slots:', error);
+    // Don't throw - we don't want to fail tour creation if schedule creation fails
+  }
+}
+
+// Helper functions
+function calculateEndDate(startDate: Date, duration: string, customEndDate?: string): Date {
+  const start = new Date(startDate);
+  
+  if (duration === 'custom' && customEndDate) {
+    return new Date(customEndDate);
+  }
+
+  switch (duration) {
+    case '1week': return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+    case '2weeks': return new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+    case '1month': return new Date(start.setMonth(start.getMonth() + 1));
+    case '3months': return new Date(start.setMonth(start.getMonth() + 3));
+    case '6months': return new Date(start.setMonth(start.getMonth() + 6));
+    default: return new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 1 month
+  }
+}
+
+function setTimeFromString(date: Date, timeString: string) {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  date.setHours(hours, minutes, 0, 0);
+}
+
+function createSlotObject(tourId: string, startTime: Date, endTime: Date, capacity: number) {
+  return {
+    id: createId(),
+    tourId,
+    startTime,
+    endTime,
+    availableSpots: capacity,
+    bookedSpots: 0,
+    status: 'available' as const,
+    isRecurring: false,
+    recurringPattern: null,
+    recurringEnd: null,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+}
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   // Check if user is authenticated
@@ -70,6 +229,20 @@ export const actions: Actions = {
           adult: adultPrice ? parseFloat(String(adultPrice)) : 0,
           child: childPrice ? parseFloat(String(childPrice)) : 0
         };
+      }
+
+      // Get schedule data
+      let scheduleData = null;
+      const enableScheduling = formData.get('enableScheduling') === 'true';
+      if (enableScheduling) {
+        const scheduleDataRaw = formData.get('scheduleData');
+        if (scheduleDataRaw && typeof scheduleDataRaw === 'string') {
+          try {
+            scheduleData = JSON.parse(scheduleDataRaw);
+          } catch (e) {
+            console.warn('Failed to parse schedule data:', e);
+          }
+        }
       }
 
       // Prepare tour data
@@ -202,8 +375,16 @@ export const actions: Actions = {
 
         console.log('✅ Tour created successfully:', createdTour.id, 'with', processedImages.length, 'images', 'and QR code:', qrCode);
 
+        // Create schedule if provided
+        if (scheduleData) {
+          await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
+        }
+
         // Redirect to the newly created tour with success flag
-        throw redirect(303, `/tours/${createdTour.id}?created=true`);
+        const redirectUrl = scheduleData 
+          ? `/tours/${createdTour.id}?created=true&scheduled=true`
+          : `/tours/${createdTour.id}?created=true`;
+        throw redirect(303, redirectUrl);
       } else {
         // No images to process - create tour without images
         console.log('📸 No valid images to process, creating tour without images');
@@ -242,8 +423,16 @@ export const actions: Actions = {
 
         console.log('✅ Tour created successfully without images:', createdTour.id, 'with QR code:', qrCode);
 
+        // Create schedule if provided
+        if (scheduleData) {
+          await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
+        }
+
         // Redirect to the newly created tour with success flag
-        throw redirect(303, `/tours/${createdTour.id}?created=true`);
+        const redirectUrl = scheduleData 
+          ? `/tours/${createdTour.id}?created=true&scheduled=true`
+          : `/tours/${createdTour.id}?created=true`;
+        throw redirect(303, redirectUrl);
       }
 
     } catch (error) {

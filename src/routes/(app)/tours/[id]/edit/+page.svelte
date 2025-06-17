@@ -17,10 +17,17 @@
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Eye from 'lucide-svelte/icons/eye';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import Plus from 'lucide-svelte/icons/plus';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Users from 'lucide-svelte/icons/users';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -35,14 +42,33 @@
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	}));
 
+	// TanStack Query for schedule data
+	let scheduleQuery = $derived(createQuery({
+		queryKey: queryKeys.tourSchedule(tourId),
+		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
+		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true,
+	}));
+
 	let tour = $derived($tourQuery.data?.tour || null);
 	let isLoading = $derived($tourQuery.isLoading);
 	let isSubmitting = $state(false);
+
+	// Schedule data
+	let scheduleData = $derived($scheduleQuery.data || null);
+	let scheduleStats = $derived(scheduleData?.scheduleStats || {});
+	let timeSlots = $derived(scheduleData?.timeSlots || []);
+	let upcomingSlots = $derived(timeSlots.filter((slot: any) => slot.isUpcoming).slice(0, 3));
+	let slotsWithBookings = $derived(timeSlots.filter((slot: any) => slot.isUpcoming && slot.totalBookings > 0).length);
+	let isScheduleLoading = $derived($scheduleQuery.isLoading);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let capacityError = $state((form as any)?.capacityError || null);
 	let triggerValidation = $state(false);
 	let showCancelModal = $state(false);
+	let showDeleteModal = $state(false);
+	let isDeleting = $state(false);
 
 	// Booking constraints - fetch separately
 	let bookingConstraints = $state<any>(null);
@@ -286,6 +312,350 @@
 				return { color: 'bg-gray-100 text-gray-700', label: 'Unknown' };
 		}
 	}
+
+	// Schedule helper functions
+	function getNextSlotText(): string {
+		if (!upcomingSlots.length) return 'No upcoming slots';
+		
+		const nextSlot = upcomingSlots[0];
+		const slotDate = new Date(nextSlot.startTime);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		
+		let dateText = '';
+		if (slotDate.toDateString() === today.toDateString()) {
+			dateText = 'Today';
+		} else if (slotDate.toDateString() === tomorrow.toDateString()) {
+			dateText = 'Tomorrow';
+		} else {
+			dateText = formatDate(nextSlot.startTime);
+		}
+		
+		return `${dateText} ${formatTime(nextSlot.startTime)}`;
+	}
+
+	function getThisWeekSlotsCount(): number {
+		const now = new Date();
+		const startOfWeek = new Date(now);
+		startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+		startOfWeek.setHours(0, 0, 0, 0);
+		
+		const endOfWeek = new Date(startOfWeek);
+		endOfWeek.setDate(startOfWeek.getDate() + 7);
+		
+		return timeSlots.filter((slot: any) => {
+			const slotDate = new Date(slot.startTime);
+			return slotDate >= startOfWeek && slotDate < endOfWeek && slot.isUpcoming;
+		}).length;
+	}
+
+	function getOccupancyPercentage(slot: any): number {
+		if (!slot.capacity || slot.capacity === 0) return 0;
+		return Math.round((slot.totalParticipants / slot.capacity) * 100);
+	}
+
+	function getBookingStatusColor(bookingCount: number): string {
+		if (bookingCount === 0) return 'bg-gray-100 text-gray-800';
+		if (bookingCount <= 2) return 'bg-blue-100 text-blue-800';
+		return 'bg-green-100 text-green-800';
+	}
+
+	// Quick action handlers
+	async function handleAddSingleSlot() {
+		// Check for validation errors first
+		const validationErrors = validateForm();
+		if (validationErrors.length > 0) {
+			error = validationErrors[0]; // Show first error
+			scrollToFirstError();
+			return;
+		}
+
+		// Auto-save current changes first
+		if (hasUnsavedChanges()) {
+			const saved = await autoSaveChanges();
+			if (!saved) {
+				// Scroll to first error and focus it
+				scrollToFirstError();
+				return;
+			}
+		}
+		
+		// Navigate to add slot page
+		goto(`/tours/${tourId}/schedule/new`);
+	}
+
+	async function handleExtendPattern() {
+		// Check for validation errors first
+		const validationErrors = validateForm();
+		if (validationErrors.length > 0) {
+			error = validationErrors[0]; // Show first error
+			scrollToFirstError();
+			return;
+		}
+
+		// Auto-save current changes first
+		if (hasUnsavedChanges()) {
+			const saved = await autoSaveChanges();
+			if (!saved) {
+				// Scroll to first error and focus it
+				scrollToFirstError();
+				return;
+			}
+		}
+		
+		// Navigate to schedule page with extend pattern mode
+		goto(`/tours/${tourId}/schedule?action=extend`);
+	}
+
+	function validateForm(): string[] {
+		const errors: string[] = [];
+		
+		// Required field validation
+		if (!formData.name || formData.name.trim().length === 0) {
+			errors.push('Tour name is required');
+		}
+		
+		if (!formData.description || formData.description.trim().length === 0) {
+			errors.push('Tour description is required');
+		}
+		
+		// Price validation
+		if (formData.price <= 0) {
+			errors.push('Price must be greater than €0');
+		}
+		
+		if (formData.price < 0.5) {
+			errors.push('Price must be at least €0.50');
+		}
+		
+		// Duration validation
+		if (formData.duration <= 0) {
+			errors.push('Duration must be greater than 0 minutes');
+		}
+		
+		// Capacity validation
+		if (formData.capacity <= 0) {
+			errors.push('Capacity must be at least 1 person');
+		}
+		
+		// Check booking constraints
+		if (bookingConstraints?.minimumCapacity && formData.capacity < bookingConstraints.minimumCapacity) {
+			errors.push(`Capacity must be at least ${bookingConstraints.minimumCapacity} due to existing bookings`);
+		}
+		
+		// Pricing tiers validation (if enabled)
+		if (formData.enablePricingTiers) {
+			if (!formData.pricingTiers.adult || formData.pricingTiers.adult < 0.5) {
+				errors.push('Adult price must be at least €0.50');
+			}
+			if (formData.pricingTiers.child < 0) {
+				errors.push('Child price cannot be negative');
+			}
+		}
+		
+		return errors;
+	}
+
+	function scrollToFirstError() {
+		// First check for specific field errors based on current error message
+		if (error?.includes('name')) {
+			const nameInput = document.querySelector('input[name="name"], #name') as HTMLElement;
+			if (nameInput) {
+				nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				setTimeout(() => nameInput.focus(), 300);
+				return;
+			}
+		}
+		
+		if (error?.includes('description')) {
+			const descInput = document.querySelector('textarea[name="description"], #description') as HTMLElement;
+			if (descInput) {
+				descInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				setTimeout(() => descInput.focus(), 300);
+				return;
+			}
+		}
+		
+		if (error?.includes('price') || error?.includes('Price')) {
+			const priceInput = document.querySelector('input[name="price"], #price') as HTMLElement;
+			if (priceInput) {
+				priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				setTimeout(() => priceInput.focus(), 300);
+				return;
+			}
+		}
+		
+		if (error?.includes('capacity') || error?.includes('Capacity')) {
+			const capacityInput = document.querySelector('input[name="capacity"], #capacity') as HTMLElement;
+			if (capacityInput) {
+				capacityInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				setTimeout(() => capacityInput.focus(), 300);
+				return;
+			}
+		}
+
+		// Fallback: try to find any visible error message
+		const errorElement = document.querySelector('.error-message, [data-error="true"], .text-red-600, .text-red-700, .text-red-800');
+		if (errorElement) {
+			errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			
+			// Try to focus the associated input
+			const input = errorElement.closest('.form-group')?.querySelector('input, textarea, select') as HTMLElement;
+			if (input) {
+				setTimeout(() => input.focus(), 300);
+			}
+			return;
+		}
+
+		// If no error element found, scroll to the general error banner
+		const errorBanner = document.querySelector('[style*="color-danger"], [style*="rgb(254 226 226)"]');
+		if (errorBanner) {
+			errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+	}
+
+	function hasUnsavedChanges(): boolean {
+		if (!tour) return false;
+		
+		// Check if form data differs from original tour data
+		return (
+			formData.name !== tour.name ||
+			formData.description !== tour.description ||
+			formData.price !== tour.price ||
+			formData.duration !== tour.duration ||
+			formData.capacity !== tour.capacity ||
+			formData.status !== tour.status ||
+			formData.category !== tour.category ||
+			formData.location !== tour.location ||
+			formData.cancellationPolicy !== tour.cancellationPolicy ||
+			formData.enablePricingTiers !== tour.enablePricingTiers ||
+			JSON.stringify(formData.includedItems) !== JSON.stringify(tour.includedItems || ['']) ||
+			JSON.stringify(formData.requirements) !== JSON.stringify(tour.requirements || ['']) ||
+			uploadedImages.length > 0 ||
+			imagesToRemove.length > 0
+		);
+	}
+
+	async function autoSaveChanges(): Promise<boolean> {
+		if (isSubmitting) return false;
+		
+		try {
+			isSubmitting = true;
+			
+			// Create form data
+			const formDataToSubmit = new FormData();
+			
+			// Add all form fields
+			Object.entries(formData).forEach(([key, value]) => {
+				if (key === 'includedItems' || key === 'requirements') {
+					(value as string[]).forEach((item, index) => {
+						if (item.trim()) {
+							formDataToSubmit.append(`${key}[${index}]`, item.trim());
+						}
+					});
+				} else if (key === 'pricingTiers') {
+					formDataToSubmit.append('pricingTiers', JSON.stringify(value));
+				} else {
+					formDataToSubmit.append(key, String(value));
+				}
+			});
+			
+			// Add images to remove
+			imagesToRemove.forEach(imageUrl => {
+				formDataToSubmit.append('imagesToRemove', imageUrl);
+			});
+			
+			// Add new images
+			uploadedImages.forEach(image => {
+				formDataToSubmit.append('images', image);
+			});
+			
+			// Submit to server
+			const response = await fetch(`/tours/${tourId}/edit`, {
+				method: 'POST',
+				body: formDataToSubmit
+			});
+			
+			if (response.ok) {
+				// Invalidate queries to refresh data
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.tourDetails(tourId)
+				});
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.toursStats
+				});
+				
+				// Clear uploaded images since they're now saved
+				uploadedImages = [];
+				imagesToRemove = [];
+				
+				return true;
+			} else {
+				const errorData = await response.json().catch(() => ({}));
+				
+				// Set specific error message based on response
+				if (response.status === 400) {
+					error = errorData.error || 'Please check your form for errors and try again.';
+				} else if (response.status === 413) {
+					error = 'Files are too large. Please use smaller images.';
+				} else {
+					error = errorData.error || 'Failed to save changes. Please try again.';
+				}
+				
+				return false;
+			}
+		} catch (err) {
+			console.error('Auto-save failed:', err);
+			error = 'Failed to save changes. Please try again.';
+			return false;
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+
+
+	// Delete tour functionality
+	function handleDeleteTour() {
+		showDeleteModal = true;
+	}
+
+	async function confirmDeleteTour() {
+		if (isDeleting) return;
+		
+		isDeleting = true;
+		
+		try {
+			const response = await fetch(`/api/tours/${tourId}`, {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' }
+			});
+			
+			if (response.ok) {
+				// Invalidate all tour-related queries
+				queryClient.invalidateQueries({
+					queryKey: queryKeys.toursStats
+				});
+				
+				// Navigate back to tours list
+				goto('/tours?deleted=true');
+			} else {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to delete tour');
+			}
+		} catch (error) {
+			console.error('Error deleting tour:', error);
+			alert(error instanceof Error ? error.message : 'Failed to delete tour. Please try again.');
+		} finally {
+			isDeleting = false;
+			showDeleteModal = false;
+		}
+	}
+
+	function cancelDeleteTour() {
+		showDeleteModal = false;
+	}
 </script>
 
 <svelte:head>
@@ -324,7 +694,7 @@
 			<!-- Mobile Compact Header -->
 			<MobilePageHeader
 				title="Edit {tour?.name || 'Tour'}"
-				secondaryInfo={getTourStatusInfo().label}
+				secondaryInfo="{getTourStatusInfo().label} • €{tour?.price || 0}"
 				quickActions={[
 					{
 						label: 'Save',
@@ -348,24 +718,24 @@
 				]}
 				infoItems={[
 					{
-						icon: Eye,
-						label: 'Price',
-						value: `€${tour?.price || 0}`
-					},
-					{
-						icon: AlertCircle,
+						icon: Clock,
 						label: 'Duration',
 						value: `${tour?.duration || 0}min`
 					},
 					{
-						icon: Eye,
+						icon: Users,
 						label: 'Capacity',
 						value: `${tour?.capacity || 0} max`
 					},
 					{
-						icon: AlertCircle,
+						icon: Calendar,
+						label: 'Slots',
+						value: `${scheduleStats.upcomingSlots || 0} upcoming`
+					},
+					{
+						icon: Eye,
 						label: 'Status',
-						value: getTourStatusInfo().label
+						value: tour?.status === 'active' ? '🟢 Live' : '🟡 Draft'
 					}
 				]}
 			/>
@@ -434,166 +804,298 @@
 			</div>
 		{/if}
 
-		<!-- Current Status & Save Actions -->
-		<div class="mt-8 rounded-xl p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">Current Status & Save Options</h3>
-			
-			<!-- Current Status -->
-			<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="flex items-center gap-3">
-					<div class="w-8 h-8 rounded-full flex items-center justify-center {tour?.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
-						<span class="text-sm font-medium {tour?.status === 'active' ? 'text-green-600' : 'text-amber-600'}">
-							{tour?.status === 'active' ? '✓' : '📝'}
-						</span>
-					</div>
-					<div>
-						<p class="font-semibold" style="color: var(--text-primary);">
-							Currently: {tour?.status === 'active' ? 'Active' : 'Draft'}
-						</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							{tour?.status === 'active' ? 'Your tour is live and accepting bookings' : 'Your tour is saved but not visible to customers'}
-						</p>
-					</div>
-				</div>
-			</div>
 
-			<!-- Save Actions Explanation -->
-			<div class="space-y-3">
-				<div class="flex items-start gap-3">
-					<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-						<span class="text-xs font-medium text-blue-600">💾</span>
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Save Changes</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							{tour?.status === 'active' ? 'Keep your tour active with the updated information' : 'Keep your tour as draft with the updated information'}
-						</p>
-					</div>
-				</div>
-				{#if tour?.status === 'draft'}
-					<div class="flex items-start gap-3">
-						<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-							<span class="text-xs font-medium text-green-600">🚀</span>
+
+		<!-- Schedule Overview Section -->
+		<div class="mt-6 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+							<Calendar class="h-4 w-4 text-blue-600" />
 						</div>
 						<div>
-							<p class="font-medium" style="color: var(--text-primary);">Want to go live?</p>
-							<p class="text-sm" style="color: var(--text-secondary);">
-								Save your changes, then use the status button in the header to activate your tour.
-							</p>
+							<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Schedule Overview</h3>
+							<p class="text-sm" style="color: var(--text-secondary);">Quick schedule management and upcoming slots</p>
 						</div>
+					</div>
+					<button onclick={() => goto(`/tours/${tourId}/schedule`)} class="button-primary button--gap">
+						<Calendar class="h-4 w-4" />
+						Manage Full Schedule
+					</button>
+				</div>
+			</div>
+			<div class="p-4">
+				{#if isScheduleLoading}
+					<div class="p-6 text-center">
+						<div class="w-6 h-6 mx-auto mb-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+						<p class="text-sm" style="color: var(--text-secondary);">Loading schedule...</p>
+					</div>
+				{:else if $scheduleQuery.isError}
+					<div class="p-6 text-center">
+						<AlertCircle class="h-8 w-8 mx-auto mb-2" style="color: var(--color-danger-600);" />
+						<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Failed to load schedule</p>
+						<p class="text-xs mb-3" style="color: var(--text-secondary);">Unable to fetch schedule data</p>
+						<button onclick={() => $scheduleQuery.refetch()} class="button-secondary button--small">
+							Try Again
+						</button>
+					</div>
+				{:else}
+					<!-- Schedule Stats -->
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
+							<p class="text-lg font-semibold text-blue-600">{scheduleStats.upcomingSlots || 0}</p>
+							<p class="text-xs" style="color: var(--text-tertiary);">Upcoming slots</p>
+						</div>
+						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
+							<p class="text-lg font-semibold text-green-600">{slotsWithBookings}</p>
+							<p class="text-xs" style="color: var(--text-tertiary);">With bookings</p>
+						</div>
+						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
+							<p class="text-lg font-semibold text-orange-600">{getThisWeekSlotsCount()}</p>
+							<p class="text-xs" style="color: var(--text-tertiary);">This week</p>
+						</div>
+						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
+							<p class="text-sm font-semibold" style="color: var(--text-primary);">Next: {getNextSlotText()}</p>
+							<p class="text-xs" style="color: var(--text-tertiary);">Next tour</p>
+						</div>
+					</div>
+
+					<!-- Schedule Status -->
+					{#if tour?.status === 'draft'}
+						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-center gap-2">
+								<span class="text-sm">📝</span>
+								<p class="text-sm font-medium" style="color: var(--color-warning-900);">
+									Draft Mode - {scheduleStats.upcomingSlots > 0 ? `${scheduleStats.upcomingSlots} slots ready` : 'No slots yet'}
+								</p>
+							</div>
+						</div>
+					{:else if scheduleStats.upcomingSlots === 0}
+						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-center gap-2">
+								<span class="text-sm">⚠️</span>
+								<p class="text-sm font-medium" style="color: var(--color-warning-900);">
+									Active but no time slots - Add slots to accept bookings
+								</p>
+							</div>
+						</div>
+					{:else}
+						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+							<div class="flex items-center gap-2">
+								<span class="text-sm">🟢</span>
+								<p class="text-sm font-medium" style="color: var(--color-success-900);">
+									Live - {scheduleStats.upcomingSlots} slot{scheduleStats.upcomingSlots === 1 ? '' : 's'} accepting bookings
+								</p>
+							</div>
+						</div>
+					{/if}
+
+					<!-- Quick Actions -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+						<button 
+							type="button" 
+							onclick={handleAddSingleSlot} 
+							disabled={isSubmitting}
+							class="button-secondary button--gap justify-start"
+							title={hasUnsavedChanges() ? 'Will save changes first, then add time slot' : 'Add a new time slot'}
+						>
+							{#if isSubmitting}
+								<div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+								Saving changes...
+							{:else}
+								<Plus class="h-4 w-4" />
+								Add Single Slot
+								{#if hasUnsavedChanges()}
+									<span class="text-xs opacity-75">(will save first)</span>
+								{/if}
+							{/if}
+						</button>
+						<button 
+							type="button" 
+							onclick={handleExtendPattern} 
+							disabled={!upcomingSlots.length || isSubmitting}
+							class="button-secondary button--gap justify-start"
+							title={!upcomingSlots.length ? 'No existing pattern to extend' : hasUnsavedChanges() ? 'Will save changes first, then extend pattern' : 'Extend current scheduling pattern'}
+						>
+							{#if isSubmitting}
+								<div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+								Saving changes...
+							{:else}
+								<RefreshCw class="h-4 w-4" />
+								Extend Current Pattern
+								{#if hasUnsavedChanges() && upcomingSlots.length}
+									<span class="text-xs opacity-75">(will save first)</span>
+								{/if}
+							{/if}
+						</button>
+					</div>
+
+					<!-- Upcoming Slots Preview -->
+					<div>
+						<h4 class="font-medium mb-3" style="color: var(--text-primary);">Next 3 Upcoming Slots</h4>
+						{#if upcomingSlots.length > 0}
+							<div class="space-y-2">
+								{#each upcomingSlots as slot}
+									<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+										<div>
+											<p class="font-medium text-sm" style="color: var(--text-primary);">
+												{formatDate(slot.startTime)}
+											</p>
+											<p class="text-xs" style="color: var(--text-secondary);">
+												{formatSlotTimeRange(slot.startTime, slot.endTime)}
+											</p>
+										</div>
+										<div class="flex items-center gap-2">
+											<span class="text-xs px-2 py-1 rounded-full {getBookingStatusColor(slot.totalBookings)}">
+												{slot.totalBookings} booking{slot.totalBookings === 1 ? '' : 's'}
+											</span>
+											<span class="text-xs" style="color: var(--text-tertiary);">
+												{getOccupancyPercentage(slot)}% full
+											</span>
+										</div>
+									</div>
+								{/each}
+							</div>
+							<div class="mt-3 text-center">
+								<button onclick={() => goto(`/tours/${tourId}/schedule`)} class="text-sm" style="color: var(--color-primary-600);">
+									View all upcoming slots →
+								</button>
+							</div>
+						{:else}
+							<div class="p-6 text-center rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<Calendar class="h-8 w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+								<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">No upcoming time slots</p>
+								<p class="text-xs mb-3" style="color: var(--text-secondary);">Create time slots to start accepting bookings</p>
+								<button onclick={handleAddSingleSlot} class="button-primary button--small button--gap">
+									<Plus class="h-3 w-3" />
+									Add First Slot
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
 		</div>
 
-		<!-- Form Container -->
-		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-6" style="border-bottom: 1px solid var(--border-primary); background: var(--bg-secondary);">
-				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-						</svg>
-					</div>
-					<div>
-						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Tour Information</h2>
-						<p class="text-sm mt-1" style="color: var(--text-secondary);">Update your tour details and make it even better</p>
+		<!-- Booking Constraints Warning -->
+		{#if capacityError}
+			<div class="mt-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+				<div class="flex items-start gap-3">
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
+					<div class="flex-1">
+						<h3 class="font-medium" style="color: var(--color-danger-900);">Capacity Reduction Blocked</h3>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+							{capacityError}
+						</p>
 					</div>
 				</div>
 			</div>
-			
-			<div class="p-6 sm:p-8">
-				<!-- Image Upload Errors -->
-				{#if imageUploadErrors.length > 0}
-					<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-						<div class="flex gap-3">
-							<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-							<div class="flex-1">
-								<p class="font-medium" style="color: var(--color-error-900);">Image Upload Issues</p>
-								<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
-									{#each imageUploadErrors as error}
-										<li>• {error}</li>
-									{/each}
-								</ul>
-							</div>
-						</div>
-					</div>
-				{/if}
+		{/if}
 
-				<form method="POST" enctype="multipart/form-data" novalidate onsubmit={(e) => {
-					// Force immediate validation by directly calling validateTourForm
-					const validation = validateTourForm(formData);
-					if (!validation.isValid) {
-						e.preventDefault();
-						// Trigger validation in TourForm component
-						triggerValidation = true;
-						return false;
+		<!-- Tour Form -->
+		<div class="mt-6">
+			{#if isLoading}
+				<div class="p-8 text-center">
+					<div class="w-8 h-8 mx-auto mb-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+					<p class="text-sm" style="color: var(--text-secondary);">Loading tour details...</p>
+				</div>
+			{:else if !tour}
+				<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="font-medium" style="color: var(--color-danger-900);">Tour not found</p>
+							<p class="text-sm mt-1" style="color: var(--color-danger-700);">The tour you're looking for doesn't exist or you don't have permission to edit it.</p>
+						</div>
+						<button onclick={() => goto('/tours')} class="button-secondary button--small">
+							Back to Tours
+						</button>
+					</div>
+				</div>
+			{:else}
+				<form method="POST" use:enhance={({ formData, cancel }) => {
+					if (isSubmitting) {
+						cancel();
+						return;
 					}
 					
 					isSubmitting = true;
-				}} use:enhance={({ formData }) => {
-					// Manually append uploaded images to form data
-					console.log('📤 Enhancing form submission (edit mode) with', uploadedImages.length, 'images');
-					uploadedImages.forEach((file, index) => {
-						console.log(`📤 Adding image ${index + 1}:`, { name: file.name, size: file.size, type: file.type });
-						formData.append('images', file);
+					
+					// Add images to remove
+					imagesToRemove.forEach(imageUrl => {
+						formData.append('imagesToRemove', imageUrl);
 					});
 					
-											return async ({ result }) => {
-							isSubmitting = false;
-							triggerValidation = false;
-							if (result.type === 'redirect') {
-								// Invalidate all tour-related queries to ensure fresh data
-								queryClient.invalidateQueries({ queryKey: ['userTours'] });
-								queryClient.invalidateQueries({ queryKey: ['toursStats'] });
-								queryClient.invalidateQueries({ queryKey: ['tourDetails', tourId] });
-								queryClient.invalidateQueries({ queryKey: ['tourSchedule', tourId] });
-								
-								// Invalidate public booking page cache
-								if (tour?.qrCode) {
-									invalidatePublicTourData(queryClient, tour.qrCode);
-								}
-								goto(result.location);
-							} else if (result.type === 'failure') {
-								// Handle server errors (like file size limits)
-								console.error('Form submission failed:', result);
-								if (result.status === 413) {
-									error = 'Upload too large. Please reduce image sizes or use fewer images. Maximum total upload size is 10MB.';
-								} else {
-									error = (result.data as any)?.error || 'An error occurred while updating your tour. Please try again.';
-								}
-							}
-						};
+					// Add new images
+					uploadedImages.forEach(image => {
+						formData.append('images', image);
+					});
+					
+					return async ({ result, update }) => {
+						if (result.type === 'success') {
+							// Invalidate tour queries to refresh data
+							queryClient.invalidateQueries({
+								queryKey: queryKeys.tourDetails(tourId)
+							});
+							queryClient.invalidateQueries({
+								queryKey: queryKeys.toursStats
+							});
+							
+							// Clear uploaded images since they're now saved
+							uploadedImages = [];
+							imagesToRemove = [];
+						}
+						
+						await update({ reset: false });
+						isSubmitting = false;
+					};
 				}}>
-					<!-- Hidden input for images to remove -->
-					{#each imagesToRemove as imageToRemove}
-						<input type="hidden" name="removeImages" value={imageToRemove} />
-					{/each}
-
 					<TourForm
 						bind:formData
 						bind:uploadedImages
 						{isSubmitting}
+						submitButtonText="Save Changes"
 						isEdit={true}
 						onCancel={handleCancel}
 						onImageUpload={handleImageUpload}
 						onImageRemove={removeImage}
 						{existingImages}
 						onExistingImageRemove={removeExistingImage}
-						{getExistingImageUrl}
 						{imageUploadErrors}
 						serverErrors={[]}
 						{triggerValidation}
-						bookingConstraints={bookingConstraints}
 					/>
 				</form>
+			{/if}
+		</div>
+
+		<!-- Danger Zone -->
+		<div class="mt-8 rounded-xl" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+			<div class="p-4 border-b" style="border-color: var(--color-danger-200);">
+				<h3 class="font-semibold" style="color: var(--color-danger-900);">Danger Zone</h3>
+			</div>
+			<div class="p-4">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+							This action cannot be undone. All bookings and data will be permanently deleted.
+						</p>
+					</div>
+					<button type="button" onclick={handleDeleteTour} class="button--danger button--small" disabled={isDeleting}>
+						{#if isDeleting}
+							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+						{/if}
+						Delete Tour
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
 </div>
 
 <!-- Floating Save Button -->
-{#if tour !== null && !isLoading}
+{#if formData.name?.trim() !== '' || uploadedImages.length > 0}
 	<button
 		onclick={handleSave}
 		disabled={isSubmitting}
@@ -609,15 +1111,33 @@
 	</button>
 {/if}
 
-<!-- Confirmation Modal -->
+<!-- Confirmation Modals -->
 <ConfirmationModal
 	bind:isOpen={showCancelModal}
-	title="Cancel editing?"
-	message="Are you sure you want to cancel editing this tour? Your unsaved changes will be lost."
-	confirmText="Yes, cancel"
+	title="Discard changes?"
+	message="Are you sure you want to discard your changes? Any unsaved modifications will be lost."
+	confirmText="Yes, discard"
 	cancelText="Keep editing"
 	variant="warning"
 	onConfirm={confirmCancel}
-	onCancel={() => {}}
-	onClose={() => {}}
+/>
+
+
+<ConfirmationModal
+	bind:isOpen={showDeleteModal}
+	title="Delete Tour: {tour?.name || 'Unknown Tour'}?"
+	message={`This will permanently delete this tour and ALL associated data:
+
+${scheduleStats.totalBookings > 0 ? `⚠️ ${scheduleStats.totalBookings} booking${scheduleStats.totalBookings === 1 ? '' : 's'} will be cancelled` : '• No active bookings'}
+${scheduleStats.upcomingSlots > 0 ? `• ${scheduleStats.upcomingSlots} upcoming time slot${scheduleStats.upcomingSlots === 1 ? '' : 's'} will be removed` : '• No upcoming time slots'}
+• All tour images and data will be lost
+• Customer booking history will be deleted
+• QR codes will stop working
+
+${scheduleStats.totalBookings > 0 ? 'Customers with bookings will need to be notified manually.' : 'This action cannot be undone.'}`}
+	confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Tour'}
+	cancelText="Cancel"
+	variant="danger"
+	onConfirm={confirmDeleteTour}
+	onCancel={cancelDeleteTour}
 /> 

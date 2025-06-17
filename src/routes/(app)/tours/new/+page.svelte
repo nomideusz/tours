@@ -24,6 +24,10 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Clock from 'lucide-svelte/icons/clock';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import Plus from 'lucide-svelte/icons/plus';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -218,6 +222,131 @@
 	let pageTitle = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Create Tour');
 	let pageSubtitle = $derived(formData.status === 'active' ? 'Create your tour and make it live immediately' : 'Create your tour as a draft first');
 	let submitButtonText = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Save as Draft');
+
+	// Scheduling state - New flexible pattern-based approach
+	let enableScheduling = $state(false);
+	let selectedPattern = $state<'daily' | 'weekend' | 'custom' | 'manual' | null>(null);
+	
+	// Pattern configurations
+	let dailyPattern = $state({
+		times: [{ startTime: '10:00', endTime: '11:00' }],
+		startDate: '',
+		duration: '1month' as '1week' | '2weeks' | '1month' | '3months' | '6months' | 'custom',
+		customEndDate: ''
+	});
+	
+	let weekendPattern = $state({
+		times: [{ startTime: '10:00', endTime: '11:00' }],
+		startDate: '',
+		duration: '1month' as '1week' | '2weeks' | '1month' | '3months' | '6months' | 'custom',
+		customEndDate: ''
+	});
+	
+	let customPattern = $state({
+		selectedDays: [] as string[],
+		times: [{ startTime: '10:00', endTime: '11:00' }],
+		startDate: '',
+		duration: '1month' as '1week' | '2weeks' | '1month' | '3months' | '6months' | 'custom',
+		customEndDate: ''
+	});
+	
+	let manualSlots = $state([
+		{ date: '', startTime: '10:00', endTime: '11:00' }
+	]);
+
+	// Helper functions for scheduling
+	function handleSchedulingToggle() {
+		enableScheduling = !enableScheduling;
+		if (!enableScheduling) {
+			selectedPattern = null;
+		}
+	}
+
+	// Reactive effect to reset pattern when scheduling is disabled
+	$effect(() => {
+		if (!enableScheduling) {
+			selectedPattern = null;
+		}
+	});
+
+	function handlePatternSelect(pattern: 'daily' | 'weekend' | 'custom' | 'manual') {
+		selectedPattern = pattern;
+	}
+
+	// Daily pattern functions
+	function addDailyTime() {
+		dailyPattern.times = [...dailyPattern.times, { startTime: '10:00', endTime: '11:00' }];
+	}
+
+	function removeDailyTime(index: number) {
+		dailyPattern.times = dailyPattern.times.filter((_, i) => i !== index);
+	}
+
+	// Weekend pattern functions
+	function addWeekendTime() {
+		weekendPattern.times = [...weekendPattern.times, { startTime: '10:00', endTime: '11:00' }];
+	}
+
+	function removeWeekendTime(index: number) {
+		weekendPattern.times = weekendPattern.times.filter((_, i) => i !== index);
+	}
+
+	// Custom pattern functions
+	function addCustomTime() {
+		customPattern.times = [...customPattern.times, { startTime: '10:00', endTime: '11:00' }];
+	}
+
+	function removeCustomTime(index: number) {
+		customPattern.times = customPattern.times.filter((_, i) => i !== index);
+	}
+
+	function toggleCustomDay(day: string) {
+		if (customPattern.selectedDays.includes(day)) {
+			customPattern.selectedDays = customPattern.selectedDays.filter(d => d !== day);
+		} else {
+			customPattern.selectedDays = [...customPattern.selectedDays, day];
+		}
+	}
+
+	function setCustomPreset(preset: string) {
+		const presets = {
+			weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			weekends: ['saturday', 'sunday'],
+			mwf: ['monday', 'wednesday', 'friday'],
+			tth: ['tuesday', 'thursday']
+		};
+		
+		customPattern.selectedDays = presets[preset as keyof typeof presets] || [];
+	}
+
+	// Manual slots functions
+	function addManualSlot() {
+		manualSlots = [...manualSlots, { date: '', startTime: '10:00', endTime: '11:00' }];
+	}
+
+	function removeManualSlot(index: number) {
+		manualSlots = manualSlots.filter((_, i) => i !== index);
+	}
+
+	// Get preview text for selected pattern
+	function getPatternPreview(): string {
+		if (!selectedPattern) return '';
+		
+		switch (selectedPattern) {
+			case 'daily':
+				return `Daily tours with ${dailyPattern.times.length} time slot${dailyPattern.times.length === 1 ? '' : 's'} per day`;
+			case 'weekend':
+				return `Weekend tours (Sat & Sun) with ${weekendPattern.times.length} time slot${weekendPattern.times.length === 1 ? '' : 's'} per day`;
+			case 'custom':
+				const dayCount = customPattern.selectedDays.length;
+				const timeCount = customPattern.times.length;
+				return dayCount > 0 ? `${dayCount} day${dayCount === 1 ? '' : 's'} per week with ${timeCount} time slot${timeCount === 1 ? '' : 's'} each` : 'Select days and times';
+			case 'manual':
+				return `${manualSlots.length} individual time slot${manualSlots.length === 1 ? '' : 's'}`;
+			default:
+				return '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -315,7 +444,7 @@
 				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					2
 				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Set Schedule</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Quick Schedule (Optional)</span>
 				<span class="sm:hidden" style="color: var(--text-tertiary);">Schedule</span>
 			</div>
 			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
@@ -323,8 +452,8 @@
 				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
 					3
 				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Activate & Share</span>
-				<span class="sm:hidden" style="color: var(--text-tertiary);">Activate</span>
+				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Review & Publish</span>
+				<span class="sm:hidden" style="color: var(--text-tertiary);">Publish</span>
 			</div>
 		</div>
 	</div>
@@ -381,6 +510,20 @@
 					console.log(`📤 Adding image ${index + 1}:`, { name: file.name, size: file.size, type: file.type });
 					formData.append('images', file);
 				});
+
+				// Add schedule data if enabled
+				if (enableScheduling && selectedPattern) {
+					const scheduleData = {
+						selectedPattern,
+						dailyPattern,
+						weekendPattern,
+						customPattern,
+						manualSlots
+					};
+					formData.append('enableScheduling', 'true');
+					formData.append('scheduleData', JSON.stringify(scheduleData));
+					console.log('📅 Adding schedule data:', scheduleData);
+				}
 				
 				return async ({ result }) => {
 					isSubmitting = false;
@@ -419,6 +562,329 @@
 				/>
 			</form>
 		</div>
+	</div>
+
+	<!-- Quick Schedule Setup (Optional) -->
+	<div class="mt-8 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+						<Clock class="h-4 w-4 text-blue-600" />
+					</div>
+					<div>
+						<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Quick Schedule Setup</h3>
+						<p class="text-sm" style="color: var(--text-secondary);">Optional: Add your first time slots now, or do it later</p>
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					<input type="checkbox" id="enableScheduling" bind:checked={enableScheduling} class="form-checkbox" />
+					<label for="enableScheduling" class="text-sm font-medium" style="color: var(--text-primary);">Add schedule now</label>
+				</div>
+			</div>
+		</div>
+		
+		{#if enableScheduling}
+			<div class="p-4">
+				<!-- Pattern Selection -->
+				<div class="mb-6">
+					<h4 class="font-medium mb-3" style="color: var(--text-primary);">Choose a Schedule Pattern</h4>
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+						<button 
+							type="button" 
+							onclick={() => handlePatternSelect('daily')} 
+							class="p-4 text-left rounded-lg border transition-colors {selectedPattern === 'daily' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}"
+							style="background: {selectedPattern === 'daily' ? 'var(--color-primary-50)' : 'var(--bg-primary)'}; border-color: {selectedPattern === 'daily' ? 'var(--color-primary-500)' : 'var(--border-primary)'};"
+						>
+							<div class="flex items-center gap-2 mb-2">
+								<Calendar class="h-4 w-4 text-blue-600" />
+								<span class="font-medium" style="color: var(--text-primary);">Daily Pattern</span>
+							</div>
+							<p class="text-xs" style="color: var(--text-secondary);">Every day of the week</p>
+							<p class="text-xs mt-1" style="color: var(--text-tertiary);">You choose the times</p>
+						</button>
+						
+						<button 
+							type="button" 
+							onclick={() => handlePatternSelect('weekend')} 
+							class="p-4 text-left rounded-lg border transition-colors {selectedPattern === 'weekend' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}"
+							style="background: {selectedPattern === 'weekend' ? 'var(--color-success-50)' : 'var(--bg-primary)'}; border-color: {selectedPattern === 'weekend' ? 'var(--color-success-500)' : 'var(--border-primary)'};"
+						>
+							<div class="flex items-center gap-2 mb-2">
+								<Calendar class="h-4 w-4 text-green-600" />
+								<span class="font-medium" style="color: var(--text-primary);">Weekend Pattern</span>
+							</div>
+							<p class="text-xs" style="color: var(--text-secondary);">Saturdays & Sundays</p>
+							<p class="text-xs mt-1" style="color: var(--text-tertiary);">You choose the times</p>
+						</button>
+						
+						<button 
+							type="button" 
+							onclick={() => handlePatternSelect('custom')} 
+							class="p-4 text-left rounded-lg border transition-colors {selectedPattern === 'custom' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'}"
+							style="background: {selectedPattern === 'custom' ? 'var(--color-warning-50)' : 'var(--bg-primary)'}; border-color: {selectedPattern === 'custom' ? 'var(--color-warning-500)' : 'var(--border-primary)'};"
+						>
+							<div class="flex items-center gap-2 mb-2">
+								<RefreshCw class="h-4 w-4 text-orange-600" />
+								<span class="font-medium" style="color: var(--text-primary);">Custom Pattern</span>
+							</div>
+							<p class="text-xs" style="color: var(--text-secondary);">Choose specific days</p>
+							<p class="text-xs mt-1" style="color: var(--text-tertiary);">e.g. Tue/Thu, Mon/Wed/Fri</p>
+						</button>
+					</div>
+					
+					<div class="mt-3 text-center">
+						<button 
+							type="button" 
+							onclick={() => handlePatternSelect('manual')} 
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors {selectedPattern === 'manual' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}"
+							style="background: {selectedPattern === 'manual' ? 'var(--color-purple-50)' : 'var(--bg-primary)'}; border-color: {selectedPattern === 'manual' ? 'var(--color-purple-500)' : 'var(--border-primary)'};"
+						>
+							<Plus class="h-4 w-4 text-purple-600" />
+							<span class="font-medium" style="color: var(--text-primary);">Manual Individual Slots</span>
+							<span class="text-xs ml-2" style="color: var(--text-tertiary);">(Pick specific dates & times)</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Pattern Configuration -->
+				{#if selectedPattern === 'daily'}
+					<div class="space-y-4">
+						<h4 class="font-medium" style="color: var(--text-primary);">Configure Daily Schedule</h4>
+						
+						<!-- Times -->
+						<div>
+							<label class="form-label">Tour Times</label>
+							<p class="text-xs mb-3" style="color: var(--text-secondary);">Add all the times you want to run tours each day</p>
+							<div class="space-y-2">
+								{#each dailyPattern.times as time, index}
+									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
+										<span class="text-sm" style="color: var(--text-secondary);">to</span>
+										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										{#if dailyPattern.times.length > 1}
+											<button type="button" onclick={() => removeDailyTime(index)} class="button-secondary button--small button--icon">
+												<Trash2 class="h-3 w-3" />
+											</button>
+										{/if}
+									</div>
+								{/each}
+							</div>
+							<button type="button" onclick={addDailyTime} class="mt-2 button-secondary button--small button--gap">
+								<Plus class="h-4 w-4" />
+								Add Another Time
+							</button>
+						</div>
+
+						<!-- Date Range -->
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div>
+								<label class="form-label">Start Date</label>
+								<input type="date" bind:value={dailyPattern.startDate} class="form-input text-sm" />
+							</div>
+							<div>
+								<label class="form-label">Duration</label>
+								<select bind:value={dailyPattern.duration} class="form-select text-sm">
+									<option value="1week">Next week</option>
+									<option value="2weeks">Next 2 weeks</option>
+									<option value="1month">Next month</option>
+									<option value="3months">Next 3 months</option>
+									<option value="6months">Next 6 months</option>
+									<option value="custom">Custom end date</option>
+								</select>
+							</div>
+						</div>
+
+						{#if dailyPattern.duration === 'custom'}
+							<div>
+								<label class="form-label">End Date</label>
+								<input type="date" bind:value={dailyPattern.customEndDate} class="form-input text-sm" />
+							</div>
+						{/if}
+					</div>
+				{:else if selectedPattern === 'weekend'}
+					<div class="space-y-4">
+						<h4 class="font-medium" style="color: var(--text-primary);">Configure Weekend Schedule</h4>
+						
+						<!-- Times -->
+						<div>
+							<label class="form-label">Tour Times</label>
+							<p class="text-xs mb-3" style="color: var(--text-secondary);">Add all the times you want to run tours on weekends</p>
+							<div class="space-y-2">
+								{#each weekendPattern.times as time, index}
+									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
+										<span class="text-sm" style="color: var(--text-secondary);">to</span>
+										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										{#if weekendPattern.times.length > 1}
+											<button type="button" onclick={() => removeWeekendTime(index)} class="button-secondary button--small button--icon">
+												<Trash2 class="h-3 w-3" />
+											</button>
+										{/if}
+									</div>
+								{/each}
+							</div>
+							<button type="button" onclick={addWeekendTime} class="mt-2 button-secondary button--small button--gap">
+								<Plus class="h-4 w-4" />
+								Add Another Time
+							</button>
+						</div>
+
+						<!-- Date Range -->
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div>
+								<label class="form-label">Start Date</label>
+								<input type="date" bind:value={weekendPattern.startDate} class="form-input text-sm" />
+							</div>
+							<div>
+								<label class="form-label">Duration</label>
+								<select bind:value={weekendPattern.duration} class="form-select text-sm">
+									<option value="1week">Next week</option>
+									<option value="2weeks">Next 2 weeks</option>
+									<option value="1month">Next month</option>
+									<option value="3months">Next 3 months</option>
+									<option value="6months">Next 6 months</option>
+									<option value="custom">Custom end date</option>
+								</select>
+							</div>
+						</div>
+
+						{#if weekendPattern.duration === 'custom'}
+							<div>
+								<label class="form-label">End Date</label>
+								<input type="date" bind:value={weekendPattern.customEndDate} class="form-input text-sm" />
+							</div>
+						{/if}
+					</div>
+				{:else if selectedPattern === 'custom'}
+					<div class="space-y-4">
+						<h4 class="font-medium" style="color: var(--text-primary);">Configure Custom Pattern</h4>
+						
+						<!-- Quick Presets -->
+						<div>
+							<label class="form-label">Quick Presets</label>
+							<div class="flex flex-wrap gap-2 mt-2">
+								<button type="button" onclick={() => setCustomPreset('weekdays')} class="px-3 py-2 text-sm rounded-lg border hover:border-blue-500 transition-colors" style="border-color: var(--border-primary);">
+									Weekdays (Mon-Fri)
+								</button>
+								<button type="button" onclick={() => setCustomPreset('weekends')} class="px-3 py-2 text-sm rounded-lg border hover:border-blue-500 transition-colors" style="border-color: var(--border-primary);">
+									Weekends (Sat-Sun)
+								</button>
+								<button type="button" onclick={() => setCustomPreset('mwf')} class="px-3 py-2 text-sm rounded-lg border hover:border-blue-500 transition-colors" style="border-color: var(--border-primary);">
+									MWF
+								</button>
+								<button type="button" onclick={() => setCustomPreset('tth')} class="px-3 py-2 text-sm rounded-lg border hover:border-blue-500 transition-colors" style="border-color: var(--border-primary);">
+									Tue/Thu
+								</button>
+							</div>
+						</div>
+
+						<!-- Days Selection -->
+						<div>
+							<label class="form-label">Days of Week</label>
+							<div class="flex flex-wrap gap-2 mt-2">
+								{#each ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as day}
+									<label class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors {customPattern.selectedDays.includes(day) ? 'border-blue-500 bg-blue-50' : ''}" style="border-color: {customPattern.selectedDays.includes(day) ? 'var(--color-primary-500)' : 'var(--border-primary)'};">
+										<input 
+											type="checkbox" 
+											checked={customPattern.selectedDays.includes(day)}
+											onchange={() => toggleCustomDay(day)}
+											class="form-checkbox" 
+										/>
+										<span class="text-sm capitalize">{day}</span>
+									</label>
+								{/each}
+							</div>
+						</div>
+
+						<!-- Times -->
+						<div>
+							<label class="form-label">Tour Times</label>
+							<p class="text-xs mb-3" style="color: var(--text-secondary);">Add all the times you want to run tours on your selected days</p>
+							<div class="space-y-2">
+								{#each customPattern.times as time, index}
+									<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+										<input type="time" bind:value={time.startTime} class="form-input text-sm" style="width: 100px;" />
+										<span class="text-sm" style="color: var(--text-secondary);">to</span>
+										<input type="time" bind:value={time.endTime} class="form-input text-sm" style="width: 100px;" />
+										{#if customPattern.times.length > 1}
+											<button type="button" onclick={() => removeCustomTime(index)} class="button-secondary button--small button--icon">
+												<Trash2 class="h-3 w-3" />
+											</button>
+										{/if}
+									</div>
+								{/each}
+							</div>
+							<button type="button" onclick={addCustomTime} class="mt-2 button-secondary button--small button--gap">
+								<Plus class="h-4 w-4" />
+								Add Another Time
+							</button>
+						</div>
+
+						<!-- Date Range -->
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<div>
+								<label class="form-label">Start Date</label>
+								<input type="date" bind:value={customPattern.startDate} class="form-input text-sm" />
+							</div>
+							<div>
+								<label class="form-label">Duration</label>
+								<select bind:value={customPattern.duration} class="form-select text-sm">
+									<option value="1week">Next week</option>
+									<option value="2weeks">Next 2 weeks</option>
+									<option value="1month">Next month</option>
+									<option value="3months">Next 3 months</option>
+									<option value="6months">Next 6 months</option>
+									<option value="custom">Custom end date</option>
+								</select>
+							</div>
+						</div>
+
+						{#if customPattern.duration === 'custom'}
+							<div>
+								<label class="form-label">End Date</label>
+								<input type="date" bind:value={customPattern.customEndDate} class="form-input text-sm" />
+							</div>
+						{/if}
+					</div>
+				{:else if selectedPattern === 'manual'}
+					<div class="space-y-4">
+						<h4 class="font-medium" style="color: var(--text-primary);">Add Individual Time Slots</h4>
+						<p class="text-sm" style="color: var(--text-secondary);">Perfect for irregular schedules or specific dates</p>
+						
+						<div class="space-y-3">
+							{#each manualSlots as slot, index}
+								<div class="flex gap-3 items-center p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+									<input type="date" bind:value={slot.date} class="form-input text-sm" style="width: 140px;" />
+									<input type="time" bind:value={slot.startTime} class="form-input text-sm" style="width: 100px;" />
+									<span class="text-sm" style="color: var(--text-secondary);">to</span>
+									<input type="time" bind:value={slot.endTime} class="form-input text-sm" style="width: 100px;" />
+									{#if manualSlots.length > 1}
+										<button type="button" onclick={() => removeManualSlot(index)} class="button-secondary button--small button--icon">
+											<Trash2 class="h-3 w-3" />
+										</button>
+									{/if}
+								</div>
+							{/each}
+						</div>
+						<button type="button" onclick={addManualSlot} class="button-secondary button--small button--gap">
+							<Plus class="h-4 w-4" />
+							Add Another Slot
+						</button>
+					</div>
+				{/if}
+
+				<!-- Preview -->
+				{#if selectedPattern}
+					<div class="mt-6 p-4 rounded-lg" style="background: var(--bg-tertiary); border: 1px solid var(--border-primary);">
+						<h5 class="font-medium mb-2" style="color: var(--text-primary);">Preview</h5>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{getPatternPreview()}
+						</p>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Tour Status & Save Options -->
@@ -529,8 +995,10 @@
 		</div>
 		
 		<p class="text-sm mb-4" style="color: var(--text-secondary);">
-			{formData.status === 'active' 
-				? 'Your tour will be created and immediately available for bookings.'
+			{enableScheduling && selectedPattern
+				? 'Your tour will be created with initial time slots and will be ready for bookings!'
+				: formData.status === 'active' 
+				? 'Your tour will be created and you can add time slots next.'
 				: 'We\'ll save your tour as a <strong>draft first</strong>, giving you complete control over when to go live.'}
 		</p>
 		
@@ -539,30 +1007,44 @@
 				<div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3">
 					<span class="text-sm font-semibold text-green-600">1</span>
 				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Save as Draft</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">Preview and test everything before customers see it</p>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Create Tour</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">Save tour details and generate QR code for sharing</p>
 			</div>
 			
 			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
-				<div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-					<span class="text-sm font-semibold text-blue-600">2</span>
+				<div class="w-10 h-10 {enableScheduling && selectedPattern ? 'bg-green-100' : 'bg-blue-100'} rounded-full flex items-center justify-center mb-3">
+					{#if enableScheduling && selectedPattern}
+						<CheckCircle class="w-4 h-4 text-green-600" />
+					{:else}
+						<span class="text-sm font-semibold text-blue-600">2</span>
+					{/if}
 				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Add Schedule</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">Set up time slots when you're available to run tours</p>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">
+					{enableScheduling && selectedPattern ? 'Schedule Added' : 'Add Schedule'}
+				</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">
+					{enableScheduling && selectedPattern 
+						? 'Time slots will be created automatically'
+						: 'Set up time slots when you\'re available to run tours'}
+				</p>
 			</div>
 			
 			<div class="flex flex-col items-center text-center p-4 rounded-lg" style="background: var(--bg-primary);">
 				<div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mb-3">
 					<span class="text-sm font-semibold text-purple-600">3</span>
 				</div>
-				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Go Live</h4>
-				<p class="text-xs" style="color: var(--text-secondary);">Activate your tour and start accepting bookings</p>
+				<h4 class="font-medium mb-2" style="color: var(--text-primary);">Start Booking</h4>
+				<p class="text-xs" style="color: var(--text-secondary);">Share your QR code and accept customer bookings</p>
 			</div>
 		</div>
 		
 		<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50);">
 			<p class="text-sm" style="color: var(--color-primary-700);">
-				<strong>✨ Pro tip:</strong> You can activate your tour instantly with one click, or take your time to perfect everything first!
+				<strong>✨ Pro tip:</strong> {enableScheduling && selectedPattern === 'custom' 
+					? 'Custom patterns are perfect for regular schedules like "every Tuesday and Thursday at 2pm" or "weekends only"!'
+					: enableScheduling && selectedPattern 
+					? 'Pattern-based scheduling will create multiple time slots automatically - you can always modify them later!'
+					: 'You can activate your tour instantly with one click, or take your time to perfect everything first!'}
 			</p>
 		</div>
 	</div>

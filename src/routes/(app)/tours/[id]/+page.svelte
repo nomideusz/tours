@@ -350,6 +350,27 @@
 			</div>
 		{/if}
 		
+		<!-- Success Banner for Schedule Created -->
+		{#if browser && $page.url.searchParams.get('scheduled') === 'true'}
+			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
+				<div class="flex items-center gap-3">
+					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
+					<div class="flex-1">
+						<p class="font-medium" style="color: var(--color-success-900);">
+							Schedule created successfully!
+						</p>
+						<p class="text-sm mt-1" style="color: var(--color-success-700);">
+							Your time slots have been added and are now available for bookings.
+						</p>
+					</div>
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
+						<Calendar class="h-4 w-4" />
+						View Schedule
+					</button>
+				</div>
+			</div>
+		{/if}
+		
 		<!-- Success Banner for Edited Tours -->
 		{#if browser && $page.url.searchParams.get('edited') === 'true'}
 			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">

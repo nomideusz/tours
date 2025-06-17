@@ -379,7 +379,7 @@
 						</p>
 					</div>
 				</div>
-				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small">
+				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
 					<Edit class="h-4 w-4" />
 					Edit Tour
 				</button>

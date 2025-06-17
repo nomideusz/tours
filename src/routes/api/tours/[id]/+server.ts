@@ -24,29 +24,31 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 			throw error(404, 'Tour not found');
 		}
 
-		// Check if there are any confirmed bookings
-		const confirmedBookings = await db
-			.select({ id: bookings.id })
-			.from(bookings)
-			.where(and(eq(bookings.tourId, tourId), eq(bookings.status, 'confirmed')))
-			.limit(1);
-
-		if (confirmedBookings.length > 0) {
-			throw error(400, 'This tour has confirmed bookings. Please cancel all bookings before deleting the tour.');
-		}
-
-		// Delete in the correct order to respect foreign key constraints
-		console.log(`Starting deletion process for tour ${tourId}`);
-		
-		// 1. First delete payments (references bookings)
-		const tourBookings = await db
-			.select({ id: bookings.id })
+		// Get booking statistics for logging
+		const allBookings = await db
+			.select({ 
+				id: bookings.id, 
+				status: bookings.status,
+				participants: bookings.participants 
+			})
 			.from(bookings)
 			.where(eq(bookings.tourId, tourId));
 
-		console.log(`Found ${tourBookings.length} bookings to process`);
+		const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
+		const totalParticipants = allBookings.reduce((sum, b) => sum + (b.participants || 0), 0);
 
-		for (const booking of tourBookings) {
+		// Log deletion of tour with bookings for audit purposes
+		if (allBookings.length > 0) {
+			console.warn(`⚠️ TOUR DELETION WITH BOOKINGS: User ${locals.user.id} is deleting tour ${tourId} with ${allBookings.length} bookings (${confirmedBookings.length} confirmed, ${totalParticipants} total participants)`);
+		}
+
+		// Delete in the correct order to respect foreign key constraints
+		console.log(`Starting deletion process for tour ${tourId} (${allBookings.length} bookings, ${confirmedBookings.length} confirmed)`);
+		
+		// 1. First delete payments (references bookings)
+		console.log(`Found ${allBookings.length} bookings to process`);
+
+		for (const booking of allBookings) {
 			try {
 				await db.delete(payments).where(eq(payments.bookingId, booking.id));
 				console.log(`Deleted payments for booking ${booking.id}`);

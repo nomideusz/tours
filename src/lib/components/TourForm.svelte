@@ -810,36 +810,7 @@
 						</div>
 					</div>
 					
-					<!-- Status Change Warning -->
-					{#if formData.status === 'active'}
-						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
-							<div class="flex items-start gap-2">
-								<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								<div>
-									<p class="text-sm font-medium" style="color: var(--color-success-900);">Tour will be activated</p>
-									<p class="text-xs mt-1" style="color: var(--color-success-700);">
-										When you save, your tour will be live and customers can book it immediately.
-									</p>
-								</div>
-							</div>
-						</div>
-					{:else}
-						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-start gap-2">
-								<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
-								</svg>
-								<div>
-									<p class="text-sm font-medium" style="color: var(--color-warning-900);">Tour will remain draft</p>
-									<p class="text-xs mt-1" style="color: var(--color-warning-700);">
-										Your tour will be saved but customers won't be able to see or book it yet.
-									</p>
-								</div>
-							</div>
-						</div>
-					{/if}
+
 				</div>
 			</div>
 		{/if}
