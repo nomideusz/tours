@@ -19,6 +19,8 @@
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Drawer from '$lib/components/Drawer.svelte';
+	import TimeSlotForm from '$lib/components/TimeSlotForm.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -43,6 +45,31 @@
 	// Get data from load function
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
+	
+	// Check for query parameters to auto-open drawer
+	$effect(() => {
+		if (browser && page.url) {
+			const searchParams = page.url.searchParams;
+			if (searchParams.get('new') === 'true') {
+				// Open drawer for new slot
+				openNewSlot();
+				// Clean up URL
+				const newUrl = new URL(page.url);
+				newUrl.searchParams.delete('new');
+				window.history.replaceState({}, '', newUrl.pathname + newUrl.search);
+			} else if (searchParams.get('edit')) {
+				// Open drawer for editing specific slot
+				const slotId = searchParams.get('edit');
+				if (slotId) {
+					openEditSlot(slotId);
+					// Clean up URL
+					const newUrl = new URL(page.url);
+					newUrl.searchParams.delete('edit');
+					window.history.replaceState({}, '', newUrl.pathname + newUrl.search);
+				}
+			}
+		}
+	});
 	
 	// TanStack Query for schedule data - reactive to tour changes
 	let scheduleQuery = $derived(createQuery({
@@ -71,6 +98,9 @@
 	let selectedView = $state<'upcoming' | 'past'>('upcoming');
 	let selectedSlots = $state<Set<string>>(new Set());
 	let showBulkActions = $derived(selectedSlots.size > 0);
+	let showSlotDrawer = $state(false);
+	let editingSlotId = $state<string | undefined>(undefined);
+	let successMessage = $state<string | null>(null);
 
 	// Separate upcoming and past slots
 	let upcomingSlots = $derived(timeSlots.filter((slot: any) => slot.isUpcoming));
@@ -96,7 +126,30 @@
 		$tourQuery.refetch();
 	}
 
+	// Handle success from TimeSlotForm
+	function handleSlotSuccess() {
+		const wasEditing = !!editingSlotId;
+		showSlotDrawer = false;
+		editingSlotId = undefined;
+		successMessage = wasEditing ? 'Time slot updated successfully!' : 'Time slot created successfully!';
+		
+		// Clear success message after 5 seconds
+		setTimeout(() => {
+			successMessage = null;
+		}, 5000);
+	}
 
+	// Handle opening drawer for new slot
+	function openNewSlot() {
+		editingSlotId = undefined;
+		showSlotDrawer = true;
+	}
+
+	// Handle opening drawer for editing
+	function openEditSlot(slotId: string) {
+		editingSlotId = slotId;
+		showSlotDrawer = true;
+	}
 
 	function getBookingRateColor(rate: number): string {
 		if (rate >= 80) return 'text-green-600';
@@ -189,15 +242,8 @@
 					{
 						label: 'Add Slot',
 						icon: Plus,
-						onclick: () => goto(`/tours/${tourId}/schedule/new`),
+						onclick: openNewSlot,
 						variant: 'primary'
-					},
-					{
-						label: 'Export',
-						icon: Download,
-						onclick: exportSchedule,
-						variant: 'secondary',
-						size: 'icon'
 					},
 					{
 						label: 'Refresh',
@@ -249,13 +295,6 @@
 					</button>
 					<div class="flex gap-3">
 						<button
-							onclick={exportSchedule}
-							class="button-secondary button--gap"
-						>
-							<Download class="h-4 w-4" />
-							Export
-						</button>
-						<button
 							onclick={handleRefresh}
 							disabled={isLoading}
 							class="button-secondary button--gap"
@@ -267,7 +306,10 @@
 							{/if}
 							Refresh
 						</button>
-						<button onclick={() => goto(`/tours/${tourId}/schedule/new`)} class="button-primary button--gap">
+						<button 
+							onclick={openNewSlot}
+							class="button-primary button--gap"
+						>
 							<Plus class="h-4 w-4" />
 							Add Time Slot
 						</button>
@@ -276,49 +318,14 @@
 			</div>
 		</div>
 
-		<!-- Success Banners -->
-		{#if browser && page.url.searchParams.get('slotCreated') === 'true'}
+		<!-- Success Message -->
+		{#if successMessage}
 			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
 				<div class="flex items-center gap-3">
 					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
 					<div class="flex-1">
 						<p class="font-medium" style="color: var(--color-success-900);">
-							Time slot created successfully!
-						</p>
-						<p class="text-sm mt-1" style="color: var(--color-success-700);">
-							Your new time slot is now available for bookings.
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-		
-		{#if browser && page.url.searchParams.get('slotUpdated') === 'true'}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
-				<div class="flex items-center gap-3">
-					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
-					<div class="flex-1">
-						<p class="font-medium" style="color: var(--color-success-900);">
-							Time slot updated successfully!
-						</p>
-						<p class="text-sm mt-1" style="color: var(--color-success-700);">
-							Your changes have been saved.
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-		
-		{#if browser && page.url.searchParams.get('slotDeleted') === 'true'}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
-				<div class="flex items-center gap-3">
-					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
-					<div class="flex-1">
-						<p class="font-medium" style="color: var(--color-success-900);">
-							Time slot deleted successfully!
-						</p>
-						<p class="text-sm mt-1" style="color: var(--color-success-700);">
-							The time slot has been removed from your schedule.
+							{successMessage}
 						</p>
 					</div>
 				</div>
@@ -414,14 +421,24 @@
 											{slot.totalParticipants}/{slot.capacity} participants ({getOccupancyPercentage(slot)}%)
 										</p>
 									</div>
-									<Tooltip text="Quick check-in">
-										<button
-											onclick={() => quickCheckIn(slot.id)}
-											class="button-secondary button--small button--icon"
-										>
-										<UserCheck class="h-3 w-3" />
-										</button>
-									</Tooltip>
+									<div class="flex gap-1">
+										<Tooltip text="Edit">
+											<button
+												onclick={() => openEditSlot(slot.id)}
+												class="button-secondary button--small button--icon"
+											>
+												<Edit class="h-3 w-3" />
+											</button>
+										</Tooltip>
+										<Tooltip text="Quick check-in">
+											<button
+												onclick={() => quickCheckIn(slot.id)}
+												class="button-secondary button--small button--icon"
+											>
+											<UserCheck class="h-3 w-3" />
+											</button>
+										</Tooltip>
+									</div>
 								</div>
 								{#if slot.totalBookings > 0}
 									<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
@@ -517,8 +534,8 @@
 													{formatSlotTimeRange(slot.startTime, slot.endTime)}
 												</p>
 											</div>
-																		<span class="ml-2 px-2 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
-								{getScheduleSlotStatusText(slot)}
+											<span class="ml-2 px-2 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
+												{getScheduleSlotStatusText(slot)}
 											</span>
 										</div>
 										
@@ -541,7 +558,7 @@
 															</button>
 														</Tooltip>
 													{/if}
-													<button onclick={() => goto(`/tours/${tourId}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+													<button onclick={() => openEditSlot(slot.id)} class="button-secondary button--small button--icon">
 														<Edit class="h-3 w-3" />
 													</button>
 												</div>
@@ -658,7 +675,7 @@
 													</button>
 												</Tooltip>
 												<Tooltip text="Edit time slot">
-													<button onclick={() => goto(`/tours/${tourId}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+													<button onclick={() => openEditSlot(slot.id)} class="button-secondary button--small button--icon">
 														<Edit class="h-4 w-4" />
 													</button>
 												</Tooltip>
@@ -687,7 +704,7 @@
 							: 'Past time slots will appear here after they complete'}
 					</p>
 					{#if selectedView === 'upcoming'}
-						<button onclick={() => goto(`/tours/${tourId}/schedule/new`)} class="button-primary button--gap">
+						<button onclick={openNewSlot} class="button-primary button--gap">
 							<Plus class="h-4 w-4" />
 							Add First Time Slot
 						</button>
@@ -700,14 +717,39 @@
 		<div class="mt-6 p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 			<h3 class="font-medium mb-2" style="color: var(--text-primary);">Quick Tips</h3>
 			<ul class="space-y-1 text-sm" style="color: var(--text-secondary);">
-				<li>• Click the check-in button to quickly scan QR codes for a specific time slot</li>
+				<li>• Click the "Add Time Slot" button to create new slots for bookings</li>
+				<li>• Edit existing slots by clicking the edit icon on each slot</li>
 				<li>• Select multiple slots to perform bulk actions like deletion</li>
 				<li>• Time slots inherit the tour's default capacity but can be adjusted individually</li>
-				<li>• Cancelled slots will notify customers automatically if bookings exist</li>
 			</ul>
 		</div>
 	{/if}
 </div>
+
+<!-- Add/Edit Slot Drawer -->
+<Drawer
+	bind:isOpen={showSlotDrawer}
+	title={editingSlotId ? 'Edit Time Slot' : 'Add Time Slot'}
+	subtitle={tour ? `${editingSlotId ? 'Modify' : 'Create'} a time slot for ${tour.name}` : ''}
+	onClose={() => {
+		showSlotDrawer = false;
+		editingSlotId = undefined;
+	}}
+>
+	{#snippet children()}
+		<TimeSlotForm
+			tourId={tourId}
+			slotId={editingSlotId}
+			tour={tour}
+			mode="modal"
+			onSuccess={handleSlotSuccess}
+			onCancel={() => {
+				showSlotDrawer = false;
+				editingSlotId = undefined;
+			}}
+		/>
+	{/snippet}
+</Drawer>
 
 <style lang="postcss">
 	@reference "tailwindcss";

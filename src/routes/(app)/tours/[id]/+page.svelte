@@ -539,7 +539,7 @@
 							</button>
 						{:else if getTourBookingStatus(tour).status === 'no-slots'}
 							<button 
-								onclick={() => goto(`/tours/${tour.id}/schedule/new`)}
+								onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)}
 								class="button-primary button--small button--gap"
 							>
 								<Plus class="w-4 h-4" />
@@ -921,7 +921,7 @@
 						<span class="ml-auto text-xs opacity-80">{tourStats.upcomingSlots} slots</span>
 					{/if}
 				</button>
-				<button onclick={() => goto(`/tours/${tour.id}/schedule/new`)} class="w-full button-secondary button--gap justify-start">
+				<button onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)} class="w-full button-secondary button--gap justify-start">
 					<Plus class="h-4 w-4" />
 					Add Time Slot
 				</button>
@@ -989,7 +989,7 @@
 														</button>
 													</Tooltip>
 												{/if}
-												<button onclick={() => goto(`/tours/${tour.id}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+												<button onclick={() => goto(`/tours/${tour.id}/schedule?edit=${slot.id}`)} class="button-secondary button--small button--icon">
 													<Edit class="h-3 w-3" />
 												</button>
 											</div>
@@ -1083,7 +1083,7 @@
 													</button>
 												</Tooltip>
 												<Tooltip text="Edit time slot">
-													<button onclick={() => goto(`/tours/${tour.id}/schedule/${slot.id}/edit`)} class="button-secondary button--small button--icon">
+													<button onclick={() => goto(`/tours/${tour.id}/schedule?edit=${slot.id}`)} class="button-secondary button--small button--icon">
 														<Edit class="h-4 w-4" />
 													</button>
 												</Tooltip>

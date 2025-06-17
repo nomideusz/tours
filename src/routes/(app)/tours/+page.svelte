@@ -858,7 +858,7 @@
 									</button>
 								{:else if getTourBookingStatus(tour).status === 'no-slots'}
 									<button 
-										onclick={() => goto(`/tours/${tour.id}/schedule/new`)}
+										onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)}
 										class="button-primary button--small button--gap"
 									>
 										<Plus class="w-4 h-4" />

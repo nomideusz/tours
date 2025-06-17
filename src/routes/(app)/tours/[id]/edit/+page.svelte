@@ -382,7 +382,7 @@
 		}
 		
 		// Navigate to add slot page
-		goto(`/tours/${tourId}/schedule/new`);
+		goto(`/tours/${tourId}/schedule?new=true`);
 	}
 
 	async function handleExtendPattern() {
