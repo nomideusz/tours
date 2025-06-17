@@ -21,6 +21,8 @@
 	let isOpen = $state(false);
 	let currentMonth = $state(new Date());
 	let selectedDate = $state<Date | null>(value ? new Date(value) : null);
+	let inputElement: HTMLDivElement;
+	let dropdownElement: HTMLDivElement;
 
 	// Update selectedDate when value prop changes
 	$effect(() => {
@@ -126,6 +128,33 @@
 	$effect(() => {
 		if (isOpen) {
 			document.addEventListener('click', handleClickOutside);
+			// Position dropdown when opened
+			if (inputElement && dropdownElement) {
+				const rect = inputElement.getBoundingClientRect();
+				const viewportHeight = window.innerHeight;
+				const viewportWidth = window.innerWidth;
+				
+				// Calculate if dropdown should open upward
+				const spaceBelow = viewportHeight - rect.bottom;
+				const spaceAbove = rect.top;
+				const dropdownHeight = 400; // Approximate dropdown height
+				
+				// Position dropdown
+				if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+					// Open upward
+					dropdownElement.style.bottom = `${viewportHeight - rect.top + 4}px`;
+					dropdownElement.style.top = 'auto';
+				} else {
+					// Open downward (default)
+					dropdownElement.style.top = `${rect.bottom + 4}px`;
+					dropdownElement.style.bottom = 'auto';
+				}
+				
+				// Position horizontally
+				const leftPosition = Math.max(8, Math.min(rect.left, viewportWidth - 320 - 8));
+				dropdownElement.style.left = `${leftPosition}px`;
+				dropdownElement.style.right = 'auto';
+			}
 			return () => document.removeEventListener('click', handleClickOutside);
 		}
 	});
@@ -142,6 +171,7 @@
 	<!-- Input field -->
 	<div class="relative">
 		<div
+			bind:this={inputElement}
 			role="button"
 			tabindex={disabled ? -1 : 0}
 			id={instanceId}
@@ -197,8 +227,9 @@
 	<!-- Calendar dropdown -->
 	{#if isOpen}
 		<div 
-			class="absolute top-full left-0 mt-1 w-full min-w-80 max-w-sm rounded-lg shadow-lg border p-4 z-50"
-			style="background: var(--bg-primary); border-color: var(--border-primary);"
+			bind:this={dropdownElement}
+			class="fixed w-80 rounded-lg shadow-lg border p-4 z-50"
+			style="background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden;"
 		>
 			<!-- Calendar header -->
 			<div class="flex items-center justify-between mb-4">
