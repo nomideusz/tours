@@ -716,7 +716,7 @@
 					</div>
 				</div>
 			{:else}
-				<form method="POST" use:enhance={({ formData, cancel }) => {
+				<form method="POST" enctype="multipart/form-data" use:enhance={({ formData, cancel }) => {
 					if (isSubmitting) {
 						cancel();
 						return;

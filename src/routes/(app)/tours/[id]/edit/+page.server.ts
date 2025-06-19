@@ -86,41 +86,73 @@ export const actions: Actions = {
       const includedItems: string[] = [];
       const requirements: string[] = [];
       
-      // Extract array values from FormData
-      for (const [key, value] of formData.entries()) {
-        if (key.startsWith('includedItems.')) {
-          const index = parseInt(key.split('.')[1]);
-          if (!isNaN(index) && typeof value === 'string' && value.trim()) {
-            includedItems[index] = value.trim();
-          }
-        } else if (key.startsWith('requirements.')) {
-          const index = parseInt(key.split('.')[1]);
-          if (!isNaN(index) && typeof value === 'string' && value.trim()) {
-            requirements[index] = value.trim();
-          }
-        }
-      }
-
-      // Parse JSON fields if they exist
-      let parsedIncludedItems = includedItems.filter(Boolean);
-      let parsedRequirements = requirements.filter(Boolean);
+      // Extract multiple values with the same field name from FormData (how TourForm submits them)
+      const allIncludedItems = formData.getAll('includedItems');
+      const allRequirements = formData.getAll('requirements');
       
-      try {
-        const includedItemsJson = formData.get('includedItems');
-        if (typeof includedItemsJson === 'string') {
-          parsedIncludedItems = JSON.parse(includedItemsJson);
+      // Process included items
+      for (const item of allIncludedItems) {
+        if (typeof item === 'string' && item.trim()) {
+          includedItems.push(item.trim());
         }
-      } catch (e) {
-        // Use the array version if JSON parsing fails
+      }
+      
+      // Process requirements  
+      for (const req of allRequirements) {
+        if (typeof req === 'string' && req.trim()) {
+          requirements.push(req.trim());
+        }
       }
 
-      try {
-        const requirementsJson = formData.get('requirements');
-        if (typeof requirementsJson === 'string') {
-          parsedRequirements = JSON.parse(requirementsJson);
+      // Use the processed arrays
+      let parsedIncludedItems = includedItems;
+      let parsedRequirements = requirements;
+      
+      // Fallback: try the old approach for backward compatibility
+      if (parsedIncludedItems.length === 0) {
+        // Extract array values from FormData (old approach with indexed keys)
+        for (const [key, value] of formData.entries()) {
+          if (key.startsWith('includedItems.')) {
+            const index = parseInt(key.split('.')[1]);
+            if (!isNaN(index) && typeof value === 'string' && value.trim()) {
+              includedItems[index] = value.trim();
+            }
+          }
         }
-      } catch (e) {
-        // Use the array version if JSON parsing fails
+        parsedIncludedItems = includedItems.filter(Boolean);
+        
+        // Also try JSON parsing if still empty
+        try {
+          const includedItemsJson = formData.get('includedItems');
+          if (typeof includedItemsJson === 'string') {
+            parsedIncludedItems = JSON.parse(includedItemsJson);
+          }
+        } catch (e) {
+          // Use the array version if JSON parsing fails
+        }
+      }
+
+      if (parsedRequirements.length === 0) {
+        // Extract array values from FormData (old approach with indexed keys)  
+        for (const [key, value] of formData.entries()) {
+          if (key.startsWith('requirements.')) {
+            const index = parseInt(key.split('.')[1]);
+            if (!isNaN(index) && typeof value === 'string' && value.trim()) {
+              requirements[index] = value.trim();
+            }
+          }
+        }
+        parsedRequirements = requirements.filter(Boolean);
+        
+        // Also try JSON parsing if still empty
+        try {
+          const requirementsJson = formData.get('requirements');
+          if (typeof requirementsJson === 'string') {
+            parsedRequirements = JSON.parse(requirementsJson);
+          }
+        } catch (e) {
+          // Use the array version if JSON parsing fails
+        }
       }
 
       // Get pricing tiers

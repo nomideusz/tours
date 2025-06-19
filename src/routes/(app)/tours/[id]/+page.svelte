@@ -9,7 +9,6 @@
 		formatDuration,
 		calculateConversionRate,
 		getConversionRateText,
-		toggleTourStatus,
 		getTourBookingStatus,
 		getTourDisplayPriceFormatted,
 		getTourImageUrl
@@ -23,12 +22,12 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -90,7 +89,6 @@
 	// State
 	let copiedQRCode = $state(false);
 	let copiedEmbedCode = $state(false);
-	let statusUpdating = $state(false);
 	let showWidget = $state(false);
 	let selectedImageIndex = $state(false ? 0 : null);
 
@@ -187,32 +185,7 @@
 		link.click();
 	}
 
-	async function handleTourStatusToggle() {
-		if (!browser || statusUpdating) return;
-		statusUpdating = true;
-		
-		try {
-			const newStatus = await toggleTourStatus(tour);
-			
-			if (newStatus) {
-				// Update local state
-				tour = { ...tour, status: newStatus };
-				
-				// Immediately invalidate queries to ensure fresh data across all pages
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tour.id) });
-				queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tour.id) });
-				
-				// Also invalidate public data if tour has QR code
-				if (tour.qrCode) {
-					invalidatePublicTourData(queryClient, tour.qrCode);
-				}
-			}
-		} finally {
-			statusUpdating = false;
-		}
-	}
+
 
 	// Embed widget functions
 	function getEmbedCode() {
@@ -293,16 +266,13 @@
 		<MobilePageHeader
 			title={tour.name}
 			secondaryInfo="{getTourDisplayPriceFormatted(tour)} per person"
-			statusButton={{
+			statusButton={getTourBookingStatus(tour).status === 'no-slots' ? {
 				label: getTourBookingStatus(tour).label,
 				color: getTourBookingStatus(tour).color,
 				dotColor: getTourBookingStatus(tour).dotColor,
 				tooltip: getTourBookingStatus(tour).description,
-				onclick: getTourBookingStatus(tour).status === 'draft' ? () => handleTourStatusToggle() : 
-						getTourBookingStatus(tour).status === 'no-slots' ? () => goto(`/tours/${tour.id}/schedule`) : 
-						() => handleTourStatusToggle(),
-				disabled: statusUpdating
-			}}
+				onclick: () => goto(`/tours/${tour.id}/schedule`)
+			} : undefined}
 			quickActions={[
 				{
 					label: 'Bookings',
@@ -369,19 +339,20 @@
 				
 				<!-- Tour Status Button -->
 				{@const status = getTourBookingStatus(tour)}
-				<Tooltip text={status.status === 'bookable' ? 'Click to pause bookings (set to draft)' : status.description} position="bottom">
+				{#if status.status === 'no-slots'}
 					<button 
-						onclick={status.status === 'draft' ? () => handleTourStatusToggle() : 
-								status.status === 'no-slots' ? () => goto(`/tours/${tour.id}/schedule`) : 
-								() => handleTourStatusToggle()}
-						disabled={statusUpdating}
+						onclick={() => goto(`/tours/${tour.id}/schedule`)}
 						class="button-secondary button--gap mr-6"
 						style="background-color: {status.color}; color: var(--color-white); border-color: {status.color};"
 					>
 						<span class="w-2 h-2 rounded-full {status.dotColor}"></span>
 						{status.label}
 					</button>
-				</Tooltip>
+				{:else if status.status === 'draft' || status.status === 'bookable'}
+					<div class="mr-6">
+						<TourStatusToggle {tour} size="default" />
+					</div>
+				{/if}
 				
 				<div class="hidden sm:flex gap-3">
 					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--gap">

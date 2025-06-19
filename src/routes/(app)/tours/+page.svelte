@@ -1,24 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import type { PageData } from './$types.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
 		formatDuration,
-		getTourStatusColor,
-		getTourStatusDot,
 		getImageUrl,
-		toggleTourStatus,
 		getTourBookingStatus,
-		calculateConversionRate,
 		getConversionRateText,
-		getTourDisplayPrice,
 		getTourDisplayPriceFormatted
 	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import type { Tour } from '$lib/types.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { browser } from '$app/environment';
@@ -28,36 +22,29 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
-	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Plus from 'lucide-svelte/icons/plus';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Edit from 'lucide-svelte/icons/edit';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
-	import Copy from 'lucide-svelte/icons/copy';
 	import Share2 from 'lucide-svelte/icons/share-2';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Search from 'lucide-svelte/icons/search';
-	import Filter from 'lucide-svelte/icons/filter';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import X from 'lucide-svelte/icons/x';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
-	import TrendingUp from 'lucide-svelte/icons/trending-up';
-	import Star from 'lucide-svelte/icons/star';
 	import Activity from 'lucide-svelte/icons/activity';
 	import Package from 'lucide-svelte/icons/package';
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-	import PlusCircle from 'lucide-svelte/icons/plus-circle';
 
 	// TanStack Query client for invalidation
 	const queryClient = useQueryClient();
@@ -66,24 +53,22 @@
 	const toursStatsQuery = createQuery({
 		queryKey: queryKeys.toursStats,
 		queryFn: queryFunctions.fetchToursStats,
-		staleTime: 0, // Always fresh - refetch on every mount
+		staleTime: 30 * 1000, // 30 seconds - reasonable for stats
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: 'always', // Always refetch when component mounts
+		refetchOnMount: true, // Refetch when component mounts
 	});
 
 	const userToursQuery = createQuery({
 		queryKey: queryKeys.userTours,
 		queryFn: queryFunctions.fetchUserTours,
-		staleTime: 0, // Always fresh - refetch on every mount
+		staleTime: 30 * 1000, // 30 seconds - prevents constant refetching
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: 'always', // Always refetch when component mounts
+		refetchOnMount: true, // Refetch when component mounts
 	});
 
 	let copiedQRCode = $state<string | null>(null);
-	let statusUpdating = $state<string | null>(null);
-	let statusSuccess = $state<string | null>(null); // Track successful status changes
 	
 	// Search and filter state
 	let searchQuery = $state('');
@@ -99,9 +84,20 @@
 	let actionMenuOpen = $state<string | null>(null);
 	let deletedTourName = $state<string | null>(null);
 
-	// Initialize state variables (like tour details page pattern)
+	// Use state for tours that we can update immediately
 	let tours = $state<Tour[]>([]);
-	let stats = $state({
+	let toursVersion = $state(0); // Force reactivity
+	let isLocalUpdate = $state(false); // Flag to prevent update loops
+	
+	// Initial load and refresh - only update if not doing local update
+	$effect(() => {
+		if ($userToursQuery.data && !isLocalUpdate) {
+			tours = $userToursQuery.data as Tour[];
+		}
+	});
+
+	// Derive stats from query
+	let stats = $derived($toursStatsQuery.data || {
 		totalTours: 0,
 		activeTours: 0,
 		draftTours: 0,
@@ -113,56 +109,35 @@
 		monthRevenue: 0
 	});
 
-	// Track manual updates to prevent $effect overrides
-	let lastManualUpdateTime = $state(0);
-
-	// Sync with query data but don't override recent manual updates
-	$effect(() => {
-		if ($userToursQuery.data) {
-			const timeSinceManualUpdate = Date.now() - lastManualUpdateTime;
-			// Only update if no recent manual changes (1 second protection window)
-			if (timeSinceManualUpdate > 1000) {
-				tours = ($userToursQuery.data as unknown as Tour[]) || [];
-			}
-		}
-	});
-	
-	$effect(() => {
-		if ($toursStatsQuery.data) {
-			const timeSinceManualUpdate = Date.now() - lastManualUpdateTime;
-			// Only update if no recent manual changes (1 second protection window)
-			if (timeSinceManualUpdate > 1000) {
-				stats = $toursStatsQuery.data || stats;
-			}
-		}
-	});
-
 	// Loading states
 	let isLoading = $derived($toursStatsQuery.isLoading || $userToursQuery.isLoading);
 	let isError = $derived($toursStatsQuery.isError || $userToursQuery.isError);
 	
 	// Filtered tours based on search and status
-	let filteredTours = $derived(() => {
-		let result = [...tours];
+	let filteredTours = $derived((() => {
+		// Access toursVersion to create dependency
+		toursVersion;
 		
-		// Search filter
-		if (searchQuery) {
-			const query = searchQuery.toLowerCase();
-			result = result.filter(tour => 
-				tour.name.toLowerCase().includes(query) ||
-				tour.description?.toLowerCase().includes(query) ||
-				tour.location?.toLowerCase().includes(query) ||
-				tour.qrCode?.toLowerCase().includes(query)
-			);
-		}
-		
-		// Status filter
-		if (statusFilter !== 'all') {
-			result = result.filter(tour => tour.status === statusFilter);
-		}
-		
-		return result;
-	});
+		return tours.filter(tour => {
+			// Search filter
+			if (searchQuery) {
+				const query = searchQuery.toLowerCase();
+				const matchesSearch = 
+					tour.name.toLowerCase().includes(query) ||
+					tour.description?.toLowerCase().includes(query) ||
+					tour.location?.toLowerCase().includes(query) ||
+					tour.qrCode?.toLowerCase().includes(query);
+				if (!matchesSearch) return false;
+			}
+			
+			// Status filter
+			if (statusFilter !== 'all' && tour.status !== statusFilter) {
+				return false;
+			}
+			
+			return true;
+		});
+	})());
 
 	// Enhanced error parsing function
 	function parseErrorMessage(error: any): string {
@@ -188,10 +163,11 @@
 	
 	// Enhanced feedback function with better timing
 	function showTourFeedback(tourId: string, type: 'success' | 'error', message: string) {
-		tourFeedback[tourId] = { type, message };
+		tourFeedback = { ...tourFeedback, [tourId]: { type, message } };
 		setTimeout(() => {
-			delete tourFeedback[tourId];
-			tourFeedback = tourFeedback;
+			const newFeedback = { ...tourFeedback };
+			delete newFeedback[tourId];
+			tourFeedback = newFeedback;
 		}, type === 'success' ? 2500 : 5000); // Shorter success feedback
 	}
 
@@ -338,50 +314,7 @@
 		}
 	}
 
-	// Simple, reliable status toggle using the same approach as tour details page
-	async function handleTourStatusToggle(tour: Tour) {
-		if (!browser || statusUpdating === tour.id) return;
-		statusUpdating = tour.id;
-		
-		try {
-			const newStatus = await toggleTourStatus(tour);
-			
-			if (newStatus) {
-				// Set timestamp to prevent $effect overrides
-				lastManualUpdateTime = Date.now();
-				
-				// Update local state directly (like tour details page)
-				tours = tours.map(t => t.id === tour.id ? { ...t, status: newStatus } : t);
-				
-				// Update stats too
-				if (newStatus === 'active') {
-					stats = { ...stats, activeTours: stats.activeTours + 1, draftTours: Math.max(0, stats.draftTours - 1) };
-				} else {
-					stats = { ...stats, activeTours: Math.max(0, stats.activeTours - 1), draftTours: stats.draftTours + 1 };
-				}
-				
-				// Update TanStack Query caches directly to avoid "stale" status
-				queryClient.setQueryData(queryKeys.userTours, tours);
-				queryClient.setQueryData(queryKeys.toursStats, stats);
-				
-				// Update tour details cache if it exists  
-				const currentTourDetails = queryClient.getQueryData(queryKeys.tourDetails(tour.id)) as any;
-				if (currentTourDetails?.tour) {
-					queryClient.setQueryData(queryKeys.tourDetails(tour.id), {
-						...currentTourDetails,
-						tour: { ...currentTourDetails.tour, status: newStatus }
-					});
-				}
-				
-				// Also invalidate public data if tour has QR code
-				if (tour.qrCode) {
-					invalidatePublicTourData(queryClient, tour.qrCode);
-				}
-			}
-		} finally {
-			statusUpdating = null;
-		}
-	}
+
 	
 	function handleDeleteTour(tour: Tour) {
 		tourToDelete = tour;
@@ -389,12 +322,11 @@
 		actionMenuOpen = null;
 	}
 
-	// Enhanced delete function with proper error handling
+	// Delete tour function
 	async function confirmDeleteTour() {
 		if (!tourToDelete) return;
 		
 		const tourToDeleteId = tourToDelete.id;
-		const tourToDeleteStatus = tourToDelete.status;
 		const tourToDeleteName = tourToDelete.name;
 		
 		isDeleting = true;
@@ -411,12 +343,14 @@
 			showDeleteModal = false;
 			tourToDelete = null;
 			
-			// Show success feedback inline instead of toast
+			// Show success feedback
 			deletedTourName = tourToDeleteName;
 			
-			// Immediately invalidate queries to refresh data
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+			// Invalidate queries to refresh data
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
+			]);
 			
 		} catch (error) {
 			console.error('Failed to delete tour:', error);
@@ -424,6 +358,33 @@
 		} finally {
 			isDeleting = false;
 		}
+	}
+
+	// Handle status update from TourStatusToggle
+	function handleStatusUpdate(tourId: string, newStatus: 'active' | 'draft') {
+		// Find index of tour to update
+		const tourIndex = tours.findIndex(t => t.id === tourId);
+		if (tourIndex === -1) return;
+		
+		// Set flag to prevent update loop
+		isLocalUpdate = true;
+		
+		// Create a completely new array with the updated tour
+		const newTours = [...tours];
+		newTours[tourIndex] = { ...newTours[tourIndex], status: newStatus };
+		
+		// Replace the entire tours array
+		tours = newTours;
+		toursVersion++; // Force filteredTours to recompute
+		
+		// Then update the cache and invalidate for eventual consistency
+		queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+		queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+		
+		// Reset flag after a short delay
+		setTimeout(() => {
+			isLocalUpdate = false;
+		}, 100);
 	}
 
 	function handleRefresh() {
@@ -498,7 +459,7 @@
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
 			title="Tours Management"
-			secondaryInfo="{filteredTours().length} of {tours.length} tours"
+			secondaryInfo="{filteredTours.length} of {tours.length} tours"
 			quickActions={[
 				{
 					label: 'New Tour',
@@ -632,7 +593,7 @@
 	</div>
 
 	<!-- Tours Section -->
-	{#if filteredTours().length === 0}
+	{#if filteredTours.length === 0}
 		<!-- Empty State -->
 		<div in:fade={{ duration: 300 }} class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-8 text-center">
@@ -671,10 +632,10 @@
 
 		<!-- Tours List -->
 		<div class="space-y-4">
-			{#each filteredTours() as tour, index (tour.id)}
+			{#each filteredTours as tour, index (tour.id)}
 				<div 
 					in:fly={{ y: 20, duration: 300, delay: index * 50 }}
-					class="rounded-xl transition-all duration-200 {tour.status === 'draft' ? 'opacity-75' : ''}" 
+					class="rounded-xl transition-all duration-200 relative {tour.status === 'draft' ? 'opacity-75' : ''}" 
 					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 				>
 					<!-- Error Feedback -->
@@ -805,19 +766,16 @@
 							<!-- Primary Action -->
 							<div class="flex items-center gap-2">
 								{#if tour.status === 'draft'}
-									<button
-										onclick={() => handleTourStatusToggle(tour)}
-										disabled={statusUpdating === tour.id}
-										class="button-success button--small button--gap"
-									>
-										{#if statusUpdating === tour.id}
-											<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-											<span>Activating...</span>
-										{:else}
-											<CheckCircle class="w-4 h-4" />
-											<span>Activate</span>
-										{/if}
-									</button>
+									<TourStatusToggle 
+										{tour} 
+										onSuccess={(newStatus) => {
+											handleStatusUpdate(tour.id, newStatus);
+											showTourFeedback(tour.id, 'success', 'Tour activated successfully!');
+										}}
+										onError={(error) => {
+											showTourFeedback(tour.id, 'error', 'Failed to activate tour. Please try again.');
+										}}
+									/>
 								{:else if getTourBookingStatus(tour).status === 'no-slots'}
 									<button 
 										onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)}
@@ -865,12 +823,12 @@
 </div>
 
 <!-- Dropdown Menus (positioned outside cards to avoid opacity inheritance) -->
-{#each filteredTours() as tour (tour.id)}
+{#each filteredTours as tour (tour.id)}
 	{#if actionMenuOpen === tour.id}
 		<div 
 			transition:scale={{ duration: 200, start: 0.95 }}
-			class="fixed w-48 rounded-lg shadow-lg z-50 overflow-hidden dropdown-menu" 
-			style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-width: calc(100vw - 16px);"
+			class="fixed w-48 rounded-lg shadow-lg overflow-hidden dropdown-menu" 
+			style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-width: calc(100vw - 16px); z-index: 100; pointer-events: auto;"
 			use:positionDropdown={tour.id}
 		>
 			<button
@@ -908,24 +866,19 @@
 				</a>
 			{/if}
 			{#if tour.status === 'active'}
-				<button
-					onclick={() => {
+				<TourStatusToggle 
+					{tour} 
+					variant="menu-item"
+					onSuccess={(newStatus) => {
 						actionMenuOpen = null;
-						handleTourStatusToggle(tour);
+						handleStatusUpdate(tour.id, newStatus);
+						showTourFeedback(tour.id, 'success', 'Tour set to draft successfully!');
 					}}
-					disabled={statusUpdating === tour.id}
-					class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
-					class:opacity-50={statusUpdating === tour.id}
-					class:hover:bg-gray-50={statusUpdating !== tour.id}
-					style="color: var(--text-secondary);"
-				>
-					{#if statusUpdating === tour.id}
-						<div class="w-4 h-4 rounded-full border border-current border-t-transparent animate-spin"></div>
-					{:else}
-						<Package class="h-4 w-4" />
-					{/if}
-					Set to Draft
-				</button>
+					onError={(error) => {
+						actionMenuOpen = null;
+						showTourFeedback(tour.id, 'error', 'Failed to set tour to draft. Please try again.');
+					}}
+				/>
 			{/if}
 			<hr style="border-color: var(--border-primary);" />
 			<button

@@ -193,27 +193,54 @@ export const actions: Actions = {
       // Get form data
       const formData = await request.formData();
       
-      // Get included items
-      let parsedIncludedItems: string[] = [];
-      const includedItems = formData.get('includedItems');
-      if (includedItems && typeof includedItems === 'string' && includedItems.trim()) {
-        try {
-          parsedIncludedItems = JSON.parse(includedItems) || [];
-        } catch (e) {
-          console.warn('Failed to parse included items, using empty array:', e);
-          parsedIncludedItems = [];
+      // Handle included items and requirements from FormData
+      const includedItems: string[] = [];
+      const requirements: string[] = [];
+      
+      // Extract multiple values with the same field name from FormData (how TourForm submits them)
+      const allIncludedItems = formData.getAll('includedItems');
+      const allRequirements = formData.getAll('requirements');
+      
+      // Process included items
+      for (const item of allIncludedItems) {
+        if (typeof item === 'string' && item.trim()) {
+          includedItems.push(item.trim());
+        }
+      }
+      
+      // Process requirements  
+      for (const req of allRequirements) {
+        if (typeof req === 'string' && req.trim()) {
+          requirements.push(req.trim());
         }
       }
 
-      // Get requirements
-      let parsedRequirements: string[] = [];
-      const requirements = formData.get('requirements');
-      if (requirements && typeof requirements === 'string' && requirements.trim()) {
-        try {
-          parsedRequirements = JSON.parse(requirements) || [];
-        } catch (e) {
-          console.warn('Failed to parse requirements, using empty array:', e);
-          parsedRequirements = [];
+      // Use the processed arrays
+      let parsedIncludedItems = includedItems;
+      let parsedRequirements = requirements;
+      
+      // Fallback: try JSON parsing if arrays are empty (for backward compatibility)
+      if (parsedIncludedItems.length === 0) {
+        const includedItemsJson = formData.get('includedItems');
+        if (includedItemsJson && typeof includedItemsJson === 'string' && includedItemsJson.trim()) {
+          try {
+            parsedIncludedItems = JSON.parse(includedItemsJson) || [];
+          } catch (e) {
+            console.warn('Failed to parse included items JSON, using empty array:', e);
+            parsedIncludedItems = [];
+          }
+        }
+      }
+
+      if (parsedRequirements.length === 0) {
+        const requirementsJson = formData.get('requirements');
+        if (requirementsJson && typeof requirementsJson === 'string' && requirementsJson.trim()) {
+          try {
+            parsedRequirements = JSON.parse(requirementsJson) || [];
+          } catch (e) {
+            console.warn('Failed to parse requirements JSON, using empty array:', e);
+            parsedRequirements = [];
+          }
         }
       }
 
