@@ -32,6 +32,12 @@
 
 	let drawerElement: HTMLDivElement;
 	let isMobile = $state(false);
+	
+	// Touch/drag state for mobile swipe-down
+	let isDragging = $state(false);
+	let startY = $state(0);
+	let currentY = $state(0);
+	let dragThreshold = 100; // pixels to drag before closing
 
 	// Check if mobile on mount and window resize
 	onMount(() => {
@@ -60,6 +66,52 @@
 		if (closeOnClickOutside) {
 			handleClose();
 		}
+	}
+
+	// Mobile drag handlers
+	function handleTouchStart(e: TouchEvent) {
+		if (!isMobile) return;
+		
+		const touch = e.touches[0];
+		startY = touch.clientY;
+		currentY = touch.clientY;
+		isDragging = true;
+	}
+
+	function handleTouchMove(e: TouchEvent) {
+		if (!isMobile || !isDragging) return;
+		
+		const touch = e.touches[0];
+		currentY = touch.clientY;
+		
+		// Only allow downward drag
+		const deltaY = currentY - startY;
+		if (deltaY > 0) {
+			// Apply transform to drawer element
+			if (drawerElement) {
+				drawerElement.style.transform = `translateY(${deltaY}px)`;
+			}
+		}
+	}
+
+	function handleTouchEnd() {
+		if (!isMobile || !isDragging) return;
+		
+		const deltaY = currentY - startY;
+		
+		// Reset transform
+		if (drawerElement) {
+			drawerElement.style.transform = '';
+		}
+		
+		// Close if dragged down enough
+		if (deltaY > dragThreshold) {
+			handleClose();
+		}
+		
+		isDragging = false;
+		startY = 0;
+		currentY = 0;
 	}
 
 	// Focus trap
@@ -118,32 +170,35 @@
 		<!-- Drawer/Modal -->
 		<div 
 			bind:this={drawerElement}
-			class="relative w-full {isMobile ? 'max-h-[90vh]' : 'max-w-6xl max-h-[85vh] my-8'} flex flex-col {isMobile ? 'rounded-t-xl' : 'rounded-xl'} shadow-xl {className}"
-			style="background: var(--bg-primary); border: 1px solid var(--border-primary); {isMobile ? 'border-bottom: none;' : ''}"
+			class="relative w-full {isMobile ? 'max-h-[90vh]' : 'max-w-4xl max-h-[85vh] my-8'} flex flex-col {isMobile ? 'rounded-t-xl' : 'rounded-xl'} shadow-xl overflow-hidden {className}"
+			style="background: var(--bg-primary); border: 1px solid var(--border-primary); {isMobile ? 'border-bottom: none;' : ''} transition: transform 0.2s ease-out;"
 			transition:fly={{ y: isMobile ? 300 : 0, duration: 200 }}
 			use:clickOutside={handleClickOutside}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={title ? 'drawer-title' : undefined}
+			ontouchstart={handleTouchStart}
+			ontouchmove={handleTouchMove}
+			ontouchend={handleTouchEnd}
 		>
 			<!-- Mobile drag handle -->
 			{#if isMobile}
-				<div class="flex justify-center py-2">
-					<div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+				<div class="flex justify-center py-3 px-6" style="cursor: grab;">
+					<div class="w-12 h-1 rounded-full" style="background: var(--border-primary);"></div>
 				</div>
 			{/if}
 			
 			<!-- Header -->
 			{#if title || showCloseButton}
-				<div class="flex items-start justify-between p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
-					<div>
+				<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
+					<div class="flex-1 min-w-0 pr-4">
 						{#if title}
-							<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
+							<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold leading-tight" style="color: var(--text-primary);">
 								{title}
 							</h2>
 						{/if}
 						{#if subtitle}
-							<p class="text-sm mt-1" style="color: var(--text-secondary);">
+							<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
 								{subtitle}
 							</p>
 						{/if}
@@ -152,7 +207,7 @@
 					{#if showCloseButton}
 						<button 
 							onclick={handleClose}
-							class="flex-shrink-0 p-2 -mt-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+							class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 							aria-label="Close"
 						>
 							<X class="h-5 w-5" style="color: var(--text-tertiary);" />
@@ -163,7 +218,9 @@
 			
 			<!-- Content -->
 			<div class="flex-1 overflow-y-auto overscroll-contain">
-				{@render children?.()}
+				<div class="px-6 py-6">
+					{@render children?.()}
+				</div>
 			</div>
 		</div>
 	</div>

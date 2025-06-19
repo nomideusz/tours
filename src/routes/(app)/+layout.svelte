@@ -222,7 +222,7 @@
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
 	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
 		<!-- App Header - Fixed at top -->
-		<div class="fixed top-0 left-0 right-0 z-50">
+		<div class="fixed top-0 left-0 right-0 z-40">
 			<AppHeader 
 				{pageTitle}
 				user={currentUserData}
@@ -325,7 +325,7 @@
 	</div>
 
 	<!-- Mobile Bottom Navigation -->
-	<div class="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary);">
+	<div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary);">
 		<nav class="flex min-w-0">
 			{#each mobileNavItems as item}
 				<a

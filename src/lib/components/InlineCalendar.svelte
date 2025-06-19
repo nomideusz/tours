@@ -63,6 +63,11 @@
 		if (!minDate) return false;
 		const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
 		const min = new Date(minDate);
+		
+		// Compare only the date part, not time
+		date.setHours(0, 0, 0, 0);
+		min.setHours(0, 0, 0, 0);
+		
 		return date < min;
 	}
 
@@ -149,7 +154,7 @@
 			{#if day}
 				<button
 					type="button"
-					onclick={() => !isPastDate(day) && selectDate(day)}
+					onclick={() => selectDate(day)}
 					disabled={isPastDate(day)}
 					class="relative h-8 w-8 sm:h-10 sm:w-10 text-sm rounded-lg transition-all"
 					style="{isSelected(day) 

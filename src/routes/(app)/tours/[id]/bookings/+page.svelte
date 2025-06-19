@@ -11,7 +11,6 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
 	// Components
-	import StatsCard from '$lib/components/StatsCard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
@@ -234,41 +233,7 @@
 		</div>
 	</div>
 	
-	<!-- Desktop Stats -->
-	<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-		<StatsCard
-			title="Total Bookings"
-			value={stats().total}
-			subtitle="{stats().confirmed} confirmed"
-			icon={Calendar}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Pending Review"
-			value={stats().pending}
-			subtitle="need attention"
-			icon={AlertCircle}
-			trend={stats().pending > 0 ? { value: 'Action needed', positive: false } : undefined}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Tour Revenue"
-			value={$globalCurrencyFormatter(stats().revenue)}
-			subtitle="from this tour"
-			icon={Euro}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Total Guests"
-			value={stats().participants}
-			subtitle="participants"
-			icon={Users}
-			variant="small"
-		/>
-	</div>
+
 	
 	<!-- Filters and Search -->
 	<div class="mb-4 space-y-3">

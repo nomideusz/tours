@@ -1,35 +1,24 @@
 <script lang="ts">
+	// @ts-nocheck
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
+	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { 
 		formatDuration,
-		getTourStatusColor,
-		getTourStatusDot,
-		getBookingStatusColor,
-		getSlotStatusColor,
-		getTourImageUrl,
 		calculateConversionRate,
 		getConversionRateText,
 		toggleTourStatus,
 		getTourBookingStatus,
-		getTourDisplayPrice,
-		getTourDisplayPriceFormatted
+		getTourDisplayPriceFormatted,
+		getTourImageUrl
 	} from '$lib/utils/tour-helpers-client.js';
 	import { 
-		formatSlotDateTime,
-		getSlotAvailabilityText,
-		getSlotStatusColor as getSlotStatusColorFromSlot,
-		getSlotStatusText,
-		getUpcomingSlots,
-		formatSlotTimeRange,
-		getScheduleSlotStatusColor,
-		getScheduleSlotStatusText,
-		getScheduleSlotStatusIcon
+		formatSlotTimeRange
 	} from '$lib/utils/time-slot-client.js';
 	import { browser } from '$app/environment';
+	import { onDestroy } from 'svelte';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -38,7 +27,6 @@
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
@@ -55,12 +43,9 @@
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
-	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Download from 'lucide-svelte/icons/download';
 	import Plus from 'lucide-svelte/icons/plus';
-	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-	import PlusCircle from 'lucide-svelte/icons/plus-circle';
 	import UserCheck from 'lucide-svelte/icons/user-check';
 
 	// Get data from load function
@@ -91,39 +76,56 @@
 	let tourStats = $derived($tourQuery.data?.tourStats || {});
 	// Use schedule data for richer slot information
 	let allTimeSlots = $derived($scheduleQuery.data?.timeSlots || []);
-	let upcomingSlots = $derived(allTimeSlots.filter((slot: any) => slot.isUpcoming));
-	let recentBookings = $derived($tourQuery.data?.recentBookings || []);
+	// @ts-ignore
+	let upcomingSlots = $derived(allTimeSlots.filter((slot) => slot.isUpcoming));
 	let isLoading = $derived($tourQuery.isLoading || $scheduleQuery.isLoading);
 	let isError = $derived($tourQuery.isError || $scheduleQuery.isError);
+	
+	// Calculate pending bookings for upcoming slots only
+	let upcomingPendingCount = $derived(
+		// @ts-ignore
+		upcomingSlots.reduce((count, slot) => count + (slot.pendingBookings || 0), 0)
+	);
 	
 	// State
 	let copiedQRCode = $state(false);
 	let copiedEmbedCode = $state(false);
 	let statusUpdating = $state(false);
-	let mobileTab = $state('qr'); // 'qr' or 'widget'
+	let showWidget = $state(false);
+	let selectedImageIndex = $state(false ? 0 : null);
 
 	// Calculate conversion rate using shared utility
 	let conversionRate = $derived(calculateConversionRate(tourStats?.qrScans || 0, tourStats?.qrConversions || 0));
+	
+	// Cleanup on destroy
+	onDestroy(() => {
+		if (browser && selectedImageIndex !== null) {
+			document.body.style.overflow = '';
+		}
+	});
 
 	// Calculate slot occupancy percentage (same as schedule page)
-	function getOccupancyPercentage(slot: any): number {
+	// @ts-ignore
+	function getOccupancyPercentage(slot) {
 		if (!slot.capacity || slot.capacity === 0) return 0;
 		return Math.round((slot.totalParticipants / slot.capacity) * 100);
 	}
 
-	function getOccupancyColor(percentage: number): string {
+	// @ts-ignore
+	function getOccupancyColor(percentage) {
 		if (percentage >= 90) return 'text-red-600 font-semibold';
 		if (percentage >= 70) return 'text-orange-600 font-medium';
 		if (percentage >= 50) return 'text-blue-600';
 		return 'text-green-600';
 	}
 
-	function quickCheckIn(slotId: string) {
+	// @ts-ignore
+	function quickCheckIn(slotId) {
 		// Navigate to check-in scanner with pre-selected slot
 		goto(`/checkin-scanner?slot=${slotId}`);
 	}
 
-	function getQRImageUrl(): string {
+	function getQRImageUrl() {
 		if (!tour.qrCode) return '';
 		const baseURL = browser ? window.location.origin : 'https://zaur.app';
 		return generateQRImageURL(tour.qrCode, {
@@ -133,14 +135,9 @@
 	}
 
 	// Get booking URL helper
-	function getBookingUrl(): string {
+	function getBookingUrl() {
 		if (!browser || !tour.qrCode) return '';
 		return `${window.location.origin}/book/${tour.qrCode}`;
-	}
-
-	// Image URL helper using shared utility
-	function getImageUrl(imagePath: string | null | undefined): string {
-		return getTourImageUrl(tour?.id || '', imagePath, 'large');
 	}
 
 	// Copy QR code to clipboard
@@ -218,7 +215,7 @@
 	}
 
 	// Embed widget functions
-	function getEmbedCode(): string {
+	function getEmbedCode() {
 		if (!browser || !tour.qrCode) return '';
 		const baseURL = window.location.origin;
 		return `<iframe src="${baseURL}/embed/book/${tour.qrCode}?theme=auto" width="100%" height="220" frameborder="0" style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border: none;"></iframe>`;
@@ -263,143 +260,30 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Success Banner for Newly Created Tours -->
-		{#if browser && $page.url.searchParams.get('created') === 'true'}
-			<div class="mb-6 rounded-xl p-4 sm:p-6" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
-				<div class="flex items-start gap-3">
-					<div class="flex-shrink-0">
-						<CheckCircle class="h-6 w-6" style="color: var(--color-success);" />
-					</div>
-					<div class="flex-1">
-						<h3 class="font-semibold mb-2" style="color: var(--color-success-900);">
-							🎉 Tour Created Successfully!
-						</h3>
-						<p class="text-sm mb-4" style="color: var(--color-success-800);">
-							Your tour "{tour.name}" has been created as a {tour.status === 'active' ? 'live' : 'draft'} tour. 
-							{#if tour.status === 'draft'}
-								It won't be visible to customers until you activate it.
-							{:else}
-								It's now live and ready to accept bookings!
-							{/if}
-						</p>
-						
-						<div class="space-y-3">
-							<h4 class="font-medium text-sm" style="color: var(--color-success-900);">Next Steps:</h4>
-							
-							{#if !upcomingSlots || upcomingSlots.length === 0}
-								<div class="flex items-start gap-3 p-3 rounded-lg" style="background: rgba(255, 255, 255, 0.5);">
-									<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-										<span class="text-xs font-bold text-blue-600">1</span>
-									</div>
-									<div>
-										<p class="font-medium text-sm" style="color: var(--color-success-900);">Add Time Slots</p>
-										<p class="text-xs mt-1" style="color: var(--color-success-700);">
-											Set up when you'll run this tour so customers can book specific times.
-										</p>
-										<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--small button--gap mt-2">
-											<Calendar class="h-3 w-3" />
-											Add Schedule
-										</button>
-									</div>
-								</div>
-							{/if}
-							
-							{#if tour.status === 'draft'}
-								<div class="flex items-start gap-3 p-3 rounded-lg" style="background: rgba(255, 255, 255, 0.5);">
-									<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-										<span class="text-xs font-bold text-green-600">{!upcomingSlots || upcomingSlots.length === 0 ? '2' : '1'}</span>
-									</div>
-									<div>
-										<p class="font-medium text-sm" style="color: var(--color-success-900);">Activate Your Tour</p>
-										<p class="text-xs mt-1" style="color: var(--color-success-700);">
-											When you're ready, activate your tour to make it visible to customers.
-										</p>
-										<button onclick={() => handleTourStatusToggle()} class="button-success button--small button--gap mt-2">
-											<CheckCircle class="h-3 w-3" />
-											Activate Tour
-										</button>
-									</div>
-								</div>
-							{/if}
-							
-							<div class="flex items-start gap-3 p-3 rounded-lg" style="background: rgba(255, 255, 255, 0.5);">
-								<div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-									<span class="text-xs font-bold text-purple-600">{tour.status === 'active' ? (!upcomingSlots || upcomingSlots.length === 0 ? '2' : '1') : (!upcomingSlots || upcomingSlots.length === 0 ? '3' : '2')}</span>
-								</div>
-								<div>
-									<p class="font-medium text-sm" style="color: var(--color-success-900);">Share Your QR Code</p>
-									<p class="text-xs mt-1" style="color: var(--color-success-700);">
-										{#if tour.status === 'active'}
-											Your tour is live! Share the QR code or booking link to start getting bookings.
-										{:else}
-											Once activated, share the QR code or booking link to start getting bookings.
-										{/if}
-									</p>
-									<div class="flex gap-2 mt-2">
-										<button onclick={() => copyQRUrl()} class="button-secondary button--small button--gap">
-											<Copy class="h-3 w-3" />
-											Copy Link
-										</button>
-										<button onclick={() => shareQR()} class="button-secondary button--small button--gap">
-											<Share2 class="h-3 w-3" />
-											Share
-										</button>
-									</div>
-								</div>
-							</div>
-						</div>
-						
-						<div class="mt-4 pt-4 border-t" style="border-color: var(--color-success-300);">
-							<div class="flex items-center justify-between">
-								<p class="text-xs" style="color: var(--color-success-700);">
-									💡 <strong>Pro tip:</strong> You can always come back to this page to manage your tour, view bookings, and track performance.
-								</p>
-								<button onclick={() => goto('/tours?refresh=true')} class="button-secondary button--small button--gap">
-									<ArrowLeft class="h-3 w-3" />
-									Back to Tours
-								</button>
-							</div>
-						</div>
-					</div>
+		<!-- Compact Success Notification -->
+		{#if browser && (page.url.searchParams.get('created') === 'true' || page.url.searchParams.get('scheduled') === 'true' || page.url.searchParams.get('edited') === 'true')}
+			{@const isCreated = page.url.searchParams.get('created') === 'true'}
+			{@const isScheduled = page.url.searchParams.get('scheduled') === 'true'}
+			{@const isEdited = page.url.searchParams.get('edited') === 'true'}
+			<div class="mb-4 rounded-lg p-3 flex items-center gap-3" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
+				<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
+				<div class="flex-1">
+					<p class="text-sm font-medium" style="color: var(--color-success-900);">
+						{#if isCreated}
+							Tour created successfully! {tour.status === 'draft' ? 'Activate it when ready.' : "It's now live!"}
+						{:else if isScheduled}
+							Schedule created! Your time slots are ready for bookings.
+						{:else if isEdited}
+							Changes saved successfully!
+						{/if}
+					</p>
 				</div>
-			</div>
-		{/if}
-		
-		<!-- Success Banner for Schedule Created -->
-		{#if browser && $page.url.searchParams.get('scheduled') === 'true'}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
-				<div class="flex items-center gap-3">
-					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
-					<div class="flex-1">
-						<p class="font-medium" style="color: var(--color-success-900);">
-							Schedule created successfully!
-						</p>
-						<p class="text-sm mt-1" style="color: var(--color-success-700);">
-							Your time slots have been added and are now available for bookings.
-						</p>
-					</div>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
-						<Calendar class="h-4 w-4" />
-						View Schedule
+				{#if isCreated && (!upcomingSlots || upcomingSlots.length === 0)}
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-primary button--small button--gap">
+						<Plus class="h-3 w-3" />
+						Add Slots
 					</button>
-				</div>
-			</div>
-		{/if}
-		
-		<!-- Success Banner for Edited Tours -->
-		{#if browser && $page.url.searchParams.get('edited') === 'true'}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
-				<div class="flex items-center gap-3">
-					<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-success);" />
-					<div class="flex-1">
-						<p class="font-medium" style="color: var(--color-success-900);">
-							Tour updated successfully!
-						</p>
-						<p class="text-sm mt-1" style="color: var(--color-success-700);">
-							Your changes have been saved and are now live.
-						</p>
-					</div>
-				</div>
+				{/if}
 			</div>
 		{/if}
 		
@@ -447,11 +331,6 @@
 			]}
 			infoItems={[
 				{
-					icon: MapPin,
-					label: 'Location',
-					value: tour.location || 'Not specified'
-				},
-				{
 					icon: Clock,
 					label: 'Duration',
 					value: formatDuration(tour.duration)
@@ -465,6 +344,11 @@
 					icon: BarChart3,
 					label: 'Bookings',
 					value: `${tourStats?.totalBookings || 0} total`
+				},
+				{
+					icon: Calendar,
+					label: 'Next slot',
+					value: upcomingSlots.length > 0 ? formatDate(upcomingSlots[0].startTime) : 'None scheduled'
 				}
 			]}
 		/>
@@ -473,7 +357,6 @@
 		<div class="hidden sm:block">
 			<PageHeader 
 				title={tour.name}
-				subtitle={tour.description}
 				breadcrumbs={[
 					{ label: 'Tours', href: '/tours?refresh=true' },
 					{ label: tour.name }
@@ -483,8 +366,25 @@
 					<ArrowLeft class="h-4 w-4" />
 					Back to Tours
 				</button>
+				
+				<!-- Tour Status Button -->
+				{@const status = getTourBookingStatus(tour)}
+				<Tooltip text={status.status === 'bookable' ? 'Click to pause bookings (set to draft)' : status.description} position="bottom">
+					<button 
+						onclick={status.status === 'draft' ? () => handleTourStatusToggle() : 
+								status.status === 'no-slots' ? () => goto(`/tours/${tour.id}/schedule`) : 
+								() => handleTourStatusToggle()}
+						disabled={statusUpdating}
+						class="button-secondary button--gap mr-6"
+						style="background-color: {status.color}; color: var(--color-white); border-color: {status.color};"
+					>
+						<span class="w-2 h-2 rounded-full {status.dotColor}"></span>
+						{status.label}
+					</button>
+				</Tooltip>
+				
 				<div class="hidden sm:flex gap-3">
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-primary button--gap">
+					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--gap">
 						<Users class="h-4 w-4" />
 						View Bookings
 					</button>
@@ -501,288 +401,388 @@
 		</div>
 	</div>
 
-	<!-- Desktop Tour Status & Quick Info -->
-	<div class="mb-8">
-		<div class="hidden sm:block rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Status</h3>
-					<div class="flex items-center gap-3">
-						<!-- Status Indicator -->
-						<div class="flex items-center gap-2">
-							{#if tour.status === 'draft'}
-								<div class="w-2 h-2 rounded-full bg-gray-400"></div>
-								<span class="text-sm" style="color: var(--text-secondary);">Draft</span>
-							{:else if getTourBookingStatus(tour).status === 'no-slots'}
-								<div class="w-2 h-2 rounded-full bg-orange-400"></div>
-								<span class="text-sm" style="color: var(--text-secondary);">Active • No time slots</span>
-							{:else}
-								<div class="w-2 h-2 rounded-full bg-green-400"></div>
-								<span class="text-sm" style="color: var(--text-secondary);">Active • Ready to book</span>
-							{/if}
-						</div>
-						
-						<!-- Primary Action -->
-						{#if getTourBookingStatus(tour).status === 'draft'}
-							<button
-								onclick={() => handleTourStatusToggle()}
-								disabled={statusUpdating}
-								class="button-success button--small button--gap"
-							>
-								{#if statusUpdating}
-									<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-									<span>Activating...</span>
-								{:else}
-									<CheckCircle class="w-4 h-4" />
-									<span>Activate</span>
-								{/if}
-							</button>
-						{:else if getTourBookingStatus(tour).status === 'no-slots'}
-							<button 
-								onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)}
-								class="button-primary button--small button--gap"
-							>
-								<Plus class="w-4 h-4" />
-								<span>Add Slots</span>
-							</button>
-						{:else}
-							<button 
-								onclick={() => goto(`/tours/${tour.id}/schedule`)}
-								class="button-secondary button--small button--gap"
-							>
-								<Calendar class="w-4 h-4" />
-								<span>Schedule</span>
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="grid grid-cols-4 gap-4 text-center">
-					<div>
-						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
-							<MapPin class="h-3 w-3" />
-							<span>Location</span>
-						</div>
-						<p class="text-sm font-medium" style="color: var(--text-primary);">{tour.location || 'Not specified'}</p>
-					</div>
-					<div>
-						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
-							<Clock class="h-3 w-3" />
-							<span>Duration</span>
-						</div>
-						<p class="text-sm font-medium" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
-					</div>
-					<div>
-						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
-							<Users class="h-3 w-3" />
-							<span>Capacity</span>
-						</div>
-						<p class="text-sm font-medium" style="color: var(--text-primary);">Max {tour.capacity}</p>
-					</div>
-					<div>
-						<div class="flex items-center justify-center gap-1 text-xs mb-1" style="color: var(--text-tertiary);">
-							<DollarSign class="h-3 w-3" />
-							<span>Price</span>
-						</div>
-						<p class="text-sm font-medium" style="color: var(--text-primary);">{getTourDisplayPriceFormatted(tour)}</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
 	<!-- Mobile-First Content Layout -->
 	
-	<!-- 1. Booking & Sharing Section - Most Important for Tour Guides -->
+	<!-- 1. QR Code & Booking - Most Important for Tour Guides -->
 	{#if tour.qrCode}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Booking & Sharing</h3>
+					<h3 class="font-semibold" style="color: var(--text-primary);">QR Code & Booking Link</h3>
 					<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
 						{tourStats?.qrScans || 0} scans • {getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)} conversion
 					</span>
 				</div>
 			</div>
 			<div class="p-4">
-				<!-- Mobile Layout: Tabbed Interface -->
+				<!-- Mobile Layout -->
 				<div class="sm:hidden">
-					<div class="flex mb-4 rounded-lg p-1" style="background: var(--bg-secondary);">
-						<button 
-							onclick={() => mobileTab = 'qr'}
-							class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200"
-							class:active={mobileTab === 'qr'}
-							style="color: {mobileTab === 'qr' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {mobileTab === 'qr' ? 'var(--bg-primary)' : 'transparent'};"
-						>
-							QR Code
-						</button>
-						<button 
-							onclick={() => mobileTab = 'widget'}
-							class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200"
-							class:active={mobileTab === 'widget'}
-							style="color: {mobileTab === 'widget' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {mobileTab === 'widget' ? 'var(--bg-primary)' : 'transparent'};"
-						>
-							Website Widget
-						</button>
-					</div>
-					
-					{#if mobileTab === 'qr'}
-						<!-- QR Code Tab -->
-						<div class="flex items-center gap-4">
-							<div class="flex-shrink-0">
-								<Tooltip text="Tap to copy booking URL" position="right">
-									<button
-										onclick={() => copyQRUrl()}
-										class="relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
-										style="border: 1px solid var(--border-primary);"
-									>
-										{#if copiedQRCode}
-											<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-												<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
-											</div>
-										{:else if browser}
-											<img 
-												src={getQRImageUrl()} 
-												alt="QR Code for {tour.name}"
-												class="w-full h-full object-cover"
-												loading="lazy"
-											/>
-										{:else}
-											<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
-												<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
-											</div>
-										{/if}
-									</button>
-								</Tooltip>
+					<div class="flex items-center gap-4">
+						<div class="flex-shrink-0">
+							<Tooltip text="Tap to copy booking URL" position="right">
+								<button
+									onclick={() => copyQRUrl()}
+									class="relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
+									style="border: 1px solid var(--border-primary);"
+								>
+									{#if copiedQRCode}
+										<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
+											<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
+										</div>
+									{:else if browser}
+										<img 
+											src={getQRImageUrl()} 
+											alt="QR Code for {tour.name}"
+											class="w-full h-full object-cover"
+											loading="lazy"
+										/>
+									{:else}
+										<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
+											<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
+										</div>
+									{/if}
+								</button>
+							</Tooltip>
+						</div>
+						<div class="flex-1 min-w-0">
+							<p class="text-sm font-medium mb-2 break-all" style="color: var(--text-primary);">{getBookingUrl()}</p>
+							<div class="flex gap-2">
+								<button onclick={() => copyQRUrl()} class="flex-1 button-primary button--small button--gap justify-center" class:opacity-50={copiedQRCode}>
+									{#if copiedQRCode}
+										<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+										Copied!
+									{:else}
+										<Copy class="h-3 w-3" />
+										Copy Link
+									{/if}
+								</button>
+								<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
+									<Share2 class="h-3 w-3" />
+								</button>
+								<a
+									href="/book/{tour.qrCode}"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="button-secondary button--small button--icon"
+								>
+									<ExternalLink class="h-3 w-3" />
+								</a>
 							</div>
-							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium mb-2 break-all" style="color: var(--text-primary);">{getBookingUrl()}</p>
-								<div class="flex gap-2">
-									<button onclick={() => copyQRUrl()} class="flex-1 button-primary button--small button--gap justify-center" class:opacity-50={copiedQRCode}>
+						</div>
+					</div>
+				</div>
+
+				<!-- Desktop Layout -->
+				<div class="hidden sm:block">
+					<div class="flex flex-col justify-center p-6 rounded-xl" style="background: var(--bg-secondary);">
+						<div class="text-center">
+							<div class="inline-block p-3 rounded-lg mb-4" style="background: var(--bg-primary);">
+								<img 
+									src={getQRImageUrl()} 
+									alt="QR Code for {tour.name}"
+									class="w-32 h-32 mx-auto"
+									loading="lazy"
+								/>
+							</div>
+							<p class="text-sm font-medium break-all px-4 py-2 rounded-md mb-4" style="color: var(--text-primary); background: var(--bg-primary);">{getBookingUrl()}</p>
+							<div class="flex justify-center gap-2">
+								<Tooltip text="Copy booking URL" position="top">
+									<button onclick={() => copyQRUrl()} class="button-primary button--gap" class:opacity-50={copiedQRCode}>
 										{#if copiedQRCode}
-											<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+											<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
 											Copied!
 										{:else}
-											<Copy class="h-3 w-3" />
+											<Copy class="h-4 w-4" />
 											Copy Link
 										{/if}
 									</button>
-									<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
-										<Share2 class="h-3 w-3" />
+								</Tooltip>
+								<Tooltip text="Share booking link" position="top">
+									<button onclick={() => shareQR()} class="button-secondary button--icon">
+										<Share2 class="h-4 w-4" />
 									</button>
-									<a
-										href="/book/{tour.qrCode}"
-										target="_blank"
-										rel="noopener noreferrer"
-										class="button-secondary button--small button--icon"
-									>
-										<ExternalLink class="h-3 w-3" />
+								</Tooltip>
+								<Tooltip text="Download QR code" position="top">
+									<button onclick={() => downloadQR()} class="button-secondary button--icon">
+										<Download class="h-4 w-4" />
+									</button>
+								</Tooltip>
+								<Tooltip text="Preview booking page" position="top">
+									<a href="/book/{tour.qrCode}" target="_blank" rel="noopener noreferrer" class="button-secondary button--icon">
+										<ExternalLink class="h-4 w-4" />
 									</a>
-								</div>
+								</Tooltip>
 							</div>
 						</div>
-					{:else}
-						<!-- Widget Tab -->
-						<div class="space-y-4">
-							<div>
-								<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Website Booking Widget</h4>
-								<p class="text-xs mb-3" style="color: var(--text-secondary);">
-									Embed this widget on your website for direct bookings
-								</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 2. Tour Overview -->
+	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<!-- Quick Stats Bar -->
+		<div class="p-4 border-b" style="background: var(--bg-secondary); border-color: var(--border-primary); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+			<div class="flex flex-wrap gap-4 justify-center text-sm">
+				<div class="flex items-center gap-2">
+					<DollarSign class="h-4 w-4" style="color: var(--text-tertiary);" />
+					<div class="flex items-baseline gap-1">
+						<span style="color: var(--text-primary);">{getTourDisplayPriceFormatted(tour)}</span>
+						{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+							<span class="text-xs" style="color: var(--text-secondary);">
+								/ {$globalCurrencyFormatter(tour.pricingTiers.child)} child
+							</span>
+						{/if}
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					<Clock class="h-4 w-4" style="color: var(--text-tertiary);" />
+					<span style="color: var(--text-primary);">{formatDuration(tour.duration)}</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<Users class="h-4 w-4" style="color: var(--text-tertiary);" />
+					<span style="color: var(--text-primary);">Max {tour.capacity}</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<MapPin class="h-4 w-4" style="color: var(--text-tertiary);" />
+					<span style="color: var(--text-primary);">{tour.location || 'Not set'}</span>
+				</div>
+				{#if tour.category}
+					<div class="flex items-center gap-2">
+						<span class="px-2 py-1 text-xs rounded-md font-medium" style="background: var(--bg-tertiary); color: var(--text-primary);">
+							{tour.category}
+						</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+		
+		<!-- Tour Details -->
+		<div class="p-4 space-y-4">
+			{#if tour.description}
+				<div>
+					<p class="text-sm" style="color: var(--text-secondary);">{tour.description}</p>
+				</div>
+			{/if}
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				{#if tour.includedItems && tour.includedItems.length > 0}
+					<div>
+						<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">What's Included</h4>
+						<ul class="space-y-1">
+							{#each tour.includedItems as item}
+								<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+									<CheckCircle class="h-4 w-4 flex-shrink-0 mt-0.5 text-green-600" />
+									<span>{item}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+				
+				{#if tour.requirements && tour.requirements.length > 0}
+					<div>
+						<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Requirements</h4>
+						<ul class="space-y-1">
+							{#each tour.requirements as requirement}
+								<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+									<span class="text-orange-600 mt-0.5">•</span>
+									<span>{requirement}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</div>
+			
+			{#if tour.cancellationPolicy}
+				<div class="pt-3 border-t" style="border-color: var(--border-primary);">
+					<h4 class="text-sm font-medium mb-2" style="color: var(--text-primary);">Cancellation Policy</h4>
+					<p class="text-sm" style="color: var(--text-secondary);">{tour.cancellationPolicy}</p>
+				</div>
+			{/if}
+		</div>
+	</div>
+
+	<!-- 3. Upcoming Schedule -->
+	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<div class="flex items-center justify-between">
+				<h3 class="font-semibold" style="color: var(--text-primary);">Upcoming Schedule</h3>
+				<div class="flex items-center gap-2">
+					{#if upcomingPendingCount > 0}
+						<span class="px-2 py-0.5 text-xs rounded-full" style="background: var(--color-warning-100); color: var(--color-warning-700); border: 1px solid var(--color-warning-200);">
+							{upcomingPendingCount} pending
+						</span>
+					{/if}
+					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
+						<Calendar class="h-3 w-3" />
+						<span class="hidden sm:inline">Full Schedule</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="p-4">
+			{#if upcomingSlots.length > 0}
+				<div class="mb-4">
+					<div class="space-y-2">
+						{#each upcomingSlots.slice(0, 5) as slot}
+							<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" 
+								style="background: var(--bg-secondary);"
+								onclick={() => goto(`/tours/${tour.id}/schedule`)}
+								onkeydown={(e) => e.key === 'Enter' && goto(`/tours/${tour.id}/schedule`)}
+								role="button"
+								tabindex="0"
+							>
+								<div class="flex-1 min-w-0">
+									<div class="flex items-center gap-3">
+										<div>
+											<p class="text-sm font-medium" style="color: var(--text-primary);">
+												{formatDate(slot.startTime)} • {formatSlotTimeRange(slot.startTime, slot.endTime)}
+											</p>
+											<div class="flex items-center gap-3 mt-1">
+												<span class="text-xs {getOccupancyColor(getOccupancyPercentage(slot))}">
+													{slot.totalParticipants}/{slot.capacity} guests
+												</span>
+												{#if slot.totalBookings > 0}
+													<span class="text-xs" style="color: var(--text-secondary);">
+														{slot.confirmedBookings} confirmed
+														{#if slot.pendingBookings > 0}
+															• {slot.pendingBookings} pending
+														{/if}
+													</span>
+												{:else}
+													<span class="text-xs" style="color: var(--text-tertiary);">No bookings yet</span>
+												{/if}
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="flex items-center gap-2">
+									{#if slot.isUpcoming}
+										<Tooltip text="Quick check-in" position="left">
+											<button 
+												onclick={(e) => { e.stopPropagation(); quickCheckIn(slot.id); }}
+												class="button-secondary button--small button--icon"
+											>
+												<UserCheck class="h-3 w-3" />
+											</button>
+										</Tooltip>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+
+				</div>
+			{:else}
+				<div class="text-center py-8">
+					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+					<p class="text-sm mb-3" style="color: var(--text-secondary);">No time slots scheduled</p>
+					<button onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)} class="button-primary button--gap">
+						<Plus class="h-4 w-4" />
+						Add Time Slots
+					</button>
+				</div>
+			{/if}
+		</div>
+	</div>
+
+	<!-- 4. Tour Gallery -->
+	{#if tour.images && tour.images.length > 0}
+		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="flex items-center justify-between">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Gallery</h3>
+					<span class="text-xs" style="color: var(--text-secondary);">{tour.images.length} {tour.images.length === 1 ? 'image' : 'images'}</span>
+				</div>
+			</div>
+			<div class="p-4">
+				<!-- Responsive Grid -->
+				<div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+					{#each tour.images as imagePath, index}
+						{@const imageUrl = getTourImageUrl(tour.id, imagePath, 'medium')}
+						{#if imageUrl && index < 11}
+							<button
+								onclick={() => selectedImageIndex = index}
+								class="aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity"
+								style="background: var(--bg-secondary); padding: 0; border: none;"
+							>
+								<img 
+									src={imageUrl} 
+									alt="{tour.name} - Image {index + 1}"
+									class="w-full h-full object-cover"
+									loading="lazy"
+								/>
+							</button>
+						{/if}
+					{/each}
+					{#if tour.images.length > 11}
+						<button
+							onclick={() => selectedImageIndex = 0}
+							class="aspect-square rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+							style="background: var(--bg-secondary); color: var(--text-secondary); border: none;"
+						>
+							<div class="text-center">
+								<span class="text-lg font-medium">+{tour.images.length - 11}</span>
+								<span class="text-xs block">more</span>
+							</div>
+						</button>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 5. Website Widget - Collapsible Advanced Feature -->
+	{#if tour.qrCode}
+		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<button
+				onclick={() => showWidget = !showWidget}
+				class="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+				style="border-radius: inherit;"
+			>
+				<div>
+					<h3 class="font-semibold" style="color: var(--text-primary);">Website Booking Widget</h3>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">
+						Embed a booking form directly on your website
+					</p>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-tertiary); color: var(--text-tertiary);">
+						Advanced
+					</span>
+					<svg 
+						class="w-5 h-5 transition-transform duration-200 {showWidget ? 'rotate-180' : ''}" 
+						style="color: var(--text-secondary);"
+						fill="none" 
+						stroke="currentColor" 
+						viewBox="0 0 24 24"
+					>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+					</svg>
+				</div>
+			</button>
+			
+			{#if showWidget}
+				<div class="border-t" style="border-color: var(--border-primary);">
+					<div class="p-4">
+						<div class="max-w-2xl mx-auto space-y-4">
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">
+								Add this widget to your website for seamless direct bookings. The widget is responsive and matches your website's theme automatically.
+							</p>
+							
+							<!-- Widget Preview -->
+							<div class="mb-4">
 								<iframe
 									src="/embed/book/{tour.qrCode}?theme=auto"
 									width="100%"
 									height="320"
 									frameborder="0"
 									title="Booking widget for {tour.name}"
-									class="bg-white rounded-lg"
-									style="border: none;"
-								></iframe>
-							</div>
-							<div>
-								<button 
-									onclick={() => copyEmbedCode()}
-									class="w-full button-secondary button--small button--gap justify-center"
-									class:opacity-50={copiedEmbedCode}
-								>
-									{#if copiedEmbedCode}
-										<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
-										Embed Code Copied!
-									{:else}
-										<Copy class="h-3 w-3" />
-										Copy Embed Code
-									{/if}
-								</button>
-							</div>
-						</div>
-					{/if}
-				</div>
-
-				<!-- Desktop Layout: Optimized Equal Height -->
-				<div class="hidden sm:block">
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-						<!-- QR Code Section -->
-						<div class="flex flex-col">
-							<h4 class="text-sm font-medium mb-4" style="color: var(--text-primary);">QR Code & Direct Link</h4>
-							<div class="flex-1 flex flex-col justify-center p-6 rounded-xl" style="background: var(--bg-secondary);">
-								<div class="text-center">
-									<div class="inline-block p-3 rounded-lg mb-4" style="background: var(--bg-primary);">
-										<img 
-											src={getQRImageUrl()} 
-											alt="QR Code for {tour.name}"
-											class="w-28 h-28 mx-auto"
-											loading="lazy"
-										/>
-									</div>
-									<p class="text-xs font-medium break-all px-3 py-2 rounded-md mb-4" style="color: var(--text-primary); background: var(--bg-primary);">{getBookingUrl()}</p>
-									<div class="flex justify-center gap-2">
-										<Tooltip text="Copy booking URL" position="top">
-											<button onclick={() => copyQRUrl()} class="button-secondary button--small button--icon" class:opacity-50={copiedQRCode}>
-												{#if copiedQRCode}
-													<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
-												{:else}
-													<Copy class="h-4 w-4" />
-												{/if}
-											</button>
-										</Tooltip>
-										<Tooltip text="Share booking link" position="top">
-											<button onclick={() => shareQR()} class="button-secondary button--small button--icon">
-												<Share2 class="h-4 w-4" />
-											</button>
-										</Tooltip>
-										<Tooltip text="Download QR code" position="top">
-											<button onclick={() => downloadQR()} class="button-secondary button--small button--icon">
-												<Download class="h-4 w-4" />
-											</button>
-										</Tooltip>
-										<Tooltip text="Preview booking page" position="top">
-											<a href="/book/{tour.qrCode}" target="_blank" rel="noopener noreferrer" class="button-secondary button--small button--icon">
-												<ExternalLink class="h-4 w-4" />
-											</a>
-										</Tooltip>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Website Widget Section -->
-						<div class="flex flex-col">
-							<h4 class="text-sm font-medium mb-4" style="color: var(--text-primary);">Website Booking Widget</h4>
-							<p class="text-sm mb-4" style="color: var(--text-secondary);">
-								Add this widget to your website for seamless direct bookings
-							</p>
-							
-							<!-- Widget Preview -->
-							<div class="flex-1 mb-4">
-								<iframe
-									src="/embed/book/{tour.qrCode}?theme=auto"
-									width="100%"
-									height="100%"
-									frameborder="0"
-									title="Booking widget for {tour.name}"
-									class="bg-white rounded-lg"
-									style="border: none; min-height: 280px;"
+									class="bg-white rounded-lg shadow-sm"
+									style="border: 1px solid var(--border-primary);"
 								></iframe>
 							</div>
 							
@@ -790,445 +790,131 @@
 							<div class="space-y-3">
 								<button 
 									onclick={() => copyEmbedCode()}
-									class="w-full button-secondary button--small button--gap justify-center"
+									class="w-full button-primary button--gap justify-center"
 									class:opacity-50={copiedEmbedCode}
 								>
 									{#if copiedEmbedCode}
-										<CheckCircle class="h-3 w-3" style="color: var(--color-success);" />
+										<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
 										Embed Code Copied!
 									{:else}
-										<Copy class="h-3 w-3" />
+										<Copy class="h-4 w-4" />
 										Copy HTML Embed Code
 									{/if}
 								</button>
 								
 								<!-- Quick Tips -->
 								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<p class="text-xs font-medium mb-1" style="color: var(--text-primary);">💡 Integration Tips:</p>
-									<ul class="text-xs space-y-0.5" style="color: var(--text-secondary);">
-										<li>• Responsive design adapts to any website</li>
-										<li>• Automatic theme detection (dark/light)</li>
-										<li>• Direct bookings without redirects</li>
-										<li>• All bookings appear in your dashboard</li>
+									<p class="text-xs font-medium mb-2" style="color: var(--text-primary);">💡 Integration Benefits:</p>
+									<ul class="text-xs space-y-1" style="color: var(--text-secondary);">
+										<li>• <strong>No redirects:</strong> Customers book directly on your site</li>
+										<li>• <strong>Responsive design:</strong> Works on desktop and mobile</li>
+										<li>• <strong>Auto theme:</strong> Matches your website's dark/light mode</li>
+										<li>• <strong>Real-time sync:</strong> All bookings appear in your dashboard</li>
 									</ul>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 	{/if}
 
-	<!-- 2. Today's Operations - Critical for Daily Use -->
-	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-4 border-b" style="border-color: var(--border-primary);">
-			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Today's Operations</h3>
-				<div class="flex gap-2">
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
-						<Calendar class="h-3 w-3" />
-						Schedule
-					</button>
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
-						<Users class="h-3 w-3" />
-						Bookings
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="p-4">
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.todayBookings || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">Today's bookings</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold text-orange-600">{tourStats?.pendingBookings || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">Pending</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold text-green-600">{tourStats?.upcomingSlots || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">Upcoming slots</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.weekBookings || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">This week</p>
-				</div>
-			</div>
-		</div>
-	</div>
+{/if}
 
-	<!-- 3. Tour Info & Actions -->
-	<div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-		<!-- Tour Information -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Tour Information</h3>
-			</div>
-			<div class="p-4 space-y-3">
-				{#if tour.category}
-					<div class="flex items-center justify-between">
-						<span class="text-sm" style="color: var(--text-secondary);">Category</span>
-						<span class="text-sm font-medium px-2 py-1 rounded-md" style="background: var(--bg-tertiary); color: var(--text-primary);">
-							{tour.category}
-						</span>
-					</div>
-				{/if}
-				<div class="flex items-center justify-between">
-					<span class="text-sm" style="color: var(--text-secondary);">Price</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">{getTourDisplayPriceFormatted(tour)} per person</span>
-				</div>
-				<div class="flex items-center justify-between">
-					<span class="text-sm" style="color: var(--text-secondary);">Duration</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">{formatDuration(tour.duration)}</span>
-				</div>
-				<div class="flex items-center justify-between">
-					<span class="text-sm" style="color: var(--text-secondary);">Capacity</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">Up to {tour.capacity} guests</span>
-				</div>
-				<div class="flex items-center justify-between">
-					<span class="text-sm" style="color: var(--text-secondary);">Location</span>
-					<span class="text-sm font-medium" style="color: var(--text-primary);">{tour.location || 'Not specified'}</span>
-				</div>
-				{#if tour.description}
-					<div class="pt-3 border-t" style="border-color: var(--border-primary);">
-						<p class="text-sm" style="color: var(--text-secondary);">
-							{tour.description}
-						</p>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Quick Actions -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Quick Actions</h3>
-			</div>
-			<div class="p-4 space-y-2">
-				<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="w-full button-primary button--gap justify-start">
-					<Users class="h-4 w-4" />
-					View All Bookings
-					{#if tourStats?.totalBookings > 0}
-						<span class="ml-auto text-xs opacity-80">{tourStats.totalBookings}</span>
-					{/if}
-				</button>
-				<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="w-full button-secondary button--gap justify-start">
-					<Calendar class="h-4 w-4" />
-					Manage Schedule
-					{#if tourStats?.upcomingSlots > 0}
-						<span class="ml-auto text-xs opacity-80">{tourStats.upcomingSlots} slots</span>
-					{/if}
-				</button>
-				<button onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)} class="w-full button-secondary button--gap justify-start">
-					<Plus class="h-4 w-4" />
-					Add Time Slot
-				</button>
-				<button onclick={() => goto('/checkin-scanner')} class="w-full button-secondary button--gap justify-start">
-					<QrCode class="h-4 w-4" />
-					Check-in Scanner
-				</button>
-				<button onclick={() => goto(`/tours/${tour.id}/edit`)} class="w-full button-secondary button--gap justify-start">
-					<Edit class="h-4 w-4" />
-					Edit Tour Details
-				</button>
-			</div>
-		</div>
-	</div>
-
-	<!-- 4. Upcoming Slots & Recent Bookings - Operational Info -->
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-		<!-- Upcoming Time Slots -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Next Slots</h3>
-					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="text-xs" style="color: var(--color-primary-600);">
-						View All
-					</button>
-				</div>
-			</div>
-			<div class="p-4">
-				{#if upcomingSlots.length > 0}
-					<div class="space-y-3">
-						{#each upcomingSlots.slice(0, 3) as slot}
-							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<!-- Mobile Layout -->
-								<div class="sm:hidden">
-									<div class="flex items-center justify-between mb-2">
-										<div class="flex-1 min-w-0">
-											<h4 class="text-sm font-medium" style="color: var(--text-primary);">
-												{formatDate(slot.startTime)}
-											</h4>
-											<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
-												{formatSlotTimeRange(slot.startTime, slot.endTime)}
-											</p>
-										</div>
-										<span class="ml-2 px-2 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
-											{getScheduleSlotStatusText(slot)}
-										</span>
-									</div>
-									
-									<div class="space-y-2">
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
-												<span class="flex items-center gap-1">
-													<Users class="h-3 w-3" />
-													{slot.totalParticipants}/{slot.capacity}
-												</span>
-												<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
-													{getOccupancyPercentage(slot)}%
-												</span>
-											</div>
-											<div class="flex gap-1">
-												{#if slot.isUpcoming}
-													<Tooltip text="Check-in">
-														<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon">
-															<UserCheck class="h-3 w-3" />
-														</button>
-													</Tooltip>
-												{/if}
-												<button onclick={() => goto(`/tours/${tour.id}/schedule?edit=${slot.id}`)} class="button-secondary button--small button--icon">
-													<Edit class="h-3 w-3" />
-												</button>
-											</div>
-										</div>
-										
-										{#if slot.totalBookings > 0}
-											<div class="text-xs p-2 rounded" style="background: var(--bg-tertiary);">
-												<div class="flex items-center justify-between mb-1">
-													<span style="color: var(--text-secondary);">Bookings:</span>
-													<span style="color: var(--text-primary);">{slot.totalBookings}</span>
-												</div>
-												<div class="flex gap-2">
-													<span class="text-green-600">{slot.confirmedBookings} confirmed</span>
-													{#if slot.pendingBookings > 0}
-														<span class="text-orange-600">{slot.pendingBookings} pending</span>
-													{/if}
-												</div>
-											</div>
-										{/if}
-									</div>
-								</div>
-
-								<!-- Desktop Layout -->
-								<div class="hidden sm:block">
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-6">
-											<div class="min-w-[140px]">
-												<h4 class="text-sm font-medium" style="color: var(--text-primary);">
-													{formatDate(slot.startTime)}
-												</h4>
-												<p class="text-xs mt-1" style="color: var(--text-secondary);">
-													{formatSlotTimeRange(slot.startTime, slot.endTime)}
-												</p>
-											</div>
-											
-											<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
-												<Tooltip text="Occupancy">
-													<div class="flex items-center gap-1">
-														<Users class="h-4 w-4" />
-														<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
-															{slot.totalParticipants}/{slot.capacity} ({getOccupancyPercentage(slot)}%)
-														</span>
-													</div>
-												</Tooltip>
-												
-												{#if slot.totalBookings > 0}
-													<div class="flex items-center gap-3">
-														<Tooltip text="Total bookings">
-															<div class="flex items-center gap-1">
-																<BarChart3 class="h-4 w-4" />
-																<span>{slot.totalBookings}</span>
-															</div>
-														</Tooltip>
-														<Tooltip text="Confirmed bookings">
-															<div class="flex items-center gap-1">
-																<CheckCircle class="h-4 w-4 text-green-600" />
-																<span>{slot.confirmedBookings}</span>
-															</div>
-														</Tooltip>
-														{#if slot.pendingBookings > 0}
-															<Tooltip text="Pending bookings">
-																<div class="flex items-center gap-1">
-																	<Clock class="h-4 w-4 text-orange-600" />
-																	<span>{slot.pendingBookings}</span>
-																</div>
-															</Tooltip>
-														{/if}
-													</div>
-												{:else}
-													<span class="text-xs" style="color: var(--text-tertiary);">No bookings</span>
-												{/if}
-											</div>
-										</div>
-										
-										<div class="flex items-center gap-3">
-											<span class="px-3 py-1 text-xs rounded-full border {getScheduleSlotStatusColor(slot)}">
-												{getScheduleSlotStatusText(slot)}
-											</span>
-											
-											<div class="flex gap-1">
-												{#if slot.isUpcoming}
-													<Tooltip text="Quick check-in">
-														<button onclick={() => quickCheckIn(slot.id)} class="button-secondary button--small button--icon">
-															<UserCheck class="h-4 w-4" />
-														</button>
-													</Tooltip>
-												{/if}
-												<Tooltip text="View bookings">
-													<button onclick={() => goto(`/tours/${tour.id}/bookings?slot=${slot.id}`)} class="button-secondary button--small button--icon">
-														<Users class="h-4 w-4" />
-													</button>
-												</Tooltip>
-												<Tooltip text="Edit time slot">
-													<button onclick={() => goto(`/tours/${tour.id}/schedule?edit=${slot.id}`)} class="button-secondary button--small button--icon">
-														<Edit class="h-4 w-4" />
-													</button>
-												</Tooltip>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="text-center py-8">
-						<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">No upcoming slots</p>
-						<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="text-xs mt-2" style="color: var(--color-primary-600);">
-							Add Time Slots
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Recent Bookings -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="text-xs" style="color: var(--color-primary-600);">
-						View All
-					</button>
-				</div>
-			</div>
-			<div class="p-4">
-				{#if recentBookings.length > 0}
-					<div class="space-y-3">
-						{#each recentBookings.slice(0, 3) as booking}
-							<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<div class="flex-1 min-w-0">
-									<p class="text-sm font-medium truncate" style="color: var(--text-primary);">{booking.customerName}</p>
-									<div class="flex items-center gap-2 mt-1">
-										<span class="text-xs" style="color: var(--text-secondary);">{booking.participants} guests</span>
-										<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-										<span class="text-xs" style="color: var(--text-secondary);">{$globalCurrencyFormatter(booking.totalAmount)}</span>
-									</div>
-								</div>
-								<span class="px-2 py-1 text-xs rounded-full {getBookingStatusColor(booking.status)}">
-									{booking.status}
-								</span>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="text-center py-8">
-						<BarChart3 class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">No bookings yet</p>
-						<button onclick={() => shareQR()} class="text-xs mt-2" style="color: var(--color-primary-600);">
-							Share QR Code
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-
-	<!-- 5. Performance Statistics - Analytics -->
-	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-4 border-b" style="border-color: var(--border-primary);">
-			<h3 class="font-semibold" style="color: var(--text-primary);">Performance Overview</h3>
-		</div>
-		<div class="p-4">
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold" style="color: var(--text-primary);">{$globalCurrencyFormatter(tourStats?.totalRevenue || 0)}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">Total revenue</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.totalBookings || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">{tourStats?.confirmedBookings || 0} confirmed</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold" style="color: var(--text-primary);">{tourStats?.totalParticipants || 0}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">Guests served</p>
-				</div>
-				<div class="text-center p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-lg font-semibold text-green-600">{getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)}</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">{tourStats?.qrScans || 0} scans</p>
-				</div>
-			</div>
-		</div>
-	</div>
-
-
-
-	<!-- 6. Tour Gallery - Visual Content (Lowest Priority) -->
-	{#if tour.images && tour.images.length > 0}
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Tour Gallery</h3>
-			</div>
-			<div class="p-4">
-				<!-- Mobile: Horizontal Scroll -->
-				<div class="sm:hidden flex gap-3 overflow-x-auto pb-2">
-					{#each tour.images.slice(0, 5) as imagePath, index}
-						{@const imageUrl = getImageUrl(imagePath)}
-						{#if imageUrl}
-							<div class="flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
-								<img 
-									src={imageUrl} 
-									alt="{tour.name} - Image {index + 1}"
-									class="w-full h-full object-cover"
-									loading="lazy"
-								/>
-							</div>
-						{/if}
-					{/each}
-					{#if tour.images.length > 5}
-						<div class="flex-shrink-0 w-24 h-16 rounded-lg flex items-center justify-center text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
-							+{tour.images.length - 5}
-						</div>
-					{/if}
-				</div>
-				
-				<!-- Desktop: Grid Layout -->
-				<div class="hidden sm:grid gap-3 grid-cols-2 lg:grid-cols-3">
-					{#each tour.images.slice(0, 6) as imagePath, index}
-						{@const imageUrl = getImageUrl(imagePath)}
-						{#if imageUrl}
-							<div class="aspect-video rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
-								<img 
-									src={imageUrl} 
-									alt="{tour.name} - Image {index + 1}"
-									class="w-full h-full object-cover"
-									loading="lazy"
-								/>
-							</div>
-						{/if}
-					{/each}
-					{#if tour.images.length > 6}
-						<div class="aspect-video rounded-lg flex items-center justify-center text-sm" style="background: var(--bg-secondary); color: var(--text-secondary);">
-							+{tour.images.length - 6} more images
-						</div>
-					{/if}
-				</div>
-			</div>
-		</div>
+<!-- Image Lightbox - Moved outside container for proper z-index layering -->
+{#if selectedImageIndex !== null && tour.images}
+	<!-- Prevent body scroll when lightbox is open -->
+	{#if browser}
+		{@const _ = (() => { 
+			document.body.style.overflow = 'hidden'; 
+			document.documentElement.style.overflow = 'hidden';
+		})()}
+		{@const __ = () => { 
+			document.body.style.overflow = ''; 
+			document.documentElement.style.overflow = '';
+		}}
 	{/if}
+	<div 
+		class="fixed inset-0 flex items-center justify-center p-4"
+		style="background: rgba(0, 0, 0, 0.95); z-index: 100;"
+		onclick={() => {
+			selectedImageIndex = null;
+			if (browser) {
+				document.body.style.overflow = '';
+				document.documentElement.style.overflow = '';
+			}
+		}}
+		role="button"
+		tabindex="0"
+		onkeydown={(e) => {
+			if (e.key === 'Escape') {
+				selectedImageIndex = null;
+				if (browser) {
+					document.body.style.overflow = '';
+					document.documentElement.style.overflow = '';
+				}
+			}
+			if (e.key === 'ArrowRight' && selectedImageIndex !== null && selectedImageIndex < tour.images.length - 1) selectedImageIndex++;
+			if (e.key === 'ArrowLeft' && selectedImageIndex !== null && selectedImageIndex > 0) selectedImageIndex--;
+		}}
+	>
+		<button
+			onclick={() => {
+				selectedImageIndex = null;
+				if (browser) {
+					document.body.style.overflow = '';
+					document.documentElement.style.overflow = '';
+				}
+			}}
+			class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+			aria-label="Close"
+		>
+			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+			</svg>
+		</button>
+		
+		<!-- Navigation arrows -->
+		{#if selectedImageIndex > 0}
+			<button
+				onclick={(e) => {
+					e.stopPropagation();
+					if (selectedImageIndex !== null) selectedImageIndex--;
+				}}
+				class="absolute left-4 text-white hover:text-gray-300 transition-colors"
+				aria-label="Previous image"
+			>
+				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+				</svg>
+			</button>
+		{/if}
+		
+		{#if selectedImageIndex < tour.images.length - 1}
+			<button
+				onclick={(e) => {
+					e.stopPropagation();
+					if (selectedImageIndex !== null) selectedImageIndex++;
+				}}
+				class="absolute right-4 text-white hover:text-gray-300 transition-colors"
+				aria-label="Next image"
+			>
+				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+				</svg>
+			</button>
+		{/if}
+		
+		<img 
+			src={getTourImageUrl(tour.id, tour.images[selectedImageIndex], 'large')} 
+			alt="{tour.name} - Image {selectedImageIndex + 1}"
+			class="max-w-full max-h-full object-contain"
+		/>
+		
+		<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+			{selectedImageIndex + 1} / {tour.images.length}
+		</div>
+	</div>
 {/if}
 </div>

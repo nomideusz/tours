@@ -10,7 +10,6 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
 	// Components
-	import StatsCard from '$lib/components/StatsCard.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
@@ -200,41 +199,7 @@
 		</div>
 	{/if}
 	
-	<!-- Quick Stats - Desktop Only -->
-	<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-		<StatsCard
-			title="Total Bookings"
-			value={isStatsLoading ? '...' : stats().total}
-			subtitle={isStatsLoading ? 'Loading...' : `${stats().confirmed} confirmed`}
-			icon={Calendar}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Pending Review"
-			value={isStatsLoading ? '...' : stats().pending}
-			subtitle={isStatsLoading ? 'Loading...' : "need attention"}
-			icon={AlertCircle}
-			trend={isStatsLoading ? undefined : (stats().pending > 0 ? { value: 'Action needed', positive: false } : undefined)}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Total Revenue"
-			value={isStatsLoading ? '...' : $globalCurrencyFormatter(stats().revenue)}
-			subtitle={isStatsLoading ? 'Loading...' : "confirmed bookings"}
-			icon={Euro}
-			variant="small"
-		/>
-		
-		<StatsCard
-			title="Total Guests"
-			value={isStatsLoading ? '...' : stats().participants}
-			subtitle={isStatsLoading ? 'Loading...' : "confirmed participants"}
-			icon={Users}
-			variant="small"
-		/>
-	</div>
+
 	
 	<!-- Bookings List -->
 	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">

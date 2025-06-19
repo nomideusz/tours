@@ -17,10 +17,10 @@
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import TimeSlotForm from '$lib/components/TimeSlotForm.svelte';
+	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -33,10 +33,8 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import XCircle from 'lucide-svelte/icons/x-circle';
-	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
-	import Loader2 from 'lucide-svelte/icons/loader-2';
+
 	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
-	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Download from 'lucide-svelte/icons/download';
@@ -46,11 +44,24 @@
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
 	
-	// Check for query parameters to auto-open drawer
+	// Check for query parameters to auto-open drawer or show welcome
 	$effect(() => {
 		if (browser && page.url) {
 			const searchParams = page.url.searchParams;
-			if (searchParams.get('new') === 'true') {
+			
+			// Handle welcome parameter for newly created tours
+			if (searchParams.get('welcome') === 'true') {
+				showWelcome = true;
+				hadScheduledSlots = searchParams.get('scheduled') === 'true';
+				
+				// Don't auto-open drawer - let user read message and choose when ready
+				
+				// Clean up URL
+				const newUrl = new URL(page.url);
+				newUrl.searchParams.delete('welcome');
+				newUrl.searchParams.delete('scheduled');
+				window.history.replaceState({}, '', newUrl.pathname + newUrl.search);
+			} else if (searchParams.get('new') === 'true') {
 				// Open drawer for new slot
 				openNewSlot();
 				// Clean up URL
@@ -101,11 +112,24 @@
 	let showSlotDrawer = $state(false);
 	let editingSlotId = $state<string | undefined>(undefined);
 	let successMessage = $state<string | null>(null);
+	let showWelcome = $state(false);
+	let hadScheduledSlots = $state(false);
+	let preselectedDate = $state<string | undefined>(undefined);
 
 	// Separate upcoming and past slots
 	let upcomingSlots = $derived(timeSlots.filter((slot: any) => slot.isUpcoming));
 	let pastSlots = $derived(timeSlots.filter((slot: any) => slot.isPast));
 	let displayedSlots = $derived(selectedView === 'upcoming' ? upcomingSlots : pastSlots);
+
+	// Create slots map for MiniMonthCalendar
+	let slotsMap = $derived(() => {
+		const map = new Map<string, number>();
+		timeSlots.forEach((slot: any) => {
+			const date = new Date(slot.startTime).toISOString().split('T')[0];
+			map.set(date, (map.get(date) || 0) + 1);
+		});
+		return map;
+	});
 
 	// Today's slots for quick reference
 	let todaySlots = $derived(() => {
@@ -120,18 +144,18 @@
 		});
 	});
 
-	// Refresh function
-	function handleRefresh() {
-		$scheduleQuery.refetch();
-		$tourQuery.refetch();
-	}
-
 	// Handle success from TimeSlotForm
 	function handleSlotSuccess() {
 		const wasEditing = !!editingSlotId;
 		showSlotDrawer = false;
 		editingSlotId = undefined;
+		preselectedDate = undefined;
 		successMessage = wasEditing ? 'Time slot updated successfully!' : 'Time slot created successfully!';
+		
+		// Dismiss welcome message if first slot was created
+		if (showWelcome && !wasEditing) {
+			showWelcome = false;
+		}
 		
 		// Clear success message after 5 seconds
 		setTimeout(() => {
@@ -140,15 +164,35 @@
 	}
 
 	// Handle opening drawer for new slot
-	function openNewSlot() {
+	function openNewSlot(date?: string) {
 		editingSlotId = undefined;
+		preselectedDate = date;
 		showSlotDrawer = true;
 	}
 
 	// Handle opening drawer for editing
 	function openEditSlot(slotId: string) {
 		editingSlotId = slotId;
+		preselectedDate = undefined;
 		showSlotDrawer = true;
+	}
+
+	// Handle calendar date click
+	function handleCalendarDateClick(date: string) {
+		// Check if there are existing slots on this date
+		const slotsOnDate = timeSlots.filter((slot: any) => {
+			const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
+			return slotDate === date;
+		});
+
+		if (slotsOnDate.length > 0) {
+			// If slots exist, scroll to them or filter view
+			// For now, just open new slot form with date preselected
+			openNewSlot(date);
+		} else {
+			// No slots on this date, open form to create one
+			openNewSlot(date);
+		}
 	}
 
 	function getBookingRateColor(rate: number): string {
@@ -209,14 +253,14 @@
 </script>
 
 <svelte:head>
-	<title>{tour?.name || 'Tour'} Schedule - Zaur</title>
-	<meta name="description" content="Manage time slots and schedule for {tour?.name || 'your tour'}" />
+	<title>{showWelcome ? `Set up ${tour?.name || 'Tour'} Schedule` : `${tour?.name || 'Tour'} Schedule`} - Zaur</title>
+	<meta name="description" content="{showWelcome ? 'Add time slots to make your tour bookable' : 'Manage time slots and schedule'} for {tour?.name || 'your tour'}" />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<div class="p-8 text-center">
-			<Loader2 class="w-8 h-8 mx-auto mb-2 animate-spin" style="color: var(--text-tertiary);" />
+			<div class="w-8 h-8 mx-auto mb-2 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
 			<p class="text-sm" style="color: var(--text-secondary);">Loading schedule...</p>
 		</div>
 	{:else if isError || !tour}
@@ -236,22 +280,14 @@
 		<div class="mb-6 sm:mb-8">
 			<!-- Mobile Header -->
 			<MobilePageHeader
-				title="Schedule"
-				secondaryInfo={tour.name}
+				title={showWelcome ? "Schedule Setup" : "Schedule"}
+				secondaryInfo={showWelcome ? "Add your first time slots" : tour.name}
 				quickActions={[
 					{
 						label: 'Add Slot',
 						icon: Plus,
-						onclick: openNewSlot,
+						onclick: () => openNewSlot(),
 						variant: 'primary'
-					},
-					{
-						label: 'Refresh',
-						icon: RefreshCw,
-						onclick: handleRefresh,
-						variant: 'secondary',
-						size: 'icon',
-						disabled: isLoading
 					}
 				]}
 				infoItems={[
@@ -281,8 +317,8 @@
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
 				<PageHeader 
-					title="Tour Schedule"
-					subtitle="Manage time slots and availability for {tour.name}"
+					title={showWelcome ? "Schedule Setup" : "Tour Schedule"}
+					subtitle={showWelcome ? "Add time slots to make your tour bookable" : "Manage time slots and availability for {tour.name}"}
 					breadcrumbs={[
 						{ label: 'Tours', href: '/tours' },
 						{ label: tour.name, href: `/tours/${tourId}` },
@@ -293,30 +329,69 @@
 						<ArrowLeft class="h-4 w-4" />
 						Back to Tour
 					</button>
-					<div class="flex gap-3">
-						<button
-							onclick={handleRefresh}
-							disabled={isLoading}
-							class="button-secondary button--gap"
-						>
-							{#if isLoading}
-								<Loader2 class="h-4 w-4 animate-spin" />
-							{:else}
-								<RefreshCw class="h-4 w-4" />
-							{/if}
-							Refresh
-						</button>
-						<button 
-							onclick={openNewSlot}
-							class="button-primary button--gap"
-						>
-							<Plus class="h-4 w-4" />
-							Add Time Slot
-						</button>
-					</div>
+					<button 
+						onclick={() => openNewSlot()}
+						class="button-primary button--gap"
+					>
+						<Plus class="h-4 w-4" />
+						Add Time Slot
+					</button>
 				</PageHeader>
 			</div>
 		</div>
+
+		<!-- Setup Guide for New Tours -->
+		{#if showWelcome}
+			<div class="mb-6 rounded-xl p-6" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+				<div class="flex items-start gap-4">
+					<div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--color-success-600);">
+						<CheckCircle class="h-6 w-6 text-white" />
+					</div>
+					<div class="flex-1">
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--color-success-900);">
+							🎉 Tour "{tour?.name}" created successfully!
+						</h3>
+						<p class="text-sm mb-4" style="color: var(--color-success-800);">
+							{#if hadScheduledSlots}
+								Your initial time slots are ready! You can add more slots below or edit existing ones.
+							{:else}
+								Ready for the next step? Add time slots so customers can book your tour. This makes your tour live and bookable.
+							{/if}
+						</p>
+						<div class="flex flex-col sm:flex-row gap-3 mb-4">
+							<div class="flex items-center gap-2 text-sm" style="color: var(--color-success-700);">
+								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-success-600);">1</span>
+								<span class="font-medium">✅ Tour Created</span>
+							</div>
+							<div class="flex items-center gap-2 text-sm" style="color: var(--text-primary);">
+								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-primary-600);">2</span>
+								<span class="font-medium">📅 Add Time Slots</span>
+							</div>
+							<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+								<span class="w-6 h-6 border-2 rounded-full flex items-center justify-center text-xs font-semibold" style="border-color: var(--border-secondary); color: var(--text-secondary);">3</span>
+								<span>Tour Goes Live</span>
+							</div>
+						</div>
+						<div class="flex flex-col sm:flex-row gap-3">
+							<button 
+								onclick={() => { showWelcome = false; openNewSlot(); }}
+								class="button-primary button--gap"
+							>
+								<Plus class="h-4 w-4" />
+								{hadScheduledSlots ? 'Add More Slots' : 'Add First Time Slot'}
+							</button>
+							<button 
+								onclick={() => showWelcome = false}
+								class="text-sm underline hover:no-underline"
+								style="color: var(--text-secondary);"
+							>
+								I'll do this later
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Success Message -->
 		{#if successMessage}
@@ -331,67 +406,6 @@
 				</div>
 			</div>
 		{/if}
-
-		<!-- Schedule Stats - Desktop Only -->
-		<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-			<StatsCard
-				title="Total Slots"
-				value={scheduleStats.totalSlots || 0}
-				subtitle="{scheduleStats.upcomingSlots || 0} upcoming"
-				icon={Calendar}
-				variant="small"
-			/>
-			
-			<StatsCard
-				title="Total Bookings"
-				value={scheduleStats.totalBookings || 0}
-				subtitle="across all slots"
-				icon={Users}
-				trend={scheduleStats.pendingBookings > 0 ? { value: `${scheduleStats.pendingBookings} pending`, positive: false } : undefined}
-				variant="small"
-			/>
-			
-			<StatsCard
-				title="Capacity Utilization"
-				value="{scheduleStats.averageBookingRate || 0}%"
-				subtitle="average occupancy"
-				icon={TrendingUp}
-				variant="small"
-			/>
-			
-			<StatsCard
-				title="Today's Schedule"
-				value={todaySlots().length}
-				subtitle="time slots today"
-				icon={Clock}
-				trend={todaySlots().length > 0 ? { value: `${todaySlots().reduce((sum: number, slot: any) => sum + slot.totalParticipants, 0)} guests`, positive: true } : undefined}
-				variant="small"
-			/>
-		</div>
-
-		<!-- Tour Capacity Info -->
-		<div class="mb-6 rounded-xl p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-						<Users class="h-4 w-4 text-blue-600" />
-					</div>
-					<div>
-						<p class="font-medium" style="color: var(--text-primary);">Tour Capacity: {tour.capacity} bookings per slot</p>
-						<p class="text-sm" style="color: var(--text-secondary);">
-							Each time slot can accept up to {tour.capacity} bookings. Each booking can have multiple participants. 
-							{#if scheduleStats.totalSlots > 0}
-								Current utilization: <span class="{getBookingRateColor(scheduleStats.averageBookingRate || 0)}">{scheduleStats.averageBookingRate || 0}%</span>
-							{/if}
-						</p>
-					</div>
-				</div>
-				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
-					<Edit class="h-4 w-4" />
-					Edit Tour
-				</button>
-			</div>
-		</div>
 
 		<!-- Today's Slots - Quick Overview -->
 		{#if todaySlots().length > 0}
@@ -457,42 +471,87 @@
 			</div>
 		{/if}
 
-		<!-- View Tabs -->
-		<div class="mb-4 flex items-center justify-between">
-			<div class="flex gap-1 p-1 rounded-lg" style="background: var(--bg-secondary);">
-				<button
-					onclick={() => { selectedView = 'upcoming'; clearSelection(); }}
-					class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'upcoming' ? 'bg-white shadow-sm' : ''}"
-					style="color: {selectedView === 'upcoming' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
-				>
-					Upcoming ({upcomingSlots.length})
-				</button>
-				<button
-					onclick={() => { selectedView = 'past'; clearSelection(); }}
-					class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'past' ? 'bg-white shadow-sm' : ''}"
-					style="color: {selectedView === 'past' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
-				>
-					Past ({pastSlots.length})
-				</button>
+		<!-- Main Content Grid -->
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+			<!-- Desktop Calendar Sidebar (Left) -->
+			<div class="hidden lg:block lg:col-span-1">
+				<div class="sticky top-6 space-y-4">
+					<MiniMonthCalendar
+						slotsMap={slotsMap()}
+						selectedDate={preselectedDate}
+						onDateClick={handleCalendarDateClick}
+						class="w-full"
+					/>
+					
+					<!-- Quick Stats -->
+					<div class="rounded-xl p-4 w-full" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Month Overview</h4>
+						<div class="space-y-2 text-sm">
+							<div class="flex justify-between">
+								<span style="color: var(--text-secondary);">Total Slots</span>
+								<span style="color: var(--text-primary);">{timeSlots.length}</span>
+							</div>
+							<div class="flex justify-between">
+								<span style="color: var(--text-secondary);">Avg. Occupancy</span>
+								<span class="{getBookingRateColor(scheduleStats.averageBookingRate || 0)}">{scheduleStats.averageBookingRate || 0}%</span>
+							</div>
+							<div class="flex justify-between">
+								<span style="color: var(--text-secondary);">Total Bookings</span>
+								<span style="color: var(--text-primary);">{scheduleStats.totalBookings || 0}</span>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 
-			{#if showBulkActions}
-				<div class="flex items-center gap-2">
-					<span class="text-sm" style="color: var(--text-secondary);">
-						{selectedSlots.size} selected
-					</span>
-					<button onclick={clearSelection} class="button-secondary button--small">
-						Clear
-					</button>
-					<button onclick={bulkDelete} class="button--danger button--gap button--small">
-						<Trash2 class="h-4 w-4" />
-						Delete
-					</button>
+			<!-- Main Content (Right) -->
+			<div class="lg:col-span-3">
+				<!-- Mobile Calendar (Above tabs) -->
+				<div class="lg:hidden mb-4">
+					<MiniMonthCalendar
+						slotsMap={slotsMap()}
+						selectedDate={preselectedDate}
+						onDateClick={handleCalendarDateClick}
+						class="w-full"
+					/>
 				</div>
-			{/if}
-		</div>
 
-		<!-- Time Slots List -->
+				<!-- View Tabs -->
+				<div class="mb-4 flex items-center justify-between">
+					<div class="flex gap-1 p-1 rounded-lg" style="background: var(--bg-secondary);">
+						<button
+							onclick={() => { selectedView = 'upcoming'; clearSelection(); }}
+							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'upcoming' ? 'bg-white shadow-sm' : ''}"
+							style="color: {selectedView === 'upcoming' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+						>
+							Upcoming ({upcomingSlots.length})
+						</button>
+						<button
+							onclick={() => { selectedView = 'past'; clearSelection(); }}
+							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'past' ? 'bg-white shadow-sm' : ''}"
+							style="color: {selectedView === 'past' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+						>
+							Past ({pastSlots.length})
+						</button>
+					</div>
+
+					{#if showBulkActions}
+						<div class="flex items-center gap-2">
+							<span class="text-sm" style="color: var(--text-secondary);">
+								{selectedSlots.size} selected
+							</span>
+							<button onclick={clearSelection} class="button-secondary button--small">
+								Clear
+							</button>
+							<button onclick={bulkDelete} class="button--danger button--gap button--small">
+								<Trash2 class="h-4 w-4" />
+								Delete
+							</button>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Time Slots List -->
 		{#if displayedSlots.length > 0}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -704,7 +763,7 @@
 							: 'Past time slots will appear here after they complete'}
 					</p>
 					{#if selectedView === 'upcoming'}
-						<button onclick={openNewSlot} class="button-primary button--gap">
+						<button onclick={() => openNewSlot()} class="button-primary button--gap">
 							<Plus class="h-4 w-4" />
 							Add First Time Slot
 						</button>
@@ -713,16 +772,9 @@
 			</div>
 		{/if}
 
-		<!-- Quick Tips -->
-		<div class="mt-6 p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<h3 class="font-medium mb-2" style="color: var(--text-primary);">Quick Tips</h3>
-			<ul class="space-y-1 text-sm" style="color: var(--text-secondary);">
-				<li>• Click the "Add Time Slot" button to create new slots for bookings</li>
-				<li>• Edit existing slots by clicking the edit icon on each slot</li>
-				<li>• Select multiple slots to perform bulk actions like deletion</li>
-				<li>• Time slots inherit the tour's default capacity but can be adjusted individually</li>
-			</ul>
-		</div>
+			</div><!-- End Main Content (lg:col-span-3) -->
+		</div><!-- End Grid -->
+
 	{/if}
 </div>
 
@@ -734,6 +786,7 @@
 	onClose={() => {
 		showSlotDrawer = false;
 		editingSlotId = undefined;
+		preselectedDate = undefined;
 	}}
 >
 	{#snippet children()}
@@ -742,10 +795,12 @@
 			slotId={editingSlotId}
 			tour={tour}
 			mode="modal"
+			preselectedDate={preselectedDate}
 			onSuccess={handleSlotSuccess}
 			onCancel={() => {
 				showSlotDrawer = false;
 				editingSlotId = undefined;
+				preselectedDate = undefined;
 			}}
 		/>
 	{/snippet}

@@ -16,7 +16,6 @@
 		getTourDisplayPriceFormatted
 	} from '$lib/utils/tour-helpers-client.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
@@ -668,44 +667,7 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Performance Overview - Using StatsCard for consistency -->
-		<div class="hidden sm:block mb-8">
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-				<StatsCard
-					title="Total Tours"
-					value={stats.totalTours}
-					subtitle="{stats.activeTours} active"
-					icon={MapPin}
-					trend={stats.monthlyTours > 0 ? { value: `+${stats.monthlyTours} this month`, positive: true } : undefined}
-					variant="small"
-				/>
 
-				<StatsCard
-					title="Total Bookings"
-					value={stats.totalBookings}
-					subtitle="all time"
-					icon={BarChart3}
-					variant="small"
-				/>
-
-				<StatsCard
-					title="Monthly Revenue"
-											value={$globalCurrencyFormatter(stats.monthRevenue)}
-					subtitle="this month"
-					icon={DollarSign}
-					trend={stats.monthRevenue > 0 ? { value: "This month", positive: true } : undefined}
-					variant="small"
-				/>
-
-				<StatsCard
-					title="Total Participants"
-					value={stats.totalParticipants}
-					subtitle="all guests served"
-					icon={Users}
-					variant="small"
-				/>
-			</div>
-		</div>
 
 		<!-- Tours List -->
 		<div class="space-y-4">
