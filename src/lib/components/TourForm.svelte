@@ -228,176 +228,7 @@
 		return validation.isValid;
 	}
 
-	// Smart list management for included items
-	function handleIncludedItemInput(index: number, event: Event) {
-		const target = event.target as HTMLInputElement;
-		const value = target.value;
-		
-		// Update the value
-		formData.includedItems[index] = value;
-		
-		// Auto-cleanup: remove empty items (except the last one)
-		if (index < formData.includedItems.length - 1 && !value.trim()) {
-			setTimeout(() => {
-				if (formData.includedItems[index] === '' && index < formData.includedItems.length - 1) {
-					formData.includedItems = formData.includedItems.filter((_, i) => i !== index);
-				}
-			}, 500); // Small delay to avoid removing while user is still typing
-		}
-	}
 
-	function handleIncludedItemBlur(index: number, event: Event) {
-		const target = event.target as HTMLInputElement;
-		const value = target.value.trim();
-		
-		// Auto-expand: if this is the last item and it has content, add a new empty item
-		if (index === formData.includedItems.length - 1 && value) {
-			formData.includedItems = [...formData.includedItems, ''];
-		}
-	}
-
-	function handleIncludedItemKeyDown(index: number, event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault(); // Prevent form submission
-			const currentValue = formData.includedItems[index]?.trim();
-			
-			// If current field has content and it's the last field, add new field and focus it
-			if (currentValue && index === formData.includedItems.length - 1) {
-				formData.includedItems = [...formData.includedItems, ''];
-				
-				// Focus the new field after DOM update
-				setTimeout(() => {
-					const nextInput = document.querySelector(`input[name="includedItems"]:nth-of-type(${index + 2})`) as HTMLInputElement;
-					if (nextInput) {
-						nextInput.focus();
-					}
-				}, 10);
-			}
-		}
-		
-		if (event.key === 'Tab') {
-			const currentValue = formData.includedItems[index]?.trim();
-			
-			// If current field has content and it's the last field, add new field
-			if (currentValue && index === formData.includedItems.length - 1) {
-				formData.includedItems = [...formData.includedItems, ''];
-				// Don't prevent default for Tab - let it naturally focus the next field
-			}
-		}
-		
-		// Handle backspace on empty field to remove it
-		if (event.key === 'Backspace' && !formData.includedItems[index] && formData.includedItems.length > 1) {
-			event.preventDefault();
-			formData.includedItems = formData.includedItems.filter((_, i) => i !== index);
-			
-			// Focus previous field
-			setTimeout(() => {
-				const prevIndex = Math.max(0, index - 1);
-				const prevInput = document.querySelector(`input[name="includedItems"]:nth-of-type(${prevIndex + 1})`) as HTMLInputElement;
-				if (prevInput) {
-					prevInput.focus();
-				}
-			}, 10);
-		}
-	}
-
-	// Smart list management for requirements
-	function handleRequirementInput(index: number, event: Event) {
-		const target = event.target as HTMLInputElement;
-		const value = target.value;
-		
-		// Update the value
-		formData.requirements[index] = value;
-		
-		// Auto-cleanup: remove empty items (except the last one)
-		if (index < formData.requirements.length - 1 && !value.trim()) {
-			setTimeout(() => {
-				if (formData.requirements[index] === '' && index < formData.requirements.length - 1) {
-					formData.requirements = formData.requirements.filter((_, i) => i !== index);
-				}
-			}, 500); // Small delay to avoid removing while user is still typing
-		}
-	}
-
-	function handleRequirementBlur(index: number, event: Event) {
-		const target = event.target as HTMLInputElement;
-		const value = target.value.trim();
-		
-		// Auto-expand: if this is the last item and it has content, add a new empty item
-		if (index === formData.requirements.length - 1 && value) {
-			formData.requirements = [...formData.requirements, ''];
-		}
-	}
-
-	function handleRequirementKeyDown(index: number, event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			event.preventDefault(); // Prevent form submission
-			const currentValue = formData.requirements[index]?.trim();
-			
-			// If current field has content and it's the last field, add new field and focus it
-			if (currentValue && index === formData.requirements.length - 1) {
-				formData.requirements = [...formData.requirements, ''];
-				
-				// Focus the new field after DOM update
-				setTimeout(() => {
-					const nextInput = document.querySelector(`input[name="requirements"]:nth-of-type(${index + 2})`) as HTMLInputElement;
-					if (nextInput) {
-						nextInput.focus();
-					}
-				}, 10);
-			}
-		}
-		
-		if (event.key === 'Tab') {
-			const currentValue = formData.requirements[index]?.trim();
-			
-			// If current field has content and it's the last field, add new field
-			if (currentValue && index === formData.requirements.length - 1) {
-				formData.requirements = [...formData.requirements, ''];
-				// Don't prevent default for Tab - let it naturally focus the next field
-			}
-		}
-		
-		// Handle backspace on empty field to remove it
-		if (event.key === 'Backspace' && !formData.requirements[index] && formData.requirements.length > 1) {
-			event.preventDefault();
-			formData.requirements = formData.requirements.filter((_, i) => i !== index);
-			
-			// Focus previous field
-			setTimeout(() => {
-				const prevIndex = Math.max(0, index - 1);
-				const prevInput = document.querySelector(`input[name="requirements"]:nth-of-type(${prevIndex + 1})`) as HTMLInputElement;
-				if (prevInput) {
-					prevInput.focus();
-				}
-			}, 10);
-		}
-	}
-
-	// Get smart placeholder text based on position
-	function getIncludedItemPlaceholder(index: number): string {
-		const placeholders = [
-			"e.g., Professional tour guide",
-			"e.g., Historical insights and stories", 
-			"e.g., Photo opportunities at key spots",
-			"e.g., Small group experience (max 12 people)",
-			"e.g., Route map and recommendations",
-			"Add another item..."
-		];
-		return placeholders[Math.min(index, placeholders.length - 1)];
-	}
-
-	function getRequirementPlaceholder(index: number): string {
-		const placeholders = [
-			"e.g., Comfortable walking shoes",
-			"e.g., Basic fitness level required",
-			"e.g., Weather-appropriate clothing",
-			"e.g., Ability to walk for 2+ hours",
-			"e.g., Must be 16+ years old",
-			"Add another requirement..."
-		];
-		return placeholders[Math.min(index, placeholders.length - 1)];
-	}
 
 	// Cancellation Policy Templates
 	let selectedPolicyTemplate = $state('');
@@ -421,18 +252,6 @@
 			name: '🔴 Strict',
 			description: 'Free cancellation up to 7 days',
 			policy: 'Free cancellation up to 7 days before the tour starts. For cancellations between 7-3 days: 50% refund. For cancellations within 3 days: no refund.'
-		},
-		{
-			id: 'weather',
-			name: '🌦️ Weather-Dependent',
-			description: 'Flexible for weather conditions',
-			policy: 'Free cancellation up to 24 hours before the tour starts. Tours may be cancelled due to severe weather conditions with full refund. Alternative dates will be offered when possible.'
-		},
-		{
-			id: 'group',
-			name: '👥 Group-Friendly',
-			description: 'Flexible for group bookings',
-			policy: 'Free cancellation up to 48 hours before the tour starts. For group bookings (5+ people), free cancellation up to 72 hours. Partial cancellations allowed with 24-hour notice.'
 		}
 	];
 
@@ -464,101 +283,10 @@
 		}
 	});
 
-	// Sticky save button state
-	let showStickySave = $state(false);
-	let saveButtonRef: HTMLElement | null = null;
 
-	// Monitor scroll position to show/hide sticky save button
-	function handleScroll() {
-		if (typeof window === 'undefined' || !saveButtonRef) return;
-		
-		const saveButtonRect = saveButtonRef.getBoundingClientRect();
-		const isButtonVisible = saveButtonRect.top >= 0 && saveButtonRect.bottom <= window.innerHeight;
-		
-		// Show sticky button when original is not visible and user has scrolled down
-		showStickySave = !isButtonVisible && window.scrollY > 200;
-	}
-
-	// Set up scroll listener
-	$effect(() => {
-		if (typeof window !== 'undefined') {
-			window.addEventListener('scroll', handleScroll, { passive: true });
-			window.addEventListener('resize', handleScroll, { passive: true });
-			
-			return () => {
-				window.removeEventListener('scroll', handleScroll);
-				window.removeEventListener('resize', handleScroll);
-			};
-		}
-	});
-
-	// Handle sticky save button click
-	function handleStickySave() {
-		const form = document.querySelector('form');
-		if (form) {
-			form.requestSubmit();
-		}
-	}
-
-	// Calculate form completion percentage
-	let formProgress = $derived(() => {
-		const requiredFields = [
-			formData.name,
-			formData.description,
-			formData.price,
-			formData.duration,
-			formData.capacity
-		];
-		
-		const optionalFields = [
-			formData.category,
-			formData.location,
-			formData.cancellationPolicy,
-			formData.includedItems.filter(item => item.trim()).length > 0,
-			formData.requirements.filter(req => req.trim()).length > 0
-		];
-		
-		const completedRequired = requiredFields.filter(field => 
-			field !== null && field !== undefined && String(field).trim() !== ''
-		).length;
-		
-		const completedOptional = optionalFields.filter(field => 
-			field !== null && field !== undefined && field !== false && String(field).trim() !== ''
-		).length;
-		
-		const requiredProgress = (completedRequired / requiredFields.length) * 70; // 70% for required
-		const optionalProgress = (completedOptional / optionalFields.length) * 30; // 30% for optional
-		
-		return Math.round(requiredProgress + optionalProgress);
-	});
-
-	// Legacy functions for backward compatibility (kept for any existing references)
-	function addIncludedItem() {
-		formData.includedItems = [...formData.includedItems, ''];
-	}
-
-	function removeIncludedItem(index: number) {
-		formData.includedItems = formData.includedItems.filter((_, i) => i !== index);
-	}
-
-	function addRequirement() {
-		formData.requirements = [...formData.requirements, ''];
-	}
-
-	function removeRequirement(index: number) {
-		formData.requirements = formData.requirements.filter((_, i) => i !== index);
-	}
 
 	function getImagePreview(file: File): string {
 		return URL.createObjectURL(file);
-	}
-
-	// Mobile-specific file input handling for better compatibility
-	function triggerFileInput() {
-		const fileInput = document.getElementById('images-upload') as HTMLInputElement;
-		if (fileInput) {
-			fileInput.click();
-		}
 	}
 
 	// Mobile error handling - scroll to first error
@@ -577,15 +305,6 @@
 		}, 100);
 	}
 
-	// Enhanced validation functions with mobile scroll
-	function validateFieldRealtimeWithScroll(fieldName: string) {
-		validateFieldRealtime(fieldName);
-	}
-
-	function validateFieldWithScroll(fieldName: string) {
-		validateField(fieldName);
-	}
-
 	// Enhanced validate function for mobile
 	export function validateWithMobileSupport() {
 		const isValid = validate();
@@ -595,39 +314,22 @@
 		return isValid;
 	}
 
-	// Pricing tiers toggle handler
-	function handlePricingTiersToggle() {
-		if (formData.enablePricingTiers) {
-			// Initialize pricing tiers with current price as adult price
-			formData.pricingTiers = {
-				adult: formData.price || 0,
-				child: 0
-			};
-		} else {
-			// When switching back to single pricing, use adult price as the main price
-			if (formData.pricingTiers.adult > 0) {
-				formData.price = formData.pricingTiers.adult;
-			}
-			// Reset pricing tiers
-			formData.pricingTiers = {
-				adult: 0,
-				child: 0
-			};
-		}
-	}
-
-	// State for child price to handle undefined values
+	// Optional child pricing
+	let showChildPrice = $state(false);
 	let childPrice = $state(0);
 
-	// Sync child price with formData
+	// Initialize child price visibility based on existing data
 	$effect(() => {
-		childPrice = formData.pricingTiers?.child ?? 0;
+		if (formData.pricingTiers?.child && formData.pricingTiers.child > 0) {
+			showChildPrice = true;
+			childPrice = formData.pricingTiers.child;
+		}
 	});
 
 	// Update formData when child price changes
 	$effect(() => {
 		if (formData.pricingTiers) {
-			formData.pricingTiers.child = childPrice;
+			formData.pricingTiers.child = showChildPrice ? childPrice : undefined;
 		}
 	});
 
@@ -710,21 +412,64 @@
 						<label for="category" class="form-label">
 							Category
 						</label>
-						<select
-							id="category"
-							name="category"
-							bind:value={formData.category}
-							class="form-select"
-						>
-							<option value="">Select category</option>
-							<option value="walking">Walking Tour</option>
-							<option value="food">Food Tour</option>
-							<option value="cultural">Cultural Tour</option>
-							<option value="historical">Historical Tour</option>
-							<option value="art">Art Tour</option>
-							<option value="adventure">Adventure Tour</option>
-							<option value="other">Other</option>
-						</select>
+						
+						<div class="flex flex-wrap gap-2">
+							{#each [
+								{ id: 'walking', name: 'Walking', icon: '👥' },
+								{ id: 'food', name: 'Food', icon: '🍴' },
+								{ id: 'cultural', name: 'Cultural', icon: '🏛' },
+								{ id: 'historical', name: 'Historical', icon: '📖' },
+								{ id: 'art', name: 'Art', icon: '🎭' },
+								{ id: 'adventure', name: 'Adventure', icon: '🏔' }
+							] as category}
+								<button
+									type="button"
+									onclick={() => { 
+										formData.category = formData.category === category.id ? '' : category.id; 
+									}}
+									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors hover:bg-gray-50 {formData.category === category.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}"
+									style="color: {formData.category === category.id ? 'var(--color-primary-700)' : 'var(--text-secondary)'};"
+								>
+									<span>{category.icon}</span>
+									<span>{category.name}</span>
+								</button>
+							{/each}
+							
+							<!-- Custom Category Option -->
+							<button
+								type="button"
+								onclick={() => { 
+									if (formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) {
+										formData.category = '';
+									} else {
+										formData.category = 'custom';
+									}
+								}}
+								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors hover:bg-gray-50 {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}"
+								style="color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-700)' : 'var(--text-secondary)'};"
+							>
+								<span>✏️</span>
+								<span>Custom</span>
+							</button>
+						</div>
+
+						{#if formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure', ''].includes(formData.category))}
+							<div class="mt-3">
+								<input
+									type="text"
+									placeholder="Enter your custom category..."
+									class="form-input"
+									value={formData.category === 'custom' ? '' : formData.category}
+									oninput={(e) => {
+										const target = e.target as HTMLInputElement;
+										formData.category = target.value || 'custom';
+									}}
+								/>
+							</div>
+						{/if}
+
+						<!-- Hidden input for form submission -->
+						<input type="hidden" name="category" bind:value={formData.category} />
 					</div>
 
 					<div>
@@ -736,9 +481,12 @@
 							id="location"
 							name="location"
 							bind:value={formData.location}
-							placeholder="e.g., Prague Castle Area"
+							placeholder="e.g., Old Town Prague, Central Park NYC, Tower Bridge area"
 							class="form-input"
 						/>
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">
+							Be specific to help customers find your tour meeting point
+						</p>
 					</div>
 
 					<div class="md:col-span-2">
@@ -763,57 +511,7 @@
 			</div>
 		</div>
 
-		<!-- Tour Status (Edit Mode Only) -->
-		{#if isEdit && !hideStatusField}
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h2 class="font-semibold" style="color: var(--text-primary);">Tour Status</h2>
-				</div>
-				<div class="p-4">
-					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
-						<div class="flex items-center gap-3">
-							<div class="w-10 h-10 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
-								<span class="text-lg">
-									{formData.status === 'active' ? '🟢' : '📝'}
-								</span>
-							</div>
-							<div>
-								<h3 class="font-medium" style="color: var(--text-primary);">
-									{formData.status === 'active' ? 'Tour is Active' : 'Tour is Draft'}
-								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
-									{formData.status === 'active' 
-										? 'Your tour is live and accepting bookings' 
-										: 'Your tour is saved but not visible to customers'}
-								</p>
-							</div>
-						</div>
-						
-						<div class="flex items-center gap-3">
-							<!-- Hidden input to send the actual status value -->
-							<input type="hidden" name="status" bind:value={formData.status} />
-							<label class="relative inline-flex items-center cursor-pointer">
-								<input
-									type="checkbox"
-									checked={formData.status === 'active'}
-									onchange={(e) => {
-										const target = e.target as HTMLInputElement;
-										formData.status = target.checked ? 'active' : 'draft';
-									}}
-									class="sr-only peer"
-								/>
-								<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-								<span class="ml-3 text-sm font-medium" style="color: var(--text-primary);">
-									{formData.status === 'active' ? 'Active' : 'Draft'}
-								</span>
-							</label>
-						</div>
-					</div>
-					
 
-				</div>
-			</div>
-		{/if}
 
 		<!-- Pricing & Logistics -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -821,19 +519,16 @@
 				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
 			</div>
 			<div class="p-4">
-			
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<!-- Only show single price field when pricing tiers are disabled -->
-				{#if !formData.enablePricingTiers}
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					<NumberInput
 						id="price"
 						name="price"
-						label="Price per Person (€)"
+						label="Price (€)"
 						bind:value={formData.price}
 						min={0.5}
 						max={99999}
 						step={0.5}
-						placeholder="0.50"
+						placeholder="25.00"
 						incrementLabel="Increase price"
 						decrementLabel="Decrease price"
 						error={getFieldError(allErrors, 'price')}
@@ -841,40 +536,16 @@
 						decimalPlaces={2}
 						onblur={() => validateField('price')}
 					/>
-				{:else}
-					<!-- Show pricing summary when tiers are enabled -->
-					<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<div class="flex items-center gap-2 mb-2">
-							<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-								<span class="text-xs font-semibold text-blue-600">💰</span>
-							</div>
-							<h4 class="font-medium" style="color: var(--text-primary);">Pricing Tiers</h4>
-						</div>
-						<div class="space-y-1 text-sm">
-							<div class="flex justify-between">
-								<span style="color: var(--text-secondary);">Adult:</span>
-								<span style="color: var(--text-primary);">€{formData.pricingTiers.adult || 0}</span>
-							</div>
-							<div class="flex justify-between">
-								<span style="color: var(--text-secondary);">Child:</span>
-								<span style="color: var(--text-primary);">€{formData.pricingTiers.child || 0}</span>
-							</div>
-						</div>
-						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
-							Configure below in Pricing Tiers section
-						</p>
-					</div>
-				{/if}
 
 				<NumberInput
 					id="duration"
 					name="duration"
 					label="Duration (minutes)"
 					bind:value={formData.duration}
-					min={1}
+						min={15}
 					max={1440}
-					step={1}
-					placeholder="60"
+						step={15}
+						placeholder="120"
 					incrementLabel="Increase duration"
 					decrementLabel="Decrease duration"
 					error={getFieldError(allErrors, 'duration')}
@@ -886,12 +557,12 @@
 				<NumberInput
 					id="capacity"
 					name="capacity"
-					label="Max Capacity"
+						label="Max Group Size"
 					bind:value={formData.capacity}
 					min={bookingConstraints?.minimumCapacity || 1}
 					max={500}
 					step={1}
-					placeholder="10"
+						placeholder="12"
 					incrementLabel="Increase capacity"
 					decrementLabel="Decrease capacity"
 					error={getFieldError(allErrors, 'capacity')}
@@ -899,106 +570,42 @@
 					integerOnly={true}
 					onblur={() => validateField('capacity')}
 				/>
-				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
-					<div class="md:col-span-3 mt-2">
-						<p class="text-xs" style="color: var(--text-secondary);">
-							⚠️ Minimum capacity: <strong>{bookingConstraints.minimumCapacity}</strong> 
-							(you have {bookingConstraints.maxBookedSpots} people booked in your busiest time slot)
-						</p>
-					</div>
-				{/if}
-			</div>
-		</div>
 	</div>
 
-	<!-- Pricing Tiers -->
-	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-4 border-b" style="border-color: var(--border-primary);">
-			<div class="flex items-center justify-between">
-				<div>
-					<h2 class="font-semibold" style="color: var(--text-primary);">Pricing Tiers</h2>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Set different prices for adults and children</p>
+				<!-- Optional Child Pricing -->
+				{#if !showChildPrice}
+					<div class="mt-6">
+						<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary);">
+							<p class="text-sm" style="color: var(--text-secondary);">Need different pricing for children?</p>
+							<button
+								type="button"
+								onclick={() => { 
+									showChildPrice = true; 
+									childPrice = formData.price || 0; 
+								}}
+								class="button-secondary button--small"
+							>
+								Add Child Price
+							</button>
 				</div>
-				<div class="flex items-center gap-3">
-					<span class="text-sm font-medium transition-colors {!formData.enablePricingTiers ? 'text-gray-600' : 'text-gray-400'}" style="color: {!formData.enablePricingTiers ? 'var(--text-primary)' : 'var(--text-tertiary)'};">
-						Single Price
-					</span>
-					<label class="relative inline-flex items-center cursor-pointer group">
-						<input
-							type="checkbox"
-							name="enablePricingTiers"
-							bind:checked={formData.enablePricingTiers}
-							onchange={handlePricingTiersToggle}
-							class="sr-only peer"
-						/>
-						<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 group-hover:peer-checked:bg-blue-600"></div>
-						<!-- Tooltip on hover -->
-						<div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-							{formData.enablePricingTiers ? 'Switch to Single Price' : 'Enable Pricing Tiers'}
-						</div>
-					</label>
-					<span class="text-sm font-medium transition-colors {formData.enablePricingTiers ? 'text-blue-600' : 'text-gray-400'}" style="color: {formData.enablePricingTiers ? 'var(--color-primary-600)' : 'var(--text-tertiary)'};">
-						Pricing Tiers
-					</span>
-				</div>
-			</div>
-		</div>
-		<div class="p-4">
-			{#if !formData.enablePricingTiers}
-				<!-- Single Price Mode -->
-				<div class="text-center py-8">
-					<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-						</svg>
-					</div>
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Single Price for Everyone</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
-						Currently using <strong>€{formData.price}</strong> per person regardless of age
-					</p>
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						Enable pricing tiers above to set different prices for adults and children
-					</p>
 				</div>
 			{:else}
-				<!-- Pricing Tiers Mode -->
-				<div class="space-y-4">
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="mt-6">
 						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex items-center gap-2 mb-3">
-								<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-									<span class="text-sm font-semibold text-blue-600">👨</span>
+							<div class="flex items-center justify-between mb-3">
+								<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
+								<button
+									type="button"
+									onclick={() => { 
+										showChildPrice = false; 
+										childPrice = 0; 
+									}}
+									class="text-xs text-gray-400 hover:text-red-600 transition-colors"
+								>
+									Remove
+								</button>
 								</div>
-								<div>
-									<h4 class="font-medium" style="color: var(--text-primary);">Adult Price</h4>
-									<p class="text-xs" style="color: var(--text-secondary);">Ages 13 and above</p>
-								</div>
-							</div>
-							<NumberInput
-								id="adultPrice"
-								name="pricingTiers.adult"
-								label="Adult Price (€)"
-								bind:value={formData.pricingTiers.adult}
-								min={0.5}
-								max={99999}
-								step={0.5}
-								placeholder="0.50"
-								incrementLabel="Increase adult price"
-								decrementLabel="Decrease adult price"
-								decimalPlaces={2}
-							/>
-						</div>
-
-						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex items-center gap-2 mb-3">
-								<div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-									<span class="text-sm font-semibold text-green-600">👶</span>
-								</div>
-								<div>
-									<h4 class="font-medium" style="color: var(--text-primary);">Child Price</h4>
-									<p class="text-xs" style="color: var(--text-secondary);">Ages 3-12 (optional)</p>
-								</div>
-							</div>
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<NumberInput
 								id="childPrice"
 								name="pricingTiers.child"
@@ -1007,156 +614,240 @@
 								min={0}
 								max={99999}
 								step={0.5}
-								placeholder="0.00 (free)"
+									placeholder="0.00"
 								incrementLabel="Increase child price"
 								decrementLabel="Decrease child price"
 								decimalPlaces={2}
 							/>
-						</div>
-					</div>
-
-					<!-- Pricing Summary -->
-					<div class="p-4 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-						<h4 class="font-medium mb-2" style="color: var(--color-primary-900);">Pricing Summary</h4>
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-							<div class="flex justify-between">
-								<span style="color: var(--color-primary-700);">Adults (13+):</span>
-								<span class="font-medium" style="color: var(--color-primary-900);">
-									€{formData.pricingTiers.adult || '0.00'}
-								</span>
-							</div>
-							<div class="flex justify-between">
-								<span style="color: var(--color-primary-700);">Children (3-12):</span>
-								<span class="font-medium" style="color: var(--color-primary-900);">
-									{#if formData.pricingTiers.child && formData.pricingTiers.child > 0}
-										€{formData.pricingTiers.child}
+								<div class="flex items-end">
+									<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
+										<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Adult vs Child</p>
+										<div class="text-sm" style="color: var(--text-primary);">
+											{#if childPrice === 0}
+												<span class="text-green-600 font-medium">Children go free</span>
+											{:else if formData.price > 0}
+												{@const discount = Math.round(((formData.price - childPrice) / formData.price) * 100)}
+												{#if discount > 0}
+													<span class="font-medium">{discount}% child discount</span>
+												{:else if discount < 0}
+													<span class="text-orange-600 font-medium">{Math.abs(discount)}% higher for children</span>
 									{:else}
-										Free
+													<span class="font-medium">Same price for all</span>
 									{/if}
-								</span>
+											{:else}
+												<span class="text-gray-400">Set adult price first</span>
+											{/if}
 							</div>
 						</div>
-						<div class="mt-3 pt-3 border-t" style="border-color: var(--color-primary-200);">
-							<p class="text-xs" style="color: var(--color-primary-600);">
-								<strong>Note:</strong> Children under 3 are always free. If child price is not set or is €0, children aged 3-12 will be free.
-							</p>
+								</div>
 						</div>
 					</div>
 				</div>
 			{/if}
+
+				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
+					<div class="mt-4">
+						<p class="text-xs" style="color: var(--text-secondary);">
+							⚠️ Minimum capacity: <strong>{bookingConstraints.minimumCapacity}</strong> 
+							(you have {bookingConstraints.maxBookedSpots} people booked in your busiest time slot)
+						</p>
+					</div>
+				{/if}
+
+
 		</div>
 	</div>
 
-		<!-- What's Included -->
+				<!-- Tour Details -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h2 class="font-semibold" style="color: var(--text-primary);">What's Included</h2>
-					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-						Press Enter to add more
-					</div>
-				</div>
+				<h2 class="font-semibold" style="color: var(--text-primary);">Tour Details</h2>
 			</div>
 			<div class="p-4">
-				<div class="space-y-3">
-					{#each formData.includedItems as item, index (index)}
-						<div class="flex gap-2 group">
-							<div class="flex-1 relative">
-								<input
-									type="text"
-									name="includedItems"
-									value={formData.includedItems[index]}
-									placeholder={getIncludedItemPlaceholder(index)}
-									class="form-input w-full transition-all duration-200 {index === formData.includedItems.length - 1 && !item ? 'ring-1 ring-blue-200' : ''}"
-									oninput={(e) => handleIncludedItemInput(index, e)}
-									onblur={(e) => handleIncludedItemBlur(index, e)}
-									onkeydown={(e) => handleIncludedItemKeyDown(index, e)}
-								/>
-								{#if index === formData.includedItems.length - 1 && !item}
-									<div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style="color: var(--text-tertiary);">
-										↵ Enter
-									</div>
-								{/if}
-							</div>
-							{#if formData.includedItems.length > 1 && (item || index < formData.includedItems.length - 1)}
+				<!-- What's Included Section -->
+				<div class="mb-8">
+					<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">What's Included</h3>
+					
+					<!-- Suggested Items -->
+					<div class="mb-4">
+						<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add popular items:</p>
+						<div class="flex flex-wrap gap-2">
+							{#each ['Professional tour guide', 'Historical insights', 'Photo opportunities', 'Small group experience', 'Route map', 'Local recommendations'] as suggestion}
 								<button
 									type="button"
-									onclick={() => removeIncludedItem(index)}
-									class="p-2 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-									aria-label="Remove included item"
-									tabindex="-1"
+									onclick={() => {
+										if (!formData.includedItems.includes(suggestion)) {
+											formData.includedItems = [...formData.includedItems.filter(item => item.trim()), suggestion];
+										}
+									}}
+									class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
+									style="border-color: var(--border-primary); color: var(--text-secondary);"
+									disabled={formData.includedItems.includes(suggestion)}
 								>
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-									</svg>
+									{suggestion}
 								</button>
-							{/if}
+							{/each}
 						</div>
-					{/each}
-				</div>
-				
-				<!-- Helpful tip -->
-				<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-xs" style="color: var(--text-secondary);">
-						💡 <strong>Tip:</strong> Just start typing and press Enter to add more items. Empty items are automatically removed.
-					</p>
-				</div>
-			</div>
-		</div>
+					</div>
 
-		<!-- Requirements -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h2 class="font-semibold" style="color: var(--text-primary);">Requirements</h2>
-					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-						Press Enter to add more
-					</div>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="space-y-3">
-					{#each formData.requirements as requirement, index (index)}
-						<div class="flex gap-2 group">
-							<div class="flex-1 relative">
-								<input
-									type="text"
-									name="requirements"
-									value={formData.requirements[index]}
-									placeholder={getRequirementPlaceholder(index)}
-									class="form-input w-full transition-all duration-200 {index === formData.requirements.length - 1 && !requirement ? 'ring-1 ring-blue-200' : ''}"
-									oninput={(e) => handleRequirementInput(index, e)}
-									onblur={(e) => handleRequirementBlur(index, e)}
-									onkeydown={(e) => handleRequirementKeyDown(index, e)}
-								/>
-								{#if index === formData.requirements.length - 1 && !requirement}
-									<div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style="color: var(--text-tertiary);">
-										↵ Enter
-									</div>
-								{/if}
+					<!-- Selected Items as Tags -->
+					{#if formData.includedItems.filter(item => item.trim()).length > 0}
+						<div class="mb-4">
+							<p class="text-sm mb-2" style="color: var(--text-secondary);">Included items:</p>
+							<div class="flex flex-wrap gap-2">
+								{#each formData.includedItems.filter(item => item.trim()) as item, index (item)}
+									<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
+										{item}
+										<button
+											type="button"
+											onclick={() => {
+												formData.includedItems = formData.includedItems.filter(i => i !== item);
+											}}
+											class="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+											aria-label="Remove {item}"
+										>
+											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</span>
+								{/each}
 							</div>
-							{#if formData.requirements.length > 1 && (requirement || index < formData.requirements.length - 1)}
-								<button
-									type="button"
-									onclick={() => removeRequirement(index)}
-									class="p-2 text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-									aria-label="Remove requirement"
-									tabindex="-1"
-								>
-									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-									</svg>
-								</button>
-							{/if}
 						</div>
+					{/if}
+
+					<!-- Custom Item Input -->
+					<div class="flex gap-2">
+						<input
+							type="text"
+							placeholder="Add custom item..."
+							class="form-input flex-1"
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									const input = e.target as HTMLInputElement;
+									const value = input.value.trim();
+									if (value && !formData.includedItems.includes(value)) {
+										formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
+										input.value = '';
+									}
+								}
+							}}
+						/>
+						<button
+							type="button"
+							onclick={(e) => {
+								const button = e.target as HTMLButtonElement;
+								const input = button.parentElement?.querySelector('input') as HTMLInputElement;
+								const value = input?.value.trim();
+								if (value && !formData.includedItems.includes(value)) {
+									formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
+									input.value = '';
+								}
+							}}
+							class="button-secondary button--small"
+						>
+							Add
+						</button>
+					</div>
+
+					<!-- Hidden inputs for form submission -->
+					{#each formData.includedItems.filter(item => item.trim()) as item}
+						<input type="hidden" name="includedItems" value={item} />
 					{/each}
 				</div>
-				
-				<!-- Helpful tip -->
-				<div class="mt-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
-					<p class="text-xs" style="color: var(--text-secondary);">
-						💡 <strong>Tip:</strong> Just start typing and press Enter to add more requirements. Empty items are automatically removed.
-					</p>
+
+				<!-- Requirements Section -->
+				<div>
+					<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">Requirements</h3>
+					
+					<!-- Suggested Requirements -->
+					<div class="mb-4">
+						<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add common requirements:</p>
+						<div class="flex flex-wrap gap-2">
+							{#each ['Comfortable walking shoes', 'Basic fitness level', 'Weather-appropriate clothing', 'Minimum age 12+', 'No mobility issues', 'English speaking'] as suggestion}
+								<button
+									type="button"
+									onclick={() => {
+										if (!formData.requirements.includes(suggestion)) {
+											formData.requirements = [...formData.requirements.filter(req => req.trim()), suggestion];
+										}
+									}}
+									class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
+									style="border-color: var(--border-primary); color: var(--text-secondary);"
+									disabled={formData.requirements.includes(suggestion)}
+								>
+									{suggestion}
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Selected Requirements as Tags -->
+					{#if formData.requirements.filter(req => req.trim()).length > 0}
+						<div class="mb-4">
+							<p class="text-sm mb-2" style="color: var(--text-secondary);">Requirements:</p>
+							<div class="flex flex-wrap gap-2">
+								{#each formData.requirements.filter(req => req.trim()) as requirement, index (requirement)}
+									<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
+										{requirement}
+										<button
+											type="button"
+											onclick={() => {
+												formData.requirements = formData.requirements.filter(r => r !== requirement);
+											}}
+											class="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+											aria-label="Remove {requirement}"
+										>
+											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Custom Requirement Input -->
+					<div class="flex gap-2">
+						<input
+							type="text"
+							placeholder="Add custom requirement..."
+							class="form-input flex-1"
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									const input = e.target as HTMLInputElement;
+									const value = input.value.trim();
+									if (value && !formData.requirements.includes(value)) {
+										formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
+										input.value = '';
+									}
+								}
+							}}
+						/>
+						<button
+							type="button"
+							onclick={(e) => {
+								const button = e.target as HTMLButtonElement;
+								const input = button.parentElement?.querySelector('input') as HTMLInputElement;
+								const value = input?.value.trim();
+								if (value && !formData.requirements.includes(value)) {
+									formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
+									input.value = '';
+								}
+							}}
+							class="button-secondary button--small"
+						>
+							Add
+						</button>
+					</div>
+
+					<!-- Hidden inputs for form submission -->
+					{#each formData.requirements.filter(req => req.trim()) as requirement}
+						<input type="hidden" name="requirements" value={requirement} />
+					{/each}
 				</div>
 			</div>
 		</div>
@@ -1164,23 +855,13 @@
 		<!-- Cancellation Policy -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
 					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
-					<div class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-						{showCustomPolicy ? 'Custom' : selectedPolicyTemplate ? 'Template' : 'Choose'}
-					</div>
-				</div>
 			</div>
 			<div class="p-4">
-				{#if !showCustomPolicy}
-					<!-- Policy Templates - Minimal Design -->
-					<div class="space-y-3 mb-4">
-						<p class="text-sm mb-4" style="color: var(--text-secondary);">Choose a cancellation policy:</p>
-						
-						<!-- Template Options as Radio-style List -->
-						<div class="space-y-2">
+				<div class="space-y-3">
+					<!-- Template Options -->
 							{#each policyTemplates as template}
-								<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm {selectedPolicyTemplate === template.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}">
+						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors {selectedPolicyTemplate === template.id ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'}" style="background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'transparent'};">
 									<input
 										type="radio"
 										name="policyTemplate"
@@ -1189,56 +870,35 @@
 										onchange={() => selectPolicyTemplate(template.id)}
 										class="form-radio mt-0.5"
 									/>
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2 mb-1">
-											<span class="text-sm">{template.name.split(' ')[0]}</span>
-											<span class="font-medium text-sm" style="color: var(--text-primary);">
+							<div class="flex-1">
+								<div class="font-medium text-sm mb-1" style="color: var(--text-primary);">
 												{template.name.substring(2)}
-											</span>
 										</div>
-										<p class="text-xs mb-2" style="color: var(--text-secondary);">{template.description}</p>
-										{#if selectedPolicyTemplate === template.id}
-											<div class="mt-2 p-2 rounded text-xs" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-												{template.policy}
-											</div>
-										{/if}
+								<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
 									</div>
 								</label>
 							{/each}
-						</div>
-					</div>
 
 					<!-- Custom Policy Option -->
-					<div class="pt-4 border-t" style="border-color: var(--border-primary);">
-						<button
-							type="button"
-							onclick={enableCustomPolicy}
-							class="w-full p-3 rounded-lg border border-dashed transition-colors text-center hover:bg-gray-50"
-							style="border-color: var(--border-primary);"
-						>
-							<div class="flex items-center justify-center gap-2 mb-1">
-								<svg class="w-4 h-4" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-								</svg>
-								<span class="font-medium text-sm" style="color: var(--text-primary);">Write Custom Policy</span>
+					<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors {showCustomPolicy ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'}" style="background: {showCustomPolicy ? 'var(--color-primary-50)' : 'transparent'};">
+						<input
+							type="radio"
+							name="policyTemplate"
+							checked={showCustomPolicy}
+							onchange={enableCustomPolicy}
+							class="form-radio mt-0.5"
+						/>
+						<div class="flex-1">
+							<div class="font-medium text-sm mb-1" style="color: var(--text-primary);">
+								Custom Policy
 							</div>
-							<p class="text-xs" style="color: var(--text-secondary);">Create your own cancellation terms</p>
-						</button>
+							<p class="text-xs" style="color: var(--text-secondary);">Write your own cancellation terms</p>
 					</div>
-				{:else}
-					<!-- Custom Policy Editor -->
-					<div class="space-y-4">
-						<div class="flex items-center justify-between">
-							<h3 class="font-medium" style="color: var(--text-primary);">Custom Cancellation Policy</h3>
-							<button
-								type="button"
-								onclick={() => { showCustomPolicy = false; selectedPolicyTemplate = ''; }}
-								class="text-sm px-3 py-1.5 rounded-md transition-colors button-secondary button--small"
-							>
-								← Back to Templates
-							</button>
+					</label>
 						</div>
 						
+				{#if showCustomPolicy}
+					<div class="mt-4">
 						<textarea
 							name="cancellationPolicy"
 							bind:value={formData.cancellationPolicy}
@@ -1246,18 +906,6 @@
 							placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
 							class="form-textarea"
 						></textarea>
-						
-						<!-- Custom Policy Tips -->
-						<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-							<p class="text-xs font-medium mb-2" style="color: var(--text-primary);">💡 Tips for a good cancellation policy:</p>
-							<ul class="text-xs space-y-1" style="color: var(--text-secondary);">
-								<li>• Specify exact time limits (e.g., "24 hours before tour starts")</li>
-								<li>• Be clear about refund percentages</li>
-								<li>• Mention weather or emergency exceptions</li>
-								<li>• Consider group booking flexibility</li>
-								<li>• Keep it simple and easy to understand</li>
-							</ul>
-						</div>
 					</div>
 				{/if}
 
@@ -1399,12 +1047,63 @@
 			</div>
 		{/if}
 
+		<!-- Tour Status -->
+		{#if !hideStatusField}
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Status</h3>
+				</div>
+				<div class="p-4">
+					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
+								<span class="text-lg">
+									{formData.status === 'active' ? '🟢' : '📝'}
+								</span>
+							</div>
+							<div>
+								<h3 class="font-medium" style="color: var(--text-primary);">
+									{formData.status === 'active' 
+										? (isEdit ? 'Tour is Active' : 'Go Live Immediately') 
+										: (isEdit ? 'Tour is Draft' : 'Save as Draft')}
+								</h3>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									{formData.status === 'active' 
+										? (isEdit ? 'Your tour is live and accepting bookings' : 'Tour will be published and accept bookings right away') 
+										: (isEdit ? 'Your tour is saved but not visible to customers' : 'Tour will be saved privately for you to activate later')}
+								</p>
+							</div>
+						</div>
+						
+						<div class="flex items-center gap-3">
+							<!-- Hidden input to send the actual status value -->
+							<input type="hidden" name="status" bind:value={formData.status} />
+							<label class="relative inline-flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									checked={formData.status === 'active'}
+									onchange={(e) => {
+										const target = e.target as HTMLInputElement;
+										formData.status = target.checked ? 'active' : 'draft';
+									}}
+									class="sr-only peer"
+								/>
+								<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+								<span class="ml-3 text-sm font-medium" style="color: var(--text-primary);">
+									{formData.status === 'active' ? 'Active' : 'Draft'}
+								</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Action Buttons -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4">
 			<div class="space-y-3">
 				<button
-					bind:this={saveButtonRef}
 					type="submit"
 					disabled={isSubmitting}
 					class="button-primary button--full-width button--gap"
@@ -1440,64 +1139,7 @@
 	</div>
 </div>
 
-<!-- Minimal Floating Save Button (appears when scrolled down) -->
-{#if showStickySave}
-	<div class="fixed z-50 transition-all duration-300 ease-out floating-save-container">
-		<!-- Single elegant floating button with integrated progress -->
-		<button
-			type="button"
-			onclick={handleStickySave}
-			disabled={isSubmitting}
-			class="floating-save-btn group"
-			title="{isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Save Tour')} • {formProgress()}% complete"
-			aria-label="{isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Save Tour')}"
-		>
-			<!-- Progress ring (subtle, integrated) -->
-			<div class="absolute inset-0 rounded-full">
-				<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-					<circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-200 opacity-30" />
-					<circle 
-						cx="18" cy="18" r="16" 
-						fill="none" 
-						stroke="currentColor" 
-						stroke-width="1.5" 
-						class="text-white transition-all duration-300"
-						stroke-dasharray="100.53"
-						stroke-dashoffset="{100.53 - (100.53 * formProgress() / 100)}"
-						stroke-linecap="round"
-					/>
-				</svg>
-			</div>
-			
-			<!-- Button content -->
-			<div class="relative flex items-center justify-center">
-				{#if isSubmitting}
-					<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-				{:else}
-					<svg class="w-4 h-4 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-				{/if}
-			</div>
-			
-			<!-- Tooltip on hover (desktop only) -->
-			<div class="floating-save-tooltip">
-				<div class="tooltip-content">
-					<span class="font-medium">
-						{#if isSubmitting}
-							Saving...
-						{:else if formData.status === 'active' && isEdit}
-							Save & Activate
-						{:else}
-							{isEdit ? 'Save Changes' : 'Save Tour'}
-						{/if}
-					</span>
-					<span class="text-xs opacity-75">{formProgress()}% complete</span>
-				</div>
-			</div>
-		</button>
-	</div>
-{/if}
+
 </div>
 
 <style>
@@ -1549,115 +1191,7 @@
 		}
 	}
 
-	/* Minimal Floating Save Button */
-	.floating-save-container {
-		bottom: 2rem;
-		right: 2rem;
-	}
 
-	/* Mobile positioning - account for bottom navigation */
-	@media (max-width: 767px) {
-		.floating-save-container {
-			bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
-			right: 1.5rem;
-		}
-	}
-
-	/* Desktop positioning - align with form content */
-	@media (min-width: 1024px) {
-		.floating-save-container {
-			right: max(2rem, calc((100vw - 80rem) / 2 + 2rem));
-		}
-	}
-
-	.floating-save-btn {
-		position: relative;
-		width: 3rem;
-		height: 3rem;
-		border-radius: 50%;
-		border: none;
-		cursor: pointer;
-		color: white;
-		background: var(--color-primary-600);
-		box-shadow: 
-			0 4px 12px rgba(0, 0, 0, 0.15),
-			0 2px 4px rgba(0, 0, 0, 0.1);
-		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-		backdrop-filter: blur(8px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.floating-save-btn:hover {
-		transform: translateY(-2px) scale(1.05);
-		box-shadow: 
-			0 8px 20px rgba(0, 0, 0, 0.2),
-			0 4px 8px rgba(0, 0, 0, 0.15);
-		background: var(--color-primary-700);
-	}
-
-	.floating-save-btn:active {
-		transform: translateY(-1px) scale(1.02);
-	}
-
-	.floating-save-btn:disabled {
-		opacity: 0.8;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	.floating-save-btn:disabled:hover {
-		transform: none;
-		box-shadow: 
-			0 4px 12px rgba(0, 0, 0, 0.15),
-			0 2px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	/* Elegant tooltip */
-	.floating-save-tooltip {
-		position: absolute;
-		right: calc(100% + 0.75rem);
-		top: 50%;
-		transform: translateY(-50%);
-		opacity: 0;
-		visibility: hidden;
-		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-		pointer-events: none;
-		z-index: 10;
-	}
-
-	.tooltip-content {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		padding: 0.5rem 0.75rem;
-		box-shadow: 
-			0 4px 12px rgba(0, 0, 0, 0.1),
-			0 2px 4px rgba(0, 0, 0, 0.06);
-		white-space: nowrap;
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-		color: var(--text-primary);
-		font-size: 0.875rem;
-	}
-
-	/* Show tooltip on hover (desktop only) */
-	@media (min-width: 768px) {
-		.floating-save-btn:hover .floating-save-tooltip {
-			opacity: 1;
-			visibility: visible;
-			transform: translateY(-50%) translateX(-0.25rem);
-		}
-	}
-
-	/* Hide tooltip on mobile */
-	@media (max-width: 767px) {
-		.floating-save-tooltip {
-			display: none;
-		}
-	}
 
 	/* Mobile-enhanced error styling */
 	@media (max-width: 768px) {
@@ -1676,11 +1210,6 @@
 		/* Make error fields more prominent on mobile */
 		.form-input.error,
 		.form-textarea.error,
-		.form-select.error {
-			border-color: var(--color-error-500);
-			box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2), 0 0 0 3px rgba(239, 68, 68, 0.1);
-			outline: none;
-		}
 		
 		/* Sticky error summary styling */
 		.sticky {
@@ -1688,9 +1217,6 @@
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		}
 		
-		/* Adjust floating button position on mobile to avoid keyboard */
-		.floating-save-btn {
-			margin-bottom: env(keyboard-inset-height, 0);
-		}
+
 	}
 </style>

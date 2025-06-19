@@ -17,17 +17,12 @@
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Eye from 'lucide-svelte/icons/eye';
-	import Calendar from 'lucide-svelte/icons/calendar';
-	import Plus from 'lucide-svelte/icons/plus';
-	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
-	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -42,26 +37,10 @@
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 	}));
 
-	// TanStack Query for schedule data
-	let scheduleQuery = $derived(createQuery({
-		queryKey: queryKeys.tourSchedule(tourId),
-		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
-		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
-		gcTime: 2 * 60 * 1000, // 2 minutes
-		refetchOnWindowFocus: true,
-	}));
-
 	let tour = $derived($tourQuery.data?.tour || null);
 	let isLoading = $derived($tourQuery.isLoading);
 	let isSubmitting = $state(false);
 
-	// Schedule data
-	let scheduleData = $derived($scheduleQuery.data || null);
-	let scheduleStats = $derived(scheduleData?.scheduleStats || {});
-	let timeSlots = $derived(scheduleData?.timeSlots || []);
-	let upcomingSlots = $derived(timeSlots.filter((slot: any) => slot.isUpcoming).slice(0, 3));
-	let slotsWithBookings = $derived(timeSlots.filter((slot: any) => slot.isUpcoming && slot.totalBookings > 0).length);
-	let isScheduleLoading = $derived($scheduleQuery.isLoading);
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let capacityError = $state((form as any)?.capacityError || null);
@@ -313,101 +292,6 @@
 		}
 	}
 
-	// Schedule helper functions
-	function getNextSlotText(): string {
-		if (!upcomingSlots.length) return 'No upcoming slots';
-		
-		const nextSlot = upcomingSlots[0];
-		const slotDate = new Date(nextSlot.startTime);
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		
-		let dateText = '';
-		if (slotDate.toDateString() === today.toDateString()) {
-			dateText = 'Today';
-		} else if (slotDate.toDateString() === tomorrow.toDateString()) {
-			dateText = 'Tomorrow';
-		} else {
-			dateText = formatDate(nextSlot.startTime);
-		}
-		
-		return `${dateText} ${formatTime(nextSlot.startTime)}`;
-	}
-
-	function getThisWeekSlotsCount(): number {
-		const now = new Date();
-		const startOfWeek = new Date(now);
-		startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
-		startOfWeek.setHours(0, 0, 0, 0);
-		
-		const endOfWeek = new Date(startOfWeek);
-		endOfWeek.setDate(startOfWeek.getDate() + 7);
-		
-		return timeSlots.filter((slot: any) => {
-			const slotDate = new Date(slot.startTime);
-			return slotDate >= startOfWeek && slotDate < endOfWeek && slot.isUpcoming;
-		}).length;
-	}
-
-	function getOccupancyPercentage(slot: any): number {
-		if (!slot.capacity || slot.capacity === 0) return 0;
-		return Math.round((slot.totalParticipants / slot.capacity) * 100);
-	}
-
-	function getBookingStatusColor(bookingCount: number): string {
-		if (bookingCount === 0) return 'bg-gray-100 text-gray-800';
-		if (bookingCount <= 2) return 'bg-blue-100 text-blue-800';
-		return 'bg-green-100 text-green-800';
-	}
-
-	// Quick action handlers
-	async function handleAddSingleSlot() {
-		// Check for validation errors first
-		const validationErrors = validateForm();
-		if (validationErrors.length > 0) {
-			error = validationErrors[0]; // Show first error
-			scrollToFirstError();
-			return;
-		}
-
-		// Auto-save current changes first
-		if (hasUnsavedChanges()) {
-			const saved = await autoSaveChanges();
-			if (!saved) {
-				// Scroll to first error and focus it
-				scrollToFirstError();
-				return;
-			}
-		}
-		
-		// Navigate to add slot page
-		goto(`/tours/${tourId}/schedule?new=true`);
-	}
-
-	async function handleExtendPattern() {
-		// Check for validation errors first
-		const validationErrors = validateForm();
-		if (validationErrors.length > 0) {
-			error = validationErrors[0]; // Show first error
-			scrollToFirstError();
-			return;
-		}
-
-		// Auto-save current changes first
-		if (hasUnsavedChanges()) {
-			const saved = await autoSaveChanges();
-			if (!saved) {
-				// Scroll to first error and focus it
-				scrollToFirstError();
-				return;
-			}
-		}
-		
-		// Navigate to schedule page with extend pattern mode
-		goto(`/tours/${tourId}/schedule?action=extend`);
-	}
-
 	function validateForm(): string[] {
 		const errors: string[] = [];
 		
@@ -614,8 +498,6 @@
 		}
 	}
 
-
-
 	// Delete tour functionality
 	function handleDeleteTour() {
 		showDeleteModal = true;
@@ -728,11 +610,6 @@
 						value: `${tour?.capacity || 0} max`
 					},
 					{
-						icon: Calendar,
-						label: 'Slots',
-						value: `${scheduleStats.upcomingSlots || 0} upcoming`
-					},
-					{
 						icon: Eye,
 						label: 'Status',
 						value: tour?.status === 'active' ? '🟢 Live' : '🟡 Draft'
@@ -803,180 +680,6 @@
 				</div>
 			</div>
 		{/if}
-
-
-
-		<!-- Schedule Overview Section -->
-		<div class="mt-6 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-							<Calendar class="h-4 w-4 text-blue-600" />
-						</div>
-						<div>
-							<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Schedule Overview</h3>
-							<p class="text-sm" style="color: var(--text-secondary);">Quick schedule management and upcoming slots</p>
-						</div>
-					</div>
-					<button onclick={() => goto(`/tours/${tourId}/schedule`)} class="button-primary button--gap">
-						<Calendar class="h-4 w-4" />
-						Manage Full Schedule
-					</button>
-				</div>
-			</div>
-			<div class="p-4">
-				{#if isScheduleLoading}
-					<div class="p-6 text-center">
-						<div class="w-6 h-6 mx-auto mb-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-						<p class="text-sm" style="color: var(--text-secondary);">Loading schedule...</p>
-					</div>
-				{:else if $scheduleQuery.isError}
-					<div class="p-6 text-center">
-						<AlertCircle class="h-8 w-8 mx-auto mb-2" style="color: var(--color-danger-600);" />
-						<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Failed to load schedule</p>
-						<p class="text-xs mb-3" style="color: var(--text-secondary);">Unable to fetch schedule data</p>
-						<button onclick={() => $scheduleQuery.refetch()} class="button-secondary button--small">
-							Try Again
-						</button>
-					</div>
-				{:else}
-					<!-- Schedule Stats -->
-					<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
-							<p class="text-lg font-semibold text-blue-600">{scheduleStats.upcomingSlots || 0}</p>
-							<p class="text-xs" style="color: var(--text-tertiary);">Upcoming slots</p>
-						</div>
-						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
-							<p class="text-lg font-semibold text-green-600">{slotsWithBookings}</p>
-							<p class="text-xs" style="color: var(--text-tertiary);">With bookings</p>
-						</div>
-						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
-							<p class="text-lg font-semibold text-orange-600">{getThisWeekSlotsCount()}</p>
-							<p class="text-xs" style="color: var(--text-tertiary);">This week</p>
-						</div>
-						<div class="text-center p-3 rounded-lg" style="background: var(--bg-primary);">
-							<p class="text-sm font-semibold" style="color: var(--text-primary);">Next: {getNextSlotText()}</p>
-							<p class="text-xs" style="color: var(--text-tertiary);">Next tour</p>
-						</div>
-					</div>
-
-					<!-- Schedule Status -->
-					{#if tour?.status === 'draft'}
-						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-center gap-2">
-								<span class="text-sm">📝</span>
-								<p class="text-sm font-medium" style="color: var(--color-warning-900);">
-									Draft Mode - {scheduleStats.upcomingSlots > 0 ? `${scheduleStats.upcomingSlots} slots ready` : 'No slots yet'}
-								</p>
-							</div>
-						</div>
-					{:else if scheduleStats.upcomingSlots === 0}
-						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-center gap-2">
-								<span class="text-sm">⚠️</span>
-								<p class="text-sm font-medium" style="color: var(--color-warning-900);">
-									Active but no time slots - Add slots to accept bookings
-								</p>
-							</div>
-						</div>
-					{:else}
-						<div class="mb-6 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
-							<div class="flex items-center gap-2">
-								<span class="text-sm">🟢</span>
-								<p class="text-sm font-medium" style="color: var(--color-success-900);">
-									Live - {scheduleStats.upcomingSlots} slot{scheduleStats.upcomingSlots === 1 ? '' : 's'} accepting bookings
-								</p>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Quick Actions -->
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-						<button 
-							type="button" 
-							onclick={handleAddSingleSlot} 
-							disabled={isSubmitting}
-							class="button-secondary button--gap justify-start"
-							title={hasUnsavedChanges() ? 'Will save changes first, then add time slot' : 'Add a new time slot'}
-						>
-							{#if isSubmitting}
-								<div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-								Saving changes...
-							{:else}
-								<Plus class="h-4 w-4" />
-								Add Single Slot
-								{#if hasUnsavedChanges()}
-									<span class="text-xs opacity-75">(will save first)</span>
-								{/if}
-							{/if}
-						</button>
-						<button 
-							type="button" 
-							onclick={handleExtendPattern} 
-							disabled={!upcomingSlots.length || isSubmitting}
-							class="button-secondary button--gap justify-start"
-							title={!upcomingSlots.length ? 'No existing pattern to extend' : hasUnsavedChanges() ? 'Will save changes first, then extend pattern' : 'Extend current scheduling pattern'}
-						>
-							{#if isSubmitting}
-								<div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-								Saving changes...
-							{:else}
-								<RefreshCw class="h-4 w-4" />
-								Extend Current Pattern
-								{#if hasUnsavedChanges() && upcomingSlots.length}
-									<span class="text-xs opacity-75">(will save first)</span>
-								{/if}
-							{/if}
-						</button>
-					</div>
-
-					<!-- Upcoming Slots Preview -->
-					<div>
-						<h4 class="font-medium mb-3" style="color: var(--text-primary);">Next 3 Upcoming Slots</h4>
-						{#if upcomingSlots.length > 0}
-							<div class="space-y-2">
-								{#each upcomingSlots as slot}
-									<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-										<div>
-											<p class="font-medium text-sm" style="color: var(--text-primary);">
-												{formatDate(slot.startTime)}
-											</p>
-											<p class="text-xs" style="color: var(--text-secondary);">
-												{formatSlotTimeRange(slot.startTime, slot.endTime)}
-											</p>
-										</div>
-										<div class="flex items-center gap-2">
-											<span class="text-xs px-2 py-1 rounded-full {getBookingStatusColor(slot.totalBookings)}">
-												{slot.totalBookings} booking{slot.totalBookings === 1 ? '' : 's'}
-											</span>
-											<span class="text-xs" style="color: var(--text-tertiary);">
-												{getOccupancyPercentage(slot)}% full
-											</span>
-										</div>
-									</div>
-								{/each}
-							</div>
-							<div class="mt-3 text-center">
-								<button onclick={() => goto(`/tours/${tourId}/schedule`)} class="text-sm" style="color: var(--color-primary-600);">
-									View all upcoming slots →
-								</button>
-							</div>
-						{:else}
-							<div class="p-6 text-center rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-								<Calendar class="h-8 w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-								<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">No upcoming time slots</p>
-								<p class="text-xs mb-3" style="color: var(--text-secondary);">Create time slots to start accepting bookings</p>
-								<button onclick={handleAddSingleSlot} class="button-primary button--small button--gap">
-									<Plus class="h-3 w-3" />
-									Add First Slot
-								</button>
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</div>
-		</div>
 
 		<!-- Booking Constraints Warning -->
 		{#if capacityError}
@@ -1064,6 +767,8 @@
 						{imageUploadErrors}
 						serverErrors={[]}
 						{triggerValidation}
+						{bookingConstraints}
+						getExistingImageUrl={getExistingImageUrl}
 					/>
 				</form>
 			{/if}
@@ -1122,19 +827,10 @@
 	onConfirm={confirmCancel}
 />
 
-
 <ConfirmationModal
 	bind:isOpen={showDeleteModal}
 	title="Delete Tour: {tour?.name || 'Unknown Tour'}?"
-	message={`This will permanently delete this tour and ALL associated data:
-
-${scheduleStats.totalBookings > 0 ? `⚠️ ${scheduleStats.totalBookings} booking${scheduleStats.totalBookings === 1 ? '' : 's'} will be cancelled` : '• No active bookings'}
-${scheduleStats.upcomingSlots > 0 ? `• ${scheduleStats.upcomingSlots} upcoming time slot${scheduleStats.upcomingSlots === 1 ? '' : 's'} will be removed` : '• No upcoming time slots'}
-• All tour images and data will be lost
-• Customer booking history will be deleted
-• QR codes will stop working
-
-${scheduleStats.totalBookings > 0 ? 'Customers with bookings will need to be notified manually.' : 'This action cannot be undone.'}`}
+	message="This will permanently delete this tour and ALL associated data. This action cannot be undone."
 	confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Tour'}
 	cancelText="Cancel"
 	variant="danger"
