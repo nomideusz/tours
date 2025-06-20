@@ -266,11 +266,15 @@ export const actions: Actions = {
 
       // Handle image removals
       const imagesToRemove = formData.getAll('removeImages') as string[];
+      console.log('🗑️ Server: Images to remove:', imagesToRemove);
+      console.log('🗑️ Server: Current images:', currentImages);
       const updatedImages = currentImages.filter(img => !imagesToRemove.includes(img));
+      console.log('🗑️ Server: Updated images after removal:', updatedImages);
       
       // Delete removed images from storage
       for (const imageToRemove of imagesToRemove) {
         try {
+          console.log('🗑️ Server: Deleting image from storage:', imageToRemove);
           await deleteImage(imageToRemove, params.id);
         } catch (error) {
           console.warn('Failed to delete image:', imageToRemove, error);
@@ -280,6 +284,7 @@ export const actions: Actions = {
 
       // Combine existing images (minus removed ones) with new images
       const finalImages = [...updatedImages, ...newImages];
+      console.log('🖼️ Server: Final images to save:', finalImages);
 
       // Update tour in database
       const updatedTour = await db

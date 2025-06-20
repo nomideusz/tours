@@ -218,8 +218,11 @@
 	}
 
 	function removeExistingImage(imageName: string) {
+		console.log('🗑️ Removing existing image:', imageName);
 		imagesToRemove = [...imagesToRemove, imageName];
 		existingImages = existingImages.filter(img => img !== imageName);
+		console.log('🗑️ Images marked for removal:', imagesToRemove);
+		console.log('🗑️ Remaining existing images:', existingImages);
 	}
 
 	function getExistingImageUrl(imageName: string): string {
@@ -281,7 +284,13 @@
 		};
 
 		// Initialize existing images
-		existingImages = tour.images || [];
+		// Only reset if we don't have images marked for removal
+		if (imagesToRemove.length === 0) {
+			existingImages = tour.images || [];
+		} else {
+			// Keep the current state if we have pending removals
+			console.log('🖼️ Keeping current image state due to pending removals:', imagesToRemove);
+		}
 	}
 
 	function handleCancel() {
@@ -488,14 +497,19 @@
 			
 			if (response.ok) {
 				// Invalidate queries to refresh data
-				queryClient.invalidateQueries({
+				await queryClient.invalidateQueries({
 					queryKey: queryKeys.tourDetails(tourId)
 				});
-				queryClient.invalidateQueries({
+				await queryClient.invalidateQueries({
 					queryKey: queryKeys.toursStats
 				});
 				
-				// Clear uploaded images since they're now saved
+				// Refetch the tour data to get the updated images list
+				await queryClient.refetchQueries({
+					queryKey: queryKeys.tourDetails(tourId)
+				});
+				
+				// Clear uploaded images and removed images since they're now saved
 				uploadedImages = [];
 				imagesToRemove = [];
 				
@@ -750,7 +764,9 @@
 					isSubmitting = true;
 					
 					// Add images to remove
+					console.log('📤 Images to remove before submission:', imagesToRemove);
 					imagesToRemove.forEach(imageUrl => {
+						console.log('📤 Adding to FormData for removal:', imageUrl);
 						formData.append('removeImages', imageUrl);
 					});
 					
@@ -772,14 +788,19 @@
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
 							// Invalidate tour queries to refresh data
-							queryClient.invalidateQueries({
+							await queryClient.invalidateQueries({
 								queryKey: queryKeys.tourDetails(tourId)
 							});
-							queryClient.invalidateQueries({
+							await queryClient.invalidateQueries({
 								queryKey: queryKeys.toursStats
 							});
 							
-							// Clear uploaded images since they're now saved
+							// Force refetch to get updated tour data including images
+							await queryClient.refetchQueries({
+								queryKey: queryKeys.tourDetails(tourId)
+							});
+							
+							// Clear uploaded images and removed images since they're now saved
 							uploadedImages = [];
 							imagesToRemove = [];
 						}
