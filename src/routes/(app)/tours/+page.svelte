@@ -458,24 +458,15 @@
 
 	// Force refetch when coming from tour creation or in certain scenarios
 	onMount(() => {
-		// Check if we're coming from tour creation
+		// Only check URL params for refresh (not sessionStorage activity)
 		const shouldRefresh = page.url.searchParams.get('refresh') === 'true' || 
 							 page.url.searchParams.get('created') === 'true';
 		
-		// Also check for recent tour creation activity (for immediate updates after mutations)
-		const recentActivity = browser ? sessionStorage.getItem('recentTourActivity') : null;
-		const shouldRefreshFromActivity = recentActivity && (Date.now() - parseInt(recentActivity)) < 10000; // Within last 10 seconds
-		
-		if (shouldRefresh || shouldRefreshFromActivity) {
-			console.log('🔄 Tours page: Force refreshing due to recent activity');
-			// Force immediate refetch of both queries with refetchType: 'all'
+		if (shouldRefresh) {
+			console.log('🔄 Tours page: Force refreshing due to URL params');
+			// Force immediate refetch of both queries
 			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats, refetchType: 'all' });
 			queryClient.invalidateQueries({ queryKey: queryKeys.userTours, refetchType: 'all' });
-			
-			// Clear the activity flag
-			if (browser && recentActivity) {
-				sessionStorage.removeItem('recentTourActivity');
-			}
 		}
 	});
 

@@ -134,20 +134,9 @@ export function createTourMutation() {
 					console.log('✅ Create mutation: Updated stats optimistically');
 					return newStats;
 				});
+				
+				console.log('✅ Create mutation: Keeping optimistic updates as final state');
 			}
-			
-			// Mark recent tour activity for UI refresh
-			if (typeof window !== 'undefined') {
-				sessionStorage.setItem('recentTourActivity', Date.now().toString());
-			}
-			
-			// Wait longer before validating to ensure database consistency
-			setTimeout(async () => {
-				console.log('✅ Create mutation: Validating cache consistency after delay');
-				await queryClient.refetchQueries({ queryKey: queryKeys.userTours });
-				await queryClient.refetchQueries({ queryKey: queryKeys.toursStats });
-				console.log('✅ Create mutation: Cache validation completed');
-			}, 2000); // Wait 2 seconds for database consistency
 		}
 	});
 }
@@ -274,25 +263,14 @@ export function deleteTourMutation() {
 			console.log('🗑️ Delete mutation: Server deletion successful for tour:', tourId);
 			console.log('🗑️ Delete mutation: Server response:', data);
 			
-			// Mark recent tour activity for UI refresh
-			if (typeof window !== 'undefined') {
-				sessionStorage.setItem('recentTourActivity', Date.now().toString());
-			}
+			// Don't do any cache invalidation - let the optimistic update persist
+			// The tour is confirmed deleted on the server, so the optimistic state is correct
+			console.log('🗑️ Delete mutation: Keeping optimistic updates as final state');
 			
-			// Wait for database transaction to commit before refreshing cache
-			setTimeout(async () => {
-				console.log('🗑️ Delete mutation: Clearing cache and refetching fresh data after delay');
-				
-				// Remove from cache completely and refetch
-				queryClient.removeQueries({ queryKey: queryKeys.userTours });
-				queryClient.removeQueries({ queryKey: queryKeys.toursStats });
-				
-				// Force fresh fetch
-				await queryClient.refetchQueries({ queryKey: queryKeys.userTours });
-				await queryClient.refetchQueries({ queryKey: queryKeys.toursStats });
-				
-				console.log('🗑️ Delete mutation: Fresh data loaded from server after delay');
-			}, 2000); // Wait 2 seconds for database transaction to commit
+			// Remove the sessionStorage activity flag to prevent competing invalidations
+			if (typeof window !== 'undefined') {
+				sessionStorage.removeItem('recentTourActivity');
+			}
 		}
 	});
 }
