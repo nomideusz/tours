@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types.js';
-	import { generateTicketURL } from '$lib/ticket-qr.js';
+	import { generateTicketURL, generateCheckInURL, getDisplayReference } from '$lib/ticket-qr.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { createBookingStatusQuery } from '$lib/queries/public-queries.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
@@ -15,6 +16,7 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Ticket from 'lucide-svelte/icons/ticket';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -27,6 +29,9 @@
 	let tourOwner = $derived($bookingQuery?.data?.tourOwner || null);
 	let isLoading = $derived($bookingQuery?.isLoading || false);
 	let queryError = $derived($bookingQuery?.error);
+	
+	// QR code element reference
+	let qrCodeElement = $state<HTMLCanvasElement>();
 	
 	// Set tour owner in store for header to use
 	$effect(() => {
@@ -41,6 +46,25 @@
 		return () => {
 			tourOwnerStore.set(null);
 		};
+	});
+	
+	// Generate QR code when booking is confirmed and has ticket
+	$effect(() => {
+		if (booking?.ticketQRCode && booking.status === 'confirmed' && booking.paymentStatus === 'paid' && qrCodeElement) {
+			// Generate QR code pointing to check-in URL for guides
+			const checkInURL = generateCheckInURL(booking.ticketQRCode);
+			
+			import('qrcode').then(QRCode => {
+				QRCode.default.toCanvas(qrCodeElement, checkInURL, {
+					width: 200, // Smaller for mobile
+					margin: 1,
+					color: {
+						dark: '#000000',
+						light: '#FFFFFF'
+					}
+				});
+			});
+		}
 	});
 	
 	function formatDate(dateString: string) {
@@ -152,20 +176,32 @@
 						</p>
 						
 						{#if hasTicket}
-							<!-- Ticket QR Code Button -->
-							<div class="mt-6">
+							<!-- Ticket QR Code Display -->
+							<div class="mt-6 space-y-4">
+								<div class="bg-white rounded-xl p-4 border-2 border-green-200">
+									<h3 class="text-sm font-semibold text-green-900 mb-3 text-center">Your Tour Ticket</h3>
+									<div class="flex justify-center mb-3">
+										<div class="bg-white rounded-lg p-3 shadow-sm" style="border: 1px solid #e5e7eb;">
+											<canvas bind:this={qrCodeElement} class="block"></canvas>
+										</div>
+									</div>
+									<p class="text-center text-sm text-gray-700 font-mono font-bold">
+										{booking?.ticketQRCode ? getDisplayReference(booking.ticketQRCode) : ''}
+									</p>
+									<p class="text-center text-xs text-green-600 mt-2">
+										Show this QR code to your guide for check-in
+									</p>
+								</div>
+								
 								<a
 									href={ticketURL}
 									target="_blank"
-									class="inline-flex items-center gap-3 px-6 py-3 bg-white text-green-800 border-2 border-green-200 rounded-xl font-semibold hover:bg-green-50 hover:border-green-300 transition-colors"
+									class="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-medium text-sm justify-center w-full"
 								>
-									<Ticket class="w-6 h-6" />
-									<span>View Your Ticket</span>
-									<ExternalLink class="w-4 h-4" />
+									<Ticket class="w-4 h-4" />
+									<span>Open Full Ticket</span>
+									<ExternalLink class="w-3 h-3" />
 								</a>
-								<p class="text-sm text-green-600 mt-2">
-									Show this QR code to your guide on the day of the tour
-								</p>
 							</div>
 						{/if}
 					</div>
@@ -242,7 +278,8 @@
 								<li>• Bring comfortable walking shoes</li>
 								<li>• Check the weather and dress appropriately</li>
 								{#if hasTicket}
-									<li>• <strong>Show your ticket QR code to your guide for check-in</strong></li>
+									<li>• <strong>Show the QR code above to your guide for check-in</strong></li>
+									<li>• Save or screenshot this page for easy access</li>
 								{/if}
 								<li>• Contact your guide if you need to make changes</li>
 							</ul>
@@ -253,27 +290,13 @@
 			
 			<!-- Additional Actions -->
 			{#if !isPaymentProcessing}
-				<div class="mt-8 text-center space-y-4">
-					{#if hasTicket}
-						<div>
-							<a 
-								href={ticketURL}
-								target="_blank"
-								class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-							>
-								<Ticket class="w-4 h-4" />
-								Access your ticket anytime
-							</a>
-						</div>
-					{/if}
-					<div>
-						<a 
-							href="/" 
-							class="text-sm text-gray-600 hover:text-gray-900"
-						>
-							← Book another tour
-						</a>
-					</div>
+				<div class="mt-8 text-center">
+					<a 
+						href="/" 
+						class="text-sm text-gray-600 hover:text-gray-900"
+					>
+						← Book another tour
+					</a>
 				</div>
 			{/if}
 		{/if}

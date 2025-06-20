@@ -7,7 +7,7 @@ import { users, oauthAccounts } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
+export const GET: RequestHandler = async ({ url, cookies, request }) => {
   if (!google) {
     console.error('Google OAuth2 is not configured');
     throw error(500, 'OAuth2 not configured');
@@ -99,6 +99,39 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
         const { generateUniqueUsername } = await import('$lib/utils/username.js');
         const username = await generateUniqueUsername(userName);
         
+        // Detect country from request headers (Accept-Language or default)
+        const acceptLanguage = request.headers.get('accept-language') || '';
+        let detectedCountry = 'DE'; // Default to Germany
+        let detectedCurrency = 'EUR';
+        
+        // Simple country detection from Accept-Language header
+        const languageCountryMap: Record<string, string> = {
+          'en-US': 'US', 'en-GB': 'GB', 'de': 'DE', 'fr': 'FR', 'es': 'ES',
+          'it': 'IT', 'pl': 'PL', 'nl': 'NL', 'pt': 'PT', 'sv': 'SE',
+          'no': 'NO', 'da': 'DK', 'fi': 'FI', 'cs': 'CZ', 'ja': 'JP'
+        };
+        
+        const countryCurrencyMap: Record<string, string> = {
+          'US': 'USD', 'GB': 'GBP', 'JP': 'JPY', 'CA': 'CAD', 'AU': 'AUD',
+          'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK', 'PL': 'PLN',
+          'CZ': 'CZK', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
+          'NL': 'EUR', 'BE': 'EUR', 'AT': 'EUR', 'PT': 'EUR'
+        };
+        
+        // Parse Accept-Language header
+        const primaryLang = acceptLanguage.split(',')[0]?.split(';')[0]?.trim().toLowerCase();
+        if (primaryLang) {
+          for (const [lang, country] of Object.entries(languageCountryMap)) {
+            if (primaryLang.startsWith(lang)) {
+              detectedCountry = country;
+              detectedCurrency = countryCurrencyMap[country] || 'EUR';
+              break;
+            }
+          }
+        }
+        
+        console.log(`🌍 OAuth user country detection: ${detectedCountry}, currency: ${detectedCurrency}`);
+        
         await db.insert(users).values({
           id: newUserId,
           email: googleUser.email.toLowerCase(),
@@ -106,7 +139,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
           username,
           avatar: googleUser.picture,
           emailVerified: true, // Google emails are pre-verified
-          hashedPassword: null // No password for OAuth users
+          hashedPassword: null, // No password for OAuth users
+          country: detectedCountry,
+          currency: detectedCurrency
         });
 
         await db.insert(oauthAccounts).values({

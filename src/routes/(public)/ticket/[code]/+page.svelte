@@ -45,7 +45,7 @@
 			import('qrcode').then(QRCode => {
 				console.log('QRCode library loaded:', QRCode);
 				QRCode.default.toCanvas(qrCodeElement, checkInURL, {
-					width: 256,
+					width: 200, // Consistent size, mobile-friendly
 					margin: 1,
 					color: {
 						dark: '#000000',
@@ -147,7 +147,7 @@
 			<!-- Mobile-first ticket design -->
 			<div style="background: var(--bg-primary);" class="shadow-xl rounded-xl overflow-hidden">
 				<!-- Header -->
-				<div class="px-6 py-8 text-white text-center" style="background: var(--color-primary-600);">
+				<div class="px-4 sm:px-6 py-8 text-white text-center" style="background: var(--color-primary-600);">
 					<div class="flex justify-center mb-4">
 						<div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
 							<Ticket class="w-8 h-8" />
@@ -158,7 +158,7 @@
 				</div>
 				
 				<!-- Ticket Status -->
-				<div class="px-6 py-4 border-b" style="border-color: var(--border-primary);">
+				<div class="px-4 sm:px-6 py-4 border-b" style="border-color: var(--border-primary);">
 					<div class="flex items-center justify-center gap-2">
 						<span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full border {statusInfo.class}">
 							<statusInfo.icon class="w-4 h-4 {statusInfo.iconClass}" />
@@ -168,16 +168,18 @@
 				</div>
 				
 				<!-- QR Code -->
-				<div class="px-6 py-8 text-center border-b" style="border-color: var(--border-primary);">
-					<div class="w-64 h-64 mx-auto rounded-xl p-4 mb-4" style="background: var(--bg-primary); border: 2px solid var(--border-primary);">
-						<canvas bind:this={qrCodeElement} class="w-full h-full"></canvas>
+				<div class="px-4 sm:px-6 py-8 text-center border-b" style="border-color: var(--border-primary);">
+					<div class="max-w-[240px] mx-auto rounded-xl p-4 mb-4" style="background: var(--bg-primary); border: 2px solid var(--border-primary);">
+						<div class="w-full flex justify-center">
+							<canvas bind:this={qrCodeElement} class="block max-w-full"></canvas>
+						</div>
 					</div>
 					<p class="text-sm mb-2" style="color: var(--text-secondary);">Ticket Code</p>
 					<p class="text-xl font-mono font-bold" style="color: var(--text-primary);">{getDisplayReference(data.ticketCode)}</p>
 				</div>
 				
 				<!-- Tour Details -->
-				<div class="px-6 py-6 space-y-4">
+				<div class="px-4 sm:px-6 py-6 space-y-4">
 					<div>
 						<h2 class="text-xl font-bold mb-1" style="color: var(--text-primary);">{booking.expand?.tour?.name}</h2>
 						{#if booking.expand?.tour?.description}
@@ -223,7 +225,7 @@
 				</div>
 				
 				<!-- Customer Details -->
-				<div class="px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+				<div class="px-4 sm:px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
 					<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Booking Details</h3>
 					<div class="space-y-3 text-sm">
 						<div class="flex items-center gap-3">
@@ -255,7 +257,7 @@
 				</div>
 				
 				<!-- Important Notes -->
-				<div class="px-6 py-6 border-t" style="border-color: var(--border-primary);">
+				<div class="px-4 sm:px-6 py-6 border-t" style="border-color: var(--border-primary);">
 					<h3 class="font-semibold mb-3" style="color: var(--text-primary);">Important Information</h3>
 					<ul class="text-sm space-y-2" style="color: var(--text-secondary);">
 						<li class="flex gap-2">

@@ -3,6 +3,7 @@ import { getStripe } from '$lib/stripe.server.js';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { formatPhoneForStripe } from '$lib/utils/phone-formatter.js';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
@@ -21,28 +22,109 @@ export const POST: RequestHandler = async ({ request, url }) => {
 
         const user = userRecords[0];
         
-        // Use the most current country data from the database
+        // Use the most current data from the database, with fallbacks
         const userCountry = user.country || country || 'DE';
+        const userBusinessName = user.businessName || businessName || user.name;
+        const userPhone = formatPhoneForStripe(user.phone);
+        const userWebsite = user.website || '';
+        const userLocation = user.location || '';
         
         const stripe = getStripe();
         let accountId = user.stripeAccountId;
 
         // Create Stripe Connect account if it doesn't exist
         if (!accountId) {
-            const account = await stripe.accounts.create({
+            // Prepare business profile with all available data
+            const businessProfile: any = {
+                name: userBusinessName,
+                product_description: user.description || 'Tour guide services',
+                support_email: email,
+            };
+            
+            // Add phone if available
+            if (userPhone) {
+                businessProfile.support_phone = userPhone;
+            }
+            
+            // Add website URL if available
+            if (userWebsite) {
+                // Ensure website has protocol
+                let websiteUrl = userWebsite;
+                if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
+                    websiteUrl = `https://${websiteUrl}`;
+                }
+                businessProfile.url = websiteUrl;
+            }
+            
+            // Prepare account creation parameters
+            const accountParams: any = {
                 type: 'express',
                 country: userCountry,
                 email: email,
-                business_profile: {
-                    name: businessName || undefined,
-                    product_description: 'Tour guide services',
-                    support_email: email,
-                },
+                business_profile: businessProfile,
                 capabilities: {
                     card_payments: { requested: true },
                     transfers: { requested: true },
                 },
-            });
+                // Add business type (most tour guides are individuals/sole proprietors)
+                business_type: 'individual',
+            };
+            
+            // Create individual object if we have any personal data
+            if (userLocation || userPhone || user.name || email) {
+                accountParams.individual = {
+                    email: email,
+                };
+                
+                // Add phone if available
+                if (userPhone) {
+                    accountParams.individual.phone = userPhone; // Already formatted to E.164
+                }
+                
+                // Add address if location is available
+                if (userLocation) {
+                    // This is a simple example - you might want to enhance this
+                    // to properly parse city/state/postal code from the location string
+                    accountParams.individual.address = {
+                        city: userLocation,
+                        country: userCountry,
+                    };
+                }
+                
+                // Add metadata to help with onboarding
+                accountParams.metadata = {
+                    userId: userId,
+                    hasLocation: userLocation ? 'true' : 'false',
+                    hasPhone: userPhone ? 'true' : 'false',
+                    hasWebsite: userWebsite ? 'true' : 'false',
+                };
+            }
+            
+            // If user has provided their name, include it
+            if (user.name) {
+                if (!accountParams.individual) {
+                    accountParams.individual = {
+                        email: email,
+                        phone: userPhone || undefined, // Add phone here too
+                    };
+                }
+                
+                // Try to split name into first and last (simple approach)
+                const nameParts = user.name.trim().split(' ');
+                if (nameParts.length >= 2) {
+                    accountParams.individual.first_name = nameParts[0];
+                    accountParams.individual.last_name = nameParts.slice(1).join(' ');
+                } else {
+                    accountParams.individual.first_name = user.name;
+                }
+                
+                // Make sure phone is included if not already set
+                if (userPhone && !accountParams.individual.phone) {
+                    accountParams.individual.phone = userPhone;
+                }
+            }
+
+            const account = await stripe.accounts.create(accountParams);
 
             accountId = account.id;
 
@@ -53,6 +135,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
                     updatedAt: new Date()
                 })
                 .where(eq(users.id, userId));
+                
+            console.log(`✅ Created Stripe Connect account ${accountId} with pre-filled data:`, {
+                country: userCountry,
+                businessName: userBusinessName,
+                hasPhone: !!userPhone,
+                phoneFormat: userPhone ? `${userPhone.substring(0, 4)}...` : 'none',
+                originalPhone: user.phone ? `${user.phone.substring(0, 10)}...` : 'none',
+                hasWebsite: !!userWebsite,
+                hasLocation: !!userLocation,
+                hasName: !!user.name
+            });
         }
 
         // Check if account needs onboarding or is ready for dashboard

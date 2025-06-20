@@ -27,6 +27,8 @@ export const actions: Actions = {
 		const confirmPassword = data.get('confirmPassword')?.toString();
 		const businessName = data.get('businessName')?.toString();
 		const location = data.get('location')?.toString();
+		const country = data.get('country')?.toString() || '';
+		const currency = data.get('currency')?.toString() || 'EUR';
 
 		// Validation
 		if (!username) {
@@ -96,12 +98,14 @@ export const actions: Actions = {
 				emailVerified: false,
 				businessName,
 				location,
+				country,
+				currency,
 				createdAt: new Date(),
 				updatedAt: new Date()
 			};
 			
 			await db.insert(users).values(userData);
-			console.log('User created successfully:', userId, 'with username:', username);
+			console.log('User created successfully:', userId, 'with username:', username, 'country:', country, 'currency:', currency);
 			
 			// Create email verification token and send verification email
 			try {

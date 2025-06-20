@@ -281,7 +281,7 @@
 			<!-- Mobile Header -->
 			<MobilePageHeader
 				title={showWelcome ? "Schedule Setup" : "Schedule"}
-				secondaryInfo={showWelcome ? "Add your first time slots" : tour.name}
+				secondaryInfo={showWelcome ? "Add your first time slots" : `${tour?.name}`}
 				quickActions={[
 					{
 						label: 'Add Slot',

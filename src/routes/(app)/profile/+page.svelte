@@ -364,8 +364,8 @@
 				body: JSON.stringify({
 					userId: user.id,
 					email: user.email,
-					businessName: user.businessName || user.name,
-					country: user.country || 'DE'
+					businessName: businessName || user.businessName || user.name,
+					country: country || user.country || 'DE'
 				})
 			});
 
