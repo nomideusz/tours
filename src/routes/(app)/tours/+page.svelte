@@ -50,48 +50,17 @@
 	// TanStack Query client for invalidation
 	const queryClient = useQueryClient();
 
-	// TanStack Query queries
+	// TanStack Query queries - using profile page pattern (simple, direct)
 	const toursStatsQuery = createQuery({
 		queryKey: queryKeys.toursStats,
-		queryFn: async () => {
-			console.log('🔍 Fetching tours stats...');
-			try {
-				const result = await queryFunctions.fetchToursStats();
-				console.log('✅ Tours stats fetched successfully:', result);
-				return result;
-			} catch (error) {
-				console.error('❌ Failed to fetch tours stats:', error);
-				throw error;
-			}
-		},
-		staleTime: 30 * 1000, // 30 seconds - longer to prevent excessive refetching
-		gcTime: 5 * 60 * 1000,
-		refetchOnWindowFocus: false, // Disable to reduce complexity
-		refetchOnMount: false, // Disable to prevent double fetching
-		retry: 1, // Reduce retries
-		enabled: browser, // Only run in browser - auth is handled by app layout
+		queryFn: queryFunctions.fetchToursStats,
+		// No individual query options - let layout defaults handle everything
 	});
 
 	const userToursQuery = createQuery({
 		queryKey: queryKeys.userTours,
-		queryFn: async () => {
-			console.log('🔍 Fetching user tours...');
-			try {
-				const result = await queryFunctions.fetchUserTours();
-				console.log('✅ User tours fetched successfully:', result?.length || 0, 'tours');
-				return result;
-			} catch (error) {
-				console.error('❌ Failed to fetch user tours:', error);
-				throw error;
-			}
-		},
-		staleTime: 30 * 1000, // 30 seconds - longer to prevent excessive refetching
-		gcTime: 5 * 60 * 1000,
-		refetchOnWindowFocus: false, // Disable to reduce complexity
-		refetchOnMount: false, // Disable to prevent double fetching
-		refetchInterval: false,
-		retry: 1, // Reduce retries
-		enabled: browser, // Only run in browser - auth is handled by app layout
+		queryFn: queryFunctions.fetchUserTours,
+		// No individual query options - let layout defaults handle everything
 	});
 
 	let copiedQRCode = $state<string | null>(null);
@@ -103,90 +72,29 @@
 	// Delete modal state
 	let showDeleteModal = $state(false);
 	let tourToDelete = $state<any>(null);
-	let isDeleting = $state(false);
 	
 	// Enhanced feedback states
 	let tourFeedback = $state<Record<string, { type: 'success' | 'error', message: string }>>({});
 	let actionMenuOpen = $state<string | null>(null);
 	let deletedTourName = $state<string | null>(null);
 
-	// Use derived state to prevent infinite loops and ensure reactivity
-	let tours = $derived((() => {
-		// Only run in browser to avoid SSR issues
-		if (!browser || $userToursQuery.status !== 'success' || !$userToursQuery.data) {
-			return [];
-		}
-		
-		console.log('🔄 Tours derived - success with data:', $userToursQuery.data.length, 'tours');
-		
-		let toursData = $userToursQuery.data as Tour[];
-		
-		// Apply any recent updates from sessionStorage for status toggle only
-		try {
-			const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-			const now = Date.now();
-			
-			// Apply updates that are less than 30 seconds old
-			toursData = toursData.map(tour => {
-				const update = recentUpdates[tour.id];
-				if (update && (now - update.timestamp) < 30000) {
-					return { ...tour, status: update.status };
-				}
-				return tour;
-			});
-		} catch (e) {
-			// Ignore sessionStorage errors
-		}
-		
-		console.log('🔄 Tours derived result:', toursData.length, 'tours');
-		return toursData;
-	})());
+	// Use simple derived state like dashboard and profile pages
+	let tours = $derived(($userToursQuery.data as Tour[]) || []);
 	
-	// Clean up sessionStorage periodically without triggering reactivity
-	$effect(() => {
-		if (!browser) return;
-		
-		const cleanup = () => {
-			try {
-				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-				const now = Date.now();
-				const validUpdates: Record<string, any> = {};
-				
-				for (const [tourId, update] of Object.entries(recentUpdates)) {
-					if ((now - (update as any).timestamp) < 30000) {
-						validUpdates[tourId] = update;
-					}
-				}
-				
-				if (Object.keys(validUpdates).length !== Object.keys(recentUpdates).length) {
-					sessionStorage.setItem('recentTourUpdates', JSON.stringify(validUpdates));
-				}
-			} catch (e) {
-				// Ignore errors
-			}
-		};
-		
-		// Clean up every 10 seconds
-		const interval = setInterval(cleanup, 10000);
-		return () => clearInterval(interval);
-	});
+	// Simplified approach - let TanStack Query handle the reactivity
 
-	// Derive stats from query with logging
-	let stats = $derived((() => {
-		const statsData = $toursStatsQuery.data || {
-			totalTours: 0,
-			activeTours: 0,
-			draftTours: 0,
-			totalBookings: 0,
-			pendingBookings: 0,
-			confirmedBookings: 0,
-			totalParticipants: 0,
-			monthlyTours: 0,
-			monthRevenue: 0
-		};
-		console.log('📊 Stats updated:', statsData);
-		return statsData;
-	})());
+	// Use simple derived state like dashboard and profile pages
+	let stats = $derived($toursStatsQuery.data || {
+		totalTours: 0,
+		activeTours: 0,
+		draftTours: 0,
+		totalBookings: 0,
+		pendingBookings: 0,
+		confirmedBookings: 0,
+		totalParticipants: 0,
+		monthlyTours: 0,
+		monthRevenue: 0
+	});
 
 	// Loading states
 	let isLoading = $derived($toursStatsQuery.isLoading || $userToursQuery.isLoading);
@@ -397,18 +305,17 @@
 	}
 
 	// Initialize delete mutation
-	const deleteToursPageMutation = deleteTourMutation();
+	const deleteMutation = deleteTourMutation();
 	
-	// Delete tour function
+	// Delete tour function - using TanStack Query mutation
 	async function confirmDeleteTour() {
 		if (!tourToDelete) return;
 		
 		const tourToDeleteId = tourToDelete.id;
 		const tourToDeleteName = tourToDelete.name;
 		
-		isDeleting = true;
 		try {
-			await $deleteToursPageMutation.mutateAsync(tourToDeleteId);
+			await $deleteMutation.mutateAsync(tourToDeleteId);
 			
 			showDeleteModal = false;
 			tourToDelete = null;
@@ -419,36 +326,28 @@
 		} catch (error) {
 			console.error('Failed to delete tour:', error);
 			showTourFeedback(tourToDeleteId, 'error', parseErrorMessage(error));
-		} finally {
-			isDeleting = false;
 		}
 	}
 
-	// Handle status update from TourStatusToggle
+	// Handle status update from TourStatusToggle - simplified like profile page
 	function handleStatusUpdate(tourId: string, newStatus: 'active' | 'draft') {
 		console.log('🎯 Status update callback triggered:', tourId, newStatus);
-		// The TourStatusToggle mutation already handles cache updates optimistically
-		// No additional state management needed here
-		
-		// Store the update in sessionStorage only as a backup for page navigation
-		if (browser) {
-			const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-			recentUpdates[tourId] = { status: newStatus, timestamp: Date.now() };
-			sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-			
-			// Clean up after 30 seconds
-			setTimeout(() => {
-				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-				delete recentUpdates[tourId];
-				sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-			}, 30000);
-		}
+		// TanStack Query will handle the cache updates automatically
 	}
 
-	function handleRefresh() {
-		Promise.all([
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
+	async function handleRefresh() {
+		// Use profile page pattern for immediate refresh
+		queryClient.removeQueries({ queryKey: queryKeys.toursStats });
+		queryClient.removeQueries({ queryKey: queryKeys.userTours });
+		await Promise.all([
+			queryClient.refetchQueries({ 
+				queryKey: queryKeys.toursStats,
+				type: 'active'
+			}),
+			queryClient.refetchQueries({ 
+				queryKey: queryKeys.userTours,
+				type: 'active'
+			})
 		]);
 	}
 
@@ -456,18 +355,9 @@
 		actionMenuOpen = actionMenuOpen === tourId ? null : tourId;
 	}
 
-	// Force refetch when coming from tour creation or in certain scenarios
+	// Let queries work with default settings from layout
 	onMount(() => {
-		// Only check URL params for refresh (not sessionStorage activity)
-		const shouldRefresh = page.url.searchParams.get('refresh') === 'true' || 
-							 page.url.searchParams.get('created') === 'true';
-		
-		if (shouldRefresh) {
-			console.log('🔄 Tours page: Force refreshing due to URL params');
-			// Force immediate refetch of both queries
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats, refetchType: 'all' });
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours, refetchType: 'all' });
-		}
+		console.log('🔄 Tours page: Mounted - queries will refetch automatically');
 	});
 
 </script>
@@ -630,7 +520,7 @@
 							{filterOption.label}
 							{#if filterOption.key !== 'all'}
 								<span class="ml-1.5 text-xs opacity-75">
-									({tours.filter(t => t.status === filterOption.key).length})
+									({tours.filter((t: Tour) => t.status === filterOption.key).length})
 								</span>
 							{/if}
 						</button>
@@ -949,7 +839,7 @@
 	bind:isOpen={showDeleteModal}
 	title="Delete tour permanently?"
 	message="Are you sure you want to delete '{tourToDelete?.name}'? This action cannot be undone and will delete all related bookings and time slots."
-	confirmText={isDeleting ? "Deleting..." : "Delete Tour"}
+	confirmText={$deleteMutation.isPending ? "Deleting..." : "Delete Tour"}
 	cancelText="Cancel"
 	variant="danger"
 	icon={AlertTriangle}

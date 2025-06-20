@@ -54,7 +54,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 		
 		return json(formattedTours, {
 			headers: {
-				'Cache-Control': 'max-age=60, stale-while-revalidate=30' // 1 min cache, 30s stale
+				'Cache-Control': 'no-cache, no-store, must-revalidate', // Don't cache mutations
+				'Pragma': 'no-cache',
+				'Expires': '0'
 			}
 		});
 	} catch (error) {

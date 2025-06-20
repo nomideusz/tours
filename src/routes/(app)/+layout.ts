@@ -13,21 +13,25 @@ export const load = async ({ data }) => {
 			(queryClient as any).__userId !== currentUserId;
 
 		if (needsFreshClient) {
-			// Create a new QueryClient for this user
+			// Create a new QueryClient for this user with reactive-friendly defaults
 			queryClient = new QueryClient({
 				defaultOptions: {
 					queries: {
 						enabled: browser,
-						staleTime: 30 * 1000, // 30 seconds - shorter to prevent stale data
+						staleTime: 0, // Always consider data potentially stale for immediate updates
 						gcTime: 5 * 60 * 1000, // 5 minutes
-						refetchOnWindowFocus: false, // Disable to prevent excessive refetching
-						refetchOnMount: false, // Disable to prevent double fetching
+						refetchOnWindowFocus: true, // Refetch when switching tabs
+						refetchOnMount: true, // Refetch when components mount
+						refetchOnReconnect: true, // Refetch when reconnecting
+						retry: 1, // Reduce retries for faster feedback
+						retryDelay: 1000, // 1 second retry delay
 					},
 				},
 			});
 			
 			// Tag the client with the user ID for tracking
 			(queryClient as any).__userId = currentUserId;
+			console.log('Created fresh QueryClient for user:', currentUserId);
 		}
 	}
 

@@ -55,9 +55,9 @@
 	let formData = $state({
 		name: (form as any)?.formData?.name || '',
 		description: (form as any)?.formData?.description || '',
-		price: (form as any)?.formData?.price || 10, // reasonable default price
-		duration: (form as any)?.formData?.duration || 60, // in minutes
-		capacity: (form as any)?.formData?.capacity || 10,
+		price: (form as any)?.formData?.price || 25, // reasonable default price
+		duration: (form as any)?.formData?.duration || 120, // in minutes - 2 hours is common for tours
+		capacity: (form as any)?.formData?.capacity || 12, // slightly larger group size
 		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
 		category: (form as any)?.formData?.category || '',
 		location: (form as any)?.formData?.location || '',
@@ -66,8 +66,8 @@
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || '',
 		enablePricingTiers: (form as any)?.formData?.enablePricingTiers || false,
 		pricingTiers: (form as any)?.formData?.pricingTiers || {
-			adult: 10, // default to same as price
-			child: 0
+			adult: (form as any)?.formData?.price || 25, // default to same as price
+			child: 0 // will be set automatically when child pricing is enabled
 		}
 	});
 
@@ -415,11 +415,11 @@
 	<div class="hidden sm:block mb-8">
 		<div class="flex items-center gap-2 sm:gap-4 text-sm">
 			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm">
+				<div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm" style="background: var(--color-primary-600);">
 					1
 				</div>
-				<span class="font-medium text-blue-600 hidden sm:inline">Tour Details</span>
-				<span class="font-medium text-blue-600 sm:hidden">Details</span>
+				<span class="font-medium hidden sm:inline" style="color: var(--color-primary-600);">Tour Details</span>
+				<span class="font-medium sm:hidden" style="color: var(--color-primary-600);">Details</span>
 			</div>
 			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
 			<div class="flex items-center gap-2">
@@ -502,15 +502,13 @@
 							sessionStorage.setItem('recentTourActivity', Date.now().toString());
 						}
 						
-						// Invalidate ALL tours-related queries BEFORE redirecting to ensure fresh data
-						console.log('🔄 Tour created successfully, invalidating all tour caches...');
-						await Promise.all([
-							queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
-							queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
-							queryClient.invalidateQueries({ queryKey: ['tours'] }), // Invalidate all tour queries
-							queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }) // Invalidate dashboard stats too
-						]);
-						console.log('✅ All caches invalidated, redirecting...');
+						// Invalidate queries to refetch with new data
+						console.log('🔄 Tour created successfully, invalidating caches...');
+						
+						queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+						queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+						
+						console.log('✅ Caches invalidated, redirecting...');
 						
 						// Use goto for client-side navigation with cache already invalidated
 						goto(result.location);

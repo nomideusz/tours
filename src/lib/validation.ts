@@ -188,6 +188,10 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 				if (data.pricingTiers.child > VALIDATION_RULES.price.max) {
 					errors.push({ field: 'pricingTiers.child', message: `Child price must be no more than €${VALIDATION_RULES.price.max}` });
 				}
+				// Add validation to ensure child price doesn't exceed adult price
+				if (data.pricingTiers.adult && data.pricingTiers.child > data.pricingTiers.adult) {
+					errors.push({ field: 'pricingTiers.child', message: 'Child price cannot be higher than adult price' });
+				}
 			}
 		}
 	}

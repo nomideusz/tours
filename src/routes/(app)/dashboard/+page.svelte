@@ -41,19 +41,23 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// TanStack Query for dashboard data
+	// TanStack Query for dashboard data - using profile page pattern (simple, direct)
 	const dashboardStatsQuery = createQuery({
 		queryKey: queryKeys.dashboardStats,
 		queryFn: queryFunctions.fetchDashboardStats,
-		staleTime: 2 * 60 * 1000, // 2 minutes
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		staleTime: 0, // Always consider data stale for immediate updates
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: 'always',
+		refetchOnMount: 'always',
 	});
 
 	const recentBookingsQuery = createQuery({
 		queryKey: queryKeys.recentBookings(10),
 		queryFn: () => queryFunctions.fetchRecentBookings(10),
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		staleTime: 0, // Always consider data stale for immediate updates
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: 'always',
+		refetchOnMount: 'always',
 	});
 
 	// Get profile from layout data (this stays server-side since it's needed for auth)
@@ -63,6 +67,28 @@
 	onMount(() => {
 		// Refresh all data to ensure emailVerified status is current
 		invalidateAll();
+		
+		// Close dropdown when clicking outside
+		const handleClickOutside = (event: MouseEvent) => {
+			const target = event.target as Element;
+			if (!target.closest('.country-selector') && !target.closest('.relative')) {
+				showCountryDropdown = false;
+			}
+		};
+		
+		// Close dropdown with Escape key
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				showCountryDropdown = false;
+			}
+		};
+		
+		document.addEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleKeyDown);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleKeyDown);
+		};
 	});
 	
 	// Use TanStack Query data with fallbacks
@@ -87,12 +113,15 @@
 	let profileLinkCopied = $state(false);
 	
 	// Currency confirmation state
-	let showCurrencyConfirmation = $state(false);
 	let selectedCurrency = $state<Currency>($userCurrency);
 	let selectedCountry = $state(profile?.country || '');
 	let savingCurrency = $state(false);
 	let saveSuccess = $state(false);
 	let saveError = $state<string | null>(null);
+	
+	// Show expanded selection UI
+	let showCurrencySelector = $state(false);
+	let showCountryDropdown = $state(false);
 	
 	// Country list for the dashboard (simplified)
 	const COMMON_COUNTRIES = [
@@ -117,6 +146,12 @@
 		{ code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR' },
 		{ code: 'IE', name: 'Ireland', flag: '🇮🇪', currency: 'EUR' }
 	];
+	
+	// Get current country info
+	let currentCountryInfo = $derived(COMMON_COUNTRIES.find(c => c.code === selectedCountry));
+	
+	// Check if settings need confirmation (show if no explicit confirmation given)
+	let needsConfirmation = $derived(browser && profile && !sessionStorage.getItem('currencyConfirmed'));
 	
 	// Subscription limits check
 	let isApproachingLimits = $derived(() => {
@@ -189,7 +224,6 @@
 			
 			if (response.ok) {
 				userCurrency.set(selectedCurrency);
-				showCurrencyConfirmation = false;
 				sessionStorage.setItem('currencyConfirmed', 'true');
 				saveSuccess = true;
 				setTimeout(() => {
@@ -215,25 +249,38 @@
 		}
 	}
 	
-	// Check if we should show currency confirmation (only if not set in profile)
-	$effect(() => {
-		if (browser && profile && !profile.country && !sessionStorage.getItem('currencyConfirmed')) {
-			// Only auto-detect if user doesn't have country set
-			import('$lib/utils/country-detector.js').then(({ detectCountry }) => {
-				const detectedCountry = detectCountry();
-				if (detectedCountry && COMMON_COUNTRIES.find(c => c.code === detectedCountry)) {
-					selectedCountry = detectedCountry;
-					const country = COMMON_COUNTRIES.find(c => c.code === detectedCountry);
-					if (country && country.currency as Currency) {
-						selectedCurrency = country.currency as Currency;
-					}
-				}
-			});
-			showCurrencyConfirmation = true;
-		} else if (profile?.country && profile?.currency) {
+	// Reset selections to original values
+	function resetSelections() {
+		if (profile && profile.country && profile.currency) {
 			// Use saved profile data
 			selectedCountry = profile.country;
 			selectedCurrency = profile.currency as Currency;
+		} else {
+			// Reset to user currency store value
+			selectedCurrency = $userCurrency;
+		}
+	}
+	
+	// Load currency settings and check if confirmation needed
+	$effect(() => {
+		if (browser && profile) {
+			if (profile.country && profile.currency) {
+				// Use saved profile data
+				selectedCountry = profile.country;
+				selectedCurrency = profile.currency as Currency;
+			} else {
+				// Auto-detect if not set
+				import('$lib/utils/country-detector.js').then(({ detectCountry }) => {
+					const detectedCountry = detectCountry();
+					if (detectedCountry && COMMON_COUNTRIES.find(c => c.code === detectedCountry)) {
+						selectedCountry = detectedCountry;
+						const country = COMMON_COUNTRIES.find(c => c.code === detectedCountry);
+						if (country && country.currency as Currency) {
+							selectedCurrency = country.currency as Currency;
+						}
+					}
+				});
+			}
 		}
 	});
 
@@ -345,31 +392,57 @@
 		color: var(--color-primary-700);
 	}
 	
-	:global([data-theme="dark"]) .currency-option.selected {
-		background-color: var(--color-primary-900);
-		color: var(--color-primary-100);
-		border-color: var(--color-primary-400);
+	.country-selector {
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.country-selector:hover {
+		border-color: var(--color-primary-300);
+	}
+	
+	.country-selector:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 	}
 	
 	.country-option {
 		cursor: pointer;
 		transition: all 0.2s ease;
-		min-height: 60px;
+		background-color: transparent;
 	}
 	
 	.country-option:hover {
-		background-color: var(--bg-tertiary);
-		transform: translateY(-1px);
+		background-color: var(--bg-secondary);
 	}
 	
 	.country-option.selected {
-		background-color: var(--color-primary-100);
-		border-color: var(--color-primary-500);
+		background-color: var(--color-primary-50);
+		color: var(--color-primary-700);
 	}
 	
-	:global([data-theme="dark"]) .country-option.selected {
-		background-color: var(--color-primary-900);
-		border-color: var(--color-primary-400);
+	.current-plan-badge {
+		background-color: var(--color-primary-100);
+		color: var(--color-primary-700);
+	}
+	
+	.currency-button {
+		background-color: var(--bg-primary);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
+		cursor: pointer;
+	}
+	
+	.currency-button:hover {
+		background-color: var(--bg-secondary);
+		border-color: var(--border-primary);
+	}
+	
+	.currency-button.selected {
+		background-color: var(--color-primary-100);
+		border-color: var(--color-primary-500);
+		color: var(--color-primary-700);
 	}
 	
 	.subscription-tier {
@@ -406,6 +479,28 @@
 	
 	.booking-item:hover {
 		background-color: var(--bg-secondary);
+	}
+	
+	.country-list {
+		scrollbar-width: thin;
+		scrollbar-color: var(--border-secondary) transparent;
+	}
+	
+	.country-list::-webkit-scrollbar {
+		width: 8px;
+	}
+	
+	.country-list::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	
+	.country-list::-webkit-scrollbar-thumb {
+		background-color: var(--border-secondary);
+		border-radius: 4px;
+	}
+	
+	.country-list::-webkit-scrollbar-thumb:hover {
+		background-color: var(--border-primary);
 	}
 </style>
 
@@ -512,87 +607,189 @@
 			</div>
 		{/if}
 		
-		<!-- Currency & Country Confirmation -->
-		{#if showCurrencyConfirmation}
-			<div class="mb-8 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="flex items-center gap-3 mb-4">
-					<Globe class="h-5 w-5" style="color: var(--color-primary-600);" />
-					<h3 class="font-semibold" style="color: var(--text-primary);">Confirm your location and currency</h3>
-				</div>
-				<p class="text-sm mb-4" style="color: var(--text-secondary);">
-					We've detected your location. Please confirm your country and preferred currency for pricing your tours:
-				</p>
-				
-				{#if saveError}
-					<div class="mb-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-						<p class="text-sm" style="color: var(--color-error-700);">{saveError}</p>
+		<!-- Currency & Location Settings -->
+		{#if needsConfirmation || showCurrencySelector}
+			<div class="mb-6 rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				{#if !showCurrencySelector}
+					<!-- Compact confirmation UI -->
+					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<div class="flex items-start gap-3">
+							<Globe class="h-5 w-5 mt-0.5" style="color: var(--color-primary-600);" />
+							<div>
+								<h3 class="font-medium text-sm mb-1" style="color: var(--text-primary);">
+									Confirm your detected location
+								</h3>
+								<div class="flex items-center gap-3 text-sm">
+									{#if currentCountryInfo}
+										<span class="flex items-center gap-1.5">
+											<span class="text-lg">{currentCountryInfo.flag}</span>
+											<span style="color: var(--text-secondary);">{currentCountryInfo.name}</span>
+										</span>
+									{/if}
+									<span style="color: var(--text-tertiary);">•</span>
+									<span style="color: var(--text-secondary);">
+										{#if currentCountryInfo && selectedCurrency !== currentCountryInfo.currency}
+											{SUPPORTED_CURRENCIES[selectedCurrency]?.symbol} {selectedCurrency} (custom)
+										{:else}
+											{SUPPORTED_CURRENCIES[selectedCurrency]?.symbol} {selectedCurrency}
+										{/if}
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={() => showCurrencySelector = true}
+								class="button-secondary button--small"
+							>
+								Change
+							</button>
+							<button
+								onclick={saveCurrencySelection}
+								disabled={savingCurrency || !selectedCountry}
+								class="button-primary button--small button--gap"
+							>
+								{#if savingCurrency}
+									<Loader2 class="h-3 w-3 animate-spin" />
+									Confirming...
+								{:else}
+									<CheckCircle class="h-3 w-3" />
+									Confirm
+								{/if}
+							</button>
+						</div>
+					</div>
+				{:else}
+					<!-- Expanded selection UI -->
+					<div class="flex items-center justify-between mb-4">
+						<div class="flex items-center gap-3">
+							<Globe class="h-5 w-5" style="color: var(--color-primary-600);" />
+							<h3 class="font-semibold" style="color: var(--text-primary);">Select your location and currency</h3>
+						</div>
+						<button
+							onclick={() => showCurrencySelector = false}
+							class="button-secondary button--small button--icon"
+							aria-label="Close"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					
+					{#if saveError}
+						<div class="mb-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<p class="text-sm" style="color: var(--color-error-700);">{saveError}</p>
+						</div>
+					{/if}
+					
+					<!-- Country Selection -->
+					<div class="mb-4">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							Country
+						</label>
+						<div class="relative">
+							<button
+								onclick={() => showCountryDropdown = !showCountryDropdown}
+								class="country-selector w-full flex items-center justify-between p-3 rounded-lg border text-left"
+								style="background: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
+							>
+								<div class="flex items-center gap-3">
+									{#if currentCountryInfo}
+										<span class="text-lg">{currentCountryInfo.flag}</span>
+										<div>
+											<div class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.name}</div>
+											<div class="text-xs" style="color: var(--text-secondary);">
+												{SUPPORTED_CURRENCIES[currentCountryInfo.currency as Currency]?.symbol} {currentCountryInfo.currency}
+											</div>
+										</div>
+									{:else}
+										<div class="text-sm" style="color: var(--text-secondary);">Select a country</div>
+									{/if}
+								</div>
+								<svg class="w-4 h-4 transition-transform {showCountryDropdown ? 'rotate-180' : ''}" 
+									 style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								</svg>
+							</button>
+							
+							{#if showCountryDropdown}
+								<div class="absolute z-50 w-full mt-1 rounded-lg shadow-lg border overflow-hidden"
+									 style="background: var(--bg-primary); border-color: var(--border-primary); box-shadow: var(--shadow-lg);">
+									<div class="max-h-[240px] overflow-y-auto country-list">
+										{#each COMMON_COUNTRIES as country}
+											<button
+												onclick={() => {
+													onCountryChange(country.code);
+													showCountryDropdown = false;
+												}}
+												class="country-option w-full flex items-center gap-3 p-3 text-left transition-colors
+														{selectedCountry === country.code ? 'selected' : ''}"
+											>
+												<span class="text-lg">{country.flag}</span>
+												<div class="flex-1">
+													<div class="text-sm font-medium" style="color: var(--text-primary);">{country.name}</div>
+													<div class="text-xs" style="color: var(--text-secondary);">
+														{SUPPORTED_CURRENCIES[country.currency as Currency]?.symbol} {country.currency}
+													</div>
+												</div>
+												{#if selectedCountry === country.code}
+													<CheckCircle class="w-4 h-4 flex-shrink-0" style="color: var(--color-primary-600);" />
+												{/if}
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
+					
+					<!-- Compact Currency Selection -->
+					<div class="mb-4">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							Currency
+						</label>
+						<div class="flex flex-wrap gap-2">
+							{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
+								<button
+									onclick={() => selectedCurrency = code as Currency}
+									class="currency-button px-3 py-2 rounded-md border text-sm transition-all
+											{selectedCurrency === code ? 'selected' : ''}"
+								>
+									{info.symbol} {code}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<div class="flex items-center justify-end gap-2">
+						<button
+							onclick={() => {
+								resetSelections();
+								showCurrencySelector = false;
+							}}
+							class="button-secondary"
+						>
+							Cancel
+						</button>
+						<button
+							onclick={async () => {
+								await saveCurrencySelection();
+								showCurrencySelector = false;
+							}}
+							disabled={savingCurrency || !selectedCountry}
+							class="button-primary button--gap"
+						>
+							{#if savingCurrency}
+								<Loader2 class="h-4 w-4 animate-spin" />
+								Saving...
+							{:else}
+								<CheckCircle class="h-4 w-4" />
+								Save Settings
+							{/if}
+						</button>
 					</div>
 				{/if}
-				
-				<!-- Country Selection Grid -->
-				<div class="mb-4">
-					<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
-						Select your country
-					</label>
-					<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-						{#each COMMON_COUNTRIES as country}
-							<button
-								onclick={() => onCountryChange(country.code)}
-								class="country-option p-3 rounded-lg border text-left transition-all flex items-center gap-2
-										{selectedCountry === country.code ? 'selected' : ''}"
-								style="border-color: {selectedCountry === country.code ? 'var(--color-primary-500)' : 'var(--border-secondary)'};"
-							>
-								<span class="text-2xl">{country.flag}</span>
-								<div class="flex-1 min-w-0">
-									<div class="font-medium text-sm truncate" style="color: var(--text-primary);">
-										{country.name}
-									</div>
-									<div class="text-xs" style="color: var(--text-secondary);">
-										{SUPPORTED_CURRENCIES[country.currency as Currency]?.symbol} {country.currency}
-									</div>
-								</div>
-							</button>
-						{/each}
-					</div>
-				</div>
-				
-				<!-- Currency Grid -->
-				<div class="mb-4">
-					<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
-						Currency (auto-selected based on country, but you can change it)
-					</label>
-					<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-						{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
-							<button
-								onclick={() => selectedCurrency = code as Currency}
-								class="currency-option p-3 rounded-lg border text-left transition-all
-										{selectedCurrency === code ? 'selected' : ''}"
-								style="border-color: {selectedCurrency === code ? 'var(--color-primary-500)' : 'var(--border-secondary)'};"
-							>
-								<div class="font-medium text-sm" style="color: var(--text-primary);">
-									{info.symbol} {code}
-								</div>
-								<div class="text-xs" style="color: var(--text-secondary);">
-									{info.name}
-								</div>
-							</button>
-						{/each}
-					</div>
-				</div>
-				
-				<button
-					onclick={saveCurrencySelection}
-					disabled={savingCurrency || !selectedCountry}
-					class="button-primary button--gap"
-				>
-					{#if savingCurrency}
-						<Loader2 class="h-4 w-4 animate-spin" />
-						Saving...
-					{:else}
-						<CheckCircle class="h-4 w-4" />
-						Confirm Location & Currency
-					{/if}
-				</button>
 			</div>
 		{/if}
 		
@@ -683,7 +880,7 @@
 							<p class="text-2xl font-bold mt-1" style="color: var(--text-primary);">€0<span class="text-sm font-normal" style="color: var(--text-secondary);">/month</span></p>
 						</div>
 						{#if profile?.subscriptionPlan === 'free'}
-							<span class="px-2 py-1 text-xs rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+							<span class="px-2 py-1 text-xs rounded-full current-plan-badge">
 								Current Plan
 							</span>
 						{/if}
@@ -774,6 +971,188 @@
 		
 	{:else}
 		<!-- Regular Dashboard for Users with Tours -->
+		
+		<!-- Currency & Location Settings (for existing users) -->
+		{#if needsConfirmation || showCurrencySelector}
+			<div class="mb-6 rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				{#if !showCurrencySelector}
+					<!-- Compact confirmation UI -->
+					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<div class="flex items-start gap-3">
+							<Globe class="h-5 w-5 mt-0.5" style="color: var(--color-primary-600);" />
+							<div>
+								<h3 class="font-medium text-sm mb-1" style="color: var(--text-primary);">
+									Confirm your detected location
+								</h3>
+								<div class="flex items-center gap-3 text-sm">
+									{#if currentCountryInfo}
+										<span class="flex items-center gap-1.5">
+											<span class="text-lg">{currentCountryInfo.flag}</span>
+											<span style="color: var(--text-secondary);">{currentCountryInfo.name}</span>
+										</span>
+									{/if}
+									<span style="color: var(--text-tertiary);">•</span>
+									<span style="color: var(--text-secondary);">
+										{$currentCurrencyInfo?.symbol} {selectedCurrency}
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={() => showCurrencySelector = true}
+								class="button-secondary button--small"
+							>
+								Change
+							</button>
+							<button
+								onclick={saveCurrencySelection}
+								disabled={savingCurrency || !selectedCountry}
+								class="button-primary button--small button--gap"
+							>
+								{#if savingCurrency}
+									<Loader2 class="h-3 w-3 animate-spin" />
+									Confirming...
+								{:else}
+									<CheckCircle class="h-3 w-3" />
+									Confirm
+								{/if}
+							</button>
+						</div>
+					</div>
+				{:else}
+					<!-- Expanded selection UI -->
+					<div class="flex items-center justify-between mb-4">
+						<div class="flex items-center gap-3">
+							<Globe class="h-5 w-5" style="color: var(--color-primary-600);" />
+							<h3 class="font-semibold" style="color: var(--text-primary);">Select your location and currency</h3>
+						</div>
+						<button
+							onclick={() => showCurrencySelector = false}
+							class="button-secondary button--small button--icon"
+							aria-label="Close"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					
+					{#if saveError}
+						<div class="mb-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<p class="text-sm" style="color: var(--color-error-700);">{saveError}</p>
+						</div>
+					{/if}
+					
+					<!-- Country Selection -->
+					<div class="mb-4">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							Country
+						</label>
+						<div class="relative">
+							<button
+								onclick={() => showCountryDropdown = !showCountryDropdown}
+								class="country-selector w-full flex items-center justify-between p-3 rounded-lg border text-left"
+								style="background: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
+							>
+								<div class="flex items-center gap-3">
+									{#if currentCountryInfo}
+										<span class="text-lg">{currentCountryInfo.flag}</span>
+										<div>
+											<div class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.name}</div>
+											<div class="text-xs" style="color: var(--text-secondary);">
+												{SUPPORTED_CURRENCIES[currentCountryInfo.currency as Currency]?.symbol} {currentCountryInfo.currency}
+											</div>
+										</div>
+									{:else}
+										<div class="text-sm" style="color: var(--text-secondary);">Select a country</div>
+									{/if}
+								</div>
+								<svg class="w-4 h-4 transition-transform {showCountryDropdown ? 'rotate-180' : ''}" 
+									 style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								</svg>
+							</button>
+							
+							{#if showCountryDropdown}
+								<div class="absolute z-50 w-full mt-1 rounded-lg shadow-lg border overflow-hidden"
+									 style="background: var(--bg-primary); border-color: var(--border-primary); box-shadow: var(--shadow-lg);">
+									<div class="max-h-[240px] overflow-y-auto country-list">
+										{#each COMMON_COUNTRIES as country}
+											<button
+												onclick={() => {
+													onCountryChange(country.code);
+													showCountryDropdown = false;
+												}}
+												class="country-option w-full flex items-center gap-3 p-3 text-left transition-colors
+														{selectedCountry === country.code ? 'selected' : ''}"
+											>
+												<span class="text-lg">{country.flag}</span>
+												<div class="flex-1">
+													<div class="text-sm font-medium" style="color: var(--text-primary);">{country.name}</div>
+													<div class="text-xs" style="color: var(--text-secondary);">
+														{SUPPORTED_CURRENCIES[country.currency as Currency]?.symbol} {country.currency}
+													</div>
+												</div>
+												{#if selectedCountry === country.code}
+													<CheckCircle class="w-4 h-4 flex-shrink-0" style="color: var(--color-primary-600);" />
+												{/if}
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
+					
+					<!-- Compact Currency Selection -->
+					<div class="mb-4">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							Currency
+						</label>
+						<div class="flex flex-wrap gap-2">
+							{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
+								<button
+									onclick={() => selectedCurrency = code as Currency}
+									class="currency-button px-3 py-2 rounded-md border text-sm transition-all
+											{selectedCurrency === code ? 'selected' : ''}"
+								>
+									{info.symbol} {code}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<div class="flex items-center justify-end gap-2">
+						<button
+							onclick={() => {
+								resetSelections();
+								showCurrencySelector = false;
+							}}
+							class="button-secondary"
+						>
+							Cancel
+						</button>
+						<button
+							onclick={async () => {
+								await saveCurrencySelection();
+								showCurrencySelector = false;
+							}}
+							disabled={savingCurrency || !selectedCountry}
+							class="button-primary button--gap"
+						>
+							{#if savingCurrency}
+								<Loader2 class="h-4 w-4 animate-spin" />
+								Saving...
+							{:else}
+								<CheckCircle class="h-4 w-4" />
+								Save Settings
+							{/if}
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
 		
 		<!-- Subscription Limit Warning -->
 		{#if isApproachingLimits()}
@@ -869,7 +1248,7 @@
 						</div>
 						
 						<!-- Full URL display on all screens -->
-						<div class="w-full bg-white bg-opacity-50 rounded px-2 py-1 overflow-x-auto no-scrollbar">
+						<div class="w-full rounded px-2 py-1 overflow-x-auto no-scrollbar" style="background: var(--bg-secondary);">
 							<a 
 								href="/{profile?.username || ''}" 
 								target="_blank" 

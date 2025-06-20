@@ -135,7 +135,21 @@ export function createTourMutation() {
 					return newStats;
 				});
 				
-				console.log('✅ Create mutation: Keeping optimistic updates as final state');
+				// Force remove and refetch for immediate sync
+				queryClient.removeQueries({ queryKey: queryKeys.userTours });
+				queryClient.removeQueries({ queryKey: queryKeys.toursStats });
+				
+				// Refetch immediately
+				await queryClient.refetchQueries({ 
+					queryKey: queryKeys.userTours,
+					type: 'active' 
+				});
+				await queryClient.refetchQueries({ 
+					queryKey: queryKeys.toursStats,
+					type: 'active' 
+				});
+				
+				console.log('✅ Create mutation: Cache synced with server');
 			}
 		}
 	});
@@ -263,11 +277,23 @@ export function deleteTourMutation() {
 			console.log('🗑️ Delete mutation: Server deletion successful for tour:', tourId);
 			console.log('🗑️ Delete mutation: Server response:', data);
 			
-			// Don't do any cache invalidation - let the optimistic update persist
-			// The tour is confirmed deleted on the server, so the optimistic state is correct
-			console.log('🗑️ Delete mutation: Keeping optimistic updates as final state');
+			// Force remove and refetch for immediate sync
+			queryClient.removeQueries({ queryKey: queryKeys.userTours });
+			queryClient.removeQueries({ queryKey: queryKeys.toursStats });
 			
-			// Remove the sessionStorage activity flag to prevent competing invalidations
+			// Refetch immediately
+			await queryClient.refetchQueries({ 
+				queryKey: queryKeys.userTours,
+				type: 'active' 
+			});
+			await queryClient.refetchQueries({ 
+				queryKey: queryKeys.toursStats,
+				type: 'active' 
+			});
+			
+			console.log('🗑️ Delete mutation: Cache synced with server');
+			
+			// Remove the sessionStorage activity flag
 			if (typeof window !== 'undefined') {
 				sessionStorage.removeItem('recentTourActivity');
 			}
@@ -347,14 +373,7 @@ export function updateTourStatusMutation() {
 				});
 			}
 			
-			// Also store in sessionStorage as backup
-			try {
-				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-				recentUpdates[tourId] = { status, timestamp: Date.now() };
-				sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-			} catch (e) {
-				console.warn('🔄 Status mutation: Failed to store in sessionStorage:', e);
-			}
+
 			
 			return { previousTours, previousStats, tourId, status, oldStatus };
 		},
@@ -371,22 +390,23 @@ export function updateTourStatusMutation() {
 				console.log('🔄 Status mutation: Rolled back stats');
 			}
 			
-			// Remove failed update from sessionStorage
-			try {
-				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
-				delete recentUpdates[variables.tourId];
-				sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-			} catch (e) {
-				console.warn('🔄 Status mutation: Failed to clean sessionStorage:', e);
-			}
+
 		},
-		onSettled: async (data, error, variables) => {
-			// Wait before refetching to let optimistic updates show
-			setTimeout(async () => {
-				const tour = queryClient.getQueryData(queryKeys.tourDetails(variables.tourId)) as any;
-				await invalidate.invalidateTourQueries(variables.tourId, tour?.tour?.qrCode);
-				console.log('🔄 Status mutation: Cache invalidated after delay');
-			}, 300); // Shorter delay for status toggle
+		onSuccess: async (data, variables) => {
+			console.log('🔄 Status mutation: Server confirmed status change');
+			
+			// Don't remove queries - just invalidate to trigger background refetch
+			// This keeps the optimistic updates visible while fetching fresh data
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.userTours,
+				exact: true 
+			});
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.toursStats,
+				exact: true 
+			});
+			
+			console.log('🔄 Status mutation: Cache invalidated, background sync in progress');
 		}
 	});
 }

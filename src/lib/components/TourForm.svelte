@@ -1,6 +1,25 @@
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
+	
+	// Import clean icons instead of using emojis
+	import User from 'lucide-svelte/icons/user';
+	import Users from 'lucide-svelte/icons/users';
+	import Utensils from 'lucide-svelte/icons/utensils';
+	import Building from 'lucide-svelte/icons/building';
+	import BookOpen from 'lucide-svelte/icons/book-open';
+	import Palette from 'lucide-svelte/icons/palette';
+	import Mountain from 'lucide-svelte/icons/mountain';
+	import Edit from 'lucide-svelte/icons/edit';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import Eye from 'lucide-svelte/icons/eye';
+	import Camera from 'lucide-svelte/icons/camera';
+	import Upload from 'lucide-svelte/icons/upload';
+	import X from 'lucide-svelte/icons/x';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Save from 'lucide-svelte/icons/save';
 
 	interface Props {
 		formData: {
@@ -237,21 +256,24 @@
 	const policyTemplates = [
 		{
 			id: 'flexible',
-			name: '🟢 Flexible',
+			name: 'Flexible',
 			description: 'Free cancellation up to 24 hours',
-			policy: 'Free cancellation up to 24 hours before the tour starts. Full refund guaranteed. For cancellations within 24 hours, 50% refund will be provided.'
+			policy: 'Free cancellation up to 24 hours before the tour starts. Full refund guaranteed. For cancellations within 24 hours, 50% refund will be provided.',
+			color: 'success'
 		},
 		{
 			id: 'moderate',
-			name: '🟡 Moderate', 
+			name: 'Moderate', 
 			description: 'Free cancellation up to 48 hours',
-			policy: 'Free cancellation up to 48 hours before the tour starts. For cancellations between 48-24 hours: 50% refund. For cancellations within 24 hours: no refund.'
+			policy: 'Free cancellation up to 48 hours before the tour starts. For cancellations between 48-24 hours: 50% refund. For cancellations within 24 hours: no refund.',
+			color: 'warning'
 		},
 		{
 			id: 'strict',
-			name: '🔴 Strict',
+			name: 'Strict',
 			description: 'Free cancellation up to 7 days',
-			policy: 'Free cancellation up to 7 days before the tour starts. For cancellations between 7-3 days: 50% refund. For cancellations within 3 days: no refund.'
+			policy: 'Free cancellation up to 7 days before the tour starts. For cancellations between 7-3 days: 50% refund. For cancellations within 3 days: no refund.',
+			color: 'error'
 		}
 	];
 
@@ -333,6 +355,14 @@
 		}
 	});
 
+	// Set reasonable default for child price when enabling
+	function enableChildPricing() {
+		showChildPrice = true;
+		// Set default to 70% of adult price (reasonable discount)
+		const reasonableDefault = Math.round(formData.price * 0.7 * 2) / 2; // Round to nearest 0.5
+		childPrice = Math.max(0, reasonableDefault);
+	}
+
 
 </script>
 
@@ -341,10 +371,8 @@
 	{#if allErrors.length > 0}
 		<div class="lg:hidden mb-4 rounded-xl p-4 sticky top-4 z-10" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
 			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-					<svg class="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
-					</svg>
+				<div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style="background: var(--color-error-100);">
+					<AlertCircle class="w-3 h-3" style="color: var(--color-error-600);" />
 				</div>
 				<div class="flex-1 min-w-0">
 					<p class="font-medium text-sm" style="color: var(--color-error-900);">
@@ -415,22 +443,26 @@
 						
 						<div class="flex flex-wrap gap-2">
 							{#each [
-								{ id: 'walking', name: 'Walking', icon: '👥' },
-								{ id: 'food', name: 'Food', icon: '🍴' },
-								{ id: 'cultural', name: 'Cultural', icon: '🏛' },
-								{ id: 'historical', name: 'Historical', icon: '📖' },
-								{ id: 'art', name: 'Art', icon: '🎭' },
-								{ id: 'adventure', name: 'Adventure', icon: '🏔' }
+								{ id: 'walking', name: 'Walking', icon: Users },
+								{ id: 'food', name: 'Food', icon: Utensils },
+								{ id: 'cultural', name: 'Cultural', icon: Building },
+								{ id: 'historical', name: 'Historical', icon: BookOpen },
+								{ id: 'art', name: 'Art', icon: Palette },
+								{ id: 'adventure', name: 'Adventure', icon: Mountain }
 							] as category}
 								<button
 									type="button"
 									onclick={() => { 
 										formData.category = formData.category === category.id ? '' : category.id; 
 									}}
-									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors hover:bg-gray-50 {formData.category === category.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}"
-									style="color: {formData.category === category.id ? 'var(--color-primary-700)' : 'var(--text-secondary)'};"
+									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors"
+									style="
+										background: {formData.category === category.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+										border-color: {formData.category === category.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+										color: {formData.category === category.id ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
+									"
 								>
-									<span>{category.icon}</span>
+									<svelte:component this={category.icon} class="w-3 h-3" />
 									<span>{category.name}</span>
 								</button>
 							{/each}
@@ -445,10 +477,14 @@
 										formData.category = 'custom';
 									}
 								}}
-								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors hover:bg-gray-50 {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}"
-								style="color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-700)' : 'var(--text-secondary)'};"
+								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors"
+								style="
+									background: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+									border-color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+									color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
+								"
 							>
-								<span>✏️</span>
+								<Edit class="w-3 h-3" />
 								<span>Custom</span>
 							</button>
 						</div>
@@ -575,21 +611,21 @@
 				<!-- Optional Child Pricing -->
 				{#if !showChildPrice}
 					<div class="mt-6">
-						<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary);">
-							<p class="text-sm" style="color: var(--text-secondary);">Need different pricing for children?</p>
+						<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary); background: var(--bg-secondary);">
+							<div>
+								<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Child Pricing</p>
+								<p class="text-xs" style="color: var(--text-secondary);">Offer discounts for children (ages 3-12)</p>
+							</div>
 							<button
 								type="button"
-								onclick={() => { 
-									showChildPrice = true; 
-									childPrice = formData.price || 0; 
-								}}
+								onclick={enableChildPricing}
 								class="button-secondary button--small"
 							>
 								Add Child Price
 							</button>
-				</div>
-				</div>
-			{:else}
+						</div>
+					</div>
+				{:else}
 					<div class="mt-6">
 						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 							<div class="flex items-center justify-between mb-3">
@@ -600,50 +636,65 @@
 										showChildPrice = false; 
 										childPrice = 0; 
 									}}
-									class="text-xs text-gray-400 hover:text-red-600 transition-colors"
+									class="button-secondary button--small button--icon"
+									aria-label="Remove child pricing"
 								>
-									Remove
+									<X class="w-3 h-3" />
 								</button>
-								</div>
+							</div>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<NumberInput
-								id="childPrice"
-								name="pricingTiers.child"
-								label="Child Price (€)"
-								bind:value={childPrice}
-								min={0}
-								max={99999}
-								step={0.5}
+								<NumberInput
+									id="childPrice"
+									name="pricingTiers.child"
+									label="Child Price (€)"
+									bind:value={childPrice}
+									min={0}
+									max={formData.price || 99999}
+									step={0.5}
 									placeholder="0.00"
-								incrementLabel="Increase child price"
-								decrementLabel="Decrease child price"
-								decimalPlaces={2}
-							/>
+									incrementLabel="Increase child price"
+									decrementLabel="Decrease child price"
+									decimalPlaces={2}
+									error={getFieldError(allErrors, 'pricingTiers.child')}
+									hasError={hasFieldError(allErrors, 'pricingTiers.child')}
+								/>
 								<div class="flex items-end">
 									<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
-										<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Adult vs Child</p>
+										<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
 										<div class="text-sm" style="color: var(--text-primary);">
 											{#if childPrice === 0}
-												<span class="text-green-600 font-medium">Children go free</span>
+												<div class="flex items-center gap-1">
+													<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+													<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
+												</div>
 											{:else if formData.price > 0}
 												{@const discount = Math.round(((formData.price - childPrice) / formData.price) * 100)}
 												{#if discount > 0}
-													<span class="font-medium">{discount}% child discount</span>
+													<div class="flex items-center gap-1">
+														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+														<span class="font-medium">{discount}% discount</span>
+													</div>
 												{:else if discount < 0}
-													<span class="text-orange-600 font-medium">{Math.abs(discount)}% higher for children</span>
-									{:else}
+													<div class="flex items-center gap-1">
+														<AlertCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
+														<span class="font-medium" style="color: var(--color-warning-700);">Higher than adult price</span>
+													</div>
+												{:else}
 													<span class="font-medium">Same price for all</span>
-									{/if}
+												{/if}
 											{:else}
-												<span class="text-gray-400">Set adult price first</span>
+												<span style="color: var(--text-tertiary);">Set adult price first</span>
 											{/if}
-							</div>
-						</div>
+										</div>
+									</div>
 								</div>
+							</div>
+							{#if getFieldError(allErrors, 'pricingTiers.child')}
+								<p class="form-error mt-2">{getFieldError(allErrors, 'pricingTiers.child')}</p>
+							{/if}
 						</div>
 					</div>
-				</div>
-			{/if}
+				{/if}
 
 				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
 					<div class="mt-4">
@@ -703,12 +754,11 @@
 											onclick={() => {
 												formData.includedItems = formData.includedItems.filter(i => i !== item);
 											}}
-											class="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+											class="ml-1 transition-colors"
+											style="color: var(--text-tertiary);"
 											aria-label="Remove {item}"
 										>
-											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-											</svg>
+											<X class="w-3 h-3" />
 										</button>
 									</span>
 								{/each}
@@ -796,12 +846,11 @@
 											onclick={() => {
 												formData.requirements = formData.requirements.filter(r => r !== requirement);
 											}}
-											class="ml-1 text-gray-400 hover:text-red-600 transition-colors"
+											class="ml-1 transition-colors"
+											style="color: var(--text-tertiary);"
 											aria-label="Remove {requirement}"
 										>
-											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-											</svg>
+											<X class="w-3 h-3" />
 										</button>
 									</span>
 								{/each}
@@ -860,27 +909,42 @@
 			<div class="p-4">
 				<div class="space-y-3">
 					<!-- Template Options -->
-							{#each policyTemplates as template}
-						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors {selectedPolicyTemplate === template.id ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'}" style="background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'transparent'};">
-									<input
-										type="radio"
-										name="policyTemplate"
-										value={template.id}
-										checked={selectedPolicyTemplate === template.id}
-										onchange={() => selectPolicyTemplate(template.id)}
-										class="form-radio mt-0.5"
-									/>
+					{#each policyTemplates as template}
+						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors" 
+							style="
+								background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+								border-color: {selectedPolicyTemplate === template.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+							"
+						>
+							<input
+								type="radio"
+								name="policyTemplate"
+								value={template.id}
+								checked={selectedPolicyTemplate === template.id}
+								onchange={() => selectPolicyTemplate(template.id)}
+								class="form-radio mt-0.5"
+							/>
 							<div class="flex-1">
-								<div class="font-medium text-sm mb-1" style="color: var(--text-primary);">
-												{template.name.substring(2)}
-										</div>
-								<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
+								<div class="flex items-center gap-2 mb-1">
+									<div class="w-2 h-2 rounded-full" 
+										style="background: var(--color-{template.color}-500);"
+									></div>
+									<div class="font-medium text-sm" style="color: var(--text-primary);">
+										{template.name}
 									</div>
-								</label>
-							{/each}
+								</div>
+								<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
+							</div>
+						</label>
+					{/each}
 
 					<!-- Custom Policy Option -->
-					<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors {showCustomPolicy ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'}" style="background: {showCustomPolicy ? 'var(--color-primary-50)' : 'transparent'};">
+					<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+						style="
+							background: {showCustomPolicy ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+							border-color: {showCustomPolicy ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+						"
+					>
 						<input
 							type="radio"
 							name="policyTemplate"
@@ -889,11 +953,14 @@
 							class="form-radio mt-0.5"
 						/>
 						<div class="flex-1">
-							<div class="font-medium text-sm mb-1" style="color: var(--text-primary);">
-								Custom Policy
+							<div class="flex items-center gap-2 mb-1">
+								<Edit class="w-3 h-3" style="color: var(--text-secondary);" />
+								<div class="font-medium text-sm" style="color: var(--text-primary);">
+									Custom Policy
+								</div>
 							</div>
 							<p class="text-xs" style="color: var(--text-secondary);">Write your own cancellation terms</p>
-					</div>
+						</div>
 					</label>
 						</div>
 						
@@ -954,11 +1021,16 @@
 												onExistingImageRemove(imageName);
 											}
 										}}
-										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full text-sm sm:text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10"
-										style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
+										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+										style="
+											background: var(--color-error-500);
+											color: white;
+											touch-action: manipulation;
+											-webkit-tap-highlight-color: transparent;
+										"
 										aria-label="Remove image"
 									>
-										×
+										<X class="w-3 h-3" />
 									</button>
 								</div>
 							{/each}
@@ -967,12 +1039,12 @@
 				{/if}
 				
 				<!-- Image Upload Area -->
-				<div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-					<svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-					</svg>
-					<p class="text-sm text-gray-600 mb-2">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-											<p class="text-xs text-gray-500 mb-4">JPEG, PNG, WebP up to 5MB each (max 5 images)</p>
+				<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+					style="border-color: var(--border-secondary); background: var(--bg-secondary);"
+				>
+					<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+					<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
+					<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 5 images)</p>
 					
 					<!-- Mobile-optimized file input -->
 					<input
@@ -991,20 +1063,15 @@
 						class="button-secondary cursor-pointer inline-flex items-center gap-2"
 						style="touch-action: manipulation;"
 					>
-						<svg class="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-						</svg>
-						<svg class="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
-						</svg>
+						<Camera class="w-4 h-4 sm:hidden" />
+						<Upload class="w-4 h-4 hidden sm:block" />
 						<span class="sm:hidden">Add Photos</span>
 						<span class="hidden sm:inline">Choose Files</span>
 					</label>
 
 					<!-- Mobile instruction -->
 					<div class="sm:hidden mt-3">
-						<p class="text-xs text-gray-500">Tap to select from gallery or take new photos</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">Tap to select from gallery or take new photos</p>
 					</div>
 				</div>
 
@@ -1012,9 +1079,7 @@
 				{#if imageUploadErrors && imageUploadErrors.length > 0}
 					<div class="mt-4 p-3 rounded-lg sm:hidden" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
 						<div class="flex items-start gap-2">
-							<svg class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
-							</svg>
+							<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
 							<div class="flex-1">
 								<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
 								<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
@@ -1058,11 +1123,16 @@
 												onImageRemove(index);
 											}
 										}}
-										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full text-sm sm:text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10"
-										style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
+										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+										style="
+											background: var(--color-error-500);
+											color: white;
+											touch-action: manipulation;
+											-webkit-tap-highlight-color: transparent;
+										"
 										aria-label="Remove image"
 									>
-										×
+										<X class="w-3 h-3" />
 									</button>
 									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
 										{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
@@ -1085,10 +1155,14 @@
 				<div class="p-4">
 					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
 						<div class="flex items-center gap-3">
-							<div class="w-10 h-10 rounded-full flex items-center justify-center {formData.status === 'active' ? 'bg-green-100' : 'bg-amber-100'}">
-								<span class="text-lg">
-									{formData.status === 'active' ? '🟢' : '📝'}
-								</span>
+							<div class="w-10 h-10 rounded-full flex items-center justify-center" 
+								style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
+							>
+								{#if formData.status === 'active'}
+									<CheckCircle class="w-5 h-5" style="color: var(--color-success-600);" />
+								{:else}
+									<FileText class="w-5 h-5" style="color: var(--color-warning-600);" />
+								{/if}
 							</div>
 							<div>
 								<h3 class="font-medium" style="color: var(--text-primary);">
@@ -1142,14 +1216,10 @@
 						{formData.status === 'active' && isEdit ? 'Activating...' : 'Saving...'}
 					{:else}
 						{#if formData.status === 'active' && isEdit}
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
+							<CheckCircle class="w-4 h-4" />
 							Save & Activate Tour
 						{:else}
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-							</svg>
+							<Save class="w-4 h-4" />
 							{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
 						{/if}
 					{/if}

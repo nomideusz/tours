@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { browser } from '$app/environment';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -504,18 +505,10 @@
 			});
 			
 			if (response.ok) {
-				// Invalidate queries to refresh data
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.tourDetails(tourId)
-				});
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.toursStats
-				});
-				
-				// Refetch the tour data to get the updated images list
-				await queryClient.refetchQueries({
-					queryKey: queryKeys.tourDetails(tourId)
-				});
+				// Invalidate queries to refetch when needed
+				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
 				
 				// Clear uploaded images and removed images since they're now saved
 				uploadedImages = [];
@@ -562,10 +555,10 @@
 			});
 			
 			if (response.ok) {
-				// Invalidate all tour-related queries
-				queryClient.invalidateQueries({
-					queryKey: queryKeys.toursStats
-				});
+				// Just invalidate queries - tours page will refetch when mounted
+				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
 				
 				// Navigate back to tours list
 				goto('/tours?deleted=true');
@@ -795,22 +788,17 @@
 					
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
-							// Invalidate tour queries to refresh data
-							await queryClient.invalidateQueries({
-								queryKey: queryKeys.tourDetails(tourId)
-							});
-							await queryClient.invalidateQueries({
-								queryKey: queryKeys.toursStats
-							});
-							
-							// Force refetch to get updated tour data including images
-							await queryClient.refetchQueries({
-								queryKey: queryKeys.tourDetails(tourId)
-							});
+							// Invalidate all related queries
+							queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
+							queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+							queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
 							
 							// Clear uploaded images and removed images since they're now saved
 							uploadedImages = [];
 							imagesToRemove = [];
+							
+							// Navigate to tour detail page
+							goto(`/tours/${tourId}`);
 						}
 						
 						await update({ reset: false });

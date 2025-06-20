@@ -31,57 +31,47 @@
 	// State
 	let localStatus = $state(tour.status);
 	
-	// Use the mutation
-	const updateStatusMutation = updateTourStatusMutation();
+	// Initialize mutation
+	const statusMutation = updateTourStatusMutation();
 	
 	// Update local status when tour prop changes
 	$effect(() => {
 		localStatus = tour.status;
 	});
 	
-	// Update local status when mutation succeeds (optimistic update handles this)
-	$effect(() => {
-		if ($updateStatusMutation.data?.status) {
-			localStatus = $updateStatusMutation.data.status;
-		}
-	});
-	
-	// Toggle function using mutation
+	// Toggle function using TanStack Query mutation
 	async function handleToggle() {
-		if (!browser || $updateStatusMutation.isPending || !tour?.id) return;
+		if (!browser || $statusMutation.isPending || !tour?.id) return;
 		
 		const newStatus = tour.status === 'active' ? 'draft' : 'active';
 		console.log('🎯 TourStatusToggle: Starting toggle', tour.id, tour.status, '→', newStatus);
 		
+		// Optimistic update for immediate feedback
+		localStatus = newStatus;
+		
 		try {
-			await $updateStatusMutation.mutateAsync({ 
-				tourId: tour.id, 
-				status: newStatus 
+			await $statusMutation.mutateAsync({
+				tourId: tour.id,
+				status: newStatus
 			});
 			
-			console.log('🎯 TourStatusToggle: Mutation successful, updating local state');
-			// Update local state (optimistic update already handled by mutation)
-			localStatus = newStatus;
-			
 			// Call success callback
-			console.log('🎯 TourStatusToggle: Calling success callback');
+			console.log('🎯 TourStatusToggle: Update successful');
 			onSuccess?.(newStatus);
+			
 		} catch (error) {
 			console.error('🎯 TourStatusToggle: Failed to toggle tour status:', error);
-			onError?.(error as Error);
-			// Rollback local state on error
+			// Rollback optimistic update on error
 			localStatus = tour.status;
+			onError?.(error as Error);
 		}
 	}
-	
-	// Derive loading state
-	let isUpdating = $derived($updateStatusMutation.isPending);
 	
 	// Button classes based on size and variant
 	let buttonClasses = $derived(
 		variant === 'menu-item' 
 			? 'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ' + 
-			  (isUpdating ? 'opacity-50' : 'hover:bg-gray-50')
+			  ($statusMutation.isPending ? 'opacity-50' : 'hover:bg-gray-50')
 			: variant === 'inline'
 			? 'inline-flex items-center gap-1.5 text-sm font-medium transition-colors ' +
 			  (localStatus === 'draft' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700')
@@ -96,11 +86,11 @@
 {#if variant === 'menu-item'}
 	<button
 		onclick={handleToggle}
-		disabled={isUpdating}
+		disabled={$statusMutation.isPending}
 		class={buttonClasses}
 		style="color: {localStatus === 'draft' ? 'var(--color-success-600)' : 'var(--text-secondary)'};"
 	>
-		{#if isUpdating}
+		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
 		{:else if localStatus === 'draft'}
 			<CheckCircle class="h-4 w-4" />
@@ -114,10 +104,10 @@
 {:else if variant === 'inline'}
 	<button
 		onclick={handleToggle}
-		disabled={isUpdating}
+		disabled={$statusMutation.isPending}
 		class={buttonClasses}
 	>
-		{#if isUpdating}
+		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
 		{:else if localStatus === 'draft'}
 			<CheckCircle class="h-4 w-4" />
@@ -131,10 +121,10 @@
 {:else}
 	<button
 		onclick={handleToggle}
-		disabled={isUpdating}
+		disabled={$statusMutation.isPending}
 		class={buttonClasses}
 	>
-		{#if isUpdating}
+		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
 			{#if showLabel}
 				<span>{localStatus === 'draft' ? 'Activating...' : 'Setting to draft...'}</span>
