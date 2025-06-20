@@ -3,6 +3,8 @@ import { browser } from '$app/environment';
 import { notificationActions, notifications, type Notification } from '$lib/stores/notifications.js';
 import { useQueryClient } from '@tanstack/svelte-query';
 import { queryKeys } from '$lib/queries/shared-stats.js';
+import { get } from 'svelte/store';
+import { notificationSoundEnabled } from '$lib/stores/preferences.js';
 
 export function useNotifications() {
   let eventSource: EventSource | null = null;
@@ -300,20 +302,9 @@ export function useNotifications() {
       return;
     }
     
-    // Show browser notification if permitted
-    console.log('🔔 Attempting to show browser notification...');
-    try {
-      showBrowserNotification(data);
-    } catch (error) {
-      console.error('❌ Error showing browser notification:', error);
-    }
-    
-    // Play notification sound (optional)
-    console.log('🔊 Playing notification sound...');
-    try {
+    // Play optional notification sound based on user preference
+    if (get(notificationSoundEnabled)) {
       playNotificationSound();
-    } catch (error) {
-      console.error('❌ Error playing notification sound:', error);
     }
     
     // Invalidate relevant queries to refresh data
@@ -333,38 +324,12 @@ export function useNotifications() {
     }
   }
 
-  function showBrowserNotification(data: any) {
-    if (!browser || !('Notification' in window)) return;
-
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(data.title, {
-        body: data.message,
-        icon: '/favicon-32x32.png',
-        badge: '/favicon-16x16.png',
-        tag: data.id, // Prevent duplicate notifications
-        requireInteraction: true
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        if (data.actions?.[0]?.url) {
-          window.location.href = data.actions[0].url;
-        }
-        notification.close();
-      };
-
-      // Auto-close after 10 seconds
-      setTimeout(() => {
-        notification.close();
-      }, 10000);
-    }
-  }
-
+  // Optional notification sound (only plays if user has enabled it)
   function playNotificationSound() {
     if (!browser) return;
     
     try {
-      // Create a simple notification sound
+      // Create a simple, pleasant notification sound
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -372,26 +337,17 @@ export function useNotifications() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+      // Pleasant two-tone chime
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.2);
+      oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
       console.warn('Could not play notification sound:', error);
-    }
-  }
-
-  function requestNotificationPermission() {
-    if (!browser || !('Notification' in window)) return;
-    
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        console.log('🔔 Notification permission:', permission);
-      });
     }
   }
 
@@ -403,7 +359,7 @@ export function useNotifications() {
 
   // Initialize
   if (browser) {
-    requestNotificationPermission();
+    // Just connect to the internal notification system
     
     // Load initial notifications from database first
     loadInitialNotifications().then(() => {

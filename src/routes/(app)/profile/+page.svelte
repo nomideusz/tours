@@ -37,6 +37,7 @@
 	import ProfileSummary from '$lib/components/profile/ProfileSummary.svelte';
 	import PaymentSetup from '$lib/components/profile/PaymentSetup.svelte';
 	import AccountInfo from '$lib/components/profile/AccountInfo.svelte';
+	import PreferencesSection from '$lib/components/profile/PreferencesSection.svelte';
 
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -794,6 +795,9 @@
 
 			<!-- Account Info -->
 			<AccountInfo {user} />
+
+			<!-- Preferences -->
+			<PreferencesSection />
 		</div>
 	</div>
 
