@@ -22,6 +22,7 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { deleteTourMutation } from '$lib/queries/mutations.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -52,21 +53,45 @@
 	// TanStack Query queries
 	const toursStatsQuery = createQuery({
 		queryKey: queryKeys.toursStats,
-		queryFn: queryFunctions.fetchToursStats,
-		staleTime: 30 * 1000, // 30 seconds - reasonable for stats
-		gcTime: 5 * 60 * 1000,    // 5 minutes
-		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: 'always', // Always refetch when component mounts
+		queryFn: async () => {
+			console.log('🔍 Fetching tours stats...');
+			try {
+				const result = await queryFunctions.fetchToursStats();
+				console.log('✅ Tours stats fetched successfully:', result);
+				return result;
+			} catch (error) {
+				console.error('❌ Failed to fetch tours stats:', error);
+				throw error;
+			}
+		},
+		staleTime: 30 * 1000, // 30 seconds - longer to prevent excessive refetching
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable to reduce complexity
+		refetchOnMount: false, // Disable to prevent double fetching
+		retry: 1, // Reduce retries
+		enabled: browser, // Only run in browser - auth is handled by app layout
 	});
 
 	const userToursQuery = createQuery({
 		queryKey: queryKeys.userTours,
-		queryFn: queryFunctions.fetchUserTours,
-		staleTime: 5 * 1000, // 5 seconds - shorter to catch updates faster
-		gcTime: 5 * 60 * 1000,    // 5 minutes
-		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: 'always', // Always refetch when component mounts
-		refetchInterval: false, // No automatic refetch interval
+		queryFn: async () => {
+			console.log('🔍 Fetching user tours...');
+			try {
+				const result = await queryFunctions.fetchUserTours();
+				console.log('✅ User tours fetched successfully:', result?.length || 0, 'tours');
+				return result;
+			} catch (error) {
+				console.error('❌ Failed to fetch user tours:', error);
+				throw error;
+			}
+		},
+		staleTime: 30 * 1000, // 30 seconds - longer to prevent excessive refetching
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable to reduce complexity
+		refetchOnMount: false, // Disable to prevent double fetching
+		refetchInterval: false,
+		retry: 1, // Reduce retries
+		enabled: browser, // Only run in browser - auth is handled by app layout
 	});
 
 	let copiedQRCode = $state<string | null>(null);
@@ -85,88 +110,108 @@
 	let actionMenuOpen = $state<string | null>(null);
 	let deletedTourName = $state<string | null>(null);
 
-	// Use state for tours that we can update immediately
-	let tours = $state<Tour[]>([]);
-	let toursVersion = $state(0); // Force reactivity
-	let isLocalUpdate = $state(false); // Flag to prevent update loops
-	
-	// Initial load and refresh - only update if not doing local update
-	$effect(() => {
-		if ($userToursQuery.data && !isLocalUpdate) {
-			let toursData = $userToursQuery.data as Tour[];
+	// Use derived state to prevent infinite loops and ensure reactivity
+	let tours = $derived((() => {
+		// Only run in browser to avoid SSR issues
+		if (!browser || $userToursQuery.status !== 'success' || !$userToursQuery.data) {
+			return [];
+		}
+		
+		console.log('🔄 Tours derived - success with data:', $userToursQuery.data.length, 'tours');
+		
+		let toursData = $userToursQuery.data as Tour[];
+		
+		// Apply any recent updates from sessionStorage for status toggle only
+		try {
+			const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
+			const now = Date.now();
 			
-			// Apply any recent updates from sessionStorage
-			if (browser) {
+			// Apply updates that are less than 30 seconds old
+			toursData = toursData.map(tour => {
+				const update = recentUpdates[tour.id];
+				if (update && (now - update.timestamp) < 30000) {
+					return { ...tour, status: update.status };
+				}
+				return tour;
+			});
+		} catch (e) {
+			// Ignore sessionStorage errors
+		}
+		
+		console.log('🔄 Tours derived result:', toursData.length, 'tours');
+		return toursData;
+	})());
+	
+	// Clean up sessionStorage periodically without triggering reactivity
+	$effect(() => {
+		if (!browser) return;
+		
+		const cleanup = () => {
+			try {
 				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
 				const now = Date.now();
-				
-				// Apply updates that are less than 45 seconds old
-				toursData = toursData.map(tour => {
-					const update = recentUpdates[tour.id];
-					if (update && (now - update.timestamp) < 45000) {
-						return { ...tour, status: update.status };
-					}
-					return tour;
-				});
-				
-				// Clean up old updates
 				const validUpdates: Record<string, any> = {};
+				
 				for (const [tourId, update] of Object.entries(recentUpdates)) {
-					if ((now - (update as any).timestamp) < 45000) {
+					if ((now - (update as any).timestamp) < 30000) {
 						validUpdates[tourId] = update;
 					}
 				}
+				
 				if (Object.keys(validUpdates).length !== Object.keys(recentUpdates).length) {
 					sessionStorage.setItem('recentTourUpdates', JSON.stringify(validUpdates));
 				}
+			} catch (e) {
+				// Ignore errors
 			}
-			
-			tours = toursData;
-		}
+		};
+		
+		// Clean up every 10 seconds
+		const interval = setInterval(cleanup, 10000);
+		return () => clearInterval(interval);
 	});
 
-	// Derive stats from query
-	let stats = $derived($toursStatsQuery.data || {
-		totalTours: 0,
-		activeTours: 0,
-		draftTours: 0,
-		totalBookings: 0,
-		pendingBookings: 0,
-		confirmedBookings: 0,
-		totalParticipants: 0,
-		monthlyTours: 0,
-		monthRevenue: 0
-	});
+	// Derive stats from query with logging
+	let stats = $derived((() => {
+		const statsData = $toursStatsQuery.data || {
+			totalTours: 0,
+			activeTours: 0,
+			draftTours: 0,
+			totalBookings: 0,
+			pendingBookings: 0,
+			confirmedBookings: 0,
+			totalParticipants: 0,
+			monthlyTours: 0,
+			monthRevenue: 0
+		};
+		console.log('📊 Stats updated:', statsData);
+		return statsData;
+	})());
 
 	// Loading states
 	let isLoading = $derived($toursStatsQuery.isLoading || $userToursQuery.isLoading);
 	let isError = $derived($toursStatsQuery.isError || $userToursQuery.isError);
 	
 	// Filtered tours based on search and status
-	let filteredTours = $derived((() => {
-		// Access toursVersion to create dependency
-		toursVersion;
+	let filteredTours = $derived(tours.filter(tour => {
+		// Search filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			const matchesSearch = 
+				tour.name.toLowerCase().includes(query) ||
+				tour.description?.toLowerCase().includes(query) ||
+				tour.location?.toLowerCase().includes(query) ||
+				tour.qrCode?.toLowerCase().includes(query);
+			if (!matchesSearch) return false;
+		}
 		
-		return tours.filter(tour => {
-			// Search filter
-			if (searchQuery) {
-				const query = searchQuery.toLowerCase();
-				const matchesSearch = 
-					tour.name.toLowerCase().includes(query) ||
-					tour.description?.toLowerCase().includes(query) ||
-					tour.location?.toLowerCase().includes(query) ||
-					tour.qrCode?.toLowerCase().includes(query);
-				if (!matchesSearch) return false;
-			}
-			
-			// Status filter
-			if (statusFilter !== 'all' && tour.status !== statusFilter) {
-				return false;
-			}
-			
-			return true;
-		});
-	})());
+		// Status filter
+		if (statusFilter !== 'all' && tour.status !== statusFilter) {
+			return false;
+		}
+		
+		return true;
+	}));
 
 	// Enhanced error parsing function
 	function parseErrorMessage(error: any): string {
@@ -351,6 +396,9 @@
 		actionMenuOpen = null;
 	}
 
+	// Initialize delete mutation
+	const deleteToursPageMutation = deleteTourMutation();
+	
 	// Delete tour function
 	async function confirmDeleteTour() {
 		if (!tourToDelete) return;
@@ -360,26 +408,13 @@
 		
 		isDeleting = true;
 		try {
-			const response = await fetch(`/api/tours/${tourToDeleteId}`, {
-				method: 'DELETE'
-			});
-			
-			if (!response.ok) {
-				const errorData = await response.text();
-				throw new Error(parseErrorMessage(errorData));
-			}
+			await $deleteToursPageMutation.mutateAsync(tourToDeleteId);
 			
 			showDeleteModal = false;
 			tourToDelete = null;
 			
 			// Show success feedback
 			deletedTourName = tourToDeleteName;
-			
-			// Invalidate queries to refresh data
-			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
-			]);
 			
 		} catch (error) {
 			console.error('Failed to delete tour:', error);
@@ -391,55 +426,23 @@
 
 	// Handle status update from TourStatusToggle
 	function handleStatusUpdate(tourId: string, newStatus: 'active' | 'draft') {
-		// Find index of tour to update
-		const tourIndex = tours.findIndex(t => t.id === tourId);
-		if (tourIndex === -1) return;
+		console.log('🎯 Status update callback triggered:', tourId, newStatus);
+		// The TourStatusToggle mutation already handles cache updates optimistically
+		// No additional state management needed here
 		
-		// Set flag to prevent update loop
-		isLocalUpdate = true;
-		
-		// Create a completely new array with the updated tour
-		const newTours = [...tours];
-		newTours[tourIndex] = { ...newTours[tourIndex], status: newStatus };
-		
-		// Replace the entire tours array
-		tours = newTours;
-		toursVersion++; // Force filteredTours to recompute
-		
-		// Also update the cache directly and force persistence
-		const currentData = queryClient.getQueryData(queryKeys.userTours) as Tour[];
-		if (currentData) {
-			const updatedData = currentData.map(t => 
-				t.id === tourId ? { ...t, status: newStatus } : t
-			);
-			// Set the updated data in cache
-			queryClient.setQueryData(queryKeys.userTours, updatedData);
-		}
-		
-		// Store the update in sessionStorage to persist across navigation
+		// Store the update in sessionStorage only as a backup for page navigation
 		if (browser) {
 			const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
 			recentUpdates[tourId] = { status: newStatus, timestamp: Date.now() };
 			sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-		}
-		
-		// Don't invalidate immediately - let the API complete first
-		// The TourStatusToggle component already updated the cache
-		
-		// Keep protection flag active for longer (45 seconds to account for slow API)
-		setTimeout(() => {
-			isLocalUpdate = false;
-			// Only invalidate after API likely completed
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
 			
-			// Clean up sessionStorage
-			if (browser) {
+			// Clean up after 30 seconds
+			setTimeout(() => {
 				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
 				delete recentUpdates[tourId];
 				sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
-			}
-		}, 45000);
+			}, 30000);
+		}
 	}
 
 	function handleRefresh() {
@@ -453,16 +456,26 @@
 		actionMenuOpen = actionMenuOpen === tourId ? null : tourId;
 	}
 
-	// Force refetch when coming from tour creation with special params
+	// Force refetch when coming from tour creation or in certain scenarios
 	onMount(() => {
-		// Check if we're coming from tour creation or need a refresh
+		// Check if we're coming from tour creation
 		const shouldRefresh = page.url.searchParams.get('refresh') === 'true' || 
 							 page.url.searchParams.get('created') === 'true';
 		
-		if (shouldRefresh) {
-			// Force immediate refetch of both queries for special cases
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+		// Also check for recent tour creation activity (for immediate updates after mutations)
+		const recentActivity = browser ? sessionStorage.getItem('recentTourActivity') : null;
+		const shouldRefreshFromActivity = recentActivity && (Date.now() - parseInt(recentActivity)) < 10000; // Within last 10 seconds
+		
+		if (shouldRefresh || shouldRefreshFromActivity) {
+			console.log('🔄 Tours page: Force refreshing due to recent activity');
+			// Force immediate refetch of both queries with refetchType: 'all'
+			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats, refetchType: 'all' });
+			queryClient.invalidateQueries({ queryKey: queryKeys.userTours, refetchType: 'all' });
+			
+			// Clear the activity flag
+			if (browser && recentActivity) {
+				sessionStorage.removeItem('recentTourActivity');
+			}
 		}
 	});
 

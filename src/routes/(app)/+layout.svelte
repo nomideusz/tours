@@ -34,9 +34,25 @@
 
 	let { children, data } = $props<{ data?: any }>();
 
+	// Track the current user ID to detect user changes
+	let previousUserId = $state<string | null>(null);
+
 	// Initialize auth store with server data
 	$effect(() => {
 		if (data) {
+			// Check if user changed
+			const currentUserId = data.user?.id || null;
+			const userChanged = previousUserId !== null && previousUserId !== currentUserId;
+			
+			if (userChanged && data.queryClient) {
+				// User changed - clear all cached data
+				console.log('User changed, clearing query cache');
+				data.queryClient.clear();
+				data.queryClient.invalidateQueries();
+			}
+			
+			previousUserId = currentUserId;
+			
 			auth.initialize(data);
 			// Initialize user currency if available
 			if (data.user?.currency) {
@@ -155,7 +171,7 @@
 		isLoggingOut = true;
 
 		try {
-			await logout('/auth/login');
+			await logout('/auth/login', data.queryClient);
 		} catch (error) {
 			console.error('Error during logout:', error);
 		} finally {

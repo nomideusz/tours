@@ -20,6 +20,18 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         const userId = await consumeEmailVerificationToken(token);
         
         if (!userId) {
+            // Check if this user exists and is already verified
+            // Try to decode the token to see if we can find a user
+            const userResult = await db.select().from(users).where(eq(users.emailVerified, true)).limit(1);
+            
+            // Generic message for security, but we could check if the current logged-in user is verified
+            if (locals.user?.emailVerified) {
+                return { 
+                    error: 'Your email is already verified', 
+                    alreadyVerified: true 
+                };
+            }
+            
             return { error: 'Invalid or expired verification token' };
         }
 
@@ -82,7 +94,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 export const actions: Actions = {
     // Action to verify email with token
-    verify: async ({ request, url }) => {
+    verify: async ({ request, url, locals }) => {
         const formData = await request.formData();
         const token = formData.get('token') as string;
         
@@ -95,6 +107,15 @@ export const actions: Actions = {
             const userId = await consumeEmailVerificationToken(token);
             
             if (!userId) {
+                // Check if the current user is already verified
+                if (locals.user?.emailVerified) {
+                    return fail(400, { 
+                        error: 'Your email is already verified',
+                        alreadyVerified: true,
+                        success: false
+                    });
+                }
+                
                 return fail(400, { error: 'Invalid or expired verification token' });
             }
 

@@ -13,6 +13,7 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys } from '$lib/queries/shared-stats.js';
+	import { updateBookingStatusMutation } from '$lib/queries/mutations.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';

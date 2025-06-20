@@ -15,6 +15,7 @@
 	// TanStack Query
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys } from '$lib/queries/shared-stats.js';
+	import { createTourMutation } from '$lib/queries/mutations.js';
 	
 	// Icons
 	import Save from 'lucide-svelte/icons/save';
@@ -37,6 +38,9 @@
 	
 	// TanStack Query client for cache invalidation
 	const queryClient = useQueryClient();
+	
+	// Initialize create tour mutation
+	const tourMutation = createTourMutation();
 	
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(form?.error || null);
@@ -486,15 +490,29 @@
 					console.log('📅 Adding schedule data:', scheduleData);
 				}
 				
-				return async ({ result }) => {
+				return async ({ result, update }) => {
 					isSubmitting = false;
 					triggerValidation = false;
 					if (result.type === 'redirect') {
-						// Invalidate tours queries before redirecting to ensure fresh data
+						// Give server a moment to fully complete the transaction
+						await new Promise(resolve => setTimeout(resolve, 100));
+						
+						// Mark recent tour activity for cache invalidation on tours page
+						if (browser) {
+							sessionStorage.setItem('recentTourActivity', Date.now().toString());
+						}
+						
+						// Invalidate ALL tours-related queries BEFORE redirecting to ensure fresh data
+						console.log('🔄 Tour created successfully, invalidating all tour caches...');
 						await Promise.all([
 							queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
-							queryClient.invalidateQueries({ queryKey: queryKeys.userTours })
+							queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
+							queryClient.invalidateQueries({ queryKey: ['tours'] }), // Invalidate all tour queries
+							queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }) // Invalidate dashboard stats too
 						]);
+						console.log('✅ All caches invalidated, redirecting...');
+						
+						// Use goto for client-side navigation with cache already invalidated
 						goto(result.location);
 					} else if (result.type === 'failure') {
 						// Handle server errors (like file size limits)

@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { Tour } from '$lib/types.js';
-	import { toggleTourStatus } from '$lib/utils/tour-helpers-client.js';
-	import { useQueryClient } from '@tanstack/svelte-query';
-	import { queryKeys } from '$lib/queries/shared-stats.js';
-	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
+	import { updateTourStatusMutation } from '$lib/queries/mutations.js';
 	
 	// Icons
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
@@ -32,66 +29,53 @@
 	}: Props = $props();
 	
 	// State
-	let isUpdating = $state(false);
 	let localStatus = $state(tour.status);
 	
-	// TanStack Query client
-	const queryClient = useQueryClient();
+	// Use the mutation
+	const updateStatusMutation = updateTourStatusMutation();
 	
 	// Update local status when tour prop changes
 	$effect(() => {
 		localStatus = tour.status;
 	});
 	
-	// Toggle function - same pattern as tour pages
+	// Update local status when mutation succeeds (optimistic update handles this)
+	$effect(() => {
+		if ($updateStatusMutation.data?.status) {
+			localStatus = $updateStatusMutation.data.status;
+		}
+	});
+	
+	// Toggle function using mutation
 	async function handleToggle() {
-		if (!browser || isUpdating || !tour?.id) return;
-		isUpdating = true;
+		if (!browser || $updateStatusMutation.isPending || !tour?.id) return;
+		
+		const newStatus = tour.status === 'active' ? 'draft' : 'active';
+		console.log('🎯 TourStatusToggle: Starting toggle', tour.id, tour.status, '→', newStatus);
 		
 		try {
-			const newStatus = await toggleTourStatus(tour);
+			await $updateStatusMutation.mutateAsync({ 
+				tourId: tour.id, 
+				status: newStatus 
+			});
 			
-			if (newStatus) {
-				// Update local state immediately
-				localStatus = newStatus;
-				
-				// Update tour details cache for the details page
-				queryClient.setQueryData(queryKeys.tourDetails(tour.id), (old: any) => {
-					if (!old?.tour) return old;
-					return {
-						...old,
-						tour: { ...old.tour, status: newStatus }
-					};
-				});
-				
-				// Also update the tours list cache directly
-				const userToursData = queryClient.getQueryData(queryKeys.userTours) as any[] | undefined;
-				if (userToursData) {
-					queryClient.setQueryData(queryKeys.userTours, 
-						userToursData.map(t => t.id === tour.id ? { ...t, status: newStatus } : t)
-					);
-				}
-				
-				// Mark queries as stale but don't refetch immediately
-				queryClient.invalidateQueries({ 
-					queryKey: queryKeys.userTours,
-					refetchType: 'none'
-				});
-				queryClient.invalidateQueries({ 
-					queryKey: queryKeys.toursStats,
-					refetchType: 'none'
-				});
-				
-				// Call success callback - parent will handle state updates
-				onSuccess?.(newStatus);
-			}
+			console.log('🎯 TourStatusToggle: Mutation successful, updating local state');
+			// Update local state (optimistic update already handled by mutation)
+			localStatus = newStatus;
+			
+			// Call success callback
+			console.log('🎯 TourStatusToggle: Calling success callback');
+			onSuccess?.(newStatus);
 		} catch (error) {
-			console.error('Failed to toggle tour status:', error);
+			console.error('🎯 TourStatusToggle: Failed to toggle tour status:', error);
 			onError?.(error as Error);
-		} finally {
-			isUpdating = false;
+			// Rollback local state on error
+			localStatus = tour.status;
 		}
 	}
+	
+	// Derive loading state
+	let isUpdating = $derived($updateStatusMutation.isPending);
 	
 	// Button classes based on size and variant
 	let buttonClasses = $derived(

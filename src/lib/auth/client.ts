@@ -1,14 +1,22 @@
 import { goto, invalidateAll } from '$app/navigation';
 import { auth } from '$lib/stores/auth.js';
+import type { QueryClient } from '@tanstack/svelte-query';
 
 /**
  * Client-side logout function
  * Navigates to logout page which handles the logout action
  */
-export async function logout(redirectTo: string = '/auth/login') {
+export async function logout(redirectTo: string = '/auth/login', queryClient?: QueryClient) {
 	try {
 		// Set loading state
 		auth.setLoading(true);
+		
+		// Clear TanStack Query cache if queryClient is provided
+		if (queryClient) {
+			console.log('Clearing query cache on logout');
+			queryClient.clear();
+			queryClient.invalidateQueries();
+		}
 		
 		// Navigate to logout page which will handle the server action
 		await goto('/auth/logout', { replaceState: true });

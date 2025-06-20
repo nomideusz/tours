@@ -10,6 +10,8 @@
 	type VerifyEmailForm = {
 		message?: string;
 		success?: boolean;
+		error?: string;
+		alreadyVerified?: boolean;
 	};
 
 	let { form } = $props<{ form?: VerifyEmailForm }>();
@@ -49,6 +51,10 @@
 	function goToRegister() {
 		goto('/auth/register');
 	}
+
+	function goToDashboard() {
+		goto('/dashboard');
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center sm:px-6 lg:px-8 -mt-20">
@@ -79,6 +85,20 @@
 			</div>
 		{/if}
 
+		{#if form?.error && !form?.success}
+			<div class="mt-6 {form?.alreadyVerified ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4">
+				<div class="flex items-center">
+					{#if form?.alreadyVerified}
+						<CheckCircle class="h-5 w-5 text-blue-400 mr-2" />
+						<p class="text-sm text-blue-600">{form.error}</p>
+					{:else}
+						<XCircle class="h-5 w-5 text-red-400 mr-2" />
+						<p class="text-sm text-red-600">{form.error}</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
+
 		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
 			{#if !token}
 				<!-- No token provided -->
@@ -104,6 +124,23 @@
 						</button>
 					</div>
 				</div>
+			{:else if form?.alreadyVerified}
+				<!-- Already verified -->
+				<div class="text-center">
+					<div class="mb-6">
+						<CheckCircle class="h-16 w-16 text-blue-500 mx-auto mb-4" />
+						<h3 class="text-lg font-medium text-gray-900 mb-2">Already Verified</h3>
+						<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+							<p class="text-sm text-blue-600">Your email address has already been verified.</p>
+						</div>
+					</div>
+					<button 
+						class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors"
+						onclick={goToDashboard}
+					>
+						Continue to Dashboard
+					</button>
+				</div>
 			{:else if form?.success}
 				<!-- Verification successful -->
 				<div class="text-center">
@@ -116,9 +153,9 @@
 					</div>
 					<button 
 						class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer transition-colors"
-						onclick={goToLogin}
+						onclick={goToDashboard}
 					>
-						Continue to Sign In
+						Go to Dashboard
 					</button>
 				</div>
 			{:else}

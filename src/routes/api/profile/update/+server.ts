@@ -48,8 +48,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		// Basic validation
-		if (username && username.length < 3) {
-			return json({ error: 'Username must be at least 3 characters long' }, { status: 400 });
+		if (username && username.length < 2) {
+			return json({ error: 'Username must be at least 2 characters long' }, { status: 400 });
 		}
 
 		if (website && !website.match(/^https?:\/\/.+/)) {

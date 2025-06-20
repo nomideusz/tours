@@ -13,9 +13,12 @@ export interface AuthUser {
 	website?: string;
 	description?: string;
 	location?: string;
+	country?: string;
 	currency?: string;
 	emailVerified?: boolean;
 	lastLogin?: Date;
+	// Payment fields
+	stripeAccountId?: string;
 	// Subscription fields
 	subscriptionPlan?: 'free' | 'starter_pro' | 'professional' | 'agency';
 	subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing';

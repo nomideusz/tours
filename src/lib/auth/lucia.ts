@@ -30,8 +30,21 @@ export const lucia = new Lucia(adapter, {
       website: attributes.website,
       description: attributes.description,
       location: attributes.location,
+      country: attributes.country,
+      currency: attributes.currency,
       emailVerified: attributes.emailVerified,
-      lastLogin: attributes.lastLogin
+      lastLogin: attributes.lastLogin,
+      // Payment fields
+      stripeAccountId: attributes.stripeAccountId,
+      // Subscription fields
+      subscriptionPlan: attributes.subscriptionPlan,
+      subscriptionStatus: attributes.subscriptionStatus,
+      subscriptionId: attributes.subscriptionId,
+      subscriptionCurrentPeriodStart: attributes.subscriptionCurrentPeriodStart,
+      subscriptionCurrentPeriodEnd: attributes.subscriptionCurrentPeriodEnd,
+      subscriptionCancelAtPeriodEnd: attributes.subscriptionCancelAtPeriodEnd,
+      monthlyBookingsUsed: attributes.monthlyBookingsUsed,
+      monthlyBookingsResetAt: attributes.monthlyBookingsResetAt
     };
   }
 });

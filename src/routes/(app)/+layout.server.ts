@@ -35,9 +35,21 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       website: userData.website,
       description: userData.description,
       location: userData.location,
+      country: userData.country,
       currency: userData.currency,
       emailVerified: userData.emailVerified,
-      lastLogin: userData.lastLogin
+      lastLogin: userData.lastLogin,
+      // Payment fields
+      stripeAccountId: userData.stripeAccountId,
+      // Subscription fields
+      subscriptionPlan: userData.subscriptionPlan,
+      subscriptionStatus: userData.subscriptionStatus,
+      subscriptionId: userData.subscriptionId,
+      subscriptionCurrentPeriodStart: userData.subscriptionCurrentPeriodStart,
+      subscriptionCurrentPeriodEnd: userData.subscriptionCurrentPeriodEnd,
+      subscriptionCancelAtPeriodEnd: userData.subscriptionCancelAtPeriodEnd,
+      monthlyBookingsUsed: userData.monthlyBookingsUsed,
+      monthlyBookingsResetAt: userData.monthlyBookingsResetAt
     };
     
     // Pass the admin status to the client

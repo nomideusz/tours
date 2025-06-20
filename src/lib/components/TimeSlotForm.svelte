@@ -6,8 +6,7 @@
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	import { useQueryClient } from '@tanstack/svelte-query';
-	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
+	import { createTimeSlotMutation, updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
 	
 	// Components
 	import NumberInput from '$lib/components/NumberInput.svelte';
@@ -51,11 +50,13 @@
 		preselectedDate
 	}: Props = $props();
 
-	// Get query client for invalidation
-	const queryClient = useQueryClient();
-	
 	// Check if we're editing
 	let isEditMode = $derived(!!slotId);
+	
+	// Initialize mutations
+	const createSlotMutation = createTimeSlotMutation(tourId);
+	const updateSlotMutation = isEditMode && slotId ? updateTimeSlotMutation(tourId, slotId) : null;
+	const deleteSlotMutation = deleteTimeSlotMutation(tourId);
 	
 	// Fetch tour details if not provided
 	let tourQuery = $derived(propTour ? null : createQuery({
@@ -572,37 +573,18 @@
 		error = null;
 		
 		try {
-			const url = isEditMode 
-				? `/api/tours/${tourId}/schedule/${slotId}`
-				: `/api/tours/${tourId}/schedule`;
+			const slotData = {
+				...formData,
+				startTime: start.toISOString(),
+				endTime: end.toISOString(),
+				status: formData.availability,
+				recurringEnd: formData.recurringEnd ? new Date(formData.recurringEnd).toISOString() : null
+			};
 			
-			const response = await fetch(url, {
-				method: isEditMode ? 'PUT' : 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					...formData,
-					startTime: start.toISOString(),
-					endTime: end.toISOString(),
-					status: formData.availability,
-					recurringEnd: formData.recurringEnd ? new Date(formData.recurringEnd).toISOString() : null
-				})
-			});
-			
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || `Failed to ${isEditMode ? 'update' : 'create'} time slot`);
-			}
-			
-			// Invalidate the schedule query so it refreshes immediately
-			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
-			
-			// Invalidate tours list since slot changes affect upcomingSlots count
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			await queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-			
-			// Invalidate public booking page cache since availability changed
-			if (tour?.qrCode) {
-				invalidatePublicTourData(queryClient, tour.qrCode);
+			if (isEditMode && updateSlotMutation && $updateSlotMutation) {
+				await $updateSlotMutation.mutateAsync(slotData);
+			} else {
+				await $createSlotMutation.mutateAsync(slotData);
 			}
 			
 			// Handle success
@@ -635,26 +617,9 @@
 		error = null;
 		
 		try {
-			const response = await fetch(`/api/tours/${tourId}/schedule/${slotId}`, {
-				method: 'DELETE'
-			});
+			if (!slotId) throw new Error('No slot ID provided');
 			
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to delete time slot');
-			}
-			
-			// Invalidate the schedule query so it refreshes immediately
-			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
-			
-			// Invalidate tours list since slot deletion affects upcomingSlots count
-			await queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			await queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-			
-			// Invalidate public booking page cache since availability changed
-			if (tour?.qrCode) {
-				invalidatePublicTourData(queryClient, tour.qrCode);
-			}
+			await $deleteSlotMutation.mutateAsync(slotId);
 			
 			// Call success callback
 			if (onSuccess) {
@@ -1164,7 +1129,6 @@
 								hasError={hasFieldError(allErrors, 'capacity')}
 								integerOnly={true}
 								onblur={() => validateField('capacity')}
-								class="w-full"
 							/>
 						</div>
 						{#if isEditMode}
