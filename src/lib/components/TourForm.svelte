@@ -940,8 +940,22 @@
 									/>
 									<button
 										type="button"
-										onclick={() => onExistingImageRemove && onExistingImageRemove(imageName)}
-										class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center touch-manipulation"
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											if (onExistingImageRemove) {
+												onExistingImageRemove(imageName);
+											}
+										}}
+										ontouchend={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											if (onExistingImageRemove) {
+												onExistingImageRemove(imageName);
+											}
+										}}
+										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full text-sm sm:text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10"
+										style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
 										aria-label="Remove image"
 									>
 										×
@@ -965,7 +979,6 @@
 						type="file"
 						multiple
 						accept="image/jpeg,image/jpg,image/png,image/webp"
-						capture="environment"
 						class="hidden"
 						id="images-upload"
 						name="images"
@@ -991,7 +1004,7 @@
 
 					<!-- Mobile instruction -->
 					<div class="sm:hidden mt-3">
-						<p class="text-xs text-gray-500">Tap to take photos or select from gallery</p>
+						<p class="text-xs text-gray-500">Tap to select from gallery or take new photos</p>
 					</div>
 				</div>
 
@@ -1031,8 +1044,22 @@
 									/>
 									<button
 										type="button"
-										onclick={() => onImageRemove && onImageRemove(index)}
-										class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center touch-manipulation"
+										onclick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											if (onImageRemove) {
+												onImageRemove(index);
+											}
+										}}
+										ontouchend={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											if (onImageRemove) {
+												onImageRemove(index);
+											}
+										}}
+										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full text-sm sm:text-xs hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10"
+										style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
 										aria-label="Remove image"
 									>
 										×
@@ -1145,13 +1172,6 @@
 </div>
 
 <style>
-	/* Mobile touch optimization */
-	.touch-manipulation {
-		touch-action: manipulation;
-		-webkit-touch-callout: none;
-		-webkit-user-select: none;
-		user-select: none;
-	}
 
 	/* Ensure proper aspect ratio for mobile image previews */
 	.aspect-square {

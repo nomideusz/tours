@@ -214,15 +214,23 @@
 	}
 
 	function removeImage(index: number) {
+		console.log('🗑️ Mobile/Desktop: Removing new image at index:', index);
+		console.log('🗑️ Touch event type:', window.event?.type);
 		uploadedImages = uploadedImages.filter((_, i) => i !== index);
+		console.log('🗑️ Remaining uploaded images:', uploadedImages.length);
+		// Force UI update on mobile
+		uploadedImages = uploadedImages;
 	}
 
 	function removeExistingImage(imageName: string) {
-		console.log('🗑️ Removing existing image:', imageName);
+		console.log('🗑️ Mobile/Desktop: Removing existing image:', imageName);
+		console.log('🗑️ Touch event type:', window.event?.type);
 		imagesToRemove = [...imagesToRemove, imageName];
 		existingImages = existingImages.filter(img => img !== imageName);
 		console.log('🗑️ Images marked for removal:', imagesToRemove);
 		console.log('🗑️ Remaining existing images:', existingImages);
+		// Force UI update on mobile
+		existingImages = existingImages;
 	}
 
 	function getExistingImageUrl(imageName: string): string {
