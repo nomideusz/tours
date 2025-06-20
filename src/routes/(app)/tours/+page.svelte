@@ -56,16 +56,17 @@
 		staleTime: 30 * 1000, // 30 seconds - reasonable for stats
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: true, // Refetch when component mounts
+		refetchOnMount: 'always', // Always refetch when component mounts
 	});
 
 	const userToursQuery = createQuery({
 		queryKey: queryKeys.userTours,
 		queryFn: queryFunctions.fetchUserTours,
-		staleTime: 30 * 1000, // 30 seconds - prevents constant refetching
+		staleTime: 5 * 1000, // 5 seconds - shorter to catch updates faster
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: true, // Refetch when component mounts
+		refetchOnMount: 'always', // Always refetch when component mounts
+		refetchInterval: false, // No automatic refetch interval
 	});
 
 	let copiedQRCode = $state<string | null>(null);
@@ -92,7 +93,35 @@
 	// Initial load and refresh - only update if not doing local update
 	$effect(() => {
 		if ($userToursQuery.data && !isLocalUpdate) {
-			tours = $userToursQuery.data as Tour[];
+			let toursData = $userToursQuery.data as Tour[];
+			
+			// Apply any recent updates from sessionStorage
+			if (browser) {
+				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
+				const now = Date.now();
+				
+				// Apply updates that are less than 45 seconds old
+				toursData = toursData.map(tour => {
+					const update = recentUpdates[tour.id];
+					if (update && (now - update.timestamp) < 45000) {
+						return { ...tour, status: update.status };
+					}
+					return tour;
+				});
+				
+				// Clean up old updates
+				const validUpdates: Record<string, any> = {};
+				for (const [tourId, update] of Object.entries(recentUpdates)) {
+					if ((now - (update as any).timestamp) < 45000) {
+						validUpdates[tourId] = update;
+					}
+				}
+				if (Object.keys(validUpdates).length !== Object.keys(recentUpdates).length) {
+					sessionStorage.setItem('recentTourUpdates', JSON.stringify(validUpdates));
+				}
+			}
+			
+			tours = toursData;
 		}
 	});
 
@@ -377,14 +406,40 @@
 		tours = newTours;
 		toursVersion++; // Force filteredTours to recompute
 		
-		// Then update the cache and invalidate for eventual consistency
-		queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-		queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+		// Also update the cache directly and force persistence
+		const currentData = queryClient.getQueryData(queryKeys.userTours) as Tour[];
+		if (currentData) {
+			const updatedData = currentData.map(t => 
+				t.id === tourId ? { ...t, status: newStatus } : t
+			);
+			// Set the updated data in cache
+			queryClient.setQueryData(queryKeys.userTours, updatedData);
+		}
 		
-		// Reset flag after a short delay
+		// Store the update in sessionStorage to persist across navigation
+		if (browser) {
+			const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
+			recentUpdates[tourId] = { status: newStatus, timestamp: Date.now() };
+			sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
+		}
+		
+		// Don't invalidate immediately - let the API complete first
+		// The TourStatusToggle component already updated the cache
+		
+		// Keep protection flag active for longer (45 seconds to account for slow API)
 		setTimeout(() => {
 			isLocalUpdate = false;
-		}, 100);
+			// Only invalidate after API likely completed
+			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+			
+			// Clean up sessionStorage
+			if (browser) {
+				const recentUpdates = JSON.parse(sessionStorage.getItem('recentTourUpdates') || '{}');
+				delete recentUpdates[tourId];
+				sessionStorage.setItem('recentTourUpdates', JSON.stringify(recentUpdates));
+			}
+		}, 45000);
 	}
 
 	function handleRefresh() {
@@ -398,27 +453,16 @@
 		actionMenuOpen = actionMenuOpen === tourId ? null : tourId;
 	}
 
-	// Force refetch when page is mounted or when coming from tour creation
+	// Force refetch when coming from tour creation with special params
 	onMount(() => {
 		// Check if we're coming from tour creation or need a refresh
 		const shouldRefresh = page.url.searchParams.get('refresh') === 'true' || 
 							 page.url.searchParams.get('created') === 'true';
 		
-		if (shouldRefresh || !$userToursQuery.data) {
-			// Force immediate refetch of both queries
+		if (shouldRefresh) {
+			// Force immediate refetch of both queries for special cases
 			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
 			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-		}
-	});
-
-	// Also refetch when navigating to this page
-	$effect(() => {
-		if (browser && page.url.pathname === '/tours') {
-			// Small delay to ensure navigation is complete
-			setTimeout(() => {
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			}, 50);
 		}
 	});
 

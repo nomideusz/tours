@@ -64,6 +64,24 @@
 					};
 				});
 				
+				// Also update the tours list cache directly
+				const userToursData = queryClient.getQueryData(queryKeys.userTours) as any[] | undefined;
+				if (userToursData) {
+					queryClient.setQueryData(queryKeys.userTours, 
+						userToursData.map(t => t.id === tour.id ? { ...t, status: newStatus } : t)
+					);
+				}
+				
+				// Mark queries as stale but don't refetch immediately
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.userTours,
+					refetchType: 'none'
+				});
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.toursStats,
+					refetchType: 'none'
+				});
+				
 				// Call success callback - parent will handle state updates
 				onSuccess?.(newStatus);
 			}
