@@ -235,7 +235,17 @@ export const actions: Actions = {
       await initializeImageStorage();
       
       const imageFiles = formData.getAll('images') as File[];
+      console.log('📱 Server received image files:', imageFiles.length);
+      imageFiles.forEach((img, index) => {
+        if (img instanceof File) {
+          console.log(`📱 Image ${index}:`, img.name, img.size, img.type);
+        } else {
+          console.log(`📱 Image ${index} is not a File:`, typeof img, img);
+        }
+      });
+      
       const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
+      console.log('📱 Valid images after filtering:', validImages.length);
       const newImages: string[] = [];
       
       // Process new images

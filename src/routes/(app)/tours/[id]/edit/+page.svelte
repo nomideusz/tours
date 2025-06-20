@@ -105,13 +105,33 @@
 		console.log('🔍 Image upload event triggered (edit mode)');
 		console.log('🔍 Target:', target);
 		console.log('🔍 Target files:', target.files);
+		console.log('🔍 User agent:', navigator.userAgent);
 		
 		if (!target.files || target.files.length === 0) {
 			console.log('❌ No files selected');
 			return;
 		}
 
-		const newFiles = Array.from(target.files);
+		// iOS Safari workaround - ensure files are properly converted
+		let newFiles: File[] = [];
+		try {
+			// Use FileList.item() method for better mobile compatibility
+			for (let i = 0; i < target.files.length; i++) {
+				const file = target.files.item(i);
+				if (file) {
+					// Create a new File object to ensure proper handling on mobile
+					const newFile = new File([file], file.name, {
+						type: file.type,
+						lastModified: file.lastModified
+					});
+					newFiles.push(newFile);
+				}
+			}
+		} catch (e) {
+			console.error('❌ Error processing files:', e);
+			// Fallback to Array.from
+			newFiles = Array.from(target.files);
+		}
 		console.log('📁 Raw files from input:', newFiles.map(f => ({
 			name: f.name,
 			size: f.size,
@@ -176,7 +196,10 @@
 		console.log('📊 Final files:', finalFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
 
 		// Update state
+		console.log('📱 Before update - uploadedImages:', uploadedImages.length);
 		uploadedImages = [...uploadedImages, ...finalFiles];
+		console.log('📱 After update - uploadedImages:', uploadedImages.length);
+		console.log('📱 uploadedImages state:', uploadedImages.map(f => ({ name: f.name, size: f.size })));
 		imageUploadErrors = errors;
 
 		// Clear the input so the same files can be selected again if needed
@@ -447,11 +470,13 @@
 			
 			// Add images to remove
 			imagesToRemove.forEach(imageUrl => {
-				formDataToSubmit.append('imagesToRemove', imageUrl);
+				formDataToSubmit.append('removeImages', imageUrl);
 			});
 			
 			// Add new images
-			uploadedImages.forEach(image => {
+			console.log('📱 AutoSave: Adding images to FormData:', uploadedImages.length);
+			uploadedImages.forEach((image, index) => {
+				console.log(`📱 AutoSave: Image ${index}:`, image.name, image.size);
 				formDataToSubmit.append('images', image);
 			});
 			
@@ -726,13 +751,23 @@
 					
 					// Add images to remove
 					imagesToRemove.forEach(imageUrl => {
-						formData.append('imagesToRemove', imageUrl);
+						formData.append('removeImages', imageUrl);
 					});
 					
 					// Add new images
-					uploadedImages.forEach(image => {
+					console.log('📱 Submitting form with uploaded images:', uploadedImages.length);
+					uploadedImages.forEach((image, index) => {
+						console.log(`📱 Adding image ${index}:`, image.name, image.size, image.type);
 						formData.append('images', image);
 					});
+					
+					// Debug: Log all FormData entries
+					console.log('📱 FormData entries:');
+					for (const [key, value] of formData.entries()) {
+						if (key === 'images') {
+							console.log(`  - ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+						}
+					}
 					
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
