@@ -137,7 +137,8 @@ export function createBookingStatusQuery(bookingId: string) {
 		},
 		refetchInterval: 3000, // 3 seconds - very frequent for payment processing
 		refetchOnWindowFocus: true,
-		staleTime: 1000 // 1 second - short for payment status
+		staleTime: 0, // No stale time - always refetch for payment status
+		gcTime: 30000 // Keep in cache for 30 seconds
 	});
 }
 

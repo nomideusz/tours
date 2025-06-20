@@ -163,14 +163,14 @@
 {#if isOpen}
 	<!-- Backdrop -->
 	<div 
-		class="fixed inset-0 z-50 flex {isMobile ? 'items-end' : 'items-center justify-center p-4'}"
-		style="background: rgba(0, 0, 0, 0.5);"
+		class="fixed z-50 flex {isMobile ? 'items-end inset-x-0 top-0' : 'items-center justify-center p-4 inset-0'}"
+		style="background: rgba(0, 0, 0, 0.5); {isMobile ? 'bottom: 5rem;' : ''}"
 		transition:fade={{ duration: 150 }}
 	>
 		<!-- Drawer/Modal -->
 		<div 
 			bind:this={drawerElement}
-			class="relative w-full {isMobile ? 'max-h-[90vh]' : 'max-w-4xl max-h-[85vh] my-8'} flex flex-col {isMobile ? 'rounded-t-xl' : 'rounded-xl'} shadow-xl overflow-hidden {className}"
+			class="relative w-full {isMobile ? 'max-h-[80vh]' : 'max-w-4xl max-h-[85vh] my-8'} flex flex-col {isMobile ? 'rounded-t-xl' : 'rounded-xl'} shadow-xl overflow-hidden {className}"
 			style="background: var(--bg-primary); border: 1px solid var(--border-primary); {isMobile ? 'border-bottom: none;' : ''} transition: transform 0.2s ease-out;"
 			transition:fly={{ y: isMobile ? 300 : 0, duration: 200 }}
 			use:clickOutside={handleClickOutside}
