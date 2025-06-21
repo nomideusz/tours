@@ -30,8 +30,8 @@
 	
 	<!-- Custom tooltip -->
 	<div 
-		class="absolute {positionClasses[position as keyof typeof positionClasses]} px-2 py-1 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
-		style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
+		class="absolute {positionClasses[position as keyof typeof positionClasses]} px-2 py-1 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
+		style="z-index: var(--z-tooltip); background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-primary); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
 	>
 		{text}
 	</div>

@@ -128,7 +128,8 @@
 		<div
 			bind:this={panelElement}
 			use:clickOutside={handleClickOutside}
-			class="fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-200 z-50"
+			class="fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-200"
+			style="z-index: var(--z-dropdown);"
 			transition:fly={{ y: -10, duration: 200 }}
 		>
 			<!-- Header -->

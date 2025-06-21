@@ -259,7 +259,7 @@
 	<div class="flex flex-1 min-w-0 pt-16">
 		<!-- Desktop Sidebar - Fixed position -->
 		<div class="hidden lg:block">
-			<div class="fixed left-0 w-64 flex flex-col" style="top: 4rem; height: calc(100vh - 4rem);">
+			<div class="fixed left-0 w-64 flex flex-col" style="top: 4rem; height: calc(100vh - 4rem); z-index: 30;">
 				<div
 					class="flex flex-col h-full pt-5"
 					style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
@@ -340,7 +340,7 @@
 		<!-- Main content -->
 		<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-64">
 			<!-- Page content with bottom padding on mobile for bottom nav -->
-			<main class="relative z-0 flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0">
+			<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0">
 				{@render children()}
 			</main>
 		</div>

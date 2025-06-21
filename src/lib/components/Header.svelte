@@ -348,7 +348,7 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 50;
+		z-index: var(--z-dropdown);
 		background: white;
 		border-bottom: 1px solid #e5e7eb;
 		backdrop-filter: blur(8px);

@@ -34,8 +34,10 @@
 	let tourQuery = $derived(createQuery({
 		queryKey: queryKeys.tourDetails(tourId),
 		queryFn: () => queryFunctions.fetchTourDetails(tourId),
-		staleTime: 1 * 60 * 1000, // 1 minute
+		staleTime: 0, // Always consider data potentially stale for immediate updates
 		gcTime: 5 * 60 * 1000,    // 5 minutes
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
 	}));
 
 	let tour = $derived($tourQuery.data?.tour || null);
@@ -50,9 +52,17 @@
 	let showDeleteModal = $state(false);
 	let isDeleting = $state(false);
 
-	// Booking constraints - fetch separately
-	let bookingConstraints = $state<any>(null);
-	let constraintsLoading = $state(false);
+	// Booking constraints query
+	let constraintsQuery = $derived(createQuery({
+		queryKey: queryKeys.tourBookingConstraints(tourId),
+		queryFn: () => queryFunctions.fetchTourBookingConstraints(tourId),
+		staleTime: 30 * 1000, // 30 seconds
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		enabled: !!tour, // Only fetch when tour is loaded
+	}));
+
+	let bookingConstraints = $derived($constraintsQuery.data || null);
+	let constraintsLoading = $derived($constraintsQuery.isLoading);
 
 	// Form data
 	let formData = $state({
@@ -239,35 +249,17 @@
 		return `/api/images/${tourId}/${imageName}?size=medium`;
 	}
 
-	// Initialize form when tour data loads
+	// Initialize form when tour data loads or changes
 	$effect(() => {
 		if (tour && !isLoading) {
+			// Always initialize when tour data is available
+			// This ensures we get fresh data even if the component is reused
+			console.log('🔄 Initializing form with tour data:', tour.id, tour.updatedAt);
 			initializeTour();
 		}
 	});
 
-	// Fetch booking constraints when tour loads
-	$effect(() => {
-		if (tour && !constraintsLoading) {
-			fetchBookingConstraints();
-		}
-	});
 
-	async function fetchBookingConstraints() {
-		if (!tour) return;
-		
-		constraintsLoading = true;
-		try {
-			const response = await fetch(`/api/tours/${tourId}/booking-constraints`);
-			if (response.ok) {
-				bookingConstraints = await response.json();
-			}
-		} catch (err) {
-			console.error('Failed to fetch booking constraints:', err);
-		} finally {
-			constraintsLoading = false;
-		}
-	}
 
 	function initializeTour() {
 		if (!tour) return;
@@ -788,10 +780,14 @@
 					
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
-							// Invalidate all related queries
-							queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
-							queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-							queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+							// Invalidate all related queries and wait for them to complete
+							await Promise.all([
+								queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) }),
+								queryClient.invalidateQueries({ queryKey: queryKeys.tourBookingConstraints(tourId) }),
+								queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
+								queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
+								invalidatePublicTourData(queryClient, tour?.qrCode)
+							]);
 							
 							// Clear uploaded images and removed images since they're now saved
 							uploadedImages = [];
@@ -857,7 +853,7 @@
 		onclick={handleSave}
 		disabled={isSubmitting}
 		class="floating-save-btn"
-		style="position: fixed; bottom: 2rem; right: 2rem; z-index: 50;"
+		style="position: fixed; bottom: 2rem; right: 2rem; z-index: var(--z-dropdown);"
 		title={isSubmitting ? 'Saving Changes...' : 'Save Changes'}
 	>
 		{#if isSubmitting}

@@ -361,6 +361,6 @@
 	/* Fix QR scanner sizing issue */
 	:global(.qr-scanner-region-box-container) {
 		max-width: 100%;
-		z-index: 5;
+		z-index: var(--z-10);
 	}
 </style> 

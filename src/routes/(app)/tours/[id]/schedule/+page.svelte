@@ -89,6 +89,7 @@
 		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
 		gcTime: 2 * 60 * 1000, // 2 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
+		refetchOnMount: true, // Always refetch when component mounts
 	}));
 
 	// Also fetch tour details to stay in sync with capacity changes
@@ -97,6 +98,8 @@
 		queryFn: () => queryFunctions.fetchTourDetails(tourId),
 		staleTime: 30 * 1000, // 30 seconds
 		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true, // Refetch when user returns to tab
+		refetchOnMount: true, // Always refetch when component mounts
 	}));
 
 	let tour = $derived($scheduleQuery.data?.tour || $tourQuery.data?.tour || null);

@@ -233,8 +233,8 @@
 	{#if isOpen}
 		<div 
 			bind:this={dropdownElement}
-			class="fixed w-80 rounded-lg shadow-lg border p-4 z-50"
-			style="background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden;"
+			class="fixed w-80 rounded-lg shadow-lg border p-4"
+			style="z-index: var(--z-dropdown); background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden;"
 		>
 			<!-- Calendar header -->
 			<div class="flex items-center justify-between mb-4">

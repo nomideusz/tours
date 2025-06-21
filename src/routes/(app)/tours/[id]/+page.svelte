@@ -28,6 +28,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
+	import Portal from '$lib/components/Portal.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -58,8 +59,10 @@
 	let tourQuery = $derived(createQuery({
 		queryKey: queryKeys.tourDetails(tourId),
 		queryFn: () => queryFunctions.fetchTourDetails(tourId),
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		staleTime: 30 * 1000, // 30 seconds for faster updates
+		gcTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
 	}));
 
 	// Also fetch schedule data for proper slot information (like the schedule page does)
@@ -69,6 +72,17 @@
 		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
 		gcTime: 2 * 60 * 1000, // 2 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
+		refetchOnMount: true,
+	}));
+
+	// Fetch recent bookings for this tour
+	let tourBookingsQuery = $derived(createQuery({
+		queryKey: queryKeys.tourBookings(tourId),
+		queryFn: () => queryFunctions.fetchTourBookings(tourId),
+		staleTime: 30 * 1000, // 30 seconds
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
 	}));
 
 	let tour = $derived($tourQuery.data?.tour || null);
@@ -77,6 +91,8 @@
 	let allTimeSlots = $derived($scheduleQuery.data?.timeSlots || []);
 	// @ts-ignore
 	let upcomingSlots = $derived(allTimeSlots.filter((slot) => slot.isUpcoming));
+	// Recent bookings data
+	let recentBookings = $derived($tourBookingsQuery.data?.bookings || []);
 	let isLoading = $derived($tourQuery.isLoading || $scheduleQuery.isLoading);
 	let isError = $derived($tourQuery.isError || $scheduleQuery.isError);
 	
@@ -216,10 +232,12 @@
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
-		<div class="p-8 text-center">
-			<div class="form-spinner mb-4"></div>
+	<div class="flex justify-center py-12">
+		<div class="text-center">
+			<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2 border-gray-300 border-t-gray-600"></div>
 			<p class="text-sm" style="color: var(--text-secondary);">Loading tour details...</p>
 		</div>
+	</div>
 	{:else if isError || !tour}
 		<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
 			<div class="flex items-center justify-between">
@@ -660,7 +678,61 @@
 		</div>
 	</div>
 
-	<!-- 4. Tour Gallery -->
+	<!-- 4. Recent Bookings -->
+	{#if recentBookings.length > 0}
+		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="flex items-center justify-between">
+					<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
+					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
+						<Users class="h-3 w-3" />
+						View All
+					</button>
+				</div>
+			</div>
+			<div class="p-4">
+				<div class="space-y-3">
+					{#each recentBookings.slice(0, 5) as booking}
+						<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" 
+							style="background: var(--bg-secondary);"
+							onclick={() => goto(`/bookings/${booking.id}`)}
+							onkeydown={(e) => e.key === 'Enter' && goto(`/bookings/${booking.id}`)}
+							role="button"
+							tabindex="0"
+						>
+							<div class="flex-1 min-w-0">
+								<p class="text-sm font-medium truncate" style="color: var(--text-primary);">
+									{booking.customerName}
+								</p>
+								<div class="flex items-center gap-3 mt-1">
+									<span class="text-xs" style="color: var(--text-secondary);">
+										{booking.totalParticipants} {booking.totalParticipants === 1 ? 'guest' : 'guests'}
+									</span>
+									<span class="text-xs" style="color: var(--text-secondary);">
+										{formatDate(booking.slotStartTime)}
+									</span>
+									{#if booking.status === 'confirmed'}
+										<span class="px-2 py-0.5 text-xs rounded-full" style="background: var(--color-success-100); color: var(--color-success-700); border: 1px solid var(--color-success-200);">
+											Confirmed
+										</span>
+									{:else if booking.status === 'pending'}
+										<span class="px-2 py-0.5 text-xs rounded-full" style="background: var(--color-warning-100); color: var(--color-warning-700); border: 1px solid var(--color-warning-200);">
+											Pending
+										</span>
+									{/if}
+								</div>
+							</div>
+							<div class="text-xs font-medium" style="color: var(--text-primary);">
+								{$globalCurrencyFormatter(booking.totalAmount)}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- 5. Tour Gallery -->
 	{#if tour.images && tour.images.length > 0}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -706,7 +778,7 @@
 		</div>
 	{/if}
 
-	<!-- 5. Website Widget - Collapsible Advanced Feature -->
+	<!-- 6. Website Widget - Collapsible Advanced Feature -->
 	{#if tour.qrCode}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<button
@@ -793,43 +865,46 @@
 
 {/if}
 
-<!-- Image Lightbox - Moved outside container for proper z-index layering -->
+</div>
+
+<!-- Image Lightbox - Using Portal to render at document root -->
 {#if selectedImageIndex !== null && tour.images}
-	<!-- Prevent body scroll when lightbox is open -->
-	{#if browser}
-		{@const _ = (() => { 
-			document.body.style.overflow = 'hidden'; 
-			document.documentElement.style.overflow = 'hidden';
-		})()}
-		{@const __ = () => { 
-			document.body.style.overflow = ''; 
-			document.documentElement.style.overflow = '';
-		}}
-	{/if}
-	<div 
-		class="fixed inset-0 flex items-center justify-center p-4"
-		style="background: rgba(0, 0, 0, 0.95); z-index: 100;"
-		onclick={() => {
-			selectedImageIndex = null;
-			if (browser) {
-				document.body.style.overflow = '';
+	<Portal>
+		<!-- Prevent body scroll when lightbox is open -->
+		{#if browser}
+			{@const _ = (() => { 
+				document.body.style.overflow = 'hidden'; 
+				document.documentElement.style.overflow = 'hidden';
+			})()}
+			{@const __ = () => { 
+				document.body.style.overflow = ''; 
 				document.documentElement.style.overflow = '';
-			}
-		}}
-		role="button"
-		tabindex="0"
-		onkeydown={(e) => {
-			if (e.key === 'Escape') {
+			}}
+		{/if}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div 
+			class="tour-lightbox-overlay"
+			onclick={() => {
 				selectedImageIndex = null;
 				if (browser) {
 					document.body.style.overflow = '';
 					document.documentElement.style.overflow = '';
 				}
-			}
-			if (e.key === 'ArrowRight' && selectedImageIndex !== null && selectedImageIndex < tour.images.length - 1) selectedImageIndex++;
-			if (e.key === 'ArrowLeft' && selectedImageIndex !== null && selectedImageIndex > 0) selectedImageIndex--;
-		}}
-	>
+			}}
+			role="button"
+			tabindex="0"
+			onkeydown={(e) => {
+				if (e.key === 'Escape') {
+					selectedImageIndex = null;
+					if (browser) {
+						document.body.style.overflow = '';
+						document.documentElement.style.overflow = '';
+					}
+				}
+				if (e.key === 'ArrowRight' && selectedImageIndex !== null && selectedImageIndex < tour.images.length - 1) selectedImageIndex++;
+				if (e.key === 'ArrowLeft' && selectedImageIndex !== null && selectedImageIndex > 0) selectedImageIndex--;
+			}}
+		>
 		<button
 			onclick={() => {
 				selectedImageIndex = null;
@@ -887,5 +962,30 @@
 			{selectedImageIndex + 1} / {tour.images.length}
 		</div>
 	</div>
+	</Portal>
 {/if}
-</div>
+
+<style>
+	/* Lightbox styles with high z-index to ensure it appears above everything */
+	:global(.tour-lightbox-overlay) {
+		position: fixed !important;
+		top: 0 !important;
+		left: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		width: 100vw !important;
+		height: 100vh !important;
+		background: rgba(0, 0, 0, 0.95) !important;
+		z-index: 999999 !important; /* Very high z-index */
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		padding: 1rem !important;
+		isolation: isolate !important;
+	}
+	
+	/* Ensure the lightbox is truly on top by resetting any inherited transforms */
+	:global(body:has(.tour-lightbox-overlay)) {
+		overflow: hidden !important;
+	}
+</style>

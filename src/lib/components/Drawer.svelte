@@ -163,8 +163,8 @@
 {#if isOpen}
 	<!-- Backdrop -->
 	<div 
-		class="fixed z-50 flex {isMobile ? 'items-end inset-x-0 top-0' : 'items-center justify-center p-4 inset-0'}"
-		style="background: rgba(0, 0, 0, 0.5); {isMobile ? 'bottom: 5rem;' : ''}"
+		class="fixed flex {isMobile ? 'items-end inset-x-0 top-0' : 'items-center justify-center p-4 inset-0'}"
+		style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5); {isMobile ? 'bottom: 4rem;' : ''}"
 		transition:fade={{ duration: 150 }}
 	>
 		<!-- Drawer/Modal -->

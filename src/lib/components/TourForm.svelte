@@ -35,10 +35,10 @@
 			requirements: string[];
 			cancellationPolicy: string;
 			enablePricingTiers: boolean;
-			pricingTiers: {
-				adult: number;
-				child?: number;
-			};
+					pricingTiers?: {
+			adult: number;
+			child?: number;
+		};
 		};
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
@@ -342,16 +342,31 @@
 
 	// Initialize child price visibility based on existing data
 	$effect(() => {
-		if (formData.pricingTiers?.child && formData.pricingTiers.child > 0) {
+		if (formData.enablePricingTiers && formData.pricingTiers?.child !== undefined) {
 			showChildPrice = true;
 			childPrice = formData.pricingTiers.child;
 		}
 	});
 
-	// Update formData when child price changes
+	// Sync child pricing state with formData
 	$effect(() => {
-		if (formData.pricingTiers) {
-			formData.pricingTiers.child = showChildPrice ? childPrice : undefined;
+		// Update enablePricingTiers based on showChildPrice
+		formData.enablePricingTiers = showChildPrice;
+		
+		// Initialize pricingTiers if needed
+		if (showChildPrice) {
+			if (!formData.pricingTiers) {
+				formData.pricingTiers = {
+					adult: formData.price || 0,
+					child: childPrice
+				};
+			} else {
+				formData.pricingTiers.adult = formData.price || 0;
+				formData.pricingTiers.child = childPrice;
+			}
+		} else {
+			// Clear pricing tiers when disabled
+			formData.pricingTiers = undefined;
 		}
 	});
 
@@ -630,17 +645,19 @@
 						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 							<div class="flex items-center justify-between mb-3">
 								<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
-								<button
-									type="button"
-									onclick={() => { 
-										showChildPrice = false; 
-										childPrice = 0; 
-									}}
-									class="button-secondary button--small button--icon"
-									aria-label="Remove child pricing"
-								>
-									<X class="w-3 h-3" />
-								</button>
+															<button
+								type="button"
+								onclick={() => { 
+									showChildPrice = false; 
+									childPrice = 0;
+									formData.enablePricingTiers = false;
+									formData.pricingTiers = undefined;
+								}}
+								class="button-secondary button--small button--icon"
+								aria-label="Remove child pricing"
+							>
+								<X class="w-3 h-3" />
+							</button>
 							</div>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<NumberInput
@@ -705,6 +722,11 @@
 					</div>
 				{/if}
 
+				<!-- Hidden inputs for pricing tiers -->
+				<input type="hidden" name="enablePricingTiers" value={showChildPrice ? 'true' : 'false'} />
+				{#if showChildPrice}
+					<input type="hidden" name="pricingTiers.adult" value={formData.price} />
+				{/if}
 
 		</div>
 	</div>

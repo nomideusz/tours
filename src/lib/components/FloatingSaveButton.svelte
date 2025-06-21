@@ -92,6 +92,6 @@
 
 	/* Ensure the button is above other floating elements */
 	.z-50 {
-		z-index: 50;
+		z-index: var(--z-dropdown);
 	}
 </style> 

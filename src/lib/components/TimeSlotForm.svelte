@@ -192,6 +192,17 @@
 		}
 	});
 
+	// Reset duration to tour default
+	function resetDuration() {
+		if (tour?.duration && formData.startTime) {
+			customDuration = null;
+			const start = new Date(`2000-01-01T${formData.startTime}:00`);
+			const end = new Date(start.getTime() + tour.duration * 60000);
+			formData.endTime = end.toTimeString().slice(0, 5);
+			validateField('endTime');
+		}
+	}
+
 	// Create slots map for MiniMonthCalendar
 	let slotsMap = $derived(() => {
 		const map = new Map<string, number>();
@@ -533,50 +544,22 @@
 		return pattern;
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(e?: Event) {
+		e?.preventDefault();
+		if (hasValidationErrors() || conflicts.length > 0) return;
 		if (isSubmitting) return;
-		
-		// Mark all required fields as touched
-		touchedFields.add('date');
-		touchedFields.add('startTime');
-		touchedFields.add('endTime');
-		touchedFields.add('capacity');
-		
-		// Validate all fields
-		validateField('date');
-		validateField('startTime');
-		validateField('endTime');
-		validateField('capacity');
-		
-		// Check for conflicts
-		if (conflicts.length > 0) {
-			error = 'Please resolve time conflicts before saving';
-			return;
-		}
-		
-		// Check if there are validation errors
-		if (validationErrors.length > 0) {
-			error = 'Please correct the errors below';
-			return;
-		}
-		
-		// Validate time logic
-		const start = new Date(`${formData.date}T${formData.startTime}:00`);
-		const end = new Date(`${formData.date}T${formData.endTime}:00`);
-		
-		if (end <= start) {
-			error = 'End time must be after start time';
-			return;
-		}
-		
+
+		// Update recurring based on showAdvanced
+		formData.recurring = showAdvanced;
+
 		isSubmitting = true;
 		error = null;
-		
+
 		try {
 			const slotData = {
 				...formData,
-				startTime: start.toISOString(),
-				endTime: end.toISOString(),
+				startTime: new Date(`${formData.date}T${formData.startTime}:00`).toISOString(),
+				endTime: new Date(`${formData.date}T${formData.endTime}:00`).toISOString(),
 				status: formData.availability,
 				recurringEnd: formData.recurringEnd ? new Date(formData.recurringEnd).toISOString() : null
 			};
@@ -688,16 +671,6 @@
 		}, 100);
 	}
 	
-	function resetDuration() {
-		customDuration = null;
-		if (formData.startTime && tour?.duration) {
-			const start = new Date(`2000-01-01T${formData.startTime}:00`);
-			const end = new Date(start.getTime() + tour.duration * 60000);
-			formData.endTime = end.toTimeString().slice(0, 5);
-			validateField('endTime');
-		}
-	}
-
 	// Calculate duration in minutes
 	let duration = $derived(() => {
 		if (!formData.startTime || !formData.endTime) return 0;
@@ -719,6 +692,10 @@
 		'rounded-xl'
 	);
 
+	// Check if form has validation errors
+	function hasValidationErrors(): boolean {
+		return validationErrors.length > 0 || !formData.date || !formData.startTime || !formData.endTime || !formData.capacity;
+	}
 
 </script>
 
@@ -790,14 +767,15 @@
 				</div>
 			{/if}
 
-			<!-- Mobile: Stacked layout -->
-			<div class="md:hidden space-y-6">
+			<!-- Mobile Layout -->
+			<div class="space-y-6 md:hidden">
 				<!-- Date Selection -->
 				<div>
-					<label class="form-label">Select Date</label>
+					<label class="form-label mb-3">Date</label>
 					<MiniMonthCalendar
 						slotsMap={slotsMap()}
 						selectedDate={formData.date}
+						minDate={isEditMode ? undefined : new Date().toISOString().split('T')[0]}
 						onDateClick={(date) => {
 							formData.date = date;
 							validateField('date');
@@ -807,20 +785,15 @@
 					{#if getFieldError(allErrors, 'date')}
 						<p class="form-error mt-2">{getFieldError(allErrors, 'date')}</p>
 					{/if}
-					{#if allSlots.length > 0}
-						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
-							Gray = past • Blue = upcoming
-						</p>
-					{/if}
 				</div>
 				
 				<!-- Time Selection -->
 				<div>
-					<label class="form-label">Time Selection</label>
-					<div class="grid grid-cols-2 gap-3">
+					<label class="form-label mb-3">Time</label>
+					<div class="space-y-3">
 						<TimePicker
 							bind:value={formData.startTime}
-							label="Start time"
+							label="Start"
 							placeholder="Select start time"
 							use24hour={true}
 							onchange={() => {
@@ -829,28 +802,30 @@
 							}}
 							error={hasFieldError(allErrors, 'startTime')}
 						/>
-						<div>
-							<TimePicker
-								bind:value={formData.endTime}
-								label="End time"
-								placeholder="Select end time"
-								use24hour={true}
-								onchange={() => validateField('endTime')}
-								error={hasFieldError(allErrors, 'endTime')}
-							/>
-							{#if tour.duration && formData.startTime}
+						<TimePicker
+							bind:value={formData.endTime}
+							label="End"
+							placeholder="Select end time"
+							use24hour={true}
+							onchange={() => validateField('endTime')}
+							error={hasFieldError(allErrors, 'endTime')}
+						/>
+					</div>
+					
+					{#if formData.startTime && formData.endTime && duration() > 0}
+						<div class="mt-3 text-sm text-center" style="color: var(--text-secondary);">
+							Duration: {formatDuration(duration())}
+							{#if customDuration && tour.duration && duration() !== tour.duration}
 								<button
 									type="button"
-									onclick={getEndTimeFromDuration}
-									class="mt-2 w-full px-3 py-1.5 text-xs rounded-lg border transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
-									style="border-color: var(--border-primary); color: var(--text-secondary);"
-									title="Set end time based on tour duration"
+									onclick={resetDuration}
+									class="ml-2 underline"
 								>
-									Auto ({formatDuration(tour.duration)})
+									Reset
 								</button>
 							{/if}
 						</div>
-					</div>
+					{/if}
 					
 					{#if getFieldError(allErrors, 'startTime')}
 						<p class="form-error mt-2">{getFieldError(allErrors, 'startTime')}</p>
@@ -860,33 +835,10 @@
 					{/if}
 				</div>
 
-				<!-- Capacity & Duration -->
-				<div class="space-y-4">
-					<!-- Compact info row -->
-					<div class="flex items-center justify-between p-3 rounded-lg text-sm" style="background: var(--bg-secondary);">
-						<div class="flex items-center gap-4">
-							<div>
-								<span style="color: var(--text-secondary);">Duration:</span>
-								<span class="font-medium ml-1" style="color: var(--text-primary);">{duration() > 0 ? formatDuration(duration()) : '--'}</span>
-							</div>
-							{#if tour.duration && duration() !== tour.duration && duration() > 0}
-								<button
-									type="button"
-									onclick={() => {
-										getEndTimeFromDuration();
-										validateField('endTime');
-									}}
-									class="text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
-								>
-									Reset
-								</button>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Capacity & Availability -->
-					<div class="flex gap-4">
-						<div class="w-40">
+				<!-- Capacity / Status -->
+				<div>
+					<div class="grid grid-cols-2 gap-4">
+						<div>
 							<NumberInput
 								id="capacity"
 								name="capacity"
@@ -901,425 +853,400 @@
 								error={getFieldError(allErrors, 'capacity')}
 								hasError={hasFieldError(allErrors, 'capacity')}
 								integerOnly={true}
-								size="small"
 								onblur={() => validateField('capacity')}
 							/>
+							{#if tour.capacity && formData.capacity !== tour.capacity}
+								<p class="text-xs mt-1" style="color: var(--text-secondary);">
+									Default: {tour.capacity}
+									<button
+										type="button"
+										onclick={() => {
+											formData.capacity = tour.capacity;
+											validateField('capacity');
+										}}
+										class="ml-1 underline"
+									>
+										Use
+									</button>
+								</p>
+							{/if}
 						</div>
 						
 						{#if isEditMode}
-							<div class="w-40">
-								<label for="availability" class="form-label">Availability</label>
-								<select id="availability" bind:value={formData.availability} class="form-select w-full size-small">
-									<option value="available">Available</option>
-									<option value="cancelled">Cancelled</option>
-								</select>
-							</div>
-						{/if}
-					</div>
-				</div>
-
-				{#if tour.capacity && formData.capacity !== tour.capacity}
-					<div class="text-sm p-2 rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
-						Tour default: {tour.capacity} guests
-						<button
-							type="button"
-							onclick={() => {
-								formData.capacity = tour.capacity;
-								validateField('capacity');
-							}}
-							class="ml-2 text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
-						>
-							Use default
-						</button>
-					</div>
-				{/if}
-
-				{#if isEditMode && hasBookings}
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						{currentSlot.bookedSpots} already booked • {formData.availability === 'cancelled' ? 'Cancelling will affect existing bookings' : 'Customers can book remaining spots'}
-					</p>
-				{:else if isEditMode}
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						{formData.availability === 'available' ? 'Customers can book this time slot' : 'This time slot will not be visible to customers'}
-					</p>
-				{:else}
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						Customers will be able to book this time slot once created
-					</p>
-				{/if}
-			</div>
-
-			<!-- Recurring Options (Mobile) - Only for create mode -->
-			{#if !isEditMode}
-				<div class="space-y-4 md:hidden">
-					<button
-						type="button"
-						onclick={() => showAdvanced = !showAdvanced}
-						class="flex items-center justify-between w-full p-3 text-left rounded-lg border transition-all duration-200 hover:bg-gray-50"
-						style="border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-2">
-							<Repeat class="h-4 w-4" style="color: var(--text-secondary);" />
-							<span class="font-medium" style="color: var(--text-primary);">Recurring Options</span>
-						</div>
-						{#if showAdvanced}
-							<ChevronUp class="h-4 w-4" style="color: var(--text-secondary);" />
-						{:else}
-							<ChevronDown class="h-4 w-4" style="color: var(--text-secondary);" />
-						{/if}
-					</button>
-
-					{#if showAdvanced}
-						<div class="space-y-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-								<!-- Pattern Selection -->
-								<div>
-									<label class="form-label">Repeat pattern</label>
-									<select bind:value={formData.recurringType} class="form-select w-full">
-										<option value="daily">Daily</option>
-										<option value="weekly">Weekly</option>
-										<option value="monthly">Monthly</option>
-									</select>
-								</div>
-
-								<!-- End Condition -->
-								<div class="space-y-3">
-									<label class="form-label">Stop after</label>
-									<div class="space-y-2">
-										<div class="flex items-center gap-2">
-											<input
-												type="radio"
-												id="end-count-mobile"
-												name="end-type-mobile"
-												value="count"
-												checked={!formData.recurringEnd}
-												onchange={() => formData.recurringEnd = ''}
-												class="form-radio"
-											/>
-											<label for="end-count-mobile" class="text-sm" style="color: var(--text-primary);">Number of slots</label>
-										</div>
-										{#if !formData.recurringEnd}
-											<NumberInput
-												id="recurring-count-mobile"
-												label=""
-												bind:value={formData.recurringCount}
-												min={1}
-												max={52}
-												step={1}
-												placeholder="5"
-												size="small"
-												integerOnly={true}
-											/>
-										{/if}
-									</div>
-									
-									<div class="space-y-2">
-										<div class="flex items-center gap-2">
-											<input
-												type="radio"
-												id="end-date-mobile"
-												name="end-type-mobile"
-												value="date"
-												checked={!!formData.recurringEnd}
-												onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 0; }}
-												class="form-radio"
-											/>
-											<label for="end-date-mobile" class="text-sm" style="color: var(--text-primary);">End date</label>
-										</div>
-										{#if formData.recurringEnd}
-											<DatePicker
-												bind:value={formData.recurringEnd}
-												minDate={formData.date}
-												placeholder="Select end date"
-												onchange={() => {}}
-											/>
-										{/if}
-									</div>
-								</div>
-
-								<!-- Preview -->
-								{#if getRecurringPreview().length > 0}
-									<div class="mt-4">
-										<label class="form-label">Preview ({getRecurringPreview().length} slots)</label>
-										<div class="max-h-32 overflow-y-auto p-2 rounded" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-											{#each getRecurringPreview() as slot, index}
-												<div class="text-xs py-1" style="color: var(--text-secondary);">
-													{index + 1}. {formatDate(slot.date)} at {slot.startTime}
-												</div>
-											{/each}
-											{#if formData.recurringEnd && getRecurringPreview().length >= 10}
-												<div class="text-xs py-1 italic" style="color: var(--text-tertiary);">...and more</div>
-											{/if}
-										</div>
-									</div>
-								{/if}
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Desktop: Optimized layout -->
-		<div class="hidden md:block">
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<!-- Date Selection -->
-				<div class="lg:col-span-1">
-					<label class="form-label">Select Date</label>
-					<MiniMonthCalendar
-						slotsMap={slotsMap()}
-						selectedDate={formData.date}
-						minDate={isEditMode ? undefined : new Date().toISOString().split('T')[0]}
-						onDateClick={(date) => {
-							formData.date = date;
-							validateField('date');
-						}}
-					/>
-					{#if getFieldError(allErrors, 'date')}
-						<p class="form-error mt-2">{getFieldError(allErrors, 'date')}</p>
-					{/if}
-					{#if allSlots.length > 0}
-						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
-							Gray dots = past slots • Blue dots = upcoming slots
-						</p>
-					{/if}
-				</div>
-				
-				<!-- Time & Settings -->
-				<div class="lg:col-span-2 space-y-4">
-					<!-- Time & Configuration Grid -->
-					<div class="grid grid-cols-2 gap-4">
-						<div>
-							<TimePicker
-								bind:value={formData.startTime}
-								label="Start time"
-								placeholder="Select start time"
-								use24hour={true}
-								onchange={() => {
-									validateField('startTime');
-								}}
-								error={hasFieldError(allErrors, 'startTime')}
-							/>
-						</div>
-						<div>
-							<TimePicker
-								bind:value={formData.endTime}
-								label="End time"
-								placeholder="Select end time"
-								use24hour={true}
-								onchange={() => validateField('endTime')}
-								error={hasFieldError(allErrors, 'endTime')}
-							/>
-						</div>
-					</div>
-					
-					<!-- Capacity & Settings -->
-					<div class="grid grid-cols-2 gap-4">
-						<div class="w-full">
-							<NumberInput
-								id="capacity"
-								name="capacity"
-								label="Capacity"
-								bind:value={formData.capacity}
-								min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
-								max={500}
-								step={1}
-								placeholder="10"
-								incrementLabel="Increase capacity"
-								decrementLabel="Decrease capacity"
-								error={getFieldError(allErrors, 'capacity')}
-								hasError={hasFieldError(allErrors, 'capacity')}
-								integerOnly={true}
-								onblur={() => validateField('capacity')}
-							/>
-						</div>
-						{#if isEditMode}
-							<div class="w-full">
-								<label for="availability" class="form-label">Availability</label>
+							<div>
+								<label for="availability" class="form-label">Status</label>
 								<select id="availability" bind:value={formData.availability} class="form-select w-full">
 									<option value="available">Available</option>
 									<option value="cancelled">Cancelled</option>
 								</select>
 							</div>
-						{:else}
-							<div class="w-full">
-								<label class="form-label">Duration</label>
-								<div class="w-full px-3 py-2 rounded-lg border text-sm flex items-center justify-between" 
-									style="border-color: var(--border-primary); background: var(--bg-secondary);">
+						{/if}
+					</div>
+				</div>
+
+				<!-- Current slot info (edit mode) -->
+				{#if isEditMode && currentSlot}
+					<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Current Time Slot</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{formatDate(currentSlot.startTime)} • {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
+						</p>
+						{#if hasBookings}
+							<p class="text-sm mt-2" style="color: var(--color-warning-700);">
+								<AlertCircle class="h-4 w-4 inline mr-1" />
+								{currentSlot.bookedSpots} booking{currentSlot.bookedSpots === 1 ? '' : 's'} will be affected
+							</p>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Recurring Options (create mode) -->
+				{#if !isEditMode}
+					<div class="p-4 rounded-lg border" style="border-color: var(--border-primary);">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								type="checkbox"
+								bind:checked={showAdvanced}
+								onchange={() => formData.recurring = showAdvanced}
+								class="form-checkbox"
+							/>
+							<span class="text-sm font-medium" style="color: var(--text-primary);">Create recurring slots</span>
+						</label>
+						
+						{#if showAdvanced}
+							<div class="mt-4 space-y-3">
+								<div class="grid grid-cols-2 gap-4">
 									<div>
-										<span class="font-medium" style="color: var(--text-primary);">
-											{duration() > 0 ? formatDuration(duration()) : 'Not set'}
-										</span>
-										{#if tour.duration && duration() !== tour.duration}
-											<span class="ml-2 text-xs" style="color: var(--text-tertiary);">
-												(default: {formatDuration(tour.duration)})
-											</span>
+										<label class="form-label text-sm">Repeat</label>
+										<select bind:value={formData.recurringType} class="form-select">
+											<option value="daily">Daily</option>
+											<option value="weekly">Weekly</option>
+											<option value="monthly">Monthly</option>
+										</select>
+									</div>
+									
+									<div>
+										<label class="form-label text-sm">
+											{!formData.recurringEnd ? 'Times' : 'Until'}
+										</label>
+										{#if !formData.recurringEnd}
+											<NumberInput
+												id="recurring-count-mobile"
+												label=""
+												bind:value={formData.recurringCount}
+												min={2}
+												max={52}
+												step={1}
+												placeholder="5"
+												integerOnly={true}
+											/>
+										{:else}
+											<DatePicker
+												bind:value={formData.recurringEnd}
+												minDate={formData.date}
+												placeholder="End date"
+												onchange={() => {}}
+											/>
 										{/if}
 									</div>
-									{#if customDuration && tour.duration}
-										<button
-											type="button"
-											onclick={resetDuration}
-											class="text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-											style="color: var(--color-primary-600);"
-										>
-											Reset
-										</button>
-									{/if}
 								</div>
+								
+								<div class="flex gap-4 text-xs">
+									<label class="flex items-center gap-1.5 cursor-pointer">
+										<input
+											type="radio"
+											name="recurring-mode-mobile"
+											checked={!formData.recurringEnd}
+											onchange={() => formData.recurringEnd = ''}
+											class="form-radio"
+										/>
+										<span>Fixed count</span>
+									</label>
+									<label class="flex items-center gap-1.5 cursor-pointer">
+										<input
+											type="radio"
+											name="recurring-mode-mobile"
+											checked={!!formData.recurringEnd}
+											onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 2; }}
+											class="form-radio"
+										/>
+										<span>End date</span>
+									</label>
+								</div>
+								
+								{#if getRecurringPreview().length > 0}
+									<div class="p-3 rounded bg-blue-50 dark:bg-blue-900/20">
+										<p class="text-xs font-medium mb-1" style="color: var(--text-primary);">
+											Will create {getRecurringPreview().length} time slots:
+										</p>
+										<div class="text-xs space-y-0.5" style="color: var(--text-secondary);">
+											{#each getRecurringPreview().slice(0, 3) as slot}
+												<div>{formatDate(slot.date)} at {slot.startTime}</div>
+											{/each}
+											{#if getRecurringPreview().length > 3}
+												<div>... and {getRecurringPreview().length - 3} more</div>
+											{/if}
+										</div>
+									</div>
+								{/if}
 							</div>
 						{/if}
 					</div>
+				{/if}
 
-					<!-- Validation & Warnings -->
-					{#if (tour.capacity && formData.capacity !== tour.capacity) || (isEditMode && hasBookings)}
-					<div class="flex gap-2">
+				<!-- Conflicts -->
+				{#if conflicts.length > 0}
+					<div class="p-4 rounded-lg" style="background: var(--color-danger-light); border: 1px solid var(--color-danger-200);">
+						<p class="text-sm font-medium flex items-center gap-2" style="color: var(--color-danger-900);">
+							<AlertCircle class="h-4 w-4" />
+							Time conflict
+						</p>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+							This time overlaps with {conflicts.length} existing slot{conflicts.length > 1 ? 's' : ''}
+						</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Desktop: Clean vertical layout -->
+		<div class="hidden md:block max-w-lg mx-auto">
+			<!-- Date Selection -->
+			<div class="mb-6">
+				<label class="form-label mb-3">Date</label>
+				<MiniMonthCalendar
+					slotsMap={slotsMap()}
+					selectedDate={formData.date}
+					minDate={isEditMode ? undefined : new Date().toISOString().split('T')[0]}
+					onDateClick={(date) => {
+						formData.date = date;
+						validateField('date');
+					}}
+				/>
+				{#if getFieldError(allErrors, 'date')}
+					<p class="form-error mt-2">{getFieldError(allErrors, 'date')}</p>
+				{/if}
+			</div>
+			
+			<!-- Time Selection -->
+			<div class="mb-6">
+				<label class="form-label mb-3">Time</label>
+				<div class="grid grid-cols-2 gap-4">
+					<TimePicker
+						bind:value={formData.startTime}
+						label="Start"
+						placeholder="Select start time"
+						use24hour={true}
+						onchange={() => {
+							validateField('startTime');
+						}}
+						error={hasFieldError(allErrors, 'startTime')}
+					/>
+					<TimePicker
+						bind:value={formData.endTime}
+						label="End"
+						placeholder="Select end time"
+						use24hour={true}
+						onchange={() => validateField('endTime')}
+						error={hasFieldError(allErrors, 'endTime')}
+					/>
+				</div>
+				
+				<!-- Duration display -->
+				{#if formData.startTime && formData.endTime && duration() > 0}
+					<div class="mt-3 text-sm text-center" style="color: var(--text-secondary);">
+						Duration: {formatDuration(duration())}
+						{#if customDuration && tour.duration && duration() !== tour.duration}
+							<button
+								type="button"
+								onclick={resetDuration}
+								class="ml-2 underline"
+							>
+								Reset
+							</button>
+						{/if}
+					</div>
+				{/if}
+				
+				{#if getFieldError(allErrors, 'startTime')}
+					<p class="form-error mt-2">{getFieldError(allErrors, 'startTime')}</p>
+				{/if}
+				{#if getFieldError(allErrors, 'endTime')}
+					<p class="form-error mt-2">{getFieldError(allErrors, 'endTime')}</p>
+				{/if}
+			</div>
+			
+			<!-- Capacity / Status -->
+			<div class="mb-6">
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<NumberInput
+							id="capacity"
+							name="capacity"
+							label="Capacity"
+							bind:value={formData.capacity}
+							min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
+							max={500}
+							step={1}
+							placeholder="10"
+							incrementLabel="Increase capacity"
+							decrementLabel="Decrease capacity"
+							error={getFieldError(allErrors, 'capacity')}
+							hasError={hasFieldError(allErrors, 'capacity')}
+							integerOnly={true}
+							onblur={() => validateField('capacity')}
+						/>
 						{#if tour.capacity && formData.capacity !== tour.capacity}
-							<div class="text-sm p-2 rounded flex-1" style="background: var(--bg-secondary); color: var(--text-secondary);">
-								Tour default: {tour.capacity} guests
+							<p class="text-xs mt-1" style="color: var(--text-secondary);">
+								Default: {tour.capacity}
 								<button
 									type="button"
 									onclick={() => {
 										formData.capacity = tour.capacity;
 										validateField('capacity');
 									}}
-									class="ml-2 text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+									class="ml-1 underline"
 								>
-									Use default
+									Use
 								</button>
-							</div>
-						{/if}
-						{#if isEditMode && hasBookings}
-							<div class="text-sm p-2 rounded flex-1" style="background: var(--color-warning-50); color: var(--color-warning-700);">
-								{currentSlot.bookedSpots} already booked
-							</div>
+							</p>
 						{/if}
 					</div>
-					{/if}
-
-					<!-- Validation Errors -->
-					{#if getFieldError(allErrors, 'startTime')}
-						<p class="form-error">{getFieldError(allErrors, 'startTime')}</p>
-					{/if}
-					{#if getFieldError(allErrors, 'endTime')}
-						<p class="form-error">{getFieldError(allErrors, 'endTime')}</p>
-					{/if}
-
+					
 					{#if isEditMode}
-						<div class="text-sm" style="color: var(--text-secondary);">
-							<strong>Current:</strong> {formatDate(currentSlot.startTime)} at {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
+						<div>
+							<label for="availability" class="form-label">Status</label>
+							<select id="availability" bind:value={formData.availability} class="form-select">
+								<option value="available">Available</option>
+								<option value="cancelled">Cancelled</option>
+							</select>
 						</div>
 					{/if}
+				</div>
+			</div>
 
-					<!-- Recurring Options (Desktop) - Only for create mode -->
-					{#if !isEditMode}
-						<div class="mt-4">
-							<button
-								type="button"
-								onclick={() => showAdvanced = !showAdvanced}
-								class="flex items-center justify-between w-full p-3 text-left rounded-lg border transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-								style="border-color: var(--border-primary);"
-							>
-								<div class="flex items-center gap-2">
-									<Repeat class="h-4 w-4" style="color: var(--text-secondary);" />
-									<span class="text-sm font-medium" style="color: var(--text-primary);">
-										Create recurring slots
-									</span>
+			<!-- Current slot info (edit mode) -->
+			{#if isEditMode && currentSlot}
+				<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Current Time Slot</p>
+					<p class="text-sm" style="color: var(--text-secondary);">
+						{formatDate(currentSlot.startTime)} • {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
+					</p>
+					{#if hasBookings}
+						<p class="text-sm mt-2" style="color: var(--color-warning-700);">
+							<AlertCircle class="h-4 w-4 inline mr-1" />
+							{currentSlot.bookedSpots} booking{currentSlot.bookedSpots === 1 ? '' : 's'} will be affected
+						</p>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Recurring Options (create mode) -->
+			{#if !isEditMode}
+				<div class="mb-6 p-4 rounded-lg border" style="border-color: var(--border-primary);">
+					<label class="flex items-center gap-2 cursor-pointer">
+						<input
+							type="checkbox"
+							bind:checked={showAdvanced}
+							onchange={() => formData.recurring = showAdvanced}
+							class="form-checkbox"
+						/>
+						<span class="text-sm font-medium" style="color: var(--text-primary);">Create recurring slots</span>
+					</label>
+					
+					{#if showAdvanced}
+						<div class="mt-4 space-y-3">
+							<div class="grid grid-cols-2 gap-4">
+								<div>
+									<label class="form-label text-sm">Repeat</label>
+									<select bind:value={formData.recurringType} class="form-select">
+										<option value="daily">Daily</option>
+										<option value="weekly">Weekly</option>
+										<option value="monthly">Monthly</option>
+									</select>
 								</div>
-								{#if showAdvanced}
-									<ChevronUp class="h-4 w-4" style="color: var(--text-secondary);" />
-								{:else}
-									<ChevronDown class="h-4 w-4" style="color: var(--text-secondary);" />
-								{/if}
-							</button>
-
-							{#if showAdvanced}
-								<div class="mt-3 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-									<div class="grid grid-cols-2 gap-4">
-										<!-- Pattern & Count -->
-										<div>
-											<label class="form-label">Pattern</label>
-											<select bind:value={formData.recurringType} class="form-select w-full">
-												<option value="daily">Daily</option>
-												<option value="weekly">Weekly</option>
-												<option value="monthly">Monthly</option>
-											</select>
-										</div>
-										
-										<div>
-											{#if !formData.recurringEnd}
-												<label class="form-label">How many?</label>
-												<NumberInput
-													id="recurring-count"
-													label=""
-													bind:value={formData.recurringCount}
-													min={2}
-													max={52}
-													step={1}
-													placeholder="5"
-													integerOnly={true}
-												/>
-											{:else}
-												<label class="form-label">Until date</label>
-												<DatePicker
-													bind:value={formData.recurringEnd}
-													minDate={formData.date}
-													placeholder="End date"
-													onchange={() => {}}
-												/>
-											{/if}
-										</div>
-									</div>
-									
-									<!-- Toggle between count/date -->
-									<div class="mt-3 flex items-center gap-4 text-sm">
-										<label class="flex items-center gap-2 cursor-pointer">
-											<input
-												type="radio"
-												name="recurring-mode"
-												checked={!formData.recurringEnd}
-												onchange={() => formData.recurringEnd = ''}
-												class="form-radio"
-											/>
-											<span style="color: var(--text-secondary);">Count</span>
-										</label>
-										<label class="flex items-center gap-2 cursor-pointer">
-											<input
-												type="radio"
-												name="recurring-mode"
-												checked={!!formData.recurringEnd}
-												onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 2; }}
-												class="form-radio"
-											/>
-											<span style="color: var(--text-secondary);">Until date</span>
-										</label>
-									</div>
-									
-									<!-- Preview -->
-									{#if getRecurringPreview().length > 0}
-										<div class="mt-4">
-											<div class="text-sm font-medium mb-2" style="color: var(--text-primary);">
-												{getRecurringPreview().length} slots will be created
-											</div>
-											<div class="max-h-32 overflow-y-auto p-2 rounded bg-gray-50 dark:bg-gray-900/50 text-xs space-y-1">
-												{#each getRecurringPreview().slice(0, 5) as slot}
-													<div class="flex justify-between" style="color: var(--text-secondary);">
-														<span>{formatDate(slot.date)}</span>
-														<span>{slot.startTime} - {formData.endTime}</span>
-													</div>
-												{/each}
-												{#if getRecurringPreview().length > 5}
-													<div class="text-center pt-1" style="color: var(--text-tertiary);">
-														...and {getRecurringPreview().length - 5} more
-													</div>
-												{/if}
-											</div>
-										</div>
+								
+								<div>
+									<label class="form-label text-sm">
+										{!formData.recurringEnd ? 'Times' : 'Until'}
+									</label>
+									{#if !formData.recurringEnd}
+										<NumberInput
+											id="recurring-count"
+											label=""
+											bind:value={formData.recurringCount}
+											min={2}
+											max={52}
+											step={1}
+											placeholder="5"
+											integerOnly={true}
+										/>
+									{:else}
+										<DatePicker
+											bind:value={formData.recurringEnd}
+											minDate={formData.date}
+											placeholder="End date"
+											onchange={() => {}}
+										/>
 									{/if}
+								</div>
+							</div>
+							
+							<div class="flex gap-4 text-xs">
+								<label class="flex items-center gap-1.5 cursor-pointer">
+									<input
+										type="radio"
+										name="recurring-mode"
+										checked={!formData.recurringEnd}
+										onchange={() => formData.recurringEnd = ''}
+										class="form-radio"
+									/>
+									<span>Fixed count</span>
+								</label>
+								<label class="flex items-center gap-1.5 cursor-pointer">
+									<input
+										type="radio"
+										name="recurring-mode"
+										checked={!!formData.recurringEnd}
+										onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 2; }}
+										class="form-radio"
+									/>
+									<span>End date</span>
+								</label>
+							</div>
+							
+							{#if getRecurringPreview().length > 0}
+								<div class="p-3 rounded bg-blue-50 dark:bg-blue-900/20">
+									<p class="text-xs font-medium mb-1" style="color: var(--text-primary);">
+										Will create {getRecurringPreview().length} time slots:
+									</p>
+									<div class="text-xs space-y-0.5" style="color: var(--text-secondary);">
+										{#each getRecurringPreview().slice(0, 3) as slot}
+											<div>{formatDate(slot.date)} at {slot.startTime}</div>
+										{/each}
+										{#if getRecurringPreview().length > 3}
+											<div>... and {getRecurringPreview().length - 3} more</div>
+										{/if}
+									</div>
 								</div>
 							{/if}
 						</div>
 					{/if}
 				</div>
-			</div>
+			{/if}
+
+			<!-- Conflicts -->
+			{#if conflicts.length > 0}
+				<div class="mb-6 p-4 rounded-lg" style="background: var(--color-danger-light); border: 1px solid var(--color-danger-200);">
+					<p class="text-sm font-medium flex items-center gap-2" style="color: var(--color-danger-900);">
+						<AlertCircle class="h-4 w-4" />
+						Time conflict
+					</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+						This time overlaps with {conflicts.length} existing slot{conflicts.length > 1 ? 's' : ''}
+					</p>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Action Buttons -->
@@ -1366,14 +1293,13 @@
 					Cancel
 				</button>
 				<button
-					type="button"
-					onclick={handleSubmit}
-					disabled={isSubmitting || conflicts.length > 0}
+					type="submit"
+					disabled={isSubmitting || hasValidationErrors() || conflicts.length > 0}
 					class="button-primary button--gap"
 				>
 					{#if isSubmitting}
 						<Loader2 class="w-4 h-4 animate-spin" />
-						{isEditMode ? 'Saving...' : (formData.recurring ? 'Creating slots...' : 'Creating...')}
+						{isEditMode ? 'Saving...' : (showAdvanced && getRecurringPreview().length > 1 ? `Creating ${getRecurringPreview().length} slots...` : 'Creating...')}
 					{:else}
 						<CheckCircle class="w-4 h-4" />
 						{isEditMode ? 'Save Changes' : (showAdvanced && getRecurringPreview().length > 1 ? `Create ${getRecurringPreview().length} slots` : 'Create Slot')}

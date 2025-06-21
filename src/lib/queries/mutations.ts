@@ -27,7 +27,8 @@ export function createInvalidationHelper(queryClient: any) {
 				promises.push(
 					queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) }),
 					queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) }),
-					queryClient.invalidateQueries({ queryKey: ['tour-bookings', tourId] })
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourBookings(tourId) }),
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourBookingConstraints(tourId) })
 				);
 			}
 			
@@ -58,9 +59,10 @@ export function createInvalidationHelper(queryClient: any) {
 			// Tour-specific bookings
 			if (tourId) {
 				promises.push(
-					queryClient.invalidateQueries({ queryKey: ['tour-bookings', tourId] }),
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourBookings(tourId) }),
 					queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) }),
-					queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) })
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) }),
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourBookingConstraints(tourId) })
 				);
 			}
 			
@@ -395,18 +397,27 @@ export function updateTourStatusMutation() {
 		onSuccess: async (data, variables) => {
 			console.log('🔄 Status mutation: Server confirmed status change');
 			
-			// Don't remove queries - just invalidate to trigger background refetch
-			// This keeps the optimistic updates visible while fetching fresh data
-			await queryClient.invalidateQueries({ 
-				queryKey: queryKeys.userTours,
-				exact: true 
-			});
-			await queryClient.invalidateQueries({ 
-				queryKey: queryKeys.toursStats,
-				exact: true 
-			});
+			// Invalidate and refetch immediately for real-time updates
+			await Promise.all([
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.userTours,
+					exact: true,
+					refetchType: 'all'
+				}),
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.toursStats,
+					exact: true,
+					refetchType: 'all'
+				}),
+				// Also invalidate the specific tour details
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.tourDetails(variables.tourId),
+					exact: true,
+					refetchType: 'all'
+				})
+			]);
 			
-			console.log('🔄 Status mutation: Cache invalidated, background sync in progress');
+			console.log('🔄 Status mutation: Cache invalidated and refetched');
 		}
 	});
 }

@@ -51,7 +51,11 @@
 	// Query
 	const userToursQuery = createQuery({
 		queryKey: queryKeys.userTours,
-		queryFn: queryFunctions.fetchUserTours
+		queryFn: queryFunctions.fetchUserTours,
+		staleTime: 0, // Always consider data potentially stale for immediate updates
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
 	});
 
 	// Derived data
@@ -128,7 +132,7 @@
 		return spaceBelow < dropdownHeight;
 	}
 
-	let dropdownOpenUpwards: { [key: string]: boolean } = {};
+	let dropdownOpenUpwards = $state<{ [key: string]: boolean }>({});
 
 	// Helper functions
 	function getQRImageUrl(tour: Tour, size: number = 200): string {
@@ -217,7 +221,17 @@
 		try {
 			// Show subtle highlight on the tour being updated
 			recentlyUpdated = tourId;
+			
+			// Execute the mutation - it handles optimistic updates automatically
 			await $updateStatusMutation.mutateAsync({ tourId, status: newStatus });
+			
+			// For extra reliability, force refetch of tours after a short delay
+			setTimeout(async () => {
+				await queryClient.refetchQueries({ 
+					queryKey: queryKeys.userTours,
+					type: 'active'
+				});
+			}, 500);
 			
 			// Keep the highlight for a moment then clear it
 			setTimeout(() => {
@@ -574,9 +588,12 @@
 								
 								{#if actionMenuOpen === tour.id}
 									<div 
-										class="absolute right-0 w-48 rounded-lg shadow-lg z-50"
-										style="background: var(--bg-primary); border: 1px solid var(--border-primary); {dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'}"
+																		class="absolute right-0 w-48 rounded-lg shadow-lg"
+								style="z-index: var(--z-dropdown); background: var(--bg-primary); border: 1px solid var(--border-primary); {dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'}"
 										onclick={(e) => e.stopPropagation()}
+										onkeydown={(e) => e.stopPropagation()}
+										role="menu"
+										tabindex="0"
 									>
 										<button
 											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/tours/${tour.id}/edit`); }}

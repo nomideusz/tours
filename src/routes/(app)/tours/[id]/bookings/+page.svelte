@@ -33,14 +33,11 @@
 	
 	// TanStack Query for tour-specific bookings
 	const tourBookingsQuery = createQuery({
-		queryKey: ['tour-bookings', tourId],
-		queryFn: async () => {
-			const response = await fetch(`/api/tours/${tourId}/bookings`);
-			if (!response.ok) throw new Error('Failed to fetch tour bookings');
-			return response.json();
-		},
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		queryKey: queryKeys.tourBookings(tourId),
+		queryFn: () => queryFunctions.fetchTourBookings(tourId),
+		staleTime: 30 * 1000, // 30 seconds - consistent with other tour queries
+		gcTime: 2 * 60 * 1000, // 2 minutes
+		refetchOnWindowFocus: true, // Refetch when user returns to tab
 	});
 	
 	// State

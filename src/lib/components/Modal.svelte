@@ -107,8 +107,8 @@
 {#if isOpen}
 	<!-- Backdrop -->
 	<div 
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
-		style="background: rgba(0, 0, 0, 0.5);"
+		class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto"
+		style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5);"
 		transition:fade={{ duration: 150 }}
 	>
 		<!-- Modal -->

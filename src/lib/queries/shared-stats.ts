@@ -12,6 +12,8 @@ export const queryKeys = {
 	userTours: ['userTours'] as const,
 	tourDetails: (tourId: string) => ['tourDetails', tourId] as const,
 	tourSchedule: (tourId: string) => ['tourSchedule', tourId] as const,
+	tourBookings: (tourId: string) => ['tourBookings', tourId] as const,
+	tourBookingConstraints: (tourId: string) => ['tourBookingConstraints', tourId] as const,
 	profile: ['profile'] as const,
 	profileStats: ['profileStats'] as const,
 } as const;
@@ -103,6 +105,28 @@ export const queryFunctions = {
 		const response = await fetch(`/api/tour-schedule/${tourId}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch tour schedule: ${response.status} ${response.statusText}`);
+		}
+		return response.json();
+	},
+
+	// Fetch tour bookings
+	async fetchTourBookings(tourId: string) {
+		if (!browser) throw new Error('Client-side only');
+		
+		const response = await fetch(`/api/tours/${tourId}/bookings`);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch tour bookings: ${response.status} ${response.statusText}`);
+		}
+		return response.json();
+	},
+
+	// Fetch tour booking constraints (for capacity validation)
+	async fetchTourBookingConstraints(tourId: string) {
+		if (!browser) throw new Error('Client-side only');
+		
+		const response = await fetch(`/api/tours/${tourId}/booking-constraints`);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch booking constraints: ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
