@@ -1067,6 +1067,7 @@
 							</div>
 						</div>
 					{:else}
+						{@const confirmedCountry = COMMON_COUNTRIES.find(c => c.code === profile?.country)}
 						<div
 							class="flex items-start gap-4 rounded-lg p-4"
 							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
@@ -1084,6 +1085,17 @@
 								<p class="text-sm" style="color: var(--text-secondary);">
 									Your business location and currency are set.
 								</p>
+								{#if confirmedCountry && profile?.currency}
+									<div class="mt-2 flex items-center gap-2">
+										<span class="text-sm font-medium" style="color: var(--text-primary);">
+											{confirmedCountry.flag} {confirmedCountry.name}
+										</span>
+										<span class="text-sm" style="color: var(--text-tertiary);">•</span>
+										<span class="text-sm font-medium" style="color: var(--text-primary);">
+											{profile.currency}
+										</span>
+									</div>
+								{/if}
 							</div>
 						</div>
 					{/if}

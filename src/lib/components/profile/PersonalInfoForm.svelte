@@ -3,7 +3,9 @@
 	import Mail from 'lucide-svelte/icons/mail';
 	import Phone from 'lucide-svelte/icons/phone';
 	import Globe from 'lucide-svelte/icons/globe';
+	import MapPin from 'lucide-svelte/icons/map-pin';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
 
@@ -18,7 +20,8 @@
 		country = $bindable(),
 		currency = $bindable(),
 		onSubmit,
-		loading = false
+		loading = false,
+		paymentSetup = false
 	}: {
 		user: any;
 		name: string;
@@ -31,82 +34,73 @@
 		currency: string;
 		onSubmit: () => void;
 		loading?: boolean;
+		paymentSetup?: boolean;
 	} = $props();
 
-	// Country code mapping
-	const countryPhoneCodes: Record<string, string> = {
-		'US': '+1',
-		'CA': '+1',
-		'GB': '+44',
-		'UK': '+44',
-		'DE': '+49',
-		'FR': '+33',
-		'IT': '+39',
-		'ES': '+34',
-		'NL': '+31',
-		'BE': '+32',
-		'AT': '+43',
-		'CH': '+41',
-		'SE': '+46',
-		'NO': '+47',
-		'DK': '+45',
-		'FI': '+358',
-		'PL': '+48',
-		'CZ': '+420',
-		'PT': '+351',
-		'IE': '+353',
-		'GR': '+30',
-		'LU': '+352',
-		'MT': '+356',
-		'CY': '+357',
-		'SK': '+421',
-		'SI': '+386',
-		'EE': '+372',
-		'LV': '+371',
-		'LT': '+370',
-		'JP': '+81',
-		'AU': '+61'
-	};
+	// Validation errors
+	let errors = $state<Record<string, string>>({});
+	let touched = $state<Record<string, boolean>>({});
 
-	// Get country code for phone number
-	function getCountryCode(countryCode: string): string {
-		return countryPhoneCodes[countryCode] || '+1';
+	// Validation rules
+	function validateUsername(value: string): string | null {
+		if (!value) return 'Username is required';
+		if (value.length < 2) return 'Username must be at least 2 characters';
+		if (!/^[a-zA-Z0-9-_]+$/.test(value)) return 'Username can only contain letters, numbers, hyphens, and underscores';
+		return null;
 	}
 
-	// Simplified phone number handling - allow free-form input
-	function handlePhoneInput(event: Event) {
-		const target = event.target as HTMLInputElement;
-		// Just update the value without complex formatting
-		phone = target.value;
-	}
-
-	// Auto-add country code when phone field is focused and empty
-	function handlePhoneFocus(event: Event) {
-		const target = event.target as HTMLInputElement;
-		if (!phone && country) {
-			const countryCode = getCountryCode(country);
-			phone = `${countryCode} `;
-			// Set cursor after the country code
-			setTimeout(() => {
-				target.setSelectionRange(phone.length, phone.length);
-			}, 0);
+	function validateWebsite(value: string): string | null {
+		if (!value) return null; // Optional field
+		const formatted = formatWebsiteUrl(value);
+		try {
+			new URL(formatted);
+			return null;
+		} catch {
+			return 'Please enter a valid website URL';
 		}
 	}
 
-	// Get placeholder based on country
-	let phonePlaceholder = $derived(() => {
-		if (country) {
-			const countryCode = getCountryCode(country);
-			return `${countryCode} (555) 123-4567`;
-		}
-		return '+1 (555) 123-4567';
-	});
+	function validatePhone(value: string): string | null {
+		if (!value) return null; // Optional field
+		// Basic phone validation - at least 10 digits
+		const digits = value.replace(/\D/g, '');
+		if (digits.length < 10) return 'Please enter a valid phone number';
+		return null;
+	}
 
-	// Website URL formatting and validation
+	// Real-time validation
+	function validateField(field: string, value: string) {
+		switch (field) {
+			case 'username':
+				errors[field] = validateUsername(value) || '';
+				break;
+			case 'website':
+				errors[field] = validateWebsite(value) || '';
+				break;
+			case 'phone':
+				errors[field] = validatePhone(value) || '';
+				break;
+		}
+	}
+
+	// Handle blur events
+	function handleBlur(field: string) {
+		touched[field] = true;
+		validateField(field, getFieldValue(field));
+	}
+
+	function getFieldValue(field: string): string {
+		switch (field) {
+			case 'username': return username;
+			case 'website': return website;
+			case 'phone': return phone;
+			default: return '';
+		}
+	}
+
+	// Website URL formatting
 	function formatWebsiteUrl(value: string): string {
 		if (!value) return '';
-		
-		// Remove whitespace
 		value = value.trim();
 		
 		// Add https:// if no protocol is specified
@@ -117,128 +111,223 @@
 		return value;
 	}
 
-	function handleWebsiteBlur(event: Event) {
-		const target = event.target as HTMLInputElement;
-		website = formatWebsiteUrl(target.value);
-		websiteBlurred = true;
+	function handleWebsiteBlur() {
+		website = formatWebsiteUrl(website);
+		handleBlur('website');
 	}
 
-	// Website validation
-	function isValidWebsite(url: string): boolean {
-		if (!url) return true; // Empty is valid
-		try {
-			new URL(url);
-			return true;
-		} catch {
-			return false;
+	// Form submission
+	function handleSubmit(e: Event) {
+		e.preventDefault();
+		
+		// Validate all fields
+		errors = {};
+		const usernameError = validateUsername(username);
+		const websiteError = validateWebsite(website);
+		const phoneError = validatePhone(phone);
+		
+		if (usernameError) errors.username = usernameError;
+		if (websiteError) errors.website = websiteError;
+		if (phoneError) errors.phone = phoneError;
+		
+		// Mark all as touched
+		touched = {
+			username: true,
+			website: true,
+			phone: true
+		};
+		
+		// If no errors, submit
+		if (Object.keys(errors).length === 0) {
+			onSubmit();
 		}
 	}
-
-	// Only show validation feedback after user has interacted with the field
-	let websiteBlurred = $state(false);
-	let websiteValid = $derived(isValidWebsite(website));
-	let showWebsiteValidation = $derived(websiteBlurred && website.length > 0);
 </script>
 
-<div class="pb-6 border-b" style="border-color: var(--border-primary);">
-	<div class="flex items-center justify-between mb-4">
-		<h3 class="font-medium" style="color: var(--text-primary);">Personal Information</h3>
+<form onsubmit={handleSubmit} novalidate class="space-y-6">
+	<!-- Username -->
+	<div>
+		<label for="username" class="form-label">
+			Username <span class="text-red-500">*</span>
+		</label>
+		<div class="relative">
+			<User class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+			<input
+				type="text"
+				id="username" 
+				name="username"
+				bind:value={username}
+				onblur={() => handleBlur('username')}
+				class="form-input pl-10"
+				class:border-red-300={touched.username && errors.username}
+				class:focus:border-red-500={touched.username && errors.username}
+				placeholder="your-username"
+			/>
+		</div>
+		{#if touched.username && errors.username}
+			<div class="flex items-center gap-1 mt-1">
+				<AlertCircle class="h-3 w-3 text-red-500" />
+				<p class="text-xs text-red-600">{errors.username}</p>
+			</div>
+		{:else if username}
+			<p class="text-xs mt-1" style="color: var(--text-secondary);">
+				Profile URL: zaur.app/{username}
+			</p>
+		{/if}
 	</div>
 
-	<form onsubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-		<div class="space-y-4">
-			<!-- Username -->
+	<!-- Name -->
+	<div>
+		<label for="name" class="form-label">
+			Full Name
+		</label>
+		<input
+			type="text"
+			id="name"
+			name="name" 
+			bind:value={name}
+			class="form-input"
+			placeholder="John Doe"
+		/>
+	</div>
+
+	<!-- Email (Read-only) -->
+	<div>
+		<label for="email" class="form-label">
+			Email Address
+		</label>
+		<div class="relative">
+			<Mail class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+			<input
+				type="email"
+				id="email"
+				name="email"
+				value={user?.email || ''}
+				class="form-input pl-10"
+				readonly
+				disabled
+			/>
+		</div>
+		<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+			Email cannot be changed
+		</p>
+	</div>
+
+	<!-- Business Name -->
+	<div>
+		<label for="businessName" class="form-label">
+			Business Name
+		</label>
+		<input
+			type="text"
+			id="businessName"
+			name="businessName" 
+			bind:value={businessName}
+			class="form-input"
+			placeholder="Your Tour Company"
+		/>
+	</div>
+
+	<!-- Description -->
+	<div>
+		<label for="description" class="form-label">
+			About You
+		</label>
+		<textarea
+			id="description"
+			name="description" 
+			bind:value={description}
+			class="form-input"
+			placeholder="Tell your customers about yourself and your tours..."
+			rows="4"
+		></textarea>
+		<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+			This will appear on your public profile
+		</p>
+	</div>
+
+	<!-- Location Section -->
+	<div class="pt-6 border-t" style="border-color: var(--border-primary);">
+		<h3 class="text-sm font-medium mb-4" style="color: var(--text-primary);">Location & Currency</h3>
+		
+		<div class="grid gap-4 sm:grid-cols-2">
+			<!-- Country -->
 			<div>
-				<label for="username" class="form-label">
-					Username
+				<label for="country" class="form-label">
+					Country
 				</label>
 				<div class="relative">
-					<User class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-					<input
-						type="text"
-						id="username" 
-						name="username"
-						bind:value={username}
-						class="form-input pl-10"
-						placeholder="Enter your username"
-						required
-					/>
+					<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+					<select
+						id="country"
+						name="country"
+						class="form-select pl-10 cursor-pointer"
+						bind:value={country}
+						disabled={paymentSetup}
+					>
+						<option value="">Select country</option>
+						<option value="AT">Austria</option>
+						<option value="BE">Belgium</option>
+						<option value="DE">Germany</option>
+						<option value="DK">Denmark</option>
+						<option value="ES">Spain</option>
+						<option value="FI">Finland</option>
+						<option value="FR">France</option>
+						<option value="GB">United Kingdom</option>
+						<option value="IE">Ireland</option>
+						<option value="IT">Italy</option>
+						<option value="NL">Netherlands</option>
+						<option value="NO">Norway</option>
+						<option value="PL">Poland</option>
+						<option value="PT">Portugal</option>
+						<option value="SE">Sweden</option>
+						<option value="CH">Switzerland</option>
+						<option value="US">United States</option>
+						<option value="CA">Canada</option>
+						<option value="AU">Australia</option>
+						<option value="JP">Japan</option>
+					</select>
 				</div>
-				{#if username}
-					<p class="text-sm text-gray-600 mt-1">
-						Your personal URL: <a href="/{username}" class="text-blue-600 hover:text-blue-800" target="_blank">zaur.app/{username}</a>
+				{#if paymentSetup}
+					<p class="text-xs mt-1" style="color: var(--color-warning);">
+						Locked after payment setup
 					</p>
 				{/if}
 			</div>
 
-			<!-- Name -->
+			<!-- Currency -->
 			<div>
-				<label for="name" class="form-label">
-					Full Name
+				<label for="currency" class="form-label">
+					Currency
 				</label>
-				<div class="relative">
-					<User class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-					<input
-						type="text"
-						id="name"
-						name="name" 
-						bind:value={name}
-						class="form-input pl-10"
-						placeholder="Enter your full name"
-					/>
-				</div>
+				<select
+					id="currency"
+					name="currency"
+					class="form-select cursor-pointer"
+					bind:value={currency}
+					onchange={() => userCurrency.set(currency as Currency)}
+					disabled={paymentSetup}
+				>
+					{#each Object.values(SUPPORTED_CURRENCIES) as currencyInfo}
+						<option value={currencyInfo.code}>
+							{currencyInfo.symbol} {currencyInfo.code}
+						</option>
+					{/each}
+				</select>
+				{#if paymentSetup}
+					<p class="text-xs mt-1" style="color: var(--color-warning);">
+						Locked with payment account
+					</p>
+				{/if}
 			</div>
+		</div>
+	</div>
 
-			<!-- Email -->
-			<div>
-				<label for="email" class="form-label">
-					Email Address
-				</label>
-				<div class="relative">
-					<Mail class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-					<input
-						type="email"
-						id="email"
-						name="email"
-						value={user?.email || ''}
-						class="form-input pl-10"
-						placeholder="Enter your email"
-						required
-						readonly
-					/>
-				</div>
-			</div>
-
-			<!-- Business Name -->
-			<div>
-				<label for="businessName" class="form-label">
-					Business Name
-				</label>
-				<input
-					type="text"
-					id="businessName"
-					name="businessName" 
-					bind:value={businessName}
-					class="form-input"
-					placeholder="Enter your business name"
-				/>
-			</div>
-
-			<!-- Description -->
-			<div>
-				<label for="description" class="form-label">
-					Description
-				</label>
-				<textarea
-					id="description"
-					name="description" 
-					bind:value={description}
-					class="form-input"
-					placeholder="Tell us about yourself or your business"
-					rows="3"
-				></textarea>
-			</div>
-
+	<!-- Contact Section -->
+	<div class="pt-6 border-t" style="border-color: var(--border-primary);">
+		<h3 class="text-sm font-medium mb-4" style="color: var(--text-primary);">Contact Information</h3>
+		
+		<div class="grid gap-4 sm:grid-cols-2">
 			<!-- Phone -->
 			<div>
 				<label for="phone" class="form-label">
@@ -251,20 +340,19 @@
 						id="phone"
 						name="phone" 
 						bind:value={phone}
-						oninput={handlePhoneInput}
-						onfocus={handlePhoneFocus}
+						onblur={() => handleBlur('phone')}
 						class="form-input pl-10"
-						placeholder={phonePlaceholder()}
-						autocomplete="tel"
+						class:border-red-300={touched.phone && errors.phone}
+						class:focus:border-red-500={touched.phone && errors.phone}
+						placeholder="+1 (555) 123-4567"
 					/>
 				</div>
-				<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-					{#if country}
-						Country code {getCountryCode(country)} will be added automatically when you focus the field
-					{:else}
-						Enter your phone number with country code for international format
-					{/if}
-				</p>
+				{#if touched.phone && errors.phone}
+					<div class="flex items-center gap-1 mt-1">
+						<AlertCircle class="h-3 w-3 text-red-500" />
+						<p class="text-xs text-red-600">{errors.phone}</p>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Website -->
@@ -275,113 +363,54 @@
 				<div class="relative">
 					<Globe class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
 					<input
-						type="url"
+						type="text"
 						id="website"
 						name="website" 
 						bind:value={website}
 						onblur={handleWebsiteBlur}
 						class="form-input pl-10 pr-10"
-						class:border-red-300={showWebsiteValidation && !websiteValid}
-						class:border-green-300={showWebsiteValidation && websiteValid}
-						placeholder="example.com"
-						autocomplete="url"
+						class:border-red-300={touched.website && errors.website}
+						class:focus:border-red-500={touched.website && errors.website}
+						placeholder="www.example.com"
 					/>
-					{#if website && websiteValid}
+					{#if website && !errors.website}
 						<a 
 							href={website} 
 							target="_blank" 
 							rel="noopener noreferrer"
-							class="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 hover:text-blue-800"
+							class="absolute right-3 top-1/2 transform -translate-y-1/2"
+							style="color: var(--color-primary-600);"
 							title="Visit website"
 						>
 							<ExternalLink class="h-4 w-4" />
 						</a>
 					{/if}
 				</div>
-				<div class="flex items-center justify-between mt-1">
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						{#if !website}
-							Enter your website URL (https:// will be added automatically)
-						{:else if showWebsiteValidation && websiteValid}
-							<span style="color: var(--color-success);">✓ Valid website URL</span>
-						{:else if showWebsiteValidation && !websiteValid}
-							<span style="color: var(--color-error);">⚠ Please enter a valid website URL</span>
-						{:else}
-							Enter your website URL (https:// will be added automatically)
-						{/if}
-					</p>
-				</div>
-			</div>
-
-			<!-- Country -->
-			<div>
-				<label for="country" class="form-label">
-					Country
-				</label>
-				<select
-					id="country"
-					name="country"
-					class="form-select cursor-pointer"
-					bind:value={country}
-				>
-					<option value="">Select your country</option>
-					<option value="AT">Austria</option>
-					<option value="BE">Belgium</option>
-					<option value="DE">Germany</option>
-					<option value="DK">Denmark</option>
-					<option value="ES">Spain</option>
-					<option value="FI">Finland</option>
-					<option value="FR">France</option>
-					<option value="GB">United Kingdom</option>
-					<option value="IE">Ireland</option>
-					<option value="IT">Italy</option>
-					<option value="NL">Netherlands</option>
-					<option value="NO">Norway</option>
-					<option value="PL">Poland</option>
-					<option value="PT">Portugal</option>
-					<option value="SE">Sweden</option>
-					<option value="CH">Switzerland</option>
-				</select>
-			</div>
-
-			<!-- Currency -->
-			<div>
-				<label for="currency" class="form-label">
-					Preferred Currency
-				</label>
-				<select
-					id="currency"
-					name="currency"
-					class="form-select cursor-pointer"
-					bind:value={currency}
-					onchange={() => userCurrency.set(currency as Currency)}
-				>
-					{#each Object.values(SUPPORTED_CURRENCIES) as currencyInfo}
-						<option value={currencyInfo.code}>
-							{currencyInfo.symbol} {currencyInfo.name} ({currencyInfo.code})
-						</option>
-					{/each}
-				</select>
-				<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-					This will be used for all price displays throughout the app
-				</p>
-			</div>
-		</div>
-
-		<!-- Save Button -->
-		<div class="flex justify-end pt-6 mt-6" style="border-top: 1px solid var(--border-primary);">
-			<button
-				type="submit"
-				disabled={loading}
-				class="button-primary"
-			>
-				{#if loading}
-					<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-					Saving...
-				{:else}
-					Save Changes
+				{#if touched.website && errors.website}
+					<div class="flex items-center gap-1 mt-1">
+						<AlertCircle class="h-3 w-3 text-red-500" />
+						<p class="text-xs text-red-600">{errors.website}</p>
+					</div>
 				{/if}
-			</button>
+			</div>
 		</div>
-	</form>
-</div> 
+	</div>
+
+	<!-- Save Button -->
+	<div class="flex justify-end pt-6">
+		<button
+			type="submit"
+			disabled={loading}
+			class="button-primary"
+		>
+			{#if loading}
+				<span class="flex items-center gap-2">
+					<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+					Saving...
+				</span>
+			{:else}
+				Save Changes
+			{/if}
+		</button>
+	</div>
+</form> 

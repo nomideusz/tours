@@ -7,20 +7,12 @@
 
 	let {
 		paymentStatus,
-		paymentStatusLoading,
 		onSetupPayments
 	}: {
 		paymentStatus: {
-			hasAccount: boolean;
-			isSetupComplete: boolean;
-			canReceivePayments: boolean;
-			accountInfo?: {
-				businessName?: string;
-				requiresAction?: boolean;
-				[key: string]: any;
-			} | null;
+			isSetup: boolean;
+			loading: boolean;
 		};
-		paymentStatusLoading: boolean;
 		onSetupPayments: () => void;
 	} = $props();
 </script>
@@ -38,7 +30,7 @@
 		</div>
 	</div>
 	<div class="p-4">
-		{#if paymentStatusLoading}
+		{#if paymentStatus.loading}
 			<div class="flex justify-center py-4">
 				<LoadingSpinner size="small" />
 			</div>
@@ -46,17 +38,11 @@
 			<div class="space-y-4">
 				<!-- Account Status -->
 				<div class="flex items-start gap-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
-					{#if paymentStatus.canReceivePayments}
+					{#if paymentStatus.isSetup}
 						<CheckCircle class="h-4 w-4 mt-0.5" style="color: var(--color-success);" />
 						<div>
 							<p class="text-sm font-medium" style="color: var(--text-primary);">Active</p>
 							<p class="text-xs" style="color: var(--text-secondary);">Ready to accept payments</p>
-						</div>
-					{:else if paymentStatus.hasAccount && !paymentStatus.isSetupComplete}
-						<AlertCircle class="h-4 w-4 mt-0.5" style="color: var(--color-warning);" />
-						<div>
-							<p class="text-sm font-medium" style="color: var(--text-primary);">Setup incomplete</p>
-							<p class="text-xs" style="color: var(--text-secondary);">Complete setup required</p>
 						</div>
 					{:else}
 						<CreditCard class="h-4 w-4 mt-0.5" style="color: var(--text-tertiary);" />
@@ -69,21 +55,13 @@
 
 				<!-- Setup Button -->
 				<div class="flex justify-center">
-					{#if !paymentStatus.hasAccount}
+					{#if !paymentStatus.isSetup}
 						<button
 							onclick={onSetupPayments}
 							class="button-primary button--gap button--small"
 						>
 							<CreditCard class="h-3 w-3" />
 							Setup Payments
-						</button>
-					{:else if !paymentStatus.isSetupComplete || paymentStatus.accountInfo?.requiresAction}
-						<button
-							onclick={onSetupPayments}
-							class="button-secondary button--gap button--small"
-						>
-							<AlertCircle class="h-3 w-3" />
-							Complete Setup
 						</button>
 					{:else}
 						<button
