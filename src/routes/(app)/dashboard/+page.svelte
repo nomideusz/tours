@@ -8,16 +8,20 @@
 	import { formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import { userCurrency, currentCurrencyInfo, SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
+	import {
+		userCurrency,
+		currentCurrencyInfo,
+		SUPPORTED_CURRENCIES,
+		type Currency
+	} from '$lib/stores/currency.js';
 	import type { AuthUser } from '$lib/stores/auth.js';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	
+
 	// TanStack Query for API-only data fetching
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	
+
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -49,7 +53,7 @@
 		staleTime: 0, // Always consider data stale for immediate updates
 		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always',
+		refetchOnMount: 'always'
 	});
 
 	const recentBookingsQuery = createQuery({
@@ -58,26 +62,29 @@
 		staleTime: 0, // Always consider data stale for immediate updates
 		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always',
+		refetchOnMount: 'always'
 	});
 
 	// Get profile from layout data (this stays server-side since it's needed for auth)
 	const profile = $derived(data.user as AuthUser | null);
-	
+
 	// Check for payment setup completion
 	let isPaymentSetupComplete = $state(false);
-	
-	// Check for email verification completion  
+
+	// Check for email verification completion
 	let isEmailVerificationComplete = $state(false);
-	
+
 	// Track if user has explicitly confirmed their location
 	let hasConfirmedLocation = $state(false);
-	
+
+	// Payment setup loading state
+	let isSettingUpPayment = $state(false);
+
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
 		// Refresh all data to ensure emailVerified status is current
 		invalidateAll();
-		
+
 		// Check if returning from email verification
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('verified') === 'true') {
@@ -86,13 +93,8 @@
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('verified');
 			window.history.replaceState({}, '', newUrl.toString());
-			
-			// Auto-dismiss email verification success after 5 seconds
-			setTimeout(() => {
-				isEmailVerificationComplete = false;
-			}, 5000);
 		}
-		
+
 		// Check if returning from payment setup
 		if (urlParams.get('setup') === 'complete') {
 			isPaymentSetupComplete = true;
@@ -100,23 +102,20 @@
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('setup');
 			window.history.replaceState({}, '', newUrl.toString());
-			
-			// Force refresh payment status
-			setTimeout(() => {
-				if (profile?.stripeAccountId) {
+
+			// Force refresh payment status and user data
+			invalidateAll().then(() => {
+				// Double-check payment status after data refresh
+				setTimeout(() => {
 					checkPaymentStatus();
-				}
-			}, 1000);
-			
-			// Auto-dismiss payment setup success after 5 seconds
-			setTimeout(() => {
-				isPaymentSetupComplete = false;
-			}, 5000);
+				}, 500);
+			});
 		}
-		
+
 		// Check if user has previously confirmed their location (stored in localStorage)
+		// Only set this for users who have explicitly confirmed, not just those with auto-detected country
 		hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
-		
+
 		// Close dropdown when clicking outside
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Element;
@@ -124,14 +123,14 @@
 				showCountryDropdown = false;
 			}
 		};
-		
+
 		// Close dropdown with Escape key
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
 				showCountryDropdown = false;
 			}
 		};
-		
+
 		document.addEventListener('click', handleClickOutside);
 		document.addEventListener('keydown', handleKeyDown);
 		return () => {
@@ -139,42 +138,60 @@
 			document.removeEventListener('keydown', handleKeyDown);
 		};
 	});
-	
+
 	// Use TanStack Query data with fallbacks
-	let stats = $derived($dashboardStatsQuery.data || {
-		todayBookings: 0,
-		weeklyRevenue: 0,
-		upcomingTours: 0,
-		totalCustomers: 0,
-		totalTours: 0,
-		activeTours: 0
-	});
+	let stats = $derived(
+		$dashboardStatsQuery.data || {
+			todayBookings: 0,
+			weeklyRevenue: 0,
+			upcomingTours: 0,
+			totalCustomers: 0,
+			totalTours: 0,
+			activeTours: 0
+		}
+	);
 	let recentBookings = $derived($recentBookingsQuery.data || []);
-	
+
 	// Loading states
 	let isLoading = $derived($dashboardStatsQuery.isLoading || $recentBookingsQuery.isLoading);
 	let isError = $derived($dashboardStatsQuery.isError || $recentBookingsQuery.isError);
-	
+
 	// Check if this is a new user
 	let isNewUser = $derived(stats.totalTours === 0);
-	
+
+	// Debug location confirmation state
+	$effect(() => {
+		if (browser && !isLoading) {
+			console.log('Location confirmation state:', {
+				hasConfirmedLocation,
+				needsConfirmation,
+				profileCountry: profile?.country,
+				profileCurrency: profile?.currency,
+				isNewUser,
+				totalTours: stats.totalTours,
+				totalCustomers: stats.totalCustomers,
+				localStorage: localStorage.getItem('locationConfirmed')
+			});
+		}
+	});
+
 	// Profile link state
 	let profileLinkCopied = $state(false);
-	
+
 	// Currency confirmation state
 	let selectedCurrency = $state<Currency>($userCurrency);
 	let selectedCountry = $state(profile?.country || '');
 	let savingCurrency = $state(false);
 	let saveSuccess = $state(false);
 	let saveError = $state<string | null>(null);
-	
+
 	// Show expanded selection UI
 	let showCurrencySelector = $state(false);
 	let showCountryDropdown = $state(false);
-	
+
 	// Track if user manually changed currency (different from country default)
 	let manualCurrencyOverride = $state(false);
-	
+
 	// Country list for the dashboard (simplified)
 	const COMMON_COUNTRIES = [
 		{ code: 'US', name: 'United States', flag: '🇺🇸', currency: 'USD' },
@@ -198,29 +215,43 @@
 		{ code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR' },
 		{ code: 'IE', name: 'Ireland', flag: '🇮🇪', currency: 'EUR' }
 	];
-	
+
 	// Get current country info
-	let currentCountryInfo = $derived(COMMON_COUNTRIES.find(c => c.code === selectedCountry));
-	
-	// Check if settings need confirmation - show if not explicitly confirmed yet OR if setup just completed
-	let needsConfirmation = $derived(browser && profile && (!hasConfirmedLocation || isPaymentSetupComplete));
-	
+	let currentCountryInfo = $derived(COMMON_COUNTRIES.find((c) => c.code === selectedCountry));
+
+	// Check if settings need confirmation - only show if location hasn't been explicitly confirmed
+	// Even if country is auto-detected during registration, users must explicitly confirm
+	let needsConfirmation = $derived(browser && profile && !hasConfirmedLocation);
+
 	// Show email verification if email not verified (regardless of tour count)
 	let needsEmailVerification = $derived(profile && !profile.emailVerified);
-	
+
 	// Check payment status - declare early to avoid reference issues
-	let paymentStatus = $state<{ isSetup: boolean; loading: boolean }>({ isSetup: false, loading: true });
-	
+	let paymentStatus = $state<{ isSetup: boolean; loading: boolean }>({
+		isSetup: false,
+		loading: true
+	});
+
 	// Email resend state
 	let resendingEmail = $state(false);
 	let resendEmailSuccess = $state(false);
 	let resendEmailError = $state<string | null>(null);
-	
+
 	// Show success messages
-	let showEmailVerificationSuccess = $derived(isEmailVerificationComplete && profile?.emailVerified);
+	let showEmailVerificationSuccess = $derived(
+		isEmailVerificationComplete && profile?.emailVerified
+	);
 	let showPaymentSetupSuccess = $derived(isPaymentSetupComplete && paymentStatus.isSetup);
 	let showLocationSaveSuccess = $derived(saveSuccess);
-	
+
+	// Calculate completed setup steps
+	let stepsCompleted = $derived(
+		(!needsEmailVerification ? 1 : 0) +
+			(paymentStatus.isSetup ? 1 : 0) +
+			(!needsConfirmation ? 1 : 0) +
+			(stats.totalTours > 0 ? 1 : 0)
+	);
+
 	// Subscription limits check
 	let isApproachingLimits = $derived(() => {
 		if (!profile || profile.subscriptionPlan !== 'free') return false;
@@ -229,17 +260,19 @@
 		const toursCreated = stats.totalTours || 0;
 		return bookingsUsed >= 2 || toursCreated >= 1;
 	});
-	
+
 	// Get the full profile URL
-	const profileUrl = $derived(browser && profile ? `${window.location.origin}/${profile.username}` : '');
-	
+	const profileUrl = $derived(
+		browser && profile ? `${window.location.origin}/${profile.username}` : ''
+	);
+
 	// Create today's schedule from recent bookings
 	let todaysSchedule = $derived(
 		(() => {
 			const now = new Date();
 			const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 			const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-			
+
 			return recentBookings
 				.filter((booking: any) => {
 					if (!booking.effectiveDate) return false;
@@ -260,7 +293,7 @@
 				.slice(0, 4); // Limit to 4 items
 		})()
 	);
-	
+
 	// Copy profile link function
 	async function copyProfileLink() {
 		try {
@@ -273,38 +306,38 @@
 			console.error('Failed to copy link:', err);
 		}
 	}
-	
+
 	// Save currency selection - simplified to single action
 	async function saveCurrencySelection() {
 		if (!profile || !selectedCountry || !selectedCurrency) return;
-		
+
 		savingCurrency = true;
 		saveError = null;
 		try {
 			const formData = new FormData();
 			formData.append('currency', selectedCurrency);
 			formData.append('country', selectedCountry);
-			
+
 			const response = await fetch('/api/profile/update', {
 				method: 'POST',
 				body: formData
 			});
-			
+
 			if (response.ok) {
 				userCurrency.set(selectedCurrency);
 				saveSuccess = true;
 				hasConfirmedLocation = true;
-				
+
 				// Save confirmation to localStorage
 				localStorage.setItem('locationConfirmed', 'true');
-				
+
 				// Refresh user data to reflect changes
 				await invalidateAll();
-				
+
 				setTimeout(() => {
 					saveSuccess = false;
 					showCurrencySelector = false;
-				}, 2000);
+				}, 100); // Just a short delay for smooth transition
 			} else {
 				const data = await response.json();
 				saveError = data.error || 'Failed to update settings';
@@ -315,24 +348,24 @@
 			savingCurrency = false;
 		}
 	}
-	
+
 	// Update currency when country changes and auto-set currency based on country
 	function onCountryChange(countryCode: string) {
 		selectedCountry = countryCode;
-		const country = COMMON_COUNTRIES.find(c => c.code === countryCode);
+		const country = COMMON_COUNTRIES.find((c) => c.code === countryCode);
 		// Only auto-set currency if user hasn't manually overridden it
-		if (country && country.currency as Currency && !manualCurrencyOverride) {
+		if (country && (country.currency as Currency) && !manualCurrencyOverride) {
 			selectedCurrency = country.currency as Currency;
 		}
 		showCountryDropdown = false;
 	}
-	
+
 	// Track manual currency changes
 	function onCurrencyChange(currency: Currency) {
 		selectedCurrency = currency;
 		manualCurrencyOverride = true;
 	}
-	
+
 	// Reset selections to original values
 	function resetSelections() {
 		if (profile && profile.country && profile.currency) {
@@ -345,7 +378,7 @@
 		}
 		manualCurrencyOverride = false;
 	}
-	
+
 	// Load currency settings and check if confirmation needed
 	$effect(() => {
 		if (browser && profile) {
@@ -357,10 +390,10 @@
 				// Auto-detect if not set
 				import('$lib/utils/country-detector.js').then(({ detectCountry }) => {
 					const detectedCountry = detectCountry();
-					if (detectedCountry && COMMON_COUNTRIES.find(c => c.code === detectedCountry)) {
+					if (detectedCountry && COMMON_COUNTRIES.find((c) => c.code === detectedCountry)) {
 						selectedCountry = detectedCountry;
-						const country = COMMON_COUNTRIES.find(c => c.code === detectedCountry);
-						if (country && country.currency as Currency) {
+						const country = COMMON_COUNTRIES.find((c) => c.code === detectedCountry);
+						if (country && (country.currency as Currency)) {
 							selectedCurrency = country.currency as Currency;
 						}
 					}
@@ -369,10 +402,26 @@
 		}
 	});
 
-	// Payment setup function with return URL
+	// Payment setup function with return URL and loading state
 	async function setupPayments() {
-		if (!profile) return;
+		if (!profile || isSettingUpPayment) return;
+
+		// Get the country for payment setup
+		const userCountry = profile.country || selectedCountry || 'US';
+		const countryInfo = COMMON_COUNTRIES.find(c => c.code === userCountry);
 		
+		// Show confirmation dialog
+		const confirmed = confirm(
+			`You are about to create a payment account for ${countryInfo?.name || userCountry}.\n\n` +
+			`This CANNOT be changed later due to financial regulations.\n\n` +
+			`Is ${countryInfo?.name || userCountry} the correct country for your business?`
+		);
+		
+		if (!confirmed) {
+			return;
+		}
+
+		isSettingUpPayment = true;
 		try {
 			const response = await fetch('/api/payments/connect/setup', {
 				method: 'POST',
@@ -381,8 +430,8 @@
 					userId: profile.id,
 					email: profile.email,
 					businessName: profile.businessName || profile.name,
-					country: profile.country || 'DE',
-					returnUrl: `${window.location.origin}/dashboard`
+					country: userCountry,
+					returnUrl: `${window.location.origin}/dashboard?setup=complete`
 				})
 			});
 
@@ -392,32 +441,34 @@
 			}
 
 			const { accountLink } = await response.json();
-			window.location.href = accountLink;
+			// Open in new tab to preserve dashboard context
+			window.open(accountLink, '_blank', 'noopener,noreferrer');
 		} catch (error) {
 			console.error('Payment setup error:', error);
 			saveError = error instanceof Error ? error.message : 'Failed to setup payment account';
+			isSettingUpPayment = false;
 		}
 	}
-	
+
 	// Function to check payment status
 	async function checkPaymentStatus() {
 		if (!profile?.stripeAccountId) {
 			paymentStatus = { isSetup: false, loading: false };
 			return;
 		}
-		
+
 		try {
 			const response = await fetch('/api/payments/connect/status', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ userId: profile.id })
 			});
-			
+
 			if (response.ok) {
 				const data = await response.json();
-				paymentStatus = { 
-					isSetup: data.canReceivePayments || false, 
-					loading: false 
+				paymentStatus = {
+					isSetup: data.canReceivePayments || false,
+					loading: false
 				};
 			} else {
 				paymentStatus = { isSetup: false, loading: false };
@@ -427,7 +478,7 @@
 			paymentStatus = { isSetup: false, loading: false };
 		}
 	}
-	
+
 	$effect(() => {
 		if (profile?.stripeAccountId) {
 			checkPaymentStatus();
@@ -438,22 +489,27 @@
 
 	// Resend verification email function
 	async function resendVerificationEmail() {
-		if (!profile?.email) return;
-		
+		if (!profile?.email || !profile?.id) return;
+
 		resendingEmail = true;
 		resendEmailError = null;
 		resendEmailSuccess = false;
-		
+
 		try {
+			// Generate verification URL
+			const verificationUrl = `${window.location.origin}/auth/verify?token=${profile.id}`;
+
 			const response = await fetch('/api/send-auth-email', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					email: profile.email,
-					type: 'email-verification'
+					emailType: 'email-verification',
+					name: profile.name || 'Tour Guide',
+					verificationUrl: verificationUrl
 				})
 			});
-			
+
 			if (response.ok) {
 				resendEmailSuccess = true;
 				setTimeout(() => {
@@ -469,6 +525,112 @@
 			resendingEmail = false;
 		}
 	}
+
+	// Close success banners
+	function closeEmailVerificationBanner() {
+		isEmailVerificationComplete = false;
+	}
+
+	function closePaymentSetupBanner() {
+		isPaymentSetupComplete = false;
+	}
+
+	function closeLocationBanner() {
+		saveSuccess = false;
+	}
+
+	// Map country codes to currencies
+	const countryToCurrency: Record<string, Currency> = {
+		US: 'USD',
+		GB: 'GBP',
+		DE: 'EUR',
+		FR: 'EUR',
+		IT: 'EUR',
+		ES: 'EUR',
+		PL: 'PLN',
+		JP: 'JPY',
+		CA: 'CAD',
+		AU: 'AUD',
+		CH: 'CHF',
+		SE: 'SEK',
+		NO: 'NOK',
+		DK: 'DKK',
+		CZ: 'CZK',
+		NL: 'EUR',
+		BE: 'EUR',
+		AT: 'EUR',
+		PT: 'EUR',
+		IE: 'EUR'
+	};
+
+	// Determine if currency settings need attention
+	let shouldShowCurrencySetup = $derived(() => {
+		// Update isNewUser calculation to match the one above
+		const newUserCheck = !stats.hasTours && stats.totalCustomers === 0;
+
+		// Show setup if:
+		// 1. Profile doesn't have country set, OR
+		// 2. No currency is set, OR
+		// 3. User is new and hasn't explicitly confirmed location
+		return (
+			profile && (!profile.country || !$userCurrency || (newUserCheck && !hasConfirmedLocation))
+		);
+	});
+
+	let isLocationConfirmed = $derived(() => {
+		// Only confirmed if user has explicitly confirmed (not just auto-detected)
+		return profile?.country !== null && profile?.country !== undefined && hasConfirmedLocation;
+	});
+
+	// Country selection state
+	let currencyExpanded = $state(false);
+	let countryToUpdate = $state<string | null>(null);
+	let isUpdatingCountry = $state<Record<string, boolean>>({});
+
+	async function handleCountryConfirm(country: string) {
+		if (!profile) return;
+
+		// Update loading states
+		countryToUpdate = country;
+		isUpdatingCountry[country] = true;
+
+		try {
+			// Update user profile with selected country
+			const response = await fetch('/api/profile/update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					country,
+					currency: countryToCurrency[country] || 'EUR'
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to update profile');
+			}
+
+			// Set the currency in the store
+			userCurrency.set(countryToCurrency[country] || 'EUR');
+
+			// Mark location as explicitly confirmed
+			if (browser) {
+				localStorage.setItem('locationConfirmed', 'true');
+			}
+
+			// Collapse currency section
+			currencyExpanded = false;
+
+			// Clear loading state
+			countryToUpdate = null;
+			isUpdatingCountry[country] = false;
+		} catch (error) {
+			console.error('Failed to update country:', error);
+			// Clear loading state on error
+			countryToUpdate = null;
+			isUpdatingCountry[country] = false;
+			// TODO: Show error message
+		}
+	}
 </script>
 
 <svelte:head>
@@ -476,191 +638,125 @@
 	<meta name="description" content="Your tour operations center" />
 </svelte:head>
 
-<style>
-	.opacity-50 {
-		opacity: 0.5;
-	}
-	
-	.schedule-item {
-		transition: background-color 0.2s ease;
-	}
-	
-	.schedule-item:hover {
-		background-color: var(--bg-tertiary);
-	}
-	
-	.schedule-item .schedule-actions {
-		opacity: 0;
-		transition: opacity 0.2s ease-in-out;
-	}
-	
-	.schedule-item:hover .schedule-actions {
-		opacity: 1;
-	}
-	
-	.currency-button {
-		background-color: var(--bg-primary);
-		border: 1px solid var(--border-secondary);
-		color: var(--text-primary);
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-	
-	.currency-button:hover {
-		background-color: var(--bg-secondary);
-		border-color: var(--border-primary);
-	}
-	
-	.currency-button.selected {
-		background-color: var(--color-primary-100);
-		border-color: var(--color-primary-500);
-		color: var(--color-primary-700);
-	}
-	
-	.subscription-tier {
-		position: relative;
-		padding: 1.5rem;
-		border-radius: 0.75rem;
-		border: 1px solid var(--border-primary);
-		background: var(--bg-primary);
-		transition: all 0.2s ease;
-	}
-	
-	.subscription-tier:hover {
-		border-color: var(--color-primary-300);
-		box-shadow: var(--shadow-md);
-	}
-	
-	.subscription-tier.current {
-		border-color: var(--color-primary-500);
-		background: var(--color-primary-50);
-	}
-
-	.no-scrollbar {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
-	
-	.no-scrollbar::-webkit-scrollbar {
-		display: none;
-	}
-	
-	.booking-item {
-		transition: background-color 0.2s ease;
-	}
-	
-	.booking-item:hover {
-		background-color: var(--bg-secondary);
-	}
-	
-	.country-list {
-		scrollbar-width: thin;
-		scrollbar-color: var(--border-secondary) transparent;
-	}
-	
-	.country-list::-webkit-scrollbar {
-		width: 8px;
-	}
-	
-	.country-list::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	
-	.country-list::-webkit-scrollbar-thumb {
-		background-color: var(--border-secondary);
-		border-radius: 4px;
-	}
-	
-	.country-list::-webkit-scrollbar-thumb:hover {
-		background-color: var(--border-primary);
-	}
-	
-	/* Success message animations */
-	.success-message {
-		animation: slideInDown 0.3s ease-out;
-	}
-	
-	@keyframes slideInDown {
-		from {
-			opacity: 0;
-			transform: translateY(-10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-</style>
-
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	
+<div class="mx-auto max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
 	<!-- Success Messages (always show at top) -->
 	{#if showEmailVerificationSuccess}
-		<div class="mb-6 rounded-lg p-4 success-message" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+		<div
+			class="success-message mb-6 rounded-lg p-4"
+			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
 					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
 				</div>
 				<div class="flex-1">
-					<h3 class="text-sm font-medium mb-1" style="color: var(--color-success-900);">
+					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
 						Email verified successfully!
 					</h3>
 					<p class="text-sm" style="color: var(--color-success-700);">
 						Your email has been verified. You now have access to all features.
 					</p>
 				</div>
+				<button
+					onclick={closeEmailVerificationBanner}
+					class="button-secondary button--small button--icon ml-2"
+					aria-label="Close"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
 			</div>
 		</div>
 	{/if}
-	
+
 	{#if showPaymentSetupSuccess}
-		<div class="mb-6 rounded-lg p-4 success-message" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+		<div
+			class="success-message mb-6 rounded-lg p-4"
+			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
 					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
 				</div>
 				<div class="flex-1">
-					<h3 class="text-sm font-medium mb-1" style="color: var(--color-success-900);">
+					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
 						Payment setup completed!
 					</h3>
 					<p class="text-sm" style="color: var(--color-success-700);">
 						Your payment account is now active. You can start receiving payments from tour bookings.
 					</p>
 				</div>
+				<button
+					onclick={closePaymentSetupBanner}
+					class="button-secondary button--small button--icon ml-2"
+					aria-label="Close"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
 			</div>
 		</div>
 	{/if}
-	
+
 	{#if showLocationSaveSuccess}
-		<div class="mb-6 rounded-lg p-4 success-message" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+		<div
+			class="success-message mb-6 rounded-lg p-4"
+			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
 					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
 				</div>
 				<div class="flex-1">
-					<h3 class="text-sm font-medium mb-1" style="color: var(--color-success-900);">
+					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
 						Location settings saved!
 					</h3>
 					<p class="text-sm" style="color: var(--color-success-700);">
 						Your country and currency preferences have been updated.
 					</p>
 				</div>
+				<button
+					onclick={closeLocationBanner}
+					class="button-secondary button--small button--icon ml-2"
+					aria-label="Close"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
 			</div>
 		</div>
 	{/if}
 
 	{#if isLoading}
 		<!-- Loading State -->
-		<div class="flex items-center justify-center min-h-[60vh]">
+		<div class="flex min-h-[60vh] items-center justify-center">
 			<div class="text-center">
-				<Loader2 class="h-8 w-8 animate-spin mx-auto mb-4" style="color: var(--text-tertiary);" />
+				<Loader2 class="mx-auto mb-4 h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
 				<p class="text-sm" style="color: var(--text-secondary);">Loading your dashboard...</p>
 			</div>
 		</div>
 	{:else if isNewUser}
 		<!-- Clean Onboarding for New Users -->
 		<div class="mb-8">
-			<h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--text-primary);">
+			<h1 class="mb-2 text-2xl font-bold sm:text-3xl" style="color: var(--text-primary);">
 				Welcome to Zaur, {profile?.name || 'Tour Guide'}!
 			</h1>
 			<p class="text-sm" style="color: var(--text-secondary);">
@@ -669,74 +765,56 @@
 		</div>
 
 		<!-- Onboarding Progress Card -->
-		<div class="mb-8 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div
+			class="mb-8 rounded-xl"
+			style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+		>
 			<div class="p-6">
 				<!-- Progress Indicator -->
 				<div class="mb-8">
-					<div class="flex items-center justify-between mb-2">
+					<div class="mb-2 flex items-center justify-between">
 						<p class="text-xs font-medium" style="color: var(--text-tertiary);">Setup Progress</p>
 						<p class="text-xs font-medium" style="color: var(--text-tertiary);">
-							{#if needsEmailVerification && !paymentStatus.isSetup && needsConfirmation && stats.totalTours === 0}
-								0 of 4 completed
-							{:else if (needsEmailVerification && !paymentStatus.isSetup && needsConfirmation) || (needsEmailVerification && !paymentStatus.isSetup && stats.totalTours === 0) || (needsEmailVerification && needsConfirmation && stats.totalTours === 0) || (!paymentStatus.isSetup && needsConfirmation && stats.totalTours === 0)}
-								1 of 4 completed
-							{:else if (needsEmailVerification && !paymentStatus.isSetup) || (needsEmailVerification && needsConfirmation) || (needsEmailVerification && stats.totalTours === 0) || (!paymentStatus.isSetup && needsConfirmation) || (!paymentStatus.isSetup && stats.totalTours === 0) || (needsConfirmation && stats.totalTours === 0)}
-								2 of 4 completed
-							{:else if needsEmailVerification || !paymentStatus.isSetup || needsConfirmation || stats.totalTours === 0}
-								3 of 4 completed
-							{:else}
-								All steps completed
-							{/if}
+							{stepsCompleted === 4 ? 'All steps completed' : `${stepsCompleted} of 4 completed`}
 						</p>
 					</div>
-					<div class="w-full h-2 rounded-full" style="background: var(--bg-tertiary);">
-						<div 
-							class="h-full rounded-full transition-all duration-500" 
-							style="background: var(--color-primary-500); width: {
-								(!needsEmailVerification && paymentStatus.isSetup && !needsConfirmation && stats.totalTours > 0) ? '100%' :
-								((!needsEmailVerification && paymentStatus.isSetup && !needsConfirmation) || 
-								 (!needsEmailVerification && paymentStatus.isSetup && stats.totalTours > 0) || 
-								 (!needsEmailVerification && !needsConfirmation && stats.totalTours > 0) ||
-								 (paymentStatus.isSetup && !needsConfirmation && stats.totalTours > 0)) ? '75%' :
-								((!needsEmailVerification && !paymentStatus.isSetup && needsConfirmation) || 
-								 (needsEmailVerification && paymentStatus.isSetup && !needsConfirmation) || 
-								 (!needsEmailVerification && paymentStatus.isSetup && !needsConfirmation) ||
-								 (stats.totalTours > 0 && (needsEmailVerification || !paymentStatus.isSetup || needsConfirmation))) ? '50%' :
-								((!needsEmailVerification && !paymentStatus.isSetup) || 
-								 (!needsEmailVerification && needsConfirmation) || 
-								 (!needsEmailVerification && stats.totalTours === 0) ||
-								 (needsEmailVerification && !paymentStatus.isSetup) ||
-								 (needsEmailVerification && needsConfirmation) ||
-								 (needsEmailVerification && stats.totalTours === 0) ||
-								 (!paymentStatus.isSetup && needsConfirmation) ||
-								 (!paymentStatus.isSetup && stats.totalTours === 0) ||
-								 (needsConfirmation && stats.totalTours === 0)) ? '25%' : '0%'
-							};"
+					<div class="h-2 w-full rounded-full" style="background: var(--bg-tertiary);">
+						<div
+							class="h-full rounded-full transition-all duration-500"
+							style="background: var(--color-primary-500); width: {(stepsCompleted / 4) * 100 +
+								'%'};"
 						></div>
 					</div>
 				</div>
-				
+
 				<div class="space-y-4">
 					<!-- Email Verification Step -->
 					{#if needsEmailVerification}
-						<div class="flex items-start gap-4 p-4 rounded-lg transition-all" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-								<Mail class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4 transition-all"
+							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--bg-tertiary); color: var(--text-secondary);"
+							>
+								<Mail class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold mb-1" style="color: var(--text-primary);">
+								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
 									Verify your email address
 								</h3>
-								<p class="text-sm mb-3" style="color: var(--text-secondary);">
-									Check your inbox at <span class="font-medium">{profile?.email}</span> and click the verification link.
+								<p class="mb-3 text-sm" style="color: var(--text-secondary);">
+									Check your inbox at <span class="font-medium">{profile?.email}</span> and click the
+									verification link.
 								</p>
 								{#if resendEmailSuccess}
-									<p class="text-xs mb-3" style="color: var(--color-success-600);">
+									<p class="mb-3 text-xs" style="color: var(--color-success-600);">
 										Verification email sent! Check your inbox.
 									</p>
 								{/if}
 								{#if resendEmailError}
-									<p class="text-xs mb-3" style="color: var(--color-error-600);">
+									<p class="mb-3 text-xs" style="color: var(--color-error-600);">
 										{resendEmailError}
 									</p>
 								{/if}
@@ -747,7 +825,7 @@
 										class="button-secondary button--small"
 									>
 										{#if resendingEmail}
-											<Loader2 class="h-3 w-3 animate-spin mr-1" />
+											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
 											Sending...
 										{:else}
 											Resend Email
@@ -760,9 +838,15 @@
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-start gap-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-success-100); color: var(--color-success-600);">
-								<CheckCircle class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4"
+							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--color-success-100); color: var(--color-success-600);"
+							>
+								<CheckCircle class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
 								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
@@ -774,74 +858,56 @@
 							</div>
 						</div>
 					{/if}
-					
-					<!-- Payment Setup Step -->
-					{#if !paymentStatus.loading}
-						{#if !paymentStatus.isSetup}
-							<div class="flex items-start gap-4 p-4 rounded-lg transition-all" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-								<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-									<CreditCard class="w-4 h-4" />
-								</div>
-								<div class="flex-1">
-									<h3 class="text-sm font-semibold mb-1" style="color: var(--text-primary);">
-										Connect your bank account
-									</h3>
-									<p class="text-sm mb-4" style="color: var(--text-secondary);">
-										Set up payments to receive money from tour bookings directly to your bank account.
-									</p>
-									<button
-										onclick={setupPayments}
-										class="button-primary button--small"
-									>
-										Connect with Stripe
-									</button>
-								</div>
-							</div>
-						{:else}
-							<div class="flex items-start gap-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);">
-								<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-success-100); color: var(--color-success-600);">
-									<CheckCircle class="w-4 h-4" />
-								</div>
-								<div class="flex-1">
-									<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
-										Payment account connected
-									</h3>
-									<p class="text-sm" style="color: var(--text-secondary);">
-										You're ready to accept payments from customers.
-									</p>
-								</div>
-							</div>
-						{/if}
-					{/if}
-					
+
 					<!-- Location Confirmation Step -->
 					{#if needsConfirmation}
-						<div class="flex items-start gap-4 p-4 rounded-lg transition-all" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-								<Globe class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4 transition-all"
+							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--bg-tertiary); color: var(--text-secondary);"
+							>
+								<Globe class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold mb-1" style="color: var(--text-primary);">
+								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
 									Confirm your business location
 								</h3>
-								<p class="text-sm mb-4" style="color: var(--text-secondary);">
+								<p class="mb-4 text-sm" style="color: var(--text-secondary);">
 									We'll use this to set your default currency and regional settings.
 								</p>
-								
+								<div class="mb-4 rounded-lg p-3" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+									<div class="flex items-start gap-2">
+										<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" style="color: var(--color-warning-600);" />
+										<p class="text-xs" style="color: var(--color-warning-800);">
+											<strong>Important:</strong> Your country selection will determine where your Stripe payment account is created. This cannot be changed later due to financial regulations. Please ensure you select the country where your business is legally registered.
+										</p>
+									</div>
+								</div>
+
 								{#if !showCurrencySelector}
-									<div class="flex items-center gap-3 mb-4">
+									<div class="mb-4 flex items-center gap-3">
 										{#if currentCountryInfo}
-											<div class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-secondary);">
-												<span>{currentCountryInfo.flag}</span>
-												<span class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.name}</span>
+											<div
+												class="flex items-center gap-2 rounded-lg px-3 py-2"
+												style="background: var(--bg-primary); border: 1px solid var(--border-secondary);"
+											>
+												<span class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.flag}</span>
+												<span class="text-sm font-medium" style="color: var(--text-primary);"
+													>{currentCountryInfo.name}</span
+												>
 												<span class="text-sm" style="color: var(--text-tertiary);">•</span>
-												<span class="text-sm" style="color: var(--text-secondary);">{selectedCurrency}</span>
+												<span class="text-sm" style="color: var(--text-secondary);"
+													>{selectedCurrency}</span
+												>
 											</div>
 										{/if}
 									</div>
 									<div class="flex items-center gap-2">
 										<button
-											onclick={() => showCurrencySelector = true}
+											onclick={() => (showCurrencySelector = true)}
 											class="button-secondary button--small"
 										>
 											Change Location
@@ -852,7 +918,7 @@
 											class="button-primary button--small"
 										>
 											{#if savingCurrency}
-												<Loader2 class="h-3 w-3 animate-spin mr-1" />
+												<Loader2 class="mr-1 h-3 w-3 animate-spin" />
 												Saving...
 											{:else}
 												Confirm Location
@@ -863,49 +929,80 @@
 									<!-- Expanded Selection -->
 									<div class="space-y-4">
 										{#if saveError}
-											<div class="p-3 rounded-lg text-sm" style="background: var(--color-error-50); color: var(--color-error-700);">
+											<div
+												class="rounded-lg p-3 text-sm"
+												style="background: var(--color-error-50); color: var(--color-error-700);"
+											>
 												{saveError}
 											</div>
 										{/if}
-										
+
 										<!-- Country Selection -->
 										<div>
-											<label class="block text-xs font-medium mb-2" style="color: var(--text-primary);">Select your country</label>
+											<label
+												class="mb-2 block text-xs font-medium"
+												style="color: var(--text-primary);">Select your country</label
+											>
 											<div class="relative">
 												<button
-													onclick={() => showCountryDropdown = !showCountryDropdown}
-													class="w-full flex items-center justify-between p-3 rounded-lg text-left"
+													onclick={() => (showCountryDropdown = !showCountryDropdown)}
+													class="flex w-full items-center justify-between rounded-lg p-3 text-left"
 													style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 												>
-																								<div class="flex items-center gap-2">
-												{#if currentCountryInfo}
-													<span>{currentCountryInfo.flag}</span>
-													<span class="text-sm" style="color: var(--text-primary);">{currentCountryInfo.name}</span>
-												{:else}
-													<span class="text-sm" style="color: var(--text-secondary);">Select country</span>
-												{/if}
-											</div>
-											<svg class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</svg>
+													<div class="flex items-center gap-2">
+														{#if currentCountryInfo}
+															<span class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.flag}</span>
+															<span class="text-sm" style="color: var(--text-primary);"
+																>{currentCountryInfo.name}</span
+															>
+														{:else}
+															<span class="text-sm" style="color: var(--text-secondary);"
+																>Select country</span
+															>
+														{/if}
+													</div>
+													<svg
+														class="h-4 w-4"
+														style="color: var(--text-tertiary);"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M19 9l-7 7-7-7"
+														/>
+													</svg>
 												</button>
-												
+
 												{#if showCountryDropdown}
-													<div class="absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-														<div class="max-h-48 overflow-y-auto country-list">
+													<div
+														class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
+														style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+													>
+														<div class="country-list max-h-48 overflow-y-auto">
 															{#each COMMON_COUNTRIES as country}
 																<button
 																	onclick={() => {
 																		onCountryChange(country.code);
 																		showCountryDropdown = false;
 																	}}
-																	class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-																	style="color: var(--text-primary);"
+																	class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
+																	style="color: var(--text-primary); background: transparent;"
+																	onmouseenter={(e) =>
+																		(e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+																	onmouseleave={(e) =>
+																		(e.currentTarget.style.backgroundColor = 'transparent')}
 																>
 																	<span>{country.flag}</span>
 																	<span>{country.name}</span>
 																	{#if selectedCountry === country.code}
-																		<CheckCircle class="w-3 h-3 ml-auto" style="color: var(--color-primary-600);" />
+																		<CheckCircle
+																			class="ml-auto h-3 w-3"
+																			style="color: var(--color-primary-600);"
+																		/>
 																	{/if}
 																</button>
 															{/each}
@@ -914,26 +1011,30 @@
 												{/if}
 											</div>
 										</div>
-										
+
 										<!-- Currency Display -->
 										<div>
-											<label class="block text-xs font-medium mb-2" style="color: var(--text-primary);">Currency</label>
+											<label
+												class="mb-2 block text-xs font-medium"
+												style="color: var(--text-primary);">Currency</label
+											>
 											<div class="grid grid-cols-3 gap-2">
 												{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
 													<button
 														onclick={() => onCurrencyChange(code as Currency)}
-														class="currency-button p-2 rounded-lg text-xs font-medium transition-all
+														class="currency-button rounded-lg p-2 text-xs font-medium transition-all
 																{selectedCurrency === code ? 'selected' : ''}"
 													>
-														{info.symbol} {code}
+														{info.symbol}
+														{code}
 													</button>
 												{/each}
 											</div>
-											<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+											<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
 												Select the currency you'll use for your tours
 											</p>
 										</div>
-										
+
 										<div class="flex justify-end gap-2 pt-2">
 											<button
 												onclick={() => {
@@ -950,7 +1051,7 @@
 												class="button-primary button--small"
 											>
 												{#if savingCurrency}
-													<Loader2 class="h-3 w-3 animate-spin mr-1" />
+													<Loader2 class="mr-1 h-3 w-3 animate-spin" />
 													Saving...
 												{:else}
 													Save Location
@@ -962,9 +1063,15 @@
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-start gap-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-success-100); color: var(--color-success-600);">
-								<CheckCircle class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4"
+							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--color-success-100); color: var(--color-success-600);"
+							>
+								<CheckCircle class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
 								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
@@ -976,19 +1083,92 @@
 							</div>
 						</div>
 					{/if}
-					
+
+					<!-- Payment Setup Step -->
+					{#if !paymentStatus.loading}
+						{#if !paymentStatus.isSetup}
+							<div
+								class="flex items-start gap-4 rounded-lg p-4 transition-all {needsConfirmation ? 'opacity-50' : ''}"
+								style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+							>
+								<div
+									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+									style="background: var(--bg-tertiary); color: var(--text-secondary);"
+								>
+									<CreditCard class="h-4 w-4" />
+								</div>
+								<div class="flex-1">
+									<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
+										Connect your bank account
+									</h3>
+									<p class="mb-4 text-sm" style="color: var(--text-secondary);">
+										Set up payments to receive money from tour bookings directly to your bank
+										account.
+									</p>
+									{#if needsConfirmation}
+										<p class="text-xs" style="color: var(--text-tertiary);">
+											Confirm your location first to set up payments for your region
+										</p>
+									{:else}
+										<button
+											onclick={setupPayments}
+											disabled={isSettingUpPayment}
+											class="button-primary button--small"
+										>
+											{#if isSettingUpPayment}
+												<Loader2 class="mr-1 h-3 w-3 animate-spin" />
+												Redirecting to Stripe...
+											{:else}
+												Connect with Stripe
+											{/if}
+										</button>
+									{/if}
+								</div>
+							</div>
+						{:else}
+							<div
+								class="flex items-start gap-4 rounded-lg p-4"
+								style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+							>
+								<div
+									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+									style="background: var(--color-success-100); color: var(--color-success-600);"
+								>
+									<CheckCircle class="h-4 w-4" />
+								</div>
+								<div class="flex-1">
+									<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+										Payment account connected
+									</h3>
+									<p class="text-sm" style="color: var(--text-secondary);">
+										You're ready to accept payments from customers.
+									</p>
+								</div>
+							</div>
+						{/if}
+					{/if}
+
 					<!-- Create First Tour Step (Always visible) -->
 					{#if stats.totalTours === 0}
-						<div class="flex items-start gap-4 p-4 rounded-lg transition-all {needsEmailVerification || !paymentStatus.isSetup || needsConfirmation ? 'opacity-50' : ''}" 
-							 style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-								<Plus class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4 transition-all {needsEmailVerification ||
+							!paymentStatus.isSetup ||
+							needsConfirmation
+								? 'opacity-50'
+								: ''}"
+							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--bg-tertiary); color: var(--text-secondary);"
+							>
+								<Plus class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold mb-1" style="color: var(--text-primary);">
+								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
 									Create your first tour
 								</h3>
-								<p class="text-sm mb-4" style="color: var(--text-secondary);">
+								<p class="mb-4 text-sm" style="color: var(--text-secondary);">
 									Set up your first tour listing to start accepting bookings from customers.
 								</p>
 								{#if needsEmailVerification || !paymentStatus.isSetup || needsConfirmation}
@@ -996,19 +1176,22 @@
 										Complete the previous steps to unlock
 									</p>
 								{:else}
-									<button
-										onclick={() => goto('/tours/new')}
-										class="button-primary button--small"
-									>
+									<button onclick={() => goto('/tours/new')} class="button-primary button--small">
 										Create Tour
 									</button>
 								{/if}
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-start gap-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);">
-							<div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-success-100); color: var(--color-success-600);">
-								<CheckCircle class="w-4 h-4" />
+						<div
+							class="flex items-start gap-4 rounded-lg p-4"
+							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--color-success-100); color: var(--color-success-600);"
+							>
+								<CheckCircle class="h-4 w-4" />
 							</div>
 							<div class="flex-1">
 								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
@@ -1021,19 +1204,18 @@
 						</div>
 					{/if}
 				</div>
-				
+
 				<!-- Get Started Section -->
 				{#if !needsEmailVerification && paymentStatus.isSetup && !needsConfirmation && stats.totalTours > 0}
-					<div class="mt-8 p-6 rounded-lg text-center" style="background: var(--bg-secondary);">
-						<CheckCircle class="w-12 h-12 mx-auto mb-4" style="color: var(--color-success-600);" />
-						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">You're all set!</h3>
-						<p class="text-sm mb-6" style="color: var(--text-secondary);">
+					<div class="mt-8 rounded-lg p-6 text-center" style="background: var(--bg-secondary);">
+						<CheckCircle class="mx-auto mb-4 h-12 w-12" style="color: var(--color-success-600);" />
+						<h3 class="mb-2 text-lg font-semibold" style="color: var(--text-primary);">
+							You're all set!
+						</h3>
+						<p class="mb-6 text-sm" style="color: var(--text-secondary);">
 							Your account is fully configured and you have active tours.
 						</p>
-						<button
-							onclick={() => goto('/tours')}
-							class="button-primary button--gap"
-						>
+						<button onclick={() => goto('/tours')} class="button-primary button--gap">
 							<MapPin class="h-4 w-4" />
 							Manage Tours
 						</button>
@@ -1041,45 +1223,54 @@
 				{/if}
 			</div>
 		</div>
-		
+
 		<!-- Help Section -->
-		<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<div
+			class="rounded-lg p-4"
+			style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+		>
 			<div class="flex items-start gap-3">
-				<AlertCircle class="w-5 h-5 mt-0.5" style="color: var(--text-tertiary);" />
+				<AlertCircle class="mt-0.5 h-5 w-5" style="color: var(--text-tertiary);" />
 				<div>
-					<h4 class="text-sm font-medium mb-1" style="color: var(--text-primary);">Need help?</h4>
+					<h4 class="mb-1 text-sm font-medium" style="color: var(--text-primary);">Need help?</h4>
 					<p class="text-sm" style="color: var(--text-secondary);">
-						If you have any questions or issues during setup, please <a href="/help" class="underline">contact our support team</a>.
+						If you have any questions or issues during setup, please <a
+							href="/help"
+							class="underline">contact our support team</a
+						>.
 					</p>
 				</div>
 			</div>
 		</div>
 	{:else}
 		<!-- Regular Dashboard for Users with Tours -->
-		
+
 		<!-- Header Section -->
 		<div class="mb-8">
-			<h1 class="text-2xl sm:text-3xl font-bold mb-1" style="color: var(--text-primary);">
+			<h1 class="mb-1 text-2xl font-bold sm:text-3xl" style="color: var(--text-primary);">
 				Welcome back, {profile?.name || 'Tour Guide'}
 			</h1>
 			<p class="text-sm" style="color: var(--text-secondary);">
-				{new Date().toLocaleDateString('en-US', { 
-					weekday: 'long', 
-					month: 'long', 
+				{new Date().toLocaleDateString('en-US', {
+					weekday: 'long',
+					month: 'long',
 					day: 'numeric',
 					year: 'numeric'
 				})}
 			</p>
 		</div>
-		
+
 		<!-- Important Notices (Collapsed into single row when possible) -->
 		{#if needsEmailVerification || !paymentStatus.isSetup || needsConfirmation}
-			<div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+			<div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{#if needsEmailVerification}
-					<div class="rounded-lg p-4 flex items-start gap-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<Mail class="h-4 w-4 mt-0.5" style="color: var(--text-tertiary);" />
-						<div class="flex-1 min-w-0">
-							<h3 class="text-xs font-medium mb-0.5" style="color: var(--text-primary);">
+					<div
+						class="flex items-start gap-3 rounded-lg p-4"
+						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+					>
+						<Mail class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="min-w-0 flex-1">
+							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
 								Verify email
 							</h3>
 							<p class="text-xs" style="color: var(--text-secondary);">
@@ -1089,61 +1280,88 @@
 						<button
 							onclick={resendVerificationEmail}
 							disabled={resendingEmail}
-							class="button-secondary button--small text-xs px-2 py-1"
+							class="button-secondary button--small px-2 py-1 text-xs"
 						>
 							Resend
 						</button>
 					</div>
 				{/if}
-				
-				{#if !paymentStatus.loading && !paymentStatus.isSetup}
-					<div class="rounded-lg p-4 flex items-start gap-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<CreditCard class="h-4 w-4 mt-0.5" style="color: var(--text-tertiary);" />
-						<div class="flex-1 min-w-0">
-							<h3 class="text-xs font-medium mb-0.5" style="color: var(--text-primary);">
-								Payment setup
-							</h3>
-							<p class="text-xs" style="color: var(--text-secondary);">
-								Connect bank account
-							</p>
-						</div>
-						<button
-							onclick={setupPayments}
-							class="button-primary button--small text-xs px-2 py-1"
-						>
-							Setup
-						</button>
-					</div>
-				{/if}
-				
+
 				{#if needsConfirmation}
-					<div class="rounded-lg p-4 flex items-start gap-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<Globe class="h-4 w-4 mt-0.5" style="color: var(--text-tertiary);" />
-						<div class="flex-1 min-w-0">
-							<h3 class="text-xs font-medium mb-0.5" style="color: var(--text-primary);">
+					<div
+						class="flex items-start gap-3 rounded-lg p-4"
+						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+					>
+						<Globe class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="min-w-0 flex-1">
+							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
 								Confirm location
 							</h3>
 							<p class="text-xs" style="color: var(--text-secondary);">
 								{currentCountryInfo?.name || 'Select country'} • {selectedCurrency}
 							</p>
 						</div>
+						<div class="flex items-center gap-1">
+							<button
+								onclick={saveCurrencySelection}
+								disabled={savingCurrency || !selectedCountry}
+								class="button-primary button--small px-2 py-1 text-xs"
+							>
+								{#if savingCurrency}
+									<Loader2 class="h-3 w-3 animate-spin" />
+								{:else}
+									Confirm
+								{/if}
+							</button>
+							<button
+								onclick={() => (showCurrencySelector = true)}
+								class="button-secondary button--small px-2 py-1 text-xs"
+							>
+								Change
+							</button>
+						</div>
+					</div>
+				{/if}
+
+				{#if !paymentStatus.loading && !paymentStatus.isSetup}
+					<div
+						class="flex items-start gap-3 rounded-lg p-4"
+						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+					>
+						<CreditCard class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="min-w-0 flex-1">
+							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
+								Payment setup
+							</h3>
+							<p class="text-xs" style="color: var(--text-secondary);">Connect bank account</p>
+						</div>
 						<button
-							onclick={() => showCurrencySelector = true}
-							class="button-secondary button--small text-xs px-2 py-1"
+							onclick={setupPayments}
+							disabled={isSettingUpPayment || needsConfirmation}
+							class="button-primary button--small px-2 py-1 text-xs"
 						>
-							Update
+							{#if isSettingUpPayment}
+								<Loader2 class="h-3 w-3 animate-spin" />
+							{:else}
+								Setup
+							{/if}
 						</button>
 					</div>
 				{/if}
 			</div>
 		{/if}
-		
+
 		<!-- Currency Settings Modal (when expanded) -->
 		{#if showCurrencySelector}
-			<div class="mb-6 rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div
+				class="mb-6 rounded-lg p-4"
+				style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+			>
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
-						<h3 class="text-sm font-medium" style="color: var(--text-primary);">Update Location Settings</h3>
+						<h3 class="text-sm font-medium" style="color: var(--text-primary);">
+							Update Location Settings
+						</h3>
 						<button
 							onclick={() => {
 								resetSelections();
@@ -1153,55 +1371,89 @@
 							aria-label="Close"
 						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 						</button>
 					</div>
-					
+
 					{#if saveError}
-						<div class="p-3 rounded-lg text-sm" style="background: var(--color-error-50); color: var(--color-error-700);">
+						<div
+							class="rounded-lg p-3 text-sm"
+							style="background: var(--color-error-50); color: var(--color-error-700);"
+						>
 							{saveError}
 						</div>
 					{/if}
-					
+
 					<!-- Country Selection -->
 					<div>
-						<label class="block text-xs font-medium mb-2" style="color: var(--text-primary);">Country</label>
+						<label class="mb-2 block text-xs font-medium" style="color: var(--text-primary);"
+							>Country</label
+						>
 						<div class="relative">
 							<button
-								onclick={() => showCountryDropdown = !showCountryDropdown}
-								class="w-full flex items-center justify-between p-3 rounded-lg text-left"
+								onclick={() => (showCountryDropdown = !showCountryDropdown)}
+								class="flex w-full items-center justify-between rounded-lg p-3 text-left"
 								style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
 							>
 								<div class="flex items-center gap-2">
 									{#if currentCountryInfo}
 										<span>{currentCountryInfo.flag}</span>
-										<span class="text-sm" style="color: var(--text-primary);">{currentCountryInfo.name}</span>
+										<span class="text-sm" style="color: var(--text-primary);"
+											>{currentCountryInfo.name}</span
+										>
 									{:else}
-										<span class="text-sm" style="color: var(--text-secondary);">Select country</span>
+										<span class="text-sm" style="color: var(--text-secondary);">Select country</span
+										>
 									{/if}
 								</div>
-								<svg class="w-4 h-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								<svg
+									class="h-4 w-4"
+									style="color: var(--text-tertiary);"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M19 9l-7 7-7-7"
+									/>
 								</svg>
 							</button>
-							
+
 							{#if showCountryDropdown}
-								<div class="absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-									<div class="max-h-48 overflow-y-auto country-list">
+								<div
+									class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
+									style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+								>
+									<div class="country-list max-h-48 overflow-y-auto">
 										{#each COMMON_COUNTRIES as country}
 											<button
 												onclick={() => {
 													onCountryChange(country.code);
 													showCountryDropdown = false;
 												}}
-												class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-												style="color: var(--text-primary);"
+												class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) =>
+													(e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+												onmouseleave={(e) =>
+													(e.currentTarget.style.backgroundColor = 'transparent')}
 											>
 												<span>{country.flag}</span>
 												<span>{country.name}</span>
 												{#if selectedCountry === country.code}
-													<CheckCircle class="w-3 h-3 ml-auto" style="color: var(--color-primary-600);" />
+													<CheckCircle
+														class="ml-auto h-3 w-3"
+														style="color: var(--color-primary-600);"
+													/>
 												{/if}
 											</button>
 										{/each}
@@ -1210,26 +1462,29 @@
 							{/if}
 						</div>
 					</div>
-					
+
 					<!-- Currency Display (Read-only) -->
 					<div>
-						<label class="block text-xs font-medium mb-2" style="color: var(--text-primary);">Currency</label>
+						<label class="mb-2 block text-xs font-medium" style="color: var(--text-primary);"
+							>Currency</label
+						>
 						<div class="grid grid-cols-3 gap-2">
 							{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
 								<button
 									onclick={() => onCurrencyChange(code as Currency)}
-									class="currency-button p-2 rounded-lg text-xs font-medium transition-all
+									class="currency-button rounded-lg p-2 text-xs font-medium transition-all
 											{selectedCurrency === code ? 'selected' : ''}"
 								>
-									{info.symbol} {code}
+									{info.symbol}
+									{code}
 								</button>
 							{/each}
 						</div>
-						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+						<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
 							Select the currency you'll use for your tours
 						</p>
 					</div>
-					
+
 					<div class="flex justify-end gap-2 pt-2">
 						<button
 							onclick={() => {
@@ -1246,7 +1501,7 @@
 							class="button-primary button--small"
 						>
 							{#if savingCurrency}
-								<Loader2 class="h-3 w-3 animate-spin mr-1" />
+								<Loader2 class="mr-1 h-3 w-3 animate-spin" />
 								Saving...
 							{:else}
 								Save Location
@@ -1256,82 +1511,171 @@
 				</div>
 			</div>
 		{/if}
-		
-		<!-- Today's Overview -->
-		<div class="mb-8">
-			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Overview</h2>
-				{#if todaysSchedule.length > 0}
-					<button
-						onclick={() => goto('/checkin-scanner')}
-						class="button-primary button--small button--gap"
-					>
-						<QrCode class="h-3 w-3" />
-						Scanner
-					</button>
-				{/if}
-			</div>
-			
-			<!-- Quick Stats Grid -->
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-				<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<div class="flex items-center justify-between mb-2">
-						<Calendar class="h-4 w-4" style="color: var(--text-tertiary);" />
-						<span class="text-xs" style="color: var(--text-tertiary);">Today</span>
+
+		<!-- Performance Overview -->
+		<div class="mb-6">
+			<h2 class="mb-4 text-lg font-semibold" style="color: var(--text-primary);">
+				Performance Overview
+			</h2>
+			<!-- Mobile: Ultra-compact 2x2 grid -->
+			<div class="grid grid-cols-2 gap-2 sm:hidden">
+				<div
+					class="rounded-lg p-3"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<div class="mb-1 flex items-center justify-between">
+						<Calendar class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
+							>Today</span
+						>
 					</div>
-					<p class="text-xl font-semibold" style="color: var(--text-primary);">{todaysSchedule.length}</p>
-					<p class="text-xs" style="color: var(--text-secondary);">{todaysSchedule.length === 1 ? 'tour' : 'tours'}</p>
-				</div>
-				
-				<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<div class="flex items-center justify-between mb-2">
-						<Users class="h-4 w-4" style="color: var(--text-tertiary);" />
-						<span class="text-xs" style="color: var(--text-tertiary);">Guests</span>
-					</div>
-					<p class="text-xl font-semibold" style="color: var(--text-primary);">
-						{todaysSchedule.reduce((sum: number, s: any) => sum + (s.participants || 0), 0)}
+					<p class="text-base font-bold" style="color: var(--text-primary);">
+						{stats.todayBookings}
 					</p>
-					<p class="text-xs" style="color: var(--text-secondary);">today</p>
+					<p class="text-[10px]" style="color: var(--text-tertiary);">
+						{stats.todayBookings === 1 ? 'booking' : 'bookings'}
+					</p>
 				</div>
-				
-				<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<div class="flex items-center justify-between mb-2">
-						<DollarSign class="h-4 w-4" style="color: var(--text-tertiary);" />
-						<span class="text-xs" style="color: var(--text-tertiary);">Revenue</span>
+				<div
+					class="rounded-lg p-3"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<div class="mb-1 flex items-center justify-between">
+						<DollarSign class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
+							>Week</span
+						>
 					</div>
-					<p class="text-xl font-semibold" style="color: var(--text-primary);">{$globalCurrencyFormatter(stats.weeklyRevenue)}</p>
-					<p class="text-xs" style="color: var(--text-secondary);">this week</p>
+					<p class="text-base font-bold" style="color: var(--text-primary);">
+						{$globalCurrencyFormatter(stats.weeklyRevenue)}
+					</p>
+					<p class="text-[10px]" style="color: var(--text-tertiary);">revenue</p>
 				</div>
-				
-				<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<div class="flex items-center justify-between mb-2">
-						<TrendingUp class="h-4 w-4" style="color: var(--text-tertiary);" />
-						<span class="text-xs" style="color: var(--text-tertiary);">Upcoming</span>
+				<div
+					class="rounded-lg p-3"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<div class="mb-1 flex items-center justify-between">
+						<TrendingUp class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
+							>Next 7d</span
+						>
 					</div>
-					<p class="text-xl font-semibold" style="color: var(--text-primary);">{stats.upcomingTours || 0}</p>
-					<p class="text-xs" style="color: var(--text-secondary);">next 7 days</p>
+					<p class="text-base font-bold" style="color: var(--text-primary);">
+						{stats.upcomingTours}
+					</p>
+					<p class="text-[10px]" style="color: var(--text-tertiary);">upcoming</p>
+				</div>
+				<div
+					class="rounded-lg p-3"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<div class="mb-1 flex items-center justify-between">
+						<Users class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
+							>Total</span
+						>
+					</div>
+					<p class="text-base font-bold" style="color: var(--text-primary);">
+						{stats.totalCustomers}
+					</p>
+					<p class="text-[10px]" style="color: var(--text-tertiary);">customers</p>
 				</div>
 			</div>
-			
+
+			<!-- Desktop: StatsCard components -->
+			<div class="hidden gap-3 sm:grid sm:grid-cols-4">
+				<StatsCard
+					title="Today"
+					value={stats.todayBookings}
+					subtitle={stats.todayBookings === 1 ? 'booking' : 'bookings'}
+					icon={Calendar}
+					variant="small"
+				/>
+				<StatsCard
+					title="This Week"
+					value={$globalCurrencyFormatter(stats.weeklyRevenue)}
+					subtitle="revenue"
+					icon={DollarSign}
+					variant="small"
+				/>
+				<StatsCard
+					title="Next 7 Days"
+					value={stats.upcomingTours}
+					subtitle="upcoming tours"
+					icon={TrendingUp}
+					variant="small"
+				/>
+				<StatsCard
+					title="Total Customers"
+					value={stats.totalCustomers}
+					subtitle="all time"
+					icon={Users}
+					variant="small"
+				/>
+			</div>
+		</div>
+
+		<!-- Today's Activity -->
+		<div class="mb-8">
+			<div class="mb-4 flex items-center justify-between">
+				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Activity</h2>
+				<div class="flex items-center gap-2">
+					{#if todaysSchedule.length > 0}
+						<button
+							onclick={() => goto('/checkin-scanner')}
+							class="button-primary button--small button--gap"
+						>
+							<QrCode class="h-3 w-3" />
+							<span class="hidden sm:inline">Scanner</span>
+						</button>
+					{/if}
+					<button
+						onclick={() => goto('/analytics')}
+						class="button-secondary button--small button--gap"
+					>
+						<TrendingUp class="h-3 w-3" />
+						<span class="hidden sm:inline">Analytics</span>
+					</button>
+				</div>
+			</div>
+
 			<!-- Today's Schedule -->
 			{#if todaysSchedule.length > 0}
-				<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<h3 class="text-sm font-medium" style="color: var(--text-primary);">Today's Schedule</h3>
+				<div
+					class="rounded-lg"
+					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+				>
+					<div class="border-b p-4" style="border-color: var(--border-primary);">
+						<div class="flex items-center justify-between">
+							<h3 class="text-sm font-medium" style="color: var(--text-primary);">
+								Today's Schedule
+							</h3>
+							<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+								<Users class="h-3 w-3" />
+								{todaysSchedule.reduce((sum: number, s: any) => sum + (s.participants || 0), 0)} total
+								guests
+							</div>
+						</div>
 					</div>
 					<div class="divide-y" style="border-color: var(--border-primary);">
 						{#each todaysSchedule as schedule}
-							<div class="p-4 flex items-center justify-between">
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center gap-2 mb-1">
+							<div class="flex items-center justify-between p-4">
+								<div class="min-w-0 flex-1">
+									<div class="mb-1 flex items-center gap-2">
 										<span class="text-sm font-medium" style="color: var(--text-primary);">
 											{#if schedule.timeSlot?.startTime && schedule.timeSlot?.endTime}
-												{formatSlotTimeRange(schedule.timeSlot.startTime, schedule.timeSlot.endTime)}
+												{formatSlotTimeRange(
+													schedule.timeSlot.startTime,
+													schedule.timeSlot.endTime
+												)}
 											{:else}
 												{formatDate(schedule.time)}
 											{/if}
 										</span>
-										<span class="px-2 py-0.5 text-xs rounded-full {getStatusColor(schedule.status)}">
+										<span
+											class="rounded-full px-2 py-0.5 text-xs {getStatusColor(schedule.status)}"
+										>
 											{schedule.status}
 										</span>
 									</div>
@@ -1353,57 +1697,66 @@
 							</div>
 						{/each}
 					</div>
-					{#if todaysSchedule.length > 4}
-						<div class="p-3 text-center border-t" style="border-color: var(--border-primary);">
-							<button 
-								onclick={() => goto('/bookings')} 
-								class="text-xs hover:underline" style="color: var(--text-tertiary);"
-							>
-								View all bookings
-							</button>
-						</div>
-					{/if}
 				</div>
 			{:else}
-				<div class="rounded-lg p-8 text-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<Calendar class="w-8 h-8 mx-auto mb-3" style="color: var(--text-tertiary);" />
-					<p class="text-sm mb-1" style="color: var(--text-primary);">No tours scheduled today</p>
+				<div
+					class="rounded-lg p-8 text-center"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<Calendar class="mx-auto mb-3 h-8 w-8" style="color: var(--text-tertiary);" />
+					<p class="mb-1 text-sm" style="color: var(--text-primary);">No tours scheduled today</p>
 					<p class="text-xs" style="color: var(--text-secondary);">Enjoy your day off!</p>
 				</div>
 			{/if}
 		</div>
-		
+
 		<!-- Quick Actions & Recent Activity -->
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Recent Bookings -->
 			<div class="lg:col-span-2">
-				<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b flex items-center justify-between" style="border-color: var(--border-primary);">
+				<div
+					class="rounded-lg"
+					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+				>
+					<div
+						class="flex items-center justify-between border-b p-4"
+						style="border-color: var(--border-primary);"
+					>
 						<h3 class="text-sm font-medium" style="color: var(--text-primary);">Recent Bookings</h3>
-						<button onclick={() => goto('/bookings')} class="text-xs hover:underline" style="color: var(--text-tertiary);">
+						<button
+							onclick={() => goto('/bookings')}
+							class="text-xs hover:underline"
+							style="color: var(--text-tertiary);"
+						>
 							View all
 						</button>
 					</div>
-					
+
 					<div class="divide-y" style="border-color: var(--border-primary);">
 						{#if recentBookings.length > 0}
 							{#each recentBookings.slice(0, 4) as booking}
 								<div class="p-4">
 									<div class="flex items-start justify-between">
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1">
+										<div class="min-w-0 flex-1">
+											<div class="mb-1 flex items-center gap-2">
 												<span class="text-sm font-medium" style="color: var(--text-primary);">
 													{booking.customerName}
 												</span>
-												<span class="px-2 py-0.5 text-xs rounded-full {getStatusColor(booking.status)}">
+												<span
+													class="rounded-full px-2 py-0.5 text-xs {getStatusColor(booking.status)}"
+												>
 													{booking.status}
 												</span>
 											</div>
 											<p class="text-xs" style="color: var(--text-secondary);">
-												{booking.tourName || booking.tour || 'Unknown Tour'} • {formatDate(booking.effectiveDate || booking.created)}
+												{booking.tourName || booking.tour || 'Unknown Tour'} • {formatDate(
+													booking.effectiveDate || booking.created
+												)}
 											</p>
-											<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-												{formatParticipantDisplayCompact(booking)} guests • {$globalCurrencyFormatter(booking.totalAmount || 0)}
+											<p class="mt-1 text-xs" style="color: var(--text-tertiary);">
+												{formatParticipantDisplayCompact(booking)} guests • {$globalCurrencyFormatter(
+													booking.totalAmount || 0
+												)}
 											</p>
 										</div>
 										<button
@@ -1417,23 +1770,28 @@
 							{/each}
 						{:else}
 							<div class="p-8 text-center">
-								<Calendar class="w-6 h-6 mx-auto mb-2" style="color: var(--text-tertiary);" />
+								<Calendar class="mx-auto mb-2 h-6 w-6" style="color: var(--text-tertiary);" />
 								<p class="text-sm" style="color: var(--text-secondary);">No bookings yet</p>
 							</div>
 						{/if}
 					</div>
 				</div>
 			</div>
-			
+
 			<!-- Quick Actions Sidebar -->
 			<div class="space-y-4">
 				<!-- Profile Link -->
 				{#if profile?.username}
-					<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-						<div class="flex items-center justify-between mb-3">
+					<div
+						class="rounded-lg p-4"
+						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+					>
+						<div class="mb-3 flex items-center justify-between">
 							<div class="flex items-center gap-2">
 								<Link class="h-4 w-4" style="color: var(--text-tertiary);" />
-								<h3 class="text-sm font-medium" style="color: var(--text-primary);">Your Profile</h3>
+								<h3 class="text-sm font-medium" style="color: var(--text-primary);">
+									Your Profile
+								</h3>
 							</div>
 							<button
 								onclick={copyProfileLink}
@@ -1447,7 +1805,7 @@
 								{/if}
 							</button>
 						</div>
-						<p class="text-xs mb-3" style="color: var(--text-secondary);">
+						<p class="mb-3 text-xs" style="color: var(--text-secondary);">
 							zaur.app/{profile.username}
 						</p>
 						<button
@@ -1459,10 +1817,15 @@
 						</button>
 					</div>
 				{/if}
-				
+
 				<!-- Quick Actions -->
-				<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<h3 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Quick Actions</h3>
+				<div
+					class="rounded-lg p-4"
+					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<h3 class="mb-3 text-sm font-medium" style="color: var(--text-primary);">
+						Quick Actions
+					</h3>
 					<div class="space-y-2">
 						<button
 							onclick={() => goto('/tours/new')}
@@ -1494,3 +1857,119 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.opacity-50 {
+		opacity: 0.5;
+	}
+
+	.schedule-item {
+		transition: background-color 0.2s ease;
+	}
+
+	.schedule-item:hover {
+		background-color: var(--bg-tertiary);
+	}
+
+	.schedule-item .schedule-actions {
+		opacity: 0;
+		transition: opacity 0.2s ease-in-out;
+	}
+
+	.schedule-item:hover .schedule-actions {
+		opacity: 1;
+	}
+
+	.currency-button {
+		background-color: var(--bg-primary);
+		border: 1px solid var(--border-secondary);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.currency-button:hover {
+		background-color: var(--bg-secondary);
+		border-color: var(--border-primary);
+	}
+
+	.currency-button.selected {
+		background-color: var(--color-primary-100);
+		border-color: var(--color-primary-500);
+		color: var(--color-primary-700);
+	}
+
+	.subscription-tier {
+		position: relative;
+		padding: 1.5rem;
+		border-radius: 0.75rem;
+		border: 1px solid var(--border-primary);
+		background: var(--bg-primary);
+		transition: all 0.2s ease;
+	}
+
+	.subscription-tier:hover {
+		border-color: var(--color-primary-300);
+		box-shadow: var(--shadow-md);
+	}
+
+	.subscription-tier.current {
+		border-color: var(--color-primary-500);
+		background: var(--color-primary-50);
+	}
+
+	.no-scrollbar {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+
+	.no-scrollbar::-webkit-scrollbar {
+		display: none;
+	}
+
+	.booking-item {
+		transition: background-color 0.2s ease;
+	}
+
+	.booking-item:hover {
+		background-color: var(--bg-secondary);
+	}
+
+	.country-list {
+		scrollbar-width: thin;
+		scrollbar-color: var(--border-secondary) transparent;
+	}
+
+	.country-list::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.country-list::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.country-list::-webkit-scrollbar-thumb {
+		background-color: var(--border-secondary);
+		border-radius: 4px;
+	}
+
+	.country-list::-webkit-scrollbar-thumb:hover {
+		background-color: var(--border-primary);
+	}
+
+	/* Success message animations */
+	.success-message {
+		animation: slideInDown 0.3s ease-out;
+	}
+
+	@keyframes slideInDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+</style>

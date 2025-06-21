@@ -18,6 +18,11 @@ export async function logout(redirectTo: string = '/auth/login', queryClient?: Q
 			queryClient.invalidateQueries();
 		}
 		
+		// Clear location confirmation from localStorage
+		if (typeof window !== 'undefined' && window.localStorage) {
+			localStorage.removeItem('locationConfirmed');
+		}
+		
 		// Navigate to logout page which will handle the server action
 		await goto('/auth/logout', { replaceState: true });
 		

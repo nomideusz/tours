@@ -4,9 +4,9 @@ import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const POST: RequestHandler = async ({ request }) => {
     try {
-        const userId = url.searchParams.get('userId');
+        const { userId } = await request.json();
         
         if (!userId) {
             return json({ error: 'Missing userId parameter' }, { status: 400 });

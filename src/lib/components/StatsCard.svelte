@@ -101,6 +101,12 @@
 		padding: 1rem;
 	}
 	
+	@media (max-width: 640px) {
+		.stats-card--small {
+			padding: 0.875rem;
+		}
+	}
+	
 	.stats-card-link {
 		display: block;
 	}
@@ -112,9 +118,17 @@
 		margin-bottom: 1rem;
 	}
 	
+	.stats-card--small .stats-card__header {
+		margin-bottom: 0.5rem;
+	}
+	
 	.stats-card__title {
 		font-size: 0.875rem;
 		color: var(--text-secondary);
+	}
+	
+	.stats-card--small .stats-card__title {
+		font-size: 0.75rem;
 	}
 	
 	.stats-card__icon {
@@ -154,9 +168,19 @@
 		font-size: 1.25rem;
 	}
 	
+	@media (max-width: 640px) {
+		.stats-card--small .stats-card__value {
+			font-size: 1.125rem;
+		}
+	}
+	
 	.stats-card__subtitle {
 		font-size: 0.75rem;
 		color: var(--text-tertiary);
+	}
+	
+	.stats-card--small .stats-card__subtitle {
+		font-size: 0.625rem;
 	}
 	
 	.stats-card__trend {

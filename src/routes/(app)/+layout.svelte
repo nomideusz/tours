@@ -31,6 +31,7 @@
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Settings from 'lucide-svelte/icons/settings';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -102,6 +103,11 @@
 			icon: MapPin
 		},
 		{
+			name: 'Analytics',
+			href: '/analytics',
+			icon: TrendingUp
+		},
+		{
 			name: 'All Bookings',
 			href: '/bookings',
 			icon: Calendar
@@ -127,16 +133,16 @@
 			active: currentPath === '/dashboard'
 		},
 		{
+			name: 'Analytics',
+			href: '/analytics',
+			icon: TrendingUp,
+			active: currentPath === '/analytics'
+		},
+		{
 			name: 'Scanner',
 			href: '/checkin-scanner',
 			icon: QrCode,
 			active: currentPath === '/checkin-scanner'
-		},
-		{
-			name: 'Bookings',
-			href: '/bookings',
-			icon: Calendar,
-			active: currentPath.startsWith('/bookings')
 		},
 		{
 			name: 'Tours',

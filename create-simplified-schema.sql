@@ -1,5 +1,5 @@
--- Zaur Tours Platform - Simplified Schema Migration
--- This script creates the complete database schema with simplified QR code approach
+-- Zaur Tours Platform - Complete Schema Migration
+-- This script creates the complete database schema for the current application state
 
 -- Drop existing tables if they exist (in reverse dependency order)
 DROP TABLE IF EXISTS payments CASCADE;
@@ -315,6 +315,8 @@ ALTER TABLE users ADD CONSTRAINT check_monthly_bookings_used_positive CHECK (mon
 ALTER TABLE tours ADD CONSTRAINT check_price_positive CHECK (price >= 0);
 ALTER TABLE tours ADD CONSTRAINT check_duration_positive CHECK (duration > 0);
 ALTER TABLE tours ADD CONSTRAINT check_capacity_positive CHECK (capacity > 0);
+ALTER TABLE tours ADD CONSTRAINT check_qr_scans_positive CHECK (qr_scans >= 0);
+ALTER TABLE tours ADD CONSTRAINT check_qr_conversions_positive CHECK (qr_conversions >= 0);
 ALTER TABLE time_slots ADD CONSTRAINT check_available_spots_positive CHECK (available_spots >= 0);
 ALTER TABLE time_slots ADD CONSTRAINT check_booked_spots_positive CHECK (booked_spots >= 0);
 ALTER TABLE time_slots ADD CONSTRAINT check_end_after_start CHECK (end_time > start_time);
@@ -324,15 +326,21 @@ ALTER TABLE payments ADD CONSTRAINT check_amount_positive CHECK (amount >= 0);
 ALTER TABLE payments ADD CONSTRAINT check_processing_fee_positive CHECK (processing_fee >= 0);
 ALTER TABLE payments ADD CONSTRAINT check_net_amount_positive CHECK (net_amount >= 0);
 
--- Create a function to auto-generate QR codes
-CREATE OR REPLACE FUNCTION generate_qr_code(prefix TEXT DEFAULT 'QR')
+-- Create helper functions for generating unique codes
+CREATE OR REPLACE FUNCTION generate_tour_qr_code()
 RETURNS TEXT AS $$
 BEGIN
-    RETURN prefix || '-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT) FROM 1 FOR 8));
+    RETURN 'TUR-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT) FROM 1 FOR 8));
 END;
 $$ LANGUAGE plpgsql;
 
--- Create a function to auto-generate booking references
+CREATE OR REPLACE FUNCTION generate_ticket_qr_code()
+RETURNS TEXT AS $$
+BEGIN
+    RETURN 'TKT-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT) FROM 1 FOR 8));
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION generate_booking_reference()
 RETURNS TEXT AS $$
 BEGIN
@@ -340,10 +348,51 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Example data (optional - remove if not needed)
--- INSERT INTO users (id, email, name, role) VALUES 
--- ('admin123', 'admin@zaur.app', 'Admin User', 'admin'),
--- ('guide123', 'guide@example.com', 'John Smith', 'user');
+-- Create auto-generation triggers for QR codes
+CREATE OR REPLACE FUNCTION auto_generate_tour_qr()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.qr_code IS NULL THEN
+        NEW.qr_code := generate_tour_qr_code();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION auto_generate_booking_codes()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.booking_reference IS NULL THEN
+        NEW.booking_reference := generate_booking_reference();
+    END IF;
+    IF NEW.ticket_qr_code IS NULL THEN
+        NEW.ticket_qr_code := generate_ticket_qr_code();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply auto-generation triggers
+CREATE TRIGGER auto_tour_qr_trigger BEFORE INSERT ON tours FOR EACH ROW EXECUTE FUNCTION auto_generate_tour_qr();
+CREATE TRIGGER auto_booking_codes_trigger BEFORE INSERT ON bookings FOR EACH ROW EXECUTE FUNCTION auto_generate_booking_codes();
+
+-- Create views for analytics (optional but helpful)
+CREATE OR REPLACE VIEW analytics_summary AS
+SELECT 
+    COALESCE(u.id, '') as user_id,
+    COALESCE(u.name, 'Unknown Guide') as guide_name,
+    COALESCE(COUNT(DISTINCT t.id), 0) as total_tours,
+    COALESCE(COUNT(DISTINCT CASE WHEN t.status = 'active' THEN t.id END), 0) as active_tours,
+    COALESCE(COUNT(DISTINCT b.id), 0) as total_bookings,
+    COALESCE(COUNT(DISTINCT CASE WHEN b.status = 'confirmed' THEN b.id END), 0) as confirmed_bookings,
+    COALESCE(SUM(CASE WHEN b.status = 'confirmed' THEN COALESCE(b.total_amount, 0) ELSE 0 END), 0) as total_revenue,
+    COALESCE(SUM(COALESCE(t.qr_scans, 0)), 0) as total_qr_scans,
+    COALESCE(SUM(COALESCE(t.qr_conversions, 0)), 0) as total_qr_conversions
+FROM users u
+LEFT JOIN tours t ON u.id = t.user_id
+LEFT JOIN bookings b ON t.id = b.tour_id
+WHERE u.role = 'user'
+GROUP BY u.id, u.name;
 
 -- Verify the schema
 SELECT 
@@ -352,15 +401,16 @@ SELECT
     tableowner
 FROM pg_tables 
 WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications')
+    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications', 'oauth_accounts', 'email_verification_tokens', 'password_reset_tokens')
 ORDER BY tablename;
 
--- Show created indexes
+-- Show enum types
 SELECT 
-    indexname,
-    tablename,
-    indexdef
-FROM pg_indexes 
-WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications')
-ORDER BY tablename, indexname; 
+    t.typname as enum_name,
+    e.enumlabel as enum_value
+FROM pg_type t 
+JOIN pg_enum e ON t.oid = e.enumtypid  
+WHERE t.typname IN ('user_role', 'tour_status', 'booking_status', 'payment_status', 'subscription_plan', 'subscription_status')
+ORDER BY t.typname, e.enumsortorder;
+
+COMMIT; 
