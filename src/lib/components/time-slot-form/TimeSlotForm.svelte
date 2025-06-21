@@ -1,0 +1,837 @@
+<script lang="ts">
+	import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
+	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
+	import { getFieldError, hasFieldError } from '$lib/validation.js';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { createTimeSlotMutation, updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
+	
+	// Components
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import DateSelection from './components/DateSelection.svelte';
+	import RecurringOptions from './components/RecurringOptions.svelte';
+	import ConflictWarning from './components/ConflictWarning.svelte';
+	import TimePicker from '$lib/components/TimePicker.svelte';
+	import NumberInput from '$lib/components/NumberInput.svelte';
+	
+	// Icons
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import Copy from 'lucide-svelte/icons/copy';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import Info from 'lucide-svelte/icons/info';
+	import Plus from 'lucide-svelte/icons/plus';
+
+	// State and utilities
+	import { createTimeSlotFormState } from './time-slot-form-state.svelte.js';
+	import { findNextAvailableTime, checkConflicts, getEndTimeFromDuration } from './utils/time-utils.js';
+	import { getRecurringPreview, getActualRecurringCount } from './utils/recurring.js';
+	import { validateField, validateForm } from './utils/validation.js';
+	import type { TimeSlotFormProps } from './types.js';
+
+	let {
+		tourId,
+		slotId,
+		mode = 'page',
+		onSuccess,
+		onCancel,
+		class: className = '',
+		tour: propTour,
+		preselectedDate
+	}: TimeSlotFormProps = $props();
+
+	// Check if we're editing
+	let isEditMode = $derived(!!slotId);
+	
+	// Initialize state
+	const state = createTimeSlotFormState();
+	
+	// Initialize mutations
+	const createSlotMutation = createTimeSlotMutation(tourId);
+	const updateSlotMutation = isEditMode && slotId ? updateTimeSlotMutation(tourId, slotId) : null;
+	const deleteSlotMutation = deleteTimeSlotMutation(tourId);
+	
+	// Fetch tour details if not provided
+	let tourQuery = $derived(propTour ? null : createQuery({
+		queryKey: queryKeys.tourDetails(tourId),
+		queryFn: () => queryFunctions.fetchTourDetails(tourId),
+		staleTime: 1 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
+	}));
+
+	// Fetch existing schedule to check for conflicts and get slot data if editing
+	let scheduleQuery = $derived(createQuery({
+		queryKey: queryKeys.tourSchedule(tourId),
+		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
+		staleTime: 30 * 1000,
+		gcTime: 2 * 60 * 1000,
+	}));
+
+	let tour = $derived(propTour || $tourQuery?.data?.tour || null);
+	let allSlots = $derived($scheduleQuery.data?.timeSlots || []);
+	let currentSlot = $derived(isEditMode ? allSlots.find((slot: any) => slot.id === slotId) : null);
+	let existingSlots = $derived(isEditMode ? allSlots.filter((slot: any) => slot.id !== slotId) : allSlots);
+	let isLoading = $derived(propTour ? $scheduleQuery.isLoading : ($tourQuery?.isLoading || $scheduleQuery.isLoading));
+
+	// Create slots map for MiniMonthCalendar
+	let slotsMap = $derived(() => {
+		const map = new Map<string, number>();
+		allSlots.forEach((slot: any) => {
+			const date = new Date(slot.startTime).toISOString().split('T')[0];
+			map.set(date, (map.get(date) || 0) + 1);
+		});
+		return map;
+	});
+
+	// Check if slot has bookings
+	let hasBookings = $derived(isEditMode && currentSlot?.bookedSpots > 0);
+
+	// Combine all errors
+	let allErrors = $derived([...state.validationErrors]);
+
+	// Compact mode styling
+	let containerClass = $derived(
+		mode === 'inline' ? 'bg-white dark:bg-gray-900 rounded-xl border' : 
+		mode === 'modal' ? '' : 
+		'rounded-xl'
+	);
+
+	// Set smart defaults when both tour and schedule data load (for create mode)
+	$effect(() => {
+		if (tour && !isEditMode && !$scheduleQuery.isLoading && !state.initialDefaults) {
+			state.initialDefaults = true;
+			state.formData.capacity = tour.capacity;
+			state.formData.availability = 'available';
+			
+			// Set default date to preselected date or tomorrow
+			if (preselectedDate) {
+				state.formData.date = preselectedDate;
+			} else {
+				const tomorrow = new Date();
+				tomorrow.setDate(tomorrow.getDate() + 1);
+				state.formData.date = tomorrow.toISOString().split('T')[0];
+			}
+			
+			// Find smart default time that doesn't conflict
+			const smartTime = findNextAvailableTime(
+				state.formData.date, 
+				state.customDuration, 
+				null,
+				'',
+				existingSlots,
+				tour.duration
+			);
+			state.formData.startTime = smartTime.startTime;
+			state.formData.endTime = smartTime.endTime;
+		}
+	});
+
+	// Populate form when slot loads (for edit mode)
+	$effect(() => {
+		if (currentSlot && isEditMode) {
+			const startDate = new Date(currentSlot.startTime);
+			const endDate = new Date(currentSlot.endTime);
+			
+			state.setFormData({
+				date: startDate.toISOString().split('T')[0],
+				startTime: startDate.toTimeString().slice(0, 5),
+				endTime: endDate.toTimeString().slice(0, 5),
+				capacity: currentSlot.capacity || tour?.capacity || 10,
+				availability: currentSlot.status === 'cancelled' ? 'cancelled' : 'available',
+				notes: currentSlot.notes || ''
+			});
+		}
+	});
+
+	// Smart time adjustment when date changes in create mode
+	$effect(() => {
+		if (state.formData.date && tour && !isEditMode && !$scheduleQuery.isLoading) {
+			// Only auto-adjust if we haven't manually set times yet
+			const hasManualTimes = state.touchedFields.has('startTime') || state.touchedFields.has('endTime');
+			if (!hasManualTimes) {
+				const smartTime = findNextAvailableTime(
+					state.formData.date, 
+					state.customDuration, 
+					null,
+					'',
+					existingSlots,
+					tour.duration
+				);
+				state.formData.startTime = smartTime.startTime;
+				state.formData.endTime = smartTime.endTime;
+			}
+		}
+	});
+	
+	// Track custom duration when end time changes
+	$effect(() => {
+		if (state.formData.startTime && state.formData.endTime && state.touchedFields.has('endTime')) {
+			const calculatedDuration = state.duration;
+			if (calculatedDuration > 0 && calculatedDuration !== tour?.duration) {
+				state.customDuration = calculatedDuration;
+			}
+		}
+	});
+	
+	// Update end time when start time changes (respecting custom duration)
+	$effect(() => {
+		if (state.formData.startTime && state.touchedFields.has('startTime')) {
+			const durationToUse = state.customDuration || tour?.duration || 120;
+			state.formData.endTime = getEndTimeFromDuration(state.formData.startTime, durationToUse);
+		}
+	});
+
+	// Check for conflicts when date/time changes
+	$effect(() => {
+		if (state.formData.date && state.formData.startTime && state.formData.endTime && existingSlots.length > 0 && !state.justCreatedSlot && !state.isAddingAnother) {
+			const conflicts = checkConflicts(state.formData.date, state.formData.startTime, state.formData.endTime, existingSlots);
+			state.setConflicts(conflicts);
+		}
+	});
+
+	// Auto-enable recurring when advanced section is opened
+	$effect(() => {
+		if (state.showAdvanced && !isEditMode) {
+			state.formData.recurring = true;
+		} else if (!state.showAdvanced && !isEditMode) {
+			state.formData.recurring = false;
+			state.formData.recurringType = 'weekly';
+			state.formData.recurringEnd = '';
+			state.formData.recurringCount = 1;
+		}
+	});
+
+	// Event handlers
+	function handleValidateField(fieldName: string) {
+		state.addTouchedField(fieldName);
+		state.removeValidationError(fieldName);
+		
+		const error = validateField(fieldName, state.formData, isEditMode, currentSlot);
+		if (error) {
+			state.setValidationError([...state.validationErrors, error]);
+		}
+	}
+
+	function handleGetEndTimeFromDuration() {
+		if (!tour?.duration || !state.formData.startTime) return;
+		state.formData.endTime = getEndTimeFromDuration(state.formData.startTime, tour.duration);
+		handleValidateField('endTime');
+	}
+
+	function copyFromExisting() {
+		if (existingSlots.length === 0) return;
+		
+		const recent = existingSlots[0];
+		const recentStart = new Date(recent.startTime);
+		const recentEnd = new Date(recent.endTime);
+		
+		state.formData.startTime = recentStart.toTimeString().slice(0, 5);
+		state.formData.endTime = recentEnd.toTimeString().slice(0, 5);
+		
+		handleValidateField('startTime');
+		handleValidateField('endTime');
+	}
+
+	async function handleSubmit() {
+		if (state.isSubmitting) return;
+		
+		// Mark all required fields as touched
+		['date', 'startTime', 'endTime', 'capacity'].forEach(field => {
+			state.addTouchedField(field);
+			handleValidateField(field);
+		});
+		
+		// Validate form
+		const errors = validateForm(state.formData, isEditMode, currentSlot);
+		if (errors.length > 0) {
+			state.setValidationError(errors);
+			state.setError('Please correct the errors below');
+			return;
+		}
+		
+		// Check for conflicts
+		if (state.conflicts.length > 0) {
+			state.setError('Please resolve time conflicts before saving');
+			return;
+		}
+		
+		state.isSubmitting = true;
+		state.setError(null);
+		
+		try {
+			const start = new Date(`${state.formData.date}T${state.formData.startTime}:00`);
+			const end = new Date(`${state.formData.date}T${state.formData.endTime}:00`);
+			
+			const slotData = {
+				...state.formData,
+				startTime: start.toISOString(),
+				endTime: end.toISOString(),
+				status: state.formData.availability,
+				recurringEnd: state.formData.recurringEnd ? new Date(state.formData.recurringEnd).toISOString() : null
+			};
+			
+			if (isEditMode && updateSlotMutation && $updateSlotMutation) {
+				await $updateSlotMutation.mutateAsync(slotData);
+			} else {
+				await $createSlotMutation.mutateAsync(slotData);
+			}
+			
+			// Handle success
+			if (!isEditMode) {
+				state.lastCreatedDate = state.formData.date;
+				state.lastCreatedStartTime = state.formData.startTime;
+				state.justCreatedSlot = true;
+				
+				if (mode !== 'modal') {
+					onSuccess?.();
+				}
+			} else {
+				onSuccess?.();
+			}
+			
+		} catch (err) {
+			state.setError(err instanceof Error ? err.message : `Failed to ${isEditMode ? 'update' : 'create'} time slot`);
+		} finally {
+			state.isSubmitting = false;
+		}
+	}
+
+	async function handleDelete() {
+		if (state.isDeleting || !isEditMode) return;
+		
+		state.isDeleting = true;
+		state.setError(null);
+		
+		try {
+			if (!slotId) throw new Error('No slot ID provided');
+			await $deleteSlotMutation.mutateAsync(slotId);
+			onSuccess?.();
+		} catch (err) {
+			state.setError(err instanceof Error ? err.message : 'Failed to delete time slot');
+		} finally {
+			state.isDeleting = false;
+			state.showDeleteConfirm = false;
+		}
+	}
+
+	function handleAddAnother() {
+		state.isAddingAnother = true;
+		state.setConflicts([]);
+		
+		const savedDate = state.formData.date;
+		const smartTime = findNextAvailableTime(
+			savedDate, 
+			state.customDuration, 
+			state.lastCreatedStartTime,
+			state.lastCreatedDate,
+			existingSlots,
+			tour?.duration
+		);
+		
+		const newDate = smartTime.suggestedNewDate ? 
+			(() => {
+				const tomorrow = new Date(savedDate);
+				tomorrow.setDate(tomorrow.getDate() + 1);
+				return tomorrow.toISOString().split('T')[0];
+			})() : savedDate;
+		
+		state.resetForm();
+		state.setFormData({
+			date: newDate,
+			startTime: smartTime.startTime,
+			endTime: smartTime.endTime,
+			capacity: tour?.capacity || 10,
+			availability: 'available'
+		});
+		
+		state.justCreatedSlot = false;
+		state.showAdvanced = false;
+		
+		setTimeout(() => {
+			state.isAddingAnother = false;
+		}, 100);
+	}
+	
+	function resetDuration() {
+		state.customDuration = null;
+		if (state.formData.startTime && tour?.duration) {
+			state.formData.endTime = getEndTimeFromDuration(state.formData.startTime, tour.duration);
+			handleValidateField('endTime');
+		}
+	}
+
+	// Get current slot time for display
+	let currentSlotTime = $derived(
+		currentSlot ? {
+			start: formatTime(currentSlot.startTime),
+			end: formatTime(currentSlot.endTime)
+		} : undefined
+	);
+
+	// Get recurring preview
+	let recurringPreview = $derived(getRecurringPreview(state.formData));
+</script>
+
+<div class="{containerClass} {className}" style="{mode === 'inline' ? 'border-color: var(--border-primary);' : ''}">
+	{#if isLoading}
+		<div class="p-8 text-center">
+			<Loader2 class="w-8 h-8 mx-auto mb-2 animate-spin" style="color: var(--text-tertiary);" />
+			<p class="text-sm" style="color: var(--text-secondary);">Loading {isEditMode ? 'time slot' : 'tour'} details...</p>
+		</div>
+	{:else if !tour || (isEditMode && !currentSlot)}
+		<div class="p-4 rounded-xl" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+			<p class="font-medium" style="color: var(--color-danger-900);">{isEditMode ? 'Time slot' : 'Tour'} not found</p>
+			<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please check the {isEditMode ? 'slot' : 'tour'} ID and try again.</p>
+		</div>
+	{:else}
+		{#if mode === 'inline'}
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<h3 class="font-semibold" style="color: var(--text-primary);">{isEditMode ? 'Edit' : 'Add'} Time Slot</h3>
+				<p class="text-sm mt-1" style="color: var(--text-secondary);">
+					{isEditMode ? `Modify the time slot for ${tour.name}` : `Create a new available time for ${tour.name}`}
+				</p>
+			</div>
+		{/if}
+
+		<div class="{mode === 'inline' ? 'p-6' : ''}">
+			
+			{#if state.error}
+				<div class="mb-6 rounded-lg p-4 border" style="background: var(--color-danger-50); border-color: var(--color-danger-200);">
+					<div class="flex gap-3">
+						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
+						<div class="flex-1">
+							<p class="text-sm font-medium" style="color: var(--color-danger-900);">{state.error}</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if isEditMode && hasBookings}
+				<div class="mb-6 rounded-xl p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+					<div class="flex gap-3">
+						<Info class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+						<div>
+							<p class="font-medium" style="color: var(--color-warning-900);">This slot has active bookings</p>
+							<p class="text-sm mt-1" style="color: var(--color-warning-700);">
+								{currentSlot.bookedSpots} guest{currentSlot.bookedSpots === 1 ? '' : 's'} booked. 
+								Changes may affect existing bookings. Consider notifying customers of any changes.
+							</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<ConflictWarning conflicts={state.conflicts} justCreatedSlot={state.justCreatedSlot} />
+
+			<!-- Mobile: Stacked layout -->
+			<div class="md:hidden space-y-4">
+				<!-- Date Selection -->
+				<DateSelection
+					bind:date={state.formData.date}
+					slotsMap={slotsMap()}
+					errors={allErrors}
+					isEditMode={isEditMode}
+					onDateChange={(date) => {
+						state.formData.date = date;
+						handleValidateField('date');
+					}}
+					isMobile={true}
+				/>
+				
+				<!-- Time Selection -->
+				<div>
+					<label class="form-label mb-2">Time</label>
+					<div class="flex gap-2 items-start">
+						<div class="flex-1">
+							<TimePicker
+								bind:value={state.formData.startTime}
+								label="Start"
+								placeholder="Start"
+								use24hour={true}
+								onchange={() => {
+									handleValidateField('startTime');
+								}}
+								error={hasFieldError(allErrors, 'startTime')}
+							/>
+						</div>
+						<div class="pt-8 text-xs" style="color: var(--text-tertiary);">to</div>
+						<div class="flex-1">
+							<TimePicker
+								bind:value={state.formData.endTime}
+								label="End"
+								placeholder="End"
+								use24hour={true}
+								onchange={() => handleValidateField('endTime')}
+								error={hasFieldError(allErrors, 'endTime')}
+							/>
+						</div>
+					</div>
+					
+					{#if state.formData.startTime && state.formData.endTime}
+						<div class="mt-2 text-xs flex items-center justify-between" style="color: var(--text-secondary);">
+							<span>Duration: <strong>{state.duration > 0 ? formatDuration(state.duration) : '--'}</strong></span>
+							{#if tour.duration && state.duration !== tour.duration && state.duration > 0}
+								<button
+									type="button"
+									onclick={() => {
+										handleGetEndTimeFromDuration();
+										handleValidateField('endTime');
+									}}
+									class="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+								>
+									Use {formatDuration(tour.duration)}
+								</button>
+							{/if}
+						</div>
+					{/if}
+					
+					{#if getFieldError(allErrors, 'startTime')}
+						<p class="form-error mt-1">{getFieldError(allErrors, 'startTime')}</p>
+					{/if}
+					{#if getFieldError(allErrors, 'endTime')}
+						<p class="form-error mt-1">{getFieldError(allErrors, 'endTime')}</p>
+					{/if}
+				</div>
+
+				<!-- Capacity & Availability -->
+				<div>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<NumberInput
+								id="capacity"
+								name="capacity"
+								label="Capacity"
+								bind:value={state.formData.capacity}
+								min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
+								max={500}
+								step={1}
+								placeholder="10"
+								incrementLabel="Increase capacity"
+								decrementLabel="Decrease capacity"
+								error={getFieldError(allErrors, 'capacity')}
+								hasError={hasFieldError(allErrors, 'capacity')}
+								integerOnly={true}
+								size="small"
+								onblur={() => handleValidateField('capacity')}
+							/>
+						</div>
+						
+						{#if isEditMode}
+							<div>
+								<label for="availability" class="form-label">Availability</label>
+								<select id="availability" bind:value={state.formData.availability} class="form-select w-full size-small">
+									<option value="available">Available</option>
+									<option value="cancelled">Cancelled</option>
+								</select>
+							</div>
+						{/if}
+					</div>
+					
+					{#if tour.capacity && state.formData.capacity !== tour.capacity}
+						<div class="text-xs mt-2 p-2 rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
+							Tour default: {tour.capacity} guests
+							<button
+								type="button"
+								onclick={() => {
+									state.formData.capacity = tour.capacity;
+									handleValidateField('capacity');
+								}}
+								class="ml-2 px-1.5 py-0.5 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+							>
+								Use default
+							</button>
+						</div>
+					{/if}
+
+					{#if isEditMode && hasBookings}
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							{currentSlot.bookedSpots} already booked • {state.formData.availability === 'cancelled' ? 'Cancelling will affect existing bookings' : 'Customers can book remaining spots'}
+						</p>
+					{:else if isEditMode}
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							{state.formData.availability === 'available' ? 'Customers can book this time slot' : 'This time slot will not be visible to customers'}
+						</p>
+					{:else}
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							Customers will be able to book this time slot once created
+						</p>
+					{/if}
+				</div>
+
+				<!-- Recurring Options -->
+				{#if !isEditMode}
+					<RecurringOptions
+						bind:formData={state.formData}
+						bind:showAdvanced={state.showAdvanced}
+						isEditMode={isEditMode}
+						onToggle={() => state.showAdvanced = !state.showAdvanced}
+						isMobile={true}
+					/>
+				{/if}
+			</div>
+
+			<!-- Desktop: Optimized layout -->
+			<div class="hidden md:block">
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<!-- Left Column: Date Selection -->
+					<div>
+						<DateSelection
+							bind:date={state.formData.date}
+							slotsMap={slotsMap()}
+							errors={allErrors}
+							isEditMode={isEditMode}
+							onDateChange={(date) => {
+								state.formData.date = date;
+								handleValidateField('date');
+							}}
+						/>
+						
+						<!-- Recurring Options - Move under calendar for better grouping -->
+						{#if !isEditMode}
+							<div class="mt-6">
+								<RecurringOptions
+									bind:formData={state.formData}
+									bind:showAdvanced={state.showAdvanced}
+									isEditMode={isEditMode}
+									onToggle={() => state.showAdvanced = !state.showAdvanced}
+								/>
+							</div>
+						{/if}
+					</div>
+					
+					<!-- Right Column: Time & Settings -->
+					<div class="space-y-6">
+						<!-- Time Selection - Compact layout -->
+						<div>
+							<label class="form-label mb-3">Time</label>
+							<div class="flex gap-3 items-start">
+								<div class="flex-1">
+									<TimePicker
+										bind:value={state.formData.startTime}
+										label="Start"
+										placeholder="Start time"
+										use24hour={true}
+										onchange={() => {
+											handleValidateField('startTime');
+										}}
+										error={hasFieldError(allErrors, 'startTime')}
+									/>
+								</div>
+								<div class="pt-8 text-sm" style="color: var(--text-tertiary);">to</div>
+								<div class="flex-1">
+									<TimePicker
+										bind:value={state.formData.endTime}
+										label="End"
+										placeholder="End time"
+										use24hour={true}
+										onchange={() => handleValidateField('endTime')}
+										error={hasFieldError(allErrors, 'endTime')}
+									/>
+								</div>
+							</div>
+							
+							<!-- Duration info and validation -->
+							<div class="mt-3 flex items-center justify-between">
+								<div class="text-sm" style="color: var(--text-secondary);">
+									Duration: 
+									<span class="font-medium">
+										{state.duration > 0 ? formatDuration(state.duration) : 'Not set'}
+									</span>
+									{#if tour.duration && state.duration !== tour.duration}
+										<span class="text-xs ml-1" style="color: var(--text-tertiary);">
+											(default: {formatDuration(tour.duration)})
+										</span>
+									{/if}
+								</div>
+								{#if state.customDuration && tour.duration}
+									<button
+										type="button"
+										onclick={resetDuration}
+										class="text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+										style="color: var(--color-primary-600);"
+									>
+										Use default
+									</button>
+								{/if}
+							</div>
+							
+							{#if getFieldError(allErrors, 'startTime')}
+								<p class="form-error mt-2">{getFieldError(allErrors, 'startTime')}</p>
+							{/if}
+							{#if getFieldError(allErrors, 'endTime')}
+								<p class="form-error mt-2">{getFieldError(allErrors, 'endTime')}</p>
+							{/if}
+							
+							{#if isEditMode && currentSlotTime}
+								<div class="text-sm mt-2" style="color: var(--text-tertiary);">
+									Current: {currentSlotTime.start} - {currentSlotTime.end}
+								</div>
+							{/if}
+						</div>
+						
+						<!-- Capacity & Availability -->
+						<div>
+							<div class="grid grid-cols-2 gap-4">
+								<div>
+									<NumberInput
+										id="capacity"
+										name="capacity"
+										label="Capacity"
+										bind:value={state.formData.capacity}
+										min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
+										max={500}
+										step={1}
+										placeholder="10"
+										incrementLabel="Increase capacity"
+										decrementLabel="Decrease capacity"
+										error={getFieldError(allErrors, 'capacity')}
+										hasError={hasFieldError(allErrors, 'capacity')}
+										integerOnly={true}
+										onblur={() => handleValidateField('capacity')}
+									/>
+								</div>
+								{#if isEditMode}
+									<div>
+										<label for="availability" class="form-label">Availability</label>
+										<select id="availability" bind:value={state.formData.availability} class="form-select w-full">
+											<option value="available">Available</option>
+											<option value="cancelled">Cancelled</option>
+										</select>
+									</div>
+								{/if}
+							</div>
+							
+							<!-- Capacity info -->
+							{#if tour.capacity && state.formData.capacity !== tour.capacity}
+								<div class="text-sm mt-2 p-2 rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
+									Tour default: {tour.capacity} guests
+									<button
+										type="button"
+										onclick={() => {
+											state.formData.capacity = tour.capacity;
+											handleValidateField('capacity');
+										}}
+										class="ml-2 text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+									>
+										Use default
+									</button>
+								</div>
+							{/if}
+							
+							{#if isEditMode && hasBookings}
+								<div class="text-sm mt-2 p-2 rounded" style="background: var(--color-warning-50); color: var(--color-warning-700);">
+									{currentSlot.bookedSpots} already booked
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Success Message - Simple inline success instead of bulky banner -->
+			{#if state.justCreatedSlot && mode === 'modal'}
+				<div class="mt-4 rounded-lg p-3 flex items-start gap-2" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+					<CheckCircle class="h-4 w-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+					<p class="text-sm" style="color: var(--color-success-700);">
+						Time slot created for {formatDate(state.lastCreatedDate)}
+					</p>
+				</div>
+			{/if}
+
+			<!-- Action Buttons - Always visible with consistent layout -->
+			<div class="mt-6 flex gap-3 {mode === 'inline' ? 'justify-end' : 'justify-between'}">
+				{#if mode !== 'inline' || existingSlots.length > 0}
+					<div class="flex gap-2">
+						{#if existingSlots.length > 0 && mode !== 'inline' && !isEditMode}
+							<button
+								type="button"
+								onclick={copyFromExisting}
+								class="button-secondary button--small button--gap"
+							>
+								<Copy class="h-4 w-4" />
+								Copy from recent
+							</button>
+						{/if}
+						{#if isEditMode}
+							<button
+								type="button"
+								onclick={() => state.showDeleteConfirm = true}
+								disabled={state.isDeleting}
+								class="button-danger button--gap"
+							>
+								{#if state.isDeleting}
+									<Loader2 class="w-4 h-4 animate-spin" />
+									Deleting...
+								{:else}
+									<Trash2 class="w-4 h-4" />
+									Delete
+								{/if}
+							</button>
+						{/if}
+					</div>
+				{/if}
+				
+				<div class="flex gap-3">
+					<button
+						type="button"
+						onclick={() => {
+							if (state.justCreatedSlot) {
+								state.justCreatedSlot = false;
+								onSuccess?.();
+							} else {
+								onCancel?.();
+							}
+						}}
+						disabled={state.isSubmitting}
+						class="button-secondary"
+					>
+						{state.justCreatedSlot ? 'Done' : 'Cancel'}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							if (state.justCreatedSlot) {
+								handleAddAnother();
+							} else {
+								handleSubmit();
+							}
+						}}
+						disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+						class="button-primary button--gap"
+					>
+						{#if state.isSubmitting}
+							<Loader2 class="w-4 h-4 animate-spin" />
+							{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
+						{:else if state.justCreatedSlot}
+							<Plus class="h-4 w-4" />
+							Create Another
+						{:else}
+							<CheckCircle class="w-4 h-4" />
+							{isEditMode ? 'Save Changes' : (state.showAdvanced && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
+						{/if}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+</div>
+
+<!-- Delete Confirmation Modal -->
+{#if state.showDeleteConfirm}
+	<ConfirmationModal
+		bind:isOpen={state.showDeleteConfirm}
+		title="Delete Time Slot"
+		message={hasBookings 
+			? `This slot has ${currentSlot.bookedSpots} active booking${currentSlot.bookedSpots === 1 ? '' : 's'}. Deleting will cancel all bookings. Consider notifying customers first.`
+			: 'Are you sure you want to delete this time slot? This action cannot be undone.'}
+		confirmText="Delete Slot"
+		cancelText="Cancel"
+		variant="danger"
+		icon={Trash2}
+		onConfirm={handleDelete}
+		onCancel={() => state.showDeleteConfirm = false}
+	/>
+{/if} 

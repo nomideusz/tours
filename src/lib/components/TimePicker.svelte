@@ -11,7 +11,6 @@
 		label = '',
 		required = false,
 		use24hour = true,
-		compact = false,
 		onchange
 	} = $props();
 
@@ -103,21 +102,21 @@
 		</label>
 	{/if}
 
-	<div class="time-picker-container rounded-lg {compact ? 'p-2' : 'p-3'}" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); {disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
-		<div class="flex items-center justify-center {compact ? 'gap-2' : 'gap-3'}">
+	<div class="time-picker-container rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); {disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
+		<div class="flex items-center justify-center gap-3">
 			<!-- Hours -->
 			<div class="flex flex-col items-center">
 				<button
 					type="button"
 					onclick={() => adjustHour(1)}
-					class="{compact ? 'p-0.5' : 'p-1'} rounded transition-colors hover:bg-gray-100"
+					class="p-1 rounded transition-colors hover:bg-gray-100"
 					style="color: var(--text-secondary);"
 				>
-					<ChevronUp class="{compact ? 'h-2.5 w-2.5' : 'h-3 w-3'}" />
+					<ChevronUp class="h-3 w-3" />
 				</button>
 				
 				<div 
-					class="{compact ? 'w-10 h-8' : 'w-12 h-10'} flex items-center justify-center rounded border {compact ? 'my-0.5' : 'my-1'} cursor-pointer transition-colors hover:bg-gray-50"
+					class="w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors hover:bg-gray-50"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingHour && startEditingHour()}
 				>
@@ -130,12 +129,12 @@
 								if (e.key === 'Enter') finishEditingHour();
 								if (e.key === 'Escape') { editingHour = false; hourInput = ''; }
 							}}
-							class="w-full h-full text-center font-mono {compact ? 'text-sm' : ''} font-semibold bg-transparent border-none outline-none"
+							class="w-full h-full text-center font-mono font-semibold bg-transparent border-none outline-none"
 							style="color: var(--text-primary);"
 							autofocus
 						/>
 					{:else}
-						<span class="font-mono {compact ? 'text-sm' : ''} font-semibold" style="color: var(--text-primary);">
+						<span class="font-mono font-semibold" style="color: var(--text-primary);">
 							{selectedHour.toString().padStart(2, '0')}
 						</span>
 					{/if}
@@ -144,31 +143,31 @@
 				<button
 					type="button"
 					onclick={() => adjustHour(-1)}
-					class="{compact ? 'p-0.5' : 'p-1'} rounded transition-colors hover:bg-gray-100"
+					class="p-1 rounded transition-colors hover:bg-gray-100"
 					style="color: var(--text-secondary);"
 				>
-					<ChevronDown class="{compact ? 'h-2.5 w-2.5' : 'h-3 w-3'}" />
+					<ChevronDown class="h-3 w-3" />
 				</button>
 				
-				<span class="{compact ? 'text-[10px]' : 'text-xs'} {compact ? 'mt-0.5' : 'mt-1'}" style="color: var(--text-tertiary);">Hr</span>
+				<span class="text-xs mt-1" style="color: var(--text-tertiary);">Hr</span>
 			</div>
 
 			<!-- Separator -->
-			<div class="{compact ? 'text-lg mb-3' : 'text-xl mb-4'} font-bold" style="color: var(--text-tertiary);">:</div>
+			<div class="text-xl font-bold mb-4" style="color: var(--text-tertiary);">:</div>
 
 			<!-- Minutes -->
 			<div class="flex flex-col items-center">
 				<button
 					type="button"
 					onclick={() => adjustMinute(15)}
-					class="{compact ? 'p-0.5' : 'p-1'} rounded transition-colors hover:bg-gray-100"
+					class="p-1 rounded transition-colors hover:bg-gray-100"
 					style="color: var(--text-secondary);"
 				>
-					<ChevronUp class="{compact ? 'h-2.5 w-2.5' : 'h-3 w-3'}" />
+					<ChevronUp class="h-3 w-3" />
 				</button>
 				
 				<div 
-					class="{compact ? 'w-10 h-8' : 'w-12 h-10'} flex items-center justify-center rounded border {compact ? 'my-0.5' : 'my-1'} cursor-pointer transition-colors hover:bg-gray-50"
+					class="w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors hover:bg-gray-50"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingMinute && startEditingMinute()}
 				>
@@ -181,12 +180,12 @@
 								if (e.key === 'Enter') finishEditingMinute();
 								if (e.key === 'Escape') { editingMinute = false; minuteInput = ''; }
 							}}
-							class="w-full h-full text-center font-mono {compact ? 'text-sm' : ''} font-semibold bg-transparent border-none outline-none"
+							class="w-full h-full text-center font-mono font-semibold bg-transparent border-none outline-none"
 							style="color: var(--text-primary);"
 							autofocus
 						/>
 					{:else}
-						<span class="font-mono {compact ? 'text-sm' : ''} font-semibold" style="color: var(--text-primary);">
+						<span class="font-mono font-semibold" style="color: var(--text-primary);">
 							{selectedMinute.toString().padStart(2, '0')}
 						</span>
 					{/if}
@@ -195,13 +194,13 @@
 				<button
 					type="button"
 					onclick={() => adjustMinute(-15)}
-					class="{compact ? 'p-0.5' : 'p-1'} rounded transition-colors hover:bg-gray-100"
+					class="p-1 rounded transition-colors hover:bg-gray-100"
 					style="color: var(--text-secondary);"
 				>
-					<ChevronDown class="{compact ? 'h-2.5 w-2.5' : 'h-3 w-3'}" />
+					<ChevronDown class="h-3 w-3" />
 				</button>
 				
-				<span class="{compact ? 'text-[10px]' : 'text-xs'} {compact ? 'mt-0.5' : 'mt-1'}" style="color: var(--text-tertiary);">Min</span>
+				<span class="text-xs mt-1" style="color: var(--text-tertiary);">Min</span>
 			</div>
 		</div>
 	</div>
@@ -211,10 +210,6 @@
 	.time-picker-container {
 		max-width: 12rem;
 		width: 100%;
-	}
-	
-	.time-picker-container:global(.p-2) {
-		max-width: 10rem;
 	}
 	
 	@media (max-width: 640px) {
