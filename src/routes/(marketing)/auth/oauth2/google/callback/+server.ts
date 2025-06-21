@@ -99,38 +99,8 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
         const { generateUniqueUsername } = await import('$lib/utils/username.js');
         const username = await generateUniqueUsername(userName);
         
-        // Detect country from request headers (Accept-Language or default)
-        const acceptLanguage = request.headers.get('accept-language') || '';
-        let detectedCountry = 'DE'; // Default to Germany
-        let detectedCurrency = 'EUR';
-        
-        // Simple country detection from Accept-Language header
-        const languageCountryMap: Record<string, string> = {
-          'en-US': 'US', 'en-GB': 'GB', 'de': 'DE', 'fr': 'FR', 'es': 'ES',
-          'it': 'IT', 'pl': 'PL', 'nl': 'NL', 'pt': 'PT', 'sv': 'SE',
-          'no': 'NO', 'da': 'DK', 'fi': 'FI', 'cs': 'CZ', 'ja': 'JP'
-        };
-        
-        const countryCurrencyMap: Record<string, string> = {
-          'US': 'USD', 'GB': 'GBP', 'JP': 'JPY', 'CA': 'CAD', 'AU': 'AUD',
-          'CH': 'CHF', 'SE': 'SEK', 'NO': 'NOK', 'DK': 'DKK', 'PL': 'PLN',
-          'CZ': 'CZK', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
-          'NL': 'EUR', 'BE': 'EUR', 'AT': 'EUR', 'PT': 'EUR'
-        };
-        
-        // Parse Accept-Language header
-        const primaryLang = acceptLanguage.split(',')[0]?.split(';')[0]?.trim().toLowerCase();
-        if (primaryLang) {
-          for (const [lang, country] of Object.entries(languageCountryMap)) {
-            if (primaryLang.startsWith(lang)) {
-              detectedCountry = country;
-              detectedCurrency = countryCurrencyMap[country] || 'EUR';
-              break;
-            }
-          }
-        }
-        
-        console.log(`🌍 OAuth user country detection: ${detectedCountry}, currency: ${detectedCurrency}`);
+        // Don't auto-detect country for OAuth users - let them set it up later
+        console.log('🌍 OAuth user will configure country/currency during onboarding');
         
         await db.insert(users).values({
           id: newUserId,
@@ -140,8 +110,8 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
           avatar: googleUser.picture,
           emailVerified: true, // Google emails are pre-verified
           hashedPassword: null, // No password for OAuth users
-          country: detectedCountry,
-          currency: detectedCurrency
+          country: null, // Let user set this during onboarding
+          // currency will use database default (EUR) until user confirms
         });
 
         await db.insert(oauthAccounts).values({

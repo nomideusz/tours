@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { sendBookingEmail, type EmailType } from '$lib/email.server.js';
+import { sendBookingEmail } from '$lib/email.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';

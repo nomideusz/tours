@@ -27,8 +27,9 @@ export const actions: Actions = {
 		const confirmPassword = data.get('confirmPassword')?.toString();
 		const businessName = data.get('businessName')?.toString();
 		const location = data.get('location')?.toString();
-		const country = data.get('country')?.toString() || '';
-		const currency = data.get('currency')?.toString() || 'EUR';
+		// Don't set country/currency during registration - let users confirm later
+		// Country can be null, currency will use database default (EUR)
+		const country = null;
 
 		// Validation
 		if (!username) {
@@ -99,13 +100,13 @@ export const actions: Actions = {
 				businessName,
 				location,
 				country,
-				currency,
+				// currency will use database default (EUR) until user confirms their country
 				createdAt: new Date(),
 				updatedAt: new Date()
 			};
 			
 			await db.insert(users).values(userData);
-			console.log('User created successfully:', userId, 'with username:', username, 'country:', country, 'currency:', currency);
+			console.log('User created successfully:', userId, 'with username:', username, 'country:', country);
 			
 			// Create email verification token and send verification email
 			try {

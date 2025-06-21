@@ -4,6 +4,7 @@ import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { formatPhoneForStripe } from '$lib/utils/phone-formatter.js';
+import { getStripeLocale } from '$lib/utils/locale-mapper.js';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
@@ -28,6 +29,9 @@ export const POST: RequestHandler = async ({ request, url }) => {
         const userPhone = formatPhoneForStripe(user.phone);
         const userWebsite = user.website || '';
         const userLocation = user.location || '';
+        
+        // Get the locale for consistent experience
+        const locale = getStripeLocale(userCountry);
         
         // Determine return URL - use provided returnUrl or default to profile
         const finalReturnUrl = returnUrl || `${url.origin}/profile`;
@@ -158,24 +162,49 @@ export const POST: RequestHandler = async ({ request, url }) => {
         // Check if account needs onboarding or is ready for dashboard
         const account = await stripe.accounts.retrieve(accountId);
         
-        let accountLink;
+        let finalUrl;
         if (account.details_submitted) {
             // Account is complete, create login link for dashboard
             const loginLink = await stripe.accounts.createLoginLink(accountId);
-            accountLink = { url: loginLink.url };
+            finalUrl = loginLink.url;
         } else {
             // Account needs onboarding
-            accountLink = await stripe.accountLinks.create({
+            // Create account link
+            const accountLink = await stripe.accountLinks.create({
                 account: accountId,
                 refresh_url: setupRefreshUrl,
                 return_url: setupCompleteUrl,
                 type: 'account_onboarding',
+                collect: 'currently_due', // Only collect required fields
             });
+            
+            // Append locale parameter to the URL to force the correct language
+            // This helps override IP-based locale detection
+            const urlWithLocale = new URL(accountLink.url);
+            urlWithLocale.searchParams.set('locale', locale);
+            finalUrl = urlWithLocale.toString();
+            
+            console.log(`✅ Created account link for country: ${userCountry} with locale: ${locale}`);
         }
 
-        return json({ accountLink: accountLink.url });
+        return json({ accountLink: finalUrl });
     } catch (error) {
         console.error('Stripe Connect setup error:', error);
+        
+        // Provide more specific error messages
+        if (error instanceof Error) {
+            if (error.message.includes('account') || error.message.includes('Account')) {
+                return json({ 
+                    error: 'Failed to access payment account. If you previously created an account with a different country, you may need to contact support.',
+                    details: error.message 
+                }, { status: 500 });
+            }
+            return json({ 
+                error: error.message || 'Failed to setup payment account',
+                details: error.message 
+            }, { status: 500 });
+        }
+        
         return json({ error: 'Failed to setup payment account' }, { status: 500 });
     }
 }; 

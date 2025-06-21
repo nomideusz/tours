@@ -17,6 +17,7 @@
 	import type { AuthUser } from '$lib/stores/auth.js';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 
 	// TanStack Query for API-only data fetching
 	import { createQuery } from '@tanstack/svelte-query';
@@ -79,6 +80,10 @@
 
 	// Payment setup loading state
 	let isSettingUpPayment = $state(false);
+	
+	// Payment confirmation modal state
+	let showPaymentConfirmModal = $state(false);
+	let pendingPaymentCountry = $state<string | null>(null);
 
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
@@ -180,7 +185,7 @@
 
 	// Currency confirmation state
 	let selectedCurrency = $state<Currency>($userCurrency);
-	let selectedCountry = $state(profile?.country || '');
+	let selectedCountry = $state('');
 	let savingCurrency = $state(false);
 	let saveSuccess = $state(false);
 	let saveError = $state<string | null>(null);
@@ -402,26 +407,23 @@
 		}
 	});
 
-	// Payment setup function with return URL and loading state
-	async function setupPayments() {
+	// Payment setup function - shows confirmation modal
+	function setupPayments() {
 		if (!profile || isSettingUpPayment) return;
 
 		// Get the country for payment setup
 		const userCountry = profile.country || selectedCountry || 'US';
-		const countryInfo = COMMON_COUNTRIES.find(c => c.code === userCountry);
-		
-		// Show confirmation dialog
-		const confirmed = confirm(
-			`You are about to create a payment account for ${countryInfo?.name || userCountry}.\n\n` +
-			`This CANNOT be changed later due to financial regulations.\n\n` +
-			`Is ${countryInfo?.name || userCountry} the correct country for your business?`
-		);
-		
-		if (!confirmed) {
-			return;
-		}
+		pendingPaymentCountry = userCountry;
+		showPaymentConfirmModal = true;
+	}
+	
+	// Actually setup payments after confirmation
+	async function confirmPaymentSetup() {
+		if (!profile || !pendingPaymentCountry || isSettingUpPayment) return;
 
+		showPaymentConfirmModal = false;
 		isSettingUpPayment = true;
+		
 		try {
 			const response = await fetch('/api/payments/connect/setup', {
 				method: 'POST',
@@ -430,23 +432,25 @@
 					userId: profile.id,
 					email: profile.email,
 					businessName: profile.businessName || profile.name,
-					country: userCountry,
+					country: pendingPaymentCountry,
 					returnUrl: `${window.location.origin}/dashboard?setup=complete`
 				})
 			});
 
 			if (!response.ok) {
 				const errorData = await response.json();
+				console.error('Payment setup API error:', errorData);
 				throw new Error(errorData.error || 'Failed to setup payment account');
 			}
 
 			const { accountLink } = await response.json();
-			// Open in new tab to preserve dashboard context
-			window.open(accountLink, '_blank', 'noopener,noreferrer');
+			window.location.href = accountLink;
 		} catch (error) {
 			console.error('Payment setup error:', error);
 			saveError = error instanceof Error ? error.message : 'Failed to setup payment account';
 			isSettingUpPayment = false;
+		} finally {
+			pendingPaymentCountry = null;
 		}
 	}
 
@@ -1122,6 +1126,9 @@
 												Connect with Stripe
 											{/if}
 										</button>
+										<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
+											Stripe will use your selected country for payment processing
+										</p>
 									{/if}
 								</div>
 							</div>
@@ -1857,6 +1864,29 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Payment Confirmation Modal -->
+{#if showPaymentConfirmModal && pendingPaymentCountry}
+	{@const countryInfo = COMMON_COUNTRIES.find(c => c.code === pendingPaymentCountry)}
+	<ConfirmationModal
+		isOpen={showPaymentConfirmModal}
+		title="Confirm Payment Account Country"
+		message="You are about to create a payment account for {countryInfo?.flag || ''} {countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered."
+		confirmText="Yes, {countryInfo?.name || pendingPaymentCountry} is correct"
+		cancelText="Cancel"
+		variant="warning"
+		icon={Globe}
+		onConfirm={confirmPaymentSetup}
+		onCancel={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+		onClose={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+	/>
+{/if}
 
 <style>
 	.opacity-50 {

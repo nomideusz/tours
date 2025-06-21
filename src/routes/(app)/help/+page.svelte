@@ -21,7 +21,6 @@
 	<PageHeader 
 		title="Help Center" 
 		subtitle="Get help with managing your tours and bookings"
-		icon={HelpCircle}
 	/>
 
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">

@@ -7,7 +7,6 @@
 	import { getAvailableOAuth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { detectCountry } from '$lib/utils/country-detector.js';
 
 
 	// Define the type for our form data
@@ -41,57 +40,10 @@
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
-	
-	// Country/currency detection
-	let detectedCountry = $state('');
-	let detectedCurrency = $state('EUR');
-	
-	// Country to currency mapping (same as in profile)
-	const countryCurrencyMap: Record<string, string> = {
-		'US': 'USD',
-		'GB': 'GBP', 
-		'UK': 'GBP',
-		'JP': 'JPY',
-		'CA': 'CAD',
-		'AU': 'AUD',
-		'CH': 'CHF',
-		'SE': 'SEK',
-		'NO': 'NOK',
-		'DK': 'DKK',
-		'PL': 'PLN',
-		'CZ': 'CZK',
-		'DE': 'EUR',
-		'FR': 'EUR',
-		'IT': 'EUR',
-		'ES': 'EUR',
-		'NL': 'EUR',
-		'BE': 'EUR',
-		'AT': 'EUR',
-		'PT': 'EUR',
-		'IE': 'EUR',
-		'FI': 'EUR',
-		'GR': 'EUR',
-		'LU': 'EUR',
-		'MT': 'EUR',
-		'CY': 'EUR',
-		'SK': 'EUR',
-		'SI': 'EUR',
-		'EE': 'EUR',
-		'LV': 'EUR',
-		'LT': 'EUR'
-	};
 
 	// Load available OAuth2 providers
 	onMount(async () => {
 		availableProviders = await getAvailableOAuth2Providers();
-		
-		// Detect country and currency on client-side
-		if (browser) {
-			const country = detectCountry();
-			detectedCountry = country;
-			detectedCurrency = countryCurrencyMap[country] || 'EUR';
-			console.log(`🌍 Detected country: ${country}, suggested currency: ${detectedCurrency}`);
-		}
 	});
 
 	// Validate form inputs
@@ -319,9 +271,7 @@
 					{/if}
 				</div>
 
-				<!-- Hidden fields for detected country and currency -->
-				<input type="hidden" name="country" value={detectedCountry} />
-				<input type="hidden" name="currency" value={detectedCurrency} />
+				<!-- Don't auto-detect country during registration - let users set it up later -->
 
 				<button
 					type="submit"
