@@ -75,8 +75,8 @@ export const load: PageServerLoad = async ({ url, locals }) => {
                 console.warn('⚠️ Error sending verification notification:', notificationError);
             }
             
-            // Redirect immediately after successful verification
-            throw redirect(302, '/dashboard');
+            // Redirect immediately after successful verification with success parameter
+            throw redirect(302, '/dashboard?verified=true');
         }
 
         return { error: 'User not found' };
@@ -160,8 +160,8 @@ export const actions: Actions = {
                     // Don't fail the verification if notification fails
                 }
                 
-                // Redirect to dashboard after successful verification
-                throw redirect(302, '/dashboard');
+                // Redirect to dashboard after successful verification with success parameter
+                throw redirect(302, '/dashboard?verified=true');
             }
 
             return fail(404, { error: 'User not found' });

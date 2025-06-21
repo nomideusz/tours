@@ -7,7 +7,7 @@ import { formatPhoneForStripe } from '$lib/utils/phone-formatter.js';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
-        const { userId, email, businessName, country } = await request.json();
+        const { userId, email, businessName, country, returnUrl } = await request.json();
 
         if (!userId || !email) {
             return json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,6 +28,11 @@ export const POST: RequestHandler = async ({ request, url }) => {
         const userPhone = formatPhoneForStripe(user.phone);
         const userWebsite = user.website || '';
         const userLocation = user.location || '';
+        
+        // Determine return URL - use provided returnUrl or default to profile
+        const finalReturnUrl = returnUrl || `${url.origin}/profile`;
+        const setupCompleteUrl = `${finalReturnUrl}${finalReturnUrl.includes('?') ? '&' : '?'}setup=complete`;
+        const setupRefreshUrl = `${finalReturnUrl}${finalReturnUrl.includes('?') ? '&' : '?'}setup=refresh`;
         
         const stripe = getStripe();
         let accountId = user.stripeAccountId;
@@ -97,6 +102,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
                     hasLocation: userLocation ? 'true' : 'false',
                     hasPhone: userPhone ? 'true' : 'false',
                     hasWebsite: userWebsite ? 'true' : 'false',
+                    returnUrl: finalReturnUrl, // Store return URL for later reference
                 };
             }
             
@@ -144,7 +150,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 originalPhone: user.phone ? `${user.phone.substring(0, 10)}...` : 'none',
                 hasWebsite: !!userWebsite,
                 hasLocation: !!userLocation,
-                hasName: !!user.name
+                hasName: !!user.name,
+                returnUrl: finalReturnUrl
             });
         }
 
@@ -160,8 +167,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
             // Account needs onboarding
             accountLink = await stripe.accountLinks.create({
                 account: accountId,
-                refresh_url: `${url.origin}/profile?setup=refresh`,
-                return_url: `${url.origin}/profile?setup=complete`,
+                refresh_url: setupRefreshUrl,
+                return_url: setupCompleteUrl,
                 type: 'account_onboarding',
             });
         }
