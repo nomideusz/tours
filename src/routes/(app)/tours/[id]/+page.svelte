@@ -29,6 +29,7 @@
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Portal from '$lib/components/Portal.svelte';
+	import StyledQRCode from '$lib/components/StyledQRCode.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -196,7 +197,16 @@
 	function downloadQR() {
 		if (!browser || !tour.qrCode) return;
 		const link = document.createElement('a');
-		link.href = getQRImageUrl();
+		// Generate a high-resolution QR code for download
+		const downloadUrl = generateQRImageURL(tour.qrCode, {
+			size: 1000, // High resolution for print
+			color: '000000', // Black for better printing and compatibility
+			backgroundColor: 'FFFFFF',
+			style: 'default',
+			margin: 4,
+			errorCorrection: 'H'
+		});
+		link.href = downloadUrl;
 		link.download = `qr-${tour.name.replace(/[^a-zA-Z0-9]/g, '-')}.png`;
 		link.click();
 	}
@@ -407,30 +417,20 @@
 				<!-- Mobile Layout -->
 				<div class="sm:hidden">
 					<div class="flex items-center gap-4">
-						<div class="flex-shrink-0">
+						<div class="flex-shrink-0 relative">
 							<Tooltip text="Tap to copy booking URL" position="right">
-								<button
+								<StyledQRCode
+									qrCode={tour.qrCode}
+									tourName={tour.name}
+									size={100}
+									style="modern"
 									onclick={() => copyQRUrl()}
-									class="relative w-20 h-20 rounded-lg overflow-hidden transition-all duration-200 active:scale-95"
-									style="border: 1px solid var(--border-primary);"
-								>
-									{#if copiedQRCode}
-										<div class="w-full h-full flex items-center justify-center" style="background: var(--color-success-light);">
-											<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
-										</div>
-									{:else if browser}
-										<img 
-											src={getQRImageUrl()} 
-											alt="QR Code for {tour.name}"
-											class="w-full h-full object-cover"
-											loading="lazy"
-										/>
-									{:else}
-										<div class="w-full h-full flex items-center justify-center" style="background: var(--bg-secondary);">
-											<QrCode class="h-8 w-8" style="color: var(--text-tertiary);" />
-										</div>
-									{/if}
-								</button>
+								/>
+								{#if copiedQRCode}
+									<div class="absolute inset-0 flex items-center justify-center rounded-2xl" style="background: var(--color-success-light); backdrop-filter: blur(4px);">
+										<CheckCircle class="h-8 w-8" style="color: var(--color-success);" />
+									</div>
+								{/if}
 							</Tooltip>
 						</div>
 						<div class="flex-1 min-w-0">
@@ -465,13 +465,20 @@
 				<div class="hidden sm:block">
 					<div class="flex flex-col justify-center p-6 rounded-xl" style="background: var(--bg-secondary);">
 						<div class="text-center">
-							<div class="inline-block p-3 rounded-lg mb-4" style="background: var(--bg-primary);">
-								<img 
-									src={getQRImageUrl()} 
-									alt="QR Code for {tour.name}"
-									class="w-32 h-32 mx-auto"
-									loading="lazy"
+							<div class="inline-block mb-4 relative">
+								<StyledQRCode
+									qrCode={tour.qrCode}
+									tourName={tour.name}
+									size={180}
+									style="premium"
+									showLabel={true}
+									onclick={() => copyQRUrl()}
 								/>
+								{#if copiedQRCode}
+									<div class="absolute inset-0 flex items-center justify-center rounded-2xl" style="background: var(--color-success-light); backdrop-filter: blur(4px);">
+										<CheckCircle class="h-12 w-12" style="color: var(--color-success);" />
+									</div>
+								{/if}
 							</div>
 							<p class="text-sm font-medium break-all px-4 py-2 rounded-md mb-4" style="color: var(--text-primary); background: var(--bg-primary);">{getBookingUrl()}</p>
 							<div class="flex justify-center gap-2">

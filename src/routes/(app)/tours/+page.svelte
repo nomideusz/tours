@@ -17,6 +17,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import StyledQRCode from '$lib/components/StyledQRCode.svelte';
 	import type { Tour } from '$lib/types.js';
 	
 	// TanStack Query
@@ -455,29 +456,20 @@
 						{#if tour.qrCode}
 							<div class="absolute bottom-3 right-3">
 								<Tooltip text="Click to copy booking URL" position="top-left">
-									<button
-										onclick={(e) => { e.stopPropagation(); copyQRUrl(tour); }}
-										class="qr-button relative w-20 h-20 rounded-lg overflow-hidden bg-white shadow-lg hover:shadow-xl transition-shadow duration-200 active:scale-95"
-									>
-										{#if browser}
-											<img 
-												src={getQRImageUrl(tour, 200)} 
-												alt="QR Code for {tour.name}"
-												class="w-full h-full object-cover"
-												loading="lazy"
-											/>
-										{:else}
-											<div class="w-full h-full flex items-center justify-center bg-white">
-												<QrCode class="h-6 w-6" style="color: #000;" />
-											</div>
-										{/if}
-										
+									<div class="qr-button">
+										<StyledQRCode
+											qrCode={tour.qrCode}
+											tourName={tour.name}
+											size={100}
+											style="modern"
+											onclick={(e) => { e.stopPropagation(); copyQRUrl(tour); }}
+										/>
 										{#if copiedQRCode === tour.qrCode}
-											<div class="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm">
-												<Check class="h-3 w-3" style="color: var(--text-secondary);" />
+											<div class="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm z-10">
+												<Check class="h-3 w-3" style="color: var(--color-success);" />
 											</div>
 										{/if}
-									</button>
+									</div>
 								</Tooltip>
 							</div>
 						{/if}
@@ -685,6 +677,12 @@
 		/* Only the image container needs overflow hidden */
 		overflow: hidden;
 		border-radius: 0.75rem 0.75rem 0 0;
+	}
+	
+	/* QR button container */
+	.qr-button {
+		position: relative;
+		display: inline-block;
 	}
 	
 	/* Ensure dropdown has proper contrast in dark mode */
