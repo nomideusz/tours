@@ -49,6 +49,13 @@
 	// Initialize state
 	const state = createTimeSlotFormState();
 	
+	// Reset state when component mounts or when mode changes
+	$effect(() => {
+		if (!slotId) {
+			state.initialDefaults = false;
+		}
+	});
+	
 	// Initialize mutations
 	const createSlotMutation = createTimeSlotMutation(tourId);
 	const updateSlotMutation = isEditMode && slotId ? updateTimeSlotMutation(tourId, slotId) : null;
@@ -74,6 +81,11 @@
 	let allSlots = $derived($scheduleQuery.data?.timeSlots || []);
 	let currentSlot = $derived(isEditMode ? allSlots.find((slot: any) => slot.id === slotId) : null);
 	let existingSlots = $derived(isEditMode ? allSlots.filter((slot: any) => slot.id !== slotId) : allSlots);
+	// Always use fresh data for conflict checking
+	let freshSlots = $derived((() => {
+		const slots = $scheduleQuery.data?.timeSlots || [];
+		return isEditMode ? slots.filter((slot: any) => slot.id !== slotId) : slots;
+	})());
 	let isLoading = $derived(propTour ? $scheduleQuery.isLoading : ($tourQuery?.isLoading || $scheduleQuery.isLoading));
 
 	// Create slots map for MiniMonthCalendar
@@ -109,35 +121,68 @@
 			// Get fresh slots data
 			const currentSlots = $scheduleQuery.data?.timeSlots || [];
 			
-			// Set default date to preselected date or tomorrow
+			// Set default date to preselected date or today/tomorrow
 			let defaultDate = preselectedDate;
 			if (!defaultDate) {
+				const today = new Date();
 				const tomorrow = new Date();
 				tomorrow.setDate(tomorrow.getDate() + 1);
-				defaultDate = tomorrow.toISOString().split('T')[0];
+				
+				// Use today if it's before 8 PM, otherwise tomorrow
+				if (today.getHours() < 20) {
+					defaultDate = today.toISOString().split('T')[0];
+				} else {
+					defaultDate = tomorrow.toISOString().split('T')[0];
+				}
 			}
 			
-			// Find smart default time that doesn't conflict
-			const smartTime = findNextAvailableTime(
-				defaultDate, 
-				state.customDuration, 
-				null,
-				'',
-				currentSlots,
-				tour.duration
-			);
+			// Try to find an available slot, checking multiple days if necessary
+			let targetDate = defaultDate;
+			let smartTime = null;
+			let daysChecked = 0;
+			const maxDaysToCheck = 30; // Check up to 30 days ahead
 			
-			// If suggested new date, update the date
-			if (smartTime.suggestedNewDate && !preselectedDate) {
-				const newDate = new Date(defaultDate);
-				newDate.setDate(newDate.getDate() + 1);
-				state.formData.date = newDate.toISOString().split('T')[0];
-			} else {
-				state.formData.date = defaultDate;
+			while (daysChecked < maxDaysToCheck) {
+				smartTime = findNextAvailableTime(
+					targetDate, 
+					state.customDuration, 
+					null,
+					'',
+					currentSlots,
+					tour.duration
+				);
+				
+				// If we found a non-conflicting time on this date, use it
+				if (!smartTime.suggestedNewDate) {
+					break;
+				}
+				
+				// If this is a preselected date, don't change it
+				if (preselectedDate) {
+					break;
+				}
+				
+				// Move to next day
+				const nextDate = new Date(targetDate);
+				nextDate.setDate(nextDate.getDate() + 1);
+				targetDate = nextDate.toISOString().split('T')[0];
+				daysChecked++;
 			}
 			
-			state.formData.startTime = smartTime.startTime;
-			state.formData.endTime = smartTime.endTime;
+			// Set the date and times
+			state.formData.date = targetDate;
+			state.formData.startTime = smartTime?.startTime || '10:00';
+			state.formData.endTime = smartTime?.endTime || getEndTimeFromDuration('10:00', tour.duration);
+			
+			// If we couldn't find a non-conflicting slot and there are many existing slots,
+			// show a helpful message (with a small delay to avoid flashing during init)
+			if (daysChecked >= maxDaysToCheck || (smartTime?.suggestedNewDate && currentSlots.length > 20)) {
+				setTimeout(() => {
+					if (!state.touchedFields.has('date')) {
+						state.setError('Your schedule is quite full. Please select a specific date to see available times.');
+					}
+				}, 300);
+			}
 		}
 	});
 
@@ -242,7 +287,7 @@
 			state.formData.recurring = false;
 			state.formData.recurringType = 'weekly';
 			state.formData.recurringEnd = '';
-			state.formData.recurringCount = 1;
+			state.formData.recurringCount = 2;
 		}
 	});
 
@@ -264,9 +309,20 @@
 	}
 
 	function copyFromExisting() {
-		if (existingSlots.length === 0) return;
+		// Use fresh slots data
+		const currentSlots = $scheduleQuery.data?.timeSlots || [];
+		const slotsToUse = isEditMode ? 
+			currentSlots.filter((slot: any) => slot.id !== slotId) : 
+			currentSlots;
+			
+		if (slotsToUse.length === 0) return;
 		
-		const recent = existingSlots[0];
+		// Sort by most recent start time
+		const sortedSlots = [...slotsToUse].sort((a: any, b: any) => 
+			new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+		);
+		
+		const recent = sortedSlots[0];
 		const recentStart = new Date(recent.startTime);
 		const recentEnd = new Date(recent.endTime);
 		

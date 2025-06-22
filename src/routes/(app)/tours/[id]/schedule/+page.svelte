@@ -170,7 +170,11 @@
 	function openNewSlot(date?: string) {
 		editingSlotId = undefined;
 		preselectedDate = date;
-		showSlotDrawer = true;
+		// Close and reopen to force state reset
+		showSlotDrawer = false;
+		setTimeout(() => {
+			showSlotDrawer = true;
+		}, 50);
 	}
 
 	// Handle opening drawer for editing
