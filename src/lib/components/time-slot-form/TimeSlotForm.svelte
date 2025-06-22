@@ -106,24 +106,36 @@
 			state.formData.capacity = tour.capacity;
 			state.formData.availability = 'available';
 			
+			// Get fresh slots data
+			const currentSlots = $scheduleQuery.data?.timeSlots || [];
+			
 			// Set default date to preselected date or tomorrow
-			if (preselectedDate) {
-				state.formData.date = preselectedDate;
-			} else {
+			let defaultDate = preselectedDate;
+			if (!defaultDate) {
 				const tomorrow = new Date();
 				tomorrow.setDate(tomorrow.getDate() + 1);
-				state.formData.date = tomorrow.toISOString().split('T')[0];
+				defaultDate = tomorrow.toISOString().split('T')[0];
 			}
 			
 			// Find smart default time that doesn't conflict
 			const smartTime = findNextAvailableTime(
-				state.formData.date, 
+				defaultDate, 
 				state.customDuration, 
 				null,
 				'',
-				existingSlots,
+				currentSlots,
 				tour.duration
 			);
+			
+			// If suggested new date, update the date
+			if (smartTime.suggestedNewDate && !preselectedDate) {
+				const newDate = new Date(defaultDate);
+				newDate.setDate(newDate.getDate() + 1);
+				state.formData.date = newDate.toISOString().split('T')[0];
+			} else {
+				state.formData.date = defaultDate;
+			}
+			
 			state.formData.startTime = smartTime.startTime;
 			state.formData.endTime = smartTime.endTime;
 		}
@@ -146,22 +158,37 @@
 		}
 	});
 
-	// Smart time adjustment when date changes in create mode
+		// Smart time adjustment when date changes in create mode
 	$effect(() => {
 		if (state.formData.date && tour && !isEditMode && !$scheduleQuery.isLoading) {
 			// Only auto-adjust if we haven't manually set times yet
 			const hasManualTimes = state.touchedFields.has('startTime') || state.touchedFields.has('endTime');
-			if (!hasManualTimes) {
+			if (!hasManualTimes && !state.isAddingAnother) {
+				// Get fresh slots data
+				const currentSlots = $scheduleQuery.data?.timeSlots || [];
+				
 				const smartTime = findNextAvailableTime(
 					state.formData.date, 
 					state.customDuration, 
 					null,
 					'',
-					existingSlots,
+					currentSlots,
 					tour.duration
 				);
-				state.formData.startTime = smartTime.startTime;
-				state.formData.endTime = smartTime.endTime;
+				
+				// Only update times if no conflict found on current date
+				// If suggestedNewDate is true, user should manually change the date
+				if (!smartTime.suggestedNewDate) {
+					state.formData.startTime = smartTime.startTime;
+					state.formData.endTime = smartTime.endTime;
+					// Clear any date warning
+					if (state.error?.includes('slots available')) {
+						state.setError(null);
+					}
+				} else if (!state.touchedFields.has('date')) {
+					// Show warning that no slots are available on this date
+					state.setError('No time slots available on this date. Try selecting a different date.');
+				}
 			}
 		}
 	});
@@ -186,9 +213,24 @@
 
 	// Check for conflicts when date/time changes
 	$effect(() => {
-		if (state.formData.date && state.formData.startTime && state.formData.endTime && existingSlots.length > 0 && !state.justCreatedSlot && !state.isAddingAnother) {
-			const conflicts = checkConflicts(state.formData.date, state.formData.startTime, state.formData.endTime, existingSlots);
-			state.setConflicts(conflicts);
+		// Don't check conflicts while schedule is loading or when adding another slot
+		if ($scheduleQuery.isLoading || state.isAddingAnother || state.justCreatedSlot || state.isSubmitting) {
+			return;
+		}
+		
+		if (state.formData.date && state.formData.startTime && state.formData.endTime) {
+			// Get fresh slots data
+			const currentSlots = $scheduleQuery.data?.timeSlots || [];
+			const slotsToCheck = isEditMode ? 
+				currentSlots.filter((slot: any) => slot.id !== slotId) : 
+				currentSlots;
+			
+			if (slotsToCheck.length > 0) {
+				const conflicts = checkConflicts(state.formData.date, state.formData.startTime, state.formData.endTime, slotsToCheck);
+				state.setConflicts(conflicts);
+			} else {
+				state.setConflicts([]);
+			}
 		}
 	});
 
@@ -252,9 +294,22 @@
 			return;
 		}
 		
-		// Check for conflicts
-		if (state.conflicts.length > 0) {
-			state.setError('Please resolve time conflicts before saving');
+		// Double-check for conflicts with latest data
+		const currentSlots = $scheduleQuery.data?.timeSlots || [];
+		const latestExistingSlots = isEditMode ? 
+			currentSlots.filter((slot: any) => slot.id !== slotId) : 
+			currentSlots;
+		
+		const finalConflicts = checkConflicts(
+			state.formData.date, 
+			state.formData.startTime, 
+			state.formData.endTime, 
+			latestExistingSlots
+		);
+		
+		if (finalConflicts.length > 0) {
+			state.setError('This time slot conflicts with existing slots. Please choose a different time.');
+			state.setConflicts(finalConflicts);
 			return;
 		}
 		
@@ -280,6 +335,9 @@
 			}
 			
 			// Handle success
+			state.setError(null);
+			state.setConflicts([]);
+			
 			if (!isEditMode) {
 				state.lastCreatedDate = state.formData.date;
 				state.lastCreatedStartTime = state.formData.startTime;
@@ -317,30 +375,60 @@
 		}
 	}
 
-	function handleAddAnother() {
+	async function handleAddAnother() {
 		state.isAddingAnother = true;
 		state.setConflicts([]);
+		state.setError(null);
 		
 		const savedDate = state.formData.date;
-		const smartTime = findNextAvailableTime(
-			savedDate, 
-			state.customDuration, 
-			state.lastCreatedStartTime,
-			state.lastCreatedDate,
-			existingSlots,
-			tour?.duration
-		);
 		
-		const newDate = smartTime.suggestedNewDate ? 
-			(() => {
-				const tomorrow = new Date(savedDate);
-				tomorrow.setDate(tomorrow.getDate() + 1);
-				return tomorrow.toISOString().split('T')[0];
-			})() : savedDate;
+		// Wait a bit for the schedule to update after the last creation
+		await new Promise(resolve => setTimeout(resolve, 500));
+		
+		// Make sure we have the latest slots data
+		const currentSlots = $scheduleQuery.data?.timeSlots || [];
+		const updatedExistingSlots = isEditMode ? 
+			currentSlots.filter((slot: any) => slot.id !== slotId) : 
+			currentSlots;
+		
+		// Try to find time on the same date first
+		let targetDate = savedDate;
+		let maxAttempts = 7; // Prevent infinite loops by limiting to 7 days ahead
+		let attempt = 0;
+		let smartTime = null;
+		
+		while (attempt < maxAttempts) {
+			smartTime = findNextAvailableTime(
+				targetDate, 
+				state.customDuration, 
+				attempt === 0 ? state.lastCreatedStartTime : null,
+				attempt === 0 ? state.lastCreatedDate : '',
+				updatedExistingSlots,
+				tour?.duration
+			);
+			
+			// If we found a slot without needing to change date, use it
+			if (!smartTime.suggestedNewDate) {
+				break;
+			}
+			
+			// Move to next day
+			const nextDate = new Date(targetDate);
+			nextDate.setDate(nextDate.getDate() + 1);
+			targetDate = nextDate.toISOString().split('T')[0];
+			attempt++;
+		}
+		
+		// If we couldn't find any slot in the next 7 days, show error
+		if (!smartTime || (attempt >= maxAttempts && smartTime.suggestedNewDate)) {
+			state.setError('No available time slots found in the next 7 days. Please review your schedule.');
+			state.isAddingAnother = false;
+			return;
+		}
 		
 		state.resetForm();
 		state.setFormData({
-			date: newDate,
+			date: targetDate,
 			startTime: smartTime.startTime,
 			endTime: smartTime.endTime,
 			capacity: tour?.capacity || 10,
@@ -350,9 +438,10 @@
 		state.justCreatedSlot = false;
 		state.showAdvanced = false;
 		
+		// Clear the flag after a short delay
 		setTimeout(() => {
 			state.isAddingAnother = false;
-		}, 100);
+		}, 300);
 	}
 	
 	function resetDuration() {
@@ -742,14 +831,15 @@
 			{/if}
 
 			<!-- Action Buttons - Always visible with consistent layout -->
-			<div class="mt-6 flex gap-3 {mode === 'inline' ? 'justify-end' : 'justify-between'}">
-				{#if mode !== 'inline' || existingSlots.length > 0}
-					<div class="flex gap-2">
-						{#if existingSlots.length > 0 && mode !== 'inline' && !isEditMode}
+			<div class="mt-6 {mode === 'inline' ? 'flex gap-3 justify-end' : ''}">
+				{#if mode !== 'inline'}
+					<!-- Mobile: Stack buttons -->
+					<div class="md:hidden space-y-3">
+						{#if existingSlots.length > 0 && !isEditMode}
 							<button
 								type="button"
 								onclick={copyFromExisting}
-								class="button-secondary button--small button--gap"
+								class="button-secondary button--gap w-full"
 							>
 								<Copy class="h-4 w-4" />
 								Copy from recent
@@ -760,7 +850,7 @@
 								type="button"
 								onclick={() => state.showDeleteConfirm = true}
 								disabled={state.isDeleting}
-								class="button-danger button--gap"
+								class="button-danger button--gap w-full"
 							>
 								{#if state.isDeleting}
 									<Loader2 class="w-4 h-4 animate-spin" />
@@ -771,49 +861,196 @@
 								{/if}
 							</button>
 						{/if}
+						<div class="flex gap-3">
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										state.justCreatedSlot = false;
+										onSuccess?.();
+									} else {
+										onCancel?.();
+									}
+								}}
+								disabled={state.isSubmitting}
+								class="button-secondary flex-1"
+							>
+								{state.justCreatedSlot ? 'Done' : 'Cancel'}
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										handleAddAnother();
+									} else {
+										handleSubmit();
+									}
+								}}
+								disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+								class="button-primary button--gap flex-1"
+							>
+								{#if state.isSubmitting}
+									<Loader2 class="w-4 h-4 animate-spin" />
+									{isEditMode ? 'Saving' : 'Creating'}
+								{:else if state.justCreatedSlot}
+									<Plus class="h-4 w-4" />
+									Add Another
+								{:else}
+									<CheckCircle class="w-4 h-4" />
+									{isEditMode ? 'Save' : 'Create'}
+								{/if}
+							</button>
+						</div>
+					</div>
+					
+					<!-- Desktop: Original layout -->
+					<div class="hidden md:flex gap-3 justify-between">
+						{#if existingSlots.length > 0 || isEditMode}
+							<div class="flex gap-2">
+								{#if existingSlots.length > 0 && !isEditMode}
+									<button
+										type="button"
+										onclick={copyFromExisting}
+										class="button-secondary button--small button--gap"
+									>
+										<Copy class="h-4 w-4" />
+										Copy from recent
+									</button>
+								{/if}
+								{#if isEditMode}
+									<button
+										type="button"
+										onclick={() => state.showDeleteConfirm = true}
+										disabled={state.isDeleting}
+										class="button-danger button--gap"
+									>
+										{#if state.isDeleting}
+											<Loader2 class="w-4 h-4 animate-spin" />
+											Deleting...
+										{:else}
+											<Trash2 class="w-4 h-4" />
+											Delete
+										{/if}
+									</button>
+								{/if}
+							</div>
+						{/if}
+						
+						<div class="flex gap-3 {!(existingSlots.length > 0 || isEditMode) ? 'w-full justify-end' : ''}">
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										state.justCreatedSlot = false;
+										onSuccess?.();
+									} else {
+										onCancel?.();
+									}
+								}}
+								disabled={state.isSubmitting}
+								class="button-secondary"
+							>
+								{state.justCreatedSlot ? 'Done' : 'Cancel'}
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										handleAddAnother();
+									} else {
+										handleSubmit();
+									}
+								}}
+								disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+								class="button-primary button--gap"
+							>
+								{#if state.isSubmitting}
+									<Loader2 class="w-4 h-4 animate-spin" />
+									{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
+								{:else if state.justCreatedSlot}
+									<Plus class="h-4 w-4" />
+									Create Another
+								{:else}
+									<CheckCircle class="w-4 h-4" />
+									{isEditMode ? 'Save Changes' : (state.showAdvanced && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
+								{/if}
+							</button>
+						</div>
+					</div>
+				{:else}
+					<!-- Inline mode: Keep original simple layout -->
+					{#if existingSlots.length > 0}
+						<div class="flex gap-2">
+							{#if existingSlots.length > 0 && !isEditMode}
+								<button
+									type="button"
+									onclick={copyFromExisting}
+									class="button-secondary button--small button--gap"
+								>
+									<Copy class="h-4 w-4" />
+									Copy from recent
+								</button>
+							{/if}
+							{#if isEditMode}
+								<button
+									type="button"
+									onclick={() => state.showDeleteConfirm = true}
+									disabled={state.isDeleting}
+									class="button-danger button--gap"
+								>
+									{#if state.isDeleting}
+										<Loader2 class="w-4 h-4 animate-spin" />
+										Deleting...
+									{:else}
+										<Trash2 class="w-4 h-4" />
+										Delete
+									{/if}
+								</button>
+							{/if}
+						</div>
+					{/if}
+					
+					<div class="flex gap-3">
+						<button
+							type="button"
+							onclick={() => {
+								if (state.justCreatedSlot) {
+									state.justCreatedSlot = false;
+									onSuccess?.();
+								} else {
+									onCancel?.();
+								}
+							}}
+							disabled={state.isSubmitting}
+							class="button-secondary"
+						>
+							{state.justCreatedSlot ? 'Done' : 'Cancel'}
+						</button>
+						<button
+							type="button"
+							onclick={() => {
+								if (state.justCreatedSlot) {
+									handleAddAnother();
+								} else {
+									handleSubmit();
+								}
+							}}
+							disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+							class="button-primary button--gap"
+						>
+							{#if state.isSubmitting}
+								<Loader2 class="w-4 h-4 animate-spin" />
+								{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
+							{:else if state.justCreatedSlot}
+								<Plus class="h-4 w-4" />
+								Create Another
+							{:else}
+								<CheckCircle class="w-4 h-4" />
+								{isEditMode ? 'Save Changes' : (state.showAdvanced && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
+							{/if}
+						</button>
 					</div>
 				{/if}
-				
-				<div class="flex gap-3">
-					<button
-						type="button"
-						onclick={() => {
-							if (state.justCreatedSlot) {
-								state.justCreatedSlot = false;
-								onSuccess?.();
-							} else {
-								onCancel?.();
-							}
-						}}
-						disabled={state.isSubmitting}
-						class="button-secondary"
-					>
-						{state.justCreatedSlot ? 'Done' : 'Cancel'}
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							if (state.justCreatedSlot) {
-								handleAddAnother();
-							} else {
-								handleSubmit();
-							}
-						}}
-						disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
-						class="button-primary button--gap"
-					>
-						{#if state.isSubmitting}
-							<Loader2 class="w-4 h-4 animate-spin" />
-							{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
-						{:else if state.justCreatedSlot}
-							<Plus class="h-4 w-4" />
-							Create Another
-						{:else}
-							<CheckCircle class="w-4 h-4" />
-							{isEditMode ? 'Save Changes' : (state.showAdvanced && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
-						{/if}
-					</button>
-				</div>
 			</div>
 		</div>
 	{/if}

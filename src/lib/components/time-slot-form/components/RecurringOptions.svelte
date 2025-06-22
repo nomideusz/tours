@@ -84,7 +84,7 @@
 										id="recurring-count-{isMobile ? 'mobile' : 'desktop'}"
 										label=""
 										bind:value={formData.recurringCount}
-										min={1}
+										min={2}
 										max={52}
 										step={1}
 										placeholder="5"

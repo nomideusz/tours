@@ -13,7 +13,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 		recurring: false,
 		recurringType: 'weekly',
 		recurringEnd: '',
-		recurringCount: 1,
+		recurringCount: 2,
 		...initialData
 	});
 
@@ -58,7 +58,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 			recurring: false,
 			recurringType: 'weekly',
 			recurringEnd: '',
-			recurringCount: 1
+			recurringCount: 2
 		};
 		validationErrors = [];
 		touchedFields.clear();

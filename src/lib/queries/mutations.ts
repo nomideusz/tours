@@ -519,6 +519,52 @@ export function createTimeSlotMutation(tourId: string) {
 			
 			return response.json();
 		},
+		onMutate: async (slotData) => {
+			// Cancel any outgoing refetches to prevent overwriting optimistic update
+			await queryClient.cancelQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			
+			// Snapshot the previous value
+			const previousSchedule = queryClient.getQueryData(queryKeys.tourSchedule(tourId));
+			
+			// Optimistically update the schedule
+			queryClient.setQueryData(queryKeys.tourSchedule(tourId), (old: any) => {
+				if (!old) return old;
+				
+				// Create a temporary slot for optimistic UI
+				const tempSlot = {
+					id: `temp-${Date.now()}`,
+					tourId,
+					startTime: slotData.startTime,
+					endTime: slotData.endTime,
+					capacity: slotData.capacity,
+					status: slotData.status || 'available',
+					notes: slotData.notes || null,
+					totalBookings: 0,
+					confirmedBookings: 0,
+					pendingBookings: 0,
+					totalParticipants: 0,
+					bookedSpots: 0,
+					availableSpots: slotData.capacity,
+					isUpcoming: true,
+					isPast: false
+				};
+				
+				return {
+					...old,
+					timeSlots: [...(old.timeSlots || []), tempSlot].sort((a, b) => 
+						new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+					)
+				};
+			});
+			
+			return { previousSchedule };
+		},
+		onError: (err, newSlot, context) => {
+			// If the mutation fails, use the context returned from onMutate to roll back
+			if (context?.previousSchedule) {
+				queryClient.setQueryData(queryKeys.tourSchedule(tourId), context.previousSchedule);
+			}
+		},
 		onSuccess: async () => {
 			// Get tour QR code for public invalidation
 			const tour = queryClient.getQueryData(queryKeys.tourDetails(tourId)) as any;

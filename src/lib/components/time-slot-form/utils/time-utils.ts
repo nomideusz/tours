@@ -6,7 +6,8 @@ export function findNextAvailableTime(
 	lastCreatedTime: string | null,
 	lastCreatedDate: string,
 	existingSlots: any[],
-	tourDuration?: number
+	tourDuration?: number,
+	recursionDepth: number = 0
 ): SmartTime {
 	const duration = preferredDuration || tourDuration || 120; // Use custom duration, tour duration, or 2 hours
 	const durationMs = duration * 60000;
@@ -36,8 +37,8 @@ export function findNextAvailableTime(
 			const tomorrow = new Date(targetDateObj);
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			const tomorrowDateStr = tomorrow.toISOString().split('T')[0];
-			// Start fresh on new day
-			const nextDayTime = findNextAvailableTime(tomorrowDateStr, preferredDuration, null, '', existingSlots, tourDuration);
+			// Start fresh on new day (pass recursion depth to prevent infinite loops)
+			const nextDayTime = findNextAvailableTime(tomorrowDateStr, preferredDuration, null, '', existingSlots, tourDuration, recursionDepth + 1);
 			return { ...nextDayTime, suggestedNewDate: true };
 		}
 		
@@ -133,11 +134,14 @@ export function findNextAvailableTime(
 		const candidateEnd = new Date(candidateStart.getTime() + durationMs);
 		
 		// Check if this time conflicts with any existing slot
-		const hasConflict = sameDaySlots.some((slot: {start: Date, end: Date}) => 
-			candidateStart < slot.end && candidateEnd > slot.start
-		);
+		const hasConflict = sameDaySlots.some((slot: {start: Date, end: Date}) => {
+			// Add a small buffer (1 minute) to avoid edge cases
+			const slotStartWithBuffer = new Date(slot.start.getTime() - 60000);
+			const slotEndWithBuffer = new Date(slot.end.getTime() + 60000);
+			return candidateStart < slotEndWithBuffer && candidateEnd > slotStartWithBuffer;
+		});
 		
-		if (!hasConflict) {
+		if (!hasConflict && candidateStart.getHours() < 22) {
 			// Found a free slot!
 			return {
 				startTime: candidateStart.toTimeString().slice(0, 5),
@@ -153,15 +157,40 @@ export function findNextAvailableTime(
 		if (candidateStart.getHours() >= 22) break;
 	}
 	
-	// Fallback: use the time after the last slot
-	const lastSlot = sameDaySlots[sameDaySlots.length - 1];
-	const fallbackStart = new Date(lastSlot.end.getTime() + 30 * 60000); // 30 min buffer
-	const fallbackEnd = new Date(fallbackStart.getTime() + durationMs);
+	// Prevent infinite recursion - if we've checked more than 7 days, just return a default
+	if (recursionDepth >= 7) {
+		return {
+			startTime: '10:00',
+			endTime: getEndTimeFromDuration('10:00', duration),
+			suggestedNewDate: true
+		};
+	}
 	
+	// If no slot found on this date, suggest the next day
+	const tomorrow = new Date(targetDateObj);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	const tomorrowDateStr = tomorrow.toISOString().split('T')[0];
+	
+	// Check if there are any slots on the next day
+	const tomorrowSlots = existingSlots.filter((slot: any) => {
+		const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
+		return slotDate === tomorrowDateStr;
+	});
+	
+	if (tomorrowSlots.length === 0) {
+		// No slots on tomorrow, use default time
+		return {
+			startTime: '10:00',
+			endTime: getEndTimeFromDuration('10:00', duration),
+			suggestedNewDate: true
+		};
+	}
+	
+	// Recursively find available slot on next day, but mark it as suggested new date
+	const nextDayResult = findNextAvailableTime(tomorrowDateStr, preferredDuration, null, '', existingSlots, tourDuration, recursionDepth + 1);
 	return {
-		startTime: fallbackStart.toTimeString().slice(0, 5),
-		endTime: fallbackEnd.toTimeString().slice(0, 5),
-		suggestedNewDate: false
+		...nextDayResult,
+		suggestedNewDate: true
 	};
 }
 
