@@ -40,6 +40,7 @@ export const POST: RequestHandler = async ({ request }) => {
             canReceivePayments: account.charges_enabled,
             accountInfo: {
                 country: account.country,
+                currency: account.default_currency,
                 businessName: account.business_profile?.name,
                 payoutsEnabled: account.payouts_enabled,
                 requiresAction: (account.requirements?.currently_due?.length || 0) > 0

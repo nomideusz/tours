@@ -5,6 +5,7 @@
 	import { toastError, toastSuccess } from '$lib/utils/toast.js';
 	import { detectCountry } from '$lib/utils/country-detector.js';
 	import { userCurrency, setUserCurrencyFromServer, SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
+	import { getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
 	
 	// Icons
 	import User from 'lucide-svelte/icons/user';
@@ -15,11 +16,13 @@
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Camera from 'lucide-svelte/icons/camera';
+	import Globe from 'lucide-svelte/icons/globe';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	
 	// Profile Components
 	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';
@@ -28,6 +31,7 @@
 	import PaymentSetup from '$lib/components/profile/PaymentSetup.svelte';
 	import AccountInfo from '$lib/components/profile/AccountInfo.svelte';
 	import PreferencesSection from '$lib/components/profile/PreferencesSection.svelte';
+	import DangerZone from '$lib/components/profile/DangerZone.svelte';
 
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -52,6 +56,8 @@
 	// Form states
 	let profileLoading = $state(false);
 	let passwordLoading = $state(false);
+	let profileSaveSuccess = $state(false);
+	let passwordChangeSuccess = $state(false);
 	
 	// Form data
 	let name = $state('');
@@ -60,6 +66,7 @@
 	let description = $state('');
 	let phone = $state('');
 	let website = $state('');
+	let location = $state('');
 	let country = $state('');
 	let currency = $state('EUR');
 	
@@ -84,6 +91,11 @@
 	// Profile link
 	let profileLinkCopied = $state(false);
 	
+	// Payment setup modal state
+	let showPaymentConfirmModal = $state(false);
+	let pendingPaymentCountry = $state<string | null>(null);
+	let isSettingUpPayment = $state(false);
+	
 	// Initialize form data when user loads
 	let formInitialized = $state(false);
 	$effect(() => {
@@ -94,6 +106,7 @@
 			description = user.description || '';
 			phone = user.phone || '';
 			website = user.website || '';
+			location = user.location || '';
 			country = user.country || '';
 			currency = user.currency || 'EUR';
 			formInitialized = true;
@@ -165,6 +178,7 @@
 			formData.append('description', description);
 			formData.append('phone', phone);
 			formData.append('website', website);
+			formData.append('location', location);
 			formData.append('country', country);
 			formData.append('currency', currency);
 
@@ -186,6 +200,15 @@
 			await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
 			
 			toastSuccess('Profile updated successfully');
+			profileSaveSuccess = true;
+			
+			// Scroll to top to show success message
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+			
+			// Hide success message after 5 seconds
+			setTimeout(() => {
+				profileSaveSuccess = false;
+			}, 5000);
 		} catch (error) {
 			toastError(error instanceof Error ? error.message : 'Failed to update profile');
 		} finally {
@@ -221,6 +244,13 @@
 			confirmPassword = '';
 			
 			toastSuccess('Password changed successfully');
+			passwordChangeSuccess = true;
+			passwordError = ''; // Clear any existing error
+			
+			// Hide success message after 5 seconds
+			setTimeout(() => {
+				passwordChangeSuccess = false;
+			}, 5000);
 		} catch (error) {
 			passwordError = error instanceof Error ? error.message : 'Failed to change password';
 		} finally {
@@ -228,8 +258,23 @@
 		}
 	}
 	
-	// Payment setup
-	async function setupPayments() {
+	// Payment setup - shows confirmation modal
+	function setupPayments() {
+		if (!user || isSettingUpPayment) return;
+
+		// Get the country for payment setup
+		const userCountry = country || user.country || 'US';
+		pendingPaymentCountry = userCountry;
+		showPaymentConfirmModal = true;
+	}
+	
+	// Actually setup payments after confirmation
+	async function confirmPaymentSetup() {
+		if (!user || !pendingPaymentCountry || isSettingUpPayment) return;
+
+		showPaymentConfirmModal = false;
+		isSettingUpPayment = true;
+		
 		try {
 			const response = await fetch('/api/payments/connect/setup', {
 				method: 'POST',
@@ -238,20 +283,25 @@
 					userId: user.id,
 					email: user.email,
 					businessName: businessName || user.businessName || user.name,
-					country: country || user.country || 'DE',
-					returnUrl: `${window.location.origin}/profile`
+					country: pendingPaymentCountry,
+					returnUrl: `${window.location.origin}/profile?setup=complete`
 				})
 			});
 
 			if (!response.ok) {
 				const errorData = await response.json();
+				console.error('Payment setup API error:', errorData);
 				throw new Error(errorData.error || 'Failed to setup payment account');
 			}
 
 			const { accountLink } = await response.json();
 			window.location.href = accountLink;
 		} catch (error) {
+			console.error('Payment setup error:', error);
 			toastError(error instanceof Error ? error.message : 'Failed to setup payment account');
+			isSettingUpPayment = false;
+		} finally {
+			pendingPaymentCountry = null;
 		}
 	}
 	
@@ -350,10 +400,60 @@
 		}
 	}
 	
+	// Delete account
+	async function deleteAccount(password: string) {
+		try {
+			const response = await fetch('/api/profile/delete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password })
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				// Check for active bookings error
+				if (result.activeBookings) {
+					const bookingList = result.activeBookings
+						.map((b: any) => `• ${b.tourName} on ${new Date(b.startTime).toLocaleDateString()}`)
+						.join('\n');
+					throw new Error(`${result.error}\n\n${bookingList}`);
+				}
+				throw new Error(result.error || 'Failed to delete account');
+			}
+
+			// Success - redirect to home page with message
+			toastSuccess('Account deleted successfully. Redirecting...');
+			
+			// Wait a moment for the message to show
+			setTimeout(() => {
+				window.location.href = '/';
+			}, 2000);
+			
+		} catch (error) {
+			throw error; // Re-throw to be handled by DangerZone component
+		}
+	}
+	
 	// Initialize currency on mount
 	onMount(() => {
 		if (user?.currency) {
 			setUserCurrencyFromServer(user.currency);
+		}
+		
+		// Check if returning from payment setup
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('setup') === 'complete') {
+			// Clear the URL parameter
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('setup');
+			window.history.replaceState({}, '', newUrl.toString());
+			
+			// Show success message
+			toastSuccess('Payment setup completed!');
+			
+			// Force refresh payment status
+			checkPaymentStatus();
 		}
 	});
 </script>
@@ -429,11 +529,13 @@
 						bind:description
 						bind:phone
 						bind:website
+						bind:location
 						bind:country
 						bind:currency
 						onSubmit={updatePersonalInfo}
 						loading={profileLoading}
 						paymentSetup={paymentStatus.isSetup}
+						saveSuccess={profileSaveSuccess}
 					/>
 				</div>
 			</div>
@@ -445,11 +547,17 @@
 					bind:newPassword
 					bind:confirmPassword
 					{passwordError}
-					passwordChanged={false}
+					passwordChanged={passwordChangeSuccess}
 					{passwordLoading}
 					onSubmit={changePassword}
 				/>
 			{/if}
+			
+			<!-- Danger Zone -->
+			<DangerZone
+				{user}
+				onDelete={deleteAccount}
+			/>
 		</div>
 
 		<!-- Sidebar -->
@@ -504,6 +612,38 @@
 		</div>
 	</div>
 </div>
+
+<!-- Payment Confirmation Modal -->
+{#if showPaymentConfirmModal && pendingPaymentCountry}
+	{@const countryInfo = getCountryInfo(pendingPaymentCountry || '')}
+	{@const stripeCurrency = getCurrencyForCountry(pendingPaymentCountry || '')}
+	{@const userPreferredCurrency = currency || user?.currency || 'EUR'}
+	{@const currencyMismatch = userPreferredCurrency.toLowerCase() !== stripeCurrency.toLowerCase()}
+	<ConfirmationModal
+		isOpen={showPaymentConfirmModal}
+		title="Confirm Payment Account Country"
+		message={currencyMismatch
+			? `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. 
+
+⚠️ IMPORTANT: You prefer ${userPreferredCurrency} but Stripe requires ${stripeCurrency} for ${countryInfo?.name || pendingPaymentCountry}. Your payment account will use ${stripeCurrency} regardless of your preference.
+
+This country CANNOT be changed later. Please ensure this is where your business is legally registered.`
+			: `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
+		cancelText="Cancel"
+		variant="warning"
+		icon={Globe}
+		onConfirm={confirmPaymentSetup}
+		onCancel={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+		onClose={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+	/>
+{/if}
 {/if}
  
  

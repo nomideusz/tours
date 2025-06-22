@@ -24,6 +24,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const description = formData.get('description')?.toString() || '';
 		const phone = formData.get('phone')?.toString() || '';
 		const website = formData.get('website')?.toString() || '';
+		const location = formData.get('location')?.toString() || '';
 		
 		// Handle country - preserve existing value if form has empty string
 		const countryValue = formData.get('country')?.toString();
@@ -74,9 +75,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 
-		// Validate currency
-		const validCurrencies = ['EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK'];
-		if (!validCurrencies.includes(currency)) {
+		// Validate currency using single source of truth
+		const { CURRENCY_DATA } = await import('$lib/utils/countries.js');
+		if (!(currency in CURRENCY_DATA)) {
 			return json({ error: 'Invalid currency selected' }, { status: 400 });
 		}
 
@@ -157,6 +158,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			description,
 			phone,
 			website,
+			location,
 			country,
 			currency,
 			avatar: newAvatarUrl,
@@ -185,6 +187,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			description: updatedUser.description || '',
 			phone: updatedUser.phone || '',
 			website: updatedUser.website || '',
+			location: updatedUser.location || '',
 			country: updatedUser.country || '',
 			currency: updatedUser.currency || 'EUR',
 			avatar: updatedUser.avatar || '',

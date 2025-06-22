@@ -197,32 +197,11 @@
 	// Track if user manually changed currency (different from country default)
 	let manualCurrencyOverride = $state(false);
 
-	// Country list for the dashboard (simplified)
-	const COMMON_COUNTRIES = [
-		{ code: 'US', name: 'United States', flag: '🇺🇸', currency: 'USD' },
-		{ code: 'GB', name: 'United Kingdom', flag: '🇬🇧', currency: 'GBP' },
-		{ code: 'DE', name: 'Germany', flag: '🇩🇪', currency: 'EUR' },
-		{ code: 'FR', name: 'France', flag: '🇫🇷', currency: 'EUR' },
-		{ code: 'IT', name: 'Italy', flag: '🇮🇹', currency: 'EUR' },
-		{ code: 'ES', name: 'Spain', flag: '🇪🇸', currency: 'EUR' },
-		{ code: 'PL', name: 'Poland', flag: '🇵🇱', currency: 'PLN' },
-		{ code: 'JP', name: 'Japan', flag: '🇯🇵', currency: 'JPY' },
-		{ code: 'CA', name: 'Canada', flag: '🇨🇦', currency: 'CAD' },
-		{ code: 'AU', name: 'Australia', flag: '🇦🇺', currency: 'AUD' },
-		{ code: 'CH', name: 'Switzerland', flag: '🇨🇭', currency: 'CHF' },
-		{ code: 'SE', name: 'Sweden', flag: '🇸🇪', currency: 'SEK' },
-		{ code: 'NO', name: 'Norway', flag: '🇳🇴', currency: 'NOK' },
-		{ code: 'DK', name: 'Denmark', flag: '🇩🇰', currency: 'DKK' },
-		{ code: 'CZ', name: 'Czech Republic', flag: '🇨🇿', currency: 'CZK' },
-		{ code: 'NL', name: 'Netherlands', flag: '🇳🇱', currency: 'EUR' },
-		{ code: 'BE', name: 'Belgium', flag: '🇧🇪', currency: 'EUR' },
-		{ code: 'AT', name: 'Austria', flag: '🇦🇹', currency: 'EUR' },
-		{ code: 'PT', name: 'Portugal', flag: '🇵🇹', currency: 'EUR' },
-		{ code: 'IE', name: 'Ireland', flag: '🇮🇪', currency: 'EUR' }
-	];
+	// Import country data from shared module
+	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, type CountryInfo } from '$lib/utils/countries.js';
 
 	// Get current country info
-	let currentCountryInfo = $derived(COMMON_COUNTRIES.find((c) => c.code === selectedCountry));
+	let currentCountryInfo = $derived(getCountryInfo(selectedCountry));
 
 	// Check if settings need confirmation - only show if location hasn't been explicitly confirmed
 	// Even if country is auto-detected during registration, users must explicitly confirm
@@ -357,9 +336,9 @@
 	// Update currency when country changes and auto-set currency based on country
 	function onCountryChange(countryCode: string) {
 		selectedCountry = countryCode;
-		const country = COMMON_COUNTRIES.find((c) => c.code === countryCode);
+		const country = getCountryInfo(countryCode);
 		// Only auto-set currency if user hasn't manually overridden it
-		if (country && (country.currency as Currency) && !manualCurrencyOverride) {
+		if (country && !manualCurrencyOverride) {
 			selectedCurrency = country.currency as Currency;
 		}
 		showCountryDropdown = false;
@@ -395,12 +374,10 @@
 				// Auto-detect if not set
 				import('$lib/utils/country-detector.js').then(({ detectCountry }) => {
 					const detectedCountry = detectCountry();
-					if (detectedCountry && COMMON_COUNTRIES.find((c) => c.code === detectedCountry)) {
+					const country = getCountryInfo(detectedCountry);
+					if (country) {
 						selectedCountry = detectedCountry;
-						const country = COMMON_COUNTRIES.find((c) => c.code === detectedCountry);
-						if (country && (country.currency as Currency)) {
-							selectedCurrency = country.currency as Currency;
-						}
+						selectedCurrency = country.currency as Currency;
 					}
 				});
 			}
@@ -543,29 +520,7 @@
 		saveSuccess = false;
 	}
 
-	// Map country codes to currencies
-	const countryToCurrency: Record<string, Currency> = {
-		US: 'USD',
-		GB: 'GBP',
-		DE: 'EUR',
-		FR: 'EUR',
-		IT: 'EUR',
-		ES: 'EUR',
-		PL: 'PLN',
-		JP: 'JPY',
-		CA: 'CAD',
-		AU: 'AUD',
-		CH: 'CHF',
-		SE: 'SEK',
-		NO: 'NOK',
-		DK: 'DKK',
-		CZ: 'CZK',
-		NL: 'EUR',
-		BE: 'EUR',
-		AT: 'EUR',
-		PT: 'EUR',
-		IE: 'EUR'
-	};
+
 
 	// Determine if currency settings need attention
 	let shouldShowCurrencySetup = $derived(() => {
@@ -605,7 +560,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					country,
-					currency: countryToCurrency[country] || 'EUR'
+					currency: getCurrencyForCountry(country) as Currency
 				})
 			});
 
@@ -614,7 +569,7 @@
 			}
 
 			// Set the currency in the store
-			userCurrency.set(countryToCurrency[country] || 'EUR');
+			userCurrency.set(getCurrencyForCountry(country) as Currency);
 
 			// Mark location as explicitly confirmed
 			if (browser) {
@@ -987,7 +942,7 @@
 														style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 													>
 														<div class="country-list max-h-48 overflow-y-auto">
-															{#each COMMON_COUNTRIES as country}
+															{#each COUNTRY_LIST as country}
 																<button
 																	onclick={() => {
 																		onCountryChange(country.code);
@@ -1067,7 +1022,7 @@
 							</div>
 						</div>
 					{:else}
-						{@const confirmedCountry = COMMON_COUNTRIES.find(c => c.code === profile?.country)}
+						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
 						<div
 							class="flex items-start gap-4 rounded-lg p-4"
 							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
@@ -1453,7 +1408,7 @@
 									style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 								>
 									<div class="country-list max-h-48 overflow-y-auto">
-										{#each COMMON_COUNTRIES as country}
+										{#each COUNTRY_LIST as country}
 											<button
 												onclick={() => {
 													onCountryChange(country.code);
@@ -1879,12 +1834,21 @@
 
 <!-- Payment Confirmation Modal -->
 {#if showPaymentConfirmModal && pendingPaymentCountry}
-	{@const countryInfo = COMMON_COUNTRIES.find(c => c.code === pendingPaymentCountry)}
+	{@const countryInfo = getCountryInfo(pendingPaymentCountry || '')}
+	{@const stripeCurrency = getCurrencyForCountry(pendingPaymentCountry || '')}
+	{@const userPreferredCurrency = profile?.currency || selectedCurrency}
+	{@const currencyMismatch = userPreferredCurrency.toLowerCase() !== stripeCurrency.toLowerCase()}
 	<ConfirmationModal
 		isOpen={showPaymentConfirmModal}
 		title="Confirm Payment Account Country"
-		message="You are about to create a payment account for {countryInfo?.flag || ''} {countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered."
-		confirmText="Yes, {countryInfo?.name || pendingPaymentCountry} is correct"
+		message={currencyMismatch
+			? `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. 
+
+⚠️ IMPORTANT: You prefer ${userPreferredCurrency} but Stripe requires ${stripeCurrency} for ${countryInfo?.name || pendingPaymentCountry}. Your payment account will use ${stripeCurrency} regardless of your preference.
+
+This country CANNOT be changed later. Please ensure this is where your business is legally registered.`
+			: `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
 		cancelText="Cancel"
 		variant="warning"
 		icon={Globe}

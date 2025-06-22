@@ -111,8 +111,9 @@ export async function processAndSaveImage(
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Process image with Sharp
-  const image = sharp(buffer);
+  // Process image with Sharp - auto-rotate based on EXIF orientation
+  const image = sharp(buffer)
+    .rotate(); // This automatically rotates based on EXIF orientation
   const metadata = await image.metadata();
   
   console.log(`📸 Processing image: ${file.name} (${metadata.width}x${metadata.height}, ${Math.round(file.size / 1024)}KB)`);
@@ -126,13 +127,19 @@ export async function processAndSaveImage(
   };
 
   try {
-    // Upload original
+    // Upload original with EXIF rotation applied
+    const originalBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
+      .jpeg({ quality: 95 }) // Convert to JPEG with good quality
+      .toBuffer();
+    
     const originalObjectName = getObjectName(tourId, sizes.original);
-    await uploadToMinIO(buffer, originalObjectName, file.type, buffer.length);
+    await uploadToMinIO(originalBuffer, originalObjectName, 'image/jpeg', originalBuffer.length);
     console.log(`✅ Uploaded original: ${sizes.original}`);
 
     // Generate and upload thumbnail
-    const thumbnailBuffer = await image
+    const thumbnailBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(IMAGE_SIZES.thumbnail.width, IMAGE_SIZES.thumbnail.height, {
         fit: 'cover',
         position: 'center'
@@ -145,7 +152,8 @@ export async function processAndSaveImage(
     console.log(`✅ Uploaded thumbnail: ${sizes.thumbnail}`);
 
     // Generate and upload medium size
-    const mediumBuffer = await image
+    const mediumBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(IMAGE_SIZES.medium.width, IMAGE_SIZES.medium.height, {
         fit: 'inside',
         withoutEnlargement: true
@@ -158,7 +166,8 @@ export async function processAndSaveImage(
     console.log(`✅ Uploaded medium: ${sizes.medium}`);
 
     // Generate and upload large size
-    const largeBuffer = await image
+    const largeBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(IMAGE_SIZES.large.width, IMAGE_SIZES.large.height, {
         fit: 'inside',
         withoutEnlargement: true

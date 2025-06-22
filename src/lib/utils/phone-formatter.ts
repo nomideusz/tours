@@ -13,12 +13,15 @@ export function formatPhoneForStripe(phone: string | null | undefined): string {
     
     // Ensure it starts with +
     if (!cleaned.startsWith('+')) {
-        // If it's a US number without country code, add +1
-        if (cleaned.length === 10) {
+        // If it's a 10-digit number, assume US/Canada and add +1
+        if (cleaned.length === 10 && cleaned[0] >= '2' && cleaned[0] <= '9') {
             cleaned = '+1' + cleaned;
-        } else {
-            // Otherwise, assume the number is missing the + prefix
+        } else if (cleaned.length > 10) {
+            // For longer numbers, add + prefix
             cleaned = '+' + cleaned;
+        } else {
+            // Number is too short or ambiguous
+            return '';
         }
     }
     

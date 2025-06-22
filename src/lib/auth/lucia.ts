@@ -44,7 +44,8 @@ export const lucia = new Lucia(adapter, {
       subscriptionCurrentPeriodEnd: attributes.subscriptionCurrentPeriodEnd,
       subscriptionCancelAtPeriodEnd: attributes.subscriptionCancelAtPeriodEnd,
       monthlyBookingsUsed: attributes.monthlyBookingsUsed,
-      monthlyBookingsResetAt: attributes.monthlyBookingsResetAt
+      monthlyBookingsResetAt: attributes.monthlyBookingsResetAt,
+      deletedAt: attributes.deletedAt
     };
   }
 });

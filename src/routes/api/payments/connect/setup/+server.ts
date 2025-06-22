@@ -5,6 +5,7 @@ import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { formatPhoneForStripe } from '$lib/utils/phone-formatter.js';
 import { getStripeLocale } from '$lib/utils/locale-mapper.js';
+import { getCurrencyForCountry } from '$lib/utils/countries.js';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
@@ -33,6 +34,15 @@ export const POST: RequestHandler = async ({ request, url }) => {
         // Get the locale for consistent experience
         const locale = getStripeLocale(userCountry);
         
+        // For Stripe account creation, we must use the country's native currency
+        // Stripe doesn't allow arbitrary currency/country combinations
+        const stripeCurrency = getCurrencyForCountry(userCountry).toLowerCase();
+        
+        // Log if user's preferred currency differs from Stripe requirements
+        if (user.currency && user.currency.toLowerCase() !== stripeCurrency) {
+            console.log(`⚠️ User prefers ${user.currency} but Stripe requires ${stripeCurrency.toUpperCase()} for country ${userCountry}`);
+        }
+        
         // Determine return URL - use provided returnUrl or default to profile
         const finalReturnUrl = returnUrl || `${url.origin}/profile`;
         const setupCompleteUrl = `${finalReturnUrl}${finalReturnUrl.includes('?') ? '&' : '?'}setup=complete`;
@@ -48,6 +58,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 name: userBusinessName,
                 product_description: user.description || 'Tour guide services',
                 support_email: email,
+                // Set MCC for Travel Agencies and Tour Operators
+                mcc: '4722',
             };
             
             // Add phone if available
@@ -70,6 +82,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 type: 'express',
                 country: userCountry,
                 email: email,
+                default_currency: stripeCurrency,
                 business_profile: businessProfile,
                 capabilities: {
                     card_payments: { requested: true },
@@ -100,12 +113,14 @@ export const POST: RequestHandler = async ({ request, url }) => {
                     };
                 }
                 
-                // Add metadata to help with onboarding
+                // Add metadata to help with onboarding and debugging
                 accountParams.metadata = {
                     userId: userId,
                     hasLocation: userLocation ? 'true' : 'false',
                     hasPhone: userPhone ? 'true' : 'false',
                     hasWebsite: userWebsite ? 'true' : 'false',
+                    locale: locale,
+                    currency: stripeCurrency,
                     returnUrl: finalReturnUrl, // Store return URL for later reference
                 };
             }
@@ -124,13 +139,46 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 if (nameParts.length >= 2) {
                     accountParams.individual.first_name = nameParts[0];
                     accountParams.individual.last_name = nameParts.slice(1).join(' ');
+                    
+                    // For Express accounts, also set representative fields
+                    // These are often required even for individual business types
+                    accountParams.representative = {
+                        first_name: nameParts[0],
+                        last_name: nameParts.slice(1).join(' '),
+                        email: email,
+                        phone: userPhone || undefined,
+                    };
                 } else {
-                    accountParams.individual.first_name = user.name;
+                    // If we only have one name, don't set name fields
+                    // Let Stripe collect this during onboarding to ensure accuracy
+                    // Many cultures use single names, so we shouldn't make assumptions
+                    
+                    // Still set email and phone for individual
+                    if (accountParams.individual) {
+                        // Keep email and phone, but don't set name fields
+                        delete accountParams.individual.first_name;
+                        delete accountParams.individual.last_name;
+                    }
+                    
+                    // For representative, we still need to provide basic info
+                    // but we'll let Stripe collect the proper name format
+                    accountParams.representative = {
+                        email: email,
+                        phone: userPhone || undefined,
+                    };
                 }
                 
                 // Make sure phone is included if not already set
                 if (userPhone && !accountParams.individual.phone) {
                     accountParams.individual.phone = userPhone;
+                }
+                
+                // Add address to representative if available
+                if (userLocation && accountParams.representative) {
+                    accountParams.representative.address = {
+                        city: userLocation,
+                        country: userCountry,
+                    };
                 }
             }
 
@@ -148,13 +196,16 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 
             console.log(`✅ Created Stripe Connect account ${accountId} with pre-filled data:`, {
                 country: userCountry,
+                currency: stripeCurrency,
                 businessName: userBusinessName,
+                mcc: '4722',
                 hasPhone: !!userPhone,
                 phoneFormat: userPhone ? `${userPhone.substring(0, 4)}...` : 'none',
                 originalPhone: user.phone ? `${user.phone.substring(0, 10)}...` : 'none',
                 hasWebsite: !!userWebsite,
                 hasLocation: !!userLocation,
                 hasName: !!user.name,
+                hasRepresentative: !!accountParams.representative,
                 returnUrl: finalReturnUrl
             });
         }

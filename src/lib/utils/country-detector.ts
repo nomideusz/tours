@@ -1,46 +1,4 @@
-/**
- * Map common browser locales to country codes
- */
-const LOCALE_TO_COUNTRY: Record<string, string> = {
-  'de': 'DE', // German
-  'en-GB': 'GB', // British English
-  'en-IE': 'IE', // Irish English
-  'fr': 'FR', // French
-  'it': 'IT', // Italian
-  'es': 'ES', // Spanish
-  'pt': 'PT', // Portuguese
-  'nl': 'NL', // Dutch
-  'pl': 'PL', // Polish
-  'da': 'DK', // Danish
-  'sv': 'SE', // Swedish
-  'no': 'NO', // Norwegian
-  'fi': 'FI', // Finnish
-  'at': 'AT', // Austrian German
-  'ch': 'CH', // Swiss
-  'be': 'BE'  // Belgium
-};
-
-/**
- * Map timezones to likely country codes
- */
-const TIMEZONE_TO_COUNTRY: Record<string, string> = {
-  'Europe/Berlin': 'DE',
-  'Europe/London': 'GB',
-  'Europe/Dublin': 'IE',
-  'Europe/Paris': 'FR',
-  'Europe/Rome': 'IT',
-  'Europe/Madrid': 'ES',
-  'Europe/Lisbon': 'PT',
-  'Europe/Amsterdam': 'NL',
-  'Europe/Warsaw': 'PL',
-  'Europe/Copenhagen': 'DK',
-  'Europe/Stockholm': 'SE',
-  'Europe/Oslo': 'NO',
-  'Europe/Helsinki': 'FI',
-  'Europe/Vienna': 'AT',
-  'Europe/Zurich': 'CH',
-  'Europe/Brussels': 'BE'
-};
+import { getCountryByLocale, getCountryByTimezone } from './countries.js';
 
 /**
  * Default country if we can't detect anything else
@@ -66,21 +24,24 @@ export function detectCountry(): string {
     const fullCode = language.toLowerCase();
     
     // Check for exact match first
-    if (LOCALE_TO_COUNTRY[language]) {
-      return LOCALE_TO_COUNTRY[language];
+    const countryByFullCode = getCountryByLocale(fullCode);
+    if (countryByFullCode) {
+      return countryByFullCode.code;
     }
     
     // Then check for language code only
-    if (LOCALE_TO_COUNTRY[languageCode]) {
-      return LOCALE_TO_COUNTRY[languageCode];
+    const countryByLangCode = getCountryByLocale(languageCode);
+    if (countryByLangCode) {
+      return countryByLangCode.code;
     }
   }
   
   // Try to detect from timezone
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (TIMEZONE_TO_COUNTRY[timezone]) {
-      return TIMEZONE_TO_COUNTRY[timezone];
+    const countryByTimezone = getCountryByTimezone(timezone);
+    if (countryByTimezone) {
+      return countryByTimezone.code;
     }
   } catch (e) {
     // Timezone detection failed, continue with default

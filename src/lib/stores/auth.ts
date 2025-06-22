@@ -26,6 +26,7 @@ export interface AuthUser {
 	subscriptionCurrentPeriodEnd?: string;
 	monthlyBookingsUsed?: number;
 	monthlyBookingsResetAt?: string;
+	deletedAt?: Date | null;
 }
 
 export interface AuthSession {

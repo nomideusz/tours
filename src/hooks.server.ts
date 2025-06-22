@@ -40,10 +40,26 @@ export const handle: Handle = async ({ event, resolve }) => {
             });
         }
         
-        // Set user and session in locals
-        event.locals.user = user;
-        event.locals.session = session;
-        event.locals.isAdmin = user?.role === 'admin' || false;
+        // Check if user account is deleted
+        if (user && user.deletedAt) {
+            // User account is deleted, treat as logged out
+            console.log('Deleted user attempting to access:', user.email);
+            
+            const sessionCookie = lucia.createBlankSessionCookie();
+            event.cookies.set(sessionCookie.name, sessionCookie.value, {
+                path: ".",
+                ...sessionCookie.attributes
+            });
+            
+            event.locals.user = null;
+            event.locals.session = null;
+            event.locals.isAdmin = false;
+        } else {
+            // Set user and session in locals
+            event.locals.user = user;
+            event.locals.session = session;
+            event.locals.isAdmin = user?.role === 'admin' || false;
+        }
         
         // Debug logging for auth status
         if (event.url.pathname.includes('/dashboard') || event.url.pathname.includes('/auth/')) {

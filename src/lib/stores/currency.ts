@@ -1,29 +1,12 @@
 import { writable, derived, type Readable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { CURRENCY_DATA, getCurrencyInfo, type Currency, type CurrencyInfo } from '$lib/utils/countries.js';
 
-export type Currency = 'EUR' | 'USD' | 'GBP' | 'JPY' | 'CAD' | 'AUD' | 'CHF' | 'SEK' | 'NOK' | 'DKK' | 'PLN' | 'CZK';
+// Re-export types from countries module for consistency
+export type { Currency, CurrencyInfo } from '$lib/utils/countries.js';
 
-export interface CurrencyInfo {
-	code: Currency;
-	symbol: string;
-	name: string;
-	decimals: number;
-}
-
-export const SUPPORTED_CURRENCIES: Record<Currency, CurrencyInfo> = {
-	EUR: { code: 'EUR', symbol: '€', name: 'Euro', decimals: 2 },
-	USD: { code: 'USD', symbol: '$', name: 'US Dollar', decimals: 2 },
-	GBP: { code: 'GBP', symbol: '£', name: 'British Pound', decimals: 2 },
-	JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen', decimals: 0 },
-	CAD: { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', decimals: 2 },
-	AUD: { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', decimals: 2 },
-	CHF: { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', decimals: 2 },
-	SEK: { code: 'SEK', symbol: 'kr', name: 'Swedish Krona', decimals: 2 },
-	NOK: { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone', decimals: 2 },
-	DKK: { code: 'DKK', symbol: 'kr', name: 'Danish Krone', decimals: 2 },
-	PLN: { code: 'PLN', symbol: 'zł', name: 'Polish Złoty', decimals: 2 },
-	CZK: { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna', decimals: 2 }
-};
+// Re-export currency data for backward compatibility
+export const SUPPORTED_CURRENCIES = CURRENCY_DATA;
 
 // Create the currency store
 function createCurrencyStore() {
@@ -34,7 +17,7 @@ function createCurrencyStore() {
 		if (!browser) return 'EUR';
 		
 		const stored = localStorage.getItem('userCurrency');
-		if (stored && stored in SUPPORTED_CURRENCIES) {
+		if (stored && stored in CURRENCY_DATA) {
 			return stored as Currency;
 		}
 		return 'EUR';
@@ -55,7 +38,7 @@ function createCurrencyStore() {
 		},
 		update,
 		// Helper method to get currency info
-		getInfo: (currency: Currency): CurrencyInfo => SUPPORTED_CURRENCIES[currency]
+		getInfo: getCurrencyInfo
 	};
 }
 
@@ -64,12 +47,12 @@ export const userCurrency = createCurrencyStore();
 // Derived store for current currency info
 export const currentCurrencyInfo: Readable<CurrencyInfo> = derived(
 	userCurrency,
-	($currency) => SUPPORTED_CURRENCIES[$currency]
+	($currency) => getCurrencyInfo($currency)
 );
 
 // Helper function to set user currency from server data
 export function setUserCurrencyFromServer(currency: string) {
-	if (currency && currency in SUPPORTED_CURRENCIES) {
+	if (currency && currency in CURRENCY_DATA) {
 		userCurrency.set(currency as Currency);
 	}
 } 

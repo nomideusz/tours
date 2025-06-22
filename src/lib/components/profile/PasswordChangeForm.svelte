@@ -2,6 +2,7 @@
 	import Lock from 'lucide-svelte/icons/lock';
 	import Shield from 'lucide-svelte/icons/shield';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
 
 	let {
 		currentPassword = $bindable(),
@@ -107,7 +108,17 @@
 	</div>
 	<div class="p-6">
 		<form onsubmit={handleSubmit} novalidate class="space-y-4">
-			{#if passwordError}
+			{#if passwordChanged}
+				<div class="p-3 rounded-lg flex items-start gap-2" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+					<CheckCircle class="h-4 w-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+					<div>
+						<p class="text-sm font-medium" style="color: var(--color-success-900);">Password changed successfully!</p>
+						<p class="text-xs mt-0.5" style="color: var(--color-success-700);">You can now use your new password to sign in.</p>
+					</div>
+				</div>
+			{/if}
+			
+			{#if passwordError && !passwordChanged}
 				<div class="p-3 rounded-lg flex items-start gap-2" style="background: var(--color-error-light);">
 					<AlertCircle class="h-4 w-4 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
 					<p class="text-sm" style="color: var(--color-error);">{passwordError}</p>

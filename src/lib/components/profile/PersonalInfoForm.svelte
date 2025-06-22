@@ -6,8 +6,10 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
+	import { COUNTRY_LIST, getCountryInfo } from '$lib/utils/countries.js';
 
 	let {
 		user,
@@ -17,11 +19,13 @@
 		description = $bindable(),
 		phone = $bindable(),
 		website = $bindable(),
+		location = $bindable(),
 		country = $bindable(),
 		currency = $bindable(),
 		onSubmit,
 		loading = false,
-		paymentSetup = false
+		paymentSetup = false,
+		saveSuccess = false
 	}: {
 		user: any;
 		name: string;
@@ -30,16 +34,58 @@
 		description: string;
 		phone: string;
 		website: string;
+		location: string;
 		country: string;
 		currency: string;
 		onSubmit: () => void;
 		loading?: boolean;
 		paymentSetup?: boolean;
+		saveSuccess?: boolean;
 	} = $props();
 
 	// Validation errors
 	let errors = $state<Record<string, string>>({});
 	let touched = $state<Record<string, boolean>>({});
+	
+	// Get phone code based on selected country
+	let phoneCode = $derived(() => {
+		if (country) {
+			const countryInfo = getCountryInfo(country);
+			return countryInfo?.phoneCode || '';
+		}
+		return '';
+	});
+	
+	// Phone placeholder with country code
+	let phonePlaceholder = $derived(() => {
+		const code = phoneCode();
+		if (code) {
+			// Generate example number based on country
+			switch(code) {
+				case '+1': return '+1 (555) 123-4567';
+				case '+44': return '+44 20 1234 5678';
+				case '+49': return '+49 30 12345678';
+				case '+33': return '+33 1 23 45 67 89';
+				case '+39': return '+39 06 1234 5678';
+				case '+34': return '+34 91 123 45 67';
+				case '+61': return '+61 2 1234 5678';
+				case '+81': return '+81 3-1234-5678';
+				default: return `${code} 123456789`;
+			}
+		}
+		return '+1 (555) 123-4567';
+	});
+	
+	// Auto-update phone field when country changes
+	let initialPhoneSet = $state(false);
+	$effect(() => {
+		const code = phoneCode();
+		// Only auto-populate if phone is completely empty and we haven't set it before
+		if (code && !phone && !initialPhoneSet) {
+			phone = code + ' ';
+			initialPhoneSet = true;
+		}
+	});
 
 	// Validation rules
 	function validateUsername(value: string): string | null {
@@ -64,7 +110,17 @@
 		if (!value) return null; // Optional field
 		// Basic phone validation - at least 10 digits
 		const digits = value.replace(/\D/g, '');
-		if (digits.length < 10) return 'Please enter a valid phone number';
+		if (digits.length < 10) return 'Please enter a valid phone number with country code';
+		// Check if it starts with + for international format
+		if (!value.startsWith('+')) {
+			return 'Please include country code (e.g., +1, +44, +49)';
+		}
+		// Validate it looks like a proper international number
+		// Allow various formatting: spaces, dashes, parentheses
+		const cleanedForValidation = value.replace(/[\s\-\(\)]/g, '');
+		if (!cleanedForValidation.match(/^\+\d{7,15}$/)) {
+			return 'Please enter a valid international phone number';
+		}
 		return null;
 	}
 
@@ -145,6 +201,23 @@
 </script>
 
 <form onsubmit={handleSubmit} novalidate class="space-y-6">
+	<!-- Success Message -->
+	{#if saveSuccess}
+		<div class="rounded-lg p-4" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+			<div class="flex items-center gap-2">
+				<CheckCircle class="h-4 w-4 flex-shrink-0" style="color: var(--color-success-600);" />
+				<div>
+					<p class="text-sm font-medium" style="color: var(--color-success-900);">
+						Profile updated successfully!
+					</p>
+					<p class="text-xs mt-0.5" style="color: var(--color-success-700);">
+						Your changes have been saved.
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Username -->
 	<div>
 		<label for="username" class="form-label">
@@ -266,26 +339,11 @@
 						disabled={paymentSetup}
 					>
 						<option value="">Select country</option>
-						<option value="AT">Austria</option>
-						<option value="BE">Belgium</option>
-						<option value="DE">Germany</option>
-						<option value="DK">Denmark</option>
-						<option value="ES">Spain</option>
-						<option value="FI">Finland</option>
-						<option value="FR">France</option>
-						<option value="GB">United Kingdom</option>
-						<option value="IE">Ireland</option>
-						<option value="IT">Italy</option>
-						<option value="NL">Netherlands</option>
-						<option value="NO">Norway</option>
-						<option value="PL">Poland</option>
-						<option value="PT">Portugal</option>
-						<option value="SE">Sweden</option>
-						<option value="CH">Switzerland</option>
-						<option value="US">United States</option>
-						<option value="CA">Canada</option>
-						<option value="AU">Australia</option>
-						<option value="JP">Japan</option>
+						{#each COUNTRY_LIST as country}
+							<option value={country.code}>
+								{country.flag} {country.name}
+							</option>
+						{/each}
 					</select>
 				</div>
 				{#if paymentSetup}
@@ -316,11 +374,40 @@
 				</select>
 				{#if paymentSetup}
 					<p class="text-xs mt-1" style="color: var(--color-warning);">
-						Locked with payment account
+						Display preference only - payments use account currency
 					</p>
 				{/if}
 			</div>
 		</div>
+
+		<!-- Location/Address -->
+		<div class="mt-4">
+			<label for="location" class="form-label">
+				City/Location
+			</label>
+			<div class="relative">
+				<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+				<input
+					type="text"
+					id="location"
+					name="location"
+					bind:value={location}
+					class="form-input pl-10"
+					placeholder="Berlin, Germany"
+				/>
+			</div>
+			<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+				Helps customers know where you operate
+			</p>
+		</div>
+		
+		{#if paymentSetup && currency && country}
+			<div class="mt-4 p-3 rounded-lg" style="background: var(--color-info-50); border: 1px solid var(--color-info-200);">
+				<p class="text-xs" style="color: var(--color-info-800);">
+					<strong>Note:</strong> Your Stripe payment account processes all transactions in your country's native currency. The currency preference above only affects how prices are displayed to you in the dashboard.
+				</p>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Contact Section -->
@@ -344,7 +431,7 @@
 						class="form-input pl-10"
 						class:border-red-300={touched.phone && errors.phone}
 						class:focus:border-red-500={touched.phone && errors.phone}
-						placeholder="+1 (555) 123-4567"
+						placeholder={phonePlaceholder()}
 					/>
 				</div>
 				{#if touched.phone && errors.phone}
@@ -352,7 +439,36 @@
 						<AlertCircle class="h-3 w-3 text-red-500" />
 						<p class="text-xs text-red-600">{errors.phone}</p>
 					</div>
+				{:else}
+					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+						{#if phoneCode() && country}
+							Business location: {getCountryInfo(country)?.name} ({phoneCode()}) • You can use any international number
+						{:else}
+							Include country code for payment processing
+						{/if}
+					</p>
 				{/if}
+				<details class="mt-2">
+					<summary class="text-xs cursor-pointer" style="color: var(--text-secondary);">
+						Common country codes
+					</summary>
+					<div class="mt-1 flex flex-wrap gap-1">
+						{#each ['+1 US/CA', '+44 UK', '+49 DE', '+33 FR', '+39 IT', '+34 ES', '+61 AU', '+81 JP'] as code}
+							<button
+								type="button"
+								onclick={() => {
+									if (!phone || phone.length <= 5) {
+										phone = code.split(' ')[0] + ' ';
+									}
+								}}
+								class="text-xs px-2 py-0.5 rounded hover:bg-gray-100"
+								style="background: var(--bg-secondary); border: 1px solid var(--border-secondary);"
+							>
+								{code}
+							</button>
+						{/each}
+					</div>
+				</details>
 			</div>
 
 			<!-- Website -->

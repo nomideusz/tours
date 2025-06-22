@@ -89,8 +89,9 @@ export async function processAndSaveAvatar(
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Process image with Sharp
-  const image = sharp(buffer);
+  // Process image with Sharp - auto-rotate based on EXIF orientation
+  const image = sharp(buffer)
+    .rotate(); // This automatically rotates based on EXIF orientation
   const metadata = await image.metadata();
   
   console.log(`👤 Processing avatar: ${file.name} (${metadata.width}x${metadata.height}, ${Math.round(file.size / 1024)}KB)`);
@@ -105,7 +106,8 @@ export async function processAndSaveAvatar(
 
   try {
     // Upload original (cropped to square)
-    const originalBuffer = await image
+    const originalBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(800, 800, {
         fit: 'cover',
         position: 'center'
@@ -118,7 +120,8 @@ export async function processAndSaveAvatar(
     console.log(`✅ Uploaded original avatar: ${sizes.original}`);
 
     // Generate and upload thumbnail (circular crop optimized)
-    const thumbnailBuffer = await image
+    const thumbnailBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(AVATAR_SIZES.thumbnail.width, AVATAR_SIZES.thumbnail.height, {
         fit: 'cover',
         position: 'center'
@@ -131,7 +134,8 @@ export async function processAndSaveAvatar(
     console.log(`✅ Uploaded avatar thumbnail: ${sizes.thumbnail}`);
 
     // Generate and upload medium size
-    const mediumBuffer = await image
+    const mediumBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(AVATAR_SIZES.medium.width, AVATAR_SIZES.medium.height, {
         fit: 'cover',
         position: 'center'
@@ -144,7 +148,8 @@ export async function processAndSaveAvatar(
     console.log(`✅ Uploaded avatar medium: ${sizes.medium}`);
 
     // Generate and upload large size
-    const largeBuffer = await image
+    const largeBuffer = await sharp(buffer)
+      .rotate() // Apply EXIF rotation
       .resize(AVATAR_SIZES.large.width, AVATAR_SIZES.large.height, {
         fit: 'cover',
         position: 'center'

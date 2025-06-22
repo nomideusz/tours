@@ -93,6 +93,16 @@ export const actions: Actions = {
 
 			user = existingUser[0];
 			
+			// Check if account is deleted
+			if (user.deletedAt) {
+				console.log('Deleted user attempting login:', email);
+				return fail(400, {
+					email,
+					redirectTo,
+					error: 'Invalid email or password'
+				});
+			}
+			
 			// Verify password
 			if (!user.hashedPassword) {
 				console.log('User has no password (OAuth user):', email);

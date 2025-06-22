@@ -26,6 +26,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			userId: user.id,
 			country: user.country,
 			currency: user.currency,
+			location: user.location,
 			countryType: typeof user.country,
 			currencyType: typeof user.currency
 		});
@@ -40,6 +41,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			description: user.description || '',
 			phone: user.phone || '',
 			website: user.website || '',
+			location: user.location || '',
 			avatar: user.avatar || '',
 			verified: user.emailVerified || false,
 			stripeAccountId: user.stripeAccountId || '',

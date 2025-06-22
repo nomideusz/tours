@@ -133,10 +133,10 @@
 			active: currentPath === '/dashboard'
 		},
 		{
-			name: 'Analytics',
-			href: '/analytics',
-			icon: TrendingUp,
-			active: currentPath === '/analytics'
+			name: 'Bookings',
+			href: '/bookings',
+			icon: Calendar,
+			active: currentPath === '/bookings'
 		},
 		{
 			name: 'Scanner',

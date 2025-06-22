@@ -135,8 +135,16 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
 
     if (existingOAuthAccount.length > 0 && existingOAuthAccount[0].users) {
       // User already exists with this GitHub account
-      userId = existingOAuthAccount[0].users.id;
-      console.log('✅ Existing GitHub user logging in:', existingOAuthAccount[0].users.email);
+      const existingUser = existingOAuthAccount[0].users;
+      
+      // Check if account is deleted
+      if (existingUser.deletedAt) {
+        console.log('❌ Deleted user attempting GitHub OAuth login:', existingUser.email);
+        throw redirect(302, '/auth/login?error=oauth_callback_failed&message=' + encodeURIComponent('This account has been deleted'));
+      }
+      
+      userId = existingUser.id;
+      console.log('✅ Existing GitHub user logging in:', existingUser.email);
       
       // Update last login
       await db
@@ -154,6 +162,12 @@ export const GET: RequestHandler = async ({ url, cookies, request }) => {
         .limit(1);
 
       if (existingUserByEmail.length > 0) {
+        // Check if account is deleted
+        if (existingUserByEmail[0].deletedAt) {
+          console.log('❌ Deleted user attempting GitHub OAuth link:', existingUserByEmail[0].email);
+          throw redirect(302, '/auth/login?error=oauth_callback_failed&message=' + encodeURIComponent('This account has been deleted'));
+        }
+        
         // Link GitHub account to existing user
         userId = existingUserByEmail[0].id;
         
