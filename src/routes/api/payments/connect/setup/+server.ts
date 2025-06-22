@@ -139,15 +139,6 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 if (nameParts.length >= 2) {
                     accountParams.individual.first_name = nameParts[0];
                     accountParams.individual.last_name = nameParts.slice(1).join(' ');
-                    
-                    // For Express accounts, also set representative fields
-                    // These are often required even for individual business types
-                    accountParams.representative = {
-                        first_name: nameParts[0],
-                        last_name: nameParts.slice(1).join(' '),
-                        email: email,
-                        phone: userPhone || undefined,
-                    };
                 } else {
                     // If we only have one name, don't set name fields
                     // Let Stripe collect this during onboarding to ensure accuracy
@@ -159,26 +150,11 @@ export const POST: RequestHandler = async ({ request, url }) => {
                         delete accountParams.individual.first_name;
                         delete accountParams.individual.last_name;
                     }
-                    
-                    // For representative, we still need to provide basic info
-                    // but we'll let Stripe collect the proper name format
-                    accountParams.representative = {
-                        email: email,
-                        phone: userPhone || undefined,
-                    };
                 }
                 
                 // Make sure phone is included if not already set
                 if (userPhone && !accountParams.individual.phone) {
                     accountParams.individual.phone = userPhone;
-                }
-                
-                // Add address to representative if available
-                if (userLocation && accountParams.representative) {
-                    accountParams.representative.address = {
-                        city: userLocation,
-                        country: userCountry,
-                    };
                 }
             }
 
@@ -205,7 +181,6 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 hasWebsite: !!userWebsite,
                 hasLocation: !!userLocation,
                 hasName: !!user.name,
-                hasRepresentative: !!accountParams.representative,
                 returnUrl: finalReturnUrl
             });
         }
@@ -239,10 +214,24 @@ export const POST: RequestHandler = async ({ request, url }) => {
         }
 
         return json({ accountLink: finalUrl });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Stripe Connect setup error:', error);
         
         // Provide more specific error messages
+        if (error?.type === 'StripeInvalidRequestError') {
+            // Stripe-specific errors
+            if (error.param === 'representative') {
+                return json({ 
+                    error: 'Payment setup configuration error. Please contact support.',
+                    details: 'Invalid parameter: representative' 
+                }, { status: 400 });
+            }
+            return json({ 
+                error: error.message || 'Invalid payment setup request',
+                details: error.raw?.message || error.message 
+            }, { status: 400 });
+        }
+        
         if (error instanceof Error) {
             if (error.message.includes('account') || error.message.includes('Account')) {
                 return json({ 
@@ -256,6 +245,6 @@ export const POST: RequestHandler = async ({ request, url }) => {
             }, { status: 500 });
         }
         
-        return json({ error: 'Failed to setup payment account' }, { status: 500 });
+        return json({ error: 'Failed to setup payment account. Please try again.' }, { status: 500 });
     }
 }; 

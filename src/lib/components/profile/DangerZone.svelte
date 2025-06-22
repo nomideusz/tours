@@ -81,8 +81,8 @@
 <div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--color-danger-200);">
 	<div class="p-6 border-b" style="border-color: var(--color-danger-200);">
 		<div class="flex items-center gap-2">
-			<AlertTriangle class="h-5 w-5" style="color: var(--color-danger-600);" />
-			<h2 class="text-lg font-semibold" style="color: var(--color-danger-900);">Danger Zone</h2>
+			<AlertTriangle class="h-5 w-5" style="color: var(--color-danger-400);" />
+			<h2 class="text-lg font-semibold" style="color: var(--color-danger-400);">Danger Zone</h2>
 		</div>
 	</div>
 	

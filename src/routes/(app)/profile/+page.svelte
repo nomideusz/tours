@@ -17,9 +17,13 @@
 	import Copy from 'lucide-svelte/icons/copy';
 	import Camera from 'lucide-svelte/icons/camera';
 	import Globe from 'lucide-svelte/icons/globe';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
+	import UserCheck from 'lucide-svelte/icons/user-check';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
@@ -87,6 +91,7 @@
 	let avatarPreview = $state('');
 	let avatarLoadError = $state(false);
 	let uploadingAvatar = $state(false);
+	let avatarUploadError = $state('');
 	
 	// Profile link
 	let profileLinkCopied = $state(false);
@@ -95,6 +100,7 @@
 	let showPaymentConfirmModal = $state(false);
 	let pendingPaymentCountry = $state<string | null>(null);
 	let isSettingUpPayment = $state(false);
+	let paymentSetupError = $state<string | null>(null);
 	
 	// Initialize form data when user loads
 	let formInitialized = $state(false);
@@ -171,12 +177,15 @@
 		profileLoading = true;
 
 		try {
+			// Clean up phone if it's just a country code
+			const cleanPhone = phone.trim().match(/^\+\d{1,4}\s*$/) ? '' : phone;
+			
 			const formData = new FormData();
 			formData.append('name', name);
 			formData.append('username', username);
 			formData.append('businessName', businessName);
 			formData.append('description', description);
-			formData.append('phone', phone);
+			formData.append('phone', cleanPhone);
 			formData.append('website', website);
 			formData.append('location', location);
 			formData.append('country', country);
@@ -262,6 +271,9 @@
 	function setupPayments() {
 		if (!user || isSettingUpPayment) return;
 
+		// Clear any previous error
+		paymentSetupError = null;
+		
 		// Get the country for payment setup
 		const userCountry = country || user.country || 'US';
 		pendingPaymentCountry = userCountry;
@@ -291,14 +303,20 @@
 			if (!response.ok) {
 				const errorData = await response.json();
 				console.error('Payment setup API error:', errorData);
-				throw new Error(errorData.error || 'Failed to setup payment account');
+				paymentSetupError = errorData.error || 'Failed to setup payment account';
+				isSettingUpPayment = false;
+				pendingPaymentCountry = null;
+				return;
 			}
 
 			const { accountLink } = await response.json();
+			
+			// Small delay to show the loading state before redirect
+			await new Promise(resolve => setTimeout(resolve, 500));
 			window.location.href = accountLink;
 		} catch (error) {
 			console.error('Payment setup error:', error);
-			toastError(error instanceof Error ? error.message : 'Failed to setup payment account');
+			paymentSetupError = error instanceof Error ? error.message : 'Failed to setup payment account';
 			isSettingUpPayment = false;
 		} finally {
 			pendingPaymentCountry = null;
@@ -310,16 +328,28 @@
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 		
+		avatarUploadError = ''; // Clear previous errors
+		
 		if (file) {
 			// Validate file
 			const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 			if (!validTypes.includes(file.type)) {
-				toastError('Please select a valid image file (JPEG, PNG, or WebP)');
+				avatarUploadError = 'Please select a valid image file (JPEG, PNG, or WebP)';
+				toastError(avatarUploadError);
 				return;
 			}
 			
-			if (file.size > 2 * 1024 * 1024) {
-				toastError('Avatar image must be smaller than 2MB');
+			// Check file size (2MB limit)
+			const maxSize = 2 * 1024 * 1024; // 2MB
+			if (file.size > maxSize) {
+				const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+				avatarUploadError = `Image too large (${sizeInMB}MB). Maximum size is 2MB. Please compress or resize your image.`;
+				toastError(avatarUploadError);
+				
+				// Clear the error after 5 seconds
+				setTimeout(() => {
+					avatarUploadError = '';
+				}, 5000);
 				return;
 			}
 			
@@ -456,6 +486,48 @@
 			checkPaymentStatus();
 		}
 	});
+	
+	// Mobile header actions
+	let mobileQuickActions = $derived([
+		{
+			label: profileLinkCopied ? 'Copied!' : 'Copy Link',
+			icon: profileLinkCopied ? CheckCircle : Copy,
+			onclick: copyProfileLink,
+			variant: 'secondary' as const,
+			disabled: !username
+		},
+		{
+			label: 'View',
+			icon: ExternalLink,
+			onclick: () => window.open(`/${username}`, '_blank'),
+			variant: 'secondary' as const,
+			disabled: !username
+		}
+	]);
+	
+	// Mobile info items
+	let mobileInfoItems = $derived([
+		{
+			icon: User,
+			label: 'Username',
+			value: username || 'Not set'
+		},
+		{
+			icon: Mail,
+			label: 'Email',
+			value: user?.emailVerified ? 'Verified' : 'Unverified'
+		},
+		{
+			icon: CreditCard,
+			label: 'Payments',
+			value: paymentStatus.isSetup ? 'Active' : 'Not setup'
+		},
+		{
+			icon: UserCheck,
+			label: 'Status',
+			value: user?.role === 'admin' ? 'Admin' : 'User'
+		}
+	]);
 </script>
 
 <svelte:head>
@@ -463,51 +535,100 @@
 </svelte:head>
 
 {#if isLoading}
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 		<div class="flex justify-center items-center py-12">
 			<LoadingSpinner size="large" text="Loading profile..." />
 		</div>
 	</div>
 {:else if isError}
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 		<ErrorAlert variant="error" message="Failed to load profile data. Please refresh the page." />
 	</div>
 {:else}
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<!-- Header -->
-	<PageHeader 
-		title="Profile Settings"
-		subtitle="Manage your account information and preferences"
-	>
-		<div class="flex gap-3">
-			{#if username}
-				<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button--gap">
-					<ExternalLink class="h-4 w-4" />
-					View Profile
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Error Message Banner -->
+	{#if paymentSetupError}
+		<div
+			class="error-message mb-6 rounded-lg p-4"
+			style="background: var(--color-error-50); border: 1px solid var(--color-error-200);"
+		>
+			<div class="flex items-start gap-3">
+				<div class="flex-shrink-0">
+					<AlertCircle class="h-5 w-5" style="color: var(--color-error-600);" />
+				</div>
+				<div class="flex-1">
+					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-error-900);">
+						Payment setup failed
+					</h3>
+					<p class="text-sm" style="color: var(--color-error-700);">
+						{paymentSetupError}
+					</p>
+				</div>
+				<button
+					onclick={() => (paymentSetupError = null)}
+					class="button-secondary button--small button--icon ml-2"
+					aria-label="Close"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
 				</button>
-				<button onclick={copyProfileLink} class="button-secondary button--gap">
-					{#if profileLinkCopied}
-						<CheckCircle class="h-4 w-4" />
-						Copied!
-					{:else}
-						<Copy class="h-4 w-4" />
-						Copy Link
-					{/if}
-				</button>
-			{/if}
+			</div>
 		</div>
-	</PageHeader>
+	{/if}
+	
+	<!-- Mobile-First Header -->
+	<div class="mb-6 sm:mb-8">
+		<!-- Mobile Compact Header -->
+		<MobilePageHeader
+			title="Profile Settings"
+			secondaryInfo={user?.email || 'Loading...'}
+			quickActions={mobileQuickActions}
+			infoItems={mobileInfoItems}
+		/>
+
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Profile Settings"
+				subtitle="Manage your account information and preferences"
+			>
+				<div class="flex gap-3">
+					{#if username}
+						<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button--gap">
+							<ExternalLink class="h-4 w-4" />
+							View Profile
+						</button>
+						<button onclick={copyProfileLink} class="button-secondary button--gap">
+							{#if profileLinkCopied}
+								<CheckCircle class="h-4 w-4" />
+								Copied!
+							{:else}
+								<Copy class="h-4 w-4" />
+								Copy Link
+							{/if}
+						</button>
+					{/if}
+				</div>
+			</PageHeader>
+		</div>
+	</div>
 
 	<!-- Main Content -->
-	<div class="grid gap-8 lg:grid-cols-3 mt-8">
+	<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">
 		<!-- Main Column -->
-		<div class="lg:col-span-2 space-y-8">
+		<div class="lg:col-span-2 space-y-6 lg:space-y-8">
 			<!-- Avatar & Personal Information -->
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-6 border-b" style="border-color: var(--border-primary);">
+				<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
 					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Profile Information</h2>
 				</div>
-				<div class="p-6 space-y-6">
+				<div class="p-4 sm:p-6 space-y-6">
 					<!-- Avatar -->
 					<ProfileAvatar
 						{user}
@@ -519,6 +640,12 @@
 						onAvatarSelect={onAvatarSelect}
 						onRemoveAvatar={removeAvatar}
 					/>
+					
+					{#if avatarUploadError}
+						<div class="rounded-lg p-3 text-sm" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<p style="color: var(--color-error-700);">{avatarUploadError}</p>
+						</div>
+					{/if}
 					
 					<!-- Form -->
 					<PersonalInfoForm
@@ -540,6 +667,16 @@
 				</div>
 			</div>
 
+			<!-- Mobile: Payment Setup (higher priority on mobile) -->
+			<div class="lg:hidden">
+				<PaymentSetup
+					{paymentStatus}
+					onSetupPayments={setupPayments}
+					{isSettingUpPayment}
+					error={paymentSetupError}
+				/>
+			</div>
+
 			<!-- Security -->
 			{#if !user?.isOAuth2User}
 				<PasswordChangeForm
@@ -552,16 +689,26 @@
 					onSubmit={changePassword}
 				/>
 			{/if}
+
+			<!-- Mobile: Account Info -->
+			<div class="lg:hidden">
+				<AccountInfo {user} />
+			</div>
+
+			<!-- Mobile: Preferences -->
+			<div class="lg:hidden">
+				<PreferencesSection />
+			</div>
 			
-			<!-- Danger Zone -->
+			<!-- Danger Zone (always last) -->
 			<DangerZone
 				{user}
 				onDelete={deleteAccount}
 			/>
 		</div>
 
-		<!-- Sidebar -->
-		<div class="space-y-6">
+		<!-- Desktop Sidebar -->
+		<div class="hidden lg:block space-y-6">
 			<!-- Quick Links -->
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -602,6 +749,8 @@
 			<PaymentSetup
 				{paymentStatus}
 				onSetupPayments={setupPayments}
+				{isSettingUpPayment}
+				error={paymentSetupError}
 			/>
 
 			<!-- Account Info -->
@@ -617,18 +766,14 @@
 {#if showPaymentConfirmModal && pendingPaymentCountry}
 	{@const countryInfo = getCountryInfo(pendingPaymentCountry || '')}
 	{@const stripeCurrency = getCurrencyForCountry(pendingPaymentCountry || '')}
-	{@const userPreferredCurrency = currency || user?.currency || 'EUR'}
-	{@const currencyMismatch = userPreferredCurrency.toLowerCase() !== stripeCurrency.toLowerCase()}
 	<ConfirmationModal
 		isOpen={showPaymentConfirmModal}
 		title="Confirm Payment Account Country"
-		message={currencyMismatch
-			? `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. 
+		message={`You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}.
 
-⚠️ IMPORTANT: You prefer ${userPreferredCurrency} but Stripe requires ${stripeCurrency} for ${countryInfo?.name || pendingPaymentCountry}. Your payment account will use ${stripeCurrency} regardless of your preference.
+Your payment account will use ${stripeCurrency} as the currency.
 
-This country CANNOT be changed later. Please ensure this is where your business is legally registered.`
-			: `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+⚠️ This country CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
 		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
 		cancelText="Cancel"
 		variant="warning"
@@ -643,6 +788,29 @@ This country CANNOT be changed later. Please ensure this is where your business 
 			pendingPaymentCountry = null;
 		}}
 	/>
+{/if}
+
+<!-- Payment Setup Loading Overlay -->
+{#if isSettingUpPayment}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+		<div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl max-w-sm mx-4 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="mb-4">
+				<div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style="background: var(--bg-secondary);">
+					<CreditCard class="h-8 w-8 animate-pulse" style="color: var(--color-primary-600);" />
+				</div>
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Setting up your payment account</h3>
+				<p class="text-sm" style="color: var(--text-secondary);">
+					Please wait while we prepare your Stripe account...
+				</p>
+			</div>
+			<div class="flex justify-center">
+				<div class="w-8 h-8 border-3 border-t-transparent rounded-full animate-spin" style="border-color: var(--color-primary-600); border-top-color: transparent;"></div>
+			</div>
+			<p class="text-xs mt-4" style="color: var(--text-tertiary);">
+				You'll be redirected to Stripe in a moment
+			</p>
+		</div>
+	</div>
 {/if}
 {/if}
  

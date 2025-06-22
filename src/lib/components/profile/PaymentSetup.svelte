@@ -7,17 +7,21 @@
 
 	let {
 		paymentStatus,
-		onSetupPayments
+		onSetupPayments,
+		isSettingUpPayment = false,
+		error = null
 	}: {
 		paymentStatus: {
 			isSetup: boolean;
 			loading: boolean;
 		};
 		onSetupPayments: () => void;
+		isSettingUpPayment?: boolean;
+		error?: string | null;
 	} = $props();
 </script>
 
-<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);" data-payment-setup-section>
 	<div class="p-4 border-b" style="border-color: var(--border-primary);">
 		<div class="flex items-center gap-3">
 			<div class="p-2 rounded-lg" style="background: var(--color-success-light);">
@@ -53,23 +57,45 @@
 					{/if}
 				</div>
 
+				<!-- Error Message -->
+				{#if error && !paymentStatus.isSetup}
+					<div class="rounded-lg p-3 text-sm" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+						<div class="flex items-start gap-2">
+							<AlertCircle class="h-4 w-4 mt-0.5 flex-shrink-0" style="color: var(--color-error-600);" />
+							<p style="color: var(--color-error-700);">{error}</p>
+						</div>
+					</div>
+				{/if}
+
 				<!-- Setup Button -->
 				<div class="flex justify-center">
 					{#if !paymentStatus.isSetup}
 						<button
 							onclick={onSetupPayments}
+							disabled={isSettingUpPayment}
 							class="button-primary button--gap button--small"
 						>
-							<CreditCard class="h-3 w-3" />
-							Setup Payments
+							{#if isSettingUpPayment}
+								<span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+								Setting up...
+							{:else}
+								<CreditCard class="h-3 w-3" />
+								Setup Payments
+							{/if}
 						</button>
 					{:else}
 						<button
 							onclick={onSetupPayments}
+							disabled={isSettingUpPayment}
 							class="button-secondary button--gap button--small"
 						>
-							<CreditCard class="h-3 w-3" />
-							Manage Account
+							{#if isSettingUpPayment}
+								<span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+								Loading...
+							{:else}
+								<CreditCard class="h-3 w-3" />
+								Manage Account
+							{/if}
 						</button>
 					{/if}
 				</div>

@@ -9,7 +9,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
-	import { COUNTRY_LIST, getCountryInfo } from '$lib/utils/countries.js';
+	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
 
 	let {
 		user,
@@ -76,14 +76,29 @@
 		return '+1 (555) 123-4567';
 	});
 	
-	// Auto-update phone field when country changes
-	let initialPhoneSet = $state(false);
+	// Auto-suggest country code on first focus, but allow manual override
+	let hasAutoSuggested = $state(false);
+	
+	// Reset the flag when country changes or phone is cleared
 	$effect(() => {
-		const code = phoneCode();
-		// Only auto-populate if phone is completely empty and we haven't set it before
-		if (code && !phone && !initialPhoneSet) {
-			phone = code + ' ';
-			initialPhoneSet = true;
+		if (country) {
+			hasAutoSuggested = false;
+		}
+		// Also reset if phone is cleared so it can suggest again
+		if (!phone || phone.trim() === '') {
+			hasAutoSuggested = false;
+		}
+	});
+	
+	// Auto-update currency when country changes
+	$effect(() => {
+		if (country) {
+			const countryCurrency = getCurrencyForCountry(country);
+			if (countryCurrency && countryCurrency !== currency) {
+				currency = countryCurrency;
+				// Also update the global currency store
+				userCurrency.set(currency as Currency);
+			}
 		}
 	});
 
@@ -108,7 +123,15 @@
 
 	function validatePhone(value: string): string | null {
 		if (!value) return null; // Optional field
-		// Basic phone validation - at least 10 digits
+		
+		// Treat phone field with only country code as empty (optional)
+		const trimmedValue = value.trim();
+		// Check if it's just a country code (e.g., "+1 ", "+44", etc.)
+		if (trimmedValue.match(/^\+\d{1,4}\s*$/)) {
+			return null; // Treat as empty/optional
+		}
+		
+		// Basic phone validation - at least 10 digits total (including country code)
 		const digits = value.replace(/\D/g, '');
 		if (digits.length < 10) return 'Please enter a valid phone number with country code';
 		// Check if it starts with + for international format
@@ -358,23 +381,22 @@
 				<label for="currency" class="form-label">
 					Currency
 				</label>
-				<select
-					id="currency"
-					name="currency"
-					class="form-select cursor-pointer"
-					bind:value={currency}
-					onchange={() => userCurrency.set(currency as Currency)}
-					disabled={paymentSetup}
-				>
-					{#each Object.values(SUPPORTED_CURRENCIES) as currencyInfo}
-						<option value={currencyInfo.code}>
-							{currencyInfo.symbol} {currencyInfo.code}
-						</option>
-					{/each}
-				</select>
-				{#if paymentSetup}
-					<p class="text-xs mt-1" style="color: var(--color-warning);">
-						Display preference only - payments use account currency
+				{#if country}
+					{@const countryCurrency = getCurrencyForCountry(country)}
+					{@const currencyInfo = SUPPORTED_CURRENCIES[countryCurrency as Currency]}
+					<div class="form-input" style="background: var(--bg-tertiary); cursor: not-allowed;">
+						{currencyInfo.symbol} {currencyInfo.code} - {currencyInfo.name}
+					</div>
+					<input type="hidden" name="currency" value={currency} />
+					<p class="text-xs mt-1" style="color: var(--text-secondary);">
+						Currency is determined by your country selection
+					</p>
+				{:else}
+					<div class="form-input" style="background: var(--bg-tertiary); cursor: not-allowed; color: var(--text-tertiary);">
+						Select a country first
+					</div>
+					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+						Currency will be set based on your country
 					</p>
 				{/if}
 			</div>
@@ -401,13 +423,7 @@
 			</p>
 		</div>
 		
-		{#if paymentSetup && currency && country}
-			<div class="mt-4 p-3 rounded-lg" style="background: var(--color-info-50); border: 1px solid var(--color-info-200);">
-				<p class="text-xs" style="color: var(--color-info-800);">
-					<strong>Note:</strong> Your Stripe payment account processes all transactions in your country's native currency. The currency preference above only affects how prices are displayed to you in the dashboard.
-				</p>
-			</div>
-		{/if}
+
 	</div>
 
 	<!-- Contact Section -->
@@ -427,6 +443,21 @@
 						id="phone"
 						name="phone" 
 						bind:value={phone}
+						onfocus={() => {
+							const code = phoneCode();
+							// Auto-suggest country code on first focus if field is empty
+							if (code && !hasAutoSuggested && (!phone || phone.trim() === '')) {
+								phone = code + ' ';
+								hasAutoSuggested = true;
+								// Place cursor at end after DOM updates
+								setTimeout(() => {
+									const input = document.getElementById('phone') as HTMLInputElement;
+									if (input) {
+										input.setSelectionRange(input.value.length, input.value.length);
+									}
+								}, 0);
+							}
+						}}
 						onblur={() => handleBlur('phone')}
 						class="form-input pl-10"
 						class:border-red-300={touched.phone && errors.phone}
@@ -442,7 +473,7 @@
 				{:else}
 					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
 						{#if phoneCode() && country}
-							Business location: {getCountryInfo(country)?.name} ({phoneCode()}) • You can use any international number
+							Will suggest {phoneCode()} based on your country • You can override with any code below
 						{:else}
 							Include country code for payment processing
 						{/if}
@@ -450,19 +481,31 @@
 				{/if}
 				<details class="mt-2">
 					<summary class="text-xs cursor-pointer" style="color: var(--text-secondary);">
-						Common country codes
+						Use a different country code
 					</summary>
 					<div class="mt-1 flex flex-wrap gap-1">
 						{#each ['+1 US/CA', '+44 UK', '+49 DE', '+33 FR', '+39 IT', '+34 ES', '+61 AU', '+81 JP'] as code}
 							<button
 								type="button"
-								onclick={() => {
-									if (!phone || phone.length <= 5) {
-										phone = code.split(' ')[0] + ' ';
+								onclick={(e) => {
+									e.preventDefault();
+									// Extract country code
+									const countryCode = code.split(' ')[0];
+									
+									// Set phone to country code (overrides any auto-suggestion)
+									phone = countryCode + ' ';
+									hasAutoSuggested = true; // Prevent further auto-suggestions
+									
+									// Focus the phone input and place cursor at end
+									const phoneInput = document.getElementById('phone') as HTMLInputElement;
+									if (phoneInput) {
+										phoneInput.focus();
+										setTimeout(() => {
+											phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+										}, 0);
 									}
 								}}
-								class="text-xs px-2 py-0.5 rounded hover:bg-gray-100"
-								style="background: var(--bg-secondary); border: 1px solid var(--border-secondary);"
+								class="country-code-button"
 							>
 								{code}
 							</button>
@@ -529,4 +572,28 @@
 			{/if}
 		</button>
 	</div>
-</form> 
+</form>
+
+<style>
+	.country-code-button {
+		font-size: 0.75rem;
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.25rem;
+		transition: all 150ms ease;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		color: var(--text-primary);
+		cursor: pointer;
+		font-family: inherit;
+	}
+	
+	.country-code-button:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-primary);
+		color: var(--text-primary);
+	}
+	
+	.country-code-button:active {
+		transform: scale(0.98);
+	}
+</style> 

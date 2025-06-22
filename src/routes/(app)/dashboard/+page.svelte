@@ -190,12 +190,11 @@
 	let saveSuccess = $state(false);
 	let saveError = $state<string | null>(null);
 
-	// Show expanded selection UI
-	let showCurrencySelector = $state(false);
+	// Show country dropdown UI
 	let showCountryDropdown = $state(false);
 
 	// Track if user manually changed currency (different from country default)
-	let manualCurrencyOverride = $state(false);
+
 
 	// Import country data from shared module
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, type CountryInfo } from '$lib/utils/countries.js';
@@ -320,7 +319,6 @@
 
 				setTimeout(() => {
 					saveSuccess = false;
-					showCurrencySelector = false;
 				}, 100); // Just a short delay for smooth transition
 			} else {
 				const data = await response.json();
@@ -336,19 +334,17 @@
 	// Update currency when country changes and auto-set currency based on country
 	function onCountryChange(countryCode: string) {
 		selectedCountry = countryCode;
-		const country = getCountryInfo(countryCode);
-		// Only auto-set currency if user hasn't manually overridden it
-		if (country && !manualCurrencyOverride) {
-			selectedCurrency = country.currency as Currency;
+		// Auto-set currency based on country
+		const countryCurrency = getCurrencyForCountry(countryCode);
+		if (countryCurrency) {
+			selectedCurrency = countryCurrency as Currency;
+			// Also update the global currency store
+			userCurrency.set(selectedCurrency);
 		}
 		showCountryDropdown = false;
 	}
 
-	// Track manual currency changes
-	function onCurrencyChange(currency: Currency) {
-		selectedCurrency = currency;
-		manualCurrencyOverride = true;
-	}
+
 
 	// Reset selections to original values
 	function resetSelections() {
@@ -360,7 +356,7 @@
 			// Reset to user currency store value
 			selectedCurrency = $userCurrency;
 		}
-		manualCurrencyOverride = false;
+
 	}
 
 	// Load currency settings and check if confirmation needed
@@ -417,14 +413,20 @@
 			if (!response.ok) {
 				const errorData = await response.json();
 				console.error('Payment setup API error:', errorData);
-				throw new Error(errorData.error || 'Failed to setup payment account');
+				// Store the error for display
+				saveError = errorData.error || 'Failed to setup payment account';
+				isSettingUpPayment = false;
+				pendingPaymentCountry = null;
+				return;
 			}
 
 			const { accountLink } = await response.json();
 			window.location.href = accountLink;
 		} catch (error) {
 			console.error('Payment setup error:', error);
-			saveError = error instanceof Error ? error.message : 'Failed to setup payment account';
+			
+			// Network or other errors
+			saveError = error instanceof Error ? error.message : 'Failed to setup payment account. Please try again.';
 			isSettingUpPayment = false;
 		} finally {
 			pendingPaymentCountry = null;
@@ -704,6 +706,41 @@
 		</div>
 	{/if}
 
+	{#if saveError && !isNewUser}
+		<div
+			class="error-message mb-6 rounded-lg p-4"
+			style="background: var(--color-error-50); border: 1px solid var(--color-error-200);"
+		>
+			<div class="flex items-start gap-3">
+				<div class="flex-shrink-0">
+					<AlertCircle class="h-5 w-5" style="color: var(--color-error-600);" />
+				</div>
+				<div class="flex-1">
+					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-error-900);">
+						Payment setup failed
+					</h3>
+					<p class="text-sm" style="color: var(--color-error-700);">
+						{saveError}
+					</p>
+				</div>
+				<button
+					onclick={() => (saveError = null)}
+					class="button-secondary button--small button--icon ml-2"
+					aria-label="Close"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	{#if isLoading}
 		<!-- Loading State -->
 		<div class="flex min-h-[60vh] items-center justify-center">
@@ -830,195 +867,139 @@
 							>
 								<Globe class="h-4 w-4" />
 							</div>
-							<div class="flex-1">
+							<div class="flex-1 max-w-fit">
 								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
 									Confirm your business location
 								</h3>
 								<p class="mb-4 text-sm" style="color: var(--text-secondary);">
 									We'll use this to set your default currency and regional settings.
 								</p>
-								<div class="mb-4 rounded-lg p-3" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-									<div class="flex items-start gap-2">
-										<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" style="color: var(--color-warning-600);" />
-										<p class="text-xs" style="color: var(--color-warning-800);">
-											<strong>Important:</strong> Your country selection will determine where your Stripe payment account is created. This cannot be changed later due to financial regulations. Please ensure you select the country where your business is legally registered.
-										</p>
-									</div>
-								</div>
-
-								{#if !showCurrencySelector}
-									<div class="mb-4 flex items-center gap-3">
-										{#if currentCountryInfo}
-											<div
-												class="flex items-center gap-2 rounded-lg px-3 py-2"
-												style="background: var(--bg-primary); border: 1px solid var(--border-secondary);"
-											>
-												<span class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.flag}</span>
-												<span class="text-sm font-medium" style="color: var(--text-primary);"
-													>{currentCountryInfo.name}</span
-												>
-												<span class="text-sm" style="color: var(--text-tertiary);">•</span>
-												<span class="text-sm" style="color: var(--text-secondary);"
-													>{selectedCurrency}</span
-												>
-											</div>
-										{/if}
-									</div>
-									<div class="flex items-center gap-2">
-										<button
-											onclick={() => (showCurrencySelector = true)}
-											class="button-secondary button--small"
-										>
-											Change Location
-										</button>
-										<button
-											onclick={saveCurrencySelection}
-											disabled={savingCurrency || !selectedCountry || !selectedCurrency}
-											class="button-primary button--small"
-										>
-											{#if savingCurrency}
-												<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-												Saving...
-											{:else}
-												Confirm Location
-											{/if}
-										</button>
-									</div>
-								{:else}
-									<!-- Expanded Selection -->
-									<div class="space-y-4">
-										{#if saveError}
-											<div
-												class="rounded-lg p-3 text-sm"
-												style="background: var(--color-error-50); color: var(--color-error-700);"
-											>
-												{saveError}
-											</div>
-										{/if}
-
-										<!-- Country Selection -->
-										<div>
-											<label
-												class="mb-2 block text-xs font-medium"
-												style="color: var(--text-primary);">Select your country</label
-											>
-											<div class="relative">
-												<button
-													onclick={() => (showCountryDropdown = !showCountryDropdown)}
-													class="flex w-full items-center justify-between rounded-lg p-3 text-left"
-													style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-												>
-													<div class="flex items-center gap-2">
-														{#if currentCountryInfo}
-															<span class="text-sm font-medium" style="color: var(--text-primary);">{currentCountryInfo.flag}</span>
-															<span class="text-sm" style="color: var(--text-primary);"
-																>{currentCountryInfo.name}</span
-															>
-														{:else}
-															<span class="text-sm" style="color: var(--text-secondary);"
-																>Select country</span
-															>
-														{/if}
-													</div>
-													<svg
-														class="h-4 w-4"
-														style="color: var(--text-tertiary);"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													</svg>
-												</button>
-
-												{#if showCountryDropdown}
-													<div
-														class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
-														style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-													>
-														<div class="country-list max-h-48 overflow-y-auto">
-															{#each COUNTRY_LIST as country}
-																<button
-																	onclick={() => {
-																		onCountryChange(country.code);
-																		showCountryDropdown = false;
-																	}}
-																	class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
-																	style="color: var(--text-primary); background: transparent;"
-																	onmouseenter={(e) =>
-																		(e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
-																	onmouseleave={(e) =>
-																		(e.currentTarget.style.backgroundColor = 'transparent')}
-																>
-																	<span>{country.flag}</span>
-																	<span>{country.name}</span>
-																	{#if selectedCountry === country.code}
-																		<CheckCircle
-																			class="ml-auto h-3 w-3"
-																			style="color: var(--color-primary-600);"
-																		/>
-																	{/if}
-																</button>
-															{/each}
-														</div>
-													</div>
-												{/if}
+								
+								<!-- Simplified Country Selection -->
+								<div class="space-y-3">
+									<!-- Warning Message -->
+									<div class="rounded-lg p-3" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+										<div class="flex items-start gap-2">
+											<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" style="color: var(--color-warning-600);" />
+											<div class="min-w-0 flex-1">
+												<p class="text-xs leading-relaxed" style="color: var(--color-warning-800);">
+													<strong>Important:</strong> Country selection determines your payment account location.
+												</p>
+												<p class="text-xs leading-relaxed mt-1" style="color: var(--color-warning-800);">
+													This cannot be changed later. Choose where your business is registered.
+												</p>
 											</div>
 										</div>
+									</div>
 
-										<!-- Currency Display -->
-										<div>
-											<label
-												class="mb-2 block text-xs font-medium"
-												style="color: var(--text-primary);">Currency</label
+									<!-- Country Dropdown -->
+									<div>
+										<label class="mb-1.5 block text-xs font-medium" style="color: var(--text-primary);">
+											Select your country
+										</label>
+										<div class="relative">
+											<button
+												onclick={() => (showCountryDropdown = !showCountryDropdown)}
+												class="flex w-full items-center justify-between rounded-lg p-3 text-left"
+												style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 											>
-											<div class="grid grid-cols-3 gap-2">
-												{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
-													<button
-														onclick={() => onCurrencyChange(code as Currency)}
-														class="currency-button rounded-lg p-2 text-xs font-medium transition-all
-																{selectedCurrency === code ? 'selected' : ''}"
-													>
-														{info.symbol}
-														{code}
-													</button>
-												{/each}
-											</div>
-											<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
-												Select the currency you'll use for your tours
+												<div class="flex items-center gap-2">
+													{#if currentCountryInfo}
+														<span class="text-sm font-medium">{currentCountryInfo.flag}</span>
+														<span class="text-sm" style="color: var(--text-primary);">
+															{currentCountryInfo.name}
+														</span>
+													{:else}
+														<span class="text-sm" style="color: var(--text-secondary);">
+															Select country
+														</span>
+													{/if}
+												</div>
+												<svg
+													class="h-4 w-4 transition-transform {showCountryDropdown ? 'rotate-180' : ''}"
+													style="color: var(--text-tertiary);"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 9l-7 7-7-7"
+													/>
+												</svg>
+											</button>
+
+											{#if showCountryDropdown}
+												<div
+													class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
+													style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-height: 16rem;"
+												>
+													<div class="overflow-y-auto" style="max-height: 16rem;">
+														{#each COUNTRY_LIST as country}
+															<button
+																onclick={() => {
+																	onCountryChange(country.code);
+																	showCountryDropdown = false;
+																}}
+																class="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+																style="color: var(--text-primary);"
+															>
+																<span>{country.flag}</span>
+																<span>{country.name}</span>
+																{#if selectedCountry === country.code}
+																	<CheckCircle
+																		class="ml-auto h-3.5 w-3.5"
+																		style="color: var(--color-primary-600);"
+																	/>
+																{/if}
+															</button>
+														{/each}
+													</div>
+												</div>
+											{/if}
+										</div>
+									</div>
+
+									<!-- Currency Display -->
+									{#if selectedCountry}
+										{@const countryCurrency = getCurrencyForCountry(selectedCountry)}
+										{@const currencyInfo = SUPPORTED_CURRENCIES[countryCurrency as Currency]}
+										<div class="rounded-lg p-3" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
+											<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">
+												Your currency will be:
+											</p>
+											<p class="text-sm font-medium" style="color: var(--text-primary);">
+												{currencyInfo.symbol} {currencyInfo.code} - {currencyInfo.name}
 											</p>
 										</div>
+									{/if}
 
-										<div class="flex justify-end gap-2 pt-2">
-											<button
-												onclick={() => {
-													resetSelections();
-													showCurrencySelector = false;
-												}}
-												class="button-secondary button--small"
-											>
-												Cancel
-											</button>
-											<button
-												onclick={saveCurrencySelection}
-												disabled={savingCurrency || !selectedCountry}
-												class="button-primary button--small"
-											>
-												{#if savingCurrency}
-													<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-													Saving...
-												{:else}
-													Save Location
-												{/if}
-											</button>
+									<!-- Error message -->
+									{#if saveError}
+										<div
+											class="rounded-lg p-3 text-sm"
+											style="background: var(--color-error-50); color: var(--color-error-700);"
+										>
+											{saveError}
 										</div>
-									</div>
-								{/if}
+									{/if}
+
+									<!-- Action Button -->
+									<button
+										onclick={saveCurrencySelection}
+										disabled={savingCurrency || !selectedCountry}
+										class="button-primary button--small w-full"
+									>
+										{#if savingCurrency}
+											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
+											Saving...
+										{:else}
+											Confirm Location
+										{/if}
+									</button>
+								</div>
 							</div>
 						</div>
 					{:else}
@@ -1068,7 +1049,7 @@
 								>
 									<CreditCard class="h-4 w-4" />
 								</div>
-								<div class="flex-1">
+								<div class="flex-1 max-w-fit">
 									<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
 										Connect your bank account
 									</h3>
@@ -1076,27 +1057,34 @@
 										Set up payments to receive money from tour bookings directly to your bank
 										account.
 									</p>
-									{#if needsConfirmation}
-										<p class="text-xs" style="color: var(--text-tertiary);">
-											Confirm your location first to set up payments for your region
+																{#if needsConfirmation}
+								<p class="text-xs" style="color: var(--text-tertiary);">
+									Confirm your location first to set up payments for your region
+								</p>
+							{:else}
+								<div class="space-y-2">
+									<button
+										onclick={setupPayments}
+										disabled={isSettingUpPayment}
+										class="button-primary button--small"
+									>
+										{#if isSettingUpPayment}
+											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
+											Redirecting to Stripe...
+										{:else}
+											Connect with Stripe
+										{/if}
+									</button>
+									<div class="rounded-lg p-2 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+										<p class="text-xs" style="color: var(--color-warning-700);">
+											<strong>Note:</strong> Your country ({currentCountryInfo?.name || 'selected country'}) cannot be changed after payment setup
 										</p>
-									{:else}
-										<button
-											onclick={setupPayments}
-											disabled={isSettingUpPayment}
-											class="button-primary button--small"
-										>
-											{#if isSettingUpPayment}
-												<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-												Redirecting to Stripe...
-											{:else}
-												Connect with Stripe
-											{/if}
-										</button>
-										<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
-											Stripe will use your selected country for payment processing
-										</p>
-									{/if}
+									</div>
+									<p class="text-xs" style="color: var(--text-tertiary);">
+										Wrong country? <a href="/profile" class="underline">Update in Profile</a> before continuing
+									</p>
+								</div>
+							{/if}
 								</div>
 							</div>
 						{:else}
@@ -1271,220 +1259,135 @@
 							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
 								Confirm location
 							</h3>
-							<p class="text-xs" style="color: var(--text-secondary);">
-								{currentCountryInfo?.name || 'Select country'} • {selectedCurrency}
-							</p>
-						</div>
-						<div class="flex items-center gap-1">
-							<button
-								onclick={saveCurrencySelection}
-								disabled={savingCurrency || !selectedCountry}
-								class="button-primary button--small px-2 py-1 text-xs"
-							>
-								{#if savingCurrency}
-									<Loader2 class="h-3 w-3 animate-spin" />
-								{:else}
-									Confirm
+							<div class="relative mt-1">
+								<button
+									onclick={() => (showCountryDropdown = !showCountryDropdown)}
+									class="flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs"
+									style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+								>
+									<div class="flex items-center gap-1.5">
+										{#if currentCountryInfo}
+											<span>{currentCountryInfo.flag}</span>
+											<span style="color: var(--text-primary);">
+												{currentCountryInfo.name}
+											</span>
+											<span style="color: var(--text-tertiary);">•</span>
+											<span style="color: var(--text-secondary);">
+												{selectedCurrency}
+											</span>
+										{:else}
+											<span style="color: var(--text-secondary);">
+												Select country
+											</span>
+										{/if}
+									</div>
+									<svg
+										class="h-3 w-3 transition-transform {showCountryDropdown ? 'rotate-180' : ''}"
+										style="color: var(--text-tertiary);"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 9l-7 7-7-7"
+										/>
+									</svg>
+								</button>
+
+								{#if showCountryDropdown}
+									<div
+										class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
+										style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-height: 12rem;"
+									>
+										<div class="overflow-y-auto" style="max-height: 12rem;">
+											{#each COUNTRY_LIST as country}
+												<button
+													onclick={async () => {
+														onCountryChange(country.code);
+														showCountryDropdown = false;
+														await saveCurrencySelection();
+													}}
+													class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+													style="color: var(--text-primary);"
+												>
+													<span>{country.flag}</span>
+													<span>{country.name}</span>
+													{#if selectedCountry === country.code}
+														<CheckCircle
+															class="ml-auto h-3 w-3"
+															style="color: var(--color-primary-600);"
+														/>
+													{/if}
+												</button>
+											{/each}
+										</div>
+									</div>
 								{/if}
-							</button>
-							<button
-								onclick={() => (showCurrencySelector = true)}
-								class="button-secondary button--small px-2 py-1 text-xs"
-							>
-								Change
-							</button>
+							</div>
 						</div>
 					</div>
 				{/if}
 
 				{#if !paymentStatus.loading && !paymentStatus.isSetup}
 					<div
-						class="flex items-start gap-3 rounded-lg p-4"
+						class="rounded-lg p-4"
 						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
 					>
-						<CreditCard class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
-						<div class="min-w-0 flex-1">
-							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
-								Payment setup
-							</h3>
-							<p class="text-xs" style="color: var(--text-secondary);">Connect bank account</p>
-						</div>
-						<button
-							onclick={setupPayments}
-							disabled={isSettingUpPayment || needsConfirmation}
-							class="button-primary button--small px-2 py-1 text-xs"
-						>
-							{#if isSettingUpPayment}
-								<Loader2 class="h-3 w-3 animate-spin" />
+						<div class="flex items-start gap-3">
+							<CreditCard class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
+							<div class="min-w-0 flex-1">
+								<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
+									Payment setup
+								</h3>
+								<p class="text-xs" style="color: var(--text-secondary);">
+									{#if needsConfirmation}
+										Confirm location first
+									{:else}
+										Connect bank account
+									{/if}
+								</p>
+							</div>
+							{#if needsConfirmation}
+								<span class="text-xs" style="color: var(--text-tertiary);">
+									<AlertCircle class="inline h-3 w-3" />
+								</span>
 							{:else}
-								Setup
+								<button
+									onclick={setupPayments}
+									disabled={isSettingUpPayment}
+									class="button-primary button--small px-2 py-1 text-xs"
+								>
+									{#if isSettingUpPayment}
+										<Loader2 class="h-3 w-3 animate-spin" />
+									{:else}
+										Setup
+									{/if}
+								</button>
 							{/if}
-						</button>
+						</div>
+						{#if !needsConfirmation && currentCountryInfo}
+							<div class="mt-2 rounded p-1.5" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+								<p class="text-[10px]" style="color: var(--color-warning-700);">
+									Country: {currentCountryInfo.name} (permanent)
+								</p>
+							</div>
+						{/if}
+						{#if saveError && !needsConfirmation}
+							<div class="mt-2 rounded p-1.5" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+								<p class="text-[10px]" style="color: var(--color-error-700);">
+									{saveError}
+								</p>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
 		{/if}
 
-		<!-- Currency Settings Modal (when expanded) -->
-		{#if showCurrencySelector}
-			<div
-				class="mb-6 rounded-lg p-4"
-				style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-			>
-				<div class="space-y-4">
-					<div class="flex items-center justify-between">
-						<h3 class="text-sm font-medium" style="color: var(--text-primary);">
-							Update Location Settings
-						</h3>
-						<button
-							onclick={() => {
-								resetSelections();
-								showCurrencySelector = false;
-							}}
-							class="button-secondary button--small button--icon"
-							aria-label="Close"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-						</button>
-					</div>
 
-					{#if saveError}
-						<div
-							class="rounded-lg p-3 text-sm"
-							style="background: var(--color-error-50); color: var(--color-error-700);"
-						>
-							{saveError}
-						</div>
-					{/if}
-
-					<!-- Country Selection -->
-					<div>
-						<label class="mb-2 block text-xs font-medium" style="color: var(--text-primary);"
-							>Country</label
-						>
-						<div class="relative">
-							<button
-								onclick={() => (showCountryDropdown = !showCountryDropdown)}
-								class="flex w-full items-center justify-between rounded-lg p-3 text-left"
-								style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-							>
-								<div class="flex items-center gap-2">
-									{#if currentCountryInfo}
-										<span>{currentCountryInfo.flag}</span>
-										<span class="text-sm" style="color: var(--text-primary);"
-											>{currentCountryInfo.name}</span
-										>
-									{:else}
-										<span class="text-sm" style="color: var(--text-secondary);">Select country</span
-										>
-									{/if}
-								</div>
-								<svg
-									class="h-4 w-4"
-									style="color: var(--text-tertiary);"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M19 9l-7 7-7-7"
-									/>
-								</svg>
-							</button>
-
-							{#if showCountryDropdown}
-								<div
-									class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
-									style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-								>
-									<div class="country-list max-h-48 overflow-y-auto">
-										{#each COUNTRY_LIST as country}
-											<button
-												onclick={() => {
-													onCountryChange(country.code);
-													showCountryDropdown = false;
-												}}
-												class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors"
-												style="color: var(--text-primary); background: transparent;"
-												onmouseenter={(e) =>
-													(e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
-												onmouseleave={(e) =>
-													(e.currentTarget.style.backgroundColor = 'transparent')}
-											>
-												<span>{country.flag}</span>
-												<span>{country.name}</span>
-												{#if selectedCountry === country.code}
-													<CheckCircle
-														class="ml-auto h-3 w-3"
-														style="color: var(--color-primary-600);"
-													/>
-												{/if}
-											</button>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Currency Display (Read-only) -->
-					<div>
-						<label class="mb-2 block text-xs font-medium" style="color: var(--text-primary);"
-							>Currency</label
-						>
-						<div class="grid grid-cols-3 gap-2">
-							{#each Object.entries(SUPPORTED_CURRENCIES) as [code, info]}
-								<button
-									onclick={() => onCurrencyChange(code as Currency)}
-									class="currency-button rounded-lg p-2 text-xs font-medium transition-all
-											{selectedCurrency === code ? 'selected' : ''}"
-								>
-									{info.symbol}
-									{code}
-								</button>
-							{/each}
-						</div>
-						<p class="mt-2 text-xs" style="color: var(--text-tertiary);">
-							Select the currency you'll use for your tours
-						</p>
-					</div>
-
-					<div class="flex justify-end gap-2 pt-2">
-						<button
-							onclick={() => {
-								resetSelections();
-								showCurrencySelector = false;
-							}}
-							class="button-secondary button--small"
-						>
-							Cancel
-						</button>
-						<button
-							onclick={saveCurrencySelection}
-							disabled={savingCurrency || !selectedCountry}
-							class="button-primary button--small"
-						>
-							{#if savingCurrency}
-								<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-								Saving...
-							{:else}
-								Save Location
-							{/if}
-						</button>
-					</div>
-				</div>
-			</div>
-		{/if}
 
 		<!-- Performance Overview -->
 		<div class="mb-6">
@@ -1836,18 +1739,14 @@
 {#if showPaymentConfirmModal && pendingPaymentCountry}
 	{@const countryInfo = getCountryInfo(pendingPaymentCountry || '')}
 	{@const stripeCurrency = getCurrencyForCountry(pendingPaymentCountry || '')}
-	{@const userPreferredCurrency = profile?.currency || selectedCurrency}
-	{@const currencyMismatch = userPreferredCurrency.toLowerCase() !== stripeCurrency.toLowerCase()}
 	<ConfirmationModal
 		isOpen={showPaymentConfirmModal}
 		title="Confirm Payment Account Country"
-		message={currencyMismatch
-			? `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. 
+		message={`You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}.
 
-⚠️ IMPORTANT: You prefer ${userPreferredCurrency} but Stripe requires ${stripeCurrency} for ${countryInfo?.name || pendingPaymentCountry}. Your payment account will use ${stripeCurrency} regardless of your preference.
+Your payment account will use ${stripeCurrency} as the currency.
 
-This country CANNOT be changed later. Please ensure this is where your business is legally registered.`
-			: `You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}. This CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+⚠️ This country CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
 		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
 		cancelText="Cancel"
 		variant="warning"
@@ -1886,24 +1785,7 @@ This country CANNOT be changed later. Please ensure this is where your business 
 		opacity: 1;
 	}
 
-	.currency-button {
-		background-color: var(--bg-primary);
-		border: 1px solid var(--border-secondary);
-		color: var(--text-primary);
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
 
-	.currency-button:hover {
-		background-color: var(--bg-secondary);
-		border-color: var(--border-primary);
-	}
-
-	.currency-button.selected {
-		background-color: var(--color-primary-100);
-		border-color: var(--color-primary-500);
-		color: var(--color-primary-700);
-	}
 
 	.subscription-tier {
 		position: relative;
