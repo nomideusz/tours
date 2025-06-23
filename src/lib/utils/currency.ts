@@ -147,4 +147,48 @@ export function formatTourOwnerCurrency(amount: number | string, ownerCurrency?:
 		? ownerCurrency as Currency 
 		: 'EUR';
 	return formatCurrency(amount, { currency });
-} 
+}
+
+/**
+ * Minimum charge amounts for different currencies in Stripe
+ * https://stripe.com/docs/currencies#minimum-and-maximum-charge-amounts
+ */
+export const STRIPE_MINIMUM_CHARGE_AMOUNTS: Record<Currency, number> = {
+	EUR: 0.50,
+	USD: 0.50,
+	GBP: 0.50,
+	PLN: 2.00,
+	SEK: 3.00,
+	NOK: 3.00,
+	DKK: 3.00,
+	CHF: 0.50,
+	CAD: 0.50,
+	AUD: 0.50,
+	NZD: 0.50,
+	SGD: 0.50,
+	HKD: 1.00,
+	JPY: 50,
+	THB: 10.00,
+	MXN: 10.00,
+	AED: 2.00,
+	CZK: 15.00
+};
+
+/**
+ * Get the minimum charge amount for a given currency
+ */
+export function getMinimumChargeAmount(currency?: Currency | string): number {
+	const curr = currency || get(userCurrency);
+	if (curr in STRIPE_MINIMUM_CHARGE_AMOUNTS) {
+		return STRIPE_MINIMUM_CHARGE_AMOUNTS[curr as Currency];
+	}
+	// Default to EUR minimum if currency not found
+	return STRIPE_MINIMUM_CHARGE_AMOUNTS.EUR;
+}
+
+/**
+ * Create a reactive store for minimum charge amount
+ */
+export const currentMinimumChargeAmount = derived(userCurrency, ($currency) => {
+	return getMinimumChargeAmount($currency);
+}); 

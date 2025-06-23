@@ -11,6 +11,8 @@ export const GET: RequestHandler = async ({ params }) => {
 		return json({ error: 'Booking ID required' }, { status: 400 });
 	}
 	
+	console.log(`API: Loading booking status for ID: ${bookingId}`);
+	
 	try {
 		// Get booking details with all related data
 		const bookingData = await db
@@ -50,7 +52,8 @@ export const GET: RequestHandler = async ({ params }) => {
 				// Tour owner fields
 				tourOwnerEmail: users.email,
 				tourOwnerName: users.name,
-				tourOwnerUsername: users.username
+				tourOwnerUsername: users.username,
+				tourOwnerCurrency: users.currency
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
@@ -60,16 +63,19 @@ export const GET: RequestHandler = async ({ params }) => {
 			.limit(1);
 		
 		if (bookingData.length === 0) {
+			console.log(`API: Booking not found: ${bookingId}`);
 			return json({ error: 'Booking not found' }, { status: 404 });
 		}
 		
 		const booking = bookingData[0];
 		
-		console.log(`Booking status API called for ${bookingId}:`, {
+		console.log(`API: Booking status for ${bookingId}:`, {
 			status: booking.status,
 			paymentStatus: booking.paymentStatus,
 			paymentId: booking.paymentId,
-			hasPaymentId: !!booking.paymentId
+			hasPaymentId: !!booking.paymentId,
+			ticketQRCode: booking.ticketQRCode,
+			tourOwnerCurrency: booking.tourOwnerCurrency
 		});
 		
 		// Check if this is a valid booking for status checking
@@ -83,20 +89,24 @@ export const GET: RequestHandler = async ({ params }) => {
 			(booking.paymentStatus === 'failed')
 		);
 		
-		console.log(`Booking ${bookingId} validation:`, {
+		console.log(`API: Booking ${bookingId} validation:`, {
 			isValidForStatus,
 			confirmedAndPaid: booking.status === 'confirmed' && booking.paymentStatus === 'paid',
 			pendingPayment: booking.status === 'pending' && booking.paymentStatus === 'pending',
-			paymentFailed: booking.paymentStatus === 'failed'
+			paymentFailed: booking.paymentStatus === 'failed',
+			actualStatus: booking.status,
+			actualPaymentStatus: booking.paymentStatus
 		});
 		
 		if (!isValidForStatus) {
-			console.log(`Booking ${bookingId} rejected - invalid status combination`);
+			console.log(`API: Booking ${bookingId} rejected - invalid status combination: status=${booking.status}, paymentStatus=${booking.paymentStatus}`);
 			return json({ error: 'Booking status cannot be checked' }, { status: 400 });
 		}
 		
 		// Determine if payment is still processing
 		const isPaymentProcessing = booking.status === 'pending' && booking.paymentStatus === 'pending' && booking.paymentId;
+		
+		console.log(`API: Returning booking data for ${bookingId}, isPaymentProcessing: ${isPaymentProcessing}`);
 		
 		// Transform to match expected format with expand structure
 		const formattedBooking = {
@@ -144,12 +154,13 @@ export const GET: RequestHandler = async ({ params }) => {
 			isPaymentProcessing,
 			tourOwner: {
 				username: booking.tourOwnerUsername,
-				name: booking.tourOwnerName
+				name: booking.tourOwnerName,
+				currency: booking.tourOwnerCurrency || 'EUR'
 			}
 		});
 		
 	} catch (err) {
-		console.error('Error loading booking status:', err);
+		console.error('API: Error loading booking status:', err);
 		return json({ error: 'Failed to load booking status' }, { status: 500 });
 	}
 }; 

@@ -128,12 +128,28 @@ export function createBookingStatusQuery(bookingId: string) {
 	return createQuery({
 		queryKey: ['public', 'booking', 'status', bookingId],
 		queryFn: async () => {
-			const response = await fetch(`/api/public/booking/${bookingId}/status`);
-			if (!response.ok) {
-				const error = await response.json().catch(() => ({ error: 'Failed to load booking status' }));
-				throw new Error(error.error || 'Failed to load booking status');
+			try {
+				console.log(`Fetching booking status for: ${bookingId}`);
+				const response = await fetch(`/api/public/booking/${bookingId}/status`);
+				console.log(`Booking status response:`, response.status);
+				
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({ error: 'Failed to load booking status' }));
+					console.error(`Booking status error:`, errorData);
+					throw new Error(errorData.error || `Failed to load booking status (${response.status})`);
+				}
+				
+				const data = await response.json();
+				console.log(`Booking status data:`, data);
+				return data;
+			} catch (error) {
+				console.error(`Error fetching booking status:`, error);
+				// Re-throw with a clearer error message
+				if (error instanceof Error) {
+					throw error;
+				}
+				throw new Error('Network error loading booking status');
 			}
-			return response.json();
 		},
 		refetchInterval: 3000, // 3 seconds - very frequent for payment processing
 		refetchOnWindowFocus: true,

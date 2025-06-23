@@ -18,21 +18,37 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ error: 'No signature' }, { status: 400 });
   }
 
-  if (!privateEnv.STRIPE_WEBHOOK_SECRET) {
-    console.error('STRIPE_WEBHOOK_SECRET not configured');
-    return json({ error: 'Webhook secret not configured' }, { status: 500 });
+  if (!privateEnv.STRIPE_WEBHOOK_SECRET && !privateEnv.STRIPE_CONNECT_WEBHOOK_SECRET) {
+    console.error('No webhook secrets configured');
+    return json({ error: 'Webhook secrets not configured' }, { status: 500 });
   }
 
   let event: Stripe.Event;
 
   try {
     const stripe = getStripe();
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      privateEnv.STRIPE_WEBHOOK_SECRET
-    );
-    console.log(`Webhook received: ${event.type} - ID: ${event.id}`);
+    
+    // Try platform webhook secret first (for customer payment events)
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        sig,
+        privateEnv.STRIPE_WEBHOOK_SECRET
+      );
+      console.log(`Platform webhook received: ${event.type} - ID: ${event.id}`);
+    } catch (err) {
+      // If platform secret fails, try connect webhook secret
+      if (privateEnv.STRIPE_CONNECT_WEBHOOK_SECRET) {
+        event = stripe.webhooks.constructEvent(
+          body,
+          sig,
+          privateEnv.STRIPE_CONNECT_WEBHOOK_SECRET
+        );
+        console.log(`Connect webhook received: ${event.type} - ID: ${event.id} - Account: ${event.account}`);
+      } else {
+        throw err;
+      }
+    }
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return json({ error: 'Invalid signature' }, { status: 400 });

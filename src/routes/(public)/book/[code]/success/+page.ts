@@ -22,4 +22,7 @@ export const load: PageLoad = async ({ params, url, parent }) => {
 		bookingId,
 		qrCode: params.code
 	};
-}; 
+};
+
+// Disable SSR to avoid fetch issues
+export const ssr = false; 

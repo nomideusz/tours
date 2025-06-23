@@ -2,6 +2,7 @@
 	import NumberInput from './NumberInput.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
+	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
 	
 	// Import clean icons instead of using emojis
 	import User from 'lucide-svelte/icons/user';
@@ -94,6 +95,12 @@
 	
 	// Get currency symbol for display
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
+	
+	// Get minimum charge amount for current currency
+	let minimumPrice = $derived($currentMinimumChargeAmount);
+	
+	// Get appropriate step value based on currency
+	let priceStep = $derived(minimumPrice >= 10 ? 1 : 0.5);
 
 	// Note: Reactive validation is handled by individual field validation functions
 	// to avoid conflicts and ensure consistent error state management
@@ -581,9 +588,9 @@
 						name="price"
 						label="Price ({currencySymbol})"
 						bind:value={formData.price}
-						min={0.5}
+						min={minimumPrice}
 						max={99999}
-						step={0.5}
+						step={priceStep}
 						placeholder="25.00"
 						incrementLabel="Increase price"
 						decrementLabel="Decrease price"
@@ -592,6 +599,11 @@
 						decimalPlaces={2}
 						onblur={() => validateField('price')}
 					/>
+					{#if minimumPrice > 0.5}
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">
+							Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice}
+						</p>
+					{/if}
 
 				<NumberInput
 					id="duration"
@@ -672,7 +684,7 @@
 									bind:value={childPrice}
 									min={0}
 									max={formData.price || 99999}
-									step={0.5}
+									step={priceStep}
 									placeholder="0.00"
 									incrementLabel="Increase child price"
 									decrementLabel="Decrease child price"

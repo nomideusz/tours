@@ -1,4 +1,7 @@
 import type { Tour, TimeSlot } from './types.js';
+import { get } from 'svelte/store';
+import { userCurrency } from '$lib/stores/currency.js';
+import { getMinimumChargeAmount, getCurrencySymbol } from '$lib/utils/currency.js';
 
 export interface ValidationError {
 	field: string;
@@ -53,7 +56,7 @@ const VALIDATION_RULES = {
 	},
 	price: {
 		required: true,
-		min: 0.5,
+		min: 0.5, // This will be overridden by currency-specific minimum
 		max: 10000
 	},
 	duration: {
@@ -120,6 +123,11 @@ const VALID_RECURRING_PATTERNS: TimeSlot['recurringPattern'][] = ['daily', 'week
 export function validateTourForm(data: Partial<TourFormData>): ValidationResult {
 	const errors: ValidationError[] = [];
 
+	// Get current currency for validation
+	const currency = get(userCurrency);
+	const currencySymbol = getCurrencySymbol(currency);
+	const minimumPrice = getMinimumChargeAmount(currency);
+
 	// Validate name
 	if (!data.name || data.name.trim() === '') {
 		errors.push({ field: 'name', message: 'Tour name is required' });
@@ -151,11 +159,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		if (data.price === undefined || data.price === null) {
 			errors.push({ field: 'price', message: 'Price is required' });
 		} else {
-			if (data.price < VALIDATION_RULES.price.min) {
-				errors.push({ field: 'price', message: `Price must be at least €${VALIDATION_RULES.price.min}` });
+			if (data.price < minimumPrice) {
+				errors.push({ field: 'price', message: `Price must be at least ${currencySymbol}${minimumPrice}` });
 			}
 			if (data.price > VALIDATION_RULES.price.max) {
-				errors.push({ field: 'price', message: `Price must be no more than €${VALIDATION_RULES.price.max}` });
+				errors.push({ field: 'price', message: `Price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
 			}
 		}
 	}
@@ -169,11 +177,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 			if (data.pricingTiers.adult === undefined || data.pricingTiers.adult === null) {
 				errors.push({ field: 'pricingTiers.adult', message: 'Adult price is required' });
 			} else {
-				if (data.pricingTiers.adult < VALIDATION_RULES.price.min) {
-					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be at least €${VALIDATION_RULES.price.min}` });
+				if (data.pricingTiers.adult < minimumPrice) {
+					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be at least ${currencySymbol}${minimumPrice}` });
 				}
 				if (data.pricingTiers.adult > VALIDATION_RULES.price.max) {
-					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be no more than €${VALIDATION_RULES.price.max}` });
+					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
 				}
 			}
 
@@ -183,7 +191,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 					errors.push({ field: 'pricingTiers.child', message: 'Child price cannot be negative' });
 				}
 				if (data.pricingTiers.child > VALIDATION_RULES.price.max) {
-					errors.push({ field: 'pricingTiers.child', message: `Child price must be no more than €${VALIDATION_RULES.price.max}` });
+					errors.push({ field: 'pricingTiers.child', message: `Child price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
 				}
 				// Add validation to ensure child price doesn't exceed adult price
 				if (data.pricingTiers.adult && data.pricingTiers.child > data.pricingTiers.adult) {

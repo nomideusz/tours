@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { sendBookingEmail } from '$lib/email.server.js';
+import { sendBookingEmail, type BookingEmailType } from '$lib/email.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
@@ -13,8 +13,8 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Validate email type
-    const validTypes: EmailType[] = ['confirmation', 'payment', 'reminder', 'cancelled', 'qr-ticket'];
-    if (!validTypes.includes(emailType as EmailType)) {
+    const validTypes: BookingEmailType[] = ['confirmation', 'payment', 'reminder', 'cancelled', 'qr-ticket'];
+    if (!validTypes.includes(emailType as BookingEmailType)) {
       return json({ error: 'Invalid email type' }, { status: 400 });
     }
 
@@ -118,7 +118,7 @@ export const POST: RequestHandler = async ({ request }) => {
     };
 
     // Send the email
-    const emailResult = await sendBookingEmail(emailType as EmailType, {
+    const emailResult = await sendBookingEmail(emailType as BookingEmailType, {
       booking,
       tour,
       timeSlot

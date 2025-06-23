@@ -1,6 +1,11 @@
 export const load = async () => {
-	// Return empty data - all data loading handled by TanStack Query client-side
-	return {};
+	// Return scanner configuration
+	return {
+		scannerConfig: {
+			highlightScanRegion: true,
+			highlightCodeOutline: true
+		}
+	};
 };
 
 // Disable SSR to prevent 502 errors on refresh

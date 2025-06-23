@@ -4,6 +4,8 @@ import { createPaymentIntent } from '$lib/stripe.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import { getMinimumChargeAmount, formatCurrencyWithCode } from '$lib/utils/currency.js';
+import type { Currency } from '$lib/stores/currency.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
@@ -16,6 +18,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     // Convert amount to number for proper comparison
     const requestAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    // Validate minimum charge amount for the currency
+    const minimumAmount = getMinimumChargeAmount(currency.toUpperCase() as Currency);
+    if (requestAmount < minimumAmount) {
+      return json({ 
+        error: `Amount must be at least ${formatCurrencyWithCode(minimumAmount, currency.toUpperCase() as Currency)}` 
+      }, { status: 400 });
+    }
 
     // Get booking details with tour and user data
     const bookingData = await db.select({
