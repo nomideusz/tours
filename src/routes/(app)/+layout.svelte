@@ -269,19 +269,23 @@
 						{#each navigationItems as item}
 							<a
 								href={item.href}
-								class="group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors min-w-0"
+								class="nav-link group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors min-w-0"
 								style={item.current
 									? 'background: var(--color-primary-100); color: var(--color-primary-900);'
 									: 'color: var(--text-secondary);'}
 								onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
 								onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
 							>
-								<item.icon
-									class="mr-3 h-5 w-5 flex-shrink-0"
-									style={item.current
-										? 'color: var(--color-primary-500);'
-										: 'color: var(--text-tertiary);'}
-								/>
+								{#if item.current}
+									<item.icon
+										class="mr-3 h-5 w-5 flex-shrink-0 nav-icon-active"
+									/>
+								{:else}
+									<item.icon
+										class="mr-3 h-5 w-5 flex-shrink-0"
+										style="color: var(--text-tertiary);"
+									/>
+								{/if}
 								<span class="truncate">{item.name}</span>
 							</a>
 						{/each}
@@ -295,8 +299,10 @@
 									<a
 										href="/profile"
 										title=""
-										class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600 flex-shrink-0"
+										class="nav-link flex items-center gap-1 text-xs transition-colors flex-shrink-0"
 										style="color: var(--text-secondary);"
+										onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+										onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
 									>
 										<Settings class="h-3 w-3" />
 										<span class="hidden xl:inline">Settings</span>
@@ -308,8 +314,10 @@
 										<a
 											href="/admin"
 											title=""
-											class="flex items-center gap-1 text-xs transition-colors hover:text-blue-600 flex-shrink-0"
+											class="nav-link flex items-center gap-1 text-xs transition-colors flex-shrink-0"
 											style="color: var(--text-secondary);"
+											onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+											onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
 										>
 											<Shield class="h-3 w-3" />
 											<span class="hidden xl:inline">Admin</span>
@@ -321,8 +329,10 @@
 								<button
 									onclick={handleLogout}
 									disabled={isLoggingOut}
-									class="rounded p-1 transition-colors hover:bg-gray-100 disabled:opacity-50 flex-shrink-0"
+									class="rounded p-1 transition-colors disabled:opacity-50 flex-shrink-0"
 									style="color: var(--text-secondary);"
+									onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+									onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 								>
 									{#if isLoggingOut}
 										<Loader2 class="h-4 w-4 animate-spin" />
@@ -352,7 +362,7 @@
 			{#each mobileNavItems as item}
 				<a
 					href={item.href}
-					class="flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0"
+					class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0"
 					style={item.active 
 						? 'color: var(--color-primary-600);' 
 						: 'color: var(--text-tertiary);'}

@@ -354,7 +354,9 @@
 				{#each bookings as booking}
 					{@const BookingIcon = getBookingStatusIcon(booking.status)}
 					{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}>
+					<div class="p-4 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
+						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
 							<div class="flex items-start justify-between mb-2">

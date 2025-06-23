@@ -5,7 +5,6 @@
 	// Icons
 	import Sun from 'lucide-svelte/icons/sun';
 	import Moon from 'lucide-svelte/icons/moon';
-	import Monitor from 'lucide-svelte/icons/monitor';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	let { tooltipPosition = 'top' } = $props<{ tooltipPosition?: 'top' | 'bottom' }>();
@@ -14,8 +13,7 @@
 
 	const themes: { value: Theme; label: string; icon: any; mobileHidden?: boolean }[] = [
 		{ value: 'light', label: 'Light', icon: Sun },
-		{ value: 'dark', label: 'Dark', icon: Moon },
-		{ value: 'system', label: 'System', icon: Monitor, mobileHidden: true }
+		{ value: 'dark', label: 'Dark', icon: Moon }
 	];
 
 	// Get current theme

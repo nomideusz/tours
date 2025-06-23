@@ -30,10 +30,10 @@
 <!-- TanStack Query Provider for Public -->
 <QueryClientProvider client={data.queryClient}>
 	<!-- Public Layout: Minimal header + main + footer -->
-	<div class="min-h-screen flex flex-col">
+	<div class="min-h-screen flex flex-col public-layout">
 		<PublicHeader />
 		
-		<main class="flex-1">
+		<main class="flex-1 public-main">
 			{@render children()}
 		</main>
 		
@@ -43,4 +43,14 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
+	.public-layout {
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+	}
+	
+	.public-main {
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+	}
 </style> 

@@ -65,17 +65,18 @@
 	let newStatus = $state('');
 
 	function getStatusColor(status: string): string {
+		// Return CSS classes that are already defined in badges.css
 		switch (status) {
 			case 'confirmed':
-				return 'bg-green-50 text-green-700 border-green-200';
+				return 'status-confirmed';
 			case 'pending':
-				return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+				return 'status-pending';
 			case 'cancelled':
-				return 'bg-red-50 text-red-700 border-red-200';
+				return 'status-cancelled';
 			case 'completed':
-				return 'bg-blue-50 text-blue-700 border-blue-200';
+				return 'status-completed';
 			default:
-				return 'bg-gray-50 text-gray-700 border-gray-200';
+				return 'status-default';
 		}
 	}
 
@@ -252,12 +253,12 @@
 		</div>
 
 		{#if error}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-light); border: 1px solid #fecaca;">
+			<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
 				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error);" />
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
 					<div>
-						<p class="font-medium" style="color: #991b1b;">Error</p>
-						<p class="text-sm mt-1" style="color: #b91c1c;">{error}</p>
+						<p class="font-medium" style="color: var(--color-danger-900);">Error</p>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">{error}</p>
 					</div>
 				</div>
 			</div>
@@ -482,7 +483,7 @@
 
 <!-- Status Change Modal -->
 {#if showStatusModal && booking}
-	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+	<div class="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50" style="background: rgba(0, 0, 0, 0.5);">
 		<div class="rounded-xl shadow-2xl max-w-md w-full" style="background: var(--bg-primary);">
 			<form
 				method="POST"
@@ -563,7 +564,17 @@
 				<div class="p-6 space-y-4">
 					<div class="space-y-3">
 						{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
-							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors {newStatus === status ? 'border-blue-300' : ''}" style="border-color: {newStatus === status ? 'var(--color-primary-300)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'var(--bg-primary)'}; hover:background: var(--bg-secondary);">
+							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors" style="border-color: {newStatus === status ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'transparent'}"
+								onmouseenter={(e) => {
+									if (newStatus !== status) {
+										e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+									}
+								}}
+								onmouseleave={(e) => {
+									if (newStatus !== status) {
+										e.currentTarget.style.backgroundColor = 'transparent';
+									}
+								}}>
 								<input
 									type="radio"
 									bind:group={newStatus}

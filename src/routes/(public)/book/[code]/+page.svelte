@@ -314,25 +314,25 @@
 						<!-- Success Message -->
 						<div class="mb-6 rounded-lg p-6 text-center" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
 							<div class="flex justify-center mb-4">
-								<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-									<Check class="w-8 h-8 text-green-600" />
+								<div class="w-16 h-16 rounded-full flex items-center justify-center" style="background: var(--color-success-100);">
+									<Check class="w-8 h-8" style="color: var(--color-success-600);" />
 								</div>
 							</div>
-							<h3 class="text-lg font-semibold text-green-900 mb-2">Booking Successful!</h3>
-							<p class="text-sm text-green-700 mb-4">
+							<h3 class="text-lg font-semibold mb-2" style="color: var(--color-success-900);">Booking Successful!</h3>
+							<p class="text-sm mb-4" style="color: var(--color-success-700);">
 								Your booking has been submitted successfully. You will receive a confirmation email shortly.
 							</p>
 							{#if (form as any)?.bookingReference}
-								<div class="bg-white border border-green-300 rounded-lg p-3 mb-2">
-									<p class="text-sm font-medium text-gray-900">Booking Reference</p>
-									<p class="text-lg font-mono font-bold text-green-800">{(form as any).bookingReference}</p>
+								<div class="rounded-lg p-3 mb-2" style="background: var(--bg-primary); border: 1px solid var(--color-success-300);">
+									<p class="text-sm font-medium" style="color: var(--text-secondary);">Booking Reference</p>
+									<p class="text-lg font-mono font-bold" style="color: var(--color-success-800);">{(form as any).bookingReference}</p>
 								</div>
 							{/if}
 						</div>
 					{:else}
 						{#if error}
-							<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-								<p class="text-sm text-red-600">{error}</p>
+							<div class="mb-6 rounded-lg p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+								<p class="text-sm" style="color: var(--color-danger-600);">{error}</p>
 							</div>
 						{/if}
 						
@@ -392,7 +392,20 @@
 											<button
 												type="button"
 												onclick={() => selectDate(date)}
-												class="p-3 text-sm rounded-lg border text-center transition-colors {selectedDate === date ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-gray-200 hover:border-gray-300'}"
+												class="p-3 text-sm rounded-lg border text-center transition-colors"
+												style="border-color: {selectedDate === date ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {selectedDate === date ? 'var(--color-primary-50)' : 'transparent'}; color: {selectedDate === date ? 'var(--color-primary-900)' : 'var(--text-primary)'}"
+												onmouseenter={(e) => {
+													if (selectedDate !== date) {
+														e.currentTarget.style.borderColor = 'var(--border-secondary)';
+														e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+													}
+												}}
+												onmouseleave={(e) => {
+													if (selectedDate !== date) {
+														e.currentTarget.style.borderColor = 'var(--border-primary)';
+														e.currentTarget.style.backgroundColor = 'transparent';
+													}
+												}}
 											>
 												{formatDate(date)}
 											</button>
@@ -411,7 +424,20 @@
 												<button
 													type="button"
 													onclick={() => selectTimeSlot(slot)}
-													class="w-full p-4 text-left rounded-lg border transition-colors {selectedTimeSlot?.id === slot.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}"
+													class="w-full p-4 text-left rounded-lg border transition-colors"
+													style="border-color: {selectedTimeSlot?.id === slot.id ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {selectedTimeSlot?.id === slot.id ? 'var(--color-primary-50)' : 'transparent'}"
+													onmouseenter={(e) => {
+														if (selectedTimeSlot?.id !== slot.id) {
+															e.currentTarget.style.borderColor = 'var(--border-secondary)';
+															e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+														}
+													}}
+													onmouseleave={(e) => {
+														if (selectedTimeSlot?.id !== slot.id) {
+															e.currentTarget.style.borderColor = 'var(--border-primary)';
+															e.currentTarget.style.backgroundColor = 'transparent';
+														}
+													}}
 												>
 													<div class="flex justify-between items-center">
 														<div>
@@ -492,7 +518,7 @@
 											<div class="text-sm p-3 rounded-lg" style="background: var(--bg-secondary); color: var(--text-secondary);">
 												Total: {totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
 												{#if totalParticipants > (selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots)}
-													<span class="text-red-600 font-medium">
+													<span class="font-medium" style="color: var(--color-danger-600);">
 														• Exceeds available spots ({selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots} remaining)
 													</span>
 												{/if}

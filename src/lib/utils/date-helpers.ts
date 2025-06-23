@@ -73,15 +73,15 @@ export function formatDateTime(dateString: string | Date): string {
 export function getStatusColor(status: string): string {
 	switch (status) {
 		case 'confirmed':
-			return 'bg-green-50 text-green-700';
+			return 'status-confirmed';
 		case 'pending':
-			return 'bg-yellow-50 text-yellow-700';
+			return 'status-pending';
 		case 'cancelled':
-			return 'bg-red-50 text-red-700';
+			return 'status-cancelled';
 		case 'completed':
-			return 'bg-blue-50 text-blue-700';
+			return 'status-completed';
 		default:
-			return 'bg-gray-50 text-gray-700';
+			return 'status-default';
 	}
 }
 
@@ -91,14 +91,14 @@ export function getStatusColor(status: string): string {
 export function getPaymentStatusColor(paymentStatus: string): string {
 	switch (paymentStatus) {
 		case 'paid':
-			return 'bg-green-50 text-green-700';
+			return 'payment-paid';
 		case 'pending':
-			return 'bg-purple-50 text-purple-700';
+			return 'payment-pending';
 		case 'failed':
-			return 'bg-red-50 text-red-700';
+			return 'payment-failed';
 		case 'refunded':
-			return 'bg-gray-50 text-gray-700';
+			return 'payment-refunded';
 		default:
-			return 'bg-purple-50 text-purple-700';
+			return 'payment-pending';
 	}
 } 

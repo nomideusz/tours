@@ -121,6 +121,8 @@
 		flex: 1;
 		width: 100%;
 		max-width: 100%;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	/* Ensure sections in main are full width */

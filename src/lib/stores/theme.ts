@@ -5,17 +5,25 @@ export type Theme = 'light' | 'dark' | 'system';
 
 // Create the theme store
 function createThemeStore() {
-	const { subscribe, set, update } = writable<Theme>('system');
+	const { subscribe, set, update } = writable<Theme>('light');
 
-	// Get initial theme from localStorage or default to system
+	// Get initial theme from localStorage or default to light
 	const getInitialTheme = (): Theme => {
-		if (!browser) return 'system';
+		if (!browser) return 'light';
 		
 		const stored = localStorage.getItem('theme');
-		if (stored === 'light' || stored === 'dark' || stored === 'system') {
+		if (stored === 'light' || stored === 'dark') {
 			return stored;
 		}
-		return 'system';
+		// If stored theme is 'system' or not set, detect user preference
+		// This handles backward compatibility for users who had 'system' selected
+		if (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			// User had system theme and prefers dark, so set to dark
+			localStorage.setItem('theme', 'dark');
+			return 'dark';
+		}
+		// Default to light mode
+		return 'light';
 	};
 
 	// Apply theme to document

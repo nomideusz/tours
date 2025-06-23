@@ -12,7 +12,7 @@
 </script>
 
 <!-- Minimal App Footer -->
-<footer class="bg-white border-t border-gray-200 {className}">
+<footer class="{className}" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
 	<div class="px-4 py-3">
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 			<!-- Left: Quick help links -->
@@ -21,7 +21,10 @@
 					<a 
 						href="/help"
 						title=""
-						class="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+						class="nav-link flex items-center gap-1 transition-colors"
+						style="color: var(--text-secondary);"
+						onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+						onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
 					>
 						<CircleHelp class="h-4 w-4" />
 						Help Center
@@ -32,7 +35,10 @@
 					<a 
 						href="mailto:support@zaur.app"
 						title=""
-						class="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+						class="nav-link flex items-center gap-1 transition-colors"
+						style="color: var(--text-secondary);"
+						onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+						onmouseleave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
 					>
 						<Mail class="h-4 w-4" />
 						Support
@@ -41,8 +47,8 @@
 			</div>
 
 			<!-- Right: Copyright and version -->
-			<div class="flex items-center gap-4 text-xs text-gray-400">
-				<span>© {currentYear} <Tooltip text="Zaur" position="top"><a href="https://zaur.app" target="_blank" title="">Zaur</a></Tooltip></span>
+			<div class="flex items-center gap-4 text-xs" style="color: var(--text-tertiary);">
+				<span>© {currentYear} <Tooltip text="Zaur" position="top"><a href="https://zaur.app" target="_blank" title="" class="nav-link hover-primary">Zaur</a></Tooltip></span>
 				<span class="hidden sm:block">•</span>
 				<span class="hidden sm:block">Dashboard v2.0</span>
 			</div>

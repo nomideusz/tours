@@ -125,7 +125,7 @@
 		<div class="flex h-20 items-center justify-between">
 			<!-- Logo and branding -->
 			<div class="flex items-center">
-				<a href={isAuthenticated ? '/?view=home' : '/'} class="text-2xl font-normal text-gray-900 logo-serif hover:text-gray-700 transition-colors">
+				<a href={isAuthenticated ? '/?view=home' : '/'} class="text-2xl font-normal logo-serif nav-link transition-colors" style="color: var(--text-primary);">
 					zaur.app
 				</a>
 			</div>
@@ -184,7 +184,7 @@
 						</a>
 						<a
 							href="/auth/register"
-							class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+							class="button-primary button--small"
 						>
 							Start for Free
 						</a>
@@ -253,7 +253,7 @@
 
 <!-- Mobile menu -->
 {#if mobileMenuOpen}
-	<div class="fixed top-20 left-0 w-screen bg-white border-t border-gray-200 shadow-xl lg:hidden z-[70]">
+	<div class="fixed top-20 left-0 w-screen mobile-menu-bg border-t shadow-xl lg:hidden z-[70]" style="background-color: var(--bg-primary); border-color: var(--border-primary);">
 		<div class="flex flex-col px-6 py-6 sm:px-8">
 			<!-- Navigation links -->
 			<div class="flex flex-col space-y-1 pb-4">
@@ -303,7 +303,7 @@
 						<a
 							href="/auth/register"
 							onclick={handleMobileLinkClick}
-							class="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+							class="button-primary button--full-width"
 						>
 							Start for Free
 						</a>
@@ -349,8 +349,8 @@
 		left: 0;
 		right: 0;
 		z-index: var(--z-dropdown);
-		background: white;
-		border-bottom: 1px solid #e5e7eb;
+		background: var(--bg-primary);
+		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(8px);
 		-webkit-backdrop-filter: blur(8px);
 	}
@@ -362,5 +362,50 @@
 
 	.header-sticky > div > div {
 		@apply flex h-20 items-center justify-between;
+	}
+	
+	/* Override text colors for header elements */
+	:global(.header-sticky a:not(.button-primary)),
+	:global(.header-sticky button:not(.button-primary)),
+	:global(.header-sticky span) {
+		color: var(--text-secondary);
+	}
+	
+	:global(.header-sticky a:not(.button-primary):hover),
+	:global(.header-sticky button:not(.button-primary):hover) {
+		color: var(--text-primary);
+	}
+	
+	/* Logo specific styling */
+	:global(.header-sticky .logo-serif) {
+		color: var(--text-primary) !important;
+	}
+	
+	:global(.header-sticky .logo-serif:hover) {
+		opacity: 0.8;
+	}
+	
+	/* Fix mobile menu colors */
+	:global(.mobile-menu-bg a),
+	:global(.mobile-menu-bg button),
+	:global(.mobile-menu-bg div) {
+		color: var(--text-secondary);
+	}
+	
+	:global(.mobile-menu-bg a:hover),
+	:global(.mobile-menu-bg button:hover) {
+		color: var(--text-primary);
+	}
+	
+	/* Border colors */
+	:global(.header-sticky .border-gray-200),
+	:global(.mobile-menu-bg .border-gray-200) {
+		border-color: var(--border-primary) !important;
+	}
+	
+	/* Fix hover backgrounds */
+	:global(.header-sticky .hover\\:bg-gray-100:hover),
+	:global(.mobile-menu-bg .bg-gray-100) {
+		background-color: var(--bg-secondary) !important;
 	}
 </style>

@@ -36,7 +36,7 @@
 					</button>
 				{/if}
 				
-				<a href="/" class="text-lg font-normal logo-serif transition-colors" style="color: var(--text-primary);">
+				<a href="/" class="text-lg font-normal logo-serif nav-link transition-colors" style="color: var(--text-primary);">
 					zaur.app
 				</a>
 				

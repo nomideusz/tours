@@ -73,7 +73,7 @@
 	.button--primary:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		box-shadow: var(--focus-shadow-primary);
 	}
 
 	.button-primary:disabled,
@@ -115,7 +115,7 @@
 	.button--secondary:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		box-shadow: var(--focus-shadow-primary);
 	}
 
 	.button-secondary:disabled,
@@ -146,14 +146,14 @@
 	}
 
 	.button--danger:hover:not(:disabled), .button-danger:hover:not(:disabled) {
-		background-color: #dc2626;
-		border-color: #dc2626;
+		background-color: var(--color-error-700);
+		border-color: var(--color-error-700);
 	}
 
 	.button--danger:focus, .button-danger:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+		box-shadow: var(--focus-shadow-error);
 	}
 
 	.button--danger:disabled, .button-danger:disabled {
@@ -177,21 +177,21 @@
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background-color: #10B981;
+		background-color: var(--color-success-600);
 		color: white;
-		border: 1px solid #10B981;
+		border: 1px solid var(--color-success-600);
 		box-shadow: var(--shadow-xs);
 	}
 
 	.button-success:hover:not(:disabled) {
-		background-color: #059669;
-		border-color: #059669;
+		background-color: var(--color-success-700);
+		border-color: var(--color-success-700);
 	}
 
 	.button-success:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+		box-shadow: var(--focus-shadow-success);
 	}
 
 	.button-success:disabled {
@@ -257,7 +257,7 @@
 
 	.button--text:hover:not(:disabled) {
 		color: var(--color-primary-700);
-		background: var(--color-primary-100);
+		background: var(--bg-secondary);
 	}
 
 	/* Ghost button variation - more subtle than secondary */
@@ -289,7 +289,7 @@
 	.button--ghost:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+		box-shadow: var(--focus-shadow-primary);
 	}
 
 	.button--ghost:disabled {
@@ -307,5 +307,86 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	/* Ensure SVG icons in buttons inherit proper colors */
+	.button svg,
+	.button-primary svg,
+	.button--primary svg,
+	.button-secondary svg,
+	.button--secondary svg,
+	.button--danger svg,
+	.button-danger svg,
+	.button-success svg,
+	.button--ghost svg,
+	.button--text svg {
+		fill: currentColor;
+		stroke: currentColor;
+		color: inherit;
+	}
+	
+	/* Ensure lucide icons in secondary/ghost buttons have proper contrast */
+	.button-secondary .lucide-icon,
+	.button--secondary .lucide-icon,
+	.button-secondary .lucide,
+	.button--secondary .lucide {
+		color: var(--text-primary);
+		stroke: var(--text-primary);
+	}
+	
+	.button--ghost .lucide-icon,
+	.button--ghost .lucide {
+		color: inherit;
+		stroke: inherit;
+	}
+	
+	.button--text .lucide-icon,
+	.button--text .lucide {
+		color: inherit;
+		stroke: inherit;
+	}
+	
+	/* Ensure proper contrast for primary buttons */
+	.button-primary,
+	.button--primary {
+		color: white !important;
+	}
+	
+	.button-primary svg,
+	.button--primary svg,
+	.button-primary .lucide-icon,
+	.button--primary .lucide-icon,
+	.button-primary .lucide,
+	.button--primary .lucide {
+		color: white !important;
+		stroke: white !important;
+	}
+	
+	/* Ensure proper contrast for success buttons */
+	.button-success {
+		color: white !important;
+	}
+	
+	.button-success svg,
+	.button-success .lucide-icon,
+	.button-success .lucide {
+		color: white !important;
+		stroke: white !important;
+	}
+	
+	/* Ensure proper contrast for danger buttons */
+	.button--danger,
+	.button-danger {
+		color: white !important;
+	}
+	
+	.button--danger svg,
+	.button-danger svg,
+	.button--danger .lucide-icon,
+	.button-danger .lucide-icon,
+	.button--danger .lucide,
+	.button-danger .lucide {
+		color: white !important;
+		stroke: white !important;
 	}
 }
