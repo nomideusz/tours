@@ -91,4 +91,34 @@ export async function createPaymentIntent(
       enabled: true,
     },
   });
+}
+
+// Create a payment intent on a connected account (direct charge)
+export async function createDirectPaymentIntent(
+  amount: number,
+  currency: string = 'eur',
+  connectedAccountId: string,
+  metadata: Record<string, string> = {},
+  platformFee?: number
+): Promise<Stripe.PaymentIntent> {
+  const stripe = getStripe();
+  
+  const params: Stripe.PaymentIntentCreateParams = {
+    amount: formatAmountForStripe(amount, currency),
+    currency,
+    metadata,
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  };
+  
+  // Add application fee if platform takes a commission (optional)
+  if (platformFee && platformFee > 0) {
+    params.application_fee_amount = formatAmountForStripe(platformFee, currency);
+  }
+  
+  // Create payment intent on the connected account
+  return await stripe.paymentIntents.create(params, {
+    stripeAccount: connectedAccountId,
+  });
 } 

@@ -116,54 +116,10 @@ export const POST: RequestHandler = async ({ request }) => {
             .set(updateData)
             .where(eq(bookings.id, bookingId));
           
-          // Transfer payment to tour guide
-          try {
-            // Get booking with tour and user data
-            const bookingData = await db.select({
-              id: bookings.id,
-              tourId: bookings.tourId,
-              participants: bookings.participants,
-              timeSlotId: bookings.timeSlotId,
-              tourUserId: users.id,
-              stripeAccountId: users.stripeAccountId
-            })
-            .from(bookings)
-            .innerJoin(tours, eq(bookings.tourId, tours.id))
-            .innerJoin(users, eq(tours.userId, users.id))
-            .where(eq(bookings.id, bookingId))
-            .limit(1);
+          console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
-            if (bookingData.length > 0) {
-              const booking = bookingData[0];
-              
-              if (booking.stripeAccountId) {
-                console.log(`Webhook: Transferring payment to tour guide ${booking.tourUserId}...`);
-                
-                const stripe = getStripe();
-                // No platform fee - tour guides keep 100% of revenue
-                const transferAmount = paymentIntent.amount;
-                
-                await stripe.transfers.create({
-                  amount: transferAmount,
-                  currency: paymentIntent.currency,
-                  destination: booking.stripeAccountId,
-                  transfer_group: `booking_${bookingId}`,
-                  metadata: {
-                    bookingId: bookingId,
-                    tourId: booking.tourId,
-                    guideId: booking.tourUserId
-                  }
-                });
-                
-                console.log(`Webhook: Payment transferred to guide: ${paymentIntent.currency} ${transferAmount/100} (100% of payment)`);
-              } else {
-                console.warn(`Webhook: Tour guide ${booking.tourUserId} has no Stripe account configured`);
-              }
-            }
-          } catch (transferError) {
-            console.error('Webhook: Failed to transfer payment to guide:', transferError);
-            // Continue processing - booking is still valid even if transfer fails
-          }
+          // No need to transfer payment - with direct charges, the payment already went to the tour guide!
+          // This is the beauty of the no-commission model - simpler and cleaner
 
           // Send emails via SvelteKit email service
           try {
@@ -215,8 +171,6 @@ export const POST: RequestHandler = async ({ request }) => {
             console.warn('Webhook: Error sending emails:', emailError);
           }
           
-          console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
-
           // Send real-time notification to tour owner
           try {
             // Get booking details for notification

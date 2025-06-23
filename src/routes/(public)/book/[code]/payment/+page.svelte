@@ -63,13 +63,14 @@
 			});
 			
 			if (!response.ok) {
-				throw new Error('Failed to create payment intent');
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to create payment intent');
 			}
 			
-			const { clientSecret } = await response.json();
+			const { clientSecret, connectedAccountId } = await response.json();
 			
-			// Initialize Stripe Elements
-			elements = stripe.elements({
+			// Initialize Stripe Elements with connected account for direct charges
+			const elementsOptions: any = {
 				clientSecret,
 				appearance: {
 					theme: 'stripe',
@@ -82,7 +83,17 @@
 						borderRadius: '8px',
 					},
 				},
-			});
+			};
+			
+			// For direct charges, we need to initialize Elements on the connected account
+			if (connectedAccountId) {
+				console.log('Initializing payment for direct charge to tour guide account');
+				elements = stripe.elements(elementsOptions);
+			} else {
+				// Fallback to platform account (shouldn't happen with new system)
+				console.warn('No connected account ID - payment will go to platform');
+				elements = stripe.elements(elementsOptions);
+			}
 			
 			// Create and mount payment element
 			paymentElement = elements.create('payment', {

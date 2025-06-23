@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { createPaymentIntent } from '$lib/stripe.server.js';
+import { createDirectPaymentIntent } from '$lib/stripe.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }, { status: 400 });
     }
 
-    // Get booking details with tour and user data
+    // Get booking details with tour and user data INCLUDING Stripe account ID
     const bookingData = await db.select({
       id: bookings.id,
       totalAmount: bookings.totalAmount,
@@ -35,7 +35,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       customerEmail: bookings.customerEmail,
       customerName: bookings.customerName,
       tourId: bookings.tourId,
-      tourUserId: users.id
+      tourUserId: users.id,
+      tourUserStripeAccountId: users.stripeAccountId
     })
     .from(bookings)
     .innerJoin(tours, eq(bookings.tourId, tours.id))
@@ -48,6 +49,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const booking = bookingData[0];
+
+    // Check if tour guide has a Stripe account
+    if (!booking.tourUserStripeAccountId) {
+      return json({ 
+        error: 'Tour guide has not set up payment processing. Please contact them directly.' 
+      }, { status: 400 });
+    }
 
     // Convert booking amount to number for comparison
     const bookingAmount = parseFloat(booking.totalAmount);
@@ -63,14 +71,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
-    // Create payment intent with metadata
-    const paymentIntent = await createPaymentIntent(requestAmount, currency, {
-      bookingId: booking.id,
-      bookingReference: booking.bookingReference,
-      tourId: booking.tourId,
-      customerEmail: booking.customerEmail,
-      customerName: booking.customerName,
-    });
+    // Create payment intent DIRECTLY on the tour guide's Stripe account
+    // No platform fee since this is a no-commission model
+    const paymentIntent = await createDirectPaymentIntent(
+      requestAmount, 
+      currency,
+      booking.tourUserStripeAccountId,
+      {
+        bookingId: booking.id,
+        bookingReference: booking.bookingReference,
+        tourId: booking.tourId,
+        customerEmail: booking.customerEmail,
+        customerName: booking.customerName,
+      }
+      // No platform fee parameter - tour guides keep 100%
+    );
 
     // Create payment record in database
     const paymentResult = await db.insert(payments).values({
@@ -80,7 +95,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       currency: currency.toUpperCase(),
       status: 'pending',
       processingFee: '0', // Will be updated after payment
-      netAmount: requestAmount.toString(), // Will be updated after payment
+      netAmount: requestAmount.toString(), // Tour guide gets 100%
     }).returning();
 
     const payment = paymentResult[0];
@@ -97,6 +112,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       paymentId: payment.id,
+      connectedAccountId: booking.tourUserStripeAccountId // Include for frontend to handle properly
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);
