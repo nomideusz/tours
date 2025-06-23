@@ -74,10 +74,10 @@
 			  ($statusMutation.isPending ? 'opacity-50' : 'hover:bg-gray-50')
 			: variant === 'inline'
 			? 'inline-flex items-center gap-1.5 text-sm font-medium transition-colors ' +
-			  (localStatus === 'draft' ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-700')
+			  (localStatus === 'draft' ? 'text-blue-600 hover:text-blue-700' : 'text-gray-600 hover:text-gray-700')
 			: (() => {
 				const sizeClass = size === 'large' ? 'button--large' : size === 'small' ? 'button--small' : '';
-				const variantClass = localStatus === 'draft' ? 'button-success' : 'button-secondary';
+				const variantClass = localStatus === 'draft' ? 'button-primary' : 'button-secondary';
 				return `${variantClass} ${sizeClass} button--gap ${className}`;
 			})()
 	);
@@ -88,7 +88,7 @@
 		onclick={handleToggle}
 		disabled={$statusMutation.isPending}
 		class={buttonClasses}
-		style="color: {localStatus === 'draft' ? 'var(--color-success-600)' : 'var(--text-secondary)'};"
+		style="color: {localStatus === 'draft' ? 'var(--color-primary)' : 'var(--text-secondary)'};"
 	>
 		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>

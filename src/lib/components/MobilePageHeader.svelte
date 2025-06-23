@@ -29,7 +29,9 @@
 			label: string;
 			onclick: () => void;
 			disabled?: boolean;
-			color: string;
+			color?: string;
+			textColor?: string;
+			backgroundColor?: string;
 			dotColor: string;
 			tooltip?: string;
 		} | null;
@@ -51,7 +53,8 @@
 						onclick={statusButton.onclick}
 						disabled={statusButton.disabled}
 						title={statusButton.tooltip}
-						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 {statusButton.color}"
+						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200"
+						style="color: {statusButton.textColor || 'var(--text-primary)'}; background: {statusButton.backgroundColor || 'var(--bg-tertiary)'};"
 					>
 						<span class="w-1.5 h-1.5 rounded-full {statusButton.dotColor}"></span>
 						{statusButton.label}

@@ -90,9 +90,6 @@ const VALIDATION_RULES = {
 	}
 };
 
-// Valid categories
-const VALID_CATEGORIES = ['walking', 'food', 'cultural', 'historical', 'art', 'adventure', 'other'];
-
 // Valid statuses
 const VALID_STATUSES: Tour['status'][] = ['draft', 'active'];
 
@@ -225,10 +222,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		errors.push({ field: 'status', message: 'Invalid tour status' });
 	}
 
-	// Validate category (optional)
+	// Validate category (optional) - allow custom categories
 	if (data.category && data.category.trim() !== '') {
-		if (!VALID_CATEGORIES.includes(data.category)) {
-			errors.push({ field: 'category', message: 'Invalid category selected' });
+		const category = data.category.trim();
+		if (category.length > VALIDATION_RULES.category.maxLength!) {
+			errors.push({ field: 'category', message: `Category must be no more than ${VALIDATION_RULES.category.maxLength} characters` });
 		}
 	}
 

@@ -1369,7 +1369,7 @@
 							{/if}
 						</div>
 						{#if !needsConfirmation && currentCountryInfo}
-							<div class="mt-2 rounded p-1.5" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="mt-2 rounded p-1.5 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 								<p class="text-[10px]" style="color: var(--color-warning-700);">
 									Country: {currentCountryInfo.name} (permanent)
 								</p>
