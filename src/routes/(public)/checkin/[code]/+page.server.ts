@@ -2,7 +2,7 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { error, fail } from '@sveltejs/kit';
 import { isValidTicketQRCode } from '$lib/ticket-qr.js';
 import { db } from '$lib/db/connection.js';
-import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -31,6 +31,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				paymentStatus: bookings.paymentStatus,
 				totalAmount: bookings.totalAmount,
 				participants: bookings.participants,
+				participantBreakdown: bookings.participantBreakdown,
 				customerName: bookings.customerName,
 				customerEmail: bookings.customerEmail,
 				customerPhone: bookings.customerPhone,
@@ -57,11 +58,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				timeSlotStartTime: timeSlots.startTime,
 				timeSlotEndTime: timeSlots.endTime,
 				timeSlotAvailableSpots: timeSlots.availableSpots,
-				timeSlotBookedSpots: timeSlots.bookedSpots
+				timeSlotBookedSpots: timeSlots.bookedSpots,
+				
+				// Tour owner fields
+				tourOwnerCurrency: users.currency,
+				tourOwnerName: users.name
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
 			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.leftJoin(users, eq(tours.userId, users.id))
 			.where(eq(bookings.ticketQRCode, ticketCode))
 			.limit(1);
 		
@@ -90,6 +96,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			paymentStatus: booking.paymentStatus,
 			totalAmount: booking.totalAmount,
 			participants: booking.participants,
+			participantBreakdown: booking.participantBreakdown,
 			customerName: booking.customerName,
 			customerEmail: booking.customerEmail,
 			customerPhone: booking.customerPhone,
@@ -124,7 +131,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		return {
 			booking: formattedBooking,
 			ticketCode,
-			currentUser
+			currentUser,
+			tourOwnerCurrency: booking.tourOwnerCurrency || 'EUR',
+			tourOwnerName: booking.tourOwnerName
 		};
 	} catch (err) {
 		console.error('Error loading check-in page:', err);
