@@ -140,8 +140,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 console.log(`Webhook: Transferring payment to tour guide ${booking.tourUserId}...`);
                 
                 const stripe = getStripe();
-                const platformFeePercent = 0.10; // 10% platform fee
-                const transferAmount = Math.round(paymentIntent.amount * (1 - platformFeePercent));
+                // No platform fee - tour guides keep 100% of revenue
+                const transferAmount = paymentIntent.amount;
                 
                 await stripe.transfers.create({
                   amount: transferAmount,
@@ -155,7 +155,7 @@ export const POST: RequestHandler = async ({ request }) => {
                   }
                 });
                 
-                console.log(`Webhook: Payment transferred to guide: €${transferAmount/100} (after 10% platform fee)`);
+                console.log(`Webhook: Payment transferred to guide: ${paymentIntent.currency} ${transferAmount/100} (100% of payment)`);
               } else {
                 console.warn(`Webhook: Tour guide ${booking.tourUserId} has no Stripe account configured`);
               }
