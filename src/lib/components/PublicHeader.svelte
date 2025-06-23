@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
+	import { auth } from '$lib/stores/auth.js';
 
 	// Simple logo/brand
 	const isAuthPage = $derived($page.route.id?.includes('/auth/'));
 	const isBookingPage = $derived($page.route.id?.includes('/book/'));
 	const isProfilePage = $derived($page.route.id?.includes('/[username]'));
+	const isTicketPage = $derived($page.route.id?.includes('/ticket/'));
+	
+	// Check if user is authenticated
+	const isAuthenticated = $derived($auth.isAuthenticated);
 </script>
 
 <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -18,7 +23,7 @@
 				</a>
 			</div>
 
-			<!-- Navigation based on page type -->
+			<!-- Navigation based on page type and auth status -->
 			<div class="flex items-center gap-4">
 				{#if isAuthPage}
 					<!-- Auth page navigation -->
@@ -37,16 +42,28 @@
 							Sign in
 						</a>
 					{/if}
-				{:else if isBookingPage || isProfilePage}
-					<!-- Booking/Profile page navigation - minimal, no redundant branding -->
-					<div class="text-sm text-gray-600">
-						<!-- Removed redundant "Powered by" since logo is already in header -->
-					</div>
+				{:else if isBookingPage || isProfilePage || isTicketPage}
+					<!-- Booking/Profile/Ticket page navigation - minimal -->
+					{#if isAuthenticated}
+						<a href="/dashboard" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+							Dashboard
+						</a>
+					{:else}
+						<div class="text-sm text-gray-600">
+							<!-- Minimal header for customer-facing pages -->
+						</div>
+					{/if}
 				{:else}
 					<!-- Default navigation -->
-					<a href="/auth/login" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
-						Sign in
-					</a>
+					{#if isAuthenticated}
+						<a href="/dashboard" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+							Dashboard
+						</a>
+					{:else}
+						<a href="/auth/login" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+							Sign in
+						</a>
+					{/if}
 				{/if}
 			</div>
 		</div>

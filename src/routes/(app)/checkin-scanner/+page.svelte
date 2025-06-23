@@ -160,16 +160,15 @@
 			// Continue anyway
 		}
 		
-		// Navigate to check-in page - use window.location.href to ensure proper route group crossing
+		// Navigate to check-in page - now in same route group, can use goto()
 		try {
 			console.log('Navigating to check-in page:', `/checkin/${qrCode}`);
 			
-			// Use window.location.href instead of goto() to ensure proper navigation
-			// between route groups ((app) to (public))
-			window.location.href = `/checkin/${qrCode}`;
-		} catch (error) {
-			console.error('Navigation error:', error);
-			// Fallback to direct navigation
+			// Now that check-in is in (app) group, we can use goto()
+			await goto(`/checkin/${qrCode}`);
+		} catch (navError) {
+			console.error('Navigation error:', navError);
+			// Fallback to direct navigation if goto() fails
 			window.location.href = `/checkin/${qrCode}`;
 		}
 	}
