@@ -103,6 +103,14 @@ export async function createDirectPaymentIntent(
 ): Promise<Stripe.PaymentIntent> {
   const stripe = getStripe();
   
+  // Log the payment intent creation attempt
+  console.log('Creating direct payment intent:', {
+    amount,
+    currency,
+    connectedAccountId,
+    formattedAmount: formatAmountForStripe(amount, currency)
+  });
+  
   const params: Stripe.PaymentIntentCreateParams = {
     amount: formatAmountForStripe(amount, currency),
     currency,
@@ -117,8 +125,21 @@ export async function createDirectPaymentIntent(
     params.application_fee_amount = formatAmountForStripe(platformFee, currency);
   }
   
-  // Create payment intent on the connected account
-  return await stripe.paymentIntents.create(params, {
-    stripeAccount: connectedAccountId,
-  });
+  try {
+    // Create payment intent on the connected account
+    const paymentIntent = await stripe.paymentIntents.create(params, {
+      stripeAccount: connectedAccountId,
+    });
+    
+    console.log('Payment intent created successfully:', paymentIntent.id);
+    return paymentIntent;
+  } catch (error) {
+    console.error('Failed to create payment intent on connected account:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      connectedAccountId,
+      amount,
+      currency
+    });
+    throw error;
+  }
 } 

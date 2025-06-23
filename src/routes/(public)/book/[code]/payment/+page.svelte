@@ -85,9 +85,20 @@
 				},
 			};
 			
-			// For direct charges, we need to initialize Elements on the connected account
+			// For direct charges, Elements must be initialized with the connected account context
 			if (connectedAccountId) {
-				console.log('Initializing payment for direct charge to tour guide account');
+				console.log('Initializing payment for direct charge to tour guide account:', connectedAccountId);
+				// Create a new Stripe instance for the connected account
+				const connectedStripe = await loadStripe(stripePublicKey, {
+					stripeAccount: connectedAccountId
+				});
+				
+				if (!connectedStripe) {
+					throw new Error('Failed to initialize connected account payment');
+				}
+				
+				// Use the connected account Stripe instance
+				stripe = connectedStripe;
 				elements = stripe.elements(elementsOptions);
 			} else {
 				// Fallback to platform account (shouldn't happen with new system)

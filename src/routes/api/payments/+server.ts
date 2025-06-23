@@ -8,9 +8,15 @@ import { getMinimumChargeAmount, formatCurrencyWithCode } from '$lib/utils/curre
 import type { Currency } from '$lib/stores/currency.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
+  // Declare variables outside try block for error handling
+  let bookingId: string | undefined;
+  let amount: number | undefined;
+  let currency: string = 'eur';
+  let connectedAccountId: string | null | undefined;
+  
   try {
     const body = await request.json();
-    const { bookingId, amount, currency = 'eur' } = body;
+    ({ bookingId, amount, currency = 'eur' } = body);
 
     if (!bookingId || !amount) {
       return json({ error: 'Missing required fields' }, { status: 400 });
@@ -49,9 +55,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     const booking = bookingData[0];
+    
+    // Store connected account ID for error handling
+    connectedAccountId = booking.tourUserStripeAccountId;
 
     // Check if tour guide has a Stripe account
-    if (!booking.tourUserStripeAccountId) {
+    if (!connectedAccountId) {
+      console.error('Tour guide missing Stripe account:', { 
+        tourUserId: booking.tourUserId,
+        bookingId: booking.id 
+      });
       return json({ 
         error: 'Tour guide has not set up payment processing. Please contact them directly.' 
       }, { status: 400 });
@@ -76,7 +89,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const paymentIntent = await createDirectPaymentIntent(
       requestAmount, 
       currency,
-      booking.tourUserStripeAccountId,
+      connectedAccountId, // We already checked this is not null
       {
         bookingId: booking.id,
         bookingReference: booking.bookingReference,
@@ -116,8 +129,46 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);
+    
+    // Provide more specific error messages for common Stripe errors
+    if (error instanceof Error) {
+      // Check for Stripe-specific errors
+      if ('type' in error && error.type === 'StripeInvalidRequestError') {
+        // Common Stripe errors
+        if (error.message.includes('account')) {
+          return json(
+            { error: 'The tour guide\'s payment account is not properly configured. Please contact them.' },
+            { status: 400 }
+          );
+        }
+        if (error.message.includes('currency')) {
+          return json(
+            { error: 'This currency is not supported for the tour guide\'s location.' },
+            { status: 400 }
+          );
+        }
+        if (error.message.includes('amount')) {
+          return json(
+            { error: 'Invalid payment amount. Please check the booking details.' },
+            { status: 400 }
+          );
+        }
+      }
+      
+      // Log detailed error for debugging
+      console.error('Stripe error details:', {
+        message: error.message,
+        type: 'type' in error ? error.type : 'unknown',
+        code: 'code' in error ? error.code : 'unknown',
+        bookingId,
+        amount,
+        currency,
+        connectedAccountId
+      });
+    }
+    
     return json(
-      { error: 'Failed to create payment intent' },
+      { error: 'Failed to create payment. Please try again or contact support.' },
       { status: 500 }
     );
   }
