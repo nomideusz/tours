@@ -8,10 +8,11 @@ export interface GuideBookingNotificationData {
   tour: Tour;
   timeSlot: TimeSlot;
   guideName?: string;
+  guideCurrency?: string;
 }
 
 export function guideBookingNotificationTemplate(data: GuideBookingNotificationData): string {
-  const { booking, tour, timeSlot, guideName } = data;
+  const { booking, tour, timeSlot, guideName, guideCurrency } = data;
   const startTime = new Date(timeSlot.startTime);
   
   const content = `
@@ -26,7 +27,7 @@ export function guideBookingNotificationTemplate(data: GuideBookingNotificationD
       
       ${infoBox({
         title: '💰 Payment Confirmed',
-        content: `<p style="margin: 0; color: #059669; font-weight: 600;">Amount: ${formatCurrency(typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : booking.totalAmount)}</p>`,
+        content: `<p style="margin: 0; color: #059669; font-weight: 600;">Amount: ${formatCurrency(typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : booking.totalAmount, guideCurrency || 'EUR')}</p>`,
         variant: 'success'
       })}
       

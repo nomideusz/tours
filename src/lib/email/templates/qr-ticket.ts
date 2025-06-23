@@ -8,10 +8,11 @@ export interface QRTicketData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+  tourOwnerCurrency?: string;
 }
 
 export function qrTicketTemplate(data: QRTicketData): string {
-  const { booking, tour, timeSlot } = data;
+  const { booking, tour, timeSlot, tourOwnerCurrency } = data;
   const startTime = new Date(timeSlot.startTime);
   const ticketCode = booking.ticketQRCode;
   
@@ -57,7 +58,8 @@ export function qrTicketTemplate(data: QRTicketData): string {
         dateTime: formatEmailDateTime(startTime),
         participants: formatParticipantDisplay(booking),
         totalAmount: booking.totalAmount,
-        meetingPoint: tour.location
+        meetingPoint: tour.location,
+        currency: tourOwnerCurrency
       })}
       
       <h3>Tour Day Checklist</h3>

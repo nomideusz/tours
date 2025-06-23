@@ -82,7 +82,8 @@ export const POST: RequestHandler = async ({ request }) => {
       guideId: users.id,
       guideName: users.name,
       guideEmail: users.email,
-      guideBusinessName: users.businessName
+      guideBusinessName: users.businessName,
+      guideCurrency: users.currency
     })
     .from(bookings)
     .innerJoin(tours, eq(bookings.tourId, tours.id))
@@ -155,7 +156,8 @@ export const POST: RequestHandler = async ({ request }) => {
       tour,
       timeSlot,
       guideEmail: data.guideEmail,
-      guideName: data.guideName || data.guideBusinessName || undefined
+      guideName: data.guideName || data.guideBusinessName || undefined,
+      guideCurrency: data.guideCurrency || 'EUR'
     });
 
     if (!emailResult.success) {

@@ -1,4 +1,5 @@
 import { emailStyles } from '../styles.js';
+import { formatCurrency } from '../utils.js';
 
 // Header component with Zaur branding
 export function header(): string {
@@ -87,6 +88,7 @@ export interface TourDetailsProps {
   totalAmount: string | number;
   meetingPoint?: string;
   status?: string;
+  currency?: string;
 }
 
 export function tourDetails(props: TourDetailsProps): string {
@@ -95,7 +97,9 @@ export function tourDetails(props: TourDetailsProps): string {
     { label: 'Tour', value: props.tourName },
     { label: 'Date & Time', value: props.dateTime },
     { label: 'Participants', value: props.participants },
-    { label: 'Total Amount', value: typeof props.totalAmount === 'number' ? `$${props.totalAmount}` : props.totalAmount }
+    { label: 'Total Amount', value: typeof props.totalAmount === 'number' 
+        ? formatCurrency(props.totalAmount, props.currency || 'EUR') 
+        : props.totalAmount }
   ];
 
   if (props.meetingPoint) {

@@ -33,6 +33,7 @@ export interface BookingEmailData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+  tourOwnerCurrency?: string;
 }
 
 // Email result interface
@@ -52,14 +53,20 @@ export async function sendBookingEmail(
 
     switch (emailType) {
       case 'confirmation':
-        emailContent = bookingConfirmationEmail(data);
+        emailContent = bookingConfirmationEmail({
+          ...data,
+          tourOwnerCurrency: data.tourOwnerCurrency
+        });
         break;
         
       case 'payment':
         // Payment emails can reuse confirmation template with slight modifications
         emailContent = {
           subject: `💳 Payment Received - ${data.tour.name}`,
-          html: bookingConfirmationEmail(data).html.replace(
+          html: bookingConfirmationEmail({
+            ...data,
+            tourOwnerCurrency: data.tourOwnerCurrency
+          }).html.replace(
             'Booking Confirmed!',
             'Payment Received!'
           ).replace(
@@ -70,11 +77,17 @@ export async function sendBookingEmail(
         break;
         
       case 'reminder':
-        emailContent = tourReminderEmail(data);
+        emailContent = tourReminderEmail({
+          ...data,
+          tourOwnerCurrency: data.tourOwnerCurrency
+        });
         break;
         
       case 'qr-ticket':
-        emailContent = qrTicketEmail(data);
+        emailContent = qrTicketEmail({
+          ...data,
+          tourOwnerCurrency: data.tourOwnerCurrency
+        });
         break;
         
       case 'cancelled':
@@ -126,14 +139,15 @@ function getCancellationEmail(data: BookingEmailData): string {
 
 // Send guide notification email
 export async function sendGuideNotificationEmail(
-  data: BookingEmailData & { guideEmail: string; guideName?: string }
+  data: BookingEmailData & { guideEmail: string; guideName?: string; guideCurrency?: string }
 ): Promise<EmailResult> {
   try {
     const emailContent = guideBookingNotificationEmail({
       booking: data.booking,
       tour: data.tour,
       timeSlot: data.timeSlot,
-      guideName: data.guideName
+      guideName: data.guideName,
+      guideCurrency: data.guideCurrency
     });
 
     const resend = getResend();

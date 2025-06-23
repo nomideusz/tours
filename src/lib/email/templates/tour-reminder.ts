@@ -7,10 +7,11 @@ export interface TourReminderData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+  tourOwnerCurrency?: string;
 }
 
 export function tourReminderTemplate(data: TourReminderData): string {
-  const { booking, tour, timeSlot } = data;
+  const { booking, tour, timeSlot, tourOwnerCurrency } = data;
   const startTime = new Date(timeSlot.startTime);
   
   const content = `
@@ -39,7 +40,8 @@ export function tourReminderTemplate(data: TourReminderData): string {
         participants: formatParticipantDisplay(booking),
         totalAmount: booking.totalAmount,
         meetingPoint: tour.location,
-        status: '✅ Confirmed'
+        status: '✅ Confirmed',
+        currency: tourOwnerCurrency
       })}
       
       <h3>Before You Go</h3>

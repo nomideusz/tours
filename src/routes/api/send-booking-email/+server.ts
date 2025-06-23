@@ -1,7 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { sendBookingEmail, type BookingEmailType } from '$lib/email.server.js';
 import { db } from '$lib/db/connection.js';
-import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -18,7 +18,7 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'Invalid email type' }, { status: 400 });
     }
 
-    // Fetch booking data with tour and time slot information
+    // Fetch booking data with tour, time slot, and tour owner information
     const bookingData = await db.select({
       // Booking fields
       id: bookings.id,
@@ -26,6 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
       customerEmail: bookings.customerEmail,
       customerPhone: bookings.customerPhone,
       participants: bookings.participants,
+      participantBreakdown: bookings.participantBreakdown,
       totalAmount: bookings.totalAmount,
       status: bookings.status,
       paymentStatus: bookings.paymentStatus,
@@ -46,17 +47,21 @@ export const POST: RequestHandler = async ({ request }) => {
       tourCapacity: tours.capacity,
       tourStatus: tours.status,
       tourLocation: tours.location,
+      tourUserId: tours.userId,
       // TimeSlot fields
       timeSlotId: timeSlots.id,
       timeSlotStartTime: timeSlots.startTime,
       timeSlotEndTime: timeSlots.endTime,
       timeSlotAvailableSpots: timeSlots.availableSpots,
       timeSlotBookedSpots: timeSlots.bookedSpots,
-      timeSlotStatus: timeSlots.status
+      timeSlotStatus: timeSlots.status,
+      // Tour owner fields
+      tourOwnerCurrency: users.currency
     })
     .from(bookings)
     .innerJoin(tours, eq(bookings.tourId, tours.id))
     .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+    .innerJoin(users, eq(tours.userId, users.id))
     .where(eq(bookings.id, bookingId))
     .limit(1);
 
@@ -121,7 +126,8 @@ export const POST: RequestHandler = async ({ request }) => {
     const emailResult = await sendBookingEmail(emailType as BookingEmailType, {
       booking,
       tour,
-      timeSlot
+      timeSlot,
+      tourOwnerCurrency: data.tourOwnerCurrency || 'EUR'
     });
 
     if (!emailResult.success) {

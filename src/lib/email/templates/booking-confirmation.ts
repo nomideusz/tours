@@ -7,10 +7,11 @@ export interface BookingConfirmationData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+  tourOwnerCurrency?: string;
 }
 
 export function bookingConfirmationTemplate(data: BookingConfirmationData): string {
-  const { booking, tour, timeSlot } = data;
+  const { booking, tour, timeSlot, tourOwnerCurrency } = data;
   const startTime = new Date(timeSlot.startTime);
   
   const content = `
@@ -35,7 +36,8 @@ export function bookingConfirmationTemplate(data: BookingConfirmationData): stri
         dateTime: formatEmailDateTime(startTime),
         participants: formatParticipantDisplay(booking),
         totalAmount: booking.totalAmount,
-        meetingPoint: tour.location
+        meetingPoint: tour.location,
+        currency: tourOwnerCurrency
       })}
       
       <h3>What happens next?</h3>

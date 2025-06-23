@@ -26,16 +26,34 @@ export function formatParticipantDisplay(booking: Booking): string {
 }
 
 // Format currency amounts
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
+export function formatCurrency(amount: number, currency: string = 'EUR'): string {
   const symbols: Record<string, string> = {
     USD: '$',
     EUR: '€',
     GBP: '£',
-    JPY: '¥'
+    JPY: '¥',
+    CAD: 'C$',
+    AUD: 'A$',
+    CHF: 'CHF',
+    SEK: 'kr',
+    NOK: 'kr',
+    DKK: 'kr',
+    PLN: 'zł',
+    CZK: 'Kč',
+    NZD: 'NZ$',
+    SGD: 'S$',
+    HKD: 'HK$',
+    THB: '฿',
+    AED: 'د.إ',
+    MXN: 'MX$'
   };
   
   const symbol = symbols[currency] || currency;
-  return `${symbol}${amount.toFixed(2)}`;
+  
+  // JPY doesn't use decimal places
+  const decimals = currency === 'JPY' ? 0 : 2;
+  
+  return `${symbol}${amount.toFixed(decimals)}`;
 }
 
 // Format date for emails
