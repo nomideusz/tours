@@ -38,8 +38,8 @@
 		{#if loading}
 			<div class="text-center">
 				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-				<h1 class="text-2xl font-bold text-gray-900 mb-2">Processing your subscription...</h1>
-				<p class="text-gray-600">Please wait while we set up your account.</p>
+				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Processing your subscription...</h1>
+				<p style="color: var(--text-secondary);">Please wait while we set up your account.</p>
 			</div>
 		{:else if error}
 			<div class="text-center">
@@ -48,8 +48,8 @@
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
 					</svg>
 				</div>
-				<h1 class="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-				<p class="text-gray-600 mb-6">{error}</p>
+				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Something went wrong</h1>
+				<p class="mb-6" style="color: var(--text-secondary);">{error}</p>
 				<button
 					onclick={goToSubscription}
 					class="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
@@ -63,8 +63,8 @@
 					<CheckCircle class="w-8 h-8 text-green-600" />
 				</div>
 				
-				<h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Zaur!</h1>
-				<p class="text-lg text-gray-600 mb-8">
+				<h1 class="text-3xl font-bold mb-4" style="color: var(--text-primary);">Welcome to Zaur!</h1>
+				<p class="text-lg mb-8" style="color: var(--text-secondary);">
 					Your subscription has been activated successfully. You can now enjoy all the features of your new plan.
 				</p>
 				
@@ -79,7 +79,10 @@
 					
 					<button
 						onclick={goToSubscription}
-						class="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors"
+						class="w-full px-6 py-3 border rounded-md font-medium transition-colors"
+						style="border-color: var(--border-primary); color: var(--text-primary); background: var(--bg-primary);"
+						onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
 					>
 						Manage Subscription
 					</button>
