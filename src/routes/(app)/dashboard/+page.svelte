@@ -44,6 +44,10 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Flag from 'lucide-svelte/icons/flag';
+	import XCircle from 'lucide-svelte/icons/x-circle';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
+	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 
 	let { data }: { data: PageData } = $props();
 
@@ -590,6 +594,54 @@
 			countryToUpdate = null;
 			isUpdatingCountry[country] = false;
 			// TODO: Show error message
+		}
+	}
+
+	// Get more user-friendly payment status label
+	function getPaymentStatusLabel(status: string): string {
+		switch (status) {
+			case 'paid':
+				return 'Paid';
+			case 'pending':
+				return 'Unpaid';
+			case 'failed':
+				return 'Failed';
+			case 'refunded':
+				return 'Refunded';
+			default:
+				return 'Unpaid';
+		}
+	}
+	
+	// Get booking status icon
+	function getBookingStatusIcon(status: string): any {
+		switch (status) {
+			case 'confirmed':
+				return CheckCircle;
+			case 'pending':
+				return AlertCircle;
+			case 'cancelled':
+				return XCircle;
+			case 'completed':
+				return CheckCircle;
+			default:
+				return AlertCircle;
+		}
+	}
+	
+	// Get payment status icon
+	function getPaymentStatusIcon(status: string): any {
+		switch (status) {
+			case 'paid':
+				return CircleDollarSign;
+			case 'pending':
+				return AlertTriangle;
+			case 'failed':
+				return XCircle;
+			case 'refunded':
+				return ReceiptText;
+			default:
+				return AlertTriangle;
 		}
 	}
 </script>
@@ -1612,6 +1664,8 @@
 					<div class="divide-y" style="border-color: var(--border-primary);">
 						{#if recentBookings.length > 0}
 							{#each recentBookings.slice(0, 4) as booking}
+								{@const BookingIcon = getBookingStatusIcon(booking.status)}
+								{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
 								<div class="p-4">
 									<div class="flex items-start justify-between">
 										<div class="min-w-0 flex-1">
@@ -1620,10 +1674,19 @@
 													{booking.customerName}
 												</span>
 												<span
-													class="rounded-full px-2 py-0.5 text-xs {getStatusColor(booking.status)}"
+													class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getStatusColor(booking.status)}"
 												>
-													{booking.status}
+													<BookingIcon class="h-3 w-3" />
+													<span class="capitalize">{booking.status}</span>
 												</span>
+												{#if booking.paymentStatus}
+													<span
+														class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getPaymentStatusColor(booking.paymentStatus)}"
+													>
+														<PaymentIcon class="h-3 w-3" />
+														{getPaymentStatusLabel(booking.paymentStatus)}
+													</span>
+												{/if}
 											</div>
 											<p class="text-xs" style="color: var(--text-secondary);">
 												{booking.tourName || booking.tour || 'Unknown Tour'} • {formatDate(

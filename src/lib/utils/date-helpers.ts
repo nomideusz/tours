@@ -93,12 +93,12 @@ export function getPaymentStatusColor(paymentStatus: string): string {
 		case 'paid':
 			return 'bg-green-50 text-green-700';
 		case 'pending':
-			return 'bg-orange-50 text-orange-700';
+			return 'bg-purple-50 text-purple-700';
 		case 'failed':
 			return 'bg-red-50 text-red-700';
 		case 'refunded':
 			return 'bg-gray-50 text-gray-700';
 		default:
-			return 'bg-orange-50 text-orange-700';
+			return 'bg-purple-50 text-purple-700';
 	}
 } 

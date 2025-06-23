@@ -9,17 +9,17 @@ export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
     name: 'Free Starter',
-    monthlyBookingLimit: 2,
+    monthlyBookingLimit: 5,
     tourLimit: 1,
-    features: ['Basic QR codes', 'Email support'],
+    features: ['Basic QR codes', 'Email notifications', '7-day onboarding sequence'],
     stripePriceId: null, // Free plan doesn't need Stripe
   },
   starter_pro: {
     id: 'starter_pro',
-    name: 'Starter Pro',
-    monthlyBookingLimit: 15,
+    name: 'Solo Guide',
+    monthlyBookingLimit: 25,
     tourLimit: 3,
-    features: ['Custom branding', 'SMS notifications'],
+    features: ['Custom branding (logo, colors)', 'SMS notifications', 'QR code customization', 'Basic analytics', 'Email support'],
     stripePriceId: {
       monthly: process.env.STRIPE_STARTER_PRO_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_STARTER_PRO_YEARLY_PRICE_ID,
@@ -30,7 +30,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Professional',
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
-    features: ['Advanced analytics', 'Priority support', 'API access'],
+    features: ['Advanced analytics & reporting', 'WhatsApp notifications', 'Customer database export', 'Review collection automation', 'Priority support (24h response)', 'Google Calendar integration', 'Multi-language booking pages'],
     stripePriceId: {
       monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
@@ -41,7 +41,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Agency',
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
-    features: ['Team management', 'White-label options', 'Dedicated support'],
+    features: ['Everything in Professional', 'Up to 10 tour guides', 'Team management dashboard', 'Revenue sharing tools', 'API access for custom integrations', 'White-label options', 'Custom domain (agency.zaur.app)', 'Dedicated account manager', 'Advanced reporting (ROI, conversion rates)'],
     stripePriceId: {
       monthly: process.env.STRIPE_AGENCY_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_AGENCY_YEARLY_PRICE_ID,

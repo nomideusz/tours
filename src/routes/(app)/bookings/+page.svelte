@@ -25,6 +25,11 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import Clock from 'lucide-svelte/icons/clock';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import XCircle from 'lucide-svelte/icons/x-circle';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
+	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 	
 
 	
@@ -109,6 +114,54 @@
 		pageSize += 10; // Add 10 more bookings each time
 	}
 	
+	// Get more user-friendly payment status label
+	function getPaymentStatusLabel(status: string): string {
+		switch (status) {
+			case 'paid':
+				return 'Paid';
+			case 'pending':
+				return 'Unpaid';
+			case 'failed':
+				return 'Failed';
+			case 'refunded':
+				return 'Refunded';
+			default:
+				return 'Unpaid';
+		}
+	}
+	
+	// Get booking status icon
+	function getBookingStatusIcon(status: string): any {
+		switch (status) {
+			case 'confirmed':
+				return CheckCircle;
+			case 'pending':
+				return AlertCircle;
+			case 'cancelled':
+				return XCircle;
+			case 'completed':
+				return CheckCircle;
+			default:
+				return AlertCircle;
+		}
+	}
+	
+	// Get payment status icon
+	function getPaymentStatusIcon(status: string): any {
+		switch (status) {
+			case 'paid':
+				return CircleDollarSign;
+			case 'pending':
+				return AlertTriangle;
+			case 'failed':
+				return XCircle;
+			case 'refunded':
+				return ReceiptText;
+			default:
+				return AlertTriangle;
+		}
+	}
+	
 </script>
 
 <svelte:head>
@@ -146,7 +199,7 @@
 				},
 				{
 					icon: AlertCircle,
-					label: 'Pending',
+					label: 'Awaiting',
 					value: isStatsLoading ? '...' : `${stats().pending}`
 				},
 				{
@@ -215,6 +268,8 @@
 		<div class="divide-y" style="border-color: var(--border-primary);">
 			{#if bookings.length > 0}
 				{#each bookings as booking}
+					{@const BookingIcon = getBookingStatusIcon(booking.status)}
+					{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
 					<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}>
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
@@ -227,12 +282,14 @@
 										{booking.tour || booking.tourName || 'Unknown Tour'}
 									</p>
 								</div>
-								<div class="ml-2 flex flex-col gap-1">
-									<span class="px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-										{booking.status}
+								<div class="ml-2 flex flex-col gap-1 items-end">
+									<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+										<BookingIcon class="h-3 w-3" />
+										<span class="capitalize">{booking.status}</span>
 									</span>
-									<span class="px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-										💳 {booking.paymentStatus || 'pending'}
+									<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+										<PaymentIcon class="h-3 w-3" />
+										{getPaymentStatusLabel(booking.paymentStatus || 'pending')}
 									</span>
 								</div>
 							</div>
@@ -312,12 +369,14 @@
 								</div>
 								
 								<div class="flex items-center gap-3">
-									<div class="flex flex-col gap-1">
-										<span class="px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-											{booking.status}
+									<div class="flex items-center gap-2">
+										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+											<BookingIcon class="h-3.5 w-3.5" />
+											<span class="capitalize font-medium">{booking.status}</span>
 										</span>
-										<span class="px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-											💳 {booking.paymentStatus || 'pending'}
+										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+											<PaymentIcon class="h-3.5 w-3.5" />
+											<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
 										</span>
 									</div>
 									

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatDate } from '$lib/utils/date-helpers.js';
+	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { 
 		formatDuration,
@@ -48,6 +48,11 @@
 	import Download from 'lucide-svelte/icons/download';
 	import Plus from 'lucide-svelte/icons/plus';
 	import UserCheck from 'lucide-svelte/icons/user-check';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import XCircle from 'lucide-svelte/icons/x-circle';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
+	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 
 	// Get data from load function
 	let { data } = $props();
@@ -186,6 +191,54 @@
 		}
 	}
 
+	// Get more user-friendly payment status label
+	function getPaymentStatusLabel(status: string): string {
+		switch (status) {
+			case 'paid':
+				return 'Paid';
+			case 'pending':
+				return 'Unpaid';
+			case 'failed':
+				return 'Failed';
+			case 'refunded':
+				return 'Refunded';
+			default:
+				return 'Unpaid';
+		}
+	}
+	
+	// Get booking status icon
+	function getBookingStatusIcon(status: string): any {
+		switch (status) {
+			case 'confirmed':
+				return CheckCircle;
+			case 'pending':
+				return AlertCircle;
+			case 'cancelled':
+				return XCircle;
+			case 'completed':
+				return CheckCircle;
+			default:
+				return AlertCircle;
+		}
+	}
+	
+	// Get payment status icon
+	function getPaymentStatusIcon(status: string): any {
+		switch (status) {
+			case 'paid':
+				return CircleDollarSign;
+			case 'pending':
+				return AlertTriangle;
+			case 'failed':
+				return XCircle;
+			case 'refunded':
+				return ReceiptText;
+			default:
+				return AlertTriangle;
+		}
+	}
+
 	function downloadQR() {
 		if (!browser || !tour.qrCode) return;
 		const link = document.createElement('a');
@@ -202,8 +255,6 @@
 		link.download = `qr-${tour.name.replace(/[^a-zA-Z0-9]/g, '-')}.png`;
 		link.click();
 	}
-
-
 
 	// Embed widget functions
 	function getEmbedCode() {
@@ -700,6 +751,8 @@
 			<div class="p-4">
 				<div class="space-y-3">
 					{#each recentBookings.slice(0, 5) as booking}
+						{@const BookingIcon = getBookingStatusIcon(booking.status)}
+						{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
 						<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" 
 							style="background: var(--bg-secondary);"
 							onclick={() => goto(`/bookings/${booking.id}`)}
@@ -724,13 +777,14 @@
 											No time slot
 										</span>
 									{/if}
-									{#if booking.status === 'confirmed'}
-										<span class="px-2 py-0.5 text-xs rounded-full font-medium" style="background: var(--bg-tertiary); color: var(--color-primary);">
-											Confirmed
-										</span>
-									{:else if booking.status === 'pending'}
-										<span class="px-2 py-0.5 text-xs rounded-full font-medium" style="background: var(--bg-tertiary); color: var(--text-primary);">
-											Pending
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium {getStatusColor(booking.status)}">
+										<BookingIcon class="h-3 w-3" />
+										<span class="capitalize">{booking.status}</span>
+									</span>
+									{#if booking.paymentStatus}
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium {getPaymentStatusColor(booking.paymentStatus)}">
+											<PaymentIcon class="h-3 w-3" />
+											{getPaymentStatusLabel(booking.paymentStatus)}
 										</span>
 									{/if}
 								</div>
@@ -771,16 +825,15 @@
 						{#if imageUrl && index < 11}
 							<button
 								onclick={() => selectedImageIndex = index}
-								class="relative aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity group"
-								style="background: var(--bg-secondary); padding: 0; border: 1px solid var(--border-primary);"
+								class="relative aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity bg-gray-100 dark:bg-gray-800"
+								style="padding: 0; border: 1px solid var(--border-primary);"
 							>
 								<img 
 									src={imageUrl} 
 									alt="{tour.name} - Image {index + 1}"
-									class="w-full h-full object-cover"
-									loading="lazy"
+									class="absolute inset-0 w-full h-full object-cover"
+									loading={index < 6 ? "eager" : "lazy"}
 								/>
-								<div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
 							</button>
 						{/if}
 					{/each}

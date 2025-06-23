@@ -5,6 +5,8 @@
 	import PublicHeader from '$lib/components/PublicHeader.svelte';
 	import PublicFooter from '$lib/components/PublicFooter.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { themeStore } from '$lib/stores/theme.js';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -16,6 +18,12 @@
 		if (data) {
 			auth.initialize(data);
 		}
+	});
+	
+	// Initialize theme
+	onMount(() => {
+		const cleanup = themeStore.init();
+		return cleanup;
 	});
 </script>
 

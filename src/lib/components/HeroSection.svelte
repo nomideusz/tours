@@ -90,12 +90,11 @@
 	  <!-- Main hero content - mobile optimized typography -->
 	  <div class="text-center max-w-4xl mx-auto" in:fly={{ y: 20, duration: 600, delay: 200 }}>
 		<h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 tracking-tight leading-tight">
-		  Turn Street Traffic into
-		  <span class="text-blue-600 block sm:inline">Instant Bookings</span>
+		  Skip Platform Fees.
+		  <span class="text-blue-600 block sm:inline">Get Direct Bookings.</span>
 		</h1>
 		<p class="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
-		  Professional QR code booking system for tour guides. 
-		  Let tourists book and pay instantly — no apps, no friction.
+			Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings.
 		</p>
 		
 		<!-- Mobile-optimized form -->

@@ -18,6 +18,12 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Ticket from 'lucide-svelte/icons/ticket';
+	import Sparkles from 'lucide-svelte/icons/sparkles';
+	import Star from 'lucide-svelte/icons/star';
+	import Shield from 'lucide-svelte/icons/shield';
+	import Smartphone from 'lucide-svelte/icons/smartphone';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -47,14 +53,23 @@
 	});
 	
 	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
+		const date = new Date(dateString);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		
+		const isToday = date.toDateString() === today.toDateString();
+		const isTomorrow = date.toDateString() === tomorrow.toDateString();
+		
+		if (isToday) return 'Today';
+		if (isTomorrow) return 'Tomorrow';
+		
+		return date.toLocaleDateString('en-US', {
 			weekday: 'short',
 			month: 'short',
 			day: 'numeric'
 		});
 	}
-	
-
 	
 	function formatDuration(minutes: number) {
 		const hours = Math.floor(minutes / 60);
@@ -86,6 +101,19 @@
 	function getBookingPageURL(qrCode: string) {
 		return generateBookingURL(qrCode);
 	}
+	
+	// Get the next available slot for a tour
+	function getNextAvailableSlot(timeSlots: any[]) {
+		const now = new Date();
+		const futureSlots = timeSlots
+			.filter(slot => 
+				slot.availableSpots > slot.bookedSpots &&
+				new Date(slot.startTime) > now
+			)
+			.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+		
+		return futureSlots[0];
+	}
 </script>
 
 <svelte:head>
@@ -93,77 +121,91 @@
 	<meta name="description" content="Book tours with {profile?.name || data.username}. {profile?.description || `Professional tour guide offering ${totalTours} tours.`}" />
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	{#if isLoading}
-		<!-- Loading State -->
-		<div class="flex items-center justify-center min-h-[400px]">
-			<div class="text-center">
-				<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
-				<p class="text-lg font-medium" style="color: var(--text-primary);">Loading profile...</p>
-				<p class="text-sm" style="color: var(--text-secondary);">Please wait while we fetch the latest tour information</p>
-			</div>
-		</div>
-	{:else if queryError}
-		<!-- Error State -->
-		<div class="flex items-center justify-center min-h-[400px]">
-			<div class="text-center max-w-md mx-auto px-6">
-				<AlertCircle class="w-16 h-16 mx-auto mb-4" style="color: var(--color-danger-600);" />
-				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
-				<p class="mb-4" style="color: var(--text-secondary);">
-					The profile @{data.username} could not be found or is not available.
-				</p>
-				<button 
-					onclick={() => $profileQuery.refetch()}
-					class="button-primary"
-				>
-					Try Again
-				</button>
-			</div>
-		</div>
-	{:else if !profile}
-		<!-- Profile Not Found -->
-		<div class="flex items-center justify-center min-h-[400px]">
-			<div class="text-center max-w-md mx-auto px-6">
-				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
-				<p class="mb-4" style="color: var(--text-secondary);">The profile @{data.username} does not exist or is not available.</p>
-			</div>
-		</div>
-	{:else}
-	<!-- Profile Header -->
-	<div class="rounded-xl overflow-hidden mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="px-6 py-8 text-white" style="background: var(--color-primary-600);">
-			<div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-				<!-- Avatar -->
-				<div class="flex-shrink-0">
-					{#if profile.avatar}
-						<img 
-							src={profile.avatar} 
-							alt={profile.name}
-							class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-lg"
-						/>
-					{:else}
-						<div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center border-4 border-white shadow-lg" style="background: var(--bg-primary);">
-							<User class="w-12 h-12 sm:w-16 sm:h-16" style="color: var(--text-secondary);" />
-						</div>
-					{/if}
+<div class="min-h-screen" style="background: var(--bg-secondary);">
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-[600px]">
+		{#if isLoading}
+			<!-- Loading State -->
+			<div class="flex items-center justify-center min-h-[600px]">
+				<div class="text-center">
+					<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
+					<p class="text-lg font-medium" style="color: var(--text-primary);">Loading profile...</p>
+					<p class="text-sm" style="color: var(--text-secondary);">Please wait while we fetch the latest tour information</p>
 				</div>
+			</div>
+		{:else if queryError}
+			<!-- Error State -->
+			<div class="flex items-center justify-center min-h-[600px]">
+				<div class="text-center max-w-md mx-auto px-6">
+					<div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--color-danger-50);">
+						<AlertCircle class="w-10 h-10" style="color: var(--color-danger-600);" />
+					</div>
+					<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
+					<p class="mb-6" style="color: var(--text-secondary);">
+						The profile @{data.username} could not be found or is not available.
+					</p>
+					<button 
+						onclick={() => $profileQuery.refetch()}
+						class="button-primary"
+					>
+						Try Again
+					</button>
+				</div>
+			</div>
+		{:else if profile}
+			<!-- Profile Header -->
+			<div class="rounded-xl overflow-hidden shadow-sm mb-6 fade-in" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<!-- Cover Background -->
+				<div class="h-14 sm:h-16" style="background: var(--color-primary-600);"></div>
 				
-				<!-- Profile Info -->
-				<div class="flex-1">
-					<h1 class="text-3xl sm:text-4xl font-bold mb-2">{profile.name}</h1>
-					<p class="text-white/80 text-lg mb-3">@{profile.username}</p>
+				<!-- Profile Content -->
+				<div class="px-4 sm:px-6 lg:px-8">
+					<div class="-mt-8 sm:-mt-12 pb-6">
+						<div class="flex flex-col sm:flex-row sm:items-end sm:space-x-5">
+							<!-- Avatar -->
+							<div class="flex justify-center sm:justify-start">
+								{#if profile.avatar}
+									<img 
+										src={profile.avatar} 
+										alt={profile.name}
+										class="w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 shadow"
+										style="ring-color: var(--bg-primary);"
+									/>
+								{:else}
+									<div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center shadow ring-4" 
+										style="background: var(--bg-tertiary); ring-color: var(--bg-primary);">
+										<User class="w-12 h-12 sm:w-16 sm:h-16" style="color: var(--text-tertiary);" />
+									</div>
+								{/if}
+							</div>
+							
+							<!-- Profile Info -->
+							<div class="mt-4 sm:mt-6 flex-1 text-center sm:text-left">
+								<div class="pt-4 sm:pt-6">
+									<h1 class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">{profile.name}</h1>
+									<p class="text-sm mb-4 sm:mb-3" style="color: var(--text-secondary);">@{profile.username}</p>
+								</div>
+								
+								<!-- Tour count badge -->
+								<div class="inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium" style="background: var(--bg-secondary); color: var(--text-primary);">
+									<Ticket class="w-4 h-4 mr-2" />
+									{totalTours} {totalTours === 1 ? 'Tour' : 'Tours'}
+								</div>
+							</div>
+						</div>
+					</div>
 					
-					<div class="flex flex-wrap gap-4 text-white/80">
+					<!-- Additional Info -->
+					<div class="flex flex-wrap gap-4 pb-6 text-sm">
 						{#if profile.businessName}
 							<div class="flex items-center gap-2">
-								<Building class="w-5 h-5" />
-								<span>{profile.businessName}</span>
+								<Building class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span style="color: var(--text-secondary);">{profile.businessName}</span>
 							</div>
 						{/if}
 						{#if profile.location}
 							<div class="flex items-center gap-2">
-								<MapPin class="w-5 h-5" />
-								<span>{profile.location}</span>
+								<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span style="color: var(--text-secondary);">{profile.location}</span>
 							</div>
 						{/if}
 						{#if profile.website}
@@ -171,204 +213,247 @@
 								href={profile.website}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="flex items-center gap-2 hover:text-white transition-colors"
+								class="flex items-center gap-2 transition-colors hover-link"
+								style="color: var(--text-secondary);"
 							>
-								<Globe class="w-5 h-5" />
+								<Globe class="w-4 h-4" />
 								<span>{profile.website.replace(/^https?:\/\//, '')}</span>
+								<ExternalLink class="w-3 h-3" />
 							</a>
 						{/if}
 					</div>
 				</div>
-			</div>
-		</div>
-		
-		{#if profile.description}
-			<div class="px-6 py-6">
-				<h2 class="font-semibold mb-3" style="color: var(--text-primary);">About {profile.name}</h2>
-				<p class="leading-relaxed" style="color: var(--text-secondary);">{profile.description}</p>
-			</div>
-		{/if}
-	</div>
-	
-	<!-- Tours Available -->
-	{#if tours.length > 0}
-		<div class="rounded-xl mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Available Tours</h2>
-				<p class="text-sm mt-1" style="color: var(--text-secondary);">Choose from {totalTours} tour{totalTours === 1 ? '' : 's'} offered by {profile.name}</p>
+				
+				{#if profile.description}
+					<div class="px-4 sm:px-6 lg:px-8 pb-6 border-t" style="border-color: var(--border-primary);">
+						<div class="pt-6">
+							<h3 class="text-sm font-medium mb-2" style="color: var(--text-primary);">About</h3>
+							<p class="text-sm leading-relaxed" style="color: var(--text-secondary);">{profile.description}</p>
+						</div>
+					</div>
+				{/if}
 			</div>
 			
-			<div class="p-4">
-				<div class="space-y-6">
-					{#each tours as tour}
-						<div class="rounded-lg border p-6" style="border-color: var(--border-primary); background: var(--bg-secondary);">
-							<div class="grid gap-6 lg:grid-cols-3">
-								<!-- Tour Info -->
-								<div class="lg:col-span-2">
-									<!-- Tour Image -->
-									{#if tour.images && tour.images.length > 0}
-										<div class="aspect-video rounded-lg mb-4 overflow-hidden" style="background: var(--bg-tertiary);">
-											<img 
-												src="/api/images/{tour.id}/{tour.images[0]}?size=large"
-												alt={tour.name}
-												class="w-full h-full object-cover"
-											/>
-										</div>
-									{:else}
-										<div class="aspect-video rounded-lg mb-4 flex items-center justify-center" style="background: var(--bg-tertiary);">
-											<MapPin class="w-12 h-12" style="color: var(--text-tertiary);" />
-										</div>
-									{/if}
-									
-									<!-- Tour Details -->
-									<h3 class="text-xl font-bold mb-3" style="color: var(--text-primary);">{tour.name}</h3>
-									{#if tour.description}
-										<p class="mb-4 leading-relaxed" style="color: var(--text-secondary);">{tour.description}</p>
-									{/if}
-									
-									<div class="flex flex-wrap gap-4 text-sm mb-4" style="color: var(--text-secondary);">
-										{#if tour.location}
-											<span class="flex items-center gap-2">
-												<MapPin class="w-4 h-4" />
-												{tour.location}
-											</span>
-										{/if}
-										{#if tour.duration}
-											<span class="flex items-center gap-2">
-												<Clock class="w-4 h-4" />
-												{formatDuration(tour.duration)}
-											</span>
-										{/if}
-										<span class="flex items-center gap-2">
-											<Users class="w-4 h-4" />
-											Up to {tour.capacity} people
-										</span>
+			<!-- Tours Section -->
+			{#if tours.length > 0}
+				<div class="mb-6">
+					<div class="flex items-center justify-between mb-4">
+						<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Available Tours</h2>
+						<span class="text-sm px-3 py-1 rounded-full" style="background: var(--bg-primary); color: var(--text-secondary);">
+							{totalTours} tour{totalTours === 1 ? '' : 's'}
+						</span>
+					</div>
+					
+					<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+						{#each tours as tour}
+							{@const nextSlot = getNextAvailableSlot(tour.timeSlots || [])}
+							<div class="rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md flex flex-col h-full" 
+								style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<!-- Tour Image -->
+								{#if tour.images && tour.images.length > 0}
+									<div class="aspect-[16/10] overflow-hidden flex-shrink-0" style="background: var(--bg-secondary);">
+										<img 
+											src="/api/images/{tour.id}/{tour.images[0]}?size=medium"
+											alt={tour.name}
+											class="w-full h-full object-cover transition-transform hover:scale-105"
+											loading="lazy"
+										/>
 									</div>
-									
-									<div class="flex items-center gap-2 text-xl font-bold" style="color: var(--color-primary-600);">
-										<DollarSign class="w-6 h-6" />
-										<span>{getTourDisplayPriceFormattedWithCurrency(tour, profile?.currency)} per person</span>
+								{:else}
+									<div class="aspect-[16/10] flex items-center justify-center flex-shrink-0" style="background: var(--bg-tertiary);">
+										<MapPin class="w-12 h-12" style="color: var(--text-tertiary);" />
 									</div>
-								</div>
+								{/if}
 								
-								<!-- Booking Section -->
-								<div class="lg:col-span-1">
-									<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-										<h4 class="font-semibold mb-3" style="color: var(--text-primary);">Available Times</h4>
+								<!-- Tour Content -->
+								<div class="p-4 sm:p-5 flex flex-col flex-1">
+									<div class="flex-1">
+										<h3 class="font-semibold text-lg mb-2 line-clamp-2" style="color: var(--text-primary);">
+											{tour.name}
+										</h3>
 										
-										{#if tour.timeSlots && tour.timeSlots.length > 0}
-											{@const nextSlots = getNextTimeSlots(tour.timeSlots, 3)}
-											{#if nextSlots.length > 0}
-												<div class="space-y-2 mb-4">
-													{#each nextSlots as slot}
-														<div class="p-3 rounded-lg border text-sm" style="border-color: var(--border-primary); background: var(--bg-secondary);">
-															<div class="font-medium" style="color: var(--text-primary);">
-																{formatDate(slot.startTime)}
-															</div>
-																													<div style="color: var(--text-secondary);">
-															{formatSlotTimeRange(slot.startTime, slot.endTime)}
-														</div>
-															<div class="text-xs mt-1" style="color: var(--text-tertiary);">
-																{slot.availableSpots - slot.bookedSpots} spots available
-															</div>
-														</div>
-													{/each}
-												</div>
-												
-												<!-- QR Code -->
-												{#if tour.qrCode}
-													<div class="text-center">
-														<a 
-															href={getBookingPageURL(tour.qrCode)}
-															class="block mb-3 hover:opacity-80 transition-opacity"
-														>
-															<img 
-																src={getQRCodeURL(tour.qrCode)}
-																alt="QR code to book {tour.name}"
-																class="w-32 h-32 mx-auto rounded-lg"
-																style="border: 2px solid var(--border-primary);"
-															/>
-														</a>
-														<p class="text-sm mb-2" style="color: var(--text-secondary);">
-															Scan to book instantly
-														</p>
-														<div class="text-xs px-3 py-2 rounded-full inline-block" style="background: var(--bg-tertiary); color: var(--text-tertiary);">
-															{tour.qrCode}
-														</div>
-													</div>
-												{:else}
-													<div class="text-center py-4">
-														<p class="text-sm mb-2" style="color: var(--text-secondary);">QR code not available</p>
-														<p class="text-xs" style="color: var(--text-tertiary);">Contact {profile.name} directly to book</p>
+										{#if tour.description}
+											<p class="text-sm mb-3 line-clamp-2" style="color: var(--text-secondary);">
+												{tour.description}
+											</p>
+										{/if}
+										
+										<!-- Tour Details -->
+										<div class="space-y-2 mb-4 text-sm">
+											<div class="flex flex-wrap gap-x-4 gap-y-2">
+												{#if tour.location}
+													<div class="flex items-center gap-2">
+														<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
+														<span style="color: var(--text-secondary);" class="truncate">{tour.location}</span>
 													</div>
 												{/if}
-											{:else}
-												<div class="text-center py-4">
-													<p class="text-sm mb-2" style="color: var(--text-secondary);">No available times</p>
-													<p class="text-xs" style="color: var(--text-tertiary);">Contact {profile.name} for custom scheduling</p>
+												{#if tour.duration}
+													<div class="flex items-center gap-2">
+														<Clock class="w-4 h-4" style="color: var(--text-tertiary);" />
+														<span style="color: var(--text-secondary);">{formatDuration(tour.duration)}</span>
+													</div>
+												{/if}
+												<div class="flex items-center gap-2">
+													<Users class="w-4 h-4" style="color: var(--text-tertiary);" />
+													<span style="color: var(--text-secondary);">Max {tour.capacity}</span>
 												</div>
-											{/if}
-										{:else}
-											<div class="text-center py-4">
-												<p class="text-sm mb-2" style="color: var(--text-secondary);">Schedule upon request</p>
-												<p class="text-xs" style="color: var(--text-tertiary);">Contact {profile.name} to arrange your tour</p>
 											</div>
+											
+											<!-- Pricing on separate line for better visibility -->
+											<div class="flex items-center gap-2">
+												<DollarSign class="w-4 h-4" style="color: var(--text-tertiary);" />
+												<span style="color: var(--text-secondary);">
+													{#if tour.enablePricingTiers && tour.pricingTiers}
+														{#if parseFloat(tour.pricingTiers.child) < parseFloat(tour.pricingTiers.adult)}
+															Adults: <span class="font-medium" style="color: var(--text-primary);">{formatTourOwnerCurrency(tour.pricingTiers.adult, profile?.currency)}</span>
+															• Children: <span class="font-medium" style="color: var(--text-primary);">{formatTourOwnerCurrency(tour.pricingTiers.child, profile?.currency)}</span>
+														{:else}
+															<span class="font-medium" style="color: var(--text-primary);">{formatTourOwnerCurrency(tour.pricingTiers.adult, profile?.currency)}</span> per person
+														{/if}
+													{:else}
+														<span class="font-medium" style="color: var(--text-primary);">{formatTourOwnerCurrency(tour.price, profile?.currency)}</span> per person
+													{/if}
+												</span>
+											</div>
+										</div>
+										
+										<!-- Next Available Slot -->
+										{#if nextSlot}
+											<div class="p-3 rounded-lg mb-4" style="background: var(--bg-secondary);">
+												<p class="text-xs font-medium mb-1" style="color: var(--text-tertiary);">Next available</p>
+												<p class="text-sm font-medium" style="color: var(--text-primary);">
+													{formatDate(nextSlot.startTime)}
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													{formatSlotTimeRange(nextSlot.startTime, nextSlot.endTime)}
+												</p>
+											</div>
+										{:else}
+											<div class="p-3 rounded-lg mb-4" style="background: var(--bg-secondary);">
+												<p class="text-sm" style="color: var(--text-tertiary);">
+													No scheduled times available
+												</p>
+											</div>
+										{/if}
+									</div>
+									
+									<!-- CTA Button - Always at bottom -->
+									<div class="mt-auto">
+										{#if tour.qrCode}
+											<a 
+												href={getBookingPageURL(tour.qrCode)}
+												class="button-primary button--gap justify-center w-full"
+											>
+												<Ticket class="w-4 h-4" />
+												Book Now
+												<ChevronRight class="w-4 h-4" />
+											</a>
+										{:else}
+											<button 
+												disabled
+												class="button--secondary w-full opacity-50 cursor-not-allowed"
+											>
+												Booking Unavailable
+											</button>
 										{/if}
 									</div>
 								</div>
 							</div>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				<!-- No Tours Available -->
+				<div class="rounded-xl text-center shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-8 sm:p-12">
+						<div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+							<Calendar class="w-10 h-10" style="color: var(--text-tertiary);" />
 						</div>
-					{/each}
+						<h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">No Tours Available</h3>
+						<p style="color: var(--text-secondary);">
+							{profile.name} doesn't have any active tours at the moment. Please check back later or contact them directly.
+						</p>
+					</div>
+				</div>
+			{/if}
+			
+			<!-- How It Works -->
+			<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
+					<div class="flex items-center gap-3">
+						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-50);">
+							<Sparkles class="w-5 h-5" style="color: var(--color-primary-600);" />
+						</div>
+						<h2 class="font-semibold" style="color: var(--text-primary);">How QR Booking Works</h2>
+					</div>
+				</div>
+				<div class="p-6 sm:p-8">
+					<div class="grid gap-6 sm:grid-cols-3">
+						<div class="text-center">
+							<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+								<QrCode class="w-8 h-8" style="color: var(--color-primary-600);" />
+							</div>
+							<h3 class="font-medium mb-2" style="color: var(--text-primary);">1. Find & Scan</h3>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								Scan a tour QR code or click "Book Now" to select your tour
+							</p>
+						</div>
+						<div class="text-center">
+							<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+								<Calendar class="w-8 h-8" style="color: var(--color-primary-600);" />
+							</div>
+							<h3 class="font-medium mb-2" style="color: var(--text-primary);">2. Choose & Pay</h3>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								Pick your preferred date and time, then pay securely online
+							</p>
+						</div>
+						<div class="text-center">
+							<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
+								<Smartphone class="w-8 h-8" style="color: var(--color-primary-600);" />
+							</div>
+							<h3 class="font-medium mb-2" style="color: var(--text-primary);">3. Show Ticket</h3>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								Get your QR ticket instantly and show it at check-in
+							</p>
+						</div>
+					</div>
+					
+					<!-- Benefits -->
+					<div class="mt-8 grid gap-4 sm:grid-cols-2">
+						<div class="flex items-start gap-3">
+							<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+							<div>
+								<p class="font-medium text-sm mb-1" style="color: var(--text-primary);">Secure Payment</p>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									Pay directly to tour guides via Stripe
+								</p>
+							</div>
+						</div>
+						<div class="flex items-start gap-3">
+							<Star class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+							<div>
+								<p class="font-medium text-sm mb-1" style="color: var(--text-primary);">Instant Confirmation</p>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									Get your tickets immediately after booking
+								</p>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
-		</div>
-	{:else}
-		<!-- No Tours Available -->
-		<div class="rounded-xl text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-8">
-				<div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-secondary);">
-					<Calendar class="w-8 h-8" style="color: var(--text-tertiary);" />
-				</div>
-				<h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">No Tours Available</h3>
-				<p style="color: var(--text-secondary);">
-					{profile.name} doesn't have any active tours at the moment. Please check back later or contact them directly.
-				</p>
-			</div>
-		</div>
-	{/if}
-	
-	<!-- How to Book -->
-	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="p-4 border-b" style="border-color: var(--border-primary);">
-			<h2 class="font-semibold" style="color: var(--text-primary);">How to Book</h2>
-		</div>
-		<div class="p-6">
-			<div class="grid gap-6 sm:grid-cols-3">
-				<div class="text-center">
-					<div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center" style="background: var(--color-primary-50);">
-						<QrCode class="w-6 h-6" style="color: var(--color-primary-600);" />
+		{:else}
+			<!-- Profile Not Found (after loading) -->
+			<div class="flex items-center justify-center min-h-[600px]">
+				<div class="text-center max-w-md mx-auto px-6">
+					<div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-primary);">
+						<User class="w-10 h-10" style="color: var(--text-tertiary);" />
 					</div>
-					<h3 class="font-medium mb-2" style="color: var(--text-primary);">1. Scan QR Code</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">Use your phone to scan the QR code for the tour you want</p>
-				</div>
-				<div class="text-center">
-					<div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center" style="background: var(--color-primary-50);">
-						<Calendar class="w-6 h-6" style="color: var(--color-primary-600);" />
-					</div>
-					<h3 class="font-medium mb-2" style="color: var(--text-primary);">2. Choose Time</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">Select from available time slots that work for you</p>
-				</div>
-				<div class="text-center">
-					<div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center" style="background: var(--color-primary-50);">
-						<DollarSign class="w-6 h-6" style="color: var(--color-primary-600);" />
-					</div>
-					<h3 class="font-medium mb-2" style="color: var(--text-primary);">3. Pay & Confirm</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">Complete payment and receive your booking confirmation</p>
+					<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Profile Not Found</h1>
+					<p class="mb-4" style="color: var(--text-secondary);">The profile @{data.username} does not exist or is not available.</p>
 				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
-	{/if}
 </div>
 
 <style>
@@ -377,5 +462,25 @@
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+	
+	.hover-link:hover {
+		color: var(--color-primary-600) !important;
+	}
+	
+	/* Smooth transition for profile content */
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	
+	.fade-in {
+		animation: fadeIn 0.3s ease-out;
 	}
 </style> 

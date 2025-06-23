@@ -1,12 +1,13 @@
 <script lang="ts">
 	import Check from 'lucide-svelte/icons/check';
+	import X from 'lucide-svelte/icons/x';
 	
 	let isYearly = $state(false);
 	
-	// Calculate prices
-	let starterProPrice = $derived(isYearly ? 10 : 12); // €10/month when billed annually (17% off €12)
-	let proPrice = $derived(isYearly ? 24 : 29); // €24/month when billed annually (17% off €29)
-	let agencyPrice = $derived(isYearly ? 65 : 79); // €65/month when billed annually (18% off €79)
+	// Calculate prices - updated prices
+	let starterProPrice = $derived(isYearly ? 16 : 19); // €16/month when billed annually (16% off €19)
+	let proPrice = $derived(isYearly ? 33 : 39); // €33/month when billed annually (15% off €39)
+	let agencyPrice = $derived(isYearly ? 83 : 99); // €83/month when billed annually (16% off €99)
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
 </script>
 
@@ -52,7 +53,7 @@
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">2 bookings/month</span>
+						<span class="text-gray-700 text-sm">5 bookings/month</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
@@ -64,7 +65,22 @@
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Email support</span>
+						<span class="text-gray-700 text-sm">Email notifications</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">7-day onboarding sequence</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<X class="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-500 text-sm">No SMS notifications</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<X class="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-500 text-sm">No branding customization</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<span class="text-gray-500 text-sm ml-6">Watermark: "Powered by Zaur"</span>
 					</li>
 				</ul>
 				
@@ -73,16 +89,16 @@
 				</a>
 			</div>
 
-			<!-- Starter Pro -->
+			<!-- Solo Guide -->
 			<div class="relative rounded-lg border border-gray-200 p-6 bg-white flex flex-col">
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">Starter Pro</h3>
+				<h3 class="text-lg font-semibold text-gray-900 mb-2">Solo Guide</h3>
 				<div class="mb-1">
 					<span class="text-3xl font-bold text-gray-900">€{starterProPrice}</span>
 					<span class="text-gray-600 text-sm">{billingPeriod}</span>
 				</div>
 				<div class="mb-2 h-4">
 					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
-						Save €24/year
+						Save €36/year
 					</span>
 				</div>
 				<p class="text-gray-600 mb-6 text-sm">Great for getting started</p>
@@ -90,7 +106,7 @@
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">15 bookings/month</span>
+						<span class="text-gray-700 text-sm">25 bookings/month</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
@@ -98,11 +114,23 @@
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Custom branding</span>
+						<span class="text-gray-700 text-sm">Custom branding (logo, colors)</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
 						<span class="text-gray-700 text-sm">SMS notifications</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">QR code customization</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Basic analytics</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Email support</span>
 					</li>
 				</ul>
 				
@@ -123,7 +151,7 @@
 				</div>
 				<div class="mb-2 h-4">
 					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
-						Save €60/year
+						Save €72/year
 					</span>
 				</div>
 				<p class="text-gray-600 mb-6 text-sm">Everything you need to grow</p>
@@ -139,15 +167,31 @@
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Advanced analytics</span>
+						<span class="text-gray-700 text-sm">Advanced analytics & reporting</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Priority support</span>
+						<span class="text-gray-700 text-sm">WhatsApp notifications</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">API access</span>
+						<span class="text-gray-700 text-sm">Customer database export</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Review collection automation</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Priority support (24h response)</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Google Calendar integration</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Multi-language booking pages</span>
 					</li>
 				</ul>
 				
@@ -165,7 +209,7 @@
 				</div>
 				<div class="mb-2 h-4">
 					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
-						Save €168/year
+						Save €192/year
 					</span>
 				</div>
 				<p class="text-gray-600 mb-6 text-sm">For tour companies</p>
@@ -173,7 +217,7 @@
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Everything in Pro</span>
+						<span class="text-gray-700 text-sm">Everything in Professional</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
@@ -181,7 +225,15 @@
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Team management</span>
+						<span class="text-gray-700 text-sm">Team management dashboard</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Revenue sharing tools</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">API access for custom integrations</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
@@ -189,7 +241,15 @@
 					</li>
 					<li class="flex items-start gap-2">
 						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Dedicated support</span>
+						<span class="text-gray-700 text-sm">Custom domain (agency.zaur.app)</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Dedicated account manager</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-gray-700 text-sm">Advanced reporting (ROI, conversion rates)</span>
 					</li>
 				</ul>
 				

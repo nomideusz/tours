@@ -1,27 +1,26 @@
-<footer class="bg-gray-50 border-t border-gray-200 mt-auto">
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-		<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-			<!-- Brand -->
-			<div class="flex items-center gap-2 text-sm text-gray-600">
-				<svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-					<path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586l-2 2V6H5v12h5.586l2 2H4a1 1 0 01-1-1V4z"/>
-					<path d="M21 8.414l-6.586 6.586a2 2 0 01-2.828 0L9 12.414 6.586 14.828a1 1 0 01-1.414-1.414l3-3a2 2 0 012.828 0L13.586 13 19 7.586V10a1 1 0 102 0V6a1 1 0 00-1-1h-4a1 1 0 100 2h2.586z"/>
-				</svg>
-				<span>© {new Date().getFullYear()} Zaur. QR Booking for Tour Guides.</span>
-			</div>
-
-			<!-- Links -->
-			<div class="flex items-center gap-6 text-sm">
-				<a href="/" class="text-gray-600 hover:text-blue-600 transition-colors">
-					Home
-				</a>
-				<a href="/auth/register" class="text-gray-600 hover:text-blue-600 transition-colors">
-					Get Started
-				</a>
-				<a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">
-					Help
+<footer class="mt-auto transition-colors" style="background: var(--bg-secondary); border-top: 1px solid var(--border-primary);">
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<div class="text-center space-y-4">
+			<!-- Link to main platform -->
+			<div>
+				<p class="text-sm mb-2" style="color: var(--text-secondary);">
+					Are you a tour guide? Create your own QR booking page
+				</p>
+				<a 
+					href="/auth/register" 
+					class="inline-flex items-center gap-2 text-sm font-medium transition-colors hover-primary"
+				>
+					Get started on zaur.app
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+					</svg>
 				</a>
 			</div>
+			
+			<!-- Copyright -->
+			<p class="text-xs" style="color: var(--text-tertiary);">
+				© {new Date().getFullYear()} Zaur • QR Booking Platform for Tour Guides
+			</p>
 		</div>
 	</div>
 </footer>
