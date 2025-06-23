@@ -1,6 +1,7 @@
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
+	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	
 	// Import clean icons instead of using emojis
 	import User from 'lucide-svelte/icons/user';
@@ -90,6 +91,9 @@
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
 	let touchedFields = $state<Set<string>>(new Set());
+	
+	// Get currency symbol for display
+	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
 
 	// Note: Reactive validation is handled by individual field validation functions
 	// to avoid conflicts and ensure consistent error state management
@@ -465,6 +469,7 @@
 								{ id: 'art', name: 'Art', icon: Palette },
 								{ id: 'adventure', name: 'Adventure', icon: Mountain }
 							] as category}
+								{@const Icon = category.icon}
 								<button
 									type="button"
 									onclick={() => { 
@@ -477,7 +482,7 @@
 										color: {formData.category === category.id ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
 									"
 								>
-									<svelte:component this={category.icon} class="w-3 h-3" />
+									<Icon class="w-3 h-3" />
 									<span>{category.name}</span>
 								</button>
 							{/each}
@@ -574,7 +579,7 @@
 					<NumberInput
 						id="price"
 						name="price"
-						label="Price (€)"
+						label="Price ({currencySymbol})"
 						bind:value={formData.price}
 						min={0.5}
 						max={99999}
@@ -663,7 +668,7 @@
 								<NumberInput
 									id="childPrice"
 									name="pricingTiers.child"
-									label="Child Price (€)"
+									label="Child Price ({currencySymbol})"
 									bind:value={childPrice}
 									min={0}
 									max={formData.price || 99999}

@@ -50,7 +50,8 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 				
 				// Tour owner fields
 				tourOwnerUsername: users.username,
-				tourOwnerName: users.name
+				tourOwnerName: users.name,
+				tourOwnerCurrency: users.currency
 			})
 			.from(bookings)
 			.leftJoin(tours, eq(bookings.tourId, tours.id))
@@ -126,7 +127,8 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
 			qrCode: { code: params.code },
 			tourOwner: {
 				username: booking.tourOwnerUsername,
-				name: booking.tourOwnerName
+				name: booking.tourOwnerName,
+				currency: booking.tourOwnerCurrency || 'EUR'
 			}
 		};
 	} catch (err) {

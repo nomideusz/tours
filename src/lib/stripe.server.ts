@@ -21,10 +21,25 @@ export function getStripe(): Stripe {
 // Helper function to format amount for Stripe (convert to cents)
 export function formatAmountForStripe(amount: number, currency: string = 'eur'): number {
   const currencyMultipliers: Record<string, number> = {
-    // Add more currencies as needed
+    // Major currencies with cents/pence
     eur: 100,
     usd: 100,
     gbp: 100,
+    cad: 100,
+    aud: 100,
+    chf: 100,
+    sek: 100,
+    nok: 100,
+    dkk: 100,
+    pln: 100,
+    czk: 100,
+    nzd: 100,
+    sgd: 100,
+    hkd: 100,
+    thb: 100,
+    aed: 100,
+    mxn: 100,
+    // Zero-decimal currencies
     jpy: 1, // Japanese yen doesn't have subunits
   };
   
@@ -35,9 +50,25 @@ export function formatAmountForStripe(amount: number, currency: string = 'eur'):
 // Helper function to format amount from Stripe (convert from cents)
 export function formatAmountFromStripe(amount: number, currency: string = 'eur'): number {
   const currencyDivisors: Record<string, number> = {
+    // Major currencies with cents/pence
     eur: 100,
     usd: 100,
     gbp: 100,
+    cad: 100,
+    aud: 100,
+    chf: 100,
+    sek: 100,
+    nok: 100,
+    dkk: 100,
+    pln: 100,
+    czk: 100,
+    nzd: 100,
+    sgd: 100,
+    hkd: 100,
+    thb: 100,
+    aed: 100,
+    mxn: 100,
+    // Zero-decimal currencies
     jpy: 1,
   };
   

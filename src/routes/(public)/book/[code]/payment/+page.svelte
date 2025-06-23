@@ -58,7 +58,7 @@
 				body: JSON.stringify({
 					bookingId: data.booking.id,
 					amount: parseFloat(data.booking.totalAmount),
-					currency: 'eur',
+					currency: data.tourOwner.currency?.toLowerCase() || 'eur',
 				}),
 			});
 			
@@ -188,7 +188,7 @@
 						<div class="pt-3 border-t">
 							<div class="flex justify-between items-center">
 								<p class="text-lg font-semibold">Total Amount</p>
-								<p class="text-lg font-semibold">{formatTourOwnerCurrency(data.booking.totalAmount)}</p>
+								<p class="text-lg font-semibold">{formatTourOwnerCurrency(data.booking.totalAmount, data.tourOwner?.currency)}</p>
 							</div>
 						</div>
 					</div>
@@ -218,7 +218,7 @@
 									Processing payment...
 								{:else}
 									<Lock class="w-5 h-5" />
-									Pay {formatTourOwnerCurrency(data.booking.totalAmount)}
+									Pay {formatTourOwnerCurrency(data.booking.totalAmount, data.tourOwner?.currency)}
 								{/if}
 							</button>
 						</form>
