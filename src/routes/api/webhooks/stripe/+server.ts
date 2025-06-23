@@ -121,7 +121,7 @@ export const POST: RequestHandler = async ({ request }) => {
           // No need to transfer payment - with direct charges, the payment already went to the tour guide!
           // This is the beauty of the no-commission model - simpler and cleaner
 
-          // Send emails via SvelteKit email service
+          // Send emails via SvelteKit email service with rate limit handling
           try {
             // Send confirmation email
             const emailResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
@@ -139,6 +139,9 @@ export const POST: RequestHandler = async ({ request }) => {
               console.warn(`Webhook: Failed to send confirmation email:`, await emailResponse.text());
             }
             
+            // Wait 600ms to respect Resend's 2 emails/second rate limit
+            await new Promise(resolve => setTimeout(resolve, 600));
+            
             // Send QR ticket
             const qrResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
               method: 'POST',
@@ -154,6 +157,9 @@ export const POST: RequestHandler = async ({ request }) => {
             } else {
               console.warn(`Webhook: Failed to send QR ticket:`, await qrResponse.text());
             }
+
+            // Wait 600ms to respect Resend's 2 emails/second rate limit
+            await new Promise(resolve => setTimeout(resolve, 600));
 
             // Send booking notification email to tour guide
             const guideEmailResponse = await fetch(`${new URL(request.url).origin}/api/send-guide-booking-email`, {

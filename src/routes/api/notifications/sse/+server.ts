@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
       };
 
       // Store connection for this user (store the sendMessage function)
-      connections.set(userId, sendMessage as any);
+      connections.set(userId, sendMessage);
       console.log(`🔍 SSE connection stored for user: "${userId}"`);
       console.log(`🔍 Total active connections:`, connections.size);
 

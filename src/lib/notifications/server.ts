@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 // Store active SSE connections by user ID
-export const connections = new Map<string, WritableStreamDefaultWriter>();
+export const connections = new Map<string, (data: any) => void>();
 
 // Function to send notification to a specific user (HYBRID: Database + SSE)
 export async function sendNotificationToUser(userId: string, notification: any): Promise<boolean> {
@@ -33,17 +33,17 @@ export async function sendNotificationToUser(userId: string, notification: any):
   }
 
   // 2. SECOND: Try to send via SSE if connection exists
-  const connection = connections.get(userId);
-  if (!connection) {
+  const sendMessage = connections.get(userId);
+  if (!sendMessage) {
     console.log(`⚠️ No active SSE connection for user: "${userId}"`);
     return dbSuccess; // DB storage may have succeeded, SSE not available
   }
 
   try {
-    const sseData = `data: ${JSON.stringify(notification)}\n\n`;
-    console.log(`📤 Writing SSE data to connection:`, sseData.trim());
+    console.log(`📤 Sending SSE notification to user "${userId}"`);
     
-    await connection.write(sseData);
+    // Call the sendMessage function stored from the SSE endpoint
+    sendMessage(notification);
     console.log(`✅ Notification sent via SSE to user: "${userId}"`);
     return true; // Both DB and SSE succeeded
   } catch (error) {
@@ -73,7 +73,7 @@ export async function broadcastBookingNotification(bookingData: any) {
     
     const notification = {
       type: 'new_booking',
-      id: `booking_${bookingData.id}`,
+      id: createId(),
       timestamp: new Date().toISOString(),
       title: 'New Booking!',
       message: `${bookingData.customerName} booked ${bookingData.tourName}`,
