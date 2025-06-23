@@ -77,26 +77,28 @@ export function getSlotAvailabilityText(slot: TimeSlot): string {
 
 /**
  * Get status color for a time slot based on its booking status
+ * Uses CSS variables instead of hard-coded colors
  */
 export function getSlotStatusColor(slot: TimeSlot): string {
-	if (slot.bookedSpots >= slot.availableSpots) return '#EF4444'; // Red - full
-	if (slot.bookedSpots > 0) return '#F59E0B'; // Amber - partial
-	return '#10B981'; // Green - available
+	if (slot.bookedSpots >= slot.availableSpots) return 'var(--color-error-500)'; // Red - full
+	if (slot.bookedSpots > 0) return 'var(--color-warning-500)'; // Amber - partial
+	return 'var(--color-success-500)'; // Green - available
 }
 
 /**
  * Get CSS classes for time slot status badges
+ * Using semantic classes that work with CSS variables
  */
 export function getSlotStatusClasses(status: string): string {
 	switch (status) {
 		case 'active': 
-			return 'bg-green-50 text-green-700 border-green-200';
+			return 'status-confirmed';
 		case 'full': 
-			return 'bg-red-50 text-red-700 border-red-200';
+			return 'status-cancelled';
 		case 'cancelled': 
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default';
 		default: 
-			return 'bg-blue-50 text-blue-700 border-blue-200';
+			return 'status-completed';
 	}
 }
 
@@ -211,13 +213,14 @@ export function formatSlotForDesktop(slot: TimeSlot): {
 
 /**
  * Get status color for schedule page slots (with totalBookings, isPast, etc.)
+ * Using semantic classes that work with CSS variables
  */
 export function getScheduleSlotStatusColor(slot: any): string {
-	if (slot.isPast) return 'bg-gray-50 text-gray-600 border-gray-200';
-	if (slot.status === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
-	if (slot.availableSpots === 0) return 'bg-orange-50 text-orange-700 border-orange-200';
-	if (slot.totalBookings > 0) return 'bg-blue-50 text-blue-700 border-blue-200';
-	return 'bg-green-50 text-green-700 border-green-200';
+	if (slot.isPast) return 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-primary)]';
+	if (slot.status === 'cancelled') return 'bg-[var(--color-error-50)] text-[var(--color-error-700)] border-[var(--color-error-200)]';
+	if (slot.availableSpots === 0) return 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)] border-[var(--color-warning-200)]';
+	if (slot.totalBookings > 0) return 'bg-[var(--color-info-50)] text-[var(--color-info-700)] border-[var(--color-info-200)]';
+	return 'bg-[var(--color-success-50)] text-[var(--color-success-700)] border-[var(--color-success-200)]';
 }
 
 /**

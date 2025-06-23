@@ -203,17 +203,17 @@
 	}
 
 	function getBookingRateColor(rate: number): string {
-		if (rate >= 80) return 'text-green-600';
-		if (rate >= 50) return 'text-blue-600';
-		if (rate >= 20) return 'text-orange-600';
-		return 'text-gray-600';
+		if (rate >= 80) return 'var(--color-success-600)';
+		if (rate >= 50) return 'var(--color-primary-600)';
+		if (rate >= 20) return 'var(--color-warning-600)';
+		return 'var(--text-secondary)';
 	}
 
 	function getOccupancyColor(percentage: number): string {
-		if (percentage >= 90) return 'text-red-600 font-semibold';
-		if (percentage >= 70) return 'text-orange-600 font-medium';
-		if (percentage >= 50) return 'text-blue-600';
-		return 'text-green-600';
+		if (percentage >= 90) return 'var(--color-danger-600)';
+		if (percentage >= 70) return 'var(--color-warning-600)';
+		if (percentage >= 50) return 'var(--color-primary-600)';
+		return 'var(--color-success-600)';
 	}
 
 	function toggleSlotSelection(slotId: string) {
@@ -267,7 +267,7 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<div class="p-8 text-center">
-			<div class="w-8 h-8 mx-auto mb-2 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+			<div class="w-8 h-8 mx-auto mb-2 rounded-full animate-spin" style="border: 2px solid var(--border-secondary); border-top-color: var(--color-primary-600);"></div>
 			<p class="text-sm" style="color: var(--text-secondary);">Loading schedule...</p>
 		</div>
 	{:else if isError || !tour}
@@ -367,11 +367,11 @@
 						</p>
 						<div class="flex flex-col sm:flex-row gap-3 mb-4">
 							<div class="flex items-center gap-2 text-sm" style="color: var(--color-success-700);">
-								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-success-600);">1</span>
+								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-success-600); color: #ffffff;">1</span>
 								<span class="font-medium">✅ Tour Created</span>
 							</div>
 							<div class="flex items-center gap-2 text-sm" style="color: var(--text-primary);">
-								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-primary-600);">2</span>
+								<span class="w-6 h-6 text-white rounded-full flex items-center justify-center text-xs font-semibold" style="background: var(--color-primary-600); color: #ffffff;">2</span>
 								<span class="font-medium">📅 Add Time Slots</span>
 							</div>
 							<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
@@ -500,7 +500,7 @@
 							</div>
 							<div class="flex justify-between">
 								<span style="color: var(--text-secondary);">Avg. Occupancy</span>
-								<span class="{getBookingRateColor(scheduleStats.averageBookingRate || 0)}">{scheduleStats.averageBookingRate || 0}%</span>
+								<span style="color: {getBookingRateColor(scheduleStats.averageBookingRate || 0)}">{scheduleStats.averageBookingRate || 0}%</span>
 							</div>
 							<div class="flex justify-between">
 								<span style="color: var(--text-secondary);">Total Bookings</span>
@@ -528,15 +528,15 @@
 					<div class="flex gap-1 p-1 rounded-lg" style="background: var(--bg-secondary);">
 						<button
 							onclick={() => { selectedView = 'upcoming'; clearSelection(); }}
-							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'upcoming' ? 'bg-white shadow-sm' : ''}"
-							style="color: {selectedView === 'upcoming' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'upcoming' ? 'active-filter' : ''}"
+							style="color: {selectedView === 'upcoming' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {selectedView === 'upcoming' ? 'var(--bg-primary)' : 'transparent'}; {selectedView === 'upcoming' ? 'box-shadow: var(--shadow-sm);' : ''}"
 						>
 							Upcoming ({upcomingSlots.length})
 						</button>
 						<button
 							onclick={() => { selectedView = 'past'; clearSelection(); }}
-							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'past' ? 'bg-white shadow-sm' : ''}"
-							style="color: {selectedView === 'past' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+							class="px-4 py-2 text-sm font-medium rounded-md transition-colors {selectedView === 'past' ? 'active-filter' : ''}"
+							style="color: {selectedView === 'past' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {selectedView === 'past' ? 'var(--bg-primary)' : 'transparent'}; {selectedView === 'past' ? 'box-shadow: var(--shadow-sm);' : ''}"
 						>
 							Past ({pastSlots.length})
 						</button>
@@ -580,7 +580,11 @@
 				
 				<div class="divide-y" style="border-color: var(--border-primary);">
 					{#each displayedSlots as slot}
-						<div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors {selectedSlots.has(slot.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}">
+						<div class="p-4 transition-colors {selectedSlots.has(slot.id) ? 'selected-slot' : ''}" 
+							style="{selectedSlots.has(slot.id) ? 'background: var(--color-primary-light);' : 'background: transparent;'}"
+							onmouseenter={(e) => !selectedSlots.has(slot.id) && (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+							onmouseleave={(e) => !selectedSlots.has(slot.id) && (e.currentTarget.style.backgroundColor = 'transparent')}
+						>
 							<!-- Mobile Layout -->
 							<div class="sm:hidden">
 								<div class="flex items-start gap-3">
@@ -612,9 +616,7 @@
 														<Users class="h-3 w-3" />
 														{slot.totalParticipants}/{slot.capacity}
 													</span>
-													<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
-														{getOccupancyPercentage(slot)}%
-													</span>
+													<span style="color: {getOccupancyColor(getOccupancyPercentage(slot))}">{getOccupancyPercentage(slot)}%</span>
 												</div>
 												<div class="flex gap-1">
 													{#if slot.isUpcoming}
@@ -637,9 +639,9 @@
 														<span style="color: var(--text-primary);">{slot.totalBookings}</span>
 													</div>
 													<div class="flex gap-2">
-														<span class="text-green-600">{slot.confirmedBookings} confirmed</span>
+														<span style="color: var(--color-success-600);">{slot.confirmedBookings} confirmed</span>
 														{#if slot.pendingBookings > 0}
-															<span class="text-orange-600">{slot.pendingBookings} pending</span>
+															<span style="color: var(--color-warning-600);">{slot.pendingBookings} pending</span>
 														{/if}
 														{#if slot.totalParticipants > 0}
 															<div class="mt-1 pt-1 border-t" style="border-color: var(--border-primary);">
@@ -679,7 +681,7 @@
 												<Tooltip text="Occupancy">
 													<div class="flex items-center gap-1">
 														<Users class="h-4 w-4" />
-														<span class="{getOccupancyColor(getOccupancyPercentage(slot))}">
+														<span style="color: {getOccupancyColor(getOccupancyPercentage(slot))}">
 															{slot.totalParticipants}/{slot.capacity} ({getOccupancyPercentage(slot)}%)
 														</span>
 													</div>
@@ -695,14 +697,14 @@
 														</Tooltip>
 														<Tooltip text="Confirmed bookings">
 															<div class="flex items-center gap-1">
-																<CheckCircle class="h-4 w-4 text-green-600" />
+																<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 																<span>{slot.confirmedBookings}</span>
 															</div>
 														</Tooltip>
 														{#if slot.pendingBookings > 0}
 															<Tooltip text="Pending bookings">
 																<div class="flex items-center gap-1">
-																	<Clock class="h-4 w-4 text-orange-600" />
+																	<Clock class="h-4 w-4" style="color: var(--color-warning-600);" />
 																	<span>{slot.pendingBookings}</span>
 																</div>
 															</Tooltip>
@@ -710,8 +712,8 @@
 														{#if slot.totalParticipants > 0}
 															<Tooltip text="Total participants across all bookings">
 																<div class="flex items-center gap-1">
-																	<Users class="h-4 w-4 text-purple-600" />
-																	<span class="text-purple-600">{slot.totalParticipants}</span>
+																	<Users class="h-4 w-4" style="color: var(--color-primary-600);" />
+																	<span style="color: var(--color-primary-600);">{slot.totalParticipants}</span>
 																</div>
 															</Tooltip>
 														{/if}
@@ -758,8 +760,8 @@
 			<!-- Empty State -->
 			<div class="rounded-xl p-8 sm:p-12 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="max-w-md mx-auto">
-					<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-						<Calendar class="h-8 w-8 text-blue-600" />
+					<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-primary-light);">
+						<Calendar class="h-8 w-8" style="color: var(--color-primary-600);" />
 					</div>
 					<h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
 						{selectedView === 'upcoming' ? 'No upcoming time slots' : 'No past time slots'}

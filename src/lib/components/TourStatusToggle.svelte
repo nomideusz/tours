@@ -71,10 +71,9 @@
 	let buttonClasses = $derived(
 		variant === 'menu-item' 
 			? 'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ' + 
-			  ($statusMutation.isPending ? 'opacity-50' : 'hover:bg-gray-50')
+			  ($statusMutation.isPending ? 'opacity-50' : '')
 			: variant === 'inline'
-			? 'inline-flex items-center gap-1.5 text-sm font-medium transition-colors ' +
-			  (localStatus === 'draft' ? 'text-blue-600 hover:text-blue-700' : 'text-gray-600 hover:text-gray-700')
+			? 'inline-flex items-center gap-1.5 text-sm font-medium transition-colors'
 			: (() => {
 				const sizeClass = size === 'large' ? 'button--large' : size === 'small' ? 'button--small' : '';
 				const variantClass = localStatus === 'draft' ? 'button-primary' : 'button-secondary';
@@ -88,7 +87,9 @@
 		onclick={handleToggle}
 		disabled={$statusMutation.isPending}
 		class={buttonClasses}
-		style="color: {localStatus === 'draft' ? 'var(--color-primary)' : 'var(--text-secondary)'};"
+		style="color: {localStatus === 'draft' ? 'var(--color-primary)' : 'var(--text-secondary)'}; background: transparent;"
+		onmouseenter={(e) => !$statusMutation.isPending && (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+		onmouseleave={(e) => !$statusMutation.isPending && (e.currentTarget.style.backgroundColor = 'transparent')}
 	>
 		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
@@ -106,6 +107,9 @@
 		onclick={handleToggle}
 		disabled={$statusMutation.isPending}
 		class={buttonClasses}
+		style="color: {localStatus === 'draft' ? 'var(--color-primary-600)' : 'var(--text-secondary)'}"
+		onmouseenter={(e) => e.currentTarget.style.color = localStatus === 'draft' ? 'var(--color-primary-700)' : 'var(--text-primary)'}
+		onmouseleave={(e) => e.currentTarget.style.color = localStatus === 'draft' ? 'var(--color-primary-600)' : 'var(--text-secondary)'}
 	>
 		{#if $statusMutation.isPending}
 			<div class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>

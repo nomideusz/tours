@@ -415,7 +415,7 @@
 	<div class="hidden sm:block mb-8">
 		<div class="flex items-center gap-2 sm:gap-4 text-sm">
 			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm" style="background: var(--color-primary-600);">
+				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--color-primary-600); color: #ffffff;">
 					1
 				</div>
 				<span class="font-medium hidden sm:inline" style="color: var(--color-primary-600);">Tour Details</span>

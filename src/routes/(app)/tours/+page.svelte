@@ -295,7 +295,10 @@
 				{#if searchQuery}
 					<button
 						onclick={() => searchQuery = ''}
-						class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100"
+						class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors"
+						style="background: transparent;"
+						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 					>
 						<X class="h-4 w-4" style="color: var(--text-tertiary);" />
 					</button>
@@ -306,22 +309,22 @@
 			<div class="flex gap-1 p-1 rounded-lg" style="background: var(--bg-secondary);">
 				<button
 					onclick={() => statusFilter = 'all'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'all' ? 'bg-white shadow-sm' : ''}"
-					style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'all' ? 'active-filter' : ''}"
+					style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'all' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'all' ? 'box-shadow: var(--shadow-sm);' : ''}"
 				>
 					All ({tours.length})
 				</button>
 				<button
 					onclick={() => statusFilter = 'active'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'active' ? 'bg-white shadow-sm' : ''}"
-					style="color: {statusFilter === 'active' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'active' ? 'active-filter' : ''}"
+					style="color: {statusFilter === 'active' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'active' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'active' ? 'box-shadow: var(--shadow-sm);' : ''}"
 				>
 					Active ({tours.filter(t => t.status === 'active').length})
 				</button>
 				<button
 					onclick={() => statusFilter = 'draft'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'draft' ? 'bg-white shadow-sm' : ''}"
-					style="color: {statusFilter === 'draft' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'draft' ? 'active-filter' : ''}"
+					style="color: {statusFilter === 'draft' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'draft' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'draft' ? 'box-shadow: var(--shadow-sm);' : ''}"
 				>
 					Draft ({tours.filter(t => t.status === 'draft').length})
 				</button>
@@ -342,7 +345,10 @@
 				{#if searchQuery}
 					<button
 						onclick={() => searchQuery = ''}
-						class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100"
+						class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors"
+						style="background: transparent;"
+						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 					>
 						<X class="h-4 w-4" style="color: var(--text-tertiary);" />
 					</button>
@@ -377,7 +383,7 @@
 	{#if isLoading}
 		<div class="flex justify-center py-12">
 			<div class="text-center">
-				<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+				<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
 				<p class="text-sm" style="color: var(--text-secondary);">Loading tours...</p>
 			</div>
 		</div>
@@ -413,8 +419,10 @@
 				<div 
 					in:fade={{ duration: 200 }}
 					out:fade={{ duration: deletingTourIds.has(tour.id) ? 300 : 200 }}
-					class="rounded-xl transition-all hover:shadow-md tour-card cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 {recentlyUpdated === tour.id ? 'recently-updated' : ''} {deletingTourIds.has(tour.id) ? 'deleting' : ''}"
+					class="rounded-xl transition-all hover:shadow-md tour-card cursor-pointer {recentlyUpdated === tour.id ? 'recently-updated' : ''} {deletingTourIds.has(tour.id) ? 'deleting' : ''}"
 					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+					onmouseenter={(e) => e.currentTarget.style.borderColor = 'var(--border-secondary)'}
+					onmouseleave={(e) => e.currentTarget.style.borderColor = 'var(--border-primary)'}
 					onclick={(e) => {
 						// Don't navigate if clicking on buttons or QR code
 						if (!(e.target as HTMLElement).closest('button, a, .qr-button')) {
@@ -445,11 +453,11 @@
 						{/if}
 						
 						<!-- Status Badge -->
-						<div class="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 {recentlyUpdated === tour.id ? 'scale-110' : ''}" 
-							style="background: {tour.status === 'active' ? 'var(--color-success-light)' : 'var(--bg-secondary)'}; 
-								   color: {tour.status === 'active' ? 'var(--color-success)' : 'var(--text-secondary)'};">
-							<CircleDot class="h-3 w-3" />
-							{tour.status === 'active' ? 'Active' : 'Draft'}
+						<div class="absolute top-3 left-3">
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-300 {recentlyUpdated === tour.id ? 'scale-110' : ''} {tour.status === 'active' ? 'status-confirmed' : 'status-default'}">
+								<CircleDot class="h-3 w-3" />
+								{tour.status === 'active' ? 'Active' : 'Draft'}
+							</span>
 						</div>
 						
 						<!-- QR Code -->
@@ -465,7 +473,7 @@
 											onclick={(e) => { e.stopPropagation(); copyQRUrl(tour); }}
 										/>
 										{#if copiedQRCode === tour.qrCode}
-											<div class="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm z-10">
+											<div class="absolute top-1 right-1 rounded-full p-1 shadow-sm z-10" style="background: var(--bg-primary); box-shadow: var(--shadow-sm);">
 												<Check class="h-3 w-3" style="color: var(--color-success);" />
 											</div>
 										{/if}
@@ -580,8 +588,8 @@
 								
 								{#if actionMenuOpen === tour.id}
 									<div 
-																		class="absolute right-0 w-48 rounded-lg shadow-lg"
-								style="z-index: var(--z-dropdown); background: var(--bg-primary); border: 1px solid var(--border-primary); {dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'}"
+										class="absolute right-0 w-48 rounded-lg shadow-lg"
+										style="z-index: var(--z-dropdown); background: var(--bg-primary); border: 1px solid var(--border-primary); {dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'}"
 										onclick={(e) => e.stopPropagation()}
 										onkeydown={(e) => e.stopPropagation()}
 										role="menu"
@@ -589,8 +597,10 @@
 									>
 										<button
 											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/tours/${tour.id}/edit`); }}
-											class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
-											style="color: var(--text-primary);"
+											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-t-lg"
+											style="color: var(--text-primary); background: transparent;"
+											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 										>
 											<Edit class="h-4 w-4" />
 											Edit Tour
@@ -599,8 +609,10 @@
 												<a
 													href="/book/{tour.qrCode}"
 													target="_blank"
-													class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
-													style="color: var(--text-primary);"
+													class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+													style="color: var(--text-primary); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 													onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; }}
 												>
 													<ExternalLink class="h-4 w-4" />
@@ -614,8 +626,10 @@
 													dropdownOpenUpwards = {};
 													updateTourStatus(tour.id, 'draft');
 												}}
-												class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
-												style="color: var(--text-primary);"
+												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 											>
 												<CircleDot class="h-4 w-4" />
 												Set to Draft
@@ -627,8 +641,10 @@
 													dropdownOpenUpwards = {};
 													updateTourStatus(tour.id, 'active');
 												}}
-												class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
-												style="color: var(--text-primary);"
+												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 											>
 												<CheckCircle class="h-4 w-4" />
 												Activate Tour
@@ -637,8 +653,10 @@
 										<hr style="border-color: var(--border-primary);" />
 										<button
 											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; tourToDelete = tour; showDeleteModal = true; }}
-											class="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-											style="color: var(--color-error);"
+											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-b-lg"
+											style="color: var(--color-error); background: transparent;"
+											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'}
+											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 										>
 											<Trash2 class="h-4 w-4" />
 											Delete

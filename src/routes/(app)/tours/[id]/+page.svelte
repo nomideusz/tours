@@ -411,7 +411,7 @@
 						onclick={() => goto(`/tours/${tour.id}/schedule`)}
 						class="button-secondary button--gap mr-6"
 					>
-						<span class="w-2 h-2 rounded-full {status.dotColor}"></span>
+						<span class="w-2 h-2 rounded-full" style="background: {status.dotColor}"></span>
 						{status.label}
 					</button>
 				{:else if status.status === 'draft' || status.status === 'bookable'}
@@ -667,8 +667,10 @@
 				<div class="space-y-2">
 					{#each upcomingSlots.slice(0, 5) as slot}
 						{@const occupancyPercent = getOccupancyPercentage(slot)}
-						<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" 
+						<div class="flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer" 
 							style="background: var(--bg-secondary);"
+							onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+							onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 							onclick={() => goto(`/tours/${tour.id}/schedule`)}
 							onkeydown={(e) => e.key === 'Enter' && goto(`/tours/${tour.id}/schedule`)}
 							role="button"
@@ -753,8 +755,10 @@
 					{#each recentBookings.slice(0, 5) as booking}
 						{@const BookingIcon = getBookingStatusIcon(booking.status)}
 						{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-						<div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer" 
+						<div class="flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer" 
 							style="background: var(--bg-secondary);"
+							onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+							onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 							onclick={() => goto(`/bookings/${booking.id}`)}
 							onkeydown={(e) => e.key === 'Enter' && goto(`/bookings/${booking.id}`)}
 							role="button"
@@ -825,8 +829,10 @@
 						{#if imageUrl && index < 11}
 							<button
 								onclick={() => selectedImageIndex = index}
-								class="relative aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity bg-gray-100 dark:bg-gray-800"
-								style="padding: 0; border: 1px solid var(--border-primary);"
+								class="relative aspect-square rounded-lg overflow-hidden transition-opacity"
+								style="padding: 0; border: 1px solid var(--border-primary); opacity: 1;"
+								onmouseenter={(e) => e.currentTarget.style.opacity = '0.8'}
+								onmouseleave={(e) => e.currentTarget.style.opacity = '1'}
 							>
 								<img 
 									src={imageUrl} 
@@ -840,8 +846,10 @@
 					{#if tour.images.length > 11}
 						<button
 							onclick={() => selectedImageIndex = 0}
-							class="aspect-square rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity"
-							style="background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-primary);"
+							class="aspect-square rounded-lg flex items-center justify-center transition-opacity"
+							style="background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-primary); opacity: 1;"
+							onmouseenter={(e) => e.currentTarget.style.opacity = '0.8'}
+							onmouseleave={(e) => e.currentTarget.style.opacity = '1'}
 						>
 							<div class="text-center">
 								<span class="text-lg font-medium">+{tour.images.length - 11}</span>
@@ -859,8 +867,10 @@
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<button
 				onclick={() => showWidget = !showWidget}
-				class="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-				style="border-radius: inherit;"
+				class="w-full p-4 flex items-center justify-between text-left transition-colors"
+				style="border-radius: inherit; background: transparent;"
+				onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+				onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 			>
 				<div>
 					<h3 class="font-semibold" style="color: var(--text-primary);">Website Booking Widget</h3>
@@ -900,8 +910,8 @@
 									height="320"
 									frameborder="0"
 									title="Booking widget for {tour.name}"
-									class="bg-white rounded-lg shadow-sm"
-									style="border: 1px solid var(--border-primary);"
+									class="rounded-lg shadow-sm"
+									style="border: 1px solid var(--border-primary); background: var(--bg-primary);"
 								></iframe>
 							</div>
 							
@@ -989,7 +999,10 @@
 					document.documentElement.style.overflow = '';
 				}
 			}}
-			class="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+			class="absolute top-4 right-4 transition-colors"
+			style="color: #ffffff;"
+			onmouseenter={(e) => e.currentTarget.style.color = '#e5e7eb'}
+			onmouseleave={(e) => e.currentTarget.style.color = '#ffffff'}
 			aria-label="Close"
 		>
 			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1004,7 +1017,10 @@
 					e.stopPropagation();
 					if (selectedImageIndex !== null) selectedImageIndex--;
 				}}
-				class="absolute left-4 text-white hover:text-gray-300 transition-colors"
+				class="absolute left-4 transition-colors"
+				style="color: #ffffff;"
+				onmouseenter={(e) => e.currentTarget.style.color = '#e5e7eb'}
+				onmouseleave={(e) => e.currentTarget.style.color = '#ffffff'}
 				aria-label="Previous image"
 			>
 				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1019,7 +1035,10 @@
 					e.stopPropagation();
 					if (selectedImageIndex !== null) selectedImageIndex++;
 				}}
-				class="absolute right-4 text-white hover:text-gray-300 transition-colors"
+				class="absolute right-4 transition-colors"
+				style="color: #ffffff;"
+				onmouseenter={(e) => e.currentTarget.style.color = '#e5e7eb'}
+				onmouseleave={(e) => e.currentTarget.style.color = '#ffffff'}
 				aria-label="Next image"
 			>
 				<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1034,7 +1053,7 @@
 			class="max-w-full max-h-full object-contain"
 		/>
 		
-		<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+		<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-sm" style="color: #ffffff;">
 			{selectedImageIndex + 1} / {tour.images.length}
 		</div>
 	</div>

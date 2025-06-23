@@ -3,6 +3,23 @@
  * Handles generation of unique QR codes for tours
  */
 
+// Color constants that match our CSS variables conceptually
+// These need to be hex values for the QR code service
+const QR_COLORS = {
+  // Primary colors (matching --color-primary-600)
+  PRIMARY: '2563EB',
+  PRIMARY_DARK: '1D4ED8',
+  
+  // Neutral colors (matching --color-gray-*)
+  BLACK: '000000',
+  WHITE: 'FFFFFF',
+  GRAY_50: 'FAFAFA',
+  GRAY_800: '1F2937',
+  
+  // Accent colors (matching --color-*)
+  PURPLE: '7C3AED'
+};
+
 /**
  * Generate a unique QR code for a tour
  * Format: TUR-{tourPrefix}-{random}
@@ -52,8 +69,8 @@ export function generateQRImageURL(
 ): string {
   const {
     size = 300,
-    color = '2563EB', // Using a nice blue color (similar to primary-600)
-    backgroundColor = 'FFFFFF',
+    color = QR_COLORS.PRIMARY, // Using primary blue color
+    backgroundColor = QR_COLORS.WHITE,
     baseURL = 'https://zaur.app',
     style = 'modern',
     margin = 2, // Increased margin for better visual spacing
@@ -102,26 +119,27 @@ export function generateStyledQRDataURL(
 
 /**
  * Get QR code style presets
+ * These use our color constants for consistency
  */
 export const QR_STYLE_PRESETS = {
   default: {
-    color: '000000',
-    backgroundColor: 'FFFFFF',
+    color: QR_COLORS.BLACK,
+    backgroundColor: QR_COLORS.WHITE,
     margin: 1
   },
   modern: {
-    color: '2563EB', // Nice blue
-    backgroundColor: 'FFFFFF',
+    color: QR_COLORS.PRIMARY, // Primary blue
+    backgroundColor: QR_COLORS.WHITE,
     margin: 2
   },
   premium: {
-    color: '7C3AED', // Purple
-    backgroundColor: 'FAFAFA',
+    color: QR_COLORS.PURPLE, // Accent purple
+    backgroundColor: QR_COLORS.GRAY_50,
     margin: 3
   },
   dark: {
-    color: 'FFFFFF',
-    backgroundColor: '1F2937',
+    color: QR_COLORS.WHITE,
+    backgroundColor: QR_COLORS.GRAY_800,
     margin: 2
   }
 };

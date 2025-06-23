@@ -290,29 +290,29 @@
 		<div class="flex gap-1 p-1 rounded-lg overflow-x-auto" style="background: var(--bg-secondary);">
 			<button
 				onclick={() => statusFilter = 'all'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'all' ? 'bg-white shadow-sm' : ''}"
-				style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'all' ? 'active-filter' : ''}"
+				style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'all' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'all' ? 'box-shadow: var(--shadow-sm);' : ''}"
 			>
 				All ({stats().total})
 			</button>
 			<button
 				onclick={() => statusFilter = 'confirmed'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'confirmed' ? 'bg-white shadow-sm' : ''}"
-				style="color: {statusFilter === 'confirmed' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'confirmed' ? 'active-filter' : ''}"
+				style="color: {statusFilter === 'confirmed' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'confirmed' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'confirmed' ? 'box-shadow: var(--shadow-sm);' : ''}"
 			>
 				Confirmed ({stats().confirmed})
 			</button>
 			<button
 				onclick={() => statusFilter = 'pending'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'pending' ? 'bg-white shadow-sm' : ''}"
-				style="color: {statusFilter === 'pending' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'pending' ? 'active-filter' : ''}"
+				style="color: {statusFilter === 'pending' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'pending' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'pending' ? 'box-shadow: var(--shadow-sm);' : ''}"
 			>
 				Pending ({stats().pending})
 			</button>
 			<button
 				onclick={() => statusFilter = 'cancelled'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'cancelled' ? 'bg-white shadow-sm' : ''}"
-				style="color: {statusFilter === 'cancelled' ? 'var(--text-primary)' : 'var(--text-secondary)'};"
+				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'cancelled' ? 'active-filter' : ''}"
+				style="color: {statusFilter === 'cancelled' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'cancelled' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'cancelled' ? 'box-shadow: var(--shadow-sm);' : ''}"
 			>
 				Cancelled ({stats().cancelled})
 			</button>

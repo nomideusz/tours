@@ -313,15 +313,15 @@
 	}
 
 	function getTourStatusInfo() {
-		if (!tour) return { color: 'bg-gray-100 text-gray-700', label: 'Unknown' };
+		if (!tour) return { color: 'var(--bg-secondary)', textColor: 'var(--text-secondary)', label: 'Unknown' };
 		
 		switch (tour.status) {
 			case 'active':
-				return { color: 'bg-green-100 text-green-700', label: 'Active' };
+				return { color: 'var(--color-success-light)', textColor: 'var(--color-success-700)', label: 'Active' };
 			case 'draft':
-				return { color: 'bg-yellow-100 text-yellow-700', label: 'Draft' };
+				return { color: 'var(--color-warning-light)', textColor: 'var(--color-warning-700)', label: 'Draft' };
 			default:
-				return { color: 'bg-gray-100 text-gray-700', label: 'Unknown' };
+				return { color: 'var(--bg-secondary)', textColor: 'var(--text-secondary)', label: 'Unknown' };
 		}
 	}
 
@@ -413,7 +413,7 @@
 		}
 
 		// Fallback: try to find any visible error message
-		const errorElement = document.querySelector('.error-message, [data-error="true"], .text-red-600, .text-red-700, .text-red-800');
+		const errorElement = document.querySelector('.error-message, [data-error="true"]');
 		if (errorElement) {
 			errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			
@@ -426,7 +426,7 @@
 		}
 
 		// If no error element found, scroll to the general error banner
-		const errorBanner = document.querySelector('[style*="color-danger"], [style*="rgb(254 226 226)"]');
+		const errorBanner = document.querySelector('[style*="--color-danger"]');
 		if (errorBanner) {
 			errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		}
@@ -675,14 +675,14 @@
 		</div>
 
 		{#if error}
-			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 226 226); border: 1px solid rgb(252 165 165);">
+			<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-light); border: 1px solid var(--color-danger-200);">
 				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
 					<div>
-						<p class="font-medium text-red-800">Error</p>
-						<p class="text-sm text-red-700 mt-1">{error}</p>
+						<p class="font-medium" style="color: var(--color-danger-900);">Error</p>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">{error}</p>
 						{#if capacityError}
-							<p class="text-sm text-red-700 mt-2">
+							<p class="text-sm mt-2" style="color: var(--color-danger-700);">
 								<strong>Capacity Issue:</strong> You tried to set capacity to {capacityError.attempted}, 
 								but you need at least {capacityError.minimum} spots due to existing bookings.
 							</p>
@@ -694,17 +694,17 @@
 
 		<!-- Capacity Warning (if bookings exist) -->
 		{#if bookingConstraints?.maxBookedSpots > 0}
-			<div class="mb-6 rounded-xl p-4" style="background: rgb(254 243 199); border: 1px solid rgb(252 211 77);">
+			<div class="mb-6 rounded-xl p-4" style="background: var(--color-warning-light); border: 1px solid var(--color-warning-200);">
 				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
 					<div>
-						<p class="font-medium text-amber-800">Capacity Constraints</p>
-						<p class="text-sm text-amber-700 mt-1">
+						<p class="font-medium" style="color: var(--color-warning-900);">Capacity Constraints</p>
+						<p class="text-sm mt-1" style="color: var(--color-warning-700);">
 							You have <strong>{bookingConstraints.maxBookedSpots} people booked</strong> in your busiest time slot.
 							You can only reduce capacity to <strong>{bookingConstraints.maxBookedSpots} or higher</strong>.
 						</p>
 						{#if !bookingConstraints.canReduceCapacity}
-							<p class="text-sm text-amber-700 mt-1">
+							<p class="text-sm mt-1" style="color: var(--color-warning-700);">
 								<em>Your tour is at maximum booking capacity. You can increase capacity but cannot reduce it.</em>
 							</p>
 						{/if}
@@ -732,7 +732,7 @@
 		<div class="mt-6">
 			{#if isLoading}
 				<div class="p-8 text-center">
-					<div class="w-8 h-8 mx-auto mb-2 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+					<div class="w-8 h-8 mx-auto mb-2 rounded-full animate-spin" style="border: 2px solid var(--border-secondary); border-top-color: var(--color-primary-600);"></div>
 					<p class="text-sm" style="color: var(--text-secondary);">Loading tour details...</p>
 				</div>
 			{:else if !tour}
@@ -837,7 +837,7 @@
 					</div>
 					<button type="button" onclick={handleDeleteTour} class="button--danger button--small" disabled={isDeleting}>
 						{#if isDeleting}
-							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+							<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
 						{/if}
 						Delete Tour
 					</button>
@@ -857,7 +857,7 @@
 		title={isSubmitting ? 'Saving Changes...' : 'Save Changes'}
 	>
 		{#if isSubmitting}
-			<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+			<div class="w-5 h-5 rounded-full animate-spin" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
 		{:else}
 			<Save class="w-5 h-5" />
 		{/if}

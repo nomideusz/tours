@@ -66,65 +66,69 @@ export function formatTourPrice(price: number | string): string {
 
 /**
  * Get status color classes for tour status badges
+ * Using semantic classes that work with CSS variables
  */
 export function getTourStatusColor(status: Tour['status']): string {
 	switch (status) {
 		case 'active':
-			return 'bg-green-50 text-green-700 border-green-200';
+			return 'status-confirmed'; // Green status
 		case 'draft':
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default'; // Gray status
 		default:
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default';
 	}
 }
 
 /**
  * Get status dot color for tour status indicators
+ * Returns CSS variable-based background color
  */
 export function getTourStatusDot(status: Tour['status']): string {
 	switch (status) {
 		case 'active':
-			return 'bg-green-500';
+			return 'bg-[var(--color-success-500)]';
 		case 'draft':
-			return 'bg-gray-500';
+			return 'bg-[var(--color-gray-500)]';
 		default:
-			return 'bg-gray-500';
+			return 'bg-[var(--color-gray-500)]';
 	}
 }
 
 /**
  * Get status color classes for booking status badges
+ * Using semantic classes that work with CSS variables
  */
 export function getBookingStatusColor(status: string): string {
 	switch (status) {
 		case 'confirmed':
-			return 'bg-green-50 text-green-700 border-green-200';
+			return 'status-confirmed';
 		case 'pending':
-			return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+			return 'status-pending';
 		case 'cancelled':
-			return 'bg-red-50 text-red-700 border-red-200';
+			return 'status-cancelled';
 		case 'completed':
-			return 'bg-blue-50 text-blue-700 border-blue-200';
+			return 'status-completed';
 		case 'no_show':
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default';
 		default:
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default';
 	}
 }
 
 /**
  * Get status color classes for time slot status badges
+ * Using semantic classes that work with CSS variables
  */
 export function getSlotStatusColor(status: string): string {
 	switch (status) {
 		case 'active': 
-			return 'bg-green-50 text-green-700 border-green-200';
+			return 'status-confirmed';
 		case 'full': 
-			return 'bg-red-50 text-red-700 border-red-200';
+			return 'status-cancelled';
 		case 'cancelled': 
-			return 'bg-gray-50 text-gray-700 border-gray-200';
+			return 'status-default';
 		default: 
-			return 'bg-blue-50 text-blue-700 border-blue-200';
+			return 'status-completed';
 	}
 }
 
@@ -222,7 +226,7 @@ export function getTourBookingStatus(tour: Tour) {
 			color: 'var(--text-tertiary)',
 			bgColor: 'var(--bg-tertiary)',
 			borderColor: 'var(--border-secondary)',
-			dotColor: 'bg-gray-400',
+			dotColor: 'var(--color-gray-400)',
 			canBook: false,
 			icon: 'draft'
 		};
@@ -236,7 +240,7 @@ export function getTourBookingStatus(tour: Tour) {
 			color: 'var(--color-warning-600)',
 			bgColor: 'var(--color-warning-50)',
 			borderColor: 'var(--color-warning-200)',
-			dotColor: 'bg-yellow-400',
+			dotColor: 'var(--color-warning-400)',
 			canBook: false,
 			icon: 'warning'
 		};
@@ -249,7 +253,7 @@ export function getTourBookingStatus(tour: Tour) {
 		color: 'var(--color-success-600)',
 		bgColor: 'var(--color-success-50)',
 		borderColor: 'var(--color-success-200)',
-		dotColor: 'bg-green-400',
+		dotColor: 'var(--color-success-400)',
 		canBook: true,
 		icon: 'success'
 	};
