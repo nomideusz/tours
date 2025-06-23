@@ -713,11 +713,17 @@
 								</p>
 								<div class="flex items-center gap-3 mt-1">
 									<span class="text-xs" style="color: var(--text-secondary);">
-										{booking.totalParticipants} {booking.totalParticipants === 1 ? 'guest' : 'guests'}
+										{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'}
 									</span>
-									<span class="text-xs" style="color: var(--text-secondary);">
-										{formatDate(booking.slotStartTime)}
-									</span>
+									{#if booking.expand?.timeSlot?.startTime}
+										<span class="text-xs" style="color: var(--text-secondary);">
+											{formatDate(booking.expand.timeSlot.startTime)}
+										</span>
+									{:else}
+										<span class="text-xs" style="color: var(--text-tertiary);">
+											No time slot
+										</span>
+									{/if}
 									{#if booking.status === 'confirmed'}
 										<span class="px-2 py-0.5 text-xs rounded-full font-medium" style="background: var(--bg-tertiary); color: var(--color-primary);">
 											Confirmed
@@ -733,11 +739,6 @@
 								<div class="text-sm font-medium" style="color: var(--text-primary);">
 									{$globalCurrencyFormatter(booking.totalAmount)}
 								</div>
-								{#if booking.pricingBreakdown?.child > 0}
-									<div class="text-xs" style="color: var(--text-tertiary);">
-										{booking.pricingBreakdown.adult} adult{booking.pricingBreakdown.adult !== 1 ? 's' : ''}, {booking.pricingBreakdown.child} child
-									</div>
-								{/if}
 							</div>
 						</div>
 					{/each}
