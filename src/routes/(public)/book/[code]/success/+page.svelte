@@ -412,10 +412,8 @@
 						<div class="text-center pb-8">
 							<a 
 								href="/" 
-								class="text-sm transition-colors" 
+								class="text-sm transition-colors hover-link" 
 								style="color: var(--text-secondary);"
-								onmouseover="this.style.color = 'var(--text-primary)'"
-								onmouseout="this.style.color = 'var(--text-secondary)'"
 							>
 								← Back to homepage
 							</a>
@@ -425,4 +423,10 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>
+
+<style>
+	.hover-link:hover {
+		color: var(--text-primary) !important;
+	}
+</style> 
