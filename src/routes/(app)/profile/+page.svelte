@@ -514,27 +514,17 @@
 		}
 	]);
 	
-	// Mobile info items
+	// Mobile info items - show quick status info not duplicated elsewhere
 	let mobileInfoItems = $derived([
 		{
-			icon: User,
-			label: 'Username',
-			value: username || 'Not set'
-		},
-		{
-			icon: Mail,
-			label: 'Email',
-			value: user?.emailVerified ? 'Verified' : 'Unverified'
+			icon: Globe,
+			label: 'Profile URL',
+			value: username ? `zaur.app/${username}` : 'Not set'
 		},
 		{
 			icon: CreditCard,
 			label: 'Payments',
 			value: paymentStatus.isSetup ? 'Active' : 'Not setup'
-		},
-		{
-			icon: UserCheck,
-			label: 'Status',
-			value: user?.role === 'admin' ? 'Admin' : 'User'
 		}
 	]);
 </script>

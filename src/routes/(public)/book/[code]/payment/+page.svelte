@@ -53,7 +53,7 @@
 		const darkMode = isDarkMode();
 		
 		return {
-			theme: darkMode ? 'night' : 'stripe',
+			theme: (darkMode ? 'night' : 'stripe') as 'night' | 'stripe',
 			variables: {
 				colorPrimary: darkMode ? '#60a5fa' : '#3B82F6',
 				colorBackground: darkMode ? '#161b22' : '#ffffff',
@@ -107,107 +107,113 @@
 		};
 	}
 	
-	onMount(async () => {
-		// Initialize Stripe
-		if (!stripePublicKey) {
-			error = 'Payment system not configured. Please contact support.';
-			isInitializing = false;
-			return;
-		}
+	onMount(() => {
+		let observer: MutationObserver;
 		
-		stripe = await loadStripe(stripePublicKey);
-		if (!stripe) {
-			error = 'Failed to load payment system';
-			isInitializing = false;
-			return;
-		}
-		
-		// Create payment intent
-		try {
-			const response = await fetch('/api/payments', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					bookingId: data.booking.id,
-					amount: parseFloat(data.booking.totalAmount),
-					currency: data.tourOwner.currency?.toLowerCase() || 'eur',
-				}),
-			});
-			
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to create payment intent');
+		const initializePayment = async () => {
+			// Initialize Stripe
+			if (!stripePublicKey) {
+				error = 'Payment system not configured. Please contact support.';
+				isInitializing = false;
+				return;
 			}
 			
-			const { clientSecret, connectedAccountId } = await response.json();
+			stripe = await loadStripe(stripePublicKey);
+			if (!stripe) {
+				error = 'Failed to load payment system';
+				isInitializing = false;
+				return;
+			}
 			
-			// Initialize Stripe Elements with connected account for direct charges
-			const elementsOptions: any = {
-				clientSecret,
-				appearance: getStripeAppearance(),
-			};
-			
-			// For direct charges, Elements must be initialized with the connected account context
-			if (connectedAccountId) {
-				console.log('Initializing payment for direct charge to tour guide account:', connectedAccountId);
-				// Create a new Stripe instance for the connected account
-				const connectedStripe = await loadStripe(stripePublicKey, {
-					stripeAccount: connectedAccountId
+			// Create payment intent
+			try {
+				const response = await fetch('/api/payments', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						bookingId: data.booking.id,
+						amount: parseFloat(data.booking.totalAmount),
+						currency: data.tourOwner.currency?.toLowerCase() || 'eur',
+					}),
 				});
 				
-				if (!connectedStripe) {
-					throw new Error('Failed to initialize connected account payment');
+				if (!response.ok) {
+					const errorData = await response.json();
+					throw new Error(errorData.error || 'Failed to create payment intent');
 				}
 				
-				// Use the connected account Stripe instance
-				stripe = connectedStripe;
-				elements = stripe.elements(elementsOptions);
-			} else {
-				// Fallback to platform account (shouldn't happen with new system)
-				console.warn('No connected account ID - payment will go to platform');
-				elements = stripe.elements(elementsOptions);
-			}
-			
-			// Create and mount payment element
-			paymentElement = elements.create('payment', {
-				layout: 'tabs',
-				paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
-			});
-			
-			mounted = true;
-			isInitializing = false;
-			await new Promise(resolve => setTimeout(resolve, 0)); // Wait for DOM update
-			
-			const container = document.getElementById('payment-element');
-			if (container) {
-				paymentElement.mount(container);
-			}
-		} catch (err) {
-			console.error('Payment initialization error:', err);
-			error = 'Failed to initialize payment. Please try again.';
-			isInitializing = false;
-		}
-		
-		// Listen for theme changes and update Stripe appearance
-		const observer = new MutationObserver((mutations) => {
-			mutations.forEach((mutation) => {
-				if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-					if (elements) {
-						elements.update({ appearance: getStripeAppearance() });
+				const { clientSecret, connectedAccountId } = await response.json();
+				
+				// Initialize Stripe Elements with connected account for direct charges
+				const elementsOptions: any = {
+					clientSecret,
+					appearance: getStripeAppearance(),
+				};
+				
+				// For direct charges, Elements must be initialized with the connected account context
+				if (connectedAccountId) {
+					console.log('Initializing payment for direct charge to tour guide account:', connectedAccountId);
+					// Create a new Stripe instance for the connected account
+					const connectedStripe = await loadStripe(stripePublicKey, {
+						stripeAccount: connectedAccountId
+					});
+					
+					if (!connectedStripe) {
+						throw new Error('Failed to initialize connected account payment');
 					}
+					
+					// Use the connected account Stripe instance
+					stripe = connectedStripe;
+					elements = stripe.elements(elementsOptions);
+				} else {
+					// Fallback to platform account (shouldn't happen with new system)
+					console.warn('No connected account ID - payment will go to platform');
+					elements = stripe.elements(elementsOptions);
 				}
+				
+				// Create and mount payment element
+				paymentElement = elements.create('payment', {
+					layout: 'tabs',
+					paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+				});
+				
+				mounted = true;
+				isInitializing = false;
+				await new Promise(resolve => setTimeout(resolve, 0)); // Wait for DOM update
+				
+				const container = document.getElementById('payment-element');
+				if (container) {
+					paymentElement.mount(container);
+				}
+			} catch (err) {
+				console.error('Payment initialization error:', err);
+				error = 'Failed to initialize payment. Please try again.';
+				isInitializing = false;
+			}
+			
+			// Listen for theme changes and update Stripe appearance
+			observer = new MutationObserver((mutations) => {
+				mutations.forEach((mutation) => {
+					if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+						if (elements) {
+							elements.update({ appearance: getStripeAppearance() });
+						}
+					}
+				});
 			});
-		});
+			
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['data-theme']
+			});
+		};
 		
-		observer.observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ['data-theme']
-		});
+		initializePayment();
 		
 		return () => {
-			observer.disconnect();
+			observer?.disconnect();
 		};
 	});
 	

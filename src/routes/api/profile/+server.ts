@@ -43,11 +43,12 @@ export const GET: RequestHandler = async ({ locals }) => {
 			website: user.website || '',
 			location: user.location || '',
 			avatar: user.avatar || '',
-			verified: user.emailVerified || false,
+			emailVerified: user.emailVerified || false,
 			stripeAccountId: user.stripeAccountId || '',
 			country: user.country || '',
 			currency: user.currency || 'EUR',
 			role: user.role || 'user',
+			created: user.createdAt,
 			// Check if user has OAuth2 login (no password)
 			isOAuth2User: !!(user.avatar && user.avatar.startsWith('http'))
 		};

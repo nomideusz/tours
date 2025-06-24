@@ -7,6 +7,7 @@
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
@@ -352,27 +353,35 @@
 				<label for="country" class="form-label">
 					Country
 				</label>
-				<div class="relative">
-					<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-					<select
-						id="country"
-						name="country"
-						class="form-select pl-10 cursor-pointer"
-						bind:value={country}
-						disabled={paymentSetup}
-					>
-						<option value="">Select country</option>
-						{#each COUNTRY_LIST as country}
-							<option value={country.code}>
-								{country.flag} {country.name}
-							</option>
-						{/each}
-					</select>
-				</div>
 				{#if paymentSetup}
+					{@const countryInfo = getCountryInfo(country)}
+					<div class="relative">
+						<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="form-input pl-10" style="background: var(--bg-tertiary); cursor: not-allowed;">
+							{countryInfo?.flag || ''} {countryInfo?.name || country}
+						</div>
+					</div>
+					<input type="hidden" name="country" value={country} />
 					<p class="text-xs mt-1" style="color: var(--color-warning-600);">
 						Country cannot be changed after payment setup starts
 					</p>
+				{:else}
+					<div class="relative">
+						<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+						<select
+							id="country"
+							name="country"
+							class="form-select pl-10 cursor-pointer"
+							bind:value={country}
+						>
+							<option value="">Select country</option>
+							{#each COUNTRY_LIST as country}
+								<option value={country.code}>
+									{country.flag} {country.name}
+								</option>
+							{/each}
+						</select>
+					</div>
 				{/if}
 			</div>
 
@@ -384,20 +393,28 @@
 				{#if country}
 					{@const countryCurrency = getCurrencyForCountry(country)}
 					{@const currencyInfo = SUPPORTED_CURRENCIES[countryCurrency as Currency]}
-					<div class="form-input" style="background: var(--bg-tertiary); cursor: not-allowed;">
-						{currencyInfo.symbol} {currencyInfo.code} - {currencyInfo.name}
+					<div class="relative">
+						<CircleDollarSign class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="form-input pl-10" style="background: var(--bg-tertiary); cursor: not-allowed;">
+							{currencyInfo.symbol} {currencyInfo.code} - {currencyInfo.name}
+						</div>
 					</div>
 					<input type="hidden" name="currency" value={currency} />
-					<p class="text-xs mt-1" style="color: var(--text-secondary);">
-						{#if paymentSetup}
+					{#if paymentSetup}
+						<p class="text-xs mt-1" style="color: var(--color-warning-600);">
 							Currency locked with country selection
-						{:else}
+						</p>
+					{:else}
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">
 							Currency is determined by your country selection
-						{/if}
-					</p>
+						</p>
+					{/if}
 				{:else}
-					<div class="form-input" style="background: var(--bg-tertiary); cursor: not-allowed; color: var(--text-tertiary);">
-						Select a country first
+					<div class="relative">
+						<CircleDollarSign class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="form-input pl-10" style="background: var(--bg-tertiary); cursor: not-allowed; color: var(--text-tertiary);">
+							Select a country first
+						</div>
 					</div>
 					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
 						Currency will be set based on your country

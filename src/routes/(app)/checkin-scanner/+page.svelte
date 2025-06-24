@@ -1,40 +1,23 @@
 <script lang="ts">
-	import { onMount, onDestroy, tick } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Camera from 'lucide-svelte/icons/camera';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Scan from 'lucide-svelte/icons/scan';
-	import Play from 'lucide-svelte/icons/play';
-	import Square from 'lucide-svelte/icons/square';
-	import RotateCcw from 'lucide-svelte/icons/rotate-ccw';
 	import type { PageData } from './$types.js';
 	import QrScannerLib from 'qr-scanner';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Keyboard from 'lucide-svelte/icons/keyboard';
 	import Search from 'lucide-svelte/icons/search';
-	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import { isValidTicketQRCode } from '$lib/ticket-qr.js';
 
 	let { data }: { data: PageData } = $props();
 	
-	// QR Scanner types and state
+	// QR Scanner state
 	let videoElement: HTMLVideoElement | undefined = $state();
-	let scanning = $state(false);
-	let cameraError = $state('');
-	let lastScanResult = $state('');
-	let lastScanTime = $state(0);
-	let isInitializing = $state(false);
-	
-	// Server data
-	let scannerConfig = $state(data.scannerConfig || {});
-
-	// Scanner instance
-	let scanner: any = null;
 
 	let scanMode: 'camera' | 'manual' = $state('camera');
 	let qrScanner: any = null;
@@ -86,45 +69,150 @@
 		}
 	}
 
-	function handleScan(code: string) {
+	function handleScan(data: string) {
 		// Prevent rapid duplicate scans
-		if (scanCooldown || code === lastScannedCode) return;
+		if (scanCooldown || data === lastScannedCode) return;
 		
-		// Validate the QR code format
-		if (!isValidTicketQRCode(code)) {
-			console.log('Invalid QR code format:', code);
+		console.log('QR Code scanned:', data);
+		
+		// Extract ticket code from various formats
+		let ticketCode = data;
+		
+		// Check if it's a booking check-in code URL
+		if (data.includes('/checkin/')) {
+			const parts = data.split('/checkin/');
+			if (parts.length > 1) {
+				ticketCode = parts[1].split('?')[0].split('#')[0]; // Remove query params and hash
+			}
+		}
+		// If it's a ticket URL (extract just the short code)
+		else if (data.includes('/ticket/')) {
+			const parts = data.split('/ticket/');
+			if (parts.length > 1) {
+				const fullCode = parts[1].split('?')[0].split('#')[0];
+				// Extract short code from TKT-xxx-SHORTCODE format
+				const codeParts = fullCode.split('-');
+				if (codeParts.length === 3 && codeParts[0] === 'TKT') {
+					ticketCode = codeParts[2]; // Just the short code
+				} else {
+					ticketCode = fullCode;
+				}
+			}
+		}
+		// If it's a QR code URL format
+		else if (data.includes('/qr/')) {
+			const parts = data.split('/qr/');
+			if (parts.length > 1) {
+				ticketCode = parts[1].split('?')[0].split('#')[0];
+			}
+		}
+		// If it's just a code (not a full URL)
+		else if (!data.startsWith('http')) {
+			ticketCode = data;
+		}
+		// If it's a different URL, ignore it
+		else {
+			console.log('Ignoring non-ticket URL:', data);
+			return;
+		}
+		
+		// Validate the ticket code - either short code or full format
+		if (!isValidShortCode(ticketCode) && !isValidTicketQRCode(ticketCode)) {
+			console.log('Invalid ticket code:', ticketCode);
 			return;
 		}
 		
 		// Set cooldown to prevent rapid scans
 		scanCooldown = true;
-		lastScannedCode = code;
+		lastScannedCode = data;
 		
-		// Navigate to check-in page
-		goto(`/checkin/${code}`);
+		// Resolve the code to ensure we have the full ticket code
+		resolveAndNavigate(ticketCode);
 		
 		// Reset cooldown after 2 seconds
 		setTimeout(() => {
 			scanCooldown = false;
 		}, 2000);
 	}
+	
+	function isValidShortCode(code: string): boolean {
+		// Short codes are typically 6 characters, alphanumeric
+		return /^[A-Z0-9]{6}$/i.test(code);
+	}
+	
+	async function resolveAndNavigate(code: string) {
+		try {
+			// If it's already a full ticket code, navigate directly
+			if (code.startsWith('TKT-')) {
+				goto(`/checkin/${code}`);
+				return;
+			}
+			
+			// Otherwise, resolve the short code
+			const response = await fetch('/api/checkin/resolve-code', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ code })
+			});
+			
+			const result = await response.json();
+			
+			if (response.ok && result.ticketCode) {
+				goto(`/checkin/${result.ticketCode}`);
+			} else {
+				console.error('Failed to resolve ticket code:', result.error);
+				// Try navigating with the original code anyway
+				goto(`/checkin/${code}`);
+			}
+		} catch (error) {
+			console.error('Error resolving ticket code:', error);
+			// Fallback: try navigating with the original code
+			goto(`/checkin/${code}`);
+		}
+	}
 
-	function handleManualSubmit() {
+	async function handleManualSubmit() {
 		manualError = '';
-		const code = manualCode.trim();
+		const code = manualCode.trim().toUpperCase(); // Normalize to uppercase
 		
 		if (!code) {
 			manualError = 'Please enter a ticket code';
 			return;
 		}
 		
-		if (!isValidTicketQRCode(code)) {
-			manualError = 'Invalid ticket code format';
-			return;
-		}
-		
 		isSubmitting = true;
-		goto(`/checkin/${code}`);
+		
+		try {
+			// Try to resolve the code (handles both short and full formats)
+			const response = await fetch('/api/checkin/resolve-code', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ code })
+			});
+			
+			const result = await response.json();
+			
+			if (response.ok && result.ticketCode) {
+				// Navigate with the resolved full ticket code
+				goto(`/checkin/${result.ticketCode}`);
+			} else {
+				isSubmitting = false;
+				manualError = result.error || 'Invalid ticket code';
+				
+				// Show suggestion if available
+				if (result.suggestion) {
+					manualError += '. ' + result.suggestion;
+				}
+			}
+		} catch (error) {
+			console.error('Error resolving ticket code:', error);
+			isSubmitting = false;
+			manualError = 'Failed to validate ticket code. Please try again.';
+		}
 	}
 
 	function switchMode(mode: 'camera' | 'manual') {
@@ -140,68 +228,7 @@
 		}
 	}
 
-	async function handleScanResult(data: string) {
-		const now = Date.now();
-		
-		// Prevent duplicate scans within 2 seconds
-		if (data === lastScanResult && now - lastScanTime < 2000) {
-			return;
-		}
 
-		lastScanResult = data;
-		lastScanTime = now;
-		
-		console.log('QR Code scanned:', data);
-		
-		// Extract QR code from various formats
-		let qrCode = data;
-		
-		// Check if it's a booking check-in code URL
-		if (data.includes('/checkin/')) {
-			const parts = data.split('/checkin/');
-			if (parts.length > 1) {
-				qrCode = parts[1].split('?')[0].split('#')[0]; // Remove query params and hash
-			}
-		}
-		// If it's a QR code URL format
-		else if (data.includes('/qr/')) {
-			const parts = data.split('/qr/');
-			if (parts.length > 1) {
-				qrCode = parts[1].split('?')[0].split('#')[0];
-			}
-		}
-		// If it's just a code (not a full URL)
-		else if (/^[A-Za-z0-9]{6,12}$/.test(data)) {
-			qrCode = data;
-		}
-		// If it's a different URL, handle it separately
-		else if (data.startsWith('http')) {
-			window.location.href = data;
-			return;
-		}
-
-		// Call the scan API to track the scan
-		try {
-			await fetch(`/api/qr/${qrCode}/scan`, {
-				method: 'POST'
-			});
-		} catch (error) {
-			console.warn('Failed to track QR scan:', error);
-			// Continue anyway
-		}
-		
-		// Navigate to check-in page - now in same route group, can use goto()
-		try {
-			console.log('Navigating to check-in page:', `/checkin/${qrCode}`);
-			
-			// Now that check-in is in (app) group, we can use goto()
-			await goto(`/checkin/${qrCode}`);
-		} catch (navError) {
-			console.error('Navigation error:', navError);
-			// Fallback to direct navigation if goto() fails
-			window.location.href = `/checkin/${qrCode}`;
-		}
-	}
 
 	onDestroy(() => {
 		stopScanner();
@@ -334,13 +361,13 @@
 									id="ticket-code"
 									type="text"
 									bind:value={manualCode}
-									placeholder="e.g., TKT-ABC123-XYZ"
-									class="form-input text-lg font-mono"
+									placeholder="e.g., CB3577"
+									class="form-input text-lg font-mono uppercase"
 									class:error={manualError}
 									disabled={isSubmitting}
 									autocomplete="off"
 									autocorrect="off"
-									autocapitalize="off"
+									autocapitalize="characters"
 									spellcheck="false"
 								/>
 								{#if manualError}
@@ -366,12 +393,12 @@
 					
 					<div class="mt-6 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 						<h3 class="text-sm font-medium mb-2" style="color: var(--text-primary);">
-							Where to find the ticket code:
+							Ticket Code Format:
 						</h3>
 						<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
-							<li>• In the booking confirmation email</li>
-							<li>• Below the QR code on printed tickets</li>
-							<li>• In the booking details in your app</li>
+							<li>• Short code: <span class="font-mono font-medium">CB3577</span> (6 characters)</li>
+							<li>• Full code: <span class="font-mono text-xs">TKT-mc9m9kgi-CB3577</span></li>
+							<li>• Try the short code first, shown on the ticket</li>
 						</ul>
 					</div>
 				</div>

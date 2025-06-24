@@ -32,35 +32,52 @@
 	
 	let qrCodeElement = $state<HTMLCanvasElement>();
 	
-	// Generate QR code for check-in when booking is loaded
+	// Function to generate QR code
+	async function generateQRCode() {
+		if (!booking || !qrCodeElement) return;
+		
+		try {
+			const QRCode = await import('qrcode');
+			const checkInURL = generateCheckInURL(data.ticketCode);
+			
+			// Check if dark mode is active
+			const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+			
+			await QRCode.default.toCanvas(qrCodeElement, checkInURL, {
+				width: 200,
+				margin: 1,
+				color: {
+					dark: isDarkMode ? '#ffffff' : '#000000',
+					light: isDarkMode ? '#1a1a1a' : '#ffffff'
+				}
+			});
+		} catch (error) {
+			console.error('QR code generation failed:', error);
+		}
+	}
+	
+	// Generate QR code when booking is loaded or theme changes
 	$effect(() => {
 		if (booking && qrCodeElement) {
-			console.log('Generating QR code for ticket:', data.ticketCode);
-			console.log('QR code element:', qrCodeElement);
+			generateQRCode();
 			
-			// Generate QR code pointing to check-in URL for guides
-			const checkInURL = generateCheckInURL(data.ticketCode);
-			console.log('Check-in URL:', checkInURL);
-			
-			import('qrcode').then(QRCode => {
-				console.log('QRCode library loaded:', QRCode);
-				QRCode.default.toCanvas(qrCodeElement, checkInURL, {
-					width: 200, // Consistent size, mobile-friendly
-					margin: 1,
-					color: {
-						dark: '#000000',
-						light: '#FFFFFF'
+			// Watch for theme changes
+			const observer = new MutationObserver((mutations) => {
+				mutations.forEach((mutation) => {
+					if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+						generateQRCode();
 					}
-				}).then(() => {
-					console.log('QR code generated successfully');
-				}).catch((error) => {
-					console.error('QR code generation failed:', error);
 				});
-			}).catch((error) => {
-				console.error('Failed to import qrcode library:', error);
 			});
-		} else {
-			console.log('QR code generation skipped:', { booking: !!booking, qrCodeElement: !!qrCodeElement });
+			
+			observer.observe(document.documentElement, {
+				attributes: true,
+				attributeFilter: ['data-theme']
+			});
+			
+			return () => {
+				observer.disconnect();
+			};
 		}
 	});
 	
@@ -79,22 +96,22 @@
 				return {
 					icon: CheckCircle,
 					text: 'Checked In',
-					class: 'bg-green-50 text-green-700 border-green-200',
-					iconClass: 'text-green-600'
+					class: 'status-confirmed',
+					iconClass: ''
 				};
 			case 'no_show':
 				return {
 					icon: AlertCircle,
 					text: 'No Show',
-					class: 'bg-red-50 text-red-700 border-red-200',
-					iconClass: 'text-red-600'
+					class: 'status-cancelled',
+					iconClass: ''
 				};
 			default:
 				return {
 					icon: Clock,
 					text: 'Not Arrived',
-					class: 'bg-blue-50 text-blue-700 border-blue-200',
-					iconClass: 'text-blue-600'
+					class: 'status-pending',
+					iconClass: ''
 				};
 		}
 	}
@@ -147,21 +164,21 @@
 			<!-- Mobile-first ticket design -->
 			<div style="background: var(--bg-primary);" class="shadow-xl rounded-xl overflow-hidden">
 				<!-- Header -->
-				<div class="px-4 sm:px-6 py-8 text-white text-center" style="background: var(--color-primary-600);">
+				<div class="px-4 sm:px-6 py-8 text-center ticket-header">
 					<div class="flex justify-center mb-4">
-						<div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+						<div class="w-16 h-16 ticket-header-icon rounded-full flex items-center justify-center">
 							<Ticket class="w-8 h-8" />
 						</div>
 					</div>
 					<h1 class="text-2xl font-bold mb-2">Your Tour Ticket</h1>
-					<p class="text-white/80">Show this QR code to your guide</p>
+					<p class="opacity-90">Show this QR code to your guide</p>
 				</div>
 				
 				<!-- Ticket Status -->
 				<div class="px-4 sm:px-6 py-4 border-b" style="border-color: var(--border-primary);">
 					<div class="flex items-center justify-center gap-2">
-						<span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full border {statusInfo.class}">
-							<statusInfo.icon class="w-4 h-4 {statusInfo.iconClass}" />
+						<span class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full {statusInfo.class}">
+							<statusInfo.icon class="w-4 h-4" />
 							{statusInfo.text}
 						</span>
 					</div>
@@ -169,7 +186,7 @@
 				
 				<!-- QR Code -->
 				<div class="px-4 sm:px-6 py-8 text-center border-b" style="border-color: var(--border-primary);">
-					<div class="max-w-[240px] mx-auto rounded-xl p-4 mb-4" style="background: var(--bg-primary); border: 2px solid var(--border-primary);">
+					<div class="max-w-[240px] mx-auto rounded-xl p-4 mb-4 qr-code-container">
 						<div class="w-full flex justify-center">
 							<canvas bind:this={qrCodeElement} class="block max-w-full"></canvas>
 						</div>
@@ -249,9 +266,9 @@
 					</div>
 					
 					{#if booking.specialRequests}
-						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-primary-50);">
-							<p class="text-sm font-medium mb-1" style="color: var(--color-primary-900);">Special Requests:</p>
-							<p class="text-sm" style="color: var(--color-primary-800);">{booking.specialRequests}</p>
+						<div class="mt-4 p-3 rounded-lg info-box">
+							<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Special Requests:</p>
+							<p class="text-sm" style="color: var(--text-secondary);">{booking.specialRequests}</p>
 						</div>
 					{/if}
 				</div>
@@ -261,19 +278,19 @@
 					<h3 class="font-semibold mb-3" style="color: var(--text-primary);">Important Information</h3>
 					<ul class="text-sm space-y-2" style="color: var(--text-secondary);">
 						<li class="flex gap-2">
-							<span style="color: var(--color-primary-600);">•</span>
+							<span style="color: var(--text-primary);">•</span>
 							<span>Please arrive 10 minutes before the tour starts</span>
 						</li>
 						<li class="flex gap-2">
-							<span style="color: var(--color-primary-600);">•</span>
+							<span style="color: var(--text-primary);">•</span>
 							<span>Show this QR code to your guide for check-in</span>
 						</li>
 						<li class="flex gap-2">
-							<span style="color: var(--color-primary-600);">•</span>
+							<span style="color: var(--text-primary);">•</span>
 							<span>Bring comfortable walking shoes and weather-appropriate clothing</span>
 						</li>
 						<li class="flex gap-2">
-							<span style="color: var(--color-primary-600);">•</span>
+							<span style="color: var(--text-primary);">•</span>
 							<span>Contact your guide if you need to make any changes</span>
 						</li>
 					</ul>
@@ -281,4 +298,39 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>
+
+<style>
+	/* Ticket header styling */
+	.ticket-header {
+		background: var(--color-primary-600);
+		color: white;
+	}
+	
+	[data-theme="dark"] .ticket-header {
+		background: var(--color-primary-700);
+	}
+	
+	.ticket-header-icon {
+		background: rgba(255, 255, 255, 0.2);
+	}
+	
+	[data-theme="dark"] .ticket-header-icon {
+		background: rgba(255, 255, 255, 0.1);
+	}
+	
+	/* QR Code container */
+	.qr-code-container {
+		background: var(--bg-primary);
+		border: 2px solid var(--border-primary);
+	}
+	
+	[data-theme="dark"] .qr-code-container {
+		background: var(--bg-secondary);
+	}
+	
+	/* Ensure canvas adapts to container */
+	.qr-code-container canvas {
+		border-radius: 0.25rem;
+	}
+</style> 
