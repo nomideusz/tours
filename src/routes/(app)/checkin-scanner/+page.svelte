@@ -13,6 +13,12 @@
 	import Square from 'lucide-svelte/icons/square';
 	import RotateCcw from 'lucide-svelte/icons/rotate-ccw';
 	import type { PageData } from './$types.js';
+	import QrScannerLib from 'qr-scanner';
+	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Keyboard from 'lucide-svelte/icons/keyboard';
+	import Search from 'lucide-svelte/icons/search';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import { isValidTicketQRCode } from '$lib/ticket-qr.js';
 
 	let { data }: { data: PageData } = $props();
 	
@@ -27,87 +33,111 @@
 	// Server data
 	let scannerConfig = $state(data.scannerConfig || {});
 
-	// Import QR scanner dynamically to avoid SSR issues
-	let QrScanner: any = null;
+	// Scanner instance
 	let scanner: any = null;
 
+	let scanMode: 'camera' | 'manual' = $state('camera');
+	let qrScanner: any = null;
+	let hasCamera = $state(true);
+	let scannerStarted = $state(false);
+	let lastScannedCode = '';
+	let scanCooldown = false;
+	let manualCode = $state('');
+	let manualError = $state('');
+	let isSubmitting = $state(false);
+
 	onMount(async () => {
-		if (browser) {
-			try {
-				isInitializing = true;
-				const QrScannerModule = await import('qr-scanner');
-				QrScanner = QrScannerModule.default;
-				console.log('QR Scanner loaded successfully');
-			} catch (error) {
-				console.error('Failed to load QR Scanner:', error);
-				cameraError = 'Failed to load QR scanner library';
-			} finally {
-				isInitializing = false;
-			}
+		if (scanMode === 'camera') {
+			startScanner();
 		}
 	});
 
-	async function startScanning() {
-		if (!QrScanner) {
-			cameraError = 'QR Scanner library not loaded';
-			return;
-		}
+	async function startScanner() {
+		if (!browser || !videoElement || scannerStarted || scanMode !== 'camera') return;
 		
-		// Set scanning to true first to render the video element
-		scanning = true;
-		
-		// Wait for DOM to update and element to be ready
-		await tick();
-		
-		let attempts = 0;
-		while (!videoElement && attempts < 10) {
-			await new Promise(resolve => setTimeout(resolve, 100));
-			attempts++;
-		}
-		
-		if (!videoElement) {
-			cameraError = 'Video element not ready';
-			scanning = false; // Reset scanning state on error
-			return;
-		}
-
 		try {
-			cameraError = '';
-			
-			scanner = new QrScanner(
+			// @ts-ignore - qr-scanner has complex type definitions
+			qrScanner = new QrScannerLib(
 				videoElement,
-				(result: any) => handleScanResult(result.data),
+				(result: any) => handleScan(result.data),
 				{
-					onDecodeError: (error: any) => {
-						// Ignore decode errors - they're normal when no QR code is visible
-					},
-					highlightScanRegion: scannerConfig.highlightScanRegion ?? true,
-					highlightCodeOutline: scannerConfig.highlightCodeOutline ?? true,
-					preferredCamera: 'environment',
+					returnDetailedScanResult: true,
+					highlightScanRegion: true,
+					highlightCodeOutline: true,
 				}
 			);
-
-			await scanner.start();
-			console.log('QR Scanner started successfully');
-		} catch (error: any) {
-			console.error('Error starting scanner:', error);
-			cameraError = `Camera access denied or not available: ${error.message}`;
-			scanning = false; // Reset scanning state on error
+			
+			await qrScanner.start();
+			scannerStarted = true;
+			hasCamera = true;
+		} catch (error) {
+			console.error('Failed to start QR scanner:', error);
+			hasCamera = false;
+			scanMode = 'manual'; // Auto-switch to manual if camera fails
 		}
 	}
 
-	function stopScanning() {
-		if (scanner) {
-			scanner.stop();
-			scanner.destroy();
-			scanner = null;
+	function stopScanner() {
+		if (qrScanner) {
+			qrScanner.stop();
+			qrScanner.destroy();
+			qrScanner = null;
+			scannerStarted = false;
 		}
-		scanning = false;
 	}
 
-	function resetScanner() {
-		stopScanning();
-		cameraError = '';
+	function handleScan(code: string) {
+		// Prevent rapid duplicate scans
+		if (scanCooldown || code === lastScannedCode) return;
+		
+		// Validate the QR code format
+		if (!isValidTicketQRCode(code)) {
+			console.log('Invalid QR code format:', code);
+			return;
+		}
+		
+		// Set cooldown to prevent rapid scans
+		scanCooldown = true;
+		lastScannedCode = code;
+		
+		// Navigate to check-in page
+		goto(`/checkin/${code}`);
+		
+		// Reset cooldown after 2 seconds
+		setTimeout(() => {
+			scanCooldown = false;
+		}, 2000);
+	}
+
+	function handleManualSubmit() {
+		manualError = '';
+		const code = manualCode.trim();
+		
+		if (!code) {
+			manualError = 'Please enter a ticket code';
+			return;
+		}
+		
+		if (!isValidTicketQRCode(code)) {
+			manualError = 'Invalid ticket code format';
+			return;
+		}
+		
+		isSubmitting = true;
+		goto(`/checkin/${code}`);
+	}
+
+	function switchMode(mode: 'camera' | 'manual') {
+		scanMode = mode;
+		manualError = '';
+		
+		if (mode === 'camera' && hasCamera) {
+			// Start scanner when switching to camera mode
+			setTimeout(() => startScanner(), 100);
+		} else if (mode === 'manual') {
+			// Stop scanner when switching to manual mode
+			stopScanner();
+		}
 	}
 
 	async function handleScanResult(data: string) {
@@ -174,175 +204,175 @@
 	}
 
 	onDestroy(() => {
-		stopScanning();
+		stopScanner();
 	});
 </script>
 
 <svelte:head>
-	<title>QR Check-in Scanner</title>
+	<title>Check-in Scanner - Zaur</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<!-- Mobile-First Header -->
-	<div class="mb-6 sm:mb-8">
-		<!-- Mobile Compact Header -->
-		<MobilePageHeader
-			title="QR Scanner"
-			secondaryInfo={scanning ? "Camera Active" : "Ready to Scan"}
-			quickActions={[
-				...(scanning ? [{
-					label: 'Stop',
-					icon: Square,
-					onclick: stopScanning,
-					variant: 'secondary' as const
-				}] : [{
-					label: 'Start Camera',
-					icon: Play,
-					onclick: startScanning,
-					variant: 'primary' as const
-				}]),
-				...(cameraError ? [{
-					label: 'Reset',
-					icon: RotateCcw,
-					onclick: resetScanner,
-					variant: 'secondary' as const
-				}] : [])
-			]}
-			infoItems={[
-				{
-					icon: Camera,
-					label: 'Status',
-					value: scanning ? 'Scanning' : cameraError ? 'Error' : 'Ready'
-				},
-				{
-					icon: Scan,
-					label: 'Mode',
-					value: 'Check-in Only'
-				}
-			]}
-		/>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+	<!-- Mobile Header -->
+	<MobilePageHeader
+		title="Check-in Scanner"
+		secondaryInfo={scanMode === 'camera' ? 'Camera Mode' : 'Manual Entry'}
+		quickActions={[
+			{
+				label: scanMode === 'camera' ? 'Manual' : 'Scanner',
+				icon: scanMode === 'camera' ? Keyboard : QrCode,
+				onclick: () => switchMode(scanMode === 'camera' ? 'manual' : 'camera'),
+				variant: 'secondary' as const
+			}
+		]}
+		infoItems={[
+			{
+				icon: scanMode === 'camera' ? Camera : Keyboard,
+				label: 'Mode',
+				value: scanMode === 'camera' ? 'QR Scanner' : 'Manual Entry'
+			},
+			{
+				icon: Scan,
+				label: 'Function',
+				value: 'Check-in'
+			}
+		]}
+	/>
 
-		<!-- Desktop Header -->
-		<div class="hidden sm:block">
-			<PageHeader 
-				title="QR Code Scanner"
-				subtitle="Scan QR codes to check in guests"
-			/>
-		</div>
+	<!-- Desktop Header -->
+	<div class="hidden sm:block mb-8">
+		<PageHeader 
+			title="Check-in Scanner"
+			subtitle="Scan or enter ticket codes to check in customers"
+		/>
 	</div>
 
-	<!-- Scanner Card -->
 	<div class="max-w-2xl mx-auto">
-		<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary); background: var(--bg-secondary);">
-				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-600);">
-						<Camera class="w-5 h-5 text-white" />
-					</div>
-					<div>
-						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Guest Check-in Scanner</h2>
-						<p class="text-sm mt-1" style="color: var(--text-secondary);">Point camera at guest QR codes</p>
-					</div>
-				</div>
-			</div>
-			
-			<div class="p-4 sm:p-6">
-				{#if cameraError}
-					<div class="text-center py-8">
-						<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-error-light);">
-							<AlertCircle class="w-8 h-8" style="color: var(--color-error);" />
-						</div>
-						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Camera Error</h3>
-						<p class="text-sm mb-6" style="color: var(--text-secondary);">{cameraError}</p>
-						<div class="flex gap-3 justify-center">
-							<button onclick={resetScanner} class="button-secondary button--gap">
-								<RotateCcw class="h-4 w-4" />
-								Reset Scanner
-							</button>
-							<button onclick={startScanning} class="button-primary button--gap">
-								<Camera class="h-4 w-4" />
-								Try Again
-							</button>
-						</div>
-					</div>
-				{:else if isInitializing}
-					<div class="text-center py-12">
-						<LoadingSpinner size="large" text="Initializing camera..." centered />
-					</div>
-				{:else if !scanning}
-					<div class="text-center py-8">
-						<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-primary-50);">
-							<Camera class="w-8 h-8" style="color: var(--color-primary-600);" />
-						</div>
-						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Ready to Scan</h3>
-						<p class="text-sm mb-6" style="color: var(--text-secondary);">Start the camera to scan guest QR codes for check-in</p>
-						<button onclick={startScanning} class="button-primary button--gap">
-							<Play class="h-4 w-4" />
-							Start Camera
-						</button>
-					</div>
-				{:else}
-					<!-- Camera View -->
-					<div class="relative">
-						<video
-							bind:this={videoElement}
-							class="w-full aspect-square object-cover rounded-lg"
-							autoplay
-							playsinline
-							muted
-						></video>
-						
-						<!-- Scanning overlay -->
-						<div class="absolute inset-0 pointer-events-none rounded-lg">
-							<div class="absolute inset-8 border-2 border-white/50 rounded-lg"></div>
-							<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-								<Scan class="h-8 w-8 text-white/70 animate-pulse" />
-							</div>
-						</div>
-						
-						<!-- Scanner status -->
-						<div class="absolute top-4 left-4 right-4">
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-2 px-3 py-2 rounded-full bg-black/50 backdrop-blur-sm">
-									<div class="w-2 h-2 rounded-full animate-pulse" style="background: var(--color-success);"></div>
-									<span class="text-white text-sm font-medium">Scanning</span>
-								</div>
-								<button
-									onclick={stopScanning}
-									class="button--small button--danger rounded-full px-3 py-2 backdrop-blur-sm"
-								>
-									Stop
-								</button>
-							</div>
-						</div>
-					</div>
-					
-					<!-- Instructions below camera -->
-					<div class="mt-4 p-4 rounded-lg text-center" style="background: var(--bg-secondary);">
-						<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Position QR code within the frame</p>
-						<p class="text-xs" style="color: var(--text-secondary);">Scanner will automatically detect and process codes</p>
-					</div>
-				{/if}
+		<!-- Mode Toggle -->
+		<div class="mb-4 sm:mb-6 text-center">
+			<div class="p-1 rounded-lg inline-flex" style="background: var(--bg-secondary);">
+				<button
+				onclick={() => switchMode('camera')}
+				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'camera' ? 'shadow-sm' : ''}"
+				style="{scanMode === 'camera' ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
+				disabled={!hasCamera}
+			>
+				<QrCode class="w-4 h-4 inline mr-2" />
+				Scanner
+			</button>
+			<button
+				onclick={() => switchMode('manual')}
+				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'manual' ? 'shadow-sm' : ''}"
+				style="{scanMode === 'manual' ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
+			>
+				<Keyboard class="w-4 h-4 inline mr-2" />
+				Manual
+			</button>
 			</div>
 		</div>
 
-		<!-- Tips Card -->
-		{#if !scanning}
-			<div class="mt-6 rounded-xl p-4 sm:p-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-				<h3 class="text-base font-semibold mb-3" style="color: var(--text-primary);">Scanner Tips</h3>
-				<div class="space-y-2 text-sm" style="color: var(--text-secondary);">
-					<div class="flex items-start gap-2">
-						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
-						<span>Hold your device steady and ensure good lighting</span>
-					</div>
-					<div class="flex items-start gap-2">
-						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
-						<span>Position the QR code fully within the scanning frame</span>
-					</div>
-					<div class="flex items-start gap-2">
-						<span class="font-semibold" style="color: var(--color-primary-600);">•</span>
-						<span>Scanner works with booking tickets and tour QR codes</span>
+		{#if scanMode === 'camera'}
+			<!-- QR Scanner Card -->
+			<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4 sm:p-6">
+					{#if hasCamera}
+						<div class="relative aspect-square sm:aspect-[4/3] md:aspect-square max-w-md mx-auto rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
+							<video
+								bind:this={videoElement}
+								class="w-full h-full object-cover"
+								style="transform: scaleX(-1);"
+								muted
+							></video>
+							
+							{#if scannerStarted}
+								<div class="absolute inset-0 pointer-events-none">
+									<div class="absolute inset-0 flex items-center justify-center p-4">
+										<div class="scanner-frame w-36 h-36 xs:w-48 xs:h-48 sm:w-64 sm:h-64 rounded-lg"></div>
+									</div>
+									<div class="absolute bottom-2 sm:bottom-4 left-0 right-0 text-center">
+										<p class="scanner-hint text-xs sm:text-sm font-medium px-2 py-1 sm:px-3 sm:py-2 rounded-full inline-block">
+											Position QR code within the frame
+										</p>
+									</div>
+								</div>
+							{/if}
+						</div>
+						
+						<p class="text-xs sm:text-sm text-center mt-3 sm:mt-4" style="color: var(--text-secondary);">
+							Scanner will automatically detect ticket QR codes
+						</p>
+					{:else}
+						<div class="text-center py-12">
+							<div class="status-icon-wrapper status-pending mx-auto mb-4" style="width: 4rem; height: 4rem;">
+								<AlertCircle class="w-8 h-8" />
+							</div>
+							<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Camera Not Available</h3>
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">
+								Please check camera permissions or use manual entry
+							</p>
+							<button onclick={() => switchMode('manual')} class="button-primary button--gap">
+								<Keyboard class="w-4 h-4" />
+								Switch to Manual Entry
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{:else}
+			<!-- Manual Entry Card -->
+			<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-6">
+					
+					<form onsubmit={(e) => { e.preventDefault(); handleManualSubmit(); }}>
+						<div class="space-y-4">
+							<div>
+								<label for="ticket-code" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+									Ticket Code
+								</label>
+								<input
+									id="ticket-code"
+									type="text"
+									bind:value={manualCode}
+									placeholder="e.g., TKT-ABC123-XYZ"
+									class="form-input text-lg font-mono"
+									class:error={manualError}
+									disabled={isSubmitting}
+									autocomplete="off"
+									autocorrect="off"
+									autocapitalize="off"
+									spellcheck="false"
+								/>
+								{#if manualError}
+									<p class="form-error mt-1">{manualError}</p>
+								{/if}
+							</div>
+							
+							<button
+								type="submit"
+								disabled={isSubmitting || !manualCode.trim()}
+								class="w-full button-primary button--gap justify-center"
+							>
+								{#if isSubmitting}
+									<div class="form-spinner"></div>
+									Checking...
+								{:else}
+									<Search class="w-5 h-5" />
+									Check Ticket
+								{/if}
+							</button>
+						</div>
+					</form>
+					
+					<div class="mt-6 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<h3 class="text-sm font-medium mb-2" style="color: var(--text-primary);">
+							Where to find the ticket code:
+						</h3>
+						<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+							<li>• In the booking confirmation email</li>
+							<li>• Below the QR code on printed tickets</li>
+							<li>• In the booking details in your app</li>
+						</ul>
 					</div>
 				</div>
 			</div>
@@ -351,15 +381,34 @@
 </div>
 
 <style>
-	/* Scanner hover styles */
-	.hover\:bg-blue-600\/90:hover {
-		background-color: var(--color-primary-600);
-		opacity: 0.9;
+	/* Scanner-specific styles */
+	.scanner-frame {
+		border: 2px solid var(--color-primary-400);
+	}
+	
+	[data-theme="dark"] .scanner-frame {
+		border-color: var(--color-primary-500);
+	}
+	
+	.scanner-hint {
+		background: rgba(0, 0, 0, 0.7);
+		color: rgba(255, 255, 255, 1);
+	}
+	
+	[data-theme="dark"] .scanner-hint {
+		background: rgba(0, 0, 0, 0.9);
+		color: rgba(255, 255, 255, 1);
 	}
 
 	/* Fix QR scanner sizing issue */
 	:global(.qr-scanner-region-box-container) {
 		max-width: 100%;
 		z-index: var(--z-10);
+	}
+	
+	/* Extra small breakpoint for very narrow devices */
+	@media (min-width: 400px) {
+		.xs\:w-48 { width: 12rem; }
+		.xs\:h-48 { height: 12rem; }
 	}
 </style> 

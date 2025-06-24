@@ -96,4 +96,65 @@
 		fill: currentColor;
 		stroke: currentColor;
 	}
+	
+	/* Status icon wrapper */
+	.status-icon-wrapper {
+		width: 3rem;
+		height: 3rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-width: 1px;
+		border-style: solid;
+	}
+	
+	/* Alert styles */
+	.alert-success {
+		background: var(--color-success-50);
+		border: 1px solid var(--color-success-200);
+		color: var(--color-success-800);
+	}
+	
+	[data-theme="dark"] .alert-success {
+		background: var(--color-success-900);
+		border-color: var(--color-success-700);
+		color: var(--color-success-200);
+	}
+	
+	.alert-error {
+		background: var(--color-error-50);
+		border: 1px solid var(--color-error-200);
+		color: var(--color-error-800);
+	}
+	
+	[data-theme="dark"] .alert-error {
+		background: var(--color-error-900);
+		border-color: var(--color-error-700);
+		color: var(--color-error-200);
+	}
+	
+	.alert-warning {
+		background: var(--color-warning-50);
+		border: 1px solid var(--color-warning-200);
+		color: var(--color-warning-800);
+	}
+	
+	[data-theme="dark"] .alert-warning {
+		background: var(--color-warning-900);
+		border-color: var(--color-warning-700);
+		color: var(--color-warning-200);
+	}
+	
+	.alert-info {
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
+		color: var(--color-info-800);
+	}
+	
+	[data-theme="dark"] .alert-info {
+		background: var(--color-info-900);
+		border-color: var(--color-info-700);
+		color: var(--color-info-200);
+	}
 } 

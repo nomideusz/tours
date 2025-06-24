@@ -61,22 +61,22 @@
 				return {
 					icon: CheckCircle,
 					text: 'Checked In',
-					class: 'bg-green-50 text-green-700 border-green-200',
-					iconClass: 'text-green-600'
+					class: 'status-confirmed',
+					iconClass: ''
 				};
 			case 'no_show':
 				return {
 					icon: XCircle,
 					text: 'No Show',
-					class: 'bg-red-50 text-red-700 border-red-200',
-					iconClass: 'text-red-600'
+					class: 'status-cancelled',
+					iconClass: ''
 				};
 			default:
 				return {
 					icon: AlertCircle,
 					text: 'Awaiting Check-in',
-					class: 'bg-amber-50 text-amber-700 border-amber-200',
-					iconClass: 'text-amber-600'
+					class: 'status-pending',
+					iconClass: ''
 				};
 		}
 	}
@@ -94,11 +94,11 @@
 
 <div class="min-h-screen" style="background: var(--bg-secondary);">
 	<!-- Mobile-optimized Header -->
-	<div class="sticky top-0 z-10" style="background: var(--color-primary-600);">
+	<div class="sticky top-0 z-10 mobile-header">
 		<div class="px-4 py-3">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-3">
-					<a href="/checkin-scanner" class="text-white/80 hover:text-white transition-colors">
+					<a href="/checkin-scanner" class="mobile-header-link">
 						<ArrowLeft class="w-5 h-5" />
 					</a>
 					<div>
@@ -106,7 +106,7 @@
 						<p class="text-xs text-white/70">{data.booking.expand?.tour?.name}</p>
 					</div>
 				</div>
-				<a href="/checkin-scanner" class="text-white/80 hover:text-white transition-colors">
+				<a href="/checkin-scanner" class="mobile-header-link">
 					<QrCode class="w-5 h-5" />
 				</a>
 			</div>
@@ -119,8 +119,8 @@
 			<div class="p-4">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-3">
-						<div class="w-12 h-12 rounded-full flex items-center justify-center {statusInfo.class}">
-							<statusInfo.icon class="w-6 h-6 {statusInfo.iconClass}" />
+						<div class="status-icon-wrapper {statusInfo.class}">
+							<statusInfo.icon class="w-6 h-6" />
 						</div>
 						<div>
 							<p class="font-medium text-lg" style="color: var(--text-primary);">{statusInfo.text}</p>
@@ -136,8 +136,8 @@
 		</div>
 
 		{#if form?.success}
-			<div class="mb-4 rounded-xl px-4 py-3 shadow-sm" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
-				<div class="flex items-center gap-2" style="color: var(--color-success-800);">
+			<div class="mb-4 rounded-xl px-4 py-3 shadow-sm alert-success">
+				<div class="flex items-center gap-2">
 					<CheckCircle class="w-5 h-5 flex-shrink-0" />
 					<span class="font-medium">
 						{#if form.noShow}
@@ -151,8 +151,8 @@
 		{/if}
 
 		{#if form?.error}
-			<div class="mb-4 rounded-xl px-4 py-3 shadow-sm" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-				<div class="flex items-center gap-2" style="color: var(--color-danger-800);">
+			<div class="mb-4 rounded-xl px-4 py-3 shadow-sm alert-error">
+				<div class="flex items-center gap-2">
 					<AlertCircle class="w-5 h-5 flex-shrink-0" />
 					<span class="font-medium">{form.error}</span>
 				</div>
@@ -163,12 +163,12 @@
 		<div class="mb-4 rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary);">
 			<div class="p-4">
 				<h2 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
-					<User class="w-4 h-4" />
+					<User class="w-4 h-4 icon-primary" />
 					Customer Details
 				</h2>
 				
 				<!-- Customer Name - Most Prominent -->
-				<div class="mb-4 p-3 rounded-lg" style="background: var(--bg-secondary);">
+				<div class="mb-4 p-3 rounded-lg info-box">
 					<p class="text-xl font-bold" style="color: var(--text-primary);">{data.booking.customerName}</p>
 					<p class="text-sm mt-1" style="color: var(--text-secondary);">
 						{formatParticipantDisplay(data.booking)}
@@ -177,27 +177,27 @@
 
 				<div class="space-y-3">
 					<div class="flex items-center gap-3">
-						<Mail class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<Mail class="w-4 h-4 icon-tertiary" />
 						<p class="text-sm" style="color: var(--text-primary);">{data.booking.customerEmail}</p>
 					</div>
 					
 					{#if data.booking.customerPhone}
 						<div class="flex items-center gap-3">
-							<Phone class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<Phone class="w-4 h-4 icon-tertiary" />
 							<p class="text-sm" style="color: var(--text-primary);">{data.booking.customerPhone}</p>
 						</div>
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Ticket class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<Ticket class="w-4 h-4 icon-tertiary" />
 						<p class="text-sm" style="color: var(--text-primary);">{data.booking.bookingReference}</p>
 					</div>
 				</div>
 				
 				{#if data.booking.specialRequests}
-					<div class="mt-4 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-						<h3 class="font-medium text-sm mb-1" style="color: var(--color-warning-900);">Special Requests</h3>
-						<p class="text-sm" style="color: var(--color-warning-800);">{data.booking.specialRequests}</p>
+					<div class="mt-4 p-3 rounded-lg alert-warning">
+						<h3 class="font-medium text-sm mb-1">Special Requests</h3>
+						<p class="text-sm">{data.booking.specialRequests}</p>
 					</div>
 				{/if}
 			</div>
@@ -207,17 +207,17 @@
 		<div class="mb-4 rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary);">
 			<div class="p-4">
 				<h2 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
-					<Calendar class="w-4 h-4" />
+					<Calendar class="w-4 h-4 icon-primary" />
 					Tour Information
 				</h2>
 				
 				<div class="space-y-3">
 					{#if data.booking.expand?.timeSlot?.startTime}
-						<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="p-3 rounded-lg info-box">
 							<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">
 								{formatDate(data.booking.expand.timeSlot.startTime)}
 							</p>
-							<p class="text-lg font-bold" style="color: var(--color-primary-600);">
+							<p class="text-lg font-bold text-primary">
 								{formatSlotTimeRange(data.booking.expand.timeSlot.startTime, data.booking.expand.timeSlot.endTime)}
 							</p>
 						</div>
@@ -225,7 +225,7 @@
 					
 					{#if data.booking.expand?.tour?.location}
 						<div class="flex items-start gap-3">
-							<MapPin class="w-4 h-4 mt-0.5" style="color: var(--text-tertiary);" />
+							<MapPin class="w-4 h-4 mt-0.5 icon-tertiary" />
 							<div class="flex-1">
 								<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">Meeting Point</p>
 								<p class="text-sm" style="color: var(--text-primary);">{data.booking.expand?.tour?.location}</p>
@@ -234,7 +234,7 @@
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<DollarSign class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<DollarSign class="w-4 h-4 icon-tertiary" />
 						<div class="flex-1">
 							<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">Total Amount</p>
 							<p class="text-sm font-semibold" style="color: var(--text-primary);">
@@ -262,8 +262,7 @@
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="w-full button-primary button--gap justify-center py-4 text-lg font-semibold shadow-lg"
-						style="background: var(--color-success-600); border-color: var(--color-success-600);"
+						class="w-full button-success button--gap button--large justify-center font-semibold shadow-lg"
 					>
 						{#if isSubmitting}
 							<div class="form-spinner"></div>
@@ -280,13 +279,12 @@
 					<button
 						onclick={() => showNoShowModal = true}
 						disabled={isSubmitting}
-						class="flex-1 button-secondary py-2 text-sm"
-						style="color: var(--color-danger-600); border-color: var(--color-danger-300);"
+						class="flex-1 button-secondary button--small button--danger-text"
 					>
 						<UserX class="w-4 h-4 mr-1" />
 						No Show
 					</button>
-					<a href="/checkin-scanner" class="flex-1 button-secondary py-2 text-sm text-center">
+					<a href="/checkin-scanner" class="flex-1 button-secondary button--small text-center">
 						<QrCode class="w-4 h-4 mr-1 inline" />
 						Scan Next
 					</a>
@@ -297,8 +295,8 @@
 		<!-- Already Processed State -->
 		<div class="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
 			<div class="max-w-2xl mx-auto">
-				<div class="p-4 rounded-xl text-center {statusInfo.class}">
-					<statusInfo.icon class="w-12 h-12 mx-auto mb-2 {statusInfo.iconClass}" />
+				<div class="p-4 rounded-xl text-center badge badge-lg {statusInfo.class}">
+					<statusInfo.icon class="w-12 h-12 mx-auto mb-2" />
 					<h3 class="text-lg font-semibold mb-1">
 						{#if isCheckedIn}
 							Already Checked In
@@ -312,8 +310,8 @@
 						</p>
 					{/if}
 				</div>
-				<a href="/checkin-scanner" class="w-full button-primary mt-3 text-center">
-					<QrCode class="w-5 h-5 mr-2 inline" />
+				<a href="/checkin-scanner" class="w-full button-primary button--gap mt-3 text-center">
+					<QrCode class="w-5 h-5 inline" />
 					Scan Next Ticket
 				</a>
 			</div>
@@ -346,4 +344,20 @@
 		isSubmitting = false;
 		await update();
 	};
-}}></form> 
+}}></form>
+
+<style>
+	/* Page-specific badge overrides for large status display */
+	.badge.badge-lg {
+		padding: 1rem;
+		font-size: 1rem;
+		width: 100%;
+		display: block;
+		border-radius: 0.75rem;
+	}
+	
+	.badge.badge-lg svg {
+		color: inherit;
+		stroke: inherit;
+	}
+</style> 

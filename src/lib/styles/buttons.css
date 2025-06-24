@@ -334,6 +334,29 @@
 		stroke: var(--text-primary);
 	}
 	
+	/* Danger text button modifier */
+	.button--danger-text {
+		color: var(--color-danger-600);
+		border-color: var(--color-danger-300);
+	}
+	
+	.button--danger-text:hover:not(:disabled) {
+		background: var(--color-danger-50);
+		color: var(--color-danger-700);
+		border-color: var(--color-danger-400);
+	}
+	
+	[data-theme="dark"] .button--danger-text {
+		color: var(--color-danger-400);
+		border-color: var(--color-danger-700);
+	}
+	
+	[data-theme="dark"] .button--danger-text:hover:not(:disabled) {
+		background: var(--color-danger-900);
+		color: var(--color-danger-300);
+		border-color: var(--color-danger-600);
+	}
+	
 	.button--ghost .lucide-icon,
 	.button--ghost .lucide {
 		color: inherit;

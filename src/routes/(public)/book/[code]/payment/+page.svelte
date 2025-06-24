@@ -43,6 +43,70 @@
 	let mounted = $state(false);
 	let isInitializing = $state(true);
 	
+	// Detect dark mode for Stripe Elements
+	function isDarkMode() {
+		return document.documentElement.getAttribute('data-theme') === 'dark';
+	}
+	
+	// Get theme-aware Stripe appearance
+	function getStripeAppearance() {
+		const darkMode = isDarkMode();
+		
+		return {
+			theme: darkMode ? 'night' : 'stripe',
+			variables: {
+				colorPrimary: darkMode ? '#60a5fa' : '#3B82F6',
+				colorBackground: darkMode ? '#161b22' : '#ffffff',
+				colorText: darkMode ? '#f0f6fc' : '#111827',
+				colorDanger: darkMode ? '#f87171' : '#ef4444',
+				fontFamily: 'Inter, system-ui, sans-serif',
+				borderRadius: '8px',
+				spacingUnit: '4px',
+			},
+			rules: {
+				'.Label': {
+					fontWeight: '500',
+					fontSize: '14px',
+					marginBottom: '8px',
+					color: darkMode ? '#c9d1d9' : '#374151',
+				},
+				'.Input': {
+					borderColor: darkMode ? '#30363d' : '#e5e7eb',
+					backgroundColor: darkMode ? '#21262d' : '#ffffff',
+					color: darkMode ? '#f0f6fc' : '#111827',
+					boxShadow: 'none',
+					fontSize: '16px',
+					padding: '12px',
+				},
+				'.Input:focus': {
+					borderColor: darkMode ? '#60a5fa' : '#3B82F6',
+					boxShadow: darkMode 
+						? '0 0 0 3px rgba(96, 165, 250, 0.3)'
+						: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+				},
+				'.Error': {
+					fontSize: '13px',
+					marginTop: '6px',
+					color: darkMode ? '#f87171' : '#ef4444',
+				},
+				'.Tab': {
+					borderColor: darkMode ? '#30363d' : '#e5e7eb',
+					backgroundColor: darkMode ? '#0d1117' : '#ffffff',
+				},
+				'.Tab--selected': {
+					borderColor: darkMode ? '#60a5fa' : '#3B82F6',
+					backgroundColor: darkMode ? '#161b22' : '#ffffff',
+				},
+				'.TabLabel': {
+					color: darkMode ? '#c9d1d9' : '#6b7280',
+				},
+				'.TabLabel--selected': {
+					color: darkMode ? '#f0f6fc' : '#111827',
+				},
+			},
+		};
+	}
+	
 	onMount(async () => {
 		// Initialize Stripe
 		if (!stripePublicKey) {
@@ -82,39 +146,7 @@
 			// Initialize Stripe Elements with connected account for direct charges
 			const elementsOptions: any = {
 				clientSecret,
-				appearance: {
-					theme: 'stripe',
-					variables: {
-						colorPrimary: '#3B82F6',
-						colorBackground: '#ffffff',
-						colorText: '#111827',
-						colorDanger: '#EF4444',
-						fontFamily: 'Inter, system-ui, sans-serif',
-						borderRadius: '8px',
-						spacingUnit: '4px',
-					},
-					rules: {
-						'.Label': {
-							fontWeight: '500',
-							fontSize: '14px',
-							marginBottom: '8px',
-						},
-						'.Input': {
-							borderColor: '#e5e7eb',
-							boxShadow: 'none',
-							fontSize: '16px',
-							padding: '12px',
-						},
-						'.Input:focus': {
-							borderColor: '#3B82F6',
-							boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
-						},
-						'.Error': {
-							fontSize: '13px',
-							marginTop: '6px',
-						},
-					},
-				},
+				appearance: getStripeAppearance(),
 			};
 			
 			// For direct charges, Elements must be initialized with the connected account context
@@ -157,6 +189,26 @@
 			error = 'Failed to initialize payment. Please try again.';
 			isInitializing = false;
 		}
+		
+		// Listen for theme changes and update Stripe appearance
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach((mutation) => {
+				if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+					if (elements) {
+						elements.update({ appearance: getStripeAppearance() });
+					}
+				}
+			});
+		});
+		
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme']
+		});
+		
+		return () => {
+			observer.disconnect();
+		};
 	});
 	
 	async function handleSubmit() {
@@ -285,8 +337,8 @@
 						<!-- Header -->
 						<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
 							<div class="flex items-center gap-3">
-								<div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: var(--color-primary-50);">
-									<CreditCard class="w-6 h-6" style="color: var(--color-primary-600);" />
+								<div class="icon-wrapper-primary w-12 h-12">
+									<CreditCard class="w-6 h-6" />
 								</div>
 								<div>
 									<h1 class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">Complete Payment</h1>
@@ -300,25 +352,25 @@
 						<!-- Payment Content -->
 						<div class="p-4 sm:p-6">
 							{#if error}
-								<div class="mb-6 p-4 rounded-lg flex items-start gap-3" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-									<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
+								<div class="alert-error mb-6">
+									<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
 									<div class="flex-1">
-										<p class="font-medium" style="color: var(--color-danger-700);">Payment Error</p>
-										<p class="text-sm mt-1" style="color: var(--color-danger-600);">{error}</p>
+										<p class="font-medium">Payment Error</p>
+										<p class="text-sm mt-1">{error}</p>
 									</div>
 								</div>
 							{/if}
 							
 							{#if isInitializing}
 								<div class="text-center py-12">
-									<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
+									<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4 icon-primary" />
 									<p class="text-lg font-medium" style="color: var(--text-primary);">Setting up secure payment...</p>
 									<p class="text-sm mt-2" style="color: var(--text-secondary);">This may take a few seconds</p>
 								</div>
 							{:else if mounted}
 								<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
 									<!-- Payment Methods Info -->
-									<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="mb-6 p-4 rounded-lg info-box">
 										<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Accepted payment methods</p>
 										<div class="flex items-center gap-3">
 											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
@@ -354,26 +406,26 @@
 									</button>
 									
 									<!-- Security Info -->
-									<div class="mt-6 p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="mt-6 p-4 rounded-lg info-box">
 										<div class="flex items-start gap-3">
-											<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+											<Shield class="w-5 h-5 flex-shrink-0 mt-0.5 icon-success" />
 											<div class="flex-1">
 												<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Your payment is secure</p>
 												<ul class="space-y-1">
 													<li class="text-xs flex items-start gap-2" style="color: var(--text-secondary);">
-														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5 icon-success" />
 														<span>SSL encrypted connection</span>
 													</li>
 													<li class="text-xs flex items-start gap-2" style="color: var(--text-secondary);">
-														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5 icon-success" />
 														<span>PCI compliant payment processing</span>
 													</li>
 													<li class="text-xs flex items-start gap-2" style="color: var(--text-secondary);">
-														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5 icon-success" />
 														<span>We never store credit card details</span>
 													</li>
 													<li class="text-xs flex items-start gap-2" style="color: var(--text-secondary);">
-														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+														<CheckCircle class="w-3 h-3 flex-shrink-0 mt-0.5 icon-success" />
 														<span>Payment goes directly to tour guide</span>
 													</li>
 												</ul>
@@ -383,7 +435,7 @@
 								</form>
 							{:else}
 								<div class="text-center py-12">
-									<AlertCircle class="w-12 h-12 mx-auto mb-4" style="color: var(--color-danger-600);" />
+									<AlertCircle class="w-12 h-12 mx-auto mb-4 icon-danger" />
 									<p class="text-lg font-medium mb-2" style="color: var(--text-primary);">Unable to load payment form</p>
 									<p class="text-sm" style="color: var(--text-secondary);">Please refresh the page or contact support</p>
 								</div>
