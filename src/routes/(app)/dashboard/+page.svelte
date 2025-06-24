@@ -208,7 +208,7 @@
 
 	// Check if settings need confirmation - only show if location hasn't been explicitly confirmed
 	// Even if country is auto-detected during registration, users must explicitly confirm
-	let needsConfirmation = $derived(browser && profile && !hasConfirmedLocation);
+	let needsConfirmation = $derived(browser && profile && !hasConfirmedLocation && !profile?.stripeAccountId);
 
 	// Show email verification if email not verified (regardless of tour count)
 	let needsEmailVerification = $derived(profile && !profile.emailVerified);
@@ -388,6 +388,13 @@
 	function setupPayments() {
 		if (!profile || isSettingUpPayment) return;
 
+		// If stripeAccountId already exists, country is already locked - skip the modal
+		if (profile.stripeAccountId) {
+			// Go directly to payment setup without warning
+			confirmPaymentSetup();
+			return;
+		}
+
 		// Get the country for payment setup
 		const userCountry = profile.country || selectedCountry || 'US';
 		pendingPaymentCountry = userCountry;
@@ -396,7 +403,12 @@
 	
 	// Actually setup payments after confirmation
 	async function confirmPaymentSetup() {
-		if (!profile || !pendingPaymentCountry || isSettingUpPayment) return;
+		if (!profile || isSettingUpPayment) return;
+
+		// Use existing country if stripeAccountId exists, otherwise use pending country
+		const countryForSetup = profile.stripeAccountId ? 
+			(profile.country || 'US') : 
+			(pendingPaymentCountry || profile.country || selectedCountry || 'US');
 
 		showPaymentConfirmModal = false;
 		isSettingUpPayment = true;
@@ -409,7 +421,7 @@
 					userId: profile.id,
 					email: profile.email,
 					businessName: profile.businessName || profile.name,
-					country: pendingPaymentCountry,
+					country: countryForSetup,
 					returnUrl: `${window.location.origin}/dashboard?setup=complete`
 				})
 			});
@@ -1054,6 +1066,38 @@
 								</div>
 							</div>
 						</div>
+					{:else if profile?.stripeAccountId && profile?.country}
+						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
+						<div
+							class="flex items-start gap-4 rounded-lg p-4"
+								style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+						>
+							<div
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+								style="background: var(--color-success-100); color: var(--color-success-600);"
+							>
+								<CheckCircle class="h-4 w-4" />
+							</div>
+							<div class="flex-1">
+								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+									Location set
+								</h3>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									Your business location is locked due to payment setup.
+								</p>
+								{#if confirmedCountry && profile?.currency}
+									<div class="mt-2 flex items-center gap-2">
+										<span class="text-sm font-medium" style="color: var(--text-primary);">
+											{confirmedCountry.flag} {confirmedCountry.name}
+										</span>
+										<span class="text-sm" style="color: var(--text-tertiary);">•</span>
+										<span class="text-sm font-medium" style="color: var(--text-primary);">
+											{profile.currency}
+										</span>
+									</div>
+								{/if}
+							</div>
+						</div>
 					{:else}
 						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
 						<div
@@ -1129,7 +1173,7 @@
 									</button>
 									<div class="rounded-lg p-2 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 										<p class="text-xs" style="color: var(--color-warning-700);">
-											<strong>Note:</strong> Your country ({currentCountryInfo?.name || 'selected country'}) cannot be changed after payment setup
+											<strong>Important:</strong> Once you start payment setup, your country ({currentCountryInfo?.name || 'selected country'}) will be permanently locked and cannot be changed
 										</p>
 									</div>
 									<p class="text-xs" style="color: var(--text-tertiary);">
@@ -1381,6 +1425,33 @@
 							</div>
 						</div>
 					</div>
+				{:else if profile?.stripeAccountId && !hasConfirmedLocation}
+					<div
+						class="flex items-start gap-3 rounded-lg p-4"
+						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
+					>
+						<Globe class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
+						<div class="min-w-0 flex-1">
+							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
+								Location locked
+							</h3>
+							<div class="flex items-center gap-1.5 text-xs">
+								{#if currentCountryInfo}
+									<span>{currentCountryInfo.flag}</span>
+									<span style="color: var(--text-primary);">
+										{currentCountryInfo.name}
+									</span>
+									<span style="color: var(--text-tertiary);">•</span>
+									<span style="color: var(--text-secondary);">
+										{profile?.currency || 'EUR'}
+									</span>
+								{/if}
+							</div>
+							<p class="text-[10px] mt-1" style="color: var(--text-tertiary);">
+								Country fixed after payment setup
+							</p>
+						</div>
+					</div>
 				{/if}
 
 				{#if !paymentStatus.loading && !paymentStatus.isSetup}
@@ -1420,10 +1491,10 @@
 								</button>
 							{/if}
 						</div>
-						{#if !needsConfirmation && currentCountryInfo}
+						{#if !needsConfirmation && currentCountryInfo && !profile?.stripeAccountId}
 							<div class="mt-2 rounded p-1.5 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 								<p class="text-[10px]" style="color: var(--color-warning-700);">
-									Country: {currentCountryInfo.name} (permanent)
+									Country: {currentCountryInfo.name} (will be permanent)
 								</p>
 							</div>
 						{/if}
@@ -1809,7 +1880,9 @@
 
 Your payment account will use ${stripeCurrency} as the currency.
 
-⚠️ This country CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+⚠️ IMPORTANT: Once you proceed, your country selection will be IMMEDIATELY and PERMANENTLY locked. This cannot be changed later, even if you don't complete the setup process.
+
+Please ensure this is the correct country where your business is legally registered.`}
 		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
 		cancelText="Cancel"
 		variant="warning"

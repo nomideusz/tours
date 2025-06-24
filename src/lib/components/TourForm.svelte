@@ -1083,7 +1083,7 @@
 				>
 					<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
 					<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-					<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 5 images)</p>
+					<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
 					
 					<!-- Mobile-optimized file input -->
 					<input

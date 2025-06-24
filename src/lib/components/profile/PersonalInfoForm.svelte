@@ -370,8 +370,8 @@
 					</select>
 				</div>
 				{#if paymentSetup}
-					<p class="text-xs mt-1" style="color: var(--color-warning);">
-						Locked after payment setup
+					<p class="text-xs mt-1" style="color: var(--color-warning-600);">
+						Country cannot be changed after payment setup starts
 					</p>
 				{/if}
 			</div>
@@ -389,7 +389,11 @@
 					</div>
 					<input type="hidden" name="currency" value={currency} />
 					<p class="text-xs mt-1" style="color: var(--text-secondary);">
-						Currency is determined by your country selection
+						{#if paymentSetup}
+							Currency locked with country selection
+						{:else}
+							Currency is determined by your country selection
+						{/if}
 					</p>
 				{:else}
 					<div class="form-input" style="background: var(--bg-tertiary); cursor: not-allowed; color: var(--text-tertiary);">

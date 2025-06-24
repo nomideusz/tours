@@ -267,13 +267,17 @@
 		}
 	}
 	
-	// Payment setup - shows confirmation modal
+	// Payment setup function - shows confirmation modal
 	function setupPayments() {
 		if (!user || isSettingUpPayment) return;
 
-		// Clear any previous error
-		paymentSetupError = null;
-		
+		// If stripeAccountId already exists, country is already locked - skip the modal
+		if (user.stripeAccountId) {
+			// Go directly to payment setup without warning
+			confirmPaymentSetup();
+			return;
+		}
+
 		// Get the country for payment setup
 		const userCountry = country || user.country || 'US';
 		pendingPaymentCountry = userCountry;
@@ -282,7 +286,12 @@
 	
 	// Actually setup payments after confirmation
 	async function confirmPaymentSetup() {
-		if (!user || !pendingPaymentCountry || isSettingUpPayment) return;
+		if (!user || isSettingUpPayment) return;
+
+		// Use existing country if stripeAccountId exists, otherwise use pending country
+		const countryForSetup = user.stripeAccountId ? 
+			(user.country || 'US') : 
+			(pendingPaymentCountry || country || user.country || 'US');
 
 		showPaymentConfirmModal = false;
 		isSettingUpPayment = true;
@@ -294,15 +303,16 @@
 				body: JSON.stringify({
 					userId: user.id,
 					email: user.email,
-					businessName: businessName || user.businessName || user.name,
-					country: pendingPaymentCountry,
-					returnUrl: `${window.location.origin}/profile?setup=complete`
+					businessName: user.businessName || user.name,
+					country: countryForSetup,
+					returnUrl: `${window.location.origin}/dashboard?setup=complete`
 				})
 			});
 
 			if (!response.ok) {
 				const errorData = await response.json();
 				console.error('Payment setup API error:', errorData);
+				// Show error in UI
 				paymentSetupError = errorData.error || 'Failed to setup payment account';
 				isSettingUpPayment = false;
 				pendingPaymentCountry = null;
@@ -310,13 +320,12 @@
 			}
 
 			const { accountLink } = await response.json();
-			
-			// Small delay to show the loading state before redirect
-			await new Promise(resolve => setTimeout(resolve, 500));
 			window.location.href = accountLink;
 		} catch (error) {
 			console.error('Payment setup error:', error);
-			paymentSetupError = error instanceof Error ? error.message : 'Failed to setup payment account';
+			
+			// Network or other errors
+			paymentSetupError = error instanceof Error ? error.message : 'Failed to setup payment account. Please try again.';
 			isSettingUpPayment = false;
 		} finally {
 			pendingPaymentCountry = null;
@@ -661,7 +670,7 @@
 						bind:currency
 						onSubmit={updatePersonalInfo}
 						loading={profileLoading}
-						paymentSetup={paymentStatus.isSetup}
+						paymentSetup={!!user?.stripeAccountId}
 						saveSuccess={profileSaveSuccess}
 					/>
 				</div>
@@ -719,8 +728,10 @@
 						<a 
 							href="/{username}" 
 							target="_blank"
-							class="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-gray-50"
+							class="flex items-center gap-3 p-3 rounded-lg transition-colors"
 							style="border: 1px solid var(--border-primary);"
+							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
 						>
 							<User class="h-4 w-4" style="color: var(--text-tertiary);" />
 							<div>
@@ -733,8 +744,10 @@
 					
 					<a 
 						href="/dashboard"
-						class="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-gray-50"
+						class="flex items-center gap-3 p-3 rounded-lg transition-colors"
 						style="border: 1px solid var(--border-primary);"
+						onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
 					>
 						<Shield class="h-4 w-4" style="color: var(--text-tertiary);" />
 						<div>
@@ -773,7 +786,9 @@
 
 Your payment account will use ${stripeCurrency} as the currency.
 
-⚠️ This country CANNOT be changed later due to financial regulations. Please ensure this is the correct country where your business is legally registered.`}
+⚠️ IMPORTANT: Once you proceed, your country selection will be IMMEDIATELY and PERMANENTLY locked. This cannot be changed later, even if you don't complete the setup process.
+
+Please ensure this is the correct country where your business is legally registered.`}
 		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
 		cancelText="Cancel"
 		variant="warning"
@@ -793,7 +808,7 @@ Your payment account will use ${stripeCurrency} as the currency.
 <!-- Payment Setup Loading Overlay -->
 {#if isSettingUpPayment}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-		<div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl max-w-sm mx-4 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="rounded-xl p-6 shadow-xl max-w-sm mx-4 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="mb-4">
 				<div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style="background: var(--bg-secondary);">
 					<CreditCard class="h-8 w-8 animate-pulse" style="color: var(--color-primary-600);" />

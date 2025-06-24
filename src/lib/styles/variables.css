@@ -428,7 +428,25 @@ input, textarea, select {
 /* Placeholder text should be slightly muted */
 ::placeholder {
 	color: var(--text-tertiary);
-	opacity: 1; /* Firefox fix */
+	opacity: 0.5; /* Make it more muted */
+}
+
+/* Firefox specific - needs opacity in the pseudo-element */
+::-moz-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Edge/IE specific */
+::-ms-input-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Webkit specific */
+::-webkit-input-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
 }
 
 /* Selection colors */
@@ -622,15 +640,19 @@ td {
 	color: white !important;
 }
 
+/* COMMENTED OUT - Too aggressive icon overrides
 /* Override inline styles on lucide icons for better contrast */
+/*
 .lucide-icon[style*="text-tertiary"],
 .lucide[style*="text-tertiary"],
 svg[style*="text-tertiary"] {
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* Icons with specific color variables in inline styles */
+/*
 [style*="color: var(--text-tertiary)"] {
 	color: var(--text-secondary) !important;
 }
@@ -641,14 +663,17 @@ svg[style*="text-tertiary"] {
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* Ensure minimum contrast for lucide icons with inline styles */
+/*
 .lucide-icon[style*="color: var(--color-gray-"],
 .lucide[style*="color: var(--color-gray-"],
 svg[style*="color: var(--color-gray-"] {
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* Special handling for icons in specific UI contexts */
 .rounded-full .lucide-icon,
@@ -660,6 +685,7 @@ svg[style*="color: var(--color-gray-"] {
 }
 
 /* Ensure icons in colored backgrounds have appropriate contrast */
+/*
 [style*="background: var(--color-primary-"] .lucide-icon,
 [style*="background: var(--color-primary-"] .lucide,
 [style*="background: var(--color-success-"] .lucide-icon,
@@ -670,10 +696,10 @@ svg[style*="color: var(--color-gray-"] {
 [style*="background: var(--color-warning-"] .lucide,
 [style*="background: var(--color-info-"] .lucide-icon,
 [style*="background: var(--color-info-"] .lucide {
-	/* These icons should use their parent's color scheme */
 	color: inherit !important;
 	stroke: inherit !important;
 }
+*/
 
 /* Global lucide icon contrast enhancement for dark mode */
 [data-theme="dark"] .lucide-icon,
@@ -683,7 +709,9 @@ svg[style*="color: var(--color-gray-"] {
 	opacity: 1;
 }
 
+/* COMMENTED OUT - Too aggressive
 /* Override low contrast colors on lucide icons in dark mode */
+/*
 [data-theme="dark"] .lucide-icon[style*="color: var(--text-tertiary)"],
 [data-theme="dark"] .lucide[style*="color: var(--text-tertiary)"],
 [data-theme="dark"] svg[style*="color: var(--text-tertiary)"],
@@ -692,6 +720,7 @@ svg[style*="color: var(--color-gray-"] {
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* Ensure all lucide icons are visible */
 .lucide-icon,
@@ -711,14 +740,18 @@ svg[class*="w-"][class*="h-"] {
 	fill: none;
 }
 
+/* COMMENTED OUT - Too aggressive
 /* Override low contrast on SVG icons with inline styles */
+/*
 svg[style*="color: var(--text-tertiary)"],
 [data-theme="dark"] svg[style*="color: var(--text-tertiary)"] {
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* SVG icons with gray colors should have better contrast */
+/*
 svg.text-gray-400,
 svg.text-gray-500,
 [data-theme="dark"] svg.text-gray-400,
@@ -726,6 +759,7 @@ svg.text-gray-500,
 	color: var(--text-secondary) !important;
 	stroke: var(--text-secondary) !important;
 }
+*/
 
 /* Ensure stroke-based icons (like lucide) are always visible */
 svg[stroke="currentColor"] {

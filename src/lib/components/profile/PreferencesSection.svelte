@@ -27,9 +27,9 @@
 	
 	<div class="p-6">
 		{#if showSuccess}
-			<div class="mb-4 rounded-lg p-3" style="background: var(--color-success-light); border: 1px solid var(--color-success-200);">
+			<div class="mb-4 rounded-lg p-3" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
 				<div class="flex items-center gap-2">
-					<CheckCircle class="h-4 w-4 flex-shrink-0" style="color: var(--color-success);" />
+					<CheckCircle class="h-4 w-4 flex-shrink-0" style="color: var(--color-success-600);" />
 					<span class="text-sm font-medium" style="color: var(--color-success-900);">Preferences saved</span>
 				</div>
 			</div>
@@ -59,7 +59,7 @@
 								onchange={(e) => handlePreferenceChange('notificationSound', e.currentTarget.checked)}
 								class="sr-only peer"
 							/>
-							<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+							<div class="toggle-switch"></div>
 						</label>
 					</Tooltip>
 				</div>
@@ -78,4 +78,64 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
+	.toggle-switch {
+		width: 44px;
+		height: 24px;
+		background: var(--bg-tertiary);
+		border: 1px solid var(--border-primary);
+		border-radius: 9999px;
+		position: relative;
+		transition: all 200ms ease;
+		cursor: pointer;
+	}
+	
+	.toggle-switch::after {
+		content: '';
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 18px;
+		height: 18px;
+		background: white;
+		border-radius: 50%;
+		transition: transform 200ms ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+	
+	/* Dark mode adjustments */
+	[data-theme="dark"] .toggle-switch::after {
+		background: var(--bg-primary);
+	}
+	
+	/* Checked state */
+	input:checked ~ .toggle-switch {
+		background: var(--color-primary-600);
+		border-color: var(--color-primary-600);
+	}
+	
+	input:checked ~ .toggle-switch::after {
+		transform: translateX(20px);
+	}
+	
+	/* Focus state */
+	input:focus-visible ~ .toggle-switch {
+		outline: 2px solid var(--color-primary-500);
+		outline-offset: 2px;
+	}
+	
+	/* Hover state */
+	label:hover .toggle-switch {
+		background: var(--bg-secondary);
+	}
+	
+	label:hover input:checked ~ .toggle-switch {
+		background: var(--color-primary-700);
+	}
+	
+	/* Disabled state */
+	input:disabled ~ .toggle-switch {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
 </style> 

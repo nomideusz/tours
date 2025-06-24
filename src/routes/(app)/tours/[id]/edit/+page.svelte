@@ -91,7 +91,7 @@
 
 	// Image validation constants (matching server-side)
 	const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-	const MAX_IMAGES = 5; // Reduced from 10 to 5 for better performance
+	const MAX_IMAGES = 6; // Maximum 6 images per tour
 	const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 	let imageUploadErrors: string[] = $state([]);
 

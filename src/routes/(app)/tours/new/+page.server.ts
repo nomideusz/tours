@@ -311,6 +311,16 @@ export const actions: Actions = {
       const validImages = imageFiles.filter(img => img instanceof File && img.size > 0);
       console.log('📸 Valid images after filtering:', validImages.length);
       
+      // Server-side validation for maximum images
+      const MAX_IMAGES = 6; // Maximum 6 images per tour
+      if (validImages.length > MAX_IMAGES) {
+        return fail(400, {
+          error: 'Too many images',
+          message: `You can upload a maximum of ${MAX_IMAGES} images per tour. You tried to upload ${validImages.length} images.`,
+          formData: sanitizedData
+        });
+      }
+      
       // Process images with proper error handling
       const processedImages: string[] = [];
       

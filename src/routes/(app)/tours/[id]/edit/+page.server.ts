@@ -248,6 +248,20 @@ export const actions: Actions = {
       console.log('📱 Valid images after filtering:', validImages.length);
       const newImages: string[] = [];
       
+      // Server-side validation for maximum images
+      const MAX_IMAGES = 6; // Maximum 6 images per tour
+      const imagesToRemove = formData.getAll('removeImages') as string[];
+      const remainingExistingImages = currentImages.filter(img => !imagesToRemove.includes(img));
+      const totalImages = remainingExistingImages.length + validImages.length;
+      
+      if (totalImages > MAX_IMAGES) {
+        return fail(400, {
+          error: 'Too many images',
+          message: `You can have a maximum of ${MAX_IMAGES} images per tour. Current: ${remainingExistingImages.length}, New: ${validImages.length}, Total: ${totalImages}.`,
+          formData: sanitizedData
+        });
+      }
+      
       // Process new images
       if (validImages.length > 0) {
         for (const imageFile of validImages) {
@@ -265,7 +279,7 @@ export const actions: Actions = {
       }
 
       // Handle image removals
-      const imagesToRemove = formData.getAll('removeImages') as string[];
+      // Note: imagesToRemove was already read above for validation
       console.log('🗑️ Server: Images to remove:', imagesToRemove);
       console.log('🗑️ Server: Current images:', currentImages);
       const updatedImages = currentImages.filter(img => !imagesToRemove.includes(img));
