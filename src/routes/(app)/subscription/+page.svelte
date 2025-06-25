@@ -299,9 +299,14 @@
 	</div>
 
 	{#if error}
-		<div class="alert-error rounded-lg p-3 mb-4">
-			<h3 class="font-medium">Error</h3>
-			<p class="text-sm">{error}</p>
+		<div class="rounded-lg p-3 sm:p-4 mb-4 border" style="background: var(--color-error-50); border-color: var(--color-error-200);">
+			<div class="flex items-start gap-2 sm:gap-3">
+				<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-error-600);" />
+				<div class="flex-1">
+					<h3 class="font-semibold text-sm sm:text-base mb-0.5" style="color: var(--color-error-900);">Something went wrong</h3>
+					<p class="text-xs sm:text-sm" style="color: var(--color-error-800);">{error}</p>
+				</div>
+			</div>
 		</div>
 	{/if}
 

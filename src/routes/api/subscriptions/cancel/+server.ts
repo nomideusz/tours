@@ -20,6 +20,25 @@ export const POST: RequestHandler = async ({ request }) => {
     }
   } catch (error) {
     console.error('Subscription cancel/reactivate error:', error);
-    return json({ error: 'Failed to update subscription' }, { status: 500 });
+    
+    // Handle specific error messages with user-friendly responses
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('no active subscription')) {
+      return json({ 
+        error: 'You don\'t have an active subscription to cancel. If you believe this is an error, please contact support.' 
+      }, { status: 400 });
+    }
+    
+    if (errorMessage.includes('User not found')) {
+      return json({ 
+        error: 'Unable to find your account. Please try logging out and back in.' 
+      }, { status: 404 });
+    }
+    
+    // Generic error fallback
+    return json({ 
+      error: 'We couldn\'t update your subscription right now. Please try again later or contact support if the issue persists.' 
+    }, { status: 500 });
   }
 }; 

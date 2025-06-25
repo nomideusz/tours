@@ -17,6 +17,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
     return json({ url: session.url });
   } catch (error) {
     console.error('Customer portal error:', error);
-    return json({ error: 'Failed to create portal session' }, { status: 500 });
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('User not found')) {
+      return json({ 
+        error: 'Unable to find your account. Please try logging out and back in.' 
+      }, { status: 404 });
+    }
+    
+    return json({ 
+      error: 'We couldn\'t open the billing portal right now. Please try again later or contact support.' 
+    }, { status: 500 });
   }
 }; 
