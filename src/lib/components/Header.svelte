@@ -154,8 +154,10 @@
 							{currentUser?.name || currentUser?.email || 'User'}
 						</span>
 						{#if currentUser && (currentUser.promoCodeUsed || currentUser.subscriptionDiscountPercentage > 0 || (currentUser.subscriptionFreeUntil && new Date(currentUser.subscriptionFreeUntil) > new Date()))}
-							<span class="text-gray-300">•</span>
-							<PromoStatusBanner variant="compact" />
+							<span class="hidden sm:inline text-gray-300">•</span>
+							<div class="hidden sm:block">
+								<PromoStatusBanner variant="compact" />
+							</div>
 						{/if}
 						<span class="text-gray-300">•</span>
 						<button

@@ -510,8 +510,8 @@
 							</span>
 						{:else if isYearly}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								Save €36/year
-							</span>
+							Save €36/year
+						</span>
 						{/if}
 					</div>
 					
@@ -555,8 +555,8 @@
 							</span>
 						{:else if isYearly}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								Save €72/year
-							</span>
+							Save €72/year
+						</span>
 						{/if}
 					</div>
 					
@@ -602,8 +602,8 @@
 							</span>
 						{:else if isYearly}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								Save €180/year
-							</span>
+							Save €180/year
+						</span>
 						{/if}
 					</div>
 					

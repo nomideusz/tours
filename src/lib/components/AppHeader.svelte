@@ -7,6 +7,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
+	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	
 	let { 
 		pageTitle, 
@@ -146,6 +147,13 @@
 						</span>
 					</a>
 				</Tooltip>
+				
+				<!-- Promo Status Banner - Hidden on mobile -->
+				{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date()))}
+					<div class="hidden sm:block">
+						<PromoStatusBanner variant="compact" />
+					</div>
+				{/if}
 
 				<!-- Logout button -->
 				<Tooltip text="Sign out" position="bottom-left">

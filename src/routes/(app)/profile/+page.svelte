@@ -97,6 +97,9 @@
 	// Profile link
 	let profileLinkCopied = $state(false);
 	
+	// Promo banner dismissal state
+	let promoBannerDismissed = $state(false);
+	
 	// Payment setup modal state
 	let showPaymentConfirmModal = $state(false);
 	let pendingPaymentCountry = $state<string | null>(null);
@@ -481,6 +484,24 @@
 			setUserCurrencyFromServer(user.currency);
 		}
 		
+		// Check if promo banner was previously dismissed
+		const dismissData = localStorage.getItem('profilePromoBannerDismissed');
+		if (dismissData) {
+			try {
+				const parsed = JSON.parse(dismissData);
+				// Check if dismissal has expired
+				if (parsed.expiry && parsed.expiry > Date.now()) {
+					promoBannerDismissed = true;
+				} else {
+					// Clear expired dismissal
+					localStorage.removeItem('profilePromoBannerDismissed');
+				}
+			} catch (e) {
+				// Invalid data, clear it
+				localStorage.removeItem('profilePromoBannerDismissed');
+			}
+		}
+		
 		// Check if returning from payment setup
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('setup') === 'complete') {
@@ -617,9 +638,25 @@
 	</div>
 
 	<!-- Promo Status Section -->
-	{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date()))}
-		<div class="mb-6">
-			<PromoStatusBanner variant="detailed" />
+	{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date())) && !promoBannerDismissed}
+		<div class="mb-4 sm:mb-6">
+			<PromoStatusBanner 
+				variant={browser && window.innerWidth < 640 ? 'default' : 'detailed'}
+				showDismiss={true}
+				onDismiss={() => {
+					promoBannerDismissed = true;
+					// Store dismissal in localStorage with expiry
+					if (browser) {
+						const dismissData = {
+							dismissed: true,
+							timestamp: Date.now(),
+							// Expire after 30 days for profile page
+							expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+						};
+						localStorage.setItem('profilePromoBannerDismissed', JSON.stringify(dismissData));
+					}
+				}}
+			/>
 		</div>
 	{/if}
 

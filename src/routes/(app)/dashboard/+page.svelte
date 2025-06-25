@@ -125,6 +125,24 @@
 		// Check if user has previously confirmed their location (stored in localStorage)
 		// Only set this for users who have explicitly confirmed, not just those with auto-detected country
 		hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
+		
+		// Check if promo banner was previously dismissed
+		const dismissData = localStorage.getItem('promoBannerDismissed');
+		if (dismissData) {
+			try {
+				const parsed = JSON.parse(dismissData);
+				// Check if dismissal has expired
+				if (parsed.expiry && parsed.expiry > Date.now()) {
+					promoBannerDismissed = true;
+				} else {
+					// Clear expired dismissal
+					localStorage.removeItem('promoBannerDismissed');
+				}
+			} catch (e) {
+				// Invalid data, clear it
+				localStorage.removeItem('promoBannerDismissed');
+			}
+		}
 
 		// Close dropdown when clicking outside
 		const handleClickOutside = (event: MouseEvent) => {
@@ -187,6 +205,9 @@
 
 	// Profile link state
 	let profileLinkCopied = $state(false);
+	
+	// Promo banner dismissal state
+	let promoBannerDismissed = $state(false);
 
 	// Currency confirmation state
 	let selectedCurrency = $state<Currency>($userCurrency);
@@ -800,6 +821,28 @@
 					</svg>
 				</button>
 			</div>
+		</div>
+	{/if}
+
+	<!-- Promo Status Banner (show for all users with promo benefits) -->
+	{#if profile && (profile.promoCodeUsed || (profile.subscriptionDiscountPercentage ?? 0) > 0 || (profile.subscriptionFreeUntil && new Date(profile.subscriptionFreeUntil) > new Date())) && !promoBannerDismissed}
+		<div class="mb-4 sm:mb-6">
+			<PromoStatusBanner 
+				showDismiss={true} 
+				onDismiss={() => {
+					promoBannerDismissed = true;
+					// Store dismissal in localStorage with expiry
+					if (browser) {
+						const dismissData = {
+							dismissed: true,
+							timestamp: Date.now(),
+							// Expire after 7 days
+							expiry: Date.now() + (7 * 24 * 60 * 60 * 1000)
+						};
+						localStorage.setItem('promoBannerDismissed', JSON.stringify(dismissData));
+					}
+				}} 
+			/>
 		</div>
 	{/if}
 
@@ -1500,13 +1543,6 @@
 						{/if}
 					</div>
 				{/if}
-			</div>
-		{/if}
-
-		<!-- Promo Status Banner -->
-		{#if profile && (profile.promoCodeUsed || (profile.subscriptionDiscountPercentage ?? 0) > 0 || (profile.subscriptionFreeUntil && new Date(profile.subscriptionFreeUntil) > new Date()))}
-			<div class="mb-6">
-				<PromoStatusBanner />
 			</div>
 		{/if}
 

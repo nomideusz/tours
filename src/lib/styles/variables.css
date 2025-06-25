@@ -688,8 +688,8 @@ svg[style*="color: var(--color-gray-"] {
 .rounded-full .lucide,
 .rounded-lg .lucide-icon,
 .rounded-lg .lucide {
-	color: inherit;
-	stroke: inherit;
+	color: currentColor;
+	stroke: currentColor;
 }
 
 /* Ensure icons in colored backgrounds have appropriate contrast */

@@ -72,7 +72,13 @@ export const load = async ({ url, locals }: { url: URL; locals: any }) => {
 			description: userData.description,
 			location: userData.location,
 			emailVerified: userData.emailVerified,
-			lastLogin: userData.lastLogin
+			lastLogin: userData.lastLogin,
+			// Promo code fields
+			promoCodeUsed: userData.promoCodeUsed,
+			subscriptionDiscountPercentage: userData.subscriptionDiscountPercentage,
+			subscriptionFreeUntil: userData.subscriptionFreeUntil,
+			isLifetimeDiscount: userData.isLifetimeDiscount,
+			earlyAccessMember: userData.earlyAccessMember
 		};
 	}
 
