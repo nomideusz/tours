@@ -423,9 +423,11 @@ nav a:hover,
 }
 
 /* Ensure buttons don't have hardcoded colors */
+/* Commented out - This breaks button hover states
 button {
 	color: inherit;
 }
+*/
 
 /* Form elements should use proper colors */
 input, textarea, select {

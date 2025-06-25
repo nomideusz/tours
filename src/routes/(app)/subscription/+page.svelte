@@ -11,12 +11,14 @@
 	import Crown from 'lucide-svelte/icons/crown';
 	import Gift from 'lucide-svelte/icons/gift';
 	import type { PageData } from './$types.js';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	
 	let { data }: { data: PageData } = $props();
 	
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let isYearly = $state(false);
+	let showCancelModal = $state(false);
 	
 	// Client-side subscription plans data - updated with new pricing structure
 	const SUBSCRIPTION_PLANS = {
@@ -59,7 +61,7 @@
 	// Check if user has promo benefits
 	let hasPromoDiscount = $derived(user && (
 		(user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date()) ||
-		(user.subscriptionDiscountPercentage > 0)
+		(user.subscriptionDiscountPercentage && user.subscriptionDiscountPercentage > 0)
 	));
 	
 	let isInFreePeriod = $derived(user && user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date());
@@ -175,7 +177,13 @@
 	}
 	
 	async function cancelSubscription() {
-		if (!user?.id || !confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your current billing period.')) return;
+		if (!user?.id) return;
+		
+		showCancelModal = true;
+	}
+	
+	async function confirmCancelSubscription() {
+		if (!user?.id) return;
 		
 		loading = true;
 		error = null;
@@ -266,28 +274,28 @@
 
 {#snippet featureItem(text: string, icon: 'check' | 'x' = 'check', colorClass: string = '')}
 	{@const isImplemented = isFeatureImplemented(text)}
-	<li class="flex items-start gap-2">
+	<li class="flex items-start gap-1.5 sm:gap-2">
 		{#if icon === 'check'}
-			<Check class="w-4 h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+			<Check class="w-3.5 h-3.5 sm:w-4 sm:h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
 		{:else}
-			<X class="w-4 h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+			<X class="w-3.5 h-3.5 sm:w-4 sm:h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
 		{/if}
-		<span class="text-sm flex-1" style="color: var(--text-primary);">
+		<span class="text-xs sm:text-sm flex-1" style="color: var(--text-primary);">
 			{text}
 			{#if !isImplemented && icon === 'check'}
-				<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
-					style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
-					Coming Soon
+				<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-1 sm:ml-2" 
+					style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); font-size: 0.65rem;">
+					Soon
 				</span>
 			{/if}
 		</span>
 	</li>
 {/snippet}
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<div class="mb-8">
-		<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Subscription Management</h1>
-		<p style="color: var(--text-secondary);">Manage your Zaur subscription and billing</p>
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8">
+	<div class="mb-6 sm:mb-8">
+		<h1 class="text-xl sm:text-2xl font-bold mb-1 sm:mb-2" style="color: var(--text-primary);">Subscription Management</h1>
+		<p class="text-sm sm:text-base" style="color: var(--text-secondary);">Manage your Zaur subscription and billing</p>
 	</div>
 
 	{#if error}
@@ -298,12 +306,12 @@
 	{/if}
 
 	<!-- Early Access Notice -->
-	<div class="alert-warning mb-6 p-4 rounded-lg">
-		<div class="flex items-start gap-3">
-			<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+	<div class="alert-warning mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg">
+		<div class="flex items-start gap-2 sm:gap-3">
+			<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
 			<div class="flex-1">
-				<h3 class="font-semibold mb-1">Early Access - Limited Time Pricing</h3>
-				<p class="text-sm">
+				<h3 class="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Early Access - Limited Time Pricing</h3>
+				<p class="text-xs sm:text-sm">
 					Zaur is in early access. Join now at discounted rates and shape the future of tour management! 
 					Some features are being actively developed and will be rolled out progressively.
 				</p>
@@ -313,12 +321,12 @@
 
 	<!-- Promo Discount Banner -->
 	{#if hasPromoDiscount}
-		<div class="mb-6 p-4 rounded-lg border" style="background: var(--color-success-50); border-color: var(--color-success-200);">
-			<div class="flex items-start gap-3">
-				<Gift class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border" style="background: var(--color-success-50); border-color: var(--color-success-200);">
+			<div class="flex items-start gap-2 sm:gap-3">
+				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
 				<div class="flex-1">
-					<h3 class="font-semibold mb-1" style="color: var(--color-success-900);">Special Offer Active!</h3>
-					<p class="text-sm" style="color: var(--color-success-800);">
+					<h3 class="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base" style="color: var(--color-success-900);">Special Offer Active!</h3>
+					<p class="text-xs sm:text-sm" style="color: var(--color-success-800);">
 						{getPromoBenefitText()}
 						{#if user?.promoCodeUsed}
 							<span class="font-medium"> • Code: {user.promoCodeUsed}</span>
@@ -334,35 +342,35 @@
 		</div>
 	{/if}
 
-	<div class="mb-8 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="flex items-start justify-between">
+	<div class="mb-6 sm:mb-8 rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
 			<div>
 				<div class="flex items-center gap-2 mb-2">
-					<Crown class="w-5 h-5" style="color: var(--color-primary-600);" />
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Current Plan</h2>
+					<Crown class="w-4 h-4 sm:w-5 sm:h-5" style="color: var(--color-primary-600);" />
+					<h2 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">Current Plan</h2>
 				</div>
 				<div class="space-y-1">
-					<p class="text-2xl font-bold" style="color: var(--text-primary);">
+					<p class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">
 						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
 					</p>
 					{#if subscriptionStatus && subscriptionStatus !== 'active'}
-						<p class="text-sm font-medium" style="color: var(--color-warning-600);">
+						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-warning-600);">
 							Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
 						</p>
 					{/if}
 					{#if cancelAtPeriodEnd && currentPeriodEnd}
-						<p class="text-sm" style="color: var(--color-warning-600);">
+						<p class="text-xs sm:text-sm" style="color: var(--color-warning-600);">
 							Cancels on {formatDate(currentPeriodEnd)}
 						</p>
 					{:else if currentPeriodEnd && currentPlan !== 'free'}
-						<p class="text-sm" style="color: var(--text-secondary);">
+						<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">
 							Renews on {formatDate(currentPeriodEnd)}
 						</p>
 					{/if}
 				</div>
 			</div>
 			
-			<div class="flex gap-2">
+			<div class="flex gap-2 flex-wrap">
 				{#if currentPlan !== 'free'}
 					{#if cancelAtPeriodEnd}
 						<button
@@ -376,20 +384,22 @@
 						<button
 							onclick={manageSubscription}
 							disabled={loading}
-							class="px-4 py-2 border rounded-md font-medium transition-colors disabled:opacity-50"
+							class="px-3 py-1.5 sm:px-4 sm:py-2 border rounded-md font-medium transition-colors disabled:opacity-50 text-sm sm:text-base"
 							style="border-color: var(--border-primary); color: var(--text-primary); background: var(--bg-primary);"
 							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
 							onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
 						>
-							<CreditCard class="w-4 h-4 inline mr-2" />
-							Manage Billing
+							<CreditCard class="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1.5 sm:mr-2" />
+							<span class="hidden sm:inline">Manage Billing</span>
+							<span class="sm:hidden">Billing</span>
 						</button>
 						<button
 							onclick={cancelSubscription}
 							disabled={loading}
-							class="button-secondary button--danger-text"
+							class="button-secondary button--danger-text button--small sm:button--small"
 						>
-							Cancel Subscription
+							<span class="hidden sm:inline">Cancel Subscription</span>
+							<span class="sm:hidden">Cancel</span>
 						</button>
 					{/if}
 				{/if}
@@ -398,10 +408,10 @@
 		
 		{#if user}
 			<div class="mt-4 pt-4 border-t" style="border-color: var(--border-primary);">
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
 					<div>
-						<p style="color: var(--text-secondary);">Monthly Bookings Used</p>
-						<p class="font-medium" style="color: var(--text-primary);">
+						<p style="color: var(--text-secondary);">Monthly Bookings</p>
+						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
 							{user.monthlyBookingsUsed || 0}
 							{#if SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
 								/ {SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
@@ -412,7 +422,7 @@
 					</div>
 					<div>
 						<p style="color: var(--text-secondary);">Tours Created</p>
-						<p class="font-medium" style="color: var(--text-primary);">
+						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
 							{data.usage?.tours?.used || 0}
 							{#if data.usage?.tours?.limit !== null}
 								/ {data.usage.tours.limit}
@@ -423,7 +433,7 @@
 					</div>
 					<div>
 						<p style="color: var(--text-secondary);">Next Reset</p>
-						<p class="font-medium" style="color: var(--text-primary);">
+						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
 							{user.monthlyBookingsResetAt ? formatDate(user.monthlyBookingsResetAt) : 'Next month'}
 						</p>
 					</div>
@@ -434,40 +444,40 @@
 
 	<!-- Upgrade Options -->
 	{#if currentPlan !== 'agency'}
-		<div class="mb-8">
-			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Upgrade Your Plan</h2>
+		<div class="mb-6 sm:mb-8">
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+				<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">Upgrade Your Plan</h2>
 				
 				<!-- Toggle -->
-				<div class="p-1 rounded-lg inline-flex" style="background: var(--bg-secondary);">
+				<div class="p-0.5 sm:p-1 rounded-lg inline-flex self-start sm:self-auto" style="background: var(--bg-secondary);">
 					<button 
-						class="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'shadow-sm' : ''}"
+						class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'shadow-sm' : ''}"
 						style="{!isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 						onclick={() => isYearly = false}
 					>
 						Monthly
 					</button>
 					<button 
-						class="px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer {isYearly ? 'shadow-sm' : ''}"
+						class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer {isYearly ? 'shadow-sm' : ''}"
 						style="{isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 						onclick={() => isYearly = true}
 					>
-						Annual (Save 20%)
+						Annual <span class="hidden sm:inline">(Save 20%)</span><span class="sm:hidden">-20%</span>
 					</button>
 				</div>
 			</div>
 			
-			<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 				<!-- Free Starter (always show for reference) -->
-				<div class="relative rounded-lg border p-6 flex flex-col h-full opacity-75" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
+				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full opacity-75" style="border-color: var(--border-primary); background: var(--bg-primary);">
+					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
 					<div class="mb-1">
-						<span class="text-3xl font-bold" style="color: var(--text-primary);">€0</span>
-						<span class="text-sm" style="color: var(--text-secondary);">/month</span>
+						<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€0</span>
+						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month</span>
 					</div>
-					<div class="mb-4 h-4"></div>
+					<div class="mb-3 sm:mb-4 h-3 sm:h-4"></div>
 					
-					<ul class="space-y-2 mb-6 flex-grow">
+					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
 						{@render featureItem('3 bookings/month', 'check', 'icon-secondary')}
 						{@render featureItem('1 tour type', 'check', 'icon-secondary')}
 						{@render featureItem('Basic QR codes', 'check', 'icon-secondary')}
@@ -489,21 +499,21 @@
 				</div>
 				
 				<!-- Solo Guide -->
-				<div class="relative rounded-lg border-2 p-6 shadow-lg flex flex-col h-full" style="background: var(--bg-primary); border-color: var(--color-primary-500);">
-					<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-						<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
+				<div class="relative rounded-lg border-2 p-4 sm:p-6 shadow-lg flex flex-col h-full" style="background: var(--bg-primary); border-color: var(--color-primary-500);">
+					<div class="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
+						<span class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
 					</div>
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
+					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
 					<div class="mb-1">
 						{#if starterProPricing.savings > 0}
-							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
-							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
+							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
 						{:else}
-							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
 						{/if}
-						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
+						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
-					<div class="mb-4 h-4">
+					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
 						{#if starterProPricing.savings > 0}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
 								{isInFreePeriod ? 'Free during trial period' : `Save €${starterProPricing.savings}/month with promo`}
@@ -515,7 +525,7 @@
 						{/if}
 					</div>
 					
-					<ul class="space-y-2 mb-6 flex-grow">
+					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
 						{@render featureItem('60 bookings/month')}
 						{@render featureItem('5 tour types')}
 						{@render featureItem('Remove Zaur branding')}
@@ -537,18 +547,18 @@
 				</div>
 				
 				<!-- Professional -->
-				<div class="relative rounded-lg border p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
+				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
+					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
 					<div class="mb-1">
 						{#if proPricing.savings > 0}
-							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
-							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
+							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
+							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
 						{:else}
-							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
+							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
 						{/if}
-						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
+						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
-					<div class="mb-4 h-4">
+					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
 						{#if proPricing.savings > 0}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
 								{isInFreePeriod ? 'Free during trial period' : `Save €${proPricing.savings}/month with promo`}
@@ -560,7 +570,7 @@
 						{/if}
 					</div>
 					
-					<ul class="space-y-2 mb-6 flex-grow">
+					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
 						{@render featureItem('Unlimited bookings')}
 						{@render featureItem('Unlimited tour types')}
 						{@render featureItem('Advanced analytics & insights')}
@@ -584,18 +594,18 @@
 				</div>
 				
 				<!-- Agency -->
-				<div class="relative rounded-lg border p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
+				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
+					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
 					<div class="mb-1">
 						{#if agencyPricing.savings > 0}
-							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
-							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
+							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
 						{:else}
-							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
 						{/if}
-						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
+						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
-					<div class="mb-4 h-4">
+					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
 						{#if agencyPricing.savings > 0}
 							<span class="text-xs font-medium" style="color: var(--color-success-600);">
 								{isInFreePeriod ? 'Free during trial period' : `Save €${agencyPricing.savings}/month with promo`}
@@ -607,7 +617,7 @@
 						{/if}
 					</div>
 					
-					<ul class="space-y-2 mb-6 flex-grow">
+					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
 						{@render featureItem('Everything in Professional', 'check', 'icon-primary')}
 						{@render featureItem('Up to 10 tour guides', 'check', 'icon-primary')}
 						{@render featureItem('Team management dashboard', 'check', 'icon-primary')}
@@ -631,4 +641,16 @@
 			</div>
 		</div>
 	{/if}
-</div> 
+</div>
+
+<!-- Cancel Subscription Modal -->
+<ConfirmationModal
+	bind:isOpen={showCancelModal}
+	title="Cancel Subscription?"
+	message="Your subscription will remain active until the end of your current billing period. You can reactivate anytime before then."
+	confirmText="Yes, Cancel Subscription"
+	cancelText="Keep Subscription"
+	variant="danger"
+	icon={AlertCircle}
+	onConfirm={confirmCancelSubscription}
+/> 

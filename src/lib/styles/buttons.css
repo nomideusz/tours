@@ -394,12 +394,12 @@
 	
 	[data-theme="dark"] .button--danger-text {
 		color: var(--color-danger-400);
-		border-color: var(--color-danger-700);
+		border-color: var(--color-danger-800);
 	}
 	
 	[data-theme="dark"] .button--danger-text:hover:not(:disabled) {
-		background: var(--color-danger-900);
-		color: var(--color-danger-300);
+		background: rgba(220, 38, 38, 0.1); /* Semi-transparent red background */
+		color: var(--color-danger-500);
 		border-color: var(--color-danger-600);
 	}
 	
