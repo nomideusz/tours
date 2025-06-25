@@ -104,11 +104,6 @@
 			icon: MapPin
 		},
 		{
-			name: 'Analytics',
-			href: '/analytics',
-			icon: TrendingUp
-		},
-		{
 			name: 'All Bookings',
 			href: '/bookings',
 			icon: Calendar
@@ -123,6 +118,11 @@
 			href: '/subscription',
 			icon: CreditCard,
 			showOnMobile: false
+		},
+		{
+			name: 'Analytics',
+			href: '/analytics',
+			icon: TrendingUp
 		}
 	]);
 
