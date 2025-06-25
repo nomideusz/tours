@@ -50,7 +50,22 @@ export const GET: RequestHandler = async ({ locals }) => {
 			role: user.role || 'user',
 			created: user.createdAt,
 			// Check if user has OAuth2 login (no password)
-			isOAuth2User: !!(user.avatar && user.avatar.startsWith('http'))
+			isOAuth2User: !!(user.avatar && user.avatar.startsWith('http')),
+			// Subscription fields
+			subscriptionPlan: user.subscriptionPlan || 'free',
+			subscriptionStatus: user.subscriptionStatus || 'active',
+			subscriptionId: user.subscriptionId || null,
+			subscriptionCurrentPeriodStart: user.subscriptionCurrentPeriodStart || null,
+			subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd || null,
+			subscriptionCancelAtPeriodEnd: user.subscriptionCancelAtPeriodEnd || false,
+			monthlyBookingsUsed: user.monthlyBookingsUsed || 0,
+			monthlyBookingsResetAt: user.monthlyBookingsResetAt || null,
+			// Promo code fields
+			promoCodeUsed: user.promoCodeUsed || null,
+			subscriptionDiscountPercentage: user.subscriptionDiscountPercentage || 0,
+			subscriptionFreeUntil: user.subscriptionFreeUntil || null,
+			isLifetimeDiscount: user.isLifetimeDiscount || false,
+			earlyAccessMember: user.earlyAccessMember || false
 		};
 
 		return json(userData, {
