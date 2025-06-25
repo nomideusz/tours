@@ -550,7 +550,7 @@
 							<button onclick={clearSelection} class="button-secondary button--small">
 								Clear
 							</button>
-							<button onclick={bulkDelete} class="button--danger button--gap button--small">
+							<button onclick={bulkDelete} class="button-danger button--gap button--small">
 								<Trash2 class="h-4 w-4" />
 								Delete
 							</button>
@@ -584,6 +584,7 @@
 							style="{selectedSlots.has(slot.id) ? 'background: var(--color-primary-light);' : 'background: transparent;'}"
 							onmouseenter={(e) => !selectedSlots.has(slot.id) && (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
 							onmouseleave={(e) => !selectedSlots.has(slot.id) && (e.currentTarget.style.backgroundColor = 'transparent')}
+							role="listitem"
 						>
 							<!-- Mobile Layout -->
 							<div class="sm:hidden">

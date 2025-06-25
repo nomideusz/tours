@@ -80,8 +80,8 @@
 		</div>
 
 		{#if form?.error || data?.error}
-			<div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-				<p class="text-sm text-red-600">{form?.error || data?.error}</p>
+			<div class="alert-error rounded-lg p-3 mb-4">
+				<p class="text-sm">{form?.error || data?.error}</p>
 			</div>
 		{/if}
 
@@ -148,7 +148,7 @@
 						id="email"
 						name="email"
 						bind:value={email}
-						class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {emailError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
+						class="form-input {emailError ? 'error' : ''}"
 						placeholder={t('loginPage.emailPlaceholder', $language)}
 						disabled={isLoggingIn || manualLoading}
 						onblur={() => {
@@ -159,7 +159,7 @@
 						}}
 					/>
 					{#if emailError}
-						<p class="mt-1 text-sm text-red-600">{emailError}</p>
+						<p class="form-error">{emailError}</p>
 					{/if}
 				</div>
 
@@ -172,7 +172,7 @@
 						id="password"
 						name="password"
 						bind:value={password}
-						class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {passwordError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
+						class="form-input {passwordError ? 'error' : ''}"
 						placeholder={t('loginPage.passwordPlaceholder', $language)}
 						disabled={isLoggingIn || manualLoading}
 						onblur={() => {
@@ -181,7 +181,7 @@
 						}}
 					/>
 					{#if passwordError}
-						<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+						<p class="form-error">{passwordError}</p>
 					{/if}
 				</div>
 

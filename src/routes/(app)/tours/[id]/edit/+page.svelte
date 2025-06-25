@@ -835,7 +835,7 @@
 							This action cannot be undone. All bookings and data will be permanently deleted.
 						</p>
 					</div>
-					<button type="button" onclick={handleDeleteTour} class="button--danger button--small" disabled={isDeleting}>
+					<button type="button" onclick={handleDeleteTour} class="button-danger button--small" disabled={isDeleting}>
 						{#if isDeleting}
 							<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
 						{/if}

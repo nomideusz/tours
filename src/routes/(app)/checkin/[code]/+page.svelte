@@ -279,7 +279,7 @@
 					<button
 						onclick={() => showNoShowModal = true}
 						disabled={isSubmitting}
-						class="flex-1 button-secondary button--small button--danger-text"
+						class="flex-1 button-danger button--small"
 					>
 						<UserX class="w-4 h-4 mr-1" />
 						No Show

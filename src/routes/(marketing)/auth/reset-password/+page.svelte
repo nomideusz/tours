@@ -135,7 +135,7 @@
 							id="password"
 							name="password"
 							bind:value={password}
-							class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {passwordError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
+							class="form-input {passwordError ? 'error' : ''}"
 							placeholder="Enter your new password"
 							disabled={isLoading}
 							onblur={() => {
@@ -145,7 +145,7 @@
 							}}
 						/>
 						{#if passwordError}
-							<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+							<p class="form-error">{passwordError}</p>
 						{/if}
 					</div>
 
@@ -158,7 +158,7 @@
 							id="passwordConfirm"
 							name="passwordConfirm"
 							bind:value={passwordConfirm}
-							class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {passwordConfirmError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
+							class="form-input {passwordConfirmError ? 'error' : ''}"
 							placeholder="Confirm your new password"
 							disabled={isLoading}
 							onblur={() => {
@@ -168,7 +168,7 @@
 							}}
 						/>
 						{#if passwordConfirmError}
-							<p class="mt-1 text-sm text-red-600">{passwordConfirmError}</p>
+							<p class="form-error">{passwordConfirmError}</p>
 						{/if}
 					</div>
 

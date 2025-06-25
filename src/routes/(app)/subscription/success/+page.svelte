@@ -1,15 +1,53 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
 	
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let sessionId = $state<string | null>(null);
+	let subscriptionDetails = $state<any>(null);
+	let retryCount = $state(0);
+	const maxRetries = 5;
+	const retryDelay = 2000; // 2 seconds
 	
-	onMount(() => {
+	async function verifySubscription(sessionId: string): Promise<boolean> {
+		try {
+			const response = await fetch('/api/subscriptions/verify-session', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ sessionId })
+			});
+			
+			if (!response.ok) {
+				const data = await response.json();
+				// If subscription not found yet, might need to retry
+				if (response.status === 400 && retryCount < maxRetries) {
+					return false;
+				}
+				throw new Error(data.error || 'Failed to verify subscription');
+			}
+			
+			subscriptionDetails = await response.json();
+			return true;
+		} catch (err) {
+			if (retryCount < maxRetries) {
+				return false;
+			}
+			throw err;
+		}
+	}
+	
+	onMount(async () => {
+		if (!browser) return;
+		
 		sessionId = $page.url.searchParams.get('session_id');
 		
 		if (!sessionId) {
@@ -18,17 +56,44 @@
 			return;
 		}
 		
-		// Give Stripe webhook time to process
-		setTimeout(() => {
+		// Try to verify subscription with retries
+		try {
+			let verified = false;
+			
+			while (!verified && retryCount < maxRetries) {
+				verified = await verifySubscription(sessionId);
+				
+				if (!verified) {
+					retryCount++;
+					// Wait before retrying
+					await new Promise(resolve => setTimeout(resolve, retryDelay));
+				}
+			}
+			
+			if (!verified) {
+				throw new Error('Subscription verification timed out. Please check your subscription page.');
+			}
+			
+			// Force refresh of all data including user session
+			await invalidateAll();
+			
 			loading = false;
-		}, 2000);
+		} catch (err) {
+			console.error('Error verifying subscription:', err);
+			error = err instanceof Error ? err.message : 'Failed to verify subscription';
+			loading = false;
+		}
 	});
 	
-	function goToDashboard() {
+	async function goToDashboard() {
+		// Invalidate all data to ensure fresh load
+		await invalidateAll();
 		goto('/dashboard');
 	}
 	
-	function goToSubscription() {
+	async function goToSubscription() {
+		// Invalidate all data to ensure fresh load
+		await invalidateAll();
 		goto('/subscription');
 	}
 </script>
@@ -37,41 +102,55 @@
 	<div class="max-w-md mx-auto">
 		{#if loading}
 			<div class="text-center">
-				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+				<Loader2 class="h-12 w-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
 				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Processing your subscription...</h1>
-				<p style="color: var(--text-secondary);">Please wait while we set up your account.</p>
+				<p style="color: var(--text-secondary);">
+					Please wait while we set up your account.
+					{#if retryCount > 0}
+						<br />
+						<span class="text-sm">Verifying payment... (attempt {retryCount}/{maxRetries})</span>
+					{/if}
+				</p>
 			</div>
 		{:else if error}
 			<div class="text-center">
-				<div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-					<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-					</svg>
+				<div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--color-error-100);">
+					<AlertCircle class="w-6 h-6" style="color: var(--color-error-600);" />
 				</div>
 				<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Something went wrong</h1>
 				<p class="mb-6" style="color: var(--text-secondary);">{error}</p>
 				<button
 					onclick={goToSubscription}
-					class="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
+					class="button-secondary"
 				>
 					Back to Subscription
 				</button>
 			</div>
 		{:else}
 			<div class="text-center">
-				<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-					<CheckCircle class="w-8 h-8 text-green-600" />
+				<div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style="background: var(--color-success-100);">
+					<CheckCircle class="w-8 h-8" style="color: var(--color-success-600);" />
 				</div>
 				
-				<h1 class="text-3xl font-bold mb-4" style="color: var(--text-primary);">Welcome to Zaur!</h1>
+				<h1 class="text-3xl font-bold mb-4" style="color: var(--text-primary);">Subscription Activated!</h1>
 				<p class="text-lg mb-8" style="color: var(--text-secondary);">
-					Your subscription has been activated successfully. You can now enjoy all the features of your new plan.
+					Your subscription has been set up successfully. 
 				</p>
 				
-				<div class="space-y-4">
+				{#if subscriptionDetails?.planName}
+					<div class="mb-8 p-6 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Your new plan</h3>
+						<p class="text-2xl font-bold mb-2" style="color: var(--color-primary-600);">{subscriptionDetails.planName}</p>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							{subscriptionDetails.interval === 'year' ? 'Billed annually' : 'Billed monthly'}
+						</p>
+					</div>
+				{/if}
+				
+				<div class="space-y-3">
 					<button
 						onclick={goToDashboard}
-						class="w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+						class="button-primary button--full-width button--gap"
 					>
 						Go to Dashboard
 						<ArrowRight class="w-4 h-4" />
@@ -79,23 +158,10 @@
 					
 					<button
 						onclick={goToSubscription}
-						class="w-full px-6 py-3 border rounded-md font-medium transition-colors"
-						style="border-color: var(--border-primary); color: var(--text-primary); background: var(--bg-primary);"
-						onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-						onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
+						class="button-secondary button--full-width"
 					>
-						Manage Subscription
+						View Subscription Details
 					</button>
-				</div>
-				
-				<div class="mt-8 p-4 bg-blue-50 rounded-lg">
-					<h3 class="font-medium text-blue-900 mb-2">What's next?</h3>
-					<ul class="text-sm text-blue-800 space-y-1 text-left">
-						<li>• Create your first tour</li>
-						<li>• Set up your QR codes</li>
-						<li>• Start accepting bookings</li>
-						<li>• Explore advanced features</li>
-					</ul>
 				</div>
 			</div>
 		{/if}

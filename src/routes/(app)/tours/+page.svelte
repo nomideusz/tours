@@ -419,10 +419,10 @@
 			</div>
 		</div>
 	{:else if isError}
-		<div class="rounded-xl p-6" style="background: var(--color-error-light); border: 1px solid var(--color-error-200);">
+		<div class="alert-error rounded-xl p-6">
 			<div class="flex items-center gap-3">
-				<AlertTriangle class="h-5 w-5" style="color: var(--color-error);" />
-				<p style="color: var(--color-error);">Failed to load tours. Please refresh the page.</p>
+				<AlertTriangle class="h-5 w-5" />
+				<p>Failed to load tours. Please refresh the page.</p>
 			</div>
 		</div>
 	{:else if filteredTours.length === 0}

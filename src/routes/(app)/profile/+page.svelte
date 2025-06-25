@@ -547,19 +547,16 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Error Message Banner -->
 	{#if paymentSetupError}
-		<div
-			class="error-message mb-6 rounded-lg p-4"
-			style="background: var(--color-error-50); border: 1px solid var(--color-error-200);"
-		>
+		<div class="alert-error mb-6 rounded-lg p-4">
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
-					<AlertCircle class="h-5 w-5" style="color: var(--color-error-600);" />
+					<AlertCircle class="h-5 w-5" />
 				</div>
 				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-error-900);">
+					<h3 class="mb-1 text-sm font-medium">
 						Payment setup failed
 					</h3>
-					<p class="text-sm" style="color: var(--color-error-700);">
+					<p class="text-sm">
 						{paymentSetupError}
 					</p>
 				</div>
@@ -641,8 +638,8 @@
 					/>
 					
 					{#if avatarUploadError}
-						<div class="rounded-lg p-3 text-sm" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<p style="color: var(--color-error-700);">{avatarUploadError}</p>
+						<div class="alert-error rounded-lg p-3 text-sm">
+							<p>{avatarUploadError}</p>
 						</div>
 					{/if}
 					

@@ -408,14 +408,14 @@
 	{#if error}
 		<div class="mb-6">
 			{#if (form as any)?.showUpgradeButton}
-				<div class="rounded-xl p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+				<div class="alert-warning rounded-xl p-4">
 					<div class="flex gap-3">
-						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
 						<div class="flex-1">
-							<p class="font-medium" style="color: var(--color-warning-900);">Tour Limit Reached</p>
-							<p class="text-sm mt-1" style="color: var(--color-warning-700);">{error}</p>
+							<p class="font-medium">Tour Limit Reached</p>
+							<p class="text-sm mt-1">{error}</p>
 							{#if (form as any)?.currentCount !== undefined && (form as any)?.limit !== undefined}
-								<p class="text-sm mt-1" style="color: var(--color-warning-700);">
+								<p class="text-sm mt-1">
 									You currently have {(form as any).currentCount} tours out of {(form as any).limit} allowed.
 								</p>
 							{/if}
@@ -464,12 +464,12 @@
 
 			<!-- Image Upload Errors -->
 			{#if imageUploadErrors.length > 0}
-				<div class="mb-6 rounded-xl p-4" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+				<div class="alert-error mb-6 rounded-xl p-4">
 					<div class="flex gap-3">
-						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
 						<div class="flex-1">
-							<p class="font-medium" style="color: var(--color-error-900);">Image Upload Issues</p>
-							<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
+							<p class="font-medium">Image Upload Issues</p>
+							<ul class="text-sm mt-2 space-y-1">
 								{#each imageUploadErrors as error}
 									<li>• {error}</li>
 								{/each}

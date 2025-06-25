@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import { currentUser } from '$lib/stores/auth.js';
 	import type { SubscriptionPlan, BillingInterval } from '$lib/stripe-subscriptions.server.js';
 	import Check from 'lucide-svelte/icons/check';
@@ -52,6 +53,12 @@
 	let proPrice = $derived(isYearly ? 29 : 35); // €29/month when billed annually (17% off €35)
 	let agencyPrice = $derived(isYearly ? 74 : 89); // €74/month when billed annually (17% off €89)
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
+	
+	// Refresh data on mount to ensure we have the latest subscription info
+	onMount(async () => {
+		// Invalidate all data to force a fresh load
+		await invalidateAll();
+	});
 	
 	async function upgradeSubscription(planId: SubscriptionPlan, billingInterval: BillingInterval) {
 		if (!user?.id) return;
@@ -136,7 +143,7 @@
 			}
 			
 			// Refresh page to show updated status
-			window.location.reload();
+			await invalidateAll();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
 		} finally {
@@ -167,7 +174,7 @@
 			}
 			
 			// Refresh page to show updated status
-			window.location.reload();
+			await invalidateAll();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
 		} finally {
@@ -192,12 +199,9 @@
 	</div>
 
 	{#if error}
-		<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-			<AlertCircle class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-			<div>
-				<h3 class="font-medium text-red-800">Error</h3>
-				<p class="text-red-700 text-sm">{error}</p>
-			</div>
+		<div class="alert-error rounded-lg p-3 mb-4">
+			<h3 class="font-medium">Error</h3>
+			<p class="text-sm">{error}</p>
 		</div>
 	{/if}
 

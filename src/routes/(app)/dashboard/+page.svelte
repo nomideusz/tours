@@ -771,19 +771,16 @@
 	{/if}
 
 	{#if saveError && !isNewUser}
-		<div
-			class="error-message mb-6 rounded-lg p-4"
-			style="background: var(--color-error-50); border: 1px solid var(--color-error-200);"
-		>
+		<div class="alert-error mb-6 rounded-lg p-4">
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
-					<AlertCircle class="h-5 w-5" style="color: var(--color-error-600);" />
+					<AlertCircle class="h-5 w-5" />
 				</div>
 				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-error-900);">
+					<h3 class="mb-1 text-sm font-medium">
 						Payment setup failed
 					</h3>
-					<p class="text-sm" style="color: var(--color-error-700);">
+					<p class="text-sm">
 						{saveError}
 					</p>
 				</div>
@@ -874,9 +871,7 @@
 									</p>
 								{/if}
 								{#if resendEmailError}
-									<p class="mb-3 text-xs" style="color: var(--color-error-600);">
-										{resendEmailError}
-									</p>
+									<p class="form-error mb-3">{resendEmailError}</p>
 								{/if}
 								<div class="flex items-center gap-2">
 									<button
@@ -942,14 +937,14 @@
 								<!-- Simplified Country Selection -->
 								<div class="space-y-3">
 									<!-- Warning Message -->
-									<div class="rounded-lg p-3" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+									<div class="alert-warning rounded-lg p-3">
 										<div class="flex items-start gap-2">
-											<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" style="color: var(--color-warning-600);" />
+											<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" />
 											<div class="min-w-0 flex-1">
-												<p class="text-xs leading-relaxed" style="color: var(--color-warning-800);">
+												<p class="text-xs leading-relaxed">
 													<strong>Important:</strong> Country selection determines your payment account location.
 												</p>
-												<p class="text-xs leading-relaxed mt-1" style="color: var(--color-warning-800);">
+												<p class="text-xs leading-relaxed mt-1">
 													This cannot be changed later. Choose where your business is registered.
 												</p>
 											</div>
@@ -1042,10 +1037,7 @@
 
 									<!-- Error message -->
 									{#if saveError}
-										<div
-											class="rounded-lg p-3 text-sm"
-											style="background: var(--color-error-50); color: var(--color-error-700);"
-										>
+										<div class="alert-error rounded-lg p-3 text-sm">
 											{saveError}
 										</div>
 									{/if}
@@ -1171,8 +1163,8 @@
 											Connect with Stripe
 										{/if}
 									</button>
-									<div class="rounded-lg p-2 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-										<p class="text-xs" style="color: var(--color-warning-700);">
+									<div class="alert-warning rounded-lg p-2 max-w-fit">
+										<p class="text-xs">
 											<strong>Important:</strong> Once you start payment setup, your country ({currentCountryInfo?.name || 'selected country'}) will be permanently locked and cannot be changed
 										</p>
 									</div>

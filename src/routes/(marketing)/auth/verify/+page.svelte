@@ -70,8 +70,6 @@
 					Your email has been successfully verified!
 				{:else if form?.message}
 					There was an issue with verification.
-				{:else}
-					Verifying your email address...
 				{/if}
 			</p>
 		</div>
@@ -85,18 +83,16 @@
 			</div>
 		{/if}
 
-		{#if form?.error && !form?.success}
-			<div class="mt-6 {form?.alreadyVerified ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4">
-				<div class="flex items-center">
-					{#if form?.alreadyVerified}
-						<CheckCircle class="h-5 w-5 text-blue-400 mr-2" />
-						<p class="text-sm text-blue-600">{form.error}</p>
-					{:else}
-						<XCircle class="h-5 w-5 text-red-400 mr-2" />
-						<p class="text-sm text-red-600">{form.error}</p>
-					{/if}
+		{#if form?.error}
+			{#if form.error.includes('already verified')}
+				<div class="alert-info rounded-lg p-3 mb-4">
+					<p class="text-sm">{form.error}</p>
 				</div>
-			</div>
+			{:else}
+				<div class="alert-error rounded-lg p-3 mb-4">
+					<p class="text-sm">{form.error}</p>
+				</div>
+			{/if}
 		{/if}
 
 		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">

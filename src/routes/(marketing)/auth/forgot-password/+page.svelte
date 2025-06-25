@@ -62,8 +62,8 @@
 		</div>
 
 		{#if error}
-			<div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-				<p class="text-sm text-red-600">{error}</p>
+			<div class="alert-error rounded-lg p-3 mb-4">
+				<p class="text-sm">{error}</p>
 			</div>
 		{/if}
 
@@ -94,12 +94,12 @@
 							value={email}
 							oninput={(e) => (email = e.currentTarget.value)}
 							onblur={() => validateEmail()}
-							class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors {emailError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}"
+							class="form-input {emailError ? 'error' : ''}"
 							required
 							disabled={isLoading}
 						/>
 						{#if emailError}
-							<p class="mt-1 text-sm text-red-600">{emailError}</p>
+							<p class="form-error">{emailError}</p>
 						{/if}
 					</div>
 
