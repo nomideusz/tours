@@ -12,57 +12,98 @@
 	
 	let { title, message, variant = 'error', dismissible = false, onDismiss }: Props = $props();
 	
-	function getVariantClasses(variant: string) {
+	function getAlertClass(variant: string) {
 		switch (variant) {
 			case 'warning':
-				return {
-					container: 'bg-yellow-50 border-yellow-200',
-					icon: 'text-yellow-600',
-					title: 'text-yellow-800',
-					message: 'text-yellow-700'
-				};
+				return 'alert-warning';
 			case 'info':
-				return {
-					container: 'bg-blue-50 border-blue-200',
-					icon: 'text-blue-600',
-					title: 'text-blue-800',
-					message: 'text-blue-700'
-				};
+				return 'alert-info';
 			case 'error':
 			default:
-				return {
-					container: 'bg-red-50 border-red-200',
-					icon: 'text-red-600',
-					title: 'text-red-800',
-					message: 'text-red-700'
-				};
+				return 'alert-error';
 		}
 	}
 	
-	let classes = $derived(getVariantClasses(variant));
+	let alertClass = $derived(getAlertClass(variant));
 </script>
 
-<div class="rounded-lg border p-4 {classes.container}">
-	<div class="flex gap-3">
-		<AlertCircle class="h-5 w-5 {classes.icon} flex-shrink-0 mt-0.5" />
-		<div class="flex-1 min-w-0">
+<div class="alert {alertClass}">
+	<div class="alert-content">
+		<AlertCircle class="alert-icon" style="color: var(--color-error-600);" />
+		<div class="alert-text">
 			{#if title}
-				<p class="font-medium {classes.title} mb-1">{title}</p>
+				<p class="alert-title">{title}</p>
 			{/if}
-			<p class="text-sm {classes.message}">{message}</p>
+			<p class="alert-message">{message}</p>
 		</div>
 		{#if dismissible && onDismiss}
 			<button
 				onclick={onDismiss}
-				class="flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors {classes.icon}"
+				class="alert-dismiss"
 				aria-label="Dismiss"
 			>
-				<X class="h-4 w-4" />
+				<X class="w-4 h-4" />
 			</button>
 		{/if}
 	</div>
 </div>
 
-<style lang="postcss">
-	@reference "tailwindcss";
+<style>
+	.alert {
+		border-radius: var(--radius-lg);
+		border-width: 1px;
+		border-style: solid;
+		padding: 1rem;
+		transition: all var(--transition-fast) ease;
+	}
+	
+	.alert-content {
+		display: flex;
+		gap: 0.75rem;
+	}
+	
+	.alert-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+		margin-top: 0.125rem;
+	}
+	
+	.alert-text {
+		flex: 1;
+		min-width: 0;
+	}
+	
+	.alert-title {
+		font-weight: 500;
+		margin-bottom: 0.25rem;
+		font-size: var(--text-sm);
+		line-height: 1.5;
+	}
+	
+	.alert-message {
+		font-size: var(--text-sm);
+		line-height: 1.5;
+	}
+	
+	.alert-dismiss {
+		flex-shrink: 0;
+		padding: 0.25rem;
+		border-radius: var(--radius-md);
+		transition: all var(--transition-fast) ease;
+		cursor: pointer;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.alert-dismiss:hover {
+		background-color: rgba(0, 0, 0, 0.05);
+	}
+	
+	[data-theme="dark"] .alert-dismiss:hover {
+		background-color: rgba(255, 255, 255, 0.05);
+	}
 </style> 
