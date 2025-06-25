@@ -8,6 +8,7 @@
 	import { formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import {
 		userCurrency,
 		currentCurrencyInfo,
@@ -1502,7 +1503,12 @@
 			</div>
 		{/if}
 
-
+		<!-- Promo Status Banner -->
+		{#if profile && (profile.promoCodeUsed || (profile.subscriptionDiscountPercentage ?? 0) > 0 || (profile.subscriptionFreeUntil && new Date(profile.subscriptionFreeUntil) > new Date()))}
+			<div class="mb-6">
+				<PromoStatusBanner />
+			</div>
+		{/if}
 
 		<!-- Performance Overview -->
 		<div class="mb-6">

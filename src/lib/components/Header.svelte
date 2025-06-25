@@ -4,6 +4,7 @@
 	import { IsMounted } from 'runed';
 	import { onMount } from 'svelte';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;
@@ -152,6 +153,10 @@
 						<span class="text-sm text-gray-600">
 							{currentUser?.name || currentUser?.email || 'User'}
 						</span>
+						{#if currentUser && (currentUser.promoCodeUsed || currentUser.subscriptionDiscountPercentage > 0 || (currentUser.subscriptionFreeUntil && new Date(currentUser.subscriptionFreeUntil) > new Date()))}
+							<span class="text-gray-300">•</span>
+							<PromoStatusBanner variant="compact" />
+						{/if}
 						<span class="text-gray-300">•</span>
 						<button
 							onclick={handleLogout}
@@ -186,7 +191,8 @@
 				<!-- Mobile menu button -->
 				<button
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
-					class="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+					class="mobile-menu-toggle rounded-lg p-2 transition-colors lg:hidden"
+					style="color: var(--text-secondary);"
 					aria-label="Toggle mobile menu"
 				>
 					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

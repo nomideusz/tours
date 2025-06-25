@@ -204,8 +204,14 @@ export async function createSubscriptionCheckout(
   if (!customerId) {
     customerId = await createStripeCustomer(userId, user.email, user.name);
   }
-
-  const session = await stripe.checkout.sessions.create({
+  
+  // Check for promo benefits
+  const now = new Date();
+  const hasFreeTrial = user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > now;
+  const hasDiscount = user.subscriptionDiscountPercentage && user.subscriptionDiscountPercentage > 0;
+  
+  // Prepare checkout session parameters
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     customer: customerId,
     payment_method_types: ['card'],
     line_items: [
@@ -221,8 +227,62 @@ export async function createSubscriptionCheckout(
       userId,
       planId,
       billingInterval,
+      promoCode: user.promoCodeUsed || '',
     },
-  });
+  };
+  
+  // Apply promo benefits
+  if (hasFreeTrial && user.subscriptionFreeUntil) {
+    // Calculate free trial days
+    const trialEndDate = new Date(user.subscriptionFreeUntil);
+    const trialDays = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (trialDays > 0) {
+      // Stripe requires minimum 2 days for trial
+      sessionParams.subscription_data = {
+        trial_period_days: Math.max(2, trialDays),
+        metadata: {
+          promoType: 'free_trial',
+          promoCode: user.promoCodeUsed || ''
+        }
+      };
+    }
+  } else if (hasDiscount) {
+    // Create or find a coupon for the discount percentage
+    const couponId = `PROMO_${user.subscriptionDiscountPercentage}PCT${user.isLifetimeDiscount ? '_FOREVER' : ''}`;
+    
+    try {
+      // Try to retrieve existing coupon
+      await stripe.coupons.retrieve(couponId);
+    } catch (error) {
+      // Create coupon if it doesn't exist
+      await stripe.coupons.create({
+        id: couponId,
+        percent_off: user.subscriptionDiscountPercentage,
+        duration: user.isLifetimeDiscount ? 'forever' : 'repeating',
+        duration_in_months: user.isLifetimeDiscount ? undefined : 12, // Default to 12 months if not lifetime
+        name: `${user.subscriptionDiscountPercentage}% ${user.isLifetimeDiscount ? 'Lifetime' : ''} Discount`,
+        metadata: {
+          type: 'promo_code_discount'
+        }
+      });
+    }
+    
+    sessionParams.discounts = [{
+      coupon: couponId
+    }];
+    
+    if (!sessionParams.subscription_data) {
+      sessionParams.subscription_data = {};
+    }
+    sessionParams.subscription_data.metadata = {
+      promoType: user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount',
+      promoCode: user.promoCodeUsed || '',
+      discountPercentage: user.subscriptionDiscountPercentage.toString()
+    };
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
 
   return session;
 }

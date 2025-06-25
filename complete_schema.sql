@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS bookings CASCADE;
 DROP TABLE IF EXISTS time_slots CASCADE;
 DROP TABLE IF EXISTS tours CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS promo_codes CASCADE;
 DROP TABLE IF EXISTS oauth_accounts CASCADE;
 DROP TABLE IF EXISTS email_verification_tokens CASCADE;
 DROP TABLE IF EXISTS password_reset_tokens CASCADE;
@@ -71,6 +72,13 @@ CREATE TABLE users (
     subscription_cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
     monthly_bookings_used INTEGER NOT NULL DEFAULT 0,
     monthly_bookings_reset_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Promo code fields
+    promo_code_used VARCHAR(50),
+    subscription_discount_percentage INTEGER DEFAULT 0,
+    subscription_free_until TIMESTAMP WITH TIME ZONE,
+    is_lifetime_discount BOOLEAN NOT NULL DEFAULT FALSE,
+    early_access_member BOOLEAN NOT NULL DEFAULT FALSE,
     
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     last_login TIMESTAMP WITH TIME ZONE,
@@ -220,6 +228,32 @@ CREATE TABLE notifications (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Promo codes table
+CREATE TABLE promo_codes (
+    id TEXT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    type VARCHAR(50) NOT NULL, -- 'early_access', 'lifetime_discount', 'free_period', 'percentage_discount'
+    
+    -- Benefit details
+    discount_percentage INTEGER, -- 0-100
+    free_months INTEGER, -- Number of free months
+    is_lifetime BOOLEAN NOT NULL DEFAULT FALSE, -- If discount applies forever
+    
+    -- Usage limits
+    max_uses INTEGER, -- NULL for unlimited
+    current_uses INTEGER NOT NULL DEFAULT 0,
+    valid_from TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    valid_until TIMESTAMP WITH TIME ZONE, -- NULL for no expiry
+    
+    -- Status
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- Create indexes for performance
 
 -- Users indexes
@@ -232,6 +266,10 @@ CREATE INDEX idx_users_subscription_status ON users(subscription_status);
 CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
 CREATE INDEX idx_users_subscription_id ON users(subscription_id);
 CREATE INDEX idx_users_monthly_bookings_reset_at ON users(monthly_bookings_reset_at);
+CREATE INDEX idx_users_promo_code_used ON users(promo_code_used);
+CREATE INDEX idx_users_subscription_discount_percentage ON users(subscription_discount_percentage);
+CREATE INDEX idx_users_subscription_free_until ON users(subscription_free_until);
+CREATE INDEX idx_users_early_access_member ON users(early_access_member);
 CREATE INDEX idx_users_created_at ON users(created_at);
 
 -- Sessions indexes
@@ -293,6 +331,14 @@ CREATE INDEX idx_notifications_type ON notifications(type);
 CREATE INDEX idx_notifications_read ON notifications(read);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at);
 
+-- Promo codes indexes
+CREATE INDEX idx_promo_codes_code ON promo_codes(code);
+CREATE INDEX idx_promo_codes_type ON promo_codes(type);
+CREATE INDEX idx_promo_codes_is_active ON promo_codes(is_active);
+CREATE INDEX idx_promo_codes_valid_from ON promo_codes(valid_from);
+CREATE INDEX idx_promo_codes_valid_until ON promo_codes(valid_until);
+CREATE INDEX idx_promo_codes_current_uses ON promo_codes(current_uses);
+
 -- Create triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -304,6 +350,7 @@ $$ language 'plpgsql';
 
 -- Apply updated_at triggers to relevant tables
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_promo_codes_updated_at BEFORE UPDATE ON promo_codes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_tours_updated_at BEFORE UPDATE ON tours FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_time_slots_updated_at BEFORE UPDATE ON time_slots FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -312,6 +359,10 @@ CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FO
 
 -- Add constraints for data validation
 ALTER TABLE users ADD CONSTRAINT check_monthly_bookings_used_positive CHECK (monthly_bookings_used >= 0);
+ALTER TABLE users ADD CONSTRAINT check_subscription_discount_percentage CHECK (subscription_discount_percentage >= 0 AND subscription_discount_percentage <= 100);
+ALTER TABLE promo_codes ADD CONSTRAINT check_discount_percentage CHECK (discount_percentage >= 0 AND discount_percentage <= 100);
+ALTER TABLE promo_codes ADD CONSTRAINT check_free_months_positive CHECK (free_months >= 0);
+ALTER TABLE promo_codes ADD CONSTRAINT check_current_uses_positive CHECK (current_uses >= 0);
 ALTER TABLE tours ADD CONSTRAINT check_price_positive CHECK (price >= 0);
 ALTER TABLE tours ADD CONSTRAINT check_duration_positive CHECK (duration > 0);
 ALTER TABLE tours ADD CONSTRAINT check_capacity_positive CHECK (capacity > 0);
@@ -327,6 +378,13 @@ ALTER TABLE payments ADD CONSTRAINT check_processing_fee_positive CHECK (process
 ALTER TABLE payments ADD CONSTRAINT check_net_amount_positive CHECK (net_amount >= 0);
 
 -- Create helper functions for generating unique codes
+CREATE OR REPLACE FUNCTION generate_promo_code()
+RETURNS TEXT AS $$
+BEGIN
+    RETURN 'PROMO-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT) FROM 1 FOR 6));
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION generate_tour_qr_code()
 RETURNS TEXT AS $$
 BEGIN
@@ -394,6 +452,31 @@ LEFT JOIN bookings b ON t.id = b.tour_id
 WHERE u.role = 'user'
 GROUP BY u.id, u.name;
 
+-- Insert default promo codes
+INSERT INTO promo_codes (id, code, description, type, discount_percentage, free_months, is_lifetime, max_uses, is_active)
+VALUES 
+    -- First 10 users: 1 year free then 50% lifetime discount
+    (gen_random_uuid(), 'FOUNDER', 'Founder member - 1 year free + 50% lifetime discount', 'early_access', 50, 12, true, 10, true),
+    (gen_random_uuid(), 'EARLY2025', 'Early 2025 member - 1 year free + 50% lifetime discount', 'early_access', 50, 12, true, 10, true),
+    
+    -- Various discount codes
+    (gen_random_uuid(), 'PREMIUM50', '50% lifetime discount', 'lifetime_discount', 50, 0, true, NULL, true),
+    (gen_random_uuid(), 'HALFOFF', '50% discount for 6 months', 'percentage_discount', 50, 6, false, NULL, true),
+    (gen_random_uuid(), 'TOURGUIDE25', '25% lifetime discount for tour guides', 'lifetime_discount', 25, 0, true, NULL, true),
+    
+    -- Free period codes
+    (gen_random_uuid(), 'FREETRIAL6', '6 months free trial', 'free_period', 0, 6, false, NULL, true),
+    (gen_random_uuid(), 'YEARFREE', '1 year free access', 'free_period', 0, 12, false, 50, true),
+    
+    -- Partner codes (free forever)
+    (gen_random_uuid(), 'PARTNER', 'Partner - Free forever', 'lifetime_discount', 100, 0, true, NULL, true),
+    (gen_random_uuid(), 'INFLUENCER', 'Influencer partnership - Free forever', 'lifetime_discount', 100, 0, true, 20, true),
+    
+    -- Limited time offers
+    (gen_random_uuid(), 'LAUNCH2025', 'Launch special - 3 months free + 30% lifetime', 'early_access', 30, 3, true, 100, true),
+    (gen_random_uuid(), 'BETAUSER', 'Beta user appreciation - 40% lifetime', 'lifetime_discount', 40, 0, true, 50, true)
+ON CONFLICT (code) DO NOTHING;
+
 -- Verify the schema
 SELECT 
     schemaname,
@@ -401,7 +484,7 @@ SELECT
     tableowner
 FROM pg_tables 
 WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications', 'oauth_accounts', 'email_verification_tokens', 'password_reset_tokens')
+    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications', 'promo_codes', 'oauth_accounts', 'email_verification_tokens', 'password_reset_tokens')
 ORDER BY tablename;
 
 -- Show enum types

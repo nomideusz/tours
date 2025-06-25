@@ -203,6 +203,10 @@
 	--text-tertiary: var(--color-gray-500);
 	--border-primary: var(--color-gray-200);
 	--border-secondary: var(--color-gray-300);
+
+	/* Component variables */
+	--modal-backdrop: rgba(0, 0, 0, 0.5);
+	--modal-close-button-hover: var(--gray-100);
 }
 
 /* Dark mode overrides */
@@ -329,6 +333,10 @@
 
 	/* Form elements for dark mode */
 	--select-arrow-color: #c9d1d9;
+
+	/* Component variables - dark mode */
+	--modal-backdrop: rgba(0, 0, 0, 0.7);
+	--modal-close-button-hover: var(--gray-800);
 }
 
 /* Global color inheritance rules to ensure readability */

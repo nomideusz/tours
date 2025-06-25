@@ -9,6 +9,7 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Crown from 'lucide-svelte/icons/crown';
+	import Gift from 'lucide-svelte/icons/gift';
 	import type { PageData } from './$types.js';
 	
 	let { data }: { data: PageData } = $props();
@@ -48,11 +49,64 @@
 	let cancelAtPeriodEnd = $derived(user?.subscriptionCancelAtPeriodEnd);
 	let currentPeriodEnd = $derived(user?.subscriptionCurrentPeriodEnd);
 	
-	// Calculate prices - updated pricing
-	let starterProPrice = $derived(isYearly ? 13 : 16); // €13/month when billed annually (19% off €16)
-	let proPrice = $derived(isYearly ? 29 : 35); // €29/month when billed annually (17% off €35)
-	let agencyPrice = $derived(isYearly ? 74 : 89); // €74/month when billed annually (17% off €89)
+	// Base prices
+	const BASE_PRICES = {
+		starter_pro: { monthly: 16, yearly: 13 },
+		professional: { monthly: 35, yearly: 29 },
+		agency: { monthly: 89, yearly: 74 }
+	};
+	
+	// Check if user has promo benefits
+	let hasPromoDiscount = $derived(user && (
+		(user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date()) ||
+		(user.subscriptionDiscountPercentage > 0)
+	));
+	
+	let isInFreePeriod = $derived(user && user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date());
+	let discountPercentage = $derived(user?.subscriptionDiscountPercentage || 0);
+	let isLifetimeDiscount = $derived(user?.isLifetimeDiscount || false);
+	
+	// Calculate prices with discounts
+	function calculatePrice(basePlan: 'starter_pro' | 'professional' | 'agency', interval: 'monthly' | 'yearly'): { original: number; final: number; savings: number } {
+		const basePrice = BASE_PRICES[basePlan][interval];
+		
+		if (isInFreePeriod) {
+			return { original: basePrice, final: 0, savings: basePrice };
+		}
+		
+		if (discountPercentage > 0) {
+			const discount = (basePrice * discountPercentage) / 100;
+			return { 
+				original: basePrice, 
+				final: Math.round(basePrice - discount), 
+				savings: Math.round(discount)
+			};
+		}
+		
+		return { original: basePrice, final: basePrice, savings: 0 };
+	}
+	
+	// Calculate prices - updated pricing with promo consideration
+	let starterProPricing = $derived(calculatePrice('starter_pro', isYearly ? 'yearly' : 'monthly'));
+	let proPricing = $derived(calculatePrice('professional', isYearly ? 'yearly' : 'monthly'));
+	let agencyPricing = $derived(calculatePrice('agency', isYearly ? 'yearly' : 'monthly'));
+	
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
+	
+	// Format promo benefit text
+	function getPromoBenefitText(): string {
+		if (isInFreePeriod && user?.subscriptionFreeUntil) {
+			const freeUntil = new Date(user.subscriptionFreeUntil);
+			const monthsLeft = Math.round((freeUntil.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30));
+			return `Free trial: ${monthsLeft} month${monthsLeft > 1 ? 's' : ''} remaining`;
+		}
+		
+		if (discountPercentage > 0) {
+			return `${discountPercentage}% ${isLifetimeDiscount ? 'lifetime' : ''} discount`;
+		}
+		
+		return '';
+	}
 	
 	// Refresh data on mount to ensure we have the latest subscription info
 	onMount(async () => {
@@ -257,6 +311,29 @@
 		</div>
 	</div>
 
+	<!-- Promo Discount Banner -->
+	{#if hasPromoDiscount}
+		<div class="mb-6 p-4 rounded-lg border" style="background: var(--color-success-50); border-color: var(--color-success-200);">
+			<div class="flex items-start gap-3">
+				<Gift class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+				<div class="flex-1">
+					<h3 class="font-semibold mb-1" style="color: var(--color-success-900);">Special Offer Active!</h3>
+					<p class="text-sm" style="color: var(--color-success-800);">
+						{getPromoBenefitText()}
+						{#if user?.promoCodeUsed}
+							<span class="font-medium"> • Code: {user.promoCodeUsed}</span>
+						{/if}
+					</p>
+					{#if isInFreePeriod && user?.subscriptionFreeUntil}
+						<p class="text-xs mt-1" style="color: var(--color-success-700);">
+							Free period ends on {formatDate(user.subscriptionFreeUntil)}
+						</p>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div class="mb-8 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="flex items-start justify-between">
 			<div>
@@ -418,13 +495,24 @@
 					</div>
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
 					<div class="mb-1">
-						<span class="text-3xl font-bold" style="color: var(--text-primary);">€{starterProPrice}</span>
+						{#if starterProPricing.savings > 0}
+							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
+							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+						{:else}
+							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+						{/if}
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
-							Save €36/year
-						</span>
+						{#if starterProPricing.savings > 0}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								{isInFreePeriod ? 'Free during trial period' : `Save €${starterProPricing.savings}/month with promo`}
+							</span>
+						{:else if isYearly}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								Save €36/year
+							</span>
+						{/if}
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
@@ -452,13 +540,24 @@
 				<div class="relative rounded-lg border p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
 					<div class="mb-1">
-						<span class="text-3xl font-bold" style="color: var(--text-primary);">€{proPrice}</span>
+						{#if proPricing.savings > 0}
+							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
+							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
+						{:else}
+							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
+						{/if}
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
-							Save €72/year
-						</span>
+						{#if proPricing.savings > 0}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								{isInFreePeriod ? 'Free during trial period' : `Save €${proPricing.savings}/month with promo`}
+							</span>
+						{:else if isYearly}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								Save €72/year
+							</span>
+						{/if}
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
@@ -488,13 +587,24 @@
 				<div class="relative rounded-lg border p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
 					<div class="mb-1">
-						<span class="text-3xl font-bold" style="color: var(--text-primary);">€{agencyPrice}</span>
+						{#if agencyPricing.savings > 0}
+							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
+							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+						{:else}
+							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+						{/if}
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
-							Save €180/year
-						</span>
+						{#if agencyPricing.savings > 0}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								{isInFreePeriod ? 'Free during trial period' : `Save €${agencyPricing.savings}/month with promo`}
+							</span>
+						{:else if isYearly}
+							<span class="text-xs font-medium" style="color: var(--color-success-600);">
+								Save €180/year
+							</span>
+						{/if}
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">

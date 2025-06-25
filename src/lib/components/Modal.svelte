@@ -108,7 +108,7 @@
 	<!-- Backdrop -->
 	<div 
 		class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto"
-		style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5);"
+		style="z-index: var(--z-modal); background: var(--modal-backdrop, rgba(0, 0, 0, 0.5));"
 		transition:fade={{ duration: 150 }}
 	>
 		<!-- Modal -->
@@ -141,7 +141,7 @@
 					{#if showCloseButton}
 						<button 
 							onclick={handleClose}
-							class="flex-shrink-0 p-2 -mt-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+							class="modal-close-button flex-shrink-0 p-2 -mt-2 -mr-2 rounded-lg transition-colors"
 							aria-label="Close modal"
 						>
 							<X class="h-5 w-5" style="color: var(--text-tertiary);" />

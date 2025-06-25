@@ -26,6 +26,12 @@ export interface AuthUser {
 	subscriptionCurrentPeriodEnd?: string;
 	monthlyBookingsUsed?: number;
 	monthlyBookingsResetAt?: string;
+	// Promo code fields
+	promoCodeUsed?: string;
+	subscriptionDiscountPercentage?: number;
+	subscriptionFreeUntil?: string;
+	isLifetimeDiscount?: boolean;
+	earlyAccessMember?: boolean;
 	deletedAt?: Date | null;
 }
 

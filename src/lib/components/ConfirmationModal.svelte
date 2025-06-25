@@ -40,18 +40,15 @@
 
 	$: variantStyles = {
 		danger: {
-			iconColor: 'text-red-600',
-			iconBg: 'bg-red-100',
+			iconClass: 'confirmation-icon-danger',
 			confirmButton: 'button--danger'
 		},
 		warning: {
-			iconColor: 'text-amber-600',
-			iconBg: 'bg-amber-100',
+			iconClass: 'confirmation-icon-warning',
 			confirmButton: 'button-primary'
 		},
 		info: {
-			iconColor: 'text-blue-600',
-			iconBg: 'bg-blue-100',
+			iconClass: 'confirmation-icon-info',
 			confirmButton: 'button-primary'
 		}
 	}[variant];
@@ -63,7 +60,7 @@
 	<!-- Backdrop -->
 	<div 
 		class="fixed inset-0 flex items-center justify-center p-4"
-		style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5);"
+		style="z-index: var(--z-modal); background: var(--modal-backdrop, rgba(0, 0, 0, 0.5));"
 		transition:fade={{ duration: 150 }}
 	>
 		<!-- Modal -->
@@ -76,8 +73,8 @@
 			<!-- Header -->
 			<div class="flex items-start gap-4 p-6">
 				<!-- Icon -->
-				<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {variantStyles.iconBg}">
-					<svelte:component this={icon} class="h-5 w-5 {variantStyles.iconColor}" />
+				<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {variantStyles.iconClass}">
+					<svelte:component this={icon} class="h-5 w-5" />
 				</div>
 				
 				<!-- Content -->
@@ -93,7 +90,7 @@
 				<!-- Close button -->
 				<button 
 					onclick={handleClose}
-					class="flex-shrink-0 p-1 rounded-md hover:bg-gray-100 transition-colors"
+					class="modal-close-button flex-shrink-0 p-1 rounded-md transition-colors"
 					aria-label="Close"
 				>
 					<X class="h-4 w-4" style="color: var(--text-tertiary);" />

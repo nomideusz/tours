@@ -16,15 +16,13 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     }
 
     try {
-        // Consume the verification token (this validates, deletes it, and marks email as verified)
-        const userId = await consumeEmailVerificationToken(token);
+        // First, try to get the userId from the token without consuming it
+        // We need to decode the token to check ownership
+        const { verifyEmailVerificationToken } = await import('$lib/auth/tokens.js');
+        const tokenUserId = await verifyEmailVerificationToken(token);
         
-        if (!userId) {
-            // Check if this user exists and is already verified
-            // Try to decode the token to see if we can find a user
-            const userResult = await db.select().from(users).where(eq(users.emailVerified, true)).limit(1);
-            
-            // Generic message for security, but we could check if the current logged-in user is verified
+        if (!tokenUserId) {
+            // Token is invalid or expired
             if (locals.user?.emailVerified) {
                 return { 
                     error: 'Your email is already verified', 
@@ -33,6 +31,29 @@ export const load: PageServerLoad = async ({ url, locals }) => {
             }
             
             return { error: 'Invalid or expired verification token' };
+        }
+        
+        // Check if a user is logged in and if it's a different user
+        if (locals.user && locals.user.id !== tokenUserId) {
+            // Get the email of the token owner for display
+            const tokenUser = await db.select().from(users).where(eq(users.id, tokenUserId)).limit(1);
+            const tokenEmail = tokenUser[0]?.email || 'another account';
+            
+            return { 
+                error: `This verification link is for ${tokenEmail}, but you are logged in as ${locals.user.email}. Please log out and try again, or log in to the correct account.`,
+                wrongAccount: true,
+                tokenEmail,
+                currentEmail: locals.user.email
+            };
+        }
+        
+        // If we're here, either no one is logged in or the correct user is logged in
+        // Now we can consume the token
+        const userId = await consumeEmailVerificationToken(token);
+        
+        if (!userId) {
+            // This shouldn't happen since we already verified the token
+            return { error: 'Failed to verify email. Please try again.' };
         }
 
         // Get user details for welcome email
@@ -103,10 +124,11 @@ export const actions: Actions = {
         }
 
         try {
-            // Consume the verification token
-            const userId = await consumeEmailVerificationToken(token);
+            // First, verify the token and check ownership
+            const { verifyEmailVerificationToken } = await import('$lib/auth/tokens.js');
+            const tokenUserId = await verifyEmailVerificationToken(token);
             
-            if (!userId) {
+            if (!tokenUserId) {
                 // Check if the current user is already verified
                 if (locals.user?.emailVerified) {
                     return fail(400, { 
@@ -117,6 +139,28 @@ export const actions: Actions = {
                 }
                 
                 return fail(400, { error: 'Invalid or expired verification token' });
+            }
+            
+            // Check if a user is logged in and if it's a different user
+            if (locals.user && locals.user.id !== tokenUserId) {
+                // Get the email of the token owner for display
+                const tokenUser = await db.select().from(users).where(eq(users.id, tokenUserId)).limit(1);
+                const tokenEmail = tokenUser[0]?.email || 'another account';
+                
+                return fail(403, { 
+                    error: `This verification link is for ${tokenEmail}, but you are logged in as ${locals.user.email}. Please log out and try again, or log in to the correct account.`,
+                    wrongAccount: true,
+                    tokenEmail,
+                    currentEmail: locals.user.email,
+                    success: false
+                });
+            }
+            
+            // Now consume the token
+            const userId = await consumeEmailVerificationToken(token);
+            
+            if (!userId) {
+                return fail(400, { error: 'Failed to verify email. Please try again.' });
             }
 
             // Get user details for welcome email

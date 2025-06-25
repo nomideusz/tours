@@ -9,10 +9,10 @@ import { eq } from 'drizzle-orm';
 import { createEmailVerificationToken } from '$lib/auth/tokens.js';
 import { sendAuthEmail } from '$lib/email.server.js';
 import { env } from '$env/dynamic/private';
+import { validatePromoCode, applyPromoCodeToUser, calculatePromoCodeBenefits, formatPromoCodeBenefit } from '$lib/utils/promo-codes.js';
 
 // Early access control
 const EARLY_ACCESS_ENABLED = env.EARLY_ACCESS_ENABLED === 'true';
-const EARLY_ACCESS_CODES = env.EARLY_ACCESS_CODES?.split(',') || ['ZAUR2024', 'TOURGUIDE', 'EARLYBIRDSPECIAL'];
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
@@ -39,14 +39,26 @@ export const actions: Actions = {
 		// Country can be null, currency will use database default (EUR)
 		const country = null;
 
-		// Check early access code if enabled
+		// Validate promo code if early access is enabled
+		let validatedPromoCode = null;
+		let promoBenefitText = '';
+		
 		if (EARLY_ACCESS_ENABLED) {
 			if (!accessCode) {
 				return fail(400, { username, email, error: 'Early access code is required' });
 			}
 			
-			if (!EARLY_ACCESS_CODES.includes(accessCode.toUpperCase())) {
-				return fail(400, { username, email, error: 'Invalid early access code' });
+			const validation = await validatePromoCode(accessCode);
+			if (!validation.valid) {
+				return fail(400, { username, email, error: validation.error || 'Invalid early access code' });
+			}
+			
+			validatedPromoCode = validation.promoCode;
+			
+			// Generate benefit description for logging
+			if (validatedPromoCode) {
+				const benefits = calculatePromoCodeBenefits(validatedPromoCode);
+				promoBenefitText = formatPromoCodeBenefit(benefits);
 			}
 		}
 
@@ -127,9 +139,20 @@ export const actions: Actions = {
 			await db.insert(users).values(userData);
 			console.log('User created successfully:', userId, 'with username:', username, 'country:', country);
 			
+			// Apply promo code benefits if provided
+			if (validatedPromoCode) {
+				const result = await applyPromoCodeToUser(userId, validatedPromoCode);
+				if (result.success) {
+					console.log(`✅ Applied promo code "${validatedPromoCode.code}" to user ${email}: ${promoBenefitText}`);
+				} else {
+					console.error(`❌ Failed to apply promo code benefits to user ${email}:`, result.error);
+					// Don't fail registration if promo code application fails
+				}
+			}
+			
 			// Log early access registration
-			if (EARLY_ACCESS_ENABLED) {
-				console.log(`🚀 Early access registration: ${email} with code: ${accessCode}`);
+			if (EARLY_ACCESS_ENABLED && validatedPromoCode) {
+				console.log(`🚀 Early access registration: ${email} with code: ${validatedPromoCode.code} (${promoBenefitText})`);
 			}
 			
 			// Create email verification token and send verification email
@@ -140,7 +163,9 @@ export const actions: Actions = {
 				const emailResult = await sendAuthEmail('email-verification', {
 					email,
 					name: username, // Use username as display name in emails
-					verificationUrl
+					verificationUrl,
+					// Include promo benefit info in email if applicable
+					promoBenefit: promoBenefitText || undefined
 				});
 				
 				if (emailResult.success) {

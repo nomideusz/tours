@@ -107,7 +107,7 @@
 		<button
 			type="button"
 			onclick={previousMonth}
-			class="p-2 rounded-lg transition-colors hover:bg-gray-100"
+			class="calendar-nav-button p-2 rounded-lg transition-colors"
 			style="color: var(--text-secondary);"
 		>
 			<ChevronLeft class="h-4 w-4" />
@@ -132,7 +132,7 @@
 		<button
 			type="button"
 			onclick={nextMonth}
-			class="p-2 rounded-lg transition-colors hover:bg-gray-100"
+			class="calendar-nav-button p-2 rounded-lg transition-colors"
 			style="color: var(--text-secondary);"
 		>
 			<ChevronRight class="h-4 w-4" />

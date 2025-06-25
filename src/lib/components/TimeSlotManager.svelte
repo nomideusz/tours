@@ -521,8 +521,8 @@
 											{#if slot.bookedSpots > 0}
 												<div class="w-20 h-2 rounded-full" style="background: var(--bg-tertiary);">
 													<div 
-														class="h-full rounded-full bg-blue-500"
-														style="width: {getSlotUtilization(slot)}%"
+														class="h-full rounded-full"
+														style="background-color: var(--color-primary-500); width: {getSlotUtilization(slot)}%"
 													></div>
 												</div>
 											{/if}

@@ -13,6 +13,9 @@ export const subscriptionPlanEnum = pgEnum('subscription_plan', ['free', 'starte
 // Subscription status enum
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'canceled', 'past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing']);
 
+// Promo code type enum
+export const promoCodeTypeEnum = pgEnum('promo_code_type', ['early_access', 'lifetime_discount', 'free_period', 'percentage_discount']);
+
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -43,6 +46,13 @@ export const users = pgTable('users', {
   subscriptionCurrentPeriodStart: timestamp('subscription_current_period_start', { withTimezone: true }),
   subscriptionCurrentPeriodEnd: timestamp('subscription_current_period_end', { withTimezone: true }),
   subscriptionCancelAtPeriodEnd: boolean('subscription_cancel_at_period_end').notNull().default(false),
+  
+  // Promo code and discount fields
+  promoCodeUsed: varchar('promo_code_used', { length: 50 }),
+  subscriptionDiscountPercentage: integer('subscription_discount_percentage').notNull().default(0),
+  subscriptionFreeUntil: timestamp('subscription_free_until', { withTimezone: true }),
+  isLifetimeDiscount: boolean('is_lifetime_discount').notNull().default(false),
+  earlyAccessMember: boolean('early_access_member').notNull().default(false),
   
   // Usage tracking for plan limits
   monthlyBookingsUsed: integer('monthly_bookings_used').notNull().default(0),
@@ -222,6 +232,32 @@ export const notifications = pgTable('notifications', {
   actions: text('actions'), // JSON string for action buttons
   read: boolean('read').notNull().default(false),
   readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Promo codes table
+export const promoCodes = pgTable('promo_codes', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  description: text('description'),
+  type: varchar('type', { length: 50 }).notNull(), // Using varchar instead of enum for flexibility
+  
+  // Benefit details
+  discountPercentage: integer('discount_percentage'), // 0-100
+  freeMonths: integer('free_months'), // Number of free months
+  isLifetime: boolean('is_lifetime').notNull().default(false), // If discount applies forever
+  
+  // Usage limits
+  maxUses: integer('max_uses'), // NULL for unlimited
+  currentUses: integer('current_uses').notNull().default(0),
+  validFrom: timestamp('valid_from', { withTimezone: true }).notNull().defaultNow(),
+  validUntil: timestamp('valid_until', { withTimezone: true }), // NULL for no expiry
+  
+  // Status
+  isActive: boolean('is_active').notNull().default(true),
+  
+  // Metadata
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 }); 

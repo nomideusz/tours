@@ -109,14 +109,14 @@
 				<button
 					type="button"
 					onclick={() => adjustHour(1)}
-					class="p-1 rounded transition-colors hover:bg-gray-100"
+					class="time-picker-button p-1 rounded transition-colors"
 					style="color: var(--text-secondary);"
 				>
 					<ChevronUp class="h-3 w-3" />
 				</button>
 				
 				<div 
-					class="w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors hover:bg-gray-50"
+					class="time-picker-input w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingHour && startEditingHour()}
 				>
@@ -143,7 +143,7 @@
 				<button
 					type="button"
 					onclick={() => adjustHour(-1)}
-					class="p-1 rounded transition-colors hover:bg-gray-100"
+					class="time-picker-button p-1 rounded transition-colors"
 					style="color: var(--text-secondary);"
 				>
 					<ChevronDown class="h-3 w-3" />
@@ -160,14 +160,14 @@
 				<button
 					type="button"
 					onclick={() => adjustMinute(15)}
-					class="p-1 rounded transition-colors hover:bg-gray-100"
+					class="time-picker-button p-1 rounded transition-colors"
 					style="color: var(--text-secondary);"
 				>
 					<ChevronUp class="h-3 w-3" />
 				</button>
 				
 				<div 
-					class="w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors hover:bg-gray-50"
+					class="time-picker-input w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingMinute && startEditingMinute()}
 				>
@@ -194,7 +194,7 @@
 				<button
 					type="button"
 					onclick={() => adjustMinute(-15)}
-					class="p-1 rounded transition-colors hover:bg-gray-100"
+					class="time-picker-button p-1 rounded transition-colors"
 					style="color: var(--text-secondary);"
 				>
 					<ChevronDown class="h-3 w-3" />

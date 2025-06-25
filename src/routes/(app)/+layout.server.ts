@@ -49,7 +49,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       subscriptionCurrentPeriodEnd: userData.subscriptionCurrentPeriodEnd,
       subscriptionCancelAtPeriodEnd: userData.subscriptionCancelAtPeriodEnd,
       monthlyBookingsUsed: userData.monthlyBookingsUsed,
-      monthlyBookingsResetAt: userData.monthlyBookingsResetAt
+      monthlyBookingsResetAt: userData.monthlyBookingsResetAt,
+      // Promo code fields
+      promoCodeUsed: userData.promoCodeUsed,
+      subscriptionDiscountPercentage: userData.subscriptionDiscountPercentage,
+      subscriptionFreeUntil: userData.subscriptionFreeUntil,
+      isLifetimeDiscount: userData.isLifetimeDiscount,
+      earlyAccessMember: userData.earlyAccessMember
     };
     
     // Pass the admin status to the client

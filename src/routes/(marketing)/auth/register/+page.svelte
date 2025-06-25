@@ -2,12 +2,14 @@
 	import { enhance } from '$app/forms';
 	import { isLoading } from '$lib/stores/auth.js';
 	import Loader from 'lucide-svelte/icons/loader';
+	import Check from 'lucide-svelte/icons/check';
+	import Gift from 'lucide-svelte/icons/gift';
+	import X from 'lucide-svelte/icons/x';
 	import { t, language } from '$lib/i18n.js';
 	import OAuth2Button from '$lib/components/OAuth2Button.svelte';
 	import { getAvailableOAuth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-
 
 	// Define the type for our form data
 	type RegisterForm = {
@@ -40,6 +42,12 @@
 	let confirmPasswordError = $state('');
 	let accessCodeError = $state('');
 
+	// Promo code validation state
+	let isValidatingCode = $state(false);
+	let promoCodeValid = $state(false);
+	let promoCodeBenefit = $state('');
+	let promoCodeDescription = $state('');
+
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
 
@@ -47,6 +55,55 @@
 	onMount(async () => {
 		availableProviders = await getAvailableOAuth2Providers();
 	});
+	
+	// Debounce timer
+	let codeValidationTimer: NodeJS.Timeout;
+	
+	// Validate promo code as user types
+	async function validatePromoCode(code: string) {
+		// Clear previous validation
+		promoCodeValid = false;
+		promoCodeBenefit = '';
+		promoCodeDescription = '';
+		accessCodeError = '';
+		
+		// Clear previous timer
+		if (codeValidationTimer) {
+			clearTimeout(codeValidationTimer);
+		}
+		
+		if (!code) {
+			return;
+		}
+		
+		// Debounce the validation
+		codeValidationTimer = setTimeout(async () => {
+			isValidatingCode = true;
+			
+			try {
+				const response = await fetch('/api/promo-code/validate', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ code })
+				});
+				
+				const result = await response.json();
+				
+				if (result.valid) {
+					promoCodeValid = true;
+					promoCodeBenefit = result.benefitText;
+					promoCodeDescription = result.benefits.description || '';
+				} else {
+					accessCodeError = result.error || 'Invalid promo code';
+				}
+			} catch (error) {
+				console.error('Error validating promo code:', error);
+				accessCodeError = 'Failed to validate promo code';
+			} finally {
+				isValidatingCode = false;
+			}
+		}, 500); // 500ms debounce
+	}
 
 	// Validate form inputs
 	function validateForm() {
@@ -102,6 +159,9 @@
 		if (data?.earlyAccessEnabled) {
 			if (!accessCode) {
 				accessCodeError = 'Early access code is required';
+				isValid = false;
+			} else if (!promoCodeValid && !isValidatingCode) {
+				accessCodeError = 'Please enter a valid early access code';
 				isValid = false;
 			}
 		}
@@ -292,25 +352,51 @@
 						<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-2">
 							Early Access Code
 						</label>
-						<input
-							type="text"
-							id="accessCode"
-							name="accessCode"
-							bind:value={accessCode}
-							class="form-input {accessCodeError ? 'error' : ''}"
-							placeholder="Enter your early access code"
-							disabled={isRegistering || manualLoading}
-							oninput={(e) => {
-								// Convert to uppercase for consistency
-								accessCode = e.currentTarget.value.toUpperCase();
-							}}
-							onblur={() => {
-								if (!accessCode) accessCodeError = 'Early access code is required';
-								else accessCodeError = '';
-							}}
-						/>
+						<div class="relative">
+							<input
+								type="text"
+								id="accessCode"
+								name="accessCode"
+								bind:value={accessCode}
+								class="form-input pr-10 {accessCodeError ? 'error' : ''} {promoCodeValid ? '!border-green-500' : ''}"
+								placeholder="Enter your early access code"
+								disabled={isRegistering || manualLoading}
+								oninput={(e) => {
+									// Convert to uppercase for consistency
+									accessCode = e.currentTarget.value.toUpperCase();
+									validatePromoCode(accessCode);
+								}}
+								onblur={() => {
+									if (!accessCode) accessCodeError = 'Early access code is required';
+									else if (!promoCodeValid && !isValidatingCode) accessCodeError = 'Invalid early access code';
+									else accessCodeError = '';
+								}}
+							/>
+							<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+								{#if isValidatingCode}
+									<Loader size={16} class="animate-spin text-gray-400" />
+								{:else if promoCodeValid}
+									<Check size={16} class="text-green-500" />
+								{:else if accessCode && accessCodeError}
+									<X size={16} class="text-red-500" />
+								{/if}
+							</div>
+						</div>
 						{#if accessCodeError}
 							<p class="form-error">{accessCodeError}</p>
+						{/if}
+						{#if promoCodeValid && promoCodeBenefit}
+							<div class="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+								<div class="flex items-start gap-2">
+									<Gift size={16} class="text-green-600 mt-0.5 flex-shrink-0" />
+									<div class="text-sm">
+										<p class="font-medium text-green-900">{promoCodeBenefit}</p>
+										{#if promoCodeDescription}
+											<p class="text-green-700 mt-1">{promoCodeDescription}</p>
+										{/if}
+									</div>
+								</div>
+							</div>
 						{/if}
 						<p class="mt-1 text-sm text-gray-500">
 							Don't have a code? <a href="/early-access" class="link">Request early access</a>
@@ -323,7 +409,7 @@
 				<button
 					type="submit"
 					class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-					disabled={isRegistering || manualLoading}
+					disabled={isRegistering || manualLoading || (data?.earlyAccessEnabled && (!promoCodeValid || isValidatingCode))}
 					onclick={(e) => {
 						if (!validateForm()) {
 							e.preventDefault();

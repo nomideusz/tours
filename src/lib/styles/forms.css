@@ -393,4 +393,74 @@
 	.form-group--inline > .button--large {
 		height: 3.5rem; /* 56px */
 	}
+
+	/* Loading styles */
+	.loading-spinner {
+		border-color: var(--spinner-track);
+		border-top-color: var(--spinner);
+	}
+
+	/* Modal styles */
+	.modal-close-button:hover {
+		background-color: var(--modal-close-button-hover);
+	}
+
+	/* Confirmation modal icon styles */
+	.confirmation-icon-danger {
+		background-color: var(--color-error-100);
+		color: var(--color-error-600);
+	}
+
+	.confirmation-icon-warning {
+		background-color: var(--color-warning-100);
+		color: var(--color-warning-600);
+	}
+
+	.confirmation-icon-info {
+		background-color: var(--color-info-100);
+		color: var(--color-info-600);
+	}
+
+	/* Toggle switch styles */
+	.toggle-switch {
+		background-color: var(--color-gray-200);
+		transition: background-color 0.2s;
+	}
+
+	.toggle-switch:focus-visible {
+		ring-color: var(--color-primary-300);
+	}
+
+	.peer:checked ~ .toggle-switch {
+		background-color: var(--color-primary-600);
+	}
+
+	.toggle-switch::after {
+		background-color: white;
+		border-color: var(--color-gray-300);
+	}
+
+	.peer:checked ~ .toggle-switch::after {
+		border-color: white;
+	}
+
+	/* Time picker styles */
+	.time-picker-button:hover {
+		background-color: var(--bg-tertiary);
+	}
+
+	.time-picker-input:hover {
+		background-color: var(--bg-secondary);
+	}
+
+	/* Calendar styles */
+	.calendar-nav-button:hover {
+		background-color: var(--bg-tertiary);
+	}
+
+	/* Mobile menu toggle */
+	.mobile-menu-toggle:hover {
+		background-color: var(--bg-secondary);
+		color: var(--text-primary);
+	}
 } 

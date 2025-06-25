@@ -178,7 +178,7 @@
 	}
 	
 	.alert-info {
-		background: var(--color-info-50);
+		background-color: var(--color-info-50);
 		border: 1px solid var(--color-info-200);
 		color: var(--color-info-800);
 	}
@@ -197,5 +197,51 @@
 	[data-theme="dark"] .alert-info,
 	[data-theme="dark"] .alert-info * {
 		color: var(--color-info-200) !important;
+	}
+
+	/* Blue info variant */
+	.alert-info {
+		background-color: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
+		color: var(--color-info-800);
+	}
+
+	/* Tour Status Badges */
+	.tour-status-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.125rem 0.625rem;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		border: 1px solid;
+		transition: all var(--transition-fast) ease;
+	}
+
+	.tour-status-badge--active {
+		background-color: var(--color-success-100);
+		color: var(--color-success-800);
+		border-color: var(--color-success-200);
+	}
+
+	.tour-status-badge--draft {
+		background-color: var(--color-warning-100);
+		color: var(--color-warning-800);
+		border-color: var(--color-warning-200);
+	}
+
+	.tour-status-indicator {
+		width: 0.375rem;
+		height: 0.375rem;
+		border-radius: 9999px;
+	}
+
+	.tour-status-indicator--active {
+		background-color: var(--color-success-500);
+	}
+
+	.tour-status-indicator--draft {
+		background-color: var(--color-warning-500);
 	}
 } 

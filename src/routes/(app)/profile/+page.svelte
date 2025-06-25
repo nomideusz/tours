@@ -27,6 +27,7 @@
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	
 	// Profile Components
 	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';
@@ -614,6 +615,13 @@
 			</PageHeader>
 		</div>
 	</div>
+
+	<!-- Promo Status Section -->
+	{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date()))}
+		<div class="mb-6">
+			<PromoStatusBanner variant="detailed" />
+		</div>
+	{/if}
 
 	<!-- Main Content -->
 	<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">

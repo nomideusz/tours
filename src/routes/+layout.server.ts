@@ -24,8 +24,25 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       website: userData.website,
       description: userData.description,
       location: userData.location,
+      country: userData.country,
+      currency: userData.currency,
       emailVerified: userData.emailVerified,
-      lastLogin: userData.lastLogin
+      lastLogin: userData.lastLogin,
+      // Payment fields
+      stripeAccountId: userData.stripeAccountId,
+      // Subscription fields
+      subscriptionPlan: userData.subscriptionPlan,
+      subscriptionStatus: userData.subscriptionStatus,
+      subscriptionCancelAtPeriodEnd: userData.subscriptionCancelAtPeriodEnd,
+      subscriptionCurrentPeriodEnd: userData.subscriptionCurrentPeriodEnd,
+      monthlyBookingsUsed: userData.monthlyBookingsUsed,
+      monthlyBookingsResetAt: userData.monthlyBookingsResetAt,
+      // Promo code fields
+      promoCodeUsed: userData.promoCodeUsed,
+      subscriptionDiscountPercentage: userData.subscriptionDiscountPercentage,
+      subscriptionFreeUntil: userData.subscriptionFreeUntil,
+      isLifetimeDiscount: userData.isLifetimeDiscount,
+      earlyAccessMember: userData.earlyAccessMember
     };
   }
   

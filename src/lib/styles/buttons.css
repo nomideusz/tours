@@ -199,12 +199,52 @@
 		cursor: not-allowed;
 	}
 
+	/* Warning button variant */
+	.button-warning {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: all var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background-color: var(--color-warning-600);
+		color: white;
+		border: 1px solid var(--color-warning-600);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-warning:hover:not(:disabled) {
+		background-color: var(--color-warning-700);
+		border-color: var(--color-warning-700);
+	}
+
+	.button-warning:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+	}
+
+	.button-warning:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
 	/* Button modifiers */
 	.button--full-width,
 	.button-primary.button--full-width,
 	.button-secondary.button--full-width,
 	.button--danger.button--full-width,
-	.button-danger.button--full-width {
+	.button-danger.button--full-width,
+	.button-success.button--full-width,
+	.button-warning.button--full-width {
 		width: 100%;
 	}
 
@@ -212,7 +252,9 @@
 	.button-primary.button--gap,
 	.button-secondary.button--gap,
 	.button--danger.button--gap,
-	.button-danger.button--gap {
+	.button-danger.button--gap,
+	.button-success.button--gap,
+	.button-warning.button--gap {
 		gap: 0.5rem;
 	}
 
@@ -220,7 +262,9 @@
 	.button-primary.button--large,
 	.button-secondary.button--large,
 	.button--danger.button--large,
-	.button-danger.button--large {
+	.button-danger.button--large,
+	.button-success.button--large,
+	.button-warning.button--large {
 		padding: 1rem 2rem;
 		font-size: var(--text-base);
 		line-height: 1.5rem;
@@ -231,7 +275,8 @@
 	.button-secondary.button--small,
 	.button--danger.button--small,
 	.button-danger.button--small,
-	.button-success.button--small {
+	.button-success.button--small,
+	.button-warning.button--small {
 		padding: 0.5rem 1rem;
 		font-size: var(--text-xs);
 		line-height: 1.25rem;
@@ -318,6 +363,7 @@
 	.button--danger svg,
 	.button-danger svg,
 	.button-success svg,
+	.button-warning svg,
 	.button--ghost svg,
 	.button--text svg {
 		fill: currentColor;
@@ -409,6 +455,18 @@
 	.button-danger .lucide-icon,
 	.button--danger .lucide,
 	.button-danger .lucide {
+		color: white !important;
+		stroke: white !important;
+	}
+
+	/* Ensure proper contrast for warning buttons */
+	.button-warning {
+		color: white !important;
+	}
+	
+	.button-warning svg,
+	.button-warning .lucide-icon,
+	.button-warning .lucide {
 		color: white !important;
 		stroke: white !important;
 	}
