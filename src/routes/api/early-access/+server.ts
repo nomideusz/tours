@@ -1,105 +1,69 @@
-import { json } from '@sveltejs/kit';
-import { Resend } from 'resend';
 import type { RequestHandler } from './$types.js';
-import { env } from '$env/dynamic/private';
-
-// Get environment variables at runtime
-const resendApiKey = env.RESEND_API_KEY;
-const resendAudienceId = env.RESEND_AUDIENCE_ID;
+import { json } from '@sveltejs/kit';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq } from 'drizzle-orm';
+import { sendAuthEmail } from '$lib/email.server.js';
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		// Check if environment variables are available
-		if (!resendApiKey || !resendAudienceId) {
-			console.error('RESEND_API_KEY and RESEND_AUDIENCE_ID environment variables are required');
-			return json(
-				{ success: false, error: 'Service configuration error' },
-				{ status: 500 }
-			);
+		const { email } = await request.json();
+		
+		if (!email) {
+			return json({ 
+				success: false, 
+				error: 'Email is required' 
+			}, { status: 400 });
 		}
-
-		const resend = new Resend(resendApiKey);
-		const { email }: { email: string } = await request.json();
-
-		// Validate email
-		if (!email || !email.includes('@')) {
-			return json(
-				{ success: false, error: 'Valid email is required' },
-				{ status: 400 }
-			);
+		
+		// Validate email format
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return json({ 
+				success: false, 
+				error: 'Please enter a valid email address' 
+			}, { status: 400 });
 		}
-
-		// Check if contact already exists
-		try {
-			const existingContact = await resend.contacts.get({
-				email: email,
-				audienceId: resendAudienceId
+		
+		// Check if email already exists
+		const existingUser = await db
+			.select()
+			.from(users)
+			.where(eq(users.email, email.toLowerCase()))
+			.limit(1);
+			
+		if (existingUser.length > 0) {
+			// User already exists
+			return json({ 
+				success: true, 
+				message: 'You already have an account! Sign in to access your dashboard.' 
 			});
-
-			if (existingContact.data) {
-				// Contact already exists
-				if (existingContact.data.unsubscribed) {
-					// Resubscribe the contact
-					await resend.contacts.update({
-						email: email,
-						audienceId: resendAudienceId,
-						unsubscribed: false
-					});
-					return json({ 
-						success: true, 
-						message: 'Welcome back! You\'ve been resubscribed to early access updates.' 
-					});
-				} else {
-					// Already subscribed
-					return json({ 
-						success: true, 
-						message: 'You\'re already signed up for early access! We\'ll keep you updated.' 
-					});
-				}
-			}
-		} catch (checkError) {
-			// Contact doesn't exist (this is expected for new contacts)
-			// Continue with creating new contact
 		}
-
-		// Add new contact to Resend audience
-		const result = await resend.contacts.create({
-			email: email,
-			unsubscribed: false,
-			audienceId: resendAudienceId
+		
+		// Send welcome email for early access
+		try {
+			await sendAuthEmail('early-access', {
+				email,
+				name: email.split('@')[0], // Use email prefix as temporary name
+			});
+		} catch (emailError) {
+			console.warn('Failed to send early access email:', emailError);
+			// Don't fail the request if email fails
+		}
+		
+		// Log the early access request
+		console.log(`Early access request from: ${email}`);
+		
+		return json({ 
+			success: true, 
+			message: 'Welcome to early access! Check your email for next steps.' 
 		});
-
-		if (result.error) {
-			console.error('Resend error:', result.error);
-			
-			// Handle specific error cases
-			if (result.error.message?.includes('already exists') || result.error.message?.includes('duplicate')) {
-				return json({ 
-					success: true, 
-					message: 'You\'re already signed up for early access! We\'ll keep you updated.' 
-				});
-			}
-			
-			return json(
-				{ success: false, error: 'Failed to subscribe. Please try again later.' },
-				{ status: 500 }
-			);
-		}
-
-		// Optional: Send welcome email
-		// await resend.emails.send({
-		//   from: 'welcome@yourdomain.com',
-		//   to: email,
-		//   subject: 'Welcome to Zaur Early Access!',
-		//   text: 'Thank you for signing up for early access to Zaur. We'll keep you updated on our progress!'
-		// });
-
-		return json({ success: true, message: 'Successfully subscribed to early access!' });
+		
 	} catch (error) {
-		console.error('API error:', error);
-		return json(
-			{ success: false, error: 'Internal server error' },
-			{ status: 500 }
-		);
+		console.error('Early access error:', error);
+		return json({ 
+			success: false, 
+			error: 'An error occurred. Please try again later.' 
+		}, { status: 500 });
 	}
 }; 

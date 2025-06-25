@@ -15,13 +15,13 @@
 
 		<div class="prose prose-lg max-w-none">
 			<section class="mb-8">
-				<h2 class="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
-				<p class="text-gray-700 mb-4">
+				<h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">1. Introduction</h2>
+				<p class="mb-4" style="color: var(--text-primary);">
 					At Zaur, we respect your privacy and are committed to protecting your personal data. This Privacy Policy explains 
 					how we collect, use, store, and protect your information when you use our QR booking service for tour guides.
 				</p>
-				<p class="text-gray-700 mb-4">
-					This policy applies to all users of Zaur, including tour guides who create accounts and tourists who book tours 
+				<p class="mb-4" style="color: var(--text-primary);">
+					This policy applies to all users of Zaur, including tour guides who subscribe to our service and tourists who book tours 
 					through our platform.
 				</p>
 			</section>
@@ -34,7 +34,7 @@
 				<div class="bg-gray-50 p-4 rounded-lg mb-4">
 					<p class="text-gray-700">
 						<strong>Email:</strong> privacy@zaur.app<br>
-						<strong>Address:</strong> [Your Company Address]<br>
+						<!-- <strong>Address:</strong> [Your Company Address]<br> -->
 						<strong>Website:</strong> <a href="https://zaur.app" class="text-blue-600 hover:text-blue-500">https://zaur.app</a>
 					</p>
 				</div>
@@ -43,12 +43,13 @@
 			<section class="mb-8">
 				<h2 class="text-2xl font-semibold text-gray-900 mb-4">3. Information We Collect</h2>
 				
-				<h3 class="text-xl font-semibold text-gray-900 mb-3">3.1 Information You Provide</h3>
-				<ul class="list-disc list-inside text-gray-700 space-y-2 mb-4">
+				<h3 class="text-xl font-semibold mb-3" style="color: var(--text-primary);">3.1 Information You Provide</h3>
+				<ul class="list-disc list-inside space-y-2 mb-4" style="color: var(--text-primary);">
 					<li><strong>Account Information:</strong> Email address, name, username, password, business name, location</li>
 					<li><strong>Profile Information:</strong> Phone number, website, business description, profile photos</li>
 					<li><strong>Tour Information:</strong> Tour descriptions, pricing, schedules, meeting points, images</li>
-					<li><strong>Payment Information:</strong> Payment details processed securely by our payment partners</li>
+					<li><strong>Subscription Information:</strong> Subscription plan, payment method for monthly/annual fees</li>
+					<li><strong>Payment Processing:</strong> Stripe Connect account details for receiving customer payments</li>
 					<li><strong>Communication:</strong> Messages, support requests, feedback</li>
 				</ul>
 

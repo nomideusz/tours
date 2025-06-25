@@ -1,39 +1,57 @@
 <script lang="ts">
 	import Check from 'lucide-svelte/icons/check';
 	import X from 'lucide-svelte/icons/x';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
 	let isYearly = $state(false);
 	
-	// Calculate prices - updated prices
-	let starterProPrice = $derived(isYearly ? 16 : 19); // €16/month when billed annually (16% off €19)
-	let proPrice = $derived(isYearly ? 33 : 39); // €33/month when billed annually (15% off €39)
-	let agencyPrice = $derived(isYearly ? 83 : 99); // €83/month when billed annually (16% off €99)
+	// Calculate prices - matching subscription page
+	let starterProPrice = $derived(isYearly ? 13 : 16); // €13/month when billed annually (19% off €16)
+	let proPrice = $derived(isYearly ? 29 : 35); // €29/month when billed annually (17% off €35)
+	let agencyPrice = $derived(isYearly ? 74 : 89); // €74/month when billed annually (17% off €89)
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
 </script>
 
 <!-- Pricing -->
-<section id="pricing" class="py-20 bg-white">
+<section id="pricing" class="py-20" style="background: var(--bg-primary);">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<!-- Early Access Notice -->
+		<div class="max-w-3xl mx-auto mb-12">
+			<div class="alert-warning p-4 rounded-lg">
+				<div class="flex items-start gap-3">
+					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1">🚀 Early Access Pricing - Limited Time</h3>
+						<p class="text-sm">
+							Join now and lock in these special rates forever! Features marked as "Coming Soon" will be rolled out progressively over the coming months.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		
 		<div class="text-center mb-12">
-			<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
 				Simple, Transparent Pricing
 			</h2>
-			<p class="text-lg text-gray-600 max-w-2xl mx-auto">
-				No booking fees, no hidden costs. Just pick a plan and start growing your business.
+			<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
+				No booking fees, no commissions. Keep 100% of your revenue with our simple monthly subscription.
 			</p>
 		</div>
 		
 		<!-- Toggle -->
 		<div class="flex justify-center mb-12">
-			<div class="bg-gray-100 p-1 rounded-lg inline-flex">
+			<div class="p-1 rounded-lg inline-flex" style="background: var(--bg-secondary);">
 				<button 
-					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}"
+					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'shadow-sm' : ''}"
+					style="{!isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 					onclick={() => isYearly = false}
 				>
 					Monthly
 				</button>
 				<button 
-					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {isYearly ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-800'}"
+					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {isYearly ? 'shadow-sm' : ''}"
+					style="{isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 					onclick={() => isYearly = true}
 				>
 					Annual (Save 20%)
@@ -43,230 +61,227 @@
 		
 		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
 			<!-- Free Starter -->
-			<div class="relative rounded-lg border border-gray-200 p-6 bg-white flex flex-col">
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">Free Starter</h3>
+			<div class="relative rounded-lg p-6 flex flex-col" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
 				<div class="mb-1">
-					<span class="text-3xl font-bold text-gray-900">Free</span>
+					<span class="text-3xl font-bold" style="color: var(--text-primary);">€0</span>
 				</div>
-				<p class="text-gray-600 mb-6 text-sm">Perfect for trying out Zaur</p>
+				<p class="mb-6 text-sm" style="color: var(--text-secondary);">Perfect for trying out Zaur</p>
 				
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">5 bookings/month</span>
+						<Check class="w-4 h-4 icon-secondary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">3 bookings/month</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">1 tour type</span>
+						<Check class="w-4 h-4 icon-secondary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">1 tour type</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Basic QR codes</span>
+						<Check class="w-4 h-4 icon-secondary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Basic QR codes</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Email notifications</span>
+						<Check class="w-4 h-4 icon-secondary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Email notifications</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">7-day onboarding sequence</span>
+						<X class="w-4 h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-secondary);">Zaur branding visible</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<X class="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-500 text-sm">No SMS notifications</span>
+						<X class="w-4 h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-secondary);">No SMS notifications</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<X class="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-500 text-sm">No branding customization</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<span class="text-gray-500 text-sm ml-6">Watermark: "Powered by Zaur"</span>
+						<X class="w-4 h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-secondary);">No analytics</span>
 					</li>
 				</ul>
 				
-				<a href="/auth/register" class="w-full py-2 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-sm text-center block">
+				<a href="/auth/register" class="button-secondary button--full-width text-center">
 					Start Free
 				</a>
 			</div>
 
 			<!-- Solo Guide -->
-			<div class="relative rounded-lg border border-gray-200 p-6 bg-white flex flex-col">
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">Solo Guide</h3>
+			<div class="relative rounded-lg p-6 flex flex-col border-2" style="background: var(--bg-primary); border-color: var(--color-primary-500);">
+				<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+					<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
+				</div>
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
 				<div class="mb-1">
-					<span class="text-3xl font-bold text-gray-900">€{starterProPrice}</span>
-					<span class="text-gray-600 text-sm">{billingPeriod}</span>
+					<span class="text-3xl font-bold" style="color: var(--text-primary);">€{starterProPrice}</span>
+					<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 				</div>
 				<div class="mb-2 h-4">
-					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
+					<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
 						Save €36/year
 					</span>
 				</div>
-				<p class="text-gray-600 mb-6 text-sm">Great for getting started</p>
+				<p class="mb-6 text-sm" style="color: var(--text-secondary);">Perfect for independent guides</p>
 				
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">25 bookings/month</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">60 bookings/month</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">3 tour types</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">5 tour types</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Custom branding (logo, colors)</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">Remove Zaur branding</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">SMS notifications</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							Custom logo & colors
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">QR code customization</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							SMS notifications
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Basic analytics</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Email support</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">Email support</span>
 					</li>
 				</ul>
 				
-				<a href="/auth/register" class="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors cursor-pointer text-sm text-center block">
-					Start for Free
+				<a href="/auth/register" class="button-primary button--full-width text-center">
+					Get Early Access
 				</a>
 			</div>
 			
-			<!-- Professional (Most Popular) -->
-			<div class="relative rounded-lg border-2 border-blue-500 p-6 bg-white shadow-lg flex flex-col">
-				<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-					<span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">Most Popular</span>
-				</div>
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">Professional</h3>
+			<!-- Professional -->
+			<div class="relative rounded-lg p-6 flex flex-col" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
 				<div class="mb-1">
-					<span class="text-3xl font-bold text-gray-900">€{proPrice}</span>
-					<span class="text-gray-600 text-sm">{billingPeriod}</span>
+					<span class="text-3xl font-bold" style="color: var(--text-primary);">€{proPrice}</span>
+					<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 				</div>
 				<div class="mb-2 h-4">
-					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
+					<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
 						Save €72/year
 					</span>
 				</div>
-				<p class="text-gray-600 mb-6 text-sm">Everything you need to grow</p>
+				<p class="mb-6 text-sm" style="color: var(--text-secondary);">Scale your tour business</p>
 				
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Unlimited bookings</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Unlimited bookings</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Unlimited tour types</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Unlimited tour types</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Advanced analytics & reporting</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							WhatsApp notifications
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">WhatsApp notifications</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							Calendar sync
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Customer database export</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Priority support</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Review collection automation</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Priority support (24h response)</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Google Calendar integration</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Multi-language booking pages</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Plus all Solo Guide features</span>
 					</li>
 				</ul>
 				
-				<a href="/auth/register" class="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors cursor-pointer text-sm text-center block">
-					Start for Free
+				<a href="/auth/register" class="button-primary button--full-width text-center">
+					Get Early Access
 				</a>
 			</div>
 			
 			<!-- Agency -->
-			<div class="relative rounded-lg border border-gray-200 p-6 bg-white flex flex-col">
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">Agency</h3>
+			<div class="relative rounded-lg p-6 flex flex-col" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
 				<div class="mb-1">
-					<span class="text-3xl font-bold text-gray-900">€{agencyPrice}</span>
-					<span class="text-gray-600 text-sm">{billingPeriod}</span>
+					<span class="text-3xl font-bold" style="color: var(--text-primary);">€{agencyPrice}</span>
+					<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 				</div>
 				<div class="mb-2 h-4">
-					<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
-						Save €192/year
+					<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
+						Save €180/year
 					</span>
 				</div>
-				<p class="text-gray-600 mb-6 text-sm">For tour companies</p>
+				<p class="mb-6 text-sm" style="color: var(--text-secondary);">For tour companies</p>
 				
 				<ul class="space-y-2 mb-6 flex-grow">
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Everything in Professional</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Everything in Professional</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Up to 10 tour guides</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							Up to 10 tour guides
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Team management dashboard</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm flex-1" style="color: var(--text-primary);">
+							API access
+							<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+								style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+								Coming Soon
+							</span>
+						</span>
 					</li>
 					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Revenue sharing tools</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">API access for custom integrations</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">White-label options</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Custom domain (agency.zaur.app)</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Dedicated account manager</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-						<span class="text-gray-700 text-sm">Advanced reporting (ROI, conversion rates)</span>
+						<Check class="w-4 h-4 icon-primary mt-0.5 flex-shrink-0" strokeWidth={2} />
+						<span class="text-sm" style="color: var(--text-primary);">Dedicated account manager</span>
 					</li>
 				</ul>
 				
-				<a href="/contact" class="w-full py-2 border border-gray-300 rounded-md font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-sm text-center block">
+				<a href="/contact" class="button-secondary button--full-width text-center">
 					Contact Sales
 				</a>
 			</div>
 		</div>
 		
 		<div class="mt-12 text-center">
-			<div class="bg-green-50 border border-green-200 rounded-lg p-6 max-w-2xl mx-auto">
-				<p class="text-green-800 font-semibold text-lg mb-2">
-					💰 Keep 100% of Your Revenue
+			<div class="p-6 rounded-lg max-w-2xl mx-auto" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+				<p class="font-semibold text-lg mb-2" style="color: var(--color-success-800);">
+					💰 Keep 100% of Your Booking Revenue
 				</p>
-				<p class="text-green-700">
+				<p style="color: var(--color-success-700);">
 					Unlike competitors who take 3-8% commission per booking, we charge a simple monthly fee. 
-					<span class="font-semibold">No booking fees, ever!</span>
+					<span class="font-semibold">No booking fees, no commissions, ever!</span>
 				</p>
 			</div>
 		</div>

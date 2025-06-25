@@ -190,7 +190,45 @@
 			day: 'numeric'
 		});
 	}
+	
+	// Features that are already implemented
+	const implementedFeatures = [
+		'bookings/month',
+		'tour types',
+		'Basic QR codes',
+		'Email notifications',
+		'Zaur branding visible',
+		'Remove Zaur branding',
+		'Email support',
+		'Unlimited bookings',
+		'Unlimited tour types',
+		'Priority support'
+	];
+	
+	function isFeatureImplemented(featureText: string): boolean {
+		return implementedFeatures.some(f => featureText.toLowerCase().includes(f.toLowerCase()));
+	}
 </script>
+
+{#snippet featureItem(text: string, icon: 'check' | 'x' = 'check', colorClass: string = '')}
+	{@const isImplemented = isFeatureImplemented(text)}
+	<li class="flex items-start gap-2">
+		{#if icon === 'check'}
+			<Check class="w-4 h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+		{:else}
+			<X class="w-4 h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+		{/if}
+		<span class="text-sm flex-1" style="color: var(--text-primary);">
+			{text}
+			{#if !isImplemented && icon === 'check'}
+				<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ml-2" 
+					style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary);">
+					Coming Soon
+				</span>
+			{/if}
+		</span>
+	</li>
+{/snippet}
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 	<div class="mb-8">
@@ -205,12 +243,25 @@
 		</div>
 	{/if}
 
-	<!-- Current Plan Status -->
-	<div class="mb-8 bg-white rounded-xl border border-gray-200 p-6">
+	<!-- Early Access Notice -->
+	<div class="alert-warning mb-6 p-4 rounded-lg">
+		<div class="flex items-start gap-3">
+			<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+			<div class="flex-1">
+				<h3 class="font-semibold mb-1">Early Access - Limited Time Pricing</h3>
+				<p class="text-sm">
+					Zaur is in early access. Join now at discounted rates and shape the future of tour management! 
+					Some features are being actively developed and will be rolled out progressively.
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="mb-8 rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="flex items-start justify-between">
 			<div>
 				<div class="flex items-center gap-2 mb-2">
-					<Crown class="w-5 h-5 text-blue-600" />
+					<Crown class="w-5 h-5" style="color: var(--color-primary-600);" />
 					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Current Plan</h2>
 				</div>
 				<div class="space-y-1">
@@ -218,12 +269,12 @@
 						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
 					</p>
 					{#if subscriptionStatus && subscriptionStatus !== 'active'}
-						<p class="text-sm text-orange-600 font-medium">
+						<p class="text-sm font-medium" style="color: var(--color-warning-600);">
 							Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
 						</p>
 					{/if}
 					{#if cancelAtPeriodEnd && currentPeriodEnd}
-						<p class="text-sm text-orange-600">
+						<p class="text-sm" style="color: var(--color-warning-600);">
 							Cancels on {formatDate(currentPeriodEnd)}
 						</p>
 					{:else if currentPeriodEnd && currentPlan !== 'free'}
@@ -240,7 +291,7 @@
 						<button
 							onclick={reactivateSubscription}
 							disabled={loading}
-							class="px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+							class="button-success"
 						>
 							Reactivate
 						</button>
@@ -259,7 +310,7 @@
 						<button
 							onclick={cancelSubscription}
 							disabled={loading}
-							class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium transition-colors disabled:opacity-50"
+							class="button-secondary button--danger-text"
 						>
 							Cancel
 						</button>
@@ -269,7 +320,7 @@
 		</div>
 		
 		{#if user}
-			<div class="mt-4 pt-4 border-t border-gray-200">
+			<div class="mt-4 pt-4 border-t" style="border-color: var(--border-primary);">
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 					<div>
 						<p style="color: var(--text-secondary);">Monthly Bookings Used</p>
@@ -340,40 +391,20 @@
 					<div class="mb-4 h-4"></div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">3 bookings/month</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">1 tour type</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Basic QR codes</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Email notifications</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<X class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-secondary);">Zaur branding visible</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<X class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-secondary);">No SMS notifications</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<X class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-secondary);">No analytics</span>
-						</li>
+						{@render featureItem('3 bookings/month', 'check', 'icon-secondary')}
+						{@render featureItem('1 tour type', 'check', 'icon-secondary')}
+						{@render featureItem('Basic QR codes', 'check', 'icon-secondary')}
+						{@render featureItem('Email notifications', 'check', 'icon-secondary')}
+						{@render featureItem('Zaur branding visible', 'x', 'icon-danger')}
+						{@render featureItem('No SMS notifications', 'x', 'icon-danger')}
+						{@render featureItem('No analytics', 'x', 'icon-danger')}
 					</ul>
 					
 					{#if currentPlan === 'free'}
 						<button
 							disabled
-							class="w-full py-2 bg-gray-300 text-gray-500 rounded-md font-medium cursor-not-allowed"
+							class="w-full py-2 rounded-md font-medium cursor-not-allowed"
+							style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
 						>
 							Current Plan
 						</button>
@@ -381,9 +412,9 @@
 				</div>
 				
 				<!-- Solo Guide -->
-				<div class="relative rounded-lg border-2 border-blue-500 p-6 shadow-lg flex flex-col h-full" style="background: var(--bg-primary);">
+				<div class="relative rounded-lg border-2 p-6 shadow-lg flex flex-col h-full" style="background: var(--bg-primary); border-color: var(--color-primary-500);">
 					<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-						<span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">Most Popular</span>
+						<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
 					</div>
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
 					<div class="mb-1">
@@ -391,54 +422,27 @@
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
+						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
 							Save €36/year
 						</span>
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">60 bookings/month</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">5 tour types</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Remove Zaur branding</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Custom logo & colors</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">SMS notifications</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Basic analytics</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">QR code customization</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Review collection prompts</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Email support</span>
-						</li>
+						{@render featureItem('60 bookings/month')}
+						{@render featureItem('5 tour types')}
+						{@render featureItem('Remove Zaur branding')}
+						{@render featureItem('Custom logo & colors')}
+						{@render featureItem('SMS notifications')}
+						{@render featureItem('Basic analytics')}
+						{@render featureItem('QR code customization')}
+						{@render featureItem('Review collection prompts')}
+						{@render featureItem('Email support')}
 					</ul>
 					
 					<button
 						onclick={() => upgradeSubscription('starter_pro', isYearly ? 'yearly' : 'monthly')}
 						disabled={loading || currentPlan === 'starter_pro'}
-						class="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+						class="button-primary button--full-width"
 					>
 						{loading ? 'Processing...' : currentPlan === 'starter_pro' ? 'Current Plan' : 'Upgrade to Solo Guide'}
 					</button>
@@ -452,62 +456,29 @@
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
+						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
 							Save €72/year
 						</span>
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Unlimited bookings</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Unlimited tour types</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Advanced analytics & insights</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">WhatsApp notifications</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Calendar sync (Google/Outlook)</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Customer database export</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Review automation</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Multi-language booking pages</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Weather integration</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Cancellation management</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Priority support (24h response)</span>
-						</li>
+						{@render featureItem('Unlimited bookings')}
+						{@render featureItem('Unlimited tour types')}
+						{@render featureItem('Advanced analytics & insights')}
+						{@render featureItem('WhatsApp notifications')}
+						{@render featureItem('Calendar sync (Google/Outlook)')}
+						{@render featureItem('Customer database export')}
+						{@render featureItem('Review automation')}
+						{@render featureItem('Multi-language booking pages')}
+						{@render featureItem('Weather integration')}
+						{@render featureItem('Cancellation management')}
+						{@render featureItem('Priority support (24h response)')}
 					</ul>
 					
 					<button
 						onclick={() => upgradeSubscription('professional', isYearly ? 'yearly' : 'monthly')}
 						disabled={loading || currentPlan === 'professional'}
-						class="w-full py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+						class="button-primary button--full-width"
 					>
 						{loading ? 'Processing...' : currentPlan === 'professional' ? 'Current Plan' : 'Upgrade to Professional'}
 					</button>
@@ -521,58 +492,28 @@
 						<span class="text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
 					<div class="mb-4 h-4">
-						<span class="text-xs text-green-600 font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}">
+						<span class="text-xs font-medium transition-opacity duration-200 {isYearly ? 'opacity-100' : 'opacity-0'}" style="color: var(--color-success-600);">
 							Save €180/year
 						</span>
 					</div>
 					
 					<ul class="space-y-2 mb-6 flex-grow">
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Everything in Professional</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Up to 10 tour guides</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Team management dashboard</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Revenue sharing tools</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">White-label options</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Custom domain (agency.zaur.app)</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Advanced reporting (ROI, conversion rates)</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">API access</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Dedicated account manager</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<Check class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" strokeWidth={2} />
-							<span class="text-sm" style="color: var(--text-primary);">Multi-location management</span>
-						</li>
+						{@render featureItem('Everything in Professional', 'check', 'icon-primary')}
+						{@render featureItem('Up to 10 tour guides', 'check', 'icon-primary')}
+						{@render featureItem('Team management dashboard', 'check', 'icon-primary')}
+						{@render featureItem('Revenue sharing tools', 'check', 'icon-primary')}
+						{@render featureItem('White-label options', 'check', 'icon-primary')}
+						{@render featureItem('Custom domain (agency.zaur.app)', 'check', 'icon-primary')}
+						{@render featureItem('Advanced reporting (ROI, conversion rates)', 'check', 'icon-primary')}
+						{@render featureItem('API access', 'check', 'icon-primary')}
+						{@render featureItem('Dedicated account manager', 'check', 'icon-primary')}
+						{@render featureItem('Multi-location management', 'check', 'icon-primary')}
 					</ul>
 					
 					<button
 						onclick={() => upgradeSubscription('agency', isYearly ? 'yearly' : 'monthly')}
 						disabled={loading || (user?.subscriptionPlan === 'agency')}
-						class="w-full py-2 bg-purple-600 text-white rounded-md font-medium hover:bg-purple-700 transition-colors disabled:opacity-50"
+						class="button-primary button--full-width"
 					>
 						{loading ? 'Processing...' : (user?.subscriptionPlan === 'agency') ? 'Current Plan' : 'Upgrade to Agency'}
 					</button>
