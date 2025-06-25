@@ -8,6 +8,11 @@ import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { createEmailVerificationToken } from '$lib/auth/tokens.js';
 import { sendAuthEmail } from '$lib/email.server.js';
+import { env } from '$env/dynamic/private';
+
+// Early access control
+const EARLY_ACCESS_ENABLED = env.EARLY_ACCESS_ENABLED === 'true';
+const EARLY_ACCESS_CODES = env.EARLY_ACCESS_CODES?.split(',') || ['ZAUR2024', 'TOURGUIDE', 'EARLYBIRDSPECIAL'];
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
@@ -15,7 +20,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		console.log('User already logged in, redirecting to dashboard');
 		throw redirect(303, '/dashboard');
 	}
-	return {};
+	return {
+		earlyAccessEnabled: EARLY_ACCESS_ENABLED
+	};
 };
 
 export const actions: Actions = {
@@ -25,11 +32,23 @@ export const actions: Actions = {
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();
 		const confirmPassword = data.get('confirmPassword')?.toString();
+		const accessCode = data.get('accessCode')?.toString();
 		const businessName = data.get('businessName')?.toString();
 		const location = data.get('location')?.toString();
 		// Don't set country/currency during registration - let users confirm later
 		// Country can be null, currency will use database default (EUR)
 		const country = null;
+
+		// Check early access code if enabled
+		if (EARLY_ACCESS_ENABLED) {
+			if (!accessCode) {
+				return fail(400, { username, email, error: 'Early access code is required' });
+			}
+			
+			if (!EARLY_ACCESS_CODES.includes(accessCode.toUpperCase())) {
+				return fail(400, { username, email, error: 'Invalid early access code' });
+			}
+		}
 
 		// Validation
 		if (!username) {
@@ -107,6 +126,11 @@ export const actions: Actions = {
 			
 			await db.insert(users).values(userData);
 			console.log('User created successfully:', userId, 'with username:', username, 'country:', country);
+			
+			// Log early access registration
+			if (EARLY_ACCESS_ENABLED) {
+				console.log(`🚀 Early access registration: ${email} with code: ${accessCode}`);
+			}
 			
 			// Create email verification token and send verification email
 			try {

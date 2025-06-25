@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { language, t } from '$lib/i18n.js';
-	import { switchLanguage } from '$lib/context.js';
 	import { logout } from '$lib/auth/client.js';
 	import { IsMounted } from 'runed';
 	import { onMount } from 'svelte';
@@ -22,16 +21,7 @@
 	// Logout loading state
 	let isLoggingOut = $state(false);
 
-	// Language switcher functions
-	function switchToEnglish(event: MouseEvent) {
-		event.preventDefault();
-		switchLanguage('en');
-	}
-
-	function switchToPolish(event: MouseEvent) {
-		event.preventDefault();
-		switchLanguage('pl');
-	}
+	// Language switcher functions removed - English only now
 
 	// Handle logout with loading state
 	async function handleLogout(event: Event) {
@@ -191,25 +181,7 @@
 					</div>
 				{/if}
 
-				<!-- Language switcher - Hidden for now -->
-				<!-- <div class="hidden items-center gap-1 border-l border-gray-200 pl-4 md:flex">
-					<button
-						class="rounded px-2 py-1 text-sm font-medium transition-colors {$language === 'en'
-							? 'bg-gray-100 text-gray-900'
-							: 'text-gray-600 hover:text-gray-900'}"
-						onclick={switchToEnglish}
-					>
-						EN
-					</button>
-					<button
-						class="rounded px-2 py-1 text-sm font-medium transition-colors {$language === 'pl'
-							? 'bg-gray-100 text-gray-900'
-							: 'text-gray-600 hover:text-gray-900'}"
-						onclick={switchToPolish}
-					>
-						PL
-					</button>
-				</div> -->
+				<!-- Language switcher removed - English only -->
 
 				<!-- Mobile menu button -->
 				<button
@@ -311,25 +283,7 @@
 				{/if}
 			</div>
 
-			<!-- Mobile language switcher - Hidden for now -->
-			<!-- <div class="flex flex-row gap-2 border-t border-gray-200 pt-4">
-				<button
-					class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'en'
-						? 'bg-gray-100 text-gray-900'
-						: 'text-gray-600 hover:text-gray-900'}"
-					onclick={switchToEnglish}
-				>
-					English
-				</button>
-				<button
-					class="rounded px-3 py-2 text-sm font-medium transition-colors {$language === 'pl'
-						? 'bg-gray-100 text-gray-900'
-						: 'text-gray-600 hover:text-gray-900'}"
-					onclick={switchToPolish}
-				>
-					Polski
-				</button>
-			</div> -->
+			<!-- Mobile language switcher removed - English only -->
 		</div>
 	</div>
 {/if}

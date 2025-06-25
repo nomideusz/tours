@@ -1,12 +1,11 @@
 import { writable, type Writable } from 'svelte/store';
 
 // Define language type
-export type Language = 'en' | 'pl';
+export type Language = 'en';
 
 // Define translation structure types
 export interface Translations {
   en: TranslationContent;
-  pl: TranslationContent;
 }
 
 export interface TranslationContent {
@@ -196,8 +195,6 @@ export const translations: Translations = {
       }
     },
 
-
-
     // Logout
     logout: {
       redirecting: 'Redirecting...',
@@ -258,171 +255,18 @@ export const translations: Translations = {
         validationError: 'New passwords do not match'
       }
     }
-  },
-
-  pl: {
-    // Header
-    appName: 'PSG Dashboard',
-    appDescription: 'Narzędzie do zarządzania i analizy danych',
-
-    // Navigation
-    nav: {
-      main: 'Główne',
-      dashboard: 'Dashboard',
-      tests: 'Testy',
-      reports: 'Raporty',
-      users: 'Użytkownicy',
-      settings: 'Ustawienia',
-    },
-
-    // Footer
-    footer: {
-      copyright: '© {year} PSG Dashboard',
-      version: 'Wersja'
-    },
-
-    // Auth
-    auth: {
-      login: 'Zaloguj',
-      logout: 'Wyloguj',
-      loggingOut: 'Wylogowywanie...',
-      loading: 'Ładowanie...',
-      title: 'PSG Dashboard'
-    },
-
-    // Loading
-    loading: {
-      pageLoading: 'Ładowanie strony...'
-    },
-
-    // Login Page
-    loginPage: {
-      title: 'Zaloguj się',
-      email: 'Email',
-      emailPlaceholder: 'twoj@email.com',
-      password: 'Hasło',
-      passwordPlaceholder: 'Twoje hasło',
-      loginButton: 'Zaloguj',
-      loggingIn: 'Logowanie...',
-      forgotPassword: 'Zapomniałeś hasła?',
-      pleaseWait: 'Proszę czekać...',
-      validation: {
-        emailRequired: 'Email jest wymagany',
-        emailInvalid: 'Wprowadź prawidłowy adres email',
-        passwordRequired: 'Hasło jest wymagane'
-      }
-    },
-
-    // Forgot Password Page
-    forgotPassword: {
-      title: 'Zresetuj swoje hasło',
-      description: 'Wprowadź swój adres email, a my wyślemy Ci instrukcje resetowania hasła.',
-      emailLabel: 'Adres Email',
-      emailPlaceholder: 'Wprowadź swój adres email',
-      sendButton: 'Wyślij instrukcje resetowania',
-      sending: 'Wysyłanie...',
-      backToLogin: 'Powrót do logowania',
-      pleaseWait: 'Proszę czekać...',
-      success: 'Instrukcje resetowania hasła zostały wysłane na Twój email.',
-      returnToLogin: 'Powrót do logowania',
-      validation: {
-        emailRequired: 'Email jest wymagany',
-        emailInvalid: 'Wprowadź prawidłowy adres email'
-      }
-    },
-
-    // Logout
-    logout: {
-      redirecting: 'Przekierowywanie...',
-      error: 'Nie udało się wylogować'
-    },
-
-    // Reset Password
-    resetPassword: {
-      title: 'Ustaw nowe hasło',
-      description: 'Wprowadź i potwierdź swoje nowe hasło.',
-      invalidToken: 'Nieprawidłowy lub brakujący token resetowania. Proszę poprosić o nowy link resetowania hasła.',
-      requestNewLink: 'Poproś o nowy link',
-      success: 'Twoje hasło zostało pomyślnie zresetowane!',
-      goToLogin: 'Przejdź do logowania',
-      newPassword: 'Nowe hasło',
-      newPasswordPlaceholder: 'Wprowadź swoje nowe hasło',
-      confirmPassword: 'Potwierdź hasło',
-      confirmPasswordPlaceholder: 'Potwierdź swoje nowe hasło',
-      passwordNote: 'Musi mieć co najmniej 8 znaków.',
-      setPasswordButton: 'Ustaw nowe hasło',
-      settingPassword: 'Ustawianie hasła...',
-      backToLogin: 'Powrót do logowania',
-      pleaseWait: 'Proszę czekać...',
-      validation: {
-        passwordRequired: 'Hasło jest wymagane',
-        passwordLength: 'Hasło musi mieć co najmniej 8 znaków',
-        confirmRequired: 'Proszę potwierdzić hasło',
-        passwordsDoNotMatch: 'Hasła nie są zgodne'
-      },
-      error: 'Nie udało się zresetować hasła'
-    },
-
-    // Settings
-    settings: {
-      title: 'Ustawienia konta',
-      authRequired: 'Musisz być zalogowany, aby uzyskać dostęp do tej strony.',
-      login: 'Zaloguj',
-      profile: {
-        title: 'Informacje o profilu',
-        username: 'Nazwa użytkownika',
-        email: 'Adres email',
-        emailNote: 'Adres email nie może zostać zmieniony.',
-        updateButton: 'Aktualizuj profil',
-        updating: 'Aktualizowanie...',
-        success: 'Profil został zaktualizowany pomyślnie',
-        error: 'Nie udało się zaktualizować profilu'
-      },
-      password: {
-        title: 'Zmień hasło',
-        current: 'Aktualne hasło',
-        new: 'Nowe hasło',
-        confirm: 'Potwierdź nowe hasło',
-        passwordNote: 'Musi mieć co najmniej 8 znaków.',
-        changeButton: 'Zmień hasło',
-        changing: 'Zmienianie...',
-        success: 'Hasło zostało zmienione pomyślnie',
-        error: 'Nie udało się zmienić hasła',
-        validationError: 'Nowe hasła nie są zgodne'
-      }
-    }
   }
 };
 
 // Supported languages
-export const LANGUAGES: Language[] = ['en', 'pl'];
+export const LANGUAGES: Language[] = ['en'];
 
-// Initialize language from localStorage or use browser language or default to English
+// Initialize language - always English now
 const initLang = (): Language => {
-  if (typeof window !== 'undefined') {
-    const savedLang = localStorage.getItem('language') as Language;
-    if (savedLang && LANGUAGES.includes(savedLang)) {
-      return savedLang;
-    }
-
-    // Check browser language
-    const browserLang = navigator.language.split('-')[0];
-    if (browserLang === 'pl') {
-      return 'pl';
-    }
-  }
-
-  return 'en'; // Default to English
+  return 'en';
 };
 
 export const language: Writable<Language> = writable<Language>(initLang());
-
-// Update localStorage when language changes
-if (typeof window !== 'undefined') {
-  language.subscribe((value: Language) => {
-    localStorage.setItem('language', value);
-  });
-}
 
 // Helper function to get translated text
 export function t(key: string, lang: Language): string {

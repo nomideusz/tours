@@ -17,7 +17,7 @@
 		success?: boolean;
 	};
 
-	let { form } = $props<{ form?: RegisterForm }>();
+	let { form, data } = $props<{ form?: RegisterForm; data: { earlyAccessEnabled: boolean } }>();
 
 	// Use the loading state from auth store
 	const isAuthLoading = $derived($isLoading);
@@ -31,12 +31,14 @@
 	let email = $state(form?.email || '');
 	let password = $state(''); // Don't restore password for security reasons
 	let confirmPassword = $state('');
+	let accessCode = $state('');
 
 	// Form validation
 	let usernameError = $state('');
 	let emailError = $state('');
 	let passwordError = $state('');
 	let confirmPasswordError = $state('');
+	let accessCodeError = $state('');
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
@@ -53,6 +55,7 @@
 		emailError = '';
 		passwordError = '';
 		confirmPasswordError = '';
+		accessCodeError = '';
 
 		let isValid = true;
 
@@ -95,6 +98,14 @@
 			isValid = false;
 		}
 
+		// Access code validation (only if early access is enabled)
+		if (data?.earlyAccessEnabled) {
+			if (!accessCode) {
+				accessCodeError = 'Early access code is required';
+				isValid = false;
+			}
+		}
+
 		return isValid;
 	}
 </script>
@@ -108,6 +119,11 @@
 			<p class="text-sm text-gray-600">
 				Choose your username and get your personal URL at zaur.app/username
 			</p>
+			{#if data?.earlyAccessEnabled}
+				<div class="mt-4 badge badge--warning">
+					🚀 Early Access
+				</div>
+			{/if}
 		</div>
 
 		{#if form?.error}
@@ -270,6 +286,37 @@
 						<p class="form-error">{confirmPasswordError}</p>
 					{/if}
 				</div>
+
+				{#if data?.earlyAccessEnabled}
+					<div>
+						<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-2">
+							Early Access Code
+						</label>
+						<input
+							type="text"
+							id="accessCode"
+							name="accessCode"
+							bind:value={accessCode}
+							class="form-input {accessCodeError ? 'error' : ''}"
+							placeholder="Enter your early access code"
+							disabled={isRegistering || manualLoading}
+							oninput={(e) => {
+								// Convert to uppercase for consistency
+								accessCode = e.currentTarget.value.toUpperCase();
+							}}
+							onblur={() => {
+								if (!accessCode) accessCodeError = 'Early access code is required';
+								else accessCodeError = '';
+							}}
+						/>
+						{#if accessCodeError}
+							<p class="form-error">{accessCodeError}</p>
+						{/if}
+						<p class="mt-1 text-sm text-gray-500">
+							Don't have a code? <a href="/early-access" class="text-blue-600 hover:text-blue-500">Request early access</a>
+						</p>
+					</div>
+				{/if}
 
 				<!-- Don't auto-detect country during registration - let users set it up later -->
 
