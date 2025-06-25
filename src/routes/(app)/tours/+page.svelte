@@ -58,11 +58,24 @@
 		refetchOnWindowFocus: true,
 		refetchOnMount: true,
 	});
+	
+	// Subscription usage query
+	const usageQuery = createQuery({
+		queryKey: ['subscriptionUsage'],
+		queryFn: async () => {
+			const response = await fetch('/api/subscriptions/usage');
+			if (!response.ok) throw new Error('Failed to fetch usage');
+			return response.json();
+		},
+		staleTime: 30 * 1000, // 30 seconds
+		gcTime: 2 * 60 * 1000, // 2 minutes
+	});
 
 	// Derived data
 	let tours = $derived(($userToursQuery.data as Tour[]) || []);
 	let isLoading = $derived($userToursQuery.isLoading);
 	let isError = $derived($userToursQuery.isError);
+	let usage = $derived($usageQuery.data);
 	
 	// Search and filter state
 	let searchQuery = $state('');
@@ -272,10 +285,28 @@
 				title="Tours"
 				subtitle="Manage your tour offerings"
 			>
-				<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-					<Plus class="h-4 w-4" />
-					Create Tour
-				</button>
+				<div class="flex items-center gap-4">
+					{#if usage?.tours}
+						<div class="text-sm" style="color: var(--text-secondary);">
+							{#if usage.tours.limit !== null}
+								<span class="{usage.tours.used >= usage.tours.limit ? 'text-orange-600 font-medium' : ''}">
+									{usage.tours.used}/{usage.tours.limit} tours
+								</span>
+								{#if usage.tours.used >= usage.tours.limit}
+									<a href="/subscription" class="ml-2 text-sm font-medium text-blue-600 hover:underline">
+										Upgrade
+									</a>
+								{/if}
+							{:else}
+								<span>{usage.tours.used} tours</span>
+							{/if}
+						</div>
+					{/if}
+					<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+						<Plus class="h-4 w-4" />
+						Create Tour
+					</button>
+				</div>
 			</PageHeader>
 		</div>
 	</div>

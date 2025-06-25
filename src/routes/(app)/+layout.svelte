@@ -32,6 +32,7 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Settings from 'lucide-svelte/icons/settings';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -119,8 +120,9 @@
 		},
 		{
 			name: 'Subscription',
-			href: '/dashboard/subscription',
-			icon: Settings
+			href: '/subscription',
+			icon: CreditCard,
+			showOnMobile: false
 		}
 	]);
 

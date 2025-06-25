@@ -1854,7 +1854,7 @@
 						</button>
 						{#if isApproachingLimits()}
 							<button
-								onclick={() => goto('/dashboard/subscription')}
+								onclick={() => goto('/subscription')}
 								class="button-secondary button--small button--gap w-full"
 								style="border-color: var(--color-warning-200); color: var(--color-warning-600);"
 							>

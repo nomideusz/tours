@@ -2,24 +2,32 @@ import Stripe from 'stripe';
 import { getStripe } from './stripe.server.js';
 import { db } from './db/connection.js';
 import { users } from './db/schema/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 
 // Subscription plan configurations
 export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
     name: 'Free Starter',
-    monthlyBookingLimit: 5,
+    monthlyBookingLimit: 3,
     tourLimit: 1,
-    features: ['Basic QR codes', 'Email notifications', '7-day onboarding sequence'],
+    features: ['Basic QR codes', 'Email notifications'],
     stripePriceId: null, // Free plan doesn't need Stripe
   },
   starter_pro: {
     id: 'starter_pro',
     name: 'Solo Guide',
-    monthlyBookingLimit: 25,
-    tourLimit: 3,
-    features: ['Custom branding (logo, colors)', 'SMS notifications', 'QR code customization', 'Basic analytics', 'Email support'],
+    monthlyBookingLimit: 60,
+    tourLimit: 5,
+    features: [
+      'Remove Zaur branding',
+      'Custom logo & colors',
+      'SMS notifications',
+      'Basic analytics',
+      'QR code customization',
+      'Review collection prompts',
+      'Email support'
+    ],
     stripePriceId: {
       monthly: process.env.STRIPE_STARTER_PRO_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_STARTER_PRO_YEARLY_PRICE_ID,
@@ -30,7 +38,20 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Professional',
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
-    features: ['Advanced analytics & reporting', 'WhatsApp notifications', 'Customer database export', 'Review collection automation', 'Priority support (24h response)', 'Google Calendar integration', 'Multi-language booking pages'],
+    features: [
+      'Everything in Solo Guide',
+      'Unlimited bookings',
+      'Unlimited tour types',
+      'Advanced analytics & insights',
+      'WhatsApp notifications',
+      'Calendar sync (Google/Outlook)',
+      'Customer database export',
+      'Review automation',
+      'Multi-language booking pages',
+      'Weather integration',
+      'Cancellation management',
+      'Priority support (24h response)'
+    ],
     stripePriceId: {
       monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
@@ -41,7 +62,18 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Agency',
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
-    features: ['Everything in Professional', 'Up to 10 tour guides', 'Team management dashboard', 'Revenue sharing tools', 'API access for custom integrations', 'White-label options', 'Custom domain (agency.zaur.app)', 'Dedicated account manager', 'Advanced reporting (ROI, conversion rates)'],
+    features: [
+      'Everything in Professional',
+      'Up to 10 tour guides',
+      'Team management dashboard',
+      'Revenue sharing tools',
+      'White-label options',
+      'Custom domain (agency.zaur.app)',
+      'Advanced reporting (ROI, conversion rates)',
+      'API access',
+      'Dedicated account manager',
+      'Multi-location management'
+    ],
     stripePriceId: {
       monthly: process.env.STRIPE_AGENCY_MONTHLY_PRICE_ID,
       yearly: process.env.STRIPE_AGENCY_YEARLY_PRICE_ID,
@@ -309,4 +341,79 @@ export async function reactivateSubscription(userId: string): Promise<void> {
       updatedAt: new Date()
     })
     .where(eq(users.id, userId));
+}
+
+// Check if user can create more tours
+export async function canUserCreateTour(userId: string): Promise<{ allowed: boolean; reason?: string; currentCount?: number; limit?: number | null }> {
+  const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (userRecords.length === 0) {
+    return { allowed: false, reason: 'User not found' };
+  }
+
+  const user = userRecords[0];
+  const plan = getPlanConfig(user.subscriptionPlan);
+
+  // Count current tours
+  const { tours } = await import('./db/schema/index.js');
+  const tourCountResult = await db.select({ tourCount: count() })
+    .from(tours)
+    .where(eq(tours.userId, userId));
+  
+  const currentCount = tourCountResult[0]?.tourCount || 0;
+
+  // Unlimited plans
+  if (plan.tourLimit === null) {
+    return { allowed: true, currentCount, limit: null };
+  }
+
+  // Check if under limit
+  if (currentCount < plan.tourLimit) {
+    return { allowed: true, currentCount, limit: plan.tourLimit };
+  }
+
+  return { 
+    allowed: false, 
+    reason: `Tour limit reached (${plan.tourLimit}). Upgrade your plan to create more tours.`,
+    currentCount,
+    limit: plan.tourLimit
+  };
+}
+
+// Get user subscription usage statistics
+export async function getUserSubscriptionUsage(userId: string): Promise<{
+  bookings: { used: number; limit: number | null; resetDate: Date | null };
+  tours: { used: number; limit: number | null };
+  plan: { name: string; id: SubscriptionPlan };
+}> {
+  const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (userRecords.length === 0) {
+    throw new Error('User not found');
+  }
+
+  const user = userRecords[0];
+  const plan = getPlanConfig(user.subscriptionPlan);
+
+  // Count tours
+  const { tours } = await import('./db/schema/index.js');
+  const tourCountResult = await db.select({ tourCount: count() })
+    .from(tours)
+    .where(eq(tours.userId, userId));
+
+  return {
+    bookings: {
+      used: user.monthlyBookingsUsed,
+      limit: plan.monthlyBookingLimit,
+      resetDate: user.monthlyBookingsResetAt
+    },
+    tours: {
+      used: tourCountResult[0]?.tourCount || 0,
+      limit: plan.tourLimit
+    },
+    plan: {
+      name: plan.name,
+      id: user.subscriptionPlan
+    }
+  };
 } 

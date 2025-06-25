@@ -29,7 +29,7 @@
 	}
 	
 	function goToSubscription() {
-		goto('/dashboard/subscription');
+		goto('/subscription');
 	}
 </script>
 

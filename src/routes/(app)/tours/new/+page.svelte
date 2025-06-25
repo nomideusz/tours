@@ -407,7 +407,29 @@
 
 	{#if error}
 		<div class="mb-6">
-			<ErrorAlert variant="error" title="Error" message={error} />
+			{#if (form as any)?.showUpgradeButton}
+				<div class="rounded-xl p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+					<div class="flex gap-3">
+						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+						<div class="flex-1">
+							<p class="font-medium" style="color: var(--color-warning-900);">Tour Limit Reached</p>
+							<p class="text-sm mt-1" style="color: var(--color-warning-700);">{error}</p>
+							{#if (form as any)?.currentCount !== undefined && (form as any)?.limit !== undefined}
+								<p class="text-sm mt-1" style="color: var(--color-warning-700);">
+									You currently have {(form as any).currentCount} tours out of {(form as any).limit} allowed.
+								</p>
+							{/if}
+							<div class="mt-3">
+								<a href="/subscription" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md" style="background: var(--color-warning-600); color: white;">
+									Upgrade Your Plan
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			{:else}
+				<ErrorAlert variant="error" title="Error" message={error} />
+			{/if}
 		</div>
 	{/if}
 

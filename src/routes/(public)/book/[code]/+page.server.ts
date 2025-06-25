@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
 import { broadcastBookingNotification } from '$lib/notifications/server.js';
+import { canUserCreateBooking } from '$lib/stripe-subscriptions.server.js';
 
 export const load: PageServerLoad = async ({ params }) => {
 	return {
@@ -83,6 +84,18 @@ export const actions: Actions = {
 			}
 
 			const tour = tourData[0];
+
+			// Check if tour owner can create more bookings (subscription limit)
+			const bookingLimitCheck = await canUserCreateBooking(tour.userId);
+			if (!bookingLimitCheck.allowed) {
+				return fail(403, {
+					error: 'The tour guide has reached their monthly booking limit. Please try again next month or contact the tour guide.',
+					customerName,
+					customerEmail,
+					customerPhone,
+					specialRequests
+				});
+			}
 
 			// Get time slot and check availability
 			const timeSlotData = await db

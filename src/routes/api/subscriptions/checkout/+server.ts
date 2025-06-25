@@ -14,8 +14,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
     }
 
     const origin = url.origin;
-    const successUrl = `${origin}/dashboard/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${origin}/dashboard/subscription`;
+    const successUrl = `${origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/subscription`;
 
     const session = await createSubscriptionCheckout(
       userId,

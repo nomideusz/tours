@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } from '$lib/utils/image-storage.js';
 import { generateTourQRCode } from '$lib/utils/qr-generation.js';
+import { canUserCreateTour } from '$lib/stripe-subscriptions.server.js';
 
 // Helper function to create schedule slots based on pattern data
 async function createScheduleSlots(tourId: string, scheduleData: any, userId: string) {
@@ -187,6 +188,18 @@ export const actions: Actions = {
     // Ensure user is authenticated
     if (!locals.user) {
       throw redirect(303, '/auth/login');
+    }
+
+    // Check if user can create more tours based on their subscription
+    const tourLimitCheck = await canUserCreateTour(locals.user.id);
+    if (!tourLimitCheck.allowed) {
+      return fail(403, {
+        error: 'Tour limit reached',
+        message: tourLimitCheck.reason || 'You have reached your tour limit. Please upgrade your subscription to create more tours.',
+        showUpgradeButton: true,
+        currentCount: tourLimitCheck.currentCount,
+        limit: tourLimitCheck.limit
+      });
     }
 
     try {

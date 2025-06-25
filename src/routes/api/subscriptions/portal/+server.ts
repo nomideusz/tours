@@ -10,7 +10,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
     }
 
     const origin = url.origin;
-    const returnUrl = `${origin}/dashboard/subscription`;
+    const returnUrl = `${origin}/subscription`;
 
     const session = await createCustomerPortalSession(userId, returnUrl);
 

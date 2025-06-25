@@ -7,7 +7,7 @@ import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { broadcastBookingNotification } from '$lib/notifications/server.js';
-import { updateUserSubscription } from '$lib/stripe-subscriptions.server.js';
+import { updateUserSubscription, incrementBookingUsage } from '$lib/stripe-subscriptions.server.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -188,7 +188,8 @@ export const POST: RequestHandler = async ({ request }) => {
               totalAmount: bookings.totalAmount,
               status: bookings.status,
               tourId: tours.id,
-              tourName: tours.name
+              tourName: tours.name,
+              tourOwnerId: tours.userId
             })
             .from(bookings)
             .innerJoin(tours, eq(bookings.tourId, tours.id))
@@ -196,6 +197,10 @@ export const POST: RequestHandler = async ({ request }) => {
             .limit(1);
 
             if (fullBookingData.length > 0) {
+              // Increment booking usage for the tour owner
+              await incrementBookingUsage(fullBookingData[0].tourOwnerId);
+              console.log(`Webhook: Incremented booking usage for tour owner ${fullBookingData[0].tourOwnerId}`);
+              
               const bookingNotificationData = {
                 id: fullBookingData[0].bookingId,
                 tourId: fullBookingData[0].tourId,
