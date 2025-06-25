@@ -40,9 +40,12 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 		}
 		
+		// Log the early access request
+		console.log(`Early access request from: ${email} at ${new Date().toISOString()}`);
+		
 		// Send welcome email for early access
 		try {
-			await sendAuthEmail('early-access', {
+			await sendAuthEmail('welcome', {
 				email,
 				name: email.split('@')[0], // Use email prefix as temporary name
 			});
@@ -51,8 +54,12 @@ export const POST: RequestHandler = async ({ request }) => {
 			// Don't fail the request if email fails
 		}
 		
-		// Log the early access request
-		console.log(`Early access request from: ${email}`);
+		// TODO: Add to Resend Audience for email campaigns
+		// await resend.contacts.create({
+		//   email: email,
+		//   audienceId: process.env.RESEND_AUDIENCE_ID,
+		//   unsubscribed: false,
+		// });
 		
 		return json({ 
 			success: true, 

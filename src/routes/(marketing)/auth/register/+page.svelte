@@ -313,7 +313,7 @@
 							<p class="form-error">{accessCodeError}</p>
 						{/if}
 						<p class="mt-1 text-sm text-gray-500">
-							Don't have a code? <a href="/early-access" class="text-blue-600 hover:text-blue-500">Request early access</a>
+							Don't have a code? <a href="/early-access" class="link">Request early access</a>
 						</p>
 					</div>
 				{/if}
