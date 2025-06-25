@@ -300,12 +300,15 @@ export async function createCustomerPortalSession(
   }
 
   const user = userRecords[0];
-  if (!user.stripeCustomerId) {
-    throw new Error('User has no Stripe customer ID');
+  let customerId = user.stripeCustomerId;
+
+  // Create customer if they don't have one (e.g., PARTNER users with 100% discount)
+  if (!customerId) {
+    customerId = await createStripeCustomer(userId, user.email, user.name);
   }
 
   const session = await stripe.billingPortal.sessions.create({
-    customer: user.stripeCustomerId,
+    customer: customerId,
     return_url: returnUrl,
   });
 

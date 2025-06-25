@@ -389,7 +389,7 @@
 							disabled={loading}
 							class="button-secondary button--danger-text"
 						>
-							Cancel
+							Cancel Subscription
 						</button>
 					{/if}
 				{/if}
