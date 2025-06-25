@@ -3,9 +3,13 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { sendAuthEmail } from '$lib/email.server.js';
+import { Resend } from 'resend';
+import { env } from '$env/dynamic/private';
 
-export const POST: RequestHandler = async ({ request }) => {
+// Initialize Resend
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+
+export const POST: RequestHandler = async ({ request, url }) => {
 	try {
 		const { email } = await request.json();
 		
@@ -43,27 +47,34 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Log the early access request
 		console.log(`Early access request from: ${email} at ${new Date().toISOString()}`);
 		
-		// Send welcome email for early access
-		try {
-			await sendAuthEmail('welcome', {
-				email,
-				name: email.split('@')[0], // Use email prefix as temporary name
-			});
-		} catch (emailError) {
-			console.warn('Failed to send early access email:', emailError);
-			// Don't fail the request if email fails
+		// Add to Resend Audience for email campaigns
+		if (resend && env.RESEND_AUDIENCE_ID) {
+			try {
+				// Determine source from the referrer or page
+				const source = url.pathname.includes('early-access') ? 'early-access-page' : 'hero-section';
+				
+				await resend.contacts.create({
+					email: email.toLowerCase(),
+					audienceId: env.RESEND_AUDIENCE_ID,
+					unsubscribed: false,
+					firstName: email.split('@')[0] // Use email prefix as name
+				});
+				
+				console.log(`✅ Added ${email} to Resend audience (source: ${source})`);
+			} catch (resendError) {
+				console.warn('Failed to add to Resend audience:', resendError);
+				// Don't fail the request if Resend fails
+			}
+		} else {
+			console.warn('⚠️ Resend not configured - skipping audience addition');
 		}
 		
-		// TODO: Add to Resend Audience for email campaigns
-		// await resend.contacts.create({
-		//   email: email,
-		//   audienceId: process.env.RESEND_AUDIENCE_ID,
-		//   unsubscribed: false,
-		// });
+		// No welcome email sent - this is just a code request
+		// Users will get their access code through a separate campaign from Resend Audience
 		
 		return json({ 
 			success: true, 
-			message: 'Welcome to early access! Check your email for next steps.' 
+			message: 'Thank you for your interest! We\'ll send you an access code soon.' 
 		});
 		
 	} catch (error) {
