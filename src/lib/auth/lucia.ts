@@ -45,6 +45,12 @@ export const lucia = new Lucia(adapter, {
       subscriptionCancelAtPeriodEnd: attributes.subscriptionCancelAtPeriodEnd,
       monthlyBookingsUsed: attributes.monthlyBookingsUsed,
       monthlyBookingsResetAt: attributes.monthlyBookingsResetAt,
+      // Promo code fields
+      promoCodeUsed: attributes.promoCodeUsed,
+      subscriptionDiscountPercentage: attributes.subscriptionDiscountPercentage,
+      subscriptionFreeUntil: attributes.subscriptionFreeUntil,
+      isLifetimeDiscount: attributes.isLifetimeDiscount,
+      earlyAccessMember: attributes.earlyAccessMember,
       deletedAt: attributes.deletedAt
     };
   }
