@@ -22,3 +22,6 @@ export const load: PageLoad = async ({ params, parent }) => {
 		ticketCode: code
 	};
 }; 
+
+// Disable SSR to avoid fetch issues
+export const ssr = false; 
