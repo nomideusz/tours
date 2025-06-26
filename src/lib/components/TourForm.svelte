@@ -583,27 +583,29 @@
 			</div>
 			<div class="p-4">
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					<NumberInput
-						id="price"
-						name="price"
-						label="Price ({currencySymbol})"
-						bind:value={formData.price}
-						min={minimumPrice}
-						max={99999}
-						step={priceStep}
-						placeholder="25.00"
-						incrementLabel="Increase price"
-						decrementLabel="Decrease price"
-						error={getFieldError(allErrors, 'price')}
-						hasError={hasFieldError(allErrors, 'price')}
-						decimalPlaces={2}
-						onblur={() => validateField('price')}
-					/>
-					{#if minimumPrice > 0.5}
-						<p class="text-xs mt-1" style="color: var(--text-secondary);">
-							Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice}
-						</p>
-					{/if}
+					<div>
+						<NumberInput
+							id="price"
+							name="price"
+							label="Price ({currencySymbol})"
+							bind:value={formData.price}
+							min={minimumPrice}
+							max={99999}
+							step={priceStep}
+							placeholder="25.00"
+							incrementLabel="Increase price"
+							decrementLabel="Decrease price"
+							error={getFieldError(allErrors, 'price')}
+							hasError={hasFieldError(allErrors, 'price')}
+							decimalPlaces={2}
+							onblur={() => validateField('price')}
+						/>
+						{#if minimumPrice > 0.5}
+							<p class="text-xs mt-1" style="color: var(--text-secondary);">
+								Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
+							</p>
+						{/if}
+					</div>
 
 				<NumberInput
 					id="duration"
