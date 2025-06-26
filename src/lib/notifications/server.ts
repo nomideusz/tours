@@ -7,7 +7,7 @@ import { createId } from '@paralleldrive/cuid2';
 export const connections = new Map<string, (data: any) => void>();
 
 // Function to send notification to a specific user (HYBRID: Database + SSE)
-export async function sendNotificationToUser(userId: string, notification: any): Promise<boolean> {
+export async function sendNotificationToUser(userId: string, notification: any, options?: { skipSSE?: boolean }): Promise<boolean> {
   console.log(`📧 Sending notification to user: "${userId}"`);
   console.log(`📧 Notification data:`, notification);
   
@@ -32,7 +32,12 @@ export async function sendNotificationToUser(userId: string, notification: any):
     // Continue with SSE even if DB fails, but log the error
   }
 
-  // 2. SECOND: Try to send via SSE if connection exists
+  // 2. SECOND: Try to send via SSE if connection exists (unless skipped)
+  if (options?.skipSSE) {
+    console.log('⏭️ Skipping SSE delivery as requested');
+    return dbSuccess;
+  }
+  
   const sendMessage = connections.get(userId);
   if (!sendMessage) {
     console.log(`⚠️ No active SSE connection for user: "${userId}"`);
@@ -42,8 +47,14 @@ export async function sendNotificationToUser(userId: string, notification: any):
   try {
     console.log(`📤 Sending SSE notification to user "${userId}"`);
     
+    // Add a flag to indicate this is a real-time notification
+    const sseNotification = {
+      ...notification,
+      isRealtime: true
+    };
+    
     // Call the sendMessage function stored from the SSE endpoint
-    sendMessage(notification);
+    sendMessage(sseNotification);
     console.log(`✅ Notification sent via SSE to user: "${userId}"`);
     return true; // Both DB and SSE succeeded
   } catch (error) {

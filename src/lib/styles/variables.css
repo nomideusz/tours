@@ -521,10 +521,101 @@ a .lucide {
 }
 
 /* Ensure lucide icons in headers have proper contrast */
+/* REMOVED - This rule was too broad and broke notification panel icon colors
 header .lucide-icon,
 header .lucide {
 	color: var(--text-primary);
 	stroke: var(--text-primary);
+}
+*/
+
+/* REMOVED - The complex :not() selector was still overriding notification colors  */
+
+/* Notification panel specific icon colors */
+/* Light mode notification icons */
+.text-green-600 svg.lucide,
+svg.lucide.text-green-600 {
+	color: #16a34a;
+	stroke: #16a34a;
+}
+
+.text-blue-600 svg.lucide,
+svg.lucide.text-blue-600 {
+	color: #2563eb;
+	stroke: #2563eb;
+}
+
+.text-red-600 svg.lucide,
+svg.lucide.text-red-600 {
+	color: #dc2626;
+	stroke: #dc2626;
+}
+
+.text-gray-300 svg.lucide,
+svg.lucide.text-gray-300 {
+	color: #d1d5db;
+	stroke: #d1d5db;
+}
+
+.text-gray-400 svg.lucide,
+svg.lucide.text-gray-400 {
+	color: #9ca3af;
+	stroke: #9ca3af;
+}
+
+.text-gray-500 svg.lucide,
+svg.lucide.text-gray-500 {
+	color: #6b7280;
+	stroke: #6b7280;
+}
+
+.text-gray-600 svg.lucide,
+svg.lucide.text-gray-600 {
+	color: #4b5563;
+	stroke: #4b5563;
+}
+
+/* Dark mode notification icons - brighter colors for visibility */
+[data-theme="dark"] .text-green-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-green-600 {
+	color: #22c55e;
+	stroke: #22c55e;
+}
+
+[data-theme="dark"] .text-blue-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-blue-600 {
+	color: #3b82f6;
+	stroke: #3b82f6;
+}
+
+[data-theme="dark"] .text-red-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-red-600 {
+	color: #ef4444;
+	stroke: #ef4444;
+}
+
+[data-theme="dark"] .text-gray-300 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-300 {
+	color: var(--text-tertiary);
+	stroke: var(--text-tertiary);
+}
+
+[data-theme="dark"] .text-gray-400 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-400 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
+}
+
+[data-theme="dark"] .text-gray-500 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-500 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
+}
+
+[data-theme="dark"] .text-gray-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-600 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
 }
 
 /* Status and payment badges icons */

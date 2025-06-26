@@ -23,11 +23,11 @@
 
 		<!-- Right: Actions -->
 		<div class="flex items-center gap-3">
-			<!-- Theme Toggle -->
-			<ThemeToggle tooltipPosition="bottom" />
-
 			<!-- Notifications -->
 			<NotificationPanel tooltipPosition="bottom-left" />
+
+			<!-- Theme Toggle -->
+			<ThemeToggle tooltipPosition="bottom" />
 		</div>
 	</div>
 </header> 

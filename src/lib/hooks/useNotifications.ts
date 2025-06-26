@@ -14,6 +14,8 @@ export function useNotifications() {
   let reconnectAttempts = 0;
   let lastHeartbeat = Date.now();
   let isConnecting = false;
+  let hasLoadedInitial = false;
+  let processedNotificationIds = new Set<string>();
   
   const maxReconnectAttempts = 5; // Reduced from 10 to prevent spam
   const heartbeatTimeout = 60000; // 60 seconds
@@ -107,6 +109,12 @@ export function useNotifications() {
           if (data.type === 'connected') {
             console.log('🔗 Connection confirmation received');
             lastHeartbeat = Date.now();
+            return;
+          }
+          
+          // Check if we've already processed this notification
+          if (data.id && processedNotificationIds.has(data.id)) {
+            console.log('🔄 Skipping duplicate notification:', data.id);
             return;
           }
           
@@ -218,7 +226,16 @@ export function useNotifications() {
         // Process each notification, preserving read status from database
         // For polling, add in reverse order since add() prepends to array
         data.notifications.reverse().forEach((notification: any) => {
+          // Skip if we've already processed this notification
+          if (processedNotificationIds.has(notification.id)) {
+            console.log('🔄 Skipping duplicate notification from polling:', notification.id);
+            return;
+          }
+          
           console.log('📬 Adding notification from polling:', notification.id, 'read:', notification.read);
+          
+          // Mark as processed
+          processedNotificationIds.add(notification.id);
           
           // Add to store preserving read status (don't trigger browser notifications for existing ones)
           notificationActions.add(notification);
@@ -231,6 +248,11 @@ export function useNotifications() {
   }
 
   async function loadInitialNotifications() {
+    if (hasLoadedInitial) {
+      console.log('📚 Initial notifications already loaded, skipping...');
+      return;
+    }
+    
     try {
       console.log('📚 Loading initial notifications from database...');
       
@@ -248,18 +270,24 @@ export function useNotifications() {
       if (data.success && data.notifications?.length > 0) {
         console.log(`📚 Loading ${data.notifications.length} notifications with read status`);
         
-        // Clear existing notifications first to avoid mixing localStorage with database
-        notificationActions.clear();
+        // Don't clear existing notifications - just add new ones
+        // This prevents losing notifications that might have come via SSE
         
         // Add notifications in reverse order since add() prepends to array
         // API returns newest first, but we need to add oldest first to maintain correct order
         data.notifications.reverse().forEach((notification: any) => {
           console.log('📚 Loading notification:', notification.id, 'read:', notification.read);
+          
+          // Mark as processed to prevent duplicates
+          processedNotificationIds.add(notification.id);
+          
           notificationActions.add(notification);
         });
         
         console.log('✅ Initial notifications loaded successfully');
       }
+      
+      hasLoadedInitial = true;
       
     } catch (error) {
       console.error('❌ Failed to load initial notifications:', error);
@@ -291,6 +319,15 @@ export function useNotifications() {
       console.error('❌ Invalid notification data structure:', data);
       return;
     }
+    
+    // Check if already processed
+    if (processedNotificationIds.has(data.id)) {
+      console.log('🔄 Notification already processed:', data.id);
+      return;
+    }
+    
+    // Mark as processed
+    processedNotificationIds.add(data.id);
     
     // Add notification to store
     console.log('📝 Adding new booking notification to store...');
@@ -361,30 +398,24 @@ export function useNotifications() {
   if (browser) {
     // Just connect to the internal notification system
     
-    // Load initial notifications from database first
+    // Always load initial notifications from database on page load
+    // This ensures persisted notifications are shown after refresh
     loadInitialNotifications().then(() => {
       console.log('📚 Initial notifications loaded, starting SSE connection...');
-      connect();
-      
-      // Start with polling as immediate fallback
-      setTimeout(() => {
-        if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
-          console.log('🔄 SSE not ready, starting polling fallback...');
-          startPolling();
-        }
-      }, 5000); // Give SSE 5 seconds to connect
     }).catch((error) => {
-      console.error('❌ Failed to load initial notifications, continuing with SSE:', error);
-      connect();
-      
-      // Start with polling as immediate fallback
-      setTimeout(() => {
-        if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
-          console.log('🔄 SSE not ready, starting polling fallback...');
-          startPolling();
-        }
-      }, 5000); // Give SSE 5 seconds to connect
+      console.error('❌ Failed to load initial notifications:', error);
     });
+    
+    // Try to connect SSE immediately
+    connect();
+    
+    // Start with polling as fallback after a delay
+    setTimeout(() => {
+      if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+        console.log('🔄 SSE not ready after 5s, starting polling fallback...');
+        startPolling();
+      }
+    }, 5000); // Give SSE 5 seconds to connect
   }
 
   onMount(() => {
