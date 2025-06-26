@@ -482,27 +482,32 @@ input, textarea, select {
 }
 
 /* Ensure SVG icons inherit color - but only for specific cases */
-nav svg,
-button:not(.preserve-icon-colors) svg,
-a:not(.preserve-icon-colors) svg,
-.icon:not(.preserve-icon-colors) svg {
+/* Only apply fill to icons that aren't stroke-based */
+nav svg:not([fill="none"]),
+button:not(.preserve-icon-colors) svg:not([fill="none"]),
+a:not(.preserve-icon-colors) svg:not([fill="none"]),
+.icon:not(.preserve-icon-colors) svg:not([fill="none"]) {
 	fill: currentColor;
 }
 
 /* Lucide icons - ensure proper contrast */
 .lucide-icon,
-.lucide {
+.lucide,
+svg.lucide {
 	stroke: currentColor;
-	fill: none;
+	fill: none !important; /* Force stroke-based icons to not be filled */
 	color: inherit;
 }
 
 /* Ensure lucide icons in specific contexts have proper contrast */
 button .lucide-icon,
 button .lucide,
+button svg.lucide,
 a .lucide-icon,
-a .lucide {
+a .lucide,
+a svg.lucide {
 	color: inherit;
+	stroke: currentColor;
 }
 
 /* Fix lucide icons that might have poor contrast */
@@ -654,11 +659,13 @@ nav .lucide {
 }
 
 /* Fallback color for lucide icons that don't inherit properly */
+/* Commented out - this was overriding button text colors
 .lucide-icon:not([style*="color"]):not([style*="stroke"]),
 .lucide:not([style*="color"]):not([style*="stroke"]) {
 	color: var(--text-primary);
 	stroke: var(--text-primary);
 }
+*/
 
 /* Allow colorful icons to maintain their colors */
 .icon-colorful svg,
@@ -888,4 +895,5 @@ button svg,
 .button-success svg {
 	opacity: 1;
 	stroke-width: 2;
+	color: inherit; /* Ensure they inherit button text color */
 }

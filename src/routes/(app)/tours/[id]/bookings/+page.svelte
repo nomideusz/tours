@@ -208,6 +208,12 @@
 			secondaryInfo="{stats().total} bookings"
 			quickActions={[
 				{
+					label: 'Back',
+					icon: ArrowLeft,
+					onclick: () => goto(`/tours/${tourId}`),
+					variant: 'secondary'
+				},
+				{
 					label: 'Scanner',
 					icon: QrCode,
 					onclick: () => goto('/checkin-scanner'),

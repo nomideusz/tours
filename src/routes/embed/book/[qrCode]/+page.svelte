@@ -134,109 +134,6 @@
 <svelte:head>
 	<title>{tour?.name || 'Tour'} - Book Now</title>
 	<meta name="description" content="Book {tour?.name || 'this tour'} - {tour?.description || 'Experience something amazing'}" />
-	<style>
-		/* Inline CSS variables for reliable iframe loading */
-		:root {
-			/* Professional Color Palette */
-			--color-primary-50: #eff6ff;
-			--color-primary-100: #dbeafe;
-			--color-primary-200: #bfdbfe;
-			--color-primary-300: #93c5fd;
-			--color-primary-400: #60a5fa;
-			--color-primary-500: #3b82f6;
-			--color-primary-600: #2563eb;
-			--color-primary-700: #1d4ed8;
-			--color-primary-800: #1e40af;
-			--color-primary-900: #1e3a8a;
-			
-			/* Neutral Grays */
-			--color-gray-50: #f9fafb;
-			--color-gray-100: #f3f4f6;
-			--color-gray-200: #e5e7eb;
-			--color-gray-300: #d1d5db;
-			--color-gray-400: #9ca3af;
-			--color-gray-500: #6b7280;
-			--color-gray-600: #4b5563;
-			--color-gray-700: #374151;
-			--color-gray-800: #1f2937;
-			--color-gray-900: #111827;
-			
-			/* Semantic Colors */
-			--color-success: #10b981;
-			--color-success-light: #d1fae5;
-			--color-error: #ef4444;
-			--color-error-light: #fee2e2;
-			
-			/* Typography */
-			--font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-			
-			/* Font Sizes */
-			--text-xs: 0.75rem;
-			--text-sm: 0.875rem;
-			--text-base: 1rem;
-			--text-lg: 1.125rem;
-			
-			/* Line Heights */
-			--leading-tight: 1.25;
-			--leading-normal: 1.5;
-			
-			/* Spacing Scale */
-			--space-1: 0.25rem;
-			--space-2: 0.5rem;
-			--space-3: 0.75rem;
-			--space-4: 1rem;
-			--space-8: 2rem;
-			
-			/* Border Radius */
-			--radius-sm: 0.125rem;
-			--radius-md: 0.5rem;
-			--radius-lg: 0.75rem;
-			--radius-xl: 1rem;
-			
-			/* Shadows */
-			--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-			
-			/* Transitions */
-			--transition-fast: 150ms;
-			
-			/* Light theme semantic colors */
-			--bg-primary: #ffffff;
-			--bg-secondary: var(--color-gray-50);
-			--text-primary: var(--color-gray-900);
-			--text-secondary: var(--color-gray-600);
-			--text-tertiary: var(--color-gray-500);
-			--border-primary: var(--color-gray-200);
-		}
-
-		/* Dark mode overrides */
-		[data-theme="dark"] {
-			--color-gray-50: #0f1419;
-			--color-gray-100: #1c2128;
-			--color-gray-200: #30363d;
-			--color-gray-300: #484f58;
-			--color-gray-400: #656d76;
-			--color-gray-500: #8b949e;
-			--color-gray-600: #b1bac4;
-			--color-gray-700: #c9d1d9;
-			--color-gray-800: #f0f6fc;
-			--color-gray-900: #ffffff;
-
-			--bg-primary: #0d1117;
-			--bg-secondary: #161b22;
-			--text-primary: #f0f6fc;
-			--text-secondary: #c9d1d9;
-			--text-tertiary: #b1bac4;
-			--border-primary: #30363d;
-		}
-
-		body {
-			margin: 0;
-			padding: 0;
-			font-family: var(--font-sans);
-			background: var(--bg-primary);
-			color: var(--text-primary);
-		}
-	</style>
 </svelte:head>
 
 <div class="embed-widget">
@@ -296,7 +193,12 @@
 								{/if}
 							</div>
 							
-							<div class="tour-price">{getTourDisplayPriceFormatted(tour)}</div>
+							<div class="tour-price">
+								<span>{getTourDisplayPriceFormatted(tour)} <span class="per-person">per person</span></span>
+								{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+									<span class="price-note">• {$globalCurrencyFormatter(tour.pricingTiers.child)} child</span>
+								{/if}
+							</div>
 						</div>
 						
 						<!-- Meta information with better spacing -->
@@ -328,13 +230,13 @@
 					<!-- Action button positioned on the right on desktop -->
 					<div class="widget-actions">
 						{#if tour.status === 'active'}
-							<button class="widget-book-button widget-book-button--primary" onclick={handleBookNow}>
-								<Calendar size={16} />
+							<button class="button-primary button--gap" onclick={handleBookNow}>
+								<Calendar class="w-4 h-4" />
 								<span>Book Now</span>
 							</button>
 						{:else}
-							<button class="widget-book-button widget-book-button--secondary" onclick={handleContactUs}>
-								<Calendar size={16} />
+							<button class="button-secondary button--gap" onclick={handleContactUs}>
+								<Calendar class="w-4 h-4" />
 								<span>Contact Us</span>
 							</button>
 						{/if}
@@ -422,6 +324,7 @@
 		box-shadow: var(--shadow-md);
 		border: 1px solid var(--border-primary);
 		min-height: 240px;
+		height: 100%;
 	}
 	
 	.widget-content {
@@ -440,6 +343,7 @@
 		position: relative;
 		overflow: hidden;
 		border-radius: var(--radius-lg) 0 0 0;
+		border-right: 1px solid var(--border-primary);
 	}
 	
 	.tour-image img {
@@ -538,6 +442,22 @@
 		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--color-success);
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+	}
+	
+	.price-note {
+		font-size: var(--text-xs);
+		font-weight: 500;
+		color: var(--text-secondary);
+	}
+	
+	.per-person {
+		font-size: var(--text-xs);
+		font-weight: 400;
+		color: var(--text-secondary);
 	}
 	
 	.tour-meta {
@@ -580,51 +500,17 @@
 		flex-shrink: 0;
 	}
 	
-	.widget-book-button {
-		padding: 12px 20px;
-		border-radius: var(--radius-md);
-		font-size: var(--text-sm);
-		font-weight: 600;
-		letter-spacing: 0.025em;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-2);
-		border: none;
-		cursor: pointer;
-		transition: all var(--transition-fast) ease;
-		text-decoration: none;
-		white-space: nowrap;
+	/* Ensure buttons in widget have minimum width */
+	.widget-actions .button-primary,
+	.widget-actions .button-secondary {
 		min-width: 120px;
-	}
-	
-	.widget-book-button--primary {
-		background: var(--color-primary-600);
-		color: white;
-	}
-	
-	.widget-book-button--primary:hover {
-		background: var(--color-primary-700);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-	}
-	
-	.widget-book-button--secondary {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--border-primary);
-	}
-	
-	.widget-book-button--secondary:hover {
-		background: var(--color-gray-100);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-md);
 	}
 	
 	.widget-footer {
 		border-top: 1px solid var(--border-primary);
 		padding: var(--space-2) var(--space-4);
 		background: var(--bg-secondary);
+		border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 	}
 	
 	.powered-by {
@@ -658,7 +544,8 @@
 			width: 100%;
 		}
 		
-		.widget-book-button {
+		.widget-actions .button-primary,
+		.widget-actions .button-secondary {
 			width: 100%;
 		}
 	}
@@ -667,50 +554,124 @@
 	@media (max-width: 480px) {
 		.embed-widget {
 			height: auto !important;
-			min-height: 280px;
+			min-height: auto;
 			max-height: none !important;
 		}
 		
 		.tour-widget {
-			height: auto;
+			height: 100%;
 			min-height: auto;
+			display: flex;
+			flex-direction: column;
 		}
 		
 		.widget-content {
-			flex-direction: column;
-			flex: none;
+			flex-direction: row;
+			flex: 1;
 		}
 		
 		.tour-image {
+			width: 120px;
+			height: auto;
+			min-height: 100%;
+			border-radius: var(--radius-lg) 0 0 0;
+		}
+		
+		.tour-image img {
+			object-fit: cover;
+			object-position: center;
+		}
+		
+		.tour-info {
+			padding: var(--space-3);
+			flex-direction: column;
+			gap: var(--space-2);
+			flex: 1;
+		}
+		
+		.tour-content {
+			gap: var(--space-2);
+			flex: 1;
+		}
+		
+		.tour-header {
+			gap: var(--space-1);
+		}
+		
+		.tour-title {
+			font-size: var(--text-base);
+			-webkit-line-clamp: 2;
+		}
+		
+		.tour-price {
+			font-size: var(--text-lg);
+		}
+		
+		.price-note {
+			font-size: 11px;
+		}
+		
+		.tour-meta {
+			gap: var(--space-2);
+			flex-wrap: wrap;
+		}
+		
+		.meta-item {
+			font-size: 11px;
+		}
+		
+		.tour-description {
+			font-size: var(--text-xs);
+			-webkit-line-clamp: 2;
+			max-height: 32px;
+		}
+		
+		.widget-actions {
 			width: 100%;
-			height: 80px;
-			min-height: 80px;
-			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+			flex-shrink: 0;
+			padding-top: var(--space-2);
+		}
+		
+		.widget-actions .button-primary,
+		.widget-actions .button-secondary {
+			width: 100%;
+			padding: 12px 16px;
+			font-size: var(--text-sm);
+			min-width: auto;
+		}
+		
+		.widget-footer {
+			padding: 8px var(--space-3);
+			flex-shrink: 0;
+		}
+		
+		.powered-by {
+			font-size: 10px;
+		}
+	}
+	
+	/* Very small screens */
+	@media (max-width: 360px) {
+		.embed-widget {
+			min-height: auto;
+		}
+		
+		.tour-image {
+			width: 100px;
+			min-height: 100%;
 		}
 		
 		.tour-info {
 			padding: var(--space-2);
-			flex-direction: column;
-			gap: var(--space-1);
-			flex: none;
+			gap: var(--space-2);
 		}
 		
 		.tour-content {
-			gap: var(--space-1);
-			flex: none;
+			gap: var(--space-2);
 		}
 		
 		.tour-header {
-			gap: 4px;
-		}
-		
-		.tour-title {
-			font-size: var(--text-sm);
-			-webkit-line-clamp: 1;
-		}
-		
-		.tour-price {
-			font-size: var(--text-base);
+			gap: var(--space-1);
 		}
 		
 		.tour-meta {
@@ -722,93 +683,41 @@
 			font-size: 10px;
 		}
 		
+		.tour-title {
+			font-size: var(--text-sm);
+			-webkit-line-clamp: 2;
+		}
+		
+		.tour-price {
+			font-size: var(--text-base);
+		}
+		
+		.price-note {
+			font-size: 10px;
+		}
+		
 		.tour-description {
 			font-size: 11px;
-			-webkit-line-clamp: 1;
-			max-height: 14px;
+			-webkit-line-clamp: 2;
+			max-height: 28px;
 		}
 		
 		.widget-actions {
-			width: 100%;
-			flex-shrink: 0;
-			padding: var(--space-1) 0 0 0;
+			padding-top: var(--space-2);
 		}
 		
-		.widget-book-button {
-			width: 100%;
-			padding: 12px 16px;
+		.widget-actions .button-primary,
+		.widget-actions .button-secondary {
+			padding: 10px 14px;
 			font-size: var(--text-xs);
-			min-width: auto;
 		}
 		
 		.widget-footer {
 			padding: 6px var(--space-2);
-			flex-shrink: 0;
 		}
 		
 		.powered-by {
 			font-size: 9px;
-		}
-	}
-	
-	/* Very small screens */
-	@media (max-width: 360px) {
-		.embed-widget {
-			min-height: 240px;
-		}
-		
-		.tour-image {
-			height: 60px;
-			min-height: 60px;
-		}
-		
-		.tour-info {
-			padding: 8px;
-			gap: 4px;
-		}
-		
-		.tour-content {
-			gap: 4px;
-		}
-		
-		.tour-header {
-			gap: 2px;
-		}
-		
-		.tour-meta {
-			flex-direction: column;
-			gap: 2px;
-			align-items: flex-start;
-		}
-		
-		.tour-title {
-			font-size: 12px;
-			-webkit-line-clamp: 1;
-		}
-		
-		.tour-price {
-			font-size: var(--text-sm);
-		}
-		
-		.tour-description {
-			display: none;
-		}
-		
-		.widget-actions {
-			padding: 4px 0 0 0;
-		}
-		
-		.widget-book-button {
-			padding: 10px 12px;
-			font-size: 11px;
-		}
-		
-		.widget-footer {
-			padding: 4px 8px;
-		}
-		
-		.powered-by {
-			font-size: 8px;
 		}
 	}
 </style> 

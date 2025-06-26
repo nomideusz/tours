@@ -372,6 +372,12 @@
 		transition: all var(--transition-fast) ease;
 	}
 	
+	.tour-status-badge--small {
+		gap: 0.25rem;
+		padding: 0.125rem 0.5rem;
+		font-size: 0.75rem;
+	}
+	
 	/* Opera-specific badge size reduction - moved to theme-overrides.css */
 
 	.tour-status-badge--active {

@@ -27,12 +27,13 @@
 		title: string;
 		statusButton?: {
 			label: string;
-			onclick: () => void;
+			onclick?: () => void;
 			disabled?: boolean;
 			color?: string;
 			textColor?: string;
 			backgroundColor?: string;
-			dotColor: string;
+			dotColor?: string;
+			className?: string;
 			tooltip?: string;
 		} | null;
 		secondaryInfo?: string | null;
@@ -53,10 +54,16 @@
 						onclick={statusButton.onclick}
 						disabled={statusButton.disabled}
 						title={statusButton.tooltip}
-						class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200"
-						style="color: {statusButton.textColor || 'var(--text-primary)'}; background: {statusButton.backgroundColor || 'var(--bg-tertiary)'};"
+						class="tour-status-badge tour-status-badge--small {statusButton.className || ''}"
+						style="{statusButton.textColor || statusButton.backgroundColor || statusButton.color ? `color: ${statusButton.textColor || 'var(--text-primary)'}; background: ${statusButton.backgroundColor || 'var(--bg-tertiary)'};` : ''}"
 					>
-						<span class="w-1.5 h-1.5 rounded-full {statusButton.dotColor}"></span>
+						{#if statusButton.dotColor || statusButton.className}
+							<span class="tour-status-indicator {statusButton.className ? 
+								(statusButton.className.includes('active') ? 'tour-status-indicator--active' : 
+								statusButton.className.includes('draft') ? 'tour-status-indicator--draft' : '') 
+								: ''}" 
+								style="{statusButton.dotColor ? `background: ${statusButton.dotColor}` : ''}"></span>
+						{/if}
 						{statusButton.label}
 					</button>
 				{/if}

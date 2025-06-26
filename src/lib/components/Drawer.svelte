@@ -158,70 +158,150 @@
 	});
 </script>
 
+<style>
+	/* Mobile drawer animations */
+	.mobile-drawer-backdrop {
+		animation: fadeIn 0.2s ease-out;
+	}
+	
+	.mobile-drawer-panel {
+		animation: slideUp 0.2s ease-out;
+	}
+	
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+	
+	@keyframes slideUp {
+		from { transform: translateY(100%); }
+		to { transform: translateY(0); }
+	}
+</style>
+
 <svelte:window on:keydown={handleKeydown} />
 
 {#if isOpen}
-	<!-- Backdrop -->
-	<div 
-		class="fixed flex {isMobile ? 'items-end inset-x-0 top-0 bottom-[3.8rem]' : 'items-center justify-center p-4 inset-0'}"
-		style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5);"
-		transition:fade={{ duration: 150 }}
-	>
-		<!-- Drawer/Modal -->
+	{#if isMobile}
+		<!-- Mobile: Full-screen overlay with bottom drawer (like mobile menu) -->
 		<div 
-			bind:this={drawerElement}
-			class="relative w-full {isMobile ? 'max-h-[80vh]' : 'max-w-4xl max-h-[85vh] my-8'} flex flex-col {isMobile ? 'rounded-t-xl' : 'rounded-xl'} shadow-xl overflow-hidden {className}"
-			style="background: var(--bg-primary); border: 1px solid var(--border-primary); {isMobile ? 'border-bottom: none;' : ''} transition: transform 0.2s ease-out;"
-			transition:fly={{ y: isMobile ? 300 : 0, duration: 200 }}
-			use:clickOutside={handleClickOutside}
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby={title ? 'drawer-title' : undefined}
-			ontouchstart={handleTouchStart}
-			ontouchmove={handleTouchMove}
-			ontouchend={handleTouchEnd}
+			class="lg:hidden fixed inset-0 mobile-drawer-backdrop" 
+			style="z-index: 60; background: rgba(0, 0, 0, 0.5);"
+			onclick={handleClickOutside}
 		>
-			<!-- Mobile drag handle -->
-			{#if isMobile}
-				<div class="flex justify-center py-3 px-6" style="cursor: grab;">
-					<div class="w-12 h-1 rounded-full" style="background: var(--border-primary);"></div>
-				</div>
-			{/if}
-			
-			<!-- Header -->
-			{#if title || showCloseButton}
-				<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
-					<div class="flex-1 min-w-0 pr-4">
-						{#if title}
-							<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold leading-tight" style="color: var(--text-primary);">
-								{title}
-							</h2>
-						{/if}
-						{#if subtitle}
-							<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
-								{subtitle}
-							</p>
-						{/if}
+			<div 
+				bind:this={drawerElement}
+				class="fixed bottom-0 left-0 right-0 mobile-drawer-panel {className}"
+				onclick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={title ? 'drawer-title' : undefined}
+				ontouchstart={handleTouchStart}
+				ontouchmove={handleTouchMove}
+				ontouchend={handleTouchEnd}
+				style="z-index: 60; max-height: 90vh; padding-bottom: env(safe-area-inset-bottom, 0);"
+			>
+				<div class="rounded-t-xl shadow-lg overflow-hidden" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: 90vh; display: flex; flex-direction: column;">
+					<!-- Mobile drag handle -->
+					<div class="flex justify-center py-3 px-6 flex-shrink-0" style="cursor: grab;">
+						<div class="w-12 h-1 rounded-full" style="background: var(--border-primary);"></div>
 					</div>
 					
-					{#if showCloseButton}
-						<button 
-							onclick={handleClose}
-							class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-							aria-label="Close"
-						>
-							<X class="h-5 w-5" style="color: var(--text-tertiary);" />
-						</button>
+					<!-- Header -->
+					{#if title || showCloseButton}
+						<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
+							<div class="flex-1 min-w-0 pr-4">
+								{#if title}
+									<h2 id="drawer-title" class="text-lg font-semibold leading-tight" style="color: var(--text-primary);">
+										{title}
+									</h2>
+								{/if}
+								{#if subtitle}
+									<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
+										{subtitle}
+									</p>
+								{/if}
+							</div>
+							
+							{#if showCloseButton}
+								<button 
+									onclick={handleClose}
+									class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
+									style="color: var(--text-tertiary);"
+									onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+									onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+									aria-label="Close"
+								>
+									<X class="h-5 w-5" />
+								</button>
+							{/if}
+						</div>
 					{/if}
-				</div>
-			{/if}
-			
-			<!-- Content -->
-			<div class="flex-1 overflow-y-auto overscroll-contain">
-				<div class="px-6 py-6">
-					{@render children?.()}
+					
+					<!-- Content -->
+					<div class="flex-1 overflow-y-auto overscroll-contain min-h-0">
+						<div class="px-6 py-6">
+							{@render children?.()}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	{:else}
+		<!-- Desktop: Centered modal -->
+		<div 
+			class="fixed flex items-center justify-center p-4 inset-0"
+			style="z-index: var(--z-modal); background: rgba(0, 0, 0, 0.5);"
+			transition:fade={{ duration: 150 }}
+		>
+			<div 
+				bind:this={drawerElement}
+				class="relative w-full max-w-4xl max-h-[85vh] my-8 flex flex-col rounded-xl shadow-xl overflow-hidden {className}"
+				style="background: var(--bg-primary); border: 1px solid var(--border-primary); transition: transform 0.2s ease-out;"
+				transition:fly={{ y: 0, duration: 200 }}
+				use:clickOutside={handleClickOutside}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={title ? 'drawer-title' : undefined}
+			>
+				<!-- Header -->
+				{#if title || showCloseButton}
+					<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
+						<div class="flex-1 min-w-0 pr-4">
+							{#if title}
+								<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold leading-tight" style="color: var(--text-primary);">
+									{title}
+								</h2>
+							{/if}
+							{#if subtitle}
+								<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
+									{subtitle}
+								</p>
+							{/if}
+						</div>
+						
+						{#if showCloseButton}
+							<button 
+								onclick={handleClose}
+								class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
+								style="color: var(--text-tertiary);"
+								onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+								onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+								aria-label="Close"
+							>
+								<X class="h-5 w-5" />
+							</button>
+						{/if}
+					</div>
+				{/if}
+				
+				<!-- Content -->
+				<div class="flex-1 overflow-y-auto overscroll-contain">
+					<div class="px-6 py-6">
+						{@render children?.()}
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if} 

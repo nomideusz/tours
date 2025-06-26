@@ -47,12 +47,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Download from 'lucide-svelte/icons/download';
 	import Plus from 'lucide-svelte/icons/plus';
-	import UserCheck from 'lucide-svelte/icons/user-check';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import XCircle from 'lucide-svelte/icons/x-circle';
-	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
-	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 
 	// Get data from load function
 	let { data } = $props();
@@ -68,7 +63,7 @@
 		staleTime: 30 * 1000, // 30 seconds for faster updates
 		gcTime: 5 * 60 * 1000, // 5 minutes
 		refetchOnWindowFocus: true,
-		refetchOnMount: true,
+		refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
 	}));
 
 	// Also fetch schedule data for proper slot information (like the schedule page does)
@@ -78,17 +73,7 @@
 		staleTime: 30 * 1000, // 30 seconds - shorter for real-time updates
 		gcTime: 2 * 60 * 1000, // 2 minutes
 		refetchOnWindowFocus: true, // Refetch when user returns to tab
-		refetchOnMount: true,
-	}));
-
-	// Fetch recent bookings for this tour
-	let tourBookingsQuery = $derived(createQuery({
-		queryKey: queryKeys.tourBookings(tourId),
-		queryFn: () => queryFunctions.fetchTourBookings(tourId),
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 2 * 60 * 1000, // 2 minutes
-		refetchOnWindowFocus: true,
-		refetchOnMount: true,
+		refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
 	}));
 
 	let tour = $derived($tourQuery.data?.tour || null);
@@ -97,16 +82,8 @@
 	let allTimeSlots = $derived($scheduleQuery.data?.timeSlots || []);
 	// @ts-ignore
 	let upcomingSlots = $derived(allTimeSlots.filter((slot) => slot.isUpcoming));
-	// Recent bookings data
-	let recentBookings = $derived($tourBookingsQuery.data?.bookings || []);
 	let isLoading = $derived($tourQuery.isLoading || $scheduleQuery.isLoading);
 	let isError = $derived($tourQuery.isError || $scheduleQuery.isError);
-	
-	// Calculate pending bookings for upcoming slots only
-	let upcomingPendingCount = $derived(
-		// @ts-ignore
-		upcomingSlots.reduce((count, slot) => count + (slot.pendingBookings || 0), 0)
-	);
 	
 	// State
 	let copiedQRCode = $state(false);
@@ -117,6 +94,49 @@
 	// Calculate conversion rate using shared utility
 	let conversionRate = $derived(calculateConversionRate(tourStats?.qrScans || 0, tourStats?.qrConversions || 0));
 	
+	// Force refetch when coming back from edit
+	$effect(() => {
+		if (browser && page.url.searchParams.get('edited') === 'true') {
+			console.log('🔄 Tour was edited, invalidating cache...');
+			// Remove the query parameter to prevent repeated invalidation
+			const url = new URL(page.url);
+			url.searchParams.delete('edited');
+			window.history.replaceState({}, '', url);
+			
+			// Invalidate and refetch tour data immediately
+			queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourDetails(tourId),
+				refetchType: 'all'
+			});
+			queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourSchedule(tourId),
+				refetchType: 'all'
+			});
+			// Also invalidate tours list and stats in case name/status changed
+			queryClient.invalidateQueries({ 
+				queryKey: queryKeys.userTours,
+				refetchType: 'all'
+			});
+			queryClient.invalidateQueries({ 
+				queryKey: queryKeys.toursStats,
+				refetchType: 'all'
+			});
+		}
+		
+		// Similar for created and scheduled
+		if (browser && page.url.searchParams.get('created') === 'true') {
+			const url = new URL(page.url);
+			url.searchParams.delete('created');
+			window.history.replaceState({}, '', url);
+		}
+		
+		if (browser && page.url.searchParams.get('scheduled') === 'true') {
+			const url = new URL(page.url);
+			url.searchParams.delete('scheduled');
+			window.history.replaceState({}, '', url);
+		}
+	});
+
 	// Cleanup on destroy
 	onDestroy(() => {
 		if (browser && selectedImageIndex !== null) {
@@ -131,11 +151,7 @@
 		return Math.round((slot.totalParticipants / slot.capacity) * 100);
 	}
 
-	// @ts-ignore
-	function quickCheckIn(slotId) {
-		// Navigate to check-in scanner with pre-selected slot
-		goto(`/checkin-scanner?slot=${slotId}`);
-	}
+
 
 	function getQRImageUrl() {
 		if (!tour.qrCode) return '';
@@ -188,54 +204,6 @@
 		} else {
 			// Fallback to copy
 			copyQRUrl();
-		}
-	}
-
-	// Get more user-friendly payment status label
-	function getPaymentStatusLabel(status: string): string {
-		switch (status) {
-			case 'paid':
-				return 'Paid';
-			case 'pending':
-				return 'Unpaid';
-			case 'failed':
-				return 'Failed';
-			case 'refunded':
-				return 'Refunded';
-			default:
-				return 'Unpaid';
-		}
-	}
-	
-	// Get booking status icon
-	function getBookingStatusIcon(status: string): any {
-		switch (status) {
-			case 'confirmed':
-				return CheckCircle;
-			case 'pending':
-				return AlertCircle;
-			case 'cancelled':
-				return XCircle;
-			case 'completed':
-				return CheckCircle;
-			default:
-				return AlertCircle;
-		}
-	}
-	
-	// Get payment status icon
-	function getPaymentStatusIcon(status: string): any {
-		switch (status) {
-			case 'paid':
-				return CircleDollarSign;
-			case 'pending':
-				return AlertTriangle;
-			case 'failed':
-				return XCircle;
-			case 'refunded':
-				return ReceiptText;
-			default:
-				return AlertTriangle;
 		}
 	}
 
@@ -292,11 +260,11 @@
 			</div>
 		</div>
 	{:else if isError || !tour}
-		<div class="mb-6 rounded-xl p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+		<div class="mb-6 rounded-xl p-4 alert-error">
 			<div class="flex items-center justify-between">
 				<div>
-					<p class="font-medium" style="color: var(--text-primary);">Failed to load tour</p>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Please try refreshing the page.</p>
+					<p class="font-medium">Failed to load tour</p>
+					<p class="text-sm mt-1">Please try refreshing the page.</p>
 				</div>
 				<button onclick={() => goto('/tours')} class="button-secondary button--small">
 					Back to Tours
@@ -309,10 +277,10 @@
 			{@const isCreated = page.url.searchParams.get('created') === 'true'}
 			{@const isScheduled = page.url.searchParams.get('scheduled') === 'true'}
 			{@const isEdited = page.url.searchParams.get('edited') === 'true'}
-			<div class="mb-4 rounded-lg p-3 flex items-center gap-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-				<CheckCircle class="h-5 w-5 flex-shrink-0" style="color: var(--color-primary);" />
+			<div class="mb-4 rounded-lg p-3 flex items-center gap-3 alert-info">
+				<CheckCircle class="h-5 w-5 flex-shrink-0" />
 				<div class="flex-1">
-					<p class="text-sm" style="color: var(--text-primary);">
+					<p class="text-sm">
 						{#if isCreated}
 							Tour created successfully! {tour.status === 'draft' ? 'Activate it when ready.' : "It's now live!"}
 						{:else if isScheduled}
@@ -337,21 +305,18 @@
 		<MobilePageHeader
 			title={tour.name}
 			secondaryInfo="{getTourDisplayPriceFormatted(tour)} per person"
-			statusButton={getTourBookingStatus(tour).status === 'no-slots' ? {
-				label: getTourBookingStatus(tour).label,
-				color: '',
-				textColor: 'var(--text-primary)',
-				backgroundColor: 'var(--bg-tertiary)',
-				dotColor: getTourBookingStatus(tour).dotColor,
-				tooltip: getTourBookingStatus(tour).description,
-				onclick: () => goto(`/tours/${tour.id}/schedule`)
-			} : undefined}
+			statusButton={{
+				label: tour.status === 'active' ? 'Active' : tour.status === 'draft' ? 'Draft' : getTourBookingStatus(tour).label,
+				className: tour.status === 'active' ? 'tour-status-badge--active' : tour.status === 'draft' ? 'tour-status-badge--draft' : '',
+				tooltip: tour.status === 'active' ? 'Tour is live and accepting bookings' : tour.status === 'draft' ? 'Tour is not visible to customers' : getTourBookingStatus(tour).description,
+				onclick: getTourBookingStatus(tour).status === 'no-slots' ? () => goto(`/tours/${tour.id}/schedule`) : undefined
+			}}
 			quickActions={[
 				{
 					label: 'Bookings',
 					icon: Users,
 					onclick: () => goto(`/tours/${tour.id}/bookings`),
-					variant: 'primary'
+					variant: 'secondary'
 				},
 				{
 					label: 'Edit',
@@ -368,19 +333,19 @@
 			]}
 			infoItems={[
 				{
-					icon: Clock,
-					label: 'Duration',
-					value: formatDuration(tour.duration)
+					icon: Users,
+					label: 'Bookings',
+					value: `${tourStats?.totalBookings || 0} total`
 				},
 				{
-					icon: Users,
-					label: 'Capacity',
-					value: `Max ${tour.capacity}`
+					icon: DollarSign,
+					label: 'Revenue',
+					value: $globalCurrencyFormatter(tourStats?.totalRevenue || 0)
 				},
 				{
 					icon: BarChart3,
-					label: 'Bookings',
-					value: `${tourStats?.totalBookings || 0} total`
+					label: 'QR Conversion',
+					value: getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)
 				},
 				{
 					icon: Calendar,
@@ -404,20 +369,40 @@
 					Back to Tours
 				</button>
 				
-				<!-- Tour Status Button -->
+				<!-- Tour Status -->
 				{@const status = getTourBookingStatus(tour)}
-				{#if status.status === 'no-slots'}
+				{#if tour.status === 'active'}
+					<div class="flex items-center gap-3 mr-6">
+						<span class="tour-status-badge tour-status-badge--active text-sm px-3 py-1.5">
+							<span class="tour-status-indicator tour-status-indicator--active"></span>
+							Active
+						</span>
+						{#if status.status === 'no-slots'}
+							<button 
+								onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)}
+								class="button-secondary button--small button--gap"
+							>
+								<Plus class="h-4 w-4" />
+								Add Time Slot
+							</button>
+						{/if}
+					</div>
+				{:else if tour.status === 'draft'}
+					<div class="flex items-center gap-3 mr-6">
+						<span class="tour-status-badge tour-status-badge--draft text-sm px-3 py-1.5">
+							<span class="tour-status-indicator tour-status-indicator--draft"></span>
+							Draft
+						</span>
+						<TourStatusToggle {tour} size="default" />
+					</div>
+				{:else if status.status === 'no-slots'}
 					<button 
 						onclick={() => goto(`/tours/${tour.id}/schedule`)}
 						class="button-secondary button--gap mr-6"
 					>
-						<span class="w-2 h-2 rounded-full" style="background: {status.dotColor}"></span>
+						<span class="tour-status-indicator" style="background: {status.dotColor}"></span>
 						{status.label}
 					</button>
-				{:else if status.status === 'draft' || status.status === 'bookable'}
-					<div class="mr-6">
-						<TourStatusToggle {tour} size="default" />
-					</div>
 				{/if}
 				
 				<div class="hidden sm:flex gap-3">
@@ -431,7 +416,7 @@
 					</button>
 					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--gap">
 						<Calendar class="h-4 w-4" />
-						Manage Schedule
+						View Schedule
 					</button>
 				</div>
 			</PageHeader>
@@ -447,7 +432,7 @@
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold" style="color: var(--text-primary);">QR Code & Booking Link</h3>
 					<span class="text-xs px-2 py-1 rounded-full" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-						{tourStats?.qrScans || 0} scans • {getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)} conversion
+						{tourStats?.qrScans || 0} {tourStats?.qrScans === 1 ? 'scan' : 'scans'}
 					</span>
 				</div>
 			</div>
@@ -466,7 +451,7 @@
 								/>
 								{#if copiedQRCode}
 									<div class="absolute inset-0 flex items-center justify-center rounded-2xl" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(4px);">
-										<CheckCircle class="h-8 w-8" style="color: var(--color-primary);" />
+										<CheckCircle class="h-8 w-8" style="color: var(--color-primary-600);" />
 									</div>
 								{/if}
 							</Tooltip>
@@ -514,7 +499,7 @@
 								/>
 								{#if copiedQRCode}
 									<div class="absolute inset-0 flex items-center justify-center rounded-2xl" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(4px);">
-										<CheckCircle class="h-12 w-12" style="color: var(--color-primary);" />
+										<CheckCircle class="h-12 w-12" style="color: var(--color-primary-600);" />
 									</div>
 								{/if}
 							</div>
@@ -556,8 +541,21 @@
 
 	<!-- 2. Tour Overview -->
 	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<!-- Tour Status Bar -->
+		{#if tour.status === 'draft'}
+			<div class="p-3 border-b flex items-center justify-between alert-warning">
+				<div class="flex items-center gap-2">
+					<AlertCircle class="h-4 w-4" />
+					<p class="text-sm font-medium">
+						This tour is in draft mode and not visible to customers
+					</p>
+				</div>
+				<TourStatusToggle {tour} size="small" />
+			</div>
+		{/if}
+		
 		<!-- Quick Stats Bar -->
-		<div class="p-4 border-b" style="background: var(--bg-secondary); border-color: var(--border-primary); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+		<div class="p-4 border-b" style="background: var(--bg-secondary); border-color: var(--border-primary); {tour.status !== 'draft' ? 'border-radius: var(--radius-lg) var(--radius-lg) 0 0;' : ''}">
 			<div class="flex flex-wrap gap-4 justify-between text-sm">
 				<div class="flex items-center gap-2">
 					<DollarSign class="h-4 w-4" style="color: var(--text-tertiary);" />
@@ -605,13 +603,13 @@
 					{#if tour.includedItems && tour.includedItems.length > 0}
 						<div class="p-4 rounded-lg" style="background: var(--bg-secondary);">
 							<h4 class="text-sm font-semibold mb-3 flex items-center gap-2" style="color: var(--text-primary);">
-								<CheckCircle class="h-4 w-4" style="color: var(--color-primary);" />
+								<CheckCircle class="h-4 w-4" style="color: var(--color-primary-600);" />
 								What's Included
 							</h4>
 							<ul class="space-y-2">
 								{#each tour.includedItems as item}
 									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
-										<span class="text-xs mt-0.5" style="color: var(--color-primary);">✓</span>
+										<span class="text-xs mt-0.5" style="color: var(--color-primary-600);">✓</span>
 										<span>{item}</span>
 									</li>
 								{/each}
@@ -641,78 +639,86 @@
 					<p class="text-sm leading-relaxed" style="color: var(--text-secondary);">{tour.cancellationPolicy}</p>
 				</div>
 			{/if}
+			
+			<!-- Performance Metrics -->
+			<div class="hidden sm:block mt-4 pt-4" style="border-top: 1px solid var(--border-primary);">
+				<h4 class="text-sm font-semibold mb-3" style="color: var(--text-primary);">Performance</h4>
+				<div class="grid grid-cols-3 gap-4">
+					<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+						<p class="text-2xl font-bold" style="color: var(--text-primary);">{tourStats?.totalBookings || 0}</p>
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">Total bookings</p>
+					</div>
+					<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+						<p class="text-2xl font-bold" style="color: var(--color-primary-600);">{$globalCurrencyFormatter(tourStats?.totalRevenue || 0)}</p>
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">Total revenue</p>
+					</div>
+					<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+						<p class="text-2xl font-bold" style="color: var(--text-primary);">{getConversionRateText(tourStats?.qrScans || 0, tourStats?.qrConversions || 0)}</p>
+						<p class="text-xs mt-1" style="color: var(--text-secondary);">QR conversion</p>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 
-	<!-- 3. Upcoming Schedule -->
+		<!-- 3. Tour Schedule -->
 	<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Upcoming Schedule</h3>
-				<div class="flex items-center gap-2">
-					{#if upcomingPendingCount > 0}
-						<span class="px-2 py-0.5 text-xs rounded-full" style="background: var(--bg-tertiary); color: var(--text-primary); font-weight: 500;">
-							{upcomingPendingCount} pending
-						</span>
-					{/if}
+				<h3 class="font-semibold" style="color: var(--text-primary);">Tour Schedule</h3>
+				<div class="flex gap-2">
+					<button onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)} class="button-primary button--small button--gap">
+						<Plus class="h-3 w-3" />
+						<span class="hidden sm:inline">Add Time Slot</span>
+						<span class="sm:hidden">Add</span>
+					</button>
 					<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="button-secondary button--small button--gap">
 						<Calendar class="h-3 w-3" />
-						<span class="hidden sm:inline">Full Schedule</span>
+						<span class="hidden sm:inline">View Schedule</span>
 					</button>
 				</div>
 			</div>
 		</div>
 		<div class="p-4">
+			<!-- Upcoming Slots -->
 			{#if upcomingSlots.length > 0}
+				<p class="text-xs font-medium uppercase tracking-wider mb-3" style="color: var(--text-tertiary);">Next 5 Time Slots</p>
 				<div class="space-y-2">
 					{#each upcomingSlots.slice(0, 5) as slot}
 						{@const occupancyPercent = getOccupancyPercentage(slot)}
-						<div class="flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer" 
-							style="background: var(--bg-secondary);"
-							onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-							onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+						{@const isToday = new Date(slot.startTime).toDateString() === new Date().toDateString()}
+						<div class="p-3 rounded-lg transition-colors cursor-pointer" 
+							style="background: {isToday ? 'var(--color-primary-50)' : 'var(--bg-secondary)'}; border: 1px solid {occupancyPercent >= 90 ? 'var(--color-error-200)' : isToday ? 'var(--color-primary-200)' : 'var(--border-primary)'};"
 							onclick={() => goto(`/tours/${tour.id}/schedule`)}
 							onkeydown={(e) => e.key === 'Enter' && goto(`/tours/${tour.id}/schedule`)}
 							role="button"
 							tabindex="0"
 						>
-							<div class="flex-1 min-w-0">
-								<div class="flex items-center gap-3">
-									<div>
+							<div class="flex items-center justify-between">
+								<div class="flex-1">
+									<div class="flex items-center gap-2">
 										<p class="text-sm font-medium" style="color: var(--text-primary);">
 											{formatDate(slot.startTime)} • {formatSlotTimeRange(slot.startTime, slot.endTime)}
 										</p>
-										<div class="flex items-center gap-3 mt-1">
-											<span class="text-xs" style="color: {occupancyPercent >= 70 ? 'var(--color-danger)' : 'var(--text-secondary)'}; font-weight: {occupancyPercent >= 90 ? '600' : '400'};">
-												{slot.totalParticipants}/{slot.capacity} guests
-												{#if occupancyPercent >= 90}
-													<span class="ml-1">• Almost full</span>
-												{/if}
+										{#if isToday}
+											<span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background: var(--color-primary-500); color: white;">
+												TODAY
 											</span>
-											{#if slot.totalBookings > 0}
-												<span class="text-xs" style="color: var(--text-tertiary);">
-													{slot.confirmedBookings} confirmed
-													{#if slot.pendingBookings > 0}
-														• {slot.pendingBookings} pending
-													{/if}
-												</span>
-											{:else}
-												<span class="text-xs" style="color: var(--text-tertiary);">No bookings yet</span>
-											{/if}
-										</div>
+										{/if}
+									</div>
+									<div class="flex items-center gap-3 mt-1">
+										<span class="text-xs font-medium" style="color: {occupancyPercent >= 70 ? 'var(--color-error-600)' : 'var(--text-secondary)'};">
+											{slot.totalParticipants}/{slot.capacity} guests ({occupancyPercent}% full)
+										</span>
+										{#if slot.pendingBookings > 0}
+											<span class="text-xs" style="color: var(--color-warning-600);">
+												• {slot.pendingBookings} pending
+											</span>
+										{/if}
 									</div>
 								</div>
-							</div>
-							<div class="flex items-center gap-2">
-								{#if slot.isUpcoming}
-									<Tooltip text="Quick check-in" position="left">
-										<button 
-											onclick={(e) => { e.stopPropagation(); quickCheckIn(slot.id); }}
-											class="button-secondary button--small button--icon"
-										>
-											<UserCheck class="h-3 w-3" />
-										</button>
-									</Tooltip>
+								{#if occupancyPercent >= 90}
+									<AlertCircle class="h-4 w-4 flex-shrink-0" style="color: var(--color-error-600);" />
 								{/if}
 							</div>
 						</div>
@@ -720,14 +726,14 @@
 				</div>
 				{#if upcomingSlots.length > 5}
 					<div class="mt-3 text-center">
-						<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="text-sm" style="color: var(--color-primary);">
-							View all {upcomingSlots.length} upcoming slots →
+						<button onclick={() => goto(`/tours/${tour.id}/schedule`)} class="text-sm font-medium hover:underline" style="color: var(--color-primary-600);">
+							View full schedule ({upcomingSlots.length} slots) →
 						</button>
 					</div>
 				{/if}
 			{:else}
-				<div class="text-center py-8">
-					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+				<div class="text-center py-6">
+					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary); opacity: 0.5;" />
 					<p class="text-sm mb-3" style="color: var(--text-secondary);">No time slots scheduled</p>
 					<button onclick={() => goto(`/tours/${tour.id}/schedule?new=true`)} class="button-primary button--gap">
 						<Plus class="h-4 w-4" />
@@ -738,81 +744,7 @@
 		</div>
 	</div>
 
-	<!-- 4. Recent Bookings -->
-	{#if recentBookings.length > 0}
-		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
-					<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="button-secondary button--small button--gap">
-						<Users class="h-3 w-3" />
-						View All
-					</button>
-				</div>
-			</div>
-			<div class="p-4">
-				<div class="space-y-3">
-					{#each recentBookings.slice(0, 5) as booking}
-						{@const BookingIcon = getBookingStatusIcon(booking.status)}
-						{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-						<div class="flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer" 
-							style="background: var(--bg-secondary);"
-							onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-							onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-							onclick={() => goto(`/bookings/${booking.id}`)}
-							onkeydown={(e) => e.key === 'Enter' && goto(`/bookings/${booking.id}`)}
-							role="button"
-							tabindex="0"
-						>
-							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium truncate" style="color: var(--text-primary);">
-									{booking.customerName}
-								</p>
-								<div class="flex items-center gap-3 mt-1">
-									<span class="text-xs" style="color: var(--text-secondary);">
-										{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'}
-									</span>
-									{#if booking.expand?.timeSlot?.startTime}
-										<span class="text-xs" style="color: var(--text-secondary);">
-											{formatDate(booking.expand.timeSlot.startTime)}
-										</span>
-									{:else}
-										<span class="text-xs" style="color: var(--text-tertiary);">
-											No time slot
-										</span>
-									{/if}
-									<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium {getStatusColor(booking.status)}">
-										<BookingIcon class="h-3 w-3" />
-										<span class="capitalize">{booking.status}</span>
-									</span>
-									{#if booking.paymentStatus}
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium {getPaymentStatusColor(booking.paymentStatus)}">
-											<PaymentIcon class="h-3 w-3" />
-											{getPaymentStatusLabel(booking.paymentStatus)}
-										</span>
-									{/if}
-								</div>
-							</div>
-							<div class="text-right">
-								<div class="text-sm font-medium" style="color: var(--text-primary);">
-									{$globalCurrencyFormatter(booking.totalAmount)}
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-				{#if recentBookings.length > 5}
-					<div class="mt-3 text-center">
-						<button onclick={() => goto(`/tours/${tour.id}/bookings`)} class="text-sm" style="color: var(--color-primary);">
-							View all {recentBookings.length} bookings →
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
-	{/if}
-
-	<!-- 5. Tour Gallery -->
+	<!-- 4. Tour Gallery -->
 	{#if tour.images && tour.images.length > 0}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -862,7 +794,7 @@
 		</div>
 	{/if}
 
-	<!-- 6. Website Widget - Collapsible Advanced Feature -->
+	<!-- 5. Website Widget - Collapsible Advanced Feature -->
 	{#if tour.qrCode}
 		<div class="mb-6 rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<button
@@ -907,11 +839,11 @@
 								<iframe
 									src="/embed/book/{tour.qrCode}?theme=auto"
 									width="100%"
-									height="320"
+									height="400"
 									frameborder="0"
 									title="Booking widget for {tour.name}"
-									class="rounded-lg shadow-sm"
-									style="border: 1px solid var(--border-primary); background: var(--bg-primary);"
+									class="rounded-lg widget-iframe"
+									style="background: transparent;"
 								></iframe>
 							</div>
 							
@@ -923,7 +855,7 @@
 									class:opacity-50={copiedEmbedCode}
 								>
 									{#if copiedEmbedCode}
-										<CheckCircle class="h-4 w-4" style="color: var(--color-success);" />
+										<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 										Embed Code Copied!
 									{:else}
 										<Copy class="h-4 w-4" />
@@ -1082,5 +1014,12 @@
 	/* Ensure the lightbox is truly on top by resetting any inherited transforms */
 	:global(body:has(.tour-lightbox-overlay)) {
 		overflow: hidden !important;
+	}
+	
+	/* Responsive widget iframe */
+	@media (max-width: 480px) {
+		.widget-iframe {
+			height: 280px !important;
+		}
 	}
 </style>
