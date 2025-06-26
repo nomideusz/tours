@@ -63,9 +63,17 @@
 </a>
 
 <style>
+	/* Serif variant styles */
+	.logo-serif {
+		font-family: var(--font-sans); /* Using modern font instead of Georgia */
+		font-weight: 500;
+		letter-spacing: -0.025em;
+	}
+
 	/* Smooth hover effect - removed transform which can affect clickable area */
 	a {
 		position: relative;
+		z-index: 50; /* Ensure logo stays above injected elements */
 	}
 	
 	a:hover {

@@ -14,7 +14,7 @@
 </script>
 
 <!-- Minimal App Header -->
-<header class="{className}" style="background: var(--bg-primary); border-bottom: 1px solid var(--border-primary); height: 4rem;">
+<header class="relative z-[100] {className}" style="background: var(--bg-primary); border-bottom: 1px solid var(--border-primary); height: 4rem;">
 	<div class="flex items-center justify-between h-full px-4 lg:px-6">
 		<!-- Left: Logo -->
 		<div class="flex items-center gap-3 h-full">

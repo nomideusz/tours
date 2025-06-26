@@ -7,9 +7,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
-  font-size: 14px;
+  font-size: 16px; /* Increased base font size for better Chrome rendering */
   line-height: 1.5;
+  
+  /* Ensure minimum font size */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  
+  /* Better font weight rendering in Chrome */
+  -webkit-font-smoothing: subpixel-antialiased;
+  font-weight: 400;
 }
+
+
 
 /* Ensure consistent rendering of monospace fonts */
 code, pre, kbd, samp, .font-mono {
@@ -24,44 +35,31 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
-/* Size scale for consistency */
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.125rem; }
-h5 { font-size: 1rem; }
-h6 { font-size: 0.875rem; }
+/* Size scale for consistency - responsive */
+/* Mobile-first approach */
+h1 { font-size: 1.5rem; } /* 24px on mobile */
+h2 { font-size: 1.25rem; } /* 20px on mobile */
+h3 { font-size: 1.125rem; } /* 18px on mobile */
+h4 { font-size: 1rem; } /* 16px on mobile */
+h5 { font-size: 0.875rem; } /* 14px on mobile */
+h6 { font-size: 0.75rem; } /* 12px on mobile */
+
+/* Desktop sizes */
+@media (min-width: 640px) {
+  h1 { font-size: 2rem; } /* 32px on desktop */
+  h2 { font-size: 1.5rem; } /* 24px on desktop */
+  h3 { font-size: 1.25rem; } /* 20px on desktop */
+  h4 { font-size: 1.125rem; } /* 18px on desktop */
+  h5 { font-size: 1rem; } /* 16px on desktop */
+  h6 { font-size: 0.875rem; } /* 14px on desktop */
+}
 
 /* Better number rendering for data-heavy dashboard */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Logo serif remains Georgia for brand consistency */
-.logo-serif {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 400;
-  letter-spacing: -0.025em;
-}
 
-/* Modern logo alternatives */
-.logo-modern {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-
-.logo-rounded {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.logo-minimal {
-  font-family: var(--font-sans);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
 
 /* Small text improvements */
 .text-xs {

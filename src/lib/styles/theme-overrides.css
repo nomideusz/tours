@@ -153,4 +153,72 @@
 	.mobile-header-link:hover {
 		color: rgba(255, 255, 255, 1);
 	}
+}
+
+	.text-responsive-2xl {
+		font-size: 1.875rem; /* 30px */
+		line-height: 2.25rem;
+	}
+	
+	/* Ensure Tailwind text classes use our custom font sizes */
+	.text-xs { 
+		font-size: var(--text-xs);
+		line-height: var(--tw-leading, var(--text-xs--line-height));
+	}
+	.text-sm { 
+		font-size: var(--text-sm);
+		line-height: var(--tw-leading, var(--text-sm--line-height));
+	}
+	.text-base { 
+		font-size: var(--text-base);
+		line-height: var(--tw-leading, var(--text-base--line-height));
+	}
+	.text-lg { 
+		font-size: var(--text-lg);
+		line-height: var(--tw-leading, var(--text-lg--line-height));
+	}
+	.text-xl { 
+		font-size: var(--text-xl);
+		line-height: var(--tw-leading, var(--text-xl--line-height));
+	}
+	.text-2xl { 
+		font-size: var(--text-2xl);
+		line-height: var(--tw-leading, var(--text-2xl--line-height));
+	}
+	.text-3xl { 
+		font-size: var(--text-3xl);
+		line-height: var(--tw-leading, var(--text-3xl--line-height));
+	}
+	.text-4xl { 
+		font-size: var(--text-4xl);
+		line-height: var(--tw-leading, var(--text-4xl--line-height));
+	}
+	.text-5xl { 
+		font-size: var(--text-5xl);
+		line-height: var(--tw-leading, var(--text-5xl--line-height));
+	}
+
+/* Defensive CSS against browser extension interference */
+/* Hide common video enhancement extensions */
+.button-container:has(#video-detach-button),
+.rgx-button-wrapper,
+[id*="lucid-mode"],
+[class*="rgx-button"] {
+	display: none !important;
+	pointer-events: none !important;
+	visibility: hidden !important;
+}
+
+/* Ensure our navigation elements stay on top */
+.nav-link,
+header,
+nav {
+	position: relative;
+	z-index: 50;
+}
+
+/* Prevent extensions from injecting into our header area */
+header .button-container,
+nav .button-container {
+	display: none !important;
 } 

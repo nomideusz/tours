@@ -46,7 +46,7 @@
 <div class="sm:hidden {className}">
 	<div class="flex items-start justify-between mb-3">
 		<div class="flex-1 min-w-0">
-			<h1 class="text-xl font-bold truncate" style="color: var(--text-primary);">{title}</h1>
+			<h1 class="text-xl font-bold truncate" style="color: var(--text-primary); font-size: 1.25rem; line-height: 1.75rem;">{title}</h1>
 			<div class="flex items-center gap-2 mt-1">
 				{#if statusButton}
 					<button

@@ -9,6 +9,8 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import {
 		userCurrency,
 		currentCurrencyInfo,
@@ -18,6 +20,7 @@
 	import type { AuthUser } from '$lib/stores/auth.js';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 
 	// TanStack Query for API-only data fetching
@@ -1289,18 +1292,55 @@
 		<!-- Regular Dashboard for Users with Tours -->
 
 		<!-- Header Section -->
-		<div class="mb-8">
-			<h1 class="mb-1 text-2xl font-bold sm:text-3xl" style="color: var(--text-primary);">
-				Welcome back, {profile?.name || 'Tour Guide'}
-			</h1>
-			<p class="text-sm" style="color: var(--text-secondary);">
-				{new Date().toLocaleDateString('en-US', {
-					weekday: 'long',
-					month: 'long',
-					day: 'numeric',
-					year: 'numeric'
-				})}
-			</p>
+		<div class="mb-6 sm:mb-8">
+			<!-- Mobile Header -->
+			<MobilePageHeader
+				title="Welcome back"
+				secondaryInfo={profile?.name || 'Tour Guide'}
+				quickActions={[
+					{
+						label: 'Create Tour',
+						icon: Plus,
+						onclick: () => goto('/tours/new'),
+						variant: 'primary'
+					}
+				]}
+				infoItems={[
+					{
+						icon: Calendar,
+						label: 'Today',
+						value: `${stats.todayBookings} bookings`
+					},
+					{
+						icon: DollarSign,
+						label: 'Week',
+						value: $globalCurrencyFormatter(stats.weeklyRevenue)
+					},
+					{
+						icon: TrendingUp,
+						label: 'Upcoming',
+						value: `${stats.upcomingTours}`
+					},
+					{
+						icon: Users,
+						label: 'Customers',
+						value: `${stats.totalCustomers}`
+					}
+				]}
+			/>
+			
+			<!-- Desktop Header -->
+			<div class="hidden sm:block">
+				<PageHeader 
+					title={`Welcome back, ${profile?.name || 'Tour Guide'}`}
+					subtitle={new Date().toLocaleDateString('en-US', {
+						weekday: 'long',
+						month: 'long',
+						day: 'numeric',
+						year: 'numeric'
+					})}
+				/>
+			</div>
 		</div>
 
 		<!-- Important Notices (Collapsed into single row when possible) -->

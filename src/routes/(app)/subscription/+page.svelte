@@ -12,6 +12,8 @@
 	import Gift from 'lucide-svelte/icons/gift';
 	import type { PageData } from './$types.js';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -293,9 +295,52 @@
 {/snippet}
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8">
+	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
-		<h1 class="page-header mb-1 sm:mb-2">Subscription Management</h1>
-		<p class="text-sm sm:text-base" style="color: var(--text-secondary);">Manage your Zaur subscription and billing</p>
+		<!-- Mobile Header -->
+		<MobilePageHeader
+			title="Subscription"
+			secondaryInfo={SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
+			quickActions={[
+				...(currentPlan !== 'free' && !cancelAtPeriodEnd ? [{
+					label: 'Billing',
+					icon: CreditCard,
+					onclick: manageSubscription,
+					variant: 'secondary' as const,
+					disabled: loading
+				}] : [])
+			]}
+			infoItems={[
+				{
+					icon: Crown,
+					label: 'Plan',
+					value: SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free'
+				},
+				{
+					icon: Calendar,
+					label: 'Bookings',
+					value: `${user?.monthlyBookingsUsed || 0}/${SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit || '∞'}`
+				},
+				{
+					icon: Gift,
+					label: 'Tours',
+					value: `${data.usage?.tours?.used || 0}/${data.usage?.tours?.limit !== null ? data.usage.tours.limit : '∞'}`
+				},
+				{
+					icon: CreditCard,
+					label: cancelAtPeriodEnd ? 'Cancels' : 'Renews',
+					value: currentPeriodEnd && currentPlan !== 'free' ? new Date(currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'
+				}
+			]}
+		/>
+		
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Subscription Management"
+				subtitle="Manage your Zaur subscription and billing"
+			/>
+		</div>
 	</div>
 
 	{#if error}
@@ -330,15 +375,15 @@
 			<div class="flex items-start gap-2 sm:gap-3">
 				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 				<div class="flex-1">
-					<h3 class="font-semibold mb-0.5 sm:mb-1">Special Offer Active!</h3>
-					<p>
+					<h3 class="alert-heading">Special Offer Active!</h3>
+					<p class="alert-body">
 						{getPromoBenefitText()}
 						{#if user?.promoCodeUsed}
 							<span class="font-medium"> • Code: {user.promoCodeUsed}</span>
 						{/if}
 					</p>
 					{#if isInFreePeriod && user?.subscriptionFreeUntil}
-						<p class="text-xs mt-1" style="opacity: 0.9;">
+						<p class="alert-body text-xs mt-1 opacity-90">
 							Free period ends on {formatDate(user.subscriptionFreeUntil)}
 						</p>
 					{/if}
@@ -352,10 +397,10 @@
 			<div>
 				<div class="flex items-center gap-2 mb-2">
 					<Crown class="w-4 h-4 sm:w-5 sm:h-5" style="color: var(--color-primary-600);" />
-					<h2 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">Current Plan</h2>
+					<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">Current Plan</h2>
 				</div>
 				<div class="space-y-1">
-					<p class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">
+					<p class="text-base sm:text-lg font-bold" style="color: var(--text-primary);">
 						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
 					</p>
 					{#if subscriptionStatus && subscriptionStatus !== 'active'}
@@ -470,9 +515,9 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 				<!-- Free Starter (always show for reference) -->
 				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full opacity-75" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
+					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
 					<div class="mb-1">
-						<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€0</span>
+						<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€0</span>
 						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month</span>
 					</div>
 					<div class="mb-3 sm:mb-4 h-3 sm:h-4"></div>
@@ -503,13 +548,13 @@
 					<div class="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
 						<span class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
 					</div>
-					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
+					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
 					<div class="mb-1">
 						{#if starterProPricing.savings > 0}
-							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
-							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
+							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
 						{:else}
-							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
 						{/if}
 						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
@@ -548,13 +593,13 @@
 				
 				<!-- Professional -->
 				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
+					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
 					<div class="mb-1">
 						{#if proPricing.savings > 0}
-							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
-							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
+							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
+							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
 						{:else}
-							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
+							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
 						{/if}
 						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>
@@ -595,13 +640,13 @@
 				
 				<!-- Agency -->
 				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-base sm:text-lg font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
+					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
 					<div class="mb-1">
 						{#if agencyPricing.savings > 0}
-							<span class="text-base sm:text-lg line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
-							<span class="text-2xl sm:text-3xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
+							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
 						{:else}
-							<span class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
+							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
 						{/if}
 						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
 					</div>

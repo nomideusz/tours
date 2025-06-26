@@ -4,6 +4,7 @@
 	import { auth } from '$lib/stores/auth.js';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import Logo from '$lib/components/Logo.svelte';
 
 	// Simple logo/brand
 	const isAuthPage = $derived($page.route.id?.includes('/auth/'));
@@ -21,7 +22,7 @@
 	const showBackButton = $derived(isBookingPage || isTicketPage);
 </script>
 
-<header class="sticky top-0 z-50 transition-colors" style="background: var(--bg-primary); border-bottom: 1px solid var(--border-primary);">
+<header class="sticky top-0 z-[100] transition-colors" style="background: var(--bg-primary); border-bottom: 1px solid var(--border-primary); position: relative;">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex items-center justify-between h-14">
 			<!-- Logo/Brand with contextual info -->
@@ -36,9 +37,7 @@
 					</button>
 				{/if}
 				
-				<a href="/" class="text-lg font-normal logo-serif nav-link transition-colors" style="color: var(--text-primary);">
-					zaur.app
-				</a>
+				<Logo variant="minimal" href="/" size="default" />
 				
 				{#if tourOwner && (isProfilePage || isBookingPage)}
 					<span class="text-sm hidden sm:inline" style="color: var(--text-tertiary);">
@@ -88,16 +87,7 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	
-	.logo-serif {
-		font-family: Georgia, 'Times New Roman', serif;
-		font-weight: 400;
-		letter-spacing: -0.025em;
-	}
-	
-	.logo-serif:hover {
-		color: var(--text-secondary);
-	}
-	
+
 	.hover-primary {
 		color: var(--color-primary-600);
 	}

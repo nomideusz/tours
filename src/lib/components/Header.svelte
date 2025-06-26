@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
+	import Logo from '$lib/components/Logo.svelte';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;
@@ -115,10 +116,8 @@
 	<div class="mx-auto max-w-screen-2xl px-6 sm:px-8 lg:px-12">
 		<div class="flex h-20 items-center justify-between">
 			<!-- Logo and branding -->
-			<div class="flex items-center">
-				<a href={isAuthenticated ? '/?view=home' : '/'} class="text-2xl font-normal logo-serif nav-link transition-colors" style="color: var(--text-primary);">
-					zaur.app
-				</a>
+			<div class="flex items-center h-full">
+				<Logo variant="minimal" href={isAuthenticated ? '/?view=home' : '/'} size="large" />
 			</div>
 
 			<!-- Desktop navigation -->
@@ -299,18 +298,13 @@
 <style lang="postcss">
 	@reference "tailwindcss";
 	
-	.logo-serif {
-		font-family: Georgia, 'Times New Roman', serif;
-		font-weight: 400;
-		letter-spacing: -0.025em;
-	}
-	
+
 	.header-sticky {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: var(--z-dropdown);
+		z-index: 100; /* High z-index to prevent extension interference */
 		background: var(--bg-primary);
 		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(8px);
@@ -338,15 +332,7 @@
 		color: var(--text-primary);
 	}
 	
-	/* Logo specific styling */
-	:global(.header-sticky .logo-serif) {
-		color: var(--text-primary) !important;
-	}
-	
-	:global(.header-sticky .logo-serif:hover) {
-		opacity: 0.8;
-	}
-	
+
 	/* Fix mobile menu colors */
 	:global(.mobile-menu-bg a),
 	:global(.mobile-menu-bg button),

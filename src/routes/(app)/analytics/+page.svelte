@@ -6,6 +6,10 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
+	// Components
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	
 	// Icons
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
@@ -218,41 +222,69 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
-		<h1 class="page-header mb-2">Analytics</h1>
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-			<div>
-				<p class="text-sm mt-1" style="color: var(--text-secondary);">
-					Track your tour business performance
-				</p>
-			</div>
-			
-			<!-- Time Range Selector -->
-			<div class="flex items-center gap-2">
-				<button
-					onclick={() => timeRange = 'week'}
-					class="time-range-button {timeRange === 'week' ? 'active' : ''}"
-				>
-					Week
-				</button>
-				<button
-					onclick={() => timeRange = 'month'}
-					class="time-range-button {timeRange === 'month' ? 'active' : ''}"
-				>
-					Month
-				</button>
-				<button
-					onclick={() => timeRange = 'quarter'}
-					class="time-range-button {timeRange === 'quarter' ? 'active' : ''}"
-				>
-					Quarter
-				</button>
-				<button
-					onclick={() => timeRange = 'year'}
-					class="time-range-button {timeRange === 'year' ? 'active' : ''}"
-				>
-					Year
-				</button>
-			</div>
+		<!-- Mobile Header -->
+		<MobilePageHeader
+			title="Analytics"
+			secondaryInfo={`${timeRange} view`}
+			quickActions={[]}
+			infoItems={[
+				{
+					icon: DollarSign,
+					label: 'Revenue',
+					value: isLoading ? '...' : $globalCurrencyFormatter(analytics.revenue.total)
+				},
+				{
+					icon: Calendar,
+					label: 'Bookings',
+					value: isLoading ? '...' : `${analytics.bookings.total}`
+				},
+				{
+					icon: Percent,
+					label: 'QR Rate',
+					value: isLoading ? '...' : `${analytics.qrCodes.conversionRate || 0}%`
+				},
+				{
+					icon: TrendingUp,
+					label: 'Trend',
+					value: isLoading ? '...' : analytics.revenue.trend > 0 ? `+${analytics.revenue.trend}%` : `${analytics.revenue.trend}%`
+				}
+			]}
+		/>
+		
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Analytics"
+				subtitle="Track your tour business performance"
+			>
+				<!-- Time Range Selector -->
+				<div class="flex items-center gap-2">
+					<button
+						onclick={() => timeRange = 'week'}
+						class="time-range-button {timeRange === 'week' ? 'active' : ''}"
+					>
+						Week
+					</button>
+					<button
+						onclick={() => timeRange = 'month'}
+						class="time-range-button {timeRange === 'month' ? 'active' : ''}"
+					>
+						Month
+					</button>
+					<button
+						onclick={() => timeRange = 'quarter'}
+						class="time-range-button {timeRange === 'quarter' ? 'active' : ''}"
+					>
+						Quarter
+					</button>
+					<button
+						onclick={() => timeRange = 'year'}
+						class="time-range-button {timeRange === 'year' ? 'active' : ''}"
+					>
+						Year
+					</button>
+				</div>
+			</PageHeader>
 		</div>
 	</div>
 	
