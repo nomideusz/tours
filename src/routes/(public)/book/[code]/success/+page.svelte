@@ -163,29 +163,29 @@
 			<div class="max-w-2xl mx-auto">
 				{#if isPaymentProcessing}
 					<!-- Payment Processing State -->
-					<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="p-8 sm:p-12 text-center" style="background: var(--color-primary-50);">
-							<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style="background: var(--color-primary-100);">
-								<Loader2 class="w-10 h-10 animate-spin" style="color: var(--color-primary-600);" />
+					<div class="rounded-xl overflow-hidden shadow-sm alert-info">
+						<div class="p-8 sm:p-12 text-center">
+							<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-white">
+								<Loader2 class="w-10 h-10 animate-spin" style="color: var(--color-info-600);" />
 							</div>
-							<h1 class="text-2xl sm:text-3xl font-bold mb-3" style="color: var(--color-primary-900);">Processing Payment...</h1>
-							<p class="text-lg mb-4" style="color: var(--color-primary-700);">
+							<h1 class="text-2xl sm:text-3xl font-bold mb-3">Processing Payment...</h1>
+							<p class="text-lg mb-4">
 								Your payment is being processed. This usually takes a few seconds.
 							</p>
-							<p class="text-sm" style="color: var(--color-primary-600);">
+							<p class="text-sm">
 								Please don't close this page. We're checking your payment status...
 							</p>
 						</div>
 					</div>
 				{:else if booking.paymentStatus === 'failed'}
 					<!-- Payment Failed State -->
-					<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="p-8 sm:p-12 text-center" style="background: var(--color-danger-50);">
-							<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style="background: var(--color-danger-100);">
-								<XCircle class="w-10 h-10" style="color: var(--color-danger-600);" />
+					<div class="rounded-xl overflow-hidden shadow-sm alert-error">
+						<div class="p-8 sm:p-12 text-center">
+							<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-white">
+								<XCircle class="w-10 h-10" style="color: var(--color-error-600);" />
 							</div>
-							<h1 class="text-2xl sm:text-3xl font-bold mb-3" style="color: var(--color-danger-900);">Payment Failed</h1>
-							<p class="text-lg mb-6" style="color: var(--color-danger-700);">
+							<h1 class="text-2xl sm:text-3xl font-bold mb-3">Payment Failed</h1>
+							<p class="text-lg mb-6">
 								Unfortunately, your payment could not be processed.
 							</p>
 							<a 
@@ -200,22 +200,22 @@
 					<!-- Payment Confirmed State -->
 					<div class="space-y-6">
 						<!-- Success Header -->
-						<div class="rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-							<div class="p-8 sm:p-12 text-center" style="background: var(--color-success-50);">
-								<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style="background: var(--color-success-100);">
+						<div class="rounded-xl overflow-hidden shadow-sm alert-success">
+							<div class="p-8 sm:p-12 text-center">
+								<div class="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-white">
 									<Check class="w-10 h-10" style="color: var(--color-success-600);" />
 								</div>
-								<h1 class="text-2xl sm:text-3xl font-bold mb-3" style="color: var(--color-success-900);">Booking Confirmed!</h1>
-								<p class="text-lg mb-2" style="color: var(--color-success-700);">
+								<h1 class="text-2xl sm:text-3xl font-bold mb-3">Booking Confirmed!</h1>
+								<p class="text-lg mb-2">
 									Thank you for your booking
 								</p>
-								<p class="text-sm" style="color: var(--color-success-600);">
+								<p class="text-sm">
 									A confirmation email has been sent to {booking.customerEmail}
 								</p>
 							</div>
 							
 							<!-- Booking Reference -->
-							<div class="p-6 border-b" style="border-color: var(--border-primary);">
+							<div class="p-6 border-b" style="border-color: var(--border-primary); background: var(--bg-primary);">
 								<div class="text-center">
 									<p class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Booking Reference</p>
 									<p class="text-2xl font-mono font-bold" style="color: var(--color-primary-600);">

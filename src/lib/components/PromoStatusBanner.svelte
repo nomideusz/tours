@@ -55,26 +55,17 @@
 
 
 
-	// Get color scheme based on benefit type
+	// Get color scheme based on benefit type - using alert classes for proper dark mode support
 	let colorScheme = $derived(
 		discountPercentage === 100 ? {
-			bg: 'var(--color-purple-50)',
-			border: 'var(--color-purple-200)',
-			icon: 'var(--color-purple-600)',
-			text: 'var(--color-purple-900)',
-			secondary: 'var(--color-purple-800)'
+			className: 'alert-info',
+			iconColor: 'var(--color-purple-600)'
 		} : isEarlyAccess ? {
-			bg: 'var(--color-primary-50)',
-			border: 'var(--color-primary-200)',
-			icon: 'var(--color-primary-600)',
-			text: 'var(--color-primary-900)',
-			secondary: 'var(--color-primary-800)'
+			className: 'alert-primary', 
+			iconColor: 'var(--color-primary-600)'
 		} : {
-			bg: 'var(--color-success-50)',
-			border: 'var(--color-success-200)',
-			icon: 'var(--color-success-600)',
-			text: 'var(--color-success-900)',
-			secondary: 'var(--color-success-800)'
+			className: 'alert-success',
+			iconColor: 'var(--color-success-600)'
 		}
 	);
 </script>
@@ -82,36 +73,37 @@
 {#if hasPromoBenefits}
 	{#if variant === 'compact'}
 		<!-- Compact variant for headers/small spaces -->
-		<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm" 
-			style="background: {colorScheme.bg}; border-color: {colorScheme.border};">
-							{#if discountPercentage === 100}
-					<Crown size={14} style="color: {colorScheme.icon};" />
+		<div class="{colorScheme.className} inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs">
+			<span class="alert-icon-wrapper">
+				{#if discountPercentage === 100}
+					<Crown size={14} />
 				{:else if isEarlyAccess}
-					<TrendingUp size={14} style="color: {colorScheme.icon};" />
+					<TrendingUp size={14} />
 				{:else if isInFreeTrial}
-					<Calendar size={14} style="color: {colorScheme.icon};" />
+					<Calendar size={14} />
 				{:else}
-					<Gift size={14} style="color: {colorScheme.icon};" />
+					<Gift size={14} />
 				{/if}
-			<span style="color: {colorScheme.text};">{benefitText}</span>
+			</span>
+			<span>{benefitText}</span>
 		</div>
 	{:else if variant === 'detailed'}
 		<!-- Detailed variant for profile/subscription pages -->
-		<div class="rounded-lg border p-3 sm:p-4" style="background: {colorScheme.bg}; border-color: {colorScheme.border};">
+		<div class="{colorScheme.className} rounded-lg p-3 sm:p-4">
 			<div class="flex items-start gap-2.5 sm:gap-3">
-				<div class="p-1.5 sm:p-2 rounded-lg flex-shrink-0" style="background: {colorScheme.icon}20;">
+				<div class="alert-icon-wrapper p-1.5 sm:p-2 rounded-lg flex-shrink-0">
 					{#if discountPercentage === 100}
-						<Crown class="h-5 w-5 sm:h-6 sm:w-6" style="color: {colorScheme.icon};" />
+						<Crown class="h-5 w-5 sm:h-6 sm:w-6" />
 					{:else if isEarlyAccess}
-						<TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" style="color: {colorScheme.icon};" />
+						<TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" />
 					{:else if isInFreeTrial}
-						<Calendar class="h-5 w-5 sm:h-6 sm:w-6" style="color: {colorScheme.icon};" />
+						<Calendar class="h-5 w-5 sm:h-6 sm:w-6" />
 					{:else}
-						<Gift class="h-5 w-5 sm:h-6 sm:w-6" style="color: {colorScheme.icon};" />
+						<Gift class="h-5 w-5 sm:h-6 sm:w-6" />
 					{/if}
 				</div>
 				<div class="flex-1 min-w-0">
-					<h3 class="text-sm sm:text-base font-semibold mb-1" style="color: {colorScheme.text};">
+					<h3 class="alert-heading">
 						{#if isEarlyAccess}
 							Early Access Member
 						{:else if discountPercentage === 100}
@@ -120,11 +112,11 @@
 							Promotional Offer Active
 						{/if}
 					</h3>
-					<p class="text-xs sm:text-sm mb-1.5 sm:mb-2" style="color: {colorScheme.secondary};">
+					<p class="alert-body mb-1.5 sm:mb-2">
 						{benefitText}
 					</p>
 					{#if promoCode}
-						<p class="text-xs" style="color: {colorScheme.secondary};">
+						<p class="alert-body text-xs opacity-90">
 							Promo code: <span class="font-mono font-medium">{promoCode}</span>
 						</p>
 					{/if}
@@ -137,31 +129,33 @@
 				{#if showDismiss}
 					<button 
 						onclick={onDismiss}
-						class="p-1 -mr-1 -mt-1 rounded hover:bg-white/20 transition-colors flex-shrink-0"
+						class="p-1 -mr-1 -mt-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex-shrink-0"
 						aria-label="Dismiss">
-						<X class="h-4 w-4" style="color: {colorScheme.secondary};" />
+						<X class="h-4 w-4 opacity-60" />
 					</button>
 				{/if}
 			</div>
 		</div>
 	{:else}
 		<!-- Default variant for dashboard/general use -->
-		<div class="rounded-lg border p-2.5 sm:p-3" style="background: {colorScheme.bg}; border-color: {colorScheme.border};">
+		<div class="{colorScheme.className} rounded-lg p-2.5 sm:p-3">
 			<div class="flex items-center gap-2 sm:gap-3">
-				{#if discountPercentage === 100}
-					<Crown class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style="color: {colorScheme.icon};" />
-				{:else if isEarlyAccess}
-					<TrendingUp class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style="color: {colorScheme.icon};" />
-				{:else if isInFreeTrial}
-					<Calendar class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style="color: {colorScheme.icon};" />
-				{:else}
-					<Gift class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style="color: {colorScheme.icon};" />
-				{/if}
+				<span class="alert-icon-wrapper">
+					{#if discountPercentage === 100}
+						<Crown class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+					{:else if isEarlyAccess}
+						<TrendingUp class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+					{:else if isInFreeTrial}
+						<Calendar class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+					{:else}
+						<Gift class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+					{/if}
+				</span>
 				<div class="flex-1 min-w-0">
-					<p class="text-xs sm:text-sm font-medium" style="color: {colorScheme.text};">
+					<p class="text-xs sm:text-sm font-medium">
 						<span class="block sm:inline">{benefitText}</span>
 						{#if promoCode}
-							<span class="font-normal" style="color: {colorScheme.secondary};">
+							<span class="font-normal opacity-90">
 								<span class="hidden sm:inline"> • </span>
 								<span class="block sm:inline text-xs">Code: {promoCode}</span>
 							</span>
@@ -171,9 +165,9 @@
 				{#if showDismiss}
 					<button 
 						onclick={onDismiss}
-						class="p-1 -mr-1 rounded hover:bg-white/20 transition-colors flex-shrink-0"
+						class="p-1 -mr-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex-shrink-0"
 						aria-label="Dismiss">
-						<X class="h-3.5 w-3.5 sm:h-4 sm:w-4" style="color: {colorScheme.secondary};" />
+						<X class="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60" />
 					</button>
 				{/if}
 			</div>

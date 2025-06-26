@@ -49,17 +49,19 @@
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
 	import ReceiptText from 'lucide-svelte/icons/receipt-text';
+	import Check from 'lucide-svelte/icons/check';
+	import RefreshCcw from 'lucide-svelte/icons/refresh-ccw';
 
 	let { data }: { data: PageData } = $props();
 
 	// TanStack Query for dashboard data - using profile page pattern (simple, direct)
 	const dashboardStatsQuery = createQuery({
-		queryKey: queryKeys.dashboardStats,
-		queryFn: queryFunctions.fetchDashboardStats,
-		staleTime: 0, // Always consider data stale for immediate updates
-		gcTime: 5 * 60 * 1000,
-		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always'
+			queryKey: queryKeys.dashboardStats,
+			queryFn: queryFunctions.fetchDashboardStats,
+			staleTime: 0, // Always consider data stale for immediate updates
+			gcTime: 5 * 60 * 1000,
+			refetchOnWindowFocus: 'always',
+			refetchOnMount: 'always'
 	});
 
 	const recentBookingsQuery = createQuery({
@@ -688,106 +690,61 @@
 <div class="mx-auto max-w-screen-2xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
 	<!-- Success Messages (always show at top) -->
 	{#if showEmailVerificationSuccess}
-		<div
-			class="success-message mb-6 rounded-lg p-4"
-			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		<div 
+			in:fade={{ duration: 300 }}
+			out:fade={{ duration: 300 }}
+			class="rounded-xl p-4 sm:p-6 mb-6 shadow-sm alert-success"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
-					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
+					<CheckCircle class="h-5 w-5 sm:h-6 sm:w-6" />
 				</div>
 				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
-						Email verified successfully!
-					</h3>
-					<p class="text-sm" style="color: var(--color-success-700);">
-						Your email has been verified. You now have access to all features.
+					<h3 class="font-semibold text-sm sm:text-base mb-1">Email Verified!</h3>
+					<p class="text-xs sm:text-sm">
+						Your email has been successfully verified. You can now receive booking notifications.
 					</p>
 				</div>
-				<button
-					onclick={closeEmailVerificationBanner}
-					class="button-secondary button--small button--icon ml-2"
-					aria-label="Close"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-				</button>
 			</div>
 		</div>
 	{/if}
 
 	{#if showPaymentSetupSuccess}
-		<div
-			class="success-message mb-6 rounded-lg p-4"
-			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		<div 
+			in:fade={{ duration: 300 }}
+			out:fade={{ duration: 300 }}
+			class="rounded-xl p-4 sm:p-6 mb-6 shadow-sm alert-success"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
-					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
+					<CreditCard class="h-5 w-5 sm:h-6 sm:w-6" />
 				</div>
 				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
-						Payment setup completed!
-					</h3>
-					<p class="text-sm" style="color: var(--color-success-700);">
-						Your payment account is now active. You can start receiving payments from tour bookings.
+					<h3 class="font-semibold text-sm sm:text-base mb-1">Payment Account Ready!</h3>
+					<p class="text-xs sm:text-sm">
+						Your payment account is set up. You can now receive payments from customers.
 					</p>
 				</div>
-				<button
-					onclick={closePaymentSetupBanner}
-					class="button-secondary button--small button--icon ml-2"
-					aria-label="Close"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-				</button>
 			</div>
 		</div>
 	{/if}
 
 	{#if showLocationSaveSuccess}
-		<div
-			class="success-message mb-6 rounded-lg p-4"
-			style="background: var(--color-success-50); border: 1px solid var(--color-success-200);"
+		<div 
+			in:fade={{ duration: 300 }}
+			out:fade={{ duration: 300 }}
+			class="rounded-xl p-4 sm:p-6 mb-6 shadow-sm alert-success"
 		>
 			<div class="flex items-start gap-3">
 				<div class="flex-shrink-0">
-					<CheckCircle class="h-5 w-5" style="color: var(--color-success-600);" />
+					<CheckCircle class="h-5 w-5 sm:h-6 sm:w-6" />
 				</div>
 				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium" style="color: var(--color-success-900);">
-						Location settings saved!
-					</h3>
-					<p class="text-sm" style="color: var(--color-success-700);">
-						Your country and currency preferences have been updated.
+					<h3 class="font-semibold text-sm sm:text-base mb-1">Location Confirmed!</h3>
+					<p class="text-xs sm:text-sm">
+						Your business location has been saved. You're all set!
 					</p>
 				</div>
-				<button
-					onclick={closeLocationBanner}
-					class="button-secondary button--small button--icon ml-2"
-					aria-label="Close"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-				</button>
 			</div>
 		</div>
 	{/if}
@@ -1105,29 +1062,27 @@
 					{:else if profile?.stripeAccountId && profile?.country}
 						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
 						<div
-							class="flex items-start gap-4 rounded-lg p-4"
-								style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+							class="flex items-start gap-4 rounded-lg p-4 alert-success"
 						>
 							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--color-success-100); color: var(--color-success-600);"
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
 							>
-								<CheckCircle class="h-4 w-4" />
+								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+								<h3 class="text-sm font-semibold">
 									Location set
 								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
+								<p class="text-sm">
 									Your business location is locked due to payment setup.
 								</p>
 								{#if confirmedCountry && profile?.currency}
 									<div class="mt-2 flex items-center gap-2">
-										<span class="text-sm font-medium" style="color: var(--text-primary);">
+										<span class="text-sm font-medium">
 											{confirmedCountry.flag} {confirmedCountry.name}
 										</span>
-										<span class="text-sm" style="color: var(--text-tertiary);">•</span>
-										<span class="text-sm font-medium" style="color: var(--text-primary);">
+										<span class="text-sm opacity-70">•</span>
+										<span class="text-sm font-medium">
 											{profile.currency}
 										</span>
 									</div>
@@ -1137,29 +1092,27 @@
 					{:else}
 						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
 						<div
-							class="flex items-start gap-4 rounded-lg p-4"
-							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+							class="flex items-start gap-4 rounded-lg p-4 alert-success"
 						>
 							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--color-success-100); color: var(--color-success-600);"
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
 							>
-								<CheckCircle class="h-4 w-4" />
+								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+								<h3 class="text-sm font-semibold">
 									Location confirmed
 								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
+								<p class="text-sm">
 									Your business location and currency are set.
 								</p>
 								{#if confirmedCountry && profile?.currency}
 									<div class="mt-2 flex items-center gap-2">
-										<span class="text-sm font-medium" style="color: var(--text-primary);">
+										<span class="text-sm font-medium">
 											{confirmedCountry.flag} {confirmedCountry.name}
 										</span>
-										<span class="text-sm" style="color: var(--text-tertiary);">•</span>
-										<span class="text-sm font-medium" style="color: var(--text-primary);">
+										<span class="text-sm opacity-70">•</span>
+										<span class="text-sm font-medium">
 											{profile.currency}
 										</span>
 									</div>
@@ -1221,20 +1174,18 @@
 							</div>
 						{:else}
 							<div
-								class="flex items-start gap-4 rounded-lg p-4"
-								style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+								class="flex items-start gap-4 rounded-lg p-4 alert-success"
 							>
 								<div
-									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-									style="background: var(--color-success-100); color: var(--color-success-600);"
+									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
 								>
-									<CheckCircle class="h-4 w-4" />
+									<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 								</div>
 								<div class="flex-1">
-									<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+									<h3 class="text-sm font-semibold">
 										Payment account connected
 									</h3>
-									<p class="text-sm" style="color: var(--text-secondary);">
+									<p class="text-sm">
 										You're ready to accept payments from customers.
 									</p>
 								</div>
@@ -1278,20 +1229,18 @@
 						</div>
 					{:else}
 						<div
-							class="flex items-start gap-4 rounded-lg p-4"
-							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
+							class="flex items-start gap-4 rounded-lg p-4 alert-success"
 						>
 							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--color-success-100); color: var(--color-success-600);"
+								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
 							>
-								<CheckCircle class="h-4 w-4" />
+								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
 							</div>
 							<div class="flex-1">
-								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
+								<h3 class="text-sm font-semibold">
 									Tour created
 								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
+								<p class="text-sm">
 									You have {stats.totalTours} active {stats.totalTours === 1 ? 'tour' : 'tours'}.
 								</p>
 							</div>

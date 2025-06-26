@@ -109,17 +109,103 @@
 		border-style: solid;
 	}
 	
-	/* Alert styles */
+	/* Alert styles with consistent typography */
 	.alert-success {
 		background: var(--color-success-50);
 		border: 1px solid var(--color-success-200);
 		color: var(--color-success-800);
 	}
 	
-	/* Ensure all text elements within alerts use the alert color */
-	.alert-success,
-	.alert-success * {
-		color: var(--color-success-800) !important;
+	.alert-success h1, .alert-success h2, .alert-success h3, 
+	.alert-success h4, .alert-success h5, .alert-success h6,
+	.alert-success p, .alert-success span, .alert-success div {
+		color: var(--color-success-800);
+	}
+	
+	/* Alert heading styles - consistent sizing */
+	.alert-success h3,
+	.alert-warning h3,
+	.alert-error h3,
+	.alert-info h3,
+	.alert-primary h3,
+	.alert-heading {
+		font-size: 0.875rem !important; /* 14px */
+		line-height: 1.25rem !important;
+		font-weight: 600 !important;
+		margin-bottom: 0.25rem;
+		color: inherit;
+	}
+	
+	/* Alert body text */
+	.alert-success p,
+	.alert-warning p,
+	.alert-error p,
+	.alert-info p,
+	.alert-primary p,
+	.alert-body {
+		font-size: 0.8125rem !important; /* 13px */
+		line-height: 1.125rem !important;
+		color: inherit;
+	}
+	
+	/* Alert icon wrapper */
+	.alert-icon-wrapper {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	
+	.alert-icon-wrapper svg {
+		width: 1rem;
+		height: 1rem;
+		color: inherit;
+		opacity: 0.9;
+	}
+	
+	/* Alert icons should use appropriate colors */
+	.alert-success svg,
+	.alert-warning svg,
+	.alert-error svg,
+	.alert-info svg {
+		flex-shrink: 0;
+	}
+	
+	.alert-success svg {
+		color: var(--color-success-600);
+	}
+	
+	.alert-warning svg {
+		color: var(--color-warning-600);
+	}
+	
+	.alert-error svg {
+		color: var(--color-error-600);
+	}
+	
+	.alert-info svg {
+		color: var(--color-info-600);
+	}
+	
+	/* Mobile alert typography */
+	@media (max-width: 639px) {
+		.alert-success h3,
+		.alert-warning h3,
+		.alert-error h3,
+		.alert-info h3,
+		.alert-primary h3,
+		.alert-heading {
+			font-size: 0.8125rem !important; /* 13px */
+		}
+		
+		.alert-success p,
+		.alert-warning p,
+		.alert-error p,
+		.alert-info p,
+		.alert-primary p,
+		.alert-body {
+			font-size: 0.75rem !important; /* 12px */
+		}
 	}
 	
 	[data-theme="dark"] .alert-success {
@@ -128,9 +214,14 @@
 		color: var(--color-success-200);
 	}
 	
-	[data-theme="dark"] .alert-success,
-	[data-theme="dark"] .alert-success * {
-		color: var(--color-success-200) !important;
+	[data-theme="dark"] .alert-success h1, [data-theme="dark"] .alert-success h2, [data-theme="dark"] .alert-success h3,
+	[data-theme="dark"] .alert-success h4, [data-theme="dark"] .alert-success h5, [data-theme="dark"] .alert-success h6,
+	[data-theme="dark"] .alert-success p, [data-theme="dark"] .alert-success span, [data-theme="dark"] .alert-success div {
+		color: var(--color-success-200);
+	}
+	
+	[data-theme="dark"] .alert-success svg {
+		color: var(--color-success-400);
 	}
 	
 	.alert-error {
@@ -139,9 +230,10 @@
 		color: var(--color-error-800);
 	}
 	
-	.alert-error,
-	.alert-error * {
-		color: var(--color-error-800) !important;
+	.alert-error h1, .alert-error h2, .alert-error h3,
+	.alert-error h4, .alert-error h5, .alert-error h6,
+	.alert-error p, .alert-error span, .alert-error div {
+		color: var(--color-error-800);
 	}
 	
 	[data-theme="dark"] .alert-error {
@@ -150,9 +242,14 @@
 		color: var(--color-error-200);
 	}
 	
-	[data-theme="dark"] .alert-error,
-	[data-theme="dark"] .alert-error * {
-		color: var(--color-error-200) !important;
+	[data-theme="dark"] .alert-error h1, [data-theme="dark"] .alert-error h2, [data-theme="dark"] .alert-error h3,
+	[data-theme="dark"] .alert-error h4, [data-theme="dark"] .alert-error h5, [data-theme="dark"] .alert-error h6,
+	[data-theme="dark"] .alert-error p, [data-theme="dark"] .alert-error span, [data-theme="dark"] .alert-error div {
+		color: var(--color-error-200);
+	}
+	
+	[data-theme="dark"] .alert-error svg {
+		color: var(--color-error-400);
 	}
 	
 	.alert-warning {
@@ -161,20 +258,26 @@
 		color: var(--color-warning-800);
 	}
 	
-	.alert-warning,
-	.alert-warning * {
-		color: var(--color-warning-800) !important;
+	.alert-warning h1, .alert-warning h2, .alert-warning h3,
+	.alert-warning h4, .alert-warning h5, .alert-warning h6,
+	.alert-warning p, .alert-warning span, .alert-warning div {
+		color: var(--color-warning-800);
 	}
 	
 	[data-theme="dark"] .alert-warning {
-		background: var(--color-warning-900);
-		border-color: var(--color-warning-700);
-		color: var(--color-warning-200);
+		background: var(--color-warning-100);  /* Changed from 900 to 100 for darker background */
+		border-color: var(--color-warning-300);  /* Adjusted border */
+		color: var(--color-warning-900);  /* Changed from 200 to 900 for light text */
 	}
 	
-	[data-theme="dark"] .alert-warning,
-	[data-theme="dark"] .alert-warning * {
-		color: var(--color-warning-200) !important;
+	[data-theme="dark"] .alert-warning h1, [data-theme="dark"] .alert-warning h2, [data-theme="dark"] .alert-warning h3,
+	[data-theme="dark"] .alert-warning h4, [data-theme="dark"] .alert-warning h5, [data-theme="dark"] .alert-warning h6,
+	[data-theme="dark"] .alert-warning p, [data-theme="dark"] .alert-warning span, [data-theme="dark"] .alert-warning div {
+		color: var(--color-warning-900);  /* Light text on dark background */
+	}
+	
+	[data-theme="dark"] .alert-warning svg {
+		color: var(--color-warning-600);  /* Bright icon color */
 	}
 	
 	.alert-info {
@@ -183,9 +286,10 @@
 		color: var(--color-info-800);
 	}
 	
-	.alert-info,
-	.alert-info * {
-		color: var(--color-info-800) !important;
+	.alert-info h1, .alert-info h2, .alert-info h3,
+	.alert-info h4, .alert-info h5, .alert-info h6,
+	.alert-info p, .alert-info span, .alert-info div {
+		color: var(--color-info-800);
 	}
 	
 	[data-theme="dark"] .alert-info {
@@ -194,9 +298,14 @@
 		color: var(--color-info-200);
 	}
 	
-	[data-theme="dark"] .alert-info,
-	[data-theme="dark"] .alert-info * {
-		color: var(--color-info-200) !important;
+	[data-theme="dark"] .alert-info h1, [data-theme="dark"] .alert-info h2, [data-theme="dark"] .alert-info h3,
+	[data-theme="dark"] .alert-info h4, [data-theme="dark"] .alert-info h5, [data-theme="dark"] .alert-info h6,
+	[data-theme="dark"] .alert-info p, [data-theme="dark"] .alert-info span, [data-theme="dark"] .alert-info div {
+		color: var(--color-info-200);
+	}
+	
+	[data-theme="dark"] .alert-info svg {
+		color: var(--color-info-400);
 	}
 
 	/* Blue info variant */
@@ -204,6 +313,50 @@
 		background-color: var(--color-info-50);
 		border: 1px solid var(--color-info-200);
 		color: var(--color-info-800);
+	}
+	
+	/* Primary alert variant */
+	.alert-primary {
+		background: var(--color-primary-50);
+		border: 1px solid var(--color-primary-200);
+		color: var(--color-primary-800);
+	}
+	
+	.alert-primary h1, .alert-primary h2, .alert-primary h3,
+	.alert-primary h4, .alert-primary h5, .alert-primary h6,
+	.alert-primary p, .alert-primary span, .alert-primary div {
+		color: var(--color-primary-800);
+	}
+	
+	[data-theme="dark"] .alert-primary {
+		background: var(--color-primary-900);
+		border-color: var(--color-primary-700);
+		color: var(--color-primary-200);
+	}
+	
+	[data-theme="dark"] .alert-primary h1, [data-theme="dark"] .alert-primary h2, [data-theme="dark"] .alert-primary h3,
+	[data-theme="dark"] .alert-primary h4, [data-theme="dark"] .alert-primary h5, [data-theme="dark"] .alert-primary h6,
+	[data-theme="dark"] .alert-primary p, [data-theme="dark"] .alert-primary span, [data-theme="dark"] .alert-primary div {
+		color: var(--color-primary-200);
+	}
+	
+	[data-theme="dark"] .alert-primary svg {
+		color: var(--color-primary-400);
+	}
+
+	/* Icon wrapper styles for alerts */
+	.alert-success .bg-white,
+	.alert-warning .bg-white,
+	.alert-error .bg-white,
+	.alert-info .bg-white {
+		background-color: rgba(255, 255, 255, 0.9);
+	}
+	
+	[data-theme="dark"] .alert-success .bg-white,
+	[data-theme="dark"] .alert-warning .bg-white,
+	[data-theme="dark"] .alert-error .bg-white,
+	[data-theme="dark"] .alert-info .bg-white {
+		background-color: rgba(0, 0, 0, 0.3);
 	}
 
 	/* Tour Status Badges */

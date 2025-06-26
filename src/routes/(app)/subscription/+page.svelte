@@ -294,17 +294,17 @@
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8">
 	<div class="mb-6 sm:mb-8">
-		<h1 class="text-xl sm:text-2xl font-bold mb-1 sm:mb-2" style="color: var(--text-primary);">Subscription Management</h1>
+		<h1 class="page-header mb-1 sm:mb-2">Subscription Management</h1>
 		<p class="text-sm sm:text-base" style="color: var(--text-secondary);">Manage your Zaur subscription and billing</p>
 	</div>
 
 	{#if error}
-		<div class="rounded-lg p-3 sm:p-4 mb-4 border" style="background: var(--color-error-50); border-color: var(--color-error-200);">
+		<div class="rounded-lg p-3 sm:p-4 mb-4 border alert-error">
 			<div class="flex items-start gap-2 sm:gap-3">
-				<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-error-600);" />
+				<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 				<div class="flex-1">
-					<h3 class="font-semibold text-sm sm:text-base mb-0.5" style="color: var(--color-error-900);">Something went wrong</h3>
-					<p class="text-xs sm:text-sm" style="color: var(--color-error-800);">{error}</p>
+					<h3 class="font-semibold mb-0.5">Something went wrong</h3>
+					<p>{error}</p>
 				</div>
 			</div>
 		</div>
@@ -313,10 +313,10 @@
 	<!-- Early Access Notice -->
 	<div class="alert-warning mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg">
 		<div class="flex items-start gap-2 sm:gap-3">
-			<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+			<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 			<div class="flex-1">
-				<h3 class="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Early Access - Limited Time Pricing</h3>
-				<p class="text-xs sm:text-sm">
+				<h3 class="font-semibold mb-0.5 sm:mb-1">Early Access - Limited Time Pricing</h3>
+				<p>
 					Zaur is in early access. Join now at discounted rates and shape the future of tour management! 
 					Some features are being actively developed and will be rolled out progressively.
 				</p>
@@ -326,19 +326,19 @@
 
 	<!-- Promo Discount Banner -->
 	{#if hasPromoDiscount}
-		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border" style="background: var(--color-success-50); border-color: var(--color-success-200);">
+		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-success">
 			<div class="flex items-start gap-2 sm:gap-3">
-				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 				<div class="flex-1">
-					<h3 class="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base" style="color: var(--color-success-900);">Special Offer Active!</h3>
-					<p class="text-xs sm:text-sm" style="color: var(--color-success-800);">
+					<h3 class="font-semibold mb-0.5 sm:mb-1">Special Offer Active!</h3>
+					<p>
 						{getPromoBenefitText()}
 						{#if user?.promoCodeUsed}
 							<span class="font-medium"> • Code: {user.promoCodeUsed}</span>
 						{/if}
 					</p>
 					{#if isInFreePeriod && user?.subscriptionFreeUntil}
-						<p class="text-xs mt-1" style="color: var(--color-success-700);">
+						<p class="text-xs mt-1" style="opacity: 0.9;">
 							Free period ends on {formatDate(user.subscriptionFreeUntil)}
 						</p>
 					{/if}
@@ -389,22 +389,17 @@
 						<button
 							onclick={manageSubscription}
 							disabled={loading}
-							class="px-3 py-1.5 sm:px-4 sm:py-2 border rounded-md font-medium transition-colors disabled:opacity-50 text-sm sm:text-base"
-							style="border-color: var(--border-primary); color: var(--text-primary); background: var(--bg-primary);"
-							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-							onmouseleave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
+							class="button-secondary"
 						>
-							<CreditCard class="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1.5 sm:mr-2" />
-							<span class="hidden sm:inline">Manage Billing</span>
-							<span class="sm:hidden">Billing</span>
+							<CreditCard class="w-4 h-4 inline mr-2" />
+							Manage Billing
 						</button>
 						<button
 							onclick={cancelSubscription}
 							disabled={loading}
-							class="button-secondary button--danger-text button--small sm:button--small"
+							class="button-secondary button--danger-text"
 						>
-							<span class="hidden sm:inline">Cancel Subscription</span>
-							<span class="sm:hidden">Cancel</span>
+							Cancel Subscription
 						</button>
 					{/if}
 				{/if}

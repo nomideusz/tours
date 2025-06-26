@@ -218,11 +218,9 @@
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
+		<h1 class="page-header mb-2">Analytics</h1>
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 			<div>
-				<h1 class="text-2xl sm:text-3xl font-bold" style="color: var(--text-primary);">
-					Analytics
-				</h1>
 				<p class="text-sm mt-1" style="color: var(--text-secondary);">
 					Track your tour business performance
 				</p>

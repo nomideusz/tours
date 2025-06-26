@@ -3,6 +3,7 @@
 	import { notifications, unreadCount, notificationActions } from '$lib/stores/notifications.js';
 	import { scale, fly } from 'svelte/transition';
 	import { clickOutside } from '$lib/utils/click-outside.js';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	
 	// Icons
 	import Bell from 'lucide-svelte/icons/bell';
@@ -21,6 +22,7 @@
 
 	let showPanel = $state(false);
 	let panelElement = $state<HTMLElement>();
+	let buttonElement = $state<HTMLButtonElement>();
 
 	$effect(() => {
 		console.log('📊 NotificationPanel: Current notifications count:', $notifications.length);
@@ -98,30 +100,46 @@
 		await notificationActions.clear();
 	}
 
-	function handleClickOutside() {
+	function handleClickOutside(event: MouseEvent) {
+		// Don't close if clicking on the bell button itself
+		if (buttonElement && buttonElement.contains(event.target as Node)) {
+			return;
+		}
 		showPanel = false;
 	}
 
-
+	function togglePanel() {
+		showPanel = !showPanel;
+	}
 </script>
 
 <div class="relative">
 	<!-- Notification Bell Button -->
-	<button
-		onclick={() => showPanel = !showPanel}
-		class="relative p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-		title="Notifications"
-	>
-		<Bell class="h-5 w-5" />
-		{#if $unreadCount > 0}
-			<span 
-				class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium"
-				transition:scale={{ duration: 200 }}
-			>
-				{$unreadCount > 99 ? '99+' : $unreadCount}
-			</span>
-		{/if}
-	</button>
+	<Tooltip text={$unreadCount > 0 ? `${$unreadCount} unread notification${$unreadCount === 1 ? '' : 's'}` : 'Notifications'} position={tooltipPosition}>
+		<button
+			bind:this={buttonElement}
+			onclick={togglePanel}
+			class="relative p-2 rounded-md transition-colors"
+			style="color: var(--text-tertiary);"
+			onmouseenter={(e) => {
+				e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+			}}
+			onmouseleave={(e) => {
+				e.currentTarget.style.backgroundColor = 'transparent';
+			}}
+		>
+			<Bell class="h-5 w-5" />
+			{#if $unreadCount > 0}
+				<span 
+					class="absolute -top-1 -right-1 h-5 w-5 text-xs rounded-full flex items-center justify-center font-medium"
+					style="background: var(--color-danger-600); color: white;"
+					transition:scale={{ duration: 200 }}
+				>
+					{$unreadCount > 99 ? '99+' : $unreadCount}
+				</span>
+			{/if}
+		</button>
+	</Tooltip>
 
 	<!-- Notification Panel -->
 	{#if showPanel}
