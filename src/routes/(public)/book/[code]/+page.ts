@@ -13,4 +13,7 @@ export const load: PageLoad = async ({ params, parent }) => {
 	return {
 		qrCode: params.code
 	};
-}; 
+};
+
+// Disable SSR to avoid fetch issues
+export const ssr = false; 
