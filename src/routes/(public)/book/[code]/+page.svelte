@@ -25,6 +25,9 @@
 	import Check from 'lucide-svelte/icons/check';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Shield from 'lucide-svelte/icons/shield';
+	import Info from 'lucide-svelte/icons/info';
+	import X from 'lucide-svelte/icons/x';
 	
 	let { data, form }: { data: PageData; form: any } = $props();
 	
@@ -301,8 +304,109 @@
 					{#if tour.description}
 						<p class="mb-4" style="color: var(--text-primary);">{tour.description}</p>
 					{/if}
+					
+					<!-- What's Included -->
+					{#if tour.includedItems && tour.includedItems.length > 0}
+						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
+							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">✅ What's Included</h3>
+							<ul class="space-y-1">
+								{#each tour.includedItems as item}
+									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+										<Check class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+					
+					<!-- What's Not Included -->
+					{#if tour.excludedItems && tour.excludedItems.length > 0}
+						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
+							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">❌ What's Not Included</h3>
+							<ul class="space-y-1">
+								{#each tour.excludedItems as item}
+									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+										<X class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-danger-600);" />
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+					
+					<!-- Requirements -->
+					{#if tour.requirements && tour.requirements.length > 0}
+						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
+							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">📋 Requirements</h3>
+							<ul class="space-y-1">
+								{#each tour.requirements as requirement}
+									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+										<AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+										<span>{requirement}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
 				</div>
 			</div>
+			
+			<!-- Additional Tour Information Cards -->
+			{#if tour.cancellationPolicy || tour.minParticipants || (tour.enablePricingTiers && tour.pricingTiers)}
+				<div class="mb-6 grid gap-4 sm:grid-cols-2">
+					<!-- Cancellation Policy -->
+					{#if tour.cancellationPolicy}
+						<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+							<div class="flex items-start gap-3">
+								<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-primary-600);" />
+								<div class="flex-1">
+									<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Cancellation Policy</h3>
+									<div class="text-sm space-y-1" style="color: var(--text-secondary);">
+										{#each tour.cancellationPolicy.split('\n') as line}
+											{#if line.trim()}
+												<p>{line}</p>
+											{/if}
+										{/each}
+									</div>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+							<div class="flex items-start gap-3">
+								<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-primary-600);" />
+								<div class="flex-1">
+									<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Standard Cancellation Policy</h3>
+									<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+										<li>• Free cancellation up to 24 hours before the tour</li>
+										<li>• 50% refund for cancellations within 24 hours</li>
+										<li>• No refund for no-shows</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
+					
+					<!-- Important Information -->
+					<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="flex items-start gap-3">
+							<Info class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+							<div class="flex-1">
+								<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Important Information</h3>
+								<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+									<li>• Meeting point: {tour.location || 'Will be provided after booking'}</li>
+									{#if tour.minParticipants && tour.minParticipants > 1}
+										<li>• Minimum {tour.minParticipants} participants required</li>
+									{/if}
+									<li>• Duration: {tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'See tour details'}</li>
+									<li>• Please arrive 10-15 minutes early</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
 			
 			<!-- Booking Form -->
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">

@@ -123,7 +123,7 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ locals, params }) => {
+export const DELETE: RequestHandler = async ({ locals, params, url }) => {
 	try {
 		if (!locals.user) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
@@ -162,6 +162,19 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 			return json({ error: 'Time slot not found' }, { status: 404 });
 		}
 
+		// Get all bookings for this slot before cancelling
+		const affectedBookings = await db
+			.select({
+				id: bookings.id,
+				customerEmail: bookings.customerEmail,
+				customerName: bookings.customerName
+			})
+			.from(bookings)
+			.where(and(
+				eq(bookings.timeSlotId, slotId),
+				eq(bookings.status, 'confirmed')
+			));
+
 		// Check if slot has bookings
 		if (currentSlot.bookedSpots > 0) {
 			// Cancel all bookings for this slot
@@ -172,6 +185,31 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 					updatedAt: new Date()
 				})
 				.where(eq(bookings.timeSlotId, slotId));
+
+			// Send cancellation emails to all affected customers
+			const origin = url.origin;
+			for (const booking of affectedBookings) {
+				try {
+					const emailResponse = await fetch(`${origin}/api/send-booking-email`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							bookingId: booking.id,
+							emailType: 'cancelled',
+							cancellationReason: 'other',
+							customMessage: 'The time slot for this tour has been cancelled by the tour guide.',
+							isBulkCancellation: true
+						})
+					});
+
+					if (!emailResponse.ok) {
+						console.warn(`Failed to send cancellation email to ${booking.customerEmail}:`, await emailResponse.text());
+					}
+				} catch (emailError) {
+					console.error(`Error sending cancellation email to ${booking.customerEmail}:`, emailError);
+					// Continue with other emails even if one fails
+				}
+			}
 		}
 
 		// Delete the time slot
@@ -182,8 +220,9 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 		return json({
 			success: true,
 			message: currentSlot.bookedSpots > 0 
-				? `Time slot deleted and ${currentSlot.bookedSpots} booking(s) cancelled`
-				: 'Time slot deleted successfully'
+				? `Time slot deleted and ${currentSlot.bookedSpots} booking(s) cancelled. Cancellation emails sent to affected customers.`
+				: 'Time slot deleted successfully',
+			affectedBookings: affectedBookings.length
 		});
 
 	} catch (error) {

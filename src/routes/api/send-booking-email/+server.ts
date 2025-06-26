@@ -1,12 +1,14 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { sendBookingEmail, type BookingEmailType } from '$lib/email.server.js';
+import { sendBookingEmail, type BookingEmailType } from '$lib/email/sender.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
+import type { User } from '$lib/types.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { bookingId, emailType } = await request.json();
+    const body = await request.json();
+    const { bookingId, emailType, cancellationReason, customMessage, isBulkCancellation } = body;
 
     if (!bookingId || !emailType) {
       return json({ error: 'bookingId and emailType are required' }, { status: 400 });
@@ -20,42 +22,55 @@ export const POST: RequestHandler = async ({ request }) => {
 
     // Fetch booking data with tour, time slot, and tour owner information
     const bookingData = await db.select({
-      // Booking fields
-      id: bookings.id,
-      customerName: bookings.customerName,
-      customerEmail: bookings.customerEmail,
-      customerPhone: bookings.customerPhone,
-      participants: bookings.participants,
-      participantBreakdown: bookings.participantBreakdown,
-      totalAmount: bookings.totalAmount,
-      status: bookings.status,
-      paymentStatus: bookings.paymentStatus,
-      bookingReference: bookings.bookingReference,
-      specialRequests: bookings.specialRequests,
-      ticketQRCode: bookings.ticketQRCode,
-      attendanceStatus: bookings.attendanceStatus,
-      checkedInAt: bookings.checkedInAt,
-      checkedInBy: bookings.checkedInBy,
-      createdAt: bookings.createdAt,
-      updatedAt: bookings.updatedAt,
-      // Tour fields
+      bookingId: bookings.id,
+      bookingTourId: bookings.tourId,
+      bookingTimeSlotId: bookings.timeSlotId,
+      bookingCustomerName: bookings.customerName,
+      bookingCustomerEmail: bookings.customerEmail,
+      bookingCustomerPhone: bookings.customerPhone,
+      bookingParticipants: bookings.participants,
+      bookingTotalAmount: bookings.totalAmount,
+      bookingParticipantBreakdown: bookings.participantBreakdown,
+      bookingStatus: bookings.status,
+      bookingPaymentId: bookings.paymentId,
+      bookingPaymentStatus: bookings.paymentStatus,
+      bookingBookingReference: bookings.bookingReference,
+      bookingSpecialRequests: bookings.specialRequests,
+      bookingTicketQRCode: bookings.ticketQRCode,
+      bookingAttendanceStatus: bookings.attendanceStatus,
+      bookingCheckedInAt: bookings.checkedInAt,
+      bookingCheckedInBy: bookings.checkedInBy,
+      bookingCreatedAt: bookings.createdAt,
+      bookingUpdatedAt: bookings.updatedAt,
+      
       tourId: tours.id,
       tourName: tours.name,
       tourDescription: tours.description,
       tourPrice: tours.price,
       tourDuration: tours.duration,
       tourCapacity: tours.capacity,
-      tourStatus: tours.status,
-      tourLocation: tours.location,
       tourUserId: tours.userId,
-      // TimeSlot fields
+      tourImages: tours.images,
+      tourStatus: tours.status,
+      tourCategory: tours.category,
+      tourLocation: tours.location,
+      tourIncludedItems: tours.includedItems,
+      tourRequirements: tours.requirements,
+      tourCancellationPolicy: tours.cancellationPolicy,
+      tourEnablePricingTiers: tours.enablePricingTiers,
+      tourPricingTiers: tours.pricingTiers,
+      tourQrCode: tours.qrCode,
+      tourCreatedAt: tours.createdAt,
+      tourUpdatedAt: tours.updatedAt,
+      
       timeSlotId: timeSlots.id,
+      timeSlotTourId: timeSlots.tourId,
       timeSlotStartTime: timeSlots.startTime,
       timeSlotEndTime: timeSlots.endTime,
       timeSlotAvailableSpots: timeSlots.availableSpots,
       timeSlotBookedSpots: timeSlots.bookedSpots,
       timeSlotStatus: timeSlots.status,
-      // Tour owner fields
+      
       tourOwnerCurrency: users.currency
     })
     .from(bookings)
@@ -73,24 +88,24 @@ export const POST: RequestHandler = async ({ request }) => {
 
     // Format data to match the expected interface
     const booking = {
-      id: data.id,
-      tourId: data.tourId,
-      timeSlotId: data.timeSlotId,
-      customerName: data.customerName,
-      customerEmail: data.customerEmail,
-      customerPhone: data.customerPhone || undefined,
-      participants: data.participants,
-      totalAmount: data.totalAmount,
-      status: data.status,
-      paymentStatus: data.paymentStatus,
-      bookingReference: data.bookingReference,
-      specialRequests: data.specialRequests || undefined,
-      ticketQRCode: data.ticketQRCode || undefined,
-      attendanceStatus: data.attendanceStatus || undefined,
-      checkedInAt: data.checkedInAt?.toISOString(),
-      checkedInBy: data.checkedInBy || undefined,
-      createdAt: data.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: data.updatedAt?.toISOString() || new Date().toISOString(),
+      id: data.bookingId,
+      tourId: data.bookingTourId,
+      timeSlotId: data.bookingTimeSlotId,
+      customerName: data.bookingCustomerName,
+      customerEmail: data.bookingCustomerEmail,
+      customerPhone: data.bookingCustomerPhone || undefined,
+      participants: data.bookingParticipants,
+      totalAmount: data.bookingTotalAmount,
+      status: data.bookingStatus,
+      paymentStatus: data.bookingPaymentStatus,
+      bookingReference: data.bookingBookingReference,
+      specialRequests: data.bookingSpecialRequests || undefined,
+      ticketQRCode: data.bookingTicketQRCode || undefined,
+      attendanceStatus: data.bookingAttendanceStatus || undefined,
+      checkedInAt: data.bookingCheckedInAt?.toISOString(),
+      checkedInBy: data.bookingCheckedInBy || undefined,
+      createdAt: data.bookingCreatedAt?.toISOString() || new Date().toISOString(),
+      updatedAt: data.bookingUpdatedAt?.toISOString() || new Date().toISOString(),
     };
 
     const tour = {
@@ -109,7 +124,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const timeSlot = {
       id: data.timeSlotId,
-      tourId: data.tourId,
+      tourId: data.timeSlotTourId,
       startTime: data.timeSlotStartTime?.toISOString() || new Date().toISOString(),
       endTime: data.timeSlotEndTime?.toISOString() || new Date().toISOString(),
       availableSpots: data.timeSlotAvailableSpots,
@@ -122,12 +137,38 @@ export const POST: RequestHandler = async ({ request }) => {
       updatedAt: new Date().toISOString(),
     };
 
+    // Also fetch tour owner data for cancellation emails
+    const tourOwnerData = await db.select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      username: users.username,
+      businessName: users.businessName,
+      phone: users.phone,
+      currency: users.currency
+    })
+    .from(users)
+    .where(eq(users.id, data.tourUserId))
+    .limit(1);
+
+    const tourOwner = tourOwnerData.length > 0 ? {
+      ...tourOwnerData[0],
+      role: 'user' as const,
+      emailVerified: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } as User : undefined;
+
     // Send the email
     const emailResult = await sendBookingEmail(emailType as BookingEmailType, {
       booking,
       tour,
       timeSlot,
-      tourOwnerCurrency: data.tourOwnerCurrency || 'EUR'
+      tourOwner,
+      tourOwnerCurrency: data.tourOwnerCurrency || 'EUR',
+      cancellationReason,
+      customMessage,
+      isBulkCancellation
     });
 
     if (!emailResult.success) {

@@ -174,7 +174,7 @@
 							<Ticket class="w-8 h-8" />
 						</div>
 					</div>
-					<h1 class="text-2xl font-bold mb-2">Your Tour Ticket</h1>
+					<h1 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">Your Tour Ticket</h1>
 					<p class="opacity-90">Show this QR code to your guide</p>
 				</div>
 				

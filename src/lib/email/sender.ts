@@ -1,9 +1,10 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
-import type { Booking, Tour, TimeSlot } from '$lib/types.js';
+import type { Booking, Tour, TimeSlot, User } from '$lib/types.js';
 
 // Import email templates
 import { bookingConfirmationEmail } from './templates/booking-confirmation.js';
+import { bookingCancellationEmail } from './templates/booking-cancellation.js';
 import { qrTicketEmail } from './templates/qr-ticket.js';
 import { tourReminderEmail } from './templates/tour-reminder.js';
 import { guideBookingNotificationEmail } from './templates/guide-booking-notification.js';
@@ -33,7 +34,11 @@ export interface BookingEmailData {
   booking: Booking;
   tour: Tour;
   timeSlot: TimeSlot;
+  tourOwner?: User;
   tourOwnerCurrency?: string;
+  cancellationReason?: 'weather' | 'illness' | 'emergency' | 'low_enrollment' | 'other';
+  customMessage?: string;
+  isBulkCancellation?: boolean;
 }
 
 // Email result interface
@@ -91,11 +96,17 @@ export async function sendBookingEmail(
         break;
         
       case 'cancelled':
-        // Create a simple cancellation email
-        emailContent = {
-          subject: `❌ Booking Cancelled - ${data.tour.name}`,
-          html: getCancellationEmail(data)
-        };
+        // Use the new cancellation template
+        emailContent = bookingCancellationEmail({
+          booking: data.booking,
+          tour: data.tour,
+          timeSlot: data.timeSlot,
+          tourOwner: data.tourOwner,
+          tourOwnerCurrency: data.tourOwnerCurrency,
+          cancellationReason: data.cancellationReason,
+          customMessage: data.customMessage,
+          isBulkCancellation: data.isBulkCancellation
+        });
         break;
         
       default:
@@ -125,16 +136,6 @@ export async function sendBookingEmail(
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }
-}
-
-// Simple cancellation email (can be moved to a template later)
-function getCancellationEmail(data: BookingEmailData): string {
-  return `
-    <h2>Booking Cancelled</h2>
-    <p>Your booking for ${data.tour.name} has been cancelled.</p>
-    <p>Reference: ${data.booking.bookingReference}</p>
-    <p>If you have any questions, please contact support.</p>
-  `;
 }
 
 // Send guide notification email

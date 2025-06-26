@@ -67,10 +67,19 @@
 	let payment = $derived($bookingQuery.data?.payment || null);
 	let isLoading = $derived($bookingQuery.isLoading);
 	let isError = $derived($bookingQuery.isError);
-	let isUpdating = $state(false);
-	let error = $state<string | null>(null);
 	let showStatusModal = $state(false);
-	let newStatus = $state('');
+	let newStatus = $state('pending');
+	let isUpdating = $state(false);
+	let cancellationReason = $state<'weather' | 'illness' | 'emergency' | 'low_enrollment' | 'other'>('other');
+	let customMessage = $state('');
+	let error = $state<string | null>(null);
+
+	// Update newStatus when booking loads
+	$effect(() => {
+		if (booking && !showStatusModal) {
+			newStatus = booking.status;
+		}
+	});
 
 	function openEmailClient() {
 		if (!booking) return;
@@ -368,10 +377,10 @@
 								<div class="flex-1 min-w-0">
 									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Booking Date</p>
 									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
-										{formatDate(booking.created)}
+										{formatDate(booking.createdAt)}
 									</p>
 									<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
-										at {new Date(booking.created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+										at {new Date(booking.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
 									</p>
 								</div>
 							</div>
@@ -387,7 +396,7 @@
 										{booking.expand?.tour?.location || 'Location not set'}
 									</p>
 									<button
-										onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
+										onclick={() => goto(`/tours/${booking.tourId}`)}
 										class="text-xs mt-1 inline-flex items-center gap-1 hover:underline"
 										style="color: var(--color-primary-600);"
 									>
@@ -459,7 +468,7 @@
 									<div class="min-w-0">
 										<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Booking Code</p>
 										<p class="font-mono font-medium text-sm sm:text-base" style="color: var(--text-primary);">
-											{booking.qrCode || booking.id.slice(-8)}
+											{booking.ticketQRCode || booking.bookingReference || booking.id.slice(-8)}
 										</p>
 									</div>
 								</div>
@@ -476,7 +485,7 @@
 							<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
 							<div class="flex-1">
 								<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-								<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.created)}</p>
+								<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.createdAt)}</p>
 							</div>
 						</div>
 						
@@ -642,7 +651,7 @@
 							{/if}
 							
 							<button
-								onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
+								onclick={() => goto(`/tours/${booking.tourId}`)}
 								class="button-secondary button--gap button--small"
 							>
 								<MapPin class="h-4 w-4" />
@@ -664,7 +673,7 @@
 								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
 								<div class="flex-1">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-									<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.created)}</p>
+									<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.createdAt)}</p>
 								</div>
 							</div>
 							
@@ -761,50 +770,94 @@
 								console.warn('Background refetch failed:', invalidationError);
 							});
 							
-						} else if (result.type === 'failure' && result.data) {
-							error = (result.data as any).error || 'Failed to update booking status';
+						} else if (result.type === 'failure') {
+							error = (result.data as any)?.error || 'Failed to update status';
 						}
 						
+						// Always reset form state
 						isUpdating = false;
+						cancellationReason = 'other';
+						customMessage = '';
 						await update();
 					};
 				}}
 			>
 				<div class="p-6" style="border-bottom: 1px solid var(--border-primary);">
-					<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Change Booking Status</h2>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Update the status of this booking</p>
+					<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Update Booking Status</h3>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Change the status of this booking</p>
 				</div>
 				
 				<div class="p-6 space-y-4">
-					<div class="space-y-3">
-						{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
-							{@const StatusIcon = getBookingStatusIcon(status)}
-							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all" 
-								style="border-color: {newStatus === status ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'transparent'}"
-								onmouseenter={(e) => {
-									if (newStatus !== status) {
-										e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-									}
-								}}
-								onmouseleave={(e) => {
-									if (newStatus !== status) {
-										e.currentTarget.style.backgroundColor = 'transparent';
-									}
-								}}>
-								<input
-									type="radio"
-									bind:group={newStatus}
-									name="status"
-									value={status}
-									class="form-radio"
-								/>
-								<div class="flex items-center gap-2">
-									<StatusIcon class="h-4 w-4" style="color: var(--text-secondary);" />
-									<span class="font-medium capitalize" style="color: var(--text-primary);">{status}</span>
-								</div>
-							</label>
-						{/each}
+					<input type="hidden" name="id" value={booking.id} />
+					
+					<div>
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							New Status
+						</label>
+						<select 
+							name="status" 
+							bind:value={newStatus}
+							class="form-select w-full"
+							style="cursor: pointer;"
+						>
+							<option value="pending">Pending</option>
+							<option value="confirmed">Confirmed</option>
+							<option value="cancelled">Cancelled</option>
+							<option value="completed">Completed</option>
+						</select>
 					</div>
+					
+					{#if newStatus === 'cancelled'}
+						<div class="rounded-lg p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-start gap-3">
+								<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+								<div class="flex-1">
+									<p class="font-medium" style="color: var(--color-warning-900);">
+										Cancelling this booking will:
+									</p>
+									<ul class="mt-2 space-y-1 text-sm" style="color: var(--color-warning-700);">
+										<li>• Send a cancellation email to the customer</li>
+										<li>• Process a full refund automatically</li>
+										<li>• Free up the spot for other customers</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						
+						<div>
+							<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+								Cancellation Reason
+							</label>
+							<select 
+								name="cancellationReason" 
+								bind:value={cancellationReason}
+								class="form-select w-full"
+								style="cursor: pointer;"
+							>
+								<option value="weather">Weather Conditions</option>
+								<option value="illness">Guide Illness</option>
+								<option value="emergency">Emergency</option>
+								<option value="low_enrollment">Low Enrollment</option>
+								<option value="other">Other</option>
+							</select>
+						</div>
+						
+						<div>
+							<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+								Custom Message (Optional)
+							</label>
+							<textarea
+								name="customMessage"
+								bind:value={customMessage}
+								rows={3}
+								placeholder="Add a personal message to the customer..."
+								class="form-textarea w-full resize-none"
+							></textarea>
+							<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+								This message will be included in the cancellation email
+							</p>
+						</div>
+					{/if}
 					
 					{#if error}
 						<div class="rounded-lg p-3" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
