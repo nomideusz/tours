@@ -18,6 +18,10 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import Check from 'lucide-svelte/icons/check';
+	import X from 'lucide-svelte/icons/x';
+	import Info from 'lucide-svelte/icons/info';
+	import Shield from 'lucide-svelte/icons/shield';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -109,7 +113,7 @@
 			default:
 				return {
 					icon: Clock,
-					text: 'Not Arrived',
+					text: 'Ready for Check-in',
 					class: 'status-pending',
 					iconClass: ''
 				};
@@ -241,8 +245,33 @@
 					</div>
 				</div>
 				
-				<!-- Customer Details -->
+				<!-- Tour Guide Information -->
 				<div class="px-4 sm:px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+					<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Your Tour Guide</h3>
+					<div class="space-y-3">
+						{#if tourOwner?.name || tourOwner?.businessName}
+							<div class="flex items-center gap-3">
+								<User class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span style="color: var(--text-primary);">{tourOwner?.businessName || tourOwner?.name}</span>
+							</div>
+						{/if}
+						{#if tourOwner?.phone}
+							<div class="flex items-center gap-3">
+								<Phone class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<a href="tel:{tourOwner.phone}" style="color: var(--color-primary-600);">{tourOwner.phone}</a>
+							</div>
+						{/if}
+						{#if tourOwner?.email}
+							<div class="flex items-center gap-3">
+								<Mail class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<a href="mailto:{tourOwner.email}" style="color: var(--color-primary-600);">{tourOwner.email}</a>
+							</div>
+						{/if}
+					</div>
+				</div>
+				
+				<!-- Customer Details -->
+				<div class="px-4 sm:px-6 py-6 border-t" style="border-color: var(--border-primary);">
 					<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Booking Details</h3>
 					<div class="space-y-3 text-sm">
 						<div class="flex items-center gap-3">
@@ -273,27 +302,157 @@
 					{/if}
 				</div>
 				
-				<!-- Important Notes -->
+				<!-- Pricing Breakdown -->
+				{#if booking.participantBreakdown && (booking.participantBreakdown.adults > 0 || booking.participantBreakdown.children > 0)}
+					<div class="px-4 sm:px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+						<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Pricing Details</h3>
+						<div class="space-y-2 text-sm">
+							{#if booking.participantBreakdown.adults > 0}
+								<div class="flex justify-between">
+									<span style="color: var(--text-secondary);">
+										Adults ({booking.participantBreakdown.adults} × {formatTourOwnerCurrency(booking.expand?.tour?.price || 0, tourOwner?.currency)})
+									</span>
+									<span style="color: var(--text-primary);">
+										{formatTourOwnerCurrency((booking.expand?.tour?.price || 0) * booking.participantBreakdown.adults, tourOwner?.currency)}
+									</span>
+								</div>
+							{/if}
+							{#if booking.participantBreakdown.children > 0}
+								<div class="flex justify-between">
+									<span style="color: var(--text-secondary);">
+										Children ({booking.participantBreakdown.children} × {formatTourOwnerCurrency(booking.expand?.tour?.childPrice || 0, tourOwner?.currency)})
+									</span>
+									<span style="color: var(--text-primary);">
+										{formatTourOwnerCurrency((booking.expand?.tour?.childPrice || 0) * booking.participantBreakdown.children, tourOwner?.currency)}
+									</span>
+								</div>
+							{/if}
+							<div class="flex justify-between pt-2 border-t" style="border-color: var(--border-primary);">
+								<span class="font-semibold" style="color: var(--text-primary);">Total</span>
+								<span class="font-semibold" style="color: var(--text-primary);">
+									{formatTourOwnerCurrency(booking.totalAmount, tourOwner?.currency)}
+								</span>
+							</div>
+						</div>
+					</div>
+				{/if}
+				
+				<!-- What's Included/Excluded -->
+				{#if booking.expand?.tour?.included || booking.expand?.tour?.excluded}
+					<div class="px-4 sm:px-6 py-6 border-t" style="border-color: var(--border-primary);">
+						<h3 class="font-semibold mb-4" style="color: var(--text-primary);">Tour Details</h3>
+						<div class="grid gap-4 sm:grid-cols-2">
+							{#if booking.expand?.tour?.included}
+								<div>
+									<h4 class="flex items-center gap-2 font-medium mb-2" style="color: var(--color-success-600);">
+										<Check class="w-4 h-4" />
+										What's Included
+									</h4>
+									<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+										{#each (booking.expand.tour.included.split('\n') || []) as item}
+											{#if item.trim()}
+												<li class="flex gap-2">
+													<Check class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+													<span>{item.trim()}</span>
+												</li>
+											{/if}
+										{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if booking.expand?.tour?.excluded}
+								<div>
+									<h4 class="flex items-center gap-2 font-medium mb-2" style="color: var(--color-error-600);">
+										<X class="w-4 h-4" />
+										Not Included
+									</h4>
+									<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+										{#each (booking.expand.tour.excluded.split('\n') || []) as item}
+											{#if item.trim()}
+												<li class="flex gap-2">
+													<X class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-error-600);" />
+													<span>{item.trim()}</span>
+												</li>
+											{/if}
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
+				
+				<!-- Requirements & Important Info -->
 				<div class="px-4 sm:px-6 py-6 border-t" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold mb-3" style="color: var(--text-primary);">Important Information</h3>
-					<ul class="text-sm space-y-2" style="color: var(--text-secondary);">
-						<li class="flex gap-2">
-							<span style="color: var(--text-primary);">•</span>
-							<span>Please arrive 10 minutes before the tour starts</span>
-						</li>
-						<li class="flex gap-2">
-							<span style="color: var(--text-primary);">•</span>
-							<span>Show this QR code to your guide for check-in</span>
-						</li>
-						<li class="flex gap-2">
-							<span style="color: var(--text-primary);">•</span>
-							<span>Bring comfortable walking shoes and weather-appropriate clothing</span>
-						</li>
-						<li class="flex gap-2">
-							<span style="color: var(--text-primary);">•</span>
-							<span>Contact your guide if you need to make any changes</span>
-						</li>
-					</ul>
+					<h3 class="flex items-center gap-2 font-semibold mb-4" style="color: var(--text-primary);">
+						<Info class="w-5 h-5" />
+						Important Information
+					</h3>
+					<div class="space-y-4">
+						{#if booking.expand?.tour?.requirements}
+							<div>
+								<h4 class="font-medium mb-2" style="color: var(--text-primary);">Requirements</h4>
+								<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+									{#each (booking.expand.tour.requirements.split('\n') || []) as req}
+										{#if req.trim()}
+											<li class="flex gap-2">
+												<span style="color: var(--text-primary);">•</span>
+												<span>{req.trim()}</span>
+											</li>
+										{/if}
+									{/each}
+								</ul>
+							</div>
+						{/if}
+						
+						<div>
+							<h4 class="font-medium mb-2" style="color: var(--text-primary);">Before You Go</h4>
+							<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+								<li class="flex gap-2">
+									<span style="color: var(--text-primary);">•</span>
+									<span>Arrive 10 minutes before the tour starts</span>
+								</li>
+								<li class="flex gap-2">
+									<span style="color: var(--text-primary);">•</span>
+									<span>Show this QR code to your guide for check-in</span>
+								</li>
+								{#if booking.expand?.tour?.duration}
+									<li class="flex gap-2">
+										<span style="color: var(--text-primary);">•</span>
+										<span>Tour duration: {booking.expand.tour.duration}</span>
+									</li>
+								{/if}
+								{#if booking.expand?.tour?.minParticipants}
+									<li class="flex gap-2">
+										<span style="color: var(--text-primary);">•</span>
+										<span>Minimum participants required: {booking.expand.tour.minParticipants}</span>
+									</li>
+								{/if}
+							</ul>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Cancellation Policy -->
+				<div class="px-4 sm:px-6 py-6 border-t" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+					<h3 class="flex items-center gap-2 font-semibold mb-4" style="color: var(--text-primary);">
+						<Shield class="w-5 h-5" />
+						Cancellation Policy
+					</h3>
+					<div class="text-sm space-y-2" style="color: var(--text-secondary);">
+						{#if booking.expand?.tour?.cancellationPolicy}
+							{#each (booking.expand.tour.cancellationPolicy.split('\n') || []) as policy}
+								{#if policy.trim()}
+									<p>{policy.trim()}</p>
+								{/if}
+							{/each}
+						{:else}
+							<p>• Free cancellation up to 24 hours before the tour</p>
+							<p>• 50% refund for cancellations within 24 hours</p>
+							<p>• No refund for no-shows or cancellations after tour start time</p>
+							<p>• Contact your tour guide directly for any changes or cancellations</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -332,5 +491,11 @@
 	/* Ensure canvas adapts to container */
 	.qr-code-container canvas {
 		border-radius: 0.25rem;
+	}
+	
+	/* Info box styling */
+	.info-box {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
 	}
 </style> 

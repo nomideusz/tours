@@ -74,7 +74,7 @@
 			default:
 				return {
 					icon: AlertCircle,
-					text: 'Awaiting Check-in',
+					text: 'Ready for Check-in',
 					class: 'status-pending',
 					iconClass: ''
 				};
