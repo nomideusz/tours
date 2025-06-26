@@ -92,7 +92,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="min-h-screen" style="background: var(--bg-secondary);">
+<div class="checkin-container">
 	<!-- Mobile-optimized Header -->
 	<div class="sticky top-0 z-10 mobile-header">
 		<div class="px-4 py-3">
@@ -102,8 +102,8 @@
 						<ArrowLeft class="w-5 h-5" />
 					</a>
 					<div>
-						<h1 class="text-lg font-semibold text-white">Check-in</h1>
-						<p class="text-xs text-white/70">{data.booking.expand?.tour?.name}</p>
+						<h1 class="text-lg font-semibold mobile-header-title">Check-in</h1>
+						<p class="text-xs mobile-header-subtitle">{data.booking.expand?.tour?.name}</p>
 					</div>
 				</div>
 				<a href="/checkin-scanner" class="mobile-header-link">
@@ -113,7 +113,7 @@
 		</div>
 	</div>
 
-	<div class="max-w-2xl mx-auto px-4 py-4 pb-20">
+	<div class="checkin-content">
 		<!-- Status Card -->
 		<div class="mb-4 rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary);">
 			<div class="p-4">
@@ -163,7 +163,7 @@
 		<div class="mb-4 rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary);">
 			<div class="p-4">
 				<h2 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
-					<User class="w-4 h-4 icon-primary" />
+					<User class="w-4 h-4" style="color: var(--color-primary-600);" />
 					Customer Details
 				</h2>
 				
@@ -177,19 +177,19 @@
 
 				<div class="space-y-3">
 					<div class="flex items-center gap-3">
-						<Mail class="w-4 h-4 icon-tertiary" />
+						<Mail class="w-4 h-4" style="color: var(--text-tertiary);" />
 						<p class="text-sm" style="color: var(--text-primary);">{data.booking.customerEmail}</p>
 					</div>
 					
 					{#if data.booking.customerPhone}
 						<div class="flex items-center gap-3">
-							<Phone class="w-4 h-4 icon-tertiary" />
+							<Phone class="w-4 h-4" style="color: var(--text-tertiary);" />
 							<p class="text-sm" style="color: var(--text-primary);">{data.booking.customerPhone}</p>
 						</div>
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<Ticket class="w-4 h-4 icon-tertiary" />
+						<Ticket class="w-4 h-4" style="color: var(--text-tertiary);" />
 						<p class="text-sm" style="color: var(--text-primary);">{data.booking.bookingReference}</p>
 					</div>
 				</div>
@@ -207,7 +207,7 @@
 		<div class="mb-4 rounded-xl overflow-hidden shadow-sm" style="background: var(--bg-primary);">
 			<div class="p-4">
 				<h2 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);">
-					<Calendar class="w-4 h-4 icon-primary" />
+					<Calendar class="w-4 h-4" style="color: var(--color-primary-600);" />
 					Tour Information
 				</h2>
 				
@@ -217,7 +217,7 @@
 							<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">
 								{formatDate(data.booking.expand.timeSlot.startTime)}
 							</p>
-							<p class="text-lg font-bold text-primary">
+							<p class="text-lg font-bold time-display">
 								{formatSlotTimeRange(data.booking.expand.timeSlot.startTime, data.booking.expand.timeSlot.endTime)}
 							</p>
 						</div>
@@ -225,7 +225,7 @@
 					
 					{#if data.booking.expand?.tour?.location}
 						<div class="flex items-start gap-3">
-							<MapPin class="w-4 h-4 mt-0.5 icon-tertiary" />
+							<MapPin class="w-4 h-4 mt-0.5" style="color: var(--text-tertiary);" />
 							<div class="flex-1">
 								<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">Meeting Point</p>
 								<p class="text-sm" style="color: var(--text-primary);">{data.booking.expand?.tour?.location}</p>
@@ -234,7 +234,7 @@
 					{/if}
 					
 					<div class="flex items-center gap-3">
-						<DollarSign class="w-4 h-4 icon-tertiary" />
+						<DollarSign class="w-4 h-4" style="color: var(--text-tertiary);" />
 						<div class="flex-1">
 							<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">Total Amount</p>
 							<p class="text-sm font-semibold" style="color: var(--text-primary);">
@@ -249,7 +249,7 @@
 
 	<!-- Fixed Bottom Action Area -->
 	{#if canTakeAction}
-		<div class="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);">
+		<div class="checkin-actions checkin-actions--active">
 			<div class="max-w-2xl mx-auto">
 				<!-- Check In Button - Primary Action -->
 				<form method="POST" action="?/checkin" use:enhance={() => {
@@ -293,7 +293,7 @@
 		</div>
 	{:else}
 		<!-- Already Processed State -->
-		<div class="fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
+		<div class="checkin-actions checkin-actions--completed">
 			<div class="max-w-2xl mx-auto">
 				<div class="p-4 rounded-xl text-center badge badge-lg {statusInfo.class}">
 					<statusInfo.icon class="w-12 h-12 mx-auto mb-2" />
@@ -347,6 +347,100 @@
 }}></form>
 
 <style>
+	/* Container setup for proper scrolling */
+	.checkin-container {
+		min-height: 100vh;
+		background: var(--bg-secondary);
+		display: flex;
+		flex-direction: column;
+	}
+	
+	/* Scrollable content area */
+	.checkin-content {
+		flex: 1;
+		max-width: 42rem;
+		margin: 0 auto;
+		width: 100%;
+		padding: 1rem 1rem 0;
+		overflow-y: auto;
+		/* Add padding bottom to account for fixed action area height */
+		padding-bottom: 200px; /* Adjust based on actual action area height */
+	}
+	
+	/* Mobile header styling */
+	.mobile-header {
+		background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+		color: white;
+	}
+	
+	.mobile-header-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 0.5rem;
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
+		transition: all 0.2s;
+	}
+	
+	.mobile-header-link:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+	
+	.mobile-header-title {
+		color: white;
+	}
+	
+	.mobile-header-subtitle {
+		color: rgba(255, 255, 255, 0.7);
+	}
+	
+	/* Info box styling */
+	.info-box {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+	}
+	
+	/* Time display using primary color */
+	.time-display {
+		color: var(--color-primary-600);
+	}
+	
+	/* Custom status icon wrapper sizing for this page */
+	.status-icon-wrapper {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+	
+	/* Fixed bottom action area */
+	.checkin-actions {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: var(--bg-primary);
+		border-top: 1px solid var(--border-primary);
+		box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+		padding: 0.5rem 1rem 1rem;
+		z-index: 10;
+		/* Add backdrop blur for better visibility on scroll */
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+	}
+	
+	/* Different padding for active vs completed states */
+	.checkin-actions--active {
+		/* Approximate height: button + secondary actions + padding */
+		min-height: 140px;
+	}
+	
+	.checkin-actions--completed {
+		/* Approximate height: status badge + scan next button + padding */
+		min-height: 180px;
+	}
+	
 	/* Page-specific badge overrides for large status display */
 	.badge.badge-lg {
 		padding: 1rem;
@@ -356,8 +450,18 @@
 		border-radius: 0.75rem;
 	}
 	
-	.badge.badge-lg svg {
-		color: inherit;
-		stroke: inherit;
+	/* Responsive adjustments for very small screens */
+	@media (max-height: 600px) {
+		.checkin-content {
+			padding-bottom: 160px;
+		}
+		
+		.checkin-actions--active {
+			min-height: 120px;
+		}
+		
+		.checkin-actions--completed {
+			min-height: 160px;
+		}
 	}
 </style> 

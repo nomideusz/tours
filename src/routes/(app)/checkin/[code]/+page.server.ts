@@ -89,6 +89,22 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			throw error(403, 'You are not authorized to check in this booking. Only the tour guide can check in customers.');
 		}
 		
+		// Check if the tour has already happened (past date)
+		if (booking.timeSlotStartTime) {
+			const tourDate = new Date(booking.timeSlotStartTime);
+			const now = new Date();
+			
+			// If the tour ended more than 24 hours ago, show specific error
+			if (booking.timeSlotEndTime) {
+				const tourEndTime = new Date(booking.timeSlotEndTime);
+				const hoursSinceTourEnd = (now.getTime() - tourEndTime.getTime()) / (1000 * 60 * 60);
+				
+				if (hoursSinceTourEnd > 24) {
+					throw error(410, 'This tour has already taken place. Check-in is no longer available for past tours.');
+				}
+			}
+		}
+		
 		// Transform to match expected format with expand structure
 		const formattedBooking = {
 			id: booking.id,
