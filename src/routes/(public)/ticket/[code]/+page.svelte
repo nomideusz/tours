@@ -466,26 +466,14 @@
 		color: white;
 	}
 	
-	[data-theme="dark"] .ticket-header {
-		background: var(--color-primary-700);
-	}
-	
 	.ticket-header-icon {
 		background: rgba(255, 255, 255, 0.2);
-	}
-	
-	[data-theme="dark"] .ticket-header-icon {
-		background: rgba(255, 255, 255, 0.1);
 	}
 	
 	/* QR Code container */
 	.qr-code-container {
 		background: var(--bg-primary);
 		border: 2px solid var(--border-primary);
-	}
-	
-	[data-theme="dark"] .qr-code-container {
-		background: var(--bg-secondary);
 	}
 	
 	/* Ensure canvas adapts to container */
