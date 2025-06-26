@@ -19,7 +19,6 @@
 	import Users from 'lucide-svelte/icons/users';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
-	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Eye from 'lucide-svelte/icons/eye';
@@ -30,45 +29,86 @@
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
 	import ReceiptText from 'lucide-svelte/icons/receipt-text';
+	import Search from 'lucide-svelte/icons/search';
+	import Filter from 'lucide-svelte/icons/filter';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import X from 'lucide-svelte/icons/x';
 	
 
+	// State
+	let searchQuery = $state('');
+	let selectedStatus = $state<string>('all');
+	let selectedPaymentStatus = $state<string>('all');
+	let showFilters = $state(false);
+	let pageSize = $state(25);
 	
-	// State for pagination - show more bookings by default
-	let pageSize = $state(50);
-	
-	// Separate query for ALL bookings (for stats calculation)
-	let allBookingsQuery = $derived(createQuery({
-		queryKey: queryKeys.recentBookings(1000), // Get a large number for stats
-		queryFn: () => queryFunctions.fetchRecentBookings(1000),
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000,    // 5 minutes
-	}));
-	
-	// TanStack Query for bookings data with pagination - reactive to page changes
+	// TanStack Query for bookings data - auto-refresh every 30 seconds
 	let bookingsQuery = $derived(createQuery({
-		queryKey: queryKeys.recentBookings(pageSize),
-		queryFn: () => queryFunctions.fetchRecentBookings(pageSize),
-		staleTime: 1 * 60 * 1000, // 1 minute
+		queryKey: queryKeys.recentBookings(1000), // Get all for filtering
+		queryFn: () => queryFunctions.fetchRecentBookings(1000),
+		staleTime: 10 * 1000,     // 10 seconds
 		gcTime: 5 * 60 * 1000,    // 5 minutes
+		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		refetchIntervalInBackground: true,
 	}));
 	
-	// Derive data from queries
-	let allBookings = $derived($allBookingsQuery.data || []); // For stats calculation
-	let bookings = $derived($bookingsQuery.data || []); // For display
+	// Derive data from query
+	let allBookings = $derived($bookingsQuery.data || []);
 	let isLoading = $derived($bookingsQuery.isLoading);
 	let isError = $derived($bookingsQuery.isError);
-	let isStatsLoading = $derived($allBookingsQuery.isLoading);
 	
-	// Calculate stats from ALL bookings, not just the paginated ones
+	// Filter bookings based on search and filters
+	let filteredBookings = $derived(() => {
+		let filtered = allBookings;
+		
+		// Search filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			filtered = filtered.filter((b: any) => 
+				b.customerName?.toLowerCase().includes(query) ||
+				b.customerEmail?.toLowerCase().includes(query) ||
+				b.tour?.toLowerCase().includes(query) ||
+				b.tourName?.toLowerCase().includes(query) ||
+				b.id?.toLowerCase().includes(query)
+			);
+		}
+		
+		// Status filter
+		if (selectedStatus !== 'all') {
+			filtered = filtered.filter((b: any) => b.status === selectedStatus);
+		}
+		
+		// Payment status filter
+		if (selectedPaymentStatus !== 'all') {
+			filtered = filtered.filter((b: any) => (b.paymentStatus || 'pending') === selectedPaymentStatus);
+		}
+		
+		return filtered;
+	});
+	
+	// Paginated bookings for display
+	let displayBookings = $derived(filteredBookings().slice(0, pageSize));
+	let hasMore = $derived(filteredBookings().length > pageSize);
+	
+	// Calculate stats from filtered bookings
 	let stats = $derived(() => {
-		const confirmed = allBookings.filter((b: any) => b.status === 'confirmed');
-		const completed = allBookings.filter((b: any) => b.status === 'completed');
-		const pending = allBookings.filter((b: any) => b.status === 'pending');
-		const revenueBookings = allBookings.filter((b: any) => b.status === 'confirmed' || b.status === 'completed');
+		const bookings = filteredBookings();
+		const confirmed = bookings.filter((b: any) => b.status === 'confirmed');
+		const completed = bookings.filter((b: any) => b.status === 'completed');
+		const pending = bookings.filter((b: any) => b.status === 'pending');
+		const cancelled = bookings.filter((b: any) => b.status === 'cancelled');
+		
+		const paid = bookings.filter((b: any) => b.paymentStatus === 'paid');
+		const unpaid = bookings.filter((b: any) => (b.paymentStatus || 'pending') === 'pending');
+		
+		const revenueBookings = bookings.filter((b: any) => 
+			(b.status === 'confirmed' || b.status === 'completed') && b.paymentStatus === 'paid'
+		);
+		
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
-		const todayBookings = allBookings.filter((b: any) => {
+		const todayBookings = bookings.filter((b: any) => {
 			if (!b.created) return false;
 			try {
 				const bookingDate = new Date(b.created);
@@ -80,7 +120,7 @@
 			}
 		});
 		
-		const upcomingBookings = allBookings.filter((b: any) => {
+		const upcomingBookings = bookings.filter((b: any) => {
 			if (!b.effectiveDate) return false;
 			try {
 				const bookingDate = new Date(b.effectiveDate);
@@ -92,10 +132,13 @@
 		});
 		
 		return {
-			total: allBookings.length,
+			total: bookings.length,
 			confirmed: confirmed.length,
 			completed: completed.length,
 			pending: pending.length,
+			cancelled: cancelled.length,
+			paid: paid.length,
+			unpaid: unpaid.length,
 			todayCount: todayBookings.length,
 			upcoming: upcomingBookings.length,
 			revenue: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
@@ -103,15 +146,17 @@
 		};
 	});
 	
-	// Refresh function - refresh both queries
-	function handleRefresh() {
-		$bookingsQuery.refetch();
-		$allBookingsQuery.refetch();
+	// Load more bookings
+	function loadMore() {
+		pageSize += 25;
 	}
 	
-	// Load more bookings - increase page size instead of page number
-	function loadMore() {
-		pageSize += 10; // Add 10 more bookings each time
+	// Clear filters
+	function clearFilters() {
+		searchQuery = '';
+		selectedStatus = 'all';
+		selectedPaymentStatus = 'all';
+		showFilters = false;
 	}
 	
 	// Get more user-friendly payment status label
@@ -162,6 +207,9 @@
 		}
 	}
 	
+	// Check if filters are active
+	let hasActiveFilters = $derived(searchQuery || selectedStatus !== 'all' || selectedPaymentStatus !== 'all');
+	
 </script>
 
 <svelte:head>
@@ -175,42 +223,35 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Bookings"
-			secondaryInfo="{isStatsLoading ? 'Loading...' : `${stats().total} total`}"
+			secondaryInfo="{isLoading ? 'Loading...' : `${stats().total} total`}"
 			quickActions={[
 				{
 					label: 'Scanner',
 					icon: QrCode,
 					onclick: () => goto('/checkin-scanner'),
 					variant: 'primary'
-				},
-				{
-					label: 'Refresh',
-					icon: RefreshCw,
-					onclick: handleRefresh,
-					variant: 'secondary',
-					disabled: isLoading || isStatsLoading
 				}
 			]}
 			infoItems={[
 				{
 					icon: Calendar,
 					label: 'Today',
-					value: isStatsLoading ? '...' : `${stats().todayCount} new`
+					value: isLoading ? '...' : `${stats().todayCount} new`
 				},
 				{
-					icon: AlertCircle,
-					label: 'Awaiting',
-					value: isStatsLoading ? '...' : `${stats().pending}`
+					icon: CheckCircle,
+					label: 'Confirmed',
+					value: isLoading ? '...' : `${stats().confirmed}`
 				},
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: isStatsLoading ? '...' : $globalCurrencyFormatter(stats().revenue)
+					value: isLoading ? '...' : $globalCurrencyFormatter(stats().revenue)
 				},
 				{
 					icon: TrendingUp,
 					label: 'Upcoming',
-					value: isStatsLoading ? '...' : `${stats().upcoming}`
+					value: isLoading ? '...' : `${stats().upcoming}`
 				}
 			]}
 		/>
@@ -222,19 +263,93 @@
 				subtitle="Manage all your tour bookings and customer reservations"
 			>
 				<button
-					onclick={handleRefresh}
-					disabled={isLoading || isStatsLoading}
-					class="button-secondary button--gap"
+					onclick={() => goto('/checkin-scanner')}
+					class="button-primary button--gap"
 				>
-					{#if isLoading || isStatsLoading}
-						<Loader2 class="h-4 w-4 animate-spin" />
-					{:else}
-						<RefreshCw class="h-4 w-4" />
-					{/if}
-					Refresh
+					<QrCode class="h-4 w-4" />
+					QR Scanner
 				</button>
 			</PageHeader>
 		</div>
+	</div>
+	
+	<!-- Search and Filters -->
+	<div class="mb-6 space-y-4">
+		<div class="flex flex-col sm:flex-row gap-3">
+			<!-- Search -->
+			<div class="flex-1 relative">
+				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Search by customer name, email, or tour..."
+					class="form-input pl-10 w-full"
+				/>
+			</div>
+			
+			<!-- Filter Button -->
+			<button
+				onclick={() => showFilters = !showFilters}
+				class="button-secondary button--gap {hasActiveFilters ? 'ring-2' : ''}"
+				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if hasActiveFilters}
+					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
+						{(selectedStatus !== 'all' ? 1 : 0) + (selectedPaymentStatus !== 'all' ? 1 : 0)}
+					</span>
+				{/if}
+				<ChevronDown class="h-4 w-4 ml-1 transition-transform {showFilters ? 'rotate-180' : ''}" />
+			</button>
+		</div>
+		
+		<!-- Filter Panel -->
+		{#if showFilters}
+			<div class="rounded-xl p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+				<div class="flex flex-col sm:flex-row gap-4">
+					<!-- Status Filter -->
+					<div class="flex-1">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Booking Status
+						</label>
+						<select bind:value={selectedStatus} class="form-select w-full">
+							<option value="all">All Statuses</option>
+							<option value="pending">Pending ({stats().pending})</option>
+							<option value="confirmed">Confirmed ({stats().confirmed})</option>
+							<option value="completed">Completed ({stats().completed})</option>
+							<option value="cancelled">Cancelled ({stats().cancelled})</option>
+						</select>
+					</div>
+					
+					<!-- Payment Status Filter -->
+					<div class="flex-1">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Payment Status
+						</label>
+						<select bind:value={selectedPaymentStatus} class="form-select w-full">
+							<option value="all">All Payments</option>
+							<option value="paid">Paid ({stats().paid})</option>
+							<option value="pending">Unpaid ({stats().unpaid})</option>
+							<option value="refunded">Refunded</option>
+						</select>
+					</div>
+					
+					<!-- Clear Filters -->
+					{#if hasActiveFilters}
+						<div class="flex items-end">
+							<button
+								onclick={clearFilters}
+								class="button-secondary button--small button--gap"
+							>
+								<X class="h-4 w-4" />
+								Clear All
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
 	</div>
 	
 	<!-- Error State -->
@@ -243,48 +358,55 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load bookings</p>
-					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please try refreshing the page.</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please check your connection and try again.</p>
 				</div>
-				<button onclick={handleRefresh} class="button-secondary button--small">
-					Try Again
-				</button>
 			</div>
 		</div>
 	{/if}
-	
-
 	
 	<!-- Bookings List -->
 	<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
-				<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
+				<h3 class="font-semibold" style="color: var(--text-primary);">
+					{hasActiveFilters ? 'Filtered Results' : 'All Bookings'}
+				</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
-					{isStatsLoading ? 'Loading...' : `${stats().total} total`}
+					{isLoading ? 'Loading...' : `${filteredBookings().length} ${filteredBookings().length === 1 ? 'booking' : 'bookings'}`}
 				</span>
 			</div>
 		</div>
 		
 		<div class="divide-y" style="border-color: var(--border-primary);">
-			{#if bookings.length > 0}
-				{#each bookings as booking}
+			{#if displayBookings.length > 0}
+				{#each displayBookings as booking}
 					{@const BookingIcon = getBookingStatusIcon(booking.status)}
 					{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-					<div class="p-4 transition-colors cursor-pointer" style="hover-bg" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
+					<div class="p-4 transition-all duration-150 cursor-pointer group" 
+						role="button" 
+						tabindex="0" 
+						onclick={() => goto(`/bookings/${booking.id}`)} 
+						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
 						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+						
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
-							<div class="flex items-start justify-between mb-2">
+							<div class="flex items-start justify-between mb-3">
 								<div class="flex-1 min-w-0">
-									<h4 class="text-sm font-medium truncate" style="color: var(--text-primary);">
+									<h4 class="font-medium truncate" style="color: var(--text-primary);">
 										{booking.customerName}
 									</h4>
-									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
+									<p class="text-sm mt-0.5" style="color: var(--color-primary-600);">
 										{booking.tour || booking.tourName || 'Unknown Tour'}
 									</p>
 								</div>
-								<div class="ml-2 flex flex-col gap-1 items-end">
+								<span class="text-sm font-semibold" style="color: var(--text-primary);">
+									{$globalCurrencyFormatter(booking.totalAmount)}
+								</span>
+							</div>
+							
+							<div class="flex items-center gap-2 mb-3">
 									<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
 										<BookingIcon class="h-3 w-3" />
 										<span class="capitalize">{booking.status}</span>
@@ -293,25 +415,25 @@
 										<PaymentIcon class="h-3 w-3" />
 										{getPaymentStatusLabel(booking.paymentStatus || 'pending')}
 									</span>
-								</div>
 							</div>
 							
-							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
 									<span class="flex items-center gap-1">
 										<Calendar class="h-3 w-3" />
+									<span>
 										{#if booking.expand?.timeSlot?.startTime}
 											{formatDate(booking.expand.timeSlot.startTime)}
 										{:else}
-											{formatDate(booking.created)}
+											<span style="opacity: 0.7;">Date TBD</span>
 										{/if}
+									</span>
 									</span>
 									<span class="flex items-center gap-1">
 										<Clock class="h-3 w-3" />
 										{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
 											{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 										{:else}
-											Time TBD
+										<span style="opacity: 0.7;">Time TBD</span>
 										{/if}
 									</span>
 									<span class="flex items-center gap-1">
@@ -319,41 +441,47 @@
 										{formatParticipantDisplayCompact(booking)}
 									</span>
 								</div>
-								<span class="text-sm font-medium" style="color: var(--text-primary);">
-									{$globalCurrencyFormatter(booking.totalAmount)}
-								</span>
+							
+							<!-- Booking date - mobile only -->
+							<div class="mt-2 text-xs" style="color: var(--text-tertiary); opacity: 0.8;">
+								Booked {formatDate(booking.created)}
 							</div>
 						</div>
 						
 						<!-- Desktop Layout -->
 						<div class="hidden sm:flex items-center justify-between">
-							<div class="flex-1 min-w-0">
-								<div class="flex items-center gap-3">
-									<div>
-										<h4 class="text-sm font-medium" style="color: var(--text-primary);">
+							<div class="flex-1 min-w-0 pr-4">
+								<div class="flex items-center gap-4">
+									<!-- Customer Info -->
+									<div class="min-w-0 flex-1">
+										<h4 class="font-medium" style="color: var(--text-primary);">
 											{booking.customerName}
 										</h4>
-										<div class="flex items-center gap-2 mt-1">
-											<span class="text-xs" style="color: var(--text-secondary);">
+										<p class="text-sm mt-0.5" style="color: var(--color-primary-600);">
 												{booking.tour || booking.tourName || 'Unknown Tour'}
-											</span>
-											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
+										</p>
+										<div class="flex items-center gap-3 mt-1.5 text-xs" style="color: var(--text-tertiary);">
+											<span class="flex items-center gap-1">
 												<Calendar class="h-3 w-3" />
+												<span>
 												{#if booking.expand?.timeSlot?.startTime}
 													{formatDate(booking.expand.timeSlot.startTime)}
 												{:else}
-													{formatDate(booking.created)}
+														<span style="opacity: 0.7;">Date TBD</span>
 												{/if}
+												</span>
 											</span>
-											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
+											<span class="flex items-center gap-1">
 												<Clock class="h-3 w-3" />
 												{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
 													{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 												{:else}
-													Time TBD
+													<span style="opacity: 0.7;">Time TBD</span>
 												{/if}
+											</span>
+											<span class="flex items-center gap-1">
+												<Users class="h-3 w-3" />
+												{formatParticipantDisplay(booking)}
 											</span>
 										</div>
 									</div>
@@ -361,49 +489,64 @@
 							</div>
 							
 							<div class="flex items-center gap-6">
+								<!-- Amount -->
 								<div class="text-right">
-									<p class="text-sm font-medium" style="color: var(--text-primary);">
+									<p class="font-semibold" style="color: var(--text-primary);">
 										{$globalCurrencyFormatter(booking.totalAmount)}
 									</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{formatParticipantDisplay(booking)}
+									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
+										#{booking.id.slice(-8)} • Booked {formatDate(booking.created)}
 									</p>
 								</div>
 								
-								<div class="flex items-center gap-3">
+								<!-- Status Badges -->
 									<div class="flex items-center gap-2">
-										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
 											<BookingIcon class="h-3.5 w-3.5" />
 											<span class="capitalize font-medium">{booking.status}</span>
 										</span>
-										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
 											<PaymentIcon class="h-3.5 w-3.5" />
 											<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
 										</span>
 									</div>
 									
+								<!-- View Button -->
 									<button
 										onclick={(e) => {
 											e.stopPropagation();
 											goto(`/bookings/${booking.id}`);
 										}}
-										class="button-secondary button--small button--icon"
+									class="opacity-0 group-hover:opacity-100 transition-opacity button-secondary button--small button--icon"
 										title="View booking details"
 									>
 										<Eye class="h-4 w-4" />
 									</button>
-								</div>
 							</div>
 						</div>
 					</div>
 				{/each}
 			{:else if !isLoading}
 				<div class="p-8 text-center">
+					{#if hasActiveFilters}
+						<Filter class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings found</h3>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							Try adjusting your filters or search query
+						</p>
+						<button
+							onclick={clearFilters}
+							class="button-secondary button--small mt-4"
+						>
+							Clear Filters
+						</button>
+					{:else}
 					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings yet</h3>
 					<p class="text-sm" style="color: var(--text-secondary);">
 						Start sharing your tours to get your first bookings!
 					</p>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -416,19 +559,13 @@
 		{/if}
 		
 		<!-- Load More Button -->
-		{#if bookings.length === pageSize && bookings.length > 0 && pageSize < 100}
+		{#if hasMore && !isLoading}
 			<div class="p-4 border-t" style="border-color: var(--border-primary);">
 				<button
 					onclick={loadMore}
-					disabled={isLoading}
 					class="w-full button-secondary button--small"
 				>
-					{#if isLoading}
-						<Loader2 class="h-4 w-4 animate-spin mr-2" />
-						Loading...
-					{:else}
-						Load More Bookings
-					{/if}
+					Show More ({filteredBookings().length - displayBookings.length} remaining)
 				</button>
 			</div>
 		{/if}

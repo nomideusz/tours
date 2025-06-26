@@ -1,10 +1,9 @@
 <script lang="ts">
-
 	import { goto } from '$app/navigation';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-	import { formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
+	import { formatParticipantDisplayCompact, formatParticipantDisplay } from '$lib/utils/participant-display.js';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -18,7 +17,6 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Euro from 'lucide-svelte/icons/euro';
 	import Users from 'lucide-svelte/icons/users';
-	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Eye from 'lucide-svelte/icons/eye';
@@ -30,23 +28,31 @@
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
 	import ReceiptText from 'lucide-svelte/icons/receipt-text';
+	import Search from 'lucide-svelte/icons/search';
+	import Filter from 'lucide-svelte/icons/filter';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import X from 'lucide-svelte/icons/x';
+	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	
 	// Get data from load function
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
 	
-	// TanStack Query for tour-specific bookings
+	// TanStack Query for tour-specific bookings - auto-refresh every 30 seconds
 	const tourBookingsQuery = createQuery({
 		queryKey: queryKeys.tourBookings(tourId),
 		queryFn: () => queryFunctions.fetchTourBookings(tourId),
-		staleTime: 30 * 1000, // 30 seconds - consistent with other tour queries
-		gcTime: 2 * 60 * 1000, // 2 minutes
-		refetchOnWindowFocus: true, // Refetch when user returns to tab
+		staleTime: 10 * 1000, // 10 seconds
+		gcTime: 5 * 60 * 1000, // 5 minutes
+		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		refetchIntervalInBackground: true,
 	});
 	
 	// State
-	let statusFilter = $state<'all' | 'confirmed' | 'pending' | 'cancelled'>('all');
 	let searchQuery = $state('');
+	let selectedStatus = $state<string>('all');
+	let selectedPaymentStatus = $state<string>('all');
+	let showFilters = $state(false);
 	
 	// Derive data from query
 	let tourData = $derived($tourBookingsQuery.data || null);
@@ -57,19 +63,25 @@
 	let filteredBookings = $derived(() => {
 		let result = tourBookings;
 		
-		// Status filter
-		if (statusFilter !== 'all') {
-			result = result.filter((b: any) => b.status === statusFilter);
-		}
-		
 		// Search filter
 		if (searchQuery) {
 			const query = searchQuery.toLowerCase();
 			result = result.filter((b: any) => 
 				b.customerName?.toLowerCase().includes(query) ||
 				b.customerEmail?.toLowerCase().includes(query) ||
-				b.bookingCode?.toLowerCase().includes(query)
+				b.bookingCode?.toLowerCase().includes(query) ||
+				b.id?.toLowerCase().includes(query)
 			);
+		}
+		
+		// Status filter
+		if (selectedStatus !== 'all') {
+			result = result.filter((b: any) => b.status === selectedStatus);
+		}
+		
+		// Payment status filter
+		if (selectedPaymentStatus !== 'all') {
+			result = result.filter((b: any) => (b.paymentStatus || 'pending') === selectedPaymentStatus);
 		}
 		
 		return result;
@@ -85,7 +97,14 @@
 		const completed = tourBookings.filter((b: any) => b.status === 'completed');
 		const pending = tourBookings.filter((b: any) => b.status === 'pending');
 		const cancelled = tourBookings.filter((b: any) => b.status === 'cancelled');
-		const revenueBookings = tourBookings.filter((b: any) => b.status === 'confirmed' || b.status === 'completed');
+		
+		const paid = tourBookings.filter((b: any) => b.paymentStatus === 'paid');
+		const unpaid = tourBookings.filter((b: any) => (b.paymentStatus || 'pending') === 'pending');
+		
+		const revenueBookings = tourBookings.filter((b: any) => 
+			(b.status === 'confirmed' || b.status === 'completed') && b.paymentStatus === 'paid'
+		);
+		
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		
@@ -106,6 +125,8 @@
 			completed: completed.length,
 			pending: pending.length,
 			cancelled: cancelled.length,
+			paid: paid.length,
+			unpaid: unpaid.length,
 			todayCount: todayBookings.length,
 			upcoming: upcomingBookings.length,
 			revenue: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
@@ -113,9 +134,12 @@
 		};
 	});
 	
-	// Refresh function
-	function handleRefresh() {
-		$tourBookingsQuery.refetch();
+	// Clear filters
+	function clearFilters() {
+		searchQuery = '';
+		selectedStatus = 'all';
+		selectedPaymentStatus = 'all';
+		showFilters = false;
 	}
 
 	// Get more user-friendly payment status label
@@ -165,6 +189,9 @@
 				return AlertTriangle;
 		}
 	}
+	
+	// Check if filters are active
+	let hasActiveFilters = $derived(searchQuery || selectedStatus !== 'all' || selectedPaymentStatus !== 'all');
 </script>
 
 <svelte:head>
@@ -185,20 +212,13 @@
 					icon: QrCode,
 					onclick: () => goto('/checkin-scanner'),
 					variant: 'primary'
-				},
-				{
-					label: 'Refresh',
-					icon: RefreshCw,
-					onclick: handleRefresh,
-					variant: 'secondary',
-					disabled: isLoading
 				}
 			]}
 			infoItems={[
 				{
-					icon: AlertCircle,
-					label: 'Pending',
-					value: `${stats().pending}`
+					icon: Calendar,
+					label: 'Today',
+					value: `${stats().todayCount} new`
 				},
 				{
 					icon: CheckCircle,
@@ -211,9 +231,9 @@
 					value: $globalCurrencyFormatter(stats().revenue)
 				},
 				{
-					icon: Users,
-					label: 'Guests',
-					value: `${stats().participants}`
+					icon: TrendingUp,
+					label: 'Upcoming',
+					value: `${stats().upcoming}`
 				}
 			]}
 		/>
@@ -234,16 +254,11 @@
 					Back to Tour
 				</button>
 				<button
-					onclick={handleRefresh}
-					disabled={isLoading}
-					class="button-secondary button--gap"
+					onclick={() => goto('/checkin-scanner')}
+					class="button-primary button--gap"
 				>
-					{#if isLoading}
-						<Loader2 class="h-4 w-4 animate-spin" />
-					{:else}
-						<RefreshCw class="h-4 w-4" />
-					{/if}
-					Refresh
+					<QrCode class="h-4 w-4" />
+					QR Scanner
 				</button>
 			</PageHeader>
 		</div>
@@ -255,83 +270,89 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load bookings</p>
-					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please try refreshing the page.</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please check your connection and try again.</p>
 				</div>
-				<button onclick={handleRefresh} class="button-secondary button--small">
-					Try Again
-				</button>
 			</div>
 		</div>
 	{/if}
 	
-	<!-- Quick Stats - Enhanced Layout -->
-	<div class="grid grid-cols-2 sm:hidden gap-3 mb-4">
-		<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center gap-2 mb-1">
-				<Calendar class="h-4 w-4" style="color: var(--text-tertiary);" />
-				<span class="text-xs" style="color: var(--text-tertiary);">Total</span>
+	<!-- Search and Filters -->
+	<div class="mb-6 space-y-4">
+		<div class="flex flex-col sm:flex-row gap-3">
+			<!-- Search -->
+			<div class="flex-1 relative">
+				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Search by customer name, email, or booking code..."
+					class="form-input pl-10 w-full"
+				/>
 			</div>
-			<p class="text-lg font-bold" style="color: var(--text-primary);">{stats().total}</p>
-		</div>
-		<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center gap-2 mb-1">
-				<Euro class="h-4 w-4" style="color: var(--text-tertiary);" />
-				<span class="text-xs" style="color: var(--text-tertiary);">Revenue</span>
-			</div>
-							<p class="text-lg font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(stats().revenue)}</p>
-		</div>
-	</div>
-	
-
-	
-	<!-- Filters and Search -->
-	<div class="mb-4 space-y-3">
-		<!-- Status Filter Tabs -->
-		<div class="flex gap-1 p-1 rounded-lg overflow-x-auto" style="background: var(--bg-secondary);">
+			
+			<!-- Filter Button -->
 			<button
-				onclick={() => statusFilter = 'all'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'all' ? 'active-filter' : ''}"
-				style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'all' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'all' ? 'box-shadow: var(--shadow-sm);' : ''}"
+				onclick={() => showFilters = !showFilters}
+				class="button-secondary button--gap {hasActiveFilters ? 'ring-2' : ''}"
+				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
 			>
-				All ({stats().total})
-			</button>
-			<button
-				onclick={() => statusFilter = 'confirmed'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'confirmed' ? 'active-filter' : ''}"
-				style="color: {statusFilter === 'confirmed' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'confirmed' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'confirmed' ? 'box-shadow: var(--shadow-sm);' : ''}"
-			>
-				Confirmed ({stats().confirmed})
-			</button>
-			<button
-				onclick={() => statusFilter = 'pending'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'pending' ? 'active-filter' : ''}"
-				style="color: {statusFilter === 'pending' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'pending' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'pending' ? 'box-shadow: var(--shadow-sm);' : ''}"
-			>
-				Pending ({stats().pending})
-			</button>
-			<button
-				onclick={() => statusFilter = 'cancelled'}
-				class="px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap {statusFilter === 'cancelled' ? 'active-filter' : ''}"
-				style="color: {statusFilter === 'cancelled' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'cancelled' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'cancelled' ? 'box-shadow: var(--shadow-sm);' : ''}"
-			>
-				Cancelled ({stats().cancelled})
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if hasActiveFilters}
+					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
+						{(selectedStatus !== 'all' ? 1 : 0) + (selectedPaymentStatus !== 'all' ? 1 : 0)}
+					</span>
+				{/if}
+				<ChevronDown class="h-4 w-4 ml-1 transition-transform {showFilters ? 'rotate-180' : ''}" />
 			</button>
 		</div>
 		
-		<!-- Search -->
-		<div class="relative">
-			<input
-				type="search"
-				bind:value={searchQuery}
-				placeholder="Search by name, email, or booking code..."
-				class="form-input pl-10"
-			/>
-			<div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-				<svg class="h-4 w-4" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-				</svg>
+		<!-- Filter Panel -->
+		{#if showFilters}
+			<div class="rounded-xl p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+				<div class="flex flex-col sm:flex-row gap-4">
+					<!-- Status Filter -->
+					<div class="flex-1">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Booking Status
+						</label>
+						<select bind:value={selectedStatus} class="form-select w-full">
+							<option value="all">All Statuses</option>
+							<option value="pending">Pending ({stats().pending})</option>
+							<option value="confirmed">Confirmed ({stats().confirmed})</option>
+							<option value="completed">Completed ({stats().completed})</option>
+							<option value="cancelled">Cancelled ({stats().cancelled})</option>
+						</select>
+					</div>
+					
+					<!-- Payment Status Filter -->
+					<div class="flex-1">
+						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Payment Status
+						</label>
+						<select bind:value={selectedPaymentStatus} class="form-select w-full">
+							<option value="all">All Payments</option>
+							<option value="paid">Paid ({stats().paid})</option>
+							<option value="pending">Unpaid ({stats().unpaid})</option>
+							<option value="refunded">Refunded</option>
+						</select>
+					</div>
+					
+					<!-- Clear Filters -->
+					{#if hasActiveFilters}
+						<div class="flex items-end">
+							<button
+								onclick={clearFilters}
+								class="button-secondary button--small button--gap"
+							>
+								<X class="h-4 w-4" />
+								Clear All
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 	
 	<!-- Bookings List -->
@@ -339,13 +360,11 @@
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
 				<h3 class="font-semibold" style="color: var(--text-primary);">
-					{searchQuery || statusFilter !== 'all' ? `Filtered Bookings (${bookings.length})` : 'Tour Bookings'}
+					{hasActiveFilters ? 'Filtered Results' : 'Tour Bookings'}
 				</h3>
-				{#if bookings.length > 0}
-					<span class="text-sm" style="color: var(--text-secondary);">
-						{bookings.length} {bookings.length === 1 ? 'result' : 'results'}
-					</span>
-				{/if}
+				<span class="text-sm" style="color: var(--text-secondary);">
+					{isLoading ? 'Loading...' : `${filteredBookings().length} ${filteredBookings().length === 1 ? 'booking' : 'bookings'}`}
+				</span>
 			</div>
 		</div>
 		
@@ -354,73 +373,103 @@
 				{#each bookings as booking}
 					{@const BookingIcon = getBookingStatusIcon(booking.status)}
 					{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-					<div class="p-4 transition-colors cursor-pointer" role="button" tabindex="0" onclick={() => goto(`/bookings/${booking.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
+					<div class="p-4 transition-all duration-150 cursor-pointer group" 
+						role="button" 
+						tabindex="0" 
+						onclick={() => goto(`/bookings/${booking.id}`)} 
+						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
 						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+						
 						<!-- Mobile Layout -->
 						<div class="sm:hidden">
-							<div class="flex items-start justify-between mb-2">
+							<div class="flex items-start justify-between mb-3">
 								<div class="flex-1 min-w-0">
-									<h4 class="text-sm font-medium truncate" style="color: var(--text-primary);">
+									<h4 class="font-medium truncate" style="color: var(--text-primary);">
 										{booking.customerName}
 									</h4>
 									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
-										{formatDate(booking.effectiveDate)}
+										#{booking.id.slice(-8)}
 									</p>
 								</div>
-								<div class="ml-2 flex flex-col gap-1 items-end">
-									<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-										<BookingIcon class="h-3 w-3" />
-										<span class="capitalize">{booking.status}</span>
-									</span>
-									<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-										<PaymentIcon class="h-3 w-3" />
-										{getPaymentStatusLabel(booking.paymentStatus || 'pending')}
-									</span>
-								</div>
-							</div>
-							
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
-									<span class="flex items-center gap-1">
-										<Clock class="h-3 w-3" />
-										{#if booking.timeSlot?.startTime && booking.timeSlot?.endTime}
-											{formatSlotTimeRange(booking.timeSlot.startTime, booking.timeSlot.endTime)}
-										{:else}
-											Time TBD
-										{/if}
-									</span>
-									<span class="flex items-center gap-1">
-										<Users class="h-3 w-3" />
-										{formatParticipantDisplayCompact(booking)}
-									</span>
-								</div>
-								<span class="text-sm font-medium" style="color: var(--text-primary);">
+								<span class="text-sm font-semibold" style="color: var(--text-primary);">
 									{$globalCurrencyFormatter(booking.totalAmount)}
 								</span>
+							</div>
+							
+							<div class="flex items-center gap-2 mb-3">
+								<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+									<BookingIcon class="h-3 w-3" />
+									<span class="capitalize">{booking.status}</span>
+								</span>
+								<span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+									<PaymentIcon class="h-3 w-3" />
+									{getPaymentStatusLabel(booking.paymentStatus || 'pending')}
+								</span>
+							</div>
+							
+							<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
+								<span class="flex items-center gap-1">
+									<Calendar class="h-3 w-3" />
+									<span>
+										Tour: {#if booking.expand?.timeSlot?.startTime}
+											{formatDate(booking.expand.timeSlot.startTime)}
+										{:else}
+											<span style="opacity: 0.7;">Date TBD</span>
+										{/if}
+									</span>
+								</span>
+								<span class="flex items-center gap-1">
+									<Clock class="h-3 w-3" />
+									{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+										{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
+									{:else}
+										<span style="opacity: 0.7;">Time TBD</span>
+									{/if}
+								</span>
+								<span class="flex items-center gap-1">
+									<Users class="h-3 w-3" />
+									{formatParticipantDisplayCompact(booking)}
+								</span>
+							</div>
+							
+							<!-- Booking date - mobile only -->
+							<div class="mt-2 text-xs" style="color: var(--text-tertiary); opacity: 0.8;">
+								Booked: {formatDate(booking.created)}
 							</div>
 						</div>
 						
 						<!-- Desktop Layout -->
 						<div class="hidden sm:flex items-center justify-between">
-							<div class="flex-1 min-w-0">
-								<div class="flex items-center gap-3">
-									<div>
-										<h4 class="text-sm font-medium" style="color: var(--text-primary);">
+							<div class="flex-1 min-w-0 pr-4">
+								<div class="flex items-center gap-4">
+									<!-- Customer Info -->
+									<div class="min-w-0 flex-1">
+										<h4 class="font-medium" style="color: var(--text-primary);">
 											{booking.customerName}
 										</h4>
-										<div class="flex items-center gap-2 mt-1">
-											<span class="text-xs" style="color: var(--text-secondary);">
-												{formatDate(booking.effectiveDate)}
+										<div class="flex items-center gap-3 mt-1 text-xs" style="color: var(--text-tertiary);">
+											<span class="flex items-center gap-1">
+												<Calendar class="h-3 w-3" />
+												<span>
+													Tour: {#if booking.expand?.timeSlot?.startTime}
+														{formatDate(booking.expand.timeSlot.startTime)}
+													{:else}
+														<span style="opacity: 0.7;">Date TBD</span>
+													{/if}
+												</span>
 											</span>
-											<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-											<span class="text-xs flex items-center gap-1" style="color: var(--text-secondary);">
+											<span class="flex items-center gap-1">
 												<Clock class="h-3 w-3" />
-												{#if booking.timeSlot?.startTime && booking.timeSlot?.endTime}
-													{formatSlotTimeRange(booking.timeSlot.startTime, booking.timeSlot.endTime)}
+												{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+													{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 												{:else}
-													Time TBD
+													<span style="opacity: 0.7;">Time TBD</span>
 												{/if}
+											</span>
+											<span class="flex items-center gap-1">
+												<Users class="h-3 w-3" />
+												{formatParticipantDisplay(booking)}
 											</span>
 										</div>
 									</div>
@@ -428,55 +477,70 @@
 							</div>
 							
 							<div class="flex items-center gap-6">
+								<!-- Amount -->
 								<div class="text-right">
-									<p class="text-sm font-medium" style="color: var(--text-primary);">
+									<p class="font-semibold" style="color: var(--text-primary);">
 										{$globalCurrencyFormatter(booking.totalAmount)}
 									</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'}
+									<p class="text-xs mt-0.5" style="color: var(--text-secondary);">
+										#{booking.id.slice(-8)} • Booked: {formatDate(booking.created)}
 									</p>
 								</div>
 								
-								<div class="flex items-center gap-3">
-									<div class="flex items-center gap-2">
-										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
-											<BookingIcon class="h-3.5 w-3.5" />
-											<span class="capitalize font-medium">{booking.status}</span>
-										</span>
-										<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-											<PaymentIcon class="h-3.5 w-3.5" />
-											<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
-										</span>
-									</div>
-									
-									<button
-										onclick={(e) => {
-											e.stopPropagation();
-											goto(`/bookings/${booking.id}`);
-										}}
-										class="button-secondary button--small button--icon"
-										title="View booking details"
-									>
-										<Eye class="h-4 w-4" />
-									</button>
+								<!-- Status Badges -->
+								<div class="flex items-center gap-2">
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
+										<BookingIcon class="h-3.5 w-3.5" />
+										<span class="capitalize font-medium">{booking.status}</span>
+									</span>
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
+										<PaymentIcon class="h-3.5 w-3.5" />
+										<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
+									</span>
 								</div>
+								
+								<!-- View Button -->
+								<button
+									onclick={(e) => {
+										e.stopPropagation();
+										goto(`/bookings/${booking.id}`);
+									}}
+									class="opacity-0 group-hover:opacity-100 transition-opacity button-secondary button--small button--icon"
+									title="View booking details"
+								>
+									<Eye class="h-4 w-4" />
+								</button>
 							</div>
 						</div>
 					</div>
 				{/each}
 			{:else if !isLoading}
 				<div class="p-8 text-center">
-					<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings yet</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
-						This tour doesn't have any bookings yet.
-					</p>
-					<button
-						onclick={() => goto(`/tours/${tourId}`)}
-						class="button-primary button--small"
-					>
-						View Tour Details
-					</button>
+					{#if hasActiveFilters}
+						<Filter class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings found</h3>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							Try adjusting your filters or search query
+						</p>
+						<button
+							onclick={clearFilters}
+							class="button-secondary button--small mt-4"
+						>
+							Clear Filters
+						</button>
+					{:else}
+						<Calendar class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No bookings yet</h3>
+						<p class="text-sm mb-4" style="color: var(--text-secondary);">
+							This tour doesn't have any bookings yet.
+						</p>
+						<button
+							onclick={() => goto(`/tours/${tourId}`)}
+							class="button-primary button--small"
+						>
+							View Tour Details
+						</button>
+					{/if}
 				</div>
 			{/if}
 		</div>

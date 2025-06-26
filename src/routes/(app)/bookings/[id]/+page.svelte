@@ -1,23 +1,22 @@
 <script lang="ts">
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { formatDate, formatDateTime, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
+	import { formatParticipantDisplayDetailed, formatParticipantDisplayCompact } from '$lib/utils/participant-display.js';
+	import { getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	
 	// Get data from load function
 	let { data } = $props();
-	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
-	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
-	import { formatParticipantDisplayDetailed } from '$lib/utils/participant-display.js';
-	import { getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys } from '$lib/queries/shared-stats.js';
-	import { updateBookingStatusMutation } from '$lib/queries/mutations.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -35,6 +34,13 @@
 	import Edit from 'lucide-svelte/icons/edit';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Euro from 'lucide-svelte/icons/euro';
+	import MessageSquare from 'lucide-svelte/icons/message-square';
+	import ReceiptText from 'lucide-svelte/icons/receipt-text';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
+	import Ticket from 'lucide-svelte/icons/ticket';
 
 	// Get booking ID from load function
 	let bookingId = $derived(data.bookingId);
@@ -42,7 +48,7 @@
 	// Query client for invalidation
 	const queryClient = useQueryClient();
 	
-	// TanStack Query for booking data
+	// TanStack Query for booking data - auto-refresh every 30 seconds
 	let bookingQuery = $derived(createQuery({
 		queryKey: ['booking', bookingId],
 		queryFn: async () => {
@@ -50,8 +56,10 @@
 			if (!response.ok) throw new Error('Failed to fetch booking');
 			return response.json();
 		},
-		staleTime: 1 * 60 * 1000, // 1 minute
+		staleTime: 10 * 1000,     // 10 seconds
 		gcTime: 5 * 60 * 1000,    // 5 minutes
+		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		refetchIntervalInBackground: true,
 	}));
 	
 	// Derive data from query
@@ -63,22 +71,6 @@
 	let error = $state<string | null>(null);
 	let showStatusModal = $state(false);
 	let newStatus = $state('');
-
-	function getStatusColor(status: string): string {
-		// Return CSS classes that are already defined in badges.css
-		switch (status) {
-			case 'confirmed':
-				return 'status-confirmed';
-			case 'pending':
-				return 'status-pending';
-			case 'cancelled':
-				return 'status-cancelled';
-			case 'completed':
-				return 'status-completed';
-			default:
-				return 'status-default';
-		}
-	}
 
 	function openEmailClient() {
 		if (!booking) return;
@@ -107,8 +99,6 @@
 	function calculateTotal(): number {
 		if (!booking) return 0;
 		try {
-			// Use the actual total amount that was calculated and stored when booking was created
-			// This handles both regular pricing and pricing tiers correctly
 			const totalAmount = booking.totalAmount;
 			if (!totalAmount) return 0;
 			
@@ -149,6 +139,40 @@
 		}
 		return true;
 	}
+	
+	// Get payment status icon
+	function getPaymentStatusIcon(status: string): any {
+		switch (status) {
+			case 'paid':
+			case 'succeeded':
+				return CircleDollarSign;
+			case 'pending':
+			case 'processing':
+				return AlertTriangle;
+			case 'failed':
+				return XCircle;
+			case 'refunded':
+				return ReceiptText;
+			default:
+				return AlertTriangle;
+		}
+	}
+	
+	// Get booking status icon
+	function getBookingStatusIcon(status: string): any {
+		switch (status) {
+			case 'confirmed':
+				return CheckCircle;
+			case 'pending':
+				return AlertCircle;
+			case 'cancelled':
+				return XCircle;
+			case 'completed':
+				return CheckCircle;
+			default:
+				return AlertCircle;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -167,7 +191,7 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load booking</p>
-					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please try refreshing the page.</p>
+					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please check your connection and try again.</p>
 				</div>
 				<button onclick={() => goto('/bookings')} class="button-secondary button--small">
 					Back to Bookings
@@ -175,61 +199,40 @@
 			</div>
 		</div>
 	{:else}
+		{@const BookingIcon = getBookingStatusIcon(booking.status)}
+		{@const PaymentIcon = getPaymentStatusIcon(payment?.status || booking.paymentStatus || 'pending')}
+		
 		<!-- Header -->
 		<div class="mb-6 sm:mb-8">
-			<!-- Mobile Header -->
+			<!-- Mobile Page Header -->
 			<MobilePageHeader
-				title={booking.customerName}
-				statusButton={{
-					label: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-					onclick: () => {
-						if (canChangeStatus()) {
-							newStatus = booking.status;
-							showStatusModal = true;
-						}
-					},
-					disabled: !canChangeStatus(),
-					color: getStatusColor(booking.status),
-					dotColor: getStatusColor(booking.status),
-					tooltip: canChangeStatus() ? 'Click to change status' : 'Cannot change status for completed past bookings'
-				}}
-				secondaryInfo={`${booking.expand?.tour?.name || 'Unknown Tour'} • ${$globalCurrencyFormatter(calculateTotal())}`}
+				title={booking.expand?.tour?.name || 'Booking Details'}
+				statusButton={null}
+				secondaryInfo={`#${booking.id.slice(-8)} • ${booking.customerName}`}
 				quickActions={[
-					{
-						label: 'Email',
-						icon: Mail,
-						onclick: openEmailClient,
-						variant: 'primary'
-					},
-					{
-						label: 'Tour',
-						icon: MapPin,
-						onclick: () => goto(`/tours/${booking.expand?.tour?.id}`),
-						variant: 'secondary'
-					}
+					{ label: 'Email', icon: Mail, onclick: openEmailClient },
+					...(booking.customerPhone ? [{ label: 'Call', icon: Phone, onclick: () => window.location.href = `tel:${booking.customerPhone}` }] : [])
 				]}
 				infoItems={[
-					{
-						icon: Calendar,
-						label: 'Date',
-						value: booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'
+					{ 
+						label: 'Tour Date', 
+						value: booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'Date TBD',
+						icon: Calendar
 					},
-					{
-						icon: Clock,
-						label: 'Time',
-						value: booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
-							? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
-							: 'TBD'
+					{ 
+						label: 'Total', 
+						value: $globalCurrencyFormatter(calculateTotal()),
+						icon: Euro
 					},
-					{
-						icon: Users,
-						label: 'Guests',
-						value: formatParticipantDisplayDetailed(booking)
+					{ 
+						label: 'Participants', 
+						value: booking.participants.toString(),
+						icon: Users
 					},
-					{
-						icon: CreditCard,
-						label: 'Payment',
-						value: payment?.status || 'Pending'
+					{ 
+						label: 'Payment', 
+						value: payment?.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Pending',
+						icon: PaymentIcon
 					}
 				]}
 			/>
@@ -264,216 +267,443 @@
 			</div>
 		{/if}
 
-		<!-- Main Content -->
-		<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-			<!-- Booking Details -->
-			<div class="xl:col-span-2 space-y-6">
-				<!-- Booking Overview -->
+		<!-- Main Content Grid -->
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+			<!-- Left Column - Main Details -->
+			<div class="lg:col-span-2 space-y-4 sm:space-y-6">
+				<!-- Booking Summary Card -->
 				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="px-6 py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
-						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Booking Overview</h2>
-					</div>
-					
-					<div class="p-6 space-y-4">
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div class="space-y-3">
-								<h3 class="text-sm font-medium mb-3" style="color: var(--text-secondary);">Tour Information</h3>
-								<div class="flex items-center gap-3">
-									<MapPin class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{booking.expand?.tour?.name || 'Unknown Tour'}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">{booking.expand?.tour?.location || 'Location not set'}</p>
-									</div>
+					<div class="p-4 sm:p-6">
+						<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4 sm:mb-6">
+							<div>
+								<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
+									{booking.expand?.tour?.name || 'Unknown Tour'}
+								</h2>
+								<p class="text-sm mt-1" style="color: var(--text-secondary);">
+									Booking #{booking.id.slice(-8)}
+								</p>
+							</div>
+							<div class="flex items-center gap-2 flex-wrap">
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
+									<BookingIcon class="h-3.5 w-3.5" />
+									<span class="capitalize font-medium">{booking.status}</span>
+								</span>
+								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs rounded-full border {getPaymentStatusColor(payment?.status || booking.paymentStatus || 'pending')}">
+									<PaymentIcon class="h-3.5 w-3.5" />
+									<span class="font-medium">
+										{payment?.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Pending'}
+									</span>
+								</span>
+							</div>
+						</div>
+
+						<!-- Mobile: Vertical Stack, Desktop: Grid -->
+						<div class="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+							<!-- Tour Date & Time -->
+							<div class="rounded-lg p-3 sm:p-4 flex items-start gap-3" style="background: var(--bg-secondary);">
+								<div class="rounded-lg p-1.5 sm:p-2 flex-shrink-0" style="background: var(--bg-tertiary);">
+									<Calendar class="h-4 w-4 sm:h-5 sm:w-5" style="color: var(--text-secondary);" />
 								</div>
-								<div class="flex items-center gap-3">
-									<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{getTourDateTime()}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">
-											{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
-												Duration: {formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
-											{/if}
+								<div class="flex-1 min-w-0">
+									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Tour Date</p>
+									<p class="text-sm sm:text-base font-semibold truncate" style="color: var(--text-primary);">
+										{#if booking.expand?.timeSlot?.startTime}
+											{formatDate(booking.expand.timeSlot.startTime)}
+										{:else}
+											Date TBD
+										{/if}
+									</p>
+									{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
+										<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
+											{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
 										</p>
-									</div>
-								</div>
-								<div class="flex items-center gap-3">
-									<Users class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{formatParticipantDisplayDetailed(booking)}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">Group size</p>
-									</div>
+									{/if}
 								</div>
 							</div>
 
-							<div class="space-y-3">
-								<h3 class="text-sm font-medium mb-3" style="color: var(--text-secondary);">Booking Details</h3>
-								<div class="flex items-center gap-3">
-									<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">Booking #{booking.id.slice(-8)}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">Created {formatDateTime(booking.created)}</p>
-									</div>
+							<!-- Total Amount - Shown prominently on mobile -->
+							<div class="rounded-lg p-3 sm:p-4 flex items-start gap-3 order-first sm:order-none" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+								<div class="rounded-lg p-1.5 sm:p-2 flex-shrink-0" style="background: var(--color-primary-100);">
+									<Euro class="h-4 w-4 sm:h-5 sm:w-5" style="color: var(--color-primary-600);" />
 								</div>
-								{#if booking.expand?.tour?.price}
-									<div class="flex items-center gap-3">
-										<DollarSign class="h-5 w-5" style="color: var(--text-tertiary);" />
-										<div>
-											<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(calculateTotal())}</p>
-											{#if booking.participantBreakdown && booking.expand?.tour?.enablePricingTiers && booking.expand?.tour?.pricingTiers}
-												<p class="text-sm" style="color: var(--text-secondary);">
-													{#if booking.participantBreakdown.adults > 0}
-														{booking.participantBreakdown.adults} adults × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers.adult)}
-													{/if}
-													{#if booking.participantBreakdown.children > 0}
-														{#if booking.participantBreakdown.adults > 0} + {/if}
-														{booking.participantBreakdown.children} children × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers.child)}
-													{/if}
-												</p>
-											{:else if booking.expand?.tour?.enablePricingTiers && booking.participantBreakdown}
-												<!-- Fallback for pricing tiers without detailed breakdown -->
-												<p class="text-sm" style="color: var(--text-secondary);">
-													{booking.participantBreakdown.adults || 0} adults × {getTourDisplayPriceFormatted(booking.expand.tour)}
-													{#if booking.participantBreakdown.children > 0}
-														+ {booking.participantBreakdown.children} children × {$globalCurrencyFormatter(booking.expand.tour.pricingTiers?.child || 0)}
-													{/if}
-												</p>
-											{:else}
-												<p class="text-sm" style="color: var(--text-secondary);">{getTourDisplayPriceFormatted(booking.expand.tour)} × {booking.participants} participants</p>
+								<div class="flex-1 min-w-0">
+									<p class="text-xs sm:text-sm font-medium" style="color: var(--color-primary-700);">Total Amount</p>
+									<p class="text-lg sm:text-xl font-bold" style="color: var(--color-primary-900);">
+										{$globalCurrencyFormatter(calculateTotal())}
+									</p>
+									{#if booking.expand?.tour?.enablePricingTiers && booking.participantBreakdown}
+										<p class="text-xs mt-0.5" style="color: var(--color-primary-600);">
+											Pricing tiers applied
+										</p>
+									{/if}
+								</div>
+							</div>
+
+							<!-- Participants -->
+							<div class="rounded-lg p-3 sm:p-4 flex items-start gap-3" style="background: var(--bg-secondary);">
+								<div class="rounded-lg p-1.5 sm:p-2 flex-shrink-0" style="background: var(--bg-tertiary);">
+									<Users class="h-4 w-4 sm:h-5 sm:w-5" style="color: var(--text-secondary);" />
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Participants</p>
+									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
+										{booking.participants}
+									</p>
+									{#if booking.participantBreakdown && (booking.participantBreakdown.adults > 0 || booking.participantBreakdown.children > 0)}
+										<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
+											{booking.participantBreakdown.adults || 0}A
+											{#if booking.participantBreakdown.children > 0}
+												+ {booking.participantBreakdown.children}C
 											{/if}
-										</div>
-									</div>
-								{/if}
-								{#if payment}
-									<div class="flex items-center gap-3">
-										<CreditCard class="h-5 w-5" style="color: var(--text-tertiary);" />
-										<div>
-											<p class="font-medium" style="color: var(--text-primary);">Payment {payment.status}</p>
-											<p class="text-sm" style="color: var(--text-secondary);">Via Stripe</p>
-										</div>
-									</div>
-								{/if}
+										</p>
+									{/if}
+								</div>
+							</div>
+
+							<!-- Booking Date - Hidden on mobile, shown in timeline -->
+							<div class="hidden sm:flex rounded-lg p-3 sm:p-4 items-start gap-3" style="background: var(--bg-secondary);">
+								<div class="rounded-lg p-1.5 sm:p-2 flex-shrink-0" style="background: var(--bg-tertiary);">
+									<ReceiptText class="h-4 w-4 sm:h-5 sm:w-5" style="color: var(--text-secondary);" />
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Booking Date</p>
+									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
+										{formatDate(booking.created)}
+									</p>
+									<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
+										at {new Date(booking.created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+									</p>
+								</div>
+							</div>
+
+							<!-- Location -->
+							<div class="rounded-lg p-3 sm:p-4 flex items-start gap-3 sm:col-span-2 lg:col-span-1" style="background: var(--bg-secondary);">
+								<div class="rounded-lg p-1.5 sm:p-2 flex-shrink-0" style="background: var(--bg-tertiary);">
+									<MapPin class="h-4 w-4 sm:h-5 sm:w-5" style="color: var(--text-secondary);" />
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Meeting Point</p>
+									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
+										{booking.expand?.tour?.location || 'Location not set'}
+									</p>
+									<button
+										onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
+										class="text-xs mt-1 inline-flex items-center gap-1 hover:underline"
+										style="color: var(--color-primary-600);"
+									>
+										View tour details
+										<ExternalLink class="h-3 w-3" />
+									</button>
+								</div>
 							</div>
 						</div>
 
 						<!-- Special Requests -->
 						{#if booking.specialRequests}
-							<div class="pt-4" style="border-top: 1px solid var(--border-primary);">
-								<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Special Requests</h3>
-								<p class="rounded-lg p-3" style="color: var(--text-primary); background: var(--bg-secondary);">{booking.specialRequests}</p>
+							<div class="mt-4 rounded-lg p-3 sm:p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+								<div class="flex items-start gap-2 sm:gap-3">
+									<MessageSquare class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+									<div class="flex-1 min-w-0">
+										<p class="font-medium text-xs sm:text-sm" style="color: var(--color-warning-900);">Special Requests</p>
+										<p class="text-xs sm:text-sm mt-1" style="color: var(--color-warning-800);">{booking.specialRequests}</p>
+									</div>
+								</div>
 							</div>
 						{/if}
 					</div>
 				</div>
 
-				<!-- Customer Information -->
+				<!-- Customer Information Card -->
 				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="px-6 py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
-						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Customer Information</h2>
+					<div class="px-4 py-3 sm:px-6 sm:py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+						<h3 class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">Customer Information</h3>
 					</div>
 					
-					<div class="p-6">
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div class="space-y-3">
-								<div class="flex items-center gap-3">
-									<User class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{booking.customerName}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">Customer name</p>
+					<div class="p-4 sm:p-6">
+						<div class="space-y-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:space-y-0">
+							<div class="space-y-3 sm:space-y-4">
+								<div class="flex items-start gap-3">
+									<User class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+									<div class="min-w-0">
+										<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Name</p>
+										<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">{booking.customerName}</p>
 									</div>
 								</div>
-								<div class="flex items-center gap-3">
-									<Mail class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">{booking.customerEmail}</p>
-										<p class="text-sm" style="color: var(--text-secondary);">Email address</p>
+								
+								<div class="flex items-start gap-3">
+									<Mail class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+									<div class="min-w-0">
+										<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Email</p>
+										<a href="mailto:{booking.customerEmail}" class="font-medium text-sm sm:text-base hover:underline break-all" style="color: var(--color-primary-600);">
+											{booking.customerEmail}
+										</a>
 									</div>
 								</div>
 							</div>
 
-							<div class="space-y-3">
+							<div class="space-y-3 sm:space-y-4">
 								{#if booking.customerPhone}
-									<div class="flex items-center gap-3">
-										<Phone class="h-5 w-5" style="color: var(--text-tertiary);" />
-										<div>
-											<p class="font-medium" style="color: var(--text-primary);">{booking.customerPhone}</p>
-											<p class="text-sm" style="color: var(--text-secondary);">Phone number</p>
+									<div class="flex items-start gap-3">
+										<Phone class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="min-w-0">
+											<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Phone</p>
+											<a href="tel:{booking.customerPhone}" class="font-medium text-sm sm:text-base hover:underline" style="color: var(--color-primary-600);">
+												{booking.customerPhone}
+											</a>
 										</div>
 									</div>
 								{/if}
-								<div class="flex items-center gap-3">
-									<Calendar class="h-5 w-5" style="color: var(--text-tertiary);" />
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">Customer since</p>
-										<p class="text-sm" style="color: var(--text-secondary);">{formatDate(booking.created)}</p>
+								
+								<div class="flex items-start gap-3">
+									<Ticket class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+									<div class="min-w-0">
+										<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Booking Code</p>
+										<p class="font-mono font-medium text-sm sm:text-base" style="color: var(--text-primary);">
+											{booking.qrCode || booking.id.slice(-8)}
+										</p>
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
 
-			<!-- Actions Sidebar -->
-			<div class="space-y-6">
-				<!-- Quick Actions - Mobile shown via MobilePageHeader -->
-				<div class="hidden sm:block rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Quick Actions</h3>
+				<!-- Mobile Timeline (shown instead of sidebar on mobile) -->
+				<div class="lg:hidden rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<h3 class="font-semibold text-sm mb-3" style="color: var(--text-primary);">Timeline</h3>
 					<div class="space-y-3">
-						<button
-							onclick={openEmailClient}
-							class="w-full button-primary button--gap button--small justify-center"
-						>
-							<Mail class="h-4 w-4" />
-							Send Email
-						</button>
+						<div class="flex items-start gap-3">
+							<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
+							<div class="flex-1">
+								<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
+								<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.created)}</p>
+							</div>
+						</div>
 						
-						{#if booking.customerPhone}
-							<a
-								href="tel:{booking.customerPhone}"
-								class="w-full button-secondary button--gap button--small justify-center inline-flex"
-							>
-								<Phone class="h-4 w-4" />
-								Call Customer
-							</a>
+						{#if booking.status === 'confirmed' || booking.status === 'completed'}
+							<div class="flex items-start gap-3">
+								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
+								<div class="flex-1">
+									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Confirmed</p>
+									<p class="text-xs" style="color: var(--text-secondary);">
+										{booking.updatedAt ? formatDateTime(booking.updatedAt) : 'Recently'}
+									</p>
+								</div>
+							</div>
 						{/if}
-
-						<button
-							onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
-							class="w-full button-secondary button--gap button--small justify-center"
-						>
-							<MapPin class="h-4 w-4" />
-							View Tour
-						</button>
+						
+						{#if payment?.status === 'paid' || payment?.status === 'succeeded'}
+							<div class="flex items-start gap-3">
+								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
+								<div class="flex-1">
+									<p class="text-sm font-medium" style="color: var(--text-primary);">Payment Received</p>
+									<p class="text-xs" style="color: var(--text-secondary);">
+										{payment.created ? formatDateTime(payment.created) : 'Recently'}
+									</p>
+								</div>
+							</div>
+						{/if}
 					</div>
 				</div>
 
-				<!-- Status Management -->
-				<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Booking Status</h3>
-					<div class="space-y-4">
-						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-							<span class="text-sm font-medium" style="color: var(--text-secondary);">Current Status</span>
-							<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border {getStatusColor(booking.status)}">
-								{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-							</span>
+				<!-- Mobile Status Update (shown at bottom on mobile) -->
+				<div class="lg:hidden rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<form method="POST" action="?/updateStatus" class="space-y-3">
+						<input type="hidden" name="id" value={booking.id} />
+						
+						<div>
+							<label class="text-xs font-medium block mb-2" style="color: var(--text-secondary);">Update Status</label>
+							<select 
+								name="status" 
+								value={booking.status}
+								class="form-select form-select--small w-full"
+								style="cursor: pointer;"
+							>
+								<option value="pending">Pending</option>
+								<option value="confirmed">Confirmed</option>
+								<option value="cancelled">Cancelled</option>
+								<option value="completed">Completed</option>
+							</select>
 						</div>
 						
-						{#if canChangeStatus()}
-							<button
-								onclick={() => {
-									newStatus = booking.status;
-									showStatusModal = true;
-								}}
-								class="w-full button-secondary button--gap button--small justify-center"
+						<button type="submit" class="button-primary w-full button--small">
+							Update Status
+						</button>
+					</form>
+				</div>
+
+				<!-- Payment Details (if available) -->
+				{#if payment}
+					<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="px-4 py-3 sm:px-6 sm:py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+							<h3 class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">Payment Information</h3>
+						</div>
+						
+						<div class="p-4 sm:p-6">
+							<div class="space-y-4 sm:grid sm:grid-cols-2 sm:gap-6 sm:space-y-0">
+								<div class="space-y-3 sm:space-y-4">
+									<div class="flex items-start gap-3">
+										<CreditCard class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="min-w-0">
+											<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Payment Method</p>
+											<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
+												{payment.paymentMethod?.card?.brand || 'Card'} •••• {payment.paymentMethod?.card?.last4 || '****'}
+											</p>
+										</div>
+									</div>
+									
+									<div class="flex items-start gap-3">
+										<DollarSign class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="min-w-0">
+											<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Amount Paid</p>
+											<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
+												{$globalCurrencyFormatter(payment.amount || calculateTotal())}
+											</p>
+										</div>
+									</div>
+								</div>
+
+								<div class="space-y-3 sm:space-y-4">
+									<div class="flex items-start gap-3">
+										<Calendar class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="min-w-0">
+											<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Payment Date</p>
+											<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
+												{payment.created ? formatDateTime(payment.created) : 'N/A'}
+											</p>
+										</div>
+									</div>
+									
+									{#if payment.stripePaymentIntentId}
+										<div class="flex items-start gap-3">
+											<ReceiptText class="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+											<div class="min-w-0">
+												<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Transaction ID</p>
+												<p class="font-mono text-xs break-all" style="color: var(--text-primary);">
+													{payment.stripePaymentIntentId}
+												</p>
+											</div>
+										</div>
+									{/if}
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Right Column - Actions and Status (hidden on mobile, actions moved to top) -->
+			<div class="hidden lg:block space-y-4 sm:space-y-6">
+				<!-- Actions Card -->
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="px-4 py-3 sm:px-6 sm:py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+						<h3 class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">Actions</h3>
+					</div>
+					
+					<div class="p-4 sm:p-6 space-y-3">
+						<!-- Status Update Form -->
+						<form method="POST" action="?/updateStatus" class="space-y-3">
+							<input type="hidden" name="id" value={booking.id} />
+							
+							<select 
+								name="status" 
+								value={booking.status}
+								class="form-select form-select--small w-full"
+								style="cursor: pointer;"
 							>
-								<Edit class="h-4 w-4" />
-								Change Status
+								<option value="pending">Pending</option>
+								<option value="confirmed">Confirmed</option>
+								<option value="cancelled">Cancelled</option>
+								<option value="completed">Completed</option>
+							</select>
+							
+							<button type="submit" class="button-primary w-full button--small">
+								Update Status
 							</button>
-						{:else}
-							<p class="text-xs text-center p-2" style="color: var(--text-tertiary);">
-								Status cannot be changed for completed past bookings
-							</p>
-						{/if}
+						</form>
+						
+						<div class="grid grid-cols-1 gap-2 pt-2">
+							<button
+								onclick={openEmailClient}
+								class="button-secondary button--gap button--small"
+							>
+								<Mail class="h-4 w-4" />
+								Email Customer
+							</button>
+							
+							{#if booking.customerPhone}
+								<button
+									onclick={() => window.location.href = `tel:${booking.customerPhone}`}
+									class="button-secondary button--gap button--small"
+								>
+									<Phone class="h-4 w-4" />
+									Call Customer
+								</button>
+							{/if}
+							
+							<button
+								onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
+								class="button-secondary button--gap button--small"
+							>
+								<MapPin class="h-4 w-4" />
+								View Tour
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Timeline Card -->
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="px-4 py-3 sm:px-6 sm:py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+						<h3 class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">Timeline</h3>
+					</div>
+					
+					<div class="p-4 sm:p-6">
+						<div class="space-y-4">
+							<div class="flex items-start gap-3">
+								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
+								<div class="flex-1">
+									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
+									<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.created)}</p>
+								</div>
+							</div>
+							
+							{#if booking.status === 'confirmed' || booking.status === 'completed'}
+								<div class="flex items-start gap-3">
+									<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
+									<div class="flex-1">
+										<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Confirmed</p>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											{booking.updatedAt ? formatDateTime(booking.updatedAt) : 'Recently'}
+										</p>
+									</div>
+								</div>
+							{/if}
+							
+							{#if payment?.status === 'paid' || payment?.status === 'succeeded'}
+								<div class="flex items-start gap-3">
+									<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
+									<div class="flex-1">
+										<p class="text-sm font-medium" style="color: var(--text-primary);">Payment Received</p>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											{payment.created ? formatDateTime(payment.created) : 'Recently'}
+										</p>
+									</div>
+								</div>
+							{/if}
+							
+							{#if booking.status === 'completed'}
+								<div class="flex items-start gap-3">
+									<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-info-500);"></div>
+									<div class="flex-1">
+										<p class="text-sm font-medium" style="color: var(--text-primary);">Tour Completed</p>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											{booking.expand?.timeSlot?.endTime ? formatDateTime(booking.expand.timeSlot.endTime) : 'Marked complete'}
+										</p>
+									</div>
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -494,8 +724,7 @@
 					
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
-							// Immediate optimistic updates - update all caches before server response
-							const oldStatus = booking.status;
+							// Immediate optimistic updates
 							const updatedStatus = newStatus as typeof booking.status;
 							
 							// 1. Update local state immediately
@@ -503,7 +732,6 @@
 							showStatusModal = false;
 							
 							// 2. Optimistically update all query caches immediately
-							// Update this booking's cache
 							queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
 								if (oldData?.booking) {
 									return {
@@ -524,24 +752,10 @@
 								return oldData;
 							});
 							
-							// Update tour bookings cache
-							queryClient.setQueriesData({ queryKey: ['tour-bookings'], exact: false }, (oldData: any) => {
-								if (oldData?.bookings) {
-									return {
-										...oldData,
-										bookings: oldData.bookings.map((b: any) => 
-											b.id === bookingId ? { ...b, status: updatedStatus } : b
-										)
-									};
-								}
-								return oldData;
-							});
-							
 							// 3. Then invalidate queries to fetch fresh data in background
 							Promise.all([
 								queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
 								queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
-								queryClient.invalidateQueries({ queryKey: ['tour-bookings'], exact: false }),
 								queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
 							]).catch((invalidationError) => {
 								console.warn('Background refetch failed:', invalidationError);
@@ -564,7 +778,9 @@
 				<div class="p-6 space-y-4">
 					<div class="space-y-3">
 						{#each ['pending', 'confirmed', 'completed', 'cancelled'] as status}
-							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors" style="border-color: {newStatus === status ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'transparent'}"
+							{@const StatusIcon = getBookingStatusIcon(status)}
+							<label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all" 
+								style="border-color: {newStatus === status ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {newStatus === status ? 'var(--color-primary-50)' : 'transparent'}"
 								onmouseenter={(e) => {
 									if (newStatus !== status) {
 										e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
@@ -583,20 +799,18 @@
 									class="form-radio"
 								/>
 								<div class="flex items-center gap-2">
-									{#if status === 'confirmed'}
-										<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-									{:else if status === 'cancelled'}
-										<XCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-									{:else if status === 'completed'}
-										<CheckCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-									{:else}
-										<AlertCircle class="h-4 w-4" style="color: var(--text-secondary);" />
-									{/if}
+									<StatusIcon class="h-4 w-4" style="color: var(--text-secondary);" />
 									<span class="font-medium capitalize" style="color: var(--text-primary);">{status}</span>
 								</div>
 							</label>
 						{/each}
 					</div>
+					
+					{#if error}
+						<div class="rounded-lg p-3" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+							<p class="text-sm" style="color: var(--color-danger-900);">{error}</p>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="p-6 flex justify-end gap-3" style="border-top: 1px solid var(--border-primary);">
@@ -616,7 +830,7 @@
 						class="button-primary button--gap {isUpdating ? 'opacity-50' : ''}"
 					>
 						{#if isUpdating}
-							<div class="form-spinner"></div>
+							<Loader2 class="h-4 w-4 animate-spin" />
 							Updating...
 						{:else}
 							Update Status
