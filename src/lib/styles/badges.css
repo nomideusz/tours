@@ -371,6 +371,8 @@
 		border: 1px solid;
 		transition: all var(--transition-fast) ease;
 	}
+	
+	/* Opera-specific badge size reduction - moved to theme-overrides.css */
 
 	.tour-status-badge--active {
 		background-color: var(--color-success-100);

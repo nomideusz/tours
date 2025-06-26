@@ -20,6 +20,17 @@
 		<meta name="pinterest" content="nopin" />
 		<meta name="extension-control" content="no-inject" />
 		
+		<!-- Browser detection for Opera-specific styling -->
+		<script>
+			// Detect Opera browser and add class for CSS targeting
+			(function() {
+				var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+				if (isOpera) {
+					document.documentElement.classList.add('is-opera');
+				}
+			})();
+		</script>
+		
 		<!-- DNS Prefetch -->
 		<link rel="dns-prefetch" href="//z.xeon.pl" />
 		<link rel="dns-prefetch" href="//js.stripe.com" />

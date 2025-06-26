@@ -203,10 +203,13 @@
 .button-container:has(#video-detach-button),
 .rgx-button-wrapper,
 [id*="lucid-mode"],
-[class*="rgx-button"] {
+[class*="rgx-button"],
+#detach-button-host,
+[id*="detach-button"] {
 	display: none !important;
 	pointer-events: none !important;
 	visibility: hidden !important;
+	z-index: -9999 !important;
 }
 
 /* Ensure our navigation elements stay on top */
@@ -217,8 +220,84 @@ nav {
 	z-index: 50;
 }
 
+/* Extra protection for logo */
+a:has(.logo-serif),
+a[href="/dashboard"],
+a[href="/"],
+header a {
+	position: relative !important;
+	z-index: 100 !important;
+	pointer-events: auto !important;
+}
+
 /* Prevent extensions from injecting into our header area */
 header .button-container,
-nav .button-container {
+nav .button-container,
+header #detach-button-host,
+nav #detach-button-host {
 	display: none !important;
-} 
+}
+
+/* Scanner page specific protection */
+.checkin-scanner #detach-button-host,
+body:has(.qr-scanner) #detach-button-host,
+body:has(video) #detach-button-host {
+	display: none !important;
+	visibility: hidden !important;
+	pointer-events: none !important;
+}
+
+/* Opera-specific font size adjustments - using JavaScript detection */
+.is-opera .badge,
+.is-opera .status-confirmed,
+.is-opera .status-pending,
+.is-opera .status-cancelled,
+.is-opera .status-completed,
+.is-opera .payment-paid,
+.is-opera .payment-pending,
+.is-opera .payment-failed,
+.is-opera .payment-refunded,
+.is-opera .tour-status-badge {
+	font-size: 0.625rem !important; /* 10px instead of 12px */
+	padding: 0.125rem 0.5rem !important; /* Smaller padding too */
+}
+
+.is-opera .badge-sm {
+	font-size: 0.5625rem !important; /* 9px instead of 10px */
+}
+
+.is-opera .badge-lg {
+	font-size: 0.75rem !important; /* 12px instead of 14px */
+}
+
+/* Reduce text sizes in Opera */
+.is-opera .text-xs {
+	font-size: 0.6875rem !important; /* 11px instead of 13px */
+}
+
+.is-opera .text-sm {
+	font-size: 0.8125rem !important; /* 13px instead of 15px */
+}
+
+/* Footer specific adjustments */
+.is-opera footer .text-xs {
+	font-size: 0.625rem !important; /* 10px for footer text */
+}
+
+/* Navigation badge adjustments */
+.is-opera .nav-badge {
+	font-size: 0.625rem !important; /* 10px */
+	min-width: 1rem !important;
+	height: 1rem !important;
+}
+
+/* Alert text adjustments */
+.is-opera .alert-heading {
+	font-size: 0.75rem !important; /* 12px instead of 14px */
+}
+
+.is-opera .alert-body {
+	font-size: 0.6875rem !important; /* 11px instead of 13px */
+}
+
+ 

@@ -408,6 +408,28 @@
 		from { transform: translateY(100%); }
 		to { transform: translateY(0); }
 	}
+	
+	/* Remove underlines from all navigation links */
+	.nav-link,
+	#mobile-menu a,
+	nav a {
+		text-decoration: none !important;
+	}
+	
+	.nav-link:hover,
+	.nav-link:active,
+	.nav-link:visited,
+	.nav-link:focus,
+	#mobile-menu a:hover,
+	#mobile-menu a:active,
+	#mobile-menu a:visited,
+	#mobile-menu a:focus,
+	nav a:hover,
+	nav a:active,
+	nav a:visited,
+	nav a:focus {
+		text-decoration: none !important;
+	}
 </style>
 
 <!-- TanStack Query Provider for App -->
@@ -612,9 +634,9 @@
 						<a
 							href={item.href}
 							class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0 relative"
-							style={item.active 
+							style="{item.active 
 								? 'color: var(--color-primary-600);' 
-								: 'color: var(--text-tertiary);'}
+								: 'color: var(--text-tertiary);'} text-decoration: none;"
 						>
 							<div class="relative">
 								<item.icon 
@@ -669,7 +691,7 @@
 								<a
 									href={item.href}
 									class="flex items-center gap-3 px-4 py-3 transition-colors"
-									style="color: var(--text-secondary);"
+									style="color: var(--text-secondary); text-decoration: none;"
 									onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
 									onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 								>

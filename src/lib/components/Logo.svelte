@@ -73,7 +73,10 @@
 	/* Smooth hover effect - removed transform which can affect clickable area */
 	a {
 		position: relative;
-		z-index: 50; /* Ensure logo stays above injected elements */
+		z-index: 100; /* Increased from 50 to ensure logo stays above all injected elements */
+		pointer-events: auto !important; /* Force clickability */
+		display: inline-flex !important; /* Ensure proper layout */
+		isolation: isolate; /* Create new stacking context */
 	}
 	
 	a:hover {
