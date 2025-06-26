@@ -43,23 +43,24 @@
 		</div>
 	{/if}
 	
-	{#if variant === 'modern' || variant === 'icon'}
-		<!-- Modern: Bold name, lighter extension -->
-		<span class="font-semibold tracking-tight">zaur</span>
-		<span class="font-normal opacity-60">.app</span>
-	{:else if variant === 'minimal'}
-		<!-- Minimal: All lowercase, consistent weight -->
-		<span class="font-medium tracking-tight">zaur.app</span>
-	{:else if variant === 'rounded'}
-		<!-- Rounded: With background -->
-		<span class="px-2 py-0.5 rounded-md font-semibold tracking-tight" style="background: var(--bg-tertiary);">
-			zaur
-		</span>
-		<span class="font-normal ml-1 opacity-70">.app</span>
-	{:else if variant === 'serif'}
-		<!-- Original serif style -->
-		<span class="logo-serif">zaur.app</span>
-	{/if}
+	<div class="flex">
+		{#if variant === 'modern' || variant === 'icon'}
+			<!-- Modern: Bold name, lighter extension -->
+			<span class="font-semibold tracking-tight">zaur</span><span class="font-normal opacity-60">.app</span>
+		{:else if variant === 'minimal'}
+			<!-- Minimal: All lowercase, consistent weight -->
+			<span class="font-medium tracking-tight">zaur.app</span>
+		{:else if variant === 'rounded'}
+			<!-- Rounded: With background -->
+			<span class="px-2 py-0.5 rounded-md font-semibold tracking-tight" style="background: var(--bg-tertiary);">
+				zaur
+			</span>
+			<span class="font-normal ml-1 opacity-70">.app</span>
+		{:else if variant === 'serif'}
+			<!-- Original serif style -->
+			<span class="logo-serif">zaur.app</span>
+		{/if}
+	</div>
 </a>
 
 <style>

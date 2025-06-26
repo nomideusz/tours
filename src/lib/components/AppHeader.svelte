@@ -18,7 +18,7 @@
 	<div class="flex items-center justify-between h-full px-4 lg:px-6">
 		<!-- Left: Logo -->
 		<div class="flex items-center gap-3 h-full">
-			<Logo variant="minimal" />
+			<Logo variant="modern" />
 		</div>
 
 		<!-- Right: Actions -->

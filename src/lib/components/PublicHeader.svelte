@@ -37,7 +37,7 @@
 					</button>
 				{/if}
 				
-				<Logo variant="minimal" href="/" size="default" />
+				<Logo variant="modern" href="/" size="default" />
 				
 				{#if tourOwner && (isProfilePage || isBookingPage)}
 					<span class="text-sm hidden sm:inline" style="color: var(--text-tertiary);">

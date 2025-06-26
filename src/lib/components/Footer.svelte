@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Scan from 'lucide-svelte/icons/scan';
+	import Logo from './Logo.svelte';
 </script>
 
 <!-- Modern footer -->
@@ -8,11 +8,14 @@
 		<div class="grid grid-cols-1 gap-8 md:grid-cols-4">
 			<!-- Brand section -->
 			<div class="md:col-span-1">
-				<div class="mb-4 flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background: var(--color-primary-600);">
-						<Scan class="h-6 w-6 text-white" />
-					</div>
-					<span class="text-2xl font-bold">Zaur</span>
+				<div class="mb-4">
+					<Logo 
+						variant="modern" 
+						size="large" 
+						href="/" 
+						showIcon={true}
+						class="justify-start p-0"
+					/>
 				</div>
 				<p class="mb-4" style="color: var(--text-secondary);">
 					The simplest booking system for independent tour guides. More bookings, less hassle.

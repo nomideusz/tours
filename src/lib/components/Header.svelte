@@ -117,7 +117,7 @@
 		<div class="flex h-20 items-center justify-between">
 			<!-- Logo and branding -->
 			<div class="flex items-center h-full">
-				<Logo variant="minimal" href={isAuthenticated ? '/?view=home' : '/'} size="large" />
+				<Logo variant="modern" href={isAuthenticated ? '/?view=home' : '/'} size="large" />
 			</div>
 
 			<!-- Desktop navigation -->
