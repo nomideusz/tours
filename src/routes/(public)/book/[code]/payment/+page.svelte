@@ -156,7 +156,7 @@
 				// Initialize Stripe Elements with connected account for direct charges
 				const elementsOptions: any = {
 					clientSecret: paymentClientSecret,
-					appearance: getStripeAppearance(),
+					appearance: getStripeAppearance()
 				};
 				
 				// For direct charges, Elements must be initialized with the connected account context
@@ -182,8 +182,8 @@
 				
 				// Create payment element with all payment methods enabled
 				paymentElement = (elements as any).create('payment', {
-					layout: 'auto', // Let Stripe decide the best layout based on available payment methods
-					paymentMethodTypes: 'auto', // Automatically show all payment methods available
+					layout: 'accordion', // Use accordion to show all payment methods clearly
+					// Don't restrict payment method types - let it show everything available
 					// Disable wallets in the element since we handle them separately
 					wallets: {
 						applePay: 'never',
@@ -216,17 +216,35 @@
 				
 				// Set up Payment Request for wallet payments (outside iframe to avoid sandbox issues)
 				try {
+					// Map currency to country code
+					const currencyCountryMap: Record<string, string> = {
+						'eur': 'NL',
+						'gbp': 'GB',
+						'usd': 'US',
+						'pln': 'PL',
+						'czk': 'CZ',
+						'sek': 'SE',
+						'nok': 'NO',
+						'dkk': 'DK',
+						'chf': 'CH'
+					};
+					
+					const currency = data.tourOwner.currency?.toLowerCase() || 'eur';
+					const country = currencyCountryMap[currency] || 'US';
+					
+					console.log('Payment Request config:', { country, currency });
+					
 					// Create Payment Request for the connected account
 					const pr = stripe.paymentRequest({
-						country: 'US', // This will be overridden by the connected account's country
-						currency: data.tourOwner.currency?.toLowerCase() || 'eur',
+						country,
+						currency,
 						total: {
 							label: data.booking.expand?.tour?.name || 'Tour Booking',
 							amount: Math.round(parseFloat(data.booking.totalAmount) * 100),
 						},
 						requestPayerName: true,
 						requestPayerEmail: true,
-						requestPayerPhone: true,
+						requestPayerPhone: true
 					});
 					
 					// Check what payment methods are available
@@ -244,6 +262,12 @@
 						if (canMakePaymentResult.googlePay) {
 							googlePayAvailable = true;
 							console.log('Google Pay is available');
+						}
+						
+						// Always show Google Pay button on Chrome even if detection fails
+						if (!googlePayAvailable && /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent)) {
+							console.log('Chrome detected - enabling Google Pay button as fallback');
+							googlePayAvailable = true;
 						}
 						
 						// Handle payment method selection
@@ -523,7 +547,7 @@
 												<button
 													type="button"
 													onclick={handleWalletPayment}
-													disabled={processing}
+													disabled={processing || !paymentRequest}
 													class="w-full button--large justify-center mb-3"
 													style="background: #fff; color: #3c4043; border: 1px solid #dadce0; font-weight: 500;"
 												>
@@ -537,6 +561,11 @@
 														Google Pay
 													{/if}
 												</button>
+												{#if !paymentRequest}
+													<p class="text-xs text-center mb-3" style="color: var(--text-tertiary);">
+														Google Pay may work if you have cards saved in Chrome
+													</p>
+												{/if}
 											{/if}
 											
 											{#if applePayAvailable}
