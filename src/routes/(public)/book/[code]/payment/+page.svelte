@@ -43,9 +43,6 @@
 	let mounted = $state(false);
 	let isInitializing = $state(true);
 	let clientSecret = $state<string>('');
-	let walletPaymentAvailable = $state(false);
-	let walletPaymentType = $state<'applePay' | 'googlePay' | null>(null);
-	let paymentRequestClient: any = $state(null);
 	
 	// Detect dark mode for Stripe Elements
 	function isDarkMode() {
@@ -180,14 +177,11 @@
 					elements = stripe.elements(elementsOptions);
 				}
 				
-				// Create payment element for card payments only
+				// Create payment element with all payment methods enabled
 				paymentElement = (elements as any).create('payment', {
-					layout: 'tabs',
-					wallets: {
-						// Disable wallets in payment element due to sandbox restrictions
-						applePay: 'never',
-						googlePay: 'never'
-					},
+					layout: 'auto', // Let Stripe decide the best layout based on available payment methods
+					// Remove wallet restrictions - let Stripe handle all payment methods
+					paymentMethodTypes: 'auto', // Automatically show all payment methods available
 					fields: {
 						billingDetails: {
 							address: {
@@ -208,91 +202,9 @@
 				const container = document.getElementById('payment-element');
 				if (container) {
 					paymentElement.mount(container);
-				}
-				
-				// Check for Google Pay availability using Payment Request API
-				try {
-					// Determine country based on currency
-					const currencyCountryMap: Record<string, string> = {
-						'eur': 'NL', // Netherlands for EUR
-						'gbp': 'GB', // UK for GBP
-						'usd': 'US', // US for USD
-						'pln': 'PL', // Poland for PLN
-						'czk': 'CZ', // Czech Republic for CZK
-						'sek': 'SE', // Sweden for SEK
-						'nok': 'NO', // Norway for NOK
-						'dkk': 'DK', // Denmark for DKK
-						'chf': 'CH', // Switzerland for CHF
-					};
-					
-					const country = currencyCountryMap[data.tourOwner.currency?.toLowerCase() || 'eur'] || 'US';
-					
-					const paymentRequest = stripe.paymentRequest({
-						country, // Use country based on currency
-						currency: (data.tourOwner.currency?.toLowerCase() || 'eur') as any,
-						total: {
-							label: data.booking.expand?.tour?.name || 'Tour Booking',
-							amount: Math.round(parseFloat(data.booking.totalAmount) * 100),
-						},
-						requestPayerName: true,
-						requestPayerEmail: true,
-					});
-					
-					const result = await paymentRequest.canMakePayment();
-					console.log('Payment Request canMakePayment result:', result);
-					
-					if (result) {
-						// Check which wallet type is available
-						if (result.applePay) {
-							console.log('Apple Pay is available');
-							walletPaymentAvailable = true;
-							walletPaymentType = 'applePay';
-							paymentRequestClient = paymentRequest;
-						} else if (result.googlePay) {
-							console.log('Google Pay is available');
-							walletPaymentAvailable = true;
-							walletPaymentType = 'googlePay';
-							paymentRequestClient = paymentRequest;
-						}
-						
-						// Handle wallet payment (both Apple Pay and Google Pay)
-						if (walletPaymentAvailable) {
-							paymentRequest.on('paymentmethod', async (ev: any) => {
-								try {
-									processing = true;
-									error = null;
-									
-									if (!stripe) {
-										throw new Error('Stripe not initialized');
-									}
-									
-									const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-										clientSecret,
-										{ payment_method: ev.paymentMethod.id }
-									);
-									
-									if (confirmError) {
-										ev.complete('fail');
-										error = confirmError.message || 'Payment failed';
-										processing = false;
-									} else {
-										ev.complete('success');
-										if (paymentIntent?.status === 'succeeded') {
-											window.location.href = `/book/${data.qrCode.code}/success?booking=${data.booking.id}`;
-										}
-									}
-								} catch (err: any) {
-									ev.complete('fail');
-									error = err?.message || 'Payment failed';
-									processing = false;
-								}
-							});
-						}
-					} else {
-						console.log('No wallet payment methods available on this device/browser');
-					}
-				} catch (err) {
-					console.log('Payment Request API error:', err);
+					console.log('Payment element mounted successfully');
+					console.log('Connected account ID:', connectedAccountId);
+					console.log('Currency:', data.tourOwner.currency);
 				}
 			} catch (err) {
 				console.error('Payment initialization error:', err);
@@ -359,18 +271,6 @@
 			console.error('Payment error:', err);
 			error = err?.message || 'An unexpected error occurred. Please try again.';
 			processing = false;
-		}
-	}
-	
-	async function handleWalletPayment() {
-		if (!paymentRequestClient || processing) return;
-		
-		try {
-			// Show the wallet payment sheet (Apple Pay or Google Pay)
-			paymentRequestClient.show();
-		} catch (err) {
-			console.error('Wallet payment error:', err);
-			error = `Unable to process ${walletPaymentType === 'applePay' ? 'Apple Pay' : 'Google Pay'}. Please use a card instead.`;
 		}
 	}
 	
@@ -513,68 +413,13 @@
 								<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
 									<!-- Payment Methods Info -->
 									<div class="mb-6 p-4 rounded-lg info-box">
-										<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Accepted payment methods</p>
-										<div class="flex items-center gap-3 flex-wrap">
-											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-												✓ Credit/Debit Cards
-											</span>
-											{#if walletPaymentAvailable && walletPaymentType === 'applePay'}
-												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-													✓ Apple Pay
-												</span>
-											{:else if walletPaymentAvailable && walletPaymentType === 'googlePay'}
-												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-													✓ Google Pay
-												</span>
-											{/if}
-										</div>
-										{#if !walletPaymentAvailable}
-											<p class="text-xs mt-2" style="color: var(--text-tertiary);">
-												Apple Pay and Google Pay may be available if configured on your device
-											</p>
-										{/if}
+										<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Available payment methods</p>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											The payment form below will show all payment methods available for your region and device, including cards, Apple Pay, Google Pay, and other local payment methods.
+										</p>
 									</div>
 									
-									<!-- Wallet Payment Button (Apple Pay / Google Pay) -->
-									{#if walletPaymentAvailable}
-										<div class="mb-6">
-											<button
-												type="button"
-												onclick={handleWalletPayment}
-												disabled={processing}
-												class="w-full button--large justify-center"
-												style="{walletPaymentType === 'applePay' ? 'background: #000; color: #fff; border: 1px solid #000;' : 'background: #000; color: #fff; border: 1px solid #000;'}"
-											>
-												{#if processing}
-													<Loader2 class="w-5 h-5 animate-spin" />
-													Processing...
-												{:else if walletPaymentType === 'applePay'}
-													<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-														<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-													</svg>
-													Pay with Apple Pay
-												{:else}
-													<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-														<path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="currentColor"/>
-													</svg>
-													Pay with Google Pay
-												{/if}
-											</button>
-											
-											<div class="relative mt-4">
-												<div class="absolute inset-0 flex items-center">
-													<div class="w-full border-t" style="border-color: var(--border-primary);"></div>
-												</div>
-												<div class="relative flex justify-center text-sm">
-													<span class="px-2" style="background: var(--bg-primary); color: var(--text-secondary);">
-														Or pay with card
-													</span>
-												</div>
-											</div>
-										</div>
-									{/if}
-									
-									<!-- Card Payment Section -->
+									<!-- Payment Element -->
 									<div class="mb-6">
 										<div id="payment-element">
 											<!-- Stripe Payment Element will be mounted here -->
