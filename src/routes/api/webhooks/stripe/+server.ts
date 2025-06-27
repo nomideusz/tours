@@ -136,30 +136,14 @@ export const POST: RequestHandler = async ({ request }) => {
             if (emailResponse.ok) {
               console.log(`Webhook: Confirmation email sent for booking ${bookingId}`);
             } else {
-              console.warn(`Webhook: Failed to send confirmation email:`, await emailResponse.text());
+              console.error('Webhook: Failed to send confirmation email:', 
+                emailResponse.status, 
+                await emailResponse.text()
+              );
             }
             
-            // Wait 600ms to respect Resend's 2 emails/second rate limit
-            await new Promise(resolve => setTimeout(resolve, 600));
-            
-            // Send QR ticket
-            const qrResponse = await fetch(`${new URL(request.url).origin}/api/send-booking-email`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                bookingId,
-                emailType: 'qr-ticket'
-              })
-            });
-            
-            if (qrResponse.ok) {
-              console.log(`Webhook: QR ticket sent for booking ${bookingId}`);
-            } else {
-              console.warn(`Webhook: Failed to send QR ticket:`, await qrResponse.text());
-            }
-
-            // Wait 600ms to respect Resend's 2 emails/second rate limit
-            await new Promise(resolve => setTimeout(resolve, 600));
+            // Don't need to wait anymore since we're not sending separate QR ticket email
+            // await new Promise(resolve => setTimeout(resolve, 600));
 
             // Send booking notification email to tour guide
             const guideEmailResponse = await fetch(`${new URL(request.url).origin}/api/send-guide-booking-email`, {

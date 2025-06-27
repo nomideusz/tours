@@ -1116,15 +1116,15 @@
 {#if state.showDeleteConfirm}
 	<ConfirmationModal
 		bind:isOpen={state.showDeleteConfirm}
-		title="Delete Time Slot"
+		title="Cancel Time Slot"
 		message={hasBookings 
-			? `⚠️ This slot has ${currentSlot.bookedSpots} active booking${currentSlot.bookedSpots === 1 ? '' : 's'}. Deleting will:\n\n• Cancel all bookings immediately\n• Send cancellation emails to all ${currentSlot.bookedSpots} customer${currentSlot.bookedSpots === 1 ? '' : 's'}\n• Process full refunds automatically\n\nThis action cannot be undone.`
-			: 'Are you sure you want to delete this time slot? This action cannot be undone.'}
-		confirmText={hasBookings ? `Delete & Notify ${currentSlot.bookedSpots} Customer${currentSlot.bookedSpots === 1 ? '' : 's'}` : "Delete Slot"}
-		cancelText="Cancel"
-		variant="danger"
-		icon={Trash2}
+			? `⚠️ This slot has ${currentSlot.bookedSpots} active booking${currentSlot.bookedSpots === 1 ? '' : 's'}. Cancelling will:\n\n• Cancel all bookings immediately\n• Send cancellation emails to all ${currentSlot.bookedSpots} customer${currentSlot.bookedSpots === 1 ? '' : 's'}\n• Process full refunds automatically\n\nThis action cannot be undone.`
+			: 'Are you sure you want to cancel this time slot? This action cannot be undone.'}
+		confirmText={hasBookings ? `Cancel Slot & Notify ${currentSlot.bookedSpots} Customer${currentSlot.bookedSpots === 1 ? '' : 's'}` : "Cancel Slot"}
+		cancelText="Keep Slot"
 		onConfirm={handleDelete}
 		onCancel={() => state.showDeleteConfirm = false}
+		variant="danger"
+		icon={Trash2}
 	/>
 {/if} 

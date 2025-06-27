@@ -517,14 +517,27 @@
 
 				<!-- Mobile Status Update (shown at bottom on mobile) -->
 				<div class="lg:hidden rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<form method="POST" action="?/updateStatus" class="space-y-3">
-						<input type="hidden" name="id" value={booking.id} />
-						
+					<div class="space-y-3">
 						<div>
 							<label class="text-xs font-medium block mb-2" style="color: var(--text-secondary);">Update Status</label>
 							<select 
 								name="status" 
 								value={booking.status}
+								onchange={(e) => {
+									const target = e.target as HTMLSelectElement;
+									if (target.value === 'cancelled') {
+										newStatus = target.value;
+										showStatusModal = true;
+									} else {
+										// For non-cancellation status changes, update directly
+										newStatus = target.value;
+										// Submit form programmatically
+										const form = document.getElementById('mobile-status-update-form') as HTMLFormElement;
+										if (form) {
+											form.requestSubmit();
+										}
+									}
+								}}
 								class="form-select form-select--small w-full"
 								style="cursor: pointer;"
 							>
@@ -535,10 +548,12 @@
 							</select>
 						</div>
 						
-						<button type="submit" class="button-primary w-full button--small">
-							Update Status
-						</button>
-					</form>
+						<!-- Hidden form for non-cancellation status updates -->
+						<form id="mobile-status-update-form" method="POST" action="?/updateStatus" class="hidden">
+							<input type="hidden" name="id" value={booking.id} />
+							<input type="hidden" name="status" value={newStatus} />
+						</form>
+					</div>
 				</div>
 
 				<!-- Payment Details (if available) -->
@@ -611,12 +626,25 @@
 					
 					<div class="p-4 sm:p-6 space-y-3">
 						<!-- Status Update Form -->
-						<form method="POST" action="?/updateStatus" class="space-y-3">
-							<input type="hidden" name="id" value={booking.id} />
-							
+						<div class="space-y-3">
 							<select 
 								name="status" 
 								value={booking.status}
+								onchange={(e) => {
+									const target = e.target as HTMLSelectElement;
+									if (target.value === 'cancelled') {
+										newStatus = target.value;
+										showStatusModal = true;
+									} else {
+										// For non-cancellation status changes, update directly
+										newStatus = target.value;
+										// Submit form programmatically
+										const form = document.getElementById('status-update-form') as HTMLFormElement;
+										if (form) {
+											form.requestSubmit();
+										}
+									}
+								}}
 								class="form-select form-select--small w-full"
 								style="cursor: pointer;"
 							>
@@ -626,10 +654,12 @@
 								<option value="completed">Completed</option>
 							</select>
 							
-							<button type="submit" class="button-primary w-full button--small">
-								Update Status
-							</button>
-						</form>
+							<!-- Hidden form for non-cancellation status updates -->
+							<form id="status-update-form" method="POST" action="?/updateStatus" class="hidden">
+								<input type="hidden" name="id" value={booking.id} />
+								<input type="hidden" name="status" value={newStatus} />
+							</form>
+						</div>
 						
 						<div class="grid grid-cols-1 gap-2 pt-2">
 							<button

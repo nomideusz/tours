@@ -170,25 +170,24 @@ export const DELETE: RequestHandler = async ({ locals, params, url }) => {
 				customerName: bookings.customerName
 			})
 			.from(bookings)
-			.where(and(
-				eq(bookings.timeSlotId, slotId),
-				eq(bookings.status, 'confirmed')
-			));
+			.where(eq(bookings.timeSlotId, slotId));
 
 		// Check if slot has bookings
-		if (currentSlot.bookedSpots > 0) {
+		if (currentSlot.bookedSpots > 0 || affectedBookings.length > 0) {
 			// Cancel all bookings for this slot
 			await db
 				.update(bookings)
-				.set({
+				.set({ 
 					status: 'cancelled',
 					updatedAt: new Date()
 				})
 				.where(eq(bookings.timeSlotId, slotId));
+			
+			console.log(`Cancelled ${affectedBookings.length} bookings for time slot ${slotId}`);
 
 			// Send cancellation emails to all affected customers
 			const origin = url.origin;
-			for (const booking of affectedBookings) {
+			const emailPromises = affectedBookings.map(async (booking) => {
 				try {
 					const emailResponse = await fetch(`${origin}/api/send-booking-email`, {
 						method: 'POST',
@@ -204,24 +203,34 @@ export const DELETE: RequestHandler = async ({ locals, params, url }) => {
 
 					if (!emailResponse.ok) {
 						console.warn(`Failed to send cancellation email to ${booking.customerEmail}:`, await emailResponse.text());
+					} else {
+						console.log(`Sent cancellation email to ${booking.customerEmail}`);
 					}
 				} catch (emailError) {
 					console.error(`Error sending cancellation email to ${booking.customerEmail}:`, emailError);
 					// Continue with other emails even if one fails
 				}
-			}
+			});
+			
+			// Wait for all emails to be sent
+			await Promise.all(emailPromises);
 		}
 
-		// Delete the time slot
+		// Instead of deleting, mark the time slot as cancelled
+		// This avoids foreign key constraint issues
 		await db
-			.delete(timeSlots)
+			.update(timeSlots)
+			.set({
+				status: 'cancelled',
+				updatedAt: new Date()
+			})
 			.where(eq(timeSlots.id, slotId));
 
 		return json({
 			success: true,
-			message: currentSlot.bookedSpots > 0 
-				? `Time slot deleted and ${currentSlot.bookedSpots} booking(s) cancelled. Cancellation emails sent to affected customers.`
-				: 'Time slot deleted successfully',
+			message: currentSlot.bookedSpots > 0
+				? `Time slot cancelled and ${affectedBookings.length} booking(s) cancelled. Cancellation emails sent to affected customers.`
+				: 'Time slot cancelled successfully',
 			affectedBookings: affectedBookings.length
 		});
 
