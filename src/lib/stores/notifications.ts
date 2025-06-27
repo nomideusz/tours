@@ -35,6 +35,9 @@ export const notifications = derived(notificationStore, ($store) => $store.notif
 export const unreadCount = derived(notificationStore, ($store) => 
   $store.notifications.filter(n => !n.read).length
 );
+export const unreadBookingCount = derived(notificationStore, ($store) => 
+  $store.notifications.filter(n => !n.read && ['new_booking', 'booking_cancelled', 'payment_received'].includes(n.type)).length
+);
 export const hasNotifications = derived(unreadCount, ($count) => $count > 0);
 export const isConnected = derived(notificationStore, ($store) => $store.connected);
 

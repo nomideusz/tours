@@ -20,7 +20,7 @@
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
 	import { themeStore } from '$lib/stores/theme.js';
 	import { onMount } from 'svelte';
-	import { unreadCount } from '$lib/stores/notifications.js';
+	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';
 
 	// Icons
 	import Home from 'lucide-svelte/icons/home';
@@ -146,7 +146,7 @@
 					icon: Calendar,
 					description: 'View all bookings',
 					showOnMobile: true,
-					badge: $unreadCount > 0 ? $unreadCount : null,
+					badge: $unreadBookingCount > 0 ? $unreadBookingCount : null,
 					shortcut: 'b'
 				},
 				{
@@ -198,7 +198,7 @@
 			href: '/bookings',
 			icon: Calendar,
 			active: currentPath === '/bookings',
-			badge: $unreadCount > 0 ? $unreadCount : null
+			badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
 		},
 		{
 			name: 'Scanner',
@@ -383,54 +383,6 @@
 	});
 
 </script>
-
-<style>
-	/* Safe area padding for devices with home indicator */
-	.h-safe-area-inset-bottom {
-		height: env(safe-area-inset-bottom, 0);
-	}
-	
-	/* Mobile menu animation */
-	.mobile-menu-backdrop {
-		animation: fadeIn 0.2s ease-out;
-	}
-	
-	.mobile-menu-panel {
-		animation: slideUp 0.2s ease-out;
-	}
-	
-	@keyframes fadeIn {
-		from { opacity: 0; }
-		to { opacity: 1; }
-	}
-	
-	@keyframes slideUp {
-		from { transform: translateY(100%); }
-		to { transform: translateY(0); }
-	}
-	
-	/* Remove underlines from all navigation links */
-	.nav-link,
-	#mobile-menu a,
-	nav a {
-		text-decoration: none !important;
-	}
-	
-	.nav-link:hover,
-	.nav-link:active,
-	.nav-link:visited,
-	.nav-link:focus,
-	#mobile-menu a:hover,
-	#mobile-menu a:active,
-	#mobile-menu a:visited,
-	#mobile-menu a:focus,
-	nav a:hover,
-	nav a:active,
-	nav a:visited,
-	nav a:focus {
-		text-decoration: none !important;
-	}
-</style>
 
 <!-- TanStack Query Provider for App -->
 <QueryClientProvider client={data.queryClient}>
@@ -763,3 +715,51 @@
 	</div>
 	<SvelteQueryDevtools />
 </QueryClientProvider>
+
+<style>
+	/* Safe area padding for devices with home indicator */
+	.h-safe-area-inset-bottom {
+		height: env(safe-area-inset-bottom, 0);
+	}
+	
+	/* Mobile menu animation */
+	.mobile-menu-backdrop {
+		animation: fadeIn 0.2s ease-out;
+	}
+	
+	.mobile-menu-panel {
+		animation: slideUp 0.2s ease-out;
+	}
+	
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+	
+	@keyframes slideUp {
+		from { transform: translateY(100%); }
+		to { transform: translateY(0); }
+	}
+	
+	/* Remove underlines from all navigation links */
+	.nav-link,
+	#mobile-menu a,
+	nav a {
+		text-decoration: none !important;
+	}
+	
+	.nav-link:hover,
+	.nav-link:active,
+	.nav-link:visited,
+	.nav-link:focus,
+	#mobile-menu a:hover,
+	#mobile-menu a:active,
+	#mobile-menu a:visited,
+	#mobile-menu a:focus,
+	nav a:hover,
+	nav a:active,
+	nav a:visited,
+	nav a:focus {
+		text-decoration: none !important;
+	}
+</style>

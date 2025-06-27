@@ -43,8 +43,6 @@
 	let mounted = $state(false);
 	let isInitializing = $state(true);
 	let clientSecret = $state<string>('');
-	let hasWalletSupport = $state(false);
-	let paymentRequest: any = $state(null);
 	
 	// Detect dark mode for Stripe Elements
 	function isDarkMode() {
@@ -183,9 +181,9 @@
 				paymentElement = (elements as any).create('payment', {
 					layout: 'tabs',
 					wallets: {
-						// Disable wallets in payment element to avoid sandbox issues
-						applePay: 'never',
-						googlePay: 'never'
+						// Enable wallets in payment element
+						applePay: 'auto',
+						googlePay: 'auto'
 					},
 					fields: {
 						billingDetails: {
@@ -198,108 +196,6 @@
 						}
 					}
 				});
-				
-				// Set up Payment Request Button for wallet payments (Apple Pay, Google Pay)
-				// This avoids the iframe sandbox issues
-				try {
-					paymentRequest = stripe.paymentRequest({
-						country: 'US', // Will be overridden by connected account's country
-						currency: (data.tourOwner.currency?.toLowerCase() || 'eur') as any,
-						total: {
-							label: data.booking.expand?.tour?.name || 'Tour Booking',
-							amount: Math.round(parseFloat(data.booking.totalAmount) * 100), // Convert to cents
-						},
-						requestPayerName: true,
-						requestPayerEmail: true,
-						requestPayerPhone: true,
-					});
-					
-					// Check if Payment Request is available (Apple Pay/Google Pay)
-					const canMakePayment = await paymentRequest.canMakePayment();
-					hasWalletSupport = !!canMakePayment;
-					
-					if (canMakePayment) {
-						console.log('Wallet payments available:', canMakePayment);
-						
-						// Create Payment Request Button
-						const prButton = elements.create('paymentRequestButton', {
-							paymentRequest,
-							style: {
-								paymentRequestButton: {
-									type: 'default',
-									theme: isDarkMode() ? 'dark' : 'light',
-									height: '48px',
-								},
-							},
-						});
-						
-						// Mount button after DOM updates
-						setTimeout(() => {
-							const prButtonElement = document.getElementById('payment-request-button');
-							if (prButtonElement) {
-								prButton.mount('#payment-request-button');
-							}
-						}, 100);
-						
-						// Handle payment request button click
-						paymentRequest.on('paymentmethod', async (ev: any) => {
-							console.log('Payment method selected:', ev.paymentMethod);
-							
-							// Confirm the payment intent with the payment method from the payment request
-							try {
-								processing = true;
-								error = null;
-								
-								if (!stripe) {
-									throw new Error('Stripe not initialized');
-								}
-								
-								const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-									clientSecret,
-									{
-										payment_method: ev.paymentMethod.id,
-									},
-									{
-										handleActions: false,
-									}
-								);
-								
-								if (confirmError) {
-									// Report to the browser that the payment failed
-									ev.complete('fail');
-									error = confirmError.message || 'Payment failed. Please try again.';
-									processing = false;
-								} else {
-									// Report to the browser that the payment was successful
-									ev.complete('success');
-									
-									// Handle 3D Secure or redirect if needed
-									if (paymentIntent && paymentIntent.status === 'requires_action') {
-										const { error: actionError } = await stripe.confirmCardPayment(clientSecret);
-										if (actionError) {
-											error = actionError.message || 'Payment authentication failed.';
-											processing = false;
-										} else {
-											// Payment succeeded, redirect to success
-											window.location.href = `/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`;
-										}
-									} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-										// Payment succeeded, redirect to success
-										window.location.href = `/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`;
-									}
-								}
-							} catch (err: any) {
-								ev.complete('fail');
-								error = err?.message || 'Payment failed. Please try again.';
-								processing = false;
-							}
-						});
-					}
-				} catch (prError) {
-					console.warn('Payment Request setup failed:', prError);
-					// Continue without wallet support
-					hasWalletSupport = false;
-				}
 				
 				// Mount the card payment element
 				mounted = true;
@@ -364,12 +260,7 @@
 			});
 			
 			if (stripeError) {
-				// Check for specific Google Pay sandbox error
-				if (stripeError.message?.includes('sandboxed') || stripeError.message?.includes('allow-top-navigation')) {
-					error = 'Google Pay is not available for this payment. Please use a card instead.';
-				} else {
-					error = stripeError.message || 'Payment failed. Please try again.';
-				}
+				error = stripeError.message || 'Payment failed. Please try again.';
 				processing = false;
 			} else if (paymentIntent && paymentIntent.status === 'succeeded') {
 				// Payment succeeded without redirect, go to success page
@@ -378,12 +269,7 @@
 			// If payment requires redirect, Stripe will handle it automatically
 		} catch (err: any) {
 			console.error('Payment error:', err);
-			// Handle any unexpected errors
-			if (err?.message?.includes('sandboxed') || err?.message?.includes('allow-top-navigation')) {
-				error = 'Google Pay is not available for this payment. Please use a card instead.';
-			} else {
-				error = err?.message || 'An unexpected error occurred. Please try again.';
-			}
+			error = err?.message || 'An unexpected error occurred. Please try again.';
 			processing = false;
 		}
 	}
@@ -532,46 +418,17 @@
 											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
 												Credit/Debit Cards
 											</span>
-											{#if hasWalletSupport}
-												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-													Apple Pay
-												</span>
-												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-													Google Pay
-												</span>
-											{/if}
+											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+												Apple Pay
+											</span>
+											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+												Google Pay
+											</span>
 										</div>
 									</div>
 									
-									<!-- Wallet Payment Section (Apple Pay / Google Pay) -->
-									{#if hasWalletSupport}
-										<div class="mb-6">
-											<p class="text-sm font-medium mb-3" style="color: var(--text-primary);">
-												Express checkout
-											</p>
-											<div id="payment-request-button" class="mb-4">
-												<!-- Payment Request Button will be mounted here -->
-											</div>
-											<div class="relative">
-												<div class="absolute inset-0 flex items-center">
-													<div class="w-full border-t" style="border-color: var(--border-primary);"></div>
-												</div>
-												<div class="relative flex justify-center text-sm">
-													<span class="px-2" style="background: var(--bg-primary); color: var(--text-secondary);">
-														Or pay with card
-													</span>
-												</div>
-											</div>
-										</div>
-									{/if}
-									
 									<!-- Card Payment Section -->
 									<div class="mb-6">
-										{#if hasWalletSupport}
-											<p class="text-sm font-medium mb-3" style="color: var(--text-primary);">
-												Card details
-											</p>
-										{/if}
 										<div id="payment-element">
 											<!-- Stripe Payment Element will be mounted here -->
 										</div>
