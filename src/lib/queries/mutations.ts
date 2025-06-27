@@ -397,6 +397,14 @@ export function updateTourStatusMutation() {
 		onSuccess: async (data, variables) => {
 			console.log('🔄 Status mutation: Server confirmed status change');
 			
+			// Check if there's a warning about active bookings
+			if (data.warning && data.warning.hasActiveBookings) {
+				// Show warning to the user
+				setTimeout(() => {
+					alert(data.warning.message);
+				}, 100);
+			}
+			
 			// Invalidate and refetch immediately for real-time updates
 			await Promise.all([
 				queryClient.invalidateQueries({ 

@@ -206,6 +206,7 @@
 		if (!tourToDelete) return;
 		
 		const tourIdToDelete = tourToDelete.id;
+		const tourNameToDelete = tourToDelete.name;
 		
 		try {
 			// Add to deleting set
@@ -223,11 +224,34 @@
 				deletingTourIds.delete(tourIdToDelete);
 				deletingTourIds = deletingTourIds; // Force reactivity
 			}, 600); // Slightly longer than fade out to ensure smooth animation
-		} catch (error) {
+		} catch (error: any) {
 			// Remove from deleting set on error
 			deletingTourIds.delete(tourIdToDelete);
 			deletingTourIds = deletingTourIds;
-			console.error('Failed to delete tour:', error);
+			
+			// Check if it's a structured error with booking details
+			if (error?.message) {
+				try {
+					const errorData = JSON.parse(error.message);
+					if (errorData.details && errorData.details.activeBookings > 0) {
+						let message = `Cannot delete "${tourNameToDelete}"\n\n`;
+						message += `This tour has ${errorData.details.activeBookings} active booking${errorData.details.activeBookings !== 1 ? 's' : ''}.\n\n`;
+						if (errorData.details.revenue > 0) {
+							message += `• Revenue at risk: €${errorData.details.revenue.toFixed(2)}\n`;
+						}
+						message += `• Total bookings: ${errorData.details.totalBookings}\n`;
+						message += `\nPlease cancel all active bookings before deleting this tour.`;
+						alert(message);
+					} else {
+						alert(errorData.error || 'Failed to delete tour');
+					}
+				} catch {
+					alert(error.message || 'Failed to delete tour');
+				}
+			} else {
+				console.error('Failed to delete tour:', error);
+				alert('Failed to delete tour. Please try again.');
+			}
 		}
 	}
 	

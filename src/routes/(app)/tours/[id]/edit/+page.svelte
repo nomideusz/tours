@@ -556,7 +556,26 @@
 				goto('/tours?deleted=true');
 			} else {
 				const errorData = await response.json().catch(() => ({}));
-				throw new Error(errorData.error || 'Failed to delete tour');
+				
+				// Check if it's a structured error with details
+				if (response.status === 400 && errorData.details) {
+					const details = errorData.details;
+					let message = errorData.error || 'Cannot delete tour';
+					
+					if (details.activeBookings > 0) {
+						message = `Cannot delete tour with ${details.activeBookings} active booking${details.activeBookings !== 1 ? 's' : ''}.\n\n`;
+						message += `• Total bookings: ${details.totalBookings}\n`;
+						message += `• Active bookings: ${details.activeBookings}\n`;
+						if (details.revenue > 0) {
+							message += `• Revenue: €${details.revenue.toFixed(2)}\n`;
+						}
+						message += `\nPlease cancel all active bookings before deleting this tour.`;
+					}
+					
+					alert(message);
+				} else {
+					throw new Error(errorData.error || errorData.message || 'Failed to delete tour');
+				}
 			}
 		} catch (error) {
 			console.error('Error deleting tour:', error);

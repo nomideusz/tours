@@ -29,69 +29,88 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 			.select({ 
 				id: bookings.id, 
 				status: bookings.status,
-				participants: bookings.participants 
+				participants: bookings.participants,
+				totalAmount: bookings.totalAmount,
+				paymentStatus: bookings.paymentStatus
 			})
 			.from(bookings)
 			.where(eq(bookings.tourId, tourId));
 
-		const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
-		const totalParticipants = allBookings.reduce((sum, b) => sum + (b.participants || 0), 0);
+		const activeBookings = allBookings.filter(b => 
+			b.status === 'confirmed' || b.status === 'pending'
+		);
+		
+		const paidBookings = allBookings.filter(b => 
+			b.paymentStatus === 'paid' && (b.status === 'confirmed' || b.status === 'completed')
+		);
+		
+		const totalRevenue = paidBookings.reduce((sum, b) => 
+			sum + (parseFloat(b.totalAmount) || 0), 0
+		);
 
-		// Log deletion of tour with bookings for audit purposes
+		// PREVENT deletion if there are active bookings
+		if (activeBookings.length > 0) {
+			throw error(400, JSON.stringify({
+				error: 'Cannot delete tour with active bookings',
+				details: {
+					activeBookings: activeBookings.length,
+					totalBookings: allBookings.length,
+					revenue: totalRevenue,
+					message: 'Please cancel all bookings before deleting this tour'
+				}
+			}));
+		}
+
+		// Log deletion for audit purposes
 		if (allBookings.length > 0) {
-			console.warn(`⚠️ TOUR DELETION WITH BOOKINGS: User ${locals.user.id} is deleting tour ${tourId} with ${allBookings.length} bookings (${confirmedBookings.length} confirmed, ${totalParticipants} total participants)`);
+			console.warn(`⚠️ TOUR DELETION: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with ${allBookings.length} historical bookings (all cancelled/completed, €${totalRevenue} historical revenue)`);
+		} else {
+			console.log(`Tour deletion: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with no bookings`);
 		}
 
 		// Delete in the correct order to respect foreign key constraints
-		console.log(`Starting deletion process for tour ${tourId} (${allBookings.length} bookings, ${confirmedBookings.length} confirmed)`);
+		console.log(`Starting deletion process for tour ${tourId}`);
 		
 		// 1. First delete payments (references bookings)
-		console.log(`Found ${allBookings.length} bookings to process`);
-
 		for (const booking of allBookings) {
 			try {
 				await db.delete(payments).where(eq(payments.bookingId, booking.id));
-				console.log(`Deleted payments for booking ${booking.id}`);
 			} catch (paymentError) {
 				console.warn(`Failed to delete payments for booking ${booking.id}:`, paymentError);
 				// Continue - payments might not exist
 			}
 		}
 
-		// 2. Then delete all bookings (references tours and time_slots)
-		try {
-			const deletedBookings = await db.delete(bookings).where(eq(bookings.tourId, tourId));
-			console.log(`Deleted bookings for tour ${tourId}`);
-		} catch (bookingError) {
-			console.error(`Failed to delete bookings for tour ${tourId}:`, bookingError);
-			throw new Error(`Failed to delete bookings: ${bookingError instanceof Error ? bookingError.message : 'Unknown error'}`);
+		// 2. Then delete all bookings
+		if (allBookings.length > 0) {
+			await db.delete(bookings).where(eq(bookings.tourId, tourId));
+			console.log(`Deleted ${allBookings.length} bookings for tour ${tourId}`);
 		}
 
-		// 3. Skip QR codes deletion - using simplified schema with QR codes in tours table
+		// 3. Then delete all time slots
+		await db.delete(timeSlots).where(eq(timeSlots.tourId, tourId));
+		console.log(`Deleted time slots for tour ${tourId}`);
 
-		// 4. Then delete all time slots (references tours)
-		try {
-			await db.delete(timeSlots).where(eq(timeSlots.tourId, tourId));
-			console.log(`Deleted time slots for tour ${tourId}`);
-		} catch (timeslotError) {
-			console.error(`Failed to delete time slots for tour ${tourId}:`, timeslotError);
-			throw new Error(`Failed to delete time slots: ${timeslotError instanceof Error ? timeslotError.message : 'Unknown error'}`);
-		}
+		// 4. Finally delete the tour
+		await db.delete(tours).where(eq(tours.id, tourId));
+		console.log(`Successfully deleted tour ${tourId}`);
 
-		// 5. Finally delete the tour
-		try {
-			await db.delete(tours).where(eq(tours.id, tourId));
-			console.log(`Successfully deleted tour ${tourId}`);
-		} catch (tourError) {
-			console.error(`Failed to delete tour ${tourId}:`, tourError);
-			throw new Error(`Failed to delete tour: ${tourError instanceof Error ? tourError.message : 'Unknown error'}`);
-		}
-
-		return json({ success: true });
+		return json({ 
+			success: true,
+			deletedBookings: allBookings.length,
+			message: allBookings.length > 0 
+				? `Tour deleted along with ${allBookings.length} historical bookings`
+				: 'Tour deleted successfully'
+		});
 	} catch (err) {
 		console.error('Failed to delete tour:', err);
 		
 		if (err instanceof Response) {
+			throw err;
+		}
+		
+		// Check if it's our custom error
+		if (err && typeof err === 'object' && 'status' in err && err.status === 400) {
 			throw err;
 		}
 		
