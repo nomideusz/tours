@@ -212,8 +212,23 @@
 				
 				// Check for Google Pay availability using Payment Request API
 				try {
+					// Determine country based on currency
+					const currencyCountryMap: Record<string, string> = {
+						'eur': 'NL', // Netherlands for EUR
+						'gbp': 'GB', // UK for GBP
+						'usd': 'US', // US for USD
+						'pln': 'PL', // Poland for PLN
+						'czk': 'CZ', // Czech Republic for CZK
+						'sek': 'SE', // Sweden for SEK
+						'nok': 'NO', // Norway for NOK
+						'dkk': 'DK', // Denmark for DKK
+						'chf': 'CH', // Switzerland for CHF
+					};
+					
+					const country = currencyCountryMap[data.tourOwner.currency?.toLowerCase() || 'eur'] || 'US';
+					
 					const paymentRequest = stripe.paymentRequest({
-						country: 'US', // Default to US since tourOwner doesn't have country
+						country, // Use country based on currency
 						currency: (data.tourOwner.currency?.toLowerCase() || 'eur') as any,
 						total: {
 							label: data.booking.expand?.tour?.name || 'Tour Booking',
@@ -224,52 +239,60 @@
 					});
 					
 					const result = await paymentRequest.canMakePayment();
+					console.log('Payment Request canMakePayment result:', result);
+					
 					if (result) {
 						// Check which wallet type is available
 						if (result.applePay) {
+							console.log('Apple Pay is available');
 							walletPaymentAvailable = true;
 							walletPaymentType = 'applePay';
 							paymentRequestClient = paymentRequest;
 						} else if (result.googlePay) {
+							console.log('Google Pay is available');
 							walletPaymentAvailable = true;
 							walletPaymentType = 'googlePay';
 							paymentRequestClient = paymentRequest;
 						}
 						
 						// Handle wallet payment (both Apple Pay and Google Pay)
-						paymentRequest.on('paymentmethod', async (ev: any) => {
-							try {
-								processing = true;
-								error = null;
-								
-								if (!stripe) {
-									throw new Error('Stripe not initialized');
-								}
-								
-								const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-									clientSecret,
-									{ payment_method: ev.paymentMethod.id }
-								);
-								
-								if (confirmError) {
-									ev.complete('fail');
-									error = confirmError.message || 'Payment failed';
-									processing = false;
-								} else {
-									ev.complete('success');
-									if (paymentIntent?.status === 'succeeded') {
-										window.location.href = `/book/${data.qrCode.code}/success?booking=${data.booking.id}`;
+						if (walletPaymentAvailable) {
+							paymentRequest.on('paymentmethod', async (ev: any) => {
+								try {
+									processing = true;
+									error = null;
+									
+									if (!stripe) {
+										throw new Error('Stripe not initialized');
 									}
+									
+									const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+										clientSecret,
+										{ payment_method: ev.paymentMethod.id }
+									);
+									
+									if (confirmError) {
+										ev.complete('fail');
+										error = confirmError.message || 'Payment failed';
+										processing = false;
+									} else {
+										ev.complete('success');
+										if (paymentIntent?.status === 'succeeded') {
+											window.location.href = `/book/${data.qrCode.code}/success?booking=${data.booking.id}`;
+										}
+									}
+								} catch (err: any) {
+									ev.complete('fail');
+									error = err?.message || 'Payment failed';
+									processing = false;
 								}
-							} catch (err: any) {
-								ev.complete('fail');
-								error = err?.message || 'Payment failed';
-								processing = false;
-							}
-						});
+							});
+						}
+					} else {
+						console.log('No wallet payment methods available on this device/browser');
 					}
 				} catch (err) {
-					console.log('Wallet payments not available:', err);
+					console.log('Payment Request API error:', err);
 				}
 			} catch (err) {
 				console.error('Payment initialization error:', err);
@@ -493,15 +516,23 @@
 										<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Accepted payment methods</p>
 										<div class="flex items-center gap-3 flex-wrap">
 											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-												Credit/Debit Cards
+												✓ Credit/Debit Cards
 											</span>
-											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-												Apple Pay
-											</span>
-											<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-												Google Pay
-											</span>
+											{#if walletPaymentAvailable && walletPaymentType === 'applePay'}
+												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+													✓ Apple Pay
+												</span>
+											{:else if walletPaymentAvailable && walletPaymentType === 'googlePay'}
+												<span class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+													✓ Google Pay
+												</span>
+											{/if}
 										</div>
+										{#if !walletPaymentAvailable}
+											<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+												Apple Pay and Google Pay may be available if configured on your device
+											</p>
+										{/if}
 									</div>
 									
 									<!-- Wallet Payment Button (Apple Pay / Google Pay) -->
