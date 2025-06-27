@@ -34,6 +34,39 @@ export const POST: RequestHandler = async ({ request }) => {
         // Get account details from Stripe
         const account = await stripe.accounts.retrieve(user.stripeAccountId);
         
+        // Check and register domain if needed (non-blocking)
+        if (account.charges_enabled) {
+            // Only register domain for accounts that can accept charges
+            stripe.paymentMethodDomains.list(
+                {
+                    domain_name: 'zaur.app',
+                    limit: 1
+                },
+                {
+                    stripeAccount: user.stripeAccountId,
+                }
+            ).then(async (domains) => {
+                if (domains.data.length === 0) {
+                    try {
+                        await stripe.paymentMethodDomains.create(
+                            {
+                                domain_name: 'zaur.app',
+                            },
+                            {
+                                stripeAccount: user.stripeAccountId,
+                            }
+                        );
+                        console.log(`✅ Auto-registered zaur.app domain for account ${user.stripeAccountId}`);
+                    } catch (err: any) {
+                        // Domain registration is not critical
+                        console.log(`⚠️ Could not auto-register domain for ${user.stripeAccountId}:`, err.message);
+                    }
+                }
+            }).catch(() => {
+                // Ignore errors in background domain check
+            });
+        }
+        
         return json({
             hasAccount: true,
             isSetupComplete: account.details_submitted,

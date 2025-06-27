@@ -170,6 +170,23 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 })
                 .where(eq(users.id, userId));
                 
+            // Register zaur.app domain for the new account to enable payment methods
+            try {
+                await stripe.paymentMethodDomains.create(
+                    {
+                        domain_name: 'zaur.app',
+                    },
+                    {
+                        stripeAccount: accountId,
+                    }
+                );
+                console.log(`✅ Registered zaur.app domain for account ${accountId}`);
+            } catch (domainError: any) {
+                // Domain registration is not critical for account creation
+                // It might already exist or the account might not have the capability yet
+                console.log(`⚠️ Could not register domain for account ${accountId}:`, domainError.message);
+            }
+                
             console.log(`✅ Created Stripe Connect account ${accountId} with pre-filled data:`, {
                 country: userCountry,
                 currency: stripeCurrency,
