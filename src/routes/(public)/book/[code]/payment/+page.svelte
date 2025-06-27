@@ -43,6 +43,8 @@
 	let mounted = $state(false);
 	let isInitializing = $state(true);
 	let clientSecret = $state<string>('');
+	let googlePayAvailable = $state(false);
+	let googlePayClient: any = $state(null);
 	
 	// Detect dark mode for Stripe Elements
 	function isDarkMode() {
@@ -181,9 +183,9 @@
 				paymentElement = (elements as any).create('payment', {
 					layout: 'tabs',
 					wallets: {
-						// Enable wallets in payment element
-						applePay: 'auto',
-						googlePay: 'auto'
+						// Disable wallets in payment element due to sandbox restrictions
+						applePay: 'never',
+						googlePay: 'never'
 					},
 					fields: {
 						billingDetails: {
@@ -205,6 +207,60 @@
 				const container = document.getElementById('payment-element');
 				if (container) {
 					paymentElement.mount(container);
+				}
+				
+				// Check for Google Pay availability using Payment Request API
+				try {
+					const paymentRequest = stripe.paymentRequest({
+						country: 'US', // Default to US since tourOwner doesn't have country
+						currency: (data.tourOwner.currency?.toLowerCase() || 'eur') as any,
+						total: {
+							label: data.booking.expand?.tour?.name || 'Tour Booking',
+							amount: Math.round(parseFloat(data.booking.totalAmount) * 100),
+						},
+						requestPayerName: true,
+						requestPayerEmail: true,
+					});
+					
+					const result = await paymentRequest.canMakePayment();
+					if (result?.googlePay) {
+						googlePayAvailable = true;
+						googlePayClient = paymentRequest;
+						
+						// Handle Google Pay payment
+						paymentRequest.on('paymentmethod', async (ev: any) => {
+							try {
+								processing = true;
+								error = null;
+								
+								if (!stripe) {
+									throw new Error('Stripe not initialized');
+								}
+								
+								const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+									clientSecret,
+									{ payment_method: ev.paymentMethod.id }
+								);
+								
+								if (confirmError) {
+									ev.complete('fail');
+									error = confirmError.message || 'Payment failed';
+									processing = false;
+								} else {
+									ev.complete('success');
+									if (paymentIntent?.status === 'succeeded') {
+										window.location.href = `/book/${data.qrCode.code}/success?booking=${data.booking.id}`;
+									}
+								}
+							} catch (err: any) {
+								ev.complete('fail');
+								error = err?.message || 'Payment failed';
+								processing = false;
+							}
+						});
+					}
+				} catch (err) {
+					console.log('Google Pay not available:', err);
 				}
 			} catch (err) {
 				console.error('Payment initialization error:', err);
@@ -271,6 +327,18 @@
 			console.error('Payment error:', err);
 			error = err?.message || 'An unexpected error occurred. Please try again.';
 			processing = false;
+		}
+	}
+	
+	async function handleGooglePay() {
+		if (!googlePayClient || processing) return;
+		
+		try {
+			// Show the Google Pay payment sheet
+			googlePayClient.show();
+		} catch (err) {
+			console.error('Google Pay error:', err);
+			error = 'Unable to process Google Pay. Please use a card instead.';
 		}
 	}
 	
@@ -426,6 +494,40 @@
 											</span>
 										</div>
 									</div>
+									
+									<!-- Google Pay Button -->
+									{#if googlePayAvailable}
+										<div class="mb-6">
+											<button
+												type="button"
+												onclick={handleGooglePay}
+												disabled={processing}
+												class="w-full button--large justify-center"
+												style="background: #000; color: #fff; border: 1px solid #000; hover:background: #333;"
+											>
+												{#if processing}
+													<Loader2 class="w-5 h-5 animate-spin" />
+													Processing...
+												{:else}
+													<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+														<path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="currentColor"/>
+													</svg>
+													Pay with Google Pay
+												{/if}
+											</button>
+											
+											<div class="relative mt-4">
+												<div class="absolute inset-0 flex items-center">
+													<div class="w-full border-t" style="border-color: var(--border-primary);"></div>
+												</div>
+												<div class="relative flex justify-center text-sm">
+													<span class="px-2" style="background: var(--bg-primary); color: var(--text-secondary);">
+														Or pay with card
+													</span>
+												</div>
+											</div>
+										</div>
+									{/if}
 									
 									<!-- Card Payment Section -->
 									<div class="mb-6">
