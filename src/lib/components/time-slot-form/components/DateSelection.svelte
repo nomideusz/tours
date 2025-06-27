@@ -31,7 +31,6 @@
 		selectedDate={date}
 		minDate={isEditMode ? undefined : new Date().toISOString().split('T')[0]}
 		onDateClick={onDateChange}
-		class={isMobile ? 'w-full' : ''}
 	/>
 	{#if error}
 		<p class="form-error mt-2">{error}</p>

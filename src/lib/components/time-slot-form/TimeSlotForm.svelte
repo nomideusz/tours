@@ -720,35 +720,22 @@
 
 			<!-- Desktop: Optimized layout -->
 			<div class="hidden md:block">
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<!-- Left Column: Date Selection -->
-					<div>
-						<DateSelection
-							bind:date={state.formData.date}
-							slotsMap={slotsMap()}
-							errors={allErrors}
-							isEditMode={isEditMode}
-							onDateChange={(date) => {
-								state.formData.date = date;
-								handleValidateField('date');
-							}}
-						/>
-						
-						<!-- Recurring Options - Move under calendar for better grouping -->
-						{#if !isEditMode}
-							<div class="mt-6">
-								<RecurringOptions
-									bind:formData={state.formData}
-									bind:showAdvanced={state.showAdvanced}
-									isEditMode={isEditMode}
-									onToggle={() => state.showAdvanced = !state.showAdvanced}
-								/>
-							</div>
-						{/if}
-					</div>
-					
-					<!-- Right Column: Time & Settings -->
+				{#if mode === 'inline'}
+					<!-- Inline mode: No calendar, just form fields -->
 					<div class="space-y-6">
+						<!-- Date Display (no calendar) -->
+						<div>
+							<label class="form-label">Selected Date</label>
+							<div class="p-3 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+								<p class="text-sm font-medium" style="color: var(--text-primary);">
+									{state.formData.date ? formatDate(state.formData.date) : 'Click a date on the calendar'}
+								</p>
+								{#if getFieldError(allErrors, 'date')}
+									<p class="form-error mt-1">{getFieldError(allErrors, 'date')}</p>
+								{/if}
+							</div>
+						</div>
+						
 						<!-- Time Selection - Compact layout -->
 						<div>
 							<label class="form-label mb-3">Time</label>
@@ -872,12 +859,426 @@
 								</div>
 							{/if}
 						</div>
+						
+						<!-- Recurring Options for inline mode -->
+						{#if !isEditMode}
+							<RecurringOptions
+								bind:formData={state.formData}
+								bind:showAdvanced={state.showAdvanced}
+								isEditMode={isEditMode}
+								onToggle={() => state.showAdvanced = !state.showAdvanced}
+							/>
+						{/if}
 					</div>
-				</div>
+				{:else if mode === 'page'}
+					<!-- Page mode: Large desktop form with calendar -->
+					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-6 border-b" style="border-color: var(--border-primary);">
+							<h3 class="text-xl font-semibold" style="color: var(--text-primary);">{isEditMode ? 'Edit' : 'Create'} Time Slot</h3>
+							<p class="text-base mt-2" style="color: var(--text-secondary);">
+								{isEditMode ? `Modify the time slot for ${tour.name}` : `Create a new available time for ${tour.name}`}
+							</p>
+						</div>
+						<div class="p-8">
+							<div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
+								<!-- Left Column: Date Selection -->
+								<div>
+									<div class="mb-2">
+										<h4 class="text-lg font-medium mb-4" style="color: var(--text-primary);">Select Date</h4>
+									</div>
+									<DateSelection
+										bind:date={state.formData.date}
+										slotsMap={slotsMap()}
+										errors={allErrors}
+										isEditMode={isEditMode}
+										onDateChange={(date) => {
+											state.formData.date = date;
+											handleValidateField('date');
+										}}
+									/>
+									
+									<!-- Recurring Options - Move under calendar for better grouping -->
+									{#if !isEditMode}
+										<div class="mt-8">
+											<RecurringOptions
+												bind:formData={state.formData}
+												bind:showAdvanced={state.showAdvanced}
+												isEditMode={isEditMode}
+												onToggle={() => state.showAdvanced = !state.showAdvanced}
+											/>
+										</div>
+									{/if}
+								</div>
+								
+								<!-- Right Column: Time & Settings -->
+								<div class="space-y-8">
+									<!-- Time Selection - Large desktop layout -->
+									<div>
+										<h4 class="text-lg font-medium mb-6" style="color: var(--text-primary);">Time & Details</h4>
+										<div class="space-y-6">
+											<div class="grid grid-cols-2 gap-6">
+												<div>
+													<TimePicker
+														bind:value={state.formData.startTime}
+														label="Start Time"
+														placeholder="Start time"
+														use24hour={true}
+														onchange={() => {
+															handleValidateField('startTime');
+														}}
+														error={hasFieldError(allErrors, 'startTime')}
+													/>
+												</div>
+												<div>
+													<TimePicker
+														bind:value={state.formData.endTime}
+														label="End Time"
+														placeholder="End time"
+														use24hour={true}
+														onchange={() => handleValidateField('endTime')}
+														error={hasFieldError(allErrors, 'endTime')}
+													/>
+												</div>
+											</div>
+										</div>
+											
+											<!-- Duration info and validation -->
+											<div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary);">
+												<div class="flex items-center justify-between">
+													<div class="text-base" style="color: var(--text-secondary);">
+														Duration: 
+														<span class="font-semibold text-lg" style="color: var(--text-primary);">
+															{state.duration > 0 ? formatDuration(state.duration) : 'Not set'}
+														</span>
+														{#if tour.duration && state.duration !== tour.duration}
+															<span class="text-sm ml-2" style="color: var(--text-tertiary);">
+																(default: {formatDuration(tour.duration)})
+															</span>
+														{/if}
+													</div>
+													{#if state.customDuration && tour.duration}
+														<button
+															type="button"
+															onclick={resetDuration}
+															class="text-sm px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+															style="color: var(--color-primary-600);"
+														>
+															Use default
+														</button>
+													{/if}
+												</div>
+											</div>
+											
+											{#if getFieldError(allErrors, 'startTime')}
+												<p class="form-error mt-3">{getFieldError(allErrors, 'startTime')}</p>
+											{/if}
+											{#if getFieldError(allErrors, 'endTime')}
+												<p class="form-error mt-3">{getFieldError(allErrors, 'endTime')}</p>
+											{/if}
+											
+											{#if isEditMode && currentSlotTime}
+												<div class="text-base mt-3 p-3 rounded-lg" style="background: var(--bg-secondary); color: var(--text-tertiary);">
+													Current: {currentSlotTime.start} - {currentSlotTime.end}
+												</div>
+											{/if}
+										</div>
+									
+									<!-- Capacity & Availability -->
+									<div>
+										<h5 class="text-base font-medium mb-4" style="color: var(--text-primary);">Capacity Settings</h5>
+										<div class="grid grid-cols-2 gap-6">
+											<div>
+												<NumberInput
+													id="capacity"
+													name="capacity"
+													label="Guest Capacity"
+													bind:value={state.formData.capacity}
+													min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
+													max={500}
+													step={1}
+													placeholder="10"
+													incrementLabel="Increase capacity"
+													decrementLabel="Decrease capacity"
+													error={getFieldError(allErrors, 'capacity')}
+													hasError={hasFieldError(allErrors, 'capacity')}
+													integerOnly={true}
+													onblur={() => handleValidateField('capacity')}
+												/>
+											</div>
+											{#if isEditMode}
+												<div>
+													<label for="availability" class="form-label text-base">Availability Status</label>
+													<select id="availability" bind:value={state.formData.availability} class="form-select w-full text-base py-3">
+														<option value="available">Available for Booking</option>
+														<option value="cancelled">Cancelled</option>
+													</select>
+												</div>
+											{/if}
+										</div>
+										
+										<!-- Capacity info -->
+										{#if tour.capacity && state.formData.capacity !== tour.capacity}
+											<div class="text-sm mt-2 p-2 rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
+												Tour default: {tour.capacity} guests
+												<button
+													type="button"
+													onclick={() => {
+														state.formData.capacity = tour.capacity;
+														handleValidateField('capacity');
+													}}
+													class="ml-2 text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+												>
+													Use default
+												</button>
+											</div>
+										{/if}
+										
+										{#if isEditMode && hasBookings}
+											<div class="text-sm mt-2 p-2 rounded" style="background: var(--color-warning-50); color: var(--color-warning-700);">
+												{currentSlot.bookedSpots} already booked
+											</div>
+										{/if}
+									</div>
+									
+									<!-- Action Buttons for Page mode -->
+									<div class="pt-6 border-t" style="border-color: var(--border-primary);">
+										<div class="flex gap-4 justify-between items-center">
+											<div class="flex gap-3">
+												{#if existingSlots.length > 0 && !isEditMode}
+													<button
+														type="button"
+														onclick={copyFromExisting}
+														class="button-secondary button--gap px-6 py-3"
+													>
+														<Copy class="h-5 w-5" />
+														Copy from recent
+													</button>
+												{/if}
+												{#if isEditMode}
+													<button
+														type="button"
+														onclick={() => state.showDeleteConfirm = true}
+														disabled={state.isDeleting}
+														class="button-danger button--gap px-6 py-3"
+													>
+														{#if state.isDeleting}
+															<Loader2 class="w-5 h-5 animate-spin" />
+															Deleting...
+														{:else}
+															<Trash2 class="w-5 h-5" />
+															Delete Slot
+														{/if}
+													</button>
+												{/if}
+											</div>
+											
+											<div class="flex gap-4">
+												<button
+													type="button"
+													onclick={() => {
+														if (state.justCreatedSlot) {
+															state.justCreatedSlot = false;
+															onSuccess?.();
+														} else {
+															onCancel?.();
+														}
+													}}
+													disabled={state.isSubmitting}
+													class="button-secondary px-6 py-3 text-base"
+												>
+													{state.justCreatedSlot ? 'Done' : 'Cancel'}
+												</button>
+												<button
+													type="button"
+													onclick={() => {
+														if (state.justCreatedSlot) {
+															handleAddAnother();
+														} else {
+															handleSubmit();
+														}
+													}}
+													disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+													class="button-primary button--gap px-8 py-3 text-base"
+												>
+													{#if state.isSubmitting}
+														<Loader2 class="w-5 h-5 animate-spin" />
+														{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
+													{:else if state.justCreatedSlot}
+														<Plus class="h-5 w-5" />
+														Create Another
+													{:else}
+														<CheckCircle class="w-5 h-5" />
+														{isEditMode ? 'Save Changes' : (state.showAdvanced && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Time Slot')}
+													{/if}
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<!-- Modal/Drawer mode: Original grid layout with calendar -->
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						<!-- Left Column: Date Selection -->
+						<div>
+							<DateSelection
+								bind:date={state.formData.date}
+								slotsMap={slotsMap()}
+								errors={allErrors}
+								isEditMode={isEditMode}
+								onDateChange={(date) => {
+									state.formData.date = date;
+									handleValidateField('date');
+								}}
+							/>
+							
+							<!-- Recurring Options - Move under calendar for better grouping -->
+							{#if !isEditMode}
+								<div class="mt-6">
+									<RecurringOptions
+										bind:formData={state.formData}
+										bind:showAdvanced={state.showAdvanced}
+										isEditMode={isEditMode}
+										onToggle={() => state.showAdvanced = !state.showAdvanced}
+									/>
+								</div>
+							{/if}
+						</div>
+						
+						<!-- Right Column: Time & Settings -->
+						<div class="space-y-6">
+							<!-- Time Selection - Compact layout -->
+							<div>
+								<label class="form-label mb-3">Time</label>
+								<div class="flex gap-3 items-start">
+									<div class="flex-1">
+										<TimePicker
+											bind:value={state.formData.startTime}
+											label="Start"
+											placeholder="Start time"
+											use24hour={true}
+											onchange={() => {
+												handleValidateField('startTime');
+											}}
+											error={hasFieldError(allErrors, 'startTime')}
+										/>
+									</div>
+									<div class="pt-8 text-sm" style="color: var(--text-tertiary);">to</div>
+									<div class="flex-1">
+										<TimePicker
+											bind:value={state.formData.endTime}
+											label="End"
+											placeholder="End time"
+											use24hour={true}
+											onchange={() => handleValidateField('endTime')}
+											error={hasFieldError(allErrors, 'endTime')}
+										/>
+									</div>
+								</div>
+								
+								<!-- Duration info and validation -->
+								<div class="mt-3 flex items-center justify-between">
+									<div class="text-sm" style="color: var(--text-secondary);">
+										Duration: 
+										<span class="font-medium">
+											{state.duration > 0 ? formatDuration(state.duration) : 'Not set'}
+										</span>
+										{#if tour.duration && state.duration !== tour.duration}
+											<span class="text-xs ml-1" style="color: var(--text-tertiary);">
+												(default: {formatDuration(tour.duration)})
+											</span>
+										{/if}
+									</div>
+									{#if state.customDuration && tour.duration}
+										<button
+											type="button"
+											onclick={resetDuration}
+											class="text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+											style="color: var(--color-primary-600);"
+										>
+											Use default
+										</button>
+									{/if}
+								</div>
+								
+								{#if getFieldError(allErrors, 'startTime')}
+									<p class="form-error mt-2">{getFieldError(allErrors, 'startTime')}</p>
+								{/if}
+								{#if getFieldError(allErrors, 'endTime')}
+									<p class="form-error mt-2">{getFieldError(allErrors, 'endTime')}</p>
+								{/if}
+								
+								{#if isEditMode && currentSlotTime}
+									<div class="text-sm mt-2" style="color: var(--text-tertiary);">
+										Current: {currentSlotTime.start} - {currentSlotTime.end}
+									</div>
+								{/if}
+							</div>
+							
+							<!-- Capacity & Availability -->
+							<div>
+								<div class="grid grid-cols-2 gap-4">
+									<div>
+										<NumberInput
+											id="capacity"
+											name="capacity"
+											label="Capacity"
+											bind:value={state.formData.capacity}
+											min={isEditMode && currentSlot?.bookedSpots ? currentSlot.bookedSpots : 1}
+											max={500}
+											step={1}
+											placeholder="10"
+											incrementLabel="Increase capacity"
+											decrementLabel="Decrease capacity"
+											error={getFieldError(allErrors, 'capacity')}
+											hasError={hasFieldError(allErrors, 'capacity')}
+											integerOnly={true}
+											onblur={() => handleValidateField('capacity')}
+										/>
+									</div>
+									{#if isEditMode}
+										<div>
+											<label for="availability" class="form-label">Availability</label>
+											<select id="availability" bind:value={state.formData.availability} class="form-select w-full">
+												<option value="available">Available</option>
+												<option value="cancelled">Cancelled</option>
+											</select>
+										</div>
+									{/if}
+								</div>
+								
+								<!-- Capacity info -->
+								{#if tour.capacity && state.formData.capacity !== tour.capacity}
+									<div class="text-sm mt-2 p-2 rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
+										Tour default: {tour.capacity} guests
+										<button
+											type="button"
+											onclick={() => {
+												state.formData.capacity = tour.capacity;
+												handleValidateField('capacity');
+											}}
+											class="ml-2 text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors"
+										>
+											Use default
+										</button>
+									</div>
+								{/if}
+								
+								{#if isEditMode && hasBookings}
+									<div class="text-sm mt-2 p-2 rounded" style="background: var(--color-warning-50); color: var(--color-warning-700);">
+										{currentSlot.bookedSpots} already booked
+									</div>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Success Message - Simple inline success instead of bulky banner -->
-			{#if state.justCreatedSlot && mode === 'modal'}
+			{#if state.justCreatedSlot && (mode === 'modal' || mode === 'page')}
 				<div class="mt-4 rounded-lg p-3 flex items-start gap-2" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
 					<CheckCircle class="h-4 w-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
 					<p class="text-sm" style="color: var(--color-success-700);">
@@ -887,6 +1288,7 @@
 			{/if}
 
 			<!-- Action Buttons - Always visible with consistent layout -->
+			{#if mode !== 'page'}
 			<div class="mt-6 {mode === 'inline' ? 'flex gap-3 justify-end' : ''}">
 				{#if mode !== 'inline'}
 					<!-- Mobile: Stack buttons -->
@@ -1108,6 +1510,7 @@
 					</div>
 				{/if}
 			</div>
+			{/if}
 		</div>
 	{/if}
 </div>

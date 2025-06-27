@@ -151,9 +151,21 @@
 			{/if}
 			
 			<!-- Content -->
-			<div class="overflow-y-auto max-h-[calc(100vh-16rem)]">
+			<div class="overflow-y-auto max-h-[calc(100vh-16rem)] p-6">
 				{@render children?.()}
 			</div>
 		</div>
 	</div>
-{/if} 
+{/if}
+
+<style>
+	/* Ensure body doesn't scroll when modal is open */
+	:global(body:has(.fixed[style*="z-index"])) {
+		overflow: hidden;
+	}
+	
+	.modal-content {
+		max-height: calc(100vh - 8rem);
+		overflow-y: auto;
+	}
+</style> 

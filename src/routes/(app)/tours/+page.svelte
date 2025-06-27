@@ -18,6 +18,7 @@
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StyledQRCode from '$lib/components/StyledQRCode.svelte';
+	import PageContainer from '$lib/components/PageContainer.svelte';
 	import type { Tour } from '$lib/types.js';
 	
 	// TanStack Query
@@ -286,7 +287,7 @@
 	<title>Tours - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+<PageContainer class="py-4 sm:py-8">
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Header -->
@@ -725,7 +726,7 @@
 			{/each}
 		</div>
 	{/if}
-</div>
+</PageContainer>
 
 <!-- Delete Confirmation Modal -->
 <ConfirmationModal

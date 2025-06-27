@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	
 	interface QuickAction {
 		label: string;
@@ -16,10 +17,22 @@
 		value: string;
 	}
 
+	interface PrimaryAction {
+		label: string;
+		icon: ComponentType;
+		onclick: () => void;
+		variant?: 'primary' | 'secondary';
+		disabled?: boolean;
+	}
+
 	let {
 		title,
 		statusButton = null,
 		secondaryInfo = null,
+		showBackButton = false,
+		backButtonLabel = 'Back',
+		onBackClick = null,
+		primaryAction = null,
 		quickActions = [],
 		infoItems = [],
 		class: className = ''
@@ -37,6 +50,10 @@
 			tooltip?: string;
 		} | null;
 		secondaryInfo?: string | null;
+		showBackButton?: boolean;
+		backButtonLabel?: string;
+		onBackClick?: (() => void) | null;
+		primaryAction?: PrimaryAction | null;
 		quickActions?: QuickAction[];
 		infoItems?: InfoItem[];
 		class?: string;
@@ -45,8 +62,24 @@
 
 <!-- Mobile Compact Header -->
 <div class="sm:hidden {className}">
+	<!-- Back Button (if enabled) -->
+	{#if showBackButton && onBackClick}
+		<div class="flex items-center gap-3 mb-3">
+			<button
+				onclick={onBackClick}
+				class="flex items-center gap-2 text-sm font-medium transition-colors py-1 -ml-1"
+				style="color: var(--color-primary-600);"
+				onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-700)'}
+				onmouseleave={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+			>
+				<ArrowLeft class="h-4 w-4" />
+				{backButtonLabel}
+			</button>
+		</div>
+	{/if}
+
 	<div class="flex items-start justify-between mb-3">
-		<div class="flex-1 min-w-0">
+		<div class="flex-1 min-w-0 {primaryAction ? 'pr-3' : ''}">
 			<h1 class="text-xl font-bold truncate" style="color: var(--text-primary); font-size: 1.25rem; line-height: 1.75rem;">{title}</h1>
 			<div class="flex items-center gap-2 mt-1">
 				{#if statusButton}
@@ -73,6 +106,18 @@
 				{/if}
 			</div>
 		</div>
+		
+		<!-- Primary Action Button -->
+		{#if primaryAction}
+			<button 
+				onclick={primaryAction.onclick} 
+				disabled={primaryAction.disabled}
+				class="button-{primaryAction.variant || 'primary'} button--small button--gap flex-shrink-0"
+			>
+				<primaryAction.icon class="h-3 w-3" />
+				{primaryAction.label}
+			</button>
+		{/if}
 	</div>
 	
 	<!-- Mobile Quick Actions -->
