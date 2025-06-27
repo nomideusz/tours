@@ -494,12 +494,16 @@
 	font-size: 0.7rem;
 	font-weight: 600;
 	border-radius: 9999px;
-	background: var(--color-danger-100);
-	color: var(--color-danger-800);
+	background: var(--color-danger-600);
+	color: white;
 }
 
 .nav-badge-mobile {
 	position: absolute;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.25rem;
 	top: -0.25rem;
 	right: -0.25rem;
 	min-width: 1rem;
@@ -507,6 +511,7 @@
 	font-size: 0.625rem;
 	background: var(--color-danger-600);
 	color: white;
+	border-radius: 9999px;
 }
 
 /* Dark mode adjustments */

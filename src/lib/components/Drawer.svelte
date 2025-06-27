@@ -38,6 +38,8 @@
 	let startY = $state(0);
 	let currentY = $state(0);
 	let dragThreshold = 100; // pixels to drag before closing
+	let dragStartedFromHandle = $state(false);
+	let minDragDistance = 20; // minimum pixels to move before starting drag visual feedback
 
 	// Check if mobile on mount and window resize
 	onMount(() => {
@@ -68,34 +70,41 @@
 		}
 	}
 
-	// Mobile drag handlers
-	function handleTouchStart(e: TouchEvent) {
+	// Mobile drag handlers - only for drag handle
+	// Fix: Only handle drag-to-close from the drag handle to prevent conflicts with scrolling in content
+	function handleDragHandleTouchStart(e: TouchEvent) {
 		if (!isMobile) return;
 		
 		const touch = e.touches[0];
 		startY = touch.clientY;
 		currentY = touch.clientY;
 		isDragging = true;
+		dragStartedFromHandle = true;
+		
+		// Prevent default to avoid interference with scrolling
+		e.preventDefault();
 	}
 
 	function handleTouchMove(e: TouchEvent) {
-		if (!isMobile || !isDragging) return;
+		if (!isMobile || !isDragging || !dragStartedFromHandle) return;
 		
 		const touch = e.touches[0];
 		currentY = touch.clientY;
 		
 		// Only allow downward drag
 		const deltaY = currentY - startY;
-		if (deltaY > 0) {
-			// Apply transform to drawer element
+		if (deltaY > minDragDistance) {
+			// Apply transform to drawer element only after minimum drag distance
 			if (drawerElement) {
 				drawerElement.style.transform = `translateY(${deltaY}px)`;
 			}
+			// Prevent default to avoid scrolling
+			e.preventDefault();
 		}
 	}
 
 	function handleTouchEnd() {
-		if (!isMobile || !isDragging) return;
+		if (!isMobile || !isDragging || !dragStartedFromHandle) return;
 		
 		const deltaY = currentY - startY;
 		
@@ -110,6 +119,7 @@
 		}
 		
 		isDragging = false;
+		dragStartedFromHandle = false;
 		startY = 0;
 		currentY = 0;
 	}
@@ -179,7 +189,7 @@
 	}
 </style>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:touchmove={handleTouchMove} on:touchend={handleTouchEnd} />
 
 {#if isOpen}
 	{#if isMobile}
@@ -189,22 +199,25 @@
 			style="z-index: 60; background: rgba(0, 0, 0, 0.5);"
 			onclick={handleClickOutside}
 		>
-			<div 
-				bind:this={drawerElement}
-				class="fixed bottom-0 left-0 right-0 mobile-drawer-panel {className}"
-				onclick={(e) => e.stopPropagation()}
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby={title ? 'drawer-title' : undefined}
-				ontouchstart={handleTouchStart}
-				ontouchmove={handleTouchMove}
-				ontouchend={handleTouchEnd}
-				style="z-index: 60; max-height: 90vh; padding-bottom: env(safe-area-inset-bottom, 0);"
-			>
+					<div 
+			bind:this={drawerElement}
+			class="fixed bottom-0 left-0 right-0 mobile-drawer-panel {className}"
+			onclick={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby={title ? 'drawer-title' : undefined}
+			style="z-index: 60; max-height: 90vh; padding-bottom: env(safe-area-inset-bottom, 0);"
+		>
 				<div class="rounded-t-xl shadow-lg overflow-hidden" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: 90vh; display: flex; flex-direction: column;">
 					<!-- Mobile drag handle -->
-					<div class="flex justify-center py-3 px-6 flex-shrink-0" style="cursor: grab;">
-						<div class="w-12 h-1 rounded-full" style="background: var(--border-primary);"></div>
+					<div 
+						class="flex justify-center py-3 px-6 flex-shrink-0" 
+						style="cursor: grab; touch-action: none;"
+						ontouchstart={handleDragHandleTouchStart}
+						ontouchmove={handleTouchMove}
+						ontouchend={handleTouchEnd}
+					>
+						<div class="w-12 h-1.5 rounded-full transition-colors" style="background: var(--text-tertiary);"></div>
 					</div>
 					
 					<!-- Header -->
@@ -239,7 +252,7 @@
 					{/if}
 					
 					<!-- Content -->
-					<div class="flex-1 overflow-y-auto overscroll-contain min-h-0">
+					<div class="flex-1 overflow-y-auto overscroll-contain min-h-0" style="touch-action: pan-y;">
 						<div class="px-6 py-6">
 							{@render children?.()}
 						</div>
