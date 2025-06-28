@@ -601,20 +601,13 @@
 						<!-- Actions -->
 						<div class="flex gap-2 items-center">
 							<div class="flex gap-2 flex-1">
-								<Tooltip text="View tour details" position="top">
+								<Tooltip text="Manage tour details & schedule" position="top">
 									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="button-secondary button--small button--gap">
-										<Eye class="h-4 w-4" />
-										<span class="hidden sm:inline">View</span>
+										<Edit class="h-4 w-4" />
+										<span class="hidden sm:inline">Manage</span>
 									</button>
 								</Tooltip>
-								{#if tour.status === 'active'}
-									<Tooltip text="Manage schedule" position="top">
-										<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/schedule`); }} class="button-secondary button--small button--gap">
-											<Calendar class="h-4 w-4" />
-											<span class="hidden sm:inline">Schedule</span>
-										</button>
-									</Tooltip>
-								{:else}
+								{#if tour.status === 'draft'}
 									<button 
 										onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
 										class="button-primary button--small button--gap"
@@ -659,21 +652,32 @@
 											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 										>
 											<Edit class="h-4 w-4" />
-											Edit Tour
+											<span class="sm:hidden">Edit</span>
+											<span class="hidden sm:inline">Edit Tour</span>
+										</button>
+										<button
+											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/tours/${tour.id}/bookings`); }}
+											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+											style="color: var(--text-primary); background: transparent;"
+											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+										>
+											<Calendar class="h-4 w-4" />
+											<span class="sm:hidden">Bookings</span>
+											<span class="hidden sm:inline">Tour Bookings</span>
 										</button>
 										{#if tour.qrCode}
-												<a
-													href="/book/{tour.qrCode}"
-													target="_blank"
+												<button
+													onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; window.open(`/book/${tour.qrCode}`, '_blank'); }}
 													class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
-													style="color: var(--text-primary); background: transparent;"
+													style="color: var(--text-primary); background: transparent; text-decoration: none;"
 													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-													onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; }}
 												>
 													<ExternalLink class="h-4 w-4" />
-													Preview Booking Page
-												</a>
+													<span class="sm:hidden">Preview</span>
+													<span class="hidden sm:inline">Preview Booking Page</span>
+												</button>
 										{/if}
 										{#if tour.status === 'active'}
 											<button
@@ -688,7 +692,8 @@
 												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 											>
 												<CircleDot class="h-4 w-4" />
-												Set to Draft
+												<span class="sm:hidden">Draft</span>
+												<span class="hidden sm:inline">Set to Draft</span>
 											</button>
 										{:else}
 											<button
@@ -703,7 +708,8 @@
 												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 											>
 												<CheckCircle class="h-4 w-4" />
-												Activate Tour
+												<span class="sm:hidden">Activate</span>
+												<span class="hidden sm:inline">Activate Tour</span>
 											</button>
 										{/if}
 										<hr style="border-color: var(--border-primary);" />

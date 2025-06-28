@@ -77,7 +77,8 @@
 		staleTime: 2 * 60 * 1000, // 2 minutes
 		gcTime: 10 * 60 * 1000, // 10 minutes
 		refetchOnWindowFocus: true,
-		get enabled() { return !!tourId && browser; },
+		refetchOnMount: true,
+		get enabled() { return !!tourId; },
 		retry: 3,
 		retryDelay: 1000,
 	});
