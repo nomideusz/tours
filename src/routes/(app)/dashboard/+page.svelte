@@ -61,17 +61,17 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// TanStack Query for dashboard data - using profile page pattern (simple, direct)
+	// TanStack Query for dashboard data - force immediate execution
 	const dashboardStatsQuery = createQuery({
 			queryKey: queryKeys.dashboardStats,
-			queryFn: ({ signal }) => queryFunctions.fetchDashboardStats(signal),
+			queryFn: () => queryFunctions.fetchDashboardStats(),
 			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes to reduce requests
 			gcTime: 10 * 60 * 1000,
 			refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-			refetchOnMount: false, // Don't automatically refetch on mount
+			refetchOnMount: true, // Enable refetch on mount to ensure data loads
+			enabled: true, // Always enabled - queryFn checks for browser
 			retry: 1, // Reduce retries
 			retryDelay: 2000, // Simple 2 second delay
-			networkMode: 'online',
 			meta: {
 				errorMessage: 'Failed to load dashboard statistics'
 			}
@@ -79,14 +79,14 @@
 
 	const recentBookingsQuery = createQuery({
 		queryKey: queryKeys.recentBookings(10),
-		queryFn: ({ signal }) => queryFunctions.fetchRecentBookings(10, signal),
+		queryFn: () => queryFunctions.fetchRecentBookings(10),
 		staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
 		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-		refetchOnMount: false, // Don't automatically refetch on mount
+		refetchOnMount: true, // Enable refetch on mount to ensure data loads
+		enabled: true, // Always enabled - queryFn checks for browser
 		retry: 1, // Reduce retries
 		retryDelay: 2000, // Simple 2 second delay
-		networkMode: 'online',
 		meta: {
 			errorMessage: 'Failed to load recent bookings'
 		}
@@ -113,6 +113,22 @@
 
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
+		console.log('🏠 Dashboard mounted');
+		console.log('📊 Dashboard stats query state:', {
+			isLoading: $dashboardStatsQuery.isLoading,
+			isError: $dashboardStatsQuery.isError,
+			data: $dashboardStatsQuery.data
+		});
+		console.log('📚 Recent bookings query state:', {
+			isLoading: $recentBookingsQuery.isLoading,
+			isError: $recentBookingsQuery.isError,
+			data: $recentBookingsQuery.data
+		});
+		
+		// Force refetch both queries
+		$dashboardStatsQuery.refetch();
+		$recentBookingsQuery.refetch();
+		
 		let timeouts: NodeJS.Timeout[] = []; // Track timeouts for cleanup
 		
 		// Check if returning from email verification
@@ -231,9 +247,33 @@
 	// Loading states
 	let isLoading = $derived($dashboardStatsQuery.isLoading || $recentBookingsQuery.isLoading);
 	let isError = $derived($dashboardStatsQuery.isError || $recentBookingsQuery.isError);
+	
+	// Debug loading state
+	$effect(() => {
+		console.log('🔍 Dashboard loading state:', {
+			isLoading,
+			isError,
+			browser,
+			dashboardQueryEnabled: browser,
+			recentBookingsQueryEnabled: browser
+		});
+	});
 
 	// Check if this is a new user - only after data has loaded
 	let isNewUser = $derived(!isLoading && stats.totalTours === 0);
+	
+	// Debug query states
+	$effect(() => {
+		if ($dashboardStatsQuery.isLoading) {
+			console.log('⏳ Dashboard stats loading...');
+		}
+		if ($dashboardStatsQuery.isError) {
+			console.error('❌ Dashboard stats error:', $dashboardStatsQuery.error);
+		}
+		if ($dashboardStatsQuery.data) {
+			console.log('✅ Dashboard stats loaded:', $dashboardStatsQuery.data);
+		}
+	});
 
 	// Profile link state
 	let profileLinkCopied = $state(false);

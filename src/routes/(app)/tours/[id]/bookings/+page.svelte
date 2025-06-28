@@ -41,14 +41,14 @@
 	
 	// TanStack Query for tour bookings - remove auto-refresh to prevent timer accumulation
 	const bookingsQuery = createQuery({
-		get queryKey() { return queryKeys.tourBookings(tourId); },
-		get queryFn() { return () => queryFunctions.fetchTourBookings(tourId); },
+		queryKey: queryKeys.tourBookings(tourId),
+		queryFn: () => queryFunctions.fetchTourBookings(tourId),
 		staleTime: 30 * 1000,     // 30 seconds
 		gcTime: 5 * 60 * 1000,    // 5 minutes
 		// Removed refetchInterval to prevent timer accumulation
 		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
 		// refetchIntervalInBackground: true,
-		get enabled() { return browser && !!tourId; },
+		enabled: browser && !!tourId,
 	});
 	
 	// State

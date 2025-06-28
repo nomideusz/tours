@@ -62,31 +62,28 @@
 	
 	// TanStack Query for tour details
 	const tourDetailsQuery = createQuery({
-		get queryKey() { return queryKeys.tourDetails(tourId); },
-		get queryFn() { return () => queryFunctions.fetchTourDetails(tourId); },
+		queryKey: queryKeys.tourDetails(tourId),
+		queryFn: () => queryFunctions.fetchTourDetails(tourId),
 		staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
 		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
 		refetchOnMount: true, // Refetch on mount once
-		get enabled() { return !!tourId && browser; },
+		enabled: !!tourId && browser,
 		retry: 2, // Reduce retries to 2
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
 	});
 	
 	// TanStack Query for tour schedule - simplified
 	const tourScheduleQuery = createQuery({
-		get queryKey() { return ['tour-schedule', tourId]; },
-		get queryFn() { 
-			return () => queryFunctions.fetchTourSchedule(tourId);
-		},
+		queryKey: ['tour-schedule', tourId],
+		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
 		staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
 		refetchOnWindowFocus: false, // Disable window focus refetching
 		refetchOnMount: true, // Enable refetchOnMount to ensure data loads
-		get enabled() { return !!tourId && browser; },
+		enabled: !!tourId && browser,
 		retry: 1, // Reduce retries to prevent cascading failures
 		retryDelay: 2000, // Simple 2 second delay
-		networkMode: 'online',
 	});
 	
 	// Derive data from queries - separate loading states
@@ -367,9 +364,34 @@
 
 	// Force queries to start immediately on mount
 	onMount(() => {
+		console.log('🔄 Tour details page mounted, tourId:', tourId);
+		console.log('📊 Tour details query state:', {
+			isLoading: $tourDetailsQuery.isLoading,
+			isError: $tourDetailsQuery.isError,
+			data: $tourDetailsQuery.data
+		});
+		console.log('📅 Tour schedule query state:', {
+			isLoading: $tourScheduleQuery.isLoading,
+			isError: $tourScheduleQuery.isError,
+			data: $tourScheduleQuery.data
+		});
+		
 		// Immediately refetch both queries without any conditions
 		$tourDetailsQuery.refetch();
 		$tourScheduleQuery.refetch();
+	});
+	
+	// Debug query states
+	$effect(() => {
+		if ($tourScheduleQuery.isLoading) {
+			console.log('⏳ Tour schedule loading...');
+		}
+		if ($tourScheduleQuery.isError) {
+			console.error('❌ Tour schedule error:', $tourScheduleQuery.error);
+		}
+		if ($tourScheduleQuery.data) {
+			console.log('✅ Tour schedule loaded:', $tourScheduleQuery.data);
+		}
 	});
 </script>
 
