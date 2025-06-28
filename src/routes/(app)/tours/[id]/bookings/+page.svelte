@@ -38,14 +38,16 @@
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
 	
-	// TanStack Query for tour-specific bookings - auto-refresh every 30 seconds
-	const tourBookingsQuery = createQuery({
-		queryKey: queryKeys.tourBookings(tourId),
-		queryFn: () => queryFunctions.fetchTourBookings(tourId),
-		staleTime: 10 * 1000, // 10 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
-		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-		refetchIntervalInBackground: true,
+	// TanStack Query for tour bookings - remove auto-refresh to prevent timer accumulation
+	const bookingsQuery = createQuery({
+		get queryKey() { return queryKeys.tourBookings(tourId); },
+		get queryFn() { return () => queryFunctions.fetchTourBookings(tourId); },
+		staleTime: 30 * 1000,     // 30 seconds
+		gcTime: 5 * 60 * 1000,    // 5 minutes
+		// Removed refetchInterval to prevent timer accumulation
+		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		// refetchIntervalInBackground: true,
+		get enabled() { return browser && !!tourId; },
 	});
 	
 	// State
@@ -55,7 +57,7 @@
 	let showFilters = $state(false);
 	
 	// Derive data from query
-	let tourData = $derived($tourBookingsQuery.data || null);
+	let tourData = $derived($bookingsQuery.data || null);
 	let tour = $derived(tourData?.tour || null);
 	let tourBookings = $derived(tourData?.bookings || []);
 	
@@ -88,8 +90,8 @@
 	});
 	
 	let bookings = $derived(filteredBookings());
-	let isLoading = $derived($tourBookingsQuery.isLoading);
-	let isError = $derived($tourBookingsQuery.isError);
+	let isLoading = $derived($bookingsQuery.isLoading);
+	let isError = $derived($bookingsQuery.isError);
 	
 	// Calculate stats from all tour bookings (not filtered)
 	let stats = $derived(() => {

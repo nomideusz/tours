@@ -283,6 +283,21 @@
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
 		
+		// Clean up resources on page unload/refresh
+		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+			console.log('🧹 Page unloading - cleaning up resources...');
+			
+			// Force cleanup of any notification connections
+			window.dispatchEvent(new Event('force-cleanup'));
+			
+			// Cancel all queries if queryClient exists
+			if (data.queryClient) {
+				data.queryClient.cancelQueries();
+			}
+		};
+		
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		
 		// Subscribe to theme changes and notify embedded widgets
 		const unsubscribe = themeStore.subscribe(theme => {
 			const effectiveTheme = themeStore.getEffective(theme);
@@ -351,6 +366,7 @@
 		window.addEventListener('keydown', handleKeyPress);
 
 		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
 			window.removeEventListener('keydown', handleKeyPress);

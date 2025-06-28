@@ -42,14 +42,15 @@
 	let showFilters = $state(false);
 	let pageSize = $state(25);
 	
-	// TanStack Query for bookings data - auto-refresh every 30 seconds
+	// TanStack Query for bookings data - remove auto-refresh to prevent timer accumulation
 	let bookingsQuery = $derived(createQuery({
 		queryKey: queryKeys.recentBookings(1000), // Get all for filtering
 		queryFn: () => queryFunctions.fetchRecentBookings(1000),
-		staleTime: 10 * 1000,     // 10 seconds
+		staleTime: 30 * 1000,     // 30 seconds
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-		refetchIntervalInBackground: true,
+		// Removed refetchInterval to prevent timer accumulation
+		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		// refetchIntervalInBackground: true,
 	}));
 	
 	// Derive data from query

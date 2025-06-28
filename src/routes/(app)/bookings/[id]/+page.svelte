@@ -48,7 +48,7 @@
 	// Query client for invalidation
 	const queryClient = useQueryClient();
 	
-	// TanStack Query for booking data - auto-refresh every 30 seconds
+	// TanStack Query for booking data - remove auto-refresh to prevent timer accumulation
 	let bookingQuery = $derived(createQuery({
 		queryKey: ['booking', bookingId],
 		queryFn: async () => {
@@ -56,10 +56,11 @@
 			if (!response.ok) throw new Error('Failed to fetch booking');
 			return response.json();
 		},
-		staleTime: 10 * 1000,     // 10 seconds
+		staleTime: 30 * 1000,     // 30 seconds
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-		refetchIntervalInBackground: true,
+		// Removed refetchInterval to prevent timer accumulation
+		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+		// refetchIntervalInBackground: true,
 	}));
 	
 	// Derive data from query

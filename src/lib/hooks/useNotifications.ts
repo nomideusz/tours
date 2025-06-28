@@ -466,13 +466,28 @@ export function useNotifications() {
   }
 
   function disconnect() {
-    console.log('🔌 Disconnecting notifications...');
+    console.log(`🔌 Instance ${instanceId}: Disconnecting notifications...`);
     cleanup();
     notificationActions.setConnected(false);
   }
 
+  // Define handleForceCleanup at the hook level
+  const handleForceCleanup = () => {
+    console.log(`🚨 Instance ${instanceId}: Force cleanup requested`);
+    disconnect();
+  };
+  
+  const handleBeforeUnload = () => {
+    console.log(`🚨 Instance ${instanceId}: Page unloading, cleaning up...`);
+    disconnect();
+  };
+
   // Initialize
   if (browser) {
+    // Listen for force cleanup events
+    window.addEventListener('force-cleanup', handleForceCleanup);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     // Just connect to the internal notification system
     
     // Always load initial notifications from database on page load
@@ -508,10 +523,23 @@ export function useNotifications() {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Remove force cleanup listener
+      if (browser) {
+        window.removeEventListener('force-cleanup', handleForceCleanup);
+      }
     };
   });
 
   onDestroy(() => {
+    console.log(`🔌 Instance ${instanceId}: Component destroying, cleaning up...`);
+    
+    // Remove all event listeners
+    if (browser) {
+      window.removeEventListener('force-cleanup', handleForceCleanup);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+    
+    // Disconnect and cleanup
     disconnect();
   });
 
