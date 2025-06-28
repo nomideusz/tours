@@ -63,21 +63,28 @@
 	const tourDetailsQuery = createQuery({
 		get queryKey() { return queryKeys.tourDetails(tourId); },
 		get queryFn() { return () => queryFunctions.fetchTourDetails(tourId); },
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
-		refetchOnWindowFocus: true,
-		refetchOnMount: true,
+		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
+		refetchOnMount: true, // Refetch on mount once
 		get enabled() { return !!tourId && browser; },
+		retry: 2, // Reduce retries to 2
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
 	});
 	
 	// TanStack Query for tour schedule - using enhanced endpoint
 	const tourScheduleQuery = createQuery({
 		get queryKey() { return ['tour-schedule', tourId]; },
 		get queryFn() { 
-			return async () => {
+			return async ({ signal }: { signal?: AbortSignal }) => {
 				// Add timeout using AbortController
 				const controller = new AbortController();
 				const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+				
+				// Listen to the TanStack Query abort signal
+				if (signal) {
+					signal.addEventListener('abort', () => controller.abort());
+				}
 				
 				try {
 					const response = await fetch(`/api/tour-schedule/${tourId}`, {
@@ -92,10 +99,10 @@
 				}
 			};
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 3 * 60 * 1000, // 3 minutes - reduce refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
-		refetchOnWindowFocus: true,
-		refetchOnMount: true,
+		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
+		refetchOnMount: true, // Refetch on mount once
 		get enabled() { return !!tourId && browser; },
 		retry: 2, // Reduce retries to 2
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
@@ -309,9 +316,15 @@
 	let showScheduleSuccess = $state(false);
 	let showAddSlotsSuccess = $state(false);
 	
+	// Track if URL effects have run to prevent multiple executions
+	let urlEffectsRun = $state(false);
+	
 	$effect(() => {
-		if (browser) {
+		if (browser && !urlEffectsRun) {
+			urlEffectsRun = true;
 			const urlParams = new URLSearchParams(window.location.search);
+			
+			let timeouts: NodeJS.Timeout[] = []; // Track timeouts for cleanup
 			
 			if (urlParams.get('edited') === 'true') {
 				showEditSuccess = true;
@@ -321,9 +334,10 @@
 				window.history.replaceState({}, '', newUrl.toString());
 				
 				// Hide after 3 seconds
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					showEditSuccess = false;
 				}, 3000);
+				timeouts.push(timeoutId);
 			}
 			
 			if (urlParams.get('scheduled') === 'true') {
@@ -340,9 +354,10 @@
 				}
 				
 				// Hide after 3 seconds
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					showScheduleSuccess = false;
 				}, 3000);
+				timeouts.push(timeoutId);
 			}
 			
 			if (urlParams.get('created') === 'true') {
@@ -361,16 +376,23 @@
 				
 				// Welcome prompt stays visible until manually dismissed
 			}
+			
+			// Cleanup function
+			return () => {
+				timeouts.forEach(timeout => clearTimeout(timeout));
+			};
 		}
 	});
 	
-	// Handle navigation success messages and data refresh
+	// Handle navigation success messages and data refresh - throttled
+	let lastDataRefresh = $state(0);
 	$effect(() => {
-		if (browser && tourId) {
+		if (browser && tourId && Date.now() - lastDataRefresh > 5000) { // Only run every 5 seconds
 			const urlParams = new URLSearchParams(window.location.search);
 			
 			// Only invalidate queries if we have specific parameters indicating data changes
 			if (urlParams.get('edited') === 'true' || urlParams.get('scheduled') === 'true') {
+				lastDataRefresh = Date.now();
 				// Use setTimeout to avoid blocking the UI
 				setTimeout(() => {
 					queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
