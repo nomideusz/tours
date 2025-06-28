@@ -57,18 +57,19 @@
 	
 	let currentDate = $state(new Date());
 	
-	// Create reactive query key that updates when view or date changes
-	let queryKey = $derived(queryKeys.allTimeSlots(view, currentDate.toISOString()));
-	let shouldRefetch = $state(0);
+	// Create stable date string for query key to prevent infinite loops
+	let dateString = $derived(
+		`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`
+	);
 	
-	// Query for timeline data
+	// Query for timeline data - use stable date string
 	let timelineQuery = $derived(
 		createQuery({
-			queryKey: [...queryKey, shouldRefetch],
+			queryKey: queryKeys.allTimeSlots(view, dateString),
 			queryFn: () => queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString()),
-			staleTime: 30 * 1000, // 30 seconds
-			refetchInterval: 60 * 1000, // Refetch every minute for real-time updates
-			refetchOnWindowFocus: 'always',
+			staleTime: 2 * 60 * 1000, // 2 minutes stale time
+			gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+			refetchOnWindowFocus: false, // Disable aggressive window focus refetching
 			enabled: browser
 		})
 	);
@@ -115,7 +116,6 @@
 		}
 		
 		currentDate = newDate;
-		shouldRefetch++; // Force query to refetch with new date
 	}
 	
 	function goToToday() {

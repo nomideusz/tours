@@ -40,25 +40,27 @@
 			if (!response.ok) throw new Error('Failed to fetch analytics');
 			return response.json();
 		},
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 5 * 60 * 1000,
-		refetchOnWindowFocus: true,
+		staleTime: 5 * 60 * 1000, // 5 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable window focus refetching
 	});
 	
 	// Dashboard stats for comparison
 	const dashboardStatsQuery = createQuery({
 		queryKey: queryKeys.dashboardStats,
-		queryFn: queryFunctions.fetchDashboardStats,
-		staleTime: 30 * 1000,
-		gcTime: 5 * 60 * 1000,
+		queryFn: ({ signal }) => queryFunctions.fetchDashboardStats(signal),
+		staleTime: 5 * 60 * 1000, // 5 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable window focus refetching
 	});
 	
 	// Tours stats
 	const toursStatsQuery = createQuery({
 		queryKey: queryKeys.toursStats,
-		queryFn: queryFunctions.fetchToursStats,
-		staleTime: 30 * 1000,
-		gcTime: 5 * 60 * 1000,
+		queryFn: ({ signal }) => queryFunctions.fetchToursStats(signal),
+		staleTime: 5 * 60 * 1000, // 5 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false, // Disable window focus refetching
 	});
 	
 	// Loading and error states

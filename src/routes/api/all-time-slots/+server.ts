@@ -97,8 +97,41 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			))
 			.orderBy(timeSlots.startTime);
 
+		// Debug: Check for duplicate time slots
+		console.log('🔍 Total time slots found:', allTimeSlots.length);
+		
+		if (allTimeSlots.length === 0) {
+			console.log('ℹ️ No time slots found for user tours:', tourIds);
+			return json({ 
+				timeSlots: [],
+				stats: {
+					totalSlots: 0,
+					totalBookings: 0,
+					totalCapacity: 0,
+					totalRevenue: 0,
+					upcomingSlots: 0,
+					todaySlots: 0,
+					averageUtilization: 0
+				},
+				dateRange: {
+					start: startDate.toISOString(),
+					end: endDate.toISOString(),
+					view
+				}
+			});
+		}
+
+		// Only remove actual duplicates (same slot ID) - different tours can have same times
+		const uniqueSlots = allTimeSlots.filter((slot, index, arr) => 
+			arr.findIndex(s => s.id === slot.id) === index
+		);
+		
+		if (uniqueSlots.length !== allTimeSlots.length) {
+			console.log('🧹 Removed duplicate slot IDs:', allTimeSlots.length, '→', uniqueSlots.length);
+		}
+
 		// Step 3: Get booking counts for all slots
-		const slotIds = allTimeSlots.map(s => s.id);
+		const slotIds = uniqueSlots.map(s => s.id);
 		const bookingCounts = slotIds.length > 0 ? await db
 			.select({
 				timeSlotId: bookings.timeSlotId,
@@ -125,7 +158,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		// Step 4: Process and combine data
 		const now = new Date();
-		const processedSlots = allTimeSlots.map(slot => {
+		const processedSlots = uniqueSlots.map(slot => {
 			const tour = tourMap.get(slot.tourId);
 			const booking = bookingMap.get(slot.id) || {
 				totalBookings: 0,

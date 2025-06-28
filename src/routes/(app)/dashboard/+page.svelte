@@ -64,28 +64,13 @@
 	// TanStack Query for dashboard data - using profile page pattern (simple, direct)
 	const dashboardStatsQuery = createQuery({
 			queryKey: queryKeys.dashboardStats,
-			queryFn: async ({ signal }) => {
-				// Create our own abort controller that will timeout after 30 seconds
-				const controller = new AbortController();
-				const timeoutId = setTimeout(() => controller.abort(), 30000);
-				
-				// Listen to the TanStack Query abort signal
-				if (signal) {
-					signal.addEventListener('abort', () => controller.abort());
-				}
-				
-				try {
-					return await queryFunctions.fetchDashboardStats(controller.signal);
-				} finally {
-					clearTimeout(timeoutId);
-				}
-			},
+			queryFn: ({ signal }) => queryFunctions.fetchDashboardStats(signal),
 			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes to reduce requests
 			gcTime: 10 * 60 * 1000,
 			refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-			refetchOnMount: true, // Refetch on mount once
-			retry: 2, // Retry twice on failure
-			retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+			refetchOnMount: false, // Don't automatically refetch on mount
+			retry: 1, // Reduce retries
+			retryDelay: 2000, // Simple 2 second delay
 			networkMode: 'online',
 			meta: {
 				errorMessage: 'Failed to load dashboard statistics'
@@ -94,28 +79,13 @@
 
 	const recentBookingsQuery = createQuery({
 		queryKey: queryKeys.recentBookings(10),
-		queryFn: async ({ signal }) => {
-			// Create our own abort controller that will timeout after 30 seconds
-			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 30000);
-			
-			// Listen to the TanStack Query abort signal
-			if (signal) {
-				signal.addEventListener('abort', () => controller.abort());
-			}
-			
-			try {
-				return await queryFunctions.fetchRecentBookings(10, controller.signal);
-			} finally {
-				clearTimeout(timeoutId);
-			}
-		},
+		queryFn: ({ signal }) => queryFunctions.fetchRecentBookings(10, signal),
 		staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
 		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-		refetchOnMount: true, // Refetch on mount once
-		retry: 2, // Retry twice on failure
-		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+		refetchOnMount: false, // Don't automatically refetch on mount
+		retry: 1, // Reduce retries
+		retryDelay: 2000, // Simple 2 second delay
 		networkMode: 'online',
 		meta: {
 			errorMessage: 'Failed to load recent bookings'
@@ -323,7 +293,7 @@
 	);
 
 	// Subscription limits check
-	let isApproachingLimits = $derived(() => {
+	let isApproachingLimits = $derived.by(() => {
 		if (!profile || profile.subscriptionPlan !== 'free') return false;
 		// Free plan: 2 bookings/month, 1 tour
 		const bookingsUsed = profile.monthlyBookingsUsed || 0;
@@ -337,34 +307,32 @@
 	);
 
 	// Create today's schedule from recent bookings
-	let todaysSchedule = $derived(
-		(() => {
-			if (!Array.isArray(recentBookings)) return [];
-			
-			const now = new Date();
-			const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-			const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+	let todaysSchedule = $derived.by(() => {
+		if (!Array.isArray(recentBookings)) return [];
+		
+		const now = new Date();
+		const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-			return recentBookings
-				.filter((booking: any) => {
-					if (!booking.effectiveDate) return false;
-					const bookingDate = new Date(booking.effectiveDate);
-					return bookingDate >= todayStart && bookingDate < todayEnd;
-				})
-				.map((booking: any) => ({
-					id: booking.id,
-					time: booking.effectiveDate,
-					tourName: booking.tour || 'Unknown Tour',
-					tourId: booking.tourId,
-					participants: booking.participants || 0,
-					customerName: booking.customerName,
-					status: booking.status,
-					timeSlot: booking.expand?.timeSlot,
-					expand: booking.expand
-				}))
-				.slice(0, 4); // Limit to 4 items
-		})()
-	);
+		return recentBookings
+			.filter((booking: any) => {
+				if (!booking.effectiveDate) return false;
+				const bookingDate = new Date(booking.effectiveDate);
+				return bookingDate >= todayStart && bookingDate < todayEnd;
+			})
+			.map((booking: any) => ({
+				id: booking.id,
+				time: booking.effectiveDate,
+				tourName: booking.tour || 'Unknown Tour',
+				tourId: booking.tourId,
+				participants: booking.participants || 0,
+				customerName: booking.customerName,
+				status: booking.status,
+				timeSlot: booking.expand?.timeSlot,
+				expand: booking.expand
+			}))
+			.slice(0, 4); // Limit to 4 items
+	});
 
 	// Copy profile link function
 	async function copyProfileLink() {
@@ -629,7 +597,7 @@
 
 
 	// Determine if currency settings need attention
-	let shouldShowCurrencySetup = $derived(() => {
+	let shouldShowCurrencySetup = $derived.by(() => {
 		// Check if user is new based on tours and customers
 		const newUserCheck = !stats.totalTours && stats.totalCustomers === 0;
 
@@ -642,7 +610,7 @@
 		);
 	});
 
-	let isLocationConfirmed = $derived(() => {
+	let isLocationConfirmed = $derived.by(() => {
 		// Only confirmed if user has explicitly confirmed (not just auto-detected)
 		return profile?.country !== null && profile?.country !== undefined && hasConfirmedLocation;
 	});

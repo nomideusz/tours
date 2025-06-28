@@ -39,6 +39,7 @@
 	let searchQuery = $state('');
 	let selectedStatus = $state<string>('all');
 	let selectedPaymentStatus = $state<string>('all');
+	let dateRange = $state<string>('all');
 	let showFilters = $state(false);
 	let pageSize = $state(25);
 	
@@ -46,8 +47,9 @@
 	let bookingsQuery = $derived(createQuery({
 		queryKey: queryKeys.recentBookings(1000), // Get all for filtering
 		queryFn: () => queryFunctions.fetchRecentBookings(1000),
-		staleTime: 30 * 1000,     // 30 seconds
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		staleTime: 2 * 60 * 1000, // 2 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000,   // 10 minutes
+		refetchOnWindowFocus: false, // Disable window focus refetching
 		// Removed refetchInterval to prevent timer accumulation
 		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
 		// refetchIntervalInBackground: true,
@@ -58,46 +60,71 @@
 	let isLoading = $derived($bookingsQuery.isLoading);
 	let isError = $derived($bookingsQuery.isError);
 	
-	// Filter bookings based on search and filters
-	let filteredBookings = $derived(() => {
-		let filtered = allBookings;
+	// Apply filters to bookings
+	let filteredBookings = $derived.by(() => {
+		let result = allBookings;
 		
 		// Search filter
 		if (searchQuery) {
 			const query = searchQuery.toLowerCase();
-			filtered = filtered.filter((b: any) => 
+			result = result.filter((b: any) => 
 				b.customerName?.toLowerCase().includes(query) ||
 				b.customerEmail?.toLowerCase().includes(query) ||
-				b.tour?.toLowerCase().includes(query) ||
-				b.tourName?.toLowerCase().includes(query) ||
-				b.id?.toLowerCase().includes(query)
+				b.bookingCode?.toLowerCase().includes(query) ||
+				b.id?.toLowerCase().includes(query) ||
+				b.tour?.toLowerCase().includes(query)
 			);
 		}
 		
 		// Status filter
 		if (selectedStatus !== 'all') {
-			filtered = filtered.filter((b: any) => b.status === selectedStatus);
+			result = result.filter((b: any) => b.status === selectedStatus);
 		}
 		
 		// Payment status filter
 		if (selectedPaymentStatus !== 'all') {
-			filtered = filtered.filter((b: any) => (b.paymentStatus || 'pending') === selectedPaymentStatus);
+			result = result.filter((b: any) => (b.paymentStatus || 'pending') === selectedPaymentStatus);
 		}
 		
-		return filtered;
+		// Date range filter
+		if (dateRange !== 'all') {
+			const now = new Date();
+			const filterDate = new Date();
+			
+			switch (dateRange) {
+				case 'today':
+					filterDate.setHours(0, 0, 0, 0);
+					result = result.filter((b: any) => {
+						const bookingDate = new Date(b.created);
+						bookingDate.setHours(0, 0, 0, 0);
+						return bookingDate >= filterDate;
+					});
+					break;
+				case 'week':
+					filterDate.setDate(now.getDate() - 7);
+					result = result.filter((b: any) => new Date(b.created) >= filterDate);
+					break;
+				case 'month':
+					filterDate.setMonth(now.getMonth() - 1);
+					result = result.filter((b: any) => new Date(b.created) >= filterDate);
+					break;
+			}
+		}
+		
+		return result;
 	});
 	
 	// Paginated bookings for display
-	let displayBookings = $derived(filteredBookings().slice(0, pageSize));
-	let hasMore = $derived(filteredBookings().length > pageSize);
+	let displayBookings = $derived(filteredBookings.slice(0, pageSize));
+	let hasMore = $derived(filteredBookings.length > pageSize);
 	
 	// Calculate stats from filtered bookings
-	let stats = $derived(() => {
-		const bookings = filteredBookings();
+	let stats = $derived.by(() => {
+		const bookings = filteredBookings;
 		const confirmed = bookings.filter((b: any) => b.status === 'confirmed');
-		const completed = bookings.filter((b: any) => b.status === 'completed');
 		const pending = bookings.filter((b: any) => b.status === 'pending');
 		const cancelled = bookings.filter((b: any) => b.status === 'cancelled');
+		const completed = bookings.filter((b: any) => b.status === 'completed');
 		
 		const paid = bookings.filter((b: any) => b.paymentStatus === 'paid');
 		const unpaid = bookings.filter((b: any) => (b.paymentStatus || 'pending') === 'pending');
@@ -110,38 +137,20 @@
 		today.setHours(0, 0, 0, 0);
 		
 		const todayBookings = bookings.filter((b: any) => {
-			if (!b.created) return false;
-			try {
-				const bookingDate = new Date(b.created);
-				if (isNaN(bookingDate.getTime())) return false;
-				bookingDate.setHours(0, 0, 0, 0);
-				return bookingDate.getTime() === today.getTime();
-			} catch {
-				return false;
-			}
-		});
-		
-		const upcomingBookings = bookings.filter((b: any) => {
-			if (!b.effectiveDate) return false;
-			try {
-				const bookingDate = new Date(b.effectiveDate);
-				if (isNaN(bookingDate.getTime())) return false;
-				return bookingDate > new Date() && (b.status === 'confirmed' || b.status === 'pending');
-			} catch {
-				return false;
-			}
+			const bookingDate = new Date(b.created);
+			bookingDate.setHours(0, 0, 0, 0);
+			return bookingDate.getTime() === today.getTime();
 		});
 		
 		return {
 			total: bookings.length,
 			confirmed: confirmed.length,
-			completed: completed.length,
 			pending: pending.length,
 			cancelled: cancelled.length,
+			completed: completed.length,
 			paid: paid.length,
 			unpaid: unpaid.length,
 			todayCount: todayBookings.length,
-			upcoming: upcomingBookings.length,
 			revenue: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.totalAmount) || 0), 0),
 			participants: revenueBookings.reduce((sum: number, b: any) => sum + (Number(b.participants) || 0), 0)
 		};
@@ -157,6 +166,7 @@
 		searchQuery = '';
 		selectedStatus = 'all';
 		selectedPaymentStatus = 'all';
+		dateRange = 'all';
 		showFilters = false;
 	}
 	
@@ -224,7 +234,7 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Bookings"
-			secondaryInfo="{isLoading ? 'Loading...' : `${stats().total} total`}"
+			secondaryInfo="{isLoading ? 'Loading...' : `${stats.total} total`}"
 			quickActions={[
 				{
 					label: 'Scanner',
@@ -237,22 +247,22 @@
 				{
 					icon: Calendar,
 					label: 'Today',
-					value: isLoading ? '...' : `${stats().todayCount} new`
+					value: isLoading ? '...' : `${stats.todayCount} new`
 				},
 				{
 					icon: CheckCircle,
 					label: 'Confirmed',
-					value: isLoading ? '...' : `${stats().confirmed}`
+					value: isLoading ? '...' : `${stats.confirmed}`
 				},
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: isLoading ? '...' : $globalCurrencyFormatter(stats().revenue)
+					value: isLoading ? '...' : $globalCurrencyFormatter(stats.revenue)
 				},
 				{
 					icon: TrendingUp,
-					label: 'Upcoming',
-					value: isLoading ? '...' : `${stats().upcoming}`
+					label: 'Pending',
+					value: isLoading ? '...' : `${stats.pending}`
 				}
 			]}
 		/>
@@ -316,10 +326,10 @@
 						</label>
 						<select bind:value={selectedStatus} class="form-select w-full">
 							<option value="all">All Statuses</option>
-							<option value="pending">Pending ({stats().pending})</option>
-							<option value="confirmed">Confirmed ({stats().confirmed})</option>
-							<option value="completed">Completed ({stats().completed})</option>
-							<option value="cancelled">Cancelled ({stats().cancelled})</option>
+							<option value="pending">Pending ({stats.pending})</option>
+							<option value="confirmed">Confirmed ({stats.confirmed})</option>
+							<option value="completed">Completed ({stats.completed})</option>
+							<option value="cancelled">Cancelled ({stats.cancelled})</option>
 						</select>
 					</div>
 					
@@ -330,8 +340,8 @@
 						</label>
 						<select bind:value={selectedPaymentStatus} class="form-select w-full">
 							<option value="all">All Payments</option>
-							<option value="paid">Paid ({stats().paid})</option>
-							<option value="pending">Unpaid ({stats().unpaid})</option>
+							<option value="paid">Paid ({stats.paid})</option>
+							<option value="pending">Unpaid ({stats.unpaid})</option>
 							<option value="refunded">Refunded</option>
 						</select>
 					</div>
@@ -373,7 +383,7 @@
 					{hasActiveFilters ? 'Filtered Results' : 'All Bookings'}
 				</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
-					{isLoading ? 'Loading...' : `${filteredBookings().length} ${filteredBookings().length === 1 ? 'booking' : 'bookings'}`}
+					{isLoading ? 'Loading...' : `${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}
 				</span>
 			</div>
 		</div>
@@ -566,7 +576,7 @@
 					onclick={loadMore}
 					class="w-full button-secondary button--small"
 				>
-					Show More ({filteredBookings().length - displayBookings.length} remaining)
+					Show More ({filteredBookings.length - displayBookings.length} remaining)
 				</button>
 			</div>
 		{/if}

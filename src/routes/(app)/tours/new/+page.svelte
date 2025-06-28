@@ -219,15 +219,30 @@
 	}
 
 	// Calculate form completion for mobile header
-	let formCompletion = $derived(() => {
-		const requiredFields = [formData.name, formData.description, formData.price, formData.duration, formData.capacity];
-		const completedFields = requiredFields.filter(field => field && String(field).trim()).length;
-		const percentage = Math.round((completedFields / requiredFields.length) * 100);
-		return { completed: completedFields, total: requiredFields.length, percentage };
+	let formCompletion = $derived.by(() => {
+		const fields = [
+			formData.name,
+			formData.description,
+			formData.location,
+			formData.duration,
+			formData.capacity,
+			formData.price
+		];
+		
+		const completed = fields.filter(field => field && field.toString().trim() !== '').length;
+		const total = fields.length;
+		const percentage = Math.round((completed / total) * 100);
+		
+		return {
+			completed,
+			total,
+			percentage,
+			isComplete: percentage === 100
+		};
 	});
 
 	// Derived values for template
-	let completionStats = $derived(formCompletion());
+	let completionStats = $derived(formCompletion);
 	let pageTitle = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Create Tour');
 	let pageSubtitle = $derived(formData.status === 'active' ? 'Create your tour and make it live immediately' : 'Create your tour as a draft first');
 	let submitButtonText = $derived(formData.status === 'active' ? 'Create & Go Live' : 'Save as Draft');

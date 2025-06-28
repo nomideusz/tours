@@ -72,40 +72,19 @@
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
 	});
 	
-	// TanStack Query for tour schedule - using enhanced endpoint
+	// TanStack Query for tour schedule - simplified
 	const tourScheduleQuery = createQuery({
 		get queryKey() { return ['tour-schedule', tourId]; },
 		get queryFn() { 
-			return async ({ signal }: { signal?: AbortSignal }) => {
-				// Add timeout using AbortController
-				const controller = new AbortController();
-				const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-				
-				// Listen to the TanStack Query abort signal
-				if (signal) {
-					signal.addEventListener('abort', () => controller.abort());
-				}
-				
-				try {
-					const response = await fetch(`/api/tour-schedule/${tourId}`, {
-						signal: controller.signal
-					});
-					if (!response.ok) {
-						throw new Error(`Failed to fetch schedule: ${response.status} ${response.statusText}`);
-					}
-					return response.json();
-				} finally {
-					clearTimeout(timeoutId);
-				}
-			};
+			return () => queryFunctions.fetchTourSchedule(tourId);
 		},
-		staleTime: 3 * 60 * 1000, // 3 minutes - reduce refetching
+		staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
-		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-		refetchOnMount: true, // Refetch on mount once
+		refetchOnWindowFocus: false, // Disable window focus refetching
+		refetchOnMount: true, // Enable refetchOnMount to ensure data loads
 		get enabled() { return !!tourId && browser; },
-		retry: 2, // Reduce retries to 2
-		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
+		retry: 1, // Reduce retries to prevent cascading failures
+		retryDelay: 2000, // Simple 2 second delay
 		networkMode: 'online',
 	});
 	
@@ -139,13 +118,19 @@
 	let showWelcomePrompt = $state(false);
 	let hasInitialSchedule = $state(false);
 	
-	// Calendar event handlers
+	// Calendar event handlers - simplified to prevent unnecessary updates
 	function handleDateSelect(date: Date) {
-		selectedDate = new Date(date); // Ensure we get a fresh Date object
+		// Only update if the date actually changed
+		if (!selectedDate || selectedDate.toDateString() !== date.toDateString()) {
+			selectedDate = new Date(date);
+		}
 	}
 	
 	function handleMonthChange(month: Date) {
-		currentMonth = new Date(month); // Ensure we get a fresh Date object
+		// Only update if the month actually changed
+		if (!currentMonth || currentMonth.getTime() !== month.getTime()) {
+			currentMonth = new Date(month);
+		}
 	}
 	
 	// Lightbox functions
@@ -186,36 +171,24 @@
 		}
 	});
 	
-	// Selected date slots - using enhanced data structure
-	let selectedDateSlots = $derived(() => {
+	// Selected date slots - simplified to prevent excessive recalculations
+	let selectedDateSlots = $derived.by(() => {
 		if (!schedule?.timeSlots || !selectedDate) return [];
 		
 		try {
-			// Format dates consistently for comparison
-			const selectedDateStr = selectedDate.getFullYear() + '-' + 
-				String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
-				String(selectedDate.getDate()).padStart(2, '0');
+			// Format dates consistently for comparison - using simple string comparison
+			const selectedDateStr = selectedDate.toDateString();
 			
-			const filteredSlots = schedule.timeSlots.filter((slot: any) => {
+			return schedule.timeSlots.filter((slot: any) => {
 				if (!slot.startTime) return false;
 				
 				try {
 					const slotDate = new Date(slot.startTime);
-					// Check if the date is valid
-					if (isNaN(slotDate.getTime())) return false;
-					
-					const slotDateStr = slotDate.getFullYear() + '-' + 
-						String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
-						String(slotDate.getDate()).padStart(2, '0');
-					
-					return slotDateStr === selectedDateStr;
+					return !isNaN(slotDate.getTime()) && slotDate.toDateString() === selectedDateStr;
 				} catch (error) {
-					console.warn('Error processing slot date:', slot.startTime, error);
 					return false;
 				}
 			});
-			
-			return filteredSlots;
 		} catch (error) {
 			console.error('Error in selectedDateSlots:', error);
 			return [];
@@ -384,20 +357,27 @@
 		}
 	});
 	
-	// Handle navigation success messages and data refresh - throttled
+	// Handle navigation success messages and data refresh - simplified and less aggressive
 	let lastDataRefresh = $state(0);
 	$effect(() => {
-		if (browser && tourId && Date.now() - lastDataRefresh > 5000) { // Only run every 5 seconds
+		if (browser && tourId && Date.now() - lastDataRefresh > 30000) { // Only run every 30 seconds max
 			const urlParams = new URLSearchParams(window.location.search);
 			
 			// Only invalidate queries if we have specific parameters indicating data changes
 			if (urlParams.get('edited') === 'true' || urlParams.get('scheduled') === 'true') {
 				lastDataRefresh = Date.now();
-				// Use setTimeout to avoid blocking the UI
+				// Use setTimeout to avoid blocking the UI and prevent infinite loops
 				setTimeout(() => {
-					queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
-					queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
-				}, 100);
+					// Only invalidate, don't force immediate refetch
+					queryClient.invalidateQueries({ 
+						queryKey: queryKeys.tourDetails(tourId),
+						refetchType: 'none' // Mark as stale but don't refetch immediately
+					});
+					queryClient.invalidateQueries({ 
+						queryKey: ['tour-schedule', tourId],
+						refetchType: 'none' // Mark as stale but don't refetch immediately
+					});
+				}, 1000); // Longer delay to prevent rapid-fire invalidations
 			}
 		}
 	});
@@ -852,17 +832,9 @@
 					
 					{#if scheduleLoading}
 						<div class="p-4">
-							<div class="animate-pulse">
-								<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-									<!-- Calendar skeleton -->
-									<div class="h-96 rounded-lg" style="background: var(--bg-secondary);"></div>
-									<!-- Slots skeleton -->
-									<div class="space-y-3">
-										{#each Array(3) as _}
-											<div class="h-20 rounded-lg" style="background: var(--bg-secondary);"></div>
-										{/each}
-									</div>
-								</div>
+							<div class="text-center">
+								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
+								<p class="text-sm" style="color: var(--text-secondary);">Loading tour schedule...</p>
 							</div>
 						</div>
 					{:else if scheduleError}
@@ -885,6 +857,19 @@
 								</div>
 							</div>
 						</div>
+					{:else if !schedule || $tourScheduleQuery.isFetching}
+						<div class="p-4">
+							<div class="text-center py-12">
+								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
+								<p class="text-sm mb-2" style="color: var(--text-secondary);">
+									{$tourScheduleQuery.isFetching ? 'Checking for updates...' : 'Initializing schedule...'}
+								</p>
+								<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--small button--gap mt-4">
+									<RefreshCw class="h-4 w-4" />
+									Force Refresh
+								</button>
+							</div>
+						</div>
 					{:else if schedule?.timeSlots && schedule.timeSlots.length > 0}
 						<div class="p-4">
 							<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] gap-6 xl:gap-8">
@@ -903,7 +888,7 @@
 								<div>
 									<TimeSlotsList 
 										selectedDate={selectedDate}
-										slots={selectedDateSlots()}
+										slots={selectedDateSlots}
 										onEditSlot={(slot) => {
 											// TODO: Open inline edit modal instead of navigation
 											console.log('Edit slot:', slot);

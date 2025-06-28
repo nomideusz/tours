@@ -69,8 +69,9 @@
 			if (!response.ok) throw new Error('Failed to fetch usage');
 			return response.json();
 		},
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 5 * 60 * 1000, // 5 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000, // 10 minutes
+		refetchOnWindowFocus: false, // Disable window focus refetching
 	});
 
 	// Derived data

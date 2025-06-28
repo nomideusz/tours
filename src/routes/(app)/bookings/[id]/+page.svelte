@@ -56,8 +56,9 @@
 			if (!response.ok) throw new Error('Failed to fetch booking');
 			return response.json();
 		},
-		staleTime: 30 * 1000,     // 30 seconds
-		gcTime: 5 * 60 * 1000,    // 5 minutes
+		staleTime: 2 * 60 * 1000, // 2 minutes - reduce excessive refetching
+		gcTime: 10 * 60 * 1000,   // 10 minutes
+		refetchOnWindowFocus: false, // Disable window focus refetching
 		// Removed refetchInterval to prevent timer accumulation
 		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
 		// refetchIntervalInBackground: true,

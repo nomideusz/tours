@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
@@ -62,7 +63,7 @@
 	let tourBookings = $derived(tourData?.bookings || []);
 	
 	// Apply filters
-	let filteredBookings = $derived(() => {
+	let filteredBookings = $derived.by(() => {
 		let result = tourBookings;
 		
 		// Search filter
@@ -89,12 +90,12 @@
 		return result;
 	});
 	
-	let bookings = $derived(filteredBookings());
+	let bookings = $derived(filteredBookings);
 	let isLoading = $derived($bookingsQuery.isLoading);
 	let isError = $derived($bookingsQuery.isError);
 	
 	// Calculate stats from all tour bookings (not filtered)
-	let stats = $derived(() => {
+	let stats = $derived.by(() => {
 		const confirmed = tourBookings.filter((b: any) => b.status === 'confirmed');
 		const completed = tourBookings.filter((b: any) => b.status === 'completed');
 		const pending = tourBookings.filter((b: any) => b.status === 'pending');
@@ -207,7 +208,7 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="{tour?.name} Bookings"
-			secondaryInfo="{stats().total} bookings"
+			secondaryInfo="{stats.total} bookings"
 			quickActions={[
 				{
 					label: 'Back',
@@ -226,22 +227,22 @@
 				{
 					icon: Calendar,
 					label: 'Today',
-					value: `${stats().todayCount} new`
+					value: `${stats.todayCount} new`
 				},
 				{
 					icon: CheckCircle,
 					label: 'Confirmed',
-					value: `${stats().confirmed}`
+					value: `${stats.confirmed}`
 				},
 				{
 					icon: Euro,
 					label: 'Revenue',
-					value: $globalCurrencyFormatter(stats().revenue)
+					value: $globalCurrencyFormatter(stats.revenue)
 				},
 				{
 					icon: TrendingUp,
 					label: 'Upcoming',
-					value: `${stats().upcoming}`
+					value: `${stats.upcoming}`
 				}
 			]}
 		/>
@@ -326,10 +327,10 @@
 						</label>
 						<select bind:value={selectedStatus} class="form-select w-full">
 							<option value="all">All Statuses</option>
-							<option value="pending">Pending ({stats().pending})</option>
-							<option value="confirmed">Confirmed ({stats().confirmed})</option>
-							<option value="completed">Completed ({stats().completed})</option>
-							<option value="cancelled">Cancelled ({stats().cancelled})</option>
+							<option value="pending">Pending ({stats.pending})</option>
+							<option value="confirmed">Confirmed ({stats.confirmed})</option>
+							<option value="completed">Completed ({stats.completed})</option>
+							<option value="cancelled">Cancelled ({stats.cancelled})</option>
 						</select>
 					</div>
 					
@@ -340,8 +341,8 @@
 						</label>
 						<select bind:value={selectedPaymentStatus} class="form-select w-full">
 							<option value="all">All Payments</option>
-							<option value="paid">Paid ({stats().paid})</option>
-							<option value="pending">Unpaid ({stats().unpaid})</option>
+							<option value="paid">Paid ({stats.paid})</option>
+							<option value="pending">Unpaid ({stats.unpaid})</option>
 							<option value="refunded">Refunded</option>
 						</select>
 					</div>
@@ -371,7 +372,7 @@
 					{hasActiveFilters ? 'Filtered Results' : 'Tour Bookings'}
 				</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
-					{isLoading ? 'Loading...' : `${filteredBookings().length} ${filteredBookings().length === 1 ? 'booking' : 'bookings'}`}
+					{isLoading ? 'Loading...' : `${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}
 				</span>
 			</div>
 		</div>
