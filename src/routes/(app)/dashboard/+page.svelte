@@ -80,10 +80,10 @@
 					clearTimeout(timeoutId);
 				}
 			},
-			staleTime: 0, // Always consider data stale for immediate updates
-			gcTime: 5 * 60 * 1000,
-			refetchOnWindowFocus: 'always',
-			refetchOnMount: 'always',
+			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes to reduce requests
+			gcTime: 10 * 60 * 1000,
+			refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
+			refetchOnMount: true, // Refetch on mount once
 			retry: 2, // Retry twice on failure
 			retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
 			networkMode: 'online',
@@ -110,10 +110,10 @@
 				clearTimeout(timeoutId);
 			}
 		},
-		staleTime: 0, // Always consider data stale for immediate updates
-		gcTime: 5 * 60 * 1000,
-		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always',
+		staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
+		refetchOnMount: true, // Refetch on mount once
 		retry: 2, // Retry twice on failure
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
 		networkMode: 'online',
@@ -143,6 +143,8 @@
 
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
+		let timeouts: NodeJS.Timeout[] = []; // Track timeouts for cleanup
+		
 		// Check if returning from email verification
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('verified') === 'true') {
@@ -162,9 +164,10 @@
 			window.history.replaceState({}, '', newUrl.toString());
 
 			// Double-check payment status after a delay
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				checkPaymentStatus();
 			}, 500);
+			timeouts.push(timeoutId);
 		}
 
 		// Check if returning from profile location update
@@ -176,9 +179,10 @@
 			window.history.replaceState({}, '', newUrl.toString());
 
 			// Hide success message after 5 seconds
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				saveSuccess = false;
 			}, 5000);
+			timeouts.push(timeoutId);
 		}
 
 		// Check if user has previously confirmed their location (stored in localStorage)
@@ -227,7 +231,12 @@
 
 		document.addEventListener('click', handleClickOutside);
 		document.addEventListener('keydown', handleKeyDown);
+		
+		// Cleanup function
 		return () => {
+			// Clear all timeouts
+			timeouts.forEach(timeout => clearTimeout(timeout));
+			// Remove event listeners
 			document.removeEventListener('click', handleClickOutside);
 			document.removeEventListener('keydown', handleKeyDown);
 		};
@@ -241,7 +250,8 @@
 			upcomingTours: 0,
 			totalCustomers: 0,
 			totalTours: 0,
-			activeTours: 0
+			activeTours: 0,
+			hasTours: false
 		}
 	);
 	let recentBookings = $derived($recentBookingsQuery.data || []);
@@ -252,22 +262,6 @@
 
 	// Check if this is a new user - only after data has loaded
 	let isNewUser = $derived(!isLoading && stats.totalTours === 0);
-
-	// Debug location confirmation state
-	$effect(() => {
-		if (browser && !isLoading) {
-			console.log('Location confirmation state:', {
-				hasConfirmedLocation,
-				needsConfirmation,
-				profileCountry: profile?.country,
-				profileCurrency: profile?.currency,
-				isNewUser,
-				totalTours: stats.totalTours,
-				totalCustomers: stats.totalCustomers,
-				localStorage: localStorage.getItem('locationConfirmed')
-			});
-		}
-	});
 
 	// Profile link state
 	let profileLinkCopied = $state(false);
@@ -345,6 +339,8 @@
 	// Create today's schedule from recent bookings
 	let todaysSchedule = $derived(
 		(() => {
+			if (!Array.isArray(recentBookings)) return [];
+			
 			const now = new Date();
 			const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 			const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -452,15 +448,18 @@
 
 	}
 
-	// Load currency settings and check if confirmation needed
+	// Load currency settings and check if confirmation needed - run only once per profile
+	let lastProfileId = $state<string | null>(null);
 	$effect(() => {
-		if (browser && profile) {
+		if (browser && profile && profile.id !== lastProfileId) {
+			lastProfileId = profile.id;
+			
 			if (profile.country && profile.currency) {
 				// Use saved profile data
 				selectedCountry = profile.country;
 				selectedCurrency = profile.currency as Currency;
 			} else {
-				// Auto-detect if not set
+				// Auto-detect if not set - only import once
 				import('$lib/utils/country-detector.js').then(({ detectCountry }) => {
 					const detectedCountry = detectCountry();
 					const country = getCountryInfo(detectedCountry);
@@ -631,8 +630,8 @@
 
 	// Determine if currency settings need attention
 	let shouldShowCurrencySetup = $derived(() => {
-		// Update isNewUser calculation to match the one above
-		const newUserCheck = !stats.hasTours && stats.totalCustomers === 0;
+		// Check if user is new based on tours and customers
+		const newUserCheck = !stats.totalTours && stats.totalCustomers === 0;
 
 		// Show setup if:
 		// 1. Profile doesn't have country set, OR
