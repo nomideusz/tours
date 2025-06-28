@@ -22,10 +22,10 @@ export const queryKeys = {
 // Query functions that call our API endpoints
 export const queryFunctions = {
 	// Fetch dashboard-specific stats
-	async fetchDashboardStats() {
+	async fetchDashboardStats(signal?: AbortSignal) {
 		if (!browser) throw new Error('Client-side only');
 		
-		const response = await fetch('/api/dashboard-stats');
+		const response = await fetch('/api/dashboard-stats', { signal });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch dashboard stats: ${response.status} ${response.statusText}`);
 		}
@@ -33,10 +33,10 @@ export const queryFunctions = {
 	},
 
 	// Fetch tours-specific stats
-	async fetchToursStats() {
+	async fetchToursStats(signal?: AbortSignal) {
 		if (!browser) throw new Error('Client-side only');
 		
-		const response = await fetch('/api/tours-stats');
+		const response = await fetch('/api/tours-stats', { signal });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch tours stats: ${response.status} ${response.statusText}`);
 		}
@@ -44,11 +44,11 @@ export const queryFunctions = {
 	},
 
 	// Fetch recent bookings
-	async fetchRecentBookings(limit: number = 10) {
+	async fetchRecentBookings(limit: number = 10, signal?: AbortSignal) {
 		if (!browser) throw new Error('Client-side only');
 		
 		// Use full endpoint for complete data structure
-		const response = await fetch(`/api/recent-bookings?limit=${limit}`);
+		const response = await fetch(`/api/recent-bookings?limit=${limit}`, { signal });
 		if (!response.ok) {
 			throw new Error(`Failed to fetch recent bookings: ${response.status} ${response.statusText}`);
 		}

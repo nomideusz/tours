@@ -75,11 +75,21 @@
 		get queryKey() { return ['tour-schedule', tourId]; },
 		get queryFn() { 
 			return async () => {
-				const response = await fetch(`/api/tour-schedule/${tourId}`);
-				if (!response.ok) {
-					throw new Error(`Failed to fetch schedule: ${response.status} ${response.statusText}`);
+				// Add timeout using AbortController
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+				
+				try {
+					const response = await fetch(`/api/tour-schedule/${tourId}`, {
+						signal: controller.signal
+					});
+					if (!response.ok) {
+						throw new Error(`Failed to fetch schedule: ${response.status} ${response.statusText}`);
+					}
+					return response.json();
+				} finally {
+					clearTimeout(timeoutId);
 				}
-				return response.json();
 			};
 		},
 		staleTime: 2 * 60 * 1000, // 2 minutes
@@ -87,8 +97,9 @@
 		refetchOnWindowFocus: true,
 		refetchOnMount: true,
 		get enabled() { return !!tourId && browser; },
-		retry: 3,
-		retryDelay: 1000,
+		retry: 2, // Reduce retries to 2
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
+		networkMode: 'online',
 	});
 	
 	// Derive data from queries - separate loading states

@@ -64,20 +64,62 @@
 	// TanStack Query for dashboard data - using profile page pattern (simple, direct)
 	const dashboardStatsQuery = createQuery({
 			queryKey: queryKeys.dashboardStats,
-			queryFn: queryFunctions.fetchDashboardStats,
+			queryFn: async ({ signal }) => {
+				// Create our own abort controller that will timeout after 30 seconds
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 30000);
+				
+				// Listen to the TanStack Query abort signal
+				if (signal) {
+					signal.addEventListener('abort', () => controller.abort());
+				}
+				
+				try {
+					return await queryFunctions.fetchDashboardStats(controller.signal);
+				} finally {
+					clearTimeout(timeoutId);
+				}
+			},
 			staleTime: 0, // Always consider data stale for immediate updates
 			gcTime: 5 * 60 * 1000,
 			refetchOnWindowFocus: 'always',
-			refetchOnMount: 'always'
+			refetchOnMount: 'always',
+			retry: 2, // Retry twice on failure
+			retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+			networkMode: 'online',
+			meta: {
+				errorMessage: 'Failed to load dashboard statistics'
+			}
 	});
 
 	const recentBookingsQuery = createQuery({
 		queryKey: queryKeys.recentBookings(10),
-		queryFn: () => queryFunctions.fetchRecentBookings(10),
+		queryFn: async ({ signal }) => {
+			// Create our own abort controller that will timeout after 30 seconds
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 30000);
+			
+			// Listen to the TanStack Query abort signal
+			if (signal) {
+				signal.addEventListener('abort', () => controller.abort());
+			}
+			
+			try {
+				return await queryFunctions.fetchRecentBookings(10, controller.signal);
+			} finally {
+				clearTimeout(timeoutId);
+			}
+		},
 		staleTime: 0, // Always consider data stale for immediate updates
 		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always'
+		refetchOnMount: 'always',
+		retry: 2, // Retry twice on failure
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+		networkMode: 'online',
+		meta: {
+			errorMessage: 'Failed to load recent bookings'
+		}
 	});
 
 	// Get profile from layout data (this stays server-side since it's needed for auth)
@@ -101,9 +143,6 @@
 
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
-		// Refresh all data to ensure emailVerified status is current
-		invalidateAll();
-
 		// Check if returning from email verification
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('verified') === 'true') {
@@ -122,13 +161,10 @@
 			newUrl.searchParams.delete('setup');
 			window.history.replaceState({}, '', newUrl.toString());
 
-			// Force refresh payment status and user data
-			invalidateAll().then(() => {
-				// Double-check payment status after data refresh
-				setTimeout(() => {
-					checkPaymentStatus();
-				}, 500);
-			});
+			// Double-check payment status after a delay
+			setTimeout(() => {
+				checkPaymentStatus();
+			}, 500);
 		}
 
 		// Check if returning from profile location update
@@ -138,9 +174,6 @@
 			const newUrl = new URL(window.location.href);
 			newUrl.searchParams.delete('location');
 			window.history.replaceState({}, '', newUrl.toString());
-
-			// Force refresh user data
-			invalidateAll();
 
 			// Hide success message after 5 seconds
 			setTimeout(() => {
@@ -152,6 +185,13 @@
 		// Only set this for users who have explicitly confirmed, not just those with auto-detected country
 		hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
 		
+		// For users with complete setup (email verified + stripe account + country), 
+		// assume location is confirmed to prevent onboarding flash
+		if (profile && profile.emailVerified && profile.stripeAccountId && profile.country && !hasConfirmedLocation) {
+			hasConfirmedLocation = true;
+			localStorage.setItem('locationConfirmed', 'true');
+		}
+
 		// Check if promo banner was previously dismissed
 		const dismissData = localStorage.getItem('promoBannerDismissed');
 		if (dismissData) {
@@ -210,31 +250,8 @@
 	let isLoading = $derived($dashboardStatsQuery.isLoading || $recentBookingsQuery.isLoading);
 	let isError = $derived($dashboardStatsQuery.isError || $recentBookingsQuery.isError);
 
-	// Check if this is a new user
-	let isNewUser = $derived(stats.totalTours === 0);
-
-	// Determine if user likely needs onboarding based on server-side profile data
-	// This prevents showing skeleton for completed users when navigating
-	let likelyNeedsOnboarding = $derived(() => {
-		if (!profile) return false;
-		
-		// If user has tours and email verified and has stripe account, they're likely done with onboarding
-		// Use server-side profile data to avoid flash
-		const hasBasicSetup = profile.emailVerified && profile.stripeAccountId && profile.country;
-		
-		// Check localStorage synchronously if available
-		const locationConfirmed = browser ? localStorage.getItem('locationConfirmed') === 'true' : false;
-		
-		// Consider them as likely needing onboarding if:
-		// - Email not verified, OR
-		// - No stripe account set up, OR  
-		// - No country set, OR
-		// - Location not explicitly confirmed (for new users)
-		return !profile.emailVerified || 
-		       !profile.stripeAccountId || 
-		       !profile.country || 
-		       (!locationConfirmed && !hasBasicSetup);
-	});
+	// Check if this is a new user - only after data has loaded
+	let isNewUser = $derived(!isLoading && stats.totalTours === 0);
 
 	// Debug location confirmation state
 	$effect(() => {
@@ -866,15 +883,34 @@
 		</div>
 	{/if}
 
-	{#if isLoading}
+	{#if isLoading && !isError}
+		<!-- Show skeleton only when loading and not in error state -->
 		<DashboardSkeleton />
+	{:else if isError}
+		<!-- Show error state -->
+		<div class="rounded-lg p-8 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<AlertCircle class="h-12 w-12 mx-auto mb-4" style="color: var(--color-danger-600);" />
+			<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
+				Unable to Load Dashboard
+			</h3>
+			<p class="text-sm mb-4" style="color: var(--text-secondary);">
+				There was an error loading your dashboard data. Please try refreshing the page.
+			</p>
+			<button 
+				onclick={() => window.location.reload()} 
+				class="button-primary button--gap"
+			>
+				<RefreshCcw class="h-4 w-4" />
+				Refresh Page
+			</button>
+		</div>
 	{:else}
 		<!-- Dashboard Header -->
 		<div class="mb-6">
 			<!-- Mobile Header -->
 			<MobilePageHeader
-				title={isNewUser ? "Welcome to Zaur!" : "Operations Center"}
-				secondaryInfo={isNewUser ? "Let's get you started" : `${stats.upcomingTours} upcoming`}
+				title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Operations Center")}
+				secondaryInfo={isLoading ? "Loading..." : (isNewUser ? "Let's get you started" : `${stats.upcomingTours} upcoming`)}
 				quickActions={[
 					{
 						label: 'Create',
@@ -894,8 +930,8 @@
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
 				<PageHeader 
-					title={isNewUser ? "Welcome to Zaur!" : "Operations Center"}
-					subtitle={isNewUser ? "Complete these steps to start accepting tour bookings" : "Manage your daily tour operations"}
+					title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Operations Center")}
+					subtitle={isLoading ? "Loading your data..." : (isNewUser ? "Complete these steps to start accepting tour bookings" : "Manage your daily tour operations")}
 				>
 					<div class="flex items-center gap-4">
 						<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
@@ -908,11 +944,8 @@
 		</div>
 
 		<!-- Onboarding Section -->
-		{#if likelyNeedsOnboarding() && (isLoading || paymentStatus.loading)}
-			<!-- Show skeleton during loading for users who likely need onboarding -->
-			<OnboardingSkeleton />
-		{:else if needsEmailVerification || needsConfirmation || !paymentStatus.isSetup || stats.totalTours === 0}
-			<!-- Show actual onboarding steps once loaded -->
+		{#if !isLoading && !paymentStatus.loading && (needsEmailVerification || needsConfirmation || !paymentStatus.isSetup || stats.totalTours === 0)}
+			<!-- Show actual onboarding steps only after data has loaded -->
 			<OnboardingSection
 				{profile}
 				{stats}
