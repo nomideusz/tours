@@ -19,6 +19,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StyledQRCode from '$lib/components/StyledQRCode.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
+	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import type { Tour } from '$lib/types.js';
 	
 	// TanStack Query
@@ -87,6 +88,10 @@
 	// Delete modal state
 	let showDeleteModal = $state(false);
 	let tourToDelete = $state<Tour | null>(null);
+	
+	// Timeline view state
+	let showTimeline = $state(false);
+	let timelineView = $state<'day' | 'week' | 'month'>('week');
 	
 	// Feedback state
 	let recentlyUpdated = $state<string | null>(null);
@@ -336,6 +341,19 @@
 		</div>
 	</div>
 
+	<!-- Optional Timeline View -->
+	{#if showTimeline}
+		<div class="mb-6">
+			<TourTimeline 
+				bind:view={timelineView}
+				compact={false}
+				onSlotClick={(slot) => {
+					goto(`/tours/${slot.tourId}`);
+				}}
+			/>
+		</div>
+	{/if}
+
 	<!-- Search and Filters -->
 	<div class="mb-6 space-y-3">
 		<!-- Mobile Search and Filter Tabs -->
@@ -413,6 +431,13 @@
 			
 			<!-- Status Filter -->
 			<div class="flex gap-2">
+				<button
+					onclick={() => showTimeline = !showTimeline}
+					class="{showTimeline ? 'button-primary' : 'button-secondary'} button--small button--gap"
+				>
+					<Calendar class="h-4 w-4" />
+					Timeline
+				</button>
 				<button
 					onclick={() => statusFilter = 'all'}
 					class="{statusFilter === 'all' ? 'button-primary' : 'button-secondary'} button--small"

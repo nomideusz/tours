@@ -8,14 +8,15 @@ import type { SharedStats, DashboardStats, ToursStats } from '$lib/utils/shared-
 export const queryKeys = {
 	dashboardStats: ['dashboardStats'] as const,
 	toursStats: ['toursStats'] as const,
-	recentBookings: (limit?: number) => ['recentBookings', limit] as const,
+	recentBookings: (limit: number) => ['recentBookings', limit] as const,
 	userTours: ['userTours'] as const,
-	tourDetails: (tourId: string) => ['tourDetails', tourId] as const,
-	tourSchedule: (tourId: string) => ['tourSchedule', tourId] as const,
+	tourDetails: (id: string) => ['tourDetails', id] as const,
+	tourSchedule: (id: string) => ['tourSchedule', id] as const,
 	tourBookings: (tourId: string) => ['tourBookings', tourId] as const,
 	tourBookingConstraints: (tourId: string) => ['tourBookingConstraints', tourId] as const,
 	profile: ['profile'] as const,
 	profileStats: ['profileStats'] as const,
+	allTimeSlots: (view: string, date: string) => ['allTimeSlots', view, date] as const,
 } as const;
 
 // Query functions that call our API endpoints
@@ -127,6 +128,17 @@ export const queryFunctions = {
 		const response = await fetch(`/api/tours/${tourId}/booking-constraints`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch booking constraints: ${response.status} ${response.statusText}`);
+		}
+		return response.json();
+	},
+
+	// Fetch all time slots
+	async fetchAllTimeSlots(view: string, date: string) {
+		if (!browser) throw new Error('Client-side only');
+		
+		const response = await fetch(`/api/all-time-slots?view=${view}&date=${date}`);
+		if (!response.ok) {
+			throw new Error(`Failed to fetch all time slots: ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},

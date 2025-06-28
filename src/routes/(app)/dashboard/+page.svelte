@@ -11,6 +11,7 @@
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import {
 		userCurrency,
 		currentCurrencyInfo,
@@ -683,6 +684,9 @@
 				return AlertTriangle;
 		}
 	}
+
+	// Timeline view state
+	let timelineView = $state<'day' | 'week' | 'month'>('week');
 </script>
 
 <svelte:head>
@@ -1637,6 +1641,17 @@
 					variant="small"
 				/>
 			</div>
+		</div>
+
+		<!-- Tour Timeline - New Centerpiece -->
+		<div class="mb-8">
+			<TourTimeline 
+				bind:view={timelineView}
+				onSlotClick={(slot) => {
+					// Navigate to tour details page when clicking a slot
+					goto(`/tours/${slot.tourId}`);
+				}}
+			/>
 		</div>
 
 		<!-- Today's Activity -->
