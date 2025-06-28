@@ -98,7 +98,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			createdAt: booking.createdAt ? booking.createdAt.toISOString() : new Date().toISOString()
 		}));
 
-		const processedTourStats = {
+		const processedStats = {
 			totalBookings: Number(tourStats?.totalBookings || 0),
 			totalRevenue: Number(tourStats?.totalRevenue || 0),
 			totalParticipants: Number(tourStats?.totalParticipants || 0),
@@ -107,12 +107,15 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			totalSlots: upcomingSlots.length,
 			upcomingSlots: upcomingSlots.length,
 			qrScans: tour.qrScans || 0,
-			qrConversions: tour.qrConversions || 0
+			qrConversions: tour.qrConversions || 0,
+			// Calculate conversion rate
+			conversionRate: (tour.qrScans || 0) > 0 ? ((tour.qrConversions || 0) / (tour.qrScans || 0)) * 100 : 0,
+			recentBookings: processedRecentBookings
 		};
 
 		return json({
 			tour: processedTour,
-			tourStats: processedTourStats,
+			stats: processedStats,
 			upcomingSlots: processedUpcomingSlots,
 			recentBookings: processedRecentBookings
 		});
