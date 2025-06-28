@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
@@ -91,7 +91,7 @@
 	let tourToDelete = $state<Tour | null>(null);
 	
 	// Timeline view state
-	let showTimeline = $state(false);
+	let showTimeline = $state(true); // Temporarily set to true for debugging
 	let timelineView = $state<'day' | 'week' | 'month'>('week');
 	
 	// Feedback state
@@ -155,6 +155,10 @@
 
 	let dropdownOpenUpwards = $state<{ [key: string]: boolean }>({});
 
+	// Track timeouts for proper cleanup
+	let copyTimeouts: NodeJS.Timeout[] = [];
+	let statusTimeouts: NodeJS.Timeout[] = [];
+
 	// Helper functions
 	function getQRImageUrl(tour: Tour, size: number = 200): string {
 		if (!tour.qrCode) return '';
@@ -176,9 +180,10 @@
 			const bookingUrl = `${window.location.origin}/book/${tour.qrCode}`;
 			await navigator.clipboard.writeText(bookingUrl);
 			copiedQRCode = tour.qrCode;
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				copiedQRCode = null;
 			}, 2000);
+			copyTimeouts.push(timeoutId);
 		} catch (err) {
 			console.error('Failed to copy URL:', err);
 		}
@@ -227,10 +232,11 @@
 			await $deleteMutation.mutateAsync(tourIdToDelete);
 			
 			// Remove from deleting set after animation completes
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				deletingTourIds.delete(tourIdToDelete);
 				deletingTourIds = deletingTourIds; // Force reactivity
 			}, 600); // Slightly longer than fade out to ensure smooth animation
+			statusTimeouts.push(timeoutId);
 		} catch (error: any) {
 			// Remove from deleting set on error
 			deletingTourIds.delete(tourIdToDelete);
@@ -271,22 +277,30 @@
 			await $updateStatusMutation.mutateAsync({ tourId, status: newStatus });
 			
 			// For extra reliability, force refetch of tours after a short delay
-			setTimeout(async () => {
+			const refetchTimeoutId = setTimeout(async () => {
 				await queryClient.refetchQueries({ 
 					queryKey: queryKeys.userTours,
 					type: 'active'
 				});
 			}, 500);
+			statusTimeouts.push(refetchTimeoutId);
 			
 			// Keep the highlight for a moment then clear it
-			setTimeout(() => {
+			const highlightTimeoutId = setTimeout(() => {
 				recentlyUpdated = null;
 			}, 1500);
+			statusTimeouts.push(highlightTimeoutId);
 		} catch (error) {
 			recentlyUpdated = null;
 			console.error('Failed to update tour status:', error);
 		}
 	}
+
+	// Cleanup timeouts on component destruction
+	onDestroy(() => {
+		copyTimeouts.forEach(timeout => clearTimeout(timeout));
+		statusTimeouts.forEach(timeout => clearTimeout(timeout));
+	});
 </script>
 
 <svelte:head>

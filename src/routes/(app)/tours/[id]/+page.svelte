@@ -4,6 +4,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -99,8 +100,6 @@
 	let scheduleError = $derived($tourScheduleQuery.isError);
 	let isLoading = $derived(tourLoading && scheduleLoading); // Only loading if BOTH are loading
 	let isError = $derived($tourDetailsQuery.isError || $tourScheduleQuery.isError);
-	
-
 	
 	// State
 	let qrCopied = $state(false);
@@ -218,35 +217,39 @@
 		return `${Math.round(rate)}%`;
 	}
 	
-	// Copy functions
+	// Copy functions with proper timeout cleanup
+	let copyTimeouts: NodeJS.Timeout[] = [];
+	
 	async function copyQrCode() {
 		if (!bookingUrl) return;
 		
 		try {
 			await navigator.clipboard.writeText(bookingUrl);
 			qrCopied = true;
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				qrCopied = false;
 			}, 2000);
+			copyTimeouts.push(timeoutId);
 		} catch (err) {
 			console.error('Failed to copy QR code:', err);
 		}
 	}
-	
+
 	async function copyBookingLink() {
 		if (!bookingUrl) return;
 		
 		try {
 			await navigator.clipboard.writeText(bookingUrl);
 			linkCopied = true;
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				linkCopied = false;
 			}, 2000);
+			copyTimeouts.push(timeoutId);
 		} catch (err) {
 			console.error('Failed to copy link:', err);
 		}
 	}
-	
+
 	// Download QR code as image
 	function downloadQrCode() {
 		if (!bookingUrl || !tour?.qrCode) return;
@@ -259,7 +262,7 @@
 		link.click();
 		document.body.removeChild(link);
 	}
-	
+
 	// Activate tour from welcome prompt
 	async function activateTour() {
 		if (!tour || tour.status === 'active') return;
@@ -275,29 +278,31 @@
 			
 			// Show a brief success message
 			showEditSuccess = true;
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				showEditSuccess = false;
 			}, 3000);
+			successTimeouts.push(timeoutId);
 		} catch (error) {
 			console.error('Failed to activate tour:', error);
 			// Could add error state here if needed
 		}
 	}
-	
+
 	// Check for success messages from navigation
 	let showEditSuccess = $state(false);
 	let showScheduleSuccess = $state(false);
 	let showAddSlotsSuccess = $state(false);
 	
-	// Track if URL effects have run to prevent multiple executions
-	let urlEffectsRun = $state(false);
+	// Track timeouts for proper cleanup
+	let successTimeouts: NodeJS.Timeout[] = [];
+	
+	// Only run URL effects once per page load, not on every render
+	let hasProcessedUrlParams = $state(false);
 	
 	$effect(() => {
-		if (browser && !urlEffectsRun) {
-			urlEffectsRun = true;
+		if (browser && !hasProcessedUrlParams) {
+			hasProcessedUrlParams = true;
 			const urlParams = new URLSearchParams(window.location.search);
-			
-			let timeouts: NodeJS.Timeout[] = []; // Track timeouts for cleanup
 			
 			if (urlParams.get('edited') === 'true') {
 				showEditSuccess = true;
@@ -310,7 +315,7 @@
 				const timeoutId = setTimeout(() => {
 					showEditSuccess = false;
 				}, 3000);
-				timeouts.push(timeoutId);
+				successTimeouts.push(timeoutId);
 			}
 			
 			if (urlParams.get('scheduled') === 'true') {
@@ -330,7 +335,7 @@
 				const timeoutId = setTimeout(() => {
 					showScheduleSuccess = false;
 				}, 3000);
-				timeouts.push(timeoutId);
+				successTimeouts.push(timeoutId);
 			}
 			
 			if (urlParams.get('created') === 'true') {
@@ -349,37 +354,22 @@
 				
 				// Welcome prompt stays visible until manually dismissed
 			}
-			
-			// Cleanup function
-			return () => {
-				timeouts.forEach(timeout => clearTimeout(timeout));
-			};
 		}
+		
+		// Cleanup function for timeouts
+		return () => {
+			successTimeouts.forEach(timeout => clearTimeout(timeout));
+			copyTimeouts.forEach(timeout => clearTimeout(timeout));
+			successTimeouts = [];
+			copyTimeouts = [];
+		};
 	});
-	
-	// Handle navigation success messages and data refresh - simplified and less aggressive
-	let lastDataRefresh = $state(0);
-	$effect(() => {
-		if (browser && tourId && Date.now() - lastDataRefresh > 30000) { // Only run every 30 seconds max
-			const urlParams = new URLSearchParams(window.location.search);
-			
-			// Only invalidate queries if we have specific parameters indicating data changes
-			if (urlParams.get('edited') === 'true' || urlParams.get('scheduled') === 'true') {
-				lastDataRefresh = Date.now();
-				// Use setTimeout to avoid blocking the UI and prevent infinite loops
-				setTimeout(() => {
-					// Only invalidate, don't force immediate refetch
-					queryClient.invalidateQueries({ 
-						queryKey: queryKeys.tourDetails(tourId),
-						refetchType: 'none' // Mark as stale but don't refetch immediately
-					});
-					queryClient.invalidateQueries({ 
-						queryKey: ['tour-schedule', tourId],
-						refetchType: 'none' // Mark as stale but don't refetch immediately
-					});
-				}, 1000); // Longer delay to prevent rapid-fire invalidations
-			}
-		}
+
+	// Force queries to start immediately on mount
+	onMount(() => {
+		// Immediately refetch both queries without any conditions
+		$tourDetailsQuery.refetch();
+		$tourScheduleQuery.refetch();
 	});
 </script>
 
@@ -857,19 +847,6 @@
 								</div>
 							</div>
 						</div>
-					{:else if !schedule || $tourScheduleQuery.isFetching}
-						<div class="p-4">
-							<div class="text-center py-12">
-								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
-								<p class="text-sm mb-2" style="color: var(--text-secondary);">
-									{$tourScheduleQuery.isFetching ? 'Checking for updates...' : 'Initializing schedule...'}
-								</p>
-								<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--small button--gap mt-4">
-									<RefreshCw class="h-4 w-4" />
-									Force Refresh
-								</button>
-							</div>
-						</div>
 					{:else if schedule?.timeSlots && schedule.timeSlots.length > 0}
 						<div class="p-4">
 							<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] gap-6 xl:gap-8">
@@ -899,7 +876,8 @@
 								</div>
 							</div>
 						</div>
-					{:else}
+					{:else if schedule}
+						<!-- We have schedule data but no time slots -->
 						<div class="p-4">
 							<div class="text-center py-12">
 								<CalendarDays class="w-12 h-12 mx-auto mb-4" style="color: var(--text-tertiary); opacity: 0.5;" />
@@ -910,6 +888,20 @@
 								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
 									<Plus class="h-4 w-4" />
 									Create Time Slots
+								</button>
+							</div>
+						</div>
+					{:else}
+						<!-- No schedule data yet - initial loading or error -->
+						<div class="p-4">
+							<div class="text-center py-12">
+								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
+								<p class="text-sm mb-2" style="color: var(--text-secondary);">
+									Initializing schedule...
+								</p>
+								<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--small button--gap mt-4">
+									<RefreshCw class="h-4 w-4" />
+									Force Refresh
 								</button>
 							</div>
 						</div>

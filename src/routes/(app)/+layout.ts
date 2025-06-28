@@ -13,48 +13,54 @@ export const load = async ({ data }) => {
 		const needsFreshClient = !queryClient || currentUserId !== newUserId;
 
 		if (needsFreshClient) {
-			// Clean up the old QueryClient if it exists
+			// Clean up the old QueryClient if it exists - more aggressive cleanup
 			if (queryClient) {
-				console.log('🧹 Cleaning up old QueryClient for user:', currentUserId);
-				// Clear all queries and cancel any in-flight requests
-				queryClient.cancelQueries();
+				console.log('🧹 Aggressively cleaning up old QueryClient for user:', currentUserId);
+				
+				// Cancel all queries and clear cache
+				await queryClient.cancelQueries();
 				queryClient.clear();
-				// Remove all observers to prevent memory leaks
-				queryClient.getQueryCache().getAll().forEach(query => {
-					query.destroy();
-				});
-				queryClient.getMutationCache().getAll().forEach(mutation => {
-					mutation.destroy();
-				});
-				// Unmount the query client
+				
+				// Destroy all queries and mutations
+				queryClient.getQueryCache().clear();
+				queryClient.getMutationCache().clear();
+				
+				// Unmount the client
 				queryClient.unmount();
 			}
-			
-			// Create a new QueryClient for this user with reactive-friendly defaults
+
+			// Create a new QueryClient with more robust settings
+			console.log('✨ Creating fresh QueryClient for user:', newUserId);
 			queryClient = new QueryClient({
 				defaultOptions: {
 					queries: {
-						enabled: browser,
-						staleTime: 0, // Always consider data potentially stale for immediate updates
-						gcTime: 5 * 60 * 1000, // 5 minutes
-						refetchOnWindowFocus: true, // Refetch when switching tabs
-						refetchOnMount: true, // Refetch when components mount
-						refetchOnReconnect: true, // Refetch when reconnecting
-						retry: 1, // Reduce retries for faster feedback
-						retryDelay: 1000, // 1 second retry delay
+						staleTime: 30 * 1000, // 30 seconds stale time
+						gcTime: 2 * 60 * 1000, // 2 minutes garbage collection (reduced from 5min)
+						refetchOnWindowFocus: false, // Disable window focus refetching
+						refetchOnMount: true, // Always refetch on mount for fresh data
+						retry: 1, // Reduce retries to prevent cascading issues
+						retryDelay: 1000, // Simple 1 second retry delay
+						networkMode: 'online', // Only run when online
+					},
+					mutations: {
+						retry: 1,
+						retryDelay: 1000,
+						networkMode: 'online',
 					},
 				},
 			});
-			
-			// Update the current user ID
+
 			currentUserId = newUserId;
-			console.log('✨ Created fresh QueryClient for user:', currentUserId);
 		}
+
+		return {
+			queryClient
+		};
 	}
 
-	return { 
-		queryClient,
-		...data 
+	// SSR fallback
+	return {
+		queryClient: undefined
 	};
 };
 

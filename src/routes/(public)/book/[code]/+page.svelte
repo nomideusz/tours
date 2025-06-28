@@ -33,7 +33,6 @@
 	
 	// Use TanStack Query for real-time data
 	let tourQuery = $derived(createPublicTourQuery(data.qrCode, {
-		refetchInterval: 30000, // 30 seconds
 		refetchOnWindowFocus: true
 	}));
 	

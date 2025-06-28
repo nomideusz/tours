@@ -41,21 +41,40 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	
-	interface Props {
-		view?: 'day' | 'week' | 'month';
-		onViewChange?: (view: 'day' | 'week' | 'month') => void;
-		onSlotClick?: (slot: any) => void;
-		compact?: boolean;
-	}
-	
+	// Component props
 	let { 
-		view = $bindable('week'),
-		onViewChange,
-		onSlotClick,
-		compact = false
-	}: Props = $props();
+		view = $bindable('week'), 
+		currentDate = $bindable(new Date()),
+		compact = false,
+		onSlotClick = undefined,
+		onViewChange = undefined
+	}: {
+		view?: 'day' | 'week' | 'month';
+		currentDate?: Date;
+		compact?: boolean;
+		onSlotClick?: (slot: TimeSlot) => void;
+		onViewChange?: (view: 'day' | 'week' | 'month') => void;
+	} = $props();
 	
-	let currentDate = $state(new Date());
+	// Debug component mounting
+	onMount(() => {
+		console.log('🗓️ TourTimeline: Component mounted', { view, currentDate, compact, browser });
+		console.log('🗓️ TourTimeline: Initial query state', { enabled: browser });
+	});
+	
+	// Debug query state changes
+	$effect(() => {
+		console.log('🗓️ TourTimeline: Query state changed', {
+			isLoading: $timelineQuery.isLoading,
+			isError: $timelineQuery.isError,
+			error: $timelineQuery.error,
+			data: $timelineQuery.data,
+			status: $timelineQuery.status,
+			enabled: browser,
+			view,
+			dateString
+		});
+	});
 	
 	// Create stable date string for query key to prevent infinite loops
 	let dateString = $derived(
@@ -66,11 +85,23 @@
 	let timelineQuery = $derived(
 		createQuery({
 			queryKey: queryKeys.allTimeSlots(view, dateString),
-			queryFn: () => queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString()),
+			queryFn: async () => {
+				console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString() });
+				try {
+					const result = await queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString());
+					console.log('✅ Timeline: Data received:', result);
+					return result;
+				} catch (error) {
+					console.error('❌ Timeline: Fetch failed:', error);
+					throw error;
+				}
+			},
 			staleTime: 2 * 60 * 1000, // 2 minutes stale time
 			gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
 			refetchOnWindowFocus: false, // Disable aggressive window focus refetching
-			enabled: browser
+			enabled: browser,
+			retry: 1, // Reduce retries
+			retryDelay: 1000, // 1 second retry delay
 		})
 	);
 	

@@ -24,7 +24,6 @@ export function createPublicTourQuery(qrCode: string, options?: {
 			}
 			return response.json();
 		},
-		refetchInterval: options?.refetchInterval || 30000, // 30 seconds
 		refetchOnWindowFocus: options?.refetchOnWindowFocus ?? true,
 		staleTime: 10000 // 10 seconds
 	});
@@ -45,7 +44,6 @@ export function createPublicProfileQuery(username: string) {
 			}
 			return response.json();
 		},
-		refetchInterval: 60000, // 1 minute
 		refetchOnWindowFocus: true,
 		staleTime: 30000 // 30 seconds
 	});
@@ -74,7 +72,6 @@ export function createTimeSlotAvailabilityQuery(qrCode: string, timeSlotId: stri
 				slot
 			};
 		},
-		refetchInterval: 5000, // 5 seconds - very frequent for booking form
 		refetchOnWindowFocus: true,
 		staleTime: 2000 // 2 seconds - short stale time for availability
 	});
@@ -114,7 +111,6 @@ export function createPublicTicketQuery(ticketCode: string) {
 			console.log(`Ticket API success:`, data);
 			return data;
 		},
-		refetchInterval: 10000, // 10 seconds - frequent for attendance status updates
 		refetchOnWindowFocus: true,
 		staleTime: 5000 // 5 seconds
 	});
@@ -151,7 +147,6 @@ export function createBookingStatusQuery(bookingId: string) {
 				throw new Error('Network error loading booking status');
 			}
 		},
-		refetchInterval: 3000, // 3 seconds - very frequent for payment processing
 		refetchOnWindowFocus: true,
 		staleTime: 0, // No stale time - always refetch for payment status
 		gcTime: 30000 // Keep in cache for 30 seconds

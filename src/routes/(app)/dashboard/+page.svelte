@@ -206,6 +206,8 @@
 		return () => {
 			// Clear all timeouts
 			timeouts.forEach(timeout => clearTimeout(timeout));
+			copyTimeouts.forEach(timeout => clearTimeout(timeout));
+			successTimeouts.forEach(timeout => clearTimeout(timeout));
 			// Remove event listeners
 			document.removeEventListener('click', handleClickOutside);
 			document.removeEventListener('keydown', handleKeyDown);
@@ -334,14 +336,19 @@
 			.slice(0, 4); // Limit to 4 items
 	});
 
+	// Track timeouts for proper cleanup
+	let copyTimeouts: NodeJS.Timeout[] = [];
+	let successTimeouts: NodeJS.Timeout[] = [];
+	
 	// Copy profile link function
 	async function copyProfileLink() {
 		try {
 			await navigator.clipboard.writeText(profileUrl);
 			profileLinkCopied = true;
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				profileLinkCopied = false;
 			}, 2000);
+			copyTimeouts.push(timeoutId);
 		} catch (err) {
 			console.error('Failed to copy link:', err);
 		}
@@ -374,9 +381,10 @@
 				// Refresh user data to reflect changes
 				await invalidateAll();
 
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					saveSuccess = false;
 				}, 5000); // Show success message for 5 seconds
+				successTimeouts.push(timeoutId);
 			} else {
 				const data = await response.json();
 				saveError = data.error || 'Failed to update settings';
@@ -567,9 +575,10 @@
 			
 			if (response.ok) {
 				resendEmailSuccess = true;
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					resendEmailSuccess = false;
 				}, 5000);
+				successTimeouts.push(timeoutId);
 			} else {
 				const data = await response.json();
 				resendEmailError = data.error || 'Failed to send verification email';

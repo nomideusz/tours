@@ -219,7 +219,7 @@
 	}
 	
 	// Check if filters are active
-	let hasActiveFilters = $derived(searchQuery || selectedStatus !== 'all' || selectedPaymentStatus !== 'all');
+	let hasActiveFilters = $derived(searchQuery || selectedStatus !== 'all' || selectedPaymentStatus !== 'all' || dateRange !== 'all');
 	
 </script>
 
@@ -308,7 +308,7 @@
 				Filters
 				{#if hasActiveFilters}
 					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
-						{(selectedStatus !== 'all' ? 1 : 0) + (selectedPaymentStatus !== 'all' ? 1 : 0)}
+						{(selectedStatus !== 'all' ? 1 : 0) + (selectedPaymentStatus !== 'all' ? 1 : 0) + (dateRange !== 'all' ? 1 : 0)}
 					</span>
 				{/if}
 				<ChevronDown class="h-4 w-4 ml-1 transition-transform {showFilters ? 'rotate-180' : ''}" />

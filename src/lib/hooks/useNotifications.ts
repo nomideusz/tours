@@ -18,6 +18,7 @@ export function useNotifications() {
   let reconnectTimeout: NodeJS.Timeout | null = null;
   let healthCheckInterval: NodeJS.Timeout | null = null;
   let pollingInterval: NodeJS.Timeout | null = null;
+  let pollingFallbackTimeout: NodeJS.Timeout | null = null;
   let reconnectAttempts = 0;
   let lastHeartbeat = Date.now();
   let isConnecting = false;
@@ -27,8 +28,8 @@ export function useNotifications() {
   
   const maxReconnectAttempts = 5; // Reduced from 10 to prevent spam
   const heartbeatTimeout = 60000; // 60 seconds
-  const healthCheckInterval_ms = 15000; // 15 seconds
-  const pollingInterval_ms = 30000; // 30 seconds fallback polling
+  const healthCheckInterval_ms = 30000; // 30 seconds - reduced frequency
+  const pollingInterval_ms = 60000; // 60 seconds fallback polling - reduced frequency
   const queryClient = useQueryClient();
 
   // Track this instance
@@ -43,6 +44,21 @@ export function useNotifications() {
     }
     
     console.log(`🧹 Instance ${instanceId}: Cleaning up connections and intervals...`);
+    
+    // Clear global references BEFORE clearing local ones
+    if (globalEventSource === eventSource) {
+      console.log(`🧹 Instance ${instanceId}: Clearing global SSE connection...`);
+      globalEventSource = null;
+    }
+    if (globalReconnectTimeout === reconnectTimeout) {
+      globalReconnectTimeout = null;
+    }
+    if (globalHealthCheckInterval === healthCheckInterval) {
+      globalHealthCheckInterval = null;
+    }
+    if (globalPollingInterval === pollingInterval) {
+      globalPollingInterval = null;
+    }
     
     // Clear local references
     if (eventSource) {
@@ -66,22 +82,17 @@ export function useNotifications() {
       pollingInterval = null;
     }
     
-    // Clear global references if they match this instance
-    if (globalEventSource === eventSource) {
-      globalEventSource = null;
-    }
-    if (globalReconnectTimeout === reconnectTimeout) {
-      globalReconnectTimeout = null;
-    }
-    if (globalHealthCheckInterval === healthCheckInterval) {
-      globalHealthCheckInterval = null;
-    }
-    if (globalPollingInterval === pollingInterval) {
-      globalPollingInterval = null;
+    if (pollingFallbackTimeout) {
+      clearTimeout(pollingFallbackTimeout);
+      pollingFallbackTimeout = null;
     }
     
     isConnecting = false;
     instanceCleanedUp = true;
+    
+    // Decrement global instance count
+    globalInstanceCount = Math.max(0, globalInstanceCount - 1);
+    console.log(`🧹 Instance ${instanceId} cleaned up. Remaining instances: ${globalInstanceCount}`);
   }
 
   // Clean up any existing global connections before creating new ones
@@ -119,7 +130,7 @@ export function useNotifications() {
     isConnecting = true;
     console.log(`🔄 Instance ${instanceId}: Creating new SSE connection...`);
     
-    cleanup();
+    // Don't call cleanup() here - it will immediately close the connection we're about to create!
     
     try {
       console.log('🔗 Establishing SSE connection for notifications...');
@@ -243,8 +254,12 @@ export function useNotifications() {
         // Start polling as fallback
         startPolling();
         
-        // Force reconnect
-        connect();
+        // Close current connection and attempt reconnect
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        attemptReconnect();
       }
     }, healthCheckInterval_ms);
     
@@ -253,7 +268,7 @@ export function useNotifications() {
   }
 
   function startPolling() {
-    if (pollingInterval) return;
+    if (pollingInterval || instanceCleanedUp) return;
     
     console.log(`🔄 Instance ${instanceId}: Starting notification polling as fallback...`);
     
@@ -272,17 +287,21 @@ export function useNotifications() {
   function stopPolling() {
     if (pollingInterval) {
       console.log(`⏹️ Instance ${instanceId}: Stopping notification polling (SSE working)`);
-      clearInterval(pollingInterval);
-      pollingInterval = null;
       
-      // Clear global reference if it matches
+      // Clear global reference if it matches BEFORE clearing local
       if (globalPollingInterval === pollingInterval) {
         globalPollingInterval = null;
       }
+      
+      clearInterval(pollingInterval);
+      pollingInterval = null;
     }
   }
 
   async function pollNotifications() {
+    // Don't poll if instance is cleaned up
+    if (instanceCleanedUp) return;
+    
     try {
       console.log('📡 Polling for notifications...');
       
@@ -386,6 +405,9 @@ export function useNotifications() {
     reconnectTimeout = setTimeout(() => {
       connect();
     }, delay);
+    
+    // Store globally
+    globalReconnectTimeout = reconnectTimeout;
   }
 
   function handleNewBookingNotification(data: any) {
@@ -467,7 +489,14 @@ export function useNotifications() {
 
   function disconnect() {
     console.log(`🔌 Instance ${instanceId}: Disconnecting notifications...`);
+    
+    // Force cleanup global connections first
+    cleanupGlobalConnections();
+    
+    // Then cleanup this instance
     cleanup();
+    
+    // Set connection state to false
     notificationActions.setConnected(false);
   }
 
@@ -479,7 +508,15 @@ export function useNotifications() {
   
   const handleBeforeUnload = () => {
     console.log(`🚨 Instance ${instanceId}: Page unloading, cleaning up...`);
+    
+    // Force cleanup all global connections immediately
+    cleanupGlobalConnections();
+    
+    // Then cleanup this instance
     disconnect();
+    
+    // Force clear all global state
+    globalInstanceCount = 0;
   };
 
   // Initialize
@@ -502,8 +539,9 @@ export function useNotifications() {
     connect();
     
     // Start with polling as fallback after a delay
-    setTimeout(() => {
-      if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
+    pollingFallbackTimeout = setTimeout(() => {
+      // Check if instance is still active before starting polling
+      if (!instanceCleanedUp && (!eventSource || eventSource.readyState !== EventSource.OPEN)) {
         console.log('🔄 SSE not ready after 5s, starting polling fallback...');
         startPolling();
       }

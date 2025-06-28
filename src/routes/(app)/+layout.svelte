@@ -287,13 +287,18 @@
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 			console.log('🧹 Page unloading - cleaning up resources...');
 			
-			// Force cleanup of any notification connections
+			// Force cleanup of any notification connections - multiple cleanup calls
 			window.dispatchEvent(new Event('force-cleanup'));
 			
 			// Cancel all queries if queryClient exists
 			if (data.queryClient) {
 				data.queryClient.cancelQueries();
 			}
+			
+			// Additional cleanup for notification system
+			setTimeout(() => {
+				window.dispatchEvent(new Event('force-cleanup'));
+			}, 0);
 		};
 		
 		window.addEventListener('beforeunload', handleBeforeUnload);
