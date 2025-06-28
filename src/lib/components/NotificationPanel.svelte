@@ -24,13 +24,7 @@
 	let panelElement = $state<HTMLElement>();
 	let buttonElement = $state<HTMLButtonElement>();
 
-	$effect(() => {
-		console.log('📊 NotificationPanel: Current notifications count:', $notifications.length);
-		console.log('📊 NotificationPanel: Unread count:', $unreadCount);
-		if ($notifications.length > 0) {
-			console.log('📊 NotificationPanel: Latest notifications:', $notifications.slice(0, 3));
-		}
-	});
+	// Removed debug logging - was causing noise in console
 
 	function getNotificationIcon(type: string) {
 		switch (type) {

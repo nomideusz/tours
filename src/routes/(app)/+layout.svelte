@@ -287,18 +287,13 @@
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 			console.log('🧹 Page unloading - cleaning up resources...');
 			
-			// Force cleanup of any notification connections - multiple cleanup calls
+			// Force cleanup of any notification connections - only dispatch once
 			window.dispatchEvent(new Event('force-cleanup'));
 			
 			// Cancel all queries if queryClient exists
 			if (data.queryClient) {
 				data.queryClient.cancelQueries();
 			}
-			
-			// Additional cleanup for notification system
-			setTimeout(() => {
-				window.dispatchEvent(new Event('force-cleanup'));
-			}, 0);
 		};
 		
 		window.addEventListener('beforeunload', handleBeforeUnload);
@@ -411,7 +406,7 @@
 		// Clear any remaining intervals or connections
 		if (browser) {
 			// Force cleanup of any lingering connections
-			window.dispatchEvent(new Event('beforeunload'));
+			window.dispatchEvent(new Event('force-cleanup'));
 		}
 	});
 

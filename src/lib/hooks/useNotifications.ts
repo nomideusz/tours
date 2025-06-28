@@ -502,11 +502,13 @@ export function useNotifications() {
 
   // Define handleForceCleanup at the hook level
   const handleForceCleanup = () => {
+    if (instanceCleanedUp) return;
     console.log(`🚨 Instance ${instanceId}: Force cleanup requested`);
     disconnect();
   };
   
   const handleBeforeUnload = () => {
+    if (instanceCleanedUp) return;
     console.log(`🚨 Instance ${instanceId}: Page unloading, cleaning up...`);
     
     // Force cleanup all global connections immediately
@@ -561,10 +563,6 @@ export function useNotifications() {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // Remove force cleanup listener
-      if (browser) {
-        window.removeEventListener('force-cleanup', handleForceCleanup);
-      }
     };
   });
 
