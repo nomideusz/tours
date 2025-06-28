@@ -91,7 +91,7 @@
 	let tourToDelete = $state<Tour | null>(null);
 	
 	// Timeline view state
-	let showTimeline = $state(true); // Temporarily set to true for debugging
+	let showTimeline = $state(false);
 	let timelineView = $state<'day' | 'week' | 'month'>('week');
 	
 	// Feedback state
