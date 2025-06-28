@@ -19,7 +19,7 @@
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
 	import { themeStore } from '$lib/stores/theme.js';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';
 
 	// Icons
@@ -379,6 +379,18 @@
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
 			};
+		}
+	});
+
+	// Cleanup on destroy
+	onDestroy(() => {
+		// QueryClient will be cleaned up by the provider
+		console.log('🧹 App layout: Cleaning up...');
+		
+		// Clear any remaining intervals or connections
+		if (browser) {
+			// Force cleanup of any lingering connections
+			window.dispatchEvent(new Event('beforeunload'));
 		}
 	});
 

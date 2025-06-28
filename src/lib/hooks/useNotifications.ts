@@ -6,6 +6,13 @@ import { queryKeys } from '$lib/queries/shared-stats.js';
 import { get } from 'svelte/store';
 import { notificationSoundEnabled } from '$lib/stores/preferences.js';
 
+// Global tracking to prevent multiple instances
+let globalEventSource: EventSource | null = null;
+let globalReconnectTimeout: NodeJS.Timeout | null = null;
+let globalHealthCheckInterval: NodeJS.Timeout | null = null;
+let globalPollingInterval: NodeJS.Timeout | null = null;
+let globalInstanceCount = 0;
+
 export function useNotifications() {
   let eventSource: EventSource | null = null;
   let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -16,6 +23,7 @@ export function useNotifications() {
   let isConnecting = false;
   let hasLoadedInitial = false;
   let processedNotificationIds = new Set<string>();
+  let instanceCleanedUp = false;
   
   const maxReconnectAttempts = 5; // Reduced from 10 to prevent spam
   const heartbeatTimeout = 60000; // 60 seconds
@@ -23,11 +31,22 @@ export function useNotifications() {
   const pollingInterval_ms = 30000; // 30 seconds fallback polling
   const queryClient = useQueryClient();
 
+  // Track this instance
+  globalInstanceCount++;
+  const instanceId = globalInstanceCount;
+  console.log(`🆕 NotificationHook instance ${instanceId} created. Total instances: ${globalInstanceCount}`);
+
   function cleanup() {
-    console.log('🧹 Cleaning up existing connections and intervals...');
+    if (instanceCleanedUp) {
+      console.log(`🧹 Instance ${instanceId} already cleaned up, skipping...`);
+      return;
+    }
     
+    console.log(`🧹 Instance ${instanceId}: Cleaning up connections and intervals...`);
+    
+    // Clear local references
     if (eventSource) {
-      console.log('🧹 Closing existing SSE connection...');
+      console.log(`🧹 Instance ${instanceId}: Closing local SSE connection...`);
       eventSource.close();
       eventSource = null;
     }
@@ -47,14 +66,58 @@ export function useNotifications() {
       pollingInterval = null;
     }
     
+    // Clear global references if they match this instance
+    if (globalEventSource === eventSource) {
+      globalEventSource = null;
+    }
+    if (globalReconnectTimeout === reconnectTimeout) {
+      globalReconnectTimeout = null;
+    }
+    if (globalHealthCheckInterval === healthCheckInterval) {
+      globalHealthCheckInterval = null;
+    }
+    if (globalPollingInterval === pollingInterval) {
+      globalPollingInterval = null;
+    }
+    
     isConnecting = false;
+    instanceCleanedUp = true;
+  }
+
+  // Clean up any existing global connections before creating new ones
+  function cleanupGlobalConnections() {
+    console.log('🌍 Cleaning up global connections...');
+    
+    if (globalEventSource) {
+      console.log('🌍 Closing global SSE connection...');
+      globalEventSource.close();
+      globalEventSource = null;
+    }
+    
+    if (globalReconnectTimeout) {
+      clearTimeout(globalReconnectTimeout);
+      globalReconnectTimeout = null;
+    }
+    
+    if (globalHealthCheckInterval) {
+      clearInterval(globalHealthCheckInterval);
+      globalHealthCheckInterval = null;
+    }
+    
+    if (globalPollingInterval) {
+      clearInterval(globalPollingInterval);
+      globalPollingInterval = null;
+    }
   }
 
   function connect() {
     if (!browser || isConnecting) return;
     
+    // Prevent multiple connections - clean up any existing global connections first
+    cleanupGlobalConnections();
+    
     isConnecting = true;
-    console.log('🔄 Creating new SSE connection...');
+    console.log(`🔄 Instance ${instanceId}: Creating new SSE connection...`);
     
     cleanup();
     
@@ -67,6 +130,9 @@ export function useNotifications() {
         withCredentials: true
       });
       
+      // Store globally to track across instances
+      globalEventSource = eventSource;
+      
       console.log('📡 EventSource created:', {
         url: eventSource.url,
         readyState: eventSource.readyState,
@@ -74,7 +140,7 @@ export function useNotifications() {
       });
 
       eventSource.onopen = () => {
-        console.log('✅ SSE connection established');
+        console.log(`✅ Instance ${instanceId}: SSE connection established`);
         console.log('🔗 EventSource readyState:', eventSource?.readyState);
         console.log('🔗 EventSource URL:', eventSource?.url);
         
@@ -131,7 +197,7 @@ export function useNotifications() {
       eventSource.onerror = (error) => {
         // Reduce noise in development - only log first few failures
         if (reconnectAttempts < 3) {
-          console.log('❌ SSE connection error:', error);
+          console.log(`❌ Instance ${instanceId}: SSE connection error:`, error);
           console.log('❌ SSE readyState:', eventSource?.readyState);
           console.log('❌ SSE url:', eventSource?.url);
         }
@@ -153,7 +219,7 @@ export function useNotifications() {
       };
 
     } catch (error) {
-      console.error('❌ Failed to create SSE connection:', error);
+      console.error(`❌ Instance ${instanceId}: Failed to create SSE connection:`, error);
       isConnecting = false;
       notificationActions.setConnected(false);
       notificationActions.setError('Failed to establish connection');
@@ -166,7 +232,7 @@ export function useNotifications() {
   function startHealthCheck() {
     if (healthCheckInterval) return;
     
-    console.log('🏥 Starting health check interval...');
+    console.log(`🏥 Instance ${instanceId}: Starting health check interval...`);
     healthCheckInterval = setInterval(() => {
       const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
       console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
@@ -181,12 +247,15 @@ export function useNotifications() {
         connect();
       }
     }, healthCheckInterval_ms);
+    
+    // Store globally
+    globalHealthCheckInterval = healthCheckInterval;
   }
 
   function startPolling() {
     if (pollingInterval) return;
     
-    console.log('🔄 Starting notification polling as fallback...');
+    console.log(`🔄 Instance ${instanceId}: Starting notification polling as fallback...`);
     
     // Poll immediately
     pollNotifications();
@@ -195,13 +264,21 @@ export function useNotifications() {
     pollingInterval = setInterval(() => {
       pollNotifications();
     }, pollingInterval_ms);
+    
+    // Store globally
+    globalPollingInterval = pollingInterval;
   }
 
   function stopPolling() {
     if (pollingInterval) {
-      console.log('⏹️ Stopping notification polling (SSE working)');
+      console.log(`⏹️ Instance ${instanceId}: Stopping notification polling (SSE working)`);
       clearInterval(pollingInterval);
       pollingInterval = null;
+      
+      // Clear global reference if it matches
+      if (globalPollingInterval === pollingInterval) {
+        globalPollingInterval = null;
+      }
     }
   }
 
@@ -346,7 +423,7 @@ export function useNotifications() {
     
     // Invalidate relevant queries to refresh data
     try {
-      queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings(10) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
       queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
       
