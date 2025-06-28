@@ -218,6 +218,11 @@
 	/* Component variables */
 	--modal-backdrop: rgba(0, 0, 0, 0.5);
 	--modal-close-button-hover: var(--gray-100);
+	
+	/* Overlay variables */
+	--overlay-dark: rgba(0, 0, 0, 0.8);
+	--overlay-light: rgba(255, 255, 255, 0.8);
+	--shadow-dark: rgba(0, 0, 0, 0.6);
 }
 
 /* Dark mode overrides */
@@ -348,6 +353,11 @@
 	/* Component variables - dark mode */
 	--modal-backdrop: rgba(0, 0, 0, 0.7);
 	--modal-close-button-hover: var(--gray-800);
+	
+	/* Overlay variables - dark mode */
+	--overlay-dark: rgba(0, 0, 0, 0.9);
+	--overlay-light: rgba(0, 0, 0, 0.6);
+	--shadow-dark: rgba(0, 0, 0, 0.8);
 }
 
 /* Global color inheritance rules to ensure readability */

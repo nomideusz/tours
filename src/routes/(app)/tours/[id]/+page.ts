@@ -5,4 +5,5 @@ export const load = async ({ params }) => {
 };
 
 // Disable SSR to prevent 502 errors on refresh
-export const ssr = false; 
+export const ssr = false;
+export const prerender = false; 

@@ -24,7 +24,7 @@
 	import Euro from 'lucide-svelte/icons/euro';
 	import Users from 'lucide-svelte/icons/users';
 	import Clock from 'lucide-svelte/icons/clock';
-	import MapPin from 'lucide-svelte/icons/map-pin';
+
 	import Edit from 'lucide-svelte/icons/edit';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Copy from 'lucide-svelte/icons/copy';
@@ -55,34 +55,56 @@
 	
 	// TanStack Query for tour details
 	const tourDetailsQuery = createQuery({
-		queryKey: queryKeys.tourDetails(tourId),
-		queryFn: () => queryFunctions.fetchTourDetails(tourId),
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnWindowFocus: 'always',
-		refetchOnMount: 'always',
+		get queryKey() { return queryKeys.tourDetails(tourId); },
+		get queryFn() { return () => queryFunctions.fetchTourDetails(tourId); },
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		gcTime: 10 * 60 * 1000, // 10 minutes
+		refetchOnWindowFocus: true,
+		refetchOnMount: true,
+		get enabled() { return !!tourId && browser; },
 	});
 	
 	// TanStack Query for tour schedule - using enhanced endpoint
 	const tourScheduleQuery = createQuery({
-		queryKey: ['tour-schedule', tourId],
-		queryFn: async () => {
-			const response = await fetch(`/api/tour-schedule/${tourId}`);
-			if (!response.ok) throw new Error('Failed to fetch schedule');
-			return response.json();
+		get queryKey() { return ['tour-schedule', tourId]; },
+		get queryFn() { 
+			return async () => {
+				const response = await fetch(`/api/tour-schedule/${tourId}`);
+				if (!response.ok) throw new Error('Failed to fetch schedule');
+				return response.json();
+			};
 		},
-		staleTime: 30 * 1000,
-		gcTime: 5 * 60 * 1000,
-		refetchInterval: 60 * 1000, // Auto-refresh every minute
-		refetchIntervalInBackground: true,
+		staleTime: 2 * 60 * 1000, // 2 minutes
+		gcTime: 10 * 60 * 1000, // 10 minutes
+		refetchOnWindowFocus: true,
+		get enabled() { return !!tourId && browser; },
+		retry: 3,
+		retryDelay: 1000,
 	});
 	
-	// Derive data from queries
+	// Derive data from queries - separate loading states
 	let tour = $derived($tourDetailsQuery.data?.tour || null);
 	let stats = $derived($tourDetailsQuery.data?.stats || null);
 	let schedule = $derived($tourScheduleQuery.data || null);
-	let isLoading = $derived($tourDetailsQuery.isLoading || $tourScheduleQuery.isLoading);
+	
+	// Separate loading states to prevent one query blocking the entire page
+	let tourLoading = $derived($tourDetailsQuery.isLoading);
+	let scheduleLoading = $derived($tourScheduleQuery.isLoading);
+	let isLoading = $derived(tourLoading && scheduleLoading); // Only loading if BOTH are loading
 	let isError = $derived($tourDetailsQuery.isError || $tourScheduleQuery.isError);
+	
+	// Debug effect to track query states
+	$effect(() => {
+		console.log('Query states:', {
+			tourLoading,
+			scheduleLoading,
+			tourError: $tourDetailsQuery.isError,
+			scheduleError: $tourScheduleQuery.isError,
+			tourData: !!tour,
+			scheduleData: !!schedule,
+			tourId
+		});
+	});
 	
 	// State
 	let qrCopied = $state(false);
@@ -93,16 +115,86 @@
 	let showFullDescription = $state(false);
 	let showAddSlotsModal = $state(false);
 	let mobileTab = $state<'info' | 'schedule' | 'qr'>('info');
+	let lightboxOpen = $state(false);
+	let lightboxImage = $state<string>('');
+	let lightboxImageLoading = $state(false);
+	let lightboxImageError = $state(false);
+	
+	// Calendar event handlers
+	function handleDateSelect(date: Date) {
+		console.log('Date selected in parent:', date, 'formatted:', date.toDateString());
+		selectedDate = new Date(date); // Ensure we get a fresh Date object
+		console.log('Updated selectedDate:', selectedDate.toDateString());
+	}
+	
+	function handleMonthChange(month: Date) {
+		console.log('Month changed in parent:', month);
+		currentMonth = new Date(month); // Ensure we get a fresh Date object
+	}
+	
+	// Lightbox functions
+	function openLightbox(imagePath: string) {
+		lightboxImage = `/api/images/${tourId}/${imagePath}`;
+		lightboxImageLoading = true;
+		lightboxImageError = false;
+		lightboxOpen = true;
+	}
+	
+	function closeLightbox() {
+		lightboxOpen = false;
+		lightboxImage = '';
+		lightboxImageLoading = false;
+		lightboxImageError = false;
+	}
+	
+	function handleImageLoad() {
+		lightboxImageLoading = false;
+	}
+	
+	function handleImageError() {
+		lightboxImageLoading = false;
+		lightboxImageError = true;
+	}
+	
+	// Handle keyboard events for lightbox
+	$effect(() => {
+		function handleKeydown(event: KeyboardEvent) {
+			if (event.key === 'Escape' && lightboxOpen) {
+				closeLightbox();
+			}
+		}
+		
+		if (browser && lightboxOpen) {
+			document.addEventListener('keydown', handleKeydown);
+			return () => document.removeEventListener('keydown', handleKeydown);
+		}
+	});
 	
 	// Selected date slots - using enhanced data structure
 	let selectedDateSlots = $derived(() => {
-		if (!schedule?.timeSlots) return [];
+		if (!schedule?.timeSlots || !selectedDate) return [];
 		
-		const dateKey = selectedDate.toISOString().split('T')[0];
-		return schedule.timeSlots.filter((slot: any) => {
-			const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
-			return slotDate === dateKey;
+		// Format dates consistently for comparison
+		const selectedDateStr = selectedDate.getFullYear() + '-' + 
+			String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
+			String(selectedDate.getDate()).padStart(2, '0');
+		
+		const filteredSlots = schedule.timeSlots.filter((slot: any) => {
+			if (!slot.startTime) return false;
+			
+			const slotDate = new Date(slot.startTime);
+			const slotDateStr = slotDate.getFullYear() + '-' + 
+				String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
+				String(slotDate.getDate()).padStart(2, '0');
+			
+			return slotDateStr === selectedDateStr;
 		});
+		
+		console.log('Selected date:', selectedDateStr, 'Total slots:', schedule.timeSlots.length, 'Found slots:', filteredSlots.length);
+		if (filteredSlots.length > 0) {
+			console.log('Matching slots:', filteredSlots.map((s: any) => ({ id: s.id, startTime: s.startTime })));
+		}
+		return filteredSlots;
 	});
 	
 	// Get booking URL
@@ -212,12 +304,19 @@
 		}
 	});
 	
-	// Refresh data when returning to the page
+	// Handle navigation success messages and data refresh
 	$effect(() => {
-		if (browser) {
-			// Invalidate queries to ensure fresh data
-			queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
-			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+		if (browser && tourId) {
+			const urlParams = new URLSearchParams(window.location.search);
+			
+			// Only invalidate queries if we have specific parameters indicating data changes
+			if (urlParams.get('edited') === 'true' || urlParams.get('scheduled') === 'true') {
+				// Use setTimeout to avoid blocking the UI
+				setTimeout(() => {
+					queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
+					queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+				}, 100);
+			}
 		}
 	});
 </script>
@@ -329,7 +428,7 @@
 		</div>
 	{/if}
 	
-	{#if isLoading}
+	{#if tourLoading && !tour}
 		<div class="animate-pulse space-y-6">
 			<!-- Loading skeleton -->
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -441,101 +540,94 @@
 							</button>
 						</div>
 					</div>
-					<div class="p-3">
-						<!-- Compact grid layout -->
-						<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-							<!-- Left: Essential info -->
-							<div class="sm:col-span-2 space-y-3">
-								<!-- Key facts in compact grid - Always visible but more compact on mobile -->
-								<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-									<div class="p-1.5 sm:p-2 rounded-lg text-center" style="background: var(--bg-secondary);">
-										<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Price</p>
-										<p class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">€{tour.price}</p>
-									</div>
-									<div class="p-1.5 sm:p-2 rounded-lg text-center" style="background: var(--bg-secondary);">
-										<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Duration</p>
-										<p class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">{tour.duration}min</p>
-									</div>
-									<div class="p-1.5 sm:p-2 rounded-lg text-center" style="background: var(--bg-secondary);">
-										<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Capacity</p>
-										<p class="font-semibold text-sm sm:text-base" style="color: var(--text-primary);">{tour.capacity}</p>
-									</div>
-									<div class="p-1.5 sm:p-2 rounded-lg text-center" style="background: var(--bg-secondary);">
-										<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Category</p>
-										<p class="font-semibold capitalize text-xs sm:text-sm" style="color: var(--text-primary);">{tour.category || 'None'}</p>
-									</div>
-								</div>
-								
-								<!-- Description - collapsible if long -->
-								<div>
-									{#if tour.description.length > 150 && !showFullDescription}
-										<p class="text-sm" style="color: var(--text-primary);">
-											{tour.description.slice(0, 150)}...
-											<button onclick={() => showFullDescription = true} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
-												Show more
-											</button>
-										</p>
-									{:else if tour.description.length > 150 && showFullDescription}
-										<p class="text-sm" style="color: var(--text-primary);">
-											{tour.description}
-											<button onclick={() => showFullDescription = false} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
-												Show less
-											</button>
-										</p>
-									{:else}
-										<p class="text-sm" style="color: var(--text-primary);">{tour.description}</p>
-									{/if}
-								</div>
-								
-								{#if tour.location}
-									<div class="flex items-start gap-2 p-2 rounded-lg" style="background: var(--bg-secondary);">
-										<MapPin class="h-3.5 w-3.5 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
-										<p class="text-sm" style="color: var(--text-primary);">{tour.location}</p>
-									</div>
+					<div class="p-4 space-y-4">
+						<!-- Key facts - full width -->
+						<div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+							<div class="sm:col-span-2 p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+								<p class="text-xs" style="color: var(--text-tertiary);">Price</p>
+								<p class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">€{tour.price}</p>
+							</div>
+							<div class="sm:col-span-2 p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+								<p class="text-xs" style="color: var(--text-tertiary);">Duration</p>
+								<p class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">{tour.duration}min</p>
+							</div>
+							<div class="sm:col-span-2 p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+								<p class="text-xs" style="color: var(--text-tertiary);">Max Group Size</p>
+								<p class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">{tour.capacity}</p>
+							</div>
+						</div>
+						
+						<!-- Description - full width -->
+						{#if tour.description}
+							<div>
+								{#if tour.description.length > 200 && !showFullDescription}
+									<p class="text-sm leading-relaxed" style="color: var(--text-primary);">
+										{tour.description.slice(0, 200)}...
+										<button onclick={() => showFullDescription = true} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
+											Show more
+										</button>
+									</p>
+								{:else if tour.description.length > 200 && showFullDescription}
+									<p class="text-sm leading-relaxed" style="color: var(--text-primary);">
+										{tour.description}
+										<button onclick={() => showFullDescription = false} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
+											Show less
+										</button>
+									</p>
+								{:else}
+									<p class="text-sm leading-relaxed" style="color: var(--text-primary);">{tour.description}</p>
 								{/if}
 							</div>
-							
-							<!-- Right: Tags and policies -->
-							<div class="space-y-3">
+						{/if}
+
+						<!-- Additional details in responsive grid -->
+						{#if (tour.includedItems && tour.includedItems.length > 0) || (tour.requirements && tour.requirements.length > 0) || tour.cancellationPolicy}
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 								{#if tour.includedItems && tour.includedItems.length > 0}
-									<div>
-										<p class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">Included</p>
-										<div class="flex flex-wrap gap-1">
+									<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+										<p class="text-sm font-medium mb-2 flex items-center gap-1" style="color: var(--text-secondary);">
+											<Check class="h-4 w-4" style="color: var(--color-success-600);" />
+											What's Included
+										</p>
+										<div class="space-y-1">
 											{#each tour.includedItems as item}
-												<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs" style="background: var(--color-success-100); color: var(--color-success-700);">
-													<Check class="h-2.5 w-2.5" />
+												<div class="flex items-center gap-2 text-xs" style="color: var(--text-primary);">
+													<Check class="h-3 w-3 flex-shrink-0" style="color: var(--color-success-600);" />
 													{item}
-												</span>
+												</div>
 											{/each}
 										</div>
 									</div>
 								{/if}
 								
 								{#if tour.requirements && tour.requirements.length > 0}
-									<div>
-										<p class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">Requirements</p>
-										<div class="flex flex-wrap gap-1">
+									<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+										<p class="text-sm font-medium mb-2 flex items-center gap-1" style="color: var(--text-secondary);">
+											<Info class="h-4 w-4" style="color: var(--color-warning-600);" />
+											Requirements
+										</p>
+										<div class="space-y-1">
 											{#each tour.requirements as requirement}
-												<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs" style="background: var(--color-warning-100); color: var(--color-warning-700);">
-													<Info class="h-2.5 w-2.5" />
+												<div class="flex items-center gap-2 text-xs" style="color: var(--text-primary);">
+													<Info class="h-3 w-3 flex-shrink-0" style="color: var(--color-warning-600);" />
 													{requirement}
-												</span>
+												</div>
 											{/each}
 										</div>
 									</div>
 								{/if}
 								
 								{#if tour.cancellationPolicy}
-									<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
-										<p class="text-xs font-medium mb-1 flex items-center gap-1" style="color: var(--text-secondary);">
-											<Shield class="h-3 w-3" />
+									<div class="p-3 rounded-lg {tour.includedItems || tour.requirements ? '' : 'sm:col-span-2 lg:col-span-3'}" style="background: var(--bg-secondary);">
+										<p class="text-sm font-medium mb-2 flex items-center gap-1" style="color: var(--text-secondary);">
+											<Shield class="h-4 w-4" style="color: var(--color-info-600);" />
 											Cancellation Policy
 										</p>
-										<p class="text-xs" style="color: var(--text-primary);">{tour.cancellationPolicy}</p>
+										<p class="text-xs leading-relaxed" style="color: var(--text-primary);">{tour.cancellationPolicy}</p>
 									</div>
 								{/if}
 							</div>
-						</div>
+						{/if}
 					</div>
 				</div>
 				
@@ -548,6 +640,8 @@
 								<p class="text-sm mt-1" style="color: var(--text-secondary);">
 									{schedule.scheduleStats.upcomingSlots} upcoming • {schedule.scheduleStats.totalBookings} bookings total
 								</p>
+							{:else if scheduleLoading}
+								<p class="text-sm mt-1" style="color: var(--text-secondary);">Loading schedule...</p>
 							{/if}
 						</div>
 						<div class="flex items-center gap-2">
@@ -562,7 +656,22 @@
 						</div>
 					</div>
 					
-					{#if schedule?.timeSlots && schedule.timeSlots.length > 0}
+					{#if scheduleLoading}
+						<div class="p-4">
+							<div class="animate-pulse">
+								<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+									<!-- Calendar skeleton -->
+									<div class="h-96 rounded-lg" style="background: var(--bg-secondary);"></div>
+									<!-- Slots skeleton -->
+									<div class="space-y-3">
+										{#each Array(3) as _}
+											<div class="h-20 rounded-lg" style="background: var(--bg-secondary);"></div>
+										{/each}
+									</div>
+								</div>
+							</div>
+						</div>
+					{:else if schedule?.timeSlots && schedule.timeSlots.length > 0}
 						<div class="p-4">
 							<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] gap-6 xl:gap-8">
 								<!-- Calendar -->
@@ -571,13 +680,24 @@
 										bind:selectedDate
 										bind:currentMonth
 										slots={schedule.timeSlots}
-										onSelectDate={(date) => selectedDate = date}
-										onMonthChange={(month) => currentMonth = month}
+										onSelectDate={handleDateSelect}
+										onMonthChange={handleMonthChange}
 									/>
 								</div>
 								
 								<!-- Selected Date Slots -->
 								<div>
+									<!-- Debug info -->
+									{#if browser}
+										<div class="mb-2 p-2 text-xs rounded" style="background: var(--bg-secondary); color: var(--text-secondary);">
+											Selected: {selectedDate.toDateString()}, Slots: {selectedDateSlots().length}
+											{#if schedule?.timeSlots}
+												<br>Total schedule slots: {schedule.timeSlots.length}
+												<br>Sample slot dates: {schedule.timeSlots.slice(0, 3).map((s: any) => new Date(s.startTime).toDateString()).join(', ')}
+											{/if}
+										</div>
+									{/if}
+									
 									<TimeSlotsList 
 										selectedDate={selectedDate}
 										slots={selectedDateSlots()}
@@ -618,14 +738,14 @@
 						<div class="p-4">
 							<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
 								{#each showAllImages ? tour.images : tour.images.slice(0, 6) as image, index}
-									<button onclick={() => window.open(`/api/images/${tourId}/${image}`, '_blank')} class="relative aspect-video rounded-lg overflow-hidden group cursor-pointer">
+									<button onclick={() => openLightbox(image)} class="relative aspect-video rounded-lg overflow-hidden group cursor-pointer gallery-thumbnail loaded">
 										<img 
 											src={`/api/images/${tourId}/${image}?size=medium`}
 											alt="Tour image {index + 1}"
-											class="w-full h-full object-cover transition-transform group-hover:scale-105"
+											class="w-full h-full object-cover transition-transform group-hover:scale-105 thumbnail-image"
 											loading="lazy"
 										/>
-										<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style="background: rgba(0, 0, 0, 0.3);">
+										<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10" style="background: rgba(0, 0, 0, 0.3);">
 											<Eye class="w-6 h-6 text-white" />
 										</div>
 									</button>
@@ -810,7 +930,7 @@
 	{/if}
 
 <!-- Floating Action Button (Mobile) -->
-{#if tour && !isLoading}
+{#if tour && !tourLoading}
 	<div class="floating-actions sm:hidden">
 		{#if tour.status === 'active'}
 			<button 
@@ -851,6 +971,48 @@
 		onCancel={() => showAddSlotsModal = false}
 	/>
 </Modal>
+
+<!-- Image Lightbox -->
+{#if lightboxOpen}
+	<div class="lightbox-overlay" onclick={closeLightbox}>
+		<div class="lightbox-content" onclick={(e) => e.stopPropagation()}>
+			<button onclick={closeLightbox} class="lightbox-close" aria-label="Close lightbox">
+				<XCircle class="w-6 h-6" />
+			</button>
+			
+			<!-- Loading spinner -->
+			{#if lightboxImageLoading}
+				<div class="lightbox-loader">
+					<div class="spinner"></div>
+					<p class="loader-text">Loading image...</p>
+				</div>
+			{/if}
+			
+			<!-- Error state -->
+			{#if lightboxImageError}
+				<div class="lightbox-error">
+					<AlertCircle class="w-12 h-12 mb-4" />
+					<p class="error-text">Failed to load image</p>
+					<button onclick={closeLightbox} class="button-secondary button--small mt-4">
+						Close
+					</button>
+				</div>
+			{/if}
+			
+			<!-- Image -->
+			{#if !lightboxImageError}
+				<img 
+					src={lightboxImage} 
+					alt="Tour image" 
+					class="lightbox-image" 
+					class:loading={lightboxImageLoading}
+					onload={handleImageLoad}
+					onerror={handleImageError}
+				/>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <style>
 	.animate-fade-in {
@@ -917,5 +1079,164 @@
 		.text-2xl {
 			font-size: 1.25rem;
 		}
+	}
+	
+	/* Lightbox styles */
+	.lightbox-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--overlay-dark);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+		padding: 1rem;
+	}
+	
+	.lightbox-content {
+		position: relative;
+		max-width: 95vw;
+		max-height: 95vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.lightbox-image {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+		border-radius: 8px;
+		box-shadow: 0 25px 50px -12px var(--shadow-dark);
+		transition: opacity 0.3s ease;
+	}
+	
+	.lightbox-image.loading {
+		opacity: 0;
+	}
+	
+	.lightbox-close {
+		position: absolute;
+		top: -1rem;
+		right: -1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 50%;
+		width: 2.5rem;
+		height: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		z-index: 10000;
+		color: var(--text-primary);
+	}
+	
+	.lightbox-close:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+		transform: scale(1.1);
+	}
+	
+	.lightbox-close svg {
+		color: var(--text-primary);
+	}
+	
+	/* Lightbox loader */
+	.lightbox-loader {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 200px;
+		color: var(--text-primary);
+	}
+	
+	.spinner {
+		width: 3rem;
+		height: 3rem;
+		border: 3px solid var(--border-primary);
+		border-top: 3px solid var(--color-primary-500);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 1rem;
+	}
+	
+	.loader-text {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	
+	/* Lightbox error */
+	.lightbox-error {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 200px;
+		color: var(--text-primary);
+		text-align: center;
+		padding: 2rem;
+	}
+	
+	.error-text {
+		font-size: 1rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	
+	.lightbox-error svg {
+		color: var(--color-error-500);
+	}
+	
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+	
+	/* Gallery thumbnail loading */
+	.gallery-thumbnail {
+		position: relative;
+	}
+	
+	.thumbnail-skeleton {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--bg-secondary);
+		border-radius: inherit;
+		z-index: 2;
+		transition: opacity 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 1;
+	}
+	
+	.thumbnail-skeleton::after {
+		content: '';
+		width: 1.5rem;
+		height: 1.5rem;
+		border: 2px solid var(--border-primary);
+		border-top: 2px solid var(--color-primary-500);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+	
+	.gallery-thumbnail.loaded .thumbnail-skeleton {
+		opacity: 0;
+		pointer-events: none;
+	}
+	
+	.thumbnail-image {
+		position: relative;
+		z-index: 1;
 	}
 </style> 
