@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -387,7 +388,7 @@
 				{
 					icon: Eye,
 					label: 'Price',
-					value: formData.price ? `€${formData.price}` : 'Required'
+					value: formData.price ? $globalCurrencyFormatter(formData.price) : 'Required'
 				}
 			]}
 		/>
