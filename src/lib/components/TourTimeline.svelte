@@ -81,29 +81,27 @@
 		`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`
 	);
 	
-	// Query for timeline data - use stable date string
-	let timelineQuery = $derived(
-		createQuery({
-			queryKey: queryKeys.allTimeSlots(view, dateString),
-			queryFn: async () => {
-				console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString() });
-				try {
-					const result = await queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString());
-					console.log('✅ Timeline: Data received:', result);
-					return result;
-				} catch (error) {
-					console.error('❌ Timeline: Fetch failed:', error);
-					throw error;
-				}
-			},
-			staleTime: 2 * 60 * 1000, // 2 minutes stale time
-			gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-			refetchOnWindowFocus: false, // Disable aggressive window focus refetching
-			enabled: browser,
-			retry: 1, // Reduce retries
-			retryDelay: 1000, // 1 second retry delay
-		})
-	);
+	// Query for timeline data - create once, not in derived
+	const timelineQuery = createQuery({
+		queryKey: queryKeys.allTimeSlots(view, dateString),
+		queryFn: async () => {
+			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString() });
+			try {
+				const result = await queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString());
+				console.log('✅ Timeline: Data received:', result);
+				return result;
+			} catch (error) {
+				console.error('❌ Timeline: Fetch failed:', error);
+				throw error;
+			}
+		},
+		staleTime: 2 * 60 * 1000, // 2 minutes stale time
+		gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+		refetchOnWindowFocus: false, // Disable aggressive window focus refetching
+		enabled: browser,
+		retry: 1, // Reduce retries
+		retryDelay: 1000, // 1 second retry delay
+	});
 	
 	// Derived data
 	let timeSlots = $derived($timelineQuery.data?.timeSlots || []);

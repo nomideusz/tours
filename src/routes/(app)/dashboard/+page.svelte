@@ -125,9 +125,13 @@
 			data: $recentBookingsQuery.data
 		});
 		
-		// Force refetch both queries
-		$dashboardStatsQuery.refetch();
-		$recentBookingsQuery.refetch();
+		// Force refetch both queries only if they haven't loaded yet
+		if (!$dashboardStatsQuery.data && !$dashboardStatsQuery.isLoading) {
+			$dashboardStatsQuery.refetch();
+		}
+		if (!$recentBookingsQuery.data && !$recentBookingsQuery.isLoading) {
+			$recentBookingsQuery.refetch();
+		}
 		
 		let timeouts: NodeJS.Timeout[] = []; // Track timeouts for cleanup
 		
