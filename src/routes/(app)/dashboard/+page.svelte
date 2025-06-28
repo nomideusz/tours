@@ -768,6 +768,7 @@
 
 	// Timeline view state
 	let timelineView = $state<'day' | 'week' | 'month'>('week');
+	let timelineCurrentDate = $state(new Date());
 </script>
 
 <svelte:head>
@@ -994,13 +995,14 @@
 
 		<!-- Tour Timeline - Main Feature -->
 		<div class="mb-8">
-			<TourTimeline 
-				bind:view={timelineView}
-				onSlotClick={(slot) => {
-					// Navigate to tour details page when clicking a slot
-					goto(`/tours/${slot.tourId}`);
-				}}
-			/>
+					<TourTimeline 
+			bind:view={timelineView}
+			bind:currentDate={timelineCurrentDate}
+			onSlotClick={(slot) => {
+				// Navigate to tour details page when clicking a slot
+				goto(`/tours/${slot.tourId}`);
+			}}
+		/>
 		</div>
 
 		<!-- Recent Bookings -->

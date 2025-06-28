@@ -93,6 +93,7 @@
 	// Timeline view state
 	let showTimeline = $state(false);
 	let timelineView = $state<'day' | 'week' | 'month'>('week');
+	let timelineCurrentDate = $state(new Date());
 	
 	// Feedback state
 	let recentlyUpdated = $state<string | null>(null);
@@ -361,6 +362,7 @@
 		<div class="mb-6">
 			<TourTimeline 
 				bind:view={timelineView}
+				bind:currentDate={timelineCurrentDate}
 				compact={false}
 				onSlotClick={(slot) => {
 					goto(`/tours/${slot.tourId}`);
