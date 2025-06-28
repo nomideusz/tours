@@ -8,6 +8,7 @@
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { updateTourStatusMutation } from '$lib/queries/mutations.js';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -46,12 +47,17 @@
 	import Tag from 'lucide-svelte/icons/tag';
 	import Download from 'lucide-svelte/icons/download';
 	import Banknote from 'lucide-svelte/icons/banknote';
+	import X from 'lucide-svelte/icons/x';
+	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	
 	// Get data from load function
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
 	
 	const queryClient = useQueryClient();
+	
+	// Initialize mutations
+	const updateStatusMutation = updateTourStatusMutation();
 	
 	// TanStack Query for tour details
 	const tourDetailsQuery = createQuery({
@@ -70,7 +76,9 @@
 		get queryFn() { 
 			return async () => {
 				const response = await fetch(`/api/tour-schedule/${tourId}`);
-				if (!response.ok) throw new Error('Failed to fetch schedule');
+				if (!response.ok) {
+					throw new Error(`Failed to fetch schedule: ${response.status} ${response.statusText}`);
+				}
 				return response.json();
 			};
 		},
@@ -78,7 +86,7 @@
 		gcTime: 10 * 60 * 1000, // 10 minutes
 		refetchOnWindowFocus: true,
 		refetchOnMount: true,
-		get enabled() { return !!tourId; },
+		get enabled() { return !!tourId && browser; },
 		retry: 3,
 		retryDelay: 1000,
 	});
@@ -91,6 +99,7 @@
 	// Separate loading states to prevent one query blocking the entire page
 	let tourLoading = $derived($tourDetailsQuery.isLoading);
 	let scheduleLoading = $derived($tourScheduleQuery.isLoading);
+	let scheduleError = $derived($tourScheduleQuery.isError);
 	let isLoading = $derived(tourLoading && scheduleLoading); // Only loading if BOTH are loading
 	let isError = $derived($tourDetailsQuery.isError || $tourScheduleQuery.isError);
 	
@@ -109,6 +118,8 @@
 	let lightboxImage = $state<string>('');
 	let lightboxImageLoading = $state(false);
 	let lightboxImageError = $state(false);
+	let showWelcomePrompt = $state(false);
+	let hasInitialSchedule = $state(false);
 	
 	// Calendar event handlers
 	function handleDateSelect(date: Date) {
@@ -161,24 +172,36 @@
 	let selectedDateSlots = $derived(() => {
 		if (!schedule?.timeSlots || !selectedDate) return [];
 		
-		// Format dates consistently for comparison
-		const selectedDateStr = selectedDate.getFullYear() + '-' + 
-			String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
-			String(selectedDate.getDate()).padStart(2, '0');
-		
-		const filteredSlots = schedule.timeSlots.filter((slot: any) => {
-			if (!slot.startTime) return false;
+		try {
+			// Format dates consistently for comparison
+			const selectedDateStr = selectedDate.getFullYear() + '-' + 
+				String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' + 
+				String(selectedDate.getDate()).padStart(2, '0');
 			
-			const slotDate = new Date(slot.startTime);
-			const slotDateStr = slotDate.getFullYear() + '-' + 
-				String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
-				String(slotDate.getDate()).padStart(2, '0');
+			const filteredSlots = schedule.timeSlots.filter((slot: any) => {
+				if (!slot.startTime) return false;
+				
+				try {
+					const slotDate = new Date(slot.startTime);
+					// Check if the date is valid
+					if (isNaN(slotDate.getTime())) return false;
+					
+					const slotDateStr = slotDate.getFullYear() + '-' + 
+						String(slotDate.getMonth() + 1).padStart(2, '0') + '-' + 
+						String(slotDate.getDate()).padStart(2, '0');
+					
+					return slotDateStr === selectedDateStr;
+				} catch (error) {
+					console.warn('Error processing slot date:', slot.startTime, error);
+					return false;
+				}
+			});
 			
-			return slotDateStr === selectedDateStr;
-		});
-		
-
-		return filteredSlots;
+			return filteredSlots;
+		} catch (error) {
+			console.error('Error in selectedDateSlots:', error);
+			return [];
+		}
 	});
 	
 	// Get booking URL
@@ -246,6 +269,30 @@
 		document.body.removeChild(link);
 	}
 	
+	// Activate tour from welcome prompt
+	async function activateTour() {
+		if (!tour || tour.status === 'active') return;
+		
+		try {
+			await $updateStatusMutation.mutateAsync({ 
+				tourId: tour.id, 
+				status: 'active' 
+			});
+			
+			// Close welcome prompt after successful activation
+			showWelcomePrompt = false;
+			
+			// Show a brief success message
+			showEditSuccess = true;
+			setTimeout(() => {
+				showEditSuccess = false;
+			}, 3000);
+		} catch (error) {
+			console.error('Failed to activate tour:', error);
+			// Could add error state here if needed
+		}
+	}
+	
 	// Check for success messages from navigation
 	let showEditSuccess = $state(false);
 	let showScheduleSuccess = $state(false);
@@ -254,6 +301,7 @@
 	$effect(() => {
 		if (browser) {
 			const urlParams = new URLSearchParams(window.location.search);
+			
 			if (urlParams.get('edited') === 'true') {
 				showEditSuccess = true;
 				// Clear the URL parameter
@@ -284,6 +332,23 @@
 				setTimeout(() => {
 					showScheduleSuccess = false;
 				}, 3000);
+			}
+			
+			if (urlParams.get('created') === 'true') {
+				showWelcomePrompt = true;
+				// Clear the URL parameter
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('created');
+				
+				// Also check if tour was created with initial schedule
+				hasInitialSchedule = urlParams.get('scheduled') === 'true';
+				if (hasInitialSchedule) {
+					newUrl.searchParams.delete('scheduled');
+				}
+				
+				window.history.replaceState({}, '', newUrl.toString());
+				
+				// Welcome prompt stays visible until manually dismissed
 			}
 		}
 	});
@@ -335,6 +400,129 @@
 			<div class="flex items-center gap-3">
 				<CheckCircle class="h-5 w-5" />
 				<p class="font-medium">Time slots added successfully!</p>
+			</div>
+		</div>
+	{/if}
+	
+	{#if showWelcomePrompt}
+		<div class="mb-6 rounded-xl p-6 alert-info animate-fade-in" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+			<div class="flex items-start gap-4">
+				<div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--color-primary-100);">
+					<Calendar class="h-6 w-6" style="color: var(--color-primary-600);" />
+				</div>
+				<div class="flex-1">
+					<h3 class="font-semibold text-lg mb-2" style="color: var(--color-primary-900);">🎉 Tour Created Successfully!</h3>
+					{#if tour?.status === 'active'}
+						{#if hasInitialSchedule}
+							<p class="mb-4" style="color: var(--color-primary-700);">
+								Your tour is now live with initial time slots! You can view your schedule below, add more time slots, or start sharing your QR code to get bookings.
+							</p>
+							<div class="flex flex-col sm:flex-row gap-3">
+								<button onclick={() => {
+									const scheduleSection = document.getElementById('schedule');
+									if (scheduleSection) {
+										scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+									}
+									showWelcomePrompt = false;
+								}} class="button-primary button--gap">
+									<Calendar class="h-4 w-4" />
+									View Schedule
+								</button>
+								<button onclick={() => showAddSlotsModal = true} class="button-secondary button--gap">
+									<Plus class="h-4 w-4" />
+									Add More Slots
+								</button>
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+									<X class="h-4 w-4" />
+									Dismiss
+								</button>
+							</div>
+						{:else}
+							<p class="mb-4" style="color: var(--color-primary-700);">
+								Your tour is now live! To start accepting bookings, you'll need to add some time slots when your tour will be available.
+							</p>
+							<div class="flex flex-col sm:flex-row gap-3">
+								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
+									<Plus class="h-4 w-4" />
+									Add Time Slots Now
+								</button>
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+									<X class="h-4 w-4" />
+									Dismiss
+								</button>
+							</div>
+						{/if}
+					{:else}
+						<!-- Draft tour -->
+						{#if hasInitialSchedule}
+							<p class="mb-4" style="color: var(--color-primary-700);">
+								Your tour has been created as a draft with initial time slots. You can activate it now to start accepting bookings, or review and edit it first.
+							</p>
+							<div class="flex flex-col sm:flex-row gap-3">
+								<button 
+									onclick={activateTour} 
+									class="button-primary button--gap"
+									disabled={$updateStatusMutation.isPending}
+								>
+									{#if $updateStatusMutation.isPending}
+										<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+									{:else}
+										<CheckCircle class="h-4 w-4" />
+									{/if}
+									{$updateStatusMutation.isPending ? 'Activating...' : 'Activate Tour'}
+								</button>
+								<button onclick={() => {
+									const scheduleSection = document.getElementById('schedule');
+									if (scheduleSection) {
+										scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+									}
+									showWelcomePrompt = false;
+								}} class="button-secondary button--gap">
+									<Calendar class="h-4 w-4" />
+									View Schedule
+								</button>
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+									<Edit class="h-4 w-4" />
+									Edit First
+								</button>
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+									<X class="h-4 w-4" />
+									Dismiss
+								</button>
+							</div>
+						{:else}
+							<p class="mb-4" style="color: var(--color-primary-700);">
+								Your tour has been created as a draft. Add some time slots to start accepting bookings, then activate your tour when you're ready.
+							</p>
+							<div class="flex flex-col sm:flex-row gap-3">
+								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
+									<Plus class="h-4 w-4" />
+									Add Time Slots
+								</button>
+								<button 
+									onclick={activateTour} 
+									class="button-secondary button--gap"
+									disabled={$updateStatusMutation.isPending}
+								>
+									{#if $updateStatusMutation.isPending}
+										<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+									{:else}
+										<CheckCircle class="h-4 w-4" />
+									{/if}
+									{$updateStatusMutation.isPending ? 'Activating...' : 'Activate Now'}
+								</button>
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+									<Edit class="h-4 w-4" />
+									Edit Tour
+								</button>
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+									<X class="h-4 w-4" />
+									Dismiss
+								</button>
+							</div>
+						{/if}
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -616,22 +804,15 @@
 				</div>
 				
 				<!-- Schedule Section -->
-				<div id="schedule" class="rounded-xl {mobileTab === 'schedule' ? 'block' : 'hidden sm:block'}" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b flex items-center justify-between" style="border-color: var(--border-primary);">
-						<div>
-							<h2 class="font-semibold" style="color: var(--text-primary);">Tour Schedule</h2>
-							{#if schedule?.scheduleStats}
-								<p class="text-sm mt-1" style="color: var(--text-secondary);">
-									{schedule.scheduleStats.upcomingSlots} upcoming • {schedule.scheduleStats.totalBookings} bookings total
-								</p>
-							{:else if scheduleLoading}
-								<p class="text-sm mt-1" style="color: var(--text-secondary);">Loading schedule...</p>
-							{/if}
-						</div>
-						<div class="flex items-center gap-2">
+				<section id="schedule" class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<div class="flex items-center justify-between">
+							<h2 class="text-lg font-semibold" style="color: var(--text-primary);">
+								Tour Schedule
+							</h2>
 							<button onclick={() => showAddSlotsModal = true} class="button-primary button--small button--gap">
-								<Plus class="h-3 w-3" />
-								<span class="hidden sm:inline">Add Time Slots</span>
+								<Plus class="h-4 w-4" />
+								Add Slots
 							</button>
 						</div>
 					</div>
@@ -648,6 +829,26 @@
 											<div class="h-20 rounded-lg" style="background: var(--bg-secondary);"></div>
 										{/each}
 									</div>
+								</div>
+							</div>
+						</div>
+					{:else if scheduleError}
+						<div class="p-4">
+							<div class="text-center py-12">
+								<AlertCircle class="w-12 h-12 mx-auto mb-4" style="color: var(--color-danger-500);" />
+								<h3 class="text-lg font-medium mb-2" style="color: var(--text-primary);">Failed to load schedule</h3>
+								<p class="text-sm mb-6" style="color: var(--text-secondary);">
+									There was an error loading your tour schedule. Please try refreshing.
+								</p>
+								<div class="flex flex-col sm:flex-row gap-3 justify-center">
+									<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--gap">
+										<RefreshCw class="h-4 w-4" />
+										Retry Loading
+									</button>
+									<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
+										<Plus class="h-4 w-4" />
+										Add Time Slots
+									</button>
 								</div>
 							</div>
 						</div>
@@ -695,7 +896,7 @@
 							</div>
 						</div>
 					{/if}
-				</div>
+				</section>
 				
 				<!-- Tour Images - At bottom on desktop, normal position on mobile -->
 				{#if tour.images && tour.images.length > 0}
@@ -933,6 +1134,8 @@
 			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
 			// Show success message
 			showAddSlotsSuccess = true;
+			// Close welcome prompt if it was open (newly created tour)
+			showWelcomePrompt = false;
 			setTimeout(() => {
 				showAddSlotsSuccess = false;
 			}, 3000);

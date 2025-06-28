@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	
 	// Types
 	interface TimeSlot {
@@ -56,14 +57,21 @@
 	
 	let currentDate = $state(new Date());
 	
+	// Create reactive query key that updates when view or date changes
+	let queryKey = $derived(queryKeys.allTimeSlots(view, currentDate.toISOString()));
+	let shouldRefetch = $state(0);
+	
 	// Query for timeline data
-	const timelineQuery = createQuery({
-		queryKey: queryKeys.allTimeSlots(view, currentDate.toISOString()),
-		queryFn: () => queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString()),
-		staleTime: 30 * 1000, // 30 seconds
-		refetchInterval: 60 * 1000, // Refetch every minute for real-time updates
-		refetchOnWindowFocus: 'always'
-	});
+	let timelineQuery = $derived(
+		createQuery({
+			queryKey: [...queryKey, shouldRefetch],
+			queryFn: () => queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString()),
+			staleTime: 30 * 1000, // 30 seconds
+			refetchInterval: 60 * 1000, // Refetch every minute for real-time updates
+			refetchOnWindowFocus: 'always',
+			enabled: browser
+		})
+	);
 	
 	// Derived data
 	let timeSlots = $derived($timelineQuery.data?.timeSlots || []);
@@ -107,6 +115,7 @@
 		}
 		
 		currentDate = newDate;
+		shouldRefetch++; // Force query to refetch with new date
 	}
 	
 	function goToToday() {
@@ -136,10 +145,10 @@
 	
 	// Get slot status styling
 	function getSlotStatusClass(slot: TimeSlot): string {
-		if (slot.isPast) return 'opacity-50';
-		if (slot.isFull) return 'border-red-500 bg-red-50 dark:bg-red-900/10';
-		if (slot.utilizationRate >= 80) return 'border-orange-500 bg-orange-50 dark:bg-orange-900/10';
-		if (slot.bookedSpots > 0) return 'border-green-500 bg-green-50 dark:bg-green-900/10';
+		if (slot.isPast) return 'past-slot';
+		if (slot.isFull) return 'full-slot';
+		if (slot.utilizationRate >= 80) return 'nearly-full-slot';
+		if (slot.bookedSpots > 0) return 'has-bookings-slot';
 		return '';
 	}
 	
@@ -198,16 +207,16 @@
 <div class="tour-timeline {compact ? 'compact' : ''}">
 	<!-- Header -->
 	<div class="timeline-header">
-		<div class="flex items-center justify-between mb-4">
-			<div class="flex items-center gap-4">
-				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+			<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+				<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
 					All Tours Schedule
 				</h3>
 				{#if !isLoading && stats.totalSlots > 0}
-					<div class="flex items-center gap-3 text-sm" style="color: var(--text-secondary);">
+					<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
 						<span>{stats.totalSlots} slots</span>
-						<span>•</span>
-						<span>{stats.totalBookings} bookings</span>
+						<span class="hidden sm:inline">•</span>
+						<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
 						<span>•</span>
 						<span>{Math.round(stats.averageUtilization)}% avg</span>
 					</div>
@@ -221,19 +230,22 @@
 						onclick={() => { view = 'day'; onViewChange?.('day'); }}
 						class="view-button {view === 'day' ? 'active' : ''}"
 					>
-						Day
+						<span class="hidden sm:inline">Day</span>
+						<span class="sm:hidden">D</span>
 					</button>
 					<button
 						onclick={() => { view = 'week'; onViewChange?.('week'); }}
 						class="view-button {view === 'week' ? 'active' : ''}"
 					>
-						Week
+						<span class="hidden sm:inline">Week</span>
+						<span class="sm:hidden">W</span>
 					</button>
 					<button
 						onclick={() => { view = 'month'; onViewChange?.('month'); }}
 						class="view-button {view === 'month' ? 'active' : ''}"
 					>
-						Month
+						<span class="hidden sm:inline">Month</span>
+						<span class="sm:hidden">M</span>
 					</button>
 				</div>
 			</div>
@@ -250,7 +262,7 @@
 			</button>
 			
 			<div class="date-display">
-				<span>{getDateRangeDisplay()}</span>
+				<span class="text-sm sm:text-base">{getDateRangeDisplay()}</span>
 				{#if currentDate.toDateString() !== new Date().toDateString()}
 					<button
 						onclick={goToToday}
@@ -315,7 +327,6 @@
 								<button
 									onclick={() => handleSlotClick(slot)}
 									class="slot-item {getSlotStatusClass(slot)}"
-									class:past={slot.isPast}
 								>
 									<div class="slot-time">
 										<Clock class="h-4 w-4" />
@@ -395,40 +406,6 @@
 			</div>
 		{/if}
 	</div>
-	
-	{#if !compact && !isLoading && stats.totalSlots > 0}
-		<!-- Stats Summary -->
-		<div class="stats-summary">
-			<div class="stat-item">
-				<Calendar class="h-4 w-4" />
-				<div>
-					<p class="stat-value">{stats.todaySlots || 0}</p>
-					<p class="stat-label">Today</p>
-				</div>
-			</div>
-			<div class="stat-item">
-				<TrendingUp class="h-4 w-4" />
-				<div>
-					<p class="stat-value">{stats.upcomingSlots}</p>
-					<p class="stat-label">Upcoming</p>
-				</div>
-			</div>
-			<div class="stat-item">
-				<Users class="h-4 w-4" />
-				<div>
-					<p class="stat-value">{stats.totalBookings}</p>
-					<p class="stat-label">Bookings</p>
-				</div>
-			</div>
-			<div class="stat-item">
-				<div class="h-4 w-4 text-xs font-bold flex items-center justify-center">%</div>
-				<div>
-					<p class="stat-value">{Math.round(stats.averageUtilization)}%</p>
-					<p class="stat-label">Utilization</p>
-				</div>
-			</div>
-		</div>
-	{/if}
 </div>
 
 <style>
@@ -473,6 +450,7 @@
 		border-radius: 0.375rem;
 		cursor: pointer;
 		transition: all 0.15s;
+		min-width: 2rem;
 	}
 	
 	.view-button:hover {
@@ -602,21 +580,37 @@
 		text-align: left;
 	}
 	
-	.slot-item:hover {
+	.slot-item:hover:not(.past-slot) {
 		background: var(--bg-tertiary);
 		border-color: var(--border-secondary);
 		transform: translateY(-1px);
 		box-shadow: var(--shadow-sm);
 	}
 	
-	.slot-item.past {
-		opacity: 0.6;
+	.slot-item.past-slot {
+		opacity: 0.5;
 		cursor: default;
+		background: var(--bg-tertiary);
 	}
 	
-	.slot-item.past:hover {
+	.slot-item.past-slot:hover {
 		transform: none;
 		box-shadow: none;
+	}
+	
+	.slot-item.full-slot {
+		border-color: var(--color-danger-200);
+		background: var(--color-danger-50);
+	}
+	
+	.slot-item.nearly-full-slot {
+		border-color: var(--color-warning-200);
+		background: var(--color-warning-50);
+	}
+	
+	.slot-item.has-bookings-slot {
+		border-color: var(--color-success-200);
+		background: var(--color-success-50);
 	}
 	
 	.slot-time {
@@ -773,44 +767,24 @@
 		border-radius: 50%;
 	}
 	
-	/* Stats Summary */
-	.stats-summary {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 1px;
-		background: var(--border-primary);
-		border-top: 1px solid var(--border-primary);
-	}
-	
-	.stat-item {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 1rem 1.5rem;
-		background: var(--bg-primary);
-	}
-	
-	.stat-item svg {
-		color: var(--text-tertiary);
-	}
-	
-	.stat-value {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin: 0;
-	}
-	
-	.stat-label {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		margin: 0;
-	}
-	
 	/* Mobile Styles */
 	@media (max-width: 640px) {
 		.timeline-header {
 			padding: 1rem;
+		}
+		
+		.view-button {
+			padding: 0.375rem 0.5rem;
+			font-size: 0.75rem;
+			min-width: 1.75rem;
+		}
+		
+		.date-navigation {
+			gap: 0.5rem;
+		}
+		
+		.nav-button {
+			padding: 0.375rem;
 		}
 		
 		.date-header {
@@ -828,10 +802,6 @@
 		
 		.slot-details {
 			font-size: 0.625rem;
-		}
-		
-		.stats-summary {
-			grid-template-columns: repeat(2, 1fr);
 		}
 		
 		.calendar-view {

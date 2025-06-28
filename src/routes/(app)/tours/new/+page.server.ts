@@ -430,10 +430,10 @@ export const actions: Actions = {
           await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
         }
 
-        // Redirect to schedule page for immediate time slot creation
+        // Redirect to tour details page with welcome prompt for time slot creation
         const redirectUrl = scheduleData 
-          ? `/tours/${createdTour.id}/schedule?welcome=true&scheduled=true`
-          : `/tours/${createdTour.id}/schedule?welcome=true`;
+          ? `/tours/${createdTour.id}?created=true&scheduled=true`
+          : `/tours/${createdTour.id}?created=true`;
         throw redirect(303, redirectUrl);
       } else {
         // No images to process - create tour without images
@@ -478,10 +478,10 @@ export const actions: Actions = {
           await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
         }
 
-        // Redirect to schedule page for immediate time slot creation
+        // Redirect to tour details page with welcome prompt for time slot creation
         const redirectUrl = scheduleData 
-          ? `/tours/${createdTour.id}/schedule?welcome=true&scheduled=true`
-          : `/tours/${createdTour.id}/schedule?welcome=true`;
+          ? `/tours/${createdTour.id}?created=true&scheduled=true`
+          : `/tours/${createdTour.id}?created=true`;
         throw redirect(303, redirectUrl);
       }
 

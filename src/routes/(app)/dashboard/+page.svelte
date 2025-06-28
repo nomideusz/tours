@@ -12,6 +12,9 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
+	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
+	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
+	import OnboardingSection from '$lib/components/OnboardingSection.svelte';
 	import {
 		userCurrency,
 		currentCurrencyInfo,
@@ -92,7 +95,7 @@
 	// Payment setup loading state
 	let isSettingUpPayment = $state(false);
 	
-	// Payment confirmation modal state
+		// Payment confirmation modal state
 	let showPaymentConfirmModal = $state(false);
 	let pendingPaymentCountry = $state<string | null>(null);
 
@@ -126,6 +129,23 @@
 					checkPaymentStatus();
 				}, 500);
 			});
+		}
+
+		// Check if returning from profile location update
+		if (urlParams.get('location') === 'updated') {
+			saveSuccess = true;
+			// Clear the URL parameter
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('location');
+			window.history.replaceState({}, '', newUrl.toString());
+
+			// Force refresh user data
+			invalidateAll();
+
+			// Hide success message after 5 seconds
+			setTimeout(() => {
+				saveSuccess = false;
+			}, 5000);
 		}
 
 		// Check if user has previously confirmed their location (stored in localStorage)
@@ -193,6 +213,29 @@
 	// Check if this is a new user
 	let isNewUser = $derived(stats.totalTours === 0);
 
+	// Determine if user likely needs onboarding based on server-side profile data
+	// This prevents showing skeleton for completed users when navigating
+	let likelyNeedsOnboarding = $derived(() => {
+		if (!profile) return false;
+		
+		// If user has tours and email verified and has stripe account, they're likely done with onboarding
+		// Use server-side profile data to avoid flash
+		const hasBasicSetup = profile.emailVerified && profile.stripeAccountId && profile.country;
+		
+		// Check localStorage synchronously if available
+		const locationConfirmed = browser ? localStorage.getItem('locationConfirmed') === 'true' : false;
+		
+		// Consider them as likely needing onboarding if:
+		// - Email not verified, OR
+		// - No stripe account set up, OR  
+		// - No country set, OR
+		// - Location not explicitly confirmed (for new users)
+		return !profile.emailVerified || 
+		       !profile.stripeAccountId || 
+		       !profile.country || 
+		       (!locationConfirmed && !hasBasicSetup);
+	});
+
 	// Debug location confirmation state
 	$effect(() => {
 		if (browser && !isLoading) {
@@ -228,6 +271,7 @@
 	// Track if user manually changed currency (different from country default)
 
 
+
 	// Import country data from shared module
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, type CountryInfo } from '$lib/utils/countries.js';
 
@@ -236,10 +280,10 @@
 
 	// Check if settings need confirmation - only show if location hasn't been explicitly confirmed
 	// Even if country is auto-detected during registration, users must explicitly confirm
-	let needsConfirmation = $derived(browser && profile && !hasConfirmedLocation && !profile?.stripeAccountId);
+	let needsConfirmation = $derived(Boolean(browser && profile && !hasConfirmedLocation && !profile?.stripeAccountId));
 
 	// Show email verification if email not verified (regardless of tour count)
-	let needsEmailVerification = $derived(profile && !profile.emailVerified);
+	let needsEmailVerification = $derived(Boolean(profile && !profile.emailVerified));
 
 	// Check payment status - declare early to avoid reference issues
 	let paymentStatus = $state<{ isSetup: boolean; loading: boolean }>({
@@ -351,7 +395,7 @@
 
 				setTimeout(() => {
 					saveSuccess = false;
-				}, 100); // Just a short delay for smooth transition
+				}, 5000); // Show success message for 5 seconds
 			} else {
 				const data = await response.json();
 				saveError = data.error || 'Failed to update settings';
@@ -516,27 +560,27 @@
 
 	// Resend verification email function
 	async function resendVerificationEmail() {
-		if (!profile?.email || !profile?.id) return;
-
+		if (!profile || resendingEmail) return;
+		
 		resendingEmail = true;
 		resendEmailError = null;
 		resendEmailSuccess = false;
-
+		
 		try {
 			// Generate verification URL
 			const verificationUrl = `${window.location.origin}/auth/verify?token=${profile.id}`;
-
+			
 			const response = await fetch('/api/send-auth-email', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					email: profile.email,
 					emailType: 'email-verification',
+					email: profile.email,
 					name: profile.name || 'Tour Guide',
 					verificationUrl: verificationUrl
 				})
 			});
-
+			
 			if (response.ok) {
 				resendEmailSuccess = true;
 				setTimeout(() => {
@@ -544,7 +588,7 @@
 				}, 5000);
 			} else {
 				const data = await response.json();
-				resendEmailError = data.error || 'Failed to resend email';
+				resendEmailError = data.error || 'Failed to send verification email';
 			}
 		} catch (error) {
 			resendEmailError = 'Network error. Please try again.';
@@ -748,8 +792,20 @@
 				</div>
 				<div class="flex-1">
 					<h3 class="font-semibold text-sm sm:text-base mb-1">Location Confirmed!</h3>
-					<p class="text-xs sm:text-sm">
-						Your business location has been saved. You're all set!
+					<p class="text-xs sm:text-sm mb-2">
+						{#if profile?.country && profile?.currency}
+							{@const countryInfo = getCountryInfo(profile.country)}
+							Business location: {countryInfo?.flag || ''} {countryInfo?.name || profile.country} • Currency: {profile.currency}
+						{:else}
+							Your business location has been saved.
+						{/if}
+					</p>
+					<p class="text-xs" style="color: var(--text-tertiary);">
+						{#if profile?.stripeAccountId}
+							Location is permanently locked because payment setup has been started.
+						{:else}
+							You can still update this in your <a href="/profile" class="underline hover:no-underline" style="color: var(--color-primary-600);">profile settings</a> until payment setup starts.
+						{/if}
 					</p>
 				</div>
 			</div>
@@ -811,524 +867,26 @@
 	{/if}
 
 	{#if isLoading}
-		<!-- Loading State -->
-		<div class="flex min-h-[60vh] items-center justify-center">
-			<div class="text-center">
-				<Loader2 class="mx-auto mb-4 h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
-				<p class="text-sm" style="color: var(--text-secondary);">Loading your dashboard...</p>
-			</div>
-		</div>
-	{:else if isNewUser}
-		<!-- Clean Onboarding for New Users -->
-		<div class="mb-8">
-			<h1 class="mb-2 text-2xl font-bold sm:text-3xl" style="color: var(--text-primary);">
-				Welcome to Zaur, {profile?.name || 'Tour Guide'}!
-			</h1>
-			<p class="text-sm" style="color: var(--text-secondary);">
-				Let's get your tour business ready in a few simple steps
-			</p>
-		</div>
-
-		<!-- Onboarding Progress Card -->
-		<div
-			class="mb-8 rounded-xl"
-			style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-		>
-			<div class="p-6">
-				<!-- Progress Indicator -->
-				<div class="mb-8">
-					<div class="mb-2 flex items-center justify-between">
-						<p class="text-xs font-medium" style="color: var(--text-tertiary);">Setup Progress</p>
-						<p class="text-xs font-medium" style="color: var(--text-tertiary);">
-							{stepsCompleted === 4 ? 'All steps completed' : `${stepsCompleted} of 4 completed`}
-						</p>
-					</div>
-					<div class="h-2 w-full rounded-full" style="background: var(--bg-tertiary);">
-						<div
-							class="h-full rounded-full transition-all duration-500"
-							style="background: var(--color-primary-500); width: {(stepsCompleted / 4) * 100 +
-								'%'};"
-						></div>
-					</div>
-				</div>
-
-				<div class="space-y-4">
-					<!-- Email Verification Step -->
-					{#if needsEmailVerification}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 transition-all"
-							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--bg-tertiary); color: var(--text-secondary);"
-							>
-								<Mail class="h-4 w-4" />
-							</div>
-							<div class="flex-1">
-								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
-									Verify your email address
-								</h3>
-								<p class="mb-3 text-sm" style="color: var(--text-secondary);">
-									Check your inbox at <span class="font-medium">{profile?.email}</span> and click the
-									verification link.
-								</p>
-								{#if resendEmailSuccess}
-									<p class="mb-3 text-xs" style="color: var(--color-success-600);">
-										Verification email sent! Check your inbox.
-									</p>
-								{/if}
-								{#if resendEmailError}
-									<p class="form-error mb-3">{resendEmailError}</p>
-								{/if}
-								<div class="flex items-center gap-2">
-									<button
-										onclick={resendVerificationEmail}
-										disabled={resendingEmail}
-										class="button-secondary button--small"
-									>
-										{#if resendingEmail}
-											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-											Sending...
-										{:else}
-											Resend Email
-										{/if}
-									</button>
-									<span class="text-xs" style="color: var(--text-tertiary);">
-										Didn't receive it? Check spam folder
-									</span>
-								</div>
-							</div>
-						</div>
-					{:else}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4"
-							style="background: var(--bg-secondary); border: 1px solid var(--color-success-200);"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--color-success-100); color: var(--color-success-600);"
-							>
-								<CheckCircle class="h-4 w-4" />
-							</div>
-							<div class="flex-1">
-								<h3 class="text-sm font-semibold" style="color: var(--text-primary);">
-									Email verified
-								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
-									Your email address has been verified successfully.
-								</p>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Location Confirmation Step -->
-					{#if needsConfirmation}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 transition-all"
-							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--bg-tertiary); color: var(--text-secondary);"
-							>
-								<Globe class="h-4 w-4" />
-							</div>
-							<div class="flex-1 max-w-fit">
-								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
-									Confirm your business location
-								</h3>
-								<p class="mb-4 text-sm" style="color: var(--text-secondary);">
-									We'll use this to set your default currency and regional settings.
-								</p>
-								
-								<!-- Simplified Country Selection -->
-								<div class="space-y-3">
-									<!-- Warning Message -->
-									<div class="alert-warning rounded-lg p-3">
-										<div class="flex items-start gap-2">
-											<AlertCircle class="mt-0.5 h-4 w-4 flex-shrink-0" />
-											<div class="min-w-0 flex-1">
-												<p class="text-xs leading-relaxed">
-													<strong>Important:</strong> Country selection determines your payment account location.
-												</p>
-												<p class="text-xs leading-relaxed mt-1">
-													This cannot be changed later. Choose where your business is registered.
-												</p>
-											</div>
-										</div>
-									</div>
-
-									<!-- Country Dropdown -->
-									<div>
-										<label class="mb-1.5 block text-xs font-medium" style="color: var(--text-primary);">
-											Select your country
-										</label>
-										<div class="relative">
-											<button
-												onclick={() => (showCountryDropdown = !showCountryDropdown)}
-												class="flex w-full items-center justify-between rounded-lg p-3 text-left"
-												style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-											>
-												<div class="flex items-center gap-2">
-													{#if currentCountryInfo}
-														<span class="text-sm font-medium">{currentCountryInfo.flag}</span>
-														<span class="text-sm" style="color: var(--text-primary);">
-															{currentCountryInfo.name}
-														</span>
-													{:else}
-														<span class="text-sm" style="color: var(--text-secondary);">
-															Select country
-														</span>
-													{/if}
-												</div>
-												<svg
-													class="h-4 w-4 transition-transform {showCountryDropdown ? 'rotate-180' : ''}"
-													style="color: var(--text-tertiary);"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M19 9l-7 7-7-7"
-													/>
-												</svg>
-											</button>
-
-											{#if showCountryDropdown}
-												<div
-													class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
-													style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-height: 16rem;"
-												>
-													<div class="overflow-y-auto" style="max-height: 16rem;">
-														{#each COUNTRY_LIST as country}
-															<button
-																onclick={() => {
-																	onCountryChange(country.code);
-																	showCountryDropdown = false;
-																}}
-																class="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-																style="color: var(--text-primary);"
-															>
-																<span>{country.flag}</span>
-																<span>{country.name}</span>
-																{#if selectedCountry === country.code}
-																	<CheckCircle
-																		class="ml-auto h-3.5 w-3.5"
-																		style="color: var(--color-primary-600);"
-																	/>
-																{/if}
-															</button>
-														{/each}
-													</div>
-												</div>
-											{/if}
-										</div>
-									</div>
-
-									<!-- Currency Display -->
-									{#if selectedCountry}
-										{@const countryCurrency = getCurrencyForCountry(selectedCountry)}
-										{@const currencyInfo = SUPPORTED_CURRENCIES[countryCurrency as Currency]}
-										<div class="rounded-lg p-3" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
-											<p class="text-xs font-medium mb-0.5" style="color: var(--text-secondary);">
-												Your currency will be:
-											</p>
-											<p class="text-sm font-medium" style="color: var(--text-primary);">
-												{currencyInfo.symbol} {currencyInfo.code} - {currencyInfo.name}
-											</p>
-										</div>
-									{/if}
-
-									<!-- Error message -->
-									{#if saveError}
-										<div class="alert-error rounded-lg p-3 text-sm">
-											{saveError}
-										</div>
-									{/if}
-
-									<!-- Action Button -->
-									<button
-										onclick={saveCurrencySelection}
-										disabled={savingCurrency || !selectedCountry}
-										class="button-primary button--small w-full"
-									>
-										{#if savingCurrency}
-											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-											Saving...
-										{:else}
-											Confirm Location
-										{/if}
-									</button>
-								</div>
-							</div>
-						</div>
-					{:else if profile?.stripeAccountId && profile?.country}
-						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 alert-success"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
-							>
-								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
-							</div>
-							<div class="flex-1">
-								<h3 class="text-sm font-semibold">
-									Location set
-								</h3>
-								<p class="text-sm">
-									Your business location is locked due to payment setup.
-								</p>
-								{#if confirmedCountry && profile?.currency}
-									<div class="mt-2 flex items-center gap-2">
-										<span class="text-sm font-medium">
-											{confirmedCountry.flag} {confirmedCountry.name}
-										</span>
-										<span class="text-sm opacity-70">•</span>
-										<span class="text-sm font-medium">
-											{profile.currency}
-										</span>
-									</div>
-								{/if}
-							</div>
-						</div>
-					{:else}
-						{@const confirmedCountry = getCountryInfo(profile?.country || '')}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 alert-success"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
-							>
-								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
-							</div>
-							<div class="flex-1">
-								<h3 class="text-sm font-semibold">
-									Location confirmed
-								</h3>
-								<p class="text-sm">
-									Your business location and currency are set.
-								</p>
-								{#if confirmedCountry && profile?.currency}
-									<div class="mt-2 flex items-center gap-2">
-										<span class="text-sm font-medium">
-											{confirmedCountry.flag} {confirmedCountry.name}
-										</span>
-										<span class="text-sm opacity-70">•</span>
-										<span class="text-sm font-medium">
-											{profile.currency}
-										</span>
-									</div>
-								{/if}
-							</div>
-						</div>
-					{/if}
-
-					<!-- Payment Setup Step -->
-					{#if !paymentStatus.loading}
-						{#if !paymentStatus.isSetup}
-							<div
-								class="flex items-start gap-4 rounded-lg p-4 transition-all {needsConfirmation ? 'opacity-50' : ''}"
-								style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-							>
-								<div
-									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-									style="background: var(--bg-tertiary); color: var(--text-secondary);"
-								>
-									<CreditCard class="h-4 w-4" />
-								</div>
-								<div class="flex-1 max-w-fit">
-									<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
-										Connect your bank account
-									</h3>
-									<p class="mb-4 text-sm" style="color: var(--text-secondary);">
-										Set up payments to receive money from tour bookings directly to your bank
-										account.
-									</p>
-																{#if needsConfirmation}
-								<p class="text-xs" style="color: var(--text-tertiary);">
-									Confirm your location first to set up payments for your region
-								</p>
-							{:else}
-								<div class="space-y-2">
-									<button
-										onclick={setupPayments}
-										disabled={isSettingUpPayment}
-										class="button-primary button--small"
-									>
-										{#if isSettingUpPayment}
-											<Loader2 class="mr-1 h-3 w-3 animate-spin" />
-											Redirecting to Stripe...
-										{:else}
-											Connect with Stripe
-										{/if}
-									</button>
-									<div class="alert-warning rounded-lg p-2 max-w-fit">
-										<p class="text-xs">
-											<strong>Important:</strong> Once you start payment setup, your country ({currentCountryInfo?.name || 'selected country'}) will be permanently locked and cannot be changed
-										</p>
-									</div>
-									<p class="text-xs" style="color: var(--text-tertiary);">
-										Wrong country? <a href="/profile" class="underline">Update in Profile</a> before continuing
-									</p>
-								</div>
-							{/if}
-								</div>
-							</div>
-						{:else}
-							<div
-								class="flex items-start gap-4 rounded-lg p-4 alert-success"
-							>
-								<div
-									class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
-								>
-									<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
-								</div>
-								<div class="flex-1">
-									<h3 class="text-sm font-semibold">
-										Payment account connected
-									</h3>
-									<p class="text-sm">
-										You're ready to accept payments from customers.
-									</p>
-								</div>
-							</div>
-						{/if}
-					{/if}
-
-					<!-- Create First Tour Step (Always visible) -->
-					{#if stats.totalTours === 0}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 transition-all {needsEmailVerification ||
-							!paymentStatus.isSetup ||
-							needsConfirmation
-								? 'opacity-50'
-								: ''}"
-							style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
-								style="background: var(--bg-tertiary); color: var(--text-secondary);"
-							>
-								<Plus class="h-4 w-4" />
-							</div>
-							<div class="flex-1">
-								<h3 class="mb-1 text-sm font-semibold" style="color: var(--text-primary);">
-									Create your first tour
-								</h3>
-								<p class="mb-4 text-sm" style="color: var(--text-secondary);">
-									Set up your first tour listing to start accepting bookings from customers.
-								</p>
-								{#if needsEmailVerification || !paymentStatus.isSetup || needsConfirmation}
-									<p class="text-xs" style="color: var(--text-tertiary);">
-										Complete the previous steps to unlock
-									</p>
-								{:else}
-									<button onclick={() => goto('/tours/new')} class="button-primary button--small">
-										Create Tour
-									</button>
-								{/if}
-							</div>
-						</div>
-					{:else}
-						<div
-							class="flex items-start gap-4 rounded-lg p-4 alert-success"
-						>
-							<div
-								class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white"
-							>
-								<CheckCircle class="h-4 w-4" style="color: var(--color-success-600);" />
-							</div>
-							<div class="flex-1">
-								<h3 class="text-sm font-semibold">
-									Tour created
-								</h3>
-								<p class="text-sm">
-									You have {stats.totalTours} active {stats.totalTours === 1 ? 'tour' : 'tours'}.
-								</p>
-							</div>
-						</div>
-					{/if}
-				</div>
-
-				<!-- Get Started Section -->
-				{#if !needsEmailVerification && paymentStatus.isSetup && !needsConfirmation && stats.totalTours > 0}
-					<div class="mt-8 rounded-lg p-6 text-center" style="background: var(--bg-secondary);">
-						<CheckCircle class="mx-auto mb-4 h-12 w-12" style="color: var(--color-success-600);" />
-						<h3 class="mb-2 text-lg font-semibold" style="color: var(--text-primary);">
-							You're all set!
-						</h3>
-						<p class="mb-6 text-sm" style="color: var(--text-secondary);">
-							Your account is fully configured and you have active tours.
-						</p>
-						<button onclick={() => goto('/tours')} class="button-primary button--gap">
-							<MapPin class="h-4 w-4" />
-							Manage Tours
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Help Section -->
-		<div
-			class="rounded-lg p-4"
-			style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-		>
-			<div class="flex items-start gap-3">
-				<AlertCircle class="mt-0.5 h-5 w-5" style="color: var(--text-tertiary);" />
-				<div>
-					<h4 class="mb-1 text-sm font-medium" style="color: var(--text-primary);">Need help?</h4>
-					<p class="text-sm" style="color: var(--text-secondary);">
-						If you have any questions or issues during setup, please <a
-							href="/help"
-							class="underline">contact our support team</a
-						>.
-					</p>
-				</div>
-			</div>
-		</div>
+		<DashboardSkeleton />
 	{:else}
-		<!-- Regular Dashboard for Users with Tours -->
-
-		<!-- Header Section -->
-		<div class="mb-6 sm:mb-8">
+		<!-- Dashboard Header -->
+		<div class="mb-6">
 			<!-- Mobile Header -->
 			<MobilePageHeader
-				title="Welcome back"
-				secondaryInfo={profile?.name || 'Tour Guide'}
+				title={isNewUser ? "Welcome to Zaur!" : "Operations Center"}
+				secondaryInfo={isNewUser ? "Let's get you started" : `${stats.upcomingTours} upcoming`}
 				quickActions={[
 					{
-						label: 'Create Tour',
+						label: 'Create',
 						icon: Plus,
 						onclick: () => goto('/tours/new'),
 						variant: 'primary'
-					}
-				]}
-				infoItems={[
-					{
-						icon: Calendar,
-						label: 'Today',
-						value: `${stats.todayBookings} bookings`
 					},
 					{
-						icon: DollarSign,
-						label: 'Week',
-						value: $globalCurrencyFormatter(stats.weeklyRevenue)
-					},
-					{
-						icon: TrendingUp,
-						label: 'Upcoming',
-						value: `${stats.upcomingTours}`
-					},
-					{
-						icon: Users,
-						label: 'Customers',
-						value: `${stats.totalCustomers}`
+						label: 'Check-in',
+						icon: QrCode,
+						onclick: () => goto('/checkin-scanner'),
+						variant: 'secondary'
 					}
 				]}
 			/>
@@ -1336,314 +894,52 @@
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
 				<PageHeader 
-					title={`Welcome back, ${profile?.name || 'Tour Guide'}`}
-					subtitle={new Date().toLocaleDateString('en-US', {
-						weekday: 'long',
-						month: 'long',
-						day: 'numeric',
-						year: 'numeric'
-					})}
-				/>
-			</div>
-		</div>
-
-		<!-- Important Notices (Collapsed into single row when possible) -->
-		{#if needsEmailVerification || !paymentStatus.isSetup || needsConfirmation}
-			<div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{#if needsEmailVerification}
-					<div
-						class="flex items-start gap-3 rounded-lg p-4"
-						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-					>
-						<Mail class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
-						<div class="min-w-0 flex-1">
-							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
-								Verify email
-							</h3>
-							<p class="text-xs" style="color: var(--text-secondary);">
-								Check {profile?.email}
-							</p>
-						</div>
-						<button
-							onclick={resendVerificationEmail}
-							disabled={resendingEmail}
-							class="button-secondary button--small px-2 py-1 text-xs"
-						>
-							Resend
+					title={isNewUser ? "Welcome to Zaur!" : "Operations Center"}
+					subtitle={isNewUser ? "Complete these steps to start accepting tour bookings" : "Manage your daily tour operations"}
+				>
+					<div class="flex items-center gap-4">
+						<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+							<Plus class="h-4 w-4" />
+							Create Tour
 						</button>
 					</div>
-				{/if}
-
-				{#if needsConfirmation}
-					<div
-						class="flex items-start gap-3 rounded-lg p-4"
-						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-					>
-						<Globe class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
-						<div class="min-w-0 flex-1">
-							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
-								Confirm location
-							</h3>
-							<div class="relative mt-1">
-								<button
-									onclick={() => (showCountryDropdown = !showCountryDropdown)}
-									class="flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs"
-									style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-								>
-									<div class="flex items-center gap-1.5">
-										{#if currentCountryInfo}
-											<span>{currentCountryInfo.flag}</span>
-											<span style="color: var(--text-primary);">
-												{currentCountryInfo.name}
-											</span>
-											<span style="color: var(--text-tertiary);">•</span>
-											<span style="color: var(--text-secondary);">
-												{selectedCurrency}
-											</span>
-										{:else}
-											<span style="color: var(--text-secondary);">
-												Select country
-											</span>
-										{/if}
-									</div>
-									<svg
-										class="h-3 w-3 transition-transform {showCountryDropdown ? 'rotate-180' : ''}"
-										style="color: var(--text-tertiary);"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 9l-7 7-7-7"
-										/>
-									</svg>
-								</button>
-
-								{#if showCountryDropdown}
-									<div
-										class="absolute z-50 mt-1 w-full overflow-hidden rounded-lg shadow-lg"
-										style="background: var(--bg-primary); border: 1px solid var(--border-primary); max-height: 12rem;"
-									>
-										<div class="overflow-y-auto" style="max-height: 12rem;">
-											{#each COUNTRY_LIST as country}
-												<button
-													onclick={async () => {
-														onCountryChange(country.code);
-														showCountryDropdown = false;
-														await saveCurrencySelection();
-													}}
-													class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-													style="color: var(--text-primary);"
-												>
-													<span>{country.flag}</span>
-													<span>{country.name}</span>
-													{#if selectedCountry === country.code}
-														<CheckCircle
-															class="ml-auto h-3 w-3"
-															style="color: var(--color-primary-600);"
-														/>
-													{/if}
-												</button>
-											{/each}
-										</div>
-									</div>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{:else if profile?.stripeAccountId && !hasConfirmedLocation}
-					<div
-						class="flex items-start gap-3 rounded-lg p-4"
-						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-					>
-						<Globe class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
-						<div class="min-w-0 flex-1">
-							<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
-								Location locked
-							</h3>
-							<div class="flex items-center gap-1.5 text-xs">
-								{#if currentCountryInfo}
-									<span>{currentCountryInfo.flag}</span>
-									<span style="color: var(--text-primary);">
-										{currentCountryInfo.name}
-									</span>
-									<span style="color: var(--text-tertiary);">•</span>
-									<span style="color: var(--text-secondary);">
-										{profile?.currency || 'EUR'}
-									</span>
-								{/if}
-							</div>
-							<p class="text-[10px] mt-1" style="color: var(--text-tertiary);">
-								Country fixed after payment setup
-							</p>
-						</div>
-					</div>
-				{/if}
-
-				{#if !paymentStatus.loading && !paymentStatus.isSetup}
-					<div
-						class="rounded-lg p-4"
-						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-					>
-						<div class="flex items-start gap-3">
-							<CreditCard class="mt-0.5 h-4 w-4" style="color: var(--text-tertiary);" />
-							<div class="min-w-0 flex-1">
-								<h3 class="mb-0.5 text-xs font-medium" style="color: var(--text-primary);">
-									Payment setup
-								</h3>
-								<p class="text-xs" style="color: var(--text-secondary);">
-									{#if needsConfirmation}
-										Confirm location first
-									{:else}
-										Connect bank account
-									{/if}
-								</p>
-							</div>
-							{#if needsConfirmation}
-								<span class="text-xs" style="color: var(--text-tertiary);">
-									<AlertCircle class="inline h-3 w-3" />
-								</span>
-							{:else}
-								<button
-									onclick={setupPayments}
-									disabled={isSettingUpPayment}
-									class="button-primary button--small px-2 py-1 text-xs"
-								>
-									{#if isSettingUpPayment}
-										<Loader2 class="h-3 w-3 animate-spin" />
-									{:else}
-										Setup
-									{/if}
-								</button>
-							{/if}
-						</div>
-						{#if !needsConfirmation && currentCountryInfo && !profile?.stripeAccountId}
-							<div class="mt-2 rounded p-1.5 max-w-fit" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-								<p class="text-[10px]" style="color: var(--color-warning-700);">
-									Country: {currentCountryInfo.name} (will be permanent)
-								</p>
-							</div>
-						{/if}
-						{#if saveError && !needsConfirmation}
-							<div class="mt-2 rounded p-1.5" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-								<p class="text-[10px]" style="color: var(--color-error-700);">
-									{saveError}
-								</p>
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</div>
-		{/if}
-
-		<!-- Performance Overview -->
-		<div class="mb-6">
-			<h2 class="mb-4 text-lg font-semibold" style="color: var(--text-primary);">
-				Performance Overview
-			</h2>
-			<!-- Mobile: Ultra-compact 2x2 grid -->
-			<div class="grid grid-cols-2 gap-2 sm:hidden">
-				<div
-					class="rounded-lg p-3"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<div class="mb-1 flex items-center justify-between">
-						<Calendar class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
-						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
-							>Today</span
-						>
-					</div>
-					<p class="text-base font-bold" style="color: var(--text-primary);">
-						{stats.todayBookings}
-					</p>
-					<p class="text-[10px]" style="color: var(--text-tertiary);">
-						{stats.todayBookings === 1 ? 'booking' : 'bookings'}
-					</p>
-				</div>
-				<div
-					class="rounded-lg p-3"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<div class="mb-1 flex items-center justify-between">
-						<DollarSign class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
-						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
-							>Week</span
-						>
-					</div>
-					<p class="text-base font-bold" style="color: var(--text-primary);">
-						{$globalCurrencyFormatter(stats.weeklyRevenue)}
-					</p>
-					<p class="text-[10px]" style="color: var(--text-tertiary);">revenue</p>
-				</div>
-				<div
-					class="rounded-lg p-3"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<div class="mb-1 flex items-center justify-between">
-						<TrendingUp class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
-						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
-							>Next 7d</span
-						>
-					</div>
-					<p class="text-base font-bold" style="color: var(--text-primary);">
-						{stats.upcomingTours}
-					</p>
-					<p class="text-[10px]" style="color: var(--text-tertiary);">upcoming</p>
-				</div>
-				<div
-					class="rounded-lg p-3"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<div class="mb-1 flex items-center justify-between">
-						<Users class="h-3.5 w-3.5" style="color: var(--text-tertiary);" />
-						<span class="text-[10px] tracking-wide uppercase" style="color: var(--text-tertiary);"
-							>Total</span
-						>
-					</div>
-					<p class="text-base font-bold" style="color: var(--text-primary);">
-						{stats.totalCustomers}
-					</p>
-					<p class="text-[10px]" style="color: var(--text-tertiary);">customers</p>
-				</div>
-			</div>
-
-			<!-- Desktop: StatsCard components -->
-			<div class="hidden gap-3 sm:grid sm:grid-cols-4">
-				<StatsCard
-					title="Today"
-					value={stats.todayBookings}
-					subtitle={stats.todayBookings === 1 ? 'booking' : 'bookings'}
-					icon={Calendar}
-					variant="small"
-				/>
-				<StatsCard
-					title="This Week"
-					value={$globalCurrencyFormatter(stats.weeklyRevenue)}
-					subtitle="revenue"
-					icon={DollarSign}
-					variant="small"
-				/>
-				<StatsCard
-					title="Next 7 Days"
-					value={stats.upcomingTours}
-					subtitle="upcoming tours"
-					icon={TrendingUp}
-					variant="small"
-				/>
-				<StatsCard
-					title="Total Customers"
-					value={stats.totalCustomers}
-					subtitle="all time"
-					icon={Users}
-					variant="small"
-				/>
+				</PageHeader>
 			</div>
 		</div>
 
-		<!-- Tour Timeline - New Centerpiece -->
+		<!-- Onboarding Section -->
+		{#if likelyNeedsOnboarding() && (isLoading || paymentStatus.loading)}
+			<!-- Show skeleton during loading for users who likely need onboarding -->
+			<OnboardingSkeleton />
+		{:else if needsEmailVerification || needsConfirmation || !paymentStatus.isSetup || stats.totalTours === 0}
+			<!-- Show actual onboarding steps once loaded -->
+			<OnboardingSection
+				{profile}
+				{stats}
+				{needsEmailVerification}
+				{needsConfirmation}
+				{paymentStatus}
+				{stepsCompleted}
+				{resendingEmail}
+				resendEmailSuccess={resendEmailSuccess || false}
+				resendEmailError={resendEmailError || null}
+				{isSettingUpPayment}
+				saveError={saveError || null}
+				{hasConfirmedLocation}
+				{selectedCountry}
+				{selectedCurrency}
+				{savingCurrency}
+				{currencyExpanded}
+				resendVerificationEmail={() => resendVerificationEmail()}
+				setupPayments={() => setupPayments()}
+				onCurrencyExpandedChange={(expanded) => currencyExpanded = expanded}
+				onCountryChange={(country) => onCountryChange(country)}
+				saveCurrencySelection={() => saveCurrencySelection()}
+				resetSelections={() => resetSelections()}
+			/>
+		{/if}
+
+		<!-- Tour Timeline - Main Feature -->
 		<div class="mb-8">
 			<TourTimeline 
 				bind:view={timelineView}
@@ -1654,80 +950,79 @@
 			/>
 		</div>
 
-		<!-- Today's Activity -->
-		<div class="mb-8">
-			<div class="mb-4 flex items-center justify-between">
-				<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Today's Activity</h2>
-				<div class="flex items-center gap-2">
-					{#if todaysSchedule.length > 0}
-						<button
-							onclick={() => goto('/checkin-scanner')}
-							class="button-primary button--small button--gap"
-						>
-							<QrCode class="h-3 w-3" />
-							<span class="hidden sm:inline">Scanner</span>
-						</button>
-					{/if}
-					<button
-						onclick={() => goto('/analytics')}
-						class="button-secondary button--small button--gap"
-					>
-						<TrendingUp class="h-3 w-3" />
-						<span class="hidden sm:inline">Analytics</span>
-					</button>
-				</div>
-			</div>
-
-			<!-- Today's Schedule -->
-			{#if todaysSchedule.length > 0}
+		<!-- Recent Bookings -->
+		{#if recentBookings && recentBookings.length > 0}
+			<div class="mb-8">
 				<div
 					class="rounded-lg"
 					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 				>
 					<div class="border-b p-4" style="border-color: var(--border-primary);">
 						<div class="flex items-center justify-between">
-							<h3 class="text-sm font-medium" style="color: var(--text-primary);">
-								Today's Schedule
+							<h3 class="text-base font-semibold" style="color: var(--text-primary);">
+								Recent Bookings
 							</h3>
-							<div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
-								<Users class="h-3 w-3" />
-								{todaysSchedule.reduce((sum: number, s: any) => sum + (s.participants || 0), 0)} total
-								guests
-							</div>
+							<button
+								onclick={() => goto('/bookings')}
+								class="button-secondary button--small button--gap"
+							>
+								View all
+								<ArrowRight class="h-3 w-3" />
+							</button>
 						</div>
 					</div>
+
 					<div class="divide-y" style="border-color: var(--border-primary);">
-						{#each todaysSchedule as schedule}
-							<div class="flex items-center justify-between p-4">
-								<div class="min-w-0 flex-1">
-									<div class="mb-1 flex items-center gap-2">
-										<span class="text-sm font-medium" style="color: var(--text-primary);">
-											{#if schedule.timeSlot?.startTime && schedule.timeSlot?.endTime}
-												{formatSlotTimeRange(
-													schedule.timeSlot.startTime,
-													schedule.timeSlot.endTime
-												)}
-											{:else}
-												{formatDate(schedule.time)}
+						{#each recentBookings.slice(0, 4) as booking}
+							{@const BookingIcon = getBookingStatusIcon(booking.status)}
+							{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
+							<div class="p-4 transition-all duration-150 cursor-pointer hover:bg-[var(--bg-secondary)]"
+								role="button"
+								tabindex="0"
+								onclick={() => goto(`/bookings/${booking.id}`)}
+								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/bookings/${booking.id}`); } }}
+							>
+								<div class="flex items-start justify-between">
+									<div class="min-w-0 flex-1">
+										<div class="mb-1 flex items-center gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-primary);">
+												{booking.customerName || 'Anonymous'}
+											</span>
+											<span
+												class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getStatusColor(booking.status)}"
+											>
+												<BookingIcon class="h-3 w-3" />
+												<span class="capitalize">{booking.status}</span>
+											</span>
+											{#if booking.paymentStatus}
+												<span
+													class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getPaymentStatusColor(booking.paymentStatus)}"
+												>
+													<PaymentIcon class="h-3 w-3" />
+													{getPaymentStatusLabel(booking.paymentStatus)}
+												</span>
 											{/if}
-										</span>
-										<span
-											class="rounded-full px-2 py-0.5 text-xs {getStatusColor(schedule.status)}"
-										>
-											{schedule.status}
-										</span>
+										</div>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											{booking.tourName || booking.tour || 'Unknown Tour'} • 
+											{#if booking.effectiveDate}
+												{formatDate(booking.effectiveDate)}
+											{:else if booking.expand?.timeSlot?.startTime}
+												{formatDate(booking.expand.timeSlot.startTime)}
+											{:else}
+												No date
+											{/if}
+										</p>
+										<p class="mt-1 text-xs" style="color: var(--text-tertiary);">
+											{booking.participants} {booking.participants === 1 ? 'guest' : 'guests'} • {$globalCurrencyFormatter(booking.totalAmount || 0)}
+										</p>
 									</div>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{schedule.tourName} • {schedule.participants || 0} guests
-										{#if schedule.customerName}
-											• {schedule.customerName}
-										{/if}
-									</p>
-								</div>
-								<div class="flex items-center gap-1">
 									<button
-										onclick={() => goto(`/bookings/${schedule.id}`)}
-										class="button-secondary button--small button--icon"
+										onclick={(e) => {
+											e.stopPropagation();
+											goto(`/bookings/${booking.id}`);
+										}}
+										class="button-secondary button--small button--icon ml-3"
 									>
 										<ArrowRight class="h-3 w-3" />
 									</button>
@@ -1736,173 +1031,39 @@
 						{/each}
 					</div>
 				</div>
-			{:else}
-				<div
-					class="rounded-lg p-8 text-center"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<Calendar class="mx-auto mb-3 h-8 w-8" style="color: var(--text-tertiary);" />
-					<p class="mb-1 text-sm" style="color: var(--text-primary);">No tours scheduled today</p>
-					<p class="text-xs" style="color: var(--text-secondary);">Enjoy your day off!</p>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Quick Actions & Recent Activity -->
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-			<!-- Recent Bookings -->
-			<div class="lg:col-span-2">
-				<div
-					class="rounded-lg"
-					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-				>
-					<div
-						class="flex items-center justify-between border-b p-4"
-						style="border-color: var(--border-primary);"
-					>
-						<h3 class="text-sm font-medium" style="color: var(--text-primary);">Recent Bookings</h3>
-						<button
-							onclick={() => goto('/bookings')}
-							class="text-xs hover:underline"
-							style="color: var(--text-tertiary);"
-						>
-							View all
-						</button>
-					</div>
-
-					<div class="divide-y" style="border-color: var(--border-primary);">
-						{#if recentBookings.length > 0}
-							{#each recentBookings.slice(0, 4) as booking}
-								{@const BookingIcon = getBookingStatusIcon(booking.status)}
-								{@const PaymentIcon = getPaymentStatusIcon(booking.paymentStatus || 'pending')}
-								<div class="p-4">
-									<div class="flex items-start justify-between">
-										<div class="min-w-0 flex-1">
-											<div class="mb-1 flex items-center gap-2">
-												<span class="text-sm font-medium" style="color: var(--text-primary);">
-													{booking.customerName}
-												</span>
-												<span
-													class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getStatusColor(booking.status)}"
-												>
-													<BookingIcon class="h-3 w-3" />
-													<span class="capitalize">{booking.status}</span>
-												</span>
-												{#if booking.paymentStatus}
-													<span
-														class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full {getPaymentStatusColor(booking.paymentStatus)}"
-													>
-														<PaymentIcon class="h-3 w-3" />
-														{getPaymentStatusLabel(booking.paymentStatus)}
-													</span>
-												{/if}
-											</div>
-											<p class="text-xs" style="color: var(--text-secondary);">
-												{booking.tourName || booking.tour || 'Unknown Tour'} • {formatDate(
-													booking.effectiveDate || booking.created
-												)}
-											</p>
-											<p class="mt-1 text-xs" style="color: var(--text-tertiary);">
-												{formatParticipantDisplayCompact(booking)} guests • {$globalCurrencyFormatter(
-													booking.totalAmount || 0
-												)}
-											</p>
-										</div>
-										<button
-											onclick={() => goto(`/bookings/${booking.id}`)}
-											class="button-secondary button--small button--icon ml-3"
-										>
-											<ArrowRight class="h-3 w-3" />
-										</button>
-									</div>
-								</div>
-							{/each}
-						{:else}
-							<div class="p-8 text-center">
-								<Calendar class="mx-auto mb-2 h-6 w-6" style="color: var(--text-tertiary);" />
-								<p class="text-sm" style="color: var(--text-secondary);">No bookings yet</p>
-							</div>
-						{/if}
-					</div>
-				</div>
 			</div>
+		{/if}
 
-			<!-- Quick Actions Sidebar -->
-			<div class="space-y-4">
-				<!-- Profile Link -->
-				{#if profile?.username}
-					<div
-						class="rounded-lg p-4"
-						style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-					>
-						<div class="mb-3 flex items-center justify-between">
-							<div class="flex items-center gap-2">
-								<Link class="h-4 w-4" style="color: var(--text-tertiary);" />
-								<h3 class="text-sm font-medium" style="color: var(--text-primary);">
-									Your Profile
-								</h3>
-							</div>
-							<button
-								onclick={copyProfileLink}
-								class="button-secondary button--small button--icon"
-								title={profileLinkCopied ? 'Copied!' : 'Copy link'}
-							>
-								{#if profileLinkCopied}
-									<CheckCircle class="h-3 w-3" />
-								{:else}
-									<Copy class="h-3 w-3" />
-								{/if}
-							</button>
-						</div>
-						<p class="mb-3 text-xs" style="color: var(--text-secondary);">
-							zaur.app/{profile.username}
-						</p>
-						<button
-							onclick={() => window.open(`/${profile?.username}`, '_blank')}
-							class="button-secondary button--small button--gap w-full"
-						>
-							<ExternalLink class="h-3 w-3" />
-							View Profile
-						</button>
-					</div>
-				{/if}
-
-				<!-- Quick Actions -->
-				<div
-					class="rounded-lg p-4"
-					style="background: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<h3 class="mb-3 text-sm font-medium" style="color: var(--text-primary);">
-						Quick Actions
-					</h3>
-					<div class="space-y-2">
-						<button
-							onclick={() => goto('/tours/new')}
-							class="button-primary button--small button--gap w-full"
-						>
-							<Plus class="h-3 w-3" />
-							Create Tour
-						</button>
-						<button
-							onclick={() => goto('/tours')}
-							class="button-secondary button--small button--gap w-full"
-						>
-							<MapPin class="h-3 w-3" />
-							Manage Tours
-						</button>
-						{#if isApproachingLimits()}
-							<button
-								onclick={() => goto('/subscription')}
-								class="button-secondary button--small button--gap w-full"
-								style="border-color: var(--color-warning-200); color: var(--color-warning-600);"
-							>
-								<Crown class="h-3 w-3" />
-								Upgrade Plan
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
+		<!-- Quick Actions -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+			<button
+				onclick={() => goto('/tours/new')}
+				class="quick-action-card"
+			>
+				<Plus class="h-5 w-5 mb-2" style="color: var(--color-primary-600);" />
+				<span class="font-medium" style="color: var(--text-primary);">Create Tour</span>
+			</button>
+			<button
+				onclick={() => goto('/checkin-scanner')}
+				class="quick-action-card"
+			>
+				<QrCode class="h-5 w-5 mb-2" style="color: var(--color-success-600);" />
+				<span class="font-medium" style="color: var(--text-primary);">Check-in Scanner</span>
+			</button>
+			<button
+				onclick={() => goto('/analytics')}
+				class="quick-action-card"
+			>
+				<TrendingUp class="h-5 w-5 mb-2" style="color: var(--color-warning-600);" />
+				<span class="font-medium" style="color: var(--text-primary);">View Analytics</span>
+			</button>
+			<button
+				onclick={() => goto('/profile')}
+				class="quick-action-card"
+			>
+				<UserCheck class="h-5 w-5 mb-2" style="color: var(--color-info-600);" />
+				<span class="font-medium" style="color: var(--text-primary);">Update Profile</span>
+			</button>
 		</div>
 	{/if}
 </div>
@@ -2033,5 +1194,26 @@ Please ensure this is the correct country where your business is legally registe
 			opacity: 1;
 			transform: translateY(0);
 		}
+	}
+
+	.quick-action-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		cursor: pointer;
+		transition: all 0.15s;
+		text-align: center;
+	}
+
+	.quick-action-card:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-sm);
 	}
 </style>
