@@ -76,18 +76,16 @@
 		});
 	});
 	
-	// Create stable date string for query key to prevent infinite loops
-	let dateString = $derived(
-		`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`
-	);
+	// Create stable date string for query key and API call consistency
+	let dateString = $derived(currentDate.toISOString());
 	
-	// Query for timeline data - create once, not in derived
-	const timelineQuery = createQuery({
+	// Query for timeline data - make reactive to date and view changes
+	let timelineQuery = $derived(createQuery({
 		queryKey: queryKeys.allTimeSlots(view, dateString),
 		queryFn: async () => {
 			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString() });
 			try {
-				const result = await queryFunctions.fetchAllTimeSlots(view, currentDate.toISOString());
+				const result = await queryFunctions.fetchAllTimeSlots(view, dateString);
 				console.log('✅ Timeline: Data received:', result);
 				return result;
 			} catch (error) {
@@ -95,13 +93,14 @@
 				throw error;
 			}
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes stale time
-		gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-		refetchOnWindowFocus: false, // Disable aggressive window focus refetching
+		staleTime: 0, // Always consider data potentially stale for immediate updates
+		gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
+		refetchOnWindowFocus: true, // Enable window focus refetching for live updates
+		refetchOnMount: 'always', // Always refetch on mount
 		enabled: browser,
 		retry: 1, // Reduce retries
 		retryDelay: 1000, // 1 second retry delay
-	});
+	}));
 	
 	// Derived data
 	let timeSlots = $derived($timelineQuery.data?.timeSlots || []);
@@ -153,22 +152,31 @@
 	
 	// Format date range display
 	function getDateRangeDisplay(): string {
-		const start = new Date($timelineQuery.data?.dateRange?.start || currentDate);
-		const end = new Date($timelineQuery.data?.dateRange?.end || currentDate);
+		// Use the actual currentDate instead of relying on query data for display
+		const baseDate = new Date(currentDate);
 		
 		if (view === 'day') {
-			return start.toLocaleDateString('en-US', { 
+			return baseDate.toLocaleDateString('en-US', { 
 				weekday: 'long', 
 				month: 'long', 
 				day: 'numeric', 
 				year: 'numeric' 
 			});
 		} else if (view === 'week') {
-			const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-			const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+			// Calculate week start (Monday) and end (Sunday)
+			const startOfWeek = new Date(baseDate);
+			const dayOfWeek = startOfWeek.getDay();
+			const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+			startOfWeek.setDate(startOfWeek.getDate() + diff);
+			
+			const endOfWeek = new Date(startOfWeek);
+			endOfWeek.setDate(endOfWeek.getDate() + 6);
+			
+			const startStr = startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+			const endStr = endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 			return `${startStr} - ${endStr}`;
 		} else {
-			return start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+			return baseDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 		}
 	}
 	

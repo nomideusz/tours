@@ -61,14 +61,14 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// TanStack Query for dashboard data - force immediate execution
+	// TanStack Query for dashboard data - configured for live updates
 	const dashboardStatsQuery = createQuery({
 			queryKey: queryKeys.dashboardStats,
 			queryFn: () => queryFunctions.fetchDashboardStats(),
-			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes to reduce requests
-			gcTime: 10 * 60 * 1000,
-			refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-			refetchOnMount: true, // Enable refetch on mount to ensure data loads
+			staleTime: 0, // Always consider data potentially stale for immediate updates
+			gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
+			refetchOnWindowFocus: true, // Enable window focus refetching for live updates
+			refetchOnMount: 'always', // Always refetch on mount
 			enabled: true, // Always enabled - queryFn checks for browser
 			retry: 1, // Reduce retries
 			retryDelay: 2000, // Simple 2 second delay
@@ -80,10 +80,10 @@
 	const recentBookingsQuery = createQuery({
 		queryKey: queryKeys.recentBookings(10),
 		queryFn: () => queryFunctions.fetchRecentBookings(10),
-		staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
-		gcTime: 10 * 60 * 1000,
-		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-		refetchOnMount: true, // Enable refetch on mount to ensure data loads
+		staleTime: 0, // Always consider data potentially stale for immediate updates
+		gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
+		refetchOnWindowFocus: true, // Enable window focus refetching for live updates
+		refetchOnMount: 'always', // Always refetch on mount
 		enabled: true, // Always enabled - queryFn checks for browser
 		retry: 1, // Reduce retries
 		retryDelay: 2000, // Simple 2 second delay
@@ -930,7 +930,7 @@
 		<div class="mb-6">
 			<!-- Mobile Header -->
 			<MobilePageHeader
-				title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Operations Center")}
+				title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
 				secondaryInfo={isLoading ? "Loading..." : (isNewUser ? "Let's get you started" : `${stats.upcomingTours} upcoming`)}
 				quickActions={[
 					{
@@ -951,7 +951,7 @@
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
 				<PageHeader 
-					title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Operations Center")}
+					title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
 					subtitle={isLoading ? "Loading your data..." : (isNewUser ? "Complete these steps to start accepting tour bookings" : "Manage your daily tour operations")}
 				>
 					<div class="flex items-center gap-4">
