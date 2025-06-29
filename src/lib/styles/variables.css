@@ -1,47 +1,47 @@
 :root {
-	/* Professional Color Palette */
+	/* Professional Color Palette - Tour Guide Edition */
 	
-	/* Primary Blue */
-	--color-primary-50: #eff6ff;
-	--color-primary-100: #dbeafe;
-	--color-primary-200: #bfdbfe;
-	--color-primary-300: #93c5fd;
-	--color-primary-400: #60a5fa;
-	--color-primary-500: #3b82f6;
-	--color-primary-600: #2563eb;
-	--color-primary-700: #1d4ed8;
-	--color-primary-800: #1e40af;
-	--color-primary-900: #1e3a8a;
+	/* Primary Ocean Blue - Deep, vibrant, and adventurous */
+	--color-primary-50: #eff8ff;
+	--color-primary-100: #dbeefe;
+	--color-primary-200: #bfe3ff;
+	--color-primary-300: #92d3fe;
+	--color-primary-400: #5ebbfb;
+	--color-primary-500: #3b9ef7;
+	--color-primary-600: #2480ec;
+	--color-primary-700: #1c69d9;
+	--color-primary-800: #1d55af;
+	--color-primary-900: #1d4a8a;
 	
-	/* Neutral Grays */
-	--color-gray-50: #f9fafb;
-	--color-gray-100: #f3f4f6;
-	--color-gray-200: #e5e7eb;
-	--color-gray-300: #d1d5db;
-	--color-gray-400: #9ca3af;
-	--color-gray-500: #6b7280;
-	--color-gray-600: #4b5563;
-	--color-gray-700: #374151;
-	--color-gray-800: #1f2937;
-	--color-gray-900: #111827;
+	/* Neutral Grays - With subtle blue undertones for cohesion */
+	--color-gray-50: #f8fafb;
+	--color-gray-100: #f1f5f9;
+	--color-gray-200: #e2e8f0;
+	--color-gray-300: #cbd5e1;
+	--color-gray-400: #94a3b8;
+	--color-gray-500: #64748b;
+	--color-gray-600: #475569;
+	--color-gray-700: #334155;
+	--color-gray-800: #1e293b;
+	--color-gray-900: #0f172a;
 	
-	/* Semantic Colors */
+	/* Semantic Colors - More vibrant and friendly */
 	
-	/* Success Green */
-	--color-success-50: #ecfdf5;
-	--color-success-100: #d1fae5;
-	--color-success-200: #a7f3d0;
-	--color-success-300: #6ee7b7;
-	--color-success-400: #34d399;
-	--color-success-500: #10b981;
-	--color-success-600: #059669;
-	--color-success-700: #047857;
-	--color-success-800: #065f46;
-	--color-success-900: #064e3b;
-	--color-success: #10b981;
-	--color-success-light: #d1fae5;
+	/* Success Green - Fresh and lively */
+	--color-success-50: #f0fdf4;
+	--color-success-100: #dcfce7;
+	--color-success-200: #bbf7d0;
+	--color-success-300: #86efac;
+	--color-success-400: #4ade80;
+	--color-success-500: #22c55e;
+	--color-success-600: #16a34a;
+	--color-success-700: #15803d;
+	--color-success-800: #166534;
+	--color-success-900: #14532d;
+	--color-success: #22c55e;
+	--color-success-light: #dcfce7;
 	
-	/* Warning Orange */
+	/* Warning Amber - Warm and attention-grabbing */
 	--color-warning-50: #fffbeb;
 	--color-warning-100: #fef3c7;
 	--color-warning-200: #fde68a;
@@ -55,47 +55,47 @@
 	--color-warning: #f59e0b;
 	--color-warning-light: #fef3c7;
 	
-	/* Error Red */
-	--color-error-50: #fef2f2;
-	--color-error-100: #fee2e2;
-	--color-error-200: #fecaca;
-	--color-error-300: #fca5a5;
-	--color-error-400: #f87171;
-	--color-error-500: #ef4444;
-	--color-error-600: #dc2626;
-	--color-error-700: #b91c1c;
-	--color-error-800: #991b1b;
-	--color-error-900: #7f1d1d;
-	--color-error: #ef4444;
-	--color-error-light: #fee2e2;
+	/* Error Rose - Softer than pure red */
+	--color-error-50: #fff1f2;
+	--color-error-100: #ffe4e6;
+	--color-error-200: #fecdd3;
+	--color-error-300: #fda4af;
+	--color-error-400: #fb7185;
+	--color-error-500: #f43f5e;
+	--color-error-600: #e11d48;
+	--color-error-700: #be123c;
+	--color-error-800: #9f1239;
+	--color-error-900: #881337;
+	--color-error: #f43f5e;
+	--color-error-light: #ffe4e6;
 
-	/* Danger colors - adjusted for dark mode */
-	--color-danger-50: #450a0a;
-	--color-danger-100: #7f1d1d;
-	--color-danger-200: #991b1b;
-	--color-danger-300: #b91c1c;
-	--color-danger-400: #dc2626;
-	--color-danger-500: #ef4444;
-	--color-danger-600: #f87171;
-	--color-danger-700: #fca5a5;
-	--color-danger-800: #fecaca;
-	--color-danger-900: #fee2e2;
-	--color-danger: #f87171;
-	--color-danger-light: #450a0a;
+	/* Danger colors - Matching error for consistency */
+	--color-danger-50: #fff1f2;
+	--color-danger-100: #ffe4e6;
+	--color-danger-200: #fecdd3;
+	--color-danger-300: #fda4af;
+	--color-danger-400: #fb7185;
+	--color-danger-500: #f43f5e;
+	--color-danger-600: #e11d48;
+	--color-danger-700: #be123c;
+	--color-danger-800: #9f1239;
+	--color-danger-900: #881337;
+	--color-danger: #f43f5e;
+	--color-danger-light: #ffe4e6;
 	
-	/* Info Blue */
-	--color-info-50: #eff6ff;
-	--color-info-100: #dbeafe;
-	--color-info-200: #bfdbfe;
-	--color-info-300: #93c5fd;
-	--color-info-400: #60a5fa;
-	--color-info-500: #3b82f6;
-	--color-info-600: #2563eb;
-	--color-info-700: #1d4ed8;
-	--color-info-800: #1e40af;
-	--color-info-900: #1e3a8a;
-	--color-info: #3b82f6;
-	--color-info-light: #dbeafe;
+	/* Info Violet - Sophisticated and trustworthy */
+	--color-info-50: #f5f3ff;
+	--color-info-100: #ede9fe;
+	--color-info-200: #ddd6fe;
+	--color-info-300: #c4b5fd;
+	--color-info-400: #a78bfa;
+	--color-info-500: #8b5cf6;
+	--color-info-600: #7c3aed;
+	--color-info-700: #6d28d9;
+	--color-info-800: #5b21b6;
+	--color-info-900: #4c1d95;
+	--color-info: #8b5cf6;
+	--color-info-light: #ede9fe;
 	
 	/* Legacy variables (for compatibility) */
 	--text-primary: var(--color-gray-900);
@@ -201,6 +201,7 @@
 	--focus-shadow-primary: 0 0 0 3px rgba(59, 130, 246, 0.1);
 	--focus-shadow-error: 0 0 0 3px rgba(239, 68, 68, 0.1);
 	--focus-shadow-success: 0 0 0 3px rgba(16, 185, 129, 0.1);
+	--focus-shadow-warning: 0 0 0 3px rgba(245, 158, 11, 0.1);
 
 	/* Form elements */
 	--select-arrow-color: #6b7280;
@@ -214,6 +215,14 @@
 	--text-tertiary: var(--color-gray-500);
 	--border-primary: var(--color-gray-200);
 	--border-secondary: var(--color-gray-300);
+	
+	/* Subtle background variations for visual interest */
+	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #eff8ff 0%, #ffffff 50%);
+	--bg-gradient-ocean: linear-gradient(135deg, #f8fafb 0%, #eff8ff 100%);
+	--bg-gradient-mist: linear-gradient(to bottom, #ffffff 0%, #f8fafb 100%);
+	--bg-pattern-dots: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+	--bg-pattern-grid: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+	--bg-pattern-size: 20px 20px;
 
 	/* Component variables */
 	--modal-backdrop: rgba(0, 0, 0, 0.5);
@@ -227,43 +236,43 @@
 
 /* Dark mode overrides */
 [data-theme="dark"] {
-	/* Primary Blue - adjusted for dark mode */
-	--color-primary-50: #0f1419;
-	--color-primary-100: #1c2938;
-	--color-primary-200: #1e3a8a;
-	--color-primary-300: #1d4ed8;
-	--color-primary-400: #2563eb;
-	--color-primary-500: #3b82f6;
-	--color-primary-600: #60a5fa;
-	--color-primary-700: #93c5fd;
-	--color-primary-800: #bfdbfe;
-	--color-primary-900: #dbeafe;
+	/* Primary Ocean Blue - adjusted for dark mode */
+	--color-primary-50: #0a1929;
+	--color-primary-100: #0d2847;
+	--color-primary-200: #1d4a8a;
+	--color-primary-300: #1d55af;
+	--color-primary-400: #1c69d9;
+	--color-primary-500: #2480ec;
+	--color-primary-600: #3b9ef7;
+	--color-primary-700: #5ebbfb;
+	--color-primary-800: #92d3fe;
+	--color-primary-900: #bfe3ff;
 
-	/* Dark mode gray scale */
-	--color-gray-50: #0f1419;
-	--color-gray-100: #1c2128;
-	--color-gray-200: #30363d;
-	--color-gray-300: #484f58;
-	--color-gray-400: #656d76;
-	--color-gray-500: #8b949e;
-	--color-gray-600: #b1bac4;
-	--color-gray-700: #c9d1d9;
-	--color-gray-800: #f0f6fc;
-	--color-gray-900: #ffffff;
+	/* Dark mode gray scale - cool grays with slight blue undertone */
+	--color-gray-50: #0b0d10;
+	--color-gray-100: #181b1f;
+	--color-gray-200: #2a2d32;
+	--color-gray-300: #424547;
+	--color-gray-400: #565759;
+	--color-gray-500: #757679;
+	--color-gray-600: #a6a7a9;
+	--color-gray-700: #d6d7d8;
+	--color-gray-800: #e7e8e9;
+	--color-gray-900: #f6f7f8;
 
 	/* Success colors - adjusted for dark mode */
-	--color-success-50: #042f2e;
-	--color-success-100: #134e4a;
-	--color-success-200: #166534;
-	--color-success-300: #15803d;
-	--color-success-400: #16a34a;
-	--color-success-500: #22c55e;
-	--color-success-600: #4ade80;
-	--color-success-700: #86efac;
-	--color-success-800: #bbf7d0;
-	--color-success-900: #dcfce7;
+	--color-success-50: #022c22;
+	--color-success-100: #064e3b;
+	--color-success-200: #14532d;
+	--color-success-300: #166534;
+	--color-success-400: #15803d;
+	--color-success-500: #16a34a;
+	--color-success-600: #22c55e;
+	--color-success-700: #4ade80;
+	--color-success-800: #86efac;
+	--color-success-900: #bbf7d0;
 	--color-success: #22c55e;
-	--color-success-light: #134e4a;
+	--color-success-light: #064e3b;
 
 	/* Warning colors - adjusted for dark mode */
 	--color-warning-50: #451a03;
@@ -279,61 +288,69 @@
 	--color-warning: #fbbf24;
 	--color-warning-light: #451a03;
 
-	/* Error colors - adjusted for dark mode */
-	--color-error-50: #450a0a;
-	--color-error-100: #7f1d1d;
-	--color-error-200: #991b1b;
-	--color-error-300: #b91c1c;
-	--color-error-400: #dc2626;
-	--color-error-500: #ef4444;
-	--color-error-600: #f87171;
-	--color-error-700: #fca5a5;
-	--color-error-800: #fecaca;
-	--color-error-900: #fee2e2;
-	--color-error: #f87171;
-	--color-error-light: #450a0a;
+	/* Error/Danger colors - adjusted for dark mode */
+	--color-error-50: #4c0519;
+	--color-error-100: #881337;
+	--color-error-200: #9f1239;
+	--color-error-300: #be123c;
+	--color-error-400: #e11d48;
+	--color-error-500: #f43f5e;
+	--color-error-600: #fb7185;
+	--color-error-700: #fda4af;
+	--color-error-800: #fecdd3;
+	--color-error-900: #ffe4e6;
+	--color-error: #fb7185;
+	--color-error-light: #4c0519;
 
-	/* Danger colors - adjusted for dark mode */
-	--color-danger-50: #450a0a;
-	--color-danger-100: #7f1d1d;
-	--color-danger-200: #991b1b;
-	--color-danger-300: #b91c1c;
-	--color-danger-400: #dc2626;
-	--color-danger-500: #ef4444;
-	--color-danger-600: #f87171;
-	--color-danger-700: #fca5a5;
-	--color-danger-800: #fecaca;
-	--color-danger-900: #fee2e2;
-	--color-danger: #f87171;
-	--color-danger-light: #450a0a;
+	/* Danger colors - same as error for consistency */
+	--color-danger-50: #4c0519;
+	--color-danger-100: #881337;
+	--color-danger-200: #9f1239;
+	--color-danger-300: #be123c;
+	--color-danger-400: #e11d48;
+	--color-danger-500: #f43f5e;
+	--color-danger-600: #fb7185;
+	--color-danger-700: #fda4af;
+	--color-danger-800: #fecdd3;
+	--color-danger-900: #ffe4e6;
+	--color-danger: #fb7185;
+	--color-danger-light: #4c0519;
 
 	/* Info colors - adjusted for dark mode */
-	--color-info-50: #0c1221;
-	--color-info-100: #1e3a8a;
-	--color-info-200: #1e40af;
-	--color-info-300: #1d4ed8;
-	--color-info-400: #2563eb;
-	--color-info-500: #3b82f6;
-	--color-info-600: #60a5fa;
-	--color-info-700: #93c5fd;
-	--color-info-800: #bfdbfe;
-	--color-info-900: #dbeafe;
-	--color-info: #60a5fa;
-	--color-info-light: #1e3a8a;
+	--color-info-50: #2e1065;
+	--color-info-100: #4c1d95;
+	--color-info-200: #5b21b6;
+	--color-info-300: #6d28d9;
+	--color-info-400: #7c3aed;
+	--color-info-500: #8b5cf6;
+	--color-info-600: #a78bfa;
+	--color-info-700: #c4b5fd;
+	--color-info-800: #ddd6fe;
+	--color-info-900: #ede9fe;
+	--color-info: #a78bfa;
+	--color-info-light: #4c1d95;
 
-	/* Dark theme semantic colors */
-	--bg-primary: #0d1117;
-	--bg-secondary: #161b22;
-	--bg-tertiary: #21262d;
-	--text-primary: #f0f6fc;
-	--text-secondary: #c9d1d9;
-	--text-tertiary: #a8b3bf; /* Slightly darker than #b1bac4 for better contrast */
-	--border-primary: #30363d;
-	--border-secondary: #21262d;
+	/* Dark theme semantic colors - cool blue-gray palette */
+	--bg-primary: #0b0d10;
+	--bg-secondary: #181b1f;
+	--bg-tertiary: #2a2d32;
+	--text-primary: #f6f7f8;
+	--text-secondary: #d6d7d8;
+	--text-tertiary: #a6a7a9;
+	--border-primary: #424547;
+	--border-secondary: #2a2d32;
 
 	/* Legacy variables for dark mode compatibility */
 	--accent-primary: var(--color-primary-500);
-	--bg-input: #21262d;
+	--bg-input: #2a2d32;
+	
+	/* Dark mode background variations - cool blue-grays */
+	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #181b1f 0%, #0b0d10 60%);
+	--bg-gradient-ocean: linear-gradient(135deg, #0b0d10 0%, #181b1f 50%, #1d2025 100%);
+	--bg-gradient-mist: linear-gradient(to bottom, #0b0d10 0%, #181b1f 100%);
+	--bg-pattern-dots: radial-gradient(circle, rgba(66, 69, 71, 0.3) 1px, transparent 1px);
+	--bg-pattern-grid: linear-gradient(rgba(66, 69, 71, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 69, 71, 0.3) 1px, transparent 1px);
+	--bg-pattern-size: 20px 20px;
 
 	/* Adjust shadows for dark mode */
 	--shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
@@ -346,6 +363,7 @@
 	--focus-shadow-primary: 0 0 0 3px rgba(59, 130, 246, 0.3);
 	--focus-shadow-error: 0 0 0 3px rgba(248, 113, 113, 0.3);
 	--focus-shadow-success: 0 0 0 3px rgba(34, 197, 94, 0.3);
+	--focus-shadow-warning: 0 0 0 3px rgba(251, 191, 36, 0.3);
 
 	/* Form elements for dark mode */
 	--select-arrow-color: #c9d1d9;
@@ -906,4 +924,81 @@ button svg,
 	opacity: 1;
 	stroke-width: 2;
 	color: inherit; /* Ensure they inherit button text color */
+}
+
+/* =============================================
+   Background Variation Utilities 
+   ============================================= */
+
+/* Gradient backgrounds */
+.bg-gradient-soft {
+	background: var(--bg-gradient-soft);
+}
+
+.bg-gradient-ocean {
+	background: var(--bg-gradient-ocean);
+}
+
+.bg-gradient-mist {
+	background: var(--bg-gradient-mist);
+}
+
+/* Pattern backgrounds */
+.bg-pattern-dots {
+	background-image: var(--bg-pattern-dots);
+	background-size: var(--bg-pattern-size);
+}
+
+.bg-pattern-grid {
+	background-image: var(--bg-pattern-grid);
+	background-size: var(--bg-pattern-size);
+}
+
+/* Combined backgrounds */
+.hero-section {
+	background: var(--bg-gradient-ocean);
+	position: relative;
+}
+
+.dashboard-bg {
+	background: var(--bg-gradient-mist);
+}
+
+.card-elevated {
+	background: var(--bg-primary);
+	box-shadow: var(--shadow-md);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+/* Pattern overlay for sections */
+.section-pattern {
+	position: relative;
+	overflow: hidden;
+}
+
+.section-pattern::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--bg-pattern-dots);
+	background-size: var(--bg-pattern-size);
+	opacity: 0.3;
+	pointer-events: none;
+}
+
+/* Subtle card backgrounds */
+.card-ocean {
+	background: var(--bg-gradient-ocean);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.card-mist {
+	background: var(--bg-gradient-mist);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
 }

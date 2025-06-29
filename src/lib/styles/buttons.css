@@ -229,7 +229,7 @@
 	.button-warning:focus {
 		outline: 2px solid transparent;
 		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+		box-shadow: var(--focus-shadow-warning, 0 0 0 3px rgba(245, 158, 11, 0.3));
 	}
 
 	.button-warning:disabled {
