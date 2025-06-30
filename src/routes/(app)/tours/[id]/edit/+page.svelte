@@ -1050,22 +1050,7 @@
 	{/if}
 </div>
 
-<!-- Floating Save Button -->
-{#if formData.name?.trim() !== '' || uploadedImages.length > 0}
-	<button
-		onclick={handleSave}
-		disabled={isSubmitting}
-		class="floating-save-btn"
-		style="position: fixed; bottom: 2rem; right: 2rem; z-index: var(--z-dropdown);"
-		title={isSubmitting ? 'Saving Changes...' : 'Save Changes'}
-	>
-		{#if isSubmitting}
-			<div class="w-5 h-5 rounded-full animate-spin" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
-		{:else}
-			<Save class="w-5 h-5" />
-		{/if}
-	</button>
-{/if}
+
 
 <!-- Confirmation Modals -->
 <ConfirmationModal
