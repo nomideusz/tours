@@ -168,7 +168,19 @@
 					{/if}
 					{#if needsConfirmation}
 						<button 
-							onclick={() => onCurrencyExpandedChange(true)}
+							onclick={() => {
+								onCurrencyExpandedChange(true);
+								// Scroll to the expanded section on mobile
+								setTimeout(() => {
+									const expandedSection = document.querySelector('[data-location-section]');
+									if (expandedSection) {
+										expandedSection.scrollIntoView({ 
+											behavior: 'smooth', 
+											block: 'start' 
+										});
+									}
+								}, 100); // Small delay to ensure DOM is updated
+							}}
 							class="button-secondary button--small"
 						>
 							Set Location
@@ -276,7 +288,7 @@
 
 	<!-- Location Confirmation Expanded -->
 	{#if needsConfirmation && currencyExpanded}
-		<div class="rounded-xl p-6 mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div data-location-section class="rounded-xl p-6 mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
 				Confirm Your Business Location
 			</h3>

@@ -3,6 +3,7 @@
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
+	import { canActivateTours, getOnboardingMessage, getNextOnboardingStep } from '$lib/utils/onboarding.js';
 	
 	// Import clean icons instead of using emojis
 	import User from 'lucide-svelte/icons/user';
@@ -67,6 +68,10 @@
 		};
 		// Hide status field for new tour creation
 		hideStatusField?: boolean;
+		// Onboarding status props for activation restrictions
+		profile?: any;
+		hasConfirmedLocation?: boolean;
+		paymentStatus?: { isSetup: boolean; loading: boolean };
 	}
 
 	let {
@@ -86,7 +91,10 @@
 		serverErrors = [],
 		triggerValidation = false,
 		bookingConstraints,
-		hideStatusField = false
+		hideStatusField = false,
+		profile = null,
+		hasConfirmedLocation = false,
+		paymentStatus = { isSetup: false, loading: false }
 	}: Props = $props();
 
 	// Client-side validation state
@@ -101,6 +109,13 @@
 	
 	// Get appropriate step value based on currency
 	let priceStep = $derived(minimumPrice >= 10 ? 1 : 0.5);
+	
+	// Check if user can activate tours based on onboarding completion
+	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus));
+	let canActivate = $derived(activationCheck.canActivate);
+	let missingSteps = $derived(activationCheck.missingSteps);
+	let onboardingMessage = $derived(getOnboardingMessage(missingSteps));
+	let nextStep = $derived(getNextOnboardingStep(missingSteps));
 
 	// Note: Reactive validation is handled by individual field validation functions
 	// to avoid conflicts and ensure consistent error state management
@@ -1194,6 +1209,28 @@
 					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Status</h3>
 				</div>
 				<div class="p-4">
+					<!-- Onboarding Restriction Notice -->
+					{#if !canActivate && (formData.status === 'active' || missingSteps.length > 0)}
+						<div class="mb-4 p-4 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-start gap-3">
+								<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+								<div class="flex-1">
+									<h4 class="font-medium text-sm mb-1" style="color: var(--color-warning-900);">
+										Complete Onboarding to Activate Tours
+									</h4>
+									<p class="text-sm mb-2" style="color: var(--color-warning-700);">
+										{onboardingMessage}
+									</p>
+									{#if nextStep}
+										<p class="text-xs" style="color: var(--color-warning-600);">
+											Next: {nextStep.action}
+										</p>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{/if}
+
 					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
 						<div class="flex items-center gap-3">
 							<div class="w-10 h-10 rounded-full flex items-center justify-center" 
@@ -1212,9 +1249,13 @@
 										: (isEdit ? 'Tour is Draft' : 'Save as Draft')}
 								</h3>
 								<p class="text-sm" style="color: var(--text-secondary);">
-									{formData.status === 'active' 
-										? (isEdit ? 'Your tour is live and accepting bookings' : 'Tour will be published and accept bookings right away') 
-										: (isEdit ? 'Your tour is saved but not visible to customers' : 'Tour will be saved privately for you to activate later')}
+									{#if !canActivate && formData.status === 'active'}
+										Cannot activate - complete onboarding steps first
+									{:else}
+										{formData.status === 'active' 
+											? (isEdit ? 'Your tour is live and accepting bookings' : 'Tour will be published and accept bookings right away') 
+											: (isEdit ? 'Your tour is saved but not visible to customers' : 'Tour will be saved privately for you to activate later')}
+									{/if}
 								</p>
 							</div>
 						</div>
@@ -1222,17 +1263,24 @@
 						<div class="flex items-center gap-3">
 							<!-- Hidden input to send the actual status value -->
 							<input type="hidden" name="status" bind:value={formData.status} />
-							<label class="relative inline-flex items-center cursor-pointer">
+							<label class="relative inline-flex items-center {canActivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
 								<input
 									type="checkbox"
 									checked={formData.status === 'active'}
+									disabled={!canActivate}
 									onchange={(e) => {
 										const target = e.target as HTMLInputElement;
-										formData.status = target.checked ? 'active' : 'draft';
+										if (canActivate || !target.checked) {
+											formData.status = target.checked ? 'active' : 'draft';
+										} else {
+											// Reset to draft if trying to activate without onboarding
+											target.checked = false;
+											formData.status = 'draft';
+										}
 									}}
 									class="sr-only peer"
 								/>
-								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all {!canActivate ? 'opacity-50' : ''}"></div>
 								<span class="ml-3 text-sm font-medium" style="color: var(--text-primary);">
 									{formData.status === 'active' ? 'Active' : 'Draft'}
 								</span>

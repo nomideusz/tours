@@ -11,13 +11,16 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { updateTourStatusMutation } from '$lib/queries/mutations.js';
 	
+	// Onboarding utilities
+	import { canActivateTours, getOnboardingMessage, getNextOnboardingStep } from '$lib/utils/onboarding.js';
+	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ScheduleCalendar from '$lib/components/ScheduleCalendar.svelte';
 	import TimeSlotsList from '$lib/components/TimeSlotsList.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import Drawer from '$lib/components/Drawer.svelte';
 	import TimeSlotForm from '$lib/components/time-slot-form/TimeSlotForm.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	
@@ -54,6 +57,7 @@
 	// Get data from load function
 	let { data } = $props();
 	let tourId = $derived(data.tourId);
+	let profile = $derived(data.user);
 	
 	const queryClient = useQueryClient();
 	
@@ -97,6 +101,56 @@
 	let scheduleError = $derived($tourScheduleQuery.isError);
 	let isLoading = $derived(tourLoading && scheduleLoading); // Only loading if BOTH are loading
 	let isError = $derived($tourDetailsQuery.isError || $tourScheduleQuery.isError);
+	
+	// Onboarding status
+	let hasConfirmedLocation = $state(false);
+	let paymentStatus = $state({ isSetup: false, loading: true });
+	
+	// Initialize onboarding status
+	$effect(() => {
+		if (browser && profile) {
+			// Check if location is confirmed from localStorage
+			hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
+			
+			// Also consider location confirmed if user has country+currency or stripe account
+			if ((profile.country && profile.currency) || profile.stripeAccountId) {
+				hasConfirmedLocation = true;
+				localStorage.setItem('locationConfirmed', 'true');
+			}
+			
+			// Check payment status
+			checkPaymentStatus();
+		}
+	});
+	
+	// Check payment status
+	async function checkPaymentStatus() {
+		if (!profile?.stripeAccountId) {
+			paymentStatus = { isSetup: false, loading: false };
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/payments/connect/status', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId: profile.id })
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				paymentStatus = {
+					isSetup: data.canReceivePayments || false,
+					loading: false
+				};
+			} else {
+				paymentStatus = { isSetup: false, loading: false };
+			}
+		} catch (error) {
+			console.error('Error checking payment status:', error);
+			paymentStatus = { isSetup: false, loading: false };
+		}
+	}
 	
 	// State
 	let qrCopied = $state(false);
@@ -263,6 +317,19 @@
 	// Activate tour from welcome prompt
 	async function activateTour() {
 		if (!tour || tour.status === 'active') return;
+		
+		// Check onboarding completion
+		const activationCheck = canActivateTours(profile, hasConfirmedLocation, paymentStatus);
+		if (!activationCheck.canActivate) {
+			const onboardingMessage = getOnboardingMessage(activationCheck.missingSteps);
+			const nextStep = getNextOnboardingStep(activationCheck.missingSteps);
+			
+			alert(`Complete onboarding before activating tours:\n\n${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`);
+			
+			// Redirect to dashboard for onboarding
+			goto('/dashboard');
+			return;
+		}
 		
 		try {
 			await $updateStatusMutation.mutateAsync({ 
@@ -829,7 +896,7 @@
 				</div>
 				
 				<!-- Schedule Section -->
-				<section id="schedule" class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<section id="schedule" class="rounded-xl {mobileTab !== 'schedule' ? 'hidden sm:block' : ''}" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<div class="p-4 border-b" style="border-color: var(--border-primary);">
 						<div class="flex items-center justify-between">
 							<h2 class="text-lg font-semibold" style="color: var(--text-primary);">
@@ -1155,8 +1222,12 @@
 {/if}
 </PageContainer>
 
-<!-- Add Time Slots Modal -->
-<Modal bind:isOpen={showAddSlotsModal} title="Add Time Slots for {tour?.name || 'Tour'}" size="lg">
+<!-- Add Time Slots Drawer -->
+<Drawer 
+	bind:isOpen={showAddSlotsModal} 
+	title="Add Time Slots for {tour?.name || 'Tour'}"
+	onClose={() => showAddSlotsModal = false}
+>
 	<TimeSlotForm 
 		tourId={tourId}
 		mode="modal"
@@ -1174,7 +1245,7 @@
 		}}
 		onCancel={() => showAddSlotsModal = false}
 	/>
-</Modal>
+</Drawer>
 
 <!-- Image Lightbox -->
 {#if lightboxOpen}

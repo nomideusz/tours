@@ -305,6 +305,35 @@ export const actions: Actions = {
       // Sanitize the data
       const sanitizedData = sanitizeTourFormData(tourData);
 
+      // Check if trying to activate tour without completing onboarding
+      if (sanitizedData.status === 'active') {
+        const missingSteps: string[] = [];
+        
+        // Check email verification
+        if (!locals.user.emailVerified) {
+          missingSteps.push('Email verification');
+        }
+        
+        // Check location confirmation
+        const hasLocationConfirmed = (locals.user.country && locals.user.currency) || locals.user.stripeAccountId;
+        if (!hasLocationConfirmed) {
+          missingSteps.push('Location confirmation');
+        }
+        
+        // Check payment setup
+        if (!locals.user.stripeAccountId) {
+          missingSteps.push('Payment setup');
+        }
+        
+        if (missingSteps.length > 0) {
+          console.error('❌ Tour activation blocked - missing onboarding steps:', missingSteps);
+          return fail(400, {
+            error: `Complete onboarding before activating tours: ${missingSteps.join(', ')}`,
+            formData: sanitizedData
+          });
+        }
+      }
+
       // Validate the data
       const validation = validateTourForm(sanitizedData);
       

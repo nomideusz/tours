@@ -185,6 +185,13 @@
 			hasConfirmedLocation = true;
 			localStorage.setItem('locationConfirmed', 'true');
 		}
+		
+		// Also consider location confirmed if user has explicitly set country in profile
+		// This handles the case where users set location in profile page before payment setup
+		if (profile && profile.country && profile.currency && !hasConfirmedLocation) {
+			hasConfirmedLocation = true;
+			localStorage.setItem('locationConfirmed', 'true');
+		}
 
 		// Check if promo banner was previously dismissed
 		const dismissData = localStorage.getItem('promoBannerDismissed');

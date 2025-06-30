@@ -24,8 +24,14 @@
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	
+	// Onboarding utilities
+	import { canActivateTours } from '$lib/utils/onboarding.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	
+	// Get profile from layout data
+	let profile = $derived(data.user);
 	
 	const queryClient = useQueryClient();
 	let tourId = $derived(data.tourId);
@@ -43,6 +49,56 @@
 	let tour = $derived($tourQuery.data?.tour || null);
 	let isLoading = $derived($tourQuery.isLoading);
 	let isSubmitting = $state(false);
+	
+	// Onboarding status
+	let hasConfirmedLocation = $state(false);
+	let paymentStatus = $state({ isSetup: false, loading: true });
+	
+	// Initialize onboarding status
+	$effect(() => {
+		if (browser && profile) {
+			// Check if location is confirmed from localStorage
+			hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
+			
+			// Also consider location confirmed if user has country+currency or stripe account
+			if ((profile.country && profile.currency) || profile.stripeAccountId) {
+				hasConfirmedLocation = true;
+				localStorage.setItem('locationConfirmed', 'true');
+			}
+			
+			// Check payment status
+			checkPaymentStatus();
+		}
+	});
+	
+	// Check payment status
+	async function checkPaymentStatus() {
+		if (!profile?.stripeAccountId) {
+			paymentStatus = { isSetup: false, loading: false };
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/payments/connect/status', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId: profile.id })
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				paymentStatus = {
+					isSetup: data.canReceivePayments || false,
+					loading: false
+				};
+			} else {
+				paymentStatus = { isSetup: false, loading: false };
+			}
+		} catch (error) {
+			console.error('Error checking payment status:', error);
+			paymentStatus = { isSetup: false, loading: false };
+		}
+	}
 
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
@@ -837,6 +893,9 @@
 						{triggerValidation}
 						{bookingConstraints}
 						getExistingImageUrl={getExistingImageUrl}
+						{profile}
+						{hasConfirmedLocation}
+						{paymentStatus}
 					/>
 				</form>
 			{/if}

@@ -27,12 +27,16 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { updateTourStatusMutation } from '$lib/queries/mutations.js';
 	
+	// Onboarding utilities
+	import { canActivateTours, getOnboardingMessage, getNextOnboardingStep } from '$lib/utils/onboarding.js';
+	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Eye from 'lucide-svelte/icons/eye';
+	import Settings from 'lucide-svelte/icons/settings';
 	import Plus from 'lucide-svelte/icons/plus';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -50,6 +54,10 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 
 	const queryClient = useQueryClient();
+	
+	// Get data from props (profile should be available from layout)
+	let { data } = $props();
+	let profile = $derived(data?.user);
 
 	// Query
 	const userToursQuery = createQuery({
@@ -98,6 +106,50 @@
 	// Feedback state
 	let recentlyUpdated = $state<string | null>(null);
 	let deletingTourIds = $state<Set<string>>(new Set());
+	
+	// Onboarding status
+	let hasConfirmedLocation = $state(false);
+	let paymentStatus = $state({ isSetup: false, loading: true });
+	
+	// Initialize onboarding status
+	$effect(() => {
+		if (browser && profile) {
+			// Check if location is confirmed from localStorage
+			hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
+			
+			// Also consider location confirmed if user has country+currency or stripe account
+			if ((profile.country && profile.currency) || profile.stripeAccountId) {
+				hasConfirmedLocation = true;
+				localStorage.setItem('locationConfirmed', 'true');
+			}
+			
+			// Check payment status
+			checkPaymentStatus();
+		}
+	});
+	
+	// Check payment status
+	async function checkPaymentStatus() {
+		try {
+			paymentStatus.loading = true;
+			const response = await fetch('/api/payments/connect/status');
+			const data = await response.json();
+			paymentStatus = { 
+				isSetup: data.isSetup || false, 
+				loading: false 
+			};
+		} catch (error) {
+			console.error('Failed to check payment status:', error);
+			paymentStatus = { isSetup: false, loading: false };
+		}
+	}
+	
+	// Check if user can activate tours based on onboarding completion
+	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus));
+	let canActivate = $derived(activationCheck.canActivate);
+	let missingSteps = $derived(activationCheck.missingSteps);
+	let onboardingMessage = $derived(getOnboardingMessage(missingSteps));
+	let nextStep = $derived(getNextOnboardingStep(missingSteps));
 	
 	// Filtered and sorted tours
 	let filteredTours = $derived(tours
@@ -271,6 +323,12 @@
 	
 	async function updateTourStatus(tourId: string, newStatus: 'active' | 'draft') {
 		try {
+			// Check onboarding completion before allowing activation
+			if (newStatus === 'active' && !canActivate) {
+				alert(`Complete onboarding first:\n\n${onboardingMessage}\n\nNext step: ${nextStep}`);
+				return;
+			}
+			
 			// Show subtle highlight on the tour being updated
 			recentlyUpdated = tourId;
 			
@@ -645,18 +703,30 @@
 							<div class="flex gap-2 flex-1">
 								<Tooltip text="Manage tour details & schedule" position="top">
 									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="button-secondary button--small button--gap">
-										<Edit class="h-4 w-4" />
+										<Settings class="h-4 w-4" />
 										<span class="hidden sm:inline">Manage</span>
 									</button>
 								</Tooltip>
 								{#if tour.status === 'draft'}
-									<button 
-										onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-										class="button-primary button--small button--gap"
-									>
-										<CheckCircle class="h-4 w-4" />
-										<span>Activate</span>
-									</button>
+									{#if canActivate}
+										<button 
+											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
+											class="button-primary button--small button--gap"
+										>
+											<CheckCircle class="h-4 w-4" />
+											<span>Activate</span>
+										</button>
+									{:else}
+										<Tooltip text={`Complete onboarding first: ${onboardingMessage}`} position="top">
+											<button 
+												class="button-secondary button--small button--gap opacity-50 cursor-not-allowed"
+												disabled
+											>
+												<CheckCircle class="h-4 w-4" />
+												<span>Activate</span>
+											</button>
+										</Tooltip>
+									{/if}
 								{/if}
 							</div>
 							
@@ -744,10 +814,12 @@
 													dropdownOpenUpwards = {};
 													updateTourStatus(tour.id, 'active');
 												}}
-												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
-												style="color: var(--text-primary); background: transparent;"
-												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors {!canActivate ? 'opacity-50 cursor-not-allowed' : ''}"
+												style="color: {!canActivate ? 'var(--text-tertiary)' : 'var(--text-primary)'}; background: transparent;"
+												onmouseenter={(e) => canActivate && (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+												onmouseleave={(e) => canActivate && (e.currentTarget.style.backgroundColor = 'transparent')}
+												disabled={!canActivate}
+												title={!canActivate ? `Complete onboarding first: ${onboardingMessage}` : ''}
 											>
 												<CheckCircle class="h-4 w-4" />
 												<span class="sm:hidden">Activate</span>

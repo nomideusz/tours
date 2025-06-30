@@ -18,6 +18,9 @@
 	import { queryKeys } from '$lib/queries/shared-stats.js';
 	import { createTourMutation } from '$lib/queries/mutations.js';
 	
+	// Onboarding utilities
+	import { canActivateTours } from '$lib/utils/onboarding.js';
+	
 	// Icons
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
@@ -36,6 +39,9 @@
 	import TimePicker from '$lib/components/TimePicker.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	
+	// Get profile from layout data
+	let profile = $derived(data.user);
 	
 	// TanStack Query client for cache invalidation
 	const queryClient = useQueryClient();
@@ -75,6 +81,56 @@
 	// Image upload state
 	let uploadedImages: File[] = $state([]);
 	let imageUploadErrors: string[] = $state([]);
+	
+	// Onboarding status (simplified for tour creation - payment setup not checked)
+	let hasConfirmedLocation = $state(false);
+	let paymentStatus = $state({ isSetup: false, loading: true });
+	
+	// Initialize onboarding status
+	$effect(() => {
+		if (browser && profile) {
+			// Check if location is confirmed from localStorage
+			hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
+			
+			// Also consider location confirmed if user has country+currency or stripe account
+			if ((profile.country && profile.currency) || profile.stripeAccountId) {
+				hasConfirmedLocation = true;
+				localStorage.setItem('locationConfirmed', 'true');
+			}
+			
+			// Check payment status
+			checkPaymentStatus();
+		}
+	});
+	
+	// Check payment status
+	async function checkPaymentStatus() {
+		if (!profile?.stripeAccountId) {
+			paymentStatus = { isSetup: false, loading: false };
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/payments/connect/status', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId: profile.id })
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				paymentStatus = {
+					isSetup: data.canReceivePayments || false,
+					loading: false
+				};
+			} else {
+				paymentStatus = { isSetup: false, loading: false };
+			}
+		} catch (error) {
+			console.error('Error checking payment status:', error);
+			paymentStatus = { isSetup: false, loading: false };
+		}
+	}
 
 	// Image validation constants (matching server-side)
 	const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -571,9 +627,12 @@
 					onImageUpload={handleImageUpload}
 					onImageRemove={removeImage}
 					{imageUploadErrors}
-					serverErrors={form?.validationErrors || []}
+					serverErrors={(form as any)?.validationErrors || []}
 					{triggerValidation}
-			hideStatusField={false}
+					hideStatusField={false}
+					{profile}
+					{hasConfirmedLocation}
+					{paymentStatus}
 				/>
 			</form>
 		</div>
