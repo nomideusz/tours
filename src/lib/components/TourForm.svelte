@@ -1131,9 +1131,9 @@
 					</div>
 				</div>
 
-				<!-- Mobile Image Upload Errors - Show directly in upload section -->
+				<!-- Image Upload Errors - Show on all screen sizes -->
 				{#if imageUploadErrors && imageUploadErrors.length > 0}
-					<div class="mt-4 p-3 rounded-lg sm:hidden" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+					<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
 						<div class="flex items-start gap-2">
 							<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
 							<div class="flex-1">
