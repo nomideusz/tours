@@ -624,50 +624,45 @@
 				// Navigate back to tours list
 				goto('/tours?deleted=true');
 			} else {
-				const errorText = await response.text();
-				console.log('Delete error response:', { status: response.status, text: errorText });
-				
 				let errorData: any = {};
+				
 				try {
-					// First try to parse the response directly
-					errorData = JSON.parse(errorText);
+					// Parse the error response as JSON
+					errorData = await response.json();
+					console.log('Delete error response:', { status: response.status, data: errorData });
 				} catch (e) {
-					// If that fails, try to extract JSON from the error message
+					// If JSON parsing fails, try text
+					const errorText = await response.text();
+					console.log('Delete error response (text):', { status: response.status, text: errorText });
+					
 					try {
-						const messageMatch = errorText.match(/{"error".*}/);
+						// Try to extract JSON from error message
+						const messageMatch = errorText.match(/\{.*\}/);
 						if (messageMatch) {
 							errorData = JSON.parse(messageMatch[0]);
-							console.log('Parsed error data from message:', errorData);
+						} else {
+							errorData = { error: errorText };
 						}
 					} catch (e2) {
-						console.log('Could not parse error as JSON:', errorText);
+						errorData = { error: errorText || 'Failed to delete tour' };
 					}
 				}
 				
-				// Check if it's a structured error with details
-				if (response.status === 400 && errorData?.details) {
-					const details = errorData.details;
-					console.log('Error details:', details);
-					
-					if (details?.activeBookings > 0) {
-						// Show custom modal for tours with active bookings
-						deleteErrorData = {
-							tourName: tour?.name || 'Unknown Tour',
-							activeBookings: details.activeBookings,
-							totalBookings: details.totalBookings,
-							revenue: details.revenue || 0
-						};
-						console.log('Setting deleteErrorData:', deleteErrorData);
-						showDeleteErrorModal = true;
-						console.log('Set showDeleteErrorModal to true');
-					} else {
-						// Generic error
-						error = errorData?.error || 'Cannot delete tour';
-					}
+				// Check if it's a structured error with booking details
+				if (errorData?.details?.activeBookings > 0) {
+					console.log('🚫 Tour has active bookings, showing custom modal');
+					// Show custom modal for tours with active bookings
+					deleteErrorData = {
+						tourName: tour?.name || 'Unknown Tour',
+						activeBookings: errorData.details.activeBookings,
+						totalBookings: errorData.details.totalBookings,
+						revenue: errorData.details.revenue || 0
+					};
+					showDeleteErrorModal = true;
 				} else {
-					// For any other error, show it in the error state
-					console.log('Showing generic error:', errorData);
-					error = errorData?.error || errorData?.message || errorText || 'Failed to delete tour';
+					// Generic error - show in error banner
+					console.log('❌ Generic delete error:', errorData);
+					error = errorData?.error || errorData?.message || 'Failed to delete tour';
 				}
 			}
 		} catch (err) {
