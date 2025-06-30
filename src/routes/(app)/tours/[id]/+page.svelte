@@ -18,7 +18,6 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
-	import TimeSlotsList from '$lib/components/TimeSlotsList.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
@@ -140,8 +139,6 @@
 	// State
 	let qrCopied = $state(false);
 	let linkCopied = $state(false);
-	let selectedDate = $state(new Date());
-	let selectedDateSlots = $state<any[]>([]);
 	let calendarView = $state<'day' | 'week' | 'month'>('month');
 	let currentCalendarDate = $state(new Date());
 	let showAllImages = $state(false);
@@ -195,39 +192,11 @@
 		}
 	});
 	
-	// Query for selected date slots
-	const selectedDateSlotsQuery = createQuery({
-		queryKey: ['tour-slots-for-date', tourId, selectedDate.toDateString()],
-		queryFn: async () => {
-			if (!tourId) return [];
-			const scheduleData = await queryFunctions.fetchTourSchedule(tourId);
-			const selectedDateStr = selectedDate.toDateString();
-			return scheduleData.timeSlots?.filter((slot: any) => {
-				if (!slot.startTime) return false;
-				try {
-					const slotDate = new Date(slot.startTime);
-					return !isNaN(slotDate.getTime()) && slotDate.toDateString() === selectedDateStr;
-				} catch (error) {
-					return false;
-				}
-			}) || [];
-		},
-		staleTime: 2 * 60 * 1000, // 2 minutes
-		enabled: !!tourId && browser,
-	});
-	
-	// Update selectedDateSlots when query data changes
-	$effect(() => {
-		selectedDateSlots = $selectedDateSlotsQuery.data || [];
-	});
-	
 	// Handle slot selection from TourTimeline
 	function handleSlotClick(slot: any) {
-		// Update selected date to the slot's date
-		const newDate = new Date(slot.startTime);
-		if (selectedDate.toDateString() !== newDate.toDateString()) {
-			selectedDate = newDate;
-		}
+		// TourTimeline handles slot selection internally
+		// No need for additional logic since we removed TimeSlotsList
+		console.log('Slot clicked:', slot);
 	}
 	
 	// Handle view changes from TourTimeline
@@ -446,9 +415,6 @@
 		}
 		if ($tourDetailsQuery.data) {
 			console.log('✅ Tour details loaded:', $tourDetailsQuery.data);
-		}
-		if ($selectedDateSlotsQuery.data) {
-			console.log('📅 Selected date slots loaded:', $selectedDateSlotsQuery.data);
 		}
 	});
 </script>
@@ -901,38 +867,19 @@
 					</div>
 					
 					<div class="p-4">
-						<!-- Mobile: Stack vertically, Desktop: Side by side -->
-						<div class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] lg:gap-6 xl:gap-8">
-							<!-- Calendar -->
-							<div>
-								<TourTimeline 
-									tourId={tourId}
-									bind:view={calendarView}
-									bind:currentDate={currentCalendarDate}
-									defaultView="month"
-									hideHeader={true}
-									hideStats={true}
-									compact={true}
-									onSlotClick={handleSlotClick}
-									onViewChange={handleViewChange}
-								/>
-							</div>
-							
-							<!-- Selected Date Slots -->
-							<div class="lg:mt-0">
-								<TimeSlotsList 
-									selectedDate={selectedDate}
-									slots={selectedDateSlots}
-									onEditSlot={(slot) => {
-										// TODO: Implement inline slot editing or modal
-										console.log('Edit slot:', slot);
-										// Old route no longer exists: /tours/${tourId}/schedule/edit/${slot.id}
-										// For now, could navigate to main edit page or implement modal editing
-										goto(`/tours/${tourId}/edit`);
-									}}
-								/>
-							</div>
-						</div>
+						<!-- Calendar with navigation -->
+						<TourTimeline 
+							tourId={tourId}
+							bind:view={calendarView}
+							bind:currentDate={currentCalendarDate}
+							defaultView="month"
+							hideHeaderText={true}
+							hideStats={true}
+							hideViewToggle={true}
+							compact={true}
+							onSlotClick={handleSlotClick}
+							onViewChange={handleViewChange}
+						/>
 					</div>
 				</section>
 				
@@ -1174,8 +1121,6 @@
 			showAddSlotsModal = false;
 			// Refresh the TourTimeline data (it uses tour-schedule query internally)
 			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
-			// Also refresh the selected date slots
-			queryClient.invalidateQueries({ queryKey: ['tour-slots-for-date', tourId] });
 			// Show success message
 			showAddSlotsSuccess = true;
 			// Close welcome prompt if it was open (newly created tour)

@@ -50,6 +50,7 @@
 		onViewChange = undefined,
 		tourId = undefined,
 		hideHeader = false,
+		hideHeaderText = false,
 		hideViewToggle = false,
 		hideStats = false,
 		defaultView = 'week'
@@ -61,6 +62,7 @@
 		onViewChange?: (view: 'day' | 'week' | 'month') => void;
 		tourId?: string;
 		hideHeader?: boolean;
+		hideHeaderText?: boolean;
 		hideViewToggle?: boolean;
 		hideStats?: boolean;
 		defaultView?: 'day' | 'week' | 'month';
@@ -339,54 +341,56 @@
 	<!-- Header -->
 	{#if !hideHeader}
 		<div class="timeline-header">
-			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-				<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-					<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
-						{tourId ? 'Tour Schedule' : 'All Tours Schedule'}
-					</h3>
-					{#if !isLoading && !hideStats && stats.totalSlots > 0}
-						<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
-							<span>{stats.totalSlots} slots</span>
-							<span class="hidden sm:inline">•</span>
-							<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
-							<span>•</span>
-							<span>{Math.round(stats.averageUtilization)}% avg</span>
+			{#if !hideHeaderText}
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+					<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+						<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
+							{tourId ? 'Tour Schedule' : 'All Tours Schedule'}
+						</h3>
+						{#if !isLoading && !hideStats && stats.totalSlots > 0}
+							<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
+								<span>{stats.totalSlots} slots</span>
+								<span class="hidden sm:inline">•</span>
+								<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
+								<span>•</span>
+								<span>{Math.round(stats.averageUtilization)}% avg</span>
+							</div>
+						{/if}
+					</div>
+					
+					<!-- View Toggle -->
+					{#if !hideViewToggle}
+						<div class="flex items-center gap-2">
+							<div class="view-toggle">
+								<button
+									onclick={() => { view = 'day'; onViewChange?.('day'); }}
+									class="view-button {view === 'day' ? 'active' : ''}"
+								>
+									<span class="hidden sm:inline">Day</span>
+									<span class="sm:hidden">D</span>
+								</button>
+								<button
+									onclick={() => { view = 'week'; onViewChange?.('week'); }}
+									class="view-button {view === 'week' ? 'active' : ''}"
+								>
+									<span class="hidden sm:inline">Week</span>
+									<span class="sm:hidden">W</span>
+								</button>
+								<button
+									onclick={() => { view = 'month'; onViewChange?.('month'); }}
+									class="view-button {view === 'month' ? 'active' : ''}"
+								>
+									<span class="hidden sm:inline">Month</span>
+									<span class="sm:hidden">M</span>
+								</button>
+							</div>
 						</div>
 					{/if}
 				</div>
-				
-				<!-- View Toggle -->
-				{#if !hideViewToggle}
-					<div class="flex items-center gap-2">
-						<div class="view-toggle">
-							<button
-								onclick={() => { view = 'day'; onViewChange?.('day'); }}
-								class="view-button {view === 'day' ? 'active' : ''}"
-							>
-								<span class="hidden sm:inline">Day</span>
-								<span class="sm:hidden">D</span>
-							</button>
-							<button
-								onclick={() => { view = 'week'; onViewChange?.('week'); }}
-								class="view-button {view === 'week' ? 'active' : ''}"
-							>
-								<span class="hidden sm:inline">Week</span>
-								<span class="sm:hidden">W</span>
-							</button>
-							<button
-								onclick={() => { view = 'month'; onViewChange?.('month'); }}
-								class="view-button {view === 'month' ? 'active' : ''}"
-							>
-								<span class="hidden sm:inline">Month</span>
-								<span class="sm:hidden">M</span>
-							</button>
-						</div>
-					</div>
-				{/if}
-			</div>
+			{/if}
 			
-			<!-- Date Navigation -->
-			<div class="date-navigation">
+			<!-- Date Navigation - Always show unless hideHeader is true -->
+			<div class="date-navigation {hideHeaderText ? 'standalone-navigation' : ''}">
 				<button
 					onclick={() => navigateDate('prev')}
 					class="nav-button"
@@ -612,6 +616,11 @@
 	.compact .timeline-header {
 		padding: 0 0 1rem 0;
 		border: none;
+	}
+	
+	.standalone-navigation {
+		margin-bottom: 0;
+		padding: 0.75rem 0;
 	}
 	
 	.view-toggle {
