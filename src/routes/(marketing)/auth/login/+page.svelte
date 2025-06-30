@@ -75,7 +75,7 @@
 	}
 
 	// Handle resending verification email
-	let resendForm: HTMLFormElement;
+	let resendForm = $state<HTMLFormElement>();
 
 	function resendVerificationEmail() {
 		if (!form?.userId || !email || !resendForm) return;
@@ -160,6 +160,7 @@
 
 			<form
 				method="POST"
+				action="?/login"
 				novalidate
 				use:enhance={({ formData, cancel }) => {
 					// Run client-side validation first
@@ -173,7 +174,12 @@
 					// Store the current email for reference
 					const submittedEmail = formData.get('email') as string;
 
-					return async ({ update }) => {
+					return async ({ result, update }) => {
+						// Don't interfere with redirects - let SvelteKit handle them
+						if (result.type === 'redirect') {
+							return;
+						}
+						
 						await update({ reset: false }); // Prevent form reset to keep values
 						// Update local email value in case server returned a different one
 						if (form?.email) {

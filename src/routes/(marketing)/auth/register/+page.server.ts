@@ -163,9 +163,7 @@ export const actions: Actions = {
 				const emailResult = await sendAuthEmail('email-verification', {
 					email,
 					name: username, // Use username as display name in emails
-					verificationUrl,
-					// Include promo benefit info in email if applicable
-					promoBenefit: promoBenefitText || undefined
+					verificationUrl
 				});
 				
 				if (emailResult.success) {

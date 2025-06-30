@@ -116,7 +116,12 @@
 
 						isLoading = true;
 
-						return async ({ update }) => {
+						return async ({ result, update }) => {
+							// Don't interfere with redirects - let SvelteKit handle them
+							if (result.type === 'redirect') {
+								return;
+							}
+							
 							await update({ reset: false });
 							isLoading = false;
 						};

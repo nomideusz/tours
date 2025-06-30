@@ -109,7 +109,7 @@ export const actions: Actions = {
 		}
 	},
 
-	default: async ({ request, cookies, url }) => {
+	login: async ({ request, cookies, url }) => {
 		const data = await request.formData();
 		const email = data.get('email')?.toString();
 		const password = data.get('password')?.toString();

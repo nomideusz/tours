@@ -229,7 +229,12 @@
 					const submittedUsername = formData.get('username') as string;
 					const submittedEmail = formData.get('email') as string;
 
-					return async ({ update }) => {
+					return async ({ result, update }) => {
+						// Don't interfere with redirects - let SvelteKit handle them
+						if (result.type === 'redirect') {
+							return;
+						}
+						
 						await update({ reset: false }); // Prevent form reset to keep values
 						// Update local values in case server returned different ones
 						if (form?.username) username = form.username;
