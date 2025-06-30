@@ -178,24 +178,25 @@
 					return async ({ result, update }) => {
 						console.log('🔄 Login form result:', result.type, result);
 						
-						// Don't interfere with redirects - let SvelteKit handle them
-						if (result.type === 'redirect') {
-							console.log('✅ Login successful, redirecting to:', result.location);
-							// Keep loading state for smooth redirect
-							return;
-						}
+						// Always call update first to let SvelteKit handle the result
+						await update({ reset: false });
 						
-						console.log('❌ Login failed or other result, resetting loading state');
-						await update({ reset: false }); // Prevent form reset to keep values
-						// Update local email value in case server returned a different one
-						if (form?.email) {
-							email = form.email;
+						// Only reset loading state for non-redirect responses
+						if (result.type !== 'redirect') {
+							console.log('❌ Login failed or other result, resetting loading state');
+							
+							// Update local email value in case server returned a different one
+							if (form?.email) {
+								email = form.email;
+							} else {
+								email = submittedEmail;
+							}
+							
+							manualLoading = false;
 						} else {
-							email = submittedEmail;
+							console.log('✅ Login successful, redirect will be handled by SvelteKit');
+							// Keep loading state during redirect for smooth UX
 						}
-						
-						// Reset loading state for non-redirect responses
-						manualLoading = false;
 					};
 				}}
 				class="space-y-6"
