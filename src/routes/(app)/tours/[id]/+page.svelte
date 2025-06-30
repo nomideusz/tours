@@ -924,10 +924,11 @@
 									selectedDate={selectedDate}
 									slots={selectedDateSlots}
 									onEditSlot={(slot) => {
-										// TODO: Open inline edit modal instead of navigation
+										// TODO: Implement inline slot editing or modal
 										console.log('Edit slot:', slot);
-										// For now, navigate to edit page
-										goto(`/tours/${tourId}/schedule/edit/${slot.id}`);
+										// Old route no longer exists: /tours/${tourId}/schedule/edit/${slot.id}
+										// For now, could navigate to main edit page or implement modal editing
+										goto(`/tours/${tourId}/edit`);
 									}}
 								/>
 							</div>

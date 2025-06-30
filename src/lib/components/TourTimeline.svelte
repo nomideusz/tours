@@ -99,7 +99,7 @@
 	// Query for timeline data - make reactive to date and view changes
 	let timelineQuery = $derived(createQuery({
 		queryKey: tourId 
-			? ['tour-schedule', tourId, view, dateString]
+			? ['tour-schedule', tourId]
 			: queryKeys.allTimeSlots(view, dateString),
 		queryFn: async () => {
 			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString(), tourId });
