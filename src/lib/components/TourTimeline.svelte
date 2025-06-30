@@ -4,45 +4,49 @@
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	
-	// Types
-	interface TimeSlot {
-		id: string;
-		tourId: string;
-		tourName: string;
-		tourImage?: string | null;
-		startTime: string;
-		endTime: string;
-		capacity: number;
-		bookedSpots: number;
-		available: number;
-		utilizationRate: number;
-		status: string;
-		isPast: boolean;
-		isToday: boolean;
-		isFull: boolean;
-		totalBookings: number;
-		confirmedBookings: number;
-		totalParticipants: number;
-		totalRevenue: number;
-	}
+	import { updateTimeSlotMutation } from '$lib/queries/mutations.js';
+	import Tooltip from '$lib/components/Tooltip.svelte';
+	import { onMount } from 'svelte';
+	import '$lib/styles/timeline.css';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
-	import MapPin from 'lucide-svelte/icons/map-pin';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Eye from 'lucide-svelte/icons/eye';
-	import QrCode from 'lucide-svelte/icons/qr-code';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Check from 'lucide-svelte/icons/check';
+	import X from 'lucide-svelte/icons/x';
+	import Play from 'lucide-svelte/icons/play';
+	import Pause from 'lucide-svelte/icons/pause';
+	import Edit3 from 'lucide-svelte/icons/edit-3';
+	import MapPin from 'lucide-svelte/icons/map-pin';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import QrCode from 'lucide-svelte/icons/qr-code';
+	
+	// Types
+	export interface TimeSlot {
+		id: string;
+		tourId: string;
+		tourName: string;
+		startTime: string;
+		endTime: string;
+		capacity: number;
+		bookedSpots: number;
+		availableSpots: number;
+		totalRevenue: number;
+		isToday: boolean;
+		isPast: boolean;
+		isFull: boolean;
+		utilizationRate: number;
+		status?: 'available' | 'cancelled';
+	}
 	
 	// Component props
-	let { 
+	let {
 		view = $bindable('week'), 
 		currentDate = $bindable(new Date()),
 		compact = false,
@@ -136,15 +140,75 @@
 	
 	// Derived data
 	let timeSlots = $derived($timelineQuery.data?.timeSlots || []);
-	let stats = $derived($timelineQuery.data?.stats || {});
+	let stats = $derived.by(() => {
+		if (!processedTimeSlots.length) {
+			return {
+				totalSlots: 0,
+				totalBookings: 0,
+				averageUtilization: 0
+			};
+		}
+
+		const totalBookings = processedTimeSlots.reduce((sum: number, slot: TimeSlot) => sum + (slot.bookedSpots || 0), 0);
+		const averageUtilization = processedTimeSlots.length > 0 
+			? processedTimeSlots.reduce((sum: number, slot: TimeSlot) => sum + slot.utilizationRate, 0) / processedTimeSlots.length
+			: 0;
+
+		return {
+			totalSlots: processedTimeSlots.length,
+			totalBookings,
+			averageUtilization
+		};
+	});
 	let isLoading = $derived($timelineQuery.isLoading);
 	let error = $derived($timelineQuery.error);
 	
-	// Group slots by date for display
+	// Process timeSlots to ensure utilizationRate is calculated
+	let processedTimeSlots = $derived.by(() => {
+		return timeSlots.map((slot: TimeSlot) => ({
+			...slot,
+			// Calculate utilizationRate if missing (tour-schedule API doesn't include it)
+			utilizationRate: slot.utilizationRate !== undefined 
+				? slot.utilizationRate 
+				: slot.capacity > 0 ? (slot.bookedSpots / slot.capacity) * 100 : 0
+		}));
+	});
+	
+	// Group slots by date for display - filter by current view period for tour-specific views
 	let slotsByDate = $derived.by(() => {
 		const groups = new Map<string, TimeSlot[]>();
 		
-		timeSlots.forEach((slot: TimeSlot) => {
+		// Filter slots based on current view and date for tour-specific views
+		let filteredSlots = processedTimeSlots;
+		
+		if (tourId && (view === 'day' || view === 'week')) {
+			// For tour-specific day/week views, filter by current period
+			filteredSlots = processedTimeSlots.filter((slot: TimeSlot) => {
+				const slotDate = new Date(slot.startTime);
+				
+				if (view === 'day') {
+					// Show only slots for the current day
+					return slotDate.toDateString() === currentDate.toDateString();
+				} else if (view === 'week') {
+					// Show only slots for the current week
+					const weekStart = new Date(currentDate);
+					const dayOfWeek = weekStart.getDay();
+					const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Monday as start
+					weekStart.setDate(weekStart.getDate() + diff);
+					weekStart.setHours(0, 0, 0, 0);
+					
+					const weekEnd = new Date(weekStart);
+					weekEnd.setDate(weekEnd.getDate() + 6);
+					weekEnd.setHours(23, 59, 59, 999);
+					
+					return slotDate >= weekStart && slotDate <= weekEnd;
+				}
+				
+				return true;
+			});
+		}
+		
+		filteredSlots.forEach((slot: TimeSlot) => {
 			const date = new Date(slot.startTime);
 			const dateKey = date.toDateString();
 			
@@ -279,7 +343,8 @@
 	
 	function getDaySlots(date: Date): TimeSlot[] {
 		const dateStr = date.toDateString();
-		return timeSlots.filter((slot: TimeSlot) => new Date(slot.startTime).toDateString() === dateStr);
+		// Use processedTimeSlots to ensure utilizationRate is calculated
+		return processedTimeSlots.filter((slot: TimeSlot) => new Date(slot.startTime).toDateString() === dateStr);
 	}
 	
 	function getDayColor(slots: TimeSlot[]): string {
@@ -290,6 +355,122 @@
 	
 	// Get query client for prefetching
 	const queryClient = useQueryClient();
+	
+	// Quick edit state
+	let editingSlot = $state<string | null>(null);
+	let editCapacity = $state<number>(0);
+	let isSubmittingEdit = $state(false);
+	let recentlyUpdated = $state<{[key: string]: string}>({});
+	
+	// Initialize update mutation for tour-specific edits
+	const updateMutation = tourId ? updateTimeSlotMutation(tourId, '') : null;
+	
+	// Helper to show inline feedback
+	function showInlineSuccess(slotId: string, message: string) {
+		recentlyUpdated = { ...recentlyUpdated, [slotId]: message };
+		
+		// Auto-clear after 2 seconds
+		setTimeout(() => {
+			recentlyUpdated = Object.fromEntries(
+				Object.entries(recentlyUpdated).filter(([id]) => id !== slotId)
+			);
+		}, 2000);
+	}
+	
+	// Quick edit functions
+	function startEditCapacity(slot: TimeSlot) {
+		editingSlot = slot.id;
+		editCapacity = slot.capacity;
+	}
+	
+	function cancelEdit() {
+		editingSlot = null;
+		editCapacity = 0;
+	}
+	
+	async function saveCapacity(slot: TimeSlot) {
+		if (!tourId || isSubmittingEdit) return;
+		
+		// Validation
+		if (editCapacity < slot.bookedSpots) {
+			alert(`Capacity cannot be less than ${slot.bookedSpots} (already booked spots)`);
+			return;
+		}
+		
+		if (editCapacity < 1 || editCapacity > 100) {
+			alert('Capacity must be between 1 and 100');
+			return;
+		}
+		
+		isSubmittingEdit = true;
+		
+		try {
+			const response = await fetch(`/api/tours/${tourId}/schedule/${slot.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					startTime: slot.startTime,
+					endTime: slot.endTime,
+					capacity: editCapacity,
+					status: slot.status || 'available'
+				})
+			});
+			
+			if (!response.ok) throw new Error('Failed to update capacity');
+			
+			// Invalidate queries to refresh data
+			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			
+			cancelEdit();
+			showInlineSuccess(slot.id, 'Updated');
+		} catch (error) {
+			console.error('Failed to update slot capacity:', error);
+			alert('Failed to update capacity. Please try again.');
+		} finally {
+			isSubmittingEdit = false;
+		}
+	}
+	
+	async function toggleSlotStatus(slot: TimeSlot) {
+		if (!tourId || isSubmittingEdit) return;
+		
+		const newStatus = slot.status === 'cancelled' ? 'available' : 'cancelled';
+		
+		// Warn if cancelling a slot with bookings
+		if (newStatus === 'cancelled' && slot.bookedSpots > 0) {
+			const confirmed = confirm(
+				`This slot has ${slot.bookedSpots} booking(s). Cancelling will send cancellation emails to all customers. Continue?`
+			);
+			if (!confirmed) return;
+		}
+		
+		isSubmittingEdit = true;
+		
+		try {
+			const response = await fetch(`/api/tours/${tourId}/schedule/${slot.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					startTime: slot.startTime,
+					endTime: slot.endTime,
+					capacity: slot.capacity,
+					status: newStatus
+				})
+			});
+			
+			if (!response.ok) throw new Error('Failed to update status');
+			
+			// Invalidate queries to refresh data
+			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			
+			showInlineSuccess(slot.id, newStatus === 'cancelled' ? 'Cancelled' : 'Reactivated');
+		} catch (error) {
+			console.error('Failed to update slot status:', error);
+			alert('Failed to update status. Please try again.');
+		} finally {
+			isSubmittingEdit = false;
+		}
+	}
 	
 	// Prefetch adjacent dates when view changes
 	$effect(() => {
@@ -440,6 +621,7 @@
 	
 	<!-- Content -->
 	<div class="timeline-content" class:loading={isLoading}>
+		
 		{#if isLoading}
 			<div class="loading-state">
 				<div class="loading-placeholder">
@@ -484,13 +666,27 @@
 				<p class="text-lg mb-1" style="color: var(--text-primary);">No tours scheduled</p>
 				<p class="text-sm" style="color: var(--text-secondary);">
 					{#if tourId}
-						{view === 'day' ? 'No time slots scheduled for this day' :
-						 view === 'week' ? 'No time slots scheduled this week' :
-						 'No time slots scheduled this month'}
+						No time slots scheduled for this tour
 					{:else}
-						{view === 'day' ? 'No tours scheduled for this day' :
-						 view === 'week' ? 'No tours scheduled this week' :
-						 'No tours scheduled this month'}
+						Start by creating your first tour
+					{/if}
+				</p>
+			</div>
+		{:else if (view === 'day' || view === 'week') && slotsByDate.length === 0}
+			<div class="empty-state">
+				<Calendar class="h-12 w-12 mb-3" style="color: var(--text-tertiary);" />
+				<p class="text-lg mb-1" style="color: var(--text-primary);">
+					{#if view === 'day'}
+						No tours on this day
+					{:else}
+						No tours this week
+					{/if}
+				</p>
+				<p class="text-sm" style="color: var(--text-secondary);">
+					{#if tourId}
+						{view === 'day' ? 'No time slots scheduled for this day' : 'No time slots scheduled this week'}
+					{:else}
+						{view === 'day' ? 'No tours scheduled for this day' : 'No tours scheduled this week'}
 					{/if}
 				</p>
 			</div>
@@ -510,46 +706,174 @@
 						
 						<div class="slots-list">
 							{#each slots as slot}
-								<button
-									onclick={() => handleSlotClick(slot)}
-									class="slot-item {getSlotStatusClass(slot)}"
-								>
-									<div class="slot-time">
-										<Clock class="h-4 w-4" />
-										<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
-									</div>
-									
-									<div class="slot-info">
-										<h5 class="tour-name">{slot.tourName}</h5>
-										<div class="slot-details">
-											<div class="detail-item">
-												<Users class="h-3 w-3" />
-												<span>{slot.bookedSpots}/{slot.capacity}</span>
-											</div>
-											{#if slot.totalRevenue > 0}
+								{#if editingSlot === slot.id}
+									<!-- Div when editing to allow buttons to work -->
+									<div class="slot-item {getSlotStatusClass(slot)} {slot.status === 'cancelled' ? 'cancelled-slot' : ''} editing">
+										<div class="slot-time">
+											<Clock class="h-4 w-4" />
+											<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+										</div>
+										
+										<div class="slot-info">
+											<h5 class="tour-name">{slot.tourName}</h5>
+											<div class="slot-details">
 												<div class="detail-item">
-													<span>{$globalCurrencyFormatter(slot.totalRevenue)}</span>
+													<Users class="h-3 w-3" />
+													<div class="capacity-edit">
+														<input
+															type="number"
+															bind:value={editCapacity}
+															min={slot.bookedSpots}
+															max="100"
+															class="capacity-input"
+														/>
+														<Tooltip text="Save changes">
+															<button
+																onclick={() => saveCapacity(slot)}
+																class="save-btn"
+																disabled={isSubmittingEdit}
+															>
+																{#if isSubmittingEdit}
+																	<div class="animate-spin h-3 w-3 rounded-full border border-current border-t-transparent"></div>
+																{:else}
+																	<Check class="h-3 w-3" />
+																{/if}
+															</button>
+														</Tooltip>
+														<Tooltip text="Cancel editing">
+															<button
+																onclick={cancelEdit}
+																class="cancel-btn"
+															>
+																<X class="h-3 w-3" />
+															</button>
+														</Tooltip>
+													</div>
 												</div>
-											{/if}
-											<div class="utilization-bar">
-												<div 
-													class="utilization-fill"
-													style="width: {slot.utilizationRate}%; background-color: {getUtilizationColor(slot.utilizationRate)};"
-												></div>
+												{#if slot.totalRevenue > 0}
+													<div class="detail-item">
+														<span>{$globalCurrencyFormatter(slot.totalRevenue)}</span>
+													</div>
+												{/if}
+												<div class="utilization-bar">
+													<div 
+														class="utilization-fill"
+														style="width: {slot.utilizationRate}%; background-color: {getUtilizationColor(slot.utilizationRate)};"
+													></div>
+												</div>
 											</div>
 										</div>
+										
+										<div class="slot-actions">
+											{#if recentlyUpdated[slot.id]}
+												<span class="success-badge">
+													<Check class="h-3 w-3" />
+													{recentlyUpdated[slot.id]}
+												</span>
+											{:else}
+												{#if slot.isToday && !slot.isPast}
+													<span class="today-badge">Today</span>
+												{/if}
+												{#if slot.isFull}
+													<span class="full-badge">Full</span>
+												{/if}
+												{#if slot.status === 'cancelled'}
+													<span class="cancelled-badge">Cancelled</span>
+												{/if}
+											{/if}
+										</div>
 									</div>
-									
-									<div class="slot-actions">
-										{#if slot.isToday && !slot.isPast}
-											<span class="today-badge">Today</span>
-										{/if}
-										{#if slot.isFull}
-											<span class="full-badge">Full</span>
-										{/if}
-										<Eye class="h-4 w-4" style="color: var(--text-tertiary);" />
-									</div>
-								</button>
+								{:else}
+									<!-- Button when not editing -->
+									<button
+										onclick={() => handleSlotClick(slot)}
+										class="slot-item {getSlotStatusClass(slot)} {slot.status === 'cancelled' ? 'cancelled-slot' : ''}"
+									>
+										<div class="slot-time">
+											<Clock class="h-4 w-4" />
+											<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+										</div>
+										
+										<div class="slot-info">
+											<h5 class="tour-name">{slot.tourName}</h5>
+											<div class="slot-details">
+												<div class="detail-item">
+													<Users class="h-3 w-3" />
+													<span>{slot.bookedSpots}/{slot.capacity}</span>
+												</div>
+												{#if slot.totalRevenue > 0}
+													<div class="detail-item">
+														<span>{$globalCurrencyFormatter(slot.totalRevenue)}</span>
+													</div>
+												{/if}
+												<div class="utilization-bar">
+													<div 
+														class="utilization-fill"
+														style="width: {slot.utilizationRate}%; background-color: {getUtilizationColor(slot.utilizationRate)};"
+													></div>
+												</div>
+											</div>
+										</div>
+										
+										<div class="slot-actions">
+											{#if recentlyUpdated[slot.id]}
+												<span class="success-badge">
+													<Check class="h-3 w-3" />
+													{recentlyUpdated[slot.id]}
+												</span>
+											{:else}
+												{#if slot.isToday && !slot.isPast}
+													<span class="today-badge">Today</span>
+												{/if}
+												{#if slot.isFull}
+													<span class="full-badge">Full</span>
+												{/if}
+												{#if slot.status === 'cancelled'}
+													<span class="cancelled-badge">Cancelled</span>
+												{/if}
+												
+												<!-- Quick edit actions (only show for tour-specific view) -->
+												{#if tourId}
+													<div class="quick-actions" onclick={(e) => e.stopPropagation()}>
+														<!-- Status toggle -->
+														<Tooltip text={slot.status === 'cancelled' ? 'Reactivate slot' : 'Cancel slot'}>
+															<button
+																onclick={() => toggleSlotStatus(slot)}
+																class="quick-action-btn status-btn"
+																disabled={isSubmittingEdit}
+															>
+																{#if isSubmittingEdit}
+																	<div class="animate-spin h-3 w-3 rounded-full border border-current border-t-transparent"></div>
+																{:else if slot.status === 'cancelled'}
+																	<Play class="h-3 w-3" />
+																{:else}
+																	<Pause class="h-3 w-3" />
+																{/if}
+															</button>
+														</Tooltip>
+														
+														<!-- Capacity edit -->
+														{#if slot.status !== 'cancelled'}
+															<Tooltip text="Edit capacity">
+																<button
+																	onclick={() => startEditCapacity(slot)}
+																	class="quick-action-btn capacity-btn"
+																>
+																	<Edit3 class="h-3 w-3" />
+																</button>
+															</Tooltip>
+														{/if}
+													</div>
+												{/if}
+												
+												<!-- Only show eye icon in dashboard view (all tours), not in tour-specific view -->
+												{#if !tourId}
+													<Eye class="h-4 w-4" style="color: var(--text-tertiary);" />
+												{/if}
+											{/if}
+										</div>
+									</button>
+								{/if}
 							{/each}
 						</div>
 					</div>
@@ -608,582 +932,4 @@
 			</div>
 		{/if}
 	</div>
-</div>
-
-<style>
-	.tour-timeline {
-		background: var(--bg-primary);
-		border-radius: 0.75rem;
-		border: 1px solid var(--border-primary);
-		overflow: hidden;
-	}
-	
-	.tour-timeline.compact {
-		border: none;
-		background: transparent;
-		padding: 0;
-	}
-	
-	.timeline-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid var(--border-primary);
-	}
-	
-	.compact .timeline-header {
-		padding: 0 0 1rem 0;
-		border: none;
-	}
-	
-	.standalone-navigation {
-		margin-bottom: 0;
-		padding: 0.75rem 0;
-	}
-	
-	.view-toggle {
-		display: flex;
-		gap: 0.25rem;
-		padding: 0.25rem;
-		background: var(--bg-secondary);
-		border-radius: 0.5rem;
-	}
-	
-	.view-button {
-		padding: 0.375rem 0.75rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		background: transparent;
-		border: none;
-		border-radius: 0.375rem;
-		cursor: pointer;
-		transition: all 0.15s;
-		min-width: 2rem;
-	}
-	
-	.view-button:hover {
-		color: var(--text-primary);
-		background: var(--bg-tertiary);
-	}
-	
-	.view-button.active {
-		color: var(--text-primary);
-		background: var(--bg-primary);
-		box-shadow: var(--shadow-sm);
-	}
-	
-	.date-navigation {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-	}
-	
-	.back-to-month-button {
-		padding: 0.5rem;
-		border-radius: 0.5rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 0.15s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.back-to-month-button:hover {
-		background: var(--bg-tertiary);
-		color: var(--text-primary);
-		border-color: var(--border-secondary);
-	}
-	
-	.view-indicator {
-		padding: 0.125rem 0.5rem;
-		font-size: 0.625rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--color-primary-600);
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.25rem;
-	}
-	
-	.nav-button {
-		padding: 0.5rem;
-		border-radius: 0.5rem;
-		background: transparent;
-		border: 1px solid var(--border-primary);
-		color: var(--text-primary);
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-	
-	.nav-button:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-	}
-	
-	.date-display {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-	
-	.today-button {
-		padding: 0.25rem 0.75rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--color-primary-600);
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.375rem;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-	
-	.today-button:hover {
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-300);
-	}
-	
-	.timeline-content {
-		min-height: 20rem;
-		position: relative;
-		transition: opacity 0.2s ease;
-	}
-	
-	.timeline-content.loading {
-		opacity: 1;
-	}
-	
-	.loading-state {
-		position: relative;
-		min-height: 20rem;
-	}
-	
-	.loading-placeholder {
-		width: 100%;
-		opacity: 0.1;
-	}
-	
-	.loading-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		background: var(--bg-primary);
-		opacity: 0.95;
-	}
-	
-	/* Loading Skeletons */
-	.calendar-skeleton {
-		padding: 1.5rem;
-	}
-	
-	.calendar-skeleton .calendar-grid {
-		display: grid;
-		grid-template-columns: repeat(7, 1fr);
-		gap: 1px;
-		background: var(--border-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		overflow: hidden;
-	}
-	
-	.weekday-skeleton {
-		height: 2.5rem;
-		background: var(--bg-secondary);
-	}
-	
-	.day-skeleton {
-		height: 4rem;
-		background: var(--bg-primary);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.day-skeleton::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		background: linear-gradient(
-			90deg,
-			transparent 0%,
-			rgba(255, 255, 255, 0.1) 50%,
-			transparent 100%
-		);
-		animation: shimmer 1.5s infinite;
-	}
-	
-	.list-skeleton {
-		padding: 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-	
-	.slot-skeleton {
-		height: 4rem;
-		background: var(--bg-secondary);
-		border-radius: 0.5rem;
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.slot-skeleton::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		background: linear-gradient(
-			90deg,
-			transparent 0%,
-			rgba(255, 255, 255, 0.1) 50%,
-			transparent 100%
-		);
-		animation: shimmer 1.5s infinite;
-	}
-	
-	@keyframes shimmer {
-		0% {
-			transform: translateX(-100%);
-		}
-		100% {
-			transform: translateX(100%);
-		}
-	}
-	
-	.error-state,
-	.empty-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 4rem 2rem;
-		text-align: center;
-		min-height: 20rem;
-	}
-	
-	/* List View Styles */
-	.timeline-list {
-		padding: 1.5rem;
-	}
-	
-	.compact .timeline-list {
-		padding: 0;
-	}
-	
-	.date-group {
-		margin-bottom: 2rem;
-	}
-	
-	.date-group:last-child {
-		margin-bottom: 0;
-	}
-	
-	.date-header {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.75rem;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	
-	.slot-count {
-		font-size: 0.75rem;
-		font-weight: 400;
-		color: var(--text-tertiary);
-	}
-	
-	.slots-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-	
-	.slot-item {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 0.75rem 1rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.15s;
-		width: 100%;
-		text-align: left;
-	}
-	
-	.slot-item:hover:not(.past-slot) {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
-	}
-	
-	.slot-item.past-slot {
-		opacity: 0.5;
-		cursor: default;
-		background: var(--bg-tertiary);
-	}
-	
-	.slot-item.past-slot:hover {
-		transform: none;
-		box-shadow: none;
-	}
-	
-	.slot-item.full-slot {
-		border-color: var(--color-danger-200);
-		background: var(--color-danger-50);
-	}
-	
-	.slot-item.nearly-full-slot {
-		border-color: var(--color-warning-200);
-		background: var(--color-warning-50);
-	}
-	
-	.slot-item.has-bookings-slot {
-		border-color: var(--color-success-200);
-		background: var(--color-success-50);
-	}
-	
-	.slot-time {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
-		min-width: 8rem;
-	}
-	
-	.slot-info {
-		flex: 1;
-		min-width: 0;
-	}
-	
-	.tour-name {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.25rem;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	
-	.slot-details {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-	}
-	
-	.detail-item {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	
-	.utilization-bar {
-		width: 4rem;
-		height: 0.25rem;
-		background: var(--bg-tertiary);
-		border-radius: 0.125rem;
-		overflow: hidden;
-	}
-	
-	.utilization-fill {
-		height: 100%;
-		transition: width 0.3s ease;
-	}
-	
-	.slot-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	
-	.today-badge,
-	.full-badge {
-		padding: 0.125rem 0.5rem;
-		font-size: 0.625rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		border-radius: 0.25rem;
-	}
-	
-	.today-badge {
-		color: var(--color-primary-700);
-		background: var(--color-primary-100);
-		border: 1px solid var(--color-primary-200);
-	}
-	
-	.full-badge {
-		color: var(--color-danger-700);
-		background: var(--color-danger-100);
-		border: 1px solid var(--color-danger-200);
-	}
-	
-	/* Calendar View Styles */
-	.calendar-view {
-		padding: 1.5rem;
-	}
-	
-	.calendar-grid {
-		display: grid;
-		grid-template-columns: repeat(7, 1fr);
-		gap: 1px;
-		background: var(--border-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		overflow: hidden;
-	}
-	
-	.weekday-header {
-		padding: 0.75rem 0.5rem;
-		background: var(--bg-secondary);
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-align: center;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-	
-	.calendar-day {
-		background: var(--bg-primary);
-		padding: 0.5rem;
-		min-height: 4rem;
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		user-select: none;
-	}
-	
-	.calendar-day.other-month {
-		background: var(--bg-secondary);
-		opacity: 0.5;
-	}
-	
-	.calendar-day.today {
-		background: var(--color-primary-50);
-	}
-	
-	.calendar-day.has-slots {
-		cursor: pointer;
-	}
-	
-	.calendar-day.has-slots:hover {
-		background: var(--bg-tertiary);
-		transform: scale(1.02);
-		z-index: 1;
-		box-shadow: var(--shadow-sm);
-	}
-	
-	.day-number {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-	
-	.day-slots {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		font-size: 0.625rem;
-		color: var(--text-secondary);
-		margin-top: auto;
-	}
-	
-	.slot-indicator {
-		width: 0.375rem;
-		height: 0.375rem;
-		border-radius: 50%;
-	}
-	
-	.single-slot-preview {
-		font-size: 0.5rem;
-		color: var(--text-tertiary);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		width: 100%;
-		margin-top: 0.125rem;
-	}
-	
-	/* Mobile Styles */
-	@media (max-width: 640px) {
-		.timeline-header {
-			padding: 1rem;
-		}
-		
-		.view-button {
-			padding: 0.375rem 0.5rem;
-			font-size: 0.75rem;
-			min-width: 1.75rem;
-		}
-		
-		.date-navigation {
-			gap: 0.5rem;
-		}
-		
-		.nav-button {
-			padding: 0.375rem;
-		}
-		
-		.date-header {
-			font-size: 0.75rem;
-		}
-		
-		.slot-time {
-			min-width: auto;
-			font-size: 0.75rem;
-		}
-		
-		.tour-name {
-			font-size: 0.75rem;
-		}
-		
-		.slot-details {
-			font-size: 0.625rem;
-		}
-		
-		.calendar-view {
-			padding: 0.75rem;
-		}
-		
-		.weekday-header {
-			font-size: 0.625rem;
-			padding: 0.5rem 0.25rem;
-		}
-		
-		.calendar-day {
-			min-height: 3rem;
-			padding: 0.25rem;
-		}
-		
-		.day-number {
-			font-size: 0.75rem;
-		}
-	}
-</style> 
+</div> 
