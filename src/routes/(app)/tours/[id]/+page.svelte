@@ -78,30 +78,14 @@
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second delay
 	});
 	
-	// TanStack Query for tour schedule - simplified
-	const tourScheduleQuery = createQuery({
-		queryKey: ['tour-schedule', tourId],
-		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
-		staleTime: 5 * 60 * 1000, // 5 minutes - prevent excessive refetching
-		gcTime: 10 * 60 * 1000, // 10 minutes
-		refetchOnWindowFocus: false, // Disable window focus refetching
-		refetchOnMount: true, // Enable refetchOnMount to ensure data loads
-		enabled: !!tourId && browser,
-		retry: 1, // Reduce retries to prevent cascading failures
-		retryDelay: 2000, // Simple 2 second delay
-	});
-	
-	// Derive data from queries - separate loading states
+	// Derive data from queries - only need tour details since TourTimeline handles its own schedule data
 	let tour = $derived($tourDetailsQuery.data?.tour || null);
 	let stats = $derived($tourDetailsQuery.data?.stats || null);
-	let schedule = $derived($tourScheduleQuery.data || null);
 	
-	// Separate loading states to prevent one query blocking the entire page
+	// Only loading state for tour details
 	let tourLoading = $derived($tourDetailsQuery.isLoading);
-	let scheduleLoading = $derived($tourScheduleQuery.isLoading);
-	let scheduleError = $derived($tourScheduleQuery.isError);
-	let isLoading = $derived(tourLoading && scheduleLoading); // Only loading if BOTH are loading
-	let isError = $derived($tourDetailsQuery.isError || $tourScheduleQuery.isError);
+	let isLoading = $derived(tourLoading);
+	let isError = $derived($tourDetailsQuery.isError);
 	
 	// Onboarding status
 	let hasConfirmedLocation = $state(false);
@@ -157,6 +141,9 @@
 	let qrCopied = $state(false);
 	let linkCopied = $state(false);
 	let selectedDate = $state(new Date());
+	let selectedDateSlots = $state<any[]>([]);
+	let calendarView = $state<'day' | 'week' | 'month'>('month');
+	let currentCalendarDate = $state(new Date());
 	let showAllImages = $state(false);
 	let showFullDescription = $state(false);
 	let showAddSlotsModal = $state(false);
@@ -208,29 +195,45 @@
 		}
 	});
 	
-	// Selected date slots - simplified to prevent excessive recalculations
-	let selectedDateSlots = $derived.by(() => {
-		if (!schedule?.timeSlots || !selectedDate) return [];
-		
-		try {
-			// Format dates consistently for comparison - using simple string comparison
+	// Query for selected date slots
+	const selectedDateSlotsQuery = createQuery({
+		queryKey: ['tour-slots-for-date', tourId, selectedDate.toDateString()],
+		queryFn: async () => {
+			if (!tourId) return [];
+			const scheduleData = await queryFunctions.fetchTourSchedule(tourId);
 			const selectedDateStr = selectedDate.toDateString();
-			
-			return schedule.timeSlots.filter((slot: any) => {
+			return scheduleData.timeSlots?.filter((slot: any) => {
 				if (!slot.startTime) return false;
-				
 				try {
 					const slotDate = new Date(slot.startTime);
 					return !isNaN(slotDate.getTime()) && slotDate.toDateString() === selectedDateStr;
 				} catch (error) {
 					return false;
 				}
-			});
-		} catch (error) {
-			console.error('Error in selectedDateSlots:', error);
-			return [];
-		}
+			}) || [];
+		},
+		staleTime: 2 * 60 * 1000, // 2 minutes
+		enabled: !!tourId && browser,
 	});
+	
+	// Update selectedDateSlots when query data changes
+	$effect(() => {
+		selectedDateSlots = $selectedDateSlotsQuery.data || [];
+	});
+	
+	// Handle slot selection from TourTimeline
+	function handleSlotClick(slot: any) {
+		// Update selected date to the slot's date
+		const newDate = new Date(slot.startTime);
+		if (selectedDate.toDateString() !== newDate.toDateString()) {
+			selectedDate = newDate;
+		}
+	}
+	
+	// Handle view changes from TourTimeline
+	function handleViewChange(newView: 'day' | 'week' | 'month') {
+		calendarView = newView;
+	}
 	
 	// Get booking URL
 	let bookingUrl = $derived(
@@ -428,27 +431,24 @@
 			isError: $tourDetailsQuery.isError,
 			data: $tourDetailsQuery.data
 		});
-		console.log('📅 Tour schedule query state:', {
-			isLoading: $tourScheduleQuery.isLoading,
-			isError: $tourScheduleQuery.isError,
-			data: $tourScheduleQuery.data
-		});
 		
-		// Immediately refetch both queries without any conditions
+		// Immediately refetch tour details query
 		$tourDetailsQuery.refetch();
-		$tourScheduleQuery.refetch();
 	});
 	
 	// Debug query states
 	$effect(() => {
-		if ($tourScheduleQuery.isLoading) {
-			console.log('⏳ Tour schedule loading...');
+		if ($tourDetailsQuery.isLoading) {
+			console.log('⏳ Tour details loading...');
 		}
-		if ($tourScheduleQuery.isError) {
-			console.error('❌ Tour schedule error:', $tourScheduleQuery.error);
+		if ($tourDetailsQuery.isError) {
+			console.error('❌ Tour details error:', $tourDetailsQuery.error);
 		}
-		if ($tourScheduleQuery.data) {
-			console.log('✅ Tour schedule loaded:', $tourScheduleQuery.data);
+		if ($tourDetailsQuery.data) {
+			console.log('✅ Tour details loaded:', $tourDetailsQuery.data);
+		}
+		if ($selectedDateSlotsQuery.data) {
+			console.log('📅 Selected date slots loaded:', $selectedDateSlotsQuery.data);
 		}
 	});
 </script>
@@ -900,98 +900,39 @@
 						</div>
 					</div>
 					
-					{#if scheduleLoading}
-						<div class="p-4">
-							<div class="text-center">
-								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
-								<p class="text-sm" style="color: var(--text-secondary);">Loading tour schedule...</p>
+					<div class="p-4">
+						<!-- Mobile: Stack vertically, Desktop: Side by side -->
+						<div class="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] lg:gap-6 xl:gap-8">
+							<!-- Calendar -->
+							<div>
+								<TourTimeline 
+									tourId={tourId}
+									bind:view={calendarView}
+									bind:currentDate={currentCalendarDate}
+									defaultView="month"
+									hideHeader={true}
+									hideStats={true}
+									compact={true}
+									onSlotClick={handleSlotClick}
+									onViewChange={handleViewChange}
+								/>
+							</div>
+							
+							<!-- Selected Date Slots -->
+							<div class="lg:mt-0">
+								<TimeSlotsList 
+									selectedDate={selectedDate}
+									slots={selectedDateSlots}
+									onEditSlot={(slot) => {
+										// TODO: Open inline edit modal instead of navigation
+										console.log('Edit slot:', slot);
+										// For now, navigate to edit page
+										goto(`/tours/${tourId}/schedule/edit/${slot.id}`);
+									}}
+								/>
 							</div>
 						</div>
-					{:else if scheduleError}
-						<div class="p-4">
-							<div class="text-center py-12">
-								<AlertCircle class="w-12 h-12 mx-auto mb-4" style="color: var(--color-danger-500);" />
-								<h3 class="text-lg font-medium mb-2" style="color: var(--text-primary);">Failed to load schedule</h3>
-								<p class="text-sm mb-6" style="color: var(--text-secondary);">
-									There was an error loading your tour schedule. Please try refreshing.
-								</p>
-								<div class="flex flex-col sm:flex-row gap-3 justify-center">
-									<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--gap">
-										<RefreshCw class="h-4 w-4" />
-										Retry Loading
-									</button>
-									<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
-										<Plus class="h-4 w-4" />
-										Add Time Slots
-									</button>
-								</div>
-							</div>
-						</div>
-					{:else if schedule?.timeSlots && schedule.timeSlots.length > 0}
-						<div class="p-4">
-							<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] gap-6 xl:gap-8">
-								<!-- Calendar -->
-								<div>
-									<TourTimeline 
-										tourId={tourId}
-										bind:currentDate={selectedDate}
-										view="month"
-										defaultView="month"
-										hideHeader={true}
-										hideStats={true}
-										compact={true}
-										onSlotClick={(slot) => {
-											// Select the date when a slot is clicked
-											selectedDate = new Date(slot.startTime);
-										}}
-									/>
-								</div>
-								
-								<!-- Selected Date Slots -->
-								<div>
-									<TimeSlotsList 
-										selectedDate={selectedDate}
-										slots={selectedDateSlots}
-										onEditSlot={(slot) => {
-											// TODO: Open inline edit modal instead of navigation
-											console.log('Edit slot:', slot);
-											// For now, navigate to edit page
-											goto(`/tours/${tourId}/schedule/edit/${slot.id}`);
-										}}
-									/>
-								</div>
-							</div>
-						</div>
-					{:else if schedule}
-						<!-- We have schedule data but no time slots -->
-						<div class="p-4">
-							<div class="text-center py-12">
-								<CalendarDays class="w-12 h-12 mx-auto mb-4" style="color: var(--text-tertiary); opacity: 0.5;" />
-								<h3 class="text-lg font-medium mb-2" style="color: var(--text-primary);">No time slots scheduled</h3>
-								<p class="text-sm mb-6" style="color: var(--text-secondary);">
-									Create time slots to start accepting bookings for this tour
-								</p>
-								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
-									<Plus class="h-4 w-4" />
-									Create Time Slots
-								</button>
-							</div>
-						</div>
-					{:else}
-						<!-- No schedule data yet - initial loading or error -->
-						<div class="p-4">
-							<div class="text-center py-12">
-								<div class="animate-spin h-8 w-8 mx-auto mb-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
-								<p class="text-sm mb-2" style="color: var(--text-secondary);">
-									Initializing schedule...
-								</p>
-								<button onclick={() => $tourScheduleQuery.refetch()} class="button-secondary button--small button--gap mt-4">
-									<RefreshCw class="h-4 w-4" />
-									Force Refresh
-								</button>
-							</div>
-						</div>
-					{/if}
+					</div>
 				</section>
 				
 				<!-- Tour Images - At bottom on desktop, normal position on mobile -->
@@ -1230,8 +1171,10 @@
 		mode="modal"
 		onSuccess={() => {
 			showAddSlotsModal = false;
-			// Refresh the schedule data
+			// Refresh the TourTimeline data (it uses tour-schedule query internally)
 			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			// Also refresh the selected date slots
+			queryClient.invalidateQueries({ queryKey: ['tour-slots-for-date', tourId] });
 			// Show success message
 			showAddSlotsSuccess = true;
 			// Close welcome prompt if it was open (newly created tour)
