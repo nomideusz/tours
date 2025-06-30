@@ -47,14 +47,31 @@
 		currentDate = $bindable(new Date()),
 		compact = false,
 		onSlotClick = undefined,
-		onViewChange = undefined
+		onViewChange = undefined,
+		tourId = undefined,
+		hideHeader = false,
+		hideViewToggle = false,
+		hideStats = false,
+		defaultView = 'week'
 	}: {
 		view?: 'day' | 'week' | 'month';
 		currentDate?: Date;
 		compact?: boolean;
 		onSlotClick?: (slot: TimeSlot) => void;
 		onViewChange?: (view: 'day' | 'week' | 'month') => void;
+		tourId?: string;
+		hideHeader?: boolean;
+		hideViewToggle?: boolean;
+		hideStats?: boolean;
+		defaultView?: 'day' | 'week' | 'month';
 	} = $props();
+	
+	// Initialize view from defaultView if not already set
+	$effect(() => {
+		if (!view && defaultView) {
+			view = defaultView;
+		}
+	});
 	
 	// Debug component mounting
 	onMount(() => {
@@ -81,13 +98,26 @@
 	
 	// Query for timeline data - make reactive to date and view changes
 	let timelineQuery = $derived(createQuery({
-		queryKey: queryKeys.allTimeSlots(view, dateString),
+		queryKey: tourId 
+			? ['tour-schedule', tourId, view, dateString]
+			: queryKeys.allTimeSlots(view, dateString),
 		queryFn: async () => {
-			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString() });
+			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString(), tourId });
 			try {
-				const result = await queryFunctions.fetchAllTimeSlots(view, dateString);
-				console.log('✅ Timeline: Data received:', result);
-				return result;
+				// If tourId is provided, fetch tour-specific schedule
+				if (tourId) {
+					const result = await queryFunctions.fetchTourSchedule(tourId);
+					// Transform the data to match the expected format
+					return {
+						timeSlots: result.timeSlots || [],
+						stats: result.stats || {}
+					};
+				} else {
+					// Otherwise fetch all time slots
+					const result = await queryFunctions.fetchAllTimeSlots(view, dateString);
+					console.log('✅ Timeline: Data received:', result);
+					return result;
+				}
 			} catch (error) {
 				console.error('❌ Timeline: Fetch failed:', error);
 				throw error;
@@ -260,7 +290,7 @@
 	
 	// Prefetch adjacent dates when view changes
 	$effect(() => {
-		if (!browser || isLoading) return;
+		if (!browser || isLoading || tourId) return; // Skip prefetching for tour-specific views
 		
 		// Prefetch adjacent periods for smoother navigation
 		const prefetchDates: Date[] = [];
@@ -307,82 +337,86 @@
 
 <div class="tour-timeline {compact ? 'compact' : ''}">
 	<!-- Header -->
-	<div class="timeline-header">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-			<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-				<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
-					All Tours Schedule
-				</h3>
-				{#if !isLoading && stats.totalSlots > 0}
-					<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
-						<span>{stats.totalSlots} slots</span>
-						<span class="hidden sm:inline">•</span>
-						<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
-						<span>•</span>
-						<span>{Math.round(stats.averageUtilization)}% avg</span>
+	{#if !hideHeader}
+		<div class="timeline-header">
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+				<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+					<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
+						{tourId ? 'Tour Schedule' : 'All Tours Schedule'}
+					</h3>
+					{#if !isLoading && !hideStats && stats.totalSlots > 0}
+						<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
+							<span>{stats.totalSlots} slots</span>
+							<span class="hidden sm:inline">•</span>
+							<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
+							<span>•</span>
+							<span>{Math.round(stats.averageUtilization)}% avg</span>
+						</div>
+					{/if}
+				</div>
+				
+				<!-- View Toggle -->
+				{#if !hideViewToggle}
+					<div class="flex items-center gap-2">
+						<div class="view-toggle">
+							<button
+								onclick={() => { view = 'day'; onViewChange?.('day'); }}
+								class="view-button {view === 'day' ? 'active' : ''}"
+							>
+								<span class="hidden sm:inline">Day</span>
+								<span class="sm:hidden">D</span>
+							</button>
+							<button
+								onclick={() => { view = 'week'; onViewChange?.('week'); }}
+								class="view-button {view === 'week' ? 'active' : ''}"
+							>
+								<span class="hidden sm:inline">Week</span>
+								<span class="sm:hidden">W</span>
+							</button>
+							<button
+								onclick={() => { view = 'month'; onViewChange?.('month'); }}
+								class="view-button {view === 'month' ? 'active' : ''}"
+							>
+								<span class="hidden sm:inline">Month</span>
+								<span class="sm:hidden">M</span>
+							</button>
+						</div>
 					</div>
 				{/if}
 			</div>
 			
-			<!-- View Toggle -->
-			<div class="flex items-center gap-2">
-				<div class="view-toggle">
-					<button
-						onclick={() => { view = 'day'; onViewChange?.('day'); }}
-						class="view-button {view === 'day' ? 'active' : ''}"
-					>
-						<span class="hidden sm:inline">Day</span>
-						<span class="sm:hidden">D</span>
-					</button>
-					<button
-						onclick={() => { view = 'week'; onViewChange?.('week'); }}
-						class="view-button {view === 'week' ? 'active' : ''}"
-					>
-						<span class="hidden sm:inline">Week</span>
-						<span class="sm:hidden">W</span>
-					</button>
-					<button
-						onclick={() => { view = 'month'; onViewChange?.('month'); }}
-						class="view-button {view === 'month' ? 'active' : ''}"
-					>
-						<span class="hidden sm:inline">Month</span>
-						<span class="sm:hidden">M</span>
-					</button>
+			<!-- Date Navigation -->
+			<div class="date-navigation">
+				<button
+					onclick={() => navigateDate('prev')}
+					class="nav-button"
+					aria-label="Previous {view}"
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</button>
+				
+				<div class="date-display">
+					<span class="text-sm sm:text-base">{getDateRangeDisplay()}</span>
+					{#if currentDate.toDateString() !== new Date().toDateString()}
+						<button
+							onclick={goToToday}
+							class="today-button"
+						>
+							Today
+						</button>
+					{/if}
 				</div>
+				
+				<button
+					onclick={() => navigateDate('next')}
+					class="nav-button"
+					aria-label="Next {view}"
+				>
+					<ChevronRight class="h-4 w-4" />
+				</button>
 			</div>
 		</div>
-		
-		<!-- Date Navigation -->
-		<div class="date-navigation">
-			<button
-				onclick={() => navigateDate('prev')}
-				class="nav-button"
-				aria-label="Previous {view}"
-			>
-				<ChevronLeft class="h-4 w-4" />
-			</button>
-			
-			<div class="date-display">
-				<span class="text-sm sm:text-base">{getDateRangeDisplay()}</span>
-				{#if currentDate.toDateString() !== new Date().toDateString()}
-					<button
-						onclick={goToToday}
-						class="today-button"
-					>
-						Today
-					</button>
-				{/if}
-			</div>
-			
-			<button
-				onclick={() => navigateDate('next')}
-				class="nav-button"
-				aria-label="Next {view}"
-			>
-				<ChevronRight class="h-4 w-4" />
-			</button>
-		</div>
-	</div>
+	{/if}
 	
 	<!-- Content -->
 	<div class="timeline-content" class:loading={isLoading}>
@@ -429,9 +463,15 @@
 				<Calendar class="h-12 w-12 mb-3" style="color: var(--text-tertiary);" />
 				<p class="text-lg mb-1" style="color: var(--text-primary);">No tours scheduled</p>
 				<p class="text-sm" style="color: var(--text-secondary);">
-					{view === 'day' ? 'No tours scheduled for this day' :
-					 view === 'week' ? 'No tours scheduled this week' :
-					 'No tours scheduled this month'}
+					{#if tourId}
+						{view === 'day' ? 'No time slots scheduled for this day' :
+						 view === 'week' ? 'No time slots scheduled this week' :
+						 'No time slots scheduled this month'}
+					{:else}
+						{view === 'day' ? 'No tours scheduled for this day' :
+						 view === 'week' ? 'No tours scheduled this week' :
+						 'No tours scheduled this month'}
+					{/if}
 				</p>
 			</div>
 		{:else if view === 'day' || view === 'week'}

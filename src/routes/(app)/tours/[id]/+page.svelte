@@ -17,7 +17,7 @@
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import ScheduleCalendar from '$lib/components/ScheduleCalendar.svelte';
+	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import TimeSlotsList from '$lib/components/TimeSlotsList.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
@@ -157,7 +157,6 @@
 	let qrCopied = $state(false);
 	let linkCopied = $state(false);
 	let selectedDate = $state(new Date());
-	let currentMonth = $state(new Date());
 	let showAllImages = $state(false);
 	let showFullDescription = $state(false);
 	let showAddSlotsModal = $state(false);
@@ -170,21 +169,6 @@
 	let hasInitialSchedule = $state(false);
 	let showOnboardingModal = $state(false);
 	let onboardingModalMessage = $state('');
-	
-	// Calendar event handlers - simplified to prevent unnecessary updates
-	function handleDateSelect(date: Date) {
-		// Only update if the date actually changed
-		if (!selectedDate || selectedDate.toDateString() !== date.toDateString()) {
-			selectedDate = new Date(date);
-		}
-	}
-	
-	function handleMonthChange(month: Date) {
-		// Only update if the month actually changed
-		if (!currentMonth || currentMonth.getTime() !== month.getTime()) {
-			currentMonth = new Date(month);
-		}
-	}
 	
 	// Lightbox functions
 	function openLightbox(imagePath: string) {
@@ -948,12 +932,18 @@
 							<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1fr_1.2fr] gap-6 xl:gap-8">
 								<!-- Calendar -->
 								<div>
-									<ScheduleCalendar 
-										bind:selectedDate
-										bind:currentMonth
-										slots={schedule.timeSlots}
-										onSelectDate={handleDateSelect}
-										onMonthChange={handleMonthChange}
+									<TourTimeline 
+										tourId={tourId}
+										bind:currentDate={selectedDate}
+										view="month"
+										defaultView="month"
+										hideHeader={true}
+										hideStats={true}
+										compact={true}
+										onSlotClick={(slot) => {
+											// Select the date when a slot is clicked
+											selectedDate = new Date(slot.startTime);
+										}}
 									/>
 								</div>
 								
