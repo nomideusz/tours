@@ -2,7 +2,7 @@ import type { PageServerLoad, Actions } from './$types.js';
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/db/connection.js';
 import { tours } from '$lib/db/schema/index.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/image-storage.js';
 import { 
@@ -11,6 +11,7 @@ import {
 	validateCapacityChange,
 	updateTimeSlotsCapacity
 } from '$lib/utils/tour-helpers-server.js';
+import { bookings, timeSlots } from '$lib/db/schema/index.js';
 
 export const load: PageServerLoad = async ({ locals, url, params }) => {
   // Check if user is authenticated
@@ -33,6 +34,27 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
     // Get booking constraints
     const bookingConstraints = await getBookingConstraints(params.id, tour.capacity);
 
+    // Check for future bookings (for delete button logic)
+    const now = new Date();
+    const futureBookingsCount = await db
+      .select({
+        count: sql<number>`COUNT(*)`
+      })
+      .from(bookings)
+      .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+      .where(and(
+        eq(bookings.tourId, params.id),
+        eq(bookings.status, 'confirmed'),
+        gte(timeSlots.startTime, now)
+      ));
+
+    const hasFutureBookings = Number(futureBookingsCount[0]?.count || 0) > 0;
+    console.log(`🔍 Server load - Tour ${params.id} future bookings check:`, {
+      futureBookingsCount: Number(futureBookingsCount[0]?.count || 0),
+      hasFutureBookings,
+      now: now.toISOString()
+    });
+
     // User is authenticated, return user data, tour ID, and tour data
     return {
       user: locals.user,
@@ -54,6 +76,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         enablePricingTiers: tour.enablePricingTiers,
         pricingTiers: tour.pricingTiers,
         images: tour.images,
+        hasFutureBookings: hasFutureBookings,
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt
       },

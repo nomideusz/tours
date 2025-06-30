@@ -77,13 +77,34 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			.from(bookings)
 			.where(eq(bookings.tourId, tourId));
 
-		// Step 5: Process data safely
+		// Step 5: Check for future bookings (for delete button logic)
+		const futureBookingsCount = await db
+			.select({
+				count: sql<number>`COUNT(*)`
+			})
+			.from(bookings)
+			.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+			.where(and(
+				eq(bookings.tourId, tourId),
+				eq(bookings.status, 'confirmed'),
+				gte(timeSlots.startTime, now)
+			));
+
+		const hasFutureBookings = Number(futureBookingsCount[0]?.count || 0) > 0;
+		console.log(`🔍 Tour ${tourId} future bookings check:`, {
+			futureBookingsCount: Number(futureBookingsCount[0]?.count || 0),
+			hasFutureBookings,
+			now: now.toISOString()
+		});
+
+		// Step 6: Process data safely
 		const processedTour = {
 			...tour,
 			price: tour.price ? parseFloat(tour.price) : 0,
 			created: tour.createdAt ? tour.createdAt.toISOString() : new Date().toISOString(),
 			updated: tour.updatedAt ? tour.updatedAt.toISOString() : new Date().toISOString(),
-			upcomingSlots: upcomingSlots.filter(slot => slot.status === 'available').length
+			upcomingSlots: upcomingSlots.filter(slot => slot.status === 'available').length,
+			hasFutureBookings: hasFutureBookings
 		};
 
 		const processedUpcomingSlots = upcomingSlots.map(slot => ({

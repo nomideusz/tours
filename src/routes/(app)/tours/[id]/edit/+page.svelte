@@ -7,6 +7,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	import type { Tour } from '$lib/types.js';
 	import type { PageData, ActionData } from './$types.js';
@@ -44,12 +45,17 @@
 		queryFn: () => queryFunctions.fetchTourDetails(tourId),
 		staleTime: 0, // Always consider data potentially stale for immediate updates
 		gcTime: 5 * 60 * 1000,    // 5 minutes
-		refetchOnWindowFocus: true,
-		refetchOnMount: true,
+		refetchOnWindowFocus: 'always',
+		refetchOnMount: 'always',
+		// Force fresh data - don't use any cached data for critical delete logic
+		refetchInterval: false, // Don't auto-refetch
+		networkMode: 'always'
 	}));
 
-	let tour = $derived($tourQuery.data?.tour || null);
-	let isLoading = $derived($tourQuery.isLoading);
+	// Use server-side data initially, then TanStack Query data when available
+	// This ensures hasFutureBookings is available immediately from server data
+	let tour = $derived($tourQuery.data?.tour || (data as any).tour || null);
+	let isLoading = $derived($tourQuery.isLoading && !(data as any).tour);
 	let isSubmitting = $state(false);
 	
 	// Onboarding status
@@ -135,6 +141,14 @@
 	// Check if tour has future bookings that prevent deletion
 	// Use the same logic as the tours list - only future bookings prevent deletion
 	let hasFutureBookings = $derived(tour?.hasFutureBookings || false);
+	
+	// Debug logging for delete button
+	$effect(() => {
+		if (tour) {
+			const dataSource = $tourQuery.data?.tour ? 'TanStack Query' : 'Server-side';
+			console.log('🔍 Delete button check - hasFutureBookings:', hasFutureBookings, 'tour.hasFutureBookings:', tour.hasFutureBookings, 'tour:', tour.name, 'source:', dataSource);
+		}
+	});
 
 	// Form data
 	let formData = $state({
@@ -604,6 +618,20 @@
 
 	// Delete tour functionality
 	function handleDeleteTour() {
+		// Safety check - prevent deletion if data isn't loaded or tour has future bookings
+		if (isLoading || !tour) {
+			console.log('🚫 Delete blocked - data not ready:', { isLoading, tour: !!tour });
+			return;
+		}
+		
+		if (hasFutureBookings) {
+			console.log('🚫 Delete blocked - tour has future bookings:', hasFutureBookings);
+			// This shouldn't happen with the UI logic, but safety first
+			error = 'Cannot delete tour with upcoming bookings. Cancel all future bookings first.';
+			return;
+		}
+		
+		console.log('✅ Delete allowed - proceeding with confirmation modal');
 		// Clear any previous errors
 		error = '';
 		showDeleteModal = true;
@@ -611,6 +639,14 @@
 
 	async function confirmDeleteTour() {
 		if (isDeleting) return;
+		
+		// Double-check before deletion - safety first
+		if (hasFutureBookings) {
+			console.log('🚫 Confirm delete blocked - tour has future bookings');
+			error = 'Cannot delete tour with upcoming bookings. Please refresh the page and try again.';
+			showDeleteModal = false;
+			return;
+		}
 		
 		isDeleting = true;
 		// Clear any previous errors
@@ -980,23 +1016,33 @@
 						{/if}
 					</div>
 					<div class="flex-shrink-0">
-						<button 
-							type="button" 
-							onclick={hasFutureBookings ? undefined : handleDeleteTour} 
-							class="{hasFutureBookings ? 'button-secondary' : 'button-danger'} button--small w-full sm:w-auto" 
-							disabled={isDeleting || hasFutureBookings}
-							title={hasFutureBookings ? 'Cannot delete tour with upcoming bookings' : 'Delete this tour permanently'}
-						>
-							{#if isDeleting}
-								<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
-								Deleting...
-							{:else if hasFutureBookings}
-								<Calendar class="w-4 h-4 mr-2" />
-								Has Upcoming Bookings
-							{:else}
-								Delete Tour
-							{/if}
-						</button>
+						{#if hasFutureBookings}
+							<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
+								<button 
+									type="button" 
+									class="button-secondary button--small w-full sm:w-auto cursor-not-allowed opacity-50" 
+									disabled
+								>
+									<Calendar class="w-4 h-4 mr-2" />
+									Has Upcoming Bookings
+								</button>
+							</Tooltip>
+						{:else}
+							<button 
+								type="button" 
+								onclick={handleDeleteTour} 
+								class="button-danger button--small w-full sm:w-auto" 
+								disabled={isDeleting}
+								title="Delete this tour permanently"
+							>
+								{#if isDeleting}
+									<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+									Deleting...
+								{:else}
+									Delete Tour
+								{/if}
+							</button>
+						{/if}
 					</div>
 				</div>
 			</div>
