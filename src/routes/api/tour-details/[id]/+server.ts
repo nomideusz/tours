@@ -78,6 +78,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			.where(eq(bookings.tourId, tourId));
 
 		// Step 5: Check for future bookings (for delete button logic)
+		// Include both confirmed AND pending bookings to prevent deletion during payment processing
 		const futureBookingsCount = await db
 			.select({
 				count: sql<number>`COUNT(*)`
@@ -86,7 +87,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.where(and(
 				eq(bookings.tourId, tourId),
-				eq(bookings.status, 'confirmed'),
+				sql`${bookings.status} IN ('confirmed', 'pending')`,
 				gte(timeSlots.startTime, now)
 			));
 

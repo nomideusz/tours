@@ -35,6 +35,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
     const bookingConstraints = await getBookingConstraints(params.id, tour.capacity);
 
     // Check for future bookings (for delete button logic)
+    // Include both confirmed AND pending bookings to prevent deletion during payment processing
     const now = new Date();
     const futureBookingsCount = await db
       .select({
@@ -44,7 +45,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
       .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
       .where(and(
         eq(bookings.tourId, params.id),
-        eq(bookings.status, 'confirmed'),
+        sql`${bookings.status} IN ('confirmed', 'pending')`,
         gte(timeSlots.startTime, now)
       ));
 
