@@ -1002,14 +1002,16 @@
 
 		<!-- Tour Timeline - Main Feature -->
 		<div class="mb-8">
-					<TourTimeline 
-			bind:view={timelineView}
-			bind:currentDate={timelineCurrentDate}
-			onSlotClick={(slot) => {
-				// Navigate to tour details page when clicking a slot
-				goto(`/tours/${slot.tourId}`);
-			}}
-		/>
+			<div class="timeline-container">
+				<TourTimeline 
+					bind:view={timelineView}
+					bind:currentDate={timelineCurrentDate}
+					onSlotClick={(slot) => {
+						// Navigate to tour details page when clicking a slot
+						goto(`/tours/${slot.tourId}`);
+					}}
+				/>
+			</div>
 		</div>
 
 		<!-- Recent Bookings -->
@@ -1277,5 +1279,40 @@ Please ensure this is the correct country where your business is legally registe
 		border-color: var(--border-secondary);
 		transform: translateY(-1px);
 		box-shadow: var(--shadow-sm);
+	}
+	
+	/* Timeline container - prevent layout jumps during navigation */
+	.timeline-container {
+		min-height: 400px; /* Minimum height to prevent collapse */
+		transition: all 0.2s ease-out; /* Smooth transitions */
+		position: relative;
+	}
+	
+	/* Ensure timeline content doesn't cause layout shifts */
+	.timeline-container :global(.timeline-content) {
+		width: 100%;
+		min-height: inherit;
+	}
+	
+	/* Hide any loading states that might cause jumps */
+	.timeline-container :global(.loading-spinner) {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 10;
+	}
+	
+	/* Ensure smooth height transitions on different screen sizes */
+	@media (max-width: 640px) {
+		.timeline-container {
+			min-height: 300px; /* Smaller minimum on mobile */
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.timeline-container {
+			min-height: 450px; /* Larger minimum on desktop */
+		}
 	}
 </style>

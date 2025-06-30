@@ -98,6 +98,15 @@
 	let showDeleteModal = $state(false);
 	let tourToDelete = $state<Tour | null>(null);
 	
+	// Delete error modal state
+	let showDeleteErrorModal = $state(false);
+	let deleteErrorData = $state<{
+		tourName: string;
+		activeBookings: number;
+		totalBookings: number;
+		revenue: number;
+	} | null>(null);
+	
 	// Timeline view state
 	let showTimeline = $state(false);
 	let timelineView = $state<'day' | 'week' | 'month'>('week');
@@ -106,6 +115,10 @@
 	// Feedback state
 	let recentlyUpdated = $state<string | null>(null);
 	let deletingTourIds = $state<Set<string>>(new Set());
+	
+	// Onboarding modal state
+	let showOnboardingModal = $state(false);
+	let onboardingModalMessage = $state('');
 	
 	// Onboarding status
 	let hasConfirmedLocation = $state(false);
@@ -130,16 +143,29 @@
 	
 	// Check payment status
 	async function checkPaymentStatus() {
+		if (!profile?.stripeAccountId) {
+			paymentStatus = { isSetup: false, loading: false };
+			return;
+		}
+
 		try {
-			paymentStatus.loading = true;
-			const response = await fetch('/api/payments/connect/status');
-			const data = await response.json();
-			paymentStatus = { 
-				isSetup: data.isSetup || false, 
-				loading: false 
-			};
+			const response = await fetch('/api/payments/connect/status', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId: profile.id })
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				paymentStatus = {
+					isSetup: data.canReceivePayments || false,
+					loading: false
+				};
+			} else {
+				paymentStatus = { isSetup: false, loading: false };
+			}
 		} catch (error) {
-			console.error('Failed to check payment status:', error);
+			console.error('Error checking payment status:', error);
 			paymentStatus = { isSetup: false, loading: false };
 		}
 	}
@@ -272,17 +298,21 @@
 		
 		const tourIdToDelete = tourToDelete.id;
 		const tourNameToDelete = tourToDelete.name;
+		const tourForError = tourToDelete; // Keep reference for error handling
 		
 		try {
 			// Add to deleting set
 			deletingTourIds.add(tourIdToDelete);
 			showDeleteModal = false;
-			tourToDelete = null; // Clear immediately
+			// Don't clear tourToDelete yet - we need it for error handling
 			
 			// Force update of the set to trigger reactivity
 			deletingTourIds = deletingTourIds;
 			
 			await $deleteMutation.mutateAsync(tourIdToDelete);
+			
+			// Clear tourToDelete on success
+			tourToDelete = null;
 			
 			// Remove from deleting set after animation completes
 			const timeoutId = setTimeout(() => {
@@ -300,23 +330,28 @@
 				try {
 					const errorData = JSON.parse(error.message);
 					if (errorData.details && errorData.details.activeBookings > 0) {
-						let message = `Cannot delete "${tourNameToDelete}"\n\n`;
-						message += `This tour has ${errorData.details.activeBookings} active booking${errorData.details.activeBookings !== 1 ? 's' : ''}.\n\n`;
-						if (errorData.details.revenue > 0) {
-							message += `• Revenue at risk: €${errorData.details.revenue.toFixed(2)}\n`;
-						}
-						message += `• Total bookings: ${errorData.details.totalBookings}\n`;
-						message += `\nPlease cancel all active bookings before deleting this tour.`;
-						alert(message);
+						// Show custom modal for tours with active bookings
+						deleteErrorData = {
+							tourName: tourNameToDelete,
+							activeBookings: errorData.details.activeBookings,
+							totalBookings: errorData.details.totalBookings,
+							revenue: errorData.details.revenue || 0
+						};
+						// Keep tourToDelete for "View Bookings" button
+						tourToDelete = tourForError;
+						showDeleteErrorModal = true;
 					} else {
-						alert(errorData.error || 'Failed to delete tour');
+						// Generic error - could add another modal for this too
+						console.error('Delete error:', errorData.error || 'Failed to delete tour');
+						tourToDelete = null; // Clear on generic error
 					}
 				} catch {
-					alert(error.message || 'Failed to delete tour');
+					console.error('Delete error:', error.message || 'Failed to delete tour');
+					tourToDelete = null; // Clear on parse error
 				}
 			} else {
 				console.error('Failed to delete tour:', error);
-				alert('Failed to delete tour. Please try again.');
+				tourToDelete = null; // Clear on unknown error
 			}
 		}
 	}
@@ -325,7 +360,8 @@
 		try {
 			// Check onboarding completion before allowing activation
 			if (newStatus === 'active' && !canActivate) {
-				alert(`Complete onboarding first:\n\n${onboardingMessage}\n\nNext step: ${nextStep}`);
+				onboardingModalMessage = `${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
+				showOnboardingModal = true;
 				return;
 			}
 			
@@ -353,6 +389,28 @@
 			recentlyUpdated = null;
 			console.error('Failed to update tour status:', error);
 		}
+	}
+	
+	function handleOnboardingModalConfirm() {
+		showOnboardingModal = false;
+		// Redirect to dashboard for onboarding
+		goto('/dashboard');
+	}
+	
+	function handleDeleteErrorViewBookings() {
+		showDeleteErrorModal = false;
+		if (deleteErrorData && tourToDelete) {
+			// Navigate to tour bookings page
+			goto(`/tours/${tourToDelete.id}/bookings`);
+		}
+		deleteErrorData = null;
+		tourToDelete = null;
+	}
+	
+	function handleDeleteErrorClose() {
+		showDeleteErrorModal = false;
+		deleteErrorData = null;
+		tourToDelete = null;
 	}
 
 	// Cleanup timeouts on component destruction
@@ -859,6 +917,33 @@
 	icon={AlertTriangle}
 	onConfirm={confirmDeleteTour}
 />
+
+<!-- Onboarding Required Modal -->
+<ConfirmationModal
+	bind:isOpen={showOnboardingModal}
+	title="Complete Onboarding First"
+	message={onboardingModalMessage}
+	confirmText="Go to Dashboard"
+	cancelText="Cancel"
+	variant="info"
+	icon={AlertTriangle}
+	onConfirm={handleOnboardingModalConfirm}
+/>
+
+<!-- Delete Error Modal - Tours with Active Bookings -->
+{#if deleteErrorData}
+	<ConfirmationModal
+		bind:isOpen={showDeleteErrorModal}
+		title="Cannot Delete Tour"
+		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} active booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nActive bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all active bookings before deleting this tour.`}
+		variant="warning"
+		icon={AlertTriangle}
+		confirmText="View Bookings"
+		cancelText="Close"
+		onConfirm={handleDeleteErrorViewBookings}
+		onCancel={handleDeleteErrorClose}
+	/>
+{/if}
 
 <style>
 	.tour-card {

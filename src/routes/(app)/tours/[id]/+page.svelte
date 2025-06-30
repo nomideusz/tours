@@ -21,6 +21,7 @@
 	import TimeSlotsList from '$lib/components/TimeSlotsList.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Drawer from '$lib/components/Drawer.svelte';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TimeSlotForm from '$lib/components/time-slot-form/TimeSlotForm.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	
@@ -167,6 +168,8 @@
 	let lightboxImageError = $state(false);
 	let showWelcomePrompt = $state(false);
 	let hasInitialSchedule = $state(false);
+	let showOnboardingModal = $state(false);
+	let onboardingModalMessage = $state('');
 	
 	// Calendar event handlers - simplified to prevent unnecessary updates
 	function handleDateSelect(date: Date) {
@@ -324,10 +327,8 @@
 			const onboardingMessage = getOnboardingMessage(activationCheck.missingSteps);
 			const nextStep = getNextOnboardingStep(activationCheck.missingSteps);
 			
-			alert(`Complete onboarding before activating tours:\n\n${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`);
-			
-			// Redirect to dashboard for onboarding
-			goto('/dashboard');
+			onboardingModalMessage = `${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
+			showOnboardingModal = true;
 			return;
 		}
 		
@@ -350,6 +351,12 @@
 			console.error('Failed to activate tour:', error);
 			// Could add error state here if needed
 		}
+	}
+	
+	function handleOnboardingModalConfirm() {
+		showOnboardingModal = false;
+		// Redirect to dashboard for onboarding
+		goto('/dashboard');
 	}
 
 	// Check for success messages from navigation
@@ -1249,8 +1256,20 @@
 
 <!-- Image Lightbox -->
 {#if lightboxOpen}
-	<div class="lightbox-overlay" onclick={closeLightbox}>
-		<div class="lightbox-content" onclick={(e) => e.stopPropagation()}>
+	<div 
+		class="lightbox-overlay" 
+		onclick={closeLightbox}
+		onkeydown={(e) => e.key === 'Enter' && closeLightbox()}
+		role="button"
+		tabindex="0"
+	>
+		<div 
+			class="lightbox-content" 
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			tabindex="0"
+		>
 			<button onclick={closeLightbox} class="lightbox-close" aria-label="Close lightbox">
 				<XCircle class="w-6 h-6" />
 			</button>
@@ -1278,7 +1297,7 @@
 			{#if !lightboxImageError}
 				<img 
 					src={lightboxImage} 
-					alt="Tour image" 
+					alt="" 
 					class="lightbox-image" 
 					class:loading={lightboxImageLoading}
 					onload={handleImageLoad}
@@ -1288,6 +1307,18 @@
 		</div>
 	</div>
 {/if}
+
+<!-- Onboarding Required Modal -->
+<ConfirmationModal
+	bind:isOpen={showOnboardingModal}
+	title="Complete Onboarding First"
+	message={onboardingModalMessage}
+	confirmText="Go to Dashboard"
+	cancelText="Cancel"
+	variant="info"
+	icon={AlertCircle}
+	onConfirm={handleOnboardingModalConfirm}
+/>
 
 <style>
 	.animate-fade-in {
