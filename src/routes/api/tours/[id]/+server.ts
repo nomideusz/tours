@@ -31,13 +31,17 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 				status: bookings.status,
 				participants: bookings.participants,
 				totalAmount: bookings.totalAmount,
-				paymentStatus: bookings.paymentStatus
+				paymentStatus: bookings.paymentStatus,
+				startTime: timeSlots.startTime
 			})
 			.from(bookings)
+			.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 			.where(eq(bookings.tourId, tourId));
 
-		const activeBookings = allBookings.filter(b => 
-			b.status === 'confirmed' || b.status === 'pending'
+		const now = new Date();
+		const futureActiveBookings = allBookings.filter(b => 
+			(b.status === 'confirmed' || b.status === 'pending') &&
+			b.startTime && new Date(b.startTime) >= now
 		);
 		
 		const paidBookings = allBookings.filter(b => 
@@ -48,22 +52,27 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 			sum + (parseFloat(b.totalAmount) || 0), 0
 		);
 
-		// PREVENT deletion if there are active bookings
-		if (activeBookings.length > 0) {
+		// PREVENT deletion if there are future active bookings
+		if (futureActiveBookings.length > 0) {
 			throw error(400, JSON.stringify({
-				error: 'Cannot delete tour with active bookings',
+				error: 'Cannot delete tour with upcoming bookings',
 				details: {
-					activeBookings: activeBookings.length,
+					activeBookings: futureActiveBookings.length,
 					totalBookings: allBookings.length,
 					revenue: totalRevenue,
-					message: 'Please cancel all bookings before deleting this tour'
+					message: 'Please cancel all upcoming bookings before deleting this tour'
 				}
 			}));
 		}
 
 		// Log deletion for audit purposes
+		const pastBookingsCount = allBookings.length - futureActiveBookings.length;
 		if (allBookings.length > 0) {
-			console.warn(`⚠️ TOUR DELETION: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with ${allBookings.length} historical bookings (all cancelled/completed, €${totalRevenue} historical revenue)`);
+			if (pastBookingsCount > 0) {
+				console.warn(`⚠️ TOUR DELETION: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with ${pastBookingsCount} past bookings (€${totalRevenue} historical revenue)`);
+			} else {
+				console.log(`Tour deletion: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with ${allBookings.length} cancelled/draft bookings`);
+			}
 		} else {
 			console.log(`Tour deletion: User ${locals.user.id} is deleting tour ${tourId} "${tour.name}" with no bookings`);
 		}

@@ -60,6 +60,7 @@ export interface Tour extends RecordModel {
   qrConversions?: number;
   // Booking availability
   upcomingSlots?: number; // number of available upcoming time slots
+  hasFutureBookings?: boolean; // whether tour has confirmed/pending future bookings
   createdAt: string;
   updatedAt: string;
 }

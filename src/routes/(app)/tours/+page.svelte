@@ -279,29 +279,19 @@
 			});
 			
 			if (!response.ok) {
-				const errorText = await response.text();
-				console.log('Delete error response:', { status: response.status, text: errorText });
-				
-				// Try to extract JSON from the error response
 				let errorData: any = {};
+				
 				try {
-					// First try to parse the response directly
-					errorData = JSON.parse(errorText);
+					// Parse the error response as JSON
+					errorData = await response.json();
 				} catch (e) {
-					// If that fails, try to extract JSON from the error message
-					try {
-						const messageMatch = errorText.match(/{"error".*}/);
-						if (messageMatch) {
-							errorData = JSON.parse(messageMatch[0]);
-							console.log('Parsed error data from message:', errorData);
-						}
-					} catch (e2) {
-						console.log('Could not parse error as JSON:', errorText);
-					}
+					// If JSON parsing fails, use text
+					const errorText = await response.text();
+					errorData = { error: errorText || 'Failed to delete tour' };
 				}
 				
-				// Throw the parsed error data instead of raw text
-				const error = new Error(errorText || 'Failed to delete tour');
+				// Throw error with parsed data
+				const error = new Error(errorData.error || 'Failed to delete tour');
 				(error as any).data = errorData;
 				throw error;
 			}
@@ -348,48 +338,21 @@
 			deletingTourIds.delete(tourIdToDelete);
 			deletingTourIds = deletingTourIds;
 			
-			// Check if we have parsed error data from the mutation
+			// This should be rare now with the new UX, but keep as fallback
 			const errorData = error?.data || {};
-			console.log('Processing delete error:', { errorData, originalError: error });
 			
-			// Check if it's a structured error with booking details
-			if (errorData?.details && errorData.details.activeBookings > 0) {
-				// Show custom modal for tours with active bookings
+			// Check if it's a structured error with booking details (fallback)
+			if (errorData?.details?.activeBookings > 0) {
 				deleteErrorData = {
 					tourName: tourNameToDelete,
 					activeBookings: errorData.details.activeBookings,
 					totalBookings: errorData.details.totalBookings,
 					revenue: errorData.details.revenue || 0
 				};
-				// Keep tourToDelete for "View Bookings" button
 				tourToDelete = tourForError;
 				showDeleteErrorModal = true;
-				console.log('Showing delete error modal for active bookings');
 			} else {
-				// Generic error - try to parse from message as fallback
-				let fallbackData = null;
-				if (error?.message) {
-					try {
-						fallbackData = JSON.parse(error.message);
-						if (fallbackData?.details && fallbackData.details.activeBookings > 0) {
-							// Show custom modal using fallback data
-							deleteErrorData = {
-								tourName: tourNameToDelete,
-								activeBookings: fallbackData.details.activeBookings,
-								totalBookings: fallbackData.details.totalBookings,
-								revenue: fallbackData.details.revenue || 0
-							};
-							tourToDelete = tourForError;
-							showDeleteErrorModal = true;
-							console.log('Showing delete error modal using fallback parsing');
-							return;
-						}
-					} catch {
-						// Ignore parsing errors for fallback
-					}
-				}
-				
-				// No structured error - just log and clear
+				// Generic error - just log and clear
 				console.error('Delete error:', errorData?.error || error?.message || 'Failed to delete tour');
 				tourToDelete = null;
 			}
@@ -782,8 +745,15 @@
 								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
 								<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
 							</div>
-							<div>
-								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrConversions || 0}</p>
+							<div class="relative">
+								<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
+									{tour.qrConversions || 0}
+									{#if tour.hasFutureBookings}
+										<Tooltip text="Has upcoming bookings" position="top">
+											<Calendar class="h-3 w-3" style="color: var(--color-warning-600);" />
+										</Tooltip>
+									{/if}
+								</p>
 								<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
 							</div>
 							<div>
@@ -906,35 +876,60 @@
 												<span class="hidden sm:inline">Set to Draft</span>
 											</button>
 										{:else}
-											<button
-												onclick={() => {
-													actionMenuOpen = null;
-													dropdownOpenUpwards = {};
-													updateTourStatus(tour.id, 'active');
-												}}
-												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors {!canActivate ? 'opacity-50 cursor-not-allowed' : ''}"
-												style="color: {!canActivate ? 'var(--text-tertiary)' : 'var(--text-primary)'}; background: transparent;"
-												onmouseenter={(e) => canActivate && (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
-												onmouseleave={(e) => canActivate && (e.currentTarget.style.backgroundColor = 'transparent')}
-												disabled={!canActivate}
-												title={!canActivate ? `Complete onboarding first: ${onboardingMessage}` : ''}
-											>
-												<CheckCircle class="h-4 w-4" />
-												<span class="sm:hidden">Activate</span>
-												<span class="hidden sm:inline">Activate Tour</span>
-											</button>
+											{#if !canActivate}
+												<Tooltip text={`Complete onboarding first: ${onboardingMessage}`} position="top">
+													<button
+														class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 opacity-50 cursor-not-allowed"
+														style="color: var(--text-tertiary); background: transparent;"
+														disabled
+													>
+														<CheckCircle class="h-4 w-4" />
+														<span class="sm:hidden">Activate</span>
+														<span class="hidden sm:inline">Activate Tour</span>
+													</button>
+												</Tooltip>
+											{:else}
+												<button
+													onclick={() => {
+														actionMenuOpen = null;
+														dropdownOpenUpwards = {};
+														updateTourStatus(tour.id, 'active');
+													}}
+													class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+													style="color: var(--text-primary); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												>
+													<CheckCircle class="h-4 w-4" />
+													<span class="sm:hidden">Activate</span>
+													<span class="hidden sm:inline">Activate Tour</span>
+												</button>
+											{/if}
 										{/if}
 										<hr style="border-color: var(--border-primary);" />
-										<button
-											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; tourToDelete = tour; showDeleteModal = true; }}
-											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-b-lg"
-											style="color: var(--color-error); background: transparent;"
-											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'}
-											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-										>
-											<Trash2 class="h-4 w-4" />
-											Delete
-										</button>
+										{#if tour.hasFutureBookings}
+											<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
+												<button
+													class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 cursor-not-allowed opacity-50 rounded-b-lg"
+													style="color: var(--text-tertiary); background: transparent;"
+													disabled
+												>
+													<Calendar class="h-4 w-4" />
+													Has Upcoming Bookings
+												</button>
+											</Tooltip>
+										{:else}
+											<button
+												onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; tourToDelete = tour; showDeleteModal = true; }}
+												class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-b-lg"
+												style="color: var(--color-error); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+											>
+												<Trash2 class="h-4 w-4" />
+												Delete
+											</button>
+										{/if}
 									</div>
 								{/if}
 							</div>
@@ -950,7 +945,7 @@
 <ConfirmationModal
 	bind:isOpen={showDeleteModal}
 	title="Delete tour?"
-	message="Are you sure you want to delete '{tourToDelete?.name}'? This action cannot be undone."
+	message="Are you sure you want to delete '{tourToDelete?.name}'? This will permanently delete the tour and all associated data, including historical bookings and analytics. This action cannot be undone."
 	confirmText={$deleteMutation.isPending ? "Deleting..." : "Delete"}
 	cancelText="Cancel"
 	variant="danger"
@@ -975,7 +970,7 @@
 	<ConfirmationModal
 		bind:isOpen={showDeleteErrorModal}
 		title="Cannot Delete Tour"
-		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} active booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nActive bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all active bookings before deleting this tour.`}
+		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} upcoming booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nUpcoming bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all upcoming bookings before deleting this tour.`}
 		variant="warning"
 		icon={AlertTriangle}
 		confirmText="View Bookings"

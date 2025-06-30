@@ -21,6 +21,7 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
+	import Calendar from 'lucide-svelte/icons/calendar';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -130,6 +131,10 @@
 
 	let bookingConstraints = $derived($constraintsQuery.data || null);
 	let constraintsLoading = $derived($constraintsQuery.isLoading);
+	
+	// Check if tour has future bookings that prevent deletion
+	// Use the same logic as the tours list - only future bookings prevent deletion
+	let hasFutureBookings = $derived(tour?.hasFutureBookings || false);
 
 	// Form data
 	let formData = $state({
@@ -608,6 +613,8 @@
 		if (isDeleting) return;
 		
 		isDeleting = true;
+		// Clear any previous errors
+		error = '';
 		
 		try {
 			const response = await fetch(`/api/tours/${tourId}`, {
@@ -629,11 +636,9 @@
 				try {
 					// Parse the error response as JSON
 					errorData = await response.json();
-					console.log('Delete error response:', { status: response.status, data: errorData });
 				} catch (e) {
 					// If JSON parsing fails, try text
 					const errorText = await response.text();
-					console.log('Delete error response (text):', { status: response.status, text: errorText });
 					
 					try {
 						// Try to extract JSON from error message
@@ -648,10 +653,10 @@
 					}
 				}
 				
-				// Check if it's a structured error with booking details
+				// This shouldn't happen with the new UX, but keep as fallback
 				if (errorData?.details?.activeBookings > 0) {
-					console.log('🚫 Tour has active bookings, showing custom modal');
-					// Show custom modal for tours with active bookings
+					// Show custom modal for tours with active bookings (fallback)
+					error = '';
 					deleteErrorData = {
 						tourName: tour?.name || 'Unknown Tour',
 						activeBookings: errorData.details.activeBookings,
@@ -661,7 +666,6 @@
 					showDeleteErrorModal = true;
 				} else {
 					// Generic error - show in error banner
-					console.log('❌ Generic delete error:', errorData);
 					error = errorData?.error || errorData?.message || 'Failed to delete tour';
 				}
 			}
@@ -952,19 +956,48 @@
 				<h3 class="font-semibold" style="color: var(--color-danger-900);">Danger Zone</h3>
 			</div>
 			<div class="p-4">
-				<div class="flex items-center justify-between">
-					<div>
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+					<div class="flex-1">
 						<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
-						<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-							This action cannot be undone. All bookings and data will be permanently deleted.
-						</p>
-					</div>
-					<button type="button" onclick={handleDeleteTour} class="button-danger button--small" disabled={isDeleting}>
-						{#if isDeleting}
-							<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+						{#if hasFutureBookings}
+							<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+								Cannot delete tour with upcoming bookings. Cancel all future bookings first, then deletion will be available.
+							</p>
+							<p class="text-sm mt-2" style="color: var(--color-primary-600);">
+								<button 
+									type="button" 
+									onclick={() => goto(`/tours/${tourId}/bookings`)}
+									class="text-sm underline hover:no-underline"
+									style="color: var(--color-primary-600);"
+								>
+									View bookings →
+								</button>
+							</p>
+						{:else}
+							<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+								This will permanently delete the tour and all data, including historical bookings. This action cannot be undone.
+							</p>
 						{/if}
-						Delete Tour
-					</button>
+					</div>
+					<div class="flex-shrink-0">
+						<button 
+							type="button" 
+							onclick={hasFutureBookings ? undefined : handleDeleteTour} 
+							class="{hasFutureBookings ? 'button-secondary' : 'button-danger'} button--small w-full sm:w-auto" 
+							disabled={isDeleting || hasFutureBookings}
+							title={hasFutureBookings ? 'Cannot delete tour with upcoming bookings' : 'Delete this tour permanently'}
+						>
+							{#if isDeleting}
+								<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+								Deleting...
+							{:else if hasFutureBookings}
+								<Calendar class="w-4 h-4 mr-2" />
+								Has Upcoming Bookings
+							{:else}
+								Delete Tour
+							{/if}
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -999,23 +1032,23 @@
 	onConfirm={confirmCancel}
 />
 
-<ConfirmationModal
-	bind:isOpen={showDeleteModal}
-	title="Delete Tour: {tour?.name || 'Unknown Tour'}?"
-	message="This will permanently delete this tour and ALL associated data. This action cannot be undone."
-	confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Tour'}
-	cancelText="Cancel"
-	variant="danger"
-	onConfirm={confirmDeleteTour}
-	onCancel={cancelDeleteTour}
-/>
+	<ConfirmationModal
+		bind:isOpen={showDeleteModal}
+		title="Delete Tour: {tour?.name || 'Unknown Tour'}?"
+		message="This will permanently delete this tour and all associated data, including historical bookings and analytics. This action cannot be undone."
+		confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete Tour'}
+		cancelText="Cancel"
+		variant="danger"
+		onConfirm={confirmDeleteTour}
+		onCancel={cancelDeleteTour}
+	/>
 
 <!-- Delete Error Modal - Tours with Active Bookings -->
 {#if deleteErrorData}
 	<ConfirmationModal
 		bind:isOpen={showDeleteErrorModal}
 		title="Cannot Delete Tour"
-		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} active booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nActive bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all active bookings before deleting this tour.`}
+		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} upcoming booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nUpcoming bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all upcoming bookings before deleting this tour.`}
 		variant="warning"
 		icon={AlertCircle}
 		confirmText="View Bookings"

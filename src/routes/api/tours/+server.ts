@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { tours, timeSlots } from '$lib/db/schema/index.js';
-import { eq, desc, and, gte, count } from 'drizzle-orm';
+import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
+import { eq, desc, and, gte, count, inArray } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	try {
@@ -21,9 +21,12 @@ export const GET: RequestHandler = async ({ locals }) => {
 		const now = new Date();
 		const tourIds = userTours.map(tour => tour.id);
 		
-		// Get upcoming time slot counts for each tour
+		// Get upcoming time slot counts and future bookings for each tour
 		const timeSlotCounts = new Map();
+		const futureBookingCounts = new Map();
+		
 		if (tourIds.length > 0) {
+			// Get upcoming time slot counts
 			for (const tourId of tourIds) {
 				try {
 					const result = await db
@@ -41,6 +44,29 @@ export const GET: RequestHandler = async ({ locals }) => {
 					timeSlotCounts.set(tourId, 0);
 				}
 			}
+			
+			// Check for future active bookings (confirmed or pending) for each tour
+			try {
+				const futureBookingsResult = await db
+					.select({
+						tourId: bookings.tourId,
+						count: count()
+					})
+					.from(bookings)
+					.leftJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+					.where(and(
+						inArray(bookings.tourId, tourIds),
+						inArray(bookings.status, ['confirmed', 'pending']),
+						gte(timeSlots.startTime, now) // Only future time slots
+					))
+					.groupBy(bookings.tourId);
+				
+				futureBookingsResult.forEach(result => {
+					futureBookingCounts.set(result.tourId, result.count);
+				});
+			} catch (err) {
+				console.warn('Failed to get future booking counts:', err);
+			}
 		}
 
 		// Format tours data to match expected client format with booking availability
@@ -49,7 +75,8 @@ export const GET: RequestHandler = async ({ locals }) => {
 			price: tour.price ? parseFloat(tour.price) : 0,
 			created: tour.createdAt?.toISOString() || new Date().toISOString(),
 			updated: tour.updatedAt?.toISOString() || new Date().toISOString(),
-			upcomingSlots: timeSlotCounts.get(tour.id) || 0
+			upcomingSlots: timeSlotCounts.get(tour.id) || 0,
+			hasFutureBookings: (futureBookingCounts.get(tour.id) || 0) > 0
 		}));
 		
 		return json(formattedTours, {
