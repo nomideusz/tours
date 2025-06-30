@@ -440,9 +440,9 @@
 						{/if}
 						
 						{#if !hasRealTimeSlots}
-							<div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
-								<h3 class="text-lg font-semibold text-amber-900 mb-2">No Available Time Slots</h3>
-								<p class="text-sm text-amber-700">
+							<div class="mb-6 alert-warning rounded-lg p-6 text-center">
+								<h3 class="text-lg font-semibold mb-2">No Available Time Slots</h3>
+								<p class="text-sm">
 									There are currently no time slots available for this tour. Please contact the tour guide directly for availability.
 								</p>
 							</div>
