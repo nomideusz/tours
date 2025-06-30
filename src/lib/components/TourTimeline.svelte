@@ -206,6 +206,21 @@
 		}
 	}
 	
+	// Handle day click in calendar view
+	function handleDayClick(date: Date, slots: TimeSlot[]) {
+		if (slots.length === 0) return;
+		
+		// If only one slot, navigate directly to it
+		if (slots.length === 1) {
+			handleSlotClick(slots[0]);
+		} else {
+			// Multiple slots - switch to day view and navigate to that date
+			view = 'day';
+			currentDate = date;
+			onViewChange?.('day');
+		}
+	}
+	
 	// Additional helper functions for calendar view
 	function getCalendarDay(index: number): Date | null {
 		const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -239,6 +254,55 @@
 		const avgUtilization = slots.reduce((sum, s) => sum + s.utilizationRate, 0) / slots.length;
 		return getUtilizationColor(avgUtilization);
 	}
+	
+	// Get query client for prefetching
+	const queryClient = useQueryClient();
+	
+	// Prefetch adjacent dates when view changes
+	$effect(() => {
+		if (!browser || isLoading) return;
+		
+		// Prefetch adjacent periods for smoother navigation
+		const prefetchDates: Date[] = [];
+		
+		if (view === 'day') {
+			// Prefetch yesterday and tomorrow
+			const yesterday = new Date(currentDate);
+			yesterday.setDate(yesterday.getDate() - 1);
+			prefetchDates.push(yesterday);
+			
+			const tomorrow = new Date(currentDate);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+			prefetchDates.push(tomorrow);
+		} else if (view === 'week') {
+			// Prefetch previous and next week
+			const prevWeek = new Date(currentDate);
+			prevWeek.setDate(prevWeek.getDate() - 7);
+			prefetchDates.push(prevWeek);
+			
+			const nextWeek = new Date(currentDate);
+			nextWeek.setDate(nextWeek.getDate() + 7);
+			prefetchDates.push(nextWeek);
+		} else if (view === 'month') {
+			// Prefetch previous and next month
+			const prevMonth = new Date(currentDate);
+			prevMonth.setMonth(prevMonth.getMonth() - 1);
+			prefetchDates.push(prevMonth);
+			
+			const nextMonth = new Date(currentDate);
+			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			prefetchDates.push(nextMonth);
+		}
+		
+		// Prefetch adjacent dates
+		prefetchDates.forEach(date => {
+			queryClient.prefetchQuery({
+				queryKey: queryKeys.allTimeSlots(view, date.toISOString()),
+				queryFn: () => queryFunctions.fetchAllTimeSlots(view, date.toISOString()),
+				staleTime: 5 * 60 * 1000, // 5 minutes
+			});
+		});
+	});
 </script>
 
 <div class="tour-timeline {compact ? 'compact' : ''}">
@@ -321,13 +385,38 @@
 	</div>
 	
 	<!-- Content -->
-	<div class="timeline-content">
+	<div class="timeline-content" class:loading={isLoading}>
 		{#if isLoading}
 			<div class="loading-state">
-				<div class="animate-spin h-8 w-8 rounded-full border-2" 
-					style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);">
+				<div class="loading-placeholder">
+					<!-- Maintain height based on view type -->
+					{#if view === 'month'}
+						<!-- Show calendar skeleton -->
+						<div class="calendar-skeleton">
+							<div class="calendar-grid">
+								{#each Array(7) as _}
+									<div class="weekday-skeleton"></div>
+								{/each}
+								{#each Array(35) as _}
+									<div class="day-skeleton"></div>
+								{/each}
+							</div>
+						</div>
+					{:else}
+						<!-- Show list skeleton -->
+						<div class="list-skeleton">
+							{#each Array(3) as _}
+								<div class="slot-skeleton"></div>
+							{/each}
+						</div>
+					{/if}
 				</div>
-				<p class="text-sm mt-4" style="color: var(--text-secondary);">Loading timeline...</p>
+				<div class="loading-overlay">
+					<div class="animate-spin h-8 w-8 rounded-full border-2" 
+						style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);">
+					</div>
+					<p class="text-sm mt-4" style="color: var(--text-secondary);">Loading timeline...</p>
+				</div>
 			</div>
 		{:else if error}
 			<div class="error-state">
@@ -427,6 +516,17 @@
 							class:other-month={dayDate && !isCurrentMonth}
 							class:today={isToday}
 							class:has-slots={daySlots.length > 0}
+							onclick={() => dayDate && handleDayClick(dayDate, daySlots)}
+							onkeydown={(e) => {
+								if ((e.key === 'Enter' || e.key === ' ') && dayDate && daySlots.length > 0) {
+									e.preventDefault();
+									handleDayClick(dayDate, daySlots);
+								}
+							}}
+							role={daySlots.length > 0 ? "button" : undefined}
+							tabindex={daySlots.length > 0 ? 0 : undefined}
+							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : undefined}
+							title={daySlots.length > 0 ? (daySlots.length === 1 ? 'Click to view tour details' : `Click to view ${daySlots.length} tour slots`) : undefined}
 						>
 							{#if dayDate}
 								<div class="day-number">{dayDate.getDate()}</div>
@@ -435,6 +535,11 @@
 										<div class="slot-indicator" style="background-color: {getDayColor(daySlots)}"></div>
 										<span class="slot-count">{daySlots.length}</span>
 									</div>
+									{#if daySlots.length === 1}
+										<div class="single-slot-preview">
+											{formatSlotTimeRange(daySlots[0].startTime, daySlots[0].endTime)}
+										</div>
+									{/if}
 								{/if}
 							{/if}
 						</div>
@@ -551,9 +656,120 @@
 	.timeline-content {
 		min-height: 20rem;
 		position: relative;
+		transition: opacity 0.2s ease;
 	}
 	
-	.loading-state,
+	.timeline-content.loading {
+		opacity: 1;
+	}
+	
+	.loading-state {
+		position: relative;
+		min-height: 20rem;
+	}
+	
+	.loading-placeholder {
+		width: 100%;
+		opacity: 0.1;
+	}
+	
+	.loading-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-primary);
+		opacity: 0.95;
+	}
+	
+	/* Loading Skeletons */
+	.calendar-skeleton {
+		padding: 1.5rem;
+	}
+	
+	.calendar-skeleton .calendar-grid {
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+		gap: 1px;
+		background: var(--border-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+	
+	.weekday-skeleton {
+		height: 2.5rem;
+		background: var(--bg-secondary);
+	}
+	
+	.day-skeleton {
+		height: 4rem;
+		background: var(--bg-primary);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.day-skeleton::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.1) 50%,
+			transparent 100%
+		);
+		animation: shimmer 1.5s infinite;
+	}
+	
+	.list-skeleton {
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	
+	.slot-skeleton {
+		height: 4rem;
+		background: var(--bg-secondary);
+		border-radius: 0.5rem;
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.slot-skeleton::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.1) 50%,
+			transparent 100%
+		);
+		animation: shimmer 1.5s infinite;
+	}
+	
+	@keyframes shimmer {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(100%);
+		}
+	}
+	
 	.error-state,
 	.empty-state {
 		display: flex;
@@ -562,6 +778,7 @@
 		justify-content: center;
 		padding: 4rem 2rem;
 		text-align: center;
+		min-height: 20rem;
 	}
 	
 	/* List View Styles */
@@ -764,6 +981,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
+		user-select: none;
 	}
 	
 	.calendar-day.other-month {
@@ -781,6 +999,9 @@
 	
 	.calendar-day.has-slots:hover {
 		background: var(--bg-tertiary);
+		transform: scale(1.02);
+		z-index: 1;
+		box-shadow: var(--shadow-sm);
 	}
 	
 	.day-number {
@@ -802,6 +1023,16 @@
 		width: 0.375rem;
 		height: 0.375rem;
 		border-radius: 50%;
+	}
+	
+	.single-slot-preview {
+		font-size: 0.5rem;
+		color: var(--text-tertiary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 100%;
+		margin-top: 0.125rem;
 	}
 	
 	/* Mobile Styles */
