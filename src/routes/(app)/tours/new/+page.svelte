@@ -54,6 +54,35 @@
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
 	let triggerValidation = $state(false);
 	let showCancelModal = $state(false);
+	
+	// Error element reference for scrolling
+	let errorElement: HTMLElement;
+	
+	// Scroll to error message when error appears
+	$effect(() => {
+		if (error && errorElement && browser) {
+			// Small delay to ensure the error element is rendered
+			setTimeout(() => {
+				errorElement.scrollIntoView({ 
+					behavior: 'smooth', 
+					block: 'center' 
+				});
+			}, 100);
+		}
+	});
+	
+	// Handle initial error on page load (server-side validation errors)
+	$effect(() => {
+		if (browser && form?.error && errorElement) {
+			// Delay to ensure page is fully loaded
+			setTimeout(() => {
+				errorElement.scrollIntoView({ 
+					behavior: 'smooth', 
+					block: 'center' 
+				});
+			}, 300);
+		}
+	});
 
 	// Check if we should auto-activate based on URL parameter
 	let shouldActivate = browser && new URLSearchParams(window.location.search).get('activate') === 'true';
@@ -478,7 +507,7 @@
 	</div>
 
 	{#if error}
-		<div class="mb-6">
+		<div bind:this={errorElement} class="mb-6">
 			{#if (form as any)?.showUpgradeButton}
 				<div class="alert-warning rounded-xl p-4">
 					<div class="flex gap-3">
@@ -614,6 +643,7 @@
 						} else {
 							error = (result.data as any)?.error || 'An error occurred while creating your tour. Please try again.';
 						}
+						// The $effect will automatically scroll to the error
 					}
 				};
 			}}>

@@ -61,6 +61,54 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
+	resendVerification: async ({ request }) => {
+		const data = await request.formData();
+		const userId = data.get('userId')?.toString();
+		const email = data.get('email')?.toString();
+
+		if (!userId || !email) {
+			return fail(400, { error: 'Missing required information' });
+		}
+
+		try {
+			// Find user to verify they exist and aren't verified
+			const existingUser = await db
+				.select()
+				.from(users)
+				.where(eq(users.id, userId))
+				.limit(1);
+
+			if (existingUser.length === 0 || existingUser[0].emailVerified) {
+				return fail(400, { error: 'Invalid request' });
+			}
+
+			// Send verification email
+			const response = await fetch('/api/send-auth-email', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					email: email,
+					type: 'verification',
+					userId: userId
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to send verification email');
+			}
+
+			return {
+				success: true,
+				message: 'Verification email sent! Please check your inbox.'
+			};
+		} catch (error) {
+			console.error('Error sending verification email:', error);
+			return fail(500, { 
+				error: 'Failed to send verification email. Please try again.' 
+			});
+		}
+	},
+
 	default: async ({ request, cookies, url }) => {
 		const data = await request.formData();
 		const email = data.get('email')?.toString();
@@ -125,6 +173,18 @@ export const actions: Actions = {
 					email,
 					redirectTo,
 					error: 'Invalid email or password'
+				});
+			}
+
+			// Check if email is verified
+			if (!user.emailVerified) {
+				console.log('Unverified user attempting login:', email);
+				return fail(400, {
+					email,
+					redirectTo,
+					error: 'Please verify your email address before signing in.',
+					needsVerification: true,
+					userId: user.id
 				});
 			}
 

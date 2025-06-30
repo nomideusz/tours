@@ -14,6 +14,9 @@
 		error?: string;
 		success?: boolean;
 		redirectTo?: string;
+		needsVerification?: boolean;
+		userId?: string;
+		message?: string;
 	};
 
 	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string; earlyAccessEnabled: boolean } }>();
@@ -32,6 +35,10 @@
 	// Form validation
 	let emailError = $state('');
 	let passwordError = $state('');
+
+	// Verification email state
+	let isResendingVerification = $state(false);
+	let verificationSent = $state(false);
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
@@ -66,6 +73,15 @@
 
 		return isValid;
 	}
+
+	// Handle resending verification email
+	let resendForm: HTMLFormElement;
+
+	function resendVerificationEmail() {
+		if (!form?.userId || !email || !resendForm) return;
+		isResendingVerification = true;
+		resendForm.requestSubmit();
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center sm:px-6 lg:px-8 -mt-20">
@@ -84,7 +100,38 @@
 			{/if}
 		</div>
 
-		{#if form?.error || data?.error}
+		{#if form?.message || verificationSent}
+			<div class="alert-success rounded-lg p-3 mb-4">
+				<p class="text-sm">{form?.message || 'Verification email sent! Please check your inbox.'}</p>
+			</div>
+		{:else if form?.needsVerification}
+			<div class="alert-warning rounded-lg p-4 mb-4">
+				<div class="flex items-start gap-3">
+					<div class="flex-shrink-0">
+						<svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+						</svg>
+					</div>
+					<div class="flex-1">
+						<h3 class="text-sm font-medium text-amber-800 mb-2">Email verification required</h3>
+						<p class="text-sm text-amber-700 mb-3">{form?.error}</p>
+						<button
+							type="button"
+							onclick={resendVerificationEmail}
+							disabled={isResendingVerification}
+							class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md text-amber-800 bg-amber-100 hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+						>
+							{#if isResendingVerification}
+								<Loader size={12} class="animate-spin" />
+								Sending...
+							{:else}
+								Resend verification email
+							{/if}
+						</button>
+					</div>
+				</div>
+			</div>
+		{:else if form?.error || data?.error}
 			<div class="alert-error rounded-lg p-3 mb-4">
 				<p class="text-sm">{form?.error || data?.error}</p>
 			</div>
@@ -208,6 +255,28 @@
 					{/if}
 				</button>
 			</form>
+
+			<!-- Hidden form for resending verification email -->
+			{#if form?.needsVerification}
+				<form
+					bind:this={resendForm}
+					method="POST"
+					action="?/resendVerification"
+					class="hidden"
+					use:enhance={() => {
+						return async ({ result, update }) => {
+							await update();
+							isResendingVerification = false;
+							if (result.type === 'success') {
+								verificationSent = true;
+							}
+						};
+					}}
+				>
+					<input type="hidden" name="userId" value={form?.userId || ''} />
+					<input type="hidden" name="email" value={email} />
+				</form>
+			{/if}
 
 			<div class="mt-6 flex items-center justify-center gap-4 text-sm">
 				<a href="/auth/forgot-password" class="text-blue-600 hover:text-blue-500 transition-colors">
