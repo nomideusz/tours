@@ -246,10 +246,11 @@
 		if (slots.length === 1) {
 			handleSlotClick(slots[0]);
 		} else {
-			// Multiple slots - switch to day view and navigate to that date
-			view = 'day';
+			// Multiple slots - switch to week view and navigate to that date
+			// Week view makes more sense for navigation (left/right = prev/next week)
+			view = 'week';
 			currentDate = date;
-			onViewChange?.('day');
+			onViewChange?.('week');
 		}
 	}
 	
@@ -391,6 +392,18 @@
 			
 			<!-- Date Navigation - Always show unless hideHeader is true -->
 			<div class="date-navigation {hideHeaderText ? 'standalone-navigation' : ''}">
+				<!-- Back to month button for compact mode when not in month view -->
+				{#if compact && hideViewToggle && view !== 'month'}
+					<button
+						onclick={() => { view = 'month'; onViewChange?.('month'); }}
+						class="back-to-month-button"
+						aria-label="Back to month view"
+						title="Back to month view"
+					>
+						<Calendar class="h-3 w-3" />
+					</button>
+				{/if}
+				
 				<button
 					onclick={() => navigateDate('prev')}
 					class="nav-button"
@@ -401,6 +414,9 @@
 				
 				<div class="date-display">
 					<span class="text-sm sm:text-base">{getDateRangeDisplay()}</span>
+					{#if compact && hideViewToggle && view !== 'month'}
+						<span class="view-indicator">{view}</span>
+					{/if}
 					{#if currentDate.toDateString() !== new Date().toDateString()}
 						<button
 							onclick={goToToday}
@@ -660,6 +676,37 @@
 		align-items: center;
 		justify-content: center;
 		gap: 1rem;
+	}
+	
+	.back-to-month-button {
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.back-to-month-button:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+		border-color: var(--border-secondary);
+	}
+	
+	.view-indicator {
+		padding: 0.125rem 0.5rem;
+		font-size: 0.625rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
+		border: 1px solid var(--color-primary-200);
+		border-radius: 0.25rem;
 	}
 	
 	.nav-button {
