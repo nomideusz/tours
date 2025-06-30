@@ -2,6 +2,7 @@
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatDate, formatDateTime, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
@@ -86,10 +87,9 @@
 	function openEmailClient() {
 		if (!booking) return;
 		const subject = encodeURIComponent(`Regarding your ${booking.expand?.tour?.name} booking`);
-		const timeText = booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime 
-			? formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)
-			: 'TBD';
-		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'TBD'}\nTime: ${timeText}\nParticipants: ${booking.participants}\n\nBest regards`);
+		const timeText = safeFormatSlotTimeRange(booking.expand?.timeSlot?.startTime, booking.expand?.timeSlot?.endTime);
+		const dateText = safeFormatDate(booking.expand?.timeSlot?.startTime);
+		const body = encodeURIComponent(`Hi ${booking.customerName},\n\nI wanted to reach out regarding your upcoming tour booking.\n\nTour: ${booking.expand?.tour?.name}\nDate: ${dateText}\nTime: ${timeText}\nParticipants: ${booking.participants}\n\nBest regards`);
 		
 		window.open(`mailto:${booking.customerEmail}?subject=${subject}&body=${body}`);
 	}
@@ -104,6 +104,47 @@
 		} catch (error) {
 			console.warn('Error getting tour date time:', error);
 			return 'Time slot not set';
+		}
+	}
+
+	// Safe date formatting functions to prevent undefined errors
+	function safeFormatDate(dateString: string | undefined): string {
+		if (!dateString) return 'Date TBD';
+		try {
+			return formatDate(dateString);
+		} catch (error) {
+			console.warn('Error formatting date:', error);
+			return 'Date TBD';
+		}
+	}
+
+	function safeFormatDateTime(dateString: string | undefined): string {
+		if (!dateString) return 'Date TBD';
+		try {
+			return formatDateTime(dateString);
+		} catch (error) {
+			console.warn('Error formatting date time:', error);
+			return 'Date TBD';
+		}
+	}
+
+	function safeFormatDateTimeForTimeline(dateString: string | undefined): string {
+		if (!dateString) return 'Recently';
+		try {
+			return formatDateTime(dateString);
+		} catch (error) {
+			console.warn('Error formatting date time:', error);
+			return 'Recently';
+		}
+	}
+
+	function safeFormatSlotTimeRange(startTime: string | undefined, endTime: string | undefined): string {
+		if (!startTime || !endTime) return 'Time TBD';
+		try {
+			return formatSlotTimeRange(startTime, endTime);
+		} catch (error) {
+			console.warn('Error formatting time range:', error);
+			return 'Time TBD';
 		}
 	}
 
@@ -227,7 +268,7 @@
 				infoItems={[
 					{ 
 						label: 'Tour Date', 
-						value: booking.expand?.timeSlot?.startTime ? formatDate(booking.expand.timeSlot.startTime) : 'Date TBD',
+						value: safeFormatDate(booking.expand?.timeSlot?.startTime),
 						icon: Calendar
 					},
 					{ 
@@ -318,17 +359,11 @@
 								<div class="flex-1 min-w-0">
 									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Tour Date</p>
 									<p class="text-sm sm:text-base font-semibold truncate" style="color: var(--text-primary);">
-										{#if booking.expand?.timeSlot?.startTime}
-											{formatDate(booking.expand.timeSlot.startTime)}
-										{:else}
-											Date TBD
-										{/if}
+										{safeFormatDate(booking.expand?.timeSlot?.startTime)}
 									</p>
-									{#if booking.expand?.timeSlot?.startTime && booking.expand?.timeSlot?.endTime}
-										<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
-											{formatSlotTimeRange(booking.expand.timeSlot.startTime, booking.expand.timeSlot.endTime)}
-										</p>
-									{/if}
+									<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
+										{safeFormatSlotTimeRange(booking.expand?.timeSlot?.startTime, booking.expand?.timeSlot?.endTime)}
+									</p>
 								</div>
 							</div>
 
@@ -379,10 +414,10 @@
 								<div class="flex-1 min-w-0">
 									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Booking Date</p>
 									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
-										{formatDate(booking.createdAt)}
+										{safeFormatDate(booking.createdAt)}
 									</p>
 									<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
-										at {new Date(booking.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+										at {booking.createdAt ? new Date(booking.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
 									</p>
 								</div>
 							</div>
@@ -487,7 +522,7 @@
 							<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
 							<div class="flex-1">
 								<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-								<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.createdAt)}</p>
+								<p class="text-xs" style="color: var(--text-secondary);">{safeFormatDateTime(booking.createdAt)}</p>
 							</div>
 						</div>
 						
@@ -497,7 +532,7 @@
 								<div class="flex-1">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Confirmed</p>
 									<p class="text-xs" style="color: var(--text-secondary);">
-										{booking.updatedAt ? formatDateTime(booking.updatedAt) : 'Recently'}
+										{safeFormatDateTimeForTimeline(booking.updatedAt)}
 									</p>
 								</div>
 							</div>
@@ -509,7 +544,7 @@
 								<div class="flex-1">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">Payment Received</p>
 									<p class="text-xs" style="color: var(--text-secondary);">
-										{payment.created ? formatDateTime(payment.created) : 'Recently'}
+										{safeFormatDateTimeForTimeline(payment.created)}
 									</p>
 								</div>
 							</div>
@@ -525,7 +560,7 @@
 							<select 
 								name="status" 
 								value={booking.status}
-								onchange={(e) => {
+								onchange={async (e) => {
 									const target = e.target as HTMLSelectElement;
 									if (target.value === 'cancelled') {
 										newStatus = target.value;
@@ -533,9 +568,14 @@
 									} else {
 										// For non-cancellation status changes, update directly
 										newStatus = target.value;
+										
+										// Wait for DOM to update before submitting
+										await tick();
+										
 										// Submit form programmatically
 										const form = document.getElementById('mobile-status-update-form') as HTMLFormElement;
 										if (form) {
+											console.log('Submitting mobile form with status:', newStatus);
 											form.requestSubmit();
 										}
 									}
@@ -551,9 +591,61 @@
 						</div>
 						
 						<!-- Hidden form for non-cancellation status updates -->
-						<form id="mobile-status-update-form" method="POST" action="?/updateStatus" class="hidden">
+						<form id="mobile-status-update-form" method="POST" action="?/updateStatus" class="hidden"
+							use:enhance={() => {
+								isUpdating = true;
+								error = null;
+								
+								return async ({ result, update }) => {
+									if (result.type === 'success') {
+										// Immediate optimistic updates
+										const updatedStatus = newStatus as typeof booking.status;
+										
+										// 1. Update local state immediately
+										booking = { ...booking, status: updatedStatus };
+										
+										// 2. Optimistically update all query caches immediately
+										queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
+											if (oldData?.booking) {
+												return {
+													...oldData,
+													booking: { ...oldData.booking, status: updatedStatus }
+												};
+											}
+											return oldData;
+										});
+										
+										// Update recent bookings cache
+										queryClient.setQueriesData({ queryKey: ['recentBookings'], exact: false }, (oldData: any) => {
+											if (Array.isArray(oldData)) {
+												return oldData.map((b: any) => 
+													b.id === bookingId ? { ...b, status: updatedStatus } : b
+												);
+											}
+											return oldData;
+										});
+										
+										// 3. Then invalidate queries to fetch fresh data in background
+										Promise.all([
+											queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
+											queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
+											queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+										]).catch((invalidationError) => {
+											console.warn('Background refetch failed:', invalidationError);
+										});
+										
+									} else if (result.type === 'failure') {
+										error = (result.data as any)?.error || 'Failed to update status';
+									}
+									
+									// Always reset form state
+									isUpdating = false;
+									await update();
+								};
+							}}
+						>
 							<input type="hidden" name="id" value={booking.id} />
-							<input type="hidden" name="status" value={newStatus} />
+							<input type="hidden" name="status" bind:value={newStatus} />
 						</form>
 					</div>
 				</div>
@@ -595,7 +687,7 @@
 										<div class="min-w-0">
 											<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">Payment Date</p>
 											<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
-												{payment.created ? formatDateTime(payment.created) : 'N/A'}
+												{safeFormatDateTime(payment.created)}
 											</p>
 										</div>
 									</div>
@@ -632,7 +724,7 @@
 							<select 
 								name="status" 
 								value={booking.status}
-								onchange={(e) => {
+								onchange={async (e) => {
 									const target = e.target as HTMLSelectElement;
 									if (target.value === 'cancelled') {
 										newStatus = target.value;
@@ -640,9 +732,14 @@
 									} else {
 										// For non-cancellation status changes, update directly
 										newStatus = target.value;
+										
+										// Wait for DOM to update before submitting
+										await tick();
+										
 										// Submit form programmatically
 										const form = document.getElementById('status-update-form') as HTMLFormElement;
 										if (form) {
+											console.log('Submitting form with status:', newStatus);
 											form.requestSubmit();
 										}
 									}
@@ -657,9 +754,61 @@
 							</select>
 							
 							<!-- Hidden form for non-cancellation status updates -->
-							<form id="status-update-form" method="POST" action="?/updateStatus" class="hidden">
+							<form id="status-update-form" method="POST" action="?/updateStatus" class="hidden"
+								use:enhance={() => {
+									isUpdating = true;
+									error = null;
+									
+									return async ({ result, update }) => {
+										if (result.type === 'success') {
+											// Immediate optimistic updates
+											const updatedStatus = newStatus as typeof booking.status;
+											
+											// 1. Update local state immediately
+											booking = { ...booking, status: updatedStatus };
+											
+											// 2. Optimistically update all query caches immediately
+											queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
+												if (oldData?.booking) {
+													return {
+														...oldData,
+														booking: { ...oldData.booking, status: updatedStatus }
+													};
+												}
+												return oldData;
+											});
+											
+											// Update recent bookings cache
+											queryClient.setQueriesData({ queryKey: ['recentBookings'], exact: false }, (oldData: any) => {
+												if (Array.isArray(oldData)) {
+													return oldData.map((b: any) => 
+														b.id === bookingId ? { ...b, status: updatedStatus } : b
+													);
+												}
+												return oldData;
+											});
+											
+											// 3. Then invalidate queries to fetch fresh data in background
+											Promise.all([
+												queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
+												queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
+												queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+											]).catch((invalidationError) => {
+												console.warn('Background refetch failed:', invalidationError);
+											});
+											
+										} else if (result.type === 'failure') {
+											error = (result.data as any)?.error || 'Failed to update status';
+										}
+										
+										// Always reset form state
+										isUpdating = false;
+										await update();
+									};
+								}}
+							>
 								<input type="hidden" name="id" value={booking.id} />
-								<input type="hidden" name="status" value={newStatus} />
+								<input type="hidden" name="status" bind:value={newStatus} />
 							</form>
 						</div>
 						
@@ -705,7 +854,7 @@
 								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
 								<div class="flex-1">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-									<p class="text-xs" style="color: var(--text-secondary);">{formatDateTime(booking.createdAt)}</p>
+									<p class="text-xs" style="color: var(--text-secondary);">{safeFormatDateTime(booking.createdAt)}</p>
 								</div>
 							</div>
 							
@@ -715,7 +864,7 @@
 									<div class="flex-1">
 										<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Confirmed</p>
 										<p class="text-xs" style="color: var(--text-secondary);">
-											{booking.updatedAt ? formatDateTime(booking.updatedAt) : 'Recently'}
+											{safeFormatDateTimeForTimeline(booking.updatedAt)}
 										</p>
 									</div>
 								</div>
@@ -727,7 +876,7 @@
 									<div class="flex-1">
 										<p class="text-sm font-medium" style="color: var(--text-primary);">Payment Received</p>
 										<p class="text-xs" style="color: var(--text-secondary);">
-											{payment.created ? formatDateTime(payment.created) : 'Recently'}
+											{safeFormatDateTimeForTimeline(payment.created)}
 										</p>
 									</div>
 								</div>
@@ -739,7 +888,7 @@
 									<div class="flex-1">
 										<p class="text-sm font-medium" style="color: var(--text-primary);">Tour Completed</p>
 										<p class="text-xs" style="color: var(--text-secondary);">
-											{booking.expand?.timeSlot?.endTime ? formatDateTime(booking.expand.timeSlot.endTime) : 'Marked complete'}
+											{safeFormatDateTime(booking.expand?.timeSlot?.endTime) !== 'Date TBD' ? safeFormatDateTime(booking.expand?.timeSlot?.endTime) : 'Marked complete'}
 										</p>
 									</div>
 								</div>
