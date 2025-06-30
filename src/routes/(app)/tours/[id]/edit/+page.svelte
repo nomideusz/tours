@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { browser } from '$app/environment';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -107,6 +108,15 @@
 	let showCancelModal = $state(false);
 	let showDeleteModal = $state(false);
 	let isDeleting = $state(false);
+	
+	// Delete error modal state
+	let showDeleteErrorModal = $state(false);
+	let deleteErrorData = $state<{
+		tourName: string;
+		activeBookings: number;
+		totalBookings: number;
+		revenue: number;
+	} | null>(null);
 
 	// Booking constraints query
 	let constraintsQuery = $derived(createQuery({
@@ -589,6 +599,8 @@
 
 	// Delete tour functionality
 	function handleDeleteTour() {
+		// Clear any previous errors
+		error = '';
 		showDeleteModal = true;
 	}
 
@@ -612,31 +624,55 @@
 				// Navigate back to tours list
 				goto('/tours?deleted=true');
 			} else {
-				const errorData = await response.json().catch(() => ({}));
+				const errorText = await response.text();
+				console.log('Delete error response:', { status: response.status, text: errorText });
+				
+				let errorData: any = {};
+				try {
+					// First try to parse the response directly
+					errorData = JSON.parse(errorText);
+				} catch (e) {
+					// If that fails, try to extract JSON from the error message
+					try {
+						const messageMatch = errorText.match(/{"error".*}/);
+						if (messageMatch) {
+							errorData = JSON.parse(messageMatch[0]);
+							console.log('Parsed error data from message:', errorData);
+						}
+					} catch (e2) {
+						console.log('Could not parse error as JSON:', errorText);
+					}
+				}
 				
 				// Check if it's a structured error with details
-				if (response.status === 400 && errorData.details) {
+				if (response.status === 400 && errorData?.details) {
 					const details = errorData.details;
-					let message = errorData.error || 'Cannot delete tour';
+					console.log('Error details:', details);
 					
-					if (details.activeBookings > 0) {
-						message = `Cannot delete tour with ${details.activeBookings} active booking${details.activeBookings !== 1 ? 's' : ''}.\n\n`;
-						message += `• Total bookings: ${details.totalBookings}\n`;
-						message += `• Active bookings: ${details.activeBookings}\n`;
-						if (details.revenue > 0) {
-							message += `• Revenue: €${details.revenue.toFixed(2)}\n`;
-						}
-						message += `\nPlease cancel all active bookings before deleting this tour.`;
+					if (details?.activeBookings > 0) {
+						// Show custom modal for tours with active bookings
+						deleteErrorData = {
+							tourName: tour?.name || 'Unknown Tour',
+							activeBookings: details.activeBookings,
+							totalBookings: details.totalBookings,
+							revenue: details.revenue || 0
+						};
+						console.log('Setting deleteErrorData:', deleteErrorData);
+						showDeleteErrorModal = true;
+						console.log('Set showDeleteErrorModal to true');
+					} else {
+						// Generic error
+						error = errorData?.error || 'Cannot delete tour';
 					}
-					
-					alert(message);
 				} else {
-					throw new Error(errorData.error || errorData.message || 'Failed to delete tour');
+					// For any other error, show it in the error state
+					console.log('Showing generic error:', errorData);
+					error = errorData?.error || errorData?.message || errorText || 'Failed to delete tour';
 				}
 			}
-		} catch (error) {
-			console.error('Error deleting tour:', error);
-			alert(error instanceof Error ? error.message : 'Failed to delete tour. Please try again.');
+		} catch (err) {
+			console.error('Error deleting tour:', err);
+			error = err instanceof Error ? err.message : 'Failed to delete tour. Please try again.';
 		} finally {
 			isDeleting = false;
 			showDeleteModal = false;
@@ -645,6 +681,20 @@
 
 	function cancelDeleteTour() {
 		showDeleteModal = false;
+	}
+	
+	function handleDeleteErrorViewBookings() {
+		showDeleteErrorModal = false;
+		if (tour) {
+			// Navigate to tour bookings page
+			goto(`/tours/${tour.id}/bookings`);
+		}
+		deleteErrorData = null;
+	}
+	
+	function handleDeleteErrorClose() {
+		showDeleteErrorModal = false;
+		deleteErrorData = null;
 	}
 </script>
 
@@ -963,4 +1013,19 @@
 	variant="danger"
 	onConfirm={confirmDeleteTour}
 	onCancel={cancelDeleteTour}
-/> 
+/>
+
+<!-- Delete Error Modal - Tours with Active Bookings -->
+{#if deleteErrorData}
+	<ConfirmationModal
+		bind:isOpen={showDeleteErrorModal}
+		title="Cannot Delete Tour"
+		message={`Cannot delete "${deleteErrorData.tourName}" because it has ${deleteErrorData.activeBookings} active booking${deleteErrorData.activeBookings !== 1 ? 's' : ''}.\n\nActive bookings: ${deleteErrorData.activeBookings}\nTotal bookings: ${deleteErrorData.totalBookings}${deleteErrorData.revenue > 0 ? `\nRevenue at risk: ${$globalCurrencyFormatter(deleteErrorData.revenue)}` : ''}\n\nYou must cancel or refund all active bookings before deleting this tour.`}
+		variant="warning"
+		icon={AlertCircle}
+		confirmText="View Bookings"
+		cancelText="Close"
+		onConfirm={handleDeleteErrorViewBookings}
+		onCancel={handleDeleteErrorClose}
+	/>
+{/if} 

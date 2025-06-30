@@ -279,8 +279,31 @@
 			});
 			
 			if (!response.ok) {
-				const error = await response.text();
-				throw new Error(error || 'Failed to delete tour');
+				const errorText = await response.text();
+				console.log('Delete error response:', { status: response.status, text: errorText });
+				
+				// Try to extract JSON from the error response
+				let errorData: any = {};
+				try {
+					// First try to parse the response directly
+					errorData = JSON.parse(errorText);
+				} catch (e) {
+					// If that fails, try to extract JSON from the error message
+					try {
+						const messageMatch = errorText.match(/{"error".*}/);
+						if (messageMatch) {
+							errorData = JSON.parse(messageMatch[0]);
+							console.log('Parsed error data from message:', errorData);
+						}
+					} catch (e2) {
+						console.log('Could not parse error as JSON:', errorText);
+					}
+				}
+				
+				// Throw the parsed error data instead of raw text
+				const error = new Error(errorText || 'Failed to delete tour');
+				(error as any).data = errorData;
+				throw error;
 			}
 			
 			return response.json().catch(() => ({ success: true }));
@@ -325,33 +348,50 @@
 			deletingTourIds.delete(tourIdToDelete);
 			deletingTourIds = deletingTourIds;
 			
+			// Check if we have parsed error data from the mutation
+			const errorData = error?.data || {};
+			console.log('Processing delete error:', { errorData, originalError: error });
+			
 			// Check if it's a structured error with booking details
-			if (error?.message) {
-				try {
-					const errorData = JSON.parse(error.message);
-					if (errorData.details && errorData.details.activeBookings > 0) {
-						// Show custom modal for tours with active bookings
-						deleteErrorData = {
-							tourName: tourNameToDelete,
-							activeBookings: errorData.details.activeBookings,
-							totalBookings: errorData.details.totalBookings,
-							revenue: errorData.details.revenue || 0
-						};
-						// Keep tourToDelete for "View Bookings" button
-						tourToDelete = tourForError;
-						showDeleteErrorModal = true;
-					} else {
-						// Generic error - could add another modal for this too
-						console.error('Delete error:', errorData.error || 'Failed to delete tour');
-						tourToDelete = null; // Clear on generic error
-					}
-				} catch {
-					console.error('Delete error:', error.message || 'Failed to delete tour');
-					tourToDelete = null; // Clear on parse error
-				}
+			if (errorData?.details && errorData.details.activeBookings > 0) {
+				// Show custom modal for tours with active bookings
+				deleteErrorData = {
+					tourName: tourNameToDelete,
+					activeBookings: errorData.details.activeBookings,
+					totalBookings: errorData.details.totalBookings,
+					revenue: errorData.details.revenue || 0
+				};
+				// Keep tourToDelete for "View Bookings" button
+				tourToDelete = tourForError;
+				showDeleteErrorModal = true;
+				console.log('Showing delete error modal for active bookings');
 			} else {
-				console.error('Failed to delete tour:', error);
-				tourToDelete = null; // Clear on unknown error
+				// Generic error - try to parse from message as fallback
+				let fallbackData = null;
+				if (error?.message) {
+					try {
+						fallbackData = JSON.parse(error.message);
+						if (fallbackData?.details && fallbackData.details.activeBookings > 0) {
+							// Show custom modal using fallback data
+							deleteErrorData = {
+								tourName: tourNameToDelete,
+								activeBookings: fallbackData.details.activeBookings,
+								totalBookings: fallbackData.details.totalBookings,
+								revenue: fallbackData.details.revenue || 0
+							};
+							tourToDelete = tourForError;
+							showDeleteErrorModal = true;
+							console.log('Showing delete error modal using fallback parsing');
+							return;
+						}
+					} catch {
+						// Ignore parsing errors for fallback
+					}
+				}
+				
+				// No structured error - just log and clear
+				console.error('Delete error:', errorData?.error || error?.message || 'Failed to delete tour');
+				tourToDelete = null;
 			}
 		}
 	}

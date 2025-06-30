@@ -171,15 +171,21 @@
 					}
 
 					manualLoading = true;
+					console.log('🔄 Login form submitted, setting manual loading to true');
 					// Store the current email for reference
 					const submittedEmail = formData.get('email') as string;
 
 					return async ({ result, update }) => {
+						console.log('🔄 Login form result:', result.type, result);
+						
 						// Don't interfere with redirects - let SvelteKit handle them
 						if (result.type === 'redirect') {
+							console.log('✅ Login successful, redirecting to:', result.location);
+							// Keep loading state for smooth redirect
 							return;
 						}
 						
+						console.log('❌ Login failed or other result, resetting loading state');
 						await update({ reset: false }); // Prevent form reset to keep values
 						// Update local email value in case server returned a different one
 						if (form?.email) {
@@ -187,9 +193,9 @@
 						} else {
 							email = submittedEmail;
 						}
-						setTimeout(() => {
-							manualLoading = false;
-						}, 500);
+						
+						// Reset loading state for non-redirect responses
+						manualLoading = false;
 					};
 				}}
 				class="space-y-6"
@@ -271,6 +277,11 @@
 					class="hidden"
 					use:enhance={() => {
 						return async ({ result, update }) => {
+							// Don't interfere with redirects
+							if (result.type === 'redirect') {
+								return;
+							}
+							
 							await update();
 							isResendingVerification = false;
 							if (result.type === 'success') {
