@@ -194,9 +194,12 @@
 	
 	// Handle slot selection from TourTimeline
 	function handleSlotClick(slot: any) {
-		// TourTimeline handles slot selection internally
-		// No need for additional logic since we removed TimeSlotsList
-		console.log('Slot clicked:', slot);
+		// When clicking a single slot, switch to day view for that date
+		// This shows the slot details in context
+		const slotDate = new Date(slot.startTime);
+		currentCalendarDate = slotDate;
+		calendarView = 'day';
+		console.log('Slot clicked, switching to day view:', slot);
 	}
 	
 	// Handle view changes from TourTimeline
