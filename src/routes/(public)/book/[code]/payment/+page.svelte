@@ -57,7 +57,7 @@
 		return {
 			theme: (darkMode ? 'night' : 'stripe') as 'night' | 'stripe',
 			variables: {
-				colorPrimary: darkMode ? '#60a5fa' : '#3B82F6',
+				colorPrimary: darkMode ? '#3b9ef7' : '#2480ec',
 				colorBackground: darkMode ? '#161b22' : '#ffffff',
 				colorText: darkMode ? '#f0f6fc' : '#111827',
 				colorDanger: darkMode ? '#f87171' : '#ef4444',
@@ -81,10 +81,10 @@
 					padding: '12px',
 				},
 				'.Input:focus': {
-					borderColor: darkMode ? '#60a5fa' : '#3B82F6',
+					borderColor: darkMode ? '#3b9ef7' : '#2480ec',
 					boxShadow: darkMode 
-						? '0 0 0 3px rgba(96, 165, 250, 0.3)'
-						: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+						? '0 0 0 3px rgba(59, 158, 247, 0.3)'
+						: '0 0 0 3px rgba(36, 128, 236, 0.1)',
 				},
 				'.Error': {
 					fontSize: '13px',
@@ -96,7 +96,7 @@
 					backgroundColor: darkMode ? '#0d1117' : '#ffffff',
 				},
 				'.Tab--selected': {
-					borderColor: darkMode ? '#60a5fa' : '#3B82F6',
+					borderColor: darkMode ? '#3b9ef7' : '#2480ec',
 					backgroundColor: darkMode ? '#161b22' : '#ffffff',
 				},
 				'.TabLabel': {

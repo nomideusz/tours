@@ -92,8 +92,8 @@ export function bookingCancellationTemplate(data: BookingCancellationData): stri
           <p style="margin: 10px 0;">
             ${tourOwner.businessName ? `<strong>${tourOwner.businessName}</strong><br>` : ''}
             ${tourOwner.name ? `${tourOwner.name}<br>` : ''}
-            ${tourOwner.email ? `Email: <a href="mailto:${tourOwner.email}" style="color: #3b82f6;">${tourOwner.email}</a><br>` : ''}
-            ${tourOwner.phone ? `Phone: <a href="tel:${tourOwner.phone}" style="color: #3b82f6;">${tourOwner.phone}</a>` : ''}
+            		${tourOwner.email ? `Email: <a href="mailto:${tourOwner.email}" style="color: #2480ec;">${tourOwner.email}</a><br>` : ''}
+		${tourOwner.phone ? `Phone: <a href="tel:${tourOwner.phone}" style="color: #2480ec;">${tourOwner.phone}</a>` : ''}
           </p>
         </div>
       ` : ''}

@@ -69,19 +69,19 @@
 	--color-error: #f43f5e;
 	--color-error-light: #ffe4e6;
 
-	/* Danger colors - Matching error for consistency */
-	--color-danger-50: #fff1f2;
-	--color-danger-100: #ffe4e6;
-	--color-danger-200: #fecdd3;
-	--color-danger-300: #fda4af;
-	--color-danger-400: #fb7185;
-	--color-danger-500: #f43f5e;
-	--color-danger-600: #e11d48;
-	--color-danger-700: #be123c;
-	--color-danger-800: #9f1239;
-	--color-danger-900: #881337;
-	--color-danger: #f43f5e;
-	--color-danger-light: #ffe4e6;
+	/* Danger colors - Using error colors for consistency */
+	--color-danger-50: var(--color-error-50);
+	--color-danger-100: var(--color-error-100);
+	--color-danger-200: var(--color-error-200);
+	--color-danger-300: var(--color-error-300);
+	--color-danger-400: var(--color-error-400);
+	--color-danger-500: var(--color-error-500);
+	--color-danger-600: var(--color-error-600);
+	--color-danger-700: var(--color-error-700);
+	--color-danger-800: var(--color-error-800);
+	--color-danger-900: var(--color-error-900);
+	--color-danger: var(--color-error);
+	--color-danger-light: var(--color-error-light);
 	
 	/* Info Violet - Sophisticated and trustworthy */
 	--color-info-50: #f5f3ff;
@@ -103,6 +103,26 @@
 	--accent-primary: var(--color-primary-600);
 	--border-primary: var(--color-gray-200);
 	--bg-input: #ffffff;
+
+	/* Common shortcut colors for easier use */
+	--primary: var(--color-primary-600);
+	--secondary: var(--color-gray-600);
+	--success: var(--color-success-600);
+	--warning: var(--color-warning-600);
+	--error: var(--color-error-600);
+	--danger: var(--color-danger-600);
+	--info: var(--color-info-600);
+
+	/* Tour guide app specific colors */
+	--color-confirmed: var(--color-success-600);
+	--color-pending: var(--color-warning-600);
+	--color-cancelled: var(--color-error-600);
+	--color-completed: var(--color-info-600);
+	--color-draft: var(--color-gray-500);
+	--color-active: var(--color-primary-600);
+	--color-paid: var(--color-success-600);
+	--color-failed: var(--color-error-600);
+	--color-refunded: var(--color-gray-600);
 	
 	/* Typography */
 	--font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -302,19 +322,19 @@
 	--color-error: #fb7185;
 	--color-error-light: #4c0519;
 
-	/* Danger colors - same as error for consistency */
-	--color-danger-50: #4c0519;
-	--color-danger-100: #881337;
-	--color-danger-200: #9f1239;
-	--color-danger-300: #be123c;
-	--color-danger-400: #e11d48;
-	--color-danger-500: #f43f5e;
-	--color-danger-600: #fb7185;
-	--color-danger-700: #fda4af;
-	--color-danger-800: #fecdd3;
-	--color-danger-900: #ffe4e6;
-	--color-danger: #fb7185;
-	--color-danger-light: #4c0519;
+	/* Danger colors - using error colors for consistency */
+	--color-danger-50: var(--color-error-50);
+	--color-danger-100: var(--color-error-100);
+	--color-danger-200: var(--color-error-200);
+	--color-danger-300: var(--color-error-300);
+	--color-danger-400: var(--color-error-400);
+	--color-danger-500: var(--color-error-500);
+	--color-danger-600: var(--color-error-600);
+	--color-danger-700: var(--color-error-700);
+	--color-danger-800: var(--color-error-800);
+	--color-danger-900: var(--color-error-900);
+	--color-danger: var(--color-error);
+	--color-danger-light: var(--color-error-light);
 
 	/* Info colors - adjusted for dark mode */
 	--color-info-50: #2e1065;
@@ -343,6 +363,26 @@
 	/* Legacy variables for dark mode compatibility */
 	--accent-primary: var(--color-primary-500);
 	--bg-input: #2a2d32;
+
+	/* Common shortcut colors for dark mode */
+	--primary: var(--color-primary-500);
+	--secondary: var(--color-gray-300);
+	--success: var(--color-success-600);
+	--warning: var(--color-warning-600);
+	--error: var(--color-error-600);
+	--danger: var(--color-danger-600);
+	--info: var(--color-info-600);
+
+	/* Tour guide app specific colors for dark mode */
+	--color-confirmed: var(--color-success-600);
+	--color-pending: var(--color-warning-600);
+	--color-cancelled: var(--color-error-600);
+	--color-completed: var(--color-info-600);
+	--color-draft: var(--color-gray-400);
+	--color-active: var(--color-primary-500);
+	--color-paid: var(--color-success-600);
+	--color-failed: var(--color-error-600);
+	--color-refunded: var(--color-gray-400);
 	
 	/* Dark mode background variations - cool blue-grays */
 	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #181b1f 0%, #0b0d10 60%);
@@ -617,8 +657,8 @@ svg.lucide.text-gray-600 {
 
 [data-theme="dark"] .text-blue-600 svg.lucide,
 [data-theme="dark"] svg.lucide.text-blue-600 {
-	color: #3b82f6;
-	stroke: #3b82f6;
+	color: #3b9ef7;
+	stroke: #3b9ef7;
 }
 
 [data-theme="dark"] .text-red-600 svg.lucide,
