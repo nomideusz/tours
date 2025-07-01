@@ -873,12 +873,12 @@
 												
 												<!-- Quick edit actions (only show for tour-specific view) -->
 												{#if tourId}
-													<div class="quick-actions" onclick={(e) => e.stopPropagation()}>
+													<div class="quick-actions" role="group" aria-label="Quick actions">
 														<!-- Delete slot - only show if no bookings -->
 														{#if slot.bookedSpots === 0}
 															<Tooltip text="Delete time slot">
 																<button
-																	onclick={() => confirmDeleteSlot(slot)}
+																	onclick={(e) => { e.stopPropagation(); confirmDeleteSlot(slot); }}
 																	class="quick-action-btn delete-btn"
 																	disabled={isSubmittingEdit || isDeleting}
 																>
@@ -894,7 +894,7 @@
 														<!-- Status toggle -->
 														<Tooltip text={slot.status === 'cancelled' ? 'Reactivate slot' : 'Cancel slot'}>
 															<button
-																onclick={() => toggleSlotStatus(slot)}
+																onclick={(e) => { e.stopPropagation(); toggleSlotStatus(slot); }}
 																class="quick-action-btn status-btn"
 																disabled={isSubmittingEdit}
 															>
@@ -912,7 +912,7 @@
 														{#if slot.status !== 'cancelled'}
 															<Tooltip text="Edit capacity">
 																<button
-																	onclick={() => startEditCapacity(slot)}
+																	onclick={(e) => { e.stopPropagation(); startEditCapacity(slot); }}
 																	class="quick-action-btn capacity-btn"
 																>
 																	<Edit3 class="h-3 w-3" />
@@ -956,16 +956,15 @@
 							class:other-month={dayDate && !isCurrentMonth}
 							class:today={isToday}
 							class:has-slots={daySlots.length > 0}
-							onclick={() => dayDate && handleDayClick(dayDate, daySlots)}
+							onclick={daySlots.length > 0 ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined}
 							onkeydown={(e) => {
 								if ((e.key === 'Enter' || e.key === ' ') && dayDate && daySlots.length > 0) {
 									e.preventDefault();
 									handleDayClick(dayDate, daySlots);
 								}
 							}}
-							role={daySlots.length > 0 ? "button" : undefined}
-							tabindex={daySlots.length > 0 ? 0 : undefined}
-							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : undefined}
+							{...(daySlots.length > 0 ? { role: "button", tabindex: 0 } : {})}
+							{...(dayDate && daySlots.length > 0 ? { "aria-label": `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` } : {})}
 							title={daySlots.length > 0 ? (daySlots.length === 1 ? 'Click to view tour details' : `Click to view ${daySlots.length} tour slots`) : undefined}
 						>
 							{#if dayDate}
@@ -992,10 +991,10 @@
 
 <!-- Delete Confirmation Modal -->
 {#if slotToDelete}
-	<div class="modal-overlay" onclick={cancelDelete}>
-		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+	<div class="modal-overlay" onclick={cancelDelete} onkeydown={(e) => e.key === 'Escape' && cancelDelete()} role="presentation" tabindex="-1">
+		<div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-labelledby="delete-modal-title" tabindex="-1">
 			<div class="modal-header">
-				<h3 class="modal-title">Delete Time Slot</h3>
+				<h3 class="modal-title" id="delete-modal-title">Delete Time Slot</h3>
 				<button onclick={cancelDelete} class="modal-close">
 					<X class="h-4 w-4" />
 				</button>
