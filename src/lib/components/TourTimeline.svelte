@@ -1082,8 +1082,9 @@
 							onmouseleave={() => {
 								hidePopover();
 							}}
-							{...(daySlots.length > 0 && !isPast ? { role: "button", tabindex: 0 } : {})}
-							{...(dayDate && daySlots.length > 0 ? { "aria-label": `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` } : {})}
+							role={daySlots.length > 0 ? "button" : "gridcell"}
+							{...(daySlots.length > 0 && !isPast ? { tabindex: 0 } : {})}
+							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : dayDate?.getDate().toString()}
 						>
 							{#if dayDate}
 								<div class="day-number">{dayDate.getDate()}</div>
@@ -1130,6 +1131,7 @@
 					{#if dayDate && daySlots.length > 0}
 						<div 
 							class="day-popover {popoverAlignment} {popoverVerticalPosition}"
+							role="tooltip"
 							style="
 								position: fixed;
 								{popoverAlignment === 'center' ? `left: ${popoverPosition.x}px;` : 
