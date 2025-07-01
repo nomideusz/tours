@@ -5,7 +5,7 @@
 	import DatePicker from '$lib/components/DatePicker.svelte';
 	import Repeat from 'lucide-svelte/icons/repeat';
 	import type { TimeSlotFormData, RecurringPreview } from '../types.js';
-	import { getRecurringPreview } from '../utils/recurring.js';
+	import { getRecurringPreview, getActualRecurringCount, getActualRecurringEndDate } from '../utils/recurring.js';
 	
 	interface Props {
 		formData: TimeSlotFormData;
@@ -20,6 +20,8 @@
 	}: Props = $props();
 	
 	let recurringPreview = $derived(getRecurringPreview(formData));
+	let actualRecurringCount = $derived(getActualRecurringCount(formData));
+	let actualEndDate = $derived(getActualRecurringEndDate(formData));
 </script>
 
 {#if !isEditMode}
@@ -51,9 +53,9 @@
 						</span>
 					</label>
 				</div>
-				{#if formData.recurring && recurringPreview.length > 0}
+				{#if formData.recurring && actualRecurringCount > 0}
 					<div class="text-xs px-2 py-1 rounded" style="background: var(--color-primary-50); color: var(--color-primary-700); border: 1px solid var(--color-primary-200);">
-						{recurringPreview.length} slots
+						{actualRecurringCount} slots
 					</div>
 				{/if}
 			</div>
@@ -210,12 +212,12 @@
 			{#if formData.recurring && recurringPreview.length > 0}
 				<div class="mt-3 p-2 rounded text-xs" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
 					<div class="flex items-center justify-between">
-						<span style="color: var(--text-secondary);">
-							{recurringPreview.length} slots: {formatDate(recurringPreview[0].date)}
-							{#if recurringPreview.length > 1}
-								→ {formatDate(recurringPreview[recurringPreview.length - 1].date)}
-							{/if}
-						</span>
+											<span style="color: var(--text-secondary);">
+						{actualRecurringCount} slots: {formatDate(recurringPreview[0].date)}
+						{#if actualRecurringCount > 1 && actualEndDate && actualEndDate !== formData.date}
+							→ {formatDate(actualEndDate)}
+						{/if}
+					</span>
 						<span class="font-medium" style="color: var(--text-primary);">
 							{formData.recurringType}
 						</span>

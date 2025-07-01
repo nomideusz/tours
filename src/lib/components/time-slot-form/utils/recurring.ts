@@ -86,4 +86,36 @@ export function getActualRecurringCount(formData: TimeSlotFormData): number {
 	}
 	
 	return count;
+}
+
+export function getActualRecurringEndDate(formData: TimeSlotFormData): string {
+	if (!formData.recurring || !formData.date || !formData.startTime) return '';
+	
+	// If using end date, return that date
+	if (formData.recurringEnd) {
+		return formData.recurringEnd;
+	}
+	
+	// If using count, calculate the actual end date
+	const count = formData.recurringCount || 1;
+	if (count <= 1) return formData.date;
+	
+	let currentDate = new Date(`${formData.date}T${formData.startTime}:00`);
+	
+	// Calculate the last slot date
+	for (let i = 1; i < count; i++) {
+		switch (formData.recurringType) {
+			case 'daily':
+				currentDate.setDate(currentDate.getDate() + 1);
+				break;
+			case 'weekly':
+				currentDate.setDate(currentDate.getDate() + 7);
+				break;
+			case 'monthly':
+				currentDate.setMonth(currentDate.getMonth() + 1);
+				break;
+		}
+	}
+	
+	return currentDate.toISOString().split('T')[0];
 } 

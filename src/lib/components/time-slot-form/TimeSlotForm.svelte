@@ -504,6 +504,7 @@
 
 	// Get recurring preview
 	let recurringPreview = $derived(getRecurringPreview(state.formData));
+	let actualRecurringCount = $derived(getActualRecurringCount(state.formData));
 	
 	// Expose resetForm method for modal to use
 	function resetForm() {
@@ -1095,7 +1096,7 @@
 														Create Another
 													{:else}
 														<CheckCircle class="w-5 h-5" />
-														{isEditMode ? 'Save Changes' : (state.formData.recurring && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Time Slot')}
+														{isEditMode ? 'Save Changes' : (state.formData.recurring && actualRecurringCount > 1 ? `Create ${actualRecurringCount} slots` : 'Create Time Slot')}
 													{/if}
 												</button>
 											</div>
@@ -1465,10 +1466,10 @@
 				</div>
 			{/if}
 
-			<!-- Action Buttons - Always visible with consistent layout (except drawer mode) -->
-			{#if mode !== 'page' && mode !== 'drawer'}
-			<div class="mt-6 {mode === 'inline' ? 'flex gap-3 justify-end' : ''}">
-				{#if mode !== 'inline'}
+			<!-- Action Buttons - Always visible with consistent layout -->
+			{#if mode !== 'page'}
+			<div class="mt-6 {mode === 'inline' ? 'flex gap-3 justify-end' : mode === 'drawer' ? 'drawer-actions' : ''}">
+				{#if mode !== 'inline' && mode !== 'drawer'}
 					<!-- Mobile: Stack buttons -->
 					<div class="md:hidden space-y-3">
 						{#if isEditMode}
@@ -1586,7 +1587,67 @@
 									Create Another
 								{:else}
 									<CheckCircle class="w-4 h-4" />
-									{isEditMode ? 'Save Changes' : (state.formData.recurring && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
+									{isEditMode ? 'Save Changes' : (state.formData.recurring && actualRecurringCount > 1 ? `Create ${actualRecurringCount} slots` : 'Create Slot')}
+								{/if}
+							</button>
+						</div>
+					</div>
+				{:else if mode === 'drawer'}
+					<!-- Drawer mode: Mobile-optimized bottom actions -->
+					<div class="space-y-3">
+						{#if isEditMode}
+							<button
+								type="button"
+								onclick={() => state.showDeleteConfirm = true}
+								disabled={state.isDeleting}
+								class="button-danger button--gap w-full"
+							>
+								{#if state.isDeleting}
+									<Loader2 class="w-4 h-4 animate-spin" />
+									Deleting...
+								{:else}
+									<Trash2 class="w-4 h-4" />
+									Delete Slot
+								{/if}
+							</button>
+						{/if}
+						<div class="flex gap-3">
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										state.justCreatedSlot = false;
+										onSuccess?.();
+									} else {
+										onCancel?.();
+									}
+								}}
+								disabled={state.isSubmitting}
+								class="button-secondary flex-1"
+							>
+								{state.justCreatedSlot ? 'Done' : 'Cancel'}
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									if (state.justCreatedSlot) {
+										handleAddAnother();
+									} else {
+										handleSubmit();
+									}
+								}}
+								disabled={state.isSubmitting || (!state.justCreatedSlot && state.conflicts.length > 0)}
+								class="button-primary button--gap flex-1"
+							>
+								{#if state.isSubmitting}
+									<Loader2 class="w-4 h-4 animate-spin" />
+									{isEditMode ? 'Saving...' : (state.formData.recurring ? 'Creating slots...' : 'Creating...')}
+								{:else if state.justCreatedSlot}
+									<Plus class="h-4 w-4" />
+									Create Another
+								{:else}
+									<CheckCircle class="w-4 h-4" />
+									{isEditMode ? 'Save Changes' : (state.formData.recurring && actualRecurringCount > 1 ? `Create ${actualRecurringCount} slots` : 'Create Slot')}
 								{/if}
 							</button>
 						</div>
@@ -1648,7 +1709,7 @@
 								Create Another
 							{:else}
 								<CheckCircle class="w-4 h-4" />
-								{isEditMode ? 'Save Changes' : (state.formData.recurring && recurringPreview.length > 1 ? `Create ${recurringPreview.length} slots` : 'Create Slot')}
+								{isEditMode ? 'Save Changes' : (state.formData.recurring && actualRecurringCount > 1 ? `Create ${actualRecurringCount} slots` : 'Create Slot')}
 							{/if}
 						</button>
 					</div>
@@ -1803,5 +1864,16 @@
 		:global(.time-slot-drawer-form .grid) {
 			grid-template-columns: 1fr; /* Stack on mobile */
 		}
+	}
+	
+	/* Drawer actions styling */
+	.drawer-actions {
+		padding: 1rem 0 0.5rem 0;
+		border-top: 1px solid var(--border-primary);
+		margin-top: 1.5rem !important;
+		position: sticky;
+		bottom: 0;
+		background: var(--bg-primary);
+		z-index: 10;
 	}
 </style> 
