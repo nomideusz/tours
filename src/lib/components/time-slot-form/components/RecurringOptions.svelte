@@ -74,7 +74,13 @@
 										name="end-type-{isMobile ? 'mobile' : 'desktop'}"
 										value="count"
 										checked={!formData.recurringEnd}
-										onchange={() => formData.recurringEnd = ''}
+										onchange={() => { 
+											formData.recurringEnd = '';
+											// Ensure we have a valid count when switching to count mode
+											if (!formData.recurringCount || formData.recurringCount < 2) {
+												formData.recurringCount = 2;
+											}
+										}}
 										class="form-radio"
 									/>
 									<label for="end-count-{isMobile ? 'mobile' : 'desktop'}" class="text-sm" style="color: var(--text-primary);">Number of slots</label>
@@ -102,7 +108,10 @@
 										name="end-type-{isMobile ? 'mobile' : 'desktop'}"
 										value="date"
 										checked={!!formData.recurringEnd}
-										onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 0; }}
+										onchange={() => { 
+											formData.recurringEnd = formData.date; 
+											formData.recurringCount = 0; 
+										}}
 										class="form-radio"
 									/>
 									<label for="end-date-{isMobile ? 'mobile' : 'desktop'}" class="text-sm" style="color: var(--text-primary);">End date</label>
@@ -163,7 +172,13 @@
 								type="radio"
 								name="recurring-mode"
 								checked={!formData.recurringEnd}
-								onchange={() => formData.recurringEnd = ''}
+								onchange={() => { 
+									formData.recurringEnd = '';
+									// Ensure we have a valid count when switching to count mode
+									if (!formData.recurringCount || formData.recurringCount < 2) {
+										formData.recurringCount = 2;
+									}
+								}}
 								class="form-radio"
 							/>
 							<span style="color: var(--text-secondary);">Count</span>
@@ -173,7 +188,10 @@
 								type="radio"
 								name="recurring-mode"
 								checked={!!formData.recurringEnd}
-								onchange={() => { formData.recurringEnd = formData.date; formData.recurringCount = 2; }}
+								onchange={() => { 
+									formData.recurringEnd = formData.date; 
+									formData.recurringCount = 0; 
+								}}
 								class="form-radio"
 							/>
 							<span style="color: var(--text-secondary);">Until date</span>

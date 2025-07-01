@@ -283,6 +283,13 @@
 	$effect(() => {
 		if (state.showAdvanced && !isEditMode) {
 			state.formData.recurring = true;
+			// Ensure we have valid default values
+			if (!state.formData.recurringType) {
+				state.formData.recurringType = 'weekly';
+			}
+			if (!state.formData.recurringCount || state.formData.recurringCount < 2) {
+				state.formData.recurringCount = 2;
+			}
 		} else if (!state.showAdvanced && !isEditMode) {
 			state.formData.recurring = false;
 			state.formData.recurringType = 'weekly';
@@ -384,10 +391,11 @@
 				recurringEnd: state.formData.recurringEnd ? new Date(state.formData.recurringEnd).toISOString() : null
 			};
 			
+			let result;
 			if (isEditMode && updateSlotMutation && $updateSlotMutation) {
-				await $updateSlotMutation.mutateAsync(slotData);
+				result = await $updateSlotMutation.mutateAsync(slotData);
 			} else {
-				await $createSlotMutation.mutateAsync(slotData);
+				result = await $createSlotMutation.mutateAsync(slotData);
 			}
 			
 			// Handle success
@@ -398,6 +406,9 @@
 				state.lastCreatedDate = state.formData.date;
 				state.lastCreatedStartTime = state.formData.startTime;
 				state.justCreatedSlot = true;
+				
+				// Track how many slots were created (from API response)
+				state.slotsCreated = result?.slots?.length || 1;
 				
 				if (mode !== 'modal') {
 					onSuccess?.();
@@ -1282,7 +1293,11 @@
 				<div class="mt-4 rounded-lg p-3 flex items-start gap-2" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
 					<CheckCircle class="h-4 w-4 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
 					<p class="text-sm" style="color: var(--color-success-700);">
-						Time slot created for {formatDate(state.lastCreatedDate)}
+						{#if state.slotsCreated > 1}
+							{state.slotsCreated} time slots created successfully!
+						{:else}
+							Time slot created for {formatDate(state.lastCreatedDate)}
+						{/if}
 					</p>
 				</div>
 			{/if}

@@ -29,6 +29,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 	let justCreatedSlot = $state(false);
 	let lastCreatedDate = $state<string>('');
 	let lastCreatedStartTime = $state<string>('');
+	let slotsCreated = $state(0);
 	let customDuration = $state<number | null>(null);
 	let initialDefaults = $state(false);
 	let isAddingAnother = $state(false);
@@ -66,6 +67,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 		conflicts = [];
 		showAdvanced = false;
 		justCreatedSlot = false;
+		slotsCreated = 0;
 	}
 
 	function setError(errorMessage: string | null) {
@@ -102,6 +104,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 		get justCreatedSlot() { return justCreatedSlot; },
 		get lastCreatedDate() { return lastCreatedDate; },
 		get lastCreatedStartTime() { return lastCreatedStartTime; },
+		get slotsCreated() { return slotsCreated; },
 		get customDuration() { return customDuration; },
 		get initialDefaults() { return initialDefaults; },
 		get isAddingAnother() { return isAddingAnother; },
@@ -115,6 +118,7 @@ export function createTimeSlotFormState(initialData?: Partial<TimeSlotFormData>)
 		set justCreatedSlot(value: boolean) { justCreatedSlot = value; },
 		set lastCreatedDate(value: string) { lastCreatedDate = value; },
 		set lastCreatedStartTime(value: string) { lastCreatedStartTime = value; },
+		set slotsCreated(value: number) { slotsCreated = value; },
 		set customDuration(value: number | null) { customDuration = value; },
 		set initialDefaults(value: boolean) { initialDefaults = value; },
 		set isAddingAnother(value: boolean) { isAddingAnother = value; },

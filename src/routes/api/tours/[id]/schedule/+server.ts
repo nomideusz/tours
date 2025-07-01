@@ -83,9 +83,12 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 			let currentDate = new Date(slotStart);
 			const endDate = recurringEnd ? new Date(recurringEnd) : null;
 			let count = 0;
-			const maxCount = parseInt(recurringCount) || 1;
+			
+			// If we have an end date, ignore count limit and create until end date
+			// If no end date, use count limit (default to reasonable number)
+			const maxCount = endDate ? 365 : (parseInt(recurringCount) || 2); // Safety limit of 365 for end date mode
 
-			while (count < maxCount && (!endDate || currentDate <= endDate)) {
+			while ((endDate ? currentDate <= endDate : count < maxCount) && count < 365) {
 				const slotStartTime = new Date(currentDate);
 				const slotEndTime = new Date(currentDate.getTime() + (slotEnd.getTime() - slotStart.getTime()));
 
