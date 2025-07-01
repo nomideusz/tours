@@ -571,7 +571,7 @@
 	
 	/* Weekend styling */
 	.calendar-day.weekend {
-		background: var(--bg-secondary);
+		background: rgba(0, 0, 0, 0.02);
 	}
 	
 	/* Past day styling */
@@ -1024,7 +1024,7 @@
 	/* Dark mode adjustments */
 	@media (prefers-color-scheme: dark) {
 		.calendar-day.weekend {
-			background: rgba(255, 255, 255, 0.02);
+			background: rgba(255, 255, 255, 0.03);
 		}
 		
 		.calendar-day.past-day {
