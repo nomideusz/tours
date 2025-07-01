@@ -294,6 +294,16 @@
 		return 'var(--text-tertiary)';
 	}
 	
+	// Get slot color based on bookings and utilization
+	function getSlotColor(slot: TimeSlot): string {
+		if (slot.status === 'cancelled') return 'var(--color-error-400)';
+		if (slot.isFull || slot.utilizationRate >= 90) return 'var(--color-danger-500)';
+		if (slot.utilizationRate >= 70) return 'var(--color-warning-500)';
+		if (slot.utilizationRate >= 30) return 'var(--color-success-500)';
+		if (slot.bookedSpots > 0) return 'var(--color-primary-500)'; // Blue for slots with bookings
+		return 'var(--text-tertiary)'; // Grey for empty slots
+	}
+	
 	// Handle slot click
 	function handleSlotClick(slot: TimeSlot) {
 		if (onSlotClick) {
@@ -1080,12 +1090,12 @@
 								{#if daySlots.length > 0}
 									<div class="day-slots">
 										{#if tourId}
-											<!-- Single tour - show colored dots based on utilization -->
+											<!-- Single tour - show colored dots based on bookings and utilization -->
 											<div class="tour-dots">
 												{#each daySlots.slice(0, 3) as slot}
 													<div 
 														class="tour-dot"
-														style="background-color: {getUtilizationColor(slot.utilizationRate)}"
+														style="background-color: {getSlotColor(slot)}"
 													></div>
 												{/each}
 												{#if daySlots.length > 3}
@@ -1148,7 +1158,7 @@
 										<div class="popover-slot-header">
 											<div 
 												class="popover-tour-dot"
-												style="background-color: {tourId ? getUtilizationColor(slot.utilizationRate) : getTourColor(slot.tourId, slot.tourName)}"
+												style="background-color: {tourId ? getSlotColor(slot) : getTourColor(slot.tourId, slot.tourName)}"
 											></div>
 											<span class="popover-tour-name">{slot.tourName}</span>
 										</div>
