@@ -25,7 +25,7 @@
 </script>
 
 <div class="{isMobile ? '' : 'lg:col-span-1'}">
-	<label class="form-label">Select Date</label>
+	<div class="form-label">Select Date</div>
 	<MiniMonthCalendar
 		slotsMap={slotsMap}
 		selectedDate={date}

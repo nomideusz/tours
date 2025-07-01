@@ -157,7 +157,7 @@
 			</div>
 		{:else}
 			<div class="w-full">
-				<label class="form-label">Duration</label>
+				<div class="form-label">Duration</div>
 				<div class="w-full px-3 py-2 rounded-lg border text-sm flex items-center justify-between" 
 					style="border-color: var(--border-primary); background: var(--bg-secondary);">
 					<div>

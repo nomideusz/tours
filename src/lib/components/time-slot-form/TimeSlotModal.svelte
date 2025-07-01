@@ -34,12 +34,12 @@
 		onSuccess
 	}: Props = $props();
 
-	let modalElement: HTMLDivElement;
+	let modalElement = $state<HTMLDivElement>();
 	let isSubmitting = $state(false);
 	let justCreated = $state(false);
 	let createdCount = $state(0);
 
-	let formComponent: any;
+	let formComponent = $state<any>();
 	let lastCreatedSlotData = $state<any>(null);
 
 	// Animation states
@@ -418,13 +418,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-	}
-	
-	.success-button .button-hint {
-		font-size: 0.75rem;
-		opacity: 0.8;
-		font-weight: 400;
-		margin-top: 0.25rem;
 	}
 	
 	.success-button--primary {

@@ -66,7 +66,7 @@
 					<!-- Mobile: Stacked compact layout -->
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label class="form-label text-xs">Pattern</label>
+							<div class="form-label text-xs">Pattern</div>
 							<select bind:value={formData.recurringType} class="form-select w-full text-sm py-2" disabled={!formData.recurring}>
 								<option value="daily">Daily</option>
 								<option value="weekly">Weekly</option>
@@ -75,7 +75,7 @@
 						</div>
 						<div>
 							{#if !formData.recurringEnd}
-								<label class="form-label text-xs">Count</label>
+								<div class="form-label text-xs">Count</div>
 								<NumberInput
 									id="recurring-count-mobile"
 									label=""
@@ -89,7 +89,7 @@
 									disabled={!formData.recurring}
 								/>
 							{:else}
-								<label class="form-label text-xs">Until</label>
+								<div class="form-label text-xs">Until</div>
 								<DatePicker
 									bind:value={formData.recurringEnd}
 									minDate={formData.date}
@@ -140,7 +140,7 @@
 					<!-- Desktop: Horizontal compact layout -->
 					<div class="flex items-end gap-3">
 						<div class="flex-1">
-							<label class="form-label text-xs">Pattern</label>
+							<div class="form-label text-xs">Pattern</div>
 							<select bind:value={formData.recurringType} class="form-select w-full text-sm py-2" disabled={!formData.recurring}>
 								<option value="daily">Daily</option>
 								<option value="weekly">Weekly</option>
@@ -150,7 +150,7 @@
 						
 						<div class="flex-1">
 							{#if !formData.recurringEnd}
-								<label class="form-label text-xs">Count</label>
+								<div class="form-label text-xs">Count</div>
 								<NumberInput
 									id="recurring-count"
 									label=""
@@ -164,7 +164,7 @@
 									disabled={!formData.recurring}
 								/>
 							{:else}
-								<label class="form-label text-xs">Until date</label>
+								<div class="form-label text-xs">Until date</div>
 								<DatePicker
 									bind:value={formData.recurringEnd}
 									minDate={formData.date}

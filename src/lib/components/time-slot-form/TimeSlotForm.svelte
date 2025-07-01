@@ -592,7 +592,7 @@
 				
 				<!-- Time Selection -->
 				<div>
-					<label class="form-label mb-2">Time</label>
+					<div class="form-label mb-2">Time</div>
 					<div class="flex gap-2 items-start">
 						<div class="flex-1">
 							<TimePicker
@@ -727,7 +727,7 @@
 					<div class="space-y-6">
 						<!-- Date Display (no calendar) -->
 						<div>
-							<label class="form-label">Selected Date</label>
+							<div class="form-label">Selected Date</div>
 							<div class="p-3 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
 								<p class="text-sm font-medium" style="color: var(--text-primary);">
 									{state.formData.date ? formatDate(state.formData.date) : 'Click a date on the calendar'}
@@ -740,7 +740,7 @@
 						
 						<!-- Time Selection - Compact layout -->
 						<div>
-							<label class="form-label mb-3">Time</label>
+							<div class="form-label mb-3">Time</div>
 							<div class="flex gap-3 items-start">
 								<div class="flex-1">
 									<TimePicker
@@ -1137,7 +1137,7 @@
 						<div class="space-y-6">
 							<!-- Time Selection - Compact layout -->
 							<div>
-								<label class="form-label mb-3">Time</label>
+								<div class="form-label mb-3">Time</div>
 								<div class="flex gap-3 items-start">
 									<div class="flex-1">
 										<TimePicker
@@ -1291,7 +1291,7 @@
 							
 							<!-- Time Selection -->
 							<div>
-								<label class="form-label mb-3">Time</label>
+								<div class="form-label mb-3">Time</div>
 								<div class="flex gap-3 items-start">
 									<div class="flex-1">
 										<TimePicker

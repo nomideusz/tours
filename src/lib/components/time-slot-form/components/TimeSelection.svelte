@@ -38,7 +38,7 @@
 {#if isMobile}
 	<!-- Mobile layout -->
 	<div>
-		<label class="form-label">Time Selection</label>
+		<div class="form-label">Time Selection</div>
 		<div class="grid grid-cols-2 gap-3">
 			<TimePicker
 				bind:value={startTime}

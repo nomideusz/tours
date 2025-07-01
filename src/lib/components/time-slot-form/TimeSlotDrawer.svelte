@@ -30,7 +30,7 @@
 		onSuccess
 	}: Props = $props();
 
-	let formComponent: any;
+	let formComponent = $state<any>();
 	let isSubmitting = $state(false);
 	let showSuccess = $state(false);
 	let createdCount = $state(0);
