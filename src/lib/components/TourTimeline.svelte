@@ -5,7 +5,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { updateTimeSlotMutation } from '$lib/queries/mutations.js';
+	import { updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import { onMount } from 'svelte';
 	import '$lib/styles/timeline.css';
@@ -23,6 +23,7 @@
 	import Play from 'lucide-svelte/icons/play';
 	import Pause from 'lucide-svelte/icons/pause';
 	import Edit3 from 'lucide-svelte/icons/edit-3';
+	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -361,8 +362,10 @@
 	let editCapacity = $state<number>(0);
 	let isSubmittingEdit = $state(false);
 	let recentlyUpdated = $state<{[key: string]: string}>({});
+	let isDeleting = $state(false);
+	let slotToDelete = $state<TimeSlot | null>(null);
 	
-	// Initialize update mutation for tour-specific edits
+	// Initialize mutations for tour-specific edits
 	const updateMutation = tourId ? updateTimeSlotMutation(tourId, '') : null;
 	
 	// Helper to show inline feedback
@@ -470,6 +473,42 @@
 		} finally {
 			isSubmittingEdit = false;
 		}
+	}
+	
+	function confirmDeleteSlot(slot: TimeSlot) {
+		slotToDelete = slot;
+	}
+	
+	async function deleteSlot() {
+		if (!slotToDelete || !tourId || isDeleting) return;
+		
+		isDeleting = true;
+		
+		try {
+			const response = await fetch(`/api/tours/${tourId}/schedule/${slotToDelete.id}`, {
+				method: 'DELETE'
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to delete time slot');
+			}
+			
+			// Invalidate queries to refresh data
+			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			
+			showInlineSuccess(slotToDelete.id, 'Deleted');
+			slotToDelete = null;
+		} catch (error) {
+			console.error('Failed to delete slot:', error);
+			alert('Failed to delete slot. Please try again.');
+		} finally {
+			isDeleting = false;
+		}
+	}
+	
+	function cancelDelete() {
+		slotToDelete = null;
 	}
 	
 	// Prefetch adjacent dates when view changes
@@ -835,6 +874,23 @@
 												<!-- Quick edit actions (only show for tour-specific view) -->
 												{#if tourId}
 													<div class="quick-actions" onclick={(e) => e.stopPropagation()}>
+														<!-- Delete slot - only show if no bookings -->
+														{#if slot.bookedSpots === 0}
+															<Tooltip text="Delete time slot">
+																<button
+																	onclick={() => confirmDeleteSlot(slot)}
+																	class="quick-action-btn delete-btn"
+																	disabled={isSubmittingEdit || isDeleting}
+																>
+																	{#if isDeleting && slotToDelete?.id === slot.id}
+																		<div class="animate-spin h-3 w-3 rounded-full border border-current border-t-transparent"></div>
+																	{:else}
+																		<Trash2 class="h-3 w-3" />
+																	{/if}
+																</button>
+															</Tooltip>
+														{/if}
+														
 														<!-- Status toggle -->
 														<Tooltip text={slot.status === 'cancelled' ? 'Reactivate slot' : 'Cancel slot'}>
 															<button
@@ -932,4 +988,142 @@
 			</div>
 		{/if}
 	</div>
-</div> 
+</div>
+
+<!-- Delete Confirmation Modal -->
+{#if slotToDelete}
+	<div class="modal-overlay" onclick={cancelDelete}>
+		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h3 class="modal-title">Delete Time Slot</h3>
+				<button onclick={cancelDelete} class="modal-close">
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+			
+			<div class="modal-body">
+				<div class="flex items-start gap-3">
+					<div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--color-error-100);">
+						<Trash2 class="h-5 w-5" style="color: var(--color-error-600);" />
+					</div>
+					<div class="flex-1">
+						<p class="font-medium mb-2" style="color: var(--text-primary);">
+							Are you sure you want to delete this time slot?
+						</p>
+						<div class="mb-3 p-3 rounded-lg" style="background: var(--bg-secondary);">
+							<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+								<Clock class="h-4 w-4" />
+								<span>{formatSlotTimeRange(slotToDelete.startTime, slotToDelete.endTime)}</span>
+							</div>
+							<div class="flex items-center gap-2 text-sm mt-1" style="color: var(--text-secondary);">
+								<Users class="h-4 w-4" />
+								<span>Capacity: {slotToDelete.capacity}</span>
+							</div>
+						</div>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							This action cannot be undone. The time slot will be permanently deleted.
+						</p>
+					</div>
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<button onclick={cancelDelete} class="button-secondary">
+					Cancel
+				</button>
+				<button 
+					onclick={deleteSlot}
+					class="button-danger"
+					disabled={isDeleting}
+				>
+					{#if isDeleting}
+						<div class="animate-spin h-4 w-4 rounded-full border-2 border-current border-t-transparent mr-2"></div>
+						Deleting...
+					{:else}
+						Delete Slot
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<style>
+	/* Delete confirmation modal styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1rem;
+	}
+	
+	.modal-content {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 12px;
+		max-width: 500px;
+		width: 100%;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	}
+	
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: between;
+		padding: 1.5rem 1.5rem 0 1.5rem;
+		border-bottom: 1px solid var(--border-primary);
+		padding-bottom: 1rem;
+	}
+	
+	.modal-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0;
+		flex: 1;
+	}
+	
+	.modal-close {
+		background: none;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: 6px;
+		transition: all 0.2s ease;
+	}
+	
+	.modal-close:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+	
+	.modal-body {
+		padding: 1.5rem;
+	}
+	
+	.modal-footer {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		padding: 0 1.5rem 1.5rem 1.5rem;
+	}
+	
+	/* Quick action button styles for delete */
+	:global(.quick-action-btn.delete-btn) {
+		color: var(--color-error-600) !important;
+	}
+	
+	:global(.quick-action-btn.delete-btn:hover) {
+		background: var(--color-error-100) !important;
+		color: var(--color-error-700) !important;
+	}
+</style> 

@@ -216,23 +216,35 @@ export const DELETE: RequestHandler = async ({ locals, params, url }) => {
 			await Promise.all(emailPromises);
 		}
 
-		// Instead of deleting, mark the time slot as cancelled
-		// This avoids foreign key constraint issues
-		await db
-			.update(timeSlots)
-			.set({
-				status: 'cancelled',
-				updatedAt: new Date()
-			})
-			.where(eq(timeSlots.id, slotId));
+		if (currentSlot.bookedSpots > 0 || affectedBookings.length > 0) {
+			// If there were bookings, mark as cancelled to preserve audit trail
+			await db
+				.update(timeSlots)
+				.set({
+					status: 'cancelled',
+					updatedAt: new Date()
+				})
+				.where(eq(timeSlots.id, slotId));
 
-		return json({
-			success: true,
-			message: currentSlot.bookedSpots > 0
-				? `Time slot cancelled and ${affectedBookings.length} booking(s) cancelled. Cancellation emails sent to affected customers.`
-				: 'Time slot cancelled successfully',
-			affectedBookings: affectedBookings.length
-		});
+			return json({
+				success: true,
+				message: `Time slot cancelled and ${affectedBookings.length} booking(s) cancelled. Cancellation emails sent to affected customers.`,
+				affectedBookings: affectedBookings.length,
+				action: 'cancelled'
+			});
+		} else {
+			// If no bookings, actually delete the slot
+			await db
+				.delete(timeSlots)
+				.where(eq(timeSlots.id, slotId));
+
+			return json({
+				success: true,
+				message: 'Time slot deleted successfully',
+				affectedBookings: 0,
+				action: 'deleted'
+			});
+		}
 
 	} catch (error) {
 		console.error('Delete time slot error:', error);
