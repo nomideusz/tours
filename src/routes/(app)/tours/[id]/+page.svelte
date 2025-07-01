@@ -19,9 +19,9 @@
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import Drawer from '$lib/components/Drawer.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import TimeSlotForm from '$lib/components/time-slot-form/TimeSlotForm.svelte';
+	import TimeSlotModal from '$lib/components/time-slot-form/TimeSlotModal.svelte';
+import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	
 	// Icons
@@ -153,6 +153,25 @@
 	let hasInitialSchedule = $state(false);
 	let showOnboardingModal = $state(false);
 	let onboardingModalMessage = $state('');
+	
+	// Check if we're on mobile for responsive modal/drawer
+	let isMobile = $state(false);
+	
+	// Update mobile state based on window size
+	$effect(() => {
+		if (browser) {
+			const checkMobile = () => {
+				isMobile = window.innerWidth < 768; // md breakpoint
+			};
+			
+			checkMobile();
+			window.addEventListener('resize', checkMobile);
+			
+			return () => {
+				window.removeEventListener('resize', checkMobile);
+			};
+		}
+	});
 	
 	// Lightbox functions
 	function openLightbox(imagePath: string) {
@@ -1111,15 +1130,13 @@
 {/if}
 </PageContainer>
 
-<!-- Add Time Slots Drawer -->
-<Drawer 
-	bind:isOpen={showAddSlotsModal} 
-	title="Add Time Slots for {tour?.name || 'Tour'}"
-	onClose={() => showAddSlotsModal = false}
->
-	<TimeSlotForm 
-		tourId={tourId}
-		mode="modal"
+<!-- Add Time Slots Modal/Drawer (responsive) -->
+{#if isMobile}
+	<TimeSlotDrawer
+		bind:isOpen={showAddSlotsModal}
+		{tourId}
+		tourName={tour?.name}
+		onClose={() => showAddSlotsModal = false}
 		onSuccess={() => {
 			showAddSlotsModal = false;
 			// Refresh the TourTimeline data (it uses tour-schedule query internally)
@@ -1132,9 +1149,27 @@
 				showAddSlotsSuccess = false;
 			}, 3000);
 		}}
-		onCancel={() => showAddSlotsModal = false}
 	/>
-</Drawer>
+{:else}
+	<TimeSlotModal
+		bind:isOpen={showAddSlotsModal}
+		{tourId}
+		tourName={tour?.name}
+		onClose={() => showAddSlotsModal = false}
+		onSuccess={() => {
+			showAddSlotsModal = false;
+			// Refresh the TourTimeline data (it uses tour-schedule query internally)
+			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			// Show success message
+			showAddSlotsSuccess = true;
+			// Close welcome prompt if it was open (newly created tour)
+			showWelcomePrompt = false;
+			setTimeout(() => {
+				showAddSlotsSuccess = false;
+			}, 3000);
+		}}
+	/>
+{/if}
 
 <!-- Image Lightbox -->
 {#if lightboxOpen}
