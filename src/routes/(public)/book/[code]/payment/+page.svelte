@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 	import { stripePublicKey } from '$lib/stripe.js';
@@ -263,7 +264,8 @@
 				processing = false;
 			} else if (paymentIntent && paymentIntent.status === 'succeeded') {
 				// Payment succeeded without redirect, go to success page
-				window.location.href = `/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`;
+				console.log('✅ Payment successful, navigating to success page');
+				await goto(`/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`);
 			}
 			// If payment requires redirect, Stripe will handle it automatically
 		} catch (err: any) {

@@ -230,22 +230,27 @@
 					const submittedEmail = formData.get('email') as string;
 
 					return async ({ result, update }) => {
-						// Don't interfere with redirects - let SvelteKit handle them
-						if (result.type === 'redirect') {
-							return;
-						}
+						console.log('🔄 Registration form result:', result.type, result);
 						
-						await update({ reset: false }); // Prevent form reset to keep values
-						// Update local values in case server returned different ones
-						if (form?.username) username = form.username;
-						else username = submittedUsername;
+						// Always call update first to let SvelteKit handle the result
+						await update({ reset: false });
 						
-						if (form?.email) email = form.email;
-						else email = submittedEmail;
-						
-						setTimeout(() => {
+						// Only reset loading state for non-redirect responses
+						if (result.type !== 'redirect') {
+							console.log('❌ Registration failed or other result, resetting loading state');
+							
+							// Update local values in case server returned different ones
+							if (form?.username) username = form.username;
+							else username = submittedUsername;
+							
+							if (form?.email) email = form.email;
+							else email = submittedEmail;
+							
 							manualLoading = false;
-						}, 500);
+						} else {
+							console.log('✅ Registration successful, redirect will be handled by SvelteKit');
+							// Keep loading state during redirect for smooth UX
+						}
 					};
 				}}
 				class="space-y-6"
