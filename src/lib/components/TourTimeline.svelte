@@ -7,7 +7,7 @@
 	import { browser } from '$app/environment';
 	import { updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import '$lib/styles/timeline.css';
 	
 	// Icons
@@ -27,6 +27,7 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Info from 'lucide-svelte/icons/info';
 	
 	// Types
 	export interface TimeSlot {
@@ -348,12 +349,6 @@
 		return processedTimeSlots.filter((slot: TimeSlot) => new Date(slot.startTime).toDateString() === dateStr);
 	}
 	
-	function getDayColor(slots: TimeSlot[]): string {
-		if (slots.length === 0) return 'transparent';
-		const avgUtilization = slots.reduce((sum, s) => sum + s.utilizationRate, 0) / slots.length;
-		return getUtilizationColor(avgUtilization);
-	}
-	
 	// Get query client for prefetching
 	const queryClient = useQueryClient();
 	
@@ -555,6 +550,102 @@
 				staleTime: 5 * 60 * 1000, // 5 minutes
 			});
 		});
+	});
+	
+	// Generate color for tour based on tour ID/name
+	function getTourColor(tourId: string, tourName: string): string {
+		// Use a hash function to generate consistent colors
+		let hash = 0;
+		const str = tourId + tourName;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash; // Convert to 32-bit integer
+		}
+		
+		// Generate HSL color with good saturation and lightness
+		const hue = Math.abs(hash) % 360;
+		const saturation = 65 + (Math.abs(hash >> 8) % 20); // 65-85%
+		const lightness = 45 + (Math.abs(hash >> 16) % 15); // 45-60%
+		
+		return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+	}
+	
+	// Check if date is in the past
+	function isPastDate(date: Date): boolean {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		date.setHours(0, 0, 0, 0);
+		return date < today;
+	}
+	
+	// State for calendar hover
+	let hoveredDay: number | null = $state(null);
+	let popoverPosition = $state({ x: 0, y: 0 });
+	let popoverTimeout: ReturnType<typeof setTimeout> | null = null;
+	let popoverAlignment = $state<'left' | 'center' | 'right'>('center');
+	let popoverVerticalPosition = $state<'below' | 'above'>('below');
+	
+	// Helper to show popover with delay
+	function showPopover(index: number, event: MouseEvent) {
+		// Clear any existing timeout
+		if (popoverTimeout) {
+			clearTimeout(popoverTimeout);
+			popoverTimeout = null;
+		}
+		
+		const rect = (event.target as HTMLElement).getBoundingClientRect();
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+		const popoverWidth = 320; // max-width of popover
+		const popoverEstimatedHeight = 400; // estimated max height
+		
+		// Calculate horizontal position and alignment
+		let x = rect.left + rect.width / 2;
+		let alignment: 'left' | 'center' | 'right' = 'center';
+		
+		// Check if popover would go off right edge
+		if (x + popoverWidth / 2 > viewportWidth - 20) {
+			// Align to right edge of day
+			x = rect.right;
+			alignment = 'right';
+		} 
+		// Check if popover would go off left edge
+		else if (x - popoverWidth / 2 < 20) {
+			// Align to left edge of day
+			x = rect.left;
+			alignment = 'left';
+		}
+		
+		// Calculate vertical position
+		let y = rect.bottom + 8;
+		let verticalPosition: 'below' | 'above' = 'below';
+		
+		// Check if popover would go off bottom edge
+		if (y + popoverEstimatedHeight > viewportHeight - 20) {
+			// Show above the day instead
+			y = rect.top - 8;
+			verticalPosition = 'above';
+		}
+		
+		hoveredDay = index;
+		popoverPosition = { x, y };
+		popoverAlignment = alignment;
+		popoverVerticalPosition = verticalPosition;
+	}
+	
+	// Helper to hide popover with delay
+	function hidePopover() {
+		// Add a small delay before hiding to allow mouse to move to popover
+		popoverTimeout = setTimeout(() => {
+			hoveredDay = null;
+		}, 100);
+	}
+	
+	// Clear timeout on unmount
+	onDestroy(() => {
+		if (popoverTimeout) {
+			clearTimeout(popoverTimeout);
+		}
 	});
 </script>
 
@@ -828,6 +919,12 @@
 										onclick={() => handleSlotClick(slot)}
 										class="slot-item {getSlotStatusClass(slot)} {slot.status === 'cancelled' ? 'cancelled-slot' : ''}"
 									>
+										{#if !tourId}
+											<div 
+												class="tour-color-indicator"
+												style="background-color: {getTourColor(slot.tourId, slot.tourName)}"
+											></div>
+										{/if}
 										<div class="slot-time">
 											<Clock class="h-4 w-4" />
 											<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
@@ -950,40 +1047,132 @@
 						{@const daySlots = dayDate ? getDaySlots(dayDate) : []}
 						{@const isToday = dayDate?.toDateString() === new Date().toDateString()}
 						{@const isCurrentMonth = dayDate?.getMonth() === currentDate.getMonth()}
+						{@const isPast = dayDate ? isPastDate(new Date(dayDate)) : false}
+						{@const isWeekend = dayDate ? (dayDate.getDay() === 0 || dayDate.getDay() === 6) : false}
 						
 						<div 
 							class="calendar-day"
 							class:other-month={dayDate && !isCurrentMonth}
 							class:today={isToday}
 							class:has-slots={daySlots.length > 0}
-							onclick={daySlots.length > 0 ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined}
+							class:past-day={isPast}
+							class:weekend={isWeekend}
+							onclick={daySlots.length > 0 && !isPast ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined}
 							onkeydown={(e) => {
-								if ((e.key === 'Enter' || e.key === ' ') && dayDate && daySlots.length > 0) {
+								if ((e.key === 'Enter' || e.key === ' ') && dayDate && daySlots.length > 0 && !isPast) {
 									e.preventDefault();
 									handleDayClick(dayDate, daySlots);
 								}
 							}}
-							{...(daySlots.length > 0 ? { role: "button", tabindex: 0 } : {})}
+							onmouseenter={(e) => {
+								if (dayDate && daySlots.length > 0) {
+									showPopover(i, e);
+								}
+							}}
+							onmouseleave={() => {
+								hidePopover();
+							}}
+							{...(daySlots.length > 0 && !isPast ? { role: "button", tabindex: 0 } : {})}
 							{...(dayDate && daySlots.length > 0 ? { "aria-label": `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` } : {})}
-							title={daySlots.length > 0 ? (daySlots.length === 1 ? 'Click to view tour details' : `Click to view ${daySlots.length} tour slots`) : undefined}
 						>
 							{#if dayDate}
 								<div class="day-number">{dayDate.getDate()}</div>
 								{#if daySlots.length > 0}
 									<div class="day-slots">
-										<div class="slot-indicator" style="background-color: {getDayColor(daySlots)}"></div>
-										<span class="slot-count">{daySlots.length}</span>
+										{#if tourId}
+											<!-- Single tour - show colored dots based on utilization -->
+											<div class="tour-dots">
+												{#each daySlots.slice(0, 3) as slot}
+													<div 
+														class="tour-dot"
+														style="background-color: {getUtilizationColor(slot.utilizationRate)}"
+													></div>
+												{/each}
+												{#if daySlots.length > 3}
+													<span class="more-tours">+{daySlots.length - 3}</span>
+												{/if}
+											</div>
+										{:else}
+											<!-- Multiple tours - show color dots -->
+											<div class="tour-dots">
+												{#each daySlots.slice(0, 3) as slot}
+													<div 
+														class="tour-dot"
+														style="background-color: {getTourColor(slot.tourId, slot.tourName)}"
+													></div>
+												{/each}
+												{#if daySlots.length > 3}
+													<span class="more-tours">+{daySlots.length - 3}</span>
+												{/if}
+											</div>
+										{/if}
 									</div>
-									{#if daySlots.length === 1}
-										<div class="single-slot-preview">
-											{formatSlotTimeRange(daySlots[0].startTime, daySlots[0].endTime)}
-										</div>
-									{/if}
 								{/if}
 							{/if}
 						</div>
 					{/each}
 				</div>
+				
+				<!-- Hover popover - moved outside calendar grid -->
+				{#if hoveredDay !== null}
+					{@const dayDate = getCalendarDay(hoveredDay)}
+					{@const daySlots = dayDate ? getDaySlots(dayDate) : []}
+					{#if dayDate && daySlots.length > 0}
+						<div 
+							class="day-popover {popoverAlignment} {popoverVerticalPosition}"
+							style="
+								position: fixed;
+								{popoverAlignment === 'center' ? `left: ${popoverPosition.x}px;` : 
+								 popoverAlignment === 'left' ? `left: ${popoverPosition.x}px;` : 
+								 `right: ${window.innerWidth - popoverPosition.x}px;`}
+								{popoverVerticalPosition === 'below' ? `top: ${popoverPosition.y}px;` : `bottom: ${window.innerHeight - popoverPosition.y}px;`}
+								{popoverAlignment === 'center' ? 'transform: translateX(-50%);' : ''}
+							"
+							onmouseenter={() => {
+								// Clear hide timeout when mouse enters popover
+								if (popoverTimeout) {
+									clearTimeout(popoverTimeout);
+									popoverTimeout = null;
+								}
+							}}
+							onmouseleave={() => {
+								hidePopover();
+							}}
+						>
+							<div class="popover-header">
+								{dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+							</div>
+							<div class="popover-content">
+								{#each daySlots as slot}
+									<div class="popover-slot">
+										<div class="popover-slot-header">
+											<div 
+												class="popover-tour-dot"
+												style="background-color: {tourId ? getUtilizationColor(slot.utilizationRate) : getTourColor(slot.tourId, slot.tourName)}"
+											></div>
+											<span class="popover-tour-name">{slot.tourName}</span>
+										</div>
+										<div class="popover-slot-info">
+											<span class="popover-time">
+												<Clock class="h-3 w-3" />
+												{formatSlotTimeRange(slot.startTime, slot.endTime)}
+											</span>
+											<span class="popover-capacity">
+												<Users class="h-3 w-3" />
+												{slot.bookedSpots}/{slot.capacity}
+											</span>
+										</div>
+										{#if slot.isFull}
+											<span class="popover-full">FULL</span>
+										{:else if slot.status === 'cancelled'}
+											<span class="popover-cancelled">CANCELLED</span>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{/if}
 			</div>
 		{/if}
 	</div>
