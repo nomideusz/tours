@@ -421,21 +421,26 @@
 				body: formData
 			});
 
-			if (response.ok) {
-				userCurrency.set(selectedCurrency);
-				saveSuccess = true;
-				hasConfirmedLocation = true;
+					if (response.ok) {
+			userCurrency.set(selectedCurrency);
+			saveSuccess = true;
+			hasConfirmedLocation = true;
 
-				// Save confirmation to localStorage
-				localStorage.setItem('locationConfirmed', 'true');
+			// Save confirmation to localStorage
+			localStorage.setItem('locationConfirmed', 'true');
 
-				// Refresh user data to reflect changes
-				await invalidateAll();
+			// Scroll to top to show success message (important for mobile)
+			if (browser) {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			}
 
-				const timeoutId = setTimeout(() => {
-					saveSuccess = false;
-				}, 5000); // Show success message for 5 seconds
-				successTimeouts.push(timeoutId);
+			// Refresh user data to reflect changes
+			await invalidateAll();
+
+			const timeoutId = setTimeout(() => {
+				saveSuccess = false;
+			}, 5000); // Show success message for 5 seconds
+			successTimeouts.push(timeoutId);
 			} else {
 				const data = await response.json();
 				saveError = data.error || 'Failed to update settings';
@@ -702,20 +707,35 @@
 				throw new Error('Failed to update profile');
 			}
 
-			// Set the currency in the store
-			userCurrency.set(getCurrencyForCountry(country) as Currency);
+					// Set the currency in the store
+		userCurrency.set(getCurrencyForCountry(country) as Currency);
 
-			// Mark location as explicitly confirmed
-			if (browser) {
-				localStorage.setItem('locationConfirmed', 'true');
-			}
+		// Mark location as explicitly confirmed
+		if (browser) {
+			localStorage.setItem('locationConfirmed', 'true');
+		}
 
-			// Collapse currency section
-			currencyExpanded = false;
+		// Show success message and scroll to top
+		saveSuccess = true;
+		hasConfirmedLocation = true;
+		
+		// Scroll to top to show success message (important for mobile)
+		if (browser) {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
 
-			// Clear loading state
-			countryToUpdate = null;
-			isUpdatingCountry[country] = false;
+		// Collapse currency section
+		currencyExpanded = false;
+
+		// Clear loading state
+		countryToUpdate = null;
+		isUpdatingCountry[country] = false;
+
+		// Hide success message after 5 seconds
+		const timeoutId = setTimeout(() => {
+			saveSuccess = false;
+		}, 5000);
+		successTimeouts.push(timeoutId);
 		} catch (error) {
 			console.error('Failed to update country:', error);
 			// Clear loading state on error
