@@ -18,11 +18,11 @@
 </script>
 
 <!-- Pricing -->
-<section id="pricing" class="marketing-section">
-	<div class="marketing-container">
+<section id="pricing" class="py-20" style="background: var(--bg-primary);">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<!-- Early Access Notice -->
 		<div class="max-w-3xl mx-auto mb-12">
-			<div class="marketing-alert marketing-alert-warning">
+			<div class="rounded-lg p-4 border" style="background: var(--color-warning-50); border-color: var(--color-warning-200);">
 				<div class="flex items-start gap-3">
 					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
 					<div class="flex-1">
@@ -36,10 +36,10 @@
 		</div>
 		
 		<div class="text-center mb-12">
-			<h2 class="marketing-heading marketing-heading-lg mb-4">
+			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
 				Simple, Transparent Pricing
 			</h2>
-			<p class="text-lg max-w-2xl mx-auto marketing-text-secondary">
+			<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
 				No booking fees, no commissions. Keep 100% of your revenue with our simple monthly subscription.
 			</p>
 		</div>
@@ -283,7 +283,7 @@
 		</div>
 		
 		<div class="mt-12 text-center">
-			<div class="marketing-alert marketing-alert-success max-w-2xl mx-auto">
+			<div class="rounded-lg p-4 border max-w-2xl mx-auto" style="background: var(--color-success-50); border-color: var(--color-success-200);">
 				<p class="font-semibold text-lg mb-2" style="color: var(--color-success-800);">
 					💰 Keep 100% of Your Booking Revenue
 				</p>

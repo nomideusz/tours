@@ -122,16 +122,17 @@
 
 			<!-- Desktop navigation -->
 			<nav class="hidden items-center gap-8 lg:flex">
+				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>How it Works</a
+				>
 				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Features</a
 				>
-				<a
-					href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'}
-					onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')}
-					class="font-medium text-gray-600 transition-colors hover:text-gray-900">How it Works</a
-				>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
+				>
+				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>FAQ</a
 				>
 			</nav>
 
@@ -236,14 +237,17 @@
 		<div class="flex flex-col px-6 py-6 sm:px-8">
 			<!-- Navigation links -->
 			<div class="flex flex-col space-y-1 pb-4">
-				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Features</a
-				>
 				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>How it Works</a
 				>
+				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>Features</a
+				>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 					>Pricing</a
+				>
+				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+					>FAQ</a
 				>
 			</div>
 

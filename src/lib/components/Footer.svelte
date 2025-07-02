@@ -42,6 +42,11 @@
 				<h3 class="mb-4 font-semibold">Product</h3>
 				<ul class="space-y-2">
 					<li>
+						<a href="/#how-it-works" class="nav-link transition-colors footer-link"
+							>How it Works</a
+						>
+					</li>
+					<li>
 						<a href="/#features" class="nav-link transition-colors footer-link"
 							>Features</a
 						>
@@ -52,8 +57,8 @@
 						>
 					</li>
 					<li>
-						<a href="/#how-it-works" class="nav-link transition-colors footer-link"
-							>How it Works</a
+						<a href="/#faq" class="nav-link transition-colors footer-link"
+							>FAQ</a
 						>
 					</li>
 				</ul>
@@ -81,7 +86,7 @@
 					</li>
 					<li>
 						<a href="/auth/register" class="nav-link transition-colors footer-link"
-							>Early Access</a
+							>Get Started</a
 						>
 					</li>
 				</ul>

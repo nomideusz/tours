@@ -1,15 +1,18 @@
 <script lang="ts">
 	import HeroSection from '$lib/components/HeroSection.svelte';
-	// import StatsSection from '$lib/components/StatsSection.svelte'; // HIDDEN: Contains mock data (127+ guides, €92k revenue)
+	import SocialProof from '$lib/components/marketing/SocialProof.svelte';
 	import HowItWorksSection from '$lib/components/HowItWorksSection.svelte';
-	import FeaturesSection from '$lib/components/FeaturesSection.svelte';
-	// import TestimonialsSection from '$lib/components/TestimonialsSection.svelte'; // HIDDEN: Contains fake testimonials
 	import PricingSection from '$lib/components/PricingSection.svelte';
-	import FinalCtaSection from '$lib/components/FinalCtaSection.svelte';
+	import TourShowcase from '$lib/components/marketing/TourShowcase.svelte';
+	import FeaturesSection from '$lib/components/FeaturesSection.svelte';
+	import GrowthChart from '$lib/components/marketing/GrowthChart.svelte';
+	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
+	import GuaranteeSection from '$lib/components/marketing/GuaranteeSection.svelte';
+	import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 </script>
 
 <svelte:head>
-	<!-- Additional structured data for homepage -->
+	<!-- Structured data for homepage -->
 	{@html `<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
@@ -56,18 +59,32 @@
 	</script>`}
 </svelte:head>
 
+<!-- Hero with main value prop -->
 <HeroSection />
 
-<!-- HIDDEN FOR PUBLIC LAUNCH: Contains mock data -->
-<!-- <StatsSection /> -->
+<!-- Social proof & urgency -->
+<SocialProof />
 
+<!-- How it works - show the simplicity -->
 <HowItWorksSection />
 
-<FeaturesSection />
-
-<!-- HIDDEN FOR PUBLIC LAUNCH: Contains fake testimonials -->
-<!-- <TestimonialsSection /> -->
-
+<!-- Pricing moved higher - people want to know cost early -->
 <PricingSection />
 
-<FinalCtaSection /> 
+<!-- Show what they can create -->
+<TourShowcase />
+
+<!-- Features & Benefits -->
+<FeaturesSection />
+
+<!-- Industry insights & timing -->
+<GrowthChart />
+
+<!-- Address concerns -->
+<FAQSection />
+
+<!-- Risk reversal -->
+<GuaranteeSection />
+
+<!-- Final CTA with urgency -->
+<EarlyAccessCTA /> 
