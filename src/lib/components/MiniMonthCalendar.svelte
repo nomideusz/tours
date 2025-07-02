@@ -331,12 +331,6 @@
 		height: 1rem;
 	}
 
-	.calendar-container--medium .nav-icon,
-	.calendar-container--large .nav-icon {
-		width: 1.25rem;
-		height: 1.25rem;
-	}
-
 	.month-display {
 		display: flex;
 		align-items: center;
@@ -352,12 +346,6 @@
 		width: 1rem;
 		height: 1rem;
 		color: var(--text-primary);
-	}
-
-	.calendar-container--medium .calendar-icon,
-	.calendar-container--large .calendar-icon {
-		width: 1.25rem;
-		height: 1.25rem;
 	}
 
 	.month-title {

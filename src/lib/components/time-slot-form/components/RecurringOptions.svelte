@@ -14,12 +14,14 @@
 		formData: TimeSlotFormData;
 		isEditMode?: boolean;
 		isMobile?: boolean;
+		onRecurringChange?: () => void;
 	}
 	
 	let { 
 		formData = $bindable(), 
 		isEditMode = false,
-		isMobile = false
+		isMobile = false,
+		onRecurringChange
 	}: Props = $props();
 	
 	let recurringPreview = $derived(getRecurringPreview(formData));
@@ -39,14 +41,25 @@
 					<label class="toggle-label">
 						<input
 							type="checkbox"
-							bind:checked={formData.recurring}
+							checked={formData.recurring}
 							class="form-checkbox"
-							onchange={() => {
-								if (!formData.recurring) {
+							onchange={(e) => {
+								const isChecked = e.currentTarget.checked;
+								formData.recurring = isChecked;
+								onRecurringChange?.();
+								if (!isChecked) {
 									// Reset recurring options when disabled
 									formData.recurringType = 'weekly';
 									formData.recurringEnd = '';
 									formData.recurringCount = 2;
+								} else {
+									// Set defaults only if not already set
+									if (!formData.recurringType) {
+										formData.recurringType = 'weekly';
+									}
+									if (!formData.recurringCount || formData.recurringCount < 2) {
+										formData.recurringCount = 2;
+									}
 								}
 							}}
 						/>
@@ -67,8 +80,8 @@
 						<div class="mobile-layout">
 							<!-- Repeat pattern selection -->
 							<div class="form-group-mobile">
-								<label class="form-label-mobile">Repeat pattern</label>
-								<select bind:value={formData.recurringType} class="form-select-mobile">
+								<label class="form-label-mobile" for="recurring-type-mobile">Repeat pattern</label>
+								<select id="recurring-type-mobile" bind:value={formData.recurringType} class="form-select-mobile">
 									<option value="daily">Daily</option>
 									<option value="weekly">Weekly</option>
 									<option value="monthly">Monthly</option>
@@ -106,7 +119,7 @@
 							<!-- Value input field -->
 							<div class="form-group-mobile">
 								{#if !formData.recurringEnd}
-									<label class="form-label-mobile">Number of slots</label>
+									<label class="form-label-mobile" for="recurring-count-mobile">Number of slots</label>
 									<NumberInput
 										id="recurring-count-mobile"
 										label=""
@@ -118,13 +131,15 @@
 										integerOnly={true}
 									/>
 								{:else}
-									<label class="form-label-mobile">End date</label>
-									<DatePicker
-										bind:value={formData.recurringEnd}
-										minDate={formData.date}
-										placeholder="Select end date"
-										onchange={() => {}}
-									/>
+									<label class="form-label-mobile">
+										End date
+										<DatePicker
+											bind:value={formData.recurringEnd}
+											minDate={formData.date}
+											placeholder="Select end date"
+											onchange={() => {}}
+										/>
+									</label>
 								{/if}
 							</div>
 
@@ -158,8 +173,8 @@
 							<div class="form-section">
 								<div class="form-controls">
 									<div class="form-group">
-										<label class="form-label-sm">Repeat pattern</label>
-										<select bind:value={formData.recurringType} class="form-select">
+										<label class="form-label-sm" for="recurring-type-desktop">Repeat pattern</label>
+										<select id="recurring-type-desktop" bind:value={formData.recurringType} class="form-select">
 											<option value="daily">Daily</option>
 											<option value="weekly">Weekly</option>
 											<option value="monthly">Monthly</option>
@@ -168,7 +183,7 @@
 									
 									<div class="form-group">
 										{#if !formData.recurringEnd}
-											<label class="form-label-sm">Number of slots</label>
+											<label class="form-label-sm" for="recurring-count">Number of slots</label>
 											<NumberInput
 												id="recurring-count"
 												label=""
@@ -180,13 +195,15 @@
 												integerOnly={true}
 											/>
 										{:else}
-											<label class="form-label-sm">End date</label>
-											<DatePicker
-												bind:value={formData.recurringEnd}
-												minDate={formData.date}
-												placeholder="Select end date"
-												onchange={() => {}}
-											/>
+											<label class="form-label-sm">
+												End date
+												<DatePicker
+													bind:value={formData.recurringEnd}
+													minDate={formData.date}
+													placeholder="Select end date"
+													onchange={() => {}}
+												/>
+											</label>
 										{/if}
 									</div>
 								</div>
@@ -363,6 +380,9 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-primary);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.form-select-mobile {
@@ -502,6 +522,9 @@
 		font-size: 0.8125rem;
 		font-weight: 500;
 		color: var(--text-primary);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.end-type-toggle {

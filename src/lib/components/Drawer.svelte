@@ -30,7 +30,7 @@
 		children
 	}: Props = $props();
 
-	let drawerElement: HTMLDivElement;
+	let drawerElement = $state.raw<HTMLDivElement>();
 	let isMobile = $state(false);
 	
 	// Touch/drag state for mobile swipe-down
@@ -198,14 +198,20 @@
 			class="lg:hidden fixed inset-0 mobile-drawer-backdrop" 
 			style="z-index: 60; background: rgba(0, 0, 0, 0.5);"
 			onclick={handleClickOutside}
+			onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleClickOutside()}
+			role="button"
+			tabindex="-1"
+			aria-label="Close drawer"
 		>
 					<div 
 			bind:this={drawerElement}
 			class="fixed bottom-0 left-0 right-0 mobile-drawer-panel {className}"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={title ? 'drawer-title' : undefined}
+			tabindex="-1"
 			style="z-index: 60; max-height: 90vh; padding-bottom: env(safe-area-inset-bottom, 0);"
 		>
 				<div class="rounded-t-xl shadow-lg overflow-hidden" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: 90vh; display: flex; flex-direction: column;">
@@ -216,6 +222,10 @@
 						ontouchstart={handleDragHandleTouchStart}
 						ontouchmove={handleTouchMove}
 						ontouchend={handleTouchEnd}
+						onkeydown={(e) => e.key === 'Escape' && handleClose()}
+						role="button"
+						tabindex="0"
+						aria-label="Drag to close drawer"
 					>
 						<div class="w-12 h-1.5 rounded-full transition-colors" style="background: var(--text-tertiary);"></div>
 					</div>
@@ -276,6 +286,7 @@
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={title ? 'drawer-title' : undefined}
+				tabindex="-1"
 			>
 				<!-- Header -->
 				{#if title || showCloseButton}

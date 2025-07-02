@@ -250,16 +250,18 @@
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 				<div>
-					<label class="form-label">Start Date</label>
+					<label class="form-label" for="bulk-start-date">Start Date</label>
 					<input
+						id="bulk-start-date"
 						type="date"
 						bind:value={bulkConfig.startDate}
 						class="form-input"
 					/>
 				</div>
 				<div>
-					<label class="form-label">End Date</label>
+					<label class="form-label" for="bulk-end-date">End Date</label>
 					<input
+						id="bulk-end-date"
 						type="date"
 						bind:value={bulkConfig.endDate}
 						class="form-input"
@@ -268,7 +270,7 @@
 			</div>
 
 			<div class="mb-4">
-				<label class="form-label">Days of Week</label>
+				<div class="form-label">Days of Week</div>
 				<div class="flex gap-2 flex-wrap">
 					{#each [
 						{ value: 1, label: 'Mon' },
@@ -293,7 +295,7 @@
 			</div>
 
 			<div class="mb-4">
-				<label class="form-label">Time Slots</label>
+				<div class="form-label">Time Slots</div>
 				{#each bulkConfig.timeSlots as timeSlot, index}
 					<div class="flex gap-2 mb-2">
 						<input
@@ -328,8 +330,9 @@
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 				<div>
-					<label class="form-label">Available Spots</label>
+					<label class="form-label" for="bulk-available-spots">Available Spots</label>
 					<input
+						id="bulk-available-spots"
 						type="number"
 						bind:value={bulkConfig.availableSpots}
 						min="1"
@@ -368,24 +371,27 @@
 			
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 				<div>
-					<label class="form-label">Date</label>
+					<label class="form-label" for="new-slot-date">Date</label>
 					<input
+						id="new-slot-date"
 						type="date"
 						bind:value={newSlot.date}
 						class="form-input"
 					/>
 				</div>
 				<div>
-					<label class="form-label">Start Time</label>
+					<label class="form-label" for="new-slot-start-time">Start Time</label>
 					<input
+						id="new-slot-start-time"
 						type="time"
 						bind:value={newSlot.startTime}
 						class="form-input"
 					/>
 				</div>
 				<div>
-					<label class="form-label">End Time</label>
+					<label class="form-label" for="new-slot-end-time">End Time</label>
 					<input
+						id="new-slot-end-time"
 						type="time"
 						bind:value={newSlot.endTime}
 						class="form-input"
@@ -395,8 +401,9 @@
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 				<div>
-					<label class="form-label">Available Spots</label>
+					<label class="form-label" for="new-slot-spots">Available Spots</label>
 					<input
+						id="new-slot-spots"
 						type="number"
 						bind:value={newSlot.availableSpots}
 						min="1"
@@ -405,8 +412,9 @@
 					/>
 				</div>
 				<div>
-					<label class="form-label">Price Override (optional)</label>
+					<label class="form-label" for="new-slot-price">Price Override (optional)</label>
 					<input
+						id="new-slot-price"
 						type="number"
 						bind:value={newSlot.price}
 						step="0.01"
@@ -417,8 +425,9 @@
 			</div>
 
 			<div class="mb-4">
-				<label class="form-label">Notes (optional)</label>
+				<label class="form-label" for="new-slot-notes">Notes (optional)</label>
 				<textarea
+					id="new-slot-notes"
 					bind:value={newSlot.notes}
 					placeholder="Special instructions or notes for this time slot"
 					class="form-textarea"

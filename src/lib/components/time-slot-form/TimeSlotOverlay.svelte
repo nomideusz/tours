@@ -151,7 +151,7 @@
 			transition:fly={{ y: 20, duration: 300 }}
 		>
 			<div class="success-icon">
-				<CheckCircle class="{isMobile ? 'h-12 w-12' : 'h-16 w-16'}" />
+				<CheckCircle class={isMobile ? 'h-12 w-12' : 'h-16 w-16'} />
 			</div>
 			<h2 class="success-title">
 				{#if createdCount > 1}

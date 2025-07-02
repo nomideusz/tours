@@ -21,8 +21,8 @@
 	let isOpen = $state(false);
 	let currentMonth = $state(new Date());
 	let selectedDate = $state<Date | null>(value ? new Date(value) : null);
-	let inputElement: HTMLDivElement;
-	let dropdownElement: HTMLDivElement;
+	let inputElement = $state.raw<HTMLDivElement>();
+	let dropdownElement = $state.raw<HTMLDivElement>();
 
 	// Update selectedDate when value prop changes
 	$effect(() => {

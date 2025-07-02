@@ -14,29 +14,34 @@
 		onchange
 	} = $props();
 
-	let selectedHour = $state(9);
-	let selectedMinute = $state(0);
+		// Initialize state from props
+	let initialHour = 9;
+	let initialMinute = 0;
+	if (value) {
+		const [hourStr, minuteStr] = value.split(':');
+		initialHour = parseInt(hourStr) || 9;
+		initialMinute = parseInt(minuteStr) || 0;
+	}
+	
+	let selectedHour = $state(initialHour);
+	let selectedMinute = $state(initialMinute);
+	
 	let hourInput = $state('');
 	let minuteInput = $state('');
 	let editingHour = $state(false);
 	let editingMinute = $state(false);
-
-	// Parse initial value
-	$effect(() => {
-		if (value) {
-			const [hourStr, minuteStr] = value.split(':');
-			selectedHour = parseInt(hourStr) || 9;
-			selectedMinute = parseInt(minuteStr) || 0;
-		}
-	});
 
 	function formatTime(): string {
 		return `${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`;
 	}
 
 	function updateValue() {
-		value = formatTime();
-		onchange?.(value);
+		const newValue = formatTime();
+		// Only update if value actually changed
+		if (newValue !== value) {
+			value = newValue;
+			onchange?.(value);
+		}
 	}
 
 	function adjustHour(delta: number) {
@@ -96,7 +101,7 @@
 
 <div class="time-picker">
 	{#if label}
-		<label class="form-label">
+		<label class="form-label" for="time-picker-hour">
 			{label}
 			{#if required}<span style="color: var(--color-error);" class="ml-1">*</span>{/if}
 		</label>
@@ -116,9 +121,14 @@
 				</button>
 				
 				<div 
+					id="time-picker-hour"
 					class="time-picker-input w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingHour && startEditingHour()}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !editingHour && startEditingHour()}
+					role="button"
+					tabindex="0"
+					aria-label="Edit hour"
 				>
 					{#if editingHour}
 						<input
@@ -131,7 +141,6 @@
 							}}
 							class="w-full h-full text-center font-mono font-semibold bg-transparent border-none outline-none"
 							style="color: var(--text-primary);"
-							autofocus
 						/>
 					{:else}
 						<span class="font-mono font-semibold" style="color: var(--text-primary);">
@@ -170,6 +179,10 @@
 					class="time-picker-input w-12 h-10 flex items-center justify-center rounded border my-1 cursor-pointer transition-colors"
 					style="background: var(--bg-primary); border-color: var(--border-primary);"
 					onclick={() => !editingMinute && startEditingMinute()}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !editingMinute && startEditingMinute()}
+					role="button"
+					tabindex="0"
+					aria-label="Edit minute"
 				>
 					{#if editingMinute}
 						<input
@@ -182,7 +195,6 @@
 							}}
 							class="w-full h-full text-center font-mono font-semibold bg-transparent border-none outline-none"
 							style="color: var(--text-primary);"
-							autofocus
 						/>
 					{:else}
 						<span class="font-mono font-semibold" style="color: var(--text-primary);">

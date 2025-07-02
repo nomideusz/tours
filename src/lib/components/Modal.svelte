@@ -32,7 +32,7 @@
 		children
 	}: Props = $props();
 
-	let modalElement: HTMLDivElement;
+	let modalElement = $state.raw<HTMLDivElement>();
 
 	const sizeClasses = {
 		sm: 'max-w-md',
