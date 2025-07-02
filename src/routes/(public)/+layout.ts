@@ -13,4 +13,6 @@ export const load = async () => {
 	});
 
 	return { queryClient };
-}; 
+};
+
+export const ssr = false;
