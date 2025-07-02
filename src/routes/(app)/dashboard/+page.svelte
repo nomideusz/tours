@@ -793,8 +793,8 @@
 		}
 	}
 
-	// Timeline view state
-	let timelineView = $state<'day' | 'week' | 'month'>('week');
+	// Timeline view state - default to day view for operations focus
+	let timelineView = $state<'day' | 'week' | 'month'>('day');
 	let timelineCurrentDate = $state(new Date());
 </script>
 

@@ -41,6 +41,7 @@
 	let paymentElement: any = $state(null);
 	let processing = $state(false);
 	let error = $state<string | null>(null);
+	let paymentSucceeded = $state(false);
 	let mounted = $state(false);
 	let isInitializing = $state(true);
 	let clientSecret = $state<string>('');
@@ -239,8 +240,10 @@
 	async function handleSubmit() {
 		if (!stripe || !elements) return;
 		
+		// Clear all previous states
 		processing = true;
 		error = null;
+		paymentSucceeded = false;
 		
 		try {
 			// Confirm payment with proper redirect handling
@@ -260,18 +263,35 @@
 			});
 			
 			if (stripeError) {
+				console.log('❌ Payment failed:', stripeError.message);
 				error = stripeError.message || 'Payment failed. Please try again.';
 				processing = false;
+				paymentSucceeded = false;
 			} else if (paymentIntent && paymentIntent.status === 'succeeded') {
-				// Payment succeeded without redirect, go to success page
+				// Payment succeeded - show success state immediately
 				console.log('✅ Payment successful, navigating to success page');
-				await goto(`/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`);
+				paymentSucceeded = true;
+				error = null; // Explicitly clear any previous errors
+				processing = false; // Stop processing spinner
+				
+				// Navigate to success page with a small delay to show success feedback
+				setTimeout(async () => {
+					try {
+						await goto(`/book/${(data.qrCode as any).code}/success?booking=${(data.booking as any).id}`);
+					} catch (navError) {
+						console.error('Navigation error:', navError);
+						// If navigation fails, still show success but allow manual retry
+						error = 'Payment successful! If page doesn\'t redirect, please refresh.';
+					}
+				}, 1000);
 			}
 			// If payment requires redirect, Stripe will handle it automatically
+			// In this case, processing stays true until redirect happens
 		} catch (err: any) {
 			console.error('Payment error:', err);
 			error = err?.message || 'An unexpected error occurred. Please try again.';
 			processing = false;
+			paymentSucceeded = false;
 		}
 	}
 	
@@ -394,11 +414,19 @@
 						
 						<!-- Payment Content -->
 						<div class="p-4 sm:p-6">
-							{#if error}
+							{#if paymentSucceeded}
+								<div class="alert-success mb-6">
+									<CheckCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
+									<div class="flex-1">
+										<p class="font-medium">Payment Successful!</p>
+										<p class="text-sm mt-1">Redirecting to confirmation page...</p>
+									</div>
+								</div>
+							{:else if error}
 								<div class="alert-error mb-6">
 									<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
 									<div class="flex-1">
-										<p class="font-medium">Payment Error</p>
+										<p class="font-medium">{error.includes('Payment successful') ? 'Payment Completed' : 'Payment Error'}</p>
 										<p class="text-sm mt-1">{error}</p>
 									</div>
 								</div>
@@ -411,7 +439,12 @@
 									<p class="text-sm mt-2" style="color: var(--text-secondary);">This may take a few seconds</p>
 								</div>
 							{:else if mounted}
-								<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+								<form onsubmit={(e) => { 
+									e.preventDefault(); 
+									if (!paymentSucceeded && !processing) {
+										handleSubmit(); 
+									}
+								}}>
 									<!-- Payment Methods Info -->
 									<div class="mb-6 p-4 rounded-lg info-box">
 										<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Available payment methods</p>
@@ -421,7 +454,7 @@
 									</div>
 									
 									<!-- Payment Element -->
-									<div class="mb-6">
+									<div class="mb-6" class:opacity-50={paymentSucceeded} class:pointer-events-none={paymentSucceeded}>
 										<div id="payment-element">
 											<!-- Stripe Payment Element will be mounted here -->
 										</div>
@@ -430,10 +463,13 @@
 									<!-- Submit Button -->
 									<button
 										type="submit"
-										disabled={processing || !stripe}
-										class="w-full button-primary button--large justify-center"
+										disabled={processing || !stripe || paymentSucceeded}
+										class="w-full {paymentSucceeded ? 'button-success' : 'button-primary'} button--large justify-center"
 									>
-										{#if processing}
+										{#if paymentSucceeded}
+											<CheckCircle class="w-5 h-5" />
+											Payment Successful
+										{:else if processing}
 											<Loader2 class="w-5 h-5 animate-spin" />
 											Processing payment...
 										{:else}

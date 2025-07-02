@@ -475,9 +475,7 @@
 	/* Calendar View Styles */
 	.calendar-view {
 		padding: 1.5rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 12px;
+		background: transparent;
 	}
 	
 	.calendar-grid {
@@ -485,6 +483,7 @@
 		grid-template-columns: repeat(7, 1fr);
 		gap: 1px;
 		background: var(--border-primary);
+		border: 1px solid var(--border-primary);
 		border-radius: 8px;
 		overflow: hidden;
 	}
@@ -569,9 +568,22 @@
 		width: 6px;
 	}
 	
-	/* Weekend styling */
+	/* Weekend styling - removed background to preserve border visibility */
 	.calendar-day.weekend {
-		background: rgba(0, 0, 0, 0.02);
+		/* Subtle weekend indication without interfering with grid borders */
+		position: relative;
+	}
+	
+	.calendar-day.weekend::before {
+		content: '';
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 4px;
+		height: 4px;
+		background: var(--text-tertiary);
+		border-radius: 50%;
+		opacity: 0.3;
 	}
 	
 	/* Past day styling */
@@ -997,12 +1009,14 @@
 			padding: 0.25rem;
 		}
 		
+		/* Weekend mobile styling removed to preserve borders */
+		
 		.day-number {
 			font-size: 0.75rem;
 		}
 		
 		.calendar-grid {
-			gap: 0;
+			gap: 1px;
 		}
 		
 		.day-popover {
@@ -1023,9 +1037,7 @@
 	
 	/* Dark mode adjustments */
 	@media (prefers-color-scheme: dark) {
-		.calendar-day.weekend {
-			background: rgba(255, 255, 255, 0.03);
-		}
+		/* Weekend dark mode styling removed to preserve borders */
 		
 		.calendar-day.past-day {
 			background: rgba(0, 0, 0, 0.3);
@@ -1043,5 +1055,10 @@
 		.tour-dot {
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 		}
+	}
+	
+	/* Dark mode mobile adjustments */
+	@media (prefers-color-scheme: dark) and (max-width: 640px) {
+		/* Weekend dark mode mobile styling removed to preserve borders */
 	}
 } 

@@ -800,18 +800,6 @@
 				<p style="color: var(--text-primary);">Failed to load timeline</p>
 				<p class="text-sm mt-1" style="color: var(--text-secondary);">Please try again</p>
 			</div>
-		{:else if timeSlots.length === 0}
-			<div class="empty-state">
-				<Calendar class="h-12 w-12 mb-3" style="color: var(--text-tertiary);" />
-				<p class="text-lg mb-1" style="color: var(--text-primary);">No tours scheduled</p>
-				<p class="text-sm" style="color: var(--text-secondary);">
-					{#if tourId}
-						No time slots scheduled for this tour
-					{:else}
-						Start by creating your first tour
-					{/if}
-				</p>
-			</div>
 		{:else if (view === 'day' || view === 'week') && slotsByDate.length === 0}
 			<div class="empty-state">
 				<Calendar class="h-12 w-12 mb-3" style="color: var(--text-tertiary);" />
@@ -826,7 +814,7 @@
 					{#if tourId}
 						{view === 'day' ? 'No time slots scheduled for this day' : 'No time slots scheduled this week'}
 					{:else}
-						{view === 'day' ? 'No tours scheduled for this day' : 'No tours scheduled this week'}
+						{view === 'day' ? 'Try a different day or create new time slots' : 'Try a different week or create new time slots'}
 					{/if}
 				</p>
 			</div>
