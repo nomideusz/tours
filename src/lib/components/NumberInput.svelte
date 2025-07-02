@@ -44,6 +44,10 @@
 	// Track if user is actively interacting for better UX feedback
 	let isInteracting = $state(false);
 	let inputElement: HTMLInputElement | undefined = $state();
+	
+	// Detect mobile to avoid focusing input after button clicks (prevents keyboard popup)
+	const isMobile = $state(typeof window !== 'undefined' && 
+		('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
 	function increment() {
 		if (disabled) return;
@@ -66,8 +70,8 @@
 		// Brief visual feedback
 		setTimeout(() => { isInteracting = false; }, 150);
 		
-		// Keep focus on input for better UX
-		if (inputElement) {
+		// Keep focus on input for better UX (but not on mobile to avoid keyboard popup)
+		if (inputElement && !isMobile) {
 			inputElement.focus();
 		}
 	}
@@ -92,8 +96,8 @@
 		// Brief visual feedback
 		setTimeout(() => { isInteracting = false; }, 150);
 		
-		// Keep focus on input for better UX
-		if (inputElement) {
+		// Keep focus on input for better UX (but not on mobile to avoid keyboard popup)
+		if (inputElement && !isMobile) {
 			inputElement.focus();
 		}
 	}
@@ -168,6 +172,7 @@
 			onblur={onblur}
 			class="number-input__field"
 			autocomplete="off"
+			inputmode={isMobile ? "none" : "numeric"}
 		/>
 
 		<!-- Increment Button -->
