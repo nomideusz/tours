@@ -89,7 +89,7 @@
 		return day >= 1 && day <= getDaysInMonth(currentMonth);
 	}
 
-	// Generate calendar grid
+	// Generate calendar grid (always 6 rows = 42 cells for consistent height)
 	let calendarGrid = $derived.by(() => {
 		const daysInMonth = getDaysInMonth(currentMonth);
 		const firstDay = getFirstDayOfMonth(currentMonth);
@@ -103,6 +103,12 @@
 		// Add days of the month
 		for (let day = 1; day <= daysInMonth; day++) {
 			days.push(day);
+		}
+
+		// Fill remaining cells to always have 6 rows (42 total cells)
+		const totalCells = 42;
+		while (days.length < totalCells) {
+			days.push(null);
 		}
 
 		return days;
@@ -156,7 +162,8 @@
 				}
 				
 				// Position horizontally
-				const leftPosition = Math.max(8, Math.min(rect.left, viewportWidth - 320 - 8));
+				const dropdownWidth = 340;
+				const leftPosition = Math.max(8, Math.min(rect.left, viewportWidth - dropdownWidth - 8));
 				dropdownElement.style.left = `${leftPosition}px`;
 				dropdownElement.style.right = 'auto';
 			}
@@ -233,8 +240,8 @@
 	{#if isOpen}
 		<div 
 			bind:this={dropdownElement}
-			class="fixed w-80 rounded-lg shadow-lg border p-4"
-			style="z-index: var(--z-dropdown); background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden;"
+			class="fixed rounded-lg shadow-lg border p-4"
+			style="z-index: var(--z-dropdown); background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden; width: 340px; max-width: calc(100vw - 16px);"
 		>
 			<!-- Calendar header -->
 			<div class="flex items-center justify-between mb-4">
@@ -278,16 +285,16 @@
 			</div>
 
 			<!-- Day headers -->
-			<div class="grid grid-cols-7 gap-1 mb-2">
+			<div class="grid grid-cols-7 gap-1 mb-2" style="display: grid; grid-template-columns: repeat(7, 1fr);">
 				{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
-					<div class="text-center text-xs font-medium py-2" style="color: var(--text-tertiary);">
+					<div class="text-center text-xs font-medium py-2" style="color: var(--text-tertiary); min-width: 0;">
 						{day}
 					</div>
 				{/each}
 			</div>
 
 			<!-- Calendar grid -->
-			<div class="grid grid-cols-7 gap-1">
+			<div class="grid grid-cols-7 gap-1" style="display: grid; grid-template-columns: repeat(7, 1fr);">
 				{#each calendarGrid as day}
 					{#if day}
 						<button
@@ -295,7 +302,7 @@
 							onclick={() => selectDate(day)}
 							disabled={isPastDate(day)}
 							class="relative h-8 w-8 text-sm rounded-lg transition-all"
-							style="{isSelected(day) 
+							style="min-width: 2rem; min-height: 2rem; flex-shrink: 0; {isSelected(day) 
 								? 'background: var(--color-primary-600); color: white; font-weight: 500;' 
 								: isToday(day) 
 									? 'background: var(--color-primary-50); color: var(--color-primary-700); font-weight: 500; border: 1px solid var(--color-primary-200);' 

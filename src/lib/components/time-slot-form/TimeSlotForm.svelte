@@ -896,16 +896,6 @@
 											handleValidateField('date');
 										}}
 									/>
-									
-									<!-- Recurring Options - Move under calendar for better grouping -->
-									{#if !isEditMode}
-										<div class="mt-8">
-											<RecurringOptions
-												bind:formData={state.formData}
-												isEditMode={isEditMode}
-											/>
-										</div>
-									{/if}
 								</div>
 								
 								<!-- Right Column: Time & Settings -->
@@ -1104,6 +1094,17 @@
 									</div>
 								</div>
 							</div>
+							
+							<!-- Full-width Recurring Options outside grid -->
+							{#if !isEditMode}
+								<div class="mt-10 pt-8 border-t" style="border-color: var(--border-primary);">
+									<h4 class="text-lg font-medium mb-6" style="color: var(--text-primary);">Recurring Options</h4>
+									<RecurringOptions
+										bind:formData={state.formData}
+										isEditMode={isEditMode}
+									/>
+								</div>
+							{/if}
 						</div>
 					</div>
 				{:else if mode === 'modal'}
@@ -1121,16 +1122,6 @@
 									handleValidateField('date');
 								}}
 							/>
-							
-							<!-- Recurring Options - Move under calendar for better grouping -->
-							{#if !isEditMode}
-								<div class="mt-6">
-									<RecurringOptions
-										bind:formData={state.formData}
-										isEditMode={isEditMode}
-									/>
-								</div>
-							{/if}
 						</div>
 						
 						<!-- Right Column: Time & Settings -->
@@ -1272,6 +1263,16 @@
 							</div>
 						</div>
 					</div>
+					
+					<!-- Full-width Recurring Options outside grid -->
+					{#if !isEditMode}
+						<div class="mt-6">
+							<RecurringOptions
+								bind:formData={state.formData}
+								isEditMode={isEditMode}
+							/>
+						</div>
+					{/if}
 				{:else}
 					<!-- Drawer mode: Mobile-optimized vertical layout -->
 					<div class="space-y-6">
@@ -1425,16 +1426,18 @@
 								</div>
 							{/if}
 						</div>
-						
-						<!-- Recurring Options -->
-						{#if !isEditMode}
+					</div>
+					
+					<!-- Full-width Recurring Options -->
+					{#if !isEditMode}
+						<div class="mt-6 pt-6 border-t" style="border-color: var(--border-primary);">
 							<RecurringOptions
 								bind:formData={state.formData}
 								isEditMode={isEditMode}
 								isMobile={true}
 							/>
-						{/if}
-					</div>
+						</div>
+					{/if}
 				{/if}
 			</div>
 
