@@ -276,12 +276,12 @@
 	</div>
 
 	<div class="max-w-2xl mx-auto">
-		<!-- Mode Toggle -->
-		<div class="mb-4 sm:mb-6 text-center">
+		<!-- Mode Toggle - Hidden on mobile since MobilePageHeader provides this -->
+		<div class="hidden sm:block mb-6 text-center">
 			<div class="p-1 rounded-lg inline-flex" style="background: var(--bg-secondary);">
 				<button
 				onclick={() => switchMode('camera')}
-				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'camera' ? 'shadow-sm' : ''}"
+				class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'camera' ? 'shadow-sm' : ''}"
 				style="{scanMode === 'camera' ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 				disabled={!hasCamera}
 			>
@@ -290,7 +290,7 @@
 			</button>
 			<button
 				onclick={() => switchMode('manual')}
-				class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'manual' ? 'shadow-sm' : ''}"
+				class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 {scanMode === 'manual' ? 'shadow-sm' : ''}"
 				style="{scanMode === 'manual' ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 			>
 				<Keyboard class="w-4 h-4 inline mr-2" />

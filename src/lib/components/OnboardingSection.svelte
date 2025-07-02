@@ -70,22 +70,20 @@
 <div class="mb-8">
 	<div class="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
 		<!-- Email Verification Step -->
-		<div class="rounded-xl p-6 {!needsEmailVerification ? 'bg-green-50 dark:bg-green-900/20' : ''}"
-			style="background: {!needsEmailVerification ? '' : 'var(--bg-primary)'}; border: 1px solid {!needsEmailVerification ? 'var(--color-success-300)' : 'var(--border-primary)'};"
-		>
+		<div class="onboarding-step {!needsEmailVerification ? 'onboarding-step--completed' : ''}">
 			<div class="flex items-start gap-4">
-				<div class="flex-shrink-0">
+				<div class="onboarding-step-icon {!needsEmailVerification ? 'onboarding-step-icon--completed' : ''}">
 					{#if !needsEmailVerification}
-						<CheckCircle class="h-8 w-8" style="color: var(--color-success-600);" />
+						<CheckCircle class="w-8 h-8" />
 					{:else}
-						<Mail class="h-8 w-8" style="color: var(--text-tertiary);" />
+						<Mail class="w-8 h-8" />
 					{/if}
 				</div>
 				<div class="flex-1">
-					<h3 class="font-semibold mb-2" style="color: var(--text-primary);">
+					<h3 class="onboarding-step-title">
 						Verify Email
 					</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+					<p class="onboarding-step-description">
 						{#if !needsEmailVerification}
 							Email verified!
 						{:else}
@@ -105,12 +103,12 @@
 							{/if}
 						</button>
 						{#if resendEmailSuccess}
-							<p class="text-xs mt-2" style="color: var(--color-success-600);">
+							<p class="onboarding-status-message onboarding-success-message">
 								Email sent! Check your inbox.
 							</p>
 						{/if}
 						{#if resendEmailError}
-							<p class="text-xs mt-2" style="color: var(--color-error);">
+							<p class="onboarding-status-message onboarding-error-message">
 								{resendEmailError}
 							</p>
 						{/if}
@@ -120,22 +118,20 @@
 		</div>
 
 		<!-- Location Confirmation Step -->
-		<div class="rounded-xl p-6 {!needsConfirmation ? 'bg-green-50 dark:bg-green-900/20' : ''}"
-			style="background: {!needsConfirmation ? '' : 'var(--bg-primary)'}; border: 1px solid {!needsConfirmation ? 'var(--color-success-300)' : 'var(--border-primary)'};"
-		>
+		<div class="onboarding-step {!needsConfirmation ? 'onboarding-step--completed' : ''}">
 			<div class="flex items-start gap-4">
-				<div class="flex-shrink-0">
+				<div class="onboarding-step-icon {!needsConfirmation ? 'onboarding-step-icon--completed' : ''}">
 					{#if !needsConfirmation}
-						<CheckCircle class="h-8 w-8" style="color: var(--color-success-600);" />
+						<CheckCircle class="w-8 h-8" />
 					{:else}
-						<Globe class="h-8 w-8" style="color: var(--text-tertiary);" />
+						<Globe class="w-8 h-8" />
 					{/if}
 				</div>
 				<div class="flex-1">
-					<h3 class="font-semibold mb-2" style="color: var(--text-primary);">
+					<h3 class="onboarding-step-title">
 						Confirm Location
 					</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+					<p class="onboarding-step-description">
 						{#if !needsConfirmation}
 							{#if profile?.country && profile?.currency}
 								{@const countryInfo = getCountryInfo(profile.country)}
@@ -150,18 +146,18 @@
 					{#if !needsConfirmation && profile?.country}
 						<div class="space-y-1">
 							{#if profile?.stripeAccountId}
-								<p class="text-xs" style="color: var(--text-tertiary);">
+								<p class="location-lock-warning">
 									🔒 Location permanently locked
 								</p>
-								<p class="text-xs" style="color: var(--text-secondary);">
+								<p class="location-lock-text">
 									Cannot be changed - payment setup was started
 								</p>
 							{:else}
-								<p class="text-xs" style="color: var(--text-tertiary);">
+								<p class="location-lock-warning">
 									⚠️ Will be locked when payment setup starts
 								</p>
-								<p class="text-xs" style="color: var(--text-secondary);">
-									Wrong country? <a href="/profile" class="underline hover:no-underline" style="color: var(--color-primary-600);">Update in Profile</a> before continuing
+								<p class="location-lock-text">
+									Wrong country? <a href="/profile" class="location-lock-link">Update in Profile</a> before continuing
 								</p>
 							{/if}
 						</div>
@@ -191,22 +187,20 @@
 		</div>
 
 		<!-- Payment Setup Step -->
-		<div class="rounded-xl p-6 {paymentStatus.isSetup ? 'bg-green-50 dark:bg-green-900/20' : ''}"
-			style="background: {paymentStatus.isSetup ? '' : 'var(--bg-primary)'}; border: 1px solid {paymentStatus.isSetup ? 'var(--color-success-300)' : 'var(--border-primary)'};"
-		>
+		<div class="onboarding-step {paymentStatus.isSetup ? 'onboarding-step--completed' : ''}">
 			<div class="flex items-start gap-4">
-				<div class="flex-shrink-0">
+				<div class="onboarding-step-icon {paymentStatus.isSetup ? 'onboarding-step-icon--completed' : ''}">
 					{#if paymentStatus.isSetup}
-						<CheckCircle class="h-8 w-8" style="color: var(--color-success-600);" />
+						<CheckCircle class="w-8 h-8" />
 					{:else}
-						<CreditCard class="h-8 w-8" style="color: var(--text-tertiary);" />
+						<CreditCard class="w-8 h-8" />
 					{/if}
 				</div>
 				<div class="flex-1">
-					<h3 class="font-semibold mb-2" style="color: var(--text-primary);">
+					<h3 class="onboarding-step-title">
 						Setup Payments
 					</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+					<p class="onboarding-step-description">
 						{#if paymentStatus.isSetup}
 							Ready to receive payments!
 						{:else}
@@ -233,22 +227,20 @@
 		</div>
 
 		<!-- Create Tour Step -->
-		<div class="rounded-xl p-6 {stats.totalTours > 0 ? 'bg-green-50 dark:bg-green-900/20' : ''}"
-			style="background: {stats.totalTours > 0 ? '' : 'var(--bg-primary)'}; border: 1px solid {stats.totalTours > 0 ? 'var(--color-success-300)' : 'var(--border-primary)'};"
-		>
+		<div class="onboarding-step {stats.totalTours > 0 ? 'onboarding-step--completed' : ''}">
 			<div class="flex items-start gap-4">
-				<div class="flex-shrink-0">
+				<div class="onboarding-step-icon {stats.totalTours > 0 ? 'onboarding-step-icon--completed' : ''}">
 					{#if stats.totalTours > 0}
-						<CheckCircle class="h-8 w-8" style="color: var(--color-success-600);" />
+						<CheckCircle class="w-8 h-8" />
 					{:else}
-						<MapPin class="h-8 w-8" style="color: var(--text-tertiary);" />
+						<MapPin class="w-8 h-8" />
 					{/if}
 				</div>
 				<div class="flex-1">
-					<h3 class="font-semibold mb-2" style="color: var(--text-primary);">
+					<h3 class="onboarding-step-title">
 						Create Tour
 					</h3>
-					<p class="text-sm mb-4" style="color: var(--text-secondary);">
+					<p class="onboarding-step-description">
 						{#if stats.totalTours > 0}
 							{stats.totalTours} tour{stats.totalTours > 1 ? 's' : ''} created!
 						{:else}
@@ -269,30 +261,30 @@
 	</div>
 
 	<!-- Progress Bar -->
-	<div class="rounded-xl p-6 mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+	<div class="onboarding-progress">
 		<div class="flex items-center justify-between mb-4">
-			<h3 class="font-semibold" style="color: var(--text-primary);">
+			<h3 class="onboarding-step-title">
 				Setup Progress
 			</h3>
-			<span class="text-sm font-medium" style="color: var(--text-secondary);">
+			<span class="onboarding-step-description font-medium">
 				{stepsCompleted}/4 steps
 			</span>
 		</div>
-		<div class="w-full rounded-full h-3" style="background: var(--bg-secondary);">
+		<div class="onboarding-progress-bar">
 			<div 
-				class="h-3 rounded-full transition-all duration-500"
-				style="background: var(--color-primary-600); width: {(stepsCompleted / 4) * 100}%;"
+				class="onboarding-progress-fill"
+				style="width: {(stepsCompleted / 4) * 100}%;"
 			></div>
 		</div>
 	</div>
 
 	<!-- Location Confirmation Expanded -->
 	{#if needsConfirmation && currencyExpanded}
-		<div data-location-section class="rounded-xl p-6 mb-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
+		<div data-location-section class="onboarding-location-section">
+			<h3 class="onboarding-step-title">
 				Confirm Your Business Location
 			</h3>
-			<p class="text-sm mb-6" style="color: var(--text-secondary);">
+			<p class="onboarding-step-description">
 				This determines your payment currency and cannot be changed after payment setup begins.
 			</p>
 			
@@ -304,22 +296,21 @@
 			
 			<div class="space-y-4">
 				<div>
-					<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+					<label class="block onboarding-step-title mb-2">
 						Select Country
 					</label>
-					<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+					<div class="country-selection-grid">
 						{#each COUNTRY_LIST as country}
 							<button
 								onclick={() => onCountryChange(country.code)}
-								class="flex items-center gap-3 p-3 text-left border rounded-lg transition-all hover:shadow-sm {selectedCountry === country.code ? 'border-primary-500 bg-primary-50' : ''}"
-								style="border-color: {selectedCountry === country.code ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {selectedCountry === country.code ? 'var(--color-primary-50)' : 'var(--bg-primary)'};"
+								class="country-option {selectedCountry === country.code ? 'country-option--selected' : ''}"
 							>
-								<span class="text-xl">{country.flag}</span>
+								<span class="country-flag">{country.flag}</span>
 								<div class="flex-1 min-w-0">
-									<p class="font-medium truncate" style="color: var(--text-primary);">
+									<p class="country-name">
 										{country.name}
 									</p>
-									<p class="text-xs truncate" style="color: var(--text-secondary);">
+									<p class="country-currency">
 										Currency: {country.currency}
 									</p>
 								</div>
@@ -333,14 +324,14 @@
 				
 				{#if selectedCountry}
 					{@const countryInfo = getCountryInfo(selectedCountry)}
-					<div class="p-4 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-						<h4 class="font-medium mb-2" style="color: var(--color-primary-900);">
+					<div class="country-selected-info">
+						<h4 class="country-selected-title">
 							Selected: {countryInfo?.flag} {countryInfo?.name}
 						</h4>
-						<p class="text-sm" style="color: var(--color-primary-700);">
+						<p class="country-selected-text">
 							Your payment currency will be: <strong>{countryInfo?.currency}</strong>
 						</p>
-						<p class="text-xs mt-2" style="color: var(--color-primary-600);">
+						<p class="country-selected-warning">
 							⚠️ This cannot be changed after payment setup begins
 						</p>
 					</div>

@@ -5,7 +5,6 @@ import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
-import { broadcastBookingNotification } from '$lib/notifications/server.js';
 import { canUserCreateBooking } from '$lib/stripe-subscriptions.server.js';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -202,16 +201,8 @@ export const actions: Actions = {
 				})
 				.where(eq(tours.id, tour.id));
 
-			// Send notifications (don't await to avoid blocking)
-			broadcastBookingNotification({
-				id: booking.id,
-				tourId: tour.id,
-				tourName: tour.name,
-				customerName: booking.customerName,
-				participants: booking.participants,
-				totalAmount: booking.totalAmount,
-				status: booking.status
-			}).catch(console.error);
+			// Notification will be sent via webhook when payment is confirmed
+			// This prevents duplicate notifications for pending bookings
 
 		} catch (error) {
 			console.error('💥 Booking creation error:', error);
