@@ -96,8 +96,14 @@ export const load: PageServerLoad = async ({ url, locals }) => {
                 console.warn('⚠️ Error sending verification notification:', notificationError);
             }
             
-            // Redirect immediately after successful verification with success parameter
-            throw redirect(302, '/dashboard?verified=true');
+            // Redirect based on login status
+            if (locals.user) {
+                // User is logged in - redirect to dashboard
+                throw redirect(302, '/dashboard?verified=true');
+            } else {
+                // User is not logged in - redirect to login with success message
+                throw redirect(302, '/auth/login?message=Your email has been successfully verified! You can now sign in to your account.&type=success');
+            }
         }
 
         return { error: 'User not found' };
@@ -204,8 +210,14 @@ export const actions: Actions = {
                     // Don't fail the verification if notification fails
                 }
                 
-                // Redirect to dashboard after successful verification with success parameter
-                throw redirect(302, '/dashboard?verified=true');
+                // Redirect based on login status
+                if (locals.user) {
+                    // User is logged in - redirect to dashboard
+                    throw redirect(302, '/dashboard?verified=true');
+                } else {
+                    // User is not logged in - redirect to login with success message
+                    throw redirect(302, '/auth/login?message=Your email has been successfully verified! You can now sign in to your account.&type=success');
+                }
             }
 
             return fail(404, { error: 'User not found' });

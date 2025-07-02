@@ -17,6 +17,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const redirectTo = url.searchParams.get('redirectTo');
 	const error = url.searchParams.get('error');
 	const message = url.searchParams.get('message');
+	const type = url.searchParams.get('type');
 	const provider = url.searchParams.get('provider');
 
 	// Handle OAuth-specific errors
@@ -56,6 +57,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		redirectTo,
 		error: errorMessage || null,
+		message: message || null,
+		type: type || null,
 		earlyAccessEnabled: EARLY_ACCESS_ENABLED
 	};
 };

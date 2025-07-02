@@ -19,7 +19,7 @@
 		message?: string;
 	};
 
-	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string; earlyAccessEnabled: boolean } }>();
+	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string; message?: string; type?: string; earlyAccessEnabled: boolean } }>();
 
 	// Use the loading state from auth store
 	const isAuthLoading = $derived($isLoading);
@@ -100,9 +100,9 @@
 			{/if}
 		</div>
 
-		{#if form?.message || verificationSent}
+		{#if form?.message || verificationSent || (data?.message && data?.type === 'success')}
 			<div class="alert-success rounded-lg p-3 mb-4">
-				<p class="text-sm">{form?.message || 'Verification email sent! Please check your inbox.'}</p>
+				<p class="text-sm">{form?.message || data?.message || 'Verification email sent! Please check your inbox.'}</p>
 			</div>
 		{:else if form?.needsVerification}
 			<div class="alert-warning rounded-lg p-4 mb-4">
