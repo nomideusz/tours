@@ -1,13 +1,10 @@
 <script lang="ts">
-	import HeroSection from '$lib/components/HeroSection.svelte';
+	import HeroSection from '$lib/components/marketing/HeroSection.svelte';
 	import SocialProof from '$lib/components/marketing/SocialProof.svelte';
-	import HowItWorksSection from '$lib/components/HowItWorksSection.svelte';
-	import PricingSection from '$lib/components/PricingSection.svelte';
-	import TourShowcase from '$lib/components/marketing/TourShowcase.svelte';
-	import FeaturesSection from '$lib/components/FeaturesSection.svelte';
-	import GrowthChart from '$lib/components/marketing/GrowthChart.svelte';
+	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
+	import PricingSection from '$lib/components/marketing/PricingSection.svelte';
+	import FeaturesSection from '$lib/components/marketing/FeaturesSection.svelte';
 	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
-	import GuaranteeSection from '$lib/components/marketing/GuaranteeSection.svelte';
 	import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 </script>
 
@@ -59,7 +56,7 @@
 	</script>`}
 </svelte:head>
 
-<!-- Hero with main value prop -->
+<!-- Hero with main value prop & product demo -->
 <HeroSection />
 
 <!-- Social proof & urgency -->
@@ -68,23 +65,14 @@
 <!-- How it works - show the simplicity -->
 <HowItWorksSection />
 
-<!-- Pricing moved higher - people want to know cost early -->
+<!-- Pricing - people want to know cost early -->
 <PricingSection />
 
-<!-- Show what they can create -->
-<TourShowcase />
-
-<!-- Features & Benefits -->
+<!-- Features & Benefits - comprehensive capabilities -->
 <FeaturesSection />
-
-<!-- Industry insights & timing -->
-<GrowthChart />
 
 <!-- Address concerns -->
 <FAQSection />
-
-<!-- Risk reversal -->
-<GuaranteeSection />
 
 <!-- Final CTA with urgency -->
 <EarlyAccessCTA /> 

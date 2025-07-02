@@ -4,6 +4,23 @@
 	import Users from 'lucide-svelte/icons/users';
 	import Zap from 'lucide-svelte/icons/zap';
 	import Star from 'lucide-svelte/icons/star';
+	import Copy from 'lucide-svelte/icons/copy';
+	
+	// State for copy feedback
+	let showCopied = $state(false);
+
+	async function copyPromoCode() {
+		try {
+			await navigator.clipboard.writeText('EARLY2025');
+			showCopied = true;
+			setTimeout(() => {
+				showCopied = false;
+			}, 2000);
+		} catch (err) {
+			// Fallback for older browsers
+			console.log('Fallback: Copy EARLY2025');
+		}
+	}
 </script>
 
 <section class="py-20" style="background: var(--bg-primary);" in:fade={{ duration: 600 }}>
@@ -16,15 +33,14 @@
 					<span class="text-sm font-medium">Early Access Available</span>
 				</div>
 				<h2 class="text-3xl font-bold mb-4" style="color: var(--text-primary);">
-					Be Among the First Tour Guides
+					Ready to Transform Your Tour Business?
 				</h2>
 				<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
-					Join our exclusive early access program and help shape the future of tour booking technology. 
-					Limited spots available for founding members.
+					Use code <strong>EARLY2025</strong> to unlock founding member benefits and start building your tour empire today.
 				</p>
 			</div>
 			
-			<div class="benefits-grid mb-8">
+			<div class="benefits-grid mb-12">
 				<div class="benefit-item">
 					<div class="benefit-icon">
 						<Star class="w-5 h-5" />
@@ -56,15 +72,35 @@
 				</div>
 			</div>
 			
+			<!-- Promo Code Section -->
+			<div class="promo-section mb-8">
+				<div class="promo-code-display">
+					<span class="promo-label-small">Early Access Code:</span>
+					<button 
+						class="promo-code-small" 
+						onclick={copyPromoCode}
+						title="Click to copy"
+					>
+						<span class="code-text">EARLY2025</span>
+						<Copy class="w-4 h-4 copy-icon-small" />
+					</button>
+				</div>
+				{#if showCopied}
+					<p class="copy-feedback-small" in:fade={{ duration: 200 }}>
+						✓ Code copied to clipboard
+					</p>
+				{/if}
+			</div>
+			
 			<div class="cta-actions">
 				<a href="/auth/register" class="cta-button primary">
 					<Rocket class="w-5 h-5" />
-					Join Early Access
+					Get Started Free
 				</a>
 			</div>
 			
 			<p class="cta-note">
-				<strong>Limited Time:</strong> Early access pricing available for first 100 members only.
+				<strong>Limited Time:</strong> Founding member benefits available for first 100 users only.
 			</p>
 		</div>
 	</div>
@@ -101,9 +137,9 @@
 	
 	.benefits-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 2rem;
-		max-width: 900px;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.5rem;
+		max-width: 800px;
 		margin: 0 auto;
 	}
 	
@@ -112,16 +148,18 @@
 		align-items: flex-start;
 		gap: 1rem;
 		text-align: left;
-		padding: 1rem;
+		padding: 1.5rem;
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.75rem;
 		transition: all 0.2s ease;
+		box-shadow: var(--shadow-sm);
 	}
 	
 	.benefit-item:hover {
 		border-color: var(--border-secondary);
-		box-shadow: var(--shadow-sm);
+		box-shadow: var(--shadow-md);
+		transform: translateY(-2px);
 	}
 	
 	.benefit-icon {
@@ -220,8 +258,17 @@
 	/* Mobile and tablet responsive styles */
 	@media (max-width: 1024px) {
 		.benefits-grid {
-			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-			gap: 1.5rem;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 1.25rem;
+			max-width: 700px;
+		}
+	}
+	
+	@media (max-width: 900px) {
+		.benefits-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+			max-width: 400px;
 		}
 	}
 	
@@ -233,12 +280,12 @@
 		
 		.benefits-grid {
 			grid-template-columns: 1fr;
-			gap: 1.25rem;
+			gap: 1rem;
 			max-width: none;
 		}
 		
 		.benefit-item {
-			padding: 0.75rem;
+			padding: 1.25rem;
 			gap: 0.75rem;
 		}
 		
@@ -284,7 +331,7 @@
 		}
 		
 		.benefit-item {
-			padding: 1rem 0.75rem;
+			padding: 1rem;
 		}
 		
 		.benefit-icon {
@@ -315,6 +362,92 @@
 		
 		.benefit-description {
 			font-size: 0.75rem;
+		}
+	}
+	
+	/* Promo Code Section Styles */
+	.promo-section {
+		text-align: center;
+		padding-top: 2rem;
+		border-top: 1px solid var(--border-primary);
+		margin-top: 1rem;
+	}
+	
+	.promo-code-display {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		padding: 0.75rem 1rem;
+		margin: 0 auto;
+	}
+	
+	.promo-label-small {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+	}
+	
+	.promo-code-small {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--color-primary-50);
+		border: 1px solid var(--color-primary-200);
+		border-radius: 0.375rem;
+		padding: 0.5rem 0.75rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.promo-code-small:hover {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-300);
+		transform: scale(1.02);
+	}
+	
+	.code-text {
+		font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--color-primary-700);
+		letter-spacing: 0.05em;
+	}
+	
+	.copy-icon-small {
+		color: var(--color-primary-600);
+		transition: transform 0.2s ease;
+	}
+	
+	.promo-code-small:hover .copy-icon-small {
+		transform: scale(1.1);
+	}
+	
+	.copy-feedback-small {
+		font-size: 0.75rem;
+		color: var(--color-success-600);
+		margin-top: 0.5rem;
+	}
+	
+	@media (max-width: 768px) {
+		.promo-section {
+			padding-top: 1.5rem;
+		}
+		
+		.promo-code-display {
+			flex-direction: column;
+			gap: 0.5rem;
+			padding: 1rem;
+		}
+		
+		.promo-label-small {
+			font-size: 0.8rem;
+		}
+		
+		.code-text {
+			font-size: 0.8rem;
 		}
 	}
 </style> 

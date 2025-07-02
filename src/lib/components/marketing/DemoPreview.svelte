@@ -6,15 +6,41 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
 	import Users from 'lucide-svelte/icons/users';
+	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import Settings from 'lucide-svelte/icons/settings';
 	
 	let showPreview = $state(false);
 	let isHovered = $state(false);
+	let viewMode = $state('guide'); // 'guide' or 'customer'
 	
-	// Platform capabilities preview instead of fake metrics
-	const platformCapabilities = [
-		{ label: 'Setup Time', value: '< 5 min', icon: Sparkles },
-		{ label: 'Platform Fee', value: '0%', icon: Users },
-		{ label: 'Payment Process', value: 'Instant', icon: BarChart3 }
+	// Mock tour data for guide dashboard preview
+	const mockTours = [
+		{
+			name: 'Historic Walking Tour',
+			status: 'active',
+			bookings: 12,
+			revenue: 300,
+			qrScans: 45,
+			nextSlot: '10:00'
+		},
+		{
+			name: 'Food & Culture Experience',
+			status: 'active', 
+			bookings: 8,
+			revenue: 400,
+			qrScans: 23,
+			nextSlot: '14:30'
+		},
+		{
+			name: 'Barcelona by Night',
+			status: 'draft',
+			bookings: 0,
+			revenue: 0,
+			qrScans: 0,
+			nextSlot: null
+		}
 	];
 	
 	onMount(() => {
@@ -23,6 +49,10 @@
 	
 	function viewDemo() {
 		goto('/demo');
+	}
+	
+	function switchView(mode: 'guide' | 'customer') {
+		viewMode = mode;
 	}
 </script>
 
@@ -39,34 +69,109 @@
 			
 			<div class="demo-badge">
 				<Sparkles class="w-3 h-3" />
-				<span>Platform Preview</span>
+				<span>Guide Dashboard</span>
+			</div>
+			
+			<!-- View Toggle -->
+			<div class="view-toggle">
+				<button 
+					class="toggle-btn {viewMode === 'guide' ? 'active' : ''}"
+					onclick={(e) => { e.stopPropagation(); switchView('guide'); }}
+				>
+					<Settings class="w-3 h-3" />
+					Guide View
+				</button>
+				<button 
+					class="toggle-btn {viewMode === 'customer' ? 'active' : ''}"
+					onclick={(e) => { e.stopPropagation(); switchView('customer'); }}
+				>
+					<Eye class="w-3 h-3" />
+					Customer View
+				</button>
 			</div>
 			
 			<div class="demo-preview-header">
-				<h3 class="demo-title">Platform Preview</h3>
-				<p class="demo-subtitle">See what your professional dashboard will look like</p>
+				<h3 class="demo-title">
+					{viewMode === 'guide' ? 'Your Tour Dashboard' : 'Customer Experience'}
+				</h3>
+				<p class="demo-subtitle">
+					{viewMode === 'guide' 
+						? 'Professional tour management interface' 
+						: 'What customers see when they scan your QR'}
+				</p>
 			</div>
 			
-			<div class="demo-stats-grid">
-				{#each platformCapabilities as stat, index}
-					<div class="demo-stat" 
-						 style="animation-delay: {index * 150}ms"
-						 in:scale={{ duration: 400, delay: 800 + index * 150 }}>
-						<div class="demo-stat-icon">
-							<stat.icon class="w-4 h-4" />
-						</div>
-						<div class="demo-stat-content">
-							<div class="demo-stat-value">{stat.value}</div>
-							<div class="demo-stat-label">{stat.label}</div>
-						</div>
+			{#if viewMode === 'guide'}
+				<!-- Guide Dashboard View -->
+				<div class="tours-preview">
+					<div class="tours-header">
+						<h4 class="tours-title">Your Tours</h4>
+						<div class="total-revenue">€{mockTours.reduce((sum, tour) => sum + tour.revenue, 0)}</div>
 					</div>
-				{/each}
-			</div>
+					
+					<div class="tours-list">
+						{#each mockTours as tour, index}
+							<div class="tour-item" 
+								 in:scale={{ duration: 300, delay: 200 + index * 100 }}
+								 onclick={(e) => e.stopPropagation()}>
+								<div class="tour-info">
+									<div class="tour-name">{tour.name}</div>
+									<div class="tour-status status-{tour.status}">
+										{tour.status === 'active' ? '● Active' : '○ Draft'}
+									</div>
+								</div>
+								<div class="tour-metrics">
+									<div class="metric">
+										<Calendar class="w-3 h-3" />
+										{tour.nextSlot || 'No slots'}
+									</div>
+									<div class="metric">
+										<Users class="w-3 h-3" />
+										{tour.bookings} bookings
+									</div>
+									<div class="metric">
+										<QrCode class="w-3 h-3" />
+										{tour.qrScans} scans
+									</div>
+									<div class="metric revenue">
+										<DollarSign class="w-3 h-3" />
+										€{tour.revenue}
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				<!-- Customer View (simplified booking interface) -->
+				<div class="customer-preview">
+					<div class="booking-header">
+						<h4 class="booking-title">Historic Walking Tour</h4>
+						<div class="booking-rating">⭐ 4.9 • 2 hours</div>
+					</div>
+					
+					<div class="booking-price">
+						<span class="price">€25</span>
+						<span class="price-label">per person</span>
+					</div>
+					
+					<div class="time-slots-mini">
+						<div class="slot active" onclick={(e) => e.stopPropagation()}>10:00</div>
+						<div class="slot" onclick={(e) => e.stopPropagation()}>14:00</div>
+						<div class="slot" onclick={(e) => e.stopPropagation()}>16:30</div>
+					</div>
+					
+					<button class="book-now-btn" onclick={(e) => e.stopPropagation()}>
+						<DollarSign class="w-4 h-4" />
+						Book Instantly
+					</button>
+				</div>
+			{/if}
 			
 			<div class="demo-cta">
-				<button class="demo-button">
+				<button class="demo-button" onclick={(e) => { e.stopPropagation(); viewDemo(); }}>
 					<Eye class="w-4 h-4" />
-					View Demo Preview
+					View Full Demo
 				</button>
 			</div>
 			
@@ -89,7 +194,7 @@
 		border: 1px solid var(--border-primary);
 		border-radius: 1rem;
 		padding: 1.5rem;
-		max-width: 400px;
+		max-width: 480px;
 		width: 100%;
 		cursor: pointer;
 		transition: all 0.3s ease;
@@ -138,56 +243,223 @@
 		color: var(--text-secondary);
 	}
 	
-	.demo-stats-grid {
-		display: grid;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
+	.view-toggle {
+		display: flex;
+		gap: 0.25rem;
+		margin-bottom: 1rem;
+		background: var(--bg-secondary);
+		border-radius: 0.5rem;
+		padding: 0.25rem;
 	}
 	
-	.demo-stat {
+	.toggle-btn {
+		flex: 1;
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
+		justify-content: center;
+		gap: 0.25rem;
+		padding: 0.5rem;
+		background: transparent;
+		border: none;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
 		transition: all 0.2s ease;
 	}
 	
-	.demo-preview-card:hover .demo-stat {
+	.toggle-btn.active {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.tours-preview {
+		margin-bottom: 1.5rem;
+	}
+	
+	.tours-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 1rem;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid var(--border-primary);
+	}
+	
+	.tours-title {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.total-revenue {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--color-success-600);
+	}
+	
+	.tours-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	
+	.tour-item {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		padding: 0.875rem;
+		transition: all 0.2s ease;
+		cursor: pointer;
+	}
+	
+	.demo-preview-card:hover .tour-item {
 		background: var(--bg-primary);
 		border-color: var(--border-secondary);
 	}
 	
-	.demo-stat-icon {
-		width: 2rem;
-		height: 2rem;
-		background: var(--color-primary-100);
+	.tour-item:hover {
+		background: var(--bg-primary);
+		border-color: var(--color-primary-300);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.tour-info {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+	}
+	
+	.tour-name {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.tour-status {
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+	
+	.status-active {
+		color: var(--color-success-600);
+	}
+	
+	.status-draft {
+		color: var(--text-tertiary);
+	}
+	
+	.tour-metrics {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+	
+	.metric {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	
+	.metric.revenue {
+		color: var(--color-success-600);
+		font-weight: 500;
+	}
+	
+	.customer-preview {
+		margin-bottom: 1.5rem;
+	}
+	
+	.booking-header {
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+	
+	.booking-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.25rem;
+	}
+	
+	.booking-rating {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	
+	.booking-price {
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+	
+	.price {
+		font-size: 1.5rem;
+		font-weight: 700;
 		color: var(--color-primary-600);
-		border-radius: 0.5rem;
+	}
+	
+	.price-label {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		margin-left: 0.25rem;
+	}
+	
+	.time-slots-mini {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+		justify-content: center;
+	}
+	
+	.slot {
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.slot:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-300);
+	}
+	
+	.slot.active {
+		background: var(--color-primary-600);
+		border-color: var(--color-primary-600);
+		color: white;
+	}
+	
+	.book-now-btn {
+		width: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		flex-shrink: 0;
-	}
-	
-	.demo-stat-content {
-		flex: 1;
-		min-width: 0;
-	}
-	
-	.demo-stat-value {
-		font-size: 1.125rem;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
 		font-weight: 600;
-		color: var(--text-primary);
-		line-height: 1;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		margin-bottom: 1rem;
 	}
 	
-	.demo-stat-label {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		margin-top: 0.25rem;
+	.book-now-btn:hover {
+		background: var(--color-primary-700);
+		transform: translateY(-1px);
 	}
 	
 	.demo-cta {
@@ -241,12 +513,29 @@
 			font-size: 1.125rem;
 		}
 		
-		.demo-stat {
-			padding: 0.5rem;
+		.toggle-btn {
+			font-size: 0.6875rem;
+			padding: 0.375rem;
 		}
 		
-		.demo-stat-value {
-			font-size: 1rem;
+		.tour-item {
+			padding: 0.75rem;
+		}
+		
+		.tour-metrics {
+			grid-template-columns: 1fr;
+		}
+		
+		.price {
+			font-size: 1.25rem;
+		}
+		
+		.time-slots-mini {
+			gap: 0.375rem;
+		}
+		
+		.slot {
+			padding: 0.375rem 0.5rem;
 		}
 	}
 </style> 

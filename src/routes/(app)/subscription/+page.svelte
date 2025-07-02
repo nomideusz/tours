@@ -14,37 +14,26 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented } from '$lib/utils/pricing-config.js';
 	
 	let { data }: { data: PageData } = $props();
 	
 	let loading = $state(false);
 	let error = $state<string | null>(null);
-	let isYearly = $state(false);
+	let isYearly = $state(true);
 	let showCancelModal = $state(false);
 	
-	// Client-side subscription plans data - updated with new pricing structure
-	const SUBSCRIPTION_PLANS = {
-		free: {
-			name: 'Free Starter',
-			monthlyBookingLimit: 3,
-			tourLimit: 1
-		},
-		starter_pro: {
-			name: 'Solo Guide', 
-			monthlyBookingLimit: 60,
-			tourLimit: 5
-		},
-		professional: {
-			name: 'Professional',
-			monthlyBookingLimit: null, // unlimited
-			tourLimit: null // unlimited
-		},
-		agency: {
-			name: 'Agency',
-			monthlyBookingLimit: null, // unlimited
-			tourLimit: null // unlimited
-		}
-	};
+	// Convert shared pricing config to subscription format
+	const SUBSCRIPTION_PLANS = Object.fromEntries(
+		PRICING_PLANS.map(plan => [
+			plan.id,
+			{
+				name: plan.name,
+				monthlyBookingLimit: plan.monthlyBookingLimit,
+				tourLimit: plan.tourLimit
+			}
+		])
+	);
 	
 	// Get current user subscription info
 	let user = $derived($currentUser);
@@ -53,12 +42,13 @@
 	let cancelAtPeriodEnd = $derived(user?.subscriptionCancelAtPeriodEnd);
 	let currentPeriodEnd = $derived(user?.subscriptionCurrentPeriodEnd);
 	
-	// Base prices
-	const BASE_PRICES = {
-		starter_pro: { monthly: 16, yearly: 13 },
-		professional: { monthly: 35, yearly: 29 },
-		agency: { monthly: 89, yearly: 74 }
-	};
+	// Base prices from shared config
+	const BASE_PRICES = Object.fromEntries(
+		PRICING_PLANS.filter(plan => plan.id !== 'free').map(plan => [
+			plan.id,
+			plan.basePrice
+		])
+	);
 	
 	// Check if user has promo benefits
 	let hasPromoDiscount = $derived(user && (
@@ -254,43 +244,26 @@
 			day: 'numeric'
 		});
 	}
-	
-	// Features that are already implemented
-	const implementedFeatures = [
-		'bookings/month',
-		'tour types',
-		'Basic QR codes',
-		'Email notifications',
-		'Zaur branding visible',
-		'Remove Zaur branding',
-		'Email support',
-		'Unlimited bookings',
-		'Unlimited tour types',
-		'Priority support'
-	];
-	
-	function isFeatureImplemented(featureText: string): boolean {
-		return implementedFeatures.some(f => featureText.toLowerCase().includes(f.toLowerCase()));
-	}
 </script>
 
-{#snippet featureItem(text: string, icon: 'check' | 'x' = 'check', colorClass: string = '')}
-	{@const isImplemented = isFeatureImplemented(text)}
+{#snippet featureItem(feature: import('$lib/utils/pricing-config.js').PricingFeature, colorClass: string = '')}
+	{@const isImplemented = isFeatureImplemented(feature.text)}
 	<li class="flex items-start gap-1.5 sm:gap-2">
-		{#if icon === 'check'}
+		{#if feature.included}
 			<Check class="w-3.5 h-3.5 sm:w-4 sm:h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+			<span class="text-xs sm:text-sm flex-1" style="color: var(--text-primary);">
+				{feature.text}
+				{#if feature.comingSoon && !isImplemented}
+					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-1 sm:ml-2" 
+						style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); font-size: 0.65rem;">
+						Soon
+					</span>
+				{/if}
+			</span>
 		{:else}
-			<X class="w-3.5 h-3.5 sm:w-4 sm:h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
+			<X class="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
+			<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{feature.text}</span>
 		{/if}
-		<span class="text-xs sm:text-sm flex-1" style="color: var(--text-primary);">
-			{text}
-			{#if !isImplemented && icon === 'check'}
-				<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-1 sm:ml-2" 
-					style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); font-size: 0.65rem;">
-					Soon
-				</span>
-			{/if}
-		</span>
 	</li>
 {/snippet}
 
@@ -513,176 +486,80 @@
 			</div>
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-				<!-- Free Starter (always show for reference) -->
-				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full opacity-75" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Free Starter</h3>
-					<div class="mb-1">
-						<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€0</span>
-						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month</span>
-					</div>
-					<div class="mb-3 sm:mb-4 h-3 sm:h-4"></div>
+				{#each PRICING_PLANS as plan}
+					{@const pricing = calculatePrice(plan.id as 'starter_pro' | 'professional' | 'agency', isYearly ? 'yearly' : 'monthly')}
+					{@const isPopular = plan.popular}
+					{@const isCurrent = currentPlan === plan.id}
+					{@const isFreePlan = plan.id === 'free'}
 					
-					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
-						{@render featureItem('3 bookings/month', 'check', 'icon-secondary')}
-						{@render featureItem('1 tour type', 'check', 'icon-secondary')}
-						{@render featureItem('Basic QR codes', 'check', 'icon-secondary')}
-						{@render featureItem('Email notifications', 'check', 'icon-secondary')}
-						{@render featureItem('Zaur branding visible', 'x', 'icon-danger')}
-						{@render featureItem('No SMS notifications', 'x', 'icon-danger')}
-						{@render featureItem('No analytics', 'x', 'icon-danger')}
-					</ul>
+					<div class="relative rounded-lg p-4 sm:p-6 flex flex-col h-full {isPopular ? 'border-2 shadow-lg' : 'border'} {isFreePlan ? 'opacity-75' : ''}" 
+						 style="background: var(--bg-primary); border-color: {isPopular ? 'var(--color-primary-500)' : 'var(--border-primary)'};{!isPopular ? ' border: 1px solid var(--border-primary);' : ''}">
 					
-					{#if currentPlan === 'free'}
-						<button
-							disabled
-							class="w-full py-2 rounded-md font-medium cursor-not-allowed"
-							style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
-						>
-							Current Plan
-						</button>
-					{/if}
-				</div>
-				
-				<!-- Solo Guide -->
-				<div class="relative rounded-lg border-2 p-4 sm:p-6 shadow-lg flex flex-col h-full" style="background: var(--bg-primary); border-color: var(--color-primary-500);">
-					<div class="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
-						<span class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
-					</div>
-					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Solo Guide</h3>
-					<div class="mb-1">
-						{#if starterProPricing.savings > 0}
-							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{starterProPricing.original}</span>
-							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{starterProPricing.final}</span>
+						{#if isPopular}
+							<div class="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
+								<span class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
+							</div>
+						{/if}
+						
+						<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">{plan.name}</h3>
+						
+						<div class="mb-1">
+							{#if !isFreePlan && pricing.savings > 0}
+								<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
+								<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{pricing.final}</span>
+							{:else}
+								<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{isFreePlan ? 0 : pricing.final}</span>
+							{/if}
+							<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isFreePlan ? '' : isYearly ? ' billed annually' : ''}</span>
+						</div>
+						
+						<div class="mb-3 sm:mb-4 h-3 sm:h-4">
+							{#if !isFreePlan && pricing.savings > 0}
+								<span class="text-xs font-medium" style="color: var(--color-success-600);">
+									{isInFreePeriod ? 'Free during trial period' : `Save €${pricing.savings}/month with promo`}
+								</span>
+							{:else if !isFreePlan && isYearly}
+								<span class="text-xs font-medium" style="color: var(--color-success-600);">
+									Save €{plan.id === 'starter_pro' ? '36' : plan.id === 'professional' ? '72' : '180'}/year
+								</span>
+							{/if}
+						</div>
+						
+						<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
+							{#each plan.features as feature}
+								{@render featureItem(feature, isPopular ? 'icon-primary' : 'icon-secondary')}
+							{/each}
+						</ul>
+						
+						{#if isCurrent}
+							<button
+								disabled
+								class="w-full py-2 rounded-md font-medium cursor-not-allowed"
+								style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
+							>
+								Current Plan
+							</button>
+						{:else if isFreePlan}
+							<!-- Free plan - no action needed in upgrade section -->
+						{:else if plan.id === 'agency'}
+							<button
+								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
+								disabled={loading}
+								class="button-primary button--full-width"
+							>
+								{loading ? 'Processing...' : `Upgrade to ${plan.name}`}
+							</button>
 						{:else}
-							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{starterProPricing.final}</span>
-						{/if}
-						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
-					</div>
-					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
-						{#if starterProPricing.savings > 0}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								{isInFreePeriod ? 'Free during trial period' : `Save €${starterProPricing.savings}/month with promo`}
-							</span>
-						{:else if isYearly}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-							Save €36/year
-						</span>
+							<button
+								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
+								disabled={loading}
+								class="button-primary button--full-width"
+							>
+								{loading ? 'Processing...' : `Upgrade to ${plan.name}`}
+							</button>
 						{/if}
 					</div>
-					
-					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
-						{@render featureItem('60 bookings/month')}
-						{@render featureItem('5 tour types')}
-						{@render featureItem('Remove Zaur branding')}
-						{@render featureItem('Custom logo & colors')}
-						{@render featureItem('SMS notifications')}
-						{@render featureItem('Basic analytics')}
-						{@render featureItem('QR code customization')}
-						{@render featureItem('Review collection prompts')}
-						{@render featureItem('Email support')}
-					</ul>
-					
-					<button
-						onclick={() => upgradeSubscription('starter_pro', isYearly ? 'yearly' : 'monthly')}
-						disabled={loading || currentPlan === 'starter_pro'}
-						class="button-primary button--full-width"
-					>
-						{loading ? 'Processing...' : currentPlan === 'starter_pro' ? 'Current Plan' : 'Upgrade to Solo Guide'}
-					</button>
-				</div>
-				
-				<!-- Professional -->
-				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Professional</h3>
-					<div class="mb-1">
-						{#if proPricing.savings > 0}
-							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{proPricing.original}</span>
-							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{proPricing.final}</span>
-						{:else}
-							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{proPricing.final}</span>
-						{/if}
-						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
-					</div>
-					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
-						{#if proPricing.savings > 0}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								{isInFreePeriod ? 'Free during trial period' : `Save €${proPricing.savings}/month with promo`}
-							</span>
-						{:else if isYearly}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-							Save €72/year
-						</span>
-						{/if}
-					</div>
-					
-					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
-						{@render featureItem('Unlimited bookings')}
-						{@render featureItem('Unlimited tour types')}
-						{@render featureItem('Advanced analytics & insights')}
-						{@render featureItem('WhatsApp notifications')}
-						{@render featureItem('Calendar sync (Google/Outlook)')}
-						{@render featureItem('Customer database export')}
-						{@render featureItem('Review automation')}
-						{@render featureItem('Multi-language booking pages')}
-						{@render featureItem('Weather integration')}
-						{@render featureItem('Cancellation management')}
-						{@render featureItem('Priority support (24h response)')}
-					</ul>
-					
-					<button
-						onclick={() => upgradeSubscription('professional', isYearly ? 'yearly' : 'monthly')}
-						disabled={loading || currentPlan === 'professional'}
-						class="button-primary button--full-width"
-					>
-						{loading ? 'Processing...' : currentPlan === 'professional' ? 'Current Plan' : 'Upgrade to Professional'}
-					</button>
-				</div>
-				
-				<!-- Agency -->
-				<div class="relative rounded-lg border p-4 sm:p-6 flex flex-col h-full" style="border-color: var(--border-primary); background: var(--bg-primary);">
-					<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">Agency</h3>
-					<div class="mb-1">
-						{#if agencyPricing.savings > 0}
-							<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{agencyPricing.original}</span>
-							<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{agencyPricing.final}</span>
-						{:else}
-							<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{agencyPricing.final}</span>
-						{/if}
-						<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{billingPeriod}</span>
-					</div>
-					<div class="mb-3 sm:mb-4 h-3 sm:h-4">
-						{#if agencyPricing.savings > 0}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-								{isInFreePeriod ? 'Free during trial period' : `Save €${agencyPricing.savings}/month with promo`}
-							</span>
-						{:else if isYearly}
-							<span class="text-xs font-medium" style="color: var(--color-success-600);">
-							Save €180/year
-						</span>
-						{/if}
-					</div>
-					
-					<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
-						{@render featureItem('Everything in Professional', 'check', 'icon-primary')}
-						{@render featureItem('Up to 10 tour guides', 'check', 'icon-primary')}
-						{@render featureItem('Team management dashboard', 'check', 'icon-primary')}
-						{@render featureItem('Revenue sharing tools', 'check', 'icon-primary')}
-						{@render featureItem('White-label options', 'check', 'icon-primary')}
-						{@render featureItem('Custom domain (agency.zaur.app)', 'check', 'icon-primary')}
-						{@render featureItem('Advanced reporting (ROI, conversion rates)', 'check', 'icon-primary')}
-						{@render featureItem('API access', 'check', 'icon-primary')}
-						{@render featureItem('Dedicated account manager', 'check', 'icon-primary')}
-						{@render featureItem('Multi-location management', 'check', 'icon-primary')}
-					</ul>
-					
-					<button
-						onclick={() => upgradeSubscription('agency', isYearly ? 'yearly' : 'monthly')}
-						disabled={loading || (user?.subscriptionPlan === 'agency')}
-						class="button-primary button--full-width"
-					>
-						{loading ? 'Processing...' : (user?.subscriptionPlan === 'agency') ? 'Current Plan' : 'Upgrade to Agency'}
-					</button>
-				</div>
+				{/each}
 			</div>
 		</div>
 	{/if}
