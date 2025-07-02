@@ -417,13 +417,14 @@
 		grid-template-columns: repeat(7, 1fr);
 		gap: 0.125rem;
 		padding: 0 0.75rem;
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.calendar-container--medium .day-headers,
 	.calendar-container--large .day-headers {
 		padding: 0 1rem;
 		gap: 0.25rem;
+		margin-bottom: 0.75rem;
 	}
 
 	.day-header {
@@ -447,22 +448,22 @@
 		grid-template-columns: repeat(7, 1fr);
 		grid-template-rows: repeat(6, 2rem);
 		gap: 0.125rem;
-		padding: 0 0.75rem 0.75rem;
-		height: 12.75rem; /* 6 rows × 2rem + 5 gaps × 0.125rem */
+		padding: 0.25rem 0.75rem 0.75rem;
+		height: 13rem; /* 6 rows × 2rem + 5 gaps × 0.125rem + 0.25rem top padding */
 	}
 
 	.calendar-container--medium .calendar-grid {
 		grid-template-rows: repeat(6, 2.5rem);
 		gap: 0.25rem;
-		padding: 0 1rem 1rem;
-		height: 16.25rem; /* 6 rows × 2.5rem + 5 gaps × 0.25rem */
+		padding: 0.5rem 1rem 1rem;
+		height: 17rem; /* 6 rows × 2.5rem + 5 gaps × 0.25rem + 0.5rem top padding */
 	}
 
 	.calendar-container--large .calendar-grid {
 		grid-template-rows: repeat(6, 3rem);
 		gap: 0.25rem;
-		padding: 0 1rem 1rem;
-		height: 19.25rem; /* 6 rows × 3rem + 5 gaps × 0.25rem */
+		padding: 0.5rem 1rem 1rem;
+		height: 20rem; /* 6 rows × 3rem + 5 gaps × 0.25rem + 0.5rem top padding */
 	}
 
 	.day-button {
@@ -496,7 +497,7 @@
 		border-radius: 0.5rem;
 	}
 
-	.day-button:hover:not(.day-button--disabled) {
+	.day-button:hover:not(.day-button--disabled):not(.day-button--empty) {
 		background: var(--bg-tertiary);
 		color: var(--text-primary);
 	}
@@ -556,11 +557,17 @@
 	/* Slot indicators */
 	.slot-indicators {
 		position: absolute;
-		bottom: 0.25rem;
+		bottom: 0.125rem;
 		left: 50%;
 		transform: translateX(-50%);
 		display: flex;
 		gap: 0.125rem;
+	}
+
+	.calendar-container--medium .slot-indicators,
+	.calendar-container--large .slot-indicators {
+		bottom: 0.25rem;
+		gap: 0.1875rem;
 	}
 
 	.slot-indicators--past {
@@ -664,11 +671,11 @@
 		
 		/* Reset all sizes to mobile-friendly on small screens */
 		.calendar-header {
-			padding: 0.75rem !important;
+			padding: 1rem 0.75rem !important;
 		}
 		
 		.calendar-nav {
-			margin-bottom: 0.5rem !important;
+			margin-bottom: 0.75rem !important;
 		}
 		
 		.nav-button {
@@ -700,29 +707,45 @@
 			padding: 0.25rem 0.5rem !important;
 		}
 		
+		.month-summary {
+			font-size: 0.75rem !important;
+			margin-top: 0.25rem !important;
+		}
+		
 		.day-headers {
 			padding: 0 0.75rem !important;
 			gap: 0.125rem !important;
+			margin-bottom: 0.75rem !important;
 		}
 		
 		.day-header {
 			font-size: 0.75rem !important;
 			font-weight: 500 !important;
-			padding: 0.5rem 0 !important;
+			padding: 0.75rem 0 !important;
 		}
 		
 		.calendar-grid {
-			grid-template-rows: repeat(6, 1.75rem) !important;
-			height: 11.125rem !important; /* 6 rows × 1.75rem + 5 gaps × 0.125rem */
-			padding: 0 0.75rem 0.75rem !important;
+			grid-template-rows: repeat(6, 2.75rem) !important;
+			height: 18rem !important; /* 6 rows × 2.75rem + 5 gaps × 0.125rem + 0.5rem top padding */
+			padding: 0.5rem 0.75rem 0.75rem !important;
 			gap: 0.125rem !important;
 		}
 		
 		.day-button {
-			width: 1.75rem !important;
-			height: 1.75rem !important;
+			width: 2.25rem !important;
+			height: 2.75rem !important;
 			font-size: 0.75rem !important;
 			font-weight: 400 !important;
+		}
+		
+		.slot-indicators {
+			bottom: 0.125rem !important;
+			gap: 0.1rem !important;
+		}
+		
+		.slot-dot {
+			width: 0.2rem !important;
+			height: 0.2rem !important;
 		}
 		
 		.calendar-legend {

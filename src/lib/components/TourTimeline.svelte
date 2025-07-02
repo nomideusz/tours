@@ -1808,17 +1808,6 @@
 
 	/* Mobile responsive adjustments */
 	@media (max-width: 640px) {
-		/* Make calendar days much larger on mobile for touch */
-		.calendar-day {
-			min-height: 80px !important;
-			padding: 6px !important;
-			position: relative;
-		}
-		
-		.day-number {
-			font-size: 16px !important;
-			font-weight: 600;
-		}
 		
 		/* Mobile quick add form - compact but usable */
 		.quick-add-form {

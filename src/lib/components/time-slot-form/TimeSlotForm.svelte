@@ -55,6 +55,8 @@
 	// Reset state when component mounts or when mode changes
 	$effect(() => {
 		if (!slotId) {
+			// Reset all state for new slot creation
+			state.resetForm();
 			state.initialDefaults = false;
 		}
 	});

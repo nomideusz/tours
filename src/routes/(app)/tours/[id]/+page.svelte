@@ -20,8 +20,7 @@
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import TimeSlotModal from '$lib/components/time-slot-form/TimeSlotModal.svelte';
-import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte';
+	import TimeSlotOverlay from '$lib/components/time-slot-form/TimeSlotOverlay.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	
 	// Icons
@@ -1137,56 +1136,30 @@ import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte
 {/if}
 </PageContainer>
 
-<!-- Add Time Slots Modal/Drawer (responsive) -->
-{#if isMobile}
-	<TimeSlotDrawer
-		bind:isOpen={showAddSlotsModal}
-		{tourId}
-		tourName={tour?.name}
-		{preselectedDate}
-		onClose={() => {
-			showAddSlotsModal = false;
-			preselectedDate = undefined; // Clear the preselected date
-		}}
-		onSuccess={() => {
-			showAddSlotsModal = false;
-			preselectedDate = undefined; // Clear the preselected date
-			// Refresh the TourTimeline data (it uses tour-schedule query internally)
-			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
-			// Show success message
-			showAddSlotsSuccess = true;
-			// Close welcome prompt if it was open (newly created tour)
-			showWelcomePrompt = false;
-			setTimeout(() => {
-				showAddSlotsSuccess = false;
-			}, 3000);
-		}}
-	/>
-{:else}
-	<TimeSlotModal
-		bind:isOpen={showAddSlotsModal}
-		{tourId}
-		tourName={tour?.name}
-		{preselectedDate}
-		onClose={() => {
-			showAddSlotsModal = false;
-			preselectedDate = undefined; // Clear the preselected date
-		}}
-		onSuccess={() => {
-			showAddSlotsModal = false;
-			preselectedDate = undefined; // Clear the preselected date
-			// Refresh the TourTimeline data (it uses tour-schedule query internally)
-			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
-			// Show success message
-			showAddSlotsSuccess = true;
-			// Close welcome prompt if it was open (newly created tour)
-			showWelcomePrompt = false;
-			setTimeout(() => {
-				showAddSlotsSuccess = false;
-			}, 3000);
-		}}
-	/>
-{/if}
+<!-- Add Time Slots Overlay (responsive) -->
+<TimeSlotOverlay
+	bind:isOpen={showAddSlotsModal}
+	{tourId}
+	tourName={tour?.name}
+	{preselectedDate}
+	onClose={() => {
+		showAddSlotsModal = false;
+		preselectedDate = undefined; // Clear the preselected date
+	}}
+	onSuccess={() => {
+		showAddSlotsModal = false;
+		preselectedDate = undefined; // Clear the preselected date
+		// Refresh the TourTimeline data (it uses tour-schedule query internally)
+		queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+		// Show success message
+		showAddSlotsSuccess = true;
+		// Close welcome prompt if it was open (newly created tour)
+		showWelcomePrompt = false;
+		setTimeout(() => {
+			showAddSlotsSuccess = false;
+		}, 3000);
+	}}
+/>
 
 <!-- Image Lightbox -->
 {#if lightboxOpen}
