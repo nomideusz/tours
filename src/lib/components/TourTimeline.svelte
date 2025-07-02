@@ -28,6 +28,7 @@
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Info from 'lucide-svelte/icons/info';
+	import Plus from 'lucide-svelte/icons/plus';
 	
 	// Types
 	export interface TimeSlot {
@@ -59,7 +60,9 @@
 		hideHeaderText = false,
 		hideViewToggle = false,
 		hideStats = false,
-		defaultView = 'week'
+		defaultView = 'week',
+		onQuickAdd = undefined,
+		tour = undefined
 	}: {
 		view?: 'day' | 'week' | 'month';
 		currentDate?: Date;
@@ -72,6 +75,8 @@
 		hideViewToggle?: boolean;
 		hideStats?: boolean;
 		defaultView?: 'day' | 'week' | 'month';
+		onQuickAdd?: (date: Date) => void;
+		tour?: any; // Tour data for accessing duration
 	} = $props();
 	
 	// Initialize view from defaultView if not already set
@@ -316,7 +321,13 @@
 	
 	// Handle day click in calendar view
 	function handleDayClick(date: Date, slots: TimeSlot[]) {
-		if (slots.length === 0) return;
+		if (slots.length === 0) {
+			// Empty day - start quick add if in tour view
+			if (tourId) {
+				startQuickAdd(date);
+			}
+			return;
+		}
 		
 		// If only one slot, navigate directly to it
 		if (slots.length === 1) {
@@ -657,6 +668,172 @@
 			clearTimeout(popoverTimeout);
 		}
 	});
+	
+	// Quick add state
+	let showQuickAdd = $state<string | null>(null); // Date string for the day being edited
+	let quickSlot = $state({
+		date: '',
+		startTime: '10:00',
+		endTime: '11:00'
+	});
+	let isCreatingQuickSlot = $state(false);
+	let quickAddErrors = $state<string[]>([]);
+	
+	// Quick add functions
+	function startQuickAdd(date: Date) {
+		// Don't allow quick add if not in tour-specific view
+		if (!tourId) {
+			console.log('Quick add only available in tour-specific view');
+			return;
+		}
+		
+		const dateStr = date.toDateString();
+		
+		// Set default times based on existing slots on this day
+		const existingSlots = getDaySlots(date);
+		let defaultStart = '10:00';
+		let defaultEnd = '11:00';
+		
+		if (existingSlots.length > 0) {
+			// Find the next available hour after the last slot
+			const lastSlot = existingSlots[existingSlots.length - 1];
+			const lastEndTime = new Date(lastSlot.endTime);
+			const nextHour = lastEndTime.getHours();
+			const nextMinute = lastEndTime.getMinutes();
+			
+			// Start at the end of the last slot (or next quarter hour)
+			const startTime = new Date(lastEndTime);
+			if (nextMinute > 0) {
+				// Round up to next quarter hour
+				const minutesToAdd = 15 - (nextMinute % 15);
+				startTime.setMinutes(nextMinute + minutesToAdd);
+			}
+			
+			defaultStart = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')}`;
+		}
+		
+		// Calculate end time based on tour duration
+		const tourDuration = tour?.duration || 60; // Default to 60 minutes if no tour data
+		const startTime = new Date(`2000-01-01T${defaultStart}`);
+		const endTime = new Date(startTime.getTime() + (tourDuration * 60 * 1000)); // Add duration in milliseconds
+		
+		defaultEnd = `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+		
+		quickSlot = {
+			date: `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`, // Local YYYY-MM-DD format
+			startTime: defaultStart,
+			endTime: defaultEnd
+		};
+		
+		showQuickAdd = dateStr;
+		quickAddErrors = [];
+	}
+	
+	function cancelQuickAdd() {
+		showQuickAdd = null;
+		quickAddErrors = [];
+	}
+	
+	function validateQuickSlot(): string[] {
+		const errors: string[] = [];
+		
+		// Validate times
+		if (quickSlot.startTime >= quickSlot.endTime) {
+			errors.push('End time must be after start time');
+		}
+		
+		// Check minimum duration (15 minutes)
+		const start = new Date(`2000-01-01T${quickSlot.startTime}`);
+		const end = new Date(`2000-01-01T${quickSlot.endTime}`);
+		const duration = (end.getTime() - start.getTime()) / (1000 * 60); // minutes
+		
+		if (duration < 15) {
+			errors.push('Minimum duration is 15 minutes');
+		}
+		
+		if (duration > 480) { // 8 hours
+			errors.push('Maximum duration is 8 hours');
+		}
+		
+		// Check for overlaps with existing slots
+		const selectedDate = new Date(quickSlot.date);
+		const existingSlots = getDaySlots(selectedDate);
+		
+		const quickStart = new Date(`${quickSlot.date}T${quickSlot.startTime}`);
+		const quickEnd = new Date(`${quickSlot.date}T${quickSlot.endTime}`);
+		
+		for (const slot of existingSlots) {
+			const slotStart = new Date(slot.startTime);
+			const slotEnd = new Date(slot.endTime);
+			
+			// Check for overlap
+			if ((quickStart < slotEnd && quickEnd > slotStart)) {
+				errors.push(`Time conflicts with existing slot: ${formatSlotTimeRange(slot.startTime, slot.endTime)}`);
+				break;
+			}
+		}
+		
+		return errors;
+	}
+	
+	async function saveQuickSlot() {
+		if (!tourId || isCreatingQuickSlot) return;
+		
+		// Validate
+		const errors = validateQuickSlot();
+		if (errors.length > 0) {
+			quickAddErrors = errors;
+			return;
+		}
+		
+		isCreatingQuickSlot = true;
+		quickAddErrors = [];
+		
+		try {
+			// Create the time slot
+			const startDateTime = new Date(`${quickSlot.date}T${quickSlot.startTime}`);
+			const endDateTime = new Date(`${quickSlot.date}T${quickSlot.endTime}`);
+			
+			const response = await fetch(`/api/tours/${tourId}/schedule`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					startTime: startDateTime.toISOString(),
+					endTime: endDateTime.toISOString(),
+					capacity: 10, // Default capacity, user can edit it afterward
+					status: 'available'
+				})
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to create time slot');
+			}
+			
+			// Invalidate queries to refresh data
+			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			
+			// Close quick add form
+			showQuickAdd = null;
+			
+			// Show success feedback
+			const slotId = `quick-${Date.now()}`;
+			showInlineSuccess(slotId, 'Slot created');
+			
+		} catch (error) {
+			console.error('Failed to create quick slot:', error);
+			quickAddErrors = [error instanceof Error ? error.message : 'Failed to create time slot'];
+		} finally {
+			isCreatingQuickSlot = false;
+		}
+	}
+	
+	function openAdvancedAdd(date: Date) {
+		cancelQuickAdd();
+		if (onQuickAdd) {
+			onQuickAdd(date);
+		}
+	}
 </script>
 
 <div class="tour-timeline {compact ? 'compact' : ''}">
@@ -1055,11 +1232,15 @@
 							class:has-slots={daySlots.length > 0}
 							class:past-day={isPast}
 							class:weekend={isWeekend}
-							onclick={daySlots.length > 0 && !isPast ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined}
+							class:quick-add-active={showQuickAdd === dayDate?.toDateString()}
+							onclick={daySlots.length > 0 && !isPast ? () => dayDate && handleDayClick(dayDate, daySlots) : 
+									(daySlots.length === 0 && !isPast && tourId ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined)}
 							onkeydown={(e) => {
-								if ((e.key === 'Enter' || e.key === ' ') && dayDate && daySlots.length > 0 && !isPast) {
+								if ((e.key === 'Enter' || e.key === ' ') && dayDate && !isPast) {
 									e.preventDefault();
-									handleDayClick(dayDate, daySlots);
+									if (daySlots.length > 0 || tourId) {
+										handleDayClick(dayDate, daySlots);
+									}
 								}
 							}}
 							onmouseenter={(e) => {
@@ -1070,13 +1251,87 @@
 							onmouseleave={() => {
 								hidePopover();
 							}}
-							role={daySlots.length > 0 ? "button" : "gridcell"}
-							{...(daySlots.length > 0 && !isPast ? { tabindex: 0 } : {})}
-							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : dayDate?.getDate().toString()}
+							role={daySlots.length > 0 || (tourId && !isPast) ? "button" : "gridcell"}
+							{...(daySlots.length > 0 || (tourId && !isPast) ? { tabindex: 0 } : {})}
+							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : 
+									   dayDate && tourId && !isPast ? `${dayDate.toLocaleDateString()} - Click to add time slot` :
+									   dayDate?.getDate().toString()}
 						>
 							{#if dayDate}
 								<div class="day-number">{dayDate.getDate()}</div>
-								{#if daySlots.length > 0}
+								
+																{#if showQuickAdd === dayDate.toDateString()}
+									{@const isRightEdge = i % 7 === 6}
+									{@const isLeftEdge = i % 7 === 0}
+									{@const tooltipPosition = isRightEdge ? 'top-left' : isLeftEdge ? 'top-right' : 'top'}
+									<!-- Quick Add Form -->
+									<form class="quick-add-form" onsubmit={(e) => { e.preventDefault(); saveQuickSlot(); }}>
+										<div class="quick-add-inputs">
+											<Tooltip text="Start time (click clock to pick)" position={tooltipPosition}>
+												<input
+													type="time"
+													bind:value={quickSlot.startTime}
+													class="time-input"
+													step="900"
+													style="position: relative;"
+												/>
+											</Tooltip>
+											<span class="time-separator">-</span>
+											<Tooltip text="End time (click clock to pick)" position={tooltipPosition}>
+												<input
+													type="time"
+													bind:value={quickSlot.endTime}
+													class="time-input"
+													step="900"
+													style="position: relative;"
+												/>
+											</Tooltip>
+										</div>
+										
+										{#if quickAddErrors.length > 0}
+											<div class="quick-add-errors">
+												{#each quickAddErrors as error}
+													<div class="error-text">{error}</div>
+												{/each}
+											</div>
+										{/if}
+										
+										<div class="quick-add-actions">
+											<Tooltip text="Save time slot" position={tooltipPosition}>
+												<button
+													type="button"
+													onclick={(e) => { e.stopPropagation(); saveQuickSlot(); }}
+													class="quick-add-btn save"
+													disabled={isCreatingQuickSlot}
+												>
+													{#if isCreatingQuickSlot}
+														<div class="spinner-sm"></div>
+													{:else}
+														<Check class="h-3 w-3" />
+													{/if}
+												</button>
+											</Tooltip>
+											<Tooltip text="Advanced options" position={tooltipPosition}>
+												<button
+													type="button"
+													onclick={(e) => { e.stopPropagation(); openAdvancedAdd(dayDate); }}
+													class="quick-add-btn advanced"
+												>
+													<Plus class="h-3 w-3" />
+												</button>
+											</Tooltip>
+											<Tooltip text="Cancel" position={tooltipPosition}>
+												<button
+													type="button"
+													onclick={(e) => { e.stopPropagation(); cancelQuickAdd(); }}
+													class="quick-add-btn cancel"
+												>
+													<X class="h-3 w-3" />
+												</button>
+											</Tooltip>
+										</div>
+									</form>
+								{:else if daySlots.length > 0}
 									<div class="day-slots">
 										{#if tourId}
 											<!-- Single tour - show colored dots based on bookings and utilization -->
@@ -1105,6 +1360,11 @@
 												{/if}
 											</div>
 										{/if}
+									</div>
+								{:else if tourId && !isPast}
+									<!-- Empty day with quick add hint -->
+									<div class="empty-day-hint">
+										<Plus class="h-3 w-3" style="color: var(--text-tertiary);" />
 									</div>
 								{/if}
 							{/if}
@@ -1313,5 +1573,389 @@
 	:global(.quick-action-btn.delete-btn:hover) {
 		background: var(--color-error-100) !important;
 		color: var(--color-error-700) !important;
+	}
+
+	/* Quick Add Styles */
+	.calendar-day.quick-add-active {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-300);
+		box-shadow: 0 0 0 2px var(--color-primary-200);
+	}
+	
+	.empty-day-hint {
+		position: absolute;
+		bottom: 2px;
+		right: 2px;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+	
+	.calendar-day:hover .empty-day-hint {
+		opacity: 0.6;
+	}
+	
+	.calendar-day[role="button"] {
+		cursor: pointer;
+	}
+	
+	.quick-add-form {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--bg-primary) !important;
+		border: 2px solid var(--color-primary-400) !important;
+		border-radius: 4px;
+		padding: 3px;
+		z-index: 15;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(4px);
+		min-width: 90px;
+		min-height: 60px;
+	}
+	
+	.quick-add-inputs {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		font-size: 10px;
+		flex: 1;
+	}
+	
+	/* High specificity selectors to override everything */
+	.quick-add-form input[type="time"].time-input,
+	input[type="time"].time-input.time-input {
+		position: relative !important;
+		flex: 1 !important;
+		padding: 2px 16px 2px 3px !important;
+		border: 1px solid var(--border-primary) !important;
+		border-radius: 3px !important;
+		font-size: 9px !important;
+		background: var(--bg-primary) !important;
+		background-color: var(--bg-primary) !important;
+		color: var(--text-primary) !important;
+		min-width: 45px !important;
+		width: auto !important;
+		max-width: 55px !important;
+		font-family: var(--font-mono, monospace) !important;
+		font-weight: 400 !important;
+		line-height: 1.2 !important;
+		box-sizing: border-box !important;
+		text-align: left !important;
+		cursor: text !important;
+		height: 18px !important;
+		margin: 0 !important;
+	}
+	
+	.time-input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+		box-shadow: 0 0 0 1px var(--color-primary-200);
+	}
+	
+	.time-separator {
+		color: var(--text-secondary) !important;
+		font-size: 9px;
+		flex-shrink: 0;
+		font-weight: 600;
+		user-select: none;
+		margin: 0 1px;
+	}
+	
+	.quick-add-actions {
+		display: flex;
+		gap: 2px;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	
+	.quick-add-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		border: 1px solid var(--border-primary) !important;
+		border-radius: 3px;
+		background: var(--bg-primary) !important;
+		color: var(--text-primary) !important;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		padding: 0;
+		font-family: inherit;
+		font-size: 0;
+		flex-shrink: 0;
+	}
+	
+	.quick-add-btn:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+	
+	.quick-add-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	.quick-add-btn.save {
+		background: var(--color-success-100);
+		border-color: var(--color-success-300);
+		color: var(--color-success-700);
+	}
+	
+	.quick-add-btn.save:hover:not(:disabled) {
+		background: var(--color-success-200);
+		border-color: var(--color-success-400);
+	}
+	
+	.quick-add-btn.advanced {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-700);
+	}
+	
+	.quick-add-btn.advanced:hover {
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-400);
+	}
+	
+	.quick-add-btn.cancel {
+		background: var(--color-error-100);
+		border-color: var(--color-error-300);
+		color: var(--color-error-700);
+	}
+	
+	.quick-add-btn.cancel:hover {
+		background: var(--color-error-200);
+		border-color: var(--color-error-400);
+	}
+	
+	.quick-add-errors {
+		font-size: 8px;
+		color: var(--color-error-600);
+		background: var(--color-error-50);
+		border: 1px solid var(--color-error-200);
+		border-radius: 3px;
+		padding: 2px 4px;
+		margin: 2px 0;
+	}
+	
+	.error-text {
+		line-height: 1.2;
+		margin: 1px 0;
+	}
+	
+	.spinner-sm {
+		width: 12px;
+		height: 12px;
+		border: 1px solid var(--border-secondary);
+		border-top: 1px solid currentColor;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+	
+	/* Clock icon styling with proper visibility */
+	input[type="time"].time-input::-webkit-calendar-picker-indicator {
+		display: block !important;
+		opacity: 1 !important;
+		cursor: pointer !important;
+		width: 7px !important;
+		height: 7px !important;
+		background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+		background-repeat: no-repeat !important;
+		background-position: center !important;
+		background-size: contain !important;
+		-webkit-appearance: none !important;
+		position: absolute !important;
+		right: 3px !important;
+		top: 50% !important;
+		transform: translateY(-50%) !important;
+	}
+	
+	/* Other webkit controls */
+	input[type="time"].time-input::-webkit-inner-spin-button,
+	input[type="time"].time-input::-webkit-outer-spin-button,
+	input[type="time"].time-input::-webkit-clear-button {
+		-webkit-appearance: auto !important;
+		display: block !important;
+		opacity: 1 !important;
+		cursor: pointer !important;
+	}
+	
+	/* Style datetime editing parts with high specificity */
+	.quick-add-form input[type="time"].time-input::-webkit-datetime-edit,
+	.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-fields-wrapper,
+	.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-text,
+	.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-hour-field,
+	.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-minute-field,
+	input[type="time"].time-input.time-input::-webkit-datetime-edit,
+	input[type="time"].time-input.time-input::-webkit-datetime-edit-fields-wrapper,
+	input[type="time"].time-input.time-input::-webkit-datetime-edit-text,
+	input[type="time"].time-input.time-input::-webkit-datetime-edit-hour-field,
+	input[type="time"].time-input.time-input::-webkit-datetime-edit-minute-field {
+		color: var(--text-primary) !important;
+		background: transparent !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		font-family: var(--font-mono, monospace) !important;
+		font-size: 10px !important;
+	}
+
+	/* Mobile responsive adjustments */
+	@media (max-width: 640px) {
+		/* Make calendar days much larger on mobile for touch */
+		.calendar-day {
+			min-height: 80px !important;
+			padding: 6px !important;
+			position: relative;
+		}
+		
+		.day-number {
+			font-size: 16px !important;
+			font-weight: 600;
+		}
+		
+		/* Mobile quick add form - compact but usable */
+		.quick-add-form {
+			position: fixed !important;
+			top: 50% !important;
+			left: 50% !important;
+			right: auto !important;
+			bottom: auto !important;
+			transform: translate(-50%, -50%) !important;
+			width: 260px !important;
+			height: auto !important;
+			padding: 16px !important;
+			gap: 12px !important;
+			border-radius: 10px !important;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+			z-index: 1000 !important;
+			backdrop-filter: blur(8px);
+		}
+		
+		.quick-add-inputs {
+			font-size: 17px !important;
+			gap: 10px !important;
+			align-items: center;
+			justify-content: center;
+		}
+		
+		.quick-add-form input[type="time"].time-input,
+		input[type="time"].time-input.time-input {
+			position: relative !important;
+			padding: 10px 24px 10px 8px !important;
+			font-size: 17px !important;
+			min-width: 90px !important;
+			width: 90px !important;
+			max-width: 90px !important;
+			height: 38px !important;
+			border-radius: 6px !important;
+			line-height: 1.3 !important;
+			border-width: 1px !important;
+			text-align: left !important;
+		}
+		
+		/* Larger clock icon for mobile */
+		input[type="time"].time-input::-webkit-calendar-picker-indicator {
+			width: 16px !important;
+			height: 16px !important;
+			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+			right: 6px !important;
+		}
+		
+		/* Dark mode mobile clock icon */
+		[data-theme="dark"] input[type="time"].time-input::-webkit-calendar-picker-indicator {
+			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+		}
+		
+		/* Mobile time text styling - make the actual time digits larger */
+		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit,
+		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-fields-wrapper,
+		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-text,
+		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-hour-field,
+		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-minute-field {
+			font-size: 17px !important;
+			font-family: var(--font-mono, monospace) !important;
+			color: var(--text-primary) !important;
+		}
+		
+		.time-separator {
+			font-size: 19px !important;
+			font-weight: 600 !important;
+			margin: 0 2px !important;
+		}
+		
+		.quick-add-btn {
+			width: 38px !important;
+			height: 38px !important;
+			border-radius: 6px !important;
+			min-width: 38px !important;
+			border-width: 1px !important;
+		}
+		
+		.quick-add-actions {
+			gap: 8px !important;
+			justify-content: center;
+			margin-top: 4px;
+		}
+		
+		.quick-add-errors {
+			font-size: 13px !important;
+			padding: 8px !important;
+			line-height: 1.3;
+			border-radius: 6px !important;
+		}
+		
+		/* Mobile backdrop overlay */
+		.calendar-day.quick-add-active::before {
+			content: '';
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 999;
+		}
+		
+
+	}
+	
+	/* Dark mode specific fixes */
+	[data-theme="dark"] .time-input {
+		background: var(--bg-primary) !important;
+		color: var(--text-primary) !important;
+		border-color: var(--border-primary) !important;
+	}
+	
+	[data-theme="dark"] .time-input:focus {
+		border-color: var(--color-primary-500) !important;
+		box-shadow: 0 0 0 2px var(--color-primary-200) !important;
+	}
+	
+	/* Dark mode clock icon */
+	[data-theme="dark"] input[type="time"].time-input::-webkit-calendar-picker-indicator {
+		background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+	}
+	
+	[data-theme="dark"] .quick-add-form {
+		background: var(--bg-primary) !important;
+		border-color: var(--color-primary-400) !important;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+	}
+	
+	[data-theme="dark"] .time-separator {
+		color: var(--text-secondary) !important;
+	}
+	
+	[data-theme="dark"] .quick-add-errors {
+		color: var(--color-error-300) !important;
+		background: var(--color-error-900) !important;
+		border-color: var(--color-error-600) !important;
 	}
 </style> 

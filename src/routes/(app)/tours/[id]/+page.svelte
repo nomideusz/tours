@@ -153,6 +153,7 @@ import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte
 	let hasInitialSchedule = $state(false);
 	let showOnboardingModal = $state(false);
 	let onboardingModalMessage = $state('');
+	let preselectedDate = $state<string | undefined>(undefined);
 	
 	// Check if we're on mobile for responsive modal/drawer
 	let isMobile = $state(false);
@@ -901,6 +902,12 @@ import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte
 							compact={true}
 							onSlotClick={handleSlotClick}
 							onViewChange={handleViewChange}
+							tour={tour}
+							onQuickAdd={(date) => {
+								// Store the selected date and open advanced modal
+								preselectedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+								showAddSlotsModal = true;
+							}}
 						/>
 					</div>
 				</section>
@@ -1136,9 +1143,14 @@ import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte
 		bind:isOpen={showAddSlotsModal}
 		{tourId}
 		tourName={tour?.name}
-		onClose={() => showAddSlotsModal = false}
+		{preselectedDate}
+		onClose={() => {
+			showAddSlotsModal = false;
+			preselectedDate = undefined; // Clear the preselected date
+		}}
 		onSuccess={() => {
 			showAddSlotsModal = false;
+			preselectedDate = undefined; // Clear the preselected date
 			// Refresh the TourTimeline data (it uses tour-schedule query internally)
 			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
 			// Show success message
@@ -1155,9 +1167,14 @@ import TimeSlotDrawer from '$lib/components/time-slot-form/TimeSlotDrawer.svelte
 		bind:isOpen={showAddSlotsModal}
 		{tourId}
 		tourName={tour?.name}
-		onClose={() => showAddSlotsModal = false}
+		{preselectedDate}
+		onClose={() => {
+			showAddSlotsModal = false;
+			preselectedDate = undefined; // Clear the preselected date
+		}}
 		onSuccess={() => {
 			showAddSlotsModal = false;
+			preselectedDate = undefined; // Clear the preselected date
 			// Refresh the TourTimeline data (it uses tour-schedule query internally)
 			queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
 			// Show success message
