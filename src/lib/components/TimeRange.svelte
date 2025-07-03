@@ -116,10 +116,10 @@
 
 <div class="time-range">
 	{#if label}
-		<label class="form-label block mb-2">
+		<div class="form-label block mb-2">
 			{label}
 			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
-		</label>
+		</div>
 	{/if}
 	
 	<div class="flex items-center gap-3">
@@ -162,7 +162,7 @@
 	{#if startTime || endTime}
 		<div class="mt-2 flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
 			<div class="flex items-center gap-2">
-				<Clock class="w-4 h-4" />
+				<Clock class="w-4 h-4" style="color: var(--text-secondary);" />
 				<span>Duration: <strong>{durationLabel}</strong></span>
 				{#if endTime && startTime && endTime <= startTime}
 					<span class="text-xs" style="color: var(--color-danger-600);">(spans midnight)</span>
@@ -205,6 +205,25 @@
 	
 	input[type="time"]::-webkit-calendar-picker-indicator {
 		cursor: pointer;
+		opacity: 0.8;
+		transition: opacity 0.2s ease;
+		filter: brightness(0) saturate(100%) invert(40%);
+	}
+	
+	input[type="time"]::-webkit-calendar-picker-indicator:hover {
+		opacity: 1;
+	}
+	
+	/* Dark mode calendar picker */
+	@media (prefers-color-scheme: dark) {
+		input[type="time"]::-webkit-calendar-picker-indicator {
+			filter: brightness(0) saturate(100%) invert(80%);
+			opacity: 0.9;
+		}
+		
+		input[type="time"]::-webkit-calendar-picker-indicator:hover {
+			opacity: 1;
+		}
 	}
 	
 	/* Better focus states */

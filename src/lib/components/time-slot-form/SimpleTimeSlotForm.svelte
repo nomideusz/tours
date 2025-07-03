@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onDestroy } from 'svelte';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 	import { createQuery } from '@tanstack/svelte-query';
@@ -21,6 +21,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Plus from 'lucide-svelte/icons/plus';
+	import X from 'lucide-svelte/icons/x';
 	
 	// Utilities
 	import { findNextAvailableTime, checkConflicts, getEndTimeFromDuration, checkRecurringConflicts } from './utils/time-utils.js';
@@ -53,6 +54,8 @@
 	let justCreatedSlot = $state(false);
 	let autoSuggestedTime = $state(false);
 	let resetTimeRangeFlag = $state(false);
+	let successMessageTimer: ReturnType<typeof setTimeout> | null = null;
+	let errorMessageTimer: ReturnType<typeof setTimeout> | null = null;
 	
 	// Form data for RecurringOptions - no need for $effect, just create reactive object
 	let formData = $state({
@@ -293,10 +296,69 @@
 	// Create mutation
 	const createSlotMutation = createTimeSlotMutation(tourId);
 	
+	// Cleanup timers on component destroy
+	onDestroy(() => {
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+		}
+		if (errorMessageTimer) {
+			clearTimeout(errorMessageTimer);
+		}
+	});
+	
+	// Message dismissal functions
+	function dismissSuccessMessage() {
+		successMessage = null;
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+			successMessageTimer = null;
+		}
+	}
+	
+	function dismissErrorMessage() {
+		error = null;
+		if (errorMessageTimer) {
+			clearTimeout(errorMessageTimer);
+			errorMessageTimer = null;
+		}
+	}
+	
+	function setSuccessMessage(message: string) {
+		// Clear any existing error message
+		dismissErrorMessage();
+		
+		successMessage = message;
+		
+		// Auto-dismiss after 5 seconds
+		if (successMessageTimer) {
+			clearTimeout(successMessageTimer);
+		}
+		successMessageTimer = setTimeout(() => {
+			successMessage = null;
+			successMessageTimer = null;
+		}, 5000);
+	}
+	
+	function setErrorMessage(message: string) {
+		// Clear any existing success message
+		dismissSuccessMessage();
+		
+		error = message;
+		
+		// Auto-dismiss after 8 seconds (errors need more time to read)
+		if (errorMessageTimer) {
+			clearTimeout(errorMessageTimer);
+		}
+		errorMessageTimer = setTimeout(() => {
+			error = null;
+			errorMessageTimer = null;
+		}, 8000);
+	}
+	
 	// Event handlers
 	function handleFieldChange(field: string) {
 		touchedFields.add(field);
-		error = null;
+		dismissErrorMessage(); // Clear error when user starts fixing
 	}
 	
 	async function handleSubmit() {
@@ -337,9 +399,9 @@
 				recurringCount: recurring && !recurringEnd ? recurringCount : undefined
 			});
 			
-			successMessage = recurring && actualRecurringCount > 1
+			setSuccessMessage(recurring && actualRecurringCount > 1
 				? `Created ${actualRecurringCount} time slots successfully!` 
-				: 'Time slot created successfully!';
+				: 'Time slot created successfully!');
 			
 			// Store last created slot info for smart suggestions
 			lastCreatedSlot = { time: startTime, date: date };
@@ -390,7 +452,7 @@
 			}, 3000);
 			
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to create time slot';
+			setErrorMessage(err instanceof Error ? err.message : 'Failed to create time slot');
 		} finally {
 			isSubmitting = false;
 		}
@@ -414,7 +476,15 @@
 			{#if successMessage}
 				<div class="alert-success mb-4">
 					<CheckCircle class="w-5 h-5" />
-					<span>{successMessage}</span>
+					<span class="alert-message">{successMessage}</span>
+					<button 
+						type="button" 
+						class="alert-dismiss"
+						onclick={dismissSuccessMessage}
+						aria-label="Dismiss success message"
+					>
+						<X class="w-4 h-4" />
+					</button>
 				</div>
 			{/if}
 			
@@ -422,7 +492,15 @@
 			{#if error}
 				<div class="alert-error mb-4">
 					<AlertCircle class="w-5 h-5" />
-					<span>{error}</span>
+					<span class="alert-message">{error}</span>
+					<button 
+						type="button" 
+						class="alert-dismiss"
+						onclick={dismissErrorMessage}
+						aria-label="Dismiss error message"
+					>
+						<X class="w-4 h-4" />
+					</button>
 				</div>
 			{/if}
 			
@@ -518,7 +596,7 @@
 								<button 
 									type="button"
 									onclick={() => capacity = tour.capacity}
-									class="button--text button--small mt-1"
+									class="button--text button--small mt-1 max-w-fit"
 								>
 									Use tour default ({tour.capacity} guests)
 								</button>
@@ -529,17 +607,19 @@
 			</div>
 			
 			<!-- Recurring Options -->
-			<RecurringOptions
-				formData={formData}
-				isEditMode={false}
-				onRecurringChange={() => {
-					// Sync changes back to individual fields
-					recurring = formData.recurring;
-					recurringEnd = formData.recurringEnd;
-					recurringCount = formData.recurringCount;
-					handleFieldChange('recurring');
-				}}
-			/>
+			<div class="recurring-options-container">
+				<RecurringOptions
+					formData={formData}
+					isEditMode={false}
+					onRecurringChange={() => {
+						// Sync changes back to individual fields
+						recurring = formData.recurring;
+						recurringEnd = formData.recurringEnd;
+						recurringCount = formData.recurringCount;
+						handleFieldChange('recurring');
+					}}
+				/>
+			</div>
 			
 			<!-- Form Actions -->
 			<div class="form-actions">
@@ -601,6 +681,12 @@
 		margin: 0 auto;
 	}
 	
+	@media (max-width: 768px) {
+		.time-slot-form {
+			padding: 0;
+		}
+	}
+	
 	.loading-state,
 	.error-state {
 		display: flex;
@@ -613,7 +699,20 @@
 		color: var(--text-tertiary);
 	}
 	
-	.alert-success,
+	.alert-success {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		background: var(--color-success-50);
+		color: var(--color-success-700);
+		border: 1px solid var(--color-success-200);
+		position: relative;
+	}
+	
 	.alert-error {
 		display: flex;
 		align-items: center;
@@ -622,6 +721,41 @@
 		border-radius: var(--radius-md);
 		font-size: var(--text-sm);
 		font-weight: 500;
+		background: var(--color-error-50);
+		color: var(--color-error-700);
+		border: 1px solid var(--color-error-200);
+		position: relative;
+	}
+	
+	.alert-message {
+		flex: 1;
+		min-width: 0;
+	}
+	
+	.alert-dismiss {
+		background: transparent;
+		border: none;
+		color: inherit;
+		cursor: pointer;
+		padding: 0.25rem;
+		border-radius: var(--radius-sm);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.7;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+	
+	.alert-dismiss:hover {
+		opacity: 1;
+		background: rgba(0, 0, 0, 0.1);
+	}
+	
+	.alert-dismiss:focus {
+		outline: none;
+		opacity: 1;
+		box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 	}
 	
 	@media (max-width: 768px) {
@@ -649,6 +783,7 @@
 	@media (max-width: 768px) {
 		.form-grid {
 			grid-template-columns: 1fr;
+			gap: 1rem;
 		}
 	}
 	
@@ -660,6 +795,15 @@
 		box-shadow: var(--shadow-sm);
 	}
 	
+	@media (max-width: 768px) {
+		.form-section {
+			border: none;
+			padding: 0.75rem;
+			background: transparent;
+			box-shadow: none;
+		}
+	}
+	
 	.section-header {
 		display: flex;
 		align-items: center;
@@ -668,6 +812,14 @@
 		padding-bottom: 1rem;
 		border-bottom: 1px solid var(--border-primary);
 		color: var(--text-secondary);
+	}
+	
+	@media (max-width: 768px) {
+		.section-header {
+			margin-bottom: 0.75rem;
+			padding-bottom: 0.5rem;
+			border-bottom: 1px solid var(--border-secondary);
+		}
 	}
 	
 	.section-header h3 {
@@ -689,6 +841,15 @@
 		color: var(--text-secondary);
 	}
 	
+	@media (max-width: 768px) {
+		.selected-date-info {
+			margin-top: 0.75rem;
+			padding: 0.5rem 0.75rem;
+			background: var(--bg-tertiary);
+			border-radius: var(--radius-sm);
+		}
+	}
+	
 	.selected-date-info strong {
 		color: var(--text-primary);
 	}
@@ -699,10 +860,35 @@
 		gap: 1.5rem;
 	}
 	
+	@media (max-width: 768px) {
+		.form-fields {
+			gap: 1rem;
+		}
+	}
+	
 	.form-field {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+	}
+	
+	.recurring-options-container {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+		margin-top: 1.5rem;
+	}
+	
+	.recurring-options-container :global(.recurring-container) {
+		width: 100%;
+		max-width: 800px;
+		margin: 0;
+	}
+	
+	@media (max-width: 768px) {
+		.recurring-options-container {
+			margin-top: 1rem;
+		}
 	}
 	
 	.form-actions {
@@ -712,6 +898,14 @@
 		margin-top: 2rem;
 		padding-top: 2rem;
 		border-top: 1px solid var(--border-primary);
+	}
+	
+	@media (max-width: 768px) {
+		.form-actions {
+			margin-top: 1.5rem;
+			padding-top: 1.5rem;
+			border-top: 1px solid var(--border-secondary);
+		}
 	}
 	
 	/* Make TimeRange fit properly */
