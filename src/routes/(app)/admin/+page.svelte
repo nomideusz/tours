@@ -91,7 +91,8 @@
 	
 	// Table sorting setup
 	type SortField = 'created' | 'lastLogin' | 'name' | 'revenue';
-	const sorting = createTableSort<SortField>('created');
+	let sortBy = $state<SortField>('created');
+	let sortOrder = $state<'asc' | 'desc'>('desc');
 	
 	// Define sortable fields
 	const sortableFields = createSortableFields<any>({
@@ -142,7 +143,7 @@
 		}
 		
 		// Sort using the reusable utility
-		result = sortData(result, sorting.getSortConfig(), sortableFields);
+		result = sortData(result, { sortBy, sortOrder }, sortableFields);
 		
 		return result;
 	});
@@ -248,7 +249,15 @@
 	
 	// Handle sort from component
 	function handleSort(field: string) {
-		sorting.setSortBy(field as SortField);
+		const fieldTyped = field as SortField;
+		if (sortBy === fieldTyped) {
+			// Toggle sort order if same field is selected
+			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			// Set new field with default desc order
+			sortBy = fieldTyped;
+			sortOrder = 'desc';
+		}
 	}
 </script>
 
@@ -430,7 +439,7 @@
 							<label for="sort-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
 								Sort By
 							</label>
-							<select id="sort-select" value={sorting.sortBy} onchange={(e) => handleSort((e.target as HTMLSelectElement).value)} class="form-select w-full">
+							<select id="sort-select" value={sortBy} onchange={(e) => handleSort((e.target as HTMLSelectElement).value)} class="form-select w-full">
 								<option value="created">Registration Date</option>
 								<option value="lastLogin">Last Login</option>
 								<option value="name">Name</option>
@@ -442,7 +451,7 @@
 							<label for="order-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
 								Order
 							</label>
-							<select id="order-select" value={sorting.sortOrder} onchange={(e) => sorting.setSortOrder((e.target as HTMLSelectElement).value as 'asc' | 'desc')} class="form-select w-full">
+							<select id="order-select" value={sortOrder} onchange={(e) => sortOrder = (e.target as HTMLSelectElement).value as 'asc' | 'desc'} class="form-select w-full">
 								<option value="desc">Descending</option>
 								<option value="asc">Ascending</option>
 							</select>
@@ -471,8 +480,8 @@
 						<thead style="background: var(--bg-secondary);">
 							<TableSort 
 								columns={sortColumns}
-								sortBy={sorting.sortBy}
-								sortOrder={sorting.sortOrder}
+								sortBy={sortBy}
+								sortOrder={sortOrder}
 								onSort={handleSort}
 								variant="desktop"
 							/>

@@ -16,36 +16,38 @@ export interface SortableField<T = any> {
 
 /**
  * Creates a reactive sorting state and functions
+ * Note: This returns a plain object - reactivity must be handled by the consuming component
  */
 export function createTableSort<T extends string>(
 	initialSortBy: T, 
 	initialSortOrder: 'asc' | 'desc' = 'desc'
 ) {
-	let sortBy = $state(initialSortBy);
-	let sortOrder = $state<'asc' | 'desc'>(initialSortOrder);
+	// Use plain variables instead of runes
+	let currentSortBy = initialSortBy;
+	let currentSortOrder = initialSortOrder;
 
 	function setSortBy(field: T) {
-		if (sortBy === field) {
+		if (currentSortBy === field) {
 			// Toggle sort order if same field is selected
-			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+			currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
 		} else {
 			// Set new field with default desc order
-			sortBy = field;
-			sortOrder = 'desc';
+			currentSortBy = field;
+			currentSortOrder = 'desc';
 		}
 	}
 
 	function setSortOrder(order: 'asc' | 'desc') {
-		sortOrder = order;
+		currentSortOrder = order;
 	}
 
 	function getSortConfig(): SortConfig<T> {
-		return { sortBy, sortOrder };
+		return { sortBy: currentSortBy, sortOrder: currentSortOrder };
 	}
 
 	return {
-		get sortBy() { return sortBy; },
-		get sortOrder() { return sortOrder; },
+		get sortBy() { return currentSortBy; },
+		get sortOrder() { return currentSortOrder; },
 		setSortBy,
 		setSortOrder,
 		getSortConfig

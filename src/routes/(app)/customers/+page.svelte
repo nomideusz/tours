@@ -84,7 +84,8 @@
 	
 	// Table sorting setup
 	type SortField = 'name' | 'email' | 'totalBookings' | 'totalSpent' | 'lastBooking';
-	const sorting = createTableSort<SortField>('lastBooking');
+	let sortBy = $state<SortField>('lastBooking');
+	let sortOrder = $state<'asc' | 'desc'>('desc');
 	
 	// Define sortable fields
 	const sortableFields = createSortableFields<Customer>({
@@ -155,7 +156,7 @@
 		}
 
 		// Sort using the reusable utility
-		result = sortData(result, sorting.getSortConfig(), sortableFields);
+		result = sortData(result, { sortBy, sortOrder }, sortableFields);
 
 		return result;
 	});
@@ -289,7 +290,15 @@
 	
 	// Handle sort from component
 	function handleSort(field: string) {
-		sorting.setSortBy(field as SortField);
+		const fieldTyped = field as SortField;
+		if (sortBy === fieldTyped) {
+			// Toggle sort order if same field is selected
+			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			// Set new field with default desc order
+			sortBy = fieldTyped;
+			sortOrder = 'desc';
+		}
 	}
 
 	// Check if filters are active
@@ -544,8 +553,8 @@
 				<!-- Mobile Sort -->
 				<TableSort 
 					columns={sortColumns}
-					sortBy={sorting.sortBy}
-					sortOrder={sorting.sortOrder}
+					sortBy={sortBy}
+					sortOrder={sortOrder}
 					onSort={handleSort}
 					variant="mobile"
 					class="flex-1"
@@ -767,8 +776,8 @@
 							</th>
 							<TableSort 
 								columns={[...sortColumns, { key: 'actions', label: 'Actions', sortable: false }]}
-								sortBy={sorting.sortBy}
-								sortOrder={sorting.sortOrder}
+								sortBy={sortBy}
+								sortOrder={sortOrder}
 								onSort={handleSort}
 								variant="desktop"
 							/>
