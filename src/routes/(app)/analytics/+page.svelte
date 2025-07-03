@@ -9,7 +9,7 @@
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import SimpleChart from '$lib/components/SimpleChart.svelte';
+	import AnalyticsChart from '$lib/components/AnalyticsChart.svelte';
 	
 	// Icons
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
@@ -73,24 +73,14 @@
 	let hasError = $derived($analyticsQuery.isError || $dashboardStatsQuery.isError || $toursStatsQuery.isError);
 	
 	// Data
-	let analytics = $derived($analyticsQuery.data || {
-		revenue: { total: 0, trend: 0, chartData: [] },
-		bookings: { total: 0, trend: 0, chartData: [] },
-		customers: { total: 0, new: 0, returning: 0 },
-		tours: { views: 0, bookings: 0, conversionRate: 0 },
-		qrCodes: { scans: 0, conversions: 0, conversionRate: 0 },
-		popularTours: [],
-		peakTimes: [],
-		sourceAnalytics: [],
-		customerRetention: { rate: 0, returningCustomers: 0 },
-	});
+	let analytics = $derived($analyticsQuery.data || null);
 	
 	let dashboardStats = $derived($dashboardStatsQuery.data || {});
 	let toursStats = $derived($toursStatsQuery.data || { stats: {} });
 	
 	// Calculate additional metrics
 	let avgBookingValue = $derived(
-		analytics.revenue.total && analytics.bookings.total
+		analytics?.revenue.total && analytics?.bookings.total
 			? analytics.revenue.total / analytics.bookings.total
 			: 0
 	);
@@ -126,6 +116,15 @@
 		};
 		return names[source] || source;
 	}
+	
+	// Debug: Log analytics data
+	$effect(() => {
+		if (analytics) {
+			console.log('Analytics data loaded:', analytics);
+			console.log('Revenue chart data:', analytics.revenue?.chartData);
+			console.log('Bookings chart data:', analytics.bookings?.chartData);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -193,26 +192,7 @@
 		overflow: hidden;
 	}
 	
-	.stat-card::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 3px;
-		background: linear-gradient(90deg, 
-			var(--color-primary-400) 0%, 
-			var(--color-primary-500) 50%, 
-			var(--color-primary-400) 100%);
-		transform: translateX(-100%);
-		animation: shimmer 2s infinite;
-	}
-	
-	@keyframes shimmer {
-		to {
-			transform: translateX(100%);
-		}
-	}
+
 	
 	.chart-container {
 		position: relative;
@@ -297,22 +277,22 @@
 				{
 					icon: DollarSign,
 					label: 'Revenue',
-					value: isLoading ? '...' : $globalCurrencyFormatter(analytics.revenue.total)
+					value: isLoading ? '...' : $globalCurrencyFormatter(analytics?.revenue.total)
 				},
 				{
 					icon: Calendar,
 					label: 'Bookings',
-					value: isLoading ? '...' : `${analytics.bookings.total}`
+					value: isLoading ? '...' : `${analytics?.bookings.total}`
 				},
 				{
 					icon: Percent,
 					label: 'QR Rate',
-					value: isLoading ? '...' : `${analytics.qrCodes.conversionRate || 0}%`
+					value: isLoading ? '...' : `${analytics?.qrCodes.conversionRate || 0}%`
 				},
 				{
 					icon: TrendingUp,
 					label: 'Trend',
-					value: isLoading ? '...' : analytics.revenue.trend > 0 ? `+${analytics.revenue.trend}%` : `${analytics.revenue.trend}%`
+					value: isLoading ? '...' : analytics?.revenue.trend > 0 ? `+${analytics.revenue.trend}%` : `${analytics.revenue.trend}%`
 				}
 			]}
 		/>
@@ -425,7 +405,7 @@
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<DollarSign class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
-							{#if analytics.revenue.trend !== 0}
+							{#if analytics?.revenue.trend !== 0}
 								<div class="flex items-center gap-1 text-xs {analytics.revenue.trend > 0 ? 'text-green-600' : 'text-red-600'}">
 									{#if analytics.revenue.trend > 0}
 										<ArrowUp class="h-3 w-3" />
@@ -437,7 +417,7 @@
 							{/if}
 						</div>
 						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{$globalCurrencyFormatter(analytics.revenue.total)}
+							{$globalCurrencyFormatter(analytics?.revenue.total)}
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">Total Revenue</p>
 					</div>
@@ -448,7 +428,7 @@
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<Calendar class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
-							{#if analytics.bookings.trend !== 0}
+							{#if analytics?.bookings.trend !== 0}
 								<div class="flex items-center gap-1 text-xs {analytics.bookings.trend > 0 ? 'text-green-600' : 'text-red-600'}">
 									{#if analytics.bookings.trend > 0}
 										<ArrowUp class="h-3 w-3" />
@@ -460,7 +440,7 @@
 							{/if}
 						</div>
 						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{analytics.bookings.total}
+							{analytics?.bookings.total}
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">Total Bookings</p>
 					</div>
@@ -486,7 +466,7 @@
 							</div>
 						</div>
 						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{analytics.qrCodes.conversionRate || 0}%
+							{analytics?.qrCodes.conversionRate || 0}%
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">QR Conversion Rate</p>
 					</div>
@@ -498,12 +478,12 @@
 					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Revenue Trend</h3>
 						<div class="chart-container">
-							<SimpleChart 
-								data={analytics.revenue.chartData} 
+							<AnalyticsChart 
+								data={analytics?.revenue.chartData || []} 
 								type="line"
 								showCurrency={true}
 								color="var(--color-primary-500)"
-								height={250}
+								label="Revenue"
 							/>
 						</div>
 					</div>
@@ -512,11 +492,11 @@
 					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Bookings Trend</h3>
 						<div class="chart-container">
-							<SimpleChart 
-								data={analytics.bookings.chartData} 
+							<AnalyticsChart 
+								data={analytics?.bookings.chartData || []} 
 								type="bar"
 								color="var(--color-primary-500)"
-								height={250}
+								label="Bookings"
 							/>
 						</div>
 					</div>
@@ -530,7 +510,7 @@
 							<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Top Performing Tours</h3>
 						</div>
 						<div class="p-4">
-							{#if analytics.popularTours && analytics.popularTours.length > 0}
+							{#if analytics?.popularTours && analytics.popularTours.length > 0}
 								<div class="space-y-3">
 									{#each analytics.popularTours.slice(0, 5) as tour, index}
 										<div class="flex items-center justify-between">
@@ -563,19 +543,19 @@
 							<div>
 								<div class="flex items-center justify-between mb-2">
 									<span class="text-xs" style="color: var(--text-secondary);">Total Customers</span>
-									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.customers.total}</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics?.customers.total}</span>
 								</div>
 								<div class="flex items-center justify-between mb-2">
 									<span class="text-xs" style="color: var(--text-secondary);">New Customers</span>
-									<span class="text-sm font-semibold text-green-600">{analytics.customers.new}</span>
+									<span class="text-sm font-semibold text-green-600">{analytics?.customers.new}</span>
 								</div>
 								<div class="flex items-center justify-between mb-2">
 									<span class="text-xs" style="color: var(--text-secondary);">Returning Customers</span>
-									<span class="text-sm font-semibold text-blue-600">{analytics.customers.returning}</span>
+									<span class="text-sm font-semibold text-blue-600">{analytics?.customers.returning}</span>
 								</div>
 								<div class="flex items-center justify-between">
 									<span class="text-xs" style="color: var(--text-secondary);">Retention Rate</span>
-									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.customerRetention.rate}%</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics?.customerRetention.rate}%</span>
 								</div>
 							</div>
 						</div>
@@ -587,7 +567,7 @@
 							<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Booking Sources</h3>
 						</div>
 						<div class="p-4">
-							{#if analytics.sourceAnalytics && analytics.sourceAnalytics.length > 0}
+							{#if analytics?.sourceAnalytics && analytics.sourceAnalytics.length > 0}
 								<div class="space-y-3">
 									{#each analytics.sourceAnalytics as source}
 										{@const Icon = sourceIcons[source.source] || Activity}
@@ -629,12 +609,12 @@
 					
 					<!-- Revenue Chart -->
 					<div class="mb-6">
-						<SimpleChart 
-							data={analytics.revenue.chartData} 
+						<AnalyticsChart 
+							data={analytics?.revenue.chartData || []} 
 							type="line"
 							showCurrency={true}
 							color="var(--color-primary-500)"
-							height={300}
+							label="Revenue"
 						/>
 					</div>
 					
@@ -642,7 +622,7 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 						<div>
 							<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Revenue by Tour</h4>
-							{#if analytics.popularTours && analytics.popularTours.length > 0}
+							{#if analytics?.popularTours && analytics.popularTours.length > 0}
 								<div class="space-y-2">
 									{#each analytics.popularTours as tour}
 										<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
@@ -699,18 +679,18 @@
 					
 					<!-- Bookings Chart -->
 					<div class="mb-6">
-						<SimpleChart 
-							data={analytics.bookings.chartData} 
+						<AnalyticsChart 
+							data={analytics?.bookings.chartData || []} 
 							type="bar"
 							color="var(--color-primary-500)"
-							height={300}
+							label="Bookings"
 						/>
 					</div>
 					
 					<!-- Peak Times -->
 					<div class="mt-6">
 						<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Peak Booking Times</h4>
-						{#if analytics.peakTimes && analytics.peakTimes.length > 0}
+						{#if analytics?.peakTimes && analytics.peakTimes.length > 0}
 							<div class="grid grid-cols-12 gap-2">
 								{#each analytics.peakTimes as time}
 									{@const maxBookings = Math.max(...analytics.peakTimes.map((t: any) => t.bookings))}
@@ -741,7 +721,7 @@
 				<div class="rounded-lg p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Tour Performance</h3>
 					
-					{#if analytics.popularTours && analytics.popularTours.length > 0}
+					{#if analytics?.popularTours && analytics.popularTours.length > 0}
 						<div class="space-y-4">
 							{#each analytics.popularTours as tour, index}
 								<div class="p-4 rounded-lg" style="background: var(--bg-secondary);">
@@ -810,7 +790,7 @@
 							<div>
 								<div class="flex items-center justify-between mb-1">
 									<span class="text-sm" style="color: var(--text-primary);">QR Scans</span>
-									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.qrCodes.scans}</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics?.qrCodes.scans}</span>
 								</div>
 								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--color-primary-500);">
 									<div class="h-full flex items-center justify-center text-xs font-medium text-white">
@@ -822,14 +802,14 @@
 							<div>
 								<div class="flex items-center justify-between mb-1">
 									<span class="text-sm" style="color: var(--text-primary);">Conversions</span>
-									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.qrCodes.conversions}</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics?.qrCodes.conversions}</span>
 								</div>
 								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
 									<div 
 										class="h-full flex items-center justify-center text-xs font-medium text-white rounded-lg"
-										style="width: {analytics.qrCodes.conversionRate}%; background: var(--color-primary-500);"
+										style="width: {analytics?.qrCodes.conversionRate}%; background: var(--color-primary-500);"
 									>
-										{analytics.qrCodes.conversionRate}%
+										{analytics?.qrCodes.conversionRate}%
 									</div>
 								</div>
 							</div>
@@ -839,7 +819,7 @@
 					<!-- Source Conversions -->
 					<div>
 						<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Conversion by Source</h4>
-						{#if analytics.sourceAnalytics && analytics.sourceAnalytics.length > 0}
+						{#if analytics?.sourceAnalytics && analytics.sourceAnalytics.length > 0}
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								{#each analytics.sourceAnalytics as source}
 									{@const Icon = sourceIcons[source.source] || Activity}

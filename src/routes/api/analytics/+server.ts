@@ -2,140 +2,154 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, users, timeSlots } from '$lib/db/schema/index.js';
-import { and, eq, gte, lte, sql, desc, inArray, count, sum } from 'drizzle-orm';
+import { and, eq, gte, lte, sql, desc, inArray, count, sum, between } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
-	if (!locals.user) {
-		throw error(401, 'Unauthorized');
-	}
-
-	const range = url.searchParams.get('range') || 'month';
-	const userId = locals.user.id;
-
-	// Calculate date range
-	const now = new Date();
-	let startDate: Date;
-	let previousStartDate: Date;
-	
-	switch (range) {
-		case 'week':
-			startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-			previousStartDate = new Date(startDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-			break;
-		case 'month':
-			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-			previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-			break;
-		case 'quarter':
-			startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-			previousStartDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 - 3, 1);
-			break;
-		case 'year':
-			startDate = new Date(now.getFullYear(), 0, 1);
-			previousStartDate = new Date(now.getFullYear() - 1, 0, 1);
-			break;
-
-		default:
-			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-			previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-	}
-
+export const GET: RequestHandler = async ({ locals, url }) => {
 	try {
-		// Get user's tours
-		const userTours = await db
-			.select({ id: tours.id })
-			.from(tours)
-			.where(eq(tours.userId, userId));
-		
-		const tourIds = userTours.map(t => t.id);
-		
-
-		
-		if (tourIds.length === 0) {
-			// Return empty analytics if no tours
-			return json({
-				revenue: { total: 0, trend: 0, chartData: [] },
-				bookings: { total: 0, trend: 0, chartData: [] },
-				customers: { total: 0, new: 0, returning: 0 },
-				tours: { views: 0, bookings: 0, conversionRate: 0 },
-				qrCodes: { scans: 0, conversions: 0, conversionRate: 0 },
-				popularTours: [],
-				peakTimes: [],
-				sourceAnalytics: [],
-				customerRetention: { rate: 0, returningCustomers: 0 },
-			});
+		if (!locals.user) {
+			return json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
-
-
-		// Get bookings for current and previous periods
-		const [periodBookings, previousPeriodBookings] = await Promise.all([
-			db
-				.select({
-					id: bookings.id,
-					tourId: bookings.tourId,
-					totalAmount: bookings.totalAmount,
-					status: bookings.status,
-					createdAt: bookings.createdAt,
-					customerEmail: bookings.customerEmail,
-					source: bookings.source,
-					sourceQrCode: bookings.sourceQrCode,
-					participants: bookings.participants,
-				})
-				.from(bookings)
-				.where(
-					and(
-						inArray(bookings.tourId, tourIds),
-						gte(bookings.createdAt, startDate),
-						lte(bookings.createdAt, now)
-					)
-				),
-			db
-				.select({
-					totalAmount: bookings.totalAmount,
-					status: bookings.status,
-				})
-				.from(bookings)
-				.where(
-					and(
-						inArray(bookings.tourId, tourIds),
-						gte(bookings.createdAt, previousStartDate),
-						lte(bookings.createdAt, startDate)
-					)
-				)
-		]);
-
-
-
-		// Calculate totals
-		const confirmedBookings = periodBookings.filter(b => b.status === 'confirmed');
-		const previousConfirmedBookings = previousPeriodBookings.filter(b => b.status === 'confirmed');
+		const userId = locals.user.id;
+		const timeRange = url.searchParams.get('range') || 'month';
+		const tourId = url.searchParams.get('tourId') || null; // Optional tour filter
 		
-		// Use confirmed bookings, fall back to all bookings if none confirmed
-		const bookingsToAnalyze = confirmedBookings.length > 0 ? confirmedBookings : periodBookings;
+		// Calculate date range
+		const now = new Date();
+		let startDate: Date;
+		let previousStartDate: Date;
+		let previousEndDate: Date;
 		
-		const totalRevenue = bookingsToAnalyze.reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
-		const previousRevenue = previousConfirmedBookings.reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+		switch (timeRange) {
+			case 'week':
+				startDate = new Date();
+				startDate.setDate(startDate.getDate() - 7);
+				previousStartDate = new Date();
+				previousStartDate.setDate(previousStartDate.getDate() - 14);
+				previousEndDate = new Date();
+				previousEndDate.setDate(previousEndDate.getDate() - 7);
+				break;
+			case 'month':
+				startDate = new Date();
+				startDate.setMonth(startDate.getMonth() - 1);
+				previousStartDate = new Date();
+				previousStartDate.setMonth(previousStartDate.getMonth() - 2);
+				previousEndDate = new Date();
+				previousEndDate.setMonth(previousEndDate.getMonth() - 1);
+				break;
+			case 'quarter':
+				startDate = new Date();
+				startDate.setMonth(startDate.getMonth() - 3);
+				previousStartDate = new Date();
+				previousStartDate.setMonth(previousStartDate.getMonth() - 6);
+				previousEndDate = new Date();
+				previousEndDate.setMonth(previousEndDate.getMonth() - 3);
+				break;
+			case 'year':
+				startDate = new Date();
+				startDate.setFullYear(startDate.getFullYear() - 1);
+				previousStartDate = new Date();
+				previousStartDate.setFullYear(previousStartDate.getFullYear() - 2);
+				previousEndDate = new Date();
+				previousEndDate.setFullYear(previousEndDate.getFullYear() - 1);
+				break;
+			default:
+				startDate = new Date();
+				startDate.setMonth(startDate.getMonth() - 1);
+				previousStartDate = new Date();
+				previousStartDate.setMonth(previousStartDate.getMonth() - 2);
+				previousEndDate = new Date();
+				previousEndDate.setMonth(previousEndDate.getMonth() - 1);
+		}
 		
-		const totalBookings = bookingsToAnalyze.length;
-		const previousBookings = previousConfirmedBookings.length;
-
+		// Build base conditions for bookings
+		const baseConditions = [
+			eq(bookings.status, 'confirmed'),
+			gte(bookings.createdAt, startDate)
+		];
+		
+		// Add tour filter if specified
+		let tourIds: string[] = [];
+		if (tourId) {
+			baseConditions.push(eq(bookings.tourId, tourId));
+			tourIds = [tourId];
+		} else {
+			// Only include user's bookings if not filtering by tour
+			const userTours = await db
+				.select({ id: tours.id })
+				.from(tours)
+				.where(eq(tours.userId, userId));
+			
+			tourIds = userTours.map(tour => tour.id);
+			if (tourIds.length > 0) {
+				baseConditions.push(sql`${bookings.tourId} IN (${sql.raw(tourIds.map(id => `'${id}'`).join(', '))})`);
+			}
+		}
+		
+		// Revenue and bookings for current period
+		const [currentPeriod] = await db
+			.select({
+				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalBookings: count(bookings.id),
+				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`
+			})
+			.from(bookings)
+			.where(and(...baseConditions));
+		
+		// Previous period conditions
+		const prevConditions = [
+			eq(bookings.status, 'confirmed'),
+			between(bookings.createdAt, previousStartDate, previousEndDate)
+		];
+		
+		if (tourId) {
+			prevConditions.push(eq(bookings.tourId, tourId));
+		} else if (tourIds && tourIds.length > 0) {
+			prevConditions.push(sql`${bookings.tourId} IN (${sql.raw(tourIds.map(id => `'${id}'`).join(', '))})`);
+		}
+		
+		// Revenue and bookings for previous period (for trend calculation)
+		const [previousPeriod] = await db
+			.select({
+				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalBookings: count(bookings.id)
+			})
+			.from(bookings)
+			.where(and(...prevConditions));
+		
 		// Calculate trends
-		const revenueTrend = previousRevenue > 0 
-			? Math.round(((totalRevenue - previousRevenue) / previousRevenue) * 100)
+		const revenueTrend = previousPeriod.totalRevenue > 0 
+			? Math.round(((currentPeriod.totalRevenue - previousPeriod.totalRevenue) / previousPeriod.totalRevenue) * 100)
 			: 0;
-		const bookingsTrend = previousBookings > 0
-			? Math.round(((totalBookings - previousBookings) / previousBookings) * 100)
+		
+		const bookingsTrend = previousPeriod.totalBookings > 0
+			? Math.round(((currentPeriod.totalBookings - previousPeriod.totalBookings) / previousPeriod.totalBookings) * 100)
 			: 0;
+		
+		// Get the actual bookings data for detailed analysis
+		const periodBookings = await db
+			.select({
+				id: bookings.id,
+				tourId: bookings.tourId,
+				totalAmount: bookings.totalAmount,
+				status: bookings.status,
+				createdAt: bookings.createdAt,
+				customerEmail: bookings.customerEmail,
+				source: bookings.source,
+				sourceQrCode: bookings.sourceQrCode,
+				participants: bookings.participants,
+			})
+			.from(bookings)
+			.where(and(...baseConditions));
 
 		// Get unique customers and identify new vs returning
-		const currentCustomers = new Set(bookingsToAnalyze.map(b => b.customerEmail).filter(Boolean));
+		const currentCustomers = new Set(periodBookings.map(b => b.customerEmail).filter(Boolean));
 		const allTimeCustomersBeforePeriod = await db
 			.select({ customerEmail: bookings.customerEmail })
 			.from(bookings)
 			.where(
 				and(
-					inArray(bookings.tourId, tourIds),
+					tourIds.length > 0 ? sql`${bookings.tourId} IN (${sql.raw(tourIds.map(id => `'${id}'`).join(', '))})` : sql`1=1`,
 					eq(bookings.status, 'confirmed'),
 					lte(bookings.createdAt, startDate)
 				)
@@ -188,7 +202,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		}));
 
 		// Source analytics
-		const sourceData = bookingsToAnalyze.reduce((acc, booking) => {
+		const sourceData = periodBookings.reduce((acc: Record<string, any>, booking) => {
 			const source = booking.source || 'direct';
 			if (!acc[source]) {
 				acc[source] = { count: 0, revenue: 0 };
@@ -196,13 +210,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			acc[source].count++;
 			acc[source].revenue += Number(booking.totalAmount || 0);
 			return acc;
-		}, {} as Record<string, { count: number; revenue: number }>);
-
-		const sourceAnalytics = Object.entries(sourceData).map(([source, data]) => ({
+		}, {});
+		
+		const sourceAnalytics = Object.entries(sourceData).map(([source, data]: [string, any]) => ({
 			source,
 			bookings: data.count,
 			revenue: data.revenue,
-			percentage: Math.round((data.count / totalBookings) * 100) || 0,
+			percentage: Math.round((data.count / currentPeriod.totalBookings) * 100) || 0,
 		})).sort((a, b) => b.bookings - a.bookings);
 
 		// Peak times analysis - get bookings by hour of day
@@ -217,7 +231,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 				.where(
 					and(
-						inArray(bookings.tourId, tourIds),
 						eq(bookings.status, 'confirmed'),
 						gte(bookings.createdAt, startDate)
 					)
@@ -235,7 +248,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		}
 
 		// Generate chart data
-		const chartData = generateChartData(bookingsToAnalyze, startDate, now, range);
+		const chartData = generateChartData(periodBookings, startDate, now, timeRange);
 
 		// Customer retention rate
 		const retentionRate = currentCustomers.size > 0
@@ -244,12 +257,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		return json({
 			revenue: { 
-				total: totalRevenue || 0, 
+				total: currentPeriod.totalRevenue || 0, 
 				trend: revenueTrend || 0,
 				chartData: chartData.revenue,
 			},
 			bookings: { 
-				total: totalBookings || 0, 
+				total: currentPeriod.totalBookings || 0, 
 				trend: bookingsTrend || 0,
 				chartData: chartData.bookings,
 			},
@@ -260,7 +273,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			},
 			tours: { 
 				views: totalQrScans || 0, 
-				bookings: totalBookings || 0, 
+				bookings: currentPeriod.totalBookings || 0, 
 				conversionRate: qrConversionRate || 0,
 			},
 			qrCodes: { 

@@ -68,10 +68,10 @@ export const queryFunctions = {
 	},
 	
 	// Fetch tour details
-	async fetchTourDetails(tourId: string) {
+	async fetchTourDetails(tourId: string, timeRange: string = 'all') {
 		if (!browser) throw new Error('Client-side only');
 		
-		const response = await fetch(`/api/tour-details/${tourId}`);
+		const response = await fetch(`/api/tour-details/${tourId}?range=${timeRange}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch tour details: ${response.status} ${response.statusText}`);
 		}

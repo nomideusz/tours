@@ -37,6 +37,7 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Plus from 'lucide-svelte/icons/plus';
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
+	import TrendingDown from 'lucide-svelte/icons/trending-down';
 	import Eye from 'lucide-svelte/icons/eye';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import XCircle from 'lucide-svelte/icons/x-circle';
@@ -61,10 +62,13 @@
 	// Initialize mutations
 	const updateStatusMutation = updateTourStatusMutation();
 	
-	// TanStack Query for tour details
+	// Time range state (matching analytics page)
+	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('month');
+	
+	// TanStack Query for tour details with time range
 	const tourDetailsQuery = $derived(createQuery({
-		queryKey: queryKeys.tourDetails(tourId),
-		queryFn: () => queryFunctions.fetchTourDetails(tourId),
+		queryKey: [...queryKeys.tourDetails(tourId), timeRange],
+		queryFn: () => queryFunctions.fetchTourDetails(tourId, timeRange),
 		staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetching
 		gcTime: 10 * 60 * 1000, // 10 minutes
 		refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
@@ -606,7 +610,7 @@
 				backgroundColor: tour.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)',
 				textColor: tour.status === 'active' ? 'var(--color-success-800)' : 'var(--color-warning-800)'
 			} : undefined}
-			secondaryInfo={tour && stats ? `${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)} • ${tour.qrScans || 0} scans` : ''}
+			secondaryInfo={tour && stats ? `${timeRange === 'all' ? 'All time' : `Last ${timeRange}`} • ${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)}` : ''}
 			quickActions={[
 				{
 					label: 'Edit',
@@ -754,6 +758,45 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8">
 			<!-- Left Column - Main Content -->
 			<div class="lg:col-span-2 xl:col-span-3 space-y-6 xl:space-y-8">
+				<!-- Time Range Selector -->
+				<div class="flex items-center gap-2 justify-center sm:justify-start mb-4">
+					<button
+						onclick={() => timeRange = 'week'}
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'week' ? 'bg-primary text-white' : ''}"
+						style="{timeRange === 'week' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
+					>
+						Week
+					</button>
+					<button
+						onclick={() => timeRange = 'month'}
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'month' ? 'bg-primary text-white' : ''}"
+						style="{timeRange === 'month' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
+					>
+						Month
+					</button>
+					<button
+						onclick={() => timeRange = 'quarter'}
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'quarter' ? 'bg-primary text-white' : ''}"
+						style="{timeRange === 'quarter' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
+					>
+						Quarter
+					</button>
+					<button
+						onclick={() => timeRange = 'year'}
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'year' ? 'bg-primary text-white' : ''}"
+						style="{timeRange === 'year' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
+					>
+						Year
+					</button>
+					<button
+						onclick={() => timeRange = 'all'}
+						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'all' ? 'bg-primary text-white' : ''}"
+						style="{timeRange === 'all' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
+					>
+						All Time
+					</button>
+				</div>
+				
 				<!-- Overview Tab Content (Mobile) -->
 				<div class="{mobileTab !== 'overview' ? 'hidden sm:block' : ''} space-y-6">
 					<!-- Tour Details - Compact version at top -->
@@ -764,10 +807,32 @@
 								<!-- Inline stats - Desktop only -->
 								<div class="hidden sm:flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
 									<span>{stats?.totalBookings || 0} bookings</span>
+									{#if stats?.trends?.bookingsTrend !== undefined && stats?.trends?.bookingsTrend !== 0}
+										<span class="flex items-center gap-1 {stats.trends.bookingsTrend > 0 ? 'text-green-600' : 'text-red-600'}">
+											{#if stats.trends.bookingsTrend > 0}
+												<TrendingUp class="h-3 w-3" />
+												+{stats.trends.bookingsTrend}%
+											{:else}
+												<TrendingDown class="h-3 w-3" />
+												{stats.trends.bookingsTrend}%
+											{/if}
+										</span>
+									{/if}
 									<span>•</span>
 									<span>{$globalCurrencyFormatter(stats?.totalRevenue || 0)}</span>
+									{#if stats?.trends?.revenueTrend !== undefined && stats?.trends?.revenueTrend !== 0}
+										<span class="flex items-center gap-1 {stats.trends.revenueTrend > 0 ? 'text-green-600' : 'text-red-600'}">
+											{#if stats.trends.revenueTrend > 0}
+												<TrendingUp class="h-3 w-3" />
+												+{stats.trends.revenueTrend}%
+											{:else}
+												<TrendingDown class="h-3 w-3" />
+												{stats.trends.revenueTrend}%
+											{/if}
+										</span>
+									{/if}
 									<span>•</span>
-									<span>{tour.qrScans || 0} scans</span>
+									<span>{tour?.qrScans || 0} scans</span>
 									<span>•</span>
 									<span>{getConversionRateText()} conversion</span>
 								</div>

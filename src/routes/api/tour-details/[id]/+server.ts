@@ -2,9 +2,9 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, timeSlots, bookings } from '$lib/db/schema/index.js';
-import { eq, and, gte, desc, count, sql } from 'drizzle-orm';
+import { eq, and, gte, desc, count, sql, between } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ locals, params }) => {
+export const GET: RequestHandler = async ({ locals, params, url }) => {
 	try {
 		if (!locals.user) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,6 +16,37 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 
 		const tourId = params.id;
 		const userId = locals.user.id;
+		
+		// Get time range from query params (defaults to 'all' for backward compatibility)
+		const timeRange = url.searchParams.get('range') || 'all';
+		
+		// Calculate date range based on timeRange parameter
+		const now = new Date();
+		let startDate: Date | null = null;
+		
+		switch (timeRange) {
+			case 'week':
+				startDate = new Date();
+				startDate.setDate(startDate.getDate() - 7);
+				break;
+			case 'month':
+				startDate = new Date();
+				startDate.setMonth(startDate.getMonth() - 1);
+				break;
+			case 'quarter':
+				startDate = new Date();
+				startDate.setMonth(startDate.getMonth() - 3);
+				break;
+			case 'year':
+				startDate = new Date();
+				startDate.setFullYear(startDate.getFullYear() - 1);
+				break;
+			case 'all':
+			default:
+				// No date filtering for all time
+				startDate = null;
+				break;
+		}
 
 		// Step 1: Get tour data (simple query, no JOINs)
 		const [tour] = await db
@@ -32,7 +63,6 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 		}
 
 		// Step 2: Get upcoming time slots (simple query)
-		const now = new Date();
 		const upcomingSlots = await db
 			.select({
 				id: timeSlots.id,
@@ -50,7 +80,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			.limit(10);
 
 		// Step 3: Get recent bookings (simple query)
-		const recentBookings = await db
+		const recentBookingsQuery = db
 			.select({
 				id: bookings.id,
 				customerName: bookings.customerName,
@@ -64,8 +94,17 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			.where(eq(bookings.tourId, tourId))
 			.orderBy(desc(bookings.createdAt))
 			.limit(10);
+			
+		const recentBookings = await recentBookingsQuery;
 
-		// Step 4: Calculate stats (simple aggregations)
+		// Step 4: Calculate stats (with time filtering)
+		const statsConditions = [eq(bookings.tourId, tourId)];
+		
+		// Add date filtering if not "all time"
+		if (startDate) {
+			statsConditions.push(gte(bookings.createdAt, startDate));
+		}
+		
 		const [tourStats] = await db
 			.select({
 				totalBookings: count(bookings.id),
@@ -75,7 +114,43 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 				pendingBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'pending' THEN 1 ELSE 0 END), 0)`
 			})
 			.from(bookings)
-			.where(eq(bookings.tourId, tourId));
+			.where(and(...statsConditions));
+			
+		// Calculate previous period stats for trends (only if not "all time")
+		let previousPeriodStats = null;
+		if (startDate && timeRange !== 'all') {
+			const previousStartDate = new Date(startDate);
+			const previousEndDate = new Date(startDate);
+			
+			// Calculate previous period dates
+			switch (timeRange) {
+				case 'week':
+					previousStartDate.setDate(previousStartDate.getDate() - 7);
+					break;
+				case 'month':
+					previousStartDate.setMonth(previousStartDate.getMonth() - 1);
+					break;
+				case 'quarter':
+					previousStartDate.setMonth(previousStartDate.getMonth() - 3);
+					break;
+				case 'year':
+					previousStartDate.setFullYear(previousStartDate.getFullYear() - 1);
+					break;
+			}
+			
+			const [prevStats] = await db
+				.select({
+					totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+					totalBookings: count(bookings.id)
+				})
+				.from(bookings)
+				.where(and(
+					eq(bookings.tourId, tourId),
+					between(bookings.createdAt, previousStartDate, previousEndDate)
+				));
+				
+			previousPeriodStats = prevStats;
+		}
 
 		// Step 5: Check for future bookings (for delete button logic)
 		// Include both confirmed AND pending bookings to prevent deletion during payment processing
@@ -132,7 +207,18 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 			qrConversions: tour.qrConversions || 0,
 			// Calculate conversion rate
 			conversionRate: (tour.qrScans || 0) > 0 ? ((tour.qrConversions || 0) / (tour.qrScans || 0)) * 100 : 0,
-			recentBookings: processedRecentBookings
+			recentBookings: processedRecentBookings,
+			// Add time range info
+			timeRange: timeRange,
+			// Add trend data if available
+			trends: previousPeriodStats ? {
+				revenueTrend: previousPeriodStats.totalRevenue > 0 
+					? Math.round(((Number(tourStats?.totalRevenue || 0) - previousPeriodStats.totalRevenue) / previousPeriodStats.totalRevenue) * 100)
+					: 0,
+				bookingsTrend: previousPeriodStats.totalBookings > 0
+					? Math.round(((Number(tourStats?.totalBookings || 0) - previousPeriodStats.totalBookings) / previousPeriodStats.totalBookings) * 100)
+					: 0
+			} : null
 		};
 
 		return json({
