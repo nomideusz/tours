@@ -9,6 +9,7 @@
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import SimpleChart from '$lib/components/SimpleChart.svelte';
 	
 	// Icons
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
@@ -25,11 +26,16 @@
 	import BarChart3 from 'lucide-svelte/icons/bar-chart-3';
 	import Target from 'lucide-svelte/icons/target';
 	import Percent from 'lucide-svelte/icons/percent';
+	import UserCheck from 'lucide-svelte/icons/user-check';
+	import Share2 from 'lucide-svelte/icons/share-2';
 
 	let { data }: { data: PageData } = $props();
 	
 	// Analytics time range state
-	let timeRange = $state<'week' | 'month' | 'quarter' | 'year'>('month');
+	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('month');
+	
+	// Debug mode
+	let showDebug = $state(false);
 	let activeTab = $state<'overview' | 'revenue' | 'bookings' | 'tours' | 'conversions'>('overview');
 	
 	// Fetch analytics data
@@ -76,6 +82,8 @@
 		qrCodes: { scans: 0, conversions: 0, conversionRate: 0 },
 		popularTours: [],
 		peakTimes: [],
+		sourceAnalytics: [],
+		customerRetention: { rate: 0, returningCustomers: 0 },
 	});
 	
 	let dashboardStats = $derived($dashboardStatsQuery.data || {});
@@ -96,6 +104,29 @@
 		{ id: 'tours' as const, label: 'Tours', icon: MapPin },
 		{ id: 'conversions' as const, label: 'Conversions', icon: Target },
 	];
+	
+	// Source icons mapping
+	const sourceIcons: Record<string, any> = {
+		main_qr: QrCode,
+		tour_qr: QrCode,
+		direct: Activity,
+		referral: Share2,
+		social: Share2,
+		other: Activity,
+	};
+	
+	// Format source name
+	function formatSourceName(source: string): string {
+		const names: Record<string, string> = {
+			main_qr: 'Main QR Code',
+			tour_qr: 'Tour QR Code',
+			direct: 'Direct Visit',
+			referral: 'Referral Link',
+			social: 'Social Media',
+			other: 'Other',
+		};
+		return names[source] || source;
+	}
 </script>
 
 <svelte:head>
@@ -219,6 +250,40 @@
 	.desktop-tab-inactive:hover {
 		color: var(--text-primary);
 	}
+	
+	.peak-time-bar {
+		position: relative;
+		height: 100px;
+		background: var(--bg-secondary);
+		border-radius: 0.25rem;
+		overflow: hidden;
+	}
+	
+	.peak-time-fill {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: var(--color-primary-500);
+		transition: height 0.3s ease;
+	}
+	
+	.source-bar {
+		position: relative;
+		height: 8px;
+		background: var(--bg-secondary);
+		border-radius: 9999px;
+		overflow: hidden;
+	}
+	
+	.source-fill {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		background: var(--color-primary-500);
+		transition: width 0.3s ease;
+	}
 </style>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -285,6 +350,19 @@
 					>
 						Year
 					</button>
+					<button
+						onclick={() => timeRange = 'all'}
+						class="time-range-button {timeRange === 'all' ? 'active' : ''}"
+					>
+						All Time
+					</button>
+					<button
+						onclick={() => showDebug = !showDebug}
+						class="time-range-button ml-4"
+						style="background: var(--color-danger-50); color: var(--color-danger-700); border-color: var(--color-danger-200);"
+					>
+						{showDebug ? 'Hide' : 'Show'} Debug
+					</button>
 				</div>
 			</PageHeader>
 		</div>
@@ -315,7 +393,27 @@
 				Retry
 			</button>
 		</div>
-	{:else}
+	{:else if showDebug}
+		<!-- Debug Information -->
+		<div class="rounded-lg p-6 mb-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Debug Information</h3>
+			<div class="space-y-4">
+				<div>
+					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Analytics Data:</h4>
+					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(analytics, null, 2)}</pre>
+				</div>
+				<div>
+					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Dashboard Stats:</h4>
+					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(dashboardStats, null, 2)}</pre>
+				</div>
+				<div>
+					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Tours Stats:</h4>
+					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(toursStats, null, 2)}</pre>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Normal content continues below -->
 		<!-- Mobile Tab Navigation -->
 		<div class="sm:hidden mb-6 -mx-4">
 			<div class="flex overflow-x-auto mobile-scroll px-4 border-b" style="border-color: var(--border-primary);">
@@ -430,56 +528,130 @@
 				
 				<!-- Charts Section -->
 				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<!-- Revenue Chart Placeholder -->
+					<!-- Revenue Chart -->
 					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Revenue Trend</h3>
-						<div class="chart-container flex items-center justify-center" style="background: var(--bg-secondary); border-radius: 0.5rem;">
-							<div class="text-center">
-								<BarChart3 class="h-8 w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-								<p class="text-sm" style="color: var(--text-secondary);">Chart coming soon</p>
-							</div>
+						<div class="chart-container">
+							<SimpleChart 
+								data={analytics.revenue.chartData} 
+								type="line"
+								showCurrency={true}
+								color="var(--color-primary-500)"
+								height={250}
+							/>
 						</div>
 					</div>
 					
-					<!-- Bookings Chart Placeholder -->
+					<!-- Bookings Chart -->
 					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Bookings Trend</h3>
-						<div class="chart-container flex items-center justify-center" style="background: var(--bg-secondary); border-radius: 0.5rem;">
-							<div class="text-center">
-								<Activity class="h-8 w-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-								<p class="text-sm" style="color: var(--text-secondary);">Chart coming soon</p>
-							</div>
+						<div class="chart-container">
+							<SimpleChart 
+								data={analytics.bookings.chartData} 
+								type="bar"
+								color="var(--color-primary-500)"
+								height={250}
+							/>
 						</div>
 					</div>
 				</div>
 				
-				<!-- Popular Tours -->
-				<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Top Performing Tours</h3>
-					</div>
-					<div class="p-4">
-						{#if analytics.popularTours && analytics.popularTours.length > 0}
-							<div class="space-y-3">
-								{#each analytics.popularTours.slice(0, 5) as tour, index}
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-3">
-											<span class="text-xs font-medium w-6" style="color: var(--text-tertiary);">#{index + 1}</span>
-											<div>
-												<p class="text-sm font-medium" style="color: var(--text-primary);">{tour.name}</p>
-												<p class="text-xs" style="color: var(--text-secondary);">
-													{tour.bookings} bookings • {$globalCurrencyFormatter(tour.revenue)}
-												</p>
+				<!-- Additional Insights Grid -->
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<!-- Popular Tours -->
+					<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-4 border-b" style="border-color: var(--border-primary);">
+							<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Top Performing Tours</h3>
+						</div>
+						<div class="p-4">
+							{#if analytics.popularTours && analytics.popularTours.length > 0}
+								<div class="space-y-3">
+									{#each analytics.popularTours.slice(0, 5) as tour, index}
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-3">
+												<span class="text-xs font-medium w-6" style="color: var(--text-tertiary);">#{index + 1}</span>
+												<div>
+													<p class="text-sm font-medium" style="color: var(--text-primary);">{tour.name}</p>
+													<p class="text-xs" style="color: var(--text-secondary);">
+														{tour.bookings} bookings • {$globalCurrencyFormatter(tour.revenue)}
+													</p>
+												</div>
 											</div>
 										</div>
-									</div>
-								{/each}
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+									No tour data available for this period
+								</p>
+							{/if}
+						</div>
+					</div>
+					
+					<!-- Customer Insights -->
+					<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-4 border-b" style="border-color: var(--border-primary);">
+							<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Customer Insights</h3>
+						</div>
+						<div class="p-4 space-y-4">
+							<div>
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs" style="color: var(--text-secondary);">Total Customers</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.customers.total}</span>
+								</div>
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs" style="color: var(--text-secondary);">New Customers</span>
+									<span class="text-sm font-semibold text-green-600">{analytics.customers.new}</span>
+								</div>
+								<div class="flex items-center justify-between mb-2">
+									<span class="text-xs" style="color: var(--text-secondary);">Returning Customers</span>
+									<span class="text-sm font-semibold text-blue-600">{analytics.customers.returning}</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-xs" style="color: var(--text-secondary);">Retention Rate</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.customerRetention.rate}%</span>
+								</div>
 							</div>
-						{:else}
-							<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
-								No tour data available for this period
-							</p>
-						{/if}
+						</div>
+					</div>
+					
+					<!-- Source Analytics -->
+					<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-4 border-b" style="border-color: var(--border-primary);">
+							<h3 class="text-sm font-semibold" style="color: var(--text-primary);">Booking Sources</h3>
+						</div>
+						<div class="p-4">
+							{#if analytics.sourceAnalytics && analytics.sourceAnalytics.length > 0}
+								<div class="space-y-3">
+									{#each analytics.sourceAnalytics as source}
+										{@const Icon = sourceIcons[source.source] || Activity}
+										<div>
+											<div class="flex items-center justify-between mb-1">
+												<div class="flex items-center gap-2">
+													<Icon class="h-3 w-3" style="color: var(--text-tertiary);" />
+													<span class="text-xs font-medium" style="color: var(--text-primary);">
+														{formatSourceName(source.source)}
+													</span>
+												</div>
+												<span class="text-xs" style="color: var(--text-secondary);">
+													{source.percentage}%
+												</span>
+											</div>
+											<div class="source-bar">
+												<div class="source-fill" style="width: {source.percentage}%"></div>
+											</div>
+											<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+												{source.bookings} bookings • {$globalCurrencyFormatter(source.revenue)}
+											</p>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+									No source data available
+								</p>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -487,10 +659,69 @@
 			<!-- Revenue Tab -->
 			<div class="space-y-6">
 				<div class="rounded-lg p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Revenue Analytics</h3>
-					<div class="text-center py-12">
-						<DollarSign class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">Revenue analytics coming soon</p>
+					<h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Revenue Analytics</h3>
+					
+					<!-- Revenue Chart -->
+					<div class="mb-6">
+						<SimpleChart 
+							data={analytics.revenue.chartData} 
+							type="line"
+							showCurrency={true}
+							color="var(--color-primary-500)"
+							height={300}
+						/>
+					</div>
+					
+					<!-- Revenue Breakdown -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+						<div>
+							<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Revenue by Tour</h4>
+							{#if analytics.popularTours && analytics.popularTours.length > 0}
+								<div class="space-y-2">
+									{#each analytics.popularTours as tour}
+										<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+											<div>
+												<p class="text-sm font-medium" style="color: var(--text-primary);">{tour.name}</p>
+												<p class="text-xs" style="color: var(--text-secondary);">
+													{tour.participants} participants
+												</p>
+											</div>
+											<p class="text-sm font-semibold" style="color: var(--text-primary);">
+												{$globalCurrencyFormatter(tour.revenue)}
+											</p>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+									No revenue data available
+								</p>
+							{/if}
+						</div>
+						
+						<div>
+							<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Key Metrics</h4>
+							<div class="space-y-3">
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<p class="text-xs mb-1" style="color: var(--text-secondary);">Average Tour Value</p>
+									<p class="text-lg font-semibold" style="color: var(--text-primary);">
+										{$globalCurrencyFormatter(avgBookingValue)}
+									</p>
+								</div>
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<p class="text-xs mb-1" style="color: var(--text-secondary);">Revenue Growth</p>
+									<p class="text-lg font-semibold {analytics.revenue.trend > 0 ? 'text-green-600' : 'text-red-600'}">
+										{analytics.revenue.trend > 0 ? '+' : ''}{analytics.revenue.trend}%
+									</p>
+								</div>
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<p class="text-xs mb-1" style="color: var(--text-secondary);">Total Participants</p>
+									<p class="text-lg font-semibold" style="color: var(--text-primary);">
+										{analytics.popularTours.reduce((sum: number, tour: any) => sum + tour.participants, 0)}
+									</p>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -498,10 +729,43 @@
 			<!-- Bookings Tab -->
 			<div class="space-y-6">
 				<div class="rounded-lg p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Booking Analytics</h3>
-					<div class="text-center py-12">
-						<Calendar class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">Booking analytics coming soon</p>
+					<h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Booking Analytics</h3>
+					
+					<!-- Bookings Chart -->
+					<div class="mb-6">
+						<SimpleChart 
+							data={analytics.bookings.chartData} 
+							type="bar"
+							color="var(--color-primary-500)"
+							height={300}
+						/>
+					</div>
+					
+					<!-- Peak Times -->
+					<div class="mt-6">
+						<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Peak Booking Times</h4>
+						{#if analytics.peakTimes && analytics.peakTimes.length > 0}
+							<div class="grid grid-cols-12 gap-2">
+								{#each analytics.peakTimes as time}
+									{@const maxBookings = Math.max(...analytics.peakTimes.map((t: any) => t.bookings))}
+									{@const percentage = (time.bookings / maxBookings) * 100}
+									<div class="text-center">
+										<div class="peak-time-bar relative mb-2">
+											<div 
+												class="peak-time-fill" 
+												style="height: {percentage}%; opacity: {0.3 + (percentage / 100) * 0.7}"
+											></div>
+										</div>
+										<p class="text-xs" style="color: var(--text-tertiary);">{time.label}</p>
+										<p class="text-xs font-medium" style="color: var(--text-secondary);">{time.bookings}</p>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+								No booking time data available
+							</p>
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -509,21 +773,138 @@
 			<!-- Tours Tab -->
 			<div class="space-y-6">
 				<div class="rounded-lg p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Tour Performance</h3>
-					<div class="text-center py-12">
-						<MapPin class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">Tour analytics coming soon</p>
-					</div>
+					<h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Tour Performance</h3>
+					
+					{#if analytics.popularTours && analytics.popularTours.length > 0}
+						<div class="space-y-4">
+							{#each analytics.popularTours as tour, index}
+								<div class="p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex items-start justify-between mb-3">
+										<div>
+											<div class="flex items-center gap-2 mb-1">
+												<span class="text-sm font-medium px-2 py-0.5 rounded" 
+													style="background: var(--color-primary-100); color: var(--color-primary-700);">
+													#{index + 1}
+												</span>
+												<h4 class="text-base font-semibold" style="color: var(--text-primary);">
+													{tour.name}
+												</h4>
+											</div>
+											<p class="text-sm" style="color: var(--text-secondary);">
+												{tour.bookings} bookings • {tour.participants} participants
+											</p>
+										</div>
+										<div class="text-right">
+											<p class="text-lg font-bold" style="color: var(--text-primary);">
+												{$globalCurrencyFormatter(tour.revenue)}
+											</p>
+											<p class="text-xs" style="color: var(--text-secondary);">
+												Avg: {$globalCurrencyFormatter(tour.avgValue)}
+											</p>
+										</div>
+									</div>
+									
+									<!-- Tour metrics bar -->
+									<div class="grid grid-cols-3 gap-2 text-center">
+										<div class="p-2 rounded" style="background: var(--bg-primary);">
+											<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
+											<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.bookings}</p>
+										</div>
+										<div class="p-2 rounded" style="background: var(--bg-primary);">
+											<p class="text-xs" style="color: var(--text-tertiary);">Participants</p>
+											<p class="text-sm font-semibold" style="color: var(--text-primary);">{tour.participants}</p>
+										</div>
+										<div class="p-2 rounded" style="background: var(--bg-primary);">
+											<p class="text-xs" style="color: var(--text-tertiary);">Avg Value</p>
+											<p class="text-sm font-semibold" style="color: var(--text-primary);">
+												{$globalCurrencyFormatter(tour.avgValue)}
+											</p>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-sm text-center py-8" style="color: var(--text-secondary);">
+							No tour performance data available for this period
+						</p>
+					{/if}
 				</div>
 			</div>
 		{:else if activeTab === 'conversions'}
 			<!-- Conversions Tab -->
 			<div class="space-y-6">
 				<div class="rounded-lg p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Conversion Analytics</h3>
-					<div class="text-center py-12">
-						<Target class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
-						<p class="text-sm" style="color: var(--text-secondary);">Conversion analytics coming soon</p>
+					<h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Conversion Analytics</h3>
+					
+					<!-- Conversion Funnel -->
+					<div class="mb-8">
+						<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">QR Code Conversion Funnel</h4>
+						<div class="space-y-3">
+							<div>
+								<div class="flex items-center justify-between mb-1">
+									<span class="text-sm" style="color: var(--text-primary);">QR Scans</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.qrCodes.scans}</span>
+								</div>
+								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--color-primary-500);">
+									<div class="h-full flex items-center justify-center text-xs font-medium text-white">
+										100%
+									</div>
+								</div>
+							</div>
+							
+							<div>
+								<div class="flex items-center justify-between mb-1">
+									<span class="text-sm" style="color: var(--text-primary);">Conversions</span>
+									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics.qrCodes.conversions}</span>
+								</div>
+								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
+									<div 
+										class="h-full flex items-center justify-center text-xs font-medium text-white rounded-lg"
+										style="width: {analytics.qrCodes.conversionRate}%; background: var(--color-primary-500);"
+									>
+										{analytics.qrCodes.conversionRate}%
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Source Conversions -->
+					<div>
+						<h4 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Conversion by Source</h4>
+						{#if analytics.sourceAnalytics && analytics.sourceAnalytics.length > 0}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{#each analytics.sourceAnalytics as source}
+									{@const Icon = sourceIcons[source.source] || Activity}
+									<div class="p-4 rounded-lg" style="background: var(--bg-secondary);">
+										<div class="flex items-center gap-3 mb-3">
+											<div class="p-2 rounded-lg" style="background: var(--bg-primary);">
+												<Icon class="h-4 w-4" style="color: var(--color-primary-600);" />
+											</div>
+											<div class="flex-1">
+												<p class="text-sm font-medium" style="color: var(--text-primary);">
+													{formatSourceName(source.source)}
+												</p>
+												<p class="text-xs" style="color: var(--text-secondary);">
+													{source.bookings} bookings
+												</p>
+											</div>
+											<p class="text-lg font-bold" style="color: var(--text-primary);">
+												{source.percentage}%
+											</p>
+										</div>
+										<div class="text-xs" style="color: var(--text-tertiary);">
+											Revenue: {$globalCurrencyFormatter(source.revenue)}
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+								No conversion data available
+							</p>
+						{/if}
 					</div>
 				</div>
 			</div>
