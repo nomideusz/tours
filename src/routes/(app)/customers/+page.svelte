@@ -91,7 +91,7 @@
 
 	// Filtered and sorted customers
 	let filteredCustomers = $derived.by(() => {
-		let result = customers;
+		let result = [...customers]; // Create a copy to avoid mutating original array
 
 		// Search filter
 		if (searchQuery.trim()) {
@@ -139,11 +139,14 @@
 			});
 		}
 
-		// Sort
+		// Sort - explicitly track sortBy and sortOrder for reactivity
+		const currentSortBy = sortBy;
+		const currentSortOrder = sortOrder;
+		
 		result.sort((a, b) => {
 			let aValue: any, bValue: any;
 
-			switch (sortBy) {
+			switch (currentSortBy) {
 				case 'name':
 					aValue = a.name.toLowerCase();
 					bValue = b.name.toLowerCase();
@@ -168,8 +171,8 @@
 					return 0;
 			}
 
-			if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-			if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+			if (aValue < bValue) return currentSortOrder === 'asc' ? -1 : 1;
+			if (aValue > bValue) return currentSortOrder === 'asc' ? 1 : -1;
 			return 0;
 		});
 
@@ -766,27 +769,75 @@
 								<span class="sr-only">Select</span>
 							</th>
 							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('name')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+								<button onclick={() => setSortBy('name')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'name' ? 'font-semibold' : ''}" style="color: {sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 									Customer
-									<ArrowUpDown class="h-3 w-3" />
+									{#if sortBy === 'name'}
+										{#if sortOrder === 'asc'}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+							                </svg>
+										{:else}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+							                </svg>
+										{/if}
+									{:else}
+										<ArrowUpDown class="h-3 w-3" />
+									{/if}
 								</button>
 							</th>
 							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('totalBookings')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+								<button onclick={() => setSortBy('totalBookings')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'totalBookings' ? 'font-semibold' : ''}" style="color: {sortBy === 'totalBookings' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 									Bookings
-									<ArrowUpDown class="h-3 w-3" />
+									{#if sortBy === 'totalBookings'}
+										{#if sortOrder === 'asc'}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+							                </svg>
+										{:else}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+							                </svg>
+										{/if}
+									{:else}
+										<ArrowUpDown class="h-3 w-3" />
+									{/if}
 								</button>
 							</th>
 							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('totalSpent')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+								<button onclick={() => setSortBy('totalSpent')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'totalSpent' ? 'font-semibold' : ''}" style="color: {sortBy === 'totalSpent' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 									Total Spent
-									<ArrowUpDown class="h-3 w-3" />
+									{#if sortBy === 'totalSpent'}
+										{#if sortOrder === 'asc'}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+							                </svg>
+										{:else}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+							                </svg>
+										{/if}
+									{:else}
+										<ArrowUpDown class="h-3 w-3" />
+									{/if}
 								</button>
 							</th>
 							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('lastBooking')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+								<button onclick={() => setSortBy('lastBooking')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'lastBooking' ? 'font-semibold' : ''}" style="color: {sortBy === 'lastBooking' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
 									Last Booking
-									<ArrowUpDown class="h-3 w-3" />
+									{#if sortBy === 'lastBooking'}
+										{#if sortOrder === 'asc'}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+							                </svg>
+										{:else}
+							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+							                </svg>
+										{/if}
+									{:else}
+										<ArrowUpDown class="h-3 w-3" />
+									{/if}
 								</button>
 							</th>
 							<th class="px-4 py-3 text-left">
