@@ -12,6 +12,7 @@
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	
 	// Icons
 	import Users from 'lucide-svelte/icons/users';
@@ -600,21 +601,22 @@
 				</select>
 				
 				<!-- Sort Order Toggle -->
-				<button
-					onclick={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
-					class="button-secondary button--icon"
-					title={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
-				>
-					{#if sortOrder === 'asc'}
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-						</svg>
-					{:else}
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-						</svg>
-					{/if}
-				</button>
+				<Tooltip text={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'} position="bottom">
+					<button
+						onclick={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
+						class="button-secondary button--icon"
+					>
+						{#if sortOrder === 'asc'}
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+							</svg>
+						{:else}
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+							</svg>
+						{/if}
+					</button>
+				</Tooltip>
 			</div>
 			
 			<!-- Filter Button -->
@@ -747,7 +749,7 @@
 		<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<!-- Table Header with Bulk Actions -->
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-h-[2.5rem]">
 					<div class="flex items-center gap-3">
 						<label class="flex items-center gap-2 cursor-pointer">
 							<input
@@ -766,27 +768,34 @@
 								{selectedCustomers.size > 0 ? `${selectedCustomers.size} selected` : 'Select all'}
 							</span>
 						</label>
-						{#if selectedCustomers.size === 0}
-							<span class="text-sm sm:hidden" style="color: var(--text-secondary);">
-								{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
-							</span>
-						{/if}
+						<span class="text-sm sm:hidden transition-opacity duration-200" 
+							  style="color: var(--text-secondary); opacity: {selectedCustomers.size === 0 ? 1 : 0};">
+							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+						</span>
 					</div>
 					
-					{#if selectedCustomers.size > 0}
-						<div class="flex flex-col sm:flex-row gap-2 sm:gap-2">
+					<!-- Right Side Content - Overlapping containers -->
+					<div class="relative flex justify-end">
+						<!-- Action Buttons Container -->
+						<div class="flex flex-col sm:flex-row gap-2 sm:gap-2 transition-opacity duration-200" 
+							 style="opacity: {selectedCustomers.size > 0 ? 1 : 0}; pointer-events: {selectedCustomers.size > 0 ? 'auto' : 'none'};">
 							<button 
 								onclick={() => {
 									const emails = Array.from(selectedCustomers).join(',');
 									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 								}} 
 								class="button-primary button--small button--gap w-full sm:w-auto"
+								disabled={selectedCustomers.size === 0}
 							>
 								<Mail class="h-4 w-4" />
 								Email Selected
 							</button>
 							<div class="flex gap-2">
-								<button onclick={copySelectedEmails} class="button-secondary button--small button--gap flex-1 sm:flex-none">
+								<button 
+									onclick={copySelectedEmails} 
+									class="button-secondary button--small button--gap flex-1 sm:flex-none"
+									disabled={selectedCustomers.size === 0}
+								>
 									{#if copiedEmails}
 										<CheckCircle class="h-4 w-4" />
 										Copied!
@@ -795,17 +804,23 @@
 										Copy
 									{/if}
 								</button>
-								<button onclick={exportToCSV} class="button-secondary button--small button--gap flex-1 sm:flex-none">
+								<button 
+									onclick={exportToCSV} 
+									class="button-secondary button--small button--gap flex-1 sm:flex-none"
+									disabled={selectedCustomers.size === 0}
+								>
 									<Download class="h-4 w-4" />
 									Export
 								</button>
 							</div>
 						</div>
-					{:else}
-						<span class="text-sm hidden sm:inline" style="color: var(--text-secondary);">
+						
+						<!-- Customer Count - Desktop Only -->
+						<span class="hidden sm:flex items-center absolute inset-0 justify-end transition-opacity duration-200" 
+							  style="color: var(--text-secondary); opacity: {selectedCustomers.size === 0 ? 1 : 0}; pointer-events: none;">
 							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
 						</span>
-					{/if}
+					</div>
 				</div>
 			</div>
 
@@ -955,21 +970,23 @@
 								</td>
 								<td class="px-4 py-4">
 									<div class="flex items-center gap-2">
-										<button
-											onclick={() => window.location.href = `mailto:${customer.email}`}
-											class="button-secondary button--small button--icon"
-											title="Send email"
-										>
-											<Mail class="h-4 w-4" />
-										</button>
-										{#if customer.phone}
+										<Tooltip text="Send email" position="top">
 											<button
-												onclick={() => window.location.href = `tel:${customer.phone}`}
+												onclick={() => window.location.href = `mailto:${customer.email}`}
 												class="button-secondary button--small button--icon"
-												title="Call customer"
 											>
-												<Phone class="h-4 w-4" />
+												<Mail class="h-4 w-4" />
 											</button>
+										</Tooltip>
+										{#if customer.phone}
+											<Tooltip text="Call customer" position="top">
+												<button
+													onclick={() => window.location.href = `tel:${customer.phone}`}
+													class="button-secondary button--small button--icon"
+												>
+													<Phone class="h-4 w-4" />
+												</button>
+											</Tooltip>
 										{/if}
 									</div>
 								</td>
@@ -1016,21 +1033,23 @@
 										{/if}
 									</div>
 									<div class="flex items-center gap-1 flex-shrink-0">
-										<button
-											onclick={() => window.location.href = `mailto:${customer.email}`}
-											class="button-secondary button--small button--icon"
-											title="Send email"
-										>
-											<Mail class="h-4 w-4" />
-										</button>
-										{#if customer.phone}
+										<Tooltip text="Send email" position="bottom-left">
 											<button
-												onclick={() => window.location.href = `tel:${customer.phone}`}
+												onclick={() => window.location.href = `mailto:${customer.email}`}
 												class="button-secondary button--small button--icon"
-												title="Call customer"
 											>
-												<Phone class="h-4 w-4" />
+												<Mail class="h-4 w-4" />
 											</button>
+										</Tooltip>
+										{#if customer.phone}
+											<Tooltip text="Call customer" position="bottom-left">
+												<button
+													onclick={() => window.location.href = `tel:${customer.phone}`}
+													class="button-secondary button--small button--icon"
+												>
+													<Phone class="h-4 w-4" />
+												</button>
+											</Tooltip>
 										{/if}
 									</div>
 								</div>
