@@ -86,6 +86,8 @@
 		}
 	});
 	
+
+	
 	// Debug component mounting
 	onMount(() => {
 		console.log('🗓️ TourTimeline: Component mounted', { view, currentDate, compact, browser });
@@ -843,44 +845,64 @@
 			{#if !hideHeaderText}
 				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
 					<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-						<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
-							{tourId ? 'Tour Schedule' : 'All Tours Schedule'}
-						</h3>
-						{#if !isLoading && !hideStats && stats.totalSlots > 0}
-							<div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm" style="color: var(--text-secondary);">
-								<span>{stats.totalSlots} slots</span>
-								<span class="hidden sm:inline">•</span>
-								<span class="hidden sm:inline">{stats.totalBookings} bookings</span>
-								<span>•</span>
-								<span>{Math.round(stats.averageUtilization)}% avg</span>
-							</div>
-						{/if}
+						<!-- Title with mobile view toggle -->
+						<div class="flex items-center justify-between w-full">
+							<h3 class="text-base sm:text-lg font-semibold" style="color: var(--text-primary);">
+								{tourId ? 'Tour Schedule' : 'All Tours Schedule'}
+							</h3>
+							
+							<!-- Mobile compact view toggle -->
+							{#if !hideViewToggle}
+								<div class="sm:hidden">
+									<div class="mobile-view-toggle">
+										<button
+											onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'month'; onViewChange?.('month'); }}
+											class="mobile-view-btn {view === 'month' ? 'active' : ''}"
+											type="button"
+										>
+											Month
+										</button>
+										<button
+											onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'week'; onViewChange?.('week'); }}
+											class="mobile-view-btn {view === 'week' ? 'active' : ''}"
+											type="button"
+										>
+											Week
+										</button>
+										<button
+											onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'day'; onViewChange?.('day'); }}
+											class="mobile-view-btn {view === 'day' ? 'active' : ''}"
+											type="button"
+										>
+											Day
+										</button>
+									</div>
+								</div>
+							{/if}
+						</div>
 					</div>
 					
-					<!-- View Toggle -->
+					<!-- Desktop view toggle -->
 					{#if !hideViewToggle}
-						<div class="flex items-center gap-2">
+						<div class="hidden sm:flex items-center gap-2">
 							<div class="view-toggle">
 								<button
 									onclick={() => { view = 'day'; onViewChange?.('day'); }}
 									class="view-button {view === 'day' ? 'active' : ''}"
 								>
-									<span class="hidden sm:inline">Day</span>
-									<span class="sm:hidden">D</span>
+									Day
 								</button>
 								<button
 									onclick={() => { view = 'week'; onViewChange?.('week'); }}
 									class="view-button {view === 'week' ? 'active' : ''}"
 								>
-									<span class="hidden sm:inline">Week</span>
-									<span class="sm:hidden">W</span>
+									Week
 								</button>
 								<button
 									onclick={() => { view = 'month'; onViewChange?.('month'); }}
 									class="view-button {view === 'month' ? 'active' : ''}"
 								>
-									<span class="hidden sm:inline">Month</span>
-									<span class="sm:hidden">M</span>
+									Month
 								</button>
 							</div>
 						</div>
@@ -890,18 +912,6 @@
 			
 			<!-- Date Navigation - Always show unless hideHeader is true -->
 			<div class="date-navigation {hideHeaderText ? 'standalone-navigation' : ''}">
-				<!-- Back to month button for compact mode when not in month view -->
-				{#if compact && hideViewToggle && view !== 'month'}
-					<button
-						onclick={() => { view = 'month'; onViewChange?.('month'); }}
-						class="back-to-month-button"
-						aria-label="Back to month view"
-						title="Back to month view"
-					>
-						<Calendar class="h-3 w-3" />
-					</button>
-				{/if}
-				
 				<button
 					onclick={() => navigateDate('prev')}
 					class="nav-button"
@@ -912,9 +922,6 @@
 				
 				<div class="date-display">
 					<span class="text-sm sm:text-base">{getDateRangeDisplay()}</span>
-					{#if compact && hideViewToggle && view !== 'month'}
-						<span class="view-indicator">{view}</span>
-					{/if}
 					{#if currentDate.toDateString() !== new Date().toDateString()}
 						<button
 							onclick={goToToday}
@@ -938,6 +945,7 @@
 	
 	<!-- Content -->
 	<div class="timeline-content" class:loading={isLoading}>
+
 		
 		{#if isLoading}
 			<div class="loading-state">
@@ -987,13 +995,7 @@
 						No tours this week
 					{/if}
 				</p>
-				<p class="text-sm" style="color: var(--text-secondary);">
-					{#if tourId}
-						{view === 'day' ? 'No time slots scheduled for this day' : 'No time slots scheduled this week'}
-					{:else}
-						{view === 'day' ? 'Try a different day or create new time slots' : 'Try a different week or create new time slots'}
-					{/if}
-				</p>
+
 			</div>
 		{:else if view === 'day' || view === 'week'}
 			<!-- List View for Day/Week -->
@@ -1006,7 +1008,6 @@
 								month: 'short', 
 								day: 'numeric' 
 							})}
-							<span class="slot-count">({slots.length} slots)</span>
 						</h4>
 						
 						<div class="slots-list">
@@ -1210,6 +1211,8 @@
 		{:else}
 			<!-- Calendar View for Month -->
 			<div class="calendar-view">
+
+				
 				<div class="calendar-grid">
 					<!-- Weekday headers -->
 					{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as day}
@@ -1915,6 +1918,60 @@
 
 	}
 	
+	/* Mobile view toggle styles */
+	.mobile-view-toggle {
+		display: flex;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		padding: 0.125rem;
+		gap: 0.125rem;
+	}
+	
+	.mobile-view-btn {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: transparent;
+		border: none;
+		border-radius: 0.25rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		user-select: none;
+	}
+	
+	.mobile-view-btn:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+	}
+	
+	.mobile-view-btn.active {
+		background: var(--color-primary-500);
+		color: white;
+		font-weight: 600;
+	}
+	
+	/* Dark mode */
+	[data-theme="dark"] .mobile-view-toggle {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+	
+	[data-theme="dark"] .mobile-view-btn {
+		color: var(--text-secondary);
+	}
+	
+	[data-theme="dark"] .mobile-view-btn:hover {
+		background: var(--bg-quaternary);
+		color: var(--text-primary);
+	}
+	
+	[data-theme="dark"] .mobile-view-btn.active {
+		background: var(--color-primary-600);
+		color: white;
+	}
+
 	/* Dark mode specific fixes */
 	[data-theme="dark"] .time-input {
 		background: var(--bg-primary) !important;

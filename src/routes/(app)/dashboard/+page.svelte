@@ -14,7 +14,6 @@
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
-	import OnboardingSection from '$lib/components/OnboardingSection.svelte';
 	import {
 		userCurrency,
 		currentCurrencyInfo,
@@ -337,13 +336,54 @@
 	let showPaymentSetupSuccess = $derived(isPaymentSetupComplete && paymentStatus.isSetup);
 	let showLocationSaveSuccess = $derived(saveSuccess);
 
-	// Calculate completed setup steps
+	// Calculate completed setup steps - only for new users
 	let stepsCompleted = $derived(
 		(!needsEmailVerification ? 1 : 0) +
 			(paymentStatus.isSetup ? 1 : 0) +
-			(!needsConfirmation ? 1 : 0) +
-			(stats.totalTours > 0 ? 1 : 0)
+			(!needsConfirmation ? 1 : 0)
 	);
+
+	// Check if all onboarding steps are complete
+	let isOnboardingComplete = $derived(
+		!needsEmailVerification && 
+		!needsConfirmation && 
+		paymentStatus.isSetup && 
+		stats.totalTours > 0
+	);
+	
+	// Show onboarding until ALL steps are complete
+	let showOnboarding = $derived(
+		!isLoading && 
+		!paymentStatus.loading && 
+		!isOnboardingComplete &&
+		$dashboardStatsQuery.data !== undefined
+	);
+	
+	// Show compact onboarding if user has tours but onboarding incomplete
+	let showCompactOnboarding = $derived(
+		showOnboarding && stats.totalTours > 0
+	);
+	
+	// Hide dashboard content until first tour is created
+	let showDashboardContent = $derived(
+		!isLoading && stats.totalTours > 0
+	);
+	
+	// Debug onboarding logic (remove when ready)
+	// $effect(() => {
+	// 	console.log('🔍 Onboarding Debug:', {
+	// 		isLoading,
+	// 		paymentStatusLoading: paymentStatus.loading,
+	// 		needsEmailVerification,
+	// 		needsConfirmation,
+	// 		paymentSetup: paymentStatus.isSetup,
+	// 		statsTotalTours: stats.totalTours,
+	// 		isOnboardingComplete,
+	// 		showOnboarding,
+	// 		showCompactOnboarding,
+	// 		showDashboardContent
+	// 	});
+	// });
 
 	// Subscription limits check
 	let isApproachingLimits = $derived.by(() => {
@@ -421,26 +461,27 @@
 				body: formData
 			});
 
-					if (response.ok) {
-			userCurrency.set(selectedCurrency);
-			saveSuccess = true;
-			hasConfirmedLocation = true;
+			if (response.ok) {
+				userCurrency.set(selectedCurrency);
+				saveSuccess = true;
+				hasConfirmedLocation = true;
+				currencyExpanded = false; // Close the modal
 
-			// Save confirmation to localStorage
-			localStorage.setItem('locationConfirmed', 'true');
+				// Save confirmation to localStorage
+				localStorage.setItem('locationConfirmed', 'true');
 
-			// Scroll to top to show success message (important for mobile)
-			if (browser) {
-				window.scrollTo({ top: 0, behavior: 'smooth' });
-			}
+				// Scroll to top to show success message (important for mobile)
+				if (browser) {
+					window.scrollTo({ top: 0, behavior: 'smooth' });
+				}
 
-			// Refresh user data to reflect changes
-			await invalidateAll();
+				// Refresh user data to reflect changes
+				await invalidateAll();
 
-			const timeoutId = setTimeout(() => {
-				saveSuccess = false;
-			}, 5000); // Show success message for 5 seconds
-			successTimeouts.push(timeoutId);
+				const timeoutId = setTimeout(() => {
+					saveSuccess = false;
+				}, 5000); // Show success message for 5 seconds
+				successTimeouts.push(timeoutId);
 			} else {
 				const data = await response.json();
 				saveError = data.error || 'Failed to update settings';
@@ -955,25 +996,19 @@
 	{:else}
 		<!-- Dashboard Header -->
 		<div class="mb-6">
-			<!-- Mobile Header -->
-			<MobilePageHeader
-				title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
-				secondaryInfo={isLoading ? "Loading..." : (isNewUser ? "Let's get you started" : `${stats.upcomingTours} upcoming`)}
-				quickActions={[
-					{
-						label: 'Create',
-						icon: Plus,
-						onclick: () => goto('/tours/new'),
-						variant: 'primary'
-					},
-					{
-						label: 'Check-in',
-						icon: QrCode,
-						onclick: () => goto('/checkin-scanner'),
-						variant: 'secondary'
-					}
-				]}
-			/>
+					<!-- Mobile Header -->
+		<MobilePageHeader
+			title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
+			secondaryInfo={isLoading ? "Loading..." : (isNewUser ? "Account Setup Required" : "")}
+			quickActions={[
+				{
+					label: 'Create Tour',
+					icon: Plus,
+					onclick: () => goto('/tours/new'),
+					variant: 'primary'
+				}
+			]}
+		/>
 			
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
@@ -992,49 +1027,233 @@
 		</div>
 
 		<!-- Onboarding Section -->
-		{#if !isLoading && !paymentStatus.loading && (needsEmailVerification || needsConfirmation || !paymentStatus.isSetup || stats.totalTours === 0)}
-			<!-- Show actual onboarding steps only after data has loaded -->
-			<OnboardingSection
-				{profile}
-				{stats}
-				{needsEmailVerification}
-				{needsConfirmation}
-				{paymentStatus}
-				{stepsCompleted}
-				{resendingEmail}
-				resendEmailSuccess={resendEmailSuccess || false}
-				resendEmailError={resendEmailError || null}
-				{isSettingUpPayment}
-				saveError={saveError || null}
-				{hasConfirmedLocation}
-				{selectedCountry}
-				{selectedCurrency}
-				{savingCurrency}
-				{currencyExpanded}
-				resendVerificationEmail={() => resendVerificationEmail()}
-				setupPayments={() => setupPayments()}
-				onCurrencyExpandedChange={(expanded) => currencyExpanded = expanded}
-				onCountryChange={(country) => onCountryChange(country)}
-				saveCurrencySelection={() => saveCurrencySelection()}
-				resetSelections={() => resetSelections()}
-			/>
+		{#if showOnboarding}
+			<!-- Show onboarding until all steps complete -->
+			<div class="compact-onboarding mb-8 {showCompactOnboarding ? 'compact-onboarding--compact' : ''}">
+				<div class="compact-onboarding-header">
+					<h2 class="compact-onboarding-title">
+						{showCompactOnboarding ? 'Complete Setup' : 'Account Setup'}
+					</h2>
+					<p class="compact-onboarding-description">
+						{showCompactOnboarding 
+							? 'Finish these remaining steps to complete your setup'
+							: 'Complete these essential steps to begin accepting bookings'}
+					</p>
+				</div>
+
+				<div class="compact-onboarding-steps">
+					<!-- Essential Steps -->
+					<div class="compact-onboarding-grid">
+						{#if needsEmailVerification}
+							<div class="compact-step">
+								<div class="compact-step-header">
+									<Mail class="compact-step-icon" />
+									<span class="compact-step-title">Verify Email</span>
+								</div>
+								<p class="compact-step-description">Check your inbox and click the verification link</p>
+								<button 
+									onclick={resendVerificationEmail}
+									disabled={resendingEmail}
+									class="compact-step-button"
+								>
+									{#if resendingEmail}
+										<Loader2 class="h-4 w-4 animate-spin" />
+										Sending...
+									{:else}
+										Resend Email
+									{/if}
+								</button>
+								{#if resendEmailSuccess}
+									<p class="compact-step-success">✓ Email sent! Check your inbox.</p>
+								{/if}
+								{#if resendEmailError}
+									<p class="compact-step-error">{resendEmailError}</p>
+								{/if}
+							</div>
+						{/if}
+
+						{#if needsConfirmation}
+							<div class="compact-step">
+								<div class="compact-step-header">
+									<Globe class="compact-step-icon" />
+									<span class="compact-step-title">Confirm Location</span>
+								</div>
+								<p class="compact-step-description">Set your business location for payments</p>
+								<button 
+									onclick={() => { currencyExpanded = true; }}
+									class="compact-step-button"
+								>
+									Set Location
+								</button>
+							</div>
+						{/if}
+
+						{#if !paymentStatus.isSetup}
+							<div class="compact-step">
+								<div class="compact-step-header">
+									<CreditCard class="compact-step-icon" />
+									<span class="compact-step-title">Setup Payments</span>
+								</div>
+								<p class="compact-step-description">Connect your payment account to receive money</p>
+								<button 
+									onclick={setupPayments}
+									disabled={isSettingUpPayment || needsConfirmation}
+									class="compact-step-button {needsConfirmation ? 'opacity-50' : ''}"
+								>
+									{#if isSettingUpPayment}
+										<Loader2 class="h-4 w-4 animate-spin" />
+										Setting up...
+									{:else if needsConfirmation}
+										Confirm location first
+									{:else}
+										Setup Payments
+									{/if}
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Main Action - only show if no tours created yet -->
+					{#if !showCompactOnboarding}
+						<div class="compact-onboarding-main-action">
+							<button 
+								onclick={() => goto('/tours/new')}
+								class="compact-main-button"
+							>
+								<Plus class="h-5 w-5" />
+								Create Your First Tour
+							</button>
+							<p class="compact-main-description">
+								Begin accepting bookings for your business
+							</p>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Progress indicator -->
+				<div class="compact-progress">
+					<div class="compact-progress-text">
+						{#if showCompactOnboarding}
+							{stepsCompleted}/3 remaining steps
+						{:else}
+							{stepsCompleted + (stats.totalTours > 0 ? 1 : 0)}/4 setup steps complete
+						{/if}
+					</div>
+					<div class="compact-progress-bar">
+						<div 
+							class="compact-progress-fill"
+							style="width: {showCompactOnboarding 
+								? (stepsCompleted / 3) * 100 
+								: ((stepsCompleted + (stats.totalTours > 0 ? 1 : 0)) / 4) * 100}%;"
+						></div>
+					</div>
+				</div>
+			</div>
 		{/if}
 
-		<!-- Tour Timeline - Main Feature -->
-		<div class="mb-8">
-			<div class="timeline-container">
-				<TourTimeline 
-					bind:view={timelineView}
-					bind:currentDate={timelineCurrentDate}
-					onSlotClick={(slot) => {
-						// Navigate to tour details page when clicking a slot
-						goto(`/tours/${slot.tourId}`);
-					}}
-				/>
+		<!-- Location Confirmation Modal -->
+		{#if showOnboarding && needsConfirmation && currencyExpanded}
+			<div class="compact-location-modal">
+				<div class="compact-location-backdrop" 
+					onclick={() => { currencyExpanded = false; resetSelections(); }}
+					onkeydown={(e) => { if (e.key === 'Escape') { currencyExpanded = false; resetSelections(); } }}
+					role="button" 
+					tabindex="0"
+				></div>
+				<div class="compact-location-content">
+					<h3 class="compact-location-title">
+						Confirm Your Business Location
+					</h3>
+					<p class="compact-location-description">
+						This determines your payment currency and cannot be changed after payment setup begins.
+					</p>
+					
+					{#if saveError}
+						<div class="alert-error mb-4 rounded-lg p-3">
+							<p class="text-sm">{saveError}</p>
+						</div>
+					{/if}
+					
+					<div class="compact-country-grid">
+						{#each COUNTRY_LIST as country}
+							<button
+								onclick={() => onCountryChange(country.code)}
+								class="compact-country-option {selectedCountry === country.code ? 'compact-country-option--selected' : ''}"
+							>
+								<span class="compact-country-flag">{country.flag}</span>
+								<div class="compact-country-info">
+									<p class="compact-country-name">{country.name}</p>
+									<p class="compact-country-currency">{country.currency}</p>
+								</div>
+								{#if selectedCountry === country.code}
+									<CheckCircle class="h-4 w-4 compact-country-check" />
+								{/if}
+							</button>
+						{/each}
+					</div>
+					
+					{#if selectedCountry}
+						{@const countryInfo = getCountryInfo(selectedCountry)}
+						<div class="compact-country-selected">
+							<p class="compact-country-selected-text">
+								✓ Selected: {countryInfo?.flag} {countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
+							</p>
+						</div>
+					{/if}
+					
+					<div class="compact-location-actions">
+						<button
+							onclick={saveCurrencySelection}
+							disabled={!selectedCountry || savingCurrency}
+							class="compact-location-confirm {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
+						>
+							{#if savingCurrency}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								Confirm Location
+							{/if}
+						</button>
+						<button
+							onclick={() => { currencyExpanded = false; resetSelections(); }}
+							class="compact-location-cancel"
+						>
+							Cancel
+						</button>
+					</div>
+				</div>
 			</div>
-		</div>
+		{/if}
 
-		<!-- Recent Bookings -->
+		<!-- Message when no tours created yet -->
+		{#if !showDashboardContent && !isLoading}
+			<div class="no-content-message">
+				<div class="no-content-icon">
+					<MapPin class="h-12 w-12" />
+				</div>
+				<h3 class="no-content-title">Ready to Start Your Tour Business?</h3>
+				<p class="no-content-description">
+					Create your first tour to unlock your dashboard and start accepting bookings from customers.
+				</p>
+			</div>
+		{/if}
+
+		<!-- Dashboard Content - Only show after first tour is created -->
+		{#if showDashboardContent}
+			<!-- Tour Timeline - Main Feature -->
+			<div class="mb-8">
+				<div class="timeline-container">
+					<TourTimeline 
+						bind:view={timelineView}
+						bind:currentDate={timelineCurrentDate}
+						onSlotClick={(slot) => {
+							// Navigate to tour details page when clicking a slot
+							goto(`/tours/${slot.tourId}`);
+						}}
+					/>
+				</div>
+			</div>
+
+			<!-- Recent Bookings -->
 		{#if recentBookings && recentBookings.length > 0}
 			<div class="mb-8">
 				<div
@@ -1149,6 +1368,7 @@
 				<span class="font-medium" style="color: var(--text-primary);">Update Profile</span>
 			</button>
 		</div>
+		{/if}
 	{/if}
 </div>
 
@@ -1333,6 +1553,444 @@ Please ensure this is the correct country where your business is legally registe
 	@media (min-width: 1024px) {
 		.timeline-container {
 			min-height: 450px; /* Larger minimum on desktop */
+		}
+	}
+	
+	/* Compact Onboarding Styles */
+	.compact-onboarding {
+		background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+		border: 1px solid var(--color-primary-200);
+		border-radius: 1rem;
+		padding: 1.5rem;
+		margin-bottom: 2rem;
+	}
+	
+	/* Compact variant for when user has tours but setup incomplete */
+	.compact-onboarding--compact {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.compact-onboarding--compact .compact-onboarding-header {
+		margin-bottom: 1rem;
+	}
+	
+	.compact-onboarding--compact .compact-onboarding-title {
+		font-size: 1.25rem;
+	}
+	
+	.compact-onboarding--compact .compact-onboarding-grid {
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 0.75rem;
+	}
+	
+	.compact-onboarding--compact .compact-step {
+		padding: 0.75rem;
+	}
+	
+	.compact-onboarding--compact .compact-progress {
+		margin-top: 1rem;
+	}
+	
+	/* No content message styles */
+	.no-content-message {
+		text-align: center;
+		padding: 3rem 1.5rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 1rem;
+		margin-bottom: 2rem;
+	}
+	
+	.no-content-icon {
+		color: var(--text-tertiary);
+		margin-bottom: 1rem;
+		display: flex;
+		justify-content: center;
+	}
+	
+	.no-content-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+	
+	.no-content-description {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		margin: 0;
+		max-width: 400px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	.compact-onboarding-header {
+		text-align: center;
+		margin-bottom: 1.5rem;
+	}
+	
+	.compact-onboarding-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+	
+	.compact-onboarding-description {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+	}
+	
+	.compact-onboarding-steps {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	
+	.compact-onboarding-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1rem;
+	}
+	
+	.compact-step {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		padding: 1rem;
+		text-align: center;
+		transition: all 0.2s ease;
+	}
+	
+	.compact-step:hover {
+		border-color: var(--color-primary-300);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.compact-step-header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+	
+	.compact-step-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		color: var(--color-primary-600);
+	}
+	
+	.compact-step-title {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+	}
+	
+	.compact-step-description {
+		color: var(--text-secondary);
+		font-size: 0.75rem;
+		margin-bottom: 0.75rem;
+		line-height: 1.4;
+	}
+	
+	.compact-step-button {
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		justify-content: center;
+		width: 100%;
+	}
+	
+	.compact-step-button:hover:not(:disabled) {
+		background: var(--color-primary-700);
+		transform: translateY(-1px);
+	}
+	
+	.compact-step-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	
+	.compact-step-success {
+		color: var(--color-success-600);
+		font-size: 0.75rem;
+		margin-top: 0.5rem;
+		font-weight: 500;
+	}
+	
+	.compact-step-error {
+		color: var(--color-danger-600);
+		font-size: 0.75rem;
+		margin-top: 0.5rem;
+	}
+	
+	.compact-onboarding-main-action {
+		text-align: center;
+		padding: 1rem;
+		background: var(--bg-primary);
+		border: 2px dashed var(--color-primary-300);
+		border-radius: 0.75rem;
+		margin-top: 0.5rem;
+	}
+	
+	.compact-main-button {
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.75rem;
+		padding: 1rem 2rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		justify-content: center;
+		margin: 0 auto 0.5rem;
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.compact-main-button:hover {
+		background: var(--color-primary-700);
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
+	}
+	
+	.compact-main-description {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		margin: 0;
+	}
+	
+	.compact-progress {
+		text-align: center;
+		margin-top: 1.5rem;
+	}
+	
+	.compact-progress-text {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.5rem;
+	}
+	
+	.compact-progress-bar {
+		width: 100%;
+		height: 6px;
+		background: var(--color-primary-100);
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	
+	.compact-progress-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
+		transition: width 0.3s ease;
+		border-radius: 3px;
+	}
+	
+	/* Location Modal Styles */
+	.compact-location-modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 50;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+	
+	.compact-location-backdrop {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(2px);
+	}
+	
+	.compact-location-content {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 1rem;
+		padding: 1.5rem;
+		max-width: 600px;
+		width: 100%;
+		max-height: 80vh;
+		overflow-y: auto;
+		position: relative;
+		box-shadow: var(--shadow-lg);
+	}
+	
+	.compact-location-title {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+		text-align: center;
+	}
+	
+	.compact-location-description {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		margin-bottom: 1.5rem;
+		text-align: center;
+	}
+	
+	.compact-country-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.compact-country-option {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		text-align: left;
+	}
+	
+	.compact-country-option:hover {
+		border-color: var(--color-primary-300);
+		background: var(--bg-tertiary);
+	}
+	
+	.compact-country-option--selected {
+		border-color: var(--color-primary-500);
+		background: var(--color-primary-50);
+	}
+	
+	.compact-country-flag {
+		font-size: 1.25rem;
+		flex-shrink: 0;
+	}
+	
+	.compact-country-info {
+		flex: 1;
+		min-width: 0;
+	}
+	
+	.compact-country-name {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	
+	.compact-country-currency {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	
+	.compact-country-check {
+		color: var(--color-primary-600);
+		flex-shrink: 0;
+	}
+	
+	.compact-country-selected {
+		background: var(--color-success-50);
+		border: 1px solid var(--color-success-200);
+		border-radius: 0.5rem;
+		padding: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.compact-country-selected-text {
+		color: var(--color-success-700);
+		font-size: 0.875rem;
+		margin: 0;
+		text-align: center;
+	}
+	
+	.compact-location-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
+	}
+	
+	.compact-location-confirm {
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.compact-location-confirm:hover:not(:disabled) {
+		background: var(--color-primary-700);
+	}
+	
+	.compact-location-cancel {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+	
+	.compact-location-cancel:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+	
+	/* Mobile Responsive */
+	@media (max-width: 768px) {
+		.compact-onboarding {
+			padding: 1rem;
+		}
+		
+		.compact-onboarding-grid {
+			grid-template-columns: 1fr;
+		}
+		
+		.compact-country-grid {
+			grid-template-columns: 1fr;
+		}
+		
+		.compact-location-actions {
+			flex-direction: column;
+		}
+		
+		.compact-location-confirm,
+		.compact-location-cancel {
+			width: 100%;
+			justify-content: center;
 		}
 	}
 </style>
