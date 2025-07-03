@@ -34,12 +34,16 @@
 	// Analytics time range state
 	let timeRange = $state<'week' | 'month' | 'quarter' | 'year'>('month');
 	
-
 	let activeTab = $state<'overview' | 'revenue' | 'bookings' | 'tours' | 'conversions'>('overview');
 	
+	// Click handler for time range changes
+	function handleTimeRangeChange(range: typeof timeRange) {
+		timeRange = range;
+	}
+
 	// Fetch analytics data
 	const analyticsQuery = createQuery({
-		queryKey: ['analytics', timeRange],
+		queryKey: ['analytics', 'month'] as const,
 		queryFn: async () => {
 			const response = await fetch(`/api/analytics?range=${timeRange}`);
 			if (!response.ok) throw new Error('Failed to fetch analytics');
@@ -48,6 +52,13 @@
 		staleTime: 5 * 60 * 1000, // 5 minutes - reduce excessive refetching
 		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false, // Disable window focus refetching
+	});
+	
+	// Refetch when timeRange changes
+	$effect(() => {
+		if (timeRange) {
+			$analyticsQuery.refetch();
+		}
 	});
 	
 	// Dashboard stats for comparison
@@ -116,15 +127,6 @@
 		};
 		return names[source] || source;
 	}
-	
-	// Debug: Log analytics data
-	$effect(() => {
-		if (analytics) {
-			console.log('Analytics data loaded:', analytics);
-			console.log('Revenue chart data:', analytics.revenue?.chartData);
-			console.log('Bookings chart data:', analytics.bookings?.chartData);
-		}
-	});
 </script>
 
 <svelte:head>
@@ -135,7 +137,7 @@
 <style>
 	.tab-button {
 		position: relative;
-		padding: 0.5rem 1rem;
+		padding: 0.75rem 1rem;
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-secondary);
@@ -144,14 +146,28 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 		white-space: nowrap;
+		min-height: 44px; /* Better touch targets */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+	
+	@media (min-width: 640px) {
+		.tab-button {
+			padding: 0.5rem 1rem;
+			min-height: auto;
+		}
 	}
 	
 	.tab-button:hover {
 		color: var(--text-primary);
+		background: var(--bg-secondary);
 	}
 	
 	.tab-button.active {
-		color: var(--text-primary);
+		color: var(--color-primary-700);
+		font-weight: 600;
 	}
 	
 	.tab-button.active::after {
@@ -160,12 +176,13 @@
 		bottom: -1px;
 		left: 0;
 		right: 0;
-		height: 2px;
-		background-color: var(--color-primary-500);
+		height: 3px;
+		background-color: var(--color-primary-600);
+		border-radius: 2px 2px 0 0;
 	}
 	
 	.time-range-button {
-		padding: 0.375rem 0.75rem;
+		padding: 0.5rem 0.875rem;
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--text-secondary);
@@ -174,17 +191,39 @@
 		border-radius: 0.375rem;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		position: relative;
+		min-height: 44px; /* Better touch targets on mobile */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		white-space: nowrap;
+	}
+	
+	@media (min-width: 640px) {
+		.time-range-button {
+			padding: 0.375rem 0.75rem;
+			min-height: auto;
+		}
 	}
 	
 	.time-range-button:hover {
 		color: var(--text-primary);
 		border-color: var(--border-primary);
+		background: var(--bg-secondary);
 	}
 	
 	.time-range-button.active {
-		color: var(--color-primary-700);
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-200);
+		color: #FFFFFF;
+		background: var(--color-primary-600);
+		border-color: var(--color-primary-600);
+		font-weight: 600;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	}
+	
+	.time-range-button.active:hover {
+		background: var(--color-primary-700);
+		border-color: var(--color-primary-700);
+		color: #FFFFFF;
 	}
 	
 	.stat-card {
@@ -196,13 +235,21 @@
 	
 	.chart-container {
 		position: relative;
-		height: 200px;
+		height: 250px;
 		width: 100%;
+		margin: 0 -0.5rem; /* Better mobile margins */
 	}
 	
 	@media (min-width: 640px) {
 		.chart-container {
 			height: 300px;
+			margin: 0;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.chart-container {
+			height: 350px;
 		}
 	}
 	
@@ -210,10 +257,36 @@
 		-webkit-overflow-scrolling: touch;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
+		padding-bottom: 2px; /* Prevent content clipping */
 	}
 	
 	.mobile-scroll::-webkit-scrollbar {
 		display: none;
+	}
+	
+	/* Extra small mobile devices */
+	@media (max-width: 375px) {
+		.time-range-button {
+			padding: 0.5rem 0.625rem;
+			font-size: 0.6875rem;
+		}
+		
+		.tab-button {
+			padding: 0.625rem 0.75rem;
+			font-size: 0.8125rem;
+		}
+		
+		.chart-container {
+			height: 220px;
+			margin: 0 -0.75rem;
+		}
+	}
+	
+	/* Custom breakpoint for xs */
+	@media (min-width: 420px) {
+		.xs\:grid-cols-2 {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 	
 	.desktop-tab-active {
@@ -265,9 +338,9 @@
 	}
 </style>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 lg:py-8">
 	<!-- Header -->
-	<div class="mb-6 sm:mb-8">
+	<div class="mb-4 sm:mb-8">
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Analytics"
@@ -297,6 +370,36 @@
 			]}
 		/>
 		
+		<!-- Mobile Time Range Selector -->
+		<div class="sm:hidden mb-4 px-1">
+			<div class="flex items-center gap-2 overflow-x-auto mobile-scroll pb-2">
+				<button
+					onclick={() => handleTimeRangeChange('week')}
+					class="time-range-button {timeRange === 'week' ? 'active' : ''}"
+				>
+					Week
+				</button>
+				<button
+					onclick={() => handleTimeRangeChange('month')}
+					class="time-range-button {timeRange === 'month' ? 'active' : ''}"
+				>
+					Month
+				</button>
+				<button
+					onclick={() => handleTimeRangeChange('quarter')}
+					class="time-range-button {timeRange === 'quarter' ? 'active' : ''}"
+				>
+					Quarter
+				</button>
+				<button
+					onclick={() => handleTimeRangeChange('year')}
+					class="time-range-button {timeRange === 'year' ? 'active' : ''}"
+				>
+					Year
+				</button>
+			</div>
+		</div>
+		
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
 			<PageHeader 
@@ -306,25 +409,25 @@
 				<!-- Time Range Selector -->
 				<div class="flex items-center gap-2">
 					<button
-						onclick={() => timeRange = 'week'}
+						onclick={() => handleTimeRangeChange('week')}
 						class="time-range-button {timeRange === 'week' ? 'active' : ''}"
 					>
 						Week
 					</button>
 					<button
-						onclick={() => timeRange = 'month'}
+						onclick={() => handleTimeRangeChange('month')}
 						class="time-range-button {timeRange === 'month' ? 'active' : ''}"
 					>
 						Month
 					</button>
 					<button
-						onclick={() => timeRange = 'quarter'}
+						onclick={() => handleTimeRangeChange('quarter')}
 						class="time-range-button {timeRange === 'quarter' ? 'active' : ''}"
 					>
 						Quarter
 					</button>
 					<button
-						onclick={() => timeRange = 'year'}
+						onclick={() => handleTimeRangeChange('year')}
 						class="time-range-button {timeRange === 'year' ? 'active' : ''}"
 					>
 						Year
@@ -396,12 +499,12 @@
 		<!-- Content based on active tab -->
 		{#if activeTab === 'overview'}
 			<!-- Overview Tab -->
-			<div class="space-y-6">
+			<div class="space-y-4 sm:space-y-6">
 				<!-- Key Metrics -->
-				<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+				<div class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 					<!-- Total Revenue -->
-					<div class="stat-card rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-3">
+					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="flex items-start justify-between mb-2 sm:mb-3">
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<DollarSign class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
@@ -416,15 +519,15 @@
 								</div>
 							{/if}
 						</div>
-						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
+						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
 							{$globalCurrencyFormatter(analytics?.revenue.total)}
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">Total Revenue</p>
 					</div>
 					
 					<!-- Total Bookings -->
-					<div class="stat-card rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-3">
+					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="flex items-start justify-between mb-2 sm:mb-3">
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<Calendar class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
@@ -439,33 +542,33 @@
 								</div>
 							{/if}
 						</div>
-						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
+						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
 							{analytics?.bookings.total}
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">Total Bookings</p>
 					</div>
 					
 					<!-- Avg Booking Value -->
-					<div class="stat-card rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-3">
+					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="flex items-start justify-between mb-2 sm:mb-3">
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<Target class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
 						</div>
-						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
+						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
 							{$globalCurrencyFormatter(avgBookingValue)}
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">Avg Booking Value</p>
 					</div>
 					
 					<!-- Conversion Rate -->
-					<div class="stat-card rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-3">
+					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="flex items-start justify-between mb-2 sm:mb-3">
 							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
 								<Percent class="h-4 w-4" style="color: var(--color-primary-600);" />
 							</div>
 						</div>
-						<p class="text-2xl font-bold mb-1" style="color: var(--text-primary);">
+						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
 							{analytics?.qrCodes.conversionRate || 0}%
 						</p>
 						<p class="text-xs" style="color: var(--text-secondary);">QR Conversion Rate</p>
@@ -473,10 +576,10 @@
 				</div>
 				
 				<!-- Charts Section -->
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 					<!-- Revenue Chart -->
-					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Revenue Trend</h3>
+					<div class="rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<h3 class="text-sm font-semibold mb-3 sm:mb-4" style="color: var(--text-primary);">Revenue Trend</h3>
 						<div class="chart-container">
 							<AnalyticsChart 
 								data={analytics?.revenue.chartData || []} 
@@ -484,26 +587,28 @@
 								showCurrency={true}
 								color="var(--color-primary-500)"
 								label="Revenue"
+								key={`revenue-${activeTab}-${timeRange}`}
 							/>
 						</div>
 					</div>
 					
 					<!-- Bookings Chart -->
-					<div class="rounded-lg p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Bookings Trend</h3>
+					<div class="rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<h3 class="text-sm font-semibold mb-3 sm:mb-4" style="color: var(--text-primary);">Bookings Trend</h3>
 						<div class="chart-container">
 							<AnalyticsChart 
 								data={analytics?.bookings.chartData || []} 
 								type="bar"
 								color="var(--color-primary-500)"
 								label="Bookings"
+								key={`bookings-${activeTab}-${timeRange}`}
 							/>
 						</div>
 					</div>
 				</div>
 				
 				<!-- Additional Insights Grid -->
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 					<!-- Popular Tours -->
 					<div class="rounded-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -615,6 +720,7 @@
 							showCurrency={true}
 							color="var(--color-primary-500)"
 							label="Revenue"
+							key={`revenue-${activeTab}-${timeRange}`}
 						/>
 					</div>
 					
@@ -684,6 +790,7 @@
 							type="bar"
 							color="var(--color-primary-500)"
 							label="Bookings"
+							key={`bookings-${activeTab}-${timeRange}`}
 						/>
 					</div>
 					

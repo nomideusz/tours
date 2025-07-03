@@ -136,9 +136,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			.select({
 				timeSlotId: bookings.timeSlotId,
 				totalBookings: count(bookings.id),
-				confirmedBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'confirmed' THEN 1 ELSE 0 END), 0)`,
+				confirmedBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} IN ('confirmed', 'completed') THEN 1 ELSE 0 END), 0)`,
 				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`,
-				totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'confirmed' AND ${bookings.paymentStatus} = 'paid' THEN ${bookings.totalAmount} ELSE 0 END), 0)`
+				totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} IN ('confirmed', 'completed') AND ${bookings.paymentStatus} = 'paid' THEN ${bookings.totalAmount} ELSE 0 END), 0)`
 			})
 			.from(bookings)
 			.where(inArray(bookings.timeSlotId, slotIds))

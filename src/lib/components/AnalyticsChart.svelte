@@ -43,6 +43,7 @@
 		showCurrency?: boolean;
 		label?: string;
 		color?: string;
+		key?: string;
 	}
 	
 	let { 
@@ -51,21 +52,33 @@
 		height = 200,
 		showCurrency = false,
 		label = '',
-		color = '#3B82F6'
+		color = '#3B82F6',
+		key = ''
 	}: Props = $props();
 	
 	let canvas = $state<HTMLCanvasElement>();
 	let chart: ChartJS | null = null;
+	let previousKey = '';
 	
-	// Reactive chart update when data changes
+	// Reactive chart update when data or key changes
 	$effect(() => {
-		if (chart && data) {
-			updateChart();
+		if (canvas && data) {
+			// If key changed, recreate the entire chart
+			if (key !== previousKey) {
+				if (chart) {
+					chart.destroy();
+					chart = null;
+				}
+				previousKey = key;
+				createChart();
+			} else if (chart) {
+				// Otherwise just update the data
+				updateChart();
+			}
 		}
 	});
 	
 	onMount(() => {
-		console.log('Chart component mounted, data:', data);
 		if (canvas) {
 			createChart();
 		}
@@ -111,13 +124,11 @@
 	
 	function createChart() {
 		if (!canvas) {
-			console.error('Canvas not available');
 			return;
 		}
 		
 		const ctx = canvas.getContext('2d');
 		if (!ctx) {
-			console.error('Canvas context not available');
 			return;
 		}
 		
@@ -125,17 +136,12 @@
 		const isDarkMode = document.documentElement.classList.contains('dark') || 
 						 window.matchMedia('(prefers-color-scheme: dark)').matches;
 		
-		console.log('Creating chart - Dark mode:', isDarkMode);
-		console.log('Document classes:', document.documentElement.className);
-		
 		// Explicit color values
 		const chartColor = isDarkMode ? '#60A5FA' : '#3B82F6';
 		const textColor = isDarkMode ? '#D1D5DB' : '#6B7280';
 		const gridColor = isDarkMode ? '#374151' : '#F3F4F6';
 		const backgroundColor = isDarkMode ? '#1F2937' : '#FFFFFF';
 		const borderColor = isDarkMode ? '#4B5563' : '#E5E7EB';
-		
-		console.log('Chart colors:', { chartColor, textColor, gridColor });
 		
 		const chartData = {
 			labels: data.map(d => d.date),
@@ -146,18 +152,16 @@
 				backgroundColor: type === 'line' ? 
 					(isDarkMode ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 
 					chartColor,
-				borderWidth: 3, // Thicker for visibility
+				borderWidth: 2,
 				fill: type === 'line',
 				tension: 0.3,
-				pointRadius: type === 'line' ? 6 : 0, // Larger points for visibility
-				pointHoverRadius: type === 'line' ? 8 : 0,
-				pointBackgroundColor: type === 'line' ? backgroundColor : undefined,
+				pointRadius: type === 'line' ? 4 : 0,
+				pointHoverRadius: type === 'line' ? 6 : 0,
+				pointBackgroundColor: type === 'line' ? '#FFFFFF' : undefined,
 				pointBorderColor: type === 'line' ? chartColor : undefined,
-				pointBorderWidth: type === 'line' ? 3 : 0,
+				pointBorderWidth: type === 'line' ? 2 : 0,
 			}]
 		};
-		
-		console.log('Dataset colors:', chartData.datasets[0].borderColor, chartData.datasets[0].backgroundColor);
 		
 		try {
 			chart = new ChartJS(ctx, {
@@ -238,10 +242,6 @@
 					}
 				}
 			});
-			
-			console.log('Chart created - final chart object:', chart);
-			console.log('Chart dataset after creation:', chart.data.datasets[0]);
-			
 		} catch (error) {
 			console.error('Error creating chart:', error);
 		}

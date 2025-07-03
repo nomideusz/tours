@@ -108,7 +108,7 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
 		const [tourStats] = await db
 			.select({
 				totalBookings: count(bookings.id),
-				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} IN ('confirmed', 'completed') AND ${bookings.paymentStatus} = 'paid' THEN CAST(${bookings.totalAmount} AS DECIMAL) ELSE 0 END), 0)`,
 				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`,
 				confirmedBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'confirmed' THEN 1 ELSE 0 END), 0)`,
 				pendingBookings: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} = 'pending' THEN 1 ELSE 0 END), 0)`
@@ -140,7 +140,7 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
 			
 			const [prevStats] = await db
 				.select({
-					totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+					totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.status} IN ('confirmed', 'completed') AND ${bookings.paymentStatus} = 'paid' THEN CAST(${bookings.totalAmount} AS DECIMAL) ELSE 0 END), 0)`,
 					totalBookings: count(bookings.id)
 				})
 				.from(bookings)

@@ -64,7 +64,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		
 		// Build base conditions for bookings
 		const baseConditions = [
-			eq(bookings.status, 'confirmed'),
+			sql`${bookings.status} IN ('confirmed', 'completed')`,
 			gte(bookings.createdAt, startDate)
 		];
 		
@@ -89,7 +89,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		// Revenue and bookings for current period
 		const [currentPeriod] = await db
 			.select({
-				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.paymentStatus} = 'paid' THEN CAST(${bookings.totalAmount} AS DECIMAL) ELSE 0 END), 0)`,
 				totalBookings: count(bookings.id),
 				totalParticipants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`
 			})
@@ -98,7 +98,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		
 		// Previous period conditions
 		const prevConditions = [
-			eq(bookings.status, 'confirmed'),
+			sql`${bookings.status} IN ('confirmed', 'completed')`,
 			between(bookings.createdAt, previousStartDate, previousEndDate)
 		];
 		
@@ -111,7 +111,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		// Revenue and bookings for previous period (for trend calculation)
 		const [previousPeriod] = await db
 			.select({
-				totalRevenue: sql<number>`COALESCE(SUM(CAST(${bookings.totalAmount} AS DECIMAL)), 0)`,
+				totalRevenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.paymentStatus} = 'paid' THEN CAST(${bookings.totalAmount} AS DECIMAL) ELSE 0 END), 0)`,
 				totalBookings: count(bookings.id)
 			})
 			.from(bookings)
@@ -133,6 +133,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				tourId: bookings.tourId,
 				totalAmount: bookings.totalAmount,
 				status: bookings.status,
+				paymentStatus: bookings.paymentStatus,
 				createdAt: bookings.createdAt,
 				customerEmail: bookings.customerEmail,
 				source: bookings.source,
@@ -150,7 +151,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			.where(
 				and(
 					tourIds.length > 0 ? sql`${bookings.tourId} IN (${sql.raw(tourIds.map(id => `'${id}'`).join(', '))})` : sql`1=1`,
-					eq(bookings.status, 'confirmed'),
+					sql`${bookings.status} IN ('confirmed', 'completed')`,
 					lte(bookings.createdAt, startDate)
 				)
 			);
@@ -165,7 +166,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				id: tours.id,
 				name: tours.name,
 				bookingCount: sql<number>`COUNT(DISTINCT ${bookings.id})`,
-				revenue: sql<number>`COALESCE(SUM(${bookings.totalAmount}), 0)`,
+				revenue: sql<number>`COALESCE(SUM(CASE WHEN ${bookings.paymentStatus} = 'paid' THEN ${bookings.totalAmount} ELSE 0 END), 0)`,
 				participants: sql<number>`COALESCE(SUM(${bookings.participants}), 0)`,
 				qrScans: tours.qrScans,
 				qrConversions: tours.qrConversions,
@@ -175,13 +176,13 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				bookings,
 				and(
 					eq(bookings.tourId, tours.id),
-					eq(bookings.status, 'confirmed'),
+					sql`${bookings.status} IN ('confirmed', 'completed')`,
 					gte(bookings.createdAt, startDate)
 				)
 			)
 			.where(eq(tours.userId, userId))
 			.groupBy(tours.id, tours.name, tours.qrScans, tours.qrConversions)
-			.orderBy(desc(sql`COALESCE(SUM(${bookings.totalAmount}), 0)`))
+			.orderBy(desc(sql`COALESCE(SUM(CASE WHEN ${bookings.paymentStatus} = 'paid' THEN ${bookings.totalAmount} ELSE 0 END), 0)`))
 			.limit(10);
 
 		// Calculate QR code metrics
@@ -208,7 +209,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				acc[source] = { count: 0, revenue: 0 };
 			}
 			acc[source].count++;
-			acc[source].revenue += Number(booking.totalAmount || 0);
+			// Only count revenue if payment is confirmed
+			if (booking.paymentStatus === 'paid') {
+				acc[source].revenue += Number(booking.totalAmount || 0);
+			}
 			return acc;
 		}, {});
 		
@@ -231,7 +235,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				.innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
 				.where(
 					and(
-						eq(bookings.status, 'confirmed'),
+						sql`${bookings.status} IN ('confirmed', 'completed')`,
 						gte(bookings.createdAt, startDate)
 					)
 				)
@@ -337,7 +341,10 @@ function generateChartData(
 		}
 		
 		const data = groupedData.get(key)!;
-		data.revenue += Number(booking.totalAmount || 0);
+		// Only count revenue if payment is confirmed
+		if (booking.paymentStatus === 'paid') {
+			data.revenue += Number(booking.totalAmount || 0);
+		}
 		data.count += 1;
 	});
 	
