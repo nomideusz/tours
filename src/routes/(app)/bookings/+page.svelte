@@ -185,8 +185,7 @@
 				selectedPaymentStatus = 'all';
 			}
 		},
-		variant: dateRange === 'today' ? ('primary' as const) : ('secondary' as const),
-		badge: stats.todayCount > 0 ? stats.todayCount : undefined
+		variant: dateRange === 'today' ? ('primary' as const) : ('secondary' as const)
 	});
 
 	// Quick actions for mobile (simplified)
@@ -195,11 +194,7 @@
 			label: 'Filters',
 			icon: Filter,
 			onclick: () => showFilters = !showFilters,
-			variant: 'secondary' as const,
-			badge: hasActiveFilters ? 
-				(selectedStatus !== 'all' ? 1 : 0) + 
-				(selectedPaymentStatus !== 'all' ? 1 : 0) + 
-				(dateRange !== 'all' ? 1 : 0) : undefined
+			variant: 'secondary' as const
 		}
 	]);
 	

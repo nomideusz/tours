@@ -145,10 +145,10 @@
 				<button 
 					onclick={primaryAction.onclick} 
 					disabled={primaryAction.disabled}
-					class="button-{primaryAction.variant || 'primary'} button--small button--gap flex-shrink-0 relative transition-all duration-200 active:scale-95"
+					class="button-{primaryAction.variant || 'primary'} button--small flex-shrink-0 relative transition-all duration-200 active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
 				>
-					<primaryAction.icon class="h-4 w-4" />
-					{primaryAction.label}
+					<primaryAction.icon class="h-3 w-3 flex-shrink-0" />
+					<span class="text-xs font-medium">{primaryAction.label}</span>
 					{#if primaryAction.badge}
 						<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
 							{primaryAction.badge}

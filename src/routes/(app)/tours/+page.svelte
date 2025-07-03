@@ -430,13 +430,23 @@
 <PageContainer class="py-4 sm:py-8">
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
-		<!-- Mobile Header -->
+		<!-- Compact Mobile Header -->
 		<MobilePageHeader
 			title="Tours"
-			secondaryInfo="{filteredTours.length} tours"
+			secondaryInfo={statusFilter === 'all' ? 
+				(tours.length > 0 ? `${tours.filter(t => t.status === 'active').length} active • ${tours.filter(t => t.status === 'draft').length} draft` : '0 tours') :
+				`${filteredTours.length} ${statusFilter}`
+			}
+			primaryAction={{
+				label: usage?.tours?.limit !== null ? `${usage?.tours?.used || 0}/${usage?.tours?.limit} Limit` : 'Unlimited',
+				icon: Settings,
+				onclick: () => goto('/subscription'),
+				variant: (usage?.tours?.used >= (usage?.tours?.limit || Infinity)) ? 'accent' : 'secondary',
+				disabled: false
+			}}
 			quickActions={[
 				{
-					label: 'Create',
+					label: 'New Tour',
 					icon: Plus,
 					onclick: () => goto('/tours/new'),
 					variant: 'primary'
@@ -492,9 +502,9 @@
 
 	<!-- Search and Filters -->
 	<div class="mb-6 space-y-3">
-		<!-- Mobile Search and Filter Tabs -->
+		<!-- Mobile Search Bar -->
 		<div class="sm:hidden">
-			<div class="relative mb-3">
+			<div class="relative">
 				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
 				<input
 					type="search"
@@ -513,31 +523,6 @@
 						<X class="h-4 w-4" style="color: var(--text-tertiary);" />
 					</button>
 				{/if}
-			</div>
-			
-			<!-- Mobile Filter Tabs -->
-			<div class="flex gap-1 p-1 rounded-lg" style="background: var(--bg-secondary);">
-				<button
-					onclick={() => statusFilter = 'all'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'all' ? 'active-filter' : ''}"
-					style="color: {statusFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'all' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'all' ? 'box-shadow: var(--shadow-sm);' : ''}"
-				>
-					All ({tours.length})
-				</button>
-				<button
-					onclick={() => statusFilter = 'active'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'active' ? 'active-filter' : ''}"
-					style="color: {statusFilter === 'active' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'active' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'active' ? 'box-shadow: var(--shadow-sm);' : ''}"
-				>
-					Active ({tours.filter(t => t.status === 'active').length})
-				</button>
-				<button
-					onclick={() => statusFilter = 'draft'}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors {statusFilter === 'draft' ? 'active-filter' : ''}"
-					style="color: {statusFilter === 'draft' ? 'var(--text-primary)' : 'var(--text-secondary)'}; background: {statusFilter === 'draft' ? 'var(--bg-primary)' : 'transparent'}; {statusFilter === 'draft' ? 'box-shadow: var(--shadow-sm);' : ''}"
-				>
-					Draft ({tours.filter(t => t.status === 'draft').length})
-				</button>
 			</div>
 		</div>
 		

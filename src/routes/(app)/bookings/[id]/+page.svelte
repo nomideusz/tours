@@ -82,22 +82,16 @@
 		}
 	});
 
-	// Status button for mobile header (next to title)
-	let statusButton = $derived(booking ? {
-		label: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
-		onclick: () => { showStatusModal = true; },
-		disabled: false,
-		className: getStatusColor(booking.status),
-		tooltip: `Current status: ${booking.status}. Tap to change.`
-	} : null);
+	// Status button for mobile header (removed)
+	let statusButton = $derived(null);
 
-	// Primary action for mobile header (total amount on the right)
+	// Primary action for mobile header (change status button on the right)
 	let primaryAction = $derived(booking ? {
-		label: $globalCurrencyFormatter(calculateTotal()),
-		icon: Euro,
-		onclick: () => {}, // Non-functional, just displays the amount
-		variant: 'secondary' as const,
-		disabled: true
+		label: 'Change Status',
+		icon: Edit,
+		onclick: () => { showStatusModal = true; },
+		variant: 'primary' as const,
+		disabled: false
 	} : null);
 
 	// Quick actions for mobile
@@ -113,13 +107,7 @@
 			icon: Phone,
 			onclick: () => { window.location.href = `tel:${booking.customerPhone}`; },
 			variant: 'secondary' as const
-		}] : []),
-		{
-			label: 'Change Status',
-			icon: Edit,
-			onclick: () => { showStatusModal = true; },
-			variant: 'primary' as const
-		}
+		}] : [])
 	] : []);
 
 	function openEmailClient() {
