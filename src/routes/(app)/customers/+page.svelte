@@ -1,0 +1,975 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	import { formatDate } from '$lib/utils/date-helpers.js';
+	import { onMount } from 'svelte';
+	
+	// TanStack Query
+	import { createQuery } from '@tanstack/svelte-query';
+	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	
+	// Components
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	
+	// Icons
+	import Users from 'lucide-svelte/icons/users';
+	import Mail from 'lucide-svelte/icons/mail';
+	import Phone from 'lucide-svelte/icons/phone';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import Search from 'lucide-svelte/icons/search';
+	import Download from 'lucide-svelte/icons/download';
+	import Filter from 'lucide-svelte/icons/filter';
+	import X from 'lucide-svelte/icons/x';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Copy from 'lucide-svelte/icons/copy';
+	import Star from 'lucide-svelte/icons/star';
+	import ArrowUpDown from 'lucide-svelte/icons/arrow-up-down';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+
+	type Customer = {
+		email: string;
+		name: string;
+		phone: string | null;
+		totalBookings: number;
+		totalSpent: number;
+		totalParticipants: number;
+		firstBooking: string;
+		lastBooking: string;
+		confirmedBookings: number;
+		pendingBookings: number;
+		cancelledBookings: number;
+		completedBookings: number;
+	};
+
+	// Query for customers data
+	const customersQuery = createQuery({
+		queryKey: queryKeys.customers,
+		queryFn: queryFunctions.fetchCustomers,
+		staleTime: 2 * 60 * 1000, // 2 minutes - customer data doesn't change frequently
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false,
+		refetchOnMount: true,
+	});
+
+	// Derive data from query
+	let customers = $derived.by(() => {
+		const data = ($customersQuery.data as Customer[]) || [];
+		// Deduplicate by email just in case
+		const seen = new Set<string>();
+		return data.filter(customer => {
+			if (seen.has(customer.email)) {
+				console.warn(`Duplicate customer email found: ${customer.email}`);
+				return false;
+			}
+			seen.add(customer.email);
+			return true;
+		});
+	});
+	let isLoading = $derived($customersQuery.isLoading);
+	let isError = $derived($customersQuery.isError);
+
+	// State
+	let searchQuery = $state('');
+	let sortBy = $state<'name' | 'email' | 'totalBookings' | 'totalSpent' | 'lastBooking'>('lastBooking');
+	let sortOrder = $state<'asc' | 'desc'>('desc');
+	let showFilters = $state(false);
+	let selectedCustomers = $state<Set<string>>(new Set());
+	let copiedEmails = $state(false);
+
+	// Filter states
+	let minBookings = $state<number | null>(null);
+	let minSpent = $state<number | null>(null);
+	let hasPhoneFilter = $state<'all' | 'phone' | 'no-phone'>('all');
+	let bookingDateFilter = $state<'all' | 'recent' | 'old'>('all');
+	let customerTypeFilter = $state<'all' | 'vip' | 'loyal' | 'new' | 'regular'>('all');
+
+	// Filtered and sorted customers
+	let filteredCustomers = $derived.by(() => {
+		let result = customers;
+
+		// Search filter
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			result = result.filter(customer => 
+				customer.name.toLowerCase().includes(query) ||
+				customer.email.toLowerCase().includes(query) ||
+				(customer.phone && customer.phone.toLowerCase().includes(query))
+			);
+		}
+
+		// Filters
+		if (minBookings !== null) {
+			result = result.filter(customer => customer.totalBookings >= minBookings!);
+		}
+
+		if (minSpent !== null) {
+			result = result.filter(customer => customer.totalSpent >= minSpent!);
+		}
+
+		if (hasPhoneFilter !== 'all') {
+			if (hasPhoneFilter === 'phone') {
+				result = result.filter(customer => customer.phone);
+			} else {
+				result = result.filter(customer => !customer.phone);
+			}
+		}
+
+		if (bookingDateFilter !== 'all') {
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+			
+			if (bookingDateFilter === 'recent') {
+				result = result.filter(customer => new Date(customer.lastBooking) >= thirtyDaysAgo);
+			} else {
+				result = result.filter(customer => new Date(customer.lastBooking) < thirtyDaysAgo);
+			}
+		}
+
+		// Customer type filter
+		if (customerTypeFilter !== 'all') {
+			result = result.filter(customer => {
+				const type = getCustomerType(customer).type.toLowerCase();
+				return type === customerTypeFilter;
+			});
+		}
+
+		// Sort
+		result.sort((a, b) => {
+			let aValue: any, bValue: any;
+
+			switch (sortBy) {
+				case 'name':
+					aValue = a.name.toLowerCase();
+					bValue = b.name.toLowerCase();
+					break;
+				case 'email':
+					aValue = a.email.toLowerCase();
+					bValue = b.email.toLowerCase();
+					break;
+				case 'totalBookings':
+					aValue = a.totalBookings;
+					bValue = b.totalBookings;
+					break;
+				case 'totalSpent':
+					aValue = a.totalSpent;
+					bValue = b.totalSpent;
+					break;
+				case 'lastBooking':
+					aValue = new Date(a.lastBooking).getTime();
+					bValue = new Date(b.lastBooking).getTime();
+					break;
+				default:
+					return 0;
+			}
+
+			if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+			if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+			return 0;
+		});
+
+		return result;
+	});
+
+	// Summary stats
+	let summaryStats = $derived.by(() => {
+		if (!customers.length) return { totalCustomers: 0, totalRevenue: 0, avgBookingsPerCustomer: 0, avgSpentPerCustomer: 0 };
+
+		const totalRevenue = customers.reduce((sum, customer) => sum + customer.totalSpent, 0);
+		const totalBookings = customers.reduce((sum, customer) => sum + customer.totalBookings, 0);
+
+		return {
+			totalCustomers: customers.length,
+			totalRevenue,
+			avgBookingsPerCustomer: totalBookings / customers.length,
+			avgSpentPerCustomer: totalRevenue / customers.length
+		};
+	});
+
+	// Customer segments
+	let customerSegments = $derived.by(() => {
+		if (!customers.length) return { vip: 0, loyal: 0, new: 0, regular: 0, withPhone: 0, recentlyActive: 0 };
+
+		const thirtyDaysAgo = new Date();
+		thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+		return {
+			vip: customers.filter(c => getCustomerType(c).type === 'VIP').length,
+			loyal: customers.filter(c => getCustomerType(c).type === 'Loyal').length,
+			new: customers.filter(c => getCustomerType(c).type === 'New').length,
+			regular: customers.filter(c => getCustomerType(c).type === 'Regular').length,
+			withPhone: customers.filter(c => c.phone).length,
+			recentlyActive: customers.filter(c => new Date(c.lastBooking) >= thirtyDaysAgo).length
+		};
+	});
+
+	// Customer type categorization
+	function getCustomerType(customer: Customer): { type: string; color: string; description: string } {
+		if (customer.totalSpent >= 200) {
+			return { type: 'VIP', color: 'var(--color-warning-600)', description: 'High-value customer' };
+		}
+		if (customer.totalBookings >= 3) {
+			return { type: 'Loyal', color: 'var(--color-success-600)', description: 'Repeat customer' };
+		}
+		if (customer.totalBookings === 1) {
+			return { type: 'New', color: 'var(--color-info-600)', description: 'First-time customer' };
+		}
+		return { type: 'Regular', color: 'var(--color-primary-600)', description: 'Regular customer' };
+	}
+
+	// Actions
+
+	async function copySelectedEmails() {
+		if (selectedCustomers.size === 0) return;
+		
+		const emails = Array.from(selectedCustomers).join(', ');
+		try {
+			await navigator.clipboard.writeText(emails);
+			copiedEmails = true;
+			setTimeout(() => copiedEmails = false, 2000);
+		} catch (err) {
+			console.error('Failed to copy emails:', err);
+			// Fallback for browsers that don't support clipboard API
+			const textArea = document.createElement('textarea');
+			textArea.value = emails;
+			document.body.appendChild(textArea);
+			textArea.select();
+			document.execCommand('copy');
+			document.body.removeChild(textArea);
+			copiedEmails = true;
+			setTimeout(() => copiedEmails = false, 2000);
+		}
+	}
+
+	async function exportToCSV() {
+		const dataToExport = selectedCustomers.size > 0 
+			? filteredCustomers.filter(c => selectedCustomers.has(c.email))
+			: filteredCustomers;
+
+		if (dataToExport.length === 0) return;
+
+		const headers = [
+			'Name', 'Email', 'Phone', 'Total Bookings', 'Total Spent', 'Total Participants',
+			'First Booking', 'Last Booking', 'Confirmed', 'Pending', 'Cancelled', 'Completed'
+		];
+
+		const csvContent = [
+			headers.join(','),
+			...dataToExport.map(customer => [
+				`"${customer.name}"`,
+				`"${customer.email}"`,
+				`"${customer.phone || ''}"`,
+				customer.totalBookings,
+				customer.totalSpent,
+				customer.totalParticipants,
+				`"${formatDate(customer.firstBooking)}"`,
+				`"${formatDate(customer.lastBooking)}"`,
+				customer.confirmedBookings,
+				customer.pendingBookings,
+				customer.cancelledBookings,
+				customer.completedBookings
+			].join(','))
+		].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	function clearFilters() {
+		searchQuery = '';
+		minBookings = null;
+		minSpent = null;
+		hasPhoneFilter = 'all';
+		bookingDateFilter = 'all';
+		customerTypeFilter = 'all';
+		showFilters = false;
+	}
+
+	function setSortBy(field: typeof sortBy) {
+		if (sortBy === field) {
+			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortBy = field;
+			sortOrder = 'desc';
+		}
+	}
+
+	// Check if filters are active
+	let hasActiveFilters = $derived(
+		searchQuery.trim() !== '' ||
+		minBookings !== null ||
+		minSpent !== null ||
+		hasPhoneFilter !== 'all' ||
+		bookingDateFilter !== 'all' ||
+		customerTypeFilter !== 'all'
+	);
+</script>
+
+<svelte:head>
+	<title>Customers - Zaur</title>
+	<meta name="description" content="Manage your customer contacts and relationships" />
+</svelte:head>
+
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<!-- Header -->
+	<div class="mb-6 sm:mb-8">
+		<!-- Mobile Header -->
+		<MobilePageHeader
+			title="Customers"
+			secondaryInfo={isLoading ? 'Loading...' : `${summaryStats.totalCustomers} total`}
+			quickActions={[
+				{
+					label: 'Export',
+					icon: Download,
+					onclick: exportToCSV,
+					variant: 'secondary',
+					disabled: filteredCustomers.length === 0
+				}
+			]}
+			infoItems={[
+				{
+					icon: Users,
+					label: 'Customers',
+					value: isLoading ? '...' : `${summaryStats.totalCustomers}`
+				},
+				{
+					icon: DollarSign,
+					label: 'Revenue',
+					value: isLoading ? '...' : $globalCurrencyFormatter(summaryStats.totalRevenue)
+				},
+				{
+					icon: Calendar,
+					label: 'Avg Bookings',
+					value: isLoading ? '...' : `${summaryStats.avgBookingsPerCustomer.toFixed(1)}`
+				},
+				{
+					icon: Star,
+					label: 'Avg Value',
+					value: isLoading ? '...' : $globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)
+				}
+			]}
+		/>
+		
+		<!-- Desktop Header -->
+		<div class="hidden sm:block">
+			<PageHeader 
+				title="Customers"
+				subtitle="Manage your customer contacts and build relationships"
+			>
+				<div class="flex items-center gap-4">
+					{#if selectedCustomers.size > 0}
+						<div class="text-sm" style="color: var(--text-secondary);">
+							{selectedCustomers.size} selected
+						</div>
+						<button 
+							onclick={() => {
+								const emails = Array.from(selectedCustomers).join(',');
+								window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
+							}} 
+							class="button-primary button--gap button--small"
+						>
+							<Mail class="h-4 w-4" />
+							Email Selected
+						</button>
+						<button onclick={copySelectedEmails} class="button-secondary button--gap button--small">
+							{#if copiedEmails}
+								<CheckCircle class="h-4 w-4" />
+								Copied!
+							{:else}
+								<Copy class="h-4 w-4" />
+								Copy Emails
+							{/if}
+						</button>
+					{/if}
+					<button onclick={exportToCSV} class="button-secondary button--gap" disabled={customers.length === 0}>
+						<Download class="h-4 w-4" />
+						Export CSV
+					</button>
+				</div>
+			</PageHeader>
+		</div>
+	</div>
+
+	<!-- Customer Statistics -->
+	{#if !isLoading && customers.length > 0}
+		<div class="mb-6 rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<!-- Main Stats Row -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+				<div class="text-center lg:text-left">
+					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
+						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-100);">
+							<Users class="h-5 w-5" style="color: var(--color-primary-600);" />
+						</div>
+						<div>
+							<p class="text-2xl font-bold" style="color: var(--text-primary);">{summaryStats.totalCustomers}</p>
+						</div>
+					</div>
+					<p class="text-sm font-medium" style="color: var(--text-secondary);">Total Customers</p>
+				</div>
+				
+				<div class="text-center lg:text-left">
+					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
+						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-success-100);">
+							<DollarSign class="h-5 w-5" style="color: var(--color-success-600);" />
+						</div>
+						<div>
+							<p class="text-2xl font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(summaryStats.totalRevenue)}</p>
+						</div>
+					</div>
+					<p class="text-sm font-medium" style="color: var(--text-secondary);">Total Revenue</p>
+				</div>
+				
+				<div class="text-center lg:text-left">
+					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
+						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-warning-100);">
+							<Calendar class="h-5 w-5" style="color: var(--color-warning-600);" />
+						</div>
+						<div>
+							<p class="text-2xl font-bold" style="color: var(--text-primary);">{summaryStats.avgBookingsPerCustomer.toFixed(1)}</p>
+						</div>
+					</div>
+					<p class="text-sm font-medium" style="color: var(--text-secondary);">Avg Bookings</p>
+				</div>
+				
+				<div class="text-center lg:text-left">
+					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
+						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-info-100);">
+							<Star class="h-5 w-5" style="color: var(--color-info-600);" />
+						</div>
+						<div>
+							<p class="text-2xl font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)}</p>
+						</div>
+					</div>
+					<p class="text-sm font-medium" style="color: var(--text-secondary);">Avg Value</p>
+				</div>
+			</div>
+
+			<!-- Customer Segments -->
+			<div class="border-t pt-4" style="border-color: var(--border-primary);">
+				<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Customer Segments</h3>
+				<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+					<div class="text-center">
+						<p class="text-xl font-bold mb-1" style="color: var(--color-warning-600);">
+							{customerSegments.vip}
+						</p>
+						<p class="text-xs font-medium" style="color: var(--text-secondary);">VIP</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							{customers.length > 0 ? Math.round((customerSegments.vip / customers.length) * 100) : 0}%
+						</p>
+					</div>
+					<div class="text-center">
+						<p class="text-xl font-bold mb-1" style="color: var(--color-success-600);">
+							{customerSegments.loyal}
+						</p>
+						<p class="text-xs font-medium" style="color: var(--text-secondary);">Loyal</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							{customers.length > 0 ? Math.round((customerSegments.loyal / customers.length) * 100) : 0}%
+						</p>
+					</div>
+					<div class="text-center">
+						<p class="text-xl font-bold mb-1" style="color: var(--color-info-600);">
+							{customerSegments.new}
+						</p>
+						<p class="text-xs font-medium" style="color: var(--text-secondary);">New</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							{customers.length > 0 ? Math.round((customerSegments.new / customers.length) * 100) : 0}%
+						</p>
+					</div>
+					<div class="text-center">
+						<p class="text-xl font-bold mb-1" style="color: var(--color-primary-600);">
+							{customerSegments.recentlyActive}
+						</p>
+						<p class="text-xs font-medium" style="color: var(--text-secondary);">Active (30d)</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							{customers.length > 0 ? Math.round((customerSegments.recentlyActive / customers.length) * 100) : 0}%
+						</p>
+					</div>
+					<div class="text-center">
+						<p class="text-xl font-bold mb-1" style="color: var(--text-primary);">
+							{customerSegments.withPhone}
+						</p>
+						<p class="text-xs font-medium" style="color: var(--text-secondary);">With Phone</p>
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							{customers.length > 0 ? Math.round((customerSegments.withPhone / customers.length) * 100) : 0}%
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Quick Filters -->
+	{#if customers.length > 0}
+		<div class="mb-4 flex flex-wrap gap-2">
+			<button
+				onclick={() => customerTypeFilter = 'all'}
+				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'all' ? 'font-medium' : ''}"
+				style="background: {customerTypeFilter === 'all' ? 'var(--color-primary-100)' : 'var(--bg-secondary)'}; 
+					   color: {customerTypeFilter === 'all' ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
+					   border: 1px solid {customerTypeFilter === 'all' ? 'var(--color-primary-200)' : 'var(--border-primary)'};"
+			>
+				All Customers ({customers.length})
+			</button>
+			<button
+				onclick={() => customerTypeFilter = 'vip'}
+				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'vip' ? 'font-medium' : ''}"
+				style="background: {customerTypeFilter === 'vip' ? 'var(--color-warning-100)' : 'var(--bg-secondary)'}; 
+					   color: {customerTypeFilter === 'vip' ? 'var(--color-warning-700)' : 'var(--text-secondary)'};
+					   border: 1px solid {customerTypeFilter === 'vip' ? 'var(--color-warning-200)' : 'var(--border-primary)'};"
+			>
+				VIP ({customers.filter(c => getCustomerType(c).type === 'VIP').length})
+			</button>
+			<button
+				onclick={() => customerTypeFilter = 'loyal'}
+				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'loyal' ? 'font-medium' : ''}"
+				style="background: {customerTypeFilter === 'loyal' ? 'var(--color-success-100)' : 'var(--bg-secondary)'}; 
+					   color: {customerTypeFilter === 'loyal' ? 'var(--color-success-700)' : 'var(--text-secondary)'};
+					   border: 1px solid {customerTypeFilter === 'loyal' ? 'var(--color-success-200)' : 'var(--border-primary)'};"
+			>
+				Loyal ({customers.filter(c => getCustomerType(c).type === 'Loyal').length})
+			</button>
+			<button
+				onclick={() => customerTypeFilter = 'new'}
+				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'new' ? 'font-medium' : ''}"
+				style="background: {customerTypeFilter === 'new' ? 'var(--color-info-100)' : 'var(--bg-secondary)'}; 
+					   color: {customerTypeFilter === 'new' ? 'var(--color-info-700)' : 'var(--text-secondary)'};
+					   border: 1px solid {customerTypeFilter === 'new' ? 'var(--color-info-200)' : 'var(--border-primary)'};"
+			>
+				New ({customers.filter(c => getCustomerType(c).type === 'New').length})
+			</button>
+		</div>
+	{/if}
+
+	<!-- Search and Filters -->
+	<div class="mb-6 space-y-4">
+		<div class="flex flex-col sm:flex-row gap-3">
+			<!-- Search -->
+			<div class="flex-1 relative">
+				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+				<input
+					type="search"
+					bind:value={searchQuery}
+					placeholder="Search customers by name, email, or phone..."
+					class="form-input pl-10 pr-10"
+				/>
+				{#if searchQuery}
+					<button
+						onclick={() => searchQuery = ''}
+						class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors"
+						style="background: transparent;"
+						onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+						onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+					>
+						<X class="h-4 w-4" style="color: var(--text-tertiary);" />
+					</button>
+				{/if}
+			</div>
+			
+			<!-- Filter Button -->
+			<button
+				onclick={() => showFilters = !showFilters}
+				class="button-secondary button--gap {hasActiveFilters ? 'ring-2' : ''}"
+				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
+			>
+				<Filter class="h-4 w-4" />
+				Filters
+				{#if hasActiveFilters}
+					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
+						{(minBookings !== null ? 1 : 0) + (minSpent !== null ? 1 : 0) + (hasPhoneFilter !== 'all' ? 1 : 0) + (bookingDateFilter !== 'all' ? 1 : 0) + (customerTypeFilter !== 'all' ? 1 : 0)}
+					</span>
+				{/if}
+				<ChevronDown class="h-4 w-4 ml-1 transition-transform {showFilters ? 'rotate-180' : ''}" />
+			</button>
+		</div>
+		
+		<!-- Filter Panel -->
+		{#if showFilters}
+			<div class="rounded-xl p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<!-- Min Bookings -->
+					<div>
+						<label for="min-bookings" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Min Bookings
+						</label>
+						<input
+							id="min-bookings"
+							type="number"
+							bind:value={minBookings}
+							placeholder="Any"
+							min="1"
+							class="form-input w-full"
+						/>
+					</div>
+					
+					<!-- Min Spent -->
+					<div>
+						<label for="min-spent" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Min Spent
+						</label>
+						<input
+							id="min-spent"
+							type="number"
+							bind:value={minSpent}
+							placeholder="Any amount"
+							min="0"
+							step="10"
+							class="form-input w-full"
+						/>
+					</div>
+					
+					<!-- Phone Filter -->
+					<div>
+						<label for="phone-filter" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Phone Number
+						</label>
+						<select id="phone-filter" bind:value={hasPhoneFilter} class="form-select w-full">
+							<option value="all">All Customers</option>
+							<option value="phone">Has Phone</option>
+							<option value="no-phone">No Phone</option>
+						</select>
+					</div>
+					
+					<!-- Booking Date Filter -->
+					<div>
+						<label for="booking-date-filter" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Last Booking
+						</label>
+						<select id="booking-date-filter" bind:value={bookingDateFilter} class="form-select w-full">
+							<option value="all">All Time</option>
+							<option value="recent">Last 30 Days</option>
+							<option value="old">Over 30 Days Ago</option>
+						</select>
+					</div>
+				</div>
+				
+				{#if hasActiveFilters}
+					<div class="mt-4 flex justify-end">
+						<button onclick={clearFilters} class="button-secondary button--small button--gap">
+							<X class="h-4 w-4" />
+							Clear Filters
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Customers List -->
+	{#if isLoading}
+		<div class="flex justify-center py-12">
+			<div class="text-center">
+				<Loader2 class="h-8 w-8 mx-auto mb-4 animate-spin" style="color: var(--text-tertiary);" />
+				<p class="text-sm" style="color: var(--text-secondary);">Loading customers...</p>
+			</div>
+		</div>
+	{:else if isError}
+		<div class="alert-error rounded-xl p-6">
+			<div class="flex items-center gap-3">
+				<AlertCircle class="h-5 w-5" />
+				<p>Failed to load customers. Please refresh the page.</p>
+			</div>
+		</div>
+	{:else if filteredCustomers.length === 0}
+		<div class="rounded-xl p-12 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			{#if customers.length === 0}
+				<Users class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No customers yet</h3>
+				<p class="text-sm mb-6" style="color: var(--text-secondary);">Start accepting bookings to build your customer base</p>
+				<button onclick={() => goto('/tours')} class="button-primary button--gap">
+					<Users class="h-4 w-4" />
+					Manage Tours
+				</button>
+			{:else}
+				<Search class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
+				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No customers found</h3>
+				<p class="text-sm mb-6" style="color: var(--text-secondary);">Try adjusting your search or filters</p>
+				<button onclick={clearFilters} class="button-secondary">
+					Clear filters
+				</button>
+			{/if}
+		</div>
+	{:else}
+		<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<!-- Table Header with Bulk Actions -->
+			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0}
+								oninput={() => {
+									if (selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0) {
+										selectedCustomers = new Set();
+									} else {
+										selectedCustomers = new Set(filteredCustomers.map(c => c.email));
+									}
+								}}
+								class="form-checkbox"
+							/>
+							<span class="text-sm font-medium" style="color: var(--text-primary);">
+								{selectedCustomers.size > 0 ? `${selectedCustomers.size} selected` : 'Select all'}
+							</span>
+						</label>
+					</div>
+					
+					{#if selectedCustomers.size > 0}
+						<div class="flex items-center gap-2">
+							<button 
+								onclick={() => {
+									const emails = Array.from(selectedCustomers).join(',');
+									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
+								}} 
+								class="button-primary button--small button--gap"
+							>
+								<Mail class="h-4 w-4" />
+								Email
+							</button>
+							<button onclick={copySelectedEmails} class="button-secondary button--small button--gap">
+								{#if copiedEmails}
+									<CheckCircle class="h-4 w-4" />
+									Copied!
+								{:else}
+									<Copy class="h-4 w-4" />
+									Copy
+								{/if}
+							</button>
+							<button onclick={exportToCSV} class="button-secondary button--small button--gap">
+								<Download class="h-4 w-4" />
+								Export
+							</button>
+						</div>
+					{:else}
+						<span class="text-sm" style="color: var(--text-secondary);">
+							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+						</span>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Desktop Table -->
+			<div class="hidden md:block overflow-x-auto">
+				<table class="w-full">
+					<thead style="background: var(--bg-secondary);">
+						<tr>
+							<th class="px-4 py-3 text-left">
+								<span class="sr-only">Select</span>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button onclick={() => setSortBy('name')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+									Customer
+									<ArrowUpDown class="h-3 w-3" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button onclick={() => setSortBy('totalBookings')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+									Bookings
+									<ArrowUpDown class="h-3 w-3" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button onclick={() => setSortBy('totalSpent')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+									Total Spent
+									<ArrowUpDown class="h-3 w-3" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button onclick={() => setSortBy('lastBooking')} class="flex items-center gap-1 text-xs font-medium hover:underline" style="color: var(--text-secondary);">
+									Last Booking
+									<ArrowUpDown class="h-3 w-3" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<span class="text-xs font-medium" style="color: var(--text-secondary);">Actions</span>
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y" style="border-color: var(--border-primary);">
+						{#each filteredCustomers as customer (customer.email)}
+							{@const customerType = getCustomerType(customer)}
+							<tr class="hover:bg-[var(--bg-secondary)] transition-colors">
+								<td class="px-4 py-4">
+									<input
+										type="checkbox"
+										checked={selectedCustomers.has(customer.email)}
+										oninput={(e) => {
+											const target = e.currentTarget;
+											if (target.checked) {
+												selectedCustomers = new Set([...selectedCustomers, customer.email]);
+											} else {
+												const newSet = new Set(selectedCustomers);
+												newSet.delete(customer.email);
+												selectedCustomers = newSet;
+											}
+										}}
+										class="form-checkbox"
+									/>
+								</td>
+								<td class="px-4 py-4">
+									<div>
+										<div class="flex items-center gap-2 mb-1">
+											<p class="font-medium text-sm" style="color: var(--text-primary);">{customer.name}</p>
+											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border" 
+												style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
+												{customerType.type}
+											</span>
+										</div>
+										<p class="text-xs" style="color: var(--text-secondary);">{customer.email}</p>
+										{#if customer.phone}
+											<p class="text-xs mt-0.5" style="color: var(--text-tertiary);">{customer.phone}</p>
+										{/if}
+									</div>
+								</td>
+								<td class="px-4 py-4">
+									<div class="text-sm">
+										<p class="font-medium" style="color: var(--text-primary);">{customer.totalBookings}</p>
+										<p class="text-xs" style="color: var(--text-secondary);">
+											{customer.confirmedBookings} confirmed
+											{#if customer.pendingBookings > 0}
+												• {customer.pendingBookings} pending
+											{/if}
+										</p>
+									</div>
+								</td>
+								<td class="px-4 py-4">
+									<div class="text-sm">
+										<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(customer.totalSpent)}</p>
+										<p class="text-xs" style="color: var(--text-secondary);">{customer.totalParticipants} participants</p>
+									</div>
+								</td>
+								<td class="px-4 py-4">
+									<div class="text-sm">
+										<p class="font-medium" style="color: var(--text-primary);">{formatDate(customer.lastBooking)}</p>
+										<p class="text-xs" style="color: var(--text-secondary);">First: {formatDate(customer.firstBooking)}</p>
+									</div>
+								</td>
+								<td class="px-4 py-4">
+									<div class="flex items-center gap-2">
+										<button
+											onclick={() => window.location.href = `mailto:${customer.email}`}
+											class="button-secondary button--small button--icon"
+											title="Send email"
+										>
+											<Mail class="h-4 w-4" />
+										</button>
+										{#if customer.phone}
+											<button
+												onclick={() => window.location.href = `tel:${customer.phone}`}
+												class="button-secondary button--small button--icon"
+												title="Call customer"
+											>
+												<Phone class="h-4 w-4" />
+											</button>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+
+						<!-- Mobile Cards -->
+			<div class="md:hidden divide-y" style="border-color: var(--border-primary);">
+				{#each filteredCustomers as customer (customer.email)}
+					{@const customerType = getCustomerType(customer)}
+					<div class="p-4">
+						<div class="flex items-start justify-between mb-3">
+							<div class="flex items-center gap-3 flex-1 min-w-0">
+								<input
+									type="checkbox"
+									checked={selectedCustomers.has(customer.email)}
+									oninput={(e) => {
+										const target = e.currentTarget;
+										if (target.checked) {
+											selectedCustomers = new Set([...selectedCustomers, customer.email]);
+										} else {
+											const newSet = new Set(selectedCustomers);
+											newSet.delete(customer.email);
+											selectedCustomers = newSet;
+										}
+									}}
+									class="form-checkbox mt-1"
+								/>
+								<div class="flex-1 min-w-0">
+									<div class="flex items-center gap-2 mb-1">
+										<h4 class="font-medium truncate" style="color: var(--text-primary);">{customer.name}</h4>
+										<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0" 
+											style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
+											{customerType.type}
+										</span>
+									</div>
+									<p class="text-sm truncate" style="color: var(--text-secondary);">{customer.email}</p>
+									{#if customer.phone}
+										<p class="text-sm mt-0.5" style="color: var(--text-tertiary);">{customer.phone}</p>
+									{/if}
+								</div>
+							</div>
+						</div>
+						
+						<div class="grid grid-cols-2 gap-4 text-sm mb-3">
+							<div>
+								<p class="font-medium" style="color: var(--text-primary);">{customer.totalBookings} bookings</p>
+								<p class="text-xs" style="color: var(--text-secondary);">{customer.confirmedBookings} confirmed</p>
+							</div>
+							<div>
+								<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(customer.totalSpent)}</p>
+								<p class="text-xs" style="color: var(--text-secondary);">{customer.totalParticipants} participants</p>
+							</div>
+						</div>
+						
+						<div class="flex items-center justify-between">
+							<p class="text-xs" style="color: var(--text-tertiary);">
+								Last booking: {formatDate(customer.lastBooking)}
+							</p>
+							<div class="flex items-center gap-2">
+								<button
+									onclick={() => window.location.href = `mailto:${customer.email}`}
+									class="button-secondary button--small button--icon"
+									title="Send email"
+								>
+									<Mail class="h-4 w-4" />
+								</button>
+								{#if customer.phone}
+									<button
+										onclick={() => window.location.href = `tel:${customer.phone}`}
+										class="button-secondary button--small button--icon"
+										title="Call customer"
+									>
+										<Phone class="h-4 w-4" />
+									</button>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+</div>
+
+<style>
+	.form-checkbox {
+		width: 1rem;
+		height: 1rem;
+		border-radius: 0.25rem;
+		border: 1px solid var(--border-primary);
+		background: var(--bg-primary);
+		cursor: pointer;
+	}
+	
+	.form-checkbox:checked {
+		background: var(--color-primary-600);
+		border-color: var(--color-primary-600);
+	}
+</style> 

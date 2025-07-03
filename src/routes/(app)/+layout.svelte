@@ -28,6 +28,7 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import User from 'lucide-svelte/icons/user';
+	import Users from 'lucide-svelte/icons/users';
 	import Shield from 'lucide-svelte/icons/shield';
 	import LogOut from 'lucide-svelte/icons/log-out';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
@@ -164,6 +165,15 @@
 			name: 'Business',
 			items: [
 				{
+					name: 'Customers',
+					href: '/customers',
+					icon: Users,
+					description: 'Manage customer contacts',
+					showOnMobile: true,
+					badge: null as number | null,
+					shortcut: 'c'
+				},
+				{
 					name: 'Analytics',
 					href: '/analytics',
 					icon: TrendingUp,
@@ -228,6 +238,12 @@
 			href: '/profile',
 			icon: User,
 			description: 'Edit your profile'
+		},
+		{
+			name: 'Customers',
+			href: '/customers',
+			icon: Users,
+			description: 'Manage customer contacts'
 		},
 		{
 			name: 'Analytics',

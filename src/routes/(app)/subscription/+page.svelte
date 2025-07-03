@@ -42,13 +42,10 @@
 	let cancelAtPeriodEnd = $derived(user?.subscriptionCancelAtPeriodEnd);
 	let currentPeriodEnd = $derived(user?.subscriptionCurrentPeriodEnd);
 	
-	// Base prices from shared config
-	const BASE_PRICES = Object.fromEntries(
-		PRICING_PLANS.filter(plan => plan.id !== 'free').map(plan => [
-			plan.id,
-			plan.basePrice
-		])
-	);
+	// Get plan pricing safely
+	function getPlanPricing(planId: string) {
+		return PRICING_PLANS.find(plan => plan.id === planId)?.basePrice;
+	}
 	
 	// Check if user has promo benefits
 	let hasPromoDiscount = $derived(user && (
@@ -60,24 +57,34 @@
 	let discountPercentage = $derived(user?.subscriptionDiscountPercentage || 0);
 	let isLifetimeDiscount = $derived(user?.isLifetimeDiscount || false);
 	
-	// Calculate prices with discounts
+	// Calculate prices with promo code discounts
 	function calculatePrice(basePlan: 'starter_pro' | 'professional' | 'agency', interval: 'monthly' | 'yearly'): { original: number; final: number; savings: number } {
-		const basePrice = BASE_PRICES[basePlan][interval];
+		const planPricing = getPlanPricing(basePlan);
 		
-		if (isInFreePeriod) {
-			return { original: basePrice, final: 0, savings: basePrice };
+		if (!planPricing) {
+			console.error(`No pricing found for plan: ${basePlan}`);
+			return { original: 0, final: 0, savings: 0 };
 		}
 		
+		const originalPrice = planPricing[interval];
+		
+		// If user is in free period (from promo code), show as free
+		if (isInFreePeriod) {
+			return { original: originalPrice, final: 0, savings: originalPrice };
+		}
+		
+		// Apply promo code discount if user has one
 		if (discountPercentage > 0) {
-			const discount = (basePrice * discountPercentage) / 100;
+			const discount = Math.round((originalPrice * discountPercentage) / 100);
 			return { 
-				original: basePrice, 
-				final: Math.round(basePrice - discount), 
-				savings: Math.round(discount)
+				original: originalPrice, 
+				final: originalPrice - discount, 
+				savings: discount
 			};
 		}
 		
-		return { original: basePrice, final: basePrice, savings: 0 };
+		// No discounts - show regular pricing
+		return { original: originalPrice, final: originalPrice, savings: 0 };
 	}
 	
 	// Calculate prices - updated pricing with promo consideration
@@ -92,15 +99,25 @@
 		if (isInFreePeriod && user?.subscriptionFreeUntil) {
 			const freeUntil = new Date(user.subscriptionFreeUntil);
 			const monthsLeft = Math.round((freeUntil.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30));
-			return `Free trial: ${monthsLeft} month${monthsLeft > 1 ? 's' : ''} remaining`;
+			const freeText = `Free access: ${monthsLeft} month${monthsLeft > 1 ? 's' : ''} remaining`;
+			
+			// If user also has a lifetime discount for after free period
+			if (discountPercentage > 0 && isLifetimeDiscount) {
+				return `${freeText}, then ${discountPercentage}% lifetime discount`;
+			}
+			
+			return freeText;
 		}
 		
 		if (discountPercentage > 0) {
-			return `${discountPercentage}% ${isLifetimeDiscount ? 'lifetime' : ''} discount`;
+			return `${discountPercentage}% ${isLifetimeDiscount ? 'lifetime' : 'temporary'} discount active`;
 		}
 		
 		return '';
 	}
+	
+	// Check if user has any promo benefits
+	let hasActivePromoCode = $derived(user?.promoCodeUsed && (isInFreePeriod || discountPercentage > 0));
 	
 	// Refresh data on mount to ensure we have the latest subscription info
 	onMount(async () => {
@@ -329,26 +346,27 @@
 	{/if}
 
 	<!-- Early Access Notice -->
-	<div class="alert-warning mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg">
+	<div class="alert-info mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg">
 		<div class="flex items-start gap-2 sm:gap-3">
 			<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 			<div class="flex-1">
-				<h3 class="font-semibold mb-0.5 sm:mb-1">Early Access - Limited Time Pricing</h3>
+				<h3 class="font-semibold mb-0.5 sm:mb-1">Early Access - Limited Time Features</h3>
 				<p>
-					Zaur is in early access. Join now at discounted rates and shape the future of tour management! 
+					Zaur is in early access. Join now and shape the future of tour management! 
 					Some features are being actively developed and will be rolled out progressively.
+					Check our social media for special promo codes with exclusive discounts.
 				</p>
 			</div>
 		</div>
 	</div>
 
-	<!-- Promo Discount Banner -->
-	{#if hasPromoDiscount}
+	<!-- Promo Code Benefits -->
+	{#if hasActivePromoCode}
 		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-success">
 			<div class="flex items-start gap-2 sm:gap-3">
 				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
 				<div class="flex-1">
-					<h3 class="alert-heading">Special Offer Active!</h3>
+					<h3 class="alert-heading">Promo Code Benefits Active!</h3>
 					<p class="alert-body">
 						{getPromoBenefitText()}
 						{#if user?.promoCodeUsed}
@@ -358,8 +376,29 @@
 					{#if isInFreePeriod && user?.subscriptionFreeUntil}
 						<p class="alert-body text-xs mt-1 opacity-90">
 							Free period ends on {formatDate(user.subscriptionFreeUntil)}
+							{#if discountPercentage > 0 && isLifetimeDiscount}
+								• After that, {discountPercentage}% lifetime discount applies to all payments
+							{/if}
+						</p>
+					{:else if discountPercentage > 0 && isLifetimeDiscount}
+						<p class="alert-body text-xs mt-1 opacity-90">
+							This discount applies to all future payments
 						</p>
 					{/if}
+				</div>
+			</div>
+		</div>
+	{:else if currentPlan === 'free'}
+		<!-- Promo Code CTA for users without codes -->
+		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+			<div class="flex items-start gap-2 sm:gap-3">
+				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
+				<div class="flex-1">
+					<h3 class="font-semibold mb-0.5 sm:mb-1" style="color: var(--text-primary);">Have a Promo Code?</h3>
+					<p class="text-sm" style="color: var(--text-secondary);">
+						Follow us on social media for exclusive discount codes and special offers. 
+						Promo codes can provide free months, lifetime discounts, and more!
+					</p>
 				</div>
 			</div>
 		</div>
@@ -487,7 +526,7 @@
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 				{#each PRICING_PLANS as plan}
-					{@const pricing = calculatePrice(plan.id as 'starter_pro' | 'professional' | 'agency', isYearly ? 'yearly' : 'monthly')}
+					{@const pricing = plan.id === 'free' ? { original: 0, final: 0, savings: 0 } : calculatePrice(plan.id as 'starter_pro' | 'professional' | 'agency', isYearly ? 'yearly' : 'monthly')}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
 					{@const isFreePlan = plan.id === 'free'}
@@ -505,22 +544,35 @@
 						
 						<div class="mb-1">
 							{#if !isFreePlan && pricing.savings > 0}
-								<span class="text-sm sm:text-base line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
-								<span class="text-xl sm:text-2xl font-bold ml-1" style="color: var(--text-primary);">€{pricing.final}</span>
+								<!-- User has promo discount applied -->
+								<div class="text-center">
+									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
+									<span class="text-xl sm:text-2xl font-bold block" style="color: var(--text-primary);">€{pricing.final}</span>
+									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isYearly ? ' billed annually' : ''}</span>
+								</div>
 							{:else}
-								<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{isFreePlan ? 0 : pricing.final}</span>
+								<!-- Regular pricing -->
+								<div class="text-center">
+									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{isFreePlan ? 0 : pricing.final}</span>
+									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isFreePlan ? '' : isYearly ? ' billed annually' : ''}</span>
+								</div>
 							{/if}
-							<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isFreePlan ? '' : isYearly ? ' billed annually' : ''}</span>
 						</div>
 						
-						<div class="mb-3 sm:mb-4 h-3 sm:h-4">
+						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
 							{#if !isFreePlan && pricing.savings > 0}
-								<span class="text-xs font-medium" style="color: var(--color-success-600);">
-									{isInFreePeriod ? 'Free during trial period' : `Save €${pricing.savings}/month with promo`}
+								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
+									{isInFreePeriod ? 'FREE during trial' : `${discountPercentage}% OFF - Save €${pricing.savings}`}
 								</span>
 							{:else if !isFreePlan && isYearly}
+								{@const planPricing = getPlanPricing(plan.id)}
+								{@const yearlySavings = planPricing ? (planPricing.monthly * 12) - (planPricing.yearly * 12) : 0}
 								<span class="text-xs font-medium" style="color: var(--color-success-600);">
-									Save €{plan.id === 'starter_pro' ? '36' : plan.id === 'professional' ? '72' : '180'}/year
+									Save €{yearlySavings}/year with annual billing
+								</span>
+							{:else if !isFreePlan}
+								<span class="text-xs" style="color: var(--text-tertiary);">
+									Regular pricing
 								</span>
 							{/if}
 						</div>

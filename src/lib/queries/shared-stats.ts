@@ -17,6 +17,7 @@ export const queryKeys = {
 	profile: ['profile'] as const,
 	profileStats: ['profileStats'] as const,
 	allTimeSlots: (view: string, date: string) => ['allTimeSlots', view, date] as const,
+	customers: ['customers'] as const,
 } as const;
 
 // Query functions that call our API endpoints
@@ -139,6 +140,17 @@ export const queryFunctions = {
 		const response = await fetch(`/api/all-time-slots?view=${view}&date=${date}`);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch all time slots: ${response.status} ${response.statusText}`);
+		}
+		return response.json();
+	},
+
+	// Fetch customers
+	async fetchCustomers() {
+		if (!browser) throw new Error('Client-side only');
+		
+		const response = await fetch('/api/customers');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch customers: ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
