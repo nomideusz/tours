@@ -32,10 +32,9 @@
 	let { data }: { data: PageData } = $props();
 	
 	// Analytics time range state
-	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('month');
+	let timeRange = $state<'week' | 'month' | 'quarter' | 'year'>('month');
 	
-	// Debug mode
-	let showDebug = $state(false);
+
 	let activeTab = $state<'overview' | 'revenue' | 'bookings' | 'tours' | 'conversions'>('overview');
 	
 	// Fetch analytics data
@@ -350,19 +349,6 @@
 					>
 						Year
 					</button>
-					<button
-						onclick={() => timeRange = 'all'}
-						class="time-range-button {timeRange === 'all' ? 'active' : ''}"
-					>
-						All Time
-					</button>
-					<button
-						onclick={() => showDebug = !showDebug}
-						class="time-range-button ml-4"
-						style="background: var(--color-danger-50); color: var(--color-danger-700); border-color: var(--color-danger-200);"
-					>
-						{showDebug ? 'Hide' : 'Show'} Debug
-					</button>
 				</div>
 			</PageHeader>
 		</div>
@@ -393,27 +379,7 @@
 				Retry
 			</button>
 		</div>
-	{:else if showDebug}
-		<!-- Debug Information -->
-		<div class="rounded-lg p-6 mb-6" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Debug Information</h3>
-			<div class="space-y-4">
-				<div>
-					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Analytics Data:</h4>
-					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(analytics, null, 2)}</pre>
-				</div>
-				<div>
-					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Dashboard Stats:</h4>
-					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(dashboardStats, null, 2)}</pre>
-				</div>
-				<div>
-					<h4 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Tours Stats:</h4>
-					<pre class="text-xs overflow-auto p-3 rounded" style="background: var(--bg-primary); color: var(--text-tertiary);">{JSON.stringify(toursStats, null, 2)}</pre>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Normal content continues below -->
+	{:else}
 		<!-- Mobile Tab Navigation -->
 		<div class="sm:hidden mb-6 -mx-4">
 			<div class="flex overflow-x-auto mobile-scroll px-4 border-b" style="border-color: var(--border-primary);">

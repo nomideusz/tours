@@ -34,11 +34,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			startDate = new Date(now.getFullYear(), 0, 1);
 			previousStartDate = new Date(now.getFullYear() - 1, 0, 1);
 			break;
-		case 'all':
-			// Show all data for debugging
-			startDate = new Date(2020, 0, 1); // Very old date
-			previousStartDate = new Date(2019, 0, 1);
-			break;
+
 		default:
 			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
 			previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -53,10 +49,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		
 		const tourIds = userTours.map(t => t.id);
 		
-		console.log('[Analytics Debug] User ID:', userId);
-		console.log('[Analytics Debug] User tours found:', userTours.length);
-		console.log('[Analytics Debug] Tour IDs:', tourIds);
-		console.log('[Analytics Debug] Date range:', { startDate, endDate: now, range });
+
 		
 		if (tourIds.length === 0) {
 			// Return empty analytics if no tours
@@ -73,25 +66,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			});
 		}
 
-		// Debug: Get ALL bookings for these tours to check data
-		const allBookings = await db
-			.select({
-				id: bookings.id,
-				tourId: bookings.tourId,
-				status: bookings.status,
-				createdAt: bookings.createdAt,
-				totalAmount: bookings.totalAmount,
-			})
-			.from(bookings)
-			.where(inArray(bookings.tourId, tourIds));
 
-		console.log('[Analytics Debug] ALL bookings for user tours:', allBookings.length);
-		console.log('[Analytics Debug] Sample bookings:', allBookings.slice(0, 3).map(b => ({
-			id: b.id,
-			status: b.status,
-			createdAt: b.createdAt,
-			amount: b.totalAmount
-		})));
 
 		// Get bookings for current and previous periods
 		const [periodBookings, previousPeriodBookings] = await Promise.all([
@@ -130,19 +105,14 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				)
 		]);
 
-		console.log('[Analytics Debug] Period bookings found:', periodBookings.length);
-		console.log('[Analytics Debug] Booking statuses:', periodBookings.map(b => b.status));
+
 
 		// Calculate totals
 		const confirmedBookings = periodBookings.filter(b => b.status === 'confirmed');
 		const previousConfirmedBookings = previousPeriodBookings.filter(b => b.status === 'confirmed');
 		
-		console.log('[Analytics Debug] Confirmed bookings:', confirmedBookings.length);
-		console.log('[Analytics Debug] Other statuses in period:', periodBookings.filter(b => b.status !== 'confirmed').map(b => ({ id: b.id, status: b.status })));
-		
-		// For debugging: include all bookings regardless of status if no confirmed bookings
+		// Use confirmed bookings, fall back to all bookings if none confirmed
 		const bookingsToAnalyze = confirmedBookings.length > 0 ? confirmedBookings : periodBookings;
-		console.log('[Analytics Debug] Using bookings for analysis:', bookingsToAnalyze.length);
 		
 		const totalRevenue = bookingsToAnalyze.reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 		const previousRevenue = previousConfirmedBookings.reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
@@ -261,7 +231,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				label: `${String(item.hour).padStart(2, '0')}:00`,
 			}));
 		} catch (err) {
-			console.error('[Analytics Debug] Peak times query error:', err);
+			console.error('Peak times query error:', err);
 		}
 
 		// Generate chart data
