@@ -61,8 +61,6 @@
 		gcTime: 10 * 60 * 1000,   // 10 minutes
 		refetchOnWindowFocus: false, // Disable window focus refetching
 		// Removed refetchInterval to prevent timer accumulation
-		// refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-		// refetchIntervalInBackground: true,
 	}));
 	
 	// Derive data from query
@@ -83,6 +81,46 @@
 			newStatus = booking.status;
 		}
 	});
+
+	// Status button for mobile header (next to title)
+	let statusButton = $derived(booking ? {
+		label: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+		onclick: () => { showStatusModal = true; },
+		disabled: false,
+		className: getStatusColor(booking.status),
+		tooltip: `Current status: ${booking.status}. Tap to change.`
+	} : null);
+
+	// Primary action for mobile header (total amount on the right)
+	let primaryAction = $derived(booking ? {
+		label: $globalCurrencyFormatter(calculateTotal()),
+		icon: Euro,
+		onclick: () => {}, // Non-functional, just displays the amount
+		variant: 'secondary' as const,
+		disabled: true
+	} : null);
+
+	// Quick actions for mobile
+	let quickActions = $derived(booking ? [
+		{
+			label: 'Email',
+			icon: Mail,
+			onclick: () => openEmailClient(),
+			variant: 'secondary' as const
+		},
+		...(booking.customerPhone ? [{
+			label: 'Call',
+			icon: Phone,
+			onclick: () => { window.location.href = `tel:${booking.customerPhone}`; },
+			variant: 'secondary' as const
+		}] : []),
+		{
+			label: 'Change Status',
+			icon: Edit,
+			onclick: () => { showStatusModal = true; },
+			variant: 'primary' as const
+		}
+	] : []);
 
 	function openEmailClient() {
 		if (!booking) return;
@@ -256,37 +294,15 @@
 		
 		<!-- Header -->
 		<div class="mb-6 sm:mb-8">
-			<!-- Mobile Page Header -->
+			<!-- Compact Mobile Page Header -->
 			<MobilePageHeader
-				title={booking.expand?.tour?.name || 'Booking Details'}
-				statusButton={null}
-				secondaryInfo={`#${booking.id.slice(-8)} • ${booking.customerName}`}
-				quickActions={[
-					{ label: 'Email', icon: Mail, onclick: openEmailClient },
-					...(booking.customerPhone ? [{ label: 'Call', icon: Phone, onclick: () => window.location.href = `tel:${booking.customerPhone}` }] : [])
-				]}
-				infoItems={[
-					{ 
-						label: 'Tour Date', 
-						value: safeFormatDate(booking.expand?.timeSlot?.startTime),
-						icon: Calendar
-					},
-					{ 
-						label: 'Total', 
-						value: $globalCurrencyFormatter(calculateTotal()),
-						icon: Euro
-					},
-					{ 
-						label: 'Participants', 
-						value: booking.participants.toString(),
-						icon: Users
-					},
-					{ 
-						label: 'Payment', 
-						value: payment?.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Pending',
-						icon: PaymentIcon
-					}
-				]}
+				title={booking.customerName}
+				secondaryInfo={`${booking.expand?.tour?.name || 'Unknown Tour'} • ${safeFormatDate(booking.expand?.timeSlot?.startTime)}`}
+				statusButton={statusButton}
+				primaryAction={primaryAction}
+				quickActions={quickActions}
+				showBackButton={true}
+				onBackClick={() => goto('/bookings')}
 			/>
 			
 			<!-- Desktop Header -->
@@ -514,141 +530,102 @@
 					</div>
 				</div>
 
-				<!-- Mobile Timeline (shown instead of sidebar on mobile) -->
-				<div class="lg:hidden rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<h3 class="font-semibold text-sm mb-3" style="color: var(--text-primary);">Timeline</h3>
-					<div class="space-y-3">
-						<div class="flex items-start gap-3">
-							<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
-							<div class="flex-1">
-								<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-								<p class="text-xs" style="color: var(--text-secondary);">{safeFormatDateTime(booking.createdAt)}</p>
+				<!-- Mobile Quick Info Cards -->
+				<div class="sm:hidden grid grid-cols-2 gap-3 mb-4">
+					<!-- Status & Payment -->
+					<div class="rounded-xl p-4 border-2 transition-all duration-200" 
+						style="background: var(--bg-primary); border-color: var(--border-primary);">
+						<div class="space-y-2">
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border {getStatusColor(booking.status)}">
+								<BookingIcon class="h-3 w-3" />
+								<span class="capitalize font-medium">{booking.status}</span>
+							</span>
+							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border {getPaymentStatusColor(payment?.status || booking.paymentStatus || 'pending')}">
+								<PaymentIcon class="h-3 w-3" />
+								<span class="font-medium">
+									{payment?.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Pending'}
+								</span>
+							</span>
+						</div>
+					</div>
+					
+					<!-- Participants & Booking ID -->
+					<div class="rounded-xl p-4 border-2" 
+						style="background: var(--bg-primary); border-color: var(--border-primary);">
+						<div class="space-y-2">
+							<div class="flex items-center gap-2">
+								<Users class="h-4 w-4" style="color: var(--text-secondary);" />
+								<span class="text-sm font-semibold" style="color: var(--text-primary);">
+									{booking.participants} {booking.participants === 1 ? 'person' : 'people'}
+								</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<Ticket class="h-4 w-4" style="color: var(--text-secondary);" />
+								<span class="text-xs font-mono" style="color: var(--text-secondary);">
+									#{booking.id.slice(-8)}
+								</span>
 							</div>
 						</div>
-						
-						{#if booking.status === 'confirmed' || booking.status === 'completed'}
-							<div class="flex items-start gap-3">
-								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
-								<div class="flex-1">
-									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Confirmed</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{safeFormatDateTimeForTimeline(booking.updatedAt)}
-									</p>
-								</div>
-							</div>
-						{/if}
-						
-						{#if payment?.status === 'paid' || payment?.status === 'succeeded'}
-							<div class="flex items-start gap-3">
-								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--color-success-500);"></div>
-								<div class="flex-1">
-									<p class="text-sm font-medium" style="color: var(--text-primary);">Payment Received</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{safeFormatDateTimeForTimeline(payment.created)}
-									</p>
-								</div>
-							</div>
-						{/if}
 					</div>
 				</div>
 
-				<!-- Mobile Status Update (shown at bottom on mobile) -->
-				<div class="lg:hidden rounded-xl p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="space-y-3">
-						<div>
-							<label class="text-xs font-medium block mb-2" style="color: var(--text-secondary);">Update Status</label>
-							<select 
-								name="status" 
-								value={booking.status}
-								onchange={async (e) => {
-									const target = e.target as HTMLSelectElement;
-									if (target.value === 'cancelled') {
-										newStatus = target.value;
-										showStatusModal = true;
-									} else {
-										// For non-cancellation status changes, update directly
-										newStatus = target.value;
-										
-										// Wait for DOM to update before submitting
-										await tick();
-										
-										// Submit form programmatically
-										const form = document.getElementById('mobile-status-update-form') as HTMLFormElement;
-										if (form) {
-											console.log('Submitting mobile form with status:', newStatus);
-											form.requestSubmit();
-										}
-									}
-								}}
-								class="form-select form-select--small w-full"
-								style="cursor: pointer;"
-							>
-								<option value="pending">Pending</option>
-								<option value="confirmed">Confirmed</option>
-								<option value="cancelled">Cancelled</option>
-								<option value="completed">Completed</option>
-							</select>
-						</div>
+				<!-- Hidden form for status updates -->
+				<form id="mobile-status-update-form" method="POST" action="?/updateStatus" class="hidden"
+					use:enhance={() => {
+						isUpdating = true;
+						error = null;
 						
-						<!-- Hidden form for non-cancellation status updates -->
-						<form id="mobile-status-update-form" method="POST" action="?/updateStatus" class="hidden"
-							use:enhance={() => {
-								isUpdating = true;
-								error = null;
+						return async ({ result, update }) => {
+							if (result.type === 'success') {
+								// Immediate optimistic updates
+								const updatedStatus = newStatus as typeof booking.status;
 								
-								return async ({ result, update }) => {
-									if (result.type === 'success') {
-										// Immediate optimistic updates
-										const updatedStatus = newStatus as typeof booking.status;
-										
-										// 1. Update local state immediately
-										booking = { ...booking, status: updatedStatus };
-										
-										// 2. Optimistically update all query caches immediately
-										queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
-											if (oldData?.booking) {
-												return {
-													...oldData,
-													booking: { ...oldData.booking, status: updatedStatus }
-												};
-											}
-											return oldData;
-										});
-										
-										// Update recent bookings cache
-										queryClient.setQueriesData({ queryKey: ['recentBookings'], exact: false }, (oldData: any) => {
-											if (Array.isArray(oldData)) {
-												return oldData.map((b: any) => 
-													b.id === bookingId ? { ...b, status: updatedStatus } : b
-												);
-											}
-											return oldData;
-										});
-										
-										// 3. Then invalidate queries to fetch fresh data in background
-										Promise.all([
-											queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
-											queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
-											queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
-										]).catch((invalidationError) => {
-											console.warn('Background refetch failed:', invalidationError);
-										});
-										
-									} else if (result.type === 'failure') {
-										error = (result.data as any)?.error || 'Failed to update status';
+								// 1. Update local state immediately
+								booking = { ...booking, status: updatedStatus };
+								
+								// 2. Optimistically update all query caches immediately
+								queryClient.setQueryData(['booking', bookingId], (oldData: any) => {
+									if (oldData?.booking) {
+										return {
+											...oldData,
+											booking: { ...oldData.booking, status: updatedStatus }
+										};
 									}
-									
-									// Always reset form state
-									isUpdating = false;
-									await update();
-								};
-							}}
-						>
-							<input type="hidden" name="id" value={booking.id} />
-							<input type="hidden" name="status" bind:value={newStatus} />
-						</form>
-					</div>
-				</div>
+									return oldData;
+								});
+								
+								// Update recent bookings cache
+								queryClient.setQueriesData({ queryKey: ['recentBookings'], exact: false }, (oldData: any) => {
+									if (Array.isArray(oldData)) {
+										return oldData.map((b: any) => 
+											b.id === bookingId ? { ...b, status: updatedStatus } : b
+										);
+									}
+									return oldData;
+								});
+								
+								// 3. Then invalidate queries to fetch fresh data in background
+								Promise.all([
+									queryClient.invalidateQueries({ queryKey: ['booking', bookingId] }),
+									queryClient.invalidateQueries({ queryKey: ['recentBookings'], exact: false }),
+									queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
+								]).catch((invalidationError) => {
+									console.warn('Background refetch failed:', invalidationError);
+								});
+								
+							} else if (result.type === 'failure') {
+								error = (result.data as any)?.error || 'Failed to update status';
+							}
+							
+							// Always reset form state
+							isUpdating = false;
+							await update();
+						};
+					}}
+				>
+					<input type="hidden" name="id" value={booking.id} />
+					<input type="hidden" name="status" bind:value={newStatus} />
+				</form>
 
 				<!-- Payment Details (if available) -->
 				{#if payment}

@@ -6,23 +6,36 @@
 		label: string;
 		icon: ComponentType;
 		onclick: () => void;
-		variant?: 'primary' | 'secondary';
+		variant?: 'primary' | 'secondary' | 'accent';
 		size?: 'small' | 'icon';
 		disabled?: boolean;
+		badge?: string | number;
 	}
 
 	interface InfoItem {
 		icon: ComponentType;
 		label: string;
 		value: string;
+		trend?: 'up' | 'down' | 'neutral';
+		accent?: boolean;
 	}
 
 	interface PrimaryAction {
 		label: string;
 		icon: ComponentType;
 		onclick: () => void;
-		variant?: 'primary' | 'secondary';
+		variant?: 'primary' | 'secondary' | 'accent';
 		disabled?: boolean;
+		badge?: string | number;
+	}
+
+	interface StatCard {
+		icon: ComponentType;
+		value: string;
+		label: string;
+		trend?: 'up' | 'down' | 'neutral';
+		accent?: boolean;
+		onclick?: () => void;
 	}
 
 	let {
@@ -35,6 +48,11 @@
 		primaryAction = null,
 		quickActions = [],
 		infoItems = [],
+		statCards = [],
+		showSearchBar = false,
+		searchValue = '',
+		onSearchChange = null,
+		searchPlaceholder = 'Search...',
 		class: className = ''
 	} = $props<{
 		title: string;
@@ -56,21 +74,40 @@
 		primaryAction?: PrimaryAction | null;
 		quickActions?: QuickAction[];
 		infoItems?: InfoItem[];
+		statCards?: StatCard[];
+		showSearchBar?: boolean;
+		searchValue?: string;
+		onSearchChange?: ((value: string) => void) | null;
+		searchPlaceholder?: string;
 		class?: string;
 	}>();
+
+	// Handle search input
+	function handleSearchInput(e: Event) {
+		const target = e.target as HTMLInputElement;
+		if (onSearchChange) {
+			onSearchChange(target.value);
+		}
+	}
 </script>
 
 <!-- Mobile Compact Header -->
 <div class="sm:hidden {className}">
 	<!-- Back Button (if enabled) -->
 	{#if showBackButton && onBackClick}
-		<div class="flex items-center gap-3 mb-3">
+		<div class="flex items-center gap-3 mb-2">
 			<button
 				onclick={onBackClick}
-				class="flex items-center gap-2 text-sm font-medium transition-colors py-1 -ml-1"
+				class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1 px-2 -ml-2 rounded-lg active:scale-95"
 				style="color: var(--color-primary-600);"
-				onmouseenter={(e) => e.currentTarget.style.color = 'var(--color-primary-700)'}
-				onmouseleave={(e) => e.currentTarget.style.color = 'var(--color-primary-600)'}
+				onmouseenter={(e) => {
+					e.currentTarget.style.color = 'var(--color-primary-700)';
+					e.currentTarget.style.backgroundColor = 'var(--color-primary-50)';
+				}}
+				onmouseleave={(e) => {
+					e.currentTarget.style.color = 'var(--color-primary-600)';
+					e.currentTarget.style.backgroundColor = 'transparent';
+				}}
 			>
 				<ArrowLeft class="h-4 w-4" />
 				{backButtonLabel}
@@ -78,47 +115,77 @@
 		</div>
 	{/if}
 
-	<div class="flex items-start justify-between mb-3">
-		<div class="flex-1 min-w-0 {primaryAction ? 'pr-3' : ''}">
-			<h1 class="text-xl font-bold truncate" style="color: var(--text-primary); font-size: 1.25rem; line-height: 1.75rem;">{title}</h1>
-			<div class="flex items-center gap-2 mt-1">
-				{#if statusButton}
-					<button
-						onclick={statusButton.onclick}
-						disabled={statusButton.disabled}
-						title={statusButton.tooltip}
-						class="tour-status-badge tour-status-badge--small {statusButton.className || ''}"
-						style="{statusButton.textColor || statusButton.backgroundColor || statusButton.color ? `color: ${statusButton.textColor || 'var(--text-primary)'}; background: ${statusButton.backgroundColor || 'var(--bg-tertiary)'};` : ''}"
-					>
-						{#if statusButton.dotColor || statusButton.className}
-							<span class="tour-status-indicator {statusButton.className ? 
-								(statusButton.className.includes('active') ? 'tour-status-indicator--active' : 
-								statusButton.className.includes('draft') ? 'tour-status-indicator--draft' : '') 
-								: ''}" 
-								style="{statusButton.dotColor ? `background: ${statusButton.dotColor}` : ''}"></span>
-						{/if}
-						{statusButton.label}
-					</button>
-				{/if}
-				{#if secondaryInfo}
-					<span class="text-xs" style="color: var(--text-tertiary);">•</span>
-					<span class="text-xs font-medium" style="color: var(--text-secondary);">{secondaryInfo}</span>
-				{/if}
+	<!-- Header Section -->
+	<div class="mb-4">
+		<div class="flex items-start justify-between mb-2">
+			<div class="flex-1 min-w-0 {primaryAction ? 'pr-4' : ''}">
+				<h1 class="text-2xl font-bold truncate leading-tight" style="color: var(--text-primary);">{title}</h1>
+				<div class="flex items-center gap-2 mt-1">
+					{#if statusButton}
+						<span
+							onclick={statusButton.onclick}
+							role="button"
+							tabindex="0"
+							title={statusButton.tooltip}
+							class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border cursor-pointer transition-all duration-200 active:scale-95 {statusButton.className || ''}"
+							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); statusButton.onclick?.(); } }}
+						>
+							{statusButton.label}
+						</span>
+					{/if}
+					{#if secondaryInfo}
+						<span class="text-sm opacity-60" style="color: var(--text-tertiary);">•</span>
+						<span class="text-sm font-medium" style="color: var(--text-secondary);">{secondaryInfo}</span>
+					{/if}
+				</div>
+			</div>
+			
+			<!-- Primary Action Button -->
+			{#if primaryAction}
+				<button 
+					onclick={primaryAction.onclick} 
+					disabled={primaryAction.disabled}
+					class="button-{primaryAction.variant || 'primary'} button--small button--gap flex-shrink-0 relative transition-all duration-200 active:scale-95"
+				>
+					<primaryAction.icon class="h-4 w-4" />
+					{primaryAction.label}
+					{#if primaryAction.badge}
+						<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+							{primaryAction.badge}
+						</span>
+					{/if}
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	<!-- Search Bar -->
+	{#if showSearchBar}
+		<div class="mb-4">
+			<div class="relative">
+				<input
+					type="text"
+					value={searchValue}
+					oninput={handleSearchInput}
+					placeholder={searchPlaceholder}
+					class="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:ring-2 focus:ring-offset-1"
+					style="
+						background: var(--bg-primary);
+						border-color: var(--border-primary);
+						color: var(--text-primary);
+					"
+					onfocus={(e) => {
+						e.currentTarget.style.borderColor = 'var(--color-primary-300)';
+						e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+					}}
+					onblur={(e) => {
+						e.currentTarget.style.borderColor = 'var(--border-primary)';
+						e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
+					}}
+				/>
 			</div>
 		</div>
-		
-		<!-- Primary Action Button -->
-		{#if primaryAction}
-			<button 
-				onclick={primaryAction.onclick} 
-				disabled={primaryAction.disabled}
-				class="button-{primaryAction.variant || 'primary'} button--small button--gap flex-shrink-0"
-			>
-				<primaryAction.icon class="h-3 w-3" />
-				{primaryAction.label}
-			</button>
-		{/if}
-	</div>
+	{/if}
 	
 	<!-- Mobile Quick Actions -->
 	{#if quickActions.length > 0}
@@ -127,28 +194,104 @@
 				<button 
 					onclick={action.onclick} 
 					disabled={action.disabled}
-					class="flex-1 button-{action.variant || 'secondary'} button--small button--gap justify-center"
+					class="relative flex-1 button-{action.variant || 'secondary'} button--small button--gap justify-center transition-all duration-200 active:scale-95"
 					class:button--icon={action.size === 'icon'}
 					class:flex-none={action.size === 'icon'}
+					class:w-12={action.size === 'icon'}
 				>
-					<action.icon class="h-3 w-3" />
+					<action.icon class="h-4 w-4" />
 					{#if action.size !== 'icon'}{action.label}{/if}
+					{#if action.badge}
+						<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+							{action.badge}
+						</span>
+					{/if}
 				</button>
 			{/each}
 		</div>
 	{/if}
 
-	<!-- Mobile Compact Info Grid -->
-	{#if infoItems.length > 0}
-		<div class="p-3 rounded-lg mb-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="grid grid-cols-2 gap-2 text-xs">
-				{#each infoItems as item}
-					<div class="flex items-center gap-1" style="color: var(--text-secondary);">
-						<item.icon class="h-3 w-3 flex-shrink-0" />
-						<span class="truncate">{item.label}: {item.value}</span>
+	<!-- Enhanced Stats Cards -->
+	{#if statCards.length > 0}
+		<div class="grid grid-cols-2 gap-3 mb-4">
+			{#each statCards as card}
+				<div 
+					class="p-4 rounded-xl border-2 transition-all duration-200 {card.onclick ? 'cursor-pointer active:scale-95' : ''}"
+					style="
+						background: {card.accent ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+						border-color: {card.accent ? 'var(--color-primary-200)' : 'var(--border-primary)'};
+					"
+					onclick={card.onclick}
+					role={card.onclick ? 'button' : 'presentation'}
+					tabindex={card.onclick ? 0 : -1}
+				>
+					<div class="flex items-center gap-3">
+						<div class="p-2 rounded-lg" style="background: {card.accent ? 'var(--color-primary-100)' : 'var(--bg-secondary)'};">
+							<card.icon class="h-5 w-5" style="color: {card.accent ? 'var(--color-primary-600)' : 'var(--text-secondary)'};" />
+						</div>
+						<div class="min-w-0 flex-1">
+							<p class="text-xl font-bold truncate" style="color: var(--text-primary);">{card.value}</p>
+							<p class="text-sm font-medium truncate" style="color: var(--text-secondary);">{card.label}</p>
+						</div>
 					</div>
-				{/each}
-			</div>
+				</div>
+			{/each}
 		</div>
 	{/if}
-</div> 
+
+	<!-- Mobile Compact Info Grid (fallback for simple info items) -->
+	{#if infoItems.length > 0 && statCards.length === 0}
+		<div class="grid grid-cols-2 gap-3 mb-4">
+			{#each infoItems as item}
+				<div class="p-3 rounded-xl border-2" style="background: var(--bg-primary); border-color: var(--border-primary);">
+					<div class="flex items-center gap-2">
+						<item.icon class="h-4 w-4 flex-shrink-0" style="color: var(--text-secondary);" />
+						<div class="min-w-0 flex-1">
+							<p class="text-sm font-medium truncate" style="color: var(--text-primary);">{item.value}</p>
+							<p class="text-xs truncate" style="color: var(--text-secondary);">{item.label}</p>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+<style>
+	/* Enhanced mobile touch targets - only for action buttons, not badges */
+	.mobile-action-button {
+		min-height: 44px;
+		min-width: 44px;
+		touch-action: manipulation;
+	}
+	
+	/* Apply touch targets to primary action and quick action buttons */
+	button:not(.tour-status-badge):not(.status-badge) {
+		min-height: 44px;
+		touch-action: manipulation;
+	}
+	
+	/* Quick action buttons should have minimum width */
+	button[class*="button-"] {
+		min-width: 44px;
+	}
+	
+	/* Smooth transitions */
+	* {
+		-webkit-tap-highlight-color: transparent;
+	}
+	
+	/* Enhanced focus styles for accessibility */
+	button:focus-visible, 
+	input:focus-visible {
+		outline: 2px solid var(--color-primary-500);
+		outline-offset: 2px;
+	}
+	
+	/* Status badges should not be affected by touch target rules */
+	.tour-status-badge,
+	button.tour-status-badge {
+		min-height: auto !important;
+		min-width: auto !important;
+	}
+</style> 
