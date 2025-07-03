@@ -9,13 +9,25 @@
 </script>
 
 <svelte:head>
-	<!-- Structured data for homepage -->
+	<!-- Override title for homepage specifically -->
+	<title>Zaur - QR Booking System for Tour Guides | Get Direct Bookings</title>
+	<meta name="title" content="Zaur - QR Booking System for Tour Guides | Get Direct Bookings" />
+	<meta name="description" content="Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings. No booking fees, ever!" />
+	
+	<!-- Additional SEO signals for homepage -->
+	<meta property="og:title" content="Zaur - QR Booking System for Tour Guides | Get Direct Bookings" />
+	<meta property="og:description" content="Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings. No booking fees, ever!" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://zaur.app/" />
+	
+	<!-- Simplified structured data for homepage -->
 	{@html `<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
 		"name": "Zaur",
-		"description": "Professional QR code booking system for tour guides. Let tourists book and pay instantly — no apps, no friction.",
+		"headline": "QR Booking System for Tour Guides",
+		"description": "Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings.",
 		"url": "https://zaur.app",
 		"applicationCategory": "BusinessApplication",
 		"operatingSystem": "Web",
@@ -23,7 +35,8 @@
 			"@type": "Offer",
 			"price": "0",
 			"priceCurrency": "EUR",
-			"description": "Free to start, monthly subscription"
+			"name": "Free Plan",
+			"description": "Free to start, monthly subscription available"
 		},
 		"featureList": [
 			"QR Code Generation",
@@ -36,21 +49,6 @@
 			"@type": "Organization",
 			"name": "Zaur",
 			"url": "https://zaur.app"
-		}
-	}
-	</script>`}
-	
-	{@html `<script type="application/ld+json">
-	{
-		"@context": "https://schema.org",
-		"@type": "WebSite",
-		"name": "Zaur",
-		"url": "https://zaur.app",
-		"description": "Turn street traffic into instant bookings for tour guides",
-		"potentialAction": {
-			"@type": "SearchAction",
-			"target": "https://zaur.app/search?q={search_term_string}",
-			"query-input": "required name=search_term_string"
 		}
 	}
 	</script>`}
