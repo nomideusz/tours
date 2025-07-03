@@ -9,6 +9,7 @@
 		navigationStore
 	} from '$lib/context.js';
 	import { afterNavigate, goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 	import { auth } from '$lib/stores/auth.js';
 	import { setUserCurrencyFromServer } from '$lib/stores/currency.js';
@@ -46,7 +47,6 @@
 		description: string;
 		showOnMobile?: boolean;
 		badge?: number | null;
-		shortcut?: string | null;
 		current?: boolean;
 	}
 
@@ -113,7 +113,7 @@
 		}
 	});
 
-	// Navigation sections for better organization with keyboard shortcuts
+	// Navigation sections for better organization
 	const navigationSections = $derived([
 		{
 			name: 'Main',
@@ -124,8 +124,7 @@
 					icon: Home,
 					description: 'Operations center',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: 'd'
+					badge: null as number | null
 				}
 			]
 		},
@@ -138,8 +137,7 @@
 					icon: MapPin,
 					description: 'Manage your tours',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: 't'
+					badge: null as number | null
 				},
 				{
 					name: 'Bookings',
@@ -147,8 +145,7 @@
 					icon: Calendar,
 					description: 'View all bookings',
 					showOnMobile: true,
-					badge: $unreadBookingCount > 0 ? $unreadBookingCount : null,
-					shortcut: 'b'
+					badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
 				},
 				{
 					name: 'Check-in Scanner',
@@ -156,8 +153,7 @@
 					icon: QrCode,
 					description: 'Scan QR tickets',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: 's'
+					badge: null as number | null
 				}
 			]
 		},
@@ -170,8 +166,7 @@
 					icon: Users,
 					description: 'Manage customer contacts',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: 'c'
+					badge: null as number | null
 				},
 				{
 					name: 'Analytics',
@@ -179,8 +174,7 @@
 					icon: TrendingUp,
 					description: 'Performance insights',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: 'a'
+					badge: null as number | null
 				},
 				{
 					name: 'Subscription',
@@ -188,48 +182,52 @@
 					icon: CreditCard,
 					description: 'Manage your plan',
 					showOnMobile: true,
-					badge: null as number | null,
-					shortcut: null
+					badge: null as number | null
 				}
 			]
 		}
 	]);
 
 	// Mobile bottom navigation items (prioritized for tour guides)
-	const mobileNavItems = $derived([
-		{
-			name: 'Dashboard',
-			href: '/dashboard',
-			icon: Home,
-			active: currentPath === '/dashboard'
-		},
-		{
-			name: 'Bookings',
-			href: '/bookings',
-			icon: Calendar,
-			active: currentPath === '/bookings',
-			badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
-		},
-		{
-			name: 'Scanner',
-			href: '/checkin-scanner',
-			icon: QrCode,
-			active: currentPath === '/checkin-scanner'
-		},
-		{
-			name: 'Tours',
-			href: '/tours',
-			icon: MapPin,
-			active: currentPath.startsWith('/tours')
-		},
-		{
-			name: 'More',
-			href: '#',
-			icon: MoreVertical,
-			active: false,
-			isMenu: true
-		}
-	]);
+	const mobileNavItems = $derived.by(() => {
+		// Check if we're viewing tour-specific bookings
+		const isTourBookings = currentPath === '/bookings' && $page.url.searchParams.has('tour');
+		
+		return [
+			{
+				name: 'Dashboard',
+				href: '/dashboard',
+				icon: Home,
+				active: currentPath === '/dashboard'
+			},
+			{
+				name: 'Bookings',
+				href: '/bookings',
+				icon: Calendar,
+				active: currentPath === '/bookings' && !isTourBookings, // Don't highlight when viewing tour-specific bookings
+				badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
+			},
+			{
+				name: 'Scanner',
+				href: '/checkin-scanner',
+				icon: QrCode,
+				active: currentPath === '/checkin-scanner'
+			},
+			{
+				name: 'Tours',
+				href: '/tours',
+				icon: MapPin,
+				active: currentPath.startsWith('/tours') || isTourBookings // Highlight when viewing tour-specific bookings
+			},
+			{
+				name: 'More',
+				href: '#',
+				icon: MoreVertical,
+				active: false,
+				isMenu: true
+			}
+		];
+	});
 
 	// All navigation items for mobile menu
 	const mobileMenuItems = $derived([
@@ -269,11 +267,29 @@
 	const navigationItems = $derived(
 		navigationSections.map(section => ({
 			...section,
-			items: section.items.map(item => ({
-				...item,
-				current: currentPath === item.href || 
-				         (currentPath.startsWith(item.href) && item.href !== '/dashboard')
-			}))
+			items: section.items.map(item => {
+				// Check if we're viewing tour-specific bookings
+				const isTourBookings = currentPath === '/bookings' && $page.url.searchParams.has('tour');
+				
+				let current = false;
+				
+				if (item.href === '/tours' && isTourBookings) {
+					// When viewing tour-specific bookings, highlight "My Tours" instead
+					current = true;
+				} else if (item.href === '/bookings' && isTourBookings) {
+					// Don't highlight "Bookings" when viewing tour-specific bookings
+					current = false;
+				} else {
+					// Normal navigation highlighting logic
+					current = currentPath === item.href || 
+					         (currentPath.startsWith(item.href) && item.href !== '/dashboard');
+				}
+				
+				return {
+					...item,
+					current
+				};
+			})
 		}))
 	);
 
@@ -353,39 +369,12 @@
 		
 		window.addEventListener('message', handleMessage);
 		
-		// Add keyboard shortcuts
-		const handleKeyPress = (event: KeyboardEvent) => {
-			// Only activate shortcuts when not typing in an input
-			if (event.target instanceof HTMLInputElement || 
-			    event.target instanceof HTMLTextAreaElement ||
-			    event.target instanceof HTMLSelectElement) {
-				return;
-			}
 
-			// Check for Ctrl/Cmd key
-			if (!event.ctrlKey && !event.metaKey) {
-				return;
-			}
-
-			// Find matching navigation item
-			for (const section of navigationSections) {
-				for (const item of section.items) {
-					if (item.shortcut && event.key === item.shortcut) {
-						event.preventDefault();
-						goto(item.href);
-						break;
-					}
-				}
-			}
-		};
-
-		window.addEventListener('keydown', handleKeyPress);
 
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
-			window.removeEventListener('keydown', handleKeyPress);
 		};
 	});
 
@@ -484,11 +473,6 @@
 														{/if}
 														<span class="truncate">
 															{item.name}
-															{#if item.shortcut}
-																<span class="ml-1 text-xs" style="color: var(--text-tertiary); opacity: 0.7;">
-																	⌘{item.shortcut.toUpperCase()}
-																</span>
-															{/if}
 														</span>
 													</div>
 													{#if item.badge}

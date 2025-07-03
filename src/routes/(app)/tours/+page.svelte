@@ -404,7 +404,7 @@
 		showDeleteErrorModal = false;
 		if (deleteErrorData && tourToDelete) {
 			// Navigate to tour bookings page
-			goto(`/tours/${tourToDelete.id}/bookings`);
+							goto(`/bookings?tour=${tourToDelete.id}`);
 		}
 		deleteErrorData = null;
 		tourToDelete = null;
@@ -821,7 +821,7 @@
 											<span class="hidden sm:inline">Edit Tour</span>
 										</button>
 										<button
-											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/tours/${tour.id}/bookings`); }}
+											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/bookings?tour=${tour.id}`); }}
 											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
 											style="color: var(--text-primary); background: transparent;"
 											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}

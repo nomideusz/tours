@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor, getPaymentStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
@@ -22,6 +23,7 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Eye from 'lucide-svelte/icons/eye';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Clock from 'lucide-svelte/icons/clock';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
@@ -44,24 +46,49 @@
 	let showFilters = $state(false);
 	let pageSize = $state(25);
 	
-	// TanStack Query for bookings data - remove auto-refresh to prevent timer accumulation
-	let bookingsQuery = $derived(createQuery({
-		queryKey: queryKeys.recentBookings(1000), // Get all for filtering
-		queryFn: () => queryFunctions.fetchRecentBookings(1000),
-		staleTime: 2 * 60 * 1000, // 2 minutes - reduce excessive refetching
-		gcTime: 10 * 60 * 1000,   // 10 minutes
-		refetchOnWindowFocus: false, // Disable window focus refetching
-		// Removed refetchInterval to prevent timer accumulation
-	}));
+	// Get tour filter from URL params
+	let tourFilter = $derived($page.url.searchParams.get('tour'));
+	let isFilteredByTour = $derived(!!tourFilter);
+	
+	// TanStack Query for bookings data - use different endpoints based on filtering
+	let bookingsQuery = $derived(tourFilter ? 
+		createQuery({
+			queryKey: queryKeys.tourBookings(tourFilter),
+			queryFn: () => queryFunctions.fetchTourBookings(tourFilter),
+			staleTime: 2 * 60 * 1000, // 2 minutes
+			gcTime: 10 * 60 * 1000,   // 10 minutes
+			refetchOnWindowFocus: false,
+		}) :
+		createQuery({
+			queryKey: queryKeys.recentBookings(1000), // Get all for filtering
+			queryFn: () => queryFunctions.fetchRecentBookings(1000),
+			staleTime: 2 * 60 * 1000, // 2 minutes - reduce excessive refetching
+			gcTime: 10 * 60 * 1000,   // 10 minutes
+			refetchOnWindowFocus: false, // Disable window focus refetching
+			// Removed refetchInterval to prevent timer accumulation
+		})
+	);
 	
 	// Derive data from query
-	let allBookings = $derived($bookingsQuery.data || []);
+	let allBookings = $derived(tourFilter ? ($bookingsQuery.data?.bookings || []) : ($bookingsQuery.data || []));
+	
+	// Add debugging
+	$effect(() => {
+		if (tourFilter) {
+			console.log('Tour filter:', tourFilter);
+			console.log('Bookings query data:', $bookingsQuery.data);
+			console.log('All bookings:', allBookings);
+		}
+	});
 	let isLoading = $derived($bookingsQuery.isLoading);
 	let isError = $derived($bookingsQuery.isError);
 	
 	// Apply filters to bookings
 	let filteredBookings = $derived.by(() => {
 		let result = allBookings;
+		
+		// Note: Tour filter is already handled by the query selection above
+		// When tourFilter is present, we use queryKeys.tourBookings(tourFilter) which returns pre-filtered results
 		
 		// Search filter
 		if (searchQuery) {
@@ -170,6 +197,27 @@
 	// Check if filters are active
 	let hasActiveFilters = $derived(searchQuery || selectedStatus !== 'all' || selectedPaymentStatus !== 'all' || dateRange !== 'all');
 	
+	// Get tour name from bookings query data
+	let tourName = $derived.by(() => {
+		if (!tourFilter) return null;
+		
+		// When filtering by tour, get name from tour bookings API response
+		if (tourFilter && $bookingsQuery.data?.tour?.name) {
+			return $bookingsQuery.data.tour.name;
+		}
+		
+		// Fallback to bookings data if available
+		if (filteredBookings.length > 0) {
+			return filteredBookings[0]?.tour || filteredBookings[0]?.tourName || 'Unknown Tour';
+		}
+		
+		// Loading state
+		if (isLoading) return 'Loading...';
+		
+		// Unknown state
+		return 'Unknown Tour';
+	});
+	
 	// Primary action for mobile (right side of title)
 	let primaryAction = $derived({
 		label: stats.todayCount > 0 ? `Today: ${stats.todayCount}` : 'Today',
@@ -210,6 +258,12 @@
 		selectedPaymentStatus = 'all';
 		dateRange = 'all';
 		showFilters = false;
+		
+		// If we're filtering by tour, don't clear that filter
+		// Just refresh the page to maintain tour context
+		if (tourFilter) {
+			goto(`/bookings?tour=${tourFilter}`);
+		}
 	}
 	
 	// Handle search change
@@ -267,8 +321,8 @@
 </script>
 
 <svelte:head>
-	<title>Bookings - Zaur</title>
-	<meta name="description" content="Manage all your tour bookings and customer reservations" />
+	<title>{isFilteredByTour ? `${tourName} Bookings` : 'Bookings'} - Zaur</title>
+	<meta name="description" content={isFilteredByTour ? `Manage bookings for ${tourName} tour` : 'Manage all your tour bookings and customer reservations'} />
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -276,7 +330,7 @@
 	<div class="mb-6 sm:mb-8">
 		<!-- Compact Mobile Header -->
 		<MobilePageHeader
-			title="Bookings"
+			title={isFilteredByTour ? `${tourName} Bookings` : 'Bookings'}
 			secondaryInfo={isLoading ? 'Loading...' : `${stats.total} total • ${$globalCurrencyFormatter(stats.revenue)} revenue`}
 			{primaryAction}
 			{quickActions}
@@ -284,14 +338,27 @@
 			searchValue={searchQuery}
 			onSearchChange={handleSearchChange}
 			searchPlaceholder="Search bookings, customers, tours..."
+			showBackButton={isFilteredByTour}
+			onBackClick={() => goto(`/tours/${tourFilter}`)}
 		/>
 		
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
 			<PageHeader 
-				title="Bookings"
-				subtitle="Manage all your tour bookings and customer reservations"
+				title={isFilteredByTour ? `${tourName} Bookings` : 'Bookings'}
+				subtitle={isFilteredByTour ? `View and manage all bookings for this tour` : `Manage all your tour bookings and customer reservations`}
+				breadcrumbs={isFilteredByTour ? [
+					{ label: 'Tours', href: '/tours' },
+					{ label: tourName || 'Tour', href: `/tours/${tourFilter}` },
+					{ label: 'Bookings' }
+				] : undefined}
 			>
+				{#if isFilteredByTour}
+					<button onclick={() => goto(`/tours/${tourFilter}`)} class="button-secondary button--gap mr-3">
+						<ArrowLeft class="h-4 w-4" />
+						Back to Tour
+					</button>
+				{/if}
 				<button
 					onclick={() => goto('/checkin-scanner')}
 					class="button-primary button--gap"
@@ -412,7 +479,7 @@
 		<div class="p-4 border-b" style="border-color: var(--border-primary);">
 			<div class="flex items-center justify-between">
 				<h3 class="font-semibold" style="color: var(--text-primary);">
-					{hasActiveFilters ? 'Filtered Results' : 'All Bookings'}
+					{hasActiveFilters ? 'Filtered Results' : (isFilteredByTour ? 'Tour Bookings' : 'All Bookings')}
 				</h3>
 				<span class="text-sm" style="color: var(--text-secondary);">
 					{isLoading ? 'Loading...' : `${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}

@@ -1817,10 +1817,10 @@
 			right: auto !important;
 			bottom: auto !important;
 			transform: translate(-50%, -50%) !important;
-			width: 260px !important;
+			width: 240px !important;
 			height: auto !important;
-			padding: 16px !important;
-			gap: 12px !important;
+			padding: 14px !important;
+			gap: 10px !important;
 			border-radius: 10px !important;
 			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
 			z-index: 1000 !important;
@@ -1828,8 +1828,8 @@
 		}
 		
 		.quick-add-inputs {
-			font-size: 17px !important;
-			gap: 10px !important;
+			font-size: 14px !important;
+			gap: 8px !important;
 			align-items: center;
 			justify-content: center;
 		}
@@ -1837,65 +1837,65 @@
 		.quick-add-form input[type="time"].time-input,
 		input[type="time"].time-input.time-input {
 			position: relative !important;
-			padding: 10px 24px 10px 8px !important;
-			font-size: 17px !important;
-			min-width: 90px !important;
-			width: 90px !important;
-			max-width: 90px !important;
-			height: 38px !important;
+			padding: 8px 20px 8px 6px !important;
+			font-size: 14px !important;
+			min-width: 80px !important;
+			width: 80px !important;
+			max-width: 80px !important;
+			height: 32px !important;
 			border-radius: 6px !important;
 			line-height: 1.3 !important;
 			border-width: 1px !important;
 			text-align: left !important;
 		}
 		
-		/* Larger clock icon for mobile */
+		/* Appropriately sized clock icon for mobile */
 		input[type="time"].time-input::-webkit-calendar-picker-indicator {
-			width: 16px !important;
-			height: 16px !important;
-			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
-			right: 6px !important;
+			width: 12px !important;
+			height: 12px !important;
+			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+			right: 4px !important;
 		}
 		
 		/* Dark mode mobile clock icon */
 		[data-theme="dark"] input[type="time"].time-input::-webkit-calendar-picker-indicator {
-			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+			background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
 		}
 		
-		/* Mobile time text styling - make the actual time digits larger */
+		/* Mobile time text styling - appropriately sized */
 		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit,
 		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-fields-wrapper,
 		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-text,
 		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-hour-field,
 		.quick-add-form input[type="time"].time-input::-webkit-datetime-edit-minute-field {
-			font-size: 17px !important;
+			font-size: 14px !important;
 			font-family: var(--font-mono, monospace) !important;
 			color: var(--text-primary) !important;
 		}
 		
 		.time-separator {
-			font-size: 19px !important;
+			font-size: 16px !important;
 			font-weight: 600 !important;
 			margin: 0 2px !important;
 		}
 		
 		.quick-add-btn {
-			width: 38px !important;
-			height: 38px !important;
+			width: 32px !important;
+			height: 32px !important;
 			border-radius: 6px !important;
-			min-width: 38px !important;
+			min-width: 32px !important;
 			border-width: 1px !important;
 		}
 		
 		.quick-add-actions {
-			gap: 8px !important;
+			gap: 6px !important;
 			justify-content: center;
 			margin-top: 4px;
 		}
 		
 		.quick-add-errors {
-			font-size: 13px !important;
-			padding: 8px !important;
+			font-size: 12px !important;
+			padding: 6px !important;
 			line-height: 1.3;
 			border-radius: 6px !important;
 		}

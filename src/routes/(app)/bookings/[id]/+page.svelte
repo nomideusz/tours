@@ -251,6 +251,47 @@
 				return AlertCircle;
 		}
 	}
+
+	// Smart back navigation
+	function getSmartBackDestination(): string {
+		if (!booking) return '/bookings';
+		
+		// Check if user came from a tour details page or filtered bookings
+		try {
+			const referrer = document.referrer;
+			if (referrer) {
+				const referrerUrl = new URL(referrer);
+				const referrerPath = referrerUrl.pathname;
+				const referrerSearch = referrerUrl.search;
+				
+				// Check if they came from the same tour's details page
+				if (referrerPath === `/tours/${booking.expand?.tour?.id}`) {
+					return `/tours/${booking.expand?.tour?.id}`;
+				}
+				
+				// Check if they came from filtered bookings page for this tour
+				if (referrerPath === '/bookings' && referrerSearch.includes(`tour=${booking.expand?.tour?.id}`)) {
+					return `/bookings?tour=${booking.expand?.tour?.id}`;
+				}
+				
+				// Check if they came from any tour details page (booking might have wrong tourId)
+				const tourDetailsMatch = referrerPath.match(/^\/tours\/([^\/]+)$/);
+				if (tourDetailsMatch) {
+					return referrerPath; // Go back to whatever tour page they came from
+				}
+			}
+		} catch (error) {
+			console.warn('Could not parse referrer for smart back navigation:', error);
+		}
+		
+		// Default to bookings page
+		return '/bookings';
+	}
+
+	function handleSmartBack() {
+		const destination = getSmartBackDestination();
+		goto(destination);
+	}
 </script>
 
 <svelte:head>
@@ -290,7 +331,7 @@
 				primaryAction={primaryAction}
 				quickActions={quickActions}
 				showBackButton={true}
-				onBackClick={() => goto('/bookings')}
+				onBackClick={handleSmartBack}
 			/>
 			
 			<!-- Desktop Header -->
@@ -303,9 +344,13 @@
 						{ label: `#${booking.id.slice(-8)}` }
 					]}
 				>
-					<button onclick={() => goto('/bookings')} class="button-secondary button--gap">
+					<button onclick={handleSmartBack} class="button-secondary button--gap">
 						<ArrowLeft class="h-4 w-4" />
-						Back to Bookings
+						{#if getSmartBackDestination().startsWith('/tours/')}
+							Back to Tour
+						{:else}
+							Back to Bookings
+						{/if}
 					</button>
 				</PageHeader>
 			</div>
@@ -437,7 +482,10 @@
 										{booking.expand?.tour?.location || 'Location not set'}
 									</p>
 									<button
-										onclick={() => goto(`/tours/${booking.tourId}`)}
+										onclick={() => {
+											console.log('Navigating to tour:', booking.expand?.tour?.id);
+											goto(`/tours/${booking.expand?.tour?.id}`);
+										}}
 										class="text-xs mt-1 inline-flex items-center gap-1 hover:underline"
 										style="color: var(--color-primary-600);"
 									>
@@ -797,7 +845,7 @@
 							{/if}
 							
 							<button
-								onclick={() => goto(`/tours/${booking.tourId}`)}
+								onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
 								class="button-secondary button--gap button--small"
 							>
 								<MapPin class="h-4 w-4" />

@@ -62,8 +62,8 @@
 	// Initialize mutations
 	const updateStatusMutation = updateTourStatusMutation();
 	
-	// Time range state (matching analytics page)
-	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('month');
+	// Time range state (always show all time)
+	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('all');
 	
 	// TanStack Query for tour details with time range
 	const tourDetailsQuery = $derived(createQuery({
@@ -432,13 +432,14 @@
 	// Debug query states
 	$effect(() => {
 		if ($tourDetailsQuery.isLoading) {
-			console.log('⏳ Tour details loading...');
+			console.log('⏳ Tour details loading for tourId:', tourId);
 		}
 		if ($tourDetailsQuery.isError) {
-			console.error('❌ Tour details error:', $tourDetailsQuery.error);
+			console.error('❌ Tour details error for tourId:', tourId, 'Error:', $tourDetailsQuery.error);
+			console.error('❌ Full error object:', $tourDetailsQuery.error);
 		}
 		if ($tourDetailsQuery.data) {
-			console.log('✅ Tour details loaded:', $tourDetailsQuery.data);
+			console.log('✅ Tour details loaded for tourId:', tourId, 'Data:', $tourDetailsQuery.data);
 		}
 	});
 </script>
@@ -607,24 +608,20 @@
 			title={tour?.name || 'Loading...'}
 			statusButton={tour ? {
 				label: tour.status === 'active' ? 'Active' : 'Draft',
-				backgroundColor: tour.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)',
-				textColor: tour.status === 'active' ? 'var(--color-success-800)' : 'var(--color-warning-800)'
-			} : undefined}
-			secondaryInfo={tour && stats ? `${timeRange === 'all' ? 'All time' : `Last ${timeRange}`} • ${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)}` : ''}
-			quickActions={[
-				{
-					label: 'Edit',
-					icon: Edit,
-					onclick: () => goto(`/tours/${tourId}/edit`),
-					variant: 'secondary'
-				},
-				{
-					label: 'Add Time Slots',
-					icon: Plus,
-					onclick: () => showAddSlotsModal = true,
-					variant: 'primary'
-				}
-			]}
+				onclick: undefined,
+				disabled: false,
+				className: tour.status === 'active' ? 'status-confirmed' : 'status-pending'
+			} : null}
+			secondaryInfo={tour && stats ? `${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)}` : ''}
+			primaryAction={{
+				label: 'Add Time Slots',
+				icon: Plus,
+				onclick: () => showAddSlotsModal = true,
+				variant: 'primary'
+			}}
+			quickActions={[]}
+			showBackButton={true}
+			onBackClick={() => goto('/tours')}
 		/>
 		
 		<!-- Desktop Header -->
@@ -667,7 +664,15 @@
 				<AlertCircle class="h-5 w-5" />
 				<div>
 					<p class="font-medium">Failed to load tour details</p>
-					<p class="text-sm mt-1">Please check your connection and try again.</p>
+					<p class="text-sm mt-1">
+						{$tourDetailsQuery.error?.message || 'Please check your connection and try again.'}
+					</p>
+					{#if tourId}
+						<p class="text-xs mt-1 opacity-75">Tour ID: {tourId}</p>
+					{/if}
+					<button onclick={() => $tourDetailsQuery.refetch()} class="button-secondary button--small mt-2">
+						Retry
+					</button>
 				</div>
 			</div>
 		</div>
@@ -758,44 +763,7 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8">
 			<!-- Left Column - Main Content -->
 			<div class="lg:col-span-2 xl:col-span-3 space-y-6 xl:space-y-8">
-				<!-- Time Range Selector -->
-				<div class="flex items-center gap-2 justify-center sm:justify-start mb-4">
-					<button
-						onclick={() => timeRange = 'week'}
-						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'week' ? 'bg-primary text-white' : ''}"
-						style="{timeRange === 'week' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
-					>
-						Week
-					</button>
-					<button
-						onclick={() => timeRange = 'month'}
-						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'month' ? 'bg-primary text-white' : ''}"
-						style="{timeRange === 'month' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
-					>
-						Month
-					</button>
-					<button
-						onclick={() => timeRange = 'quarter'}
-						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'quarter' ? 'bg-primary text-white' : ''}"
-						style="{timeRange === 'quarter' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
-					>
-						Quarter
-					</button>
-					<button
-						onclick={() => timeRange = 'year'}
-						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'year' ? 'bg-primary text-white' : ''}"
-						style="{timeRange === 'year' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
-					>
-						Year
-					</button>
-					<button
-						onclick={() => timeRange = 'all'}
-						class="px-3 py-1.5 text-xs font-medium rounded-md transition-all {timeRange === 'all' ? 'bg-primary text-white' : ''}"
-						style="{timeRange === 'all' ? 'background: var(--color-primary-500); color: white;' : 'background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-secondary);'}"
-					>
-						All Time
-					</button>
-				</div>
+
 				
 				<!-- Overview Tab Content (Mobile) -->
 				<div class="{mobileTab !== 'overview' ? 'hidden sm:block' : ''} space-y-6">
@@ -836,8 +804,11 @@
 									<span>•</span>
 									<span>{getConversionRateText()} conversion</span>
 								</div>
-								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--icon">
+								<!-- Edit button - visible on both mobile and desktop -->
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
 									<Edit class="h-4 w-4" />
+									<span class="hidden sm:inline">Edit</span>
+									<span class="sm:hidden">Edit Tour</span>
 								</button>
 							</div>
 						</div>
@@ -1053,18 +1024,13 @@
 					<!-- Schedule Section -->
 					<section id="schedule" class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<div class="p-4 border-b" style="border-color: var(--border-primary);">
-							<div class="flex items-center justify-between">
-								<h2 class="text-lg font-semibold" style="color: var(--text-primary);">
-									Tour Schedule
-								</h2>
-								<button onclick={() => showAddSlotsModal = true} class="button-primary button--small button--gap">
-									<Plus class="h-4 w-4" />
-									Add Slots
-								</button>
-							</div>
+							<h2 class="text-lg font-semibold" style="color: var(--text-primary);">
+								Tour Schedule
+							</h2>
 						</div>
 						
-						<div class="p-4">
+						<!-- Remove extra padding - TourTimeline has its own -->
+						<div>
 							<!-- Calendar with navigation -->
 							<TourTimeline 
 								tourId={tourId}
@@ -1096,10 +1062,9 @@
 										<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 										<p class="text-xs mt-0.5" style="color: var(--text-secondary);">Last {stats.recentBookings.length} bookings</p>
 									</div>
-									<button onclick={() => goto(`/tours/${tourId}/bookings`)} class="button-secondary button--small button--gap">
+									<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button--small button--gap">
 										<Eye class="h-3 w-3" />
-										<span class="hidden sm:inline">View All</span>
-										<span class="sm:hidden">All</span>
+										View All
 									</button>
 								</div>
 								<div class="divide-y" style="border-color: var(--border-primary);">
@@ -1230,7 +1195,7 @@
 								<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 								<p class="text-xs mt-0.5" style="color: var(--text-secondary);">Last {stats.recentBookings.length} bookings</p>
 							</div>
-							<button onclick={() => goto(`/tours/${tourId}/bookings`)} class="button-secondary button--small button--gap">
+							<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button--small button--gap">
 								<Eye class="h-3 w-3" />
 								<span class="hidden sm:inline">View All</span>
 								<span class="sm:hidden">All</span>
@@ -1293,18 +1258,7 @@
 		</div>
 	{/if}
 
-<!-- Floating Action Button (Mobile) -->
-{#if tour && !tourLoading}
-	<div class="floating-actions sm:hidden">
-		<button 
-			onclick={() => showAddSlotsModal = true}
-			class="floating-action-btn"
-			aria-label="Add time slots"
-		>
-			<Plus class="w-6 h-6" />
-		</button>
-	</div>
-{/if}
+
 </PageContainer>
 
 <!-- Add Time Slots Overlay (responsive) -->
@@ -1412,39 +1366,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-	
-	/* Floating Action Button */
-	.floating-actions {
-		position: fixed;
-		bottom: 5rem; /* Account for mobile navigation height */
-		right: 1rem;
-		z-index: 40;
-	}
-	
-	.floating-action-btn {
-		width: 3.5rem;
-		height: 3.5rem;
-		border-radius: 50%;
-		background: var(--color-primary-500);
-		color: white;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		transition: all 0.2s ease;
-		border: none;
-		cursor: pointer;
-	}
-	
-	.floating-action-btn:hover {
-		background: var(--color-primary-600);
-		transform: scale(1.05);
-		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-	}
-	
-	.floating-action-btn:active {
-		transform: scale(0.95);
 	}
 	
 	/* Ensure proper layout on all screen sizes */

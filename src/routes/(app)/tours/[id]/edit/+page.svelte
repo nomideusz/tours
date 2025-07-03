@@ -722,7 +722,7 @@
 		showDeleteErrorModal = false;
 		if (tour) {
 			// Navigate to tour bookings page
-			goto(`/tours/${tour.id}/bookings`);
+								goto(`/bookings?tour=${tour.id}`);
 		}
 		deleteErrorData = null;
 	}
@@ -1002,7 +1002,7 @@
 							<p class="text-sm mt-2" style="color: var(--color-primary-600);">
 								<button 
 									type="button" 
-									onclick={() => goto(`/tours/${tourId}/bookings`)}
+									onclick={() => goto(`/bookings?tour=${tourId}`)}
 									class="text-sm underline hover:no-underline"
 									style="color: var(--color-primary-600);"
 								>
