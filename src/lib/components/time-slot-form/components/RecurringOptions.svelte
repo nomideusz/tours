@@ -131,15 +131,17 @@
 										integerOnly={true}
 									/>
 								{:else}
-									<label class="form-label-mobile">
-										End date
+									<div class="form-group-mobile">
 										<DatePicker
 											bind:value={formData.recurringEnd}
 											minDate={formData.date}
 											placeholder="Select end date"
-											onchange={() => {}}
+											label="End date"
+											onchange={() => {
+												onRecurringChange?.();
+											}}
 										/>
-									</label>
+									</div>
 								{/if}
 							</div>
 
@@ -195,15 +197,17 @@
 												integerOnly={true}
 											/>
 										{:else}
-											<label class="form-label-sm">
-												End date
+											<div class="form-group">
 												<DatePicker
 													bind:value={formData.recurringEnd}
 													minDate={formData.date}
 													placeholder="Select end date"
-													onchange={() => {}}
+													label="End date"
+													onchange={() => {
+														onRecurringChange?.();
+													}}
 												/>
-											</label>
+											</div>
 										{/if}
 									</div>
 								</div>

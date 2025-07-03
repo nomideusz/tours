@@ -14,58 +14,54 @@
 		onchange
 	} = $props();
 
-		// Initialize state from props
-	let initialHour = 9;
-	let initialMinute = 0;
-	if (value) {
-		const [hourStr, minuteStr] = value.split(':');
-		initialHour = parseInt(hourStr) || 9;
-		initialMinute = parseInt(minuteStr) || 0;
-	}
+		// Parse value prop reactively
+	let selectedHour = $derived.by(() => {
+		if (value && value.includes(':')) {
+			const [hourStr] = value.split(':');
+			return parseInt(hourStr) || 9;
+		}
+		return 9;
+	});
 	
-	let selectedHour = $state(initialHour);
-	let selectedMinute = $state(initialMinute);
+	let selectedMinute = $derived.by(() => {
+		if (value && value.includes(':')) {
+			const [, minuteStr] = value.split(':');
+			return parseInt(minuteStr) || 0;
+		}
+		return 0;
+	});
 	
 	let hourInput = $state('');
 	let minuteInput = $state('');
 	let editingHour = $state(false);
 	let editingMinute = $state(false);
 
-	function formatTime(): string {
-		return `${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`;
-	}
 
-	function updateValue() {
-		const newValue = formatTime();
-		// Only update if value actually changed
-		if (newValue !== value) {
-			value = newValue;
-			onchange?.(value);
-		}
-	}
 
 	function adjustHour(delta: number) {
-		const newHour = selectedHour + delta;
+		let newHour = selectedHour + delta;
 		if (newHour >= 24) {
-			selectedHour = 0;
+			newHour = 0;
 		} else if (newHour < 0) {
-			selectedHour = 23;
-		} else {
-			selectedHour = newHour;
+			newHour = 23;
 		}
-		updateValue();
+		
+		const newValue = `${newHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`;
+		value = newValue;
+		onchange?.(newValue);
 	}
 
 	function adjustMinute(delta: number) {
-		const newMinute = selectedMinute + delta;
+		let newMinute = selectedMinute + delta;
 		if (newMinute >= 60) {
-			selectedMinute = 0;
+			newMinute = 0;
 		} else if (newMinute < 0) {
-			selectedMinute = 45;
-		} else {
-			selectedMinute = newMinute;
+			newMinute = 45;
 		}
-		updateValue();
+		
+		const newValue = `${selectedHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
+		value = newValue;
+		onchange?.(newValue);
 	}
 
 	function startEditingHour() {
@@ -77,8 +73,9 @@
 		editingHour = false;
 		const hour = parseInt(hourInput);
 		if (!isNaN(hour) && hour >= 0 && hour <= 23) {
-			selectedHour = hour;
-			updateValue();
+			const newValue = `${hour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`;
+			value = newValue;
+			onchange?.(newValue);
 		}
 		hourInput = '';
 	}
@@ -92,8 +89,9 @@
 		editingMinute = false;
 		const minute = parseInt(minuteInput);
 		if (!isNaN(minute) && minute >= 0 && minute <= 59) {
-			selectedMinute = minute;
-			updateValue();
+			const newValue = `${selectedHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+			value = newValue;
+			onchange?.(newValue);
 		}
 		minuteInput = '';
 	}

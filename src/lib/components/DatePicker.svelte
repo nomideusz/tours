@@ -241,7 +241,7 @@
 		<div 
 			bind:this={dropdownElement}
 			class="fixed rounded-lg shadow-lg border p-4"
-			style="z-index: var(--z-dropdown); background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden; width: 340px; max-width: calc(100vw - 16px);"
+			style="z-index: 9999; background: var(--bg-primary); border-color: var(--border-primary); max-height: 400px; overflow: hidden; width: 340px; max-width: calc(100vw - 16px);"
 		>
 			<!-- Calendar header -->
 			<div class="flex items-center justify-between mb-4">

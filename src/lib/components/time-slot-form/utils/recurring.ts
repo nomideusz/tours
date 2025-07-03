@@ -57,14 +57,21 @@ export function getRecurringText(formData: TimeSlotFormData): string {
 }
 
 export function getActualRecurringCount(formData: TimeSlotFormData): number {
-	if (!formData.recurring || !formData.date || !formData.startTime) return 0;
+	// If recurring is disabled, return 0
+	if (!formData.recurring) return 0;
 	
+	// If essential data is missing, return the count or 1
+	if (!formData.date || !formData.startTime) {
+		return formData.recurringCount || 1;
+	}
+	
+	// If using count mode
 	if (!formData.recurringEnd) {
 		return formData.recurringCount || 1;
 	}
 	
 	// Calculate actual count based on end date
-	let currentDate = new Date(`${formData.date}T${formData.startTime}:00`);
+	let currentDate = new Date(`${formData.date}T${formData.startTime || '00:00'}:00`);
 	const endDate = new Date(formData.recurringEnd);
 	let count = 0;
 	const maxCount = 365; // Safety limit
