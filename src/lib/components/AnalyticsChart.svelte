@@ -54,7 +54,7 @@
 		color = '#3B82F6'
 	}: Props = $props();
 	
-	let canvas: HTMLCanvasElement;
+	let canvas = $state<HTMLCanvasElement>();
 	let chart: ChartJS | null = null;
 	
 	// Reactive chart update when data changes
@@ -70,10 +70,42 @@
 			createChart();
 		}
 		
+		// Listen for theme changes
+		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const handleThemeChange = () => {
+			if (chart) {
+				chart.destroy();
+				chart = null;
+				createChart();
+			}
+		};
+		
+		mediaQuery.addEventListener('change', handleThemeChange);
+		
+		// Also listen for manual theme changes via class toggle
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach((mutation) => {
+				if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+					if (chart) {
+						chart.destroy();
+						chart = null;
+						createChart();
+					}
+				}
+			});
+		});
+		
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['class']
+		});
+		
 		return () => {
 			if (chart) {
 				chart.destroy();
 			}
+			mediaQuery.removeEventListener('change', handleThemeChange);
+			observer.disconnect();
 		};
 	});
 	
@@ -89,23 +121,43 @@
 			return;
 		}
 		
-		console.log('Creating chart with:', { type, dataLength: data.length, color });
+		// Force theme detection with explicit checks
+		const isDarkMode = document.documentElement.classList.contains('dark') || 
+						 window.matchMedia('(prefers-color-scheme: dark)').matches;
 		
-		// Simple hardcoded configuration to test
+		console.log('Creating chart - Dark mode:', isDarkMode);
+		console.log('Document classes:', document.documentElement.className);
+		
+		// Explicit color values
+		const chartColor = isDarkMode ? '#60A5FA' : '#3B82F6';
+		const textColor = isDarkMode ? '#D1D5DB' : '#6B7280';
+		const gridColor = isDarkMode ? '#374151' : '#F3F4F6';
+		const backgroundColor = isDarkMode ? '#1F2937' : '#FFFFFF';
+		const borderColor = isDarkMode ? '#4B5563' : '#E5E7EB';
+		
+		console.log('Chart colors:', { chartColor, textColor, gridColor });
+		
 		const chartData = {
 			labels: data.map(d => d.date),
 			datasets: [{
 				label: label || 'Value',
 				data: data.map(d => d.value),
-				borderColor: '#3B82F6',
-				backgroundColor: type === 'line' ? 'rgba(59, 130, 246, 0.1)' : '#3B82F6',
-				borderWidth: 2,
+				borderColor: chartColor,
+				backgroundColor: type === 'line' ? 
+					(isDarkMode ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 
+					chartColor,
+				borderWidth: 3, // Thicker for visibility
 				fill: type === 'line',
 				tension: 0.3,
+				pointRadius: type === 'line' ? 6 : 0, // Larger points for visibility
+				pointHoverRadius: type === 'line' ? 8 : 0,
+				pointBackgroundColor: type === 'line' ? backgroundColor : undefined,
+				pointBorderColor: type === 'line' ? chartColor : undefined,
+				pointBorderWidth: type === 'line' ? 3 : 0,
 			}]
 		};
 		
-		console.log('Chart data:', chartData);
+		console.log('Dataset colors:', chartData.datasets[0].borderColor, chartData.datasets[0].backgroundColor);
 		
 		try {
 			chart = new ChartJS(ctx, {
@@ -119,11 +171,13 @@
 							display: false,
 						},
 						tooltip: {
-							backgroundColor: '#1F2937',
-							titleColor: '#F9FAFB',
-							bodyColor: '#F9FAFB',
-							borderColor: '#374151',
+							backgroundColor: backgroundColor,
+							titleColor: isDarkMode ? '#F9FAFB' : '#111827',
+							bodyColor: textColor,
+							borderColor: borderColor,
 							borderWidth: 1,
+							cornerRadius: 8,
+							padding: 12,
 							callbacks: {
 								label: (context) => {
 									const value = context.parsed.y;
@@ -134,32 +188,50 @@
 					},
 					scales: {
 						x: {
+							border: {
+								color: borderColor,
+							},
 							grid: {
 								display: false,
 							},
 							ticks: {
-								color: '#6B7280',
+								color: textColor,
+								maxRotation: 0,
+								maxTicksLimit: 6,
 							}
 						},
 						y: {
 							beginAtZero: true,
+							border: {
+								color: borderColor,
+							},
 							grid: {
-								color: '#E5E7EB',
+								color: gridColor,
+								lineWidth: 1,
 							},
 							ticks: {
-								color: '#6B7280',
+								color: textColor,
+								maxTicksLimit: 6,
+								precision: 0,
+								stepSize: 1,
 								callback: function(value) {
-									if (showCurrency) {
-										return formatCurrency(Number(value));
+									// Only show integer values for counts
+									const num = Number(value);
+									if (!Number.isInteger(num)) {
+										return null; // Hide non-integer ticks
 									}
 									
-									const num = Number(value);
+									if (showCurrency) {
+										return formatCurrency(num);
+									}
+									
+									// Format large numbers
 									if (num >= 1000000) {
 										return `${(num / 1000000).toFixed(1)}M`;
 									} else if (num >= 1000) {
 										return `${(num / 1000).toFixed(1)}k`;
 									}
-									return num.toFixed(0);
+									return num.toString();
 								}
 							}
 						}
@@ -167,7 +239,9 @@
 				}
 			});
 			
-			console.log('Chart created successfully:', chart);
+			console.log('Chart created - final chart object:', chart);
+			console.log('Chart dataset after creation:', chart.data.datasets[0]);
+			
 		} catch (error) {
 			console.error('Error creating chart:', error);
 		}
@@ -182,11 +256,11 @@
 	}
 </script>
 
-<div class="chart-container" style="height: {height}px;">
+<div class="chart-container">
 	{#if data.length === 0 || !data.some(d => d.value > 0)}
 		<div class="empty-state">No data available</div>
 	{:else}
-		<canvas bind:this={canvas}></canvas>
+		<canvas bind:this={canvas} width="400" height="200"></canvas>
 	{/if}
 </div>
 
@@ -194,23 +268,25 @@
 	.chart-container {
 		position: relative;
 		width: 100%;
-		background: white; /* Test with white background */
+		height: 300px;
+		background: var(--bg-secondary);
 		border-radius: 0.5rem;
 		padding: 1rem;
-		border: 1px solid #E5E7EB; /* Add border to see container */
+		border: 1px solid var(--border-primary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 	
 	canvas {
+		display: block;
 		width: 100% !important;
 		height: 100% !important;
 	}
 	
 	.empty-state {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		color: var(--text-tertiary);
+		color: var(--text-secondary);
 		font-size: 0.875rem;
+		text-align: center;
 	}
 </style> 
