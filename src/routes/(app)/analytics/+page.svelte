@@ -137,8 +137,8 @@
 <style>
 	.tab-button {
 		position: relative;
-		padding: 0.75rem 1rem;
-		font-size: 0.875rem;
+		padding: 0.625rem 0.75rem;
+		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--text-secondary);
 		background: transparent;
@@ -150,13 +150,16 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
+		gap: 0.375rem;
+		flex-shrink: 0; /* Prevent shrinking */
 	}
 	
 	@media (min-width: 640px) {
 		.tab-button {
 			padding: 0.5rem 1rem;
+			font-size: 0.875rem;
 			min-height: auto;
+			gap: 0.5rem;
 		}
 	}
 	
@@ -258,22 +261,37 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 		padding-bottom: 2px; /* Prevent content clipping */
+		scroll-behavior: smooth;
 	}
 	
 	.mobile-scroll::-webkit-scrollbar {
 		display: none;
 	}
 	
+	/* Add scroll snap for better tab navigation */
+	.mobile-scroll.tab-scroll {
+		scroll-snap-type: x mandatory;
+	}
+	
+	.mobile-scroll.tab-scroll .tab-button {
+		scroll-snap-align: start;
+	}
+	
 	/* Extra small mobile devices */
 	@media (max-width: 375px) {
+		.tab-button {
+			padding: 0.5rem 0.625rem;
+			font-size: 0.6875rem;
+			gap: 0.25rem;
+		}
+		
+		.tab-button .tab-text {
+			display: none; /* Hide text on very small screens, show only icons */
+		}
+		
 		.time-range-button {
 			padding: 0.5rem 0.625rem;
 			font-size: 0.6875rem;
-		}
-		
-		.tab-button {
-			padding: 0.625rem 0.75rem;
-			font-size: 0.8125rem;
 		}
 		
 		.chart-container {
@@ -465,15 +483,15 @@
 	{:else}
 		<!-- Mobile Tab Navigation -->
 		<div class="sm:hidden mb-6 -mx-4">
-			<div class="flex overflow-x-auto mobile-scroll px-4 border-b" style="border-color: var(--border-primary);">
+			<div class="flex overflow-x-auto mobile-scroll tab-scroll px-4 pb-1 border-b" style="border-color: var(--border-primary);">
 				{#each tabs as tab}
 					<button
 						onclick={() => activeTab = tab.id}
 						class="tab-button {activeTab === tab.id ? 'active' : ''}"
 					>
-						<div class="flex items-center gap-2">
-							<tab.icon class="h-4 w-4" />
-							<span>{tab.label}</span>
+						<div class="flex items-center">
+							<tab.icon class="h-4 w-4 flex-shrink-0" />
+							<span class="tab-text">{tab.label}</span>
 						</div>
 					</button>
 				{/each}
@@ -501,7 +519,7 @@
 			<!-- Overview Tab -->
 			<div class="space-y-4 sm:space-y-6">
 				<!-- Key Metrics -->
-				<div class="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+				<div class="hidden sm:grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 					<!-- Total Revenue -->
 					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<div class="flex items-start justify-between mb-2 sm:mb-3">
