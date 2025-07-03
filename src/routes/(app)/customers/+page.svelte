@@ -21,7 +21,6 @@
 	import Users from 'lucide-svelte/icons/users';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Phone from 'lucide-svelte/icons/phone';
-	import Calendar from 'lucide-svelte/icons/calendar';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Search from 'lucide-svelte/icons/search';
 	import Download from 'lucide-svelte/icons/download';
@@ -32,7 +31,6 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Copy from 'lucide-svelte/icons/copy';
-	import Star from 'lucide-svelte/icons/star';
 	import ArrowUpDown from 'lucide-svelte/icons/arrow-up-down';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 
@@ -103,7 +101,7 @@
 	let minSpent = $state<number | null>(null);
 	let hasPhoneFilter = $state<'all' | 'phone' | 'no-phone'>('all');
 	let bookingDateFilter = $state<'all' | 'recent' | 'old'>('all');
-	let customerTypeFilter = $state<'all' | 'vip' | 'loyal' | 'new' | 'regular'>('all');
+
 
 	// Filtered and sorted customers
 	let filteredCustomers = $derived.by(() => {
@@ -147,13 +145,7 @@
 			}
 		}
 
-		// Customer type filter
-		if (customerTypeFilter !== 'all') {
-			result = result.filter(customer => {
-				const type = getCustomerType(customer).type.toLowerCase();
-				return type === customerTypeFilter;
-			});
-		}
+
 
 		// Sort using the reusable utility
 		result = sortData(result, { sortBy, sortOrder }, sortableFields);
@@ -176,36 +168,9 @@
 		};
 	});
 
-	// Customer segments
-	let customerSegments = $derived.by(() => {
-		if (!customers.length) return { vip: 0, loyal: 0, new: 0, regular: 0, withPhone: 0, recentlyActive: 0 };
 
-		const thirtyDaysAgo = new Date();
-		thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-		return {
-			vip: customers.filter(c => getCustomerType(c).type === 'VIP').length,
-			loyal: customers.filter(c => getCustomerType(c).type === 'Loyal').length,
-			new: customers.filter(c => getCustomerType(c).type === 'New').length,
-			regular: customers.filter(c => getCustomerType(c).type === 'Regular').length,
-			withPhone: customers.filter(c => c.phone).length,
-			recentlyActive: customers.filter(c => new Date(c.lastBooking) >= thirtyDaysAgo).length
-		};
-	});
 
-	// Customer type categorization
-	function getCustomerType(customer: Customer): { type: string; color: string; description: string } {
-		if (customer.totalSpent >= 200) {
-			return { type: 'VIP', color: 'var(--color-warning-600)', description: 'High-value customer' };
-		}
-		if (customer.totalBookings >= 3) {
-			return { type: 'Loyal', color: 'var(--color-success-600)', description: 'Repeat customer' };
-		}
-		if (customer.totalBookings === 1) {
-			return { type: 'New', color: 'var(--color-info-600)', description: 'First-time customer' };
-		}
-		return { type: 'Regular', color: 'var(--color-primary-600)', description: 'Regular customer' };
-	}
 
 	// Actions
 
@@ -276,7 +241,6 @@
 		minSpent = null;
 		hasPhoneFilter = 'all';
 		bookingDateFilter = 'all';
-		customerTypeFilter = 'all';
 		showFilters = false;
 	}
 
@@ -307,8 +271,7 @@
 		minBookings !== null ||
 		minSpent !== null ||
 		hasPhoneFilter !== 'all' ||
-		bookingDateFilter !== 'all' ||
-		customerTypeFilter !== 'all'
+		bookingDateFilter !== 'all'
 	);
 </script>
 
@@ -323,7 +286,7 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Customers"
-			secondaryInfo={isLoading ? 'Loading...' : `${summaryStats.totalCustomers} total`}
+			secondaryInfo={isLoading ? 'Loading...' : `${customers.length} total`}
 			quickActions={[
 				{
 					label: 'Export',
@@ -333,28 +296,7 @@
 					disabled: filteredCustomers.length === 0
 				}
 			]}
-			infoItems={[
-				{
-					icon: Users,
-					label: 'Customers',
-					value: isLoading ? '...' : `${summaryStats.totalCustomers}`
-				},
-				{
-					icon: DollarSign,
-					label: 'Revenue',
-					value: isLoading ? '...' : $globalCurrencyFormatter(summaryStats.totalRevenue)
-				},
-				{
-					icon: Calendar,
-					label: 'Avg Bookings',
-					value: isLoading ? '...' : `${summaryStats.avgBookingsPerCustomer.toFixed(1)}`
-				},
-				{
-					icon: Star,
-					label: 'Avg Value',
-					value: isLoading ? '...' : $globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)
-				}
-			]}
+
 		/>
 		
 		<!-- Desktop Header -->
@@ -397,131 +339,9 @@
 		</div>
 	</div>
 
-	<!-- Customer Statistics -->
-	{#if !isLoading && customers.length > 0}
-		<!-- Main Stats -->
-		<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-			<StatsCard
-				title="Total Customers"
-				value={summaryStats.totalCustomers}
-				subtitle="Registered customers"
-				icon={Users}
-			/>
-			
-			<StatsCard
-				title="Total Revenue"
-				value={$globalCurrencyFormatter(summaryStats.totalRevenue)}
-				subtitle="All-time revenue"
-				icon={DollarSign}
-			/>
-			
-			<StatsCard
-				title="Avg Bookings"
-				value={summaryStats.avgBookingsPerCustomer.toFixed(1)}
-				subtitle="Per customer"
-				icon={Calendar}
-			/>
-			
-			<StatsCard
-				title="Avg Value"
-				value={$globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)}
-				subtitle="Per customer"
-				icon={Star}
-			/>
-		</div>
 
-		<!-- Customer Segments -->
-		<div class="hidden sm:block mb-6">
-			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Customer Segments</h3>
-			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-				<StatsCard
-					title="VIP Customers"
-					value={customerSegments.vip}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.vip / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-				
-				<StatsCard
-					title="Loyal Customers"
-					value={customerSegments.loyal}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.loyal / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-				
-				<StatsCard
-					title="New Customers"
-					value={customerSegments.new}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.new / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-				
-				<StatsCard
-					title="Regular Customers"
-					value={customerSegments.regular}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.regular / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-				
-				<StatsCard
-					title="Recently Active"
-					value={customerSegments.recentlyActive}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.recentlyActive / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-				
-				<StatsCard
-					title="With Phone"
-					value={customerSegments.withPhone}
-					subtitle={`${customers.length > 0 ? Math.round((customerSegments.withPhone / customers.length) * 100) : 0}% of total`}
-					variant="small"
-				/>
-			</div>
-		</div>
-	{/if}
 
-	<!-- Quick Filters -->
-	{#if customers.length > 0}
-		<div class="mb-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-			<button
-				onclick={() => customerTypeFilter = 'all'}
-				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'all' ? 'font-medium' : ''}"
-				style="background: {customerTypeFilter === 'all' ? 'var(--color-primary-100)' : 'var(--bg-secondary)'}; 
-					   color: {customerTypeFilter === 'all' ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
-					   border: 1px solid {customerTypeFilter === 'all' ? 'var(--color-primary-200)' : 'var(--border-primary)'};"
-			>
-				<span class="sm:hidden">All</span>
-				<span class="hidden sm:inline">All Customers</span>
-				({customers.length})
-			</button>
-			<button
-				onclick={() => customerTypeFilter = 'vip'}
-				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'vip' ? 'font-medium' : ''}"
-				style="background: {customerTypeFilter === 'vip' ? 'var(--color-warning-100)' : 'var(--bg-secondary)'}; 
-					   color: {customerTypeFilter === 'vip' ? 'var(--color-warning-700)' : 'var(--text-secondary)'};
-					   border: 1px solid {customerTypeFilter === 'vip' ? 'var(--color-warning-200)' : 'var(--border-primary)'};"
-			>
-				VIP ({customers.filter(c => getCustomerType(c).type === 'VIP').length})
-			</button>
-			<button
-				onclick={() => customerTypeFilter = 'loyal'}
-				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'loyal' ? 'font-medium' : ''}"
-				style="background: {customerTypeFilter === 'loyal' ? 'var(--color-success-100)' : 'var(--bg-secondary)'}; 
-					   color: {customerTypeFilter === 'loyal' ? 'var(--color-success-700)' : 'var(--text-secondary)'};
-					   border: 1px solid {customerTypeFilter === 'loyal' ? 'var(--color-success-200)' : 'var(--border-primary)'};"
-			>
-				Loyal ({customers.filter(c => getCustomerType(c).type === 'Loyal').length})
-			</button>
-			<button
-				onclick={() => customerTypeFilter = 'new'}
-				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'new' ? 'font-medium' : ''}"
-				style="background: {customerTypeFilter === 'new' ? 'var(--color-info-100)' : 'var(--bg-secondary)'}; 
-					   color: {customerTypeFilter === 'new' ? 'var(--color-info-700)' : 'var(--text-secondary)'};
-					   border: 1px solid {customerTypeFilter === 'new' ? 'var(--color-info-200)' : 'var(--border-primary)'};"
-			>
-				New ({customers.filter(c => getCustomerType(c).type === 'New').length})
-			</button>
-		</div>
-	{/if}
+
 
 	<!-- Search and Filters -->
 	<div class="mb-6 space-y-4">
@@ -551,14 +371,16 @@
 			<!-- Mobile Sort & Filter Controls -->
 			<div class="flex gap-2 sm:hidden">
 				<!-- Mobile Sort -->
-				<TableSort 
-					columns={sortColumns}
-					sortBy={sortBy}
-					sortOrder={sortOrder}
-					onSort={handleSort}
-					variant="mobile"
-					class="flex-1"
-				/>
+				<select 
+					onchange={(e) => handleSort(e.currentTarget.value)}
+					class="form-select flex-1"
+					value={sortBy}
+				>
+					<option value="name">Sort: Customer Name</option>
+					<option value="totalBookings">Sort: Most Bookings</option>
+					<option value="totalSpent">Sort: Highest Revenue</option>
+					<option value="lastBooking">Sort: Recent Activity</option>
+				</select>
 			</div>
 			
 			<!-- Filter Button -->
@@ -571,7 +393,7 @@
 				<span class="hidden sm:inline">Filters</span>
 				{#if hasActiveFilters}
 					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
-						{(minBookings !== null ? 1 : 0) + (minSpent !== null ? 1 : 0) + (hasPhoneFilter !== 'all' ? 1 : 0) + (bookingDateFilter !== 'all' ? 1 : 0) + (customerTypeFilter !== 'all' ? 1 : 0)}
+						{(minBookings !== null ? 1 : 0) + (minSpent !== null ? 1 : 0) + (hasPhoneFilter !== 'all' ? 1 : 0) + (bookingDateFilter !== 'all' ? 1 : 0)}
 					</span>
 				{/if}
 				<ChevronDown class="h-4 w-4 ml-1 transition-transform {showFilters ? 'rotate-180' : ''}" />
@@ -691,7 +513,65 @@
 		<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<!-- Table Header with Bulk Actions -->
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-h-[2.5rem]">
+				<!-- Mobile Layout -->
+				<div class="sm:hidden">
+					<div class="flex items-center justify-between mb-3">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0}
+								oninput={() => {
+									if (selectedCustomers.size === filteredCustomers.length && filteredCustomers.length > 0) {
+										selectedCustomers = new Set();
+									} else {
+										selectedCustomers = new Set(filteredCustomers.map(c => c.email));
+									}
+								}}
+								class="form-checkbox"
+							/>
+							<span class="text-sm font-medium" style="color: var(--text-primary);">
+								{selectedCustomers.size > 0 ? `${selectedCustomers.size} selected` : 'Select all'}
+							</span>
+						</label>
+						<span class="text-sm" style="color: var(--text-secondary);">
+							{filteredCustomers.length} of {customers.length}
+						</span>
+					</div>
+					
+					{#if selectedCustomers.size > 0}
+						<div class="flex gap-2">
+							<button 
+								onclick={() => {
+									const emails = Array.from(selectedCustomers).join(',');
+									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
+								}} 
+								class="button-primary button--small button--gap flex-1"
+							>
+								<Mail class="h-4 w-4" />
+								Email
+							</button>
+							<button 
+								onclick={copySelectedEmails} 
+								class="button-secondary button--small button--gap"
+							>
+								{#if copiedEmails}
+									<CheckCircle class="h-4 w-4" />
+								{:else}
+									<Copy class="h-4 w-4" />
+								{/if}
+							</button>
+							<button 
+								onclick={exportToCSV} 
+								class="button-secondary button--small button--gap"
+							>
+								<Download class="h-4 w-4" />
+							</button>
+						</div>
+					{/if}
+				</div>
+				
+				<!-- Desktop Layout -->
+				<div class="hidden sm:flex items-center justify-between min-h-[2.5rem]">
 					<div class="flex items-center gap-3">
 						<label class="flex items-center gap-2 cursor-pointer">
 							<input
@@ -710,57 +590,51 @@
 								{selectedCustomers.size > 0 ? `${selectedCustomers.size} selected` : 'Select all'}
 							</span>
 						</label>
-						<span class="text-sm sm:hidden transition-opacity duration-200" 
-							  style="color: var(--text-secondary); opacity: {selectedCustomers.size === 0 ? 1 : 0};">
-							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
-						</span>
 					</div>
 					
 					<!-- Right Side Content - Overlapping containers -->
 					<div class="relative flex justify-end">
 						<!-- Action Buttons Container -->
-						<div class="flex flex-col sm:flex-row gap-2 sm:gap-2 transition-opacity duration-200" 
+						<div class="flex gap-2 transition-opacity duration-200" 
 							 style="opacity: {selectedCustomers.size > 0 ? 1 : 0}; pointer-events: {selectedCustomers.size > 0 ? 'auto' : 'none'};">
 							<button 
 								onclick={() => {
 									const emails = Array.from(selectedCustomers).join(',');
 									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 								}} 
-								class="button-primary button--small button--gap w-full sm:w-auto"
+								class="button-primary button--small button--gap"
 								disabled={selectedCustomers.size === 0}
 							>
 								<Mail class="h-4 w-4" />
 								Email Selected
 							</button>
-							<div class="flex gap-2">
-								<button 
-									onclick={copySelectedEmails} 
-									class="button-secondary button--small button--gap flex-1 sm:flex-none"
-									disabled={selectedCustomers.size === 0}
-								>
-									{#if copiedEmails}
-										<CheckCircle class="h-4 w-4" />
-										Copied!
-									{:else}
-										<Copy class="h-4 w-4" />
-										Copy
-									{/if}
-								</button>
-								<button 
-									onclick={exportToCSV} 
-									class="button-secondary button--small button--gap flex-1 sm:flex-none"
-									disabled={selectedCustomers.size === 0}
-								>
-									<Download class="h-4 w-4" />
-									Export
-								</button>
-							</div>
+							<button 
+								onclick={copySelectedEmails} 
+								class="button-secondary button--small button--gap"
+								disabled={selectedCustomers.size === 0}
+							>
+								{#if copiedEmails}
+									<CheckCircle class="h-4 w-4" />
+									Copied!
+								{:else}
+									<Copy class="h-4 w-4" />
+									Copy
+								{/if}
+							</button>
+							<button 
+								onclick={exportToCSV} 
+								class="button-secondary button--small button--gap"
+								disabled={selectedCustomers.size === 0}
+							>
+								<Download class="h-4 w-4" />
+								Export
+							</button>
 						</div>
 						
 						<!-- Customer Count - Desktop Only -->
-						<span class="hidden sm:flex items-center absolute inset-0 justify-end transition-opacity duration-200" 
+						<span class="flex items-center absolute inset-0 justify-end transition-opacity duration-200" 
 							  style="color: var(--text-secondary); opacity: {selectedCustomers.size === 0 ? 1 : 0}; pointer-events: none;">
-							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+							{filteredCustomers.length} of {customers.length} customer{customers.length !== 1 ? 's' : ''}
 						</span>
 					</div>
 				</div>
@@ -774,18 +648,55 @@
 							<th class="px-4 py-3 text-left">
 								<span class="sr-only">Select</span>
 							</th>
-							<TableSort 
-								columns={[...sortColumns, { key: 'actions', label: 'Actions', sortable: false }]}
-								sortBy={sortBy}
-								sortOrder={sortOrder}
-								onSort={handleSort}
-								variant="desktop"
-							/>
+							<th class="px-4 py-3 text-left">
+								<button
+									onclick={() => handleSort('name')}
+									class="flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-all group"
+									style="color: var(--text-secondary);"
+								>
+									Customer
+									<ArrowUpDown class="h-3 w-3 transition-opacity {sortBy === 'name' ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'}" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button
+									onclick={() => handleSort('totalBookings')}
+									class="flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-all group"
+									style="color: var(--text-secondary);"
+								>
+									Bookings
+									<ArrowUpDown class="h-3 w-3 transition-opacity {sortBy === 'totalBookings' ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'}" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button
+									onclick={() => handleSort('totalSpent')}
+									class="flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-all group"
+									style="color: var(--text-secondary);"
+								>
+									Revenue
+									<ArrowUpDown class="h-3 w-3 transition-opacity {sortBy === 'totalSpent' ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'}" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<button
+									onclick={() => handleSort('lastBooking')}
+									class="flex items-center gap-2 text-sm font-medium hover:opacity-70 transition-all group"
+									style="color: var(--text-secondary);"
+								>
+									Last Booking
+									<ArrowUpDown class="h-3 w-3 transition-opacity {sortBy === 'lastBooking' ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'}" />
+								</button>
+							</th>
+							<th class="px-4 py-3 text-left">
+								<span class="text-sm font-medium" style="color: var(--text-secondary);">
+									Actions
+								</span>
+							</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y" style="border-color: var(--border-primary);">
 						{#each filteredCustomers as customer (customer.email)}
-							{@const customerType = getCustomerType(customer)}
 							<tr class="hover:bg-[var(--bg-secondary)] transition-colors">
 								<td class="px-4 py-4">
 									<input
@@ -806,12 +717,8 @@
 								</td>
 								<td class="px-4 py-4">
 									<div>
-										<div class="flex items-center gap-2 mb-1">
+										<div class="mb-1">
 											<p class="font-medium text-sm" style="color: var(--text-primary);">{customer.name}</p>
-											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border" 
-												style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
-												{customerType.type}
-											</span>
 										</div>
 										<p class="text-xs" style="color: var(--text-secondary);">{customer.email}</p>
 										{#if customer.phone}
@@ -873,7 +780,6 @@
 						<!-- Mobile Cards -->
 			<div class="md:hidden divide-y" style="border-color: var(--border-primary);">
 				{#each filteredCustomers as customer (customer.email)}
-					{@const customerType = getCustomerType(customer)}
 					<div class="p-4 active:bg-[var(--bg-secondary)] transition-colors">
 						<div class="flex items-start gap-3 mb-3">
 							<input
@@ -894,12 +800,8 @@
 							<div class="flex-1 min-w-0">
 								<div class="flex items-start justify-between gap-2 mb-2">
 									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2 mb-1">
+										<div class="mb-1">
 											<h4 class="font-semibold text-base truncate" style="color: var(--text-primary);">{customer.name}</h4>
-											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0" 
-												style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
-												{customerType.type}
-											</span>
 										</div>
 										<p class="text-sm truncate mb-1" style="color: var(--text-secondary);">{customer.email}</p>
 										{#if customer.phone}
