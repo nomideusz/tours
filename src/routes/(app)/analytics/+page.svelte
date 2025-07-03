@@ -10,6 +10,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import AnalyticsChart from '$lib/components/AnalyticsChart.svelte';
+	import StatsCard from '$lib/components/StatsCard.svelte';
 	
 	// Icons
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
@@ -229,11 +230,7 @@
 		color: #FFFFFF;
 	}
 	
-	.stat-card {
-		position: relative;
-		overflow: hidden;
-	}
-	
+
 
 	
 	.chart-container {
@@ -519,78 +516,42 @@
 			<!-- Overview Tab -->
 			<div class="space-y-4 sm:space-y-6">
 				<!-- Key Metrics -->
-				<div class="hidden sm:grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-					<!-- Total Revenue -->
-					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-2 sm:mb-3">
-							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
-								<DollarSign class="h-4 w-4" style="color: var(--color-primary-600);" />
-							</div>
-							{#if analytics?.revenue.trend !== 0}
-								<div class="flex items-center gap-1 text-xs {analytics.revenue.trend > 0 ? 'text-green-600' : 'text-red-600'}">
-									{#if analytics.revenue.trend > 0}
-										<ArrowUp class="h-3 w-3" />
-									{:else}
-										<ArrowDown class="h-3 w-3" />
-									{/if}
-									{Math.abs(analytics.revenue.trend)}%
-								</div>
-							{/if}
-						</div>
-						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{$globalCurrencyFormatter(analytics?.revenue.total)}
-						</p>
-						<p class="text-xs" style="color: var(--text-secondary);">Total Revenue</p>
-					</div>
+				<div class="hidden sm:grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+					<StatsCard 
+						title="Total Revenue"
+						value={$globalCurrencyFormatter(analytics?.revenue.total)}
+						subtitle="Total Revenue"
+						icon={DollarSign}
+						trend={analytics?.revenue.trend !== 0 ? {
+							value: `${analytics.revenue.trend > 0 ? '+' : ''}${analytics.revenue.trend}%`,
+							positive: analytics.revenue.trend > 0
+						} : undefined}
+					/>
 					
-					<!-- Total Bookings -->
-					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-2 sm:mb-3">
-							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
-								<Calendar class="h-4 w-4" style="color: var(--color-primary-600);" />
-							</div>
-							{#if analytics?.bookings.trend !== 0}
-								<div class="flex items-center gap-1 text-xs {analytics.bookings.trend > 0 ? 'text-green-600' : 'text-red-600'}">
-									{#if analytics.bookings.trend > 0}
-										<ArrowUp class="h-3 w-3" />
-									{:else}
-										<ArrowDown class="h-3 w-3" />
-									{/if}
-									{Math.abs(analytics.bookings.trend)}%
-								</div>
-							{/if}
-						</div>
-						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{analytics?.bookings.total}
-						</p>
-						<p class="text-xs" style="color: var(--text-secondary);">Total Bookings</p>
-					</div>
+					<StatsCard 
+						title="Total Bookings"
+						value={analytics?.bookings.total}
+						subtitle="Total Bookings"
+						icon={Calendar}
+						trend={analytics?.bookings.trend !== 0 ? {
+							value: `${analytics.bookings.trend > 0 ? '+' : ''}${analytics.bookings.trend}%`,
+							positive: analytics.bookings.trend > 0
+						} : undefined}
+					/>
 					
-					<!-- Avg Booking Value -->
-					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-2 sm:mb-3">
-							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
-								<Target class="h-4 w-4" style="color: var(--color-primary-600);" />
-							</div>
-						</div>
-						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{$globalCurrencyFormatter(avgBookingValue)}
-						</p>
-						<p class="text-xs" style="color: var(--text-secondary);">Avg Booking Value</p>
-					</div>
+					<StatsCard 
+						title="Avg Booking Value"
+						value={$globalCurrencyFormatter(avgBookingValue)}
+						subtitle="Avg Booking Value"
+						icon={Target}
+					/>
 					
-					<!-- Conversion Rate -->
-					<div class="stat-card rounded-lg p-3 sm:p-4" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start justify-between mb-2 sm:mb-3">
-							<div class="p-2 rounded-lg" style="background: var(--bg-secondary);">
-								<Percent class="h-4 w-4" style="color: var(--color-primary-600);" />
-							</div>
-						</div>
-						<p class="text-xl sm:text-2xl font-bold mb-1" style="color: var(--text-primary);">
-							{analytics?.qrCodes.conversionRate || 0}%
-						</p>
-						<p class="text-xs" style="color: var(--text-secondary);">QR Conversion Rate</p>
-					</div>
+					<StatsCard 
+						title="QR Conversion Rate"
+						value={`${analytics?.qrCodes.conversionRate || 0}%`}
+						subtitle="QR Conversion Rate"
+						icon={Percent}
+					/>
 				</div>
 				
 				<!-- Charts Section -->

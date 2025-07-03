@@ -4,6 +4,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { onMount } from 'svelte';
+	import { createTableSort, sortData, createSortableFields } from '$lib/utils/table-sort.js';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -13,6 +14,8 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import StatsCard from '$lib/components/StatsCard.svelte';
+	import TableSort from '$lib/components/TableSort.svelte';
 	
 	// Icons
 	import Users from 'lucide-svelte/icons/users';
@@ -77,9 +80,20 @@
 
 	// State
 	let searchQuery = $state('');
-	let sortBy = $state<'name' | 'email' | 'totalBookings' | 'totalSpent' | 'lastBooking'>('lastBooking');
-	let sortOrder = $state<'asc' | 'desc'>('desc');
 	let showFilters = $state(false);
+	
+	// Table sorting setup
+	type SortField = 'name' | 'email' | 'totalBookings' | 'totalSpent' | 'lastBooking';
+	const sorting = createTableSort<SortField>('lastBooking');
+	
+	// Define sortable fields
+	const sortableFields = createSortableFields<Customer>({
+		name: { getValue: (item) => item.name, type: 'string' },
+		email: { getValue: (item) => item.email, type: 'string' },
+		totalBookings: { getValue: (item) => item.totalBookings, type: 'number' },
+		totalSpent: { getValue: (item) => item.totalSpent, type: 'number' },
+		lastBooking: { getValue: (item) => item.lastBooking, type: 'date' }
+	});
 	let selectedCustomers = $state<Set<string>>(new Set());
 	let copiedEmails = $state(false);
 
@@ -140,42 +154,8 @@
 			});
 		}
 
-		// Sort - explicitly track sortBy and sortOrder for reactivity
-		const currentSortBy = sortBy;
-		const currentSortOrder = sortOrder;
-		
-		result.sort((a, b) => {
-			let aValue: any, bValue: any;
-
-			switch (currentSortBy) {
-				case 'name':
-					aValue = a.name.toLowerCase();
-					bValue = b.name.toLowerCase();
-					break;
-				case 'email':
-					aValue = a.email.toLowerCase();
-					bValue = b.email.toLowerCase();
-					break;
-				case 'totalBookings':
-					aValue = a.totalBookings;
-					bValue = b.totalBookings;
-					break;
-				case 'totalSpent':
-					aValue = a.totalSpent;
-					bValue = b.totalSpent;
-					break;
-				case 'lastBooking':
-					aValue = new Date(a.lastBooking).getTime();
-					bValue = new Date(b.lastBooking).getTime();
-					break;
-				default:
-					return 0;
-			}
-
-			if (aValue < bValue) return currentSortOrder === 'asc' ? -1 : 1;
-			if (aValue > bValue) return currentSortOrder === 'asc' ? 1 : -1;
-			return 0;
-		});
+		// Sort using the reusable utility
+		result = sortData(result, sorting.getSortConfig(), sortableFields);
 
 		return result;
 	});
@@ -299,13 +279,17 @@
 		showFilters = false;
 	}
 
-	function setSortBy(field: typeof sortBy) {
-		if (sortBy === field) {
-			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortBy = field;
-			sortOrder = 'desc';
-		}
+	// Sort columns configuration for TableSort component
+	const sortColumns = [
+		{ key: 'name', label: 'Customer' },
+		{ key: 'totalBookings', label: 'Bookings' },
+		{ key: 'totalSpent', label: 'Revenue' },
+		{ key: 'lastBooking', label: 'Last Booking' }
+	];
+	
+	// Handle sort from component
+	function handleSort(field: string) {
+		sorting.setSortBy(field as SortField);
 	}
 
 	// Check if filters are active
@@ -406,108 +390,82 @@
 
 	<!-- Customer Statistics -->
 	{#if !isLoading && customers.length > 0}
-		<div class="mb-6 rounded-xl p-4 sm:p-6 hidden sm:block" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<!-- Main Stats Row -->
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-				<div class="text-center lg:text-left">
-					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
-						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-100);">
-							<Users class="h-5 w-5" style="color: var(--color-primary-600);" />
-						</div>
-						<div>
-							<p class="text-2xl font-bold" style="color: var(--text-primary);">{summaryStats.totalCustomers}</p>
-						</div>
-					</div>
-					<p class="text-sm font-medium" style="color: var(--text-secondary);">Total Customers</p>
-				</div>
-				
-				<div class="text-center lg:text-left">
-					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
-						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-success-100);">
-							<DollarSign class="h-5 w-5" style="color: var(--color-success-600);" />
-						</div>
-						<div>
-							<p class="text-2xl font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(summaryStats.totalRevenue)}</p>
-						</div>
-					</div>
-					<p class="text-sm font-medium" style="color: var(--text-secondary);">Total Revenue</p>
-				</div>
-				
-				<div class="text-center lg:text-left">
-					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
-						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-warning-100);">
-							<Calendar class="h-5 w-5" style="color: var(--color-warning-600);" />
-						</div>
-						<div>
-							<p class="text-2xl font-bold" style="color: var(--text-primary);">{summaryStats.avgBookingsPerCustomer.toFixed(1)}</p>
-						</div>
-					</div>
-					<p class="text-sm font-medium" style="color: var(--text-secondary);">Avg Bookings</p>
-				</div>
-				
-				<div class="text-center lg:text-left">
-					<div class="flex items-center justify-center lg:justify-start gap-3 mb-2">
-						<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-info-100);">
-							<Star class="h-5 w-5" style="color: var(--color-info-600);" />
-						</div>
-						<div>
-							<p class="text-2xl font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)}</p>
-						</div>
-					</div>
-					<p class="text-sm font-medium" style="color: var(--text-secondary);">Avg Value</p>
-				</div>
-			</div>
+		<!-- Main Stats -->
+		<div class="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+			<StatsCard
+				title="Total Customers"
+				value={summaryStats.totalCustomers}
+				subtitle="Registered customers"
+				icon={Users}
+			/>
+			
+			<StatsCard
+				title="Total Revenue"
+				value={$globalCurrencyFormatter(summaryStats.totalRevenue)}
+				subtitle="All-time revenue"
+				icon={DollarSign}
+			/>
+			
+			<StatsCard
+				title="Avg Bookings"
+				value={summaryStats.avgBookingsPerCustomer.toFixed(1)}
+				subtitle="Per customer"
+				icon={Calendar}
+			/>
+			
+			<StatsCard
+				title="Avg Value"
+				value={$globalCurrencyFormatter(summaryStats.avgSpentPerCustomer)}
+				subtitle="Per customer"
+				icon={Star}
+			/>
+		</div>
 
-			<!-- Customer Segments -->
-			<div class="border-t pt-4" style="border-color: var(--border-primary);">
-				<h3 class="text-sm font-semibold mb-4" style="color: var(--text-primary);">Customer Segments</h3>
-				<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-					<div class="text-center">
-						<p class="text-xl font-bold mb-1" style="color: var(--color-warning-600);">
-							{customerSegments.vip}
-						</p>
-						<p class="text-xs font-medium" style="color: var(--text-secondary);">VIP</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">
-							{customers.length > 0 ? Math.round((customerSegments.vip / customers.length) * 100) : 0}%
-						</p>
-					</div>
-					<div class="text-center">
-						<p class="text-xl font-bold mb-1" style="color: var(--color-success-600);">
-							{customerSegments.loyal}
-						</p>
-						<p class="text-xs font-medium" style="color: var(--text-secondary);">Loyal</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">
-							{customers.length > 0 ? Math.round((customerSegments.loyal / customers.length) * 100) : 0}%
-						</p>
-					</div>
-					<div class="text-center">
-						<p class="text-xl font-bold mb-1" style="color: var(--color-info-600);">
-							{customerSegments.new}
-						</p>
-						<p class="text-xs font-medium" style="color: var(--text-secondary);">New</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">
-							{customers.length > 0 ? Math.round((customerSegments.new / customers.length) * 100) : 0}%
-						</p>
-					</div>
-					<div class="text-center">
-						<p class="text-xl font-bold mb-1" style="color: var(--color-primary-600);">
-							{customerSegments.recentlyActive}
-						</p>
-						<p class="text-xs font-medium" style="color: var(--text-secondary);">Active (30d)</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">
-							{customers.length > 0 ? Math.round((customerSegments.recentlyActive / customers.length) * 100) : 0}%
-						</p>
-					</div>
-					<div class="text-center">
-						<p class="text-xl font-bold mb-1" style="color: var(--text-primary);">
-							{customerSegments.withPhone}
-						</p>
-						<p class="text-xs font-medium" style="color: var(--text-secondary);">With Phone</p>
-						<p class="text-xs" style="color: var(--text-tertiary);">
-							{customers.length > 0 ? Math.round((customerSegments.withPhone / customers.length) * 100) : 0}%
-						</p>
-					</div>
-				</div>
+		<!-- Customer Segments -->
+		<div class="hidden sm:block mb-6">
+			<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Customer Segments</h3>
+			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+				<StatsCard
+					title="VIP Customers"
+					value={customerSegments.vip}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.vip / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
+				
+				<StatsCard
+					title="Loyal Customers"
+					value={customerSegments.loyal}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.loyal / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
+				
+				<StatsCard
+					title="New Customers"
+					value={customerSegments.new}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.new / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
+				
+				<StatsCard
+					title="Regular Customers"
+					value={customerSegments.regular}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.regular / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
+				
+				<StatsCard
+					title="Recently Active"
+					value={customerSegments.recentlyActive}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.recentlyActive / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
+				
+				<StatsCard
+					title="With Phone"
+					value={customerSegments.withPhone}
+					subtitle={`${customers.length > 0 ? Math.round((customerSegments.withPhone / customers.length) * 100) : 0}% of total`}
+					variant="small"
+				/>
 			</div>
 		</div>
 	{/if}
@@ -584,39 +542,14 @@
 			<!-- Mobile Sort & Filter Controls -->
 			<div class="flex gap-2 sm:hidden">
 				<!-- Mobile Sort -->
-				<select 
-					bind:value={sortBy} 
-					onchange={() => {
-						// Toggle sort order if same field is selected again
-						if (sortBy === sortBy) {
-							sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
-						}
-					}}
-					class="form-select flex-1"
-				>
-					<option value="lastBooking">Latest Booking</option>
-					<option value="name">Name</option>
-					<option value="totalBookings">Most Bookings</option>
-					<option value="totalSpent">Highest Spent</option>
-				</select>
-				
-				<!-- Sort Order Toggle -->
-				<Tooltip text={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'} position="bottom">
-					<button
-						onclick={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
-						class="button-secondary button--icon"
-					>
-						{#if sortOrder === 'asc'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-							</svg>
-						{:else}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							</svg>
-						{/if}
-					</button>
-				</Tooltip>
+				<TableSort 
+					columns={sortColumns}
+					sortBy={sorting.sortBy}
+					sortOrder={sorting.sortOrder}
+					onSort={handleSort}
+					variant="mobile"
+					class="flex-1"
+				/>
 			</div>
 			
 			<!-- Filter Button -->
@@ -832,81 +765,13 @@
 							<th class="px-4 py-3 text-left">
 								<span class="sr-only">Select</span>
 							</th>
-							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('name')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'name' ? 'font-semibold' : ''}" style="color: {sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
-									Customer
-									{#if sortBy === 'name'}
-										{#if sortOrder === 'asc'}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-							                </svg>
-										{:else}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							                </svg>
-										{/if}
-									{:else}
-										<ArrowUpDown class="h-3 w-3" />
-									{/if}
-								</button>
-							</th>
-							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('totalBookings')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'totalBookings' ? 'font-semibold' : ''}" style="color: {sortBy === 'totalBookings' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
-									Bookings
-									{#if sortBy === 'totalBookings'}
-										{#if sortOrder === 'asc'}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-							                </svg>
-										{:else}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							                </svg>
-										{/if}
-									{:else}
-										<ArrowUpDown class="h-3 w-3" />
-									{/if}
-								</button>
-							</th>
-							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('totalSpent')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'totalSpent' ? 'font-semibold' : ''}" style="color: {sortBy === 'totalSpent' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
-									Total Spent
-									{#if sortBy === 'totalSpent'}
-										{#if sortOrder === 'asc'}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-							                </svg>
-										{:else}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							                </svg>
-										{/if}
-									{:else}
-										<ArrowUpDown class="h-3 w-3" />
-									{/if}
-								</button>
-							</th>
-							<th class="px-4 py-3 text-left">
-								<button onclick={() => setSortBy('lastBooking')} class="flex items-center gap-1 text-xs font-medium hover:underline {sortBy === 'lastBooking' ? 'font-semibold' : ''}" style="color: {sortBy === 'lastBooking' ? 'var(--text-primary)' : 'var(--text-secondary)'};">
-									Last Booking
-									{#if sortBy === 'lastBooking'}
-										{#if sortOrder === 'asc'}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-							                </svg>
-										{:else}
-							                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							                </svg>
-										{/if}
-									{:else}
-										<ArrowUpDown class="h-3 w-3" />
-									{/if}
-								</button>
-							</th>
-							<th class="px-4 py-3 text-left">
-								<span class="text-xs font-medium" style="color: var(--text-secondary);">Actions</span>
-							</th>
+							<TableSort 
+								columns={[...sortColumns, { key: 'actions', label: 'Actions', sortable: false }]}
+								sortBy={sorting.sortBy}
+								sortOrder={sorting.sortOrder}
+								onSort={handleSort}
+								variant="desktop"
+							/>
 						</tr>
 					</thead>
 					<tbody class="divide-y" style="border-color: var(--border-primary);">
