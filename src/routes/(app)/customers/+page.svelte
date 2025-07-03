@@ -405,7 +405,7 @@
 
 	<!-- Customer Statistics -->
 	{#if !isLoading && customers.length > 0}
-		<div class="mb-6 rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="mb-6 rounded-xl p-4 sm:p-6 hidden sm:block" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<!-- Main Stats Row -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 				<div class="text-center lg:text-left">
@@ -513,19 +513,21 @@
 
 	<!-- Quick Filters -->
 	{#if customers.length > 0}
-		<div class="mb-4 flex flex-wrap gap-2">
+		<div class="mb-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
 			<button
 				onclick={() => customerTypeFilter = 'all'}
-				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'all' ? 'font-medium' : ''}"
+				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'all' ? 'font-medium' : ''}"
 				style="background: {customerTypeFilter === 'all' ? 'var(--color-primary-100)' : 'var(--bg-secondary)'}; 
 					   color: {customerTypeFilter === 'all' ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
 					   border: 1px solid {customerTypeFilter === 'all' ? 'var(--color-primary-200)' : 'var(--border-primary)'};"
 			>
-				All Customers ({customers.length})
+				<span class="sm:hidden">All</span>
+				<span class="hidden sm:inline">All Customers</span>
+				({customers.length})
 			</button>
 			<button
 				onclick={() => customerTypeFilter = 'vip'}
-				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'vip' ? 'font-medium' : ''}"
+				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'vip' ? 'font-medium' : ''}"
 				style="background: {customerTypeFilter === 'vip' ? 'var(--color-warning-100)' : 'var(--bg-secondary)'}; 
 					   color: {customerTypeFilter === 'vip' ? 'var(--color-warning-700)' : 'var(--text-secondary)'};
 					   border: 1px solid {customerTypeFilter === 'vip' ? 'var(--color-warning-200)' : 'var(--border-primary)'};"
@@ -534,7 +536,7 @@
 			</button>
 			<button
 				onclick={() => customerTypeFilter = 'loyal'}
-				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'loyal' ? 'font-medium' : ''}"
+				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'loyal' ? 'font-medium' : ''}"
 				style="background: {customerTypeFilter === 'loyal' ? 'var(--color-success-100)' : 'var(--bg-secondary)'}; 
 					   color: {customerTypeFilter === 'loyal' ? 'var(--color-success-700)' : 'var(--text-secondary)'};
 					   border: 1px solid {customerTypeFilter === 'loyal' ? 'var(--color-success-200)' : 'var(--border-primary)'};"
@@ -543,7 +545,7 @@
 			</button>
 			<button
 				onclick={() => customerTypeFilter = 'new'}
-				class="px-3 py-1.5 text-sm rounded-lg transition-colors {customerTypeFilter === 'new' ? 'font-medium' : ''}"
+				class="px-3 py-2 text-sm rounded-lg transition-colors {customerTypeFilter === 'new' ? 'font-medium' : ''}"
 				style="background: {customerTypeFilter === 'new' ? 'var(--color-info-100)' : 'var(--bg-secondary)'}; 
 					   color: {customerTypeFilter === 'new' ? 'var(--color-info-700)' : 'var(--text-secondary)'};
 					   border: 1px solid {customerTypeFilter === 'new' ? 'var(--color-info-200)' : 'var(--border-primary)'};"
@@ -578,6 +580,43 @@
 				{/if}
 			</div>
 			
+			<!-- Mobile Sort & Filter Controls -->
+			<div class="flex gap-2 sm:hidden">
+				<!-- Mobile Sort -->
+				<select 
+					bind:value={sortBy} 
+					onchange={() => {
+						// Toggle sort order if same field is selected again
+						if (sortBy === sortBy) {
+							sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+						}
+					}}
+					class="form-select flex-1"
+				>
+					<option value="lastBooking">Latest Booking</option>
+					<option value="name">Name</option>
+					<option value="totalBookings">Most Bookings</option>
+					<option value="totalSpent">Highest Spent</option>
+				</select>
+				
+				<!-- Sort Order Toggle -->
+				<button
+					onclick={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
+					class="button-secondary button--icon"
+					title={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
+				>
+					{#if sortOrder === 'asc'}
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+						</svg>
+					{:else}
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+						</svg>
+					{/if}
+				</button>
+			</div>
+			
 			<!-- Filter Button -->
 			<button
 				onclick={() => showFilters = !showFilters}
@@ -585,7 +624,7 @@
 				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
 			>
 				<Filter class="h-4 w-4" />
-				Filters
+				<span class="hidden sm:inline">Filters</span>
 				{#if hasActiveFilters}
 					<span class="ml-1 px-1.5 py-0.5 text-xs rounded-full" style="background: var(--color-primary-500); color: white;">
 						{(minBookings !== null ? 1 : 0) + (minSpent !== null ? 1 : 0) + (hasPhoneFilter !== 'all' ? 1 : 0) + (bookingDateFilter !== 'all' ? 1 : 0) + (customerTypeFilter !== 'all' ? 1 : 0)}
@@ -655,14 +694,17 @@
 					</div>
 				</div>
 				
-				{#if hasActiveFilters}
-					<div class="mt-4 flex justify-end">
-						<button onclick={clearFilters} class="button-secondary button--small button--gap">
+				<div class="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
+					{#if hasActiveFilters}
+						<button onclick={clearFilters} class="button-secondary button--small button--gap w-full sm:w-auto">
 							<X class="h-4 w-4" />
 							Clear Filters
 						</button>
-					</div>
-				{/if}
+					{/if}
+					<button onclick={() => showFilters = false} class="button-primary button--small w-full sm:w-auto sm:hidden">
+						Done
+					</button>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -705,7 +747,7 @@
 		<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<!-- Table Header with Bulk Actions -->
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<div class="flex items-center justify-between">
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 					<div class="flex items-center gap-3">
 						<label class="flex items-center gap-2 cursor-pointer">
 							<input
@@ -724,36 +766,43 @@
 								{selectedCustomers.size > 0 ? `${selectedCustomers.size} selected` : 'Select all'}
 							</span>
 						</label>
+						{#if selectedCustomers.size === 0}
+							<span class="text-sm sm:hidden" style="color: var(--text-secondary);">
+								{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+							</span>
+						{/if}
 					</div>
 					
 					{#if selectedCustomers.size > 0}
-						<div class="flex items-center gap-2">
+						<div class="flex flex-col sm:flex-row gap-2 sm:gap-2">
 							<button 
 								onclick={() => {
 									const emails = Array.from(selectedCustomers).join(',');
 									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 								}} 
-								class="button-primary button--small button--gap"
+								class="button-primary button--small button--gap w-full sm:w-auto"
 							>
 								<Mail class="h-4 w-4" />
-								Email
+								Email Selected
 							</button>
-							<button onclick={copySelectedEmails} class="button-secondary button--small button--gap">
-								{#if copiedEmails}
-									<CheckCircle class="h-4 w-4" />
-									Copied!
-								{:else}
-									<Copy class="h-4 w-4" />
-									Copy
-								{/if}
-							</button>
-							<button onclick={exportToCSV} class="button-secondary button--small button--gap">
-								<Download class="h-4 w-4" />
-								Export
-							</button>
+							<div class="flex gap-2">
+								<button onclick={copySelectedEmails} class="button-secondary button--small button--gap flex-1 sm:flex-none">
+									{#if copiedEmails}
+										<CheckCircle class="h-4 w-4" />
+										Copied!
+									{:else}
+										<Copy class="h-4 w-4" />
+										Copy
+									{/if}
+								</button>
+								<button onclick={exportToCSV} class="button-secondary button--small button--gap flex-1 sm:flex-none">
+									<Download class="h-4 w-4" />
+									Export
+								</button>
+							</div>
 						</div>
 					{:else}
-						<span class="text-sm" style="color: var(--text-secondary);">
+						<span class="text-sm hidden sm:inline" style="color: var(--text-secondary);">
 							{filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
 						</span>
 					{/if}
@@ -934,72 +983,74 @@
 			<div class="md:hidden divide-y" style="border-color: var(--border-primary);">
 				{#each filteredCustomers as customer (customer.email)}
 					{@const customerType = getCustomerType(customer)}
-					<div class="p-4">
-						<div class="flex items-start justify-between mb-3">
-							<div class="flex items-center gap-3 flex-1 min-w-0">
-								<input
-									type="checkbox"
-									checked={selectedCustomers.has(customer.email)}
-									oninput={(e) => {
-										const target = e.currentTarget;
-										if (target.checked) {
-											selectedCustomers = new Set([...selectedCustomers, customer.email]);
-										} else {
-											const newSet = new Set(selectedCustomers);
-											newSet.delete(customer.email);
-											selectedCustomers = newSet;
-										}
-									}}
-									class="form-checkbox mt-1"
-								/>
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center gap-2 mb-1">
-										<h4 class="font-medium truncate" style="color: var(--text-primary);">{customer.name}</h4>
-										<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0" 
-											style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
-											{customerType.type}
-										</span>
+					<div class="p-4 active:bg-[var(--bg-secondary)] transition-colors">
+						<div class="flex items-start gap-3 mb-3">
+							<input
+								type="checkbox"
+								checked={selectedCustomers.has(customer.email)}
+								oninput={(e) => {
+									const target = e.currentTarget;
+									if (target.checked) {
+										selectedCustomers = new Set([...selectedCustomers, customer.email]);
+									} else {
+										const newSet = new Set(selectedCustomers);
+										newSet.delete(customer.email);
+										selectedCustomers = newSet;
+									}
+								}}
+								class="form-checkbox mt-1 flex-shrink-0"
+							/>
+							<div class="flex-1 min-w-0">
+								<div class="flex items-start justify-between gap-2 mb-2">
+									<div class="flex-1 min-w-0">
+										<div class="flex items-center gap-2 mb-1">
+											<h4 class="font-semibold text-base truncate" style="color: var(--text-primary);">{customer.name}</h4>
+											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0" 
+												style="color: {customerType.color}; border-color: {customerType.color}20; background: {customerType.color}10;">
+												{customerType.type}
+											</span>
+										</div>
+										<p class="text-sm truncate mb-1" style="color: var(--text-secondary);">{customer.email}</p>
+										{#if customer.phone}
+											<p class="text-sm" style="color: var(--text-tertiary);">{customer.phone}</p>
+										{/if}
 									</div>
-									<p class="text-sm truncate" style="color: var(--text-secondary);">{customer.email}</p>
-									{#if customer.phone}
-										<p class="text-sm mt-0.5" style="color: var(--text-tertiary);">{customer.phone}</p>
-									{/if}
+									<div class="flex items-center gap-1 flex-shrink-0">
+										<button
+											onclick={() => window.location.href = `mailto:${customer.email}`}
+											class="button-secondary button--small button--icon"
+											title="Send email"
+										>
+											<Mail class="h-4 w-4" />
+										</button>
+										{#if customer.phone}
+											<button
+												onclick={() => window.location.href = `tel:${customer.phone}`}
+												class="button-secondary button--small button--icon"
+												title="Call customer"
+											>
+												<Phone class="h-4 w-4" />
+											</button>
+										{/if}
+									</div>
 								</div>
-							</div>
-						</div>
-						
-						<div class="grid grid-cols-2 gap-4 text-sm mb-3">
-							<div>
-								<p class="font-medium" style="color: var(--text-primary);">{customer.totalBookings} bookings</p>
-								<p class="text-xs" style="color: var(--text-secondary);">{customer.confirmedBookings} confirmed</p>
-							</div>
-							<div>
-								<p class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(customer.totalSpent)}</p>
-								<p class="text-xs" style="color: var(--text-secondary);">{customer.totalParticipants} participants</p>
-							</div>
-						</div>
-						
-						<div class="flex items-center justify-between">
-							<p class="text-xs" style="color: var(--text-tertiary);">
-								Last booking: {formatDate(customer.lastBooking)}
-							</p>
-							<div class="flex items-center gap-2">
-								<button
-									onclick={() => window.location.href = `mailto:${customer.email}`}
-									class="button-secondary button--small button--icon"
-									title="Send email"
-								>
-									<Mail class="h-4 w-4" />
-								</button>
-								{#if customer.phone}
-									<button
-										onclick={() => window.location.href = `tel:${customer.phone}`}
-										class="button-secondary button--small button--icon"
-										title="Call customer"
-									>
-										<Phone class="h-4 w-4" />
-									</button>
-								{/if}
+								
+								<div class="grid grid-cols-2 gap-3 text-sm">
+									<div class="bg-[var(--bg-secondary)] rounded-lg p-2">
+										<p class="font-semibold text-lg" style="color: var(--text-primary);">{customer.totalBookings}</p>
+										<p class="text-xs" style="color: var(--text-secondary);">bookings</p>
+										<p class="text-xs" style="color: var(--text-tertiary);">{customer.confirmedBookings} confirmed</p>
+									</div>
+									<div class="bg-[var(--bg-secondary)] rounded-lg p-2">
+										<p class="font-semibold text-lg" style="color: var(--text-primary);">{$globalCurrencyFormatter(customer.totalSpent)}</p>
+										<p class="text-xs" style="color: var(--text-secondary);">total spent</p>
+										<p class="text-xs" style="color: var(--text-tertiary);">{customer.totalParticipants} participants</p>
+									</div>
+								</div>
+								
+								<div class="mt-2 text-xs" style="color: var(--text-tertiary);">
+									Last booking: {formatDate(customer.lastBooking)}
+								</div>
 							</div>
 						</div>
 					</div>
