@@ -36,6 +36,10 @@ RUN pnpm install --prod --frozen-lockfile
 # Copy built application from builder stage
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/static ./static
+# Copy scripts directory for production setup
+COPY --from=builder /app/scripts ./scripts
+# Copy source files needed by scripts
+COPY --from=builder /app/src/lib/db ./src/lib/db
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs

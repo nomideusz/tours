@@ -1,13 +1,74 @@
 import type { Handle } from '@sveltejs/kit';
 import { lucia } from '$lib/auth/lucia.js';
 import { initializeImageStorage } from '$lib/utils/image-storage.js';
+import { db } from '$lib/db/connection.js';
+import { promoCodes } from '$lib/db/schema/index.js';
+import { count } from 'drizzle-orm';
+import { sequence } from '@sveltejs/kit/hooks';
+import { redirect } from '@sveltejs/kit';
 
 // Types are declared in src/app.d.ts
 
 // Initialize MinIO storage on server startup
 initializeImageStorage().catch(console.error);
 
-export const handle: Handle = async ({ event, resolve }) => {
+// One-time promo setup check
+let promoSetupChecked = false;
+
+async function ensurePromoCodesExist() {
+  if (promoSetupChecked) return;
+  
+  try {
+    // Check if promo codes exist
+    const [{ count: promoCount }] = await db.select({ count: count() }).from(promoCodes);
+    
+    if (promoCount === 0) {
+      console.log('🎁 No promo codes found, setting up default codes...');
+      
+      // Insert basic promo codes directly
+      await db.insert(promoCodes).values([
+        {
+          code: 'FOUNDER',
+          description: 'Founder member - 1 year free + 50% lifetime discount',
+          type: 'early_access',
+          discountPercentage: 50,
+          freeMonths: 12,
+          isLifetime: true,
+          maxUses: 10,
+          isActive: true
+        },
+        {
+          code: 'PREMIUM50',
+          description: '50% lifetime discount',
+          type: 'lifetime_discount',
+          discountPercentage: 50,
+          isLifetime: true,
+          isActive: true
+        },
+        {
+          code: 'FREETRIAL6',
+          description: '6 months free trial',
+          type: 'free_period',
+          freeMonths: 6,
+          isActive: true
+        }
+      ]);
+      
+      console.log('✅ Basic promo codes created successfully!');
+    }
+    
+    promoSetupChecked = true;
+  } catch (error) {
+    console.error('Error checking/creating promo codes:', error);
+    promoSetupChecked = true; // Don't retry on every request
+  }
+}
+
+// Auth handle
+const authHandle: Handle = async ({ event, resolve }) => {
+    // One-time promo setup check
+    await ensurePromoCodesExist();
+    
     // Get session ID from cookies
     const sessionId = event.cookies.get(lucia.sessionCookieName);
     
@@ -84,4 +145,16 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     return resolve(event);
-}; 
+};
+
+// Dashboard redirect handle
+const dashboardRedirectHandle: Handle = async ({ event, resolve }) => {
+  // Auto-redirect authenticated users from root to dashboard
+  if (event.url.pathname === '/' && event.locals.user && !event.url.searchParams.has('view')) {
+    throw redirect(302, '/dashboard');
+  }
+  
+  return resolve(event);
+};
+
+export const handle = sequence(authHandle, dashboardRedirectHandle); 
