@@ -19,7 +19,7 @@
 		message?: string;
 	};
 
-	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string; message?: string; type?: string; earlyAccessEnabled: boolean } }>();
+	let { form, data } = $props<{ form?: LoginForm; data: { redirectTo: string; error?: string; message?: string; type?: string } }>();
 
 	// Use the loading state from auth store
 	const isAuthLoading = $derived($isLoading);
@@ -93,11 +93,6 @@
 			<p class="text-sm text-gray-600">
 				Welcome back! Please sign in to your account.
 			</p>
-			{#if data.earlyAccessEnabled}
-				<div class="mt-4 badge badge--warning">
-					🚀 Early Access
-				</div>
-			{/if}
 		</div>
 
 		{#if form?.message || verificationSent || (data?.message && data?.type === 'success')}
@@ -301,15 +296,9 @@
 					{t('loginPage.forgotPassword', $language)}
 				</a>
 				<span class="text-gray-400">•</span>
-				{#if data.earlyAccessEnabled}
-					<a href="/early-access" class="text-blue-600 hover:text-blue-500 transition-colors">
-						Request early access
-					</a>
-				{:else}
-					<a href="/auth/register" class="text-blue-600 hover:text-blue-500 transition-colors">
-						Create an account
-					</a>
-				{/if}
+				<a href="/auth/register" class="text-blue-600 hover:text-blue-500 transition-colors">
+					Create an account
+				</a>
 			</div>
 		</div>
 	</div>

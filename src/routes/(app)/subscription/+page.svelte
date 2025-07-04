@@ -14,6 +14,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PromoCodeInput from '$lib/components/PromoCodeInput.svelte';
 	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented } from '$lib/utils/pricing-config.js';
 	
 	let { data }: { data: PageData } = $props();
@@ -261,6 +262,15 @@
 			day: 'numeric'
 		});
 	}
+	
+	async function handlePromoCodeApplied(event: CustomEvent) {
+		// Refresh the page to show updated promo code benefits
+		await invalidateAll();
+	}
+	
+	function handlePromoCodeError(event: CustomEvent) {
+		error = event.detail.message;
+	}
 </script>
 
 {#snippet featureItem(feature: import('$lib/utils/pricing-config.js').PricingFeature, colorClass: string = '')}
@@ -389,15 +399,24 @@
 			</div>
 		</div>
 	{:else if currentPlan === 'free'}
-		<!-- Promo Code CTA for users without codes -->
+		<!-- Promo Code Input for users without codes -->
 		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
 			<div class="flex items-start gap-2 sm:gap-3">
 				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
 				<div class="flex-1">
 					<h3 class="font-semibold mb-0.5 sm:mb-1" style="color: var(--text-primary);">Have a Promo Code?</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">
-						Follow us on social media for exclusive discount codes and special offers. 
+					<p class="text-sm mb-3" style="color: var(--text-secondary);">
 						Promo codes can provide free months, lifetime discounts, and more!
+					</p>
+					
+					<PromoCodeInput 
+						class="mb-3"
+						on:applied={handlePromoCodeApplied}
+						on:error={handlePromoCodeError}
+					/>
+					
+					<p class="text-xs" style="color: var(--text-tertiary);">
+						Follow us on social media for exclusive discount codes and special offers.
 					</p>
 				</div>
 			</div>

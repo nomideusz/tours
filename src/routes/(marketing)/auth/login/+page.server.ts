@@ -4,11 +4,6 @@ import { lucia, verifyPassword } from '$lib/auth/lucia.js';
 import { users } from '$lib/db/schema/index.js';
 import { db } from '$lib/db/connection.js';
 import { eq } from 'drizzle-orm';
-import { env } from '$env/dynamic/private';
-
-// Early access control
-const EARLY_ACCESS_ENABLED = env.EARLY_ACCESS_ENABLED === 'true';
-
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
 		throw redirect(302, '/dashboard');
@@ -58,8 +53,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		redirectTo,
 		error: errorMessage || null,
 		message: message || null,
-		type: type || null,
-		earlyAccessEnabled: EARLY_ACCESS_ENABLED
+		type: type || null
 	};
 };
 

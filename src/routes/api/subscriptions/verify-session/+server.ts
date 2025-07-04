@@ -58,6 +58,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 
+		// Extract promo code metadata from subscription
+		const metadata = subscription.metadata || {};
+		const hasPromoCode = metadata.promoCode && metadata.promoCode !== '';
+		
 		// Update user subscription in database
 		const updateData: any = {
 			subscriptionPlan: planId,
@@ -66,6 +70,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			subscriptionCancelAtPeriodEnd: subscription.cancel_at_period_end,
 			updatedAt: new Date()
 		};
+		
+		// If promo code metadata exists, ensure it's preserved in user profile
+		if (hasPromoCode) {
+			updateData.promoCodeUsed = metadata.promoCode;
+			
+			// Parse discount percentage and lifetime status from metadata
+			const discountPercentage = parseInt(metadata.discountPercentage || '0');
+			const isLifetimeDiscount = metadata.isLifetimeDiscount === 'true';
+			
+			if (discountPercentage > 0) {
+				updateData.subscriptionDiscountPercentage = discountPercentage;
+				updateData.isLifetimeDiscount = isLifetimeDiscount;
+			}
+		}
 
 		// Handle current_period_end safely - cast to any to access expanded properties
 		const subscriptionData = subscription as any;

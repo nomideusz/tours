@@ -243,7 +243,9 @@ export async function createSubscriptionCheckout(
         trial_period_days: Math.max(2, trialDays),
         metadata: {
           promoType: 'free_trial',
-          promoCode: user.promoCodeUsed || ''
+          promoCode: user.promoCodeUsed || '',
+          discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
+          isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
         }
       };
     }
@@ -256,16 +258,23 @@ export async function createSubscriptionCheckout(
       await stripe.coupons.retrieve(couponId);
     } catch (error) {
       // Create coupon if it doesn't exist
-      await stripe.coupons.create({
+      const couponData: any = {
         id: couponId,
         percent_off: user.subscriptionDiscountPercentage,
         duration: user.isLifetimeDiscount ? 'forever' : 'repeating',
-        duration_in_months: user.isLifetimeDiscount ? undefined : 12, // Default to 12 months if not lifetime
         name: `${user.subscriptionDiscountPercentage}% ${user.isLifetimeDiscount ? 'Lifetime' : ''} Discount`,
         metadata: {
-          type: 'promo_code_discount'
+          type: 'promo_code_discount',
+          promoCode: user.promoCodeUsed || ''
         }
-      });
+      };
+      
+      // Only add duration_in_months for repeating coupons
+      if (!user.isLifetimeDiscount) {
+        couponData.duration_in_months = 12; // Default to 12 months if not lifetime
+      }
+      
+      await stripe.coupons.create(couponData);
     }
     
     sessionParams.discounts = [{
@@ -278,9 +287,30 @@ export async function createSubscriptionCheckout(
     sessionParams.subscription_data.metadata = {
       promoType: user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount',
       promoCode: user.promoCodeUsed || '',
-      discountPercentage: user.subscriptionDiscountPercentage.toString()
+      discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
+      isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
     };
   }
+  
+  // Add basic metadata even if no promo code is used
+  if (!sessionParams.subscription_data) {
+    sessionParams.subscription_data = {};
+  }
+  if (!sessionParams.subscription_data.metadata) {
+    sessionParams.subscription_data.metadata = {};
+  }
+  
+  // Ensure all metadata fields are present
+  sessionParams.subscription_data.metadata = {
+    userId,
+    planId,
+    billingInterval,
+    promoCode: user.promoCodeUsed || '',
+    promoType: hasFreeTrial ? 'free_trial' : (hasDiscount ? (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount') : 'none'),
+    discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
+    isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false',
+    ...sessionParams.subscription_data.metadata
+  };
 
   const session = await stripe.checkout.sessions.create(sessionParams);
 

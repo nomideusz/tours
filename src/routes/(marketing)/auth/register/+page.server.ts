@@ -11,18 +11,13 @@ import { sendAuthEmail } from '$lib/email.server.js';
 import { env } from '$env/dynamic/private';
 import { validatePromoCode, applyPromoCodeToUser, calculatePromoCodeBenefits, formatPromoCodeBenefit } from '$lib/utils/promo-codes.js';
 
-// Early access control
-const EARLY_ACCESS_ENABLED = env.EARLY_ACCESS_ENABLED === 'true';
-
 export const load: PageServerLoad = async ({ locals }) => {
 	// Redirect if already logged in
 	if (locals.session) {
 		console.log('User already logged in, redirecting to dashboard');
 		throw redirect(303, '/dashboard');
 	}
-	return {
-		earlyAccessEnabled: EARLY_ACCESS_ENABLED
-	};
+	return {};
 };
 
 export const actions: Actions = {
@@ -39,18 +34,14 @@ export const actions: Actions = {
 		// Country can be null, currency will use database default (EUR)
 		const country = null;
 
-		// Validate promo code if early access is enabled
+		// Validate promo code if provided (always optional)
 		let validatedPromoCode = null;
 		let promoBenefitText = '';
 		
-		if (EARLY_ACCESS_ENABLED) {
-			if (!accessCode) {
-				return fail(400, { username, email, error: 'Early access code is required' });
-			}
-			
+		if (accessCode && accessCode.trim()) {
 			const validation = await validatePromoCode(accessCode);
 			if (!validation.valid) {
-				return fail(400, { username, email, error: validation.error || 'Invalid early access code' });
+				return fail(400, { username, email, error: validation.error || 'Invalid promo code' });
 			}
 			
 			validatedPromoCode = validation.promoCode;
@@ -150,9 +141,9 @@ export const actions: Actions = {
 				}
 			}
 			
-			// Log early access registration
-			if (EARLY_ACCESS_ENABLED && validatedPromoCode) {
-				console.log(`🚀 Early access registration: ${email} with code: ${validatedPromoCode.code} (${promoBenefitText})`);
+			// Log promo code usage during registration
+			if (validatedPromoCode) {
+				console.log(`🎁 Registration with promo code: ${email} with code: ${validatedPromoCode.code} (${promoBenefitText})`);
 			}
 			
 			// Create email verification token and send verification email

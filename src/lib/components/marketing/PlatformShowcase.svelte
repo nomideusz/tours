@@ -79,7 +79,9 @@
 		<div class="showcase-preview" 
 			 class:hovered={isHovered}
 			 onmouseenter={() => isHovered = true}
-			 onmouseleave={() => isHovered = false}>
+			 onmouseleave={() => isHovered = false}
+			 role="region"
+			 aria-label="Interactive platform showcase">
 			
 			<!-- View Toggle -->
 			<div class="view-toggle">

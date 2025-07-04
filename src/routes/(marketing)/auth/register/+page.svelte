@@ -19,7 +19,7 @@
 		success?: boolean;
 	};
 
-	let { form, data } = $props<{ form?: RegisterForm; data: { earlyAccessEnabled: boolean } }>();
+	let { form, data } = $props<{ form?: RegisterForm; data: {} }>();
 
 	// Use the loading state from auth store
 	const isAuthLoading = $derived($isLoading);
@@ -47,6 +47,9 @@
 	let promoCodeValid = $state(false);
 	let promoCodeBenefit = $state('');
 	let promoCodeDescription = $state('');
+	
+	// UI state for collapsible promo code section
+	let showPromoCode = $state(false); // Always start collapsed
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
@@ -155,13 +158,11 @@
 			isValid = false;
 		}
 
-		// Access code validation (only if early access is enabled)
-		if (data?.earlyAccessEnabled) {
-			if (!accessCode) {
-				accessCodeError = 'Early access code is required';
-				isValid = false;
-			} else if (!promoCodeValid && !isValidatingCode) {
-				accessCodeError = 'Please enter a valid early access code';
+		// Promo code validation (always optional)
+		if (accessCode && accessCode.trim()) {
+			// Promo code is optional but must be valid if provided
+			if (!promoCodeValid && !isValidatingCode) {
+				accessCodeError = 'Please enter a valid promo code';
 				isValid = false;
 			}
 		}
@@ -179,11 +180,6 @@
 			<p class="text-sm text-gray-600">
 				Choose your username and get your personal URL at zaur.app/username
 			</p>
-			{#if data?.earlyAccessEnabled}
-				<div class="mt-4 badge badge--warning">
-					🚀 Early Access
-				</div>
-			{/if}
 		</div>
 
 		{#if form?.error}
@@ -357,69 +353,103 @@
 					{/if}
 				</div>
 
-				{#if data?.earlyAccessEnabled}
-					<div>
-						<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-2">
-							Early Access Code
-						</label>
-						<div class="relative">
-							<input
-								type="text"
-								id="accessCode"
-								name="accessCode"
-								bind:value={accessCode}
-								class="form-input pr-10 {accessCodeError ? 'error' : ''} {promoCodeValid ? '!border-green-500' : ''}"
-								placeholder="Enter your early access code"
-								disabled={isRegistering || manualLoading}
-								oninput={(e) => {
-									// Convert to uppercase for consistency
-									accessCode = e.currentTarget.value.toUpperCase();
-									validatePromoCode(accessCode);
-								}}
-								onblur={() => {
-									if (!accessCode) accessCodeError = 'Early access code is required';
-									else if (!promoCodeValid && !isValidatingCode) accessCodeError = 'Invalid early access code';
-									else accessCodeError = '';
-								}}
-							/>
-							<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-								{#if isValidatingCode}
-									<Loader size={16} class="animate-spin text-gray-400" />
-								{:else if promoCodeValid}
-									<Check size={16} class="text-green-500" />
-								{:else if accessCode && accessCodeError}
-									<X size={16} class="text-red-500" />
-								{/if}
+				<!-- Optional Promo Code Section -->
+				<div>
+					{#if !showPromoCode}
+						<!-- Collapsed state - show trigger button -->
+						<button
+							type="button"
+							onclick={() => showPromoCode = true}
+							class="w-full text-left p-3 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors group"
+						>
+							<div class="flex items-center gap-2">
+								<Gift size={16} class="text-gray-400 group-hover:text-gray-600" />
+								<span class="text-sm text-gray-600 group-hover:text-gray-800">
+									Have a promo code? Click to enter it for exclusive discounts
+								</span>
 							</div>
-						</div>
-						{#if accessCodeError}
-							<p class="form-error">{accessCodeError}</p>
-						{/if}
-						{#if promoCodeValid && promoCodeBenefit}
-							<div class="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-								<div class="flex items-start gap-2">
-									<Gift size={16} class="text-green-600 mt-0.5 flex-shrink-0" />
-									<div class="text-sm">
-										<p class="font-medium text-green-900">{promoCodeBenefit}</p>
-										{#if promoCodeDescription}
-											<p class="text-green-700 mt-1">{promoCodeDescription}</p>
-										{/if}
-									</div>
+						</button>
+					{:else}
+						<!-- Expanded state - show promo code input -->
+						<div class="space-y-3">
+							<div class="flex items-center justify-between">
+								<label for="accessCode" class="block text-sm font-medium text-gray-700">
+									Promo Code <span class="text-gray-500 font-normal">(optional)</span>
+								</label>
+								<button
+									type="button"
+									onclick={() => {
+										showPromoCode = false;
+										accessCode = '';
+										promoCodeValid = false;
+										promoCodeBenefit = '';
+										promoCodeDescription = '';
+										accessCodeError = '';
+									}}
+									class="text-sm text-gray-500 hover:text-gray-700 underline"
+								>
+									Cancel
+								</button>
+							</div>
+							<div class="relative">
+								<input
+									type="text"
+									id="accessCode"
+									name="accessCode"
+									bind:value={accessCode}
+									class="form-input pr-10 {accessCodeError ? 'error' : ''} {promoCodeValid ? '!border-green-500' : ''}"
+									placeholder="Enter promo code for discounts"
+									disabled={isRegistering || manualLoading}
+									oninput={(e) => {
+										// Convert to uppercase for consistency
+										accessCode = e.currentTarget.value.toUpperCase();
+										validatePromoCode(accessCode);
+									}}
+									onblur={() => {
+										if (accessCode && accessCode.trim()) {
+											if (!promoCodeValid && !isValidatingCode) accessCodeError = 'Invalid promo code';
+											else accessCodeError = '';
+										} else {
+											accessCodeError = '';
+										}
+									}}
+								/>
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+									{#if isValidatingCode}
+										<Loader size={16} class="animate-spin text-gray-400" />
+									{:else if promoCodeValid}
+										<Check size={16} class="text-green-500" />
+									{:else if accessCode && accessCodeError}
+										<X size={16} class="text-red-500" />
+									{/if}
 								</div>
 							</div>
-						{/if}
-						<p class="mt-1 text-sm text-gray-500">
-							Don't have a code? <a href="/early-access" class="link">Request early access</a>
-						</p>
-					</div>
-				{/if}
+							{#if accessCodeError}
+								<p class="form-error">{accessCodeError}</p>
+							{/if}
+							{#if promoCodeValid && promoCodeBenefit}
+								<div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+									<div class="flex items-start gap-2">
+										<Gift size={16} class="text-green-600 mt-0.5 flex-shrink-0" />
+										<div class="text-sm">
+											<p class="font-medium text-green-900">{promoCodeBenefit}</p>
+											{#if promoCodeDescription}
+												<p class="text-green-700 mt-1">{promoCodeDescription}</p>
+											{/if}
+										</div>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
 
 				<!-- Don't auto-detect country during registration - let users set it up later -->
 
 				<button
 					type="submit"
 					class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-					disabled={isRegistering || manualLoading || (data?.earlyAccessEnabled && (!promoCodeValid || isValidatingCode))}
+					disabled={isRegistering || manualLoading || isValidatingCode}
 					onclick={(e) => {
 						if (!validateForm()) {
 							e.preventDefault();
