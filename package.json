@@ -4,7 +4,8 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"start": "HOST=0.0.0.0 PORT=${PORT:-3000} BODY_SIZE_LIMIT=10485760 node build",
+		"setup-promo": "node scripts/apply-promo-codes.js",
+		"start": "npm run setup-promo && HOST=0.0.0.0 PORT=${PORT:-3000} BODY_SIZE_LIMIT=10485760 node build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepack": "svelte-kit sync && svelte-package && publint",
