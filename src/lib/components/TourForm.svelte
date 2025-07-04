@@ -1232,17 +1232,17 @@
 					{/if}
 
 					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
-						<div class="flex items-center gap-3">
-							<div class="w-10 h-10 rounded-full flex items-center justify-center" 
+						<div class="flex items-center gap-3 min-w-0 flex-1">
+							<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
 								style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
 							>
 								{#if formData.status === 'active'}
-									<CheckCircle class="w-5 h-5" style="color: var(--color-success-600);" />
+									<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
 								{:else}
-									<FileText class="w-5 h-5" style="color: var(--color-warning-600);" />
+									<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
 								{/if}
 							</div>
-							<div>
+							<div class="min-w-0 flex-1">
 								<h3 class="font-medium" style="color: var(--text-primary);">
 									{formData.status === 'active' 
 										? (isEdit ? 'Tour is Active' : 'Go Live Immediately') 
@@ -1260,7 +1260,7 @@
 							</div>
 						</div>
 						
-						<div class="flex items-center gap-3">
+						<div class="flex items-center gap-3 flex-shrink-0">
 							<!-- Hidden input to send the actual status value -->
 							<input type="hidden" name="status" bind:value={formData.status} />
 							<label class="relative inline-flex items-center {canActivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
@@ -1281,7 +1281,7 @@
 									class="sr-only peer"
 								/>
 								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all {!canActivate ? 'opacity-50' : ''}"></div>
-								<span class="ml-3 text-sm font-medium" style="color: var(--text-primary);">
+								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
 									{formData.status === 'active' ? 'Active' : 'Draft'}
 								</span>
 							</label>
