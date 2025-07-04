@@ -7,36 +7,36 @@
 	
 	const faqs = [
 		{
-			question: "When will Zaur fully launch?",
-			answer: "We're planning our full public launch in Q2 2025. Early access members will have all features available progressively as we roll them out. You'll be using the platform fully before the public launch."
+			question: "When will Zaur be fully available?",
+			answer: "We're planning our public launch in Q2 2025. Early access members will receive all features progressively as we complete development. You'll have full platform access before the public launch."
 		},
 		{
 			question: "What happens to my early access pricing after launch?",
-			answer: "Your early access pricing is locked in forever! As a founding member, you'll never pay more than what you sign up for today, even as we add more features and increase prices for new users."
+			answer: "Your early access pricing is permanently locked in. As a founding member, your subscription rate will never increase, even as we add more features and adjust pricing for new users."
 		},
 		{
 			question: "Which countries and currencies do you support?",
-			answer: "We support tour guides in all countries where Stripe operates (40+ countries). You can accept payments in 135+ currencies. Your location determines your payout currency, which is set during onboarding."
+			answer: "We support tour guides in all countries where Stripe operates (40+ countries). You can accept payments in 135+ currencies. Your payout currency is determined by your business location, which is set during account setup."
 		},
 		{
-			question: "Do I need any technical skills to use Zaur?",
-			answer: "Not at all! If you can use WhatsApp or Instagram, you can use Zaur. Everything is designed to be simple and intuitive. Setup takes less than 5 minutes, and we provide step-by-step guidance."
+			question: "Do I need technical skills to use Zaur?",
+			answer: "No technical expertise required. The platform is designed to be intuitive for tour guides of all technical backgrounds. Setup typically takes less than 5 minutes, and we provide comprehensive guidance throughout the process."
 		},
 		{
 			question: "How does payment processing work?",
-			answer: "Payments go directly to your bank account via Stripe. Customers pay instantly when booking, and you receive the money in 2-7 business days (depending on your country). We never touch your money - it goes straight from customer to you."
+			answer: "Payments are processed directly to your bank account via Stripe. Customers pay instantly when booking, and you receive funds in 2-7 business days (depending on your country). We never handle your money - it goes directly from customer to you."
 		},
 		{
-			question: "What if I already use another booking platform?",
-			answer: "You can use Zaur alongside any existing platform. Many guides start by using our QR codes for walk-up customers while keeping their existing system. When you're ready to fully switch, we'll help you migrate."
+			question: "Can I use Zaur alongside other booking platforms?",
+			answer: "Yes, Zaur works alongside any existing booking system. Many guides start by using our QR codes for walk-up customers while maintaining their current setup. When you're ready to transition fully, we provide migration assistance."
 		},
 		{
-			question: "Is there a contract or cancellation fee?",
-			answer: "No contracts, no cancellation fees, no surprises. You can cancel or pause your subscription anytime. If you cancel, you'll still have access until the end of your billing period."
+			question: "Are there contracts or cancellation fees?",
+			answer: "No contracts or cancellation fees. You can cancel or pause your subscription at any time. If you cancel, you retain access until the end of your current billing period."
 		},
 		{
-			question: "What support do I get during early access?",
-			answer: "Early access members get priority support directly from the founders. We typically respond within hours, not days. You also get access to our private community where you can connect with other tour guides and share tips."
+			question: "What support do early access members receive?",
+			answer: "Early access members receive priority support with direct access to our team. We typically respond within hours during business days. You also gain access to our founding member community for peer networking and tips."
 		}
 	];
 	
@@ -59,13 +59,13 @@
 			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" 
 				style="background: var(--color-info-100); color: var(--color-info-700);">
 				<HelpCircle class="w-4 h-4" />
-				<span class="text-sm font-medium">Common Questions</span>
+				<span class="text-sm font-medium">Frequently Asked Questions</span>
 			</div>
 			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
-				Everything You Need to Know
+				Common Questions Answered
 			</h2>
 			<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
-				Got questions? We've got answers. If you can't find what you're looking for, email us at support@zaur.app
+				Find answers to frequently asked questions about Zaur. For additional support, contact us at support@zaur.app
 			</p>
 		</div>
 		
@@ -94,7 +94,7 @@
 			
 			<div class="text-center mt-12">
 				<p class="text-sm mb-4" style="color: var(--text-secondary);">
-					Still have questions?
+					Need additional assistance?
 				</p>
 				<a 
 					href="/contact" 

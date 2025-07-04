@@ -139,9 +139,6 @@
 
 		<div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
 		  <div class="text-center p-6 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--color-success-100);">
-			  <span class="text-2xl">🆓</span>
-			</div>
 			<h4 class="font-semibold mb-2" style="color: var(--text-primary);">Free Forever Plan</h4>
 			<p class="text-sm" style="color: var(--text-secondary);">
 			  Start with our Free plan. No credit card required, no hidden fees.
@@ -149,9 +146,6 @@
 		  </div>
 
 		  <div class="text-center p-6 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--color-success-100);">
-			  <span class="text-2xl">✂️</span>
-			</div>
 			<h4 class="font-semibold mb-2" style="color: var(--text-primary);">Cancel Anytime</h4>
 			<p class="text-sm" style="color: var(--text-secondary);">
 			  No contracts, no commitments. Cancel with one click whenever you want.
@@ -159,28 +153,11 @@
 		  </div>
 
 		  <div class="text-center p-6 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-			<div class="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--color-success-100);">
-			  <span class="text-2xl">💯</span>
-			</div>
 			<h4 class="font-semibold mb-2" style="color: var(--text-primary);">100% Satisfaction</h4>
 			<p class="text-sm" style="color: var(--text-secondary);">
 			  Not happy? We'll work with you until you are, or help you migrate elsewhere.
 			</p>
 		  </div>
-		</div>
-	  </div>
-
-	  <!-- Global support -->
-	  <div class="mt-12 text-center">
-		<p class="mb-4" style="color: var(--text-secondary);">Trusted by tour guides worldwide</p>
-		<div class="flex flex-wrap justify-center items-center gap-6">
-		  <span class="font-medium" style="color: var(--text-tertiary);">🇪🇺 Europe</span>
-		  <span style="color: var(--text-tertiary);">•</span>
-		  <span class="font-medium" style="color: var(--text-tertiary);">🇺🇸 Americas</span>
-		  <span style="color: var(--text-tertiary);">•</span>
-		  <span class="font-medium" style="color: var(--text-tertiary);">🌏 Asia Pacific</span>
-		  <span style="color: var(--text-tertiary);">•</span>
-		  <span class="font-medium" style="color: var(--text-tertiary);">🌍 40+ Countries</span>
 		</div>
 	  </div>
 	</div>

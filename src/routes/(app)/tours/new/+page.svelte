@@ -469,28 +469,6 @@
 		<MobilePageHeader
 			title="Create Tour"
 			secondaryInfo="New Tour"
-			infoItems={[
-				{
-					icon: Eye,
-					label: 'Progress',
-					value: `${completionStats.completed}/${completionStats.total} fields`
-				},
-				{
-					icon: FileText,
-					label: 'Name',
-					value: formData.name ? '✓ Set' : 'Required'
-				},
-				{
-					icon: Clock,
-					label: 'Duration',
-					value: formData.duration ? `${formData.duration}min` : 'Required'
-				},
-				{
-					icon: Eye,
-					label: 'Price',
-					value: formData.price ? $globalCurrencyFormatter(formData.price) : 'Required'
-				}
-			]}
 		/>
 
 		<!-- Desktop Header -->
