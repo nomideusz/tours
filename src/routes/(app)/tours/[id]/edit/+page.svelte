@@ -791,23 +791,6 @@
 						size: 'icon' as const
 					}] : [])
 				]}
-				infoItems={[
-					{
-						icon: Clock,
-						label: 'Duration',
-						value: `${tour?.duration || 0}min`
-					},
-					{
-						icon: Users,
-						label: 'Capacity',
-						value: `${tour?.capacity || 0} max`
-					},
-					{
-						icon: Eye,
-						label: 'Status',
-						value: tour?.status === 'active' ? '🟢 Live' : '🟡 Draft'
-					}
-				]}
 			/>
 
 			<!-- Desktop Header -->
