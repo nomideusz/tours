@@ -5,12 +5,11 @@ import pg from 'pg';
 const { Pool } = pg;
 
 async function applyPromoCodesChanges() {
-  const connectionString = process.env.DATABASE_URL;
+  // Build connection string from environment variables (same logic as main app)
+  const connectionString = process.env.DATABASE_URL || 
+    `postgresql://${process.env.DATABASE_USER || 'zaur_dev'}:${process.env.DATABASE_PASSWORD || 'zaur_dev_password'}@${process.env.DATABASE_HOST || 'localhost'}:${process.env.DATABASE_PORT || '5432'}/${process.env.DATABASE_NAME || 'zaur_db_local'}`;
   
-  if (!connectionString) {
-    console.error('DATABASE_URL not found');
-    process.exit(1);
-  }
+  console.log('Using database connection:', connectionString.replace(/:[^:@]*@/, ':***@')); // Hide password in logs
 
   const pool = new Pool({ connectionString });
   const db = drizzle(pool);
