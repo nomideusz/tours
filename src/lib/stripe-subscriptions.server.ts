@@ -242,14 +242,17 @@ export async function createSubscriptionCheckout(
       sessionParams.subscription_data = {
         trial_period_days: Math.max(2, trialDays),
         metadata: {
-          promoType: 'free_trial',
+          promoType: hasDiscount ? 'free_trial_with_discount' : 'free_trial',
           promoCode: user.promoCodeUsed || '',
           discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
           isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
         }
       };
     }
-  } else if (hasDiscount) {
+  }
+  
+  // Apply discount coupon (can be combined with free trial)
+  if (hasDiscount) {
     // Create or find a coupon for the discount percentage
     const couponId = `PROMO_${user.subscriptionDiscountPercentage}PCT${user.isLifetimeDiscount ? '_FOREVER' : ''}`;
     
@@ -284,8 +287,13 @@ export async function createSubscriptionCheckout(
     if (!sessionParams.subscription_data) {
       sessionParams.subscription_data = {};
     }
+    if (!sessionParams.subscription_data.metadata) {
+      sessionParams.subscription_data.metadata = {};
+    }
+    // Merge discount metadata (don't override existing metadata from trial)
     sessionParams.subscription_data.metadata = {
-      promoType: user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount',
+      ...sessionParams.subscription_data.metadata,
+      promoType: hasFreeTrial ? 'free_trial_with_discount' : (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount'),
       promoCode: user.promoCodeUsed || '',
       discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
       isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
@@ -306,7 +314,9 @@ export async function createSubscriptionCheckout(
     planId,
     billingInterval,
     promoCode: user.promoCodeUsed || '',
-    promoType: hasFreeTrial ? 'free_trial' : (hasDiscount ? (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount') : 'none'),
+    promoType: hasFreeTrial && hasDiscount ? 'free_trial_with_discount' : 
+               hasFreeTrial ? 'free_trial' : 
+               hasDiscount ? (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount') : 'none',
     discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
     isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false',
     ...sessionParams.subscription_data.metadata
