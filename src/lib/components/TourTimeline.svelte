@@ -1247,12 +1247,15 @@
 								}
 							}}
 							onmouseenter={(e) => {
-								if (dayDate && daySlots.length > 0) {
+								// Only show popover on desktop (not mobile)
+								if (dayDate && daySlots.length > 0 && window.innerWidth >= 640) {
 									showPopover(i, e);
 								}
 							}}
 							onmouseleave={() => {
-								hidePopover();
+								if (window.innerWidth >= 640) {
+									hidePopover();
+								}
 							}}
 							role={daySlots.length > 0 || (tourId && !isPast) ? "button" : "gridcell"}
 							{...(daySlots.length > 0 || (tourId && !isPast) ? { tabindex: 0 } : {})}
@@ -1381,7 +1384,7 @@
 					{@const daySlots = dayDate ? getDaySlots(dayDate) : []}
 					{#if dayDate && daySlots.length > 0}
 						<div 
-							class="day-popover {popoverAlignment} {popoverVerticalPosition}"
+							class="day-popover hidden sm:block {popoverAlignment} {popoverVerticalPosition}"
 							role="tooltip"
 							style="
 								position: fixed;
@@ -1987,6 +1990,13 @@
 	/* Dark mode clock icon */
 	[data-theme="dark"] input[type="time"].time-input::-webkit-calendar-picker-indicator {
 		background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
+	}
+	
+	/* Hide popover on mobile devices */
+	@media (max-width: 639px) {
+		.day-popover {
+			display: none !important;
+		}
 	}
 	
 	[data-theme="dark"] .quick-add-form {
