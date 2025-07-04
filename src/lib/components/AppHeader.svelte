@@ -22,7 +22,7 @@
 		</div>
 
 		<!-- Right: Actions -->
-		<div class="flex items-center gap-3">
+		<div class="flex items-center gap-3 pr-1 sm:pr-2">
 			<!-- Notifications -->
 			<NotificationPanel tooltipPosition="bottom-left" />
 

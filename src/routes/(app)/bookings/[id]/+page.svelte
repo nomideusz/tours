@@ -259,38 +259,114 @@
 		// Check if user came from a tour details page or filtered bookings
 		try {
 			const referrer = document.referrer;
+			console.log('🔍 Smart back navigation - referrer:', referrer);
+			
 			if (referrer) {
 				const referrerUrl = new URL(referrer);
 				const referrerPath = referrerUrl.pathname;
 				const referrerSearch = referrerUrl.search;
 				
-				// Check if they came from the same tour's details page
-				if (referrerPath === `/tours/${booking.expand?.tour?.id}`) {
-					return `/tours/${booking.expand?.tour?.id}`;
+				console.log('🔍 Referrer details:', {
+					path: referrerPath,
+					search: referrerSearch,
+					fullUrl: referrer
+				});
+				
+				// Check if they came from dashboard
+				if (referrerPath === '/dashboard') {
+					console.log('✅ Going back to dashboard');
+					return '/dashboard';
 				}
 				
-				// Check if they came from filtered bookings page for this tour
-				if (referrerPath === '/bookings' && referrerSearch.includes(`tour=${booking.expand?.tour?.id}`)) {
-					return `/bookings?tour=${booking.expand?.tour?.id}`;
+				// Check if they came from the same tour's details page
+				if (referrerPath === `/tours/${booking.expand?.tour?.id}`) {
+					console.log('✅ Going back to tour details');
+					return `/tours/${booking.expand?.tour?.id}`;
 				}
 				
 				// Check if they came from any tour details page (booking might have wrong tourId)
 				const tourDetailsMatch = referrerPath.match(/^\/tours\/([^\/]+)$/);
 				if (tourDetailsMatch) {
+					console.log('✅ Going back to tour details (generic)');
 					return referrerPath; // Go back to whatever tour page they came from
 				}
+				
+				// Check if they came from filtered bookings page for this tour
+				if (referrerPath === '/bookings' && referrerSearch.includes(`tour=${booking.expand?.tour?.id}`)) {
+					console.log('✅ Going back to filtered bookings (same tour)');
+					return `/bookings?tour=${booking.expand?.tour?.id}`;
+				}
+				
+				// Check if they came from any filtered bookings page
+				if (referrerPath === '/bookings' && referrerSearch) {
+					console.log('✅ Going back to filtered bookings');
+					return `/bookings${referrerSearch}`;
+				}
+				
+				// Check if they came from main bookings page
+				if (referrerPath === '/bookings') {
+					console.log('✅ Going back to main bookings');
+					return '/bookings';
+				}
+				
+				// Check if they came from tours list
+				if (referrerPath === '/tours') {
+					console.log('✅ Going back to tours list');
+					return '/tours';
+				}
 			}
+			
+			// If no referrer or referrer doesn't match expected patterns, try to use browser history
+			console.log('🔍 No valid referrer found, checking browser history');
+			
+			// Try to determine from URL or other context
+			const currentUrl = new URL(window.location.href);
+			const fromParam = currentUrl.searchParams.get('from');
+			
+			if (fromParam) {
+				console.log('✅ Using "from" parameter:', fromParam);
+				return fromParam;
+			}
+			
 		} catch (error) {
 			console.warn('Could not parse referrer for smart back navigation:', error);
 		}
 		
 		// Default to bookings page
+		console.log('🔍 Using default: /bookings');
 		return '/bookings';
 	}
 
 	function handleSmartBack() {
+		console.log('🚀 Attempting smart back navigation...');
+		
+		// Try to use browser history first
+		if (window.history.length > 1) {
+			const referrer = document.referrer;
+			console.log('🔍 Browser history available, referrer:', referrer);
+			
+			// Check if we can safely go back
+			if (referrer && referrer.includes(window.location.origin)) {
+				console.log('✅ Using browser back() - safe internal navigation');
+				window.history.back();
+				return;
+			}
+		}
+		
+		// Fallback to smart destination
 		const destination = getSmartBackDestination();
+		console.log('🚀 Navigating to:', destination);
 		goto(destination);
+	}
+
+	// Get smart back button text
+	function getSmartBackText(): string {
+		const destination = getSmartBackDestination();
+		if (destination === '/dashboard') return 'Back to Dashboard';
+		if (destination.startsWith('/tours/')) return 'Back to Tour';
+		if (destination === '/tours') return 'Back to Tours';
+		if (destination.startsWith('/bookings')) return 'Back to Bookings';
+		return 'Back';
 	}
 </script>
 
@@ -344,14 +420,10 @@
 						{ label: `#${booking.id.slice(-8)}` }
 					]}
 				>
-					<button onclick={handleSmartBack} class="button-secondary button--gap">
-						<ArrowLeft class="h-4 w-4" />
-						{#if getSmartBackDestination().startsWith('/tours/')}
-							Back to Tour
-						{:else}
-							Back to Bookings
-						{/if}
-					</button>
+									<button onclick={handleSmartBack} class="button-secondary button--gap">
+					<ArrowLeft class="h-4 w-4" />
+					{getSmartBackText()}
+				</button>
 				</PageHeader>
 			</div>
 		</div>

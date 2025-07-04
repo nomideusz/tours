@@ -416,6 +416,115 @@
 		};
 	});
 
+	// Smart back navigation
+	function getSmartBackDestination(): string {
+		// Check if user came from a specific page
+		try {
+			const referrer = document.referrer;
+			console.log('🔍 Smart back navigation (tours) - referrer:', referrer);
+			
+			if (referrer) {
+				const referrerUrl = new URL(referrer);
+				const referrerPath = referrerUrl.pathname;
+				const referrerSearch = referrerUrl.search;
+				
+				console.log('🔍 Referrer details:', {
+					path: referrerPath,
+					search: referrerSearch,
+					fullUrl: referrer
+				});
+				
+				// Check if they came from dashboard
+				if (referrerPath === '/dashboard') {
+					console.log('✅ Going back to dashboard');
+					return '/dashboard';
+				}
+				
+				// Check if they came from a specific booking page
+				const bookingDetailsMatch = referrerPath.match(/^\/bookings\/([^\/]+)$/);
+				if (bookingDetailsMatch) {
+					console.log('✅ Going back to booking details');
+					return referrerPath; // Go back to whatever booking page they came from
+				}
+				
+				// Check if they came from filtered bookings page
+				if (referrerPath === '/bookings' && referrerSearch) {
+					console.log('✅ Going back to filtered bookings');
+					return `/bookings${referrerSearch}`;
+				}
+				
+				// Check if they came from main bookings page
+				if (referrerPath === '/bookings') {
+					console.log('✅ Going back to main bookings');
+					return '/bookings';
+				}
+				
+				// Check if they came from tours list with filters
+				if (referrerPath === '/tours' && referrerSearch) {
+					console.log('✅ Going back to filtered tours');
+					return `/tours${referrerSearch}`;
+				}
+				
+				// Check if they came from main tours page
+				if (referrerPath === '/tours') {
+					console.log('✅ Going back to main tours');
+					return '/tours';
+				}
+			}
+			
+			// If no referrer or referrer doesn't match expected patterns
+			console.log('🔍 No valid referrer found, checking browser history');
+			
+			// Try to determine from URL or other context
+			const currentUrl = new URL(window.location.href);
+			const fromParam = currentUrl.searchParams.get('from');
+			
+			if (fromParam) {
+				console.log('✅ Using "from" parameter:', fromParam);
+				return fromParam;
+			}
+			
+		} catch (error) {
+			console.warn('Could not parse referrer for smart back navigation:', error);
+		}
+		
+		// Default to tours page
+		console.log('🔍 Using default: /tours');
+		return '/tours';
+	}
+
+	function handleSmartBack() {
+		console.log('🚀 Attempting smart back navigation...');
+		
+		// Try to use browser history first
+		if (window.history.length > 1) {
+			const referrer = document.referrer;
+			console.log('🔍 Browser history available, referrer:', referrer);
+			
+			// Check if we can safely go back
+			if (referrer && referrer.includes(window.location.origin)) {
+				console.log('✅ Using browser back() - safe internal navigation');
+				window.history.back();
+				return;
+			}
+		}
+		
+		// Fallback to smart destination
+		const destination = getSmartBackDestination();
+		console.log('🚀 Navigating to:', destination);
+		goto(destination);
+	}
+
+	// Get smart back button text
+	function getSmartBackText(): string {
+		const destination = getSmartBackDestination();
+		if (destination === '/dashboard') return 'Back to Dashboard';
+		if (destination.startsWith('/bookings/')) return 'Back to Booking';
+		if (destination.startsWith('/bookings')) return 'Back to Bookings';
+		if (destination.startsWith('/tours')) return 'Back to Tours';
+		return 'Back';
+	}
+
 	// Force queries to start immediately on mount
 	onMount(() => {
 		console.log('🔄 Tour details page mounted, tourId:', tourId);
@@ -621,7 +730,7 @@
 			}}
 			quickActions={[]}
 			showBackButton={true}
-			onBackClick={() => goto('/tours')}
+			onBackClick={handleSmartBack}
 		/>
 		
 		<!-- Desktop Header -->
