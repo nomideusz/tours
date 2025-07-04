@@ -25,15 +25,15 @@
 <!-- Pricing -->
 <section id="pricing" class="py-20" style="background: var(--bg-primary);">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<!-- Early Access Notice -->
+		<!-- Professional Early Access Notice -->
 		<div class="max-w-3xl mx-auto mb-12">
-			<div class="rounded-lg p-4 border" style="background: var(--color-warning-50); border-color: var(--color-warning-200);">
+			<div class="rounded-lg p-4 border" style="background: var(--color-info-50); border-color: var(--color-info-200);">
 				<div class="flex items-start gap-3">
-					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
+					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-info-600);" />
 					<div class="flex-1">
-						<h3 class="font-semibold mb-1">🚀 Early Access - 50% OFF Limited Time</h3>
+						<h3 class="font-semibold mb-1">Early Access Program</h3>
 						<p class="text-sm">
-							Join now and lock in these special rates forever! Get 50% off regular pricing during early access. Features marked as "Soon" will be rolled out progressively over the coming months.
+							Founding members receive special pricing that remains locked in permanently. Features marked as "Soon" are in development and will be released progressively.
 						</p>
 					</div>
 				</div>
@@ -42,10 +42,10 @@
 		
 		<div class="text-center mb-12">
 			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
-				Simple, Transparent Pricing
+				Transparent Subscription Pricing
 			</h2>
 			<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
-				No booking fees, no commissions. Keep 100% of your revenue with our simple monthly subscription.
+				No booking commissions or hidden fees. Choose a plan that fits your business needs. Keep 100% of your tour revenue.
 			</p>
 		</div>
 		
@@ -69,7 +69,7 @@
 			</div>
 		</div>
 		
-		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-none mx-auto">
 			{#each PRICING_PLANS as plan}
 				{@const pricing = getPlanPricing(plan, isYearly)}
 				<div class="relative rounded-lg p-6 flex flex-col {plan.popular ? 'border-2' : ''}" 
@@ -77,7 +77,7 @@
 					
 					{#if plan.popular}
 						<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-							<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
+							<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Recommended</span>
 						</div>
 					{/if}
 					
@@ -85,7 +85,7 @@
 					
 					<div class="mb-1">
 						{#if plan.id !== 'free' && pricing.savings > 0}
-							<span class="text-lg line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
+							<span class="text-lg text-decoration-line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
 							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{pricing.earlyAccess}</span>
 						{:else}
 							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{pricing.earlyAccess}</span>
@@ -97,8 +97,8 @@
 					
 					<div class="mb-2 h-4">
 						{#if plan.id !== 'free' && pricing.savings > 0}
-							<span class="text-xs font-medium px-2 py-1 rounded-full" style="background: var(--color-success-100); color: var(--color-success-700);">
-								50% OFF Early Access
+							<span class="text-xs font-medium px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+								Founding Member Price
 							</span>
 						{/if}
 					</div>
@@ -141,11 +141,11 @@
 		<div class="mt-12 text-center">
 			<div class="rounded-lg p-4 border max-w-2xl mx-auto" style="background: var(--color-success-50); border-color: var(--color-success-200);">
 				<p class="font-semibold text-lg mb-2" style="color: var(--color-success-800);">
-					💰 Keep 100% of Your Booking Revenue
+					No Commission Model
 				</p>
 				<p style="color: var(--color-success-700);">
-					Unlike competitors who take 3-8% commission per booking, we charge a simple monthly fee. 
-					<span class="font-semibold">No booking fees, no commissions, ever!</span>
+					Unlike competitors who charge 3-8% commission per booking, we use a simple subscription model. 
+					<span class="font-semibold">You keep 100% of your booking revenue.</span>
 				</p>
 			</div>
 		</div>

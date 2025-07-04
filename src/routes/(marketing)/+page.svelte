@@ -1,6 +1,5 @@
 <script lang="ts">
 	import HeroSection from '$lib/components/marketing/HeroSection.svelte';
-	import SocialProof from '$lib/components/marketing/SocialProof.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import FeaturesSection from '$lib/components/marketing/FeaturesSection.svelte';
@@ -57,9 +56,6 @@
 <!-- Hero with main value prop & product demo -->
 <HeroSection />
 
-<!-- Social proof & urgency -->
-<SocialProof />
-
 <!-- How it works - show the simplicity -->
 <HowItWorksSection />
 
@@ -72,5 +68,5 @@
 <!-- Address concerns -->
 <FAQSection />
 
-<!-- Final CTA with urgency -->
+<!-- Final CTA with early access counter -->
 <EarlyAccessCTA /> 
