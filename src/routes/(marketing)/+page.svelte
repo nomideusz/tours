@@ -1,10 +1,13 @@
 <script lang="ts">
 	import HeroSection from '$lib/components/marketing/HeroSection.svelte';
+	import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
+	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import FeaturesSection from '$lib/components/marketing/FeaturesSection.svelte';
 	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
 	import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
+	import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
 </script>
 
 <svelte:head>
@@ -53,20 +56,69 @@
 	</script>`}
 </svelte:head>
 
-<!-- Hero with main value prop & product demo -->
+<!-- Hero Section with subtle texture -->
 <HeroSection />
 
-<!-- How it works - show the simplicity -->
+<!-- Platform showcase with subtle texture -->
+<section class="subtle-retro-section py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<PlatformShowcase />
+	</div>
+</section>
+
+<!-- How it works with subtle texture -->
 <HowItWorksSection />
 
-<!-- Pricing - people want to know cost early -->
-<PricingSection />
+<!-- Pricing with subtle texture -->
+<section class="subtle-retro-section py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<PricingSection />
+	</div>
+</section>
 
-<!-- Features & Benefits - comprehensive capabilities -->
+<!-- Features with subtle texture -->
 <FeaturesSection />
 
-<!-- Address concerns -->
-<FAQSection />
+<!-- FAQ with subtle texture -->
+<section class="subtle-retro-section py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<FAQSection />
+	</div>
+</section>
 
-<!-- Final CTA with early access counter -->
-<EarlyAccessCTA /> 
+<!-- Final CTA with subtle texture -->
+<FinalCtaSection />
+
+<style>
+	/* Subtle retro section with minimal color - matches HeroSection */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 70vh;
+		display: flex;
+		align-items: center;
+	}
+	
+	/* Very subtle texture overlay - matches HeroSection */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+</style> 

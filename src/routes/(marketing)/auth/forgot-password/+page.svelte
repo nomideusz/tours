@@ -1,135 +1,205 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { SubmitFunction } from '@sveltejs/kit';
-	import { goto } from '$app/navigation';
 	import Loader from 'lucide-svelte/icons/loader';
-	import { t, language } from '$lib/i18n.js';
+	import Mail from 'lucide-svelte/icons/mail';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
-
-	// Form state variables
-	let email = $state('');
-	let isLoading = $state(false);
-	let error = $state('');
-	let success = $state('');
-
-	// Handle form submission
-	const handleSubmit: SubmitFunction = () => {
-		isLoading = true;
-		error = '';
-		success = '';
-
-		return async ({ result }) => {
-			isLoading = false;
-
-			if (result.type === 'failure') {
-				error = result.data?.message || 'Failed to send password reset email';
-			} else if (result.type === 'success') {
-				success = t('forgotPassword.success', $language);
-				email = ''; // Clear the form
-			}
-		};
+	// Define the type for our form data
+	type ForgotPasswordForm = {
+		success?: boolean;
+		message?: string;
 	};
 
-	function goToLogin() {
-		goto('/auth/login');
-	}
+	let { form } = $props<{ form?: ForgotPasswordForm }>();
+
+	// Form state
+	let email = $state('');
+	let isLoading = $state(false);
 
 	// Form validation
 	let emailError = $state('');
 
-	function validateEmail() {
-		if (!email) {
-			emailError = t('forgotPassword.validation.emailRequired', $language);
-			return false;
-		} else if (!/^\S+@\S+\.\S+$/.test(email)) {
-			emailError = t('forgotPassword.validation.emailInvalid', $language);
-			return false;
-		}
+	// Validate form inputs
+	function validateForm() {
 		emailError = '';
-		return true;
+		let isValid = true;
+
+		// Email validation
+		if (!email) {
+			emailError = 'Email is required';
+			isValid = false;
+		} else if (!/^\S+@\S+\.\S+$/.test(email)) {
+			emailError = 'Please enter a valid email address';
+			isValid = false;
+		}
+
+		return isValid;
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center sm:px-6 lg:px-8 -mt-20">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<div class="text-center">
+<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
+	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+		<!-- Header -->
+		<div class="text-center mb-8">
 			<h2 class="text-3xl font-bold text-gray-900 mb-2">
-				{t('forgotPassword.title', $language)}
+				Reset Password
 			</h2>
-			<p class="text-sm text-gray-600">
-				{t('forgotPassword.description', $language)}
+			<p class="text-gray-600 text-sm">
+				Enter your email address and we'll send you a reset link
 			</p>
 		</div>
 
-		{#if error}
-			<div class="alert-error rounded-lg p-3 mb-4">
-				<p class="text-sm">{error}</p>
-			</div>
-		{/if}
-
-		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
-			{#if success}
+		<!-- Success Message -->
+		{#if form?.success}
+			<div class="bg-white border border-green-200 rounded-xl p-6 mb-6 shadow-sm">
 				<div class="text-center">
-					<div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-						<p class="text-sm text-green-600">{success}</p>
+					<div class="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+						<CheckCircle class="w-6 h-6 text-green-600" />
 					</div>
-					<button 
-						class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors"
-						onclick={goToLogin}
-					>
-						{t('forgotPassword.returnToLogin', $language)}
-					</button>
-				</div>
-			{:else}
-				<form method="POST" novalidate use:enhance={handleSubmit} class="space-y-6">
-					<div>
-						<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-							{t('forgotPassword.emailLabel', $language)}
-						</label>
-						<input
-							type="email"
-							id="email"
-							name="email"
-							placeholder={t('forgotPassword.emailPlaceholder', $language)}
-							value={email}
-							oninput={(e) => (email = e.currentTarget.value)}
-							onblur={() => validateEmail()}
-							class="form-input {emailError ? 'error' : ''}"
-							required
-							disabled={isLoading}
-						/>
-						{#if emailError}
-							<p class="form-error">{emailError}</p>
-						{/if}
-					</div>
-
-					<button
-						type="submit"
-						class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-						disabled={isLoading}
-						onclick={(e) => {
-							if (!validateEmail()) {
-								e.preventDefault();
-							}
-						}}
-					>
-						{#if isLoading}
-							<Loader size={16} class="animate-spin" />
-							<span>{t('forgotPassword.sending', $language)}</span>
-						{:else}
-							{t('forgotPassword.sendButton', $language)}
-						{/if}
-					</button>
-				</form>
-
-				<div class="mt-6 text-center text-sm">
-					<a href="/auth/login" class="text-blue-600 hover:text-blue-500 transition-colors">
-						{t('forgotPassword.backToLogin', $language)}
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Check Your Email</h3>
+					<p class="text-sm text-gray-600 mb-4">
+						We've sent a password reset link to your email address if an account exists.
+					</p>
+					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+						<ArrowLeft class="w-4 h-4" />
+						Back to sign in
 					</a>
 				</div>
-			{/if}
-		</div>
+			</div>
+		{:else}
+			<!-- Reset Password Card -->
+			<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+				<div class="relative">
+					{#if form?.message}
+						<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+							<div class="flex items-center gap-3">
+								<div class="flex-shrink-0">
+									<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+										<AlertCircle class="w-4 h-4 text-red-600" />
+									</div>
+								</div>
+								<p class="text-sm font-medium text-red-800">{form.message}</p>
+							</div>
+						</div>
+					{/if}
+
+					<form
+						method="POST"
+						novalidate
+						use:enhance={({ formData, cancel }) => {
+							// Run client-side validation first
+							if (!validateForm()) {
+								cancel();
+								return;
+							}
+
+							isLoading = true;
+
+							return async ({ result, update }) => {
+								await update({ reset: false });
+								
+								if (result.type !== 'redirect') {
+									isLoading = false;
+									
+									// Clear the email field on success for security
+									if (form?.success) {
+										email = '';
+									}
+								}
+							};
+						}}
+						class="space-y-6"
+					>
+						<div>
+							<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+								Email Address
+							</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								bind:value={email}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder="Enter your email address"
+								disabled={isLoading}
+								onblur={() => {
+									if (!email) emailError = 'Email is required';
+									else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = 'Please enter a valid email address';
+									else emailError = '';
+								}}
+							/>
+							{#if emailError}
+								<p class="mt-1 text-sm text-red-600">{emailError}</p>
+							{/if}
+						</div>
+
+						<button
+							type="submit"
+							class="w-full button-coral button--full-width"
+							disabled={isLoading}
+							onclick={(e) => {
+								if (!validateForm()) {
+									e.preventDefault();
+								}
+							}}
+						>
+							{#if isLoading}
+								<Loader size={16} class="animate-spin mr-2" />
+								<span>Sending reset link...</span>
+							{:else}
+								<Mail size={16} class="mr-2" />
+								<span>Send Reset Link</span>
+							{/if}
+						</button>
+					</form>
+
+					<!-- Navigation -->
+					<div class="mt-6 text-center">
+						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+							<ArrowLeft class="w-4 h-4" />
+							Back to sign in
+						</a>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 </div>
+
+<style>
+	/* Subtle retro section with minimal color - matches HeroSection */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+	}
+	
+	/* Very subtle texture overlay - matches HeroSection */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+</style>
 
  

@@ -6,7 +6,10 @@
 	import OAuth2Button from '$lib/components/OAuth2Button.svelte';
 	import { getAvailableOAuth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
 	import { onMount } from 'svelte';
-
+	import LogIn from 'lucide-svelte/icons/log-in';
+	import Mail from 'lucide-svelte/icons/mail';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
 
 	// Define the type for our form data
 	type LoginForm = {
@@ -84,42 +87,52 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center sm:px-6 lg:px-8 -mt-20">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<div class="text-center">
+<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
+	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+		<!-- Header -->
+		<div class="text-center mb-8">
 			<h2 class="text-3xl font-bold text-gray-900 mb-2">
-				{t('loginPage.title', $language)}
+				Welcome Back
 			</h2>
-			<p class="text-sm text-gray-600">
-				Welcome back! Please sign in to your account.
+			<p class="text-gray-600 text-sm">
+				Sign in to your account to continue
 			</p>
 		</div>
 
+		<!-- Status Messages -->
 		{#if form?.message || verificationSent || (data?.message && data?.type === 'success')}
-			<div class="alert-success rounded-lg p-3 mb-4">
-				<p class="text-sm">{form?.message || data?.message || 'Verification email sent! Please check your inbox.'}</p>
+			<div class="bg-white border border-green-200 rounded-xl p-4 mb-6 shadow-sm">
+				<div class="flex items-center gap-3">
+					<div class="flex-shrink-0">
+						<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+							<CheckCircle class="w-4 h-4 text-green-600" />
+						</div>
+					</div>
+					<p class="text-sm font-medium text-green-800">{form?.message || data?.message || 'Success! Please check your inbox.'}</p>
+				</div>
 			</div>
 		{:else if form?.needsVerification}
-			<div class="alert-warning rounded-lg p-4 mb-4">
+			<div class="bg-white border border-orange-200 rounded-xl p-4 mb-6 shadow-sm">
 				<div class="flex items-start gap-3">
 					<div class="flex-shrink-0">
-						<svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-							<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-						</svg>
+						<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+							<AlertCircle class="w-4 h-4 text-orange-600" />
+						</div>
 					</div>
 					<div class="flex-1">
-						<h3 class="text-sm font-medium text-amber-800 mb-2">Email verification required</h3>
-						<p class="text-sm text-amber-700 mb-3">{form?.error}</p>
+						<h3 class="text-sm font-semibold text-gray-900 mb-2">Email Verification Required</h3>
+						<p class="text-sm text-gray-600 mb-3">{form?.error}</p>
 						<button
 							type="button"
 							onclick={resendVerificationEmail}
 							disabled={isResendingVerification}
-							class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md text-amber-800 bg-amber-100 hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
 						>
 							{#if isResendingVerification}
 								<Loader size={12} class="animate-spin" />
-								Sending...
+								Sending verification email...
 							{:else}
+								<Mail size={12} />
 								Resend verification email
 							{/if}
 						</button>
@@ -127,181 +140,229 @@
 				</div>
 			</div>
 		{:else if form?.error || data?.error}
-			<div class="alert-error rounded-lg p-3 mb-4">
-				<p class="text-sm">{form?.error || data?.error}</p>
+			<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+				<div class="flex items-center gap-3">
+					<div class="flex-shrink-0">
+						<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+							<AlertCircle class="w-4 h-4 text-red-600" />
+						</div>
+					</div>
+					<p class="text-sm font-medium text-red-800">{form?.error || data?.error}</p>
+				</div>
 			</div>
 		{/if}
 
-		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
-			<!-- OAuth2 Login Options -->
-			{#if availableProviders.length > 0}
-				<div class="mb-6">
-					<div class="space-y-3">
-						{#each availableProviders as provider}
-							<OAuth2Button {provider} variant="outline" redirectTo={form?.redirectTo || data.redirectTo || ''} />
-						{/each}
-					</div>
-					
-					<div class="relative my-6">
-						<div class="absolute inset-0 flex items-center">
-							<div class="w-full border-t border-gray-300"></div>
+		<!-- Login Card -->
+		<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+			<div class="relative">
+				<!-- OAuth2 Login Options -->
+				{#if availableProviders.length > 0}
+					<div class="mb-6">
+						<div class="space-y-3">
+							{#each availableProviders as provider}
+								<OAuth2Button {provider} variant="outline" redirectTo={form?.redirectTo || data.redirectTo || ''} />
+							{/each}
 						</div>
-						<div class="relative flex justify-center text-sm">
-							<span class="px-2 bg-white text-gray-500">Or continue with email</span>
+						
+						<div class="relative my-6">
+							<div class="absolute inset-0 flex items-center">
+								<div class="w-full border-t border-gray-300"></div>
+							</div>
+							<div class="relative flex justify-center">
+								<span class="px-4 bg-white text-gray-500 text-sm font-medium">
+									Or continue with email
+								</span>
+							</div>
 						</div>
 					</div>
-				</div>
-			{/if}
+				{/if}
 
-			<form
-				method="POST"
-				action="?/login"
-				novalidate
-				use:enhance={({ formData, cancel }) => {
-					// Run client-side validation first
-					if (!validateForm()) {
-						// Cancel form submission if validation fails
-						cancel();
-						return;
-					}
-
-					manualLoading = true;
-					console.log('🔄 Login form submitted, setting manual loading to true');
-					// Store the current email for reference
-					const submittedEmail = formData.get('email') as string;
-
-					return async ({ result, update }) => {
-						console.log('🔄 Login form result:', result.type, result);
-						
-						// Always call update first to let SvelteKit handle the result
-						await update({ reset: false });
-						
-						// Only reset loading state for non-redirect responses
-						if (result.type !== 'redirect') {
-							console.log('❌ Login failed or other result, resetting loading state');
-							
-							// Update local email value in case server returned a different one
-							if (form?.email) {
-								email = form.email;
-							} else {
-								email = submittedEmail;
-							}
-							
-							manualLoading = false;
-						} else {
-							console.log('✅ Login successful, redirect will be handled by SvelteKit');
-							// Keep loading state during redirect for smooth UX
-						}
-					};
-				}}
-				class="space-y-6"
-			>
-				<!-- Hidden redirect field -->
-				<input type="hidden" name="redirectTo" value={form?.redirectTo || data.redirectTo || ''} />
-				
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-						{t('loginPage.email', $language)}
-					</label>
-					<input
-						type="email"
-						id="email"
-						name="email"
-						bind:value={email}
-						class="form-input {emailError ? 'error' : ''}"
-						placeholder={t('loginPage.emailPlaceholder', $language)}
-						disabled={isLoggingIn || manualLoading}
-						onblur={() => {
-							if (!email) emailError = t('loginPage.validation.emailRequired', $language);
-							else if (!/^\S+@\S+\.\S+$/.test(email))
-								emailError = t('loginPage.validation.emailInvalid', $language);
-							else emailError = '';
-						}}
-					/>
-					{#if emailError}
-						<p class="form-error">{emailError}</p>
-					{/if}
-				</div>
-
-				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-						{t('loginPage.password', $language)}
-					</label>
-					<input
-						type="password"
-						id="password"
-						name="password"
-						bind:value={password}
-						class="form-input {passwordError ? 'error' : ''}"
-						placeholder={t('loginPage.passwordPlaceholder', $language)}
-						disabled={isLoggingIn || manualLoading}
-						onblur={() => {
-							if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
-							else passwordError = '';
-						}}
-					/>
-					{#if passwordError}
-						<p class="form-error">{passwordError}</p>
-					{/if}
-				</div>
-
-				<button
-					type="submit"
-					class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-					disabled={isLoggingIn || manualLoading}
-					onclick={(e) => {
-						if (!validateForm()) {
-							e.preventDefault();
-						}
-					}}
-				>
-					{#if isLoggingIn || manualLoading}
-						<Loader size={16} class="animate-spin" />
-						<span>{t('loginPage.loggingIn', $language)}</span>
-					{:else}
-						{t('loginPage.loginButton', $language)}
-					{/if}
-				</button>
-			</form>
-
-			<!-- Hidden form for resending verification email -->
-			{#if form?.needsVerification}
 				<form
-					bind:this={resendForm}
 					method="POST"
-					action="?/resendVerification"
-					class="hidden"
-					use:enhance={() => {
+					action="?/login"
+					novalidate
+					use:enhance={({ formData, cancel }) => {
+						// Run client-side validation first
+						if (!validateForm()) {
+							// Cancel form submission if validation fails
+							cancel();
+							return;
+						}
+
+						manualLoading = true;
+						console.log('🔄 Login form submitted, setting manual loading to true');
+						// Store the current email for reference
+						const submittedEmail = formData.get('email') as string;
+
 						return async ({ result, update }) => {
-							// Don't interfere with redirects
-							if (result.type === 'redirect') {
-								return;
-							}
+							console.log('🔄 Login form result:', result.type, result);
 							
-							await update();
-							isResendingVerification = false;
-							if (result.type === 'success') {
-								verificationSent = true;
+							// Always call update first to let SvelteKit handle the result
+							await update({ reset: false });
+							
+							// Only reset loading state for non-redirect responses
+							if (result.type !== 'redirect') {
+								console.log('❌ Login failed or other result, resetting loading state');
+								
+								// Update local email value in case server returned a different one
+								if (form?.email) {
+									email = form.email;
+								} else {
+									email = submittedEmail;
+								}
+								
+								manualLoading = false;
+							} else {
+								console.log('✅ Login successful, redirect will be handled by SvelteKit');
+								// Keep loading state during redirect for smooth UX
 							}
 						};
 					}}
+					class="space-y-6"
 				>
-					<input type="hidden" name="userId" value={form?.userId || ''} />
-					<input type="hidden" name="email" value={email} />
-				</form>
-			{/if}
+					<!-- Hidden redirect field -->
+					<input type="hidden" name="redirectTo" value={form?.redirectTo || data.redirectTo || ''} />
+					
+					<div>
+						<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+							{t('loginPage.email', $language)}
+						</label>
+						<input
+							type="email"
+							id="email"
+							name="email"
+							bind:value={email}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							placeholder={t('loginPage.emailPlaceholder', $language)}
+							disabled={isLoggingIn || manualLoading}
+							onblur={() => {
+								if (!email) emailError = t('loginPage.validation.emailRequired', $language);
+								else if (!/^\S+@\S+\.\S+$/.test(email))
+									emailError = t('loginPage.validation.emailInvalid', $language);
+								else emailError = '';
+							}}
+						/>
+						{#if emailError}
+							<p class="mt-1 text-sm text-red-600">{emailError}</p>
+						{/if}
+					</div>
 
-			<div class="mt-6 flex items-center justify-center gap-4 text-sm">
-				<a href="/auth/forgot-password" class="text-blue-600 hover:text-blue-500 transition-colors">
-					{t('loginPage.forgotPassword', $language)}
-				</a>
-				<span class="text-gray-400">•</span>
-				<a href="/auth/register" class="text-blue-600 hover:text-blue-500 transition-colors">
-					Create an account
-				</a>
+					<div>
+						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+							{t('loginPage.password', $language)}
+						</label>
+						<input
+							type="password"
+							id="password"
+							name="password"
+							bind:value={password}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							placeholder={t('loginPage.passwordPlaceholder', $language)}
+							disabled={isLoggingIn || manualLoading}
+							onblur={() => {
+								if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
+								else passwordError = '';
+							}}
+						/>
+						{#if passwordError}
+							<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+						{/if}
+					</div>
+
+					<button
+						type="submit"
+						class="w-full button-coral button--full-width"
+						disabled={isLoggingIn || manualLoading}
+						onclick={(e) => {
+							if (!validateForm()) {
+								e.preventDefault();
+							}
+						}}
+					>
+						{#if isLoggingIn || manualLoading}
+							<Loader size={16} class="animate-spin mr-2" />
+							<span>{t('loginPage.loggingIn', $language)}</span>
+						{:else}
+							<LogIn size={16} class="mr-2" />
+							<span>{t('loginPage.loginButton', $language)}</span>
+						{/if}
+					</button>
+				</form>
+
+				<!-- Hidden form for resending verification email -->
+				{#if form?.needsVerification}
+					<form
+						bind:this={resendForm}
+						method="POST"
+						action="?/resendVerification"
+						class="hidden"
+						use:enhance={() => {
+							return async ({ result, update }) => {
+								// Don't interfere with redirects
+								if (result.type === 'redirect') {
+									return;
+								}
+								
+								await update();
+								isResendingVerification = false;
+								if (result.type === 'success') {
+									verificationSent = true;
+								}
+							};
+						}}
+					>
+						<input type="hidden" name="userId" value={form?.userId || ''} />
+						<input type="hidden" name="email" value={email} />
+					</form>
+				{/if}
+
+				<!-- Navigation -->
+				<div class="mt-6 flex items-center justify-center gap-4 text-sm">
+					<a href="/auth/forgot-password" class="text-coral-600 hover:text-coral-500 font-medium">
+						Forgot password?
+					</a>
+					<div class="w-1 h-1 rounded-full bg-gray-400"></div>
+					<a href="/auth/register" class="text-coral-600 hover:text-coral-500 font-medium">
+						Create account
+					</a>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	/* Subtle retro section with minimal color - matches homepage */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+	}
+	
+	/* Very subtle texture overlay - matches homepage */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+</style>
 
  

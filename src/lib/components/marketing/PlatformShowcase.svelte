@@ -18,7 +18,6 @@
 	
 	let showcaseMounted = $state(false);
 	let viewMode = $state<'guide' | 'customer' | 'qr'>('qr');
-	let isHovered = $state(false);
 	let qrCopied = $state(false);
 	
 	onMount(() => {
@@ -77,9 +76,6 @@
 		</div>
 		
 		<div class="showcase-preview" 
-			 class:hovered={isHovered}
-			 onmouseenter={() => isHovered = true}
-			 onmouseleave={() => isHovered = false}
 			 role="region"
 			 aria-label="Interactive platform showcase">
 			
@@ -176,7 +172,7 @@
 						
 						<!-- QR Actions -->
 						<div class="qr-actions">
-							<button onclick={copyQrCode} class="qr-action-button primary">
+							<button onclick={copyQrCode} class="button-coral button--large button--gap button--full-width">
 								{#if qrCopied}
 									<CheckCircle class="w-4 h-4" />
 									Link Copied!
@@ -186,11 +182,11 @@
 								{/if}
 							</button>
 							<div class="qr-action-grid">
-								<button class="qr-action-button secondary">
+								<button class="button-secondary button--gap">
 									<ExternalLink class="w-4 h-4" />
 									Preview
 								</button>
-								<button class="qr-action-button secondary">
+								<button class="button-secondary button--gap">
 									<Download class="w-4 h-4" />
 									Download
 								</button>
@@ -261,7 +257,7 @@
 						<div class="slot">16:30</div>
 					</div>
 					
-					<button class="book-now-btn">
+					<button class="button-coral button--large button--gap button--full-width">
 						<DollarSign class="w-4 h-4" />
 						Book Instantly
 					</button>
@@ -273,16 +269,12 @@
 					</div>
 				</div>
 			{/if}
-			
-			{#if isHovered}
-				<div class="preview-shine" in:fade={{ duration: 300 }}></div>
-			{/if}
 		</div>
 	</div>
 {/if}
 
 <style>
-	/* Platform Showcase Styles */
+	/* Professional Platform Showcase - matches HeroSection */
 	.platform-showcase {
 		max-width: 900px;
 		margin: 0 auto;
@@ -306,36 +298,52 @@
 		color: var(--text-secondary);
 	}
 	
+	/* Main showcase container - matches HeroSection trust cards */
 	.showcase-preview {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 1rem;
+		border-radius: var(--radius-xl);
 		padding: 2rem;
 		box-shadow: var(--shadow-lg);
-		transition: all 0.3s ease;
+		transition: all var(--transition-base) ease;
 		position: relative;
 		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.showcase-preview::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.showcase-preview:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.showcase-preview:hover {
 		box-shadow: var(--shadow-xl);
+		transform: translateY(-2px);
 		border-color: var(--border-secondary);
 	}
 	
-	.showcase-preview.hovered {
-		background: linear-gradient(135deg, var(--bg-primary) 0%, var(--color-primary-50) 100%);
-	}
-	
-	/* View Toggle Styles */
+	/* View Toggle - professional design */
 	.view-toggle {
 		display: flex;
-		gap: 0.5rem;
+		gap: 0;
 		justify-content: center;
 		margin-bottom: 2rem;
 		background: var(--bg-secondary);
-		border-radius: 0.75rem;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
 		padding: 0.5rem;
-		max-width: 500px;
+		max-width: 600px;
 		margin-left: auto;
 		margin-right: auto;
 	}
@@ -348,28 +356,29 @@
 		gap: 0.5rem;
 		background: transparent;
 		border: none;
-		border-radius: 0.5rem;
-		padding: 0.75rem 1rem;
+		border-radius: var(--radius-md);
+		padding: 1rem 1.5rem;
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-secondary);
 		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-	
-	.toggle-btn.active {
-		background: var(--color-primary-600);
-		color: white;
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
+		transition: all var(--transition-base) ease;
+		min-width: 140px;
+		height: 44px;
 	}
 	
 	.toggle-btn:hover:not(.active) {
-		background: var(--bg-primary);
+		background: var(--bg-tertiary);
 		color: var(--text-primary);
 	}
 	
-	/* QR Showcase Styles */
+	.toggle-btn.active {
+		background: var(--color-coral-500);
+		color: white;
+		box-shadow: var(--shadow-md);
+	}
+	
+	/* QR Showcase */
 	.qr-showcase {
 		min-height: 400px;
 	}
@@ -390,11 +399,13 @@
 		margin: 0;
 	}
 	
+	/* QR Badge - matches HeroSection professional badge */
 	.qr-badge {
 		padding: 0.25rem 0.75rem;
-		background: var(--color-success-100);
-		color: var(--color-success-700);
-		border-radius: 9999px;
+		background: var(--bg-primary);
+		color: var(--text-secondary);
+		border: 1px solid var(--color-coral-500);
+		border-radius: var(--radius-full);
 		font-size: 0.75rem;
 		font-weight: 500;
 	}
@@ -422,7 +433,7 @@
 	.qr-code-wrapper {
 		background: white;
 		padding: 1.5rem;
-		border-radius: 0.75rem;
+		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-sm);
 		border: 1px solid var(--border-primary);
 	}
@@ -437,25 +448,53 @@
 		text-align: center;
 		padding: 0.5rem 1rem;
 		background: var(--bg-secondary);
-		border-radius: 0.5rem;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
 	}
 	
 	.qr-id-text {
 		font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: var(--text-secondary);
+		color: var(--text-primary);
 		margin: 0;
 	}
 	
+	/* Tour Preview Card - matches HeroSection trust cards */
 	.tour-preview-card {
-		background: var(--bg-secondary);
+		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
+		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.tour-preview-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.tour-preview-card:hover::before {
+		transform: scaleX(1);
+	}
+
+	.tour-preview-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--border-secondary);
 	}
 	
 	.tour-preview-header {
@@ -524,44 +563,6 @@
 		gap: 1rem;
 	}
 	
-	.qr-action-button {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1rem;
-		border-radius: 0.5rem;
-		font-weight: 500;
-		font-size: 0.875rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		border: none;
-	}
-	
-	.qr-action-button.primary {
-		background: var(--color-primary-600);
-		color: white;
-		box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-	}
-	
-	.qr-action-button.primary:hover {
-		background: var(--color-primary-700);
-		transform: translateY(-1px);
-		box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
-	}
-	
-	.qr-action-button.secondary {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--border-primary);
-	}
-	
-	.qr-action-button.secondary:hover {
-		background: var(--bg-primary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
-	}
-	
 	.qr-action-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -572,7 +573,7 @@
 		text-align: center;
 		padding: 1rem;
 		background: var(--bg-secondary);
-		border-radius: 0.5rem;
+		border-radius: var(--radius-md);
 		border: 1px dashed var(--border-secondary);
 	}
 	
@@ -584,7 +585,7 @@
 		word-break: break-all;
 	}
 	
-	/* Guide Dashboard Styles */
+	/* Guide Dashboard */
 	.guide-preview {
 		min-height: 400px;
 		display: flex;
@@ -613,7 +614,7 @@
 		color: var(--color-success-600);
 		background: var(--color-success-50);
 		padding: 0.5rem 1rem;
-		border-radius: 0.5rem;
+		border-radius: var(--radius-md);
 		border: 1px solid var(--color-success-200);
 	}
 	
@@ -623,22 +624,42 @@
 		gap: 1rem;
 	}
 	
+	/* Tour Items - matches HeroSection trust cards */
 	.tour-item {
-		background: var(--bg-secondary);
+		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
+		border-radius: var(--radius-lg);
 		padding: 1.25rem;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		transition: all 0.2s ease;
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.tour-item::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.tour-item:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.tour-item:hover {
-		background: var(--bg-primary);
+		background: var(--bg-secondary);
 		border-color: var(--border-secondary);
-		transform: translateY(-1px);
 		box-shadow: var(--shadow-sm);
+		transform: translateY(-2px);
 	}
 	
 	.tour-info {
@@ -684,7 +705,7 @@
 		font-weight: 600;
 	}
 	
-	/* Customer View Styles */
+	/* Customer View */
 	.customer-preview {
 		min-height: 400px;
 		display: flex;
@@ -714,12 +735,40 @@
 		gap: 0.25rem;
 	}
 	
+	/* Price Card - matches HeroSection trust cards */
 	.booking-price {
 		text-align: center;
 		padding: 1.5rem;
-		background: var(--bg-secondary);
-		border-radius: 0.75rem;
+		background: var(--bg-primary);
+		border-radius: var(--radius-lg);
 		border: 1px solid var(--border-primary);
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.booking-price::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.booking-price:hover::before {
+		transform: scaleX(1);
+	}
+
+	.booking-price:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+		box-shadow: var(--shadow-sm);
+		transform: translateY(-2px);
 	}
 	
 	.price {
@@ -736,68 +785,47 @@
 		margin-top: 0.25rem;
 	}
 	
+	/* Time Slots - matches HeroSection trust cards */
 	.time-slots-mini {
 		display: flex;
 		gap: 0.75rem;
 		justify-content: center;
 		padding: 1rem;
-		background: var(--bg-secondary);
-		border-radius: 0.75rem;
+		background: var(--bg-primary);
+		border-radius: var(--radius-lg);
 		border: 1px solid var(--border-primary);
 	}
 	
 	.slot {
 		padding: 0.75rem 1.25rem;
-		background: var(--bg-primary);
+		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
+		border-radius: var(--radius-md);
 		font-weight: 500;
 		color: var(--text-secondary);
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--transition-base) ease;
 	}
 	
 	.slot:hover {
-		border-color: var(--color-primary-300);
+		border-color: var(--color-coral-500);
 		color: var(--text-primary);
 	}
 	
 	.slot.active {
-		background: var(--color-primary-600);
+		background: var(--color-coral-500);
 		color: white;
-		border-color: var(--color-primary-600);
-		box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+		border-color: var(--color-coral-500);
+		box-shadow: var(--shadow-md);
 	}
 	
-	.book-now-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 1rem 2rem;
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
-		border-radius: 0.75rem;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-	}
-	
-	.book-now-btn:hover {
-		background: var(--color-primary-700);
-		transform: translateY(-1px);
-		box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
-	}
-	
+	/* Booking Features - matches HeroSection trust cards */
 	.booking-features {
 		display: flex;
 		justify-content: space-around;
 		padding: 1rem;
-		background: var(--bg-secondary);
-		border-radius: 0.75rem;
+		background: var(--bg-primary);
+		border-radius: var(--radius-lg);
 		border: 1px solid var(--border-primary);
 	}
 	
@@ -806,22 +834,6 @@
 		color: var(--color-success-600);
 		font-weight: 500;
 		text-align: center;
-	}
-	
-	/* Preview Shine Effect */
-	.preview-shine {
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-		animation: shine 2s ease-in-out infinite;
-	}
-	
-	@keyframes shine {
-		0% { left: -100%; }
-		100% { left: 100%; }
 	}
 	
 	/* Responsive Design */
@@ -866,7 +878,7 @@
 			font-size: 0.9rem;
 		}
 		
-		/* Mobile adjustments for guide/customer views */
+		/* Mobile adjustments */
 		.tour-item {
 			flex-direction: column;
 			align-items: flex-start;

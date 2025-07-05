@@ -13,6 +13,205 @@
 	--color-primary-800: #1d55af;
 	--color-primary-900: #1d4a8a;
 	
+	/* =============================================
+	   PROFESSIONAL ADVENTURE PALETTE - Clean & Modern
+	   ============================================= */
+	
+	/* Coral Red - Bold and energetic */
+	--color-coral-50: #fff5f5;
+	--color-coral-100: #fed7d7;
+	--color-coral-200: #feb2b2;
+	--color-coral-300: #fc8181;
+	--color-coral-400: #f56565;
+	--color-coral-500: #FF5959;
+	--color-coral-600: #e53e3e;
+	--color-coral-700: #c53030;
+	--color-coral-800: #9c2626;
+	--color-coral-900: #742a2a;
+	
+	/* Warm Orange - Friendly and inviting */
+	--color-warm-orange-50: #fffaf0;
+	--color-warm-orange-100: #feebc8;
+	--color-warm-orange-200: #fbd38d;
+	--color-warm-orange-300: #f6ad55;
+	--color-warm-orange-400: #ed8936;
+	--color-warm-orange-500: #FFAD5A;
+	--color-warm-orange-600: #dd6b20;
+	--color-warm-orange-700: #c05621;
+	--color-warm-orange-800: #9c4221;
+	--color-warm-orange-900: #7b341e;
+	
+	/* Professional Teal - Trustworthy and stable */
+	--color-pro-teal-50: #f0fdfa;
+	--color-pro-teal-100: #ccfbf1;
+	--color-pro-teal-200: #99f6e4;
+	--color-pro-teal-300: #5eead4;
+	--color-pro-teal-400: #2dd4bf;
+	--color-pro-teal-500: #4F9DA6;
+	--color-pro-teal-600: #0d9488;
+	--color-pro-teal-700: #0f766e;
+	--color-pro-teal-800: #115e59;
+	--color-pro-teal-900: #134e4a;
+	
+	/* Deep Navy - Professional and sophisticated */
+	--color-deep-navy-50: #f8fafc;
+	--color-deep-navy-100: #f1f5f9;
+	--color-deep-navy-200: #e2e8f0;
+	--color-deep-navy-300: #cbd5e1;
+	--color-deep-navy-400: #94a3b8;
+	--color-deep-navy-500: #64748b;
+	--color-deep-navy-600: #475569;
+	--color-deep-navy-700: #334155;
+	--color-deep-navy-800: #1e293b;
+	--color-deep-navy-900: #1A0841;
+
+	/* =============================================
+	   ADVENTURE COLOR PALETTE - Vintage Travel Inspired (Updated)
+	   ============================================= */
+	
+	/* Deep Expedition Navy - Updated to use professional navy */
+	--color-expedition-50: #f8fafc;
+	--color-expedition-100: #f1f5f9;
+	--color-expedition-200: #e2e8f0;
+	--color-expedition-300: #cbd5e1;
+	--color-expedition-400: #94a3b8;
+	--color-expedition-500: #64748b;
+	--color-expedition-600: #475569;
+	--color-expedition-700: #334155;
+	--color-expedition-800: #1e293b;
+	--color-expedition-900: #1A0841;
+	
+	/* Explorer Teal - Updated to use professional teal */
+	--color-explorer-50: #f0fdfa;
+	--color-explorer-100: #ccfbf1;
+	--color-explorer-200: #99f6e4;
+	--color-explorer-300: #5eead4;
+	--color-explorer-400: #2dd4bf;
+	--color-explorer-500: #4F9DA6;
+	--color-explorer-600: #0d9488;
+	--color-explorer-700: #0f766e;
+	--color-explorer-800: #115e59;
+	--color-explorer-900: #134e4a;
+	
+	/* Sunset Orange - Updated to use warm orange */
+	--color-sunset-50: #fffaf0;
+	--color-sunset-100: #feebc8;
+	--color-sunset-200: #fbd38d;
+	--color-sunset-300: #f6ad55;
+	--color-sunset-400: #ed8936;
+	--color-sunset-500: #FFAD5A;
+	--color-sunset-600: #dd6b20;
+	--color-sunset-700: #c05621;
+	--color-sunset-800: #9c4221;
+	--color-sunset-900: #7b341e;
+	
+	/* Golden Hour - Keep existing for compatibility */
+	--color-golden-50: #fffbeb;
+	--color-golden-100: #fef3c7;
+	--color-golden-200: #fde68a;
+	--color-golden-300: #fcd34d;
+	--color-golden-400: #fbbf24;
+	--color-golden-500: #f59e0b;
+	--color-golden-600: #faca78;
+	--color-golden-700: #b45309;
+	--color-golden-800: #92400e;
+	--color-golden-900: #78350f;
+	
+	/* Journey Red - Updated to use coral */
+	--color-journey-50: #fff5f5;
+	--color-journey-100: #fed7d7;
+	--color-journey-200: #feb2b2;
+	--color-journey-300: #fc8181;
+	--color-journey-400: #f56565;
+	--color-journey-500: #FF5959;
+	--color-journey-600: #e53e3e;
+	--color-journey-700: #c53030;
+	--color-journey-800: #9c2626;
+	--color-journey-900: #742a2a;
+	
+	/* Earth Brown - Keep existing for compatibility */
+	--color-earth-50: #fdf8f6;
+	--color-earth-100: #f2e8e5;
+	--color-earth-200: #eaddd7;
+	--color-earth-300: #e0cfc7;
+	--color-earth-400: #d2bab0;
+	--color-earth-500: #bfa094;
+	--color-earth-600: #a18072;
+	--color-earth-700: #764338;
+	--color-earth-800: #6c3f18;
+	--color-earth-900: #5c2e04;
+	
+	/* Vintage Cream - Keep existing for compatibility */
+	--color-vintage-50: #fefdfb;
+	--color-vintage-100: #fef9f3;
+	--color-vintage-200: #fdf2e9;
+	--color-vintage-300: #f6dcac;
+	--color-vintage-400: #f2d089;
+	--color-vintage-500: #e4c063;
+	--color-vintage-600: #d4a843;
+	--color-vintage-700: #b8943a;
+	--color-vintage-800: #8f7533;
+	--color-vintage-900: #73612b;
+
+	/* =============================================
+	   PROFESSIONAL ADVENTURE GRADIENTS & PATTERNS
+	   ============================================= */
+	
+	/* Professional gradients - clean and modern */
+	--bg-professional-coral: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+	--bg-professional-orange: linear-gradient(135deg, var(--color-warm-orange-500), var(--color-warm-orange-600));
+	--bg-professional-teal: linear-gradient(135deg, var(--color-pro-teal-500), var(--color-pro-teal-600));
+	--bg-professional-navy: linear-gradient(135deg, var(--color-deep-navy-800), var(--color-deep-navy-900));
+	
+	/* Adventure Gradients - Updated with professional colors */
+	--bg-adventure-sunset: linear-gradient(135deg, var(--color-sunset-500), var(--color-journey-500));
+	--bg-adventure-dawn: linear-gradient(135deg, var(--color-explorer-500) 0%, var(--color-sunset-500) 50%, var(--color-warm-orange-500) 100%);
+	--bg-expedition-depth: linear-gradient(135deg, var(--color-expedition-900) 0%, var(--color-expedition-700) 50%, var(--color-explorer-600) 100%);
+	--bg-journey-path: linear-gradient(90deg, var(--color-earth-600), var(--color-journey-500), var(--color-sunset-500), var(--color-warm-orange-500));
+	--bg-vintage-burst: conic-gradient(from 0deg at 50% 50%, var(--color-expedition-900), var(--color-explorer-600), var(--color-sunset-500), var(--color-warm-orange-500), var(--color-journey-500), var(--color-expedition-900));
+	
+	/* Subtle Character Gradients - For sections */
+	--bg-warm-welcome: linear-gradient(135deg, var(--color-vintage-50) 0%, var(--color-warm-orange-50) 100%);
+	--bg-ocean-breeze: linear-gradient(135deg, var(--color-explorer-50) 0%, var(--color-primary-50) 100%);
+	--bg-adventure-card: linear-gradient(135deg, var(--color-vintage-100) 0%, var(--color-sunset-50) 50%, var(--color-warm-orange-100) 100%);
+	
+	/* Professional card backgrounds */
+	--bg-professional-card: #ffffff;
+	--bg-professional-card-hover: #f8fafc;
+	
+	/* Texture Patterns - Vintage travel feel */
+	--pattern-vintage-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+	--pattern-compass-points: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%23f97316' fill-opacity='0.03'%3E%3Cpolygon points='30,0 35,25 30,30 25,25'/%3E%3Cpolygon points='60,30 35,25 30,30 35,35'/%3E%3Cpolygon points='30,60 25,35 30,30 35,35'/%3E%3Cpolygon points='0,30 25,35 30,30 25,25'/%3E%3C/g%3E%3C/svg%3E");
+	--pattern-journey-lines: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M0 40c20-20 60-20 80 0' stroke='%23028391' stroke-width='1' fill='none' opacity='0.08'/%3E%3Cpath d='M0 20c20-10 60-10 80 0' stroke='%23f97316' stroke-width='1' fill='none' opacity='0.05'/%3E%3Cpath d='M0 60c20-10 60-10 80 0' stroke='%23faca78' stroke-width='1' fill='none' opacity='0.06'/%3E%3C/svg%3E");
+	
+	/* Sunburst Patterns - For hero sections */
+	--pattern-sunburst-subtle: conic-gradient(from 0deg at 50% 50%, 
+		transparent 0deg, 
+		rgba(255, 89, 89, 0.02) 45deg, 
+		transparent 90deg,
+		rgba(79, 157, 166, 0.02) 135deg,
+		transparent 180deg,
+		rgba(255, 173, 90, 0.02) 225deg,
+		transparent 270deg,
+		rgba(26, 8, 65, 0.02) 315deg,
+		transparent 360deg
+	);
+	
+	/* Professional Marketing Color Shortcuts */
+	--professional-coral: var(--color-coral-500);
+	--professional-orange: var(--color-warm-orange-500);
+	--professional-teal: var(--color-pro-teal-500);
+	--professional-navy: var(--color-deep-navy-900);
+	
+	/* Marketing Color Shortcuts - Updated */
+	--adventure-primary: var(--color-expedition-900);
+	--adventure-secondary: var(--color-explorer-500);
+	--adventure-accent: var(--color-sunset-500);
+	--adventure-warm: var(--color-warm-orange-500);
+	--adventure-bold: var(--color-journey-500);
+	--adventure-earth: var(--color-earth-600);
+	--adventure-neutral: var(--color-vintage-300);
+
 	/* Neutral Grays - With subtle blue undertones for cohesion */
 	--color-gray-50: #f8fafb;
 	--color-gray-100: #f1f5f9;
@@ -267,6 +466,131 @@
 	--color-primary-700: #5ebbfb;
 	--color-primary-800: #92d3fe;
 	--color-primary-900: #bfe3ff;
+
+	/* =============================================
+	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
+	   ============================================= */
+	
+	/* Coral Red - Dark mode adjustments */
+	--color-coral-50: #4c1d1d;
+	--color-coral-100: #742a2a;
+	--color-coral-200: #9c2626;
+	--color-coral-300: #c53030;
+	--color-coral-400: #e53e3e;
+	--color-coral-500: #FF5959;
+	--color-coral-600: #f56565;
+	--color-coral-700: #fc8181;
+	--color-coral-800: #feb2b2;
+	--color-coral-900: #fed7d7;
+	
+	/* Warm Orange - Dark mode adjustments */
+	--color-warm-orange-50: #451a03;
+	--color-warm-orange-100: #7b341e;
+	--color-warm-orange-200: #9c4221;
+	--color-warm-orange-300: #c05621;
+	--color-warm-orange-400: #dd6b20;
+	--color-warm-orange-500: #FFAD5A;
+	--color-warm-orange-600: #ed8936;
+	--color-warm-orange-700: #f6ad55;
+	--color-warm-orange-800: #fbd38d;
+	--color-warm-orange-900: #feebc8;
+	
+	/* Professional Teal - Dark mode adjustments */
+	--color-pro-teal-50: #022c22;
+	--color-pro-teal-100: #134e4a;
+	--color-pro-teal-200: #115e59;
+	--color-pro-teal-300: #0f766e;
+	--color-pro-teal-400: #0d9488;
+	--color-pro-teal-500: #4F9DA6;
+	--color-pro-teal-600: #2dd4bf;
+	--color-pro-teal-700: #5eead4;
+	--color-pro-teal-800: #99f6e4;
+	--color-pro-teal-900: #ccfbf1;
+	
+	/* Deep Navy - Dark mode adjustments */
+	--color-deep-navy-50: #0a0612;
+	--color-deep-navy-100: #1A0841;
+	--color-deep-navy-200: #1e293b;
+	--color-deep-navy-300: #334155;
+	--color-deep-navy-400: #475569;
+	--color-deep-navy-500: #64748b;
+	--color-deep-navy-600: #94a3b8;
+	--color-deep-navy-700: #cbd5e1;
+	--color-deep-navy-800: #e2e8f0;
+	--color-deep-navy-900: #f8fafc;
+
+	/* Adventure colors - Updated for dark mode */
+	--color-expedition-50: #0a0612;
+	--color-expedition-100: #1A0841;
+	--color-expedition-200: #1e293b;
+	--color-expedition-300: #334155;
+	--color-expedition-400: #475569;
+	--color-expedition-500: #64748b;
+	--color-expedition-600: #94a3b8;
+	--color-expedition-700: #cbd5e1;
+	--color-expedition-800: #e2e8f0;
+	--color-expedition-900: #f8fafc;
+	
+	/* Explorer Teal - Dark mode adjustments */
+	--color-explorer-50: #022c22;
+	--color-explorer-100: #134e4a;
+	--color-explorer-200: #115e59;
+	--color-explorer-300: #0f766e;
+	--color-explorer-400: #0d9488;
+	--color-explorer-500: #4F9DA6;
+	--color-explorer-600: #2dd4bf;
+	--color-explorer-700: #5eead4;
+	--color-explorer-800: #99f6e4;
+	--color-explorer-900: #ccfbf1;
+	
+	/* Sunset Orange - Dark mode adjustments */
+	--color-sunset-50: #451a03;
+	--color-sunset-100: #7b341e;
+	--color-sunset-200: #9c4221;
+	--color-sunset-300: #c05621;
+	--color-sunset-400: #dd6b20;
+	--color-sunset-500: #FFAD5A;
+	--color-sunset-600: #ed8936;
+	--color-sunset-700: #f6ad55;
+	--color-sunset-800: #fbd38d;
+	--color-sunset-900: #feebc8;
+	
+	/* Journey Red - Dark mode adjustments */
+	--color-journey-50: #4c1d1d;
+	--color-journey-100: #742a2a;
+	--color-journey-200: #9c2626;
+	--color-journey-300: #c53030;
+	--color-journey-400: #e53e3e;
+	--color-journey-500: #FF5959;
+	--color-journey-600: #f56565;
+	--color-journey-700: #fc8181;
+	--color-journey-800: #feb2b2;
+	--color-journey-900: #fed7d7;
+
+	/* Professional gradients - dark mode */
+	--bg-professional-coral: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+	--bg-professional-orange: linear-gradient(135deg, var(--color-warm-orange-500), var(--color-warm-orange-600));
+	--bg-professional-teal: linear-gradient(135deg, var(--color-pro-teal-500), var(--color-pro-teal-600));
+	--bg-professional-navy: linear-gradient(135deg, var(--color-deep-navy-100), var(--color-deep-navy-200));
+	
+	/* Professional card backgrounds - dark mode */
+	--bg-professional-card: #181b1f;
+	--bg-professional-card-hover: #2a2d32;
+	
+	/* Professional Marketing Color Shortcuts - Dark mode */
+	--professional-coral: var(--color-coral-500);
+	--professional-orange: var(--color-warm-orange-500);
+	--professional-teal: var(--color-pro-teal-500);
+	--professional-navy: var(--color-deep-navy-100);
+	
+	/* Marketing Color Shortcuts - Updated for dark mode */
+	--adventure-primary: var(--color-expedition-100);
+	--adventure-secondary: var(--color-explorer-500);
+	--adventure-accent: var(--color-sunset-500);
+	--adventure-warm: var(--color-warm-orange-500);
+	--adventure-bold: var(--color-journey-500);
+	--adventure-earth: var(--color-earth-600);
+	--adventure-neutral: var(--color-vintage-300);
 
 	/* Dark mode gray scale - cool grays with slight blue undertone */
 	--color-gray-50: #0b0d10;
@@ -1278,4 +1602,673 @@ button svg,
 
 .location-lock-link:hover {
 	text-decoration: none;
+}
+
+/* =============================================
+   MARKETING CHARACTER UTILITIES - Vintage Travel Theme
+   ============================================= */
+
+/* Adventure background utilities */
+.bg-adventure-sunset {
+	background: var(--bg-adventure-sunset);
+}
+
+.bg-adventure-dawn {
+	background: var(--bg-adventure-dawn);
+}
+
+.bg-expedition-depth {
+	background: var(--bg-expedition-depth);
+}
+
+.bg-warm-welcome {
+	background: var(--bg-warm-welcome);
+}
+
+.bg-ocean-breeze {
+	background: var(--bg-ocean-breeze);
+}
+
+.bg-adventure-card {
+	background: var(--bg-adventure-card);
+}
+
+/* Pattern overlays */
+.pattern-vintage-grain {
+	position: relative;
+}
+
+.pattern-vintage-grain::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-vintage-grain);
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.pattern-compass-points {
+	position: relative;
+}
+
+.pattern-compass-points::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-compass-points);
+	background-size: 60px 60px;
+	pointer-events: none;
+}
+
+.pattern-journey-lines {
+	position: relative;
+}
+
+.pattern-journey-lines::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-journey-lines);
+	background-size: 80px 80px;
+	pointer-events: none;
+}
+
+.pattern-sunburst-subtle {
+	position: relative;
+}
+
+.pattern-sunburst-subtle::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--pattern-sunburst-subtle);
+	pointer-events: none;
+}
+
+/* Adventure text colors */
+.text-adventure-primary {
+	color: var(--adventure-primary);
+}
+
+.text-adventure-secondary {
+	color: var(--adventure-secondary);
+}
+
+.text-adventure-accent {
+	color: var(--adventure-accent);
+}
+
+.text-adventure-warm {
+	color: var(--adventure-warm);
+}
+
+.text-adventure-bold {
+	color: var(--adventure-bold);
+}
+
+.text-adventure-earth {
+	color: var(--adventure-earth);
+}
+
+/* Adventure cards and sections */
+.adventure-hero {
+	background: var(--bg-expedition-depth);
+	position: relative;
+	overflow: hidden;
+}
+
+.adventure-hero::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--pattern-sunburst-subtle);
+	pointer-events: none;
+}
+
+.adventure-section {
+	position: relative;
+	padding: 4rem 0;
+}
+
+.adventure-section:nth-child(odd) {
+	background: var(--bg-warm-welcome);
+}
+
+.adventure-section:nth-child(even) {
+	background: var(--bg-ocean-breeze);
+}
+
+.adventure-card {
+	background: var(--bg-adventure-card);
+	border: 1px solid var(--color-vintage-200);
+	border-radius: 1rem;
+	padding: 2rem;
+	position: relative;
+	transition: all 0.3s ease;
+}
+
+.adventure-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--pattern-vintage-grain);
+	border-radius: 1rem;
+	pointer-events: none;
+	opacity: 0.3;
+}
+
+.adventure-card:hover {
+	box-shadow: 0 12px 32px rgba(1, 32, 78, 0.15);
+	border-color: var(--color-sunset-300);
+}
+
+/* Vintage badge styles */
+.vintage-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1rem;
+	background: var(--color-vintage-100);
+	border: 2px solid var(--color-earth-600);
+	border-radius: 2rem;
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-earth-700);
+	position: relative;
+	overflow: hidden;
+}
+
+.vintage-badge::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: var(--pattern-vintage-grain);
+	pointer-events: none;
+	opacity: 0.2;
+}
+
+/* Adventure CTA buttons */
+.adventure-cta {
+	background: linear-gradient(135deg, var(--color-sunset-500), var(--color-journey-600));
+	border: none;
+	border-radius: 0.75rem;
+	padding: 1rem 2rem;
+	color: white;
+	font-weight: 600;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+	box-shadow: 0 4px 16px rgba(248, 85, 37, 0.3);
+}
+
+.adventure-cta::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+	transition: left 0.6s ease;
+}
+
+.adventure-cta:hover::before {
+	left: 100%;
+}
+
+.adventure-cta:hover {
+	box-shadow: 0 8px 24px rgba(248, 85, 37, 0.4);
+}
+
+/* Secondary adventure button */
+.adventure-cta-secondary {
+	background: var(--color-vintage-100);
+	border: 2px solid var(--color-earth-600);
+	border-radius: 0.75rem;
+	padding: 1rem 2rem;
+	color: var(--color-earth-700);
+	font-weight: 600;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.adventure-cta-secondary:hover {
+	background: var(--color-earth-50);
+	border-color: var(--color-earth-700);
+	box-shadow: 0 6px 20px rgba(118, 67, 56, 0.2);
+}
+
+/* Journey dividers */
+.journey-divider {
+	width: 100%;
+	height: 80px;
+	background: var(--pattern-journey-lines);
+	background-size: 80px 80px;
+	margin: 3rem 0;
+	opacity: 0.6;
+}
+
+/* Vintage heading styles */
+.adventure-heading {
+	font-weight: 700;
+	color: var(--adventure-primary);
+	line-height: 1.2;
+	position: relative;
+}
+
+.adventure-heading::after {
+	content: '';
+	position: absolute;
+	bottom: -0.5rem;
+	left: 0;
+	width: 3rem;
+	height: 0.25rem;
+	background: linear-gradient(90deg, var(--color-sunset-500), var(--color-golden-500));
+	border-radius: 0.125rem;
+}
+
+.adventure-heading-centered::after {
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+/* Mobile responsiveness for adventure elements */
+@media (max-width: 640px) {
+	.adventure-section {
+		padding: 2rem 0;
+	}
+	
+	.adventure-card {
+		padding: 1.5rem;
+	}
+	
+	.adventure-cta,
+	.adventure-cta-secondary {
+		padding: 0.875rem 1.5rem;
+		font-size: 0.9375rem;
+	}
+}
+
+/* =============================================
+   END MARKETING CHARACTER UTILITIES
+   ============================================= */
+
+/* =============================================
+   PROFESSIONAL COLOR UTILITIES
+   ============================================= */
+
+/* Professional background utilities */
+.bg-professional-coral {
+	background: var(--bg-professional-coral);
+}
+
+.bg-professional-orange {
+	background: var(--bg-professional-orange);
+}
+
+.bg-professional-teal {
+	background: var(--bg-professional-teal);
+}
+
+.bg-professional-navy {
+	background: var(--bg-professional-navy);
+}
+
+.bg-professional-card {
+	background: var(--bg-professional-card);
+}
+
+.bg-professional-card:hover {
+	background: var(--bg-professional-card-hover);
+}
+
+/* Professional text colors */
+.text-professional-coral {
+	color: var(--professional-coral);
+}
+
+.text-professional-orange {
+	color: var(--professional-orange);
+}
+
+.text-professional-teal {
+	color: var(--professional-teal);
+}
+
+.text-professional-navy {
+	color: var(--professional-navy);
+}
+
+/* Professional color variants */
+.text-coral-500 {
+	color: var(--color-coral-500);
+}
+
+.text-coral-600 {
+	color: var(--color-coral-600);
+}
+
+.text-warm-orange-500 {
+	color: var(--color-warm-orange-500);
+}
+
+.text-warm-orange-600 {
+	color: var(--color-warm-orange-600);
+}
+
+.text-pro-teal-500 {
+	color: var(--color-pro-teal-500);
+}
+
+.text-pro-teal-600 {
+	color: var(--color-pro-teal-600);
+}
+
+.text-deep-navy-800 {
+	color: var(--color-deep-navy-800);
+}
+
+.text-deep-navy-900 {
+	color: var(--color-deep-navy-900);
+}
+
+/* Professional background color variants */
+.bg-coral-50 {
+	background-color: var(--color-coral-50);
+}
+
+.bg-coral-100 {
+	background-color: var(--color-coral-100);
+}
+
+.bg-coral-500 {
+	background-color: var(--color-coral-500);
+}
+
+.bg-warm-orange-50 {
+	background-color: var(--color-warm-orange-50);
+}
+
+.bg-warm-orange-100 {
+	background-color: var(--color-warm-orange-100);
+}
+
+.bg-warm-orange-500 {
+	background-color: var(--color-warm-orange-500);
+}
+
+.bg-pro-teal-50 {
+	background-color: var(--color-pro-teal-50);
+}
+
+.bg-pro-teal-100 {
+	background-color: var(--color-pro-teal-100);
+}
+
+.bg-pro-teal-500 {
+	background-color: var(--color-pro-teal-500);
+}
+
+.bg-deep-navy-50 {
+	background-color: var(--color-deep-navy-50);
+}
+
+.bg-deep-navy-100 {
+	background-color: var(--color-deep-navy-100);
+}
+
+.bg-deep-navy-900 {
+	background-color: var(--color-deep-navy-900);
+}
+
+/* Professional border colors */
+.border-coral-200 {
+	border-color: var(--color-coral-200);
+}
+
+.border-coral-500 {
+	border-color: var(--color-coral-500);
+}
+
+.border-warm-orange-200 {
+	border-color: var(--color-warm-orange-200);
+}
+
+.border-warm-orange-500 {
+	border-color: var(--color-warm-orange-500);
+}
+
+.border-pro-teal-200 {
+	border-color: var(--color-pro-teal-200);
+}
+
+.border-pro-teal-500 {
+	border-color: var(--color-pro-teal-500);
+}
+
+.border-deep-navy-200 {
+	border-color: var(--color-deep-navy-200);
+}
+
+.border-deep-navy-500 {
+	border-color: var(--color-deep-navy-500);
+}
+
+/* Professional card styles */
+.professional-card {
+	background: var(--bg-professional-card);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: var(--space-6);
+	transition: all var(--transition-base) ease;
+}
+
+.professional-card:hover {
+	background: var(--bg-professional-card-hover);
+	border-color: var(--border-secondary);
+	box-shadow: var(--shadow-sm);
+}
+
+.professional-feature-card {
+	background: var(--bg-professional-card);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	padding: 2rem;
+	transition: all var(--transition-base) ease;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	height: 100%;
+}
+
+.professional-feature-card:hover {
+	background: var(--bg-professional-card-hover);
+	border-color: var(--border-secondary);
+	box-shadow: var(--shadow-md);
+}
+
+/* Professional icon containers */
+.professional-icon {
+	width: 3.5rem;
+	height: 3.5rem;
+	border-radius: var(--radius-lg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	flex-shrink: 0;
+}
+
+.professional-icon--coral {
+	background: var(--color-coral-500);
+}
+
+.professional-icon--orange {
+	background: var(--color-warm-orange-500);
+}
+
+.professional-icon--teal {
+	background: var(--color-pro-teal-500);
+}
+
+.professional-icon--navy {
+	background: var(--color-deep-navy-900);
+}
+
+/* Professional section backgrounds */
+.professional-section {
+	background: #ffffff;
+	padding: 5rem 0;
+	border-top: 1px solid var(--border-primary);
+}
+
+[data-theme="dark"] .professional-section {
+	background: var(--bg-primary);
+}
+
+/* Professional badge */
+.professional-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	color: var(--text-secondary);
+	padding: 0.5rem 1rem;
+	border-radius: 2rem;
+	font-size: var(--text-sm);
+	font-weight: 500;
+}
+
+/* Hover utilities for professional colors */
+.hover-coral:hover {
+	color: var(--color-coral-600) !important;
+}
+
+.hover-orange:hover {
+	color: var(--color-warm-orange-600) !important;
+}
+
+.hover-teal:hover {
+	color: var(--color-pro-teal-600) !important;
+}
+
+.hover-navy:hover {
+	color: var(--color-deep-navy-800) !important;
+}
+
+/* Professional gradient text */
+.gradient-text-coral {
+	background: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+.gradient-text-orange {
+	background: linear-gradient(135deg, var(--color-warm-orange-500), var(--color-warm-orange-600));
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+.gradient-text-teal {
+	background: linear-gradient(135deg, var(--color-pro-teal-500), var(--color-pro-teal-600));
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+.gradient-text-navy {
+	background: linear-gradient(135deg, var(--color-deep-navy-800), var(--color-deep-navy-900));
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	color: transparent;
+}
+
+/* Professional responsive utilities */
+@media (max-width: 768px) {
+	.professional-feature-card {
+		padding: 1.5rem;
+		gap: 1rem;
+	}
+
+	.professional-icon {
+		width: 3rem;
+		height: 3rem;
+	}
+
+	.professional-section {
+		padding: 3rem 0;
+	}
+}
+
+/* =============================================
+   END PROFESSIONAL COLOR UTILITIES
+   ============================================= */
+
+/* Coral hover utilities */
+.hover\:text-coral-500:hover {
+	color: var(--color-coral-500);
+}
+
+.hover\:text-coral-600:hover {
+	color: var(--color-coral-600);
+}
+
+/* Focus ring utilities for coral */
+.focus\:ring-coral-500:focus {
+	--tw-ring-color: var(--color-coral-500);
+	box-shadow: 0 0 0 3px rgba(255, 89, 89, 0.1);
+}
+
+.focus\:border-coral-500:focus {
+	border-color: var(--color-coral-500);
+}
+
+/* Red text utilities for error messages */
+.text-red-500 {
+	color: var(--color-error-500);
+}
+
+.text-red-600 {
+	color: var(--color-error-600);
+}
+
+.text-red-700 {
+	color: var(--color-error-700);
+}
+
+.text-red-800 {
+	color: var(--color-error-800);
 }

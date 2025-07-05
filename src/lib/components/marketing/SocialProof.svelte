@@ -256,7 +256,7 @@
 	.trust-item:hover {
 		border-color: var(--border-secondary);
 		box-shadow: var(--shadow-sm);
-		transform: translateY(-2px);
+
 	}
 	
 	.trust-icon {

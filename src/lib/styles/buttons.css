@@ -19,7 +19,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -52,7 +52,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -82,6 +82,348 @@
 		cursor: not-allowed;
 	}
 
+	/* =============================================
+	   PROFESSIONAL BUTTON VARIANTS
+	   ============================================= */
+	
+	/* Coral button - bold and energetic */
+	.button-coral,
+	.button--coral {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: var(--color-coral-500);
+		color: white;
+		border: 1px solid var(--color-coral-500);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-coral:hover:not(:disabled),
+	.button--coral:hover:not(:disabled) {
+		background: var(--color-coral-600);
+		border-color: var(--color-coral-600);
+	}
+
+	.button-coral:focus,
+	.button--coral:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(255, 89, 89, 0.3);
+	}
+
+	.button-coral:disabled,
+	.button--coral:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Warm Orange button - friendly and inviting */
+	.button-orange,
+	.button--orange {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: var(--color-warm-orange-500);
+		color: white;
+		border: 1px solid var(--color-warm-orange-500);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-orange:hover:not(:disabled),
+	.button--orange:hover:not(:disabled) {
+		background: var(--color-warm-orange-600);
+		border-color: var(--color-warm-orange-600);
+	}
+
+	.button-orange:focus,
+	.button--orange:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(255, 173, 90, 0.3);
+	}
+
+	.button-orange:disabled,
+	.button--orange:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Professional Teal button - trustworthy and stable */
+	.button-teal,
+	.button--teal {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: var(--color-pro-teal-500);
+		color: white;
+		border: 1px solid var(--color-pro-teal-500);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-teal:hover:not(:disabled),
+	.button--teal:hover:not(:disabled) {
+		background: var(--color-pro-teal-600);
+		border-color: var(--color-pro-teal-600);
+	}
+
+	.button-teal:focus,
+	.button--teal:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(79, 157, 166, 0.3);
+	}
+
+	.button-teal:disabled,
+	.button--teal:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Deep Navy button - professional and sophisticated */
+	.button-navy,
+	.button--navy {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: var(--color-deep-navy-900);
+		color: white;
+		border: 1px solid var(--color-deep-navy-900);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-navy:hover:not(:disabled),
+	.button--navy:hover:not(:disabled) {
+		background: var(--color-deep-navy-800);
+		border-color: var(--color-deep-navy-800);
+	}
+
+	.button-navy:focus,
+	.button--navy:focus {
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: 0 0 0 3px rgba(26, 8, 65, 0.3);
+	}
+
+	.button-navy:disabled,
+	.button--navy:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Outlined variants of professional colors */
+	.button-coral-outline,
+	.button--coral-outline {
+		background: transparent;
+		color: var(--color-coral-600);
+		border: 1px solid var(--color-coral-500);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-coral-outline:hover:not(:disabled),
+	.button--coral-outline:hover:not(:disabled) {
+		background: var(--color-coral-50);
+		border-color: var(--color-coral-600);
+		color: var(--color-coral-700);
+	}
+
+	.button-orange-outline,
+	.button--orange-outline {
+		background: transparent;
+		color: var(--color-warm-orange-600);
+		border: 1px solid var(--color-warm-orange-500);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-orange-outline:hover:not(:disabled),
+	.button--orange-outline:hover:not(:disabled) {
+		background: var(--color-warm-orange-50);
+		border-color: var(--color-warm-orange-600);
+		color: var(--color-warm-orange-700);
+	}
+
+	.button-teal-outline,
+	.button--teal-outline {
+		background: transparent;
+		color: var(--color-pro-teal-600);
+		border: 1px solid var(--color-pro-teal-500);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-teal-outline:hover:not(:disabled),
+	.button--teal-outline:hover:not(:disabled) {
+		background: var(--color-pro-teal-50);
+		border-color: var(--color-pro-teal-600);
+		color: var(--color-pro-teal-700);
+	}
+
+	.button-navy-outline,
+	.button--navy-outline {
+		background: transparent;
+		color: var(--color-deep-navy-700);
+		border: 1px solid var(--color-deep-navy-600);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.75rem 1.5rem;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		line-height: 1.25rem;
+		cursor: pointer;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		box-shadow: var(--shadow-xs);
+	}
+
+	.button-navy-outline:hover:not(:disabled),
+	.button--navy-outline:hover:not(:disabled) {
+		background: var(--color-deep-navy-50);
+		border-color: var(--color-deep-navy-700);
+		color: var(--color-deep-navy-800);
+	}
+
+	/* Dark mode adjustments for outlined buttons */
+	[data-theme="dark"] .button-coral-outline,
+	[data-theme="dark"] .button--coral-outline {
+		color: var(--color-coral-400);
+		border-color: var(--color-coral-500);
+	}
+
+	[data-theme="dark"] .button-coral-outline:hover:not(:disabled),
+	[data-theme="dark"] .button--coral-outline:hover:not(:disabled) {
+		background: rgba(255, 89, 89, 0.1);
+		border-color: var(--color-coral-400);
+		color: var(--color-coral-300);
+	}
+
+	[data-theme="dark"] .button-orange-outline,
+	[data-theme="dark"] .button--orange-outline {
+		color: var(--color-warm-orange-400);
+		border-color: var(--color-warm-orange-500);
+	}
+
+	[data-theme="dark"] .button-orange-outline:hover:not(:disabled),
+	[data-theme="dark"] .button--orange-outline:hover:not(:disabled) {
+		background: rgba(255, 173, 90, 0.1);
+		border-color: var(--color-warm-orange-400);
+		color: var(--color-warm-orange-300);
+	}
+
+	[data-theme="dark"] .button-teal-outline,
+	[data-theme="dark"] .button--teal-outline {
+		color: var(--color-pro-teal-400);
+		border-color: var(--color-pro-teal-500);
+	}
+
+	[data-theme="dark"] .button-teal-outline:hover:not(:disabled),
+	[data-theme="dark"] .button--teal-outline:hover:not(:disabled) {
+		background: rgba(79, 157, 166, 0.1);
+		border-color: var(--color-pro-teal-400);
+		color: var(--color-pro-teal-300);
+	}
+
+	[data-theme="dark"] .button-navy-outline,
+	[data-theme="dark"] .button--navy-outline {
+		color: var(--color-deep-navy-300);
+		border-color: var(--color-deep-navy-400);
+	}
+
+	[data-theme="dark"] .button-navy-outline:hover:not(:disabled),
+	[data-theme="dark"] .button--navy-outline:hover:not(:disabled) {
+		background: rgba(26, 8, 65, 0.1);
+		border-color: var(--color-deep-navy-300);
+		color: var(--color-deep-navy-200);
+	}
+
 	/* Secondary button - outlined */
 	.button-secondary,
 	.button--secondary {
@@ -94,7 +436,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -134,7 +476,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -172,7 +514,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -210,7 +552,7 @@
 		font-weight: 500;
 		line-height: 1.25rem;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
@@ -237,14 +579,22 @@
 		cursor: not-allowed;
 	}
 
-	/* Button modifiers */
+	/* Button modifiers - Apply to all button variants */
 	.button--full-width,
 	.button-primary.button--full-width,
 	.button-secondary.button--full-width,
 	.button--danger.button--full-width,
 	.button-danger.button--full-width,
 	.button-success.button--full-width,
-	.button-warning.button--full-width {
+	.button-warning.button--full-width,
+	.button-coral.button--full-width,
+	.button--coral.button--full-width,
+	.button-orange.button--full-width,
+	.button--orange.button--full-width,
+	.button-teal.button--full-width,
+	.button--teal.button--full-width,
+	.button-navy.button--full-width,
+	.button--navy.button--full-width {
 		width: 100%;
 	}
 
@@ -254,7 +604,15 @@
 	.button--danger.button--gap,
 	.button-danger.button--gap,
 	.button-success.button--gap,
-	.button-warning.button--gap {
+	.button-warning.button--gap,
+	.button-coral.button--gap,
+	.button--coral.button--gap,
+	.button-orange.button--gap,
+	.button--orange.button--gap,
+	.button-teal.button--gap,
+	.button--teal.button--gap,
+	.button-navy.button--gap,
+	.button--navy.button--gap {
 		gap: 0.5rem;
 	}
 
@@ -264,7 +622,15 @@
 	.button--danger.button--large,
 	.button-danger.button--large,
 	.button-success.button--large,
-	.button-warning.button--large {
+	.button-warning.button--large,
+	.button-coral.button--large,
+	.button--coral.button--large,
+	.button-orange.button--large,
+	.button--orange.button--large,
+	.button-teal.button--large,
+	.button--teal.button--large,
+	.button-navy.button--large,
+	.button--navy.button--large {
 		padding: 1rem 2rem;
 		font-size: var(--text-base);
 		line-height: 1.5rem;
@@ -276,7 +642,15 @@
 	.button--danger.button--small,
 	.button-danger.button--small,
 	.button-success.button--small,
-	.button-warning.button--small {
+	.button-warning.button--small,
+	.button-coral.button--small,
+	.button--coral.button--small,
+	.button-orange.button--small,
+	.button--orange.button--small,
+	.button-teal.button--small,
+	.button--teal.button--small,
+	.button-navy.button--small,
+	.button--navy.button--small {
 		padding: 0.5rem 1rem;
 		font-size: var(--text-xs);
 		line-height: 1.25rem;
@@ -297,7 +671,7 @@
 		text-decoration: none;
 		padding: 0.25rem 0.5rem;
 		font-weight: 500;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease;
 	}
 
 	.button--text:hover:not(:disabled) {
@@ -313,7 +687,7 @@
 		text-decoration: none;
 		padding: 0.75rem 1.5rem;
 		font-weight: 500;
-		transition: all var(--transition-fast) ease;
+		transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease, border-color var(--transition-fast) ease;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -364,6 +738,14 @@
 	.button-danger svg,
 	.button-success svg,
 	.button-warning svg,
+	.button-coral svg,
+	.button--coral svg,
+	.button-orange svg,
+	.button--orange svg,
+	.button-teal svg,
+	.button--teal svg,
+	.button-navy svg,
+	.button--navy svg,
 	.button--ghost svg,
 	.button--text svg {
 		fill: currentColor;
@@ -467,6 +849,46 @@
 	.button-warning svg,
 	.button-warning .lucide-icon,
 	.button-warning .lucide {
+		color: white !important;
+		stroke: white !important;
+	}
+
+	/* Ensure proper contrast for professional colored buttons */
+	.button-coral,
+	.button--coral,
+	.button-orange,
+	.button--orange,
+	.button-teal,
+	.button--teal,
+	.button-navy,
+	.button--navy {
+		color: white !important;
+	}
+	
+	.button-coral svg,
+	.button--coral svg,
+	.button-orange svg,
+	.button--orange svg,
+	.button-teal svg,
+	.button--teal svg,
+	.button-navy svg,
+	.button--navy svg,
+	.button-coral .lucide-icon,
+	.button--coral .lucide-icon,
+	.button-orange .lucide-icon,
+	.button--orange .lucide-icon,
+	.button-teal .lucide-icon,
+	.button--teal .lucide-icon,
+	.button-navy .lucide-icon,
+	.button--navy .lucide-icon,
+	.button-coral .lucide,
+	.button--coral .lucide,
+	.button-orange .lucide,
+	.button--orange .lucide,
+	.button-teal .lucide,
+	.button--teal .lucide,
+	.button-navy .lucide,
+	.button--navy .lucide {
 		color: white !important;
 		stroke: white !important;
 	}

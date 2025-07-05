@@ -1,112 +1,129 @@
 <script lang="ts">
 	import Logo from './Logo.svelte';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Layout from 'lucide-svelte/icons/layout';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import HelpCircle from 'lucide-svelte/icons/help-circle';
+	import Shield from 'lucide-svelte/icons/shield';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
+	import Heart from 'lucide-svelte/icons/heart';
+	import Mail from 'lucide-svelte/icons/mail';
+	import LifeBuoy from 'lucide-svelte/icons/life-buoy';
+	import Rocket from 'lucide-svelte/icons/rocket';
 </script>
 
-<!-- Modern footer -->
-<footer style="background: var(--bg-primary); color: var(--text-primary); border-top: 1px solid var(--border-primary);">
-	<div class="mx-auto max-w-screen-2xl px-6 py-12 sm:px-8 lg:px-12">
-		<div class="grid grid-cols-1 gap-8 md:grid-cols-4">
-			<!-- Brand section -->
-			<div class="md:col-span-1">
-				<div class="mb-4">
+<!-- Professional Footer -->
+<footer class="professional-footer">
+	<div class="professional-footer-container">
+		<div class="professional-footer-content">
+			<!-- Brand Section -->
+			<div class="footer-brand">
+				<div class="footer-logo">
 					<Logo 
 						variant="modern" 
 						size="large" 
 						href="/" 
-						showIcon={true}
-						class="justify-start p-0"
+						showIcon={false}
+						class="justify-start p-0 -ml-2"
 					/>
 				</div>
-				<p class="mb-4" style="color: var(--text-secondary);">
+				<p class="footer-description">
 					The simplest booking system for independent tour guides. More bookings, less hassle.
 				</p>
-				<!-- Trust badges -->
-				<div class="flex items-center gap-4">
-					<div class="flex items-center gap-2 text-sm" style="color: var(--text-tertiary);">
-						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-5-5 1.41-1.41L11 14.17l7.59-7.59L20 8l-9 9z"/>
-						</svg>
+				<!-- Trust Badges -->
+				<div class="trust-badges">
+					<div class="trust-badge">
+						<CreditCard class="w-4 h-4" />
 						<span>Stripe Secured</span>
 					</div>
-					<div class="flex items-center gap-2 text-sm" style="color: var(--text-tertiary);">
-						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-						</svg>
+					<div class="trust-badge">
+						<Shield class="w-4 h-4" />
 						<span>SSL Protected</span>
 					</div>
 				</div>
 			</div>
 
-			<!-- Links sections -->
-			<div>
-				<h3 class="mb-4 font-semibold">Product</h3>
-				<ul class="space-y-2">
+			<!-- Links Grid -->
+			<div class="footer-section">
+				<h3 class="footer-heading">Product</h3>
+				<ul class="footer-links">
 					<li>
-						<a href="/#how-it-works" class="nav-link transition-colors footer-link"
-							>How it Works</a
-						>
+						<a href="/#how-it-works" class="footer-link">
+							<MapPin class="w-4 h-4" />
+							<span>How it Works</span>
+						</a>
 					</li>
 					<li>
-						<a href="/#features" class="nav-link transition-colors footer-link"
-							>Features</a
-						>
+						<a href="/#features" class="footer-link">
+							<Layout class="w-4 h-4" />
+							<span>Features</span>
+						</a>
 					</li>
 					<li>
-						<a href="/#pricing" class="nav-link transition-colors footer-link"
-							>Pricing</a
-						>
+						<a href="/#pricing" class="footer-link">
+							<DollarSign class="w-4 h-4" />
+							<span>Pricing</span>
+						</a>
 					</li>
 					<li>
-						<a href="/#faq" class="nav-link transition-colors footer-link"
-							>FAQ</a
-						>
-					</li>
-				</ul>
-			</div>
-
-			<div>
-				<h3 class="mb-4 font-semibold">Company</h3>
-				<ul class="space-y-2">
-					<li>
-						<a href="/about" class="nav-link transition-colors footer-link">About Us</a>
-					</li>
-					<li>
-						<a href="/contact" class="nav-link transition-colors footer-link">Contact</a>
+						<a href="/#faq" class="footer-link">
+							<HelpCircle class="w-4 h-4" />
+							<span>FAQ</span>
+						</a>
 					</li>
 				</ul>
 			</div>
 
-			<div>
-				<h3 class="mb-4 font-semibold">Support</h3>
-				<ul class="space-y-2">
+			<div class="footer-section">
+				<h3 class="footer-heading">Company</h3>
+				<ul class="footer-links">
 					<li>
-						<a href="/contact" class="nav-link transition-colors footer-link"
-							>Help Center</a
-						>
+						<a href="/about" class="footer-link">
+							<Heart class="w-4 h-4" />
+							<span>About Us</span>
+						</a>
 					</li>
 					<li>
-						<a href="/auth/register" class="nav-link transition-colors footer-link"
-							>Get Started</a
+						<a href="/contact" class="footer-link">
+							<Mail class="w-4 h-4" />
+							<span>Contact</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+
+			<div class="footer-section">
+				<h3 class="footer-heading">Support</h3>
+				<ul class="footer-links">
+					<li>
+						<a href="/contact" class="footer-link">
+							<LifeBuoy class="w-4 h-4" />
+							<span>Help Center</span>
+						</a>
+					</li>
+					<li>
+						<button 
+							class="footer-link footer-button"
+							onclick={() => window.location.href = '/auth/register'}
 						>
+							<Rocket class="w-4 h-4" />
+							<span>Get Started</span>
+						</button>
 					</li>
 				</ul>
 			</div>
 		</div>
 
-		<!-- Bottom section -->
-		<div class="mt-12 pt-8" style="border-top: 1px solid var(--border-primary);">
-			<div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-				<div class="text-sm" style="color: var(--text-tertiary);">© 2025 Zaur. All rights reserved.</div>
-				<div class="flex gap-6 text-sm">
-					<a href="/privacy" class="nav-link transition-colors footer-link"
-						>Privacy Policy</a
-					>
-					<a href="/terms" class="nav-link transition-colors footer-link"
-						>Terms of Service</a
-					>
-					<a href="/cookies" class="nav-link transition-colors footer-link"
-						>Cookie Policy</a
-					>
+		<!-- Bottom Section -->
+		<div class="footer-bottom">
+			<div class="footer-bottom-content">
+				<div class="footer-copyright">
+					© 2025 Zaur. All rights reserved.
+				</div>
+				<div class="footer-legal">
+					<a href="/privacy" class="footer-legal-link">Privacy Policy</a>
+					<a href="/terms" class="footer-legal-link">Terms of Service</a>
+					<a href="/cookies" class="footer-legal-link">Cookie Policy</a>
 				</div>
 			</div>
 		</div>
@@ -114,11 +131,299 @@
 </footer>
 
 <style>
-	.footer-link {
-		color: var(--text-secondary);
+	/* Professional Footer */
+	.professional-footer {
+		background: var(--bg-primary);
+		border-top: 1px solid var(--border-primary);
+		position: relative;
+		overflow: hidden;
 	}
-	
+
+	/* Very subtle texture overlay - matches HeroSection */
+	.professional-footer::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
+	.professional-footer-container {
+		max-width: 1536px;
+		margin: 0 auto;
+		padding: 3rem 1.5rem;
+		position: relative;
+		z-index: 2;
+	}
+
+	@media (min-width: 640px) {
+		.professional-footer-container {
+			padding: 3rem 2rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.professional-footer-container {
+			padding: 3rem;
+		}
+	}
+
+	/* Footer Content Grid */
+	.professional-footer-content {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+
+	@media (min-width: 768px) {
+		.professional-footer-content {
+			grid-template-columns: repeat(4, 1fr);
+			gap: 2rem;
+		}
+	}
+
+	/* Footer Brand */
+	.footer-brand {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.footer-brand {
+			grid-column: span 1;
+		}
+	}
+
+	.footer-logo {
+		margin-bottom: 1rem;
+	}
+
+	.footer-description {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	/* Trust Badges */
+	.trust-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-top: 0.5rem;
+	}
+
+	.trust-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-full);
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.trust-badge::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.trust-badge:hover::before {
+		transform: scaleX(1);
+	}
+
+	.trust-badge:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	/* Footer Sections */
+	.footer-section {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.footer-heading {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 1rem;
+		position: relative;
+	}
+
+	/* Coral accent line under headings - matches HeroSection */
+	.footer-heading::after {
+		content: '';
+		position: absolute;
+		bottom: -0.5rem;
+		left: 0;
+		width: 2rem;
+		height: 0.125rem;
+		background: var(--color-coral-500);
+		border-radius: 0.0625rem;
+	}
+
+	/* Footer Links */
+	.footer-links {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.footer-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: all var(--transition-base) ease;
+		padding: 0.25rem 0;
+		border-radius: var(--radius-md);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		width: auto;
+	}
+
 	.footer-link:hover {
 		color: var(--text-primary);
+		transform: translateX(0.25rem);
+	}
+
+	/* Special styling for footer button */
+	.footer-button {
+		color: var(--color-coral-600);
+		font-weight: 600;
+	}
+
+	.footer-button:hover {
+		color: var(--color-coral-700);
+	}
+
+	/* Footer Bottom */
+	.footer-bottom {
+		margin-top: 3rem;
+		padding-top: 2rem;
+		border-top: 1px solid var(--border-primary);
+	}
+
+	.footer-bottom-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.footer-bottom-content {
+			flex-direction: row;
+			gap: 1.5rem;
+		}
+	}
+
+	.footer-copyright {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	/* Footer Legal Links */
+	.footer-legal {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		justify-content: center;
+	}
+
+	@media (min-width: 768px) {
+		.footer-legal {
+			justify-content: flex-end;
+		}
+	}
+
+	.footer-legal-link {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: color var(--transition-base) ease;
+		position: relative;
+	}
+
+	.footer-legal-link:hover {
+		color: var(--text-primary);
+	}
+
+	/* Coral accent underline on hover - matches HeroSection */
+	.footer-legal-link::after {
+		content: '';
+		position: absolute;
+		bottom: -0.125rem;
+		left: 0;
+		width: 0;
+		height: 0.125rem;
+		background: var(--color-coral-500);
+		transition: width var(--transition-base) ease;
+	}
+
+	.footer-legal-link:hover::after {
+		width: 100%;
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 640px) {
+		.professional-footer-container {
+			padding: 2rem 1rem;
+		}
+
+		.professional-footer-content {
+			gap: 1.5rem;
+		}
+
+		.footer-bottom {
+			margin-top: 2rem;
+			padding-top: 1.5rem;
+		}
+
+		.trust-badges {
+			justify-content: center;
+		}
+
+		.footer-legal {
+			gap: 1rem;
+		}
 	}
 </style> 

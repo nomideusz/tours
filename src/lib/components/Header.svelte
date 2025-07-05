@@ -4,6 +4,10 @@
 	import { IsMounted } from 'runed';
 	import { onMount } from 'svelte';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Layout from 'lucide-svelte/icons/layout';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 
@@ -22,8 +26,6 @@
 
 	// Logout loading state
 	let isLoggingOut = $state(false);
-
-	// Language switcher functions removed - English only now
 
 	// Handle logout with loading state
 	async function handleLogout(event: Event) {
@@ -111,59 +113,60 @@
 	});
 </script>
 
-<!-- Modern header with improved navigation -->
-<header class="header-sticky">
-	<div class="mx-auto max-w-screen-2xl px-6 sm:px-8 lg:px-12">
-		<div class="flex h-20 items-center justify-between">
+<!-- Professional Header -->
+<header class="professional-header">
+	<div class="professional-header-container">
+		<div class="professional-header-content">
 			<!-- Logo and branding -->
-			<div class="flex items-center h-full">
+			<div class="professional-header-brand">
 				<Logo variant="modern" href={isAuthenticated ? '/?view=home' : '/'} size="large" />
 			</div>
 
-			<!-- Desktop navigation -->
-			<nav class="hidden items-center gap-8 lg:flex">
-				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>How it Works</a
-				>
-				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Features</a
-				>
-				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Pricing</a
-				>
-				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>FAQ</a
-				>
+			<!-- Desktop Navigation -->
+			<nav class="nav-desktop">
+				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="nav-link">
+					<MapPin class="w-4 h-4" />
+					<span>How it Works</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="nav-link">
+					<Layout class="w-4 h-4" />
+					<span>Features</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
+					<DollarSign class="w-4 h-4" />
+					<span>Pricing</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="nav-link">
+					<HelpCircle class="w-4 h-4" />
+					<span>FAQ</span>
+				</a>
 			</nav>
 
-			<!-- Right side actions -->
-			<div class="flex items-center gap-4">
+			<!-- Right Side Actions -->
+			<div class="header-actions">
 				<!-- Auth section -->
 				{#if !isMounted.current}
-					<div class="hidden text-sm text-gray-500 md:block">{t('auth.loading', $language)}</div>
+					<div class="loading-text">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
-					<div class="hidden items-center gap-3 md:flex">
-						<a 
-							href="/dashboard" 
-							class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-						>
+					<div class="auth-section">
+						<a href="/dashboard" class="dashboard-link">
 							Dashboard
 						</a>
-						<span class="text-gray-300">•</span>
-						<span class="text-sm text-gray-600">
+						<span class="separator">•</span>
+						<span class="user-info">
 							{currentUser?.name || currentUser?.email || 'User'}
 						</span>
 						{#if currentUser && (currentUser.promoCodeUsed || currentUser.subscriptionDiscountPercentage > 0 || (currentUser.subscriptionFreeUntil && new Date(currentUser.subscriptionFreeUntil) > new Date()))}
-							<span class="hidden sm:inline text-gray-300">•</span>
-							<div class="hidden sm:block">
+							<span class="separator separator--hidden">•</span>
+							<div class="promo-banner">
 								<PromoStatusBanner variant="compact" />
 							</div>
 						{/if}
-						<span class="text-gray-300">•</span>
+						<span class="separator">•</span>
 						<button
 							onclick={handleLogout}
 							disabled={isLoggingOut}
-							class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 leading-none p-0 border-0 bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+							class="logout-button"
 						>
 							{#if isLoggingOut}
 								<Loader2 class="h-3 w-3 animate-spin" />
@@ -172,105 +175,91 @@
 						</button>
 					</div>
 				{:else}
-					<div class="hidden items-center gap-3 md:flex">
-						<a 
-							href="/auth/login" 
-							class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-						>
+					<div class="guest-section">
+						<a href="/auth/login" class="login-link">
 							{t('auth.login', $language)}
 						</a>
-						<a
-							href="/auth/register"
-							class="button-primary button--small"
+						<button 
+							class="button-coral button--small"
+							onclick={() => window.location.href = '/auth/register'}
 						>
 							Start for Free
-						</a>
+						</button>
 					</div>
 				{/if}
 
-				<!-- Language switcher removed - English only -->
-
-				<!-- Mobile menu button -->
+				<!-- Mobile Menu Button -->
 				<button
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
-					class="mobile-menu-toggle rounded-lg p-2 transition-colors lg:hidden"
-					style="color: var(--text-secondary);"
+					class="mobile-toggle"
 					aria-label="Toggle mobile menu"
 				>
-					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						{#if mobileMenuOpen}
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							></path>
-						{:else}
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 6h16M4 12h16M4 18h16"
-							></path>
-						{/if}
-					</svg>
+					{#if mobileMenuOpen}
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					{:else}
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+						</svg>
+					{/if}
 				</button>
 			</div>
 		</div>
 	</div>
 </header>
 
-<!-- Mobile menu backdrop -->
+<!-- Mobile Menu Backdrop -->
 {#if mobileMenuOpen}
 	<div 
 		role="button" 
 		tabindex="-1"
-		class="fixed inset-0 top-20 bg-black/20 lg:hidden z-[60]" 
+		class="mobile-backdrop" 
 		onclick={() => (mobileMenuOpen = false)}
 		onkeydown={(e) => e.key === 'Escape' && (mobileMenuOpen = false)}
 	></div>
 {/if}
 
-<!-- Mobile menu -->
+<!-- Mobile Menu -->
 {#if mobileMenuOpen}
-	<div class="fixed top-20 left-0 w-screen mobile-menu-bg border-t shadow-xl lg:hidden z-[70]" style="background-color: var(--bg-primary); border-color: var(--border-primary);">
-		<div class="flex flex-col px-6 py-6 sm:px-8">
-			<!-- Navigation links -->
-			<div class="flex flex-col space-y-1 pb-4">
-				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>How it Works</a
-				>
-				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Features</a
-				>
-				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>Pricing</a
-				>
-				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-					>FAQ</a
-				>
+	<div class="mobile-menu">
+		<div class="mobile-menu-content">
+			<!-- Navigation Links -->
+			<div class="mobile-nav">
+				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="mobile-nav-link">
+					<MapPin class="w-4 h-4" />
+					<span>How it Works</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="mobile-nav-link">
+					<Layout class="w-4 h-4" />
+					<span>Features</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
+					<DollarSign class="w-4 h-4" />
+					<span>Pricing</span>
+				</a>
+				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="mobile-nav-link">
+					<HelpCircle class="w-4 h-4" />
+					<span>FAQ</span>
+				</a>
 			</div>
 
-			<!-- Auth section -->
-			<div class="flex flex-col border-t border-gray-200 pt-4 pb-4">
+			<!-- Mobile Auth Section -->
+			<div class="mobile-auth">
 				{#if !isMounted.current}
-					<div class="py-3 text-sm text-gray-500">{t('auth.loading', $language)}</div>
+					<div class="mobile-loading">{t('auth.loading', $language)}</div>
 				{:else if isAuthenticated}
-					<div class="flex flex-col space-y-1">
-						<a 
-							href="/dashboard" 
-							onclick={handleMobileLinkClick} 
-							class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-						>
+					<div class="mobile-auth-authenticated">
+						<a href="/dashboard" onclick={handleMobileLinkClick} class="mobile-dashboard-link">
 							My Dashboard
 						</a>
-						<div class="py-3 text-sm text-gray-500">
+						<div class="mobile-user-info">
 							Signed in as {currentUser?.name || currentUser?.email || 'User'}
 						</div>
 						<button
 							onclick={handleLogout}
 							disabled={isLoggingOut}
-							class="flex w-full items-center gap-2 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+							class="mobile-logout-button"
 						>
 							{#if isLoggingOut}
 								<Loader2 class="h-3 w-3 animate-spin" />
@@ -279,85 +268,464 @@
 						</button>
 					</div>
 				{:else}
-					<div class="flex flex-col space-y-3">
-						<a href="/auth/login" onclick={handleMobileLinkClick} class="block py-3 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900">
+					<div class="mobile-auth-guest">
+						<a href="/auth/login" onclick={handleMobileLinkClick} class="mobile-login-link">
 							{t('auth.login', $language)}
 						</a>
-						<a
-							href="/auth/register"
-							onclick={handleMobileLinkClick}
-							class="button-primary button--full-width"
+						<button 
+							class="button-coral button--full-width"
+							onclick={() => {
+								handleMobileLinkClick();
+								window.location.href = '/auth/register';
+							}}
 						>
 							Start for Free
-						</a>
+						</button>
 					</div>
 				{/if}
 			</div>
-
-			<!-- Mobile language switcher removed - English only -->
 		</div>
 	</div>
 {/if}
 
-<style lang="postcss">
-	@reference "tailwindcss";
-	
-
-	.header-sticky {
+<style>
+	/* Professional Header */
+	.professional-header {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 100; /* High z-index to prevent extension interference */
-		background: var(--bg-primary);
+		z-index: 100;
+		background: rgba(255, 255, 255, 0.95);
 		border-bottom: 1px solid var(--border-primary);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		box-shadow: var(--shadow-sm);
+		transition: all var(--transition-base) ease;
 	}
 
-	/* Ensure the header container has proper spacing */
-	.header-sticky > div {
-		@apply mx-auto max-w-screen-2xl px-6 sm:px-8 lg:px-12;
+	/* Very subtle texture overlay - matches HeroSection */
+	.professional-header::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.01) 40px,
+			rgba(0, 0, 0, 0.01) 41px
+		);
+		pointer-events: none;
 	}
 
-	.header-sticky > div > div {
-		@apply flex h-20 items-center justify-between;
+	.professional-header-container {
+		max-width: 1536px;
+		margin: 0 auto;
+		padding: 0 1.5rem;
+		position: relative;
+		z-index: 2;
 	}
-	
-	/* Override text colors for header elements */
-	:global(.header-sticky a:not(.button-primary)),
-	:global(.header-sticky button:not(.button-primary)),
-	:global(.header-sticky span) {
+
+	.professional-header-content {
+		display: flex;
+		height: 5rem;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	/* Brand */
+	.professional-header-brand {
+		display: flex;
+		align-items: center;
+		height: 100%;
+	}
+
+	/* Desktop Navigation */
+	.nav-desktop {
+		display: none;
+		align-items: center;
+		gap: 2rem;
+	}
+
+	@media (min-width: 1024px) {
+		.nav-desktop {
+			display: flex;
+		}
+	}
+
+	.nav-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: all var(--transition-base) ease;
+		padding: 0.5rem 0.75rem;
+		border-radius: var(--radius-md);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.nav-link::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.nav-link:hover::before {
+		transform: scaleX(1);
+	}
+
+	.nav-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		transform: translateY(-1px);
+	}
+
+	/* Header Actions */
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	/* Loading Text */
+	.loading-text {
+		display: none;
+		font-size: 0.875rem;
 		color: var(--text-secondary);
 	}
-	
-	:global(.header-sticky a:not(.button-primary):hover),
-	:global(.header-sticky button:not(.button-primary):hover) {
+
+	@media (min-width: 768px) {
+		.loading-text {
+			display: block;
+		}
+	}
+
+	/* Auth Section */
+	.auth-section {
+		display: none;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	@media (min-width: 768px) {
+		.auth-section {
+			display: flex;
+		}
+	}
+
+	.dashboard-link {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: color var(--transition-base) ease;
+	}
+
+	.dashboard-link:hover {
 		color: var(--text-primary);
 	}
-	
 
-	/* Fix mobile menu colors */
-	:global(.mobile-menu-bg a),
-	:global(.mobile-menu-bg button),
-	:global(.mobile-menu-bg div) {
+	.separator {
+		color: var(--text-tertiary);
+		font-weight: 300;
+	}
+
+	.separator--hidden {
+		display: none;
+	}
+
+	@media (min-width: 640px) {
+		.separator--hidden {
+			display: inline;
+		}
+	}
+
+	.user-info {
+		font-size: 0.875rem;
 		color: var(--text-secondary);
 	}
-	
-	:global(.mobile-menu-bg a:hover),
-	:global(.mobile-menu-bg button:hover) {
+
+	.promo-banner {
+		display: none;
+	}
+
+	@media (min-width: 640px) {
+		.promo-banner {
+			display: block;
+		}
+	}
+
+	.logout-button {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: color var(--transition-base) ease;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0;
+	}
+
+	.logout-button:hover {
 		color: var(--text-primary);
 	}
-	
-	/* Border colors */
-	:global(.header-sticky .border-gray-200),
-	:global(.mobile-menu-bg .border-gray-200) {
-		border-color: var(--border-primary) !important;
+
+	.logout-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
-	
-	/* Fix hover backgrounds */
-	:global(.header-sticky .hover\\:bg-gray-100:hover),
-	:global(.mobile-menu-bg .bg-gray-100) {
-		background-color: var(--bg-secondary) !important;
+
+	/* Guest Section */
+	.guest-section {
+		display: none;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	@media (min-width: 768px) {
+		.guest-section {
+			display: flex;
+		}
+	}
+
+	.login-link {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: color var(--transition-base) ease;
+	}
+
+	.login-link:hover {
+		color: var(--text-primary);
+	}
+
+	/* Mobile Toggle */
+	.mobile-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		color: var(--text-secondary);
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: var(--radius-md);
+		transition: all var(--transition-base) ease;
+	}
+
+	.mobile-toggle:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	@media (min-width: 1024px) {
+		.mobile-toggle {
+			display: none;
+		}
+	}
+
+	/* Mobile Menu */
+	.mobile-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 98;
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+	}
+
+	.mobile-menu {
+		position: fixed;
+		top: 5rem;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: var(--bg-primary);
+		z-index: 99;
+		border-top: 1px solid var(--border-primary);
+		box-shadow: var(--shadow-lg);
+		overflow-y: auto;
+	}
+
+	.mobile-menu-content {
+		padding: 2rem 1.5rem;
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	/* Mobile Navigation */
+	.mobile-nav {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 2rem;
+	}
+
+	.mobile-nav-link {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-weight: 600;
+		font-size: 1rem;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: all var(--transition-base) ease;
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--border-primary);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle coral accent on hover - matches HeroSection */
+	.mobile-nav-link::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.mobile-nav-link:hover::before {
+		transform: scaleX(1);
+	}
+
+	.mobile-nav-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Mobile Auth */
+	.mobile-auth {
+		border-top: 1px solid var(--border-primary);
+		padding-top: 2rem;
+	}
+
+	.mobile-loading {
+		font-size: 1rem;
+		color: var(--text-secondary);
+		text-align: center;
+		padding: 1rem;
+	}
+
+	.mobile-auth-authenticated {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.mobile-dashboard-link {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		text-decoration: none;
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		text-align: center;
+		transition: all var(--transition-base) ease;
+	}
+
+	.mobile-dashboard-link:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+
+	.mobile-user-info {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		text-align: center;
+		padding: 0.5rem;
+	}
+
+	.mobile-logout-button {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		background: transparent;
+		border: 1px solid var(--border-primary);
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+	}
+
+	.mobile-logout-button:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	.mobile-logout-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.mobile-auth-guest {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.mobile-login-link {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		text-decoration: none;
+		padding: 1rem;
+		border-radius: var(--radius-lg);
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		text-align: center;
+		transition: all var(--transition-base) ease;
+	}
+
+	.mobile-login-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 480px) {
+		.professional-header-container {
+			padding: 0 1rem;
+		}
+
+		.mobile-menu-content {
+			padding: 1.5rem 1rem;
+		}
 	}
 </style>

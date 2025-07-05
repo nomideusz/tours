@@ -204,7 +204,6 @@
 	}
 	
 	.demo-preview-card:hover {
-		transform: translateY(-2px);
 		box-shadow: var(--shadow-lg);
 		border-color: var(--color-primary-300);
 	}
@@ -459,7 +458,6 @@
 	
 	.book-now-btn:hover {
 		background: var(--color-primary-700);
-		transform: translateY(-1px);
 	}
 	
 	.demo-cta {
@@ -485,7 +483,6 @@
 	
 	.demo-button:hover {
 		background: var(--color-primary-700);
-		transform: translateY(-1px);
 	}
 	
 	.demo-shine {

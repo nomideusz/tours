@@ -6,6 +6,7 @@
 	import Zap from 'lucide-svelte/icons/zap';
 	import Star from 'lucide-svelte/icons/star';
 	import Copy from 'lucide-svelte/icons/copy';
+	import Crown from 'lucide-svelte/icons/crown';
 	
 	// State for copy feedback
 	let showCopied = $state(false);
@@ -58,33 +59,36 @@
 	}
 </script>
 
-<section class="py-20" style="background: var(--bg-secondary);" in:fade={{ duration: 600 }}>
+<section class="subtle-retro-section py-20" in:fade={{ duration: 600 }}>
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<!-- Header Section -->
 		<div class="text-center mb-12">
-			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" 
-				style="background: var(--color-primary-100); color: var(--color-primary-700);">
-				<Rocket class="w-4 h-4" />
-				<span class="text-sm font-medium">Early Access Program</span>
+			<div class="professional-badge mb-6">
+				<Crown class="w-4 h-4" />
+				<span>Founding Members</span>
 			</div>
-			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
+			<h2 class="marketing-heading marketing-heading-lg mb-4">
 				Join the Founding Members
 			</h2>
-			<p class="text-lg md:text-xl max-w-3xl mx-auto" style="color: var(--text-secondary);">
-				Use code <strong>EARLY2025</strong> to access founding member benefits and help shape the future of tour guide technology.
+			<p class="text-lg md:text-xl max-w-3xl mx-auto text-secondary">
+				Use code <strong class="code-highlight">EARLY2025</strong> to access founding member benefits and help shape the future of tour guide technology.
 			</p>
 		</div>
 		
-		<!-- Professional Early Access Counter -->
+		<!-- Counter Section -->
 		{#if !stats.loading}
 			<div class="counter-section mb-16">
 				<div class="counter-card">
 					<div class="counter-content">
+						<div class="counter-badge">
+							<Crown class="w-5 h-5" />
+							<span>Founding Members</span>
+						</div>
 						<span class="counter-number">{stats.earlyAccessUsers}</span>
-						<span class="counter-label">founding members joined</span>
+						<span class="counter-label">members joined</span>
 						<div class="spots-info">
 							<span class="spots-remaining">{stats.spotsTotal - stats.earlyAccessUsers} spots remaining</span>
-							<span class="spots-total">out of {stats.spotsTotal} total</span>
+							<span class="spots-total">out of {stats.spotsTotal} founding positions</span>
 						</div>
 					</div>
 				</div>
@@ -95,8 +99,8 @@
 		<div class="benefits-section mb-20">
 			<div class="benefits-grid">
 				<div class="benefit-card">
-					<div class="benefit-icon">
-						<Star class="w-6 h-6" />
+					<div class="benefit-icon benefit-icon--coral">
+						<Star class="w-6 h-6 text-white" />
 					</div>
 					<div class="benefit-content">
 						<h4 class="benefit-title">Founding Member Benefits</h4>
@@ -105,8 +109,8 @@
 				</div>
 				
 				<div class="benefit-card">
-					<div class="benefit-icon">
-						<Users class="w-6 h-6" />
+					<div class="benefit-icon benefit-icon--orange">
+						<Users class="w-6 h-6 text-white" />
 					</div>
 					<div class="benefit-content">
 						<h4 class="benefit-title">Product Development Input</h4>
@@ -115,8 +119,8 @@
 				</div>
 				
 				<div class="benefit-card">
-					<div class="benefit-icon">
-						<Zap class="w-6 h-6" />
+					<div class="benefit-icon benefit-icon--teal">
+						<Zap class="w-6 h-6 text-white" />
 					</div>
 					<div class="benefit-content">
 						<h4 class="benefit-title">Priority Support</h4>
@@ -131,31 +135,39 @@
 			<div class="action-content">
 				<!-- Promo Code Section -->
 				<div class="promo-section">
+					<div class="promo-badge mb-4">
+						<span>Access Code</span>
+					</div>
 					<h3 class="promo-title">Get Started</h3>
 					<div class="promo-code-display">
-						<span class="promo-label">Access Code:</span>
+						<span class="promo-label">Early Access Code:</span>
 						<button 
 							class="promo-code-button" 
 							onclick={copyPromoCode}
 							title="Click to copy"
 						>
 							<span class="code-text">EARLY2025</span>
-							<Copy class="w-4 h-4 copy-icon" />
+							<div class="copy-icon-container">
+								<Copy class="w-4 h-4" />
+							</div>
 						</button>
 					</div>
 					{#if showCopied}
 						<p class="copy-feedback" in:fade={{ duration: 200 }}>
-							Code copied to clipboard
+							✓ Code copied to clipboard
 						</p>
 					{/if}
 				</div>
 				
 				<!-- CTA Button -->
 				<div class="cta-section">
-					<a href="/auth/register" class="cta-button">
+					<button 
+						class="button-coral button--large button--gap"
+						onclick={() => window.location.href = '/auth/register'}
+					>
 						<Rocket class="w-5 h-5" />
 						Join Early Access
-					</a>
+					</button>
 					<p class="cta-note">
 						Early access includes founding member benefits and permanent pricing protection.
 					</p>
@@ -166,69 +178,158 @@
 </section>
 
 <style>
-	/* Header Section */
-	.text-center h2 {
-		line-height: 1.2;
+	/* Subtle retro section with minimal color - matches HeroSection */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 70vh;
+		display: flex;
+		align-items: center;
 	}
 	
-	/* Professional Counter Section */
+	/* Very subtle texture overlay - matches HeroSection */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
+	/* Professional badge with subtle retro border - matches HeroSection */
+	.professional-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-coral-500);
+		color: var(--text-primary);
+		padding: 0.5rem 1.5rem;
+		border-radius: 2rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* Code highlight - matches HeroSection promo styling */
+	.code-highlight {
+		color: var(--text-primary);
+		background: var(--color-coral-100);
+		padding: 0.125rem 0.5rem;
+		border-radius: var(--radius-md);
+		font-weight: 700;
+		border: 1px solid var(--color-coral-300);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	/* Counter Section */
 	.counter-section {
 		display: flex;
 		justify-content: center;
 	}
 	
+	/* Counter Card - matches HeroSection promo card */
 	.counter-card {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 1rem;
-		padding: 2rem 3rem;
-		box-shadow: var(--shadow-sm);
-		transition: all 0.2s ease;
+		border-radius: var(--radius-lg);
+		padding: 2.5rem 3.5rem;
+		box-shadow: var(--shadow-md);
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle accent line on hover - matches HeroSection */
+	.counter-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.counter-card:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.counter-card:hover {
-		box-shadow: var(--shadow-md);
+		box-shadow: var(--shadow-lg);
+		transform: translateY(-2px);
 		border-color: var(--border-secondary);
 	}
 	
 	.counter-content {
 		text-align: center;
 	}
+
+	.counter-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--color-coral-500);
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: var(--radius-full);
+		font-size: 0.875rem;
+		font-weight: 600;
+		margin-bottom: 1rem;
+		box-shadow: var(--shadow-md);
+	}
 	
 	.counter-number {
 		display: block;
-		font-size: 3rem;
-		font-weight: 700;
-		color: var(--color-primary-600);
+		font-size: 3.5rem;
+		font-weight: 800;
+		color: var(--text-primary);
 		line-height: 1;
 		margin-bottom: 0.5rem;
 	}
 	
 	.counter-label {
-		font-size: 1rem;
+		font-size: 1.125rem;
 		color: var(--text-secondary);
-		font-weight: 500;
+		font-weight: 600;
+		display: block;
+		margin-bottom: 1.5rem;
 	}
 	
 	.spots-info {
-		margin-top: 1rem;
-		padding-top: 1rem;
+		padding-top: 1.5rem;
 		border-top: 1px solid var(--border-primary);
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.5rem;
 	}
 	
 	.spots-remaining {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--color-primary-600);
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--color-coral-600);
 	}
 	
 	.spots-total {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-		font-weight: 400;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		font-weight: 500;
 	}
 	
 	/* Benefits Section */
@@ -243,31 +344,64 @@
 		gap: 2rem;
 	}
 	
+	/* Benefit Cards - matches HeroSection trust cards */
 	.benefit-card {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 1rem;
+		border-radius: var(--radius-lg);
 		padding: 2rem;
-		transition: all 0.2s ease;
+		transition: all var(--transition-base) ease;
 		box-shadow: var(--shadow-sm);
+		position: relative;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	/* Subtle accent line on hover - matches HeroSection */
+	.benefit-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.benefit-card:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.benefit-card:hover {
-		border-color: var(--border-secondary);
-		box-shadow: var(--shadow-md);
 		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--border-secondary);
 	}
 	
 	.benefit-icon {
-		width: 3.5rem;
-		height: 3.5rem;
-		background: var(--color-primary-100);
-		color: var(--color-primary-600);
-		border-radius: 1rem;
+		width: 4rem;
+		height: 4rem;
+		border-radius: var(--radius-lg);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: 1.5rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.benefit-icon--coral {
+		background: var(--color-coral-500);
+	}
+
+	.benefit-icon--orange {
+		background: var(--color-warm-orange-500);
+	}
+
+	.benefit-icon--teal {
+		background: var(--color-pro-teal-500);
 	}
 	
 	.benefit-content {
@@ -286,17 +420,37 @@
 		font-size: 1rem;
 		color: var(--text-secondary);
 		line-height: 1.6;
+		margin: 0;
 	}
 	
-	/* Action Section */
+	/* Action Section - matches HeroSection promo card */
 	.action-section {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 1.5rem;
-		padding: 3rem 2rem;
-		max-width: 800px;
+		border-radius: var(--radius-lg);
+		padding: 3rem 2.5rem;
+		max-width: 900px;
 		margin: 4rem auto 0;
-		box-shadow: var(--shadow-sm);
+		box-shadow: var(--shadow-md);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Subtle accent line on hover - matches HeroSection */
+	.action-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.action-section:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.action-content {
@@ -306,195 +460,136 @@
 		align-items: center;
 	}
 	
-	/* Promo Code Section */
+	/* Promo Section */
 	.promo-section {
 		text-align: left;
 	}
+
+	.promo-badge {
+		background: var(--color-pro-teal-100);
+		border: 1px solid var(--color-pro-teal-300);
+		color: var(--color-pro-teal-700);
+		padding: 0.375rem 0.75rem;
+		border-radius: var(--radius-full);
+		font-size: 0.75rem;
+		font-weight: 600;
+		display: inline-block;
+	}
 	
 	.promo-title {
-		font-size: 1.5rem;
-		font-weight: 600;
+		font-size: 1.75rem;
+		font-weight: 700;
 		color: var(--text-primary);
 		margin-bottom: 1.5rem;
 	}
 	
 	.promo-code-display {
 		display: flex;
-		align-items: center;
-		gap: 1rem;
+		flex-direction: column;
+		gap: 0.75rem;
 		margin-bottom: 1rem;
 	}
 	
 	.promo-label {
 		font-size: 1rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--text-secondary);
-		min-width: fit-content;
 	}
 	
+	/* Promo Code Button - matches HeroSection promo button */
 	.promo-code-button {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.5rem;
-		padding: 0.75rem 1rem;
+		justify-content: space-between;
+		gap: 1rem;
+		background: var(--bg-secondary);
+		border: 2px dashed var(--border-secondary);
+		border-radius: var(--radius-lg);
+		padding: 1rem 1.25rem;
 		cursor: pointer;
-		transition: all 0.2s ease;
-		flex: 1;
+		transition: all var(--transition-base) ease;
+		width: 100%;
 	}
 	
 	.promo-code-button:hover {
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-300);
-		transform: scale(1.02);
+		background: var(--bg-tertiary);
+		border-color: var(--color-coral-500);
 	}
 	
 	.code-text {
 		font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--color-primary-700);
-		letter-spacing: 0.05em;
-		flex: 1;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		letter-spacing: 0.1em;
 	}
-	
-	.copy-icon {
-		color: var(--color-primary-600);
-		transition: transform 0.2s ease;
+
+	.copy-icon-container {
+		background: var(--color-coral-100);
+		border-radius: var(--radius-md);
+		padding: 0.5rem;
+		color: var(--color-coral-600);
 	}
-	
-	.promo-code-button:hover .copy-icon {
-		transform: scale(1.1);
-	}
-	
+
 	.copy-feedback {
 		font-size: 0.875rem;
-		color: var(--color-success-600);
+		color: var(--text-secondary);
+		text-align: center;
 		margin-top: 0.5rem;
 	}
-	
+
 	/* CTA Section */
 	.cta-section {
 		text-align: center;
 	}
-	
-	.cta-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 1rem 2rem;
-		background: var(--color-primary-600);
-		color: white;
-		border: 1px solid var(--color-primary-600);
-		border-radius: 0.75rem;
-		font-weight: 600;
-		font-size: 1rem;
-		text-decoration: none;
-		transition: all 0.2s ease;
-		cursor: pointer;
-		box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-		margin-bottom: 1rem;
-	}
-	
-	.cta-button:hover {
-		background: var(--color-primary-700);
-		border-color: var(--color-primary-700);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
-	}
-	
+
 	.cta-note {
+		margin-top: 1rem;
 		font-size: 0.875rem;
-		color: var(--text-tertiary);
+		color: var(--text-secondary);
 		line-height: 1.5;
-		max-width: 300px;
-		margin: 0 auto;
 	}
-	
+
 	/* Responsive Design */
 	@media (max-width: 768px) {
+		.counter-card {
+			padding: 2rem 1.5rem;
+		}
+
+		.counter-number {
+			font-size: 2.5rem;
+		}
+
 		.benefits-grid {
 			grid-template-columns: 1fr;
-			gap: 1.5rem;
 		}
-		
+
 		.benefit-card {
 			padding: 1.5rem;
 		}
-		
-		.benefit-icon {
-			width: 3rem;
-			height: 3rem;
-			margin-bottom: 1rem;
-		}
-		
-		.benefit-title {
-			font-size: 1.125rem;
-		}
-		
-		.benefit-description {
-			font-size: 0.9rem;
-		}
-		
-		.action-section {
-			padding: 2rem 1.5rem;
-		}
-		
+
 		.action-content {
 			grid-template-columns: 1fr;
 			gap: 2rem;
 			text-align: center;
 		}
-		
+
 		.promo-section {
 			text-align: center;
 		}
-		
-		.promo-code-display {
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-		
-		.promo-code-button {
-			justify-content: center;
-		}
-		
-		.counter-card {
-			padding: 1.5rem 2rem;
-		}
-		
-		.counter-number {
-			font-size: 2.5rem;
+
+		.action-section {
+			padding: 2rem 1.5rem;
 		}
 	}
-	
+
 	@media (max-width: 480px) {
-		.action-section {
-			padding: 1.5rem 1rem;
-			border-radius: 1rem;
-		}
-		
-		.benefit-card {
-			padding: 1.25rem;
-		}
-		
-		.cta-button {
-			width: 100%;
-			padding: 0.875rem 1.5rem;
-		}
-		
 		.counter-card {
-			padding: 1.25rem 1.5rem;
+			padding: 1.5rem 1rem;
 		}
-		
-		.counter-number {
-			font-size: 2rem;
-		}
-		
-		.counter-label {
-			font-size: 0.9rem;
+
+		.promo-title {
+			font-size: 1.5rem;
 		}
 	}
 </style> 

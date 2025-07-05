@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import Check from 'lucide-svelte/icons/check';
 	import X from 'lucide-svelte/icons/x';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Crown from 'lucide-svelte/icons/crown';
 	import { PRICING_PLANS, calculateEarlyAccessPrice, type PricingPlan } from '$lib/utils/pricing-config.js';
 	
 	let isYearly = $state(true);
@@ -20,19 +22,22 @@
 			savings: originalPrice - earlyAccessPrice
 		};
 	}
+	
+	function handlePlanSelect(plan: PricingPlan) {
+		goto(plan.ctaLink);
+	}
 </script>
 
-<!-- Pricing -->
-<section id="pricing" class="py-20" style="background: var(--bg-primary);">
+<section id="pricing" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<!-- Professional Early Access Notice -->
-		<div class="max-w-3xl mx-auto mb-12">
-			<div class="rounded-lg p-4 border" style="background: var(--color-info-50); border-color: var(--color-info-200);">
+		<div class="mb-12">
+			<div class="info-alert max-w-4xl mx-auto">
 				<div class="flex items-start gap-3">
-					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0" style="color: var(--color-info-600);" />
+					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0 text-teal" />
 					<div class="flex-1">
-						<h3 class="font-semibold mb-1">Early Access Program</h3>
-						<p class="text-sm">
+						<h3 class="font-semibold mb-1 text-primary">Early Access Program</h3>
+						<p class="text-sm text-secondary">
 							Founding members receive special pricing that remains locked in permanently. Features marked as "Soon" are in development and will be released progressively.
 						</p>
 					</div>
@@ -41,27 +46,29 @@
 		</div>
 		
 		<div class="text-center mb-12">
-			<h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--text-primary);">
+			<div class="professional-badge mb-6">
+				<Crown class="w-4 h-4" />
+				<span>Founding Member Pricing</span>
+			</div>
+			<h2 class="marketing-heading marketing-heading-lg mb-4">
 				Transparent Subscription Pricing
 			</h2>
-			<p class="text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
+			<p class="text-lg max-w-2xl mx-auto text-secondary">
 				No booking commissions or hidden fees. Choose a plan that fits your business needs. Keep 100% of your tour revenue.
 			</p>
 		</div>
 		
-		<!-- Toggle -->
-		<div class="flex justify-center mb-12">
-			<div class="p-1 rounded-lg inline-flex" style="background: var(--bg-secondary);">
+		<!-- Professional Toggle -->
+		<div class="flex justify-center mb-16">
+			<div class="pricing-toggle">
 				<button 
-					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'shadow-sm' : ''}"
-					style="{!isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
+					class="toggle-option {!isYearly ? 'toggle-option--active' : ''}"
 					onclick={() => isYearly = false}
 				>
 					Monthly
 				</button>
 				<button 
-					class="px-4 py-2 rounded-md font-medium transition-all duration-200 cursor-pointer {isYearly ? 'shadow-sm' : ''}"
-					style="{isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
+					class="toggle-option {isYearly ? 'toggle-option--active' : ''}"
 					onclick={() => isYearly = true}
 				>
 					Annual (Save 20%)
@@ -69,85 +76,514 @@
 			</div>
 		</div>
 		
-		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-none mx-auto">
+		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
 			{#each PRICING_PLANS as plan}
 				{@const pricing = getPlanPricing(plan, isYearly)}
-				<div class="relative rounded-lg p-6 flex flex-col {plan.popular ? 'border-2' : ''}" 
-					 style="background: var(--bg-primary); border-color: {plan.popular ? 'var(--color-primary-500)' : 'var(--border-primary)'};{!plan.popular ? ' border: 1px solid var(--border-primary);' : ''}">
+				<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}" 
+					 role="button"
+					 tabindex="0"
+					 onclick={() => handlePlanSelect(plan)}
+					 onkeydown={(e) => e.key === 'Enter' && handlePlanSelect(plan)}>
 					
 					{#if plan.popular}
-						<div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-							<span class="px-3 py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Recommended</span>
+						<div class="popular-badge">
+							<Crown class="w-3 h-3" />
+							<span>Recommended</span>
 						</div>
 					{/if}
 					
-					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">{plan.name}</h3>
-					
-					<div class="mb-1">
-						{#if plan.id !== 'free' && pricing.savings > 0}
-							<span class="text-lg text-decoration-line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
-							<span class="text-3xl font-bold ml-1" style="color: var(--text-primary);">€{pricing.earlyAccess}</span>
-						{:else}
-							<span class="text-3xl font-bold" style="color: var(--text-primary);">€{pricing.earlyAccess}</span>
-						{/if}
-						{#if plan.id !== 'free'}
-							<span class="text-sm" style="color: var(--text-secondary);">{pricing.period}</span>
-						{/if}
+					<div class="plan-header">
+						<h3 class="plan-name">{plan.name}</h3>
+						
+						<div class="plan-pricing">
+							{#if plan.id !== 'free' && pricing.savings > 0}
+								<span class="original-price">€{pricing.original}</span>
+								<span class="current-price">€{pricing.earlyAccess}</span>
+							{:else}
+								<span class="current-price">€{pricing.earlyAccess}</span>
+							{/if}
+							{#if plan.id !== 'free'}
+								<span class="billing-period">{pricing.period}</span>
+							{/if}
+						</div>
+						
+						<div class="plan-badge-container">
+							{#if plan.id !== 'free' && pricing.savings > 0}
+								<span class="founding-member-badge">
+									Founding Member Price
+								</span>
+							{/if}
+						</div>
+						
+						<p class="plan-description">{plan.description}</p>
 					</div>
 					
-					<div class="mb-2 h-4">
-						{#if plan.id !== 'free' && pricing.savings > 0}
-							<span class="text-xs font-medium px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-								Founding Member Price
-							</span>
-						{/if}
-					</div>
-					
-					<p class="mb-6 text-sm" style="color: var(--text-secondary);">{plan.description}</p>
-					
-					<ul class="space-y-2 mb-6 flex-grow">
+					<ul class="feature-list">
 						{#each plan.features as feature}
-							<li class="flex items-start gap-2">
+							<li class="feature-item">
 								{#if feature.included}
-									<Check class="w-4 h-4 {plan.popular ? 'icon-primary' : 'icon-secondary'} mt-0.5 flex-shrink-0" strokeWidth={2} />
-									<div class="flex-1 min-w-0">
-										<div class="flex items-baseline gap-1.5 flex-wrap">
-											<span class="text-sm" style="color: var(--text-primary);">
+									<Check class="feature-icon feature-icon--included" strokeWidth={2} />
+									<div class="feature-content">
+										<div class="feature-text-wrapper">
+											<span class="feature-text">
 												{feature.text}
 											</span>
 											{#if feature.comingSoon}
-												<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0" 
-													style="background: var(--color-primary-100); color: var(--color-primary-700); border: 1px solid var(--color-primary-300); font-size: 0.625rem; line-height: 1;">
+												<span class="coming-soon-badge">
 													Soon
 												</span>
 											{/if}
 										</div>
 									</div>
 								{:else}
-									<X class="w-4 h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
-									<span class="text-sm" style="color: var(--text-secondary);">{feature.text}</span>
+									<X class="feature-icon feature-icon--excluded" strokeWidth={2} />
+									<span class="feature-text feature-text--excluded">{feature.text}</span>
 								{/if}
 							</li>
 						{/each}
 					</ul>
 					
-					<a href={plan.ctaLink} class="{plan.popular ? 'button-primary' : 'button-secondary'} button--full-width text-center">
+					<button onclick={(e) => { e.stopPropagation(); handlePlanSelect(plan); }} 
+						    class="plan-cta {plan.popular ? 'plan-cta--primary' : 'plan-cta--outline'}">
 						{plan.ctaText}
-					</a>
+					</button>
 				</div>
 			{/each}
 		</div>
 		
-		<div class="mt-12 text-center">
-			<div class="rounded-lg p-4 border max-w-2xl mx-auto" style="background: var(--color-success-50); border-color: var(--color-success-200);">
-				<p class="font-semibold text-lg mb-2" style="color: var(--color-success-800);">
+		<!-- Professional No Commission Notice -->
+		<div class="mt-16">
+			<div class="no-commission-card max-w-4xl mx-auto text-center">
+				<p class="no-commission-title">
 					No Commission Model
 				</p>
-				<p style="color: var(--color-success-700);">
+				<p class="no-commission-description">
 					Unlike competitors who charge 3-8% commission per booking, we use a simple subscription model. 
 					<span class="font-semibold">You keep 100% of your booking revenue.</span>
 				</p>
 			</div>
 		</div>
 	</div>
-</section> 
+</section>
+
+<style>
+	/* Subtle retro section with minimal color - matches other sections */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Very subtle texture overlay */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
+	/* Professional badge */
+	.professional-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-coral-500);
+		color: var(--text-primary);
+		padding: 0.5rem 1.5rem;
+		border-radius: 2rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* Professional Alert Styling */
+	.info-alert {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.25rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	/* Pricing Toggle */
+	.pricing-toggle {
+		background: var(--bg-primary);
+		border: 2px dashed var(--border-secondary);
+		border-radius: var(--radius-lg);
+		padding: 0.5rem;
+		display: inline-flex;
+		gap: 0.25rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.toggle-option {
+		padding: 0.75rem 1.5rem;
+		border-radius: var(--radius-md);
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		border: none;
+		background: transparent;
+		color: var(--text-secondary);
+	}
+
+	.toggle-option--active {
+		background: var(--color-coral-500);
+		color: white;
+		box-shadow: var(--shadow-md);
+	}
+
+	.toggle-option:not(.toggle-option--active):hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+
+
+	/* Pricing Cards - Fixed badge positioning */
+	.pricing-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		box-shadow: var(--shadow-sm);
+		overflow: visible;
+		margin-top: 1rem; /* Space for badge */
+	}
+
+	/* Coral accent line on hover */
+	.pricing-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.pricing-card:hover::before {
+		transform: scaleX(1);
+	}
+
+	.pricing-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--border-secondary);
+	}
+
+	.pricing-card--popular {
+		border-color: var(--color-coral-400);
+		background: var(--bg-secondary);
+		box-shadow: var(--shadow-md);
+	}
+
+	.pricing-card--popular:hover {
+		box-shadow: var(--shadow-xl);
+	}
+
+	/* Popular Badge - Fixed positioning */
+	.popular-badge {
+		position: absolute;
+		top: -0.75rem;
+		left: 50%;
+		transform: translateX(-50%);
+		background: var(--color-coral-500);
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: var(--radius-full);
+		font-size: 0.75rem;
+		font-weight: 600;
+		box-shadow: var(--shadow-md);
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		z-index: 10;
+		white-space: nowrap;
+	}
+
+	/* Plan Header */
+	.plan-header {
+		margin-bottom: 1.5rem;
+	}
+
+	.plan-name {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 1rem;
+	}
+
+	.plan-pricing {
+		margin-bottom: 0.75rem;
+	}
+
+	.original-price {
+		font-size: 1.125rem;
+		text-decoration: line-through;
+		color: var(--text-tertiary);
+	}
+
+	.current-price {
+		font-size: 2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-left: 0.5rem;
+	}
+
+	.billing-period {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		display: block;
+		margin-top: 0.25rem;
+	}
+
+	.plan-badge-container {
+		height: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.founding-member-badge {
+		background: var(--color-warm-orange-100);
+		border: 1px solid var(--color-warm-orange-300);
+		color: var(--color-warm-orange-800);
+		padding: 0.25rem 0.75rem;
+		border-radius: var(--radius-full);
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	.plan-description {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+
+	/* Feature List */
+	.feature-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		margin-bottom: 2rem;
+		flex-grow: 1;
+	}
+
+	.feature-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.feature-icon {
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		margin-top: 0.125rem;
+	}
+
+	.feature-icon--included {
+		color: var(--color-pro-teal-600);
+	}
+
+	.feature-icon--excluded {
+		color: var(--text-tertiary);
+	}
+
+	.feature-content {
+		flex-grow: 1;
+		min-width: 0;
+	}
+
+	.feature-text-wrapper {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.feature-text {
+		font-size: 0.875rem;
+		color: var(--text-primary);
+	}
+
+	.feature-text--excluded {
+		font-size: 0.875rem;
+		color: var(--text-tertiary);
+	}
+
+	.coming-soon-badge {
+		background: var(--color-pro-teal-100);
+		border: 1px solid var(--color-pro-teal-300);
+		color: var(--color-pro-teal-700);
+		padding: 0.125rem 0.5rem;
+		border-radius: var(--radius-md);
+		font-size: 0.625rem;
+		font-weight: 500;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+
+	/* Plan CTA Buttons - Properly styled */
+	.plan-cta {
+		width: 100%;
+		padding: 0.875rem 1.5rem;
+		border-radius: var(--radius-lg);
+		font-weight: 600;
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		border: none;
+		text-align: center;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.plan-cta--primary {
+		background: var(--color-coral-500);
+		color: white;
+		box-shadow: var(--shadow-md);
+	}
+
+	.plan-cta--primary:hover {
+		background: var(--color-coral-600);
+		box-shadow: var(--shadow-lg);
+		transform: translateY(-1px);
+	}
+
+	.plan-cta--outline {
+		background: transparent;
+		color: var(--text-primary);
+		border: 2px solid var(--border-primary);
+	}
+
+	.plan-cta--outline:hover {
+		background: var(--bg-secondary);
+		border-color: var(--color-coral-500);
+		color: var(--color-coral-600);
+		transform: translateY(-1px);
+	}
+
+	/* No Commission Card */
+	.no-commission-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		box-shadow: var(--shadow-md);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent line on hover */
+	.no-commission-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.no-commission-card:hover::before {
+		transform: scaleX(1);
+	}
+
+	.no-commission-title {
+		font-weight: 700;
+		font-size: 1.125rem;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	.no-commission-description {
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	/* Responsive Design */
+	@media (max-width: 768px) {
+		.pricing-card {
+			padding: 1.5rem;
+		}
+
+		.current-price {
+			font-size: 1.75rem;
+		}
+
+		.plan-name {
+			font-size: 1.125rem;
+		}
+
+		.current-price {
+			font-size: 1.5rem;
+		}
+
+		.billing-period {
+			font-size: 0.8125rem;
+		}
+
+		.feature-text {
+			font-size: 0.8125rem;
+		}
+
+		.plan-cta {
+			padding: 0.75rem 1.25rem;
+			font-size: 0.8125rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.pricing-card {
+			margin-top: 0.75rem;
+		}
+
+		.plan-name {
+			font-size: 1rem;
+		}
+
+		.current-price {
+			font-size: 1.375rem;
+		}
+
+		.no-commission-card {
+			padding: 1.25rem;
+		}
+
+		.no-commission-title {
+			font-size: 1rem;
+		}
+
+		.no-commission-description {
+			font-size: 0.875rem;
+		}
+	}
+</style> 

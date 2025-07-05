@@ -1,112 +1,371 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import Check from 'lucide-svelte/icons/check';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Euro from 'lucide-svelte/icons/euro';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	
+	function handleCreateTour() {
+		goto('/auth/register');
+	}
 </script>
 
-<!-- How it works - Visual Process -->
-<section id="how-it-works" class="py-20 bg-gray-50">
+<section id="how-it-works" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<div class="text-center mb-16">
-			<h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+			<div class="professional-badge mb-6">
+				<span>How It Works</span>
+			</div>
+			<h2 class="marketing-heading marketing-heading-lg mb-4">
 				Start Getting Bookings in Minutes
 			</h2>
-			<p class="text-lg text-gray-600 max-w-2xl mx-auto">
+			<p class="text-lg text-secondary max-w-2xl mx-auto">
 				No technical skills needed. If you can use WhatsApp, you can use Zaur.
 			</p>
 		</div>
 		
 		<div class="grid md:grid-cols-3 gap-8">
-			<!-- Step 1 -->
+			<!-- Step 1: Create Your Tour -->
 			<div class="relative">
-				<div class="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-					<div class="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mb-6 mx-auto">
-						<span class="text-2xl font-bold text-blue-600">1</span>
+				<div class="professional-card h-full flex flex-col">
+					<div class="step-number-container mb-6 mx-auto">
+						<div class="step-number step-number-coral">1</div>
 					</div>
-					<h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Create Your Tour</h3>
-					<p class="text-gray-600 mb-6 text-center flex-grow">
+					<h3 class="step-title text-center mb-4">Create Your Tour</h3>
+					<p class="step-description text-center flex-grow mb-6">
 						Add your tour details, set your price, and choose when you're available. Takes 2 minutes.
 					</p>
-					<div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+					<div class="tour-preview-card">
 						<div class="space-y-3 text-sm">
 							<div class="flex justify-between items-center">
-								<span class="text-gray-700 font-medium">Walking Tour of Old Town</span>
-								<span class="font-bold text-blue-600">€25</span>
+								<span class="text-primary font-medium">Walking Tour of Old Town</span>
+								<span class="font-bold text-primary">€25</span>
 							</div>
-							<div class="text-gray-500 text-xs">Duration: 2 hours</div>
+							<div class="text-secondary text-xs">Duration: 2 hours</div>
 							<div class="flex gap-2 mt-3">
-								<span class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">10:00 AM</span>
-								<span class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">2:00 PM</span>
-								<span class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">5:00 PM</span>
+								<span class="time-slot">10:00 AM</span>
+								<span class="time-slot">2:00 PM</span>
+								<span class="time-slot">5:00 PM</span>
 							</div>
 						</div>
 					</div>
 				</div>
-				<!-- Arrow -->
+				<!-- Professional Arrow -->
 				<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-					<div class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-200">
-						<ChevronRight class="w-4 h-4 text-blue-600" strokeWidth={2.5} />
+					<div class="professional-arrow">
+						<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
 					</div>
 				</div>
 			</div>
 			
-			<!-- Step 2 -->
+			<!-- Step 2: Get Your QR Code -->
 			<div class="relative">
-				<div class="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-					<div class="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mb-6 mx-auto">
-						<span class="text-2xl font-bold text-blue-600">2</span>
+				<div class="professional-card h-full flex flex-col">
+					<div class="step-number-container mb-6 mx-auto">
+						<div class="step-number step-number-orange">2</div>
 					</div>
-					<h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Get Your QR Code</h3>
-					<p class="text-gray-600 mb-6 text-center flex-grow">
+					<h3 class="step-title text-center mb-4">Get Your QR Code</h3>
+					<p class="step-description text-center flex-grow mb-6">
 						Download your unique QR code. Print it on flyers, business cards, or display it anywhere.
 					</p>
-					<div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 flex justify-center border border-blue-100">
-						<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-							<QrCode class="w-20 h-20 text-blue-600" strokeWidth={1.5} />
+					<div class="qr-showcase-container">
+						<div class="qr-code-display">
+							<QrCode class="w-20 h-20 text-secondary" strokeWidth={1.5} />
 						</div>
 					</div>
 				</div>
-				<!-- Arrow -->
+				<!-- Professional Arrow -->
 				<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-					<div class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-200">
-						<ChevronRight class="w-4 h-4 text-blue-600" strokeWidth={2.5} />
+					<div class="professional-arrow">
+						<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
 					</div>
 				</div>
 			</div>
 			
-			<!-- Step 3 -->
-			<div class="bg-white rounded-xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-				<div class="w-16 h-16 bg-green-50 rounded-xl flex items-center justify-center mb-6 mx-auto">
-					<Check class="w-8 h-8 text-green-600" strokeWidth={2.5} />
+			<!-- Step 3: Get Instant Bookings -->
+			<div class="professional-card h-full flex flex-col">
+				<div class="step-number-container mb-6 mx-auto">
+					<div class="step-number step-number-success">
+						<Check class="w-8 h-8 text-white" strokeWidth={2.5} />
+					</div>
 				</div>
-				<h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">Get Instant Bookings</h3>
-				<p class="text-gray-600 mb-6 text-center flex-grow">
+				<h3 class="step-title text-center mb-4">Get Instant Bookings</h3>
+				<p class="step-description text-center flex-grow mb-6">
 					Tourists scan your code, pick a time, pay securely, and you get a notification. That's it!
 				</p>
-				<div class="bg-green-50 border border-green-200 rounded-xl p-5">
+				<div class="booking-notification">
 					<div class="flex items-start gap-4">
-						<div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+						<div class="notification-icon">
 							<Euro class="w-6 h-6 text-white" strokeWidth={2} />
 						</div>
-						<div class="text-sm">
-							<div class="font-semibold text-gray-900 text-base">New booking received!</div>
-							<div class="text-gray-600 mt-1">Sarah booked Walking Tour • +€25</div>
-							<div class="text-green-600 text-xs mt-1 font-medium">Just now</div>
+						<div class="notification-content">
+							<div class="notification-title">New booking received!</div>
+							<div class="notification-message">Sarah booked Walking Tour • +€25</div>
+							<div class="notification-time">Just now</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 		
-		<!-- Bottom CTA -->
+		<!-- Professional CTA -->
 		<div class="text-center mt-16">
-			<p class="text-gray-600 mb-6">Ready to get started?</p>
-			<a href="/auth/register" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+			<p class="text-secondary mb-6 text-lg">Ready to start getting bookings?</p>
+			<button onclick={handleCreateTour} class="button-coral button--large button--gap">
 				Create Your First Tour
-				<ArrowRight class="w-4 h-4 ml-2" strokeWidth={2} />
-			</a>
+				<ArrowRight class="w-4 h-4" strokeWidth={2} />
+			</button>
 		</div>
 	</div>
-</section> 
+</section>
+
+<style>
+	/* Subtle retro section with minimal color - matches HeroSection */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 70vh;
+		display: flex;
+		align-items: center;
+	}
+	
+	/* Very subtle texture overlay - matches HeroSection */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
+	/* Professional badge with subtle retro border - matches HeroSection */
+	.professional-badge {
+		display: inline-block;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-coral-500);
+		color: var(--text-primary);
+		padding: 0.5rem 1.5rem;
+		border-radius: 2rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* Professional cards - matches HeroSection trust cards */
+	.professional-card {
+		text-align: center;
+		padding: 2rem 1.5rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		transition: all var(--transition-base) ease;
+		box-shadow: var(--shadow-sm);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Subtle accent line on hover - matches HeroSection */
+	.professional-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.professional-card:hover::before {
+		transform: scaleX(1);
+	}
+	
+	.professional-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--border-secondary);
+	}
+
+	/* Step Number Styling */
+	.step-number-container {
+		position: relative;
+	}
+
+	.step-number {
+		width: 4rem;
+		height: 4rem;
+		border-radius: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: white;
+		box-shadow: var(--shadow-lg);
+	}
+
+	.step-number-coral {
+		background: var(--color-coral-500);
+	}
+
+	.step-number-orange {
+		background: var(--color-warm-orange-500);
+	}
+
+	.step-number-success {
+		background: var(--color-pro-teal-500);
+	}
+
+	/* Step Content Styling */
+	.step-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.step-description {
+		color: var(--text-secondary);
+		line-height: 1.6;
+	}
+
+	/* Tour Preview Card - matches HeroSection promo card */
+	.tour-preview-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.time-slot {
+		padding: 0.375rem 0.75rem;
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+
+	/* QR Code Showcase */
+	.qr-showcase-container {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		display: flex;
+		justify-content: center;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.qr-code-display {
+		background: white;
+		padding: 1rem;
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-md);
+		border: 1px solid var(--border-secondary);
+	}
+
+	/* Booking Notification */
+	.booking-notification {
+		background: var(--bg-primary);
+		border: 2px solid var(--color-coral-500);
+		border-radius: var(--radius-lg);
+		padding: 1.25rem;
+		box-shadow: var(--shadow-md);
+	}
+
+	.notification-icon {
+		width: 3rem;
+		height: 3rem;
+		background: var(--color-coral-500);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		box-shadow: var(--shadow-md);
+	}
+
+	.notification-title {
+		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 1rem;
+	}
+
+	.notification-message {
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
+	}
+
+	.notification-time {
+		color: var(--color-coral-600);
+		font-size: 0.75rem;
+		margin-top: 0.25rem;
+		font-weight: 500;
+	}
+
+	/* Professional Arrows - matches HeroSection style */
+	.professional-arrow {
+		width: 2rem;
+		height: 2rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-primary);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: var(--shadow-md);
+	}
+
+	/* Responsive Design */
+	@media (max-width: 768px) {
+		.step-number {
+			width: 3rem;
+			height: 3rem;
+			font-size: 1.25rem;
+		}
+
+		.step-title {
+			font-size: 1.125rem;
+		}
+
+		.step-description {
+			font-size: 0.9rem;
+		}
+
+		.time-slot {
+			font-size: 0.6875rem;
+			padding: 0.25rem 0.5rem;
+		}
+
+		.notification-icon {
+			width: 2.5rem;
+			height: 2.5rem;
+		}
+
+		.notification-title {
+			font-size: 0.9rem;
+		}
+
+		.notification-message {
+			font-size: 0.875rem;
+		}
+	}
+</style> 

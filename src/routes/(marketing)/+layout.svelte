@@ -8,10 +8,12 @@
 
 	let { children, data } = $props<{ data?: any }>();
 
-	// Initialize auth store with server data
+	// Initialize auth store with server data - only once
+	let authInitialized = $state(false);
 	$effect(() => {
-		if (data) {
+		if (data && !authInitialized) {
 			auth.initialize(data);
+			authInitialized = true;
 		}
 	});
 
@@ -100,15 +102,15 @@
 	{/if}
 </svelte:head>
 
-<!-- Marketing Layout: Header + Main + Footer -->
-<div class="min-h-screen flex flex-col" style="background: var(--bg-primary);">
+<!-- Clean Marketing Layout -->
+<div class="min-h-screen flex flex-col">
 	<Header 
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
 	/>
 
-	<main class="flex-1 pt-20">
+	<main class="flex-1 pt-20 relative">
 		{@render children()}
 	</main>
 
@@ -122,38 +124,12 @@
 		color: var(--text-primary);
 	}
 
-	/* Marketing page specific styles */
-	:global(.marketing-section) {
-		padding: 4rem 0;
-		border-bottom: 1px solid var(--border-primary);
+	/* Clean text utilities */
+	:global(.text-secondary) {
+		color: var(--text-secondary);
 	}
 
-	@media (max-width: 768px) {
-		:global(.marketing-section) {
-			padding: 2.5rem 0;
-		}
-	}
-
-	/* Consistent container styling */
-	:global(.marketing-container) {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 0 1.5rem;
-	}
-
-	@media (min-width: 640px) {
-		:global(.marketing-container) {
-			padding: 0 2rem;
-		}
-	}
-
-	@media (min-width: 1024px) {
-		:global(.marketing-container) {
-			padding: 0 3rem;
-		}
-	}
-
-	/* Typography improvements */
+	/* Clean marketing headings */
 	:global(.marketing-heading) {
 		font-weight: 700;
 		line-height: 1.2;
@@ -187,117 +163,18 @@
 		}
 	}
 
-	/* Card styling consistent with app */
-	:global(.marketing-card) {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
-		padding: 1.5rem;
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-		transition: all 0.2s ease-in-out;
+	/* Clean button cursor behavior */
+	:global(.marketing-button *),
+	:global(.marketing-button svg),
+	:global(.marketing-button span),
+	:global(button *),
+	:global(button svg),
+	:global(button span) {
+		pointer-events: none;
+		cursor: inherit;
 	}
-
-	:global(.marketing-card:hover) {
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-		border-color: var(--border-secondary);
-	}
-
-	/* Button improvements */
-	:global(.marketing-button) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1.5rem;
-		border-radius: 0.5rem;
-		font-weight: 500;
-		font-size: 0.875rem;
-		transition: all 0.2s ease-in-out;
+	
+	:global(button) {
 		cursor: pointer;
-		border: 1px solid transparent;
-		text-decoration: none;
-	}
-
-	:global(.marketing-button-primary) {
-		background: var(--color-primary-600);
-		color: white;
-	}
-
-	:global(.marketing-button-primary:hover) {
-		background: var(--color-primary-700);
-	}
-
-	:global(.marketing-button-secondary) {
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		border-color: var(--border-primary);
-	}
-
-	:global(.marketing-button-secondary:hover) {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-	}
-
-	/* Grid improvements */
-	:global(.marketing-grid) {
-		display: grid;
-		gap: 1.5rem;
-	}
-
-	:global(.marketing-grid-2) {
-		grid-template-columns: repeat(1, 1fr);
-	}
-
-	:global(.marketing-grid-3) {
-		grid-template-columns: repeat(1, 1fr);
-	}
-
-	@media (min-width: 768px) {
-		:global(.marketing-grid-2) {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		:global(.marketing-grid-3) {
-			grid-template-columns: repeat(3, 1fr);
-		}
-	}
-
-	/* Text improvements */
-	:global(.marketing-text-primary) {
-		color: var(--text-primary);
-	}
-
-	:global(.marketing-text-secondary) {
-		color: var(--text-secondary);
-	}
-
-	:global(.marketing-text-muted) {
-		color: var(--text-tertiary);
-	}
-
-	/* Alert styles consistent with app */
-	:global(.marketing-alert) {
-		padding: 1rem;
-		border-radius: 0.5rem;
-		border: 1px solid;
-		margin-bottom: 1rem;
-	}
-
-	:global(.marketing-alert-info) {
-		background: var(--color-info-50);
-		border-color: var(--color-info-200);
-		color: var(--color-info-800);
-	}
-
-	:global(.marketing-alert-warning) {
-		background: var(--color-warning-50);
-		border-color: var(--color-warning-200);
-		color: var(--color-warning-800);
-	}
-
-	:global(.marketing-alert-success) {
-		background: var(--color-success-50);
-		border-color: var(--color-success-200);
-		color: var(--color-success-800);
 	}
 </style> 

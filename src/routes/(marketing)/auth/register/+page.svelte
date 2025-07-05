@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { t, language } from '$lib/i18n.js';
 	import { isLoading } from '$lib/stores/auth.js';
 	import Loader from 'lucide-svelte/icons/loader';
-	import Check from 'lucide-svelte/icons/check';
-	import Gift from 'lucide-svelte/icons/gift';
-	import X from 'lucide-svelte/icons/x';
-	import { t, language } from '$lib/i18n.js';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import UserPlus from 'lucide-svelte/icons/user-plus';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
+	import Eye from 'lucide-svelte/icons/eye';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
 	import OAuth2Button from '$lib/components/OAuth2Button.svelte';
 	import { getAvailableOAuth2Providers, type OAuth2Provider } from '$lib/oauth2.js';
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
 
 	// Define the type for our form data
 	type RegisterForm = {
@@ -17,9 +20,10 @@
 		email?: string;
 		error?: string;
 		success?: boolean;
+		message?: string;
 	};
 
-	let { form, data } = $props<{ form?: RegisterForm; data: {} }>();
+	let { form } = $props<{ form?: RegisterForm }>();
 
 	// Use the loading state from auth store
 	const isAuthLoading = $derived($isLoading);
@@ -31,25 +35,13 @@
 	// Form data - use server-returned values if available
 	let username = $state(form?.username || '');
 	let email = $state(form?.email || '');
-	let password = $state(''); // Don't restore password for security reasons
+	let password = $state('');
 	let confirmPassword = $state('');
 	let accessCode = $state('');
-
-	// Form validation
-	let usernameError = $state('');
-	let emailError = $state('');
-	let passwordError = $state('');
-	let confirmPasswordError = $state('');
-	let accessCodeError = $state('');
-
-	// Promo code validation state
-	let isValidatingCode = $state(false);
-	let promoCodeValid = $state(false);
-	let promoCodeBenefit = $state('');
-	let promoCodeDescription = $state('');
-	
-	// UI state for collapsible promo code section
-	let showPromoCode = $state(false); // Always start collapsed
+	let businessName = $state('');
+	let location = $state('');
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
 
 	// OAuth2 providers
 	let availableProviders = $state<OAuth2Provider[]>([]);
@@ -58,55 +50,12 @@
 	onMount(async () => {
 		availableProviders = await getAvailableOAuth2Providers();
 	});
-	
-	// Debounce timer
-	let codeValidationTimer: NodeJS.Timeout;
-	
-	// Validate promo code as user types
-	async function validatePromoCode(code: string) {
-		// Clear previous validation
-		promoCodeValid = false;
-		promoCodeBenefit = '';
-		promoCodeDescription = '';
-		accessCodeError = '';
-		
-		// Clear previous timer
-		if (codeValidationTimer) {
-			clearTimeout(codeValidationTimer);
-		}
-		
-		if (!code) {
-			return;
-		}
-		
-		// Debounce the validation
-		codeValidationTimer = setTimeout(async () => {
-			isValidatingCode = true;
-			
-			try {
-				const response = await fetch('/api/promo-code/validate', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ code })
-				});
-				
-				const result = await response.json();
-				
-				if (result.valid) {
-					promoCodeValid = true;
-					promoCodeBenefit = result.benefitText;
-					promoCodeDescription = result.benefits.description || '';
-				} else {
-					accessCodeError = result.error || 'Invalid promo code';
-				}
-			} catch (error) {
-				console.error('Error validating promo code:', error);
-				accessCodeError = 'Failed to validate promo code';
-			} finally {
-				isValidatingCode = false;
-			}
-		}, 500); // 500ms debounce
-	}
+
+	// Form validation
+	let usernameError = $state('');
+	let emailError = $state('');
+	let passwordError = $state('');
+	let confirmPasswordError = $state('');
 
 	// Validate form inputs
 	function validateForm() {
@@ -115,7 +64,6 @@
 		emailError = '';
 		passwordError = '';
 		confirmPasswordError = '';
-		accessCodeError = '';
 
 		let isValid = true;
 
@@ -123,26 +71,26 @@
 		if (!username) {
 			usernameError = 'Username is required';
 			isValid = false;
-		} else if (username.length < 2) {
-			usernameError = 'Username must be at least 2 characters';
+		} else if (username.length < 3) {
+			usernameError = 'Username must be at least 3 characters';
 			isValid = false;
-		} else if (!/^[a-z0-9]+$/.test(username)) {
-			usernameError = 'Username can only contain lowercase letters and numbers';
+		} else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+			usernameError = 'Username can only contain letters, numbers, hyphens, and underscores';
 			isValid = false;
 		}
 
 		// Email validation
 		if (!email) {
-			emailError = t('loginPage.validation.emailRequired', $language);
+			emailError = 'Email is required';
 			isValid = false;
 		} else if (!/^\S+@\S+\.\S+$/.test(email)) {
-			emailError = t('loginPage.validation.emailInvalid', $language);
+			emailError = 'Please enter a valid email address';
 			isValid = false;
 		}
 
 		// Password validation
 		if (!password) {
-			passwordError = t('loginPage.validation.passwordRequired', $language);
+			passwordError = 'Password is required';
 			isValid = false;
 		} else if (password.length < 8) {
 			passwordError = 'Password must be at least 8 characters';
@@ -158,320 +106,350 @@
 			isValid = false;
 		}
 
-		// Promo code validation (always optional)
-		if (accessCode && accessCode.trim()) {
-			// Promo code is optional but must be valid if provided
-			if (!promoCodeValid && !isValidatingCode) {
-				accessCodeError = 'Please enter a valid promo code';
-				isValid = false;
-			}
-		}
-
 		return isValid;
+	}
+
+	function goToLogin() {
+		goto('/auth/login');
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center items-center sm:px-6 lg:px-8 -mt-20">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md">
-		<div class="text-center">
+<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
+	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+		<!-- Header -->
+		<div class="text-center mb-8">
 			<h2 class="text-3xl font-bold text-gray-900 mb-2">
-				Create Your Account
+				Create Account
 			</h2>
-			<p class="text-sm text-gray-600">
-				Choose your username and get your personal URL at zaur.app/username
+			<p class="text-gray-600 text-sm">
+				Start your journey with Zaur
 			</p>
 		</div>
 
+		<!-- Error Messages -->
 		{#if form?.error}
-			<div class="alert-error rounded-lg p-3 mb-4">
-				<p class="text-sm">{form.error}</p>
+			<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+				<div class="flex items-center gap-3">
+					<div class="flex-shrink-0">
+						<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+							<AlertCircle class="w-4 h-4 text-red-600" />
+						</div>
+					</div>
+					<p class="text-sm font-medium text-red-800">{form.error}</p>
+				</div>
 			</div>
 		{/if}
 
-		<div class="mt-8 bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
-			<!-- OAuth2 Registration Options -->
-			{#if availableProviders.length > 0}
-				<div class="mb-6">
-					<div class="space-y-3">
-						{#each availableProviders as provider}
-							<OAuth2Button {provider} variant="outline" />
-						{/each}
-					</div>
-					
-					<div class="relative my-6">
-						<div class="absolute inset-0 flex items-center">
-							<div class="w-full border-t border-gray-300"></div>
-						</div>
-						<div class="relative flex justify-center text-sm">
-							<span class="px-2 bg-white text-gray-500">Or create account with email</span>
+		<!-- Success Message -->
+		{#if form?.success}
+			<div class="bg-white border border-green-200 rounded-xl p-4 mb-6 shadow-sm">
+				<div class="flex items-center gap-3">
+					<div class="flex-shrink-0">
+						<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+							<CheckCircle class="w-4 h-4 text-green-600" />
 						</div>
 					</div>
+					<p class="text-sm font-medium text-green-800">{form.message || 'Account created successfully!'}</p>
 				</div>
-			{/if}
+			</div>
+		{/if}
 
-			<form
-				method="POST"
-				novalidate
-				use:enhance={({ formData, cancel }) => {
-					// Run client-side validation first
-					if (!validateForm()) {
-						// Cancel form submission if validation fails
-						cancel();
-						return;
-					}
-
-					manualLoading = true;
-					// Store the current values for reference
-					const submittedUsername = formData.get('username') as string;
-					const submittedEmail = formData.get('email') as string;
-
-					return async ({ result, update }) => {
-						console.log('🔄 Registration form result:', result.type, result);
+		<!-- Register Card -->
+		<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+			<div class="relative">
+				<!-- OAuth2 Register Options -->
+				{#if availableProviders.length > 0}
+					<div class="mb-6">
+						<div class="space-y-3">
+							{#each availableProviders as provider}
+								<OAuth2Button {provider} variant="outline" />
+							{/each}
+						</div>
 						
-						// Always call update first to let SvelteKit handle the result
-						await update({ reset: false });
-						
-						// Only reset loading state for non-redirect responses
-						if (result.type !== 'redirect') {
-							console.log('❌ Registration failed or other result, resetting loading state');
-							
-							// Update local values in case server returned different ones
-							if (form?.username) username = form.username;
-							else username = submittedUsername;
-							
-							if (form?.email) email = form.email;
-							else email = submittedEmail;
-							
-							manualLoading = false;
-						} else {
-							console.log('✅ Registration successful, redirect will be handled by SvelteKit');
-							// Keep loading state during redirect for smooth UX
+						<div class="relative my-6">
+							<div class="absolute inset-0 flex items-center">
+								<div class="w-full border-t border-gray-300"></div>
+							</div>
+							<div class="relative flex justify-center">
+								<span class="px-4 bg-white text-gray-500 text-sm font-medium">
+									Or continue with email
+								</span>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<form
+					method="POST"
+					novalidate
+					use:enhance={({ formData, cancel }) => {
+						// Run client-side validation first
+						if (!validateForm()) {
+							cancel();
+							return;
 						}
-					};
-				}}
-				class="space-y-6"
-			>
-				<div>
-					<label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-						Username
-					</label>
-					<div class="relative">
-						<span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">zaur.app/</span>
+
+						manualLoading = true;
+						const submittedUsername = formData.get('username') as string;
+						const submittedEmail = formData.get('email') as string;
+
+						return async ({ result, update }) => {
+							await update({ reset: false });
+							
+							if (result.type !== 'redirect') {
+								// Update local values in case server returned different ones
+								if (form?.username) {
+									username = form.username;
+								} else {
+									username = submittedUsername;
+								}
+								
+								if (form?.email) {
+									email = form.email;
+								} else {
+									email = submittedEmail;
+								}
+								
+								// Clear passwords for security
+								password = '';
+								confirmPassword = '';
+								
+								manualLoading = false;
+							}
+						};
+					}}
+					class="space-y-6"
+				>
+					<div>
+						<label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+							Username
+						</label>
 						<input
 							type="text"
 							id="username"
 							name="username"
 							bind:value={username}
-							class="form-input pl-20 {usernameError ? 'error' : ''}"
-							placeholder="johndoe"
-							disabled={isRegistering || manualLoading}
-							oninput={(e) => {
-								// Convert to lowercase and remove invalid chars as user types
-								username = e.currentTarget.value.toLowerCase().replace(/[^a-z0-9]/g, '');
-							}}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {usernameError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							placeholder="Enter your username"
+							disabled={isRegistering}
 							onblur={() => {
 								if (!username) usernameError = 'Username is required';
-								else if (username.length < 2) usernameError = 'Username must be at least 2 characters';
-								else if (!/^[a-z0-9]+$/.test(username)) usernameError = 'Username can only contain lowercase letters and numbers';
+								else if (username.length < 3) usernameError = 'Username must be at least 3 characters';
+								else if (!/^[a-zA-Z0-9_-]+$/.test(username)) usernameError = 'Username can only contain letters, numbers, hyphens, and underscores';
 								else usernameError = '';
 							}}
 						/>
+						{#if usernameError}
+							<p class="mt-1 text-sm text-red-600">{usernameError}</p>
+						{/if}
 					</div>
-					{#if usernameError}
-						<p class="form-error">{usernameError}</p>
-					{/if}
-					<p class="mt-1 text-sm text-gray-500">This will be your personal URL: zaur.app/{username || 'username'}</p>
-				</div>
 
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-						{t('loginPage.email', $language)}
-					</label>
-					<input
-						type="email"
-						id="email"
-						name="email"
-						bind:value={email}
-						class="form-input {emailError ? 'error' : ''}"
-						placeholder={t('loginPage.emailPlaceholder', $language)}
-						disabled={isRegistering || manualLoading}
-						onblur={() => {
-							if (!email) emailError = t('loginPage.validation.emailRequired', $language);
-							else if (!/^\S+@\S+\.\S+$/.test(email))
-								emailError = t('loginPage.validation.emailInvalid', $language);
-							else emailError = '';
-						}}
-					/>
-					{#if emailError}
-						<p class="form-error">{emailError}</p>
-					{/if}
-				</div>
+					<div>
+						<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+							Email Address
+						</label>
+						<input
+							type="email"
+							id="email"
+							name="email"
+							bind:value={email}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							placeholder="Enter your email address"
+							disabled={isRegistering}
+							onblur={() => {
+								if (!email) emailError = 'Email is required';
+								else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = 'Please enter a valid email address';
+								else emailError = '';
+							}}
+						/>
+						{#if emailError}
+							<p class="mt-1 text-sm text-red-600">{emailError}</p>
+						{/if}
+					</div>
 
-				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-						{t('loginPage.password', $language)}
-					</label>
-					<input
-						type="password"
-						id="password"
-						name="password"
-						bind:value={password}
-						class="form-input {passwordError ? 'error' : ''}"
-						placeholder="Enter your password"
-						disabled={isRegistering || manualLoading}
-						onblur={() => {
-							if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
-							else if (password.length < 8) passwordError = 'Password must be at least 8 characters';
-							else passwordError = '';
-						}}
-					/>
-					{#if passwordError}
-						<p class="form-error">{passwordError}</p>
-					{/if}
-				</div>
-
-				<div>
-					<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
-						Confirm Password
-					</label>
-					<input
-						type="password"
-						id="confirmPassword"
-						name="confirmPassword"
-						bind:value={confirmPassword}
-						class="form-input {confirmPasswordError ? 'error' : ''}"
-						placeholder="Confirm your password"
-						disabled={isRegistering || manualLoading}
-						onblur={() => {
-							if (!confirmPassword) confirmPasswordError = 'Please confirm your password';
-							else if (password !== confirmPassword) confirmPasswordError = 'Passwords do not match';
-							else confirmPasswordError = '';
-						}}
-					/>
-					{#if confirmPasswordError}
-						<p class="form-error">{confirmPasswordError}</p>
-					{/if}
-				</div>
-
-				<!-- Optional Promo Code Section -->
-				<div>
-					{#if !showPromoCode}
-						<!-- Collapsed state - show trigger button -->
-						<button
-							type="button"
-							onclick={() => showPromoCode = true}
-							class="w-full text-left p-3 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors group"
-						>
-							<div class="flex items-center gap-2">
-								<Gift size={16} class="text-gray-400 group-hover:text-gray-600" />
-								<span class="text-sm text-gray-600 group-hover:text-gray-800">
-									Have a promo code? Click to enter it for exclusive discounts
-								</span>
-							</div>
-						</button>
-					{:else}
-						<!-- Expanded state - show promo code input -->
-						<div class="space-y-3">
-							<div class="flex items-center justify-between">
-								<label for="accessCode" class="block text-sm font-medium text-gray-700">
-									Promo Code <span class="text-gray-500 font-normal">(optional)</span>
-								</label>
-								<button
-									type="button"
-									onclick={() => {
-										showPromoCode = false;
-										accessCode = '';
-										promoCodeValid = false;
-										promoCodeBenefit = '';
-										promoCodeDescription = '';
-										accessCodeError = '';
-									}}
-									class="text-sm text-gray-500 hover:text-gray-700 underline"
-								>
-									Cancel
-								</button>
-							</div>
-							<div class="relative">
-								<input
-									type="text"
-									id="accessCode"
-									name="accessCode"
-									bind:value={accessCode}
-									class="form-input pr-10 {accessCodeError ? 'error' : ''} {promoCodeValid ? '!border-green-500' : ''}"
-									placeholder="Enter promo code for discounts"
-									disabled={isRegistering || manualLoading}
-									oninput={(e) => {
-										// Convert to uppercase for consistency
-										accessCode = e.currentTarget.value.toUpperCase();
-										validatePromoCode(accessCode);
-									}}
-									onblur={() => {
-										if (accessCode && accessCode.trim()) {
-											if (!promoCodeValid && !isValidatingCode) accessCodeError = 'Invalid promo code';
-											else accessCodeError = '';
-										} else {
-											accessCodeError = '';
-										}
-									}}
-								/>
-								<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-									{#if isValidatingCode}
-										<Loader size={16} class="animate-spin text-gray-400" />
-									{:else if promoCodeValid}
-										<Check size={16} class="text-green-500" />
-									{:else if accessCode && accessCodeError}
-										<X size={16} class="text-red-500" />
-									{/if}
-								</div>
-							</div>
-							{#if accessCodeError}
-								<p class="form-error">{accessCodeError}</p>
-							{/if}
-							{#if promoCodeValid && promoCodeBenefit}
-								<div class="p-3 bg-green-50 border border-green-200 rounded-lg">
-									<div class="flex items-start gap-2">
-										<Gift size={16} class="text-green-600 mt-0.5 flex-shrink-0" />
-										<div class="text-sm">
-											<p class="font-medium text-green-900">{promoCodeBenefit}</p>
-											{#if promoCodeDescription}
-												<p class="text-green-700 mt-1">{promoCodeDescription}</p>
-											{/if}
-										</div>
-									</div>
-								</div>
-							{/if}
+					<div>
+						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+							Password
+						</label>
+						<div class="relative">
+							<input
+								type={showPassword ? 'text' : 'password'}
+								id="password"
+								name="password"
+								bind:value={password}
+								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder="Enter your password"
+								disabled={isRegistering}
+								onblur={() => {
+									if (!password) passwordError = 'Password is required';
+									else if (password.length < 8) passwordError = 'Password must be at least 8 characters';
+									else passwordError = '';
+								}}
+							/>
+							<button
+								type="button"
+								class="absolute inset-y-0 right-0 pr-3 flex items-center"
+								onclick={() => showPassword = !showPassword}
+							>
+								{#if showPassword}
+									<EyeOff class="h-4 w-4 text-gray-400" />
+								{:else}
+									<Eye class="h-4 w-4 text-gray-400" />
+								{/if}
+							</button>
 						</div>
-					{/if}
+						{#if passwordError}
+							<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+						{/if}
+					</div>
+
+					<div>
+						<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+							Confirm Password
+						</label>
+						<div class="relative">
+							<input
+								type={showConfirmPassword ? 'text' : 'password'}
+								id="confirmPassword"
+								name="confirmPassword"
+								bind:value={confirmPassword}
+								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder="Confirm your password"
+								disabled={isRegistering}
+								onblur={() => {
+									if (!confirmPassword) confirmPasswordError = 'Please confirm your password';
+									else if (password !== confirmPassword) confirmPasswordError = 'Passwords do not match';
+									else confirmPasswordError = '';
+								}}
+							/>
+							<button
+								type="button"
+								class="absolute inset-y-0 right-0 pr-3 flex items-center"
+								onclick={() => showConfirmPassword = !showConfirmPassword}
+							>
+								{#if showConfirmPassword}
+									<EyeOff class="h-4 w-4 text-gray-400" />
+								{:else}
+									<Eye class="h-4 w-4 text-gray-400" />
+								{/if}
+							</button>
+						</div>
+						{#if confirmPasswordError}
+							<p class="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
+						{/if}
+					</div>
+
+					<div>
+						<label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
+							Business Name <span class="text-gray-500 text-xs">(Optional)</span>
+						</label>
+						<input
+							type="text"
+							id="businessName"
+							name="businessName"
+							bind:value={businessName}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							placeholder="Your business or company name"
+							disabled={isRegistering}
+						/>
+					</div>
+
+					<div>
+						<label for="location" class="block text-sm font-medium text-gray-700 mb-2">
+							Location <span class="text-gray-500 text-xs">(Optional)</span>
+						</label>
+						<input
+							type="text"
+							id="location"
+							name="location"
+							bind:value={location}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							placeholder="City, Country"
+							disabled={isRegistering}
+						/>
+					</div>
+
+					<div>
+						<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-2">
+							Promo Code <span class="text-gray-500 text-xs">(Optional)</span>
+						</label>
+						<input
+							type="text"
+							id="accessCode"
+							name="accessCode"
+							bind:value={accessCode}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							placeholder="Enter promo code if you have one"
+							disabled={isRegistering}
+						/>
+					</div>
+
+					<button
+						type="submit"
+						class="w-full button-coral button--full-width"
+						disabled={isRegistering}
+						onclick={(e) => {
+							if (!validateForm()) {
+								e.preventDefault();
+							}
+						}}
+					>
+						{#if isRegistering}
+							<Loader size={16} class="animate-spin mr-2" />
+							<span>Creating account...</span>
+						{:else}
+							<UserPlus size={16} class="mr-2" />
+							<span>Create Account</span>
+						{/if}
+					</button>
+				</form>
+
+				<!-- Navigation -->
+				<div class="mt-6 text-center">
+					<p class="text-sm text-gray-600">
+						Already have an account?
+						<a href="/auth/login" class="font-medium text-coral-600 hover:text-coral-500 ml-1">
+							Sign in
+						</a>
+					</p>
 				</div>
-
-				<!-- Don't auto-detect country during registration - let users set it up later -->
-
-				<button
-					type="submit"
-					class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-					disabled={isRegistering || manualLoading || isValidatingCode}
-					onclick={(e) => {
-						if (!validateForm()) {
-							e.preventDefault();
-						}
-					}}
-				>
-					{#if isRegistering || manualLoading}
-						<Loader size={16} class="animate-spin" />
-						<span>Creating Account...</span>
-					{:else}
-						Create Account
-					{/if}
-				</button>
-			</form>
-
-			<div class="mt-6 text-center text-sm">
-				<a href="/auth/login" class="text-blue-600 hover:text-blue-500 transition-colors">
-					Already have an account? Sign in
-				</a>
 			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	/* Subtle retro section with minimal color - matches homepage */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+	}
+	
+	/* Very subtle texture overlay - matches homepage */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+</style>
 
  

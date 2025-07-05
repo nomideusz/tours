@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	
-	// Components
-	import PlatformShowcase from './PlatformShowcase.svelte';
+	import { goto } from '$app/navigation';
 	
 	// Icons
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
@@ -16,39 +14,41 @@
 		showCopied = true;
 		setTimeout(() => showCopied = false, 2000);
 	}
+	
+	function handleGetStarted() {
+		goto('/auth/register');
+	}
 </script>
 
-<section class="py-12 pb-20" style="border-bottom: none;">
+<section class="subtle-retro-section">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<div class="text-center max-w-4xl mx-auto" in:fade={{ delay: 200 }}>
-			<div class="hero-badge">
-				<span class="badge-text">Available Now</span>
+		<div class="text-center max-w-4xl mx-auto py-20" in:fade={{ delay: 200 }}>
+			<div class="professional-badge mb-6">
+				<span>🚀 Available Now</span>
 			</div>
 			
-			<h1 class="hero-title">
+			<h1 class="hero-title mb-6">
 				<span class="title-primary">Professional QR Booking</span>
 				<span class="title-secondary">for Tour Guides</span>
 			</h1>
 			
-			<p class="hero-subtitle">
+			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
 				Transform your tours with instant QR code bookings. Professional booking system with real-time availability, secure payments, and no commission fees.
 			</p>
 			
-			<div class="hero-actions">
-				<div class="promo-code-container">
+			<div class="hero-actions max-w-md mx-auto mb-8">
+				<div class="promo-card mb-4">
 					<div class="promo-header">
 						<span class="promo-label">Early Access Code</span>
 						<span class="promo-badge">Founding Member</span>
 					</div>
 					<button 
-						class="promo-code-button"
+						class="promo-button"
 						onclick={copyPromoCode}
 						aria-label="Copy promo code EARLY2025"
 					>
 						<span class="promo-code">EARLY2025</span>
-						<svg class="w-5 h-5 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-						</svg>
+						<Copy class="w-5 h-5" />
 					</button>
 					{#if showCopied}
 						<p class="copy-feedback" in:fade={{ duration: 200 }}>
@@ -58,69 +58,79 @@
 				</div>
 				
 				<div class="action-button-container">
-					<a href="/auth/register" class="cta-button">
+					<button onclick={handleGetStarted} class="button-coral button--large button--gap button--full-width">
 						Get Started
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-						</svg>
-					</a>
+						<ArrowRight class="w-4 h-4" />
+					</button>
 				</div>
 			</div>
 			
-			<!-- Professional social proof -->
-			<div class="flex flex-col items-center justify-center gap-3 text-sm" style="color: var(--text-tertiary);">
-				<span class="text-center">Use code EARLY2025 for founding member pricing</span>
-				<span class="text-center" style="color: var(--text-tertiary);">Join tour guides building with Zaur</span>
+			<!-- Social proof -->
+			<div class="text-center mb-12">
+				<p class="social-text mb-2">Use code EARLY2025 for founding member pricing</p>
+				<p class="social-text">Join tour guides building with Zaur</p>
 			</div>
 			
-			<!-- Professional trust indicators -->
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 max-w-3xl mx-auto">
-				<div class="trust-indicator">
+			<!-- Trust indicators with subtle retro touch -->
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
+				<div class="trust-card">
 					<div class="trust-value">5 min</div>
 					<div class="trust-label">Setup Time</div>
 				</div>
-				<div class="trust-indicator">
+				<div class="trust-card">
 					<div class="trust-value">0%</div>
 					<div class="trust-label">Commission</div>
 				</div>
-				<div class="trust-indicator">
+				<div class="trust-card">
 					<div class="trust-value">Stripe</div>
 					<div class="trust-label">Secure Payments</div>
 				</div>
-				<div class="trust-indicator">
+				<div class="trust-card">
 					<div class="trust-value">40+</div>
 					<div class="trust-label">Countries</div>
 				</div>
 			</div>
 		</div>
-
-		<!-- Platform Showcase -->
-		<PlatformShowcase />
 	</div>
 </section>
 
 <style>
-	/* Hero Section Styles */
-	.hero-badge {
-		display: inline-flex;
+	/* Subtle retro section with minimal color */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 90vh;
+		display: flex;
 		align-items: center;
-		justify-content: center;
-		margin-bottom: 1.5rem;
 	}
 	
-	.badge-text {
-		padding: 0.5rem 1rem;
-		background: var(--color-primary-100);
-		color: var(--color-primary-700);
-		border-radius: 9999px;
-		font-size: 0.875rem;
-		font-weight: 500;
+	/* Very subtle texture overlay */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
 	}
 	
+	/* Clean typography with subtle retro touches */
 	.hero-title {
 		font-size: 2.5rem;
 		font-weight: 700;
-		margin-bottom: 1.5rem;
 		line-height: 1.1;
 		display: flex;
 		flex-direction: column;
@@ -128,11 +138,17 @@
 	}
 	
 	.title-primary {
-		color: var(--color-primary-600);
+		color: var(--text-primary);
 	}
 	
 	.title-secondary {
-		color: var(--text-primary);
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+	
+	.hero-subtitle {
+		color: var(--text-secondary);
+		font-weight: 500;
 	}
 	
 	@media (min-width: 768px) {
@@ -141,81 +157,26 @@
 		}
 	}
 	
-	@media (min-width: 1024px) {
-		.hero-title {
-			font-size: 4rem;
-		}
-	}
-	
-	.hero-subtitle {
-		font-size: 1.125rem;
-		margin-bottom: 2rem;
-		color: var(--text-secondary);
-		line-height: 1.6;
-		max-width: 600px;
-		margin-left: auto;
-		margin-right: auto;
-	}
-	
-	.hero-actions {
-		max-width: 480px;
-		margin: 0 auto 2rem;
-	}
-	
-	/* Trust indicators */
-	.trust-indicator {
-		text-align: center;
-		padding: 1rem 0.75rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		transition: all 0.2s ease;
-	}
-	
-	.trust-indicator:hover {
-		border-color: var(--color-primary-300);
-		box-shadow: var(--shadow-sm);
-		transform: translateY(-1px);
-	}
-	
-	.trust-value {
-		font-size: 1.125rem;
-		font-weight: 700;
+	/* Professional badge with subtle retro border */
+	.professional-badge {
+		display: inline-block;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-coral-500);
 		color: var(--text-primary);
-		margin-bottom: 0.5rem;
-		line-height: 1;
+		padding: 0.5rem 1.5rem;
+		border-radius: 2rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		box-shadow: var(--shadow-sm);
 	}
 	
-	.trust-label {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		line-height: 1;
-	}
-	
-	@media (max-width: 640px) {
-		.trust-indicator {
-			padding: 0.75rem 0.5rem;
-		}
-		
-		.trust-value {
-			font-size: 1rem;
-		}
-		
-		.trust-label {
-			font-size: 0.6875rem;
-		}
-	}
-	
-	/* Promo Code Styles */
-	.promo-code-container {
+	/* Clean promo card */
+	.promo-card {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 1rem;
+		border-radius: var(--radius-lg);
 		padding: 1.5rem;
-		margin-bottom: 1rem;
-		box-shadow: var(--shadow-sm);
+		box-shadow: var(--shadow-md);
 	}
 	
 	.promo-header {
@@ -228,26 +189,26 @@
 	.promo-label {
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: var(--text-secondary);
+		color: var(--text-primary);
 	}
 	
 	.promo-badge {
+		background: var(--color-coral-500);
+		color: white;
+		padding: 0.25rem 0.75rem;
+		border-radius: 1rem;
 		font-size: 0.75rem;
 		font-weight: 500;
-		padding: 0.25rem 0.75rem;
-		background: var(--color-warning-100);
-		color: var(--color-warning-700);
-		border-radius: 9999px;
 	}
 	
-	.promo-code-button {
+	.promo-button {
 		width: 100%;
 		background: var(--bg-secondary);
-		border: 2px dashed var(--color-primary-300);
-		border-radius: 0.75rem;
+		border: 2px dashed var(--border-secondary);
+		border-radius: var(--radius-lg);
 		padding: 1rem;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--transition-base) ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -255,79 +216,112 @@
 		margin-bottom: 0.5rem;
 	}
 	
-	.promo-code-button:hover {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-500);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
+	.promo-button:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--color-coral-500);
 	}
 	
 	.promo-code {
 		font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-		font-size: 1.25rem;
-		font-weight: 700;
+		font-size: 1.125rem;
+		font-weight: 600;
 		color: var(--text-primary);
 		letter-spacing: 0.1em;
 	}
 	
-	.copy-icon {
-		color: var(--text-tertiary);
-		transition: color 0.2s ease;
-	}
-	
-	.promo-code-button:hover .copy-icon {
-		color: var(--color-primary-600);
-	}
-	
 	.copy-feedback {
 		font-size: 0.875rem;
-		color: var(--color-success-600);
+		color: var(--text-secondary);
 		text-align: center;
 		margin-top: 0.5rem;
 	}
 	
-	.action-button-container {
-		margin-top: 1rem;
+	/* Social proof text */
+	.social-text {
+		color: var(--text-secondary);
+		font-weight: 500;
+		font-size: 0.875rem;
 	}
 	
-	.cta-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.875rem 2rem;
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
-		border-radius: 0.5rem;
+	/* Trust cards with subtle retro styling */
+	.trust-card {
+		text-align: center;
+		padding: 1.5rem 1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		transition: all var(--transition-base) ease;
+		box-shadow: var(--shadow-sm);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Subtle accent line on hover */
+	.trust-card::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.trust-card:hover::before {
+		transform: scaleX(1);
+	}
+	
+	.trust-card:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--border-secondary);
+	}
+	
+	.trust-value {
+		font-size: 1.125rem;
 		font-weight: 600;
-		font-size: 1rem;
-		text-decoration: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+		line-height: 1;
 	}
 	
-	.cta-button:hover {
-		background: var(--color-primary-700);
-		transform: translateY(-1px);
-		box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
+	.trust-label {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		line-height: 1;
+		font-weight: 500;
 	}
 	
-	@media (max-width: 768px) {
-		.promo-code-container {
-			padding: 1rem;
+	/* Responsive adjustments */
+	@media (max-width: 640px) {
+		.subtle-retro-section {
+			min-height: 80vh;
+		}
+		
+		.hero-title {
+			font-size: 2rem;
+		}
+		
+		.trust-card {
+			padding: 1rem 0.75rem;
+		}
+		
+		.trust-value {
+			font-size: 1rem;
+		}
+		
+		.trust-label {
+			font-size: 0.6875rem;
 		}
 		
 		.promo-code {
 			font-size: 1rem;
 		}
-		
-		.cta-button {
-			padding: 0.75rem 1.5rem;
-			font-size: 0.9rem;
-		}
 	}
-
 </style>
 
 	
