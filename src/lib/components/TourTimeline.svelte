@@ -1195,10 +1195,12 @@
 													</div>
 												{/if}
 												
-												<!-- Only show eye icon in dashboard view (all tours), not in tour-specific view -->
-												{#if !tourId}
-													<Eye class="h-4 w-4" style="color: var(--text-tertiary);" />
-												{/if}
+																				<!-- Show navigation indicator in dashboard view (all tours) -->
+								{#if !tourId}
+									<div class="navigation-indicator">
+										<ChevronRight class="h-3 w-3" style="color: var(--text-tertiary);" />
+									</div>
+								{/if}
 											{/if}
 										</div>
 									</button>
