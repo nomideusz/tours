@@ -135,223 +135,6 @@
 	<meta name="description" content="Tour business analytics and insights" />
 </svelte:head>
 
-<style>
-	.tab-button {
-		position: relative;
-		padding: 0.625rem 0.75rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		white-space: nowrap;
-		min-height: 44px; /* Better touch targets */
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		flex-shrink: 0; /* Prevent shrinking */
-	}
-	
-	@media (min-width: 640px) {
-		.tab-button {
-			padding: 0.5rem 1rem;
-			font-size: 0.875rem;
-			min-height: auto;
-			gap: 0.5rem;
-		}
-	}
-	
-	.tab-button:hover {
-		color: var(--text-primary);
-		background: var(--bg-secondary);
-	}
-	
-	.tab-button.active {
-		color: var(--color-primary-700);
-		font-weight: 600;
-	}
-	
-	.tab-button.active::after {
-		content: '';
-		position: absolute;
-		bottom: -1px;
-		left: 0;
-		right: 0;
-		height: 3px;
-		background-color: var(--color-primary-600);
-		border-radius: 2px 2px 0 0;
-	}
-	
-	.time-range-button {
-		padding: 0.5rem 0.875rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		background: var(--bg-primary);
-		border: 1px solid var(--border-secondary);
-		border-radius: 0.375rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		position: relative;
-		min-height: 44px; /* Better touch targets on mobile */
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		white-space: nowrap;
-	}
-	
-	@media (min-width: 640px) {
-		.time-range-button {
-			padding: 0.375rem 0.75rem;
-			min-height: auto;
-		}
-	}
-	
-	.time-range-button:hover {
-		color: var(--text-primary);
-		border-color: var(--border-primary);
-		background: var(--bg-secondary);
-	}
-	
-	.time-range-button.active {
-		color: #FFFFFF;
-		background: var(--color-primary-600);
-		border-color: var(--color-primary-600);
-		font-weight: 600;
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-	}
-	
-	.time-range-button.active:hover {
-		background: var(--color-primary-700);
-		border-color: var(--color-primary-700);
-		color: #FFFFFF;
-	}
-	
-
-
-	
-	.chart-container {
-		position: relative;
-		height: 250px;
-		width: 100%;
-		margin: 0 -0.5rem; /* Better mobile margins */
-	}
-	
-	@media (min-width: 640px) {
-		.chart-container {
-			height: 300px;
-			margin: 0;
-		}
-	}
-	
-	@media (min-width: 1024px) {
-		.chart-container {
-			height: 350px;
-		}
-	}
-	
-	.mobile-scroll {
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-		padding-bottom: 2px; /* Prevent content clipping */
-		scroll-behavior: smooth;
-	}
-	
-	.mobile-scroll::-webkit-scrollbar {
-		display: none;
-	}
-	
-	/* Add scroll snap for better tab navigation */
-	.mobile-scroll.tab-scroll {
-		scroll-snap-type: x mandatory;
-	}
-	
-	.mobile-scroll.tab-scroll .tab-button {
-		scroll-snap-align: start;
-	}
-	
-	/* Extra small mobile devices */
-	@media (max-width: 375px) {
-		.tab-button {
-			padding: 0.5rem 0.625rem;
-			font-size: 0.6875rem;
-			gap: 0.25rem;
-		}
-		
-		.tab-button .tab-text {
-			display: none; /* Hide text on very small screens, show only icons */
-		}
-		
-		.time-range-button {
-			padding: 0.5rem 0.625rem;
-			font-size: 0.6875rem;
-		}
-		
-		.chart-container {
-			height: 220px;
-			margin: 0 -0.75rem;
-		}
-	}
-	
-	/* Custom breakpoint for xs */
-	@media (min-width: 420px) {
-		.xs\:grid-cols-2 {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-	
-	.desktop-tab-active {
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-	}
-	
-	.desktop-tab-inactive {
-		color: var(--text-secondary);
-	}
-	
-	.desktop-tab-inactive:hover {
-		color: var(--text-primary);
-	}
-	
-	.peak-time-bar {
-		position: relative;
-		height: 100px;
-		background: var(--bg-secondary);
-		border-radius: 0.25rem;
-		overflow: hidden;
-	}
-	
-	.peak-time-fill {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		background: var(--color-primary-500);
-		transition: height 0.3s ease;
-	}
-	
-	.source-bar {
-		position: relative;
-		height: 8px;
-		background: var(--bg-secondary);
-		border-radius: 9999px;
-		overflow: hidden;
-	}
-	
-	.source-fill {
-		position: absolute;
-		left: 0;
-		top: 0;
-		bottom: 0;
-		background: var(--color-primary-500);
-		transition: width 0.3s ease;
-	}
-</style>
 
 <div class="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 lg:py-8">
 	<!-- Header -->
@@ -486,7 +269,7 @@
 						onclick={() => activeTab = tab.id}
 						class="tab-button {activeTab === tab.id ? 'active' : ''}"
 					>
-						<div class="flex items-center">
+						<div class="flex items-center gap-1">
 							<tab.icon class="h-4 w-4 flex-shrink-0" />
 							<span class="tab-text">{tab.label}</span>
 						</div>
@@ -943,3 +726,222 @@
 		{/if}
 	{/if}
 </div> 
+
+
+<style>
+	.tab-button {
+		position: relative;
+		padding: 0.625rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+		min-height: 44px; /* Better touch targets */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		flex-shrink: 0; /* Prevent shrinking */
+	}
+	
+	@media (min-width: 640px) {
+		.tab-button {
+			padding: 0.5rem 1rem;
+			font-size: 0.875rem;
+			min-height: auto;
+			gap: 0.5rem;
+		}
+	}
+	
+	.tab-button:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+	}
+	
+	.tab-button.active {
+		color: var(--color-primary-700);
+		font-weight: 600;
+	}
+	
+	.tab-button.active::after {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		right: 0;
+		height: 3px;
+		background-color: var(--color-primary-600);
+		border-radius: 2px 2px 0 0;
+	}
+	
+	.time-range-button {
+		padding: 0.5rem 0.875rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: var(--bg-primary);
+		border: 1px solid var(--border-secondary);
+		border-radius: 0.375rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		position: relative;
+		min-height: 44px; /* Better touch targets on mobile */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		white-space: nowrap;
+	}
+	
+	@media (min-width: 640px) {
+		.time-range-button {
+			padding: 0.375rem 0.75rem;
+			min-height: auto;
+		}
+	}
+	
+	.time-range-button:hover {
+		color: var(--text-primary);
+		border-color: var(--border-primary);
+		background: var(--bg-secondary);
+	}
+	
+	.time-range-button.active {
+		color: #FFFFFF;
+		background: var(--color-primary-600);
+		border-color: var(--color-primary-600);
+		font-weight: 600;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	}
+	
+	.time-range-button.active:hover {
+		background: var(--color-primary-700);
+		border-color: var(--color-primary-700);
+		color: #FFFFFF;
+	}
+	
+
+
+	
+	.chart-container {
+		position: relative;
+		height: 250px;
+		width: 100%;
+		margin: 0 -0.5rem; /* Better mobile margins */
+	}
+	
+	@media (min-width: 640px) {
+		.chart-container {
+			height: 300px;
+			margin: 0;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.chart-container {
+			height: 350px;
+		}
+	}
+	
+	.mobile-scroll {
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		padding-bottom: 2px; /* Prevent content clipping */
+		scroll-behavior: smooth;
+	}
+	
+	.mobile-scroll::-webkit-scrollbar {
+		display: none;
+	}
+	
+	/* Add scroll snap for better tab navigation */
+	.mobile-scroll.tab-scroll {
+		scroll-snap-type: x mandatory;
+	}
+	
+	.mobile-scroll.tab-scroll .tab-button {
+		scroll-snap-align: start;
+	}
+	
+	/* Extra small mobile devices */
+	@media (max-width: 375px) {
+		.tab-button {
+			padding: 0.5rem 0.625rem;
+			font-size: 0.6875rem;
+			gap: 0.25rem;
+		}
+		
+		.tab-button .tab-text {
+			display: none; /* Hide text on very small screens, show only icons */
+		}
+		
+		.time-range-button {
+			padding: 0.5rem 0.625rem;
+			font-size: 0.6875rem;
+		}
+		
+		.chart-container {
+			height: 220px;
+			margin: 0 -0.75rem;
+		}
+	}
+	
+	/* Custom breakpoint for xs */
+	@media (min-width: 420px) {
+		.xs\:grid-cols-2 {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	
+	.desktop-tab-active {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	}
+	
+	.desktop-tab-inactive {
+		color: var(--text-secondary);
+	}
+	
+	.desktop-tab-inactive:hover {
+		color: var(--text-primary);
+	}
+	
+	.peak-time-bar {
+		position: relative;
+		height: 100px;
+		background: var(--bg-secondary);
+		border-radius: 0.25rem;
+		overflow: hidden;
+	}
+	
+	.peak-time-fill {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: var(--color-primary-500);
+		transition: height 0.3s ease;
+	}
+	
+	.source-bar {
+		position: relative;
+		height: 8px;
+		background: var(--bg-secondary);
+		border-radius: 9999px;
+		overflow: hidden;
+	}
+	
+	.source-fill {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		background: var(--color-primary-500);
+		transition: width 0.3s ease;
+	}
+</style>

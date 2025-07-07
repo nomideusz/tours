@@ -317,7 +317,12 @@
 			onSlotClick(slot);
 		} else {
 			// Default: navigate to tour details
-			goto(`/tours/${slot.tourId}`);
+			// On mobile, go directly to schedule tab
+			if (browser && window.innerWidth < 768) {
+				goto(`/tours/${slot.tourId}?tab=schedule`);
+			} else {
+				goto(`/tours/${slot.tourId}`);
+			}
 		}
 	}
 	
@@ -940,6 +945,62 @@
 					<ChevronRight class="h-4 w-4" />
 				</button>
 			</div>
+			
+			<!-- View Toggle in standalone navigation (when header text is hidden) -->
+			{#if hideHeaderText && !hideViewToggle}
+				<div class="standalone-view-toggle">
+					<!-- Mobile view toggle -->
+					<div class="sm:hidden">
+						<div class="mobile-view-toggle">
+							<button
+								onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'month'; onViewChange?.('month'); }}
+								class="mobile-view-btn {view === 'month' ? 'active' : ''}"
+								type="button"
+							>
+								Month
+							</button>
+							<button
+								onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'week'; onViewChange?.('week'); }}
+								class="mobile-view-btn {view === 'week' ? 'active' : ''}"
+								type="button"
+							>
+								Week
+							</button>
+							<button
+								onclick={(e) => { e.preventDefault(); e.stopPropagation(); view = 'day'; onViewChange?.('day'); }}
+								class="mobile-view-btn {view === 'day' ? 'active' : ''}"
+								type="button"
+							>
+								Day
+							</button>
+						</div>
+					</div>
+					
+					<!-- Desktop view toggle -->
+					<div class="hidden sm:flex items-center justify-center">
+						<div class="view-toggle">
+							<button
+								onclick={() => { view = 'day'; onViewChange?.('day'); }}
+								class="view-button {view === 'day' ? 'active' : ''}"
+							>
+								Day
+							</button>
+							<button
+								onclick={() => { view = 'week'; onViewChange?.('week'); }}
+								class="view-button {view === 'week' ? 'active' : ''}"
+							>
+								Week
+							</button>
+							<button
+								onclick={() => { view = 'month'; onViewChange?.('month'); }}
+								class="view-button {view === 'month' ? 'active' : ''}"
+							>
+								Month
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 	{/if}
 	
@@ -1196,11 +1257,11 @@
 												{/if}
 												
 																				<!-- Show navigation indicator in dashboard view (all tours) -->
-								{#if !tourId}
+												{#if !tourId}
 									<div class="navigation-indicator">
 										<ChevronRight class="h-3 w-3" style="color: var(--text-tertiary);" />
 									</div>
-								{/if}
+												{/if}
 											{/if}
 										</div>
 									</button>

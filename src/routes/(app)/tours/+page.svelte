@@ -474,7 +474,13 @@
 				bind:currentDate={timelineCurrentDate}
 				compact={false}
 				onSlotClick={(slot) => {
-					goto(`/tours/${slot.tourId}`);
+					// Navigate to tour details page when clicking a slot
+					// On mobile, go directly to schedule tab
+					if (window.innerWidth < 768) {
+						goto(`/tours/${slot.tourId}?tab=schedule`);
+					} else {
+						goto(`/tours/${slot.tourId}`);
+					}
 				}}
 			/>
 		</div>

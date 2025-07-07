@@ -355,6 +355,15 @@
 			hasProcessedUrlParams = true;
 			const urlParams = new URLSearchParams(window.location.search);
 			
+			// Check for tab parameter to switch mobile tab
+			if (urlParams.get('tab') === 'schedule') {
+				mobileTab = 'schedule';
+				// Clear the URL parameter
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete('tab');
+				window.history.replaceState({}, '', newUrl.toString());
+			}
+			
 			if (urlParams.get('edited') === 'true') {
 				showEditSuccess = true;
 				// Clear the URL parameter
@@ -1148,7 +1157,7 @@
 								defaultView="month"
 								hideHeaderText={true}
 								hideStats={true}
-								hideViewToggle={true}
+								hideViewToggle={false}
 								compact={true}
 								onSlotClick={handleSlotClick}
 								onViewChange={handleViewChange}

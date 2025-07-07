@@ -22,7 +22,7 @@
 			</div>
 		</div>
 	</div>
-</footer>
+</footer> 
 
 <style>
 	/* Minimal Footer - clean and simple */

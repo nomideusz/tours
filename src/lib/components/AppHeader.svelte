@@ -20,19 +20,19 @@
 			<!-- Logo and branding -->
 			<div class="professional-header-brand">
 				<Logo variant="modern" href="/dashboard" size="large" />
-			</div>
+		</div>
 
 			<!-- Right Side Actions -->
 			<div class="header-actions">
-				<!-- Notifications -->
-				<NotificationPanel tooltipPosition="bottom-left" />
+			<!-- Notifications -->
+			<NotificationPanel tooltipPosition="bottom-left" />
 
-				<!-- Theme Toggle -->
-				<ThemeToggle tooltipPosition="bottom" />
+			<!-- Theme Toggle -->
+			<ThemeToggle tooltipPosition="bottom" />
 			</div>
 		</div>
 	</div>
-</header>
+</header> 
 
 <style>
 	/* Professional Header - matches marketing style */
