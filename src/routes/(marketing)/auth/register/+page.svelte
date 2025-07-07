@@ -114,11 +114,11 @@
 	}
 </script>
 
-<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+<div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+	<div class="w-full max-w-lg lg:max-w-2xl relative z-10">
 		<!-- Header -->
-		<div class="text-center mb-8">
-			<h2 class="text-3xl font-bold text-gray-900 mb-2">
+		<div class="text-center mb-6 sm:mb-8">
+			<h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
 				Create Account
 			</h2>
 			<p class="text-gray-600 text-sm">
@@ -128,7 +128,7 @@
 
 		<!-- Error Messages -->
 		{#if form?.error}
-			<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+			<div class="bg-white border border-red-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 				<div class="flex items-center gap-3">
 					<div class="flex-shrink-0">
 						<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -142,7 +142,7 @@
 
 		<!-- Success Message -->
 		{#if form?.success}
-			<div class="bg-white border border-green-200 rounded-xl p-4 mb-6 shadow-sm">
+			<div class="bg-white border border-green-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 				<div class="flex items-center gap-3">
 					<div class="flex-shrink-0">
 						<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -155,7 +155,7 @@
 		{/if}
 
 		<!-- Register Card -->
-		<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+		<div class="modern-card">
 			<div class="relative">
 				<!-- OAuth2 Register Options -->
 				{#if availableProviders.length > 0}
@@ -218,171 +218,187 @@
 							}
 						};
 					}}
-					class="space-y-6"
+					class="space-y-4 sm:space-y-5"
 				>
-					<div>
-						<label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-							Username
-						</label>
-						<input
-							type="text"
-							id="username"
-							name="username"
-							bind:value={username}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {usernameError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-							placeholder="Enter your username"
-							disabled={isRegistering}
-							onblur={() => {
-								if (!username) usernameError = 'Username is required';
-								else if (username.length < 3) usernameError = 'Username must be at least 3 characters';
-								else if (!/^[a-zA-Z0-9_-]+$/.test(username)) usernameError = 'Username can only contain letters, numbers, hyphens, and underscores';
-								else usernameError = '';
-							}}
-						/>
-						{#if usernameError}
-							<p class="mt-1 text-sm text-red-600">{usernameError}</p>
-						{/if}
-					</div>
-
-					<div>
-						<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-							Email Address
-						</label>
-						<input
-							type="email"
-							id="email"
-							name="email"
-							bind:value={email}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-							placeholder="Enter your email address"
-							disabled={isRegistering}
-							onblur={() => {
-								if (!email) emailError = 'Email is required';
-								else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = 'Please enter a valid email address';
-								else emailError = '';
-							}}
-						/>
-						{#if emailError}
-							<p class="mt-1 text-sm text-red-600">{emailError}</p>
-						{/if}
-					</div>
-
-					<div>
-						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-							Password
-						</label>
-						<div class="relative">
+					<!-- Account Information Grid -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+						<div>
+							<label for="username" class="block text-sm font-medium text-gray-700 mb-1.5">
+								Username
+							</label>
 							<input
-								type={showPassword ? 'text' : 'password'}
-								id="password"
-								name="password"
-								bind:value={password}
-								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-								placeholder="Enter your password"
+								type="text"
+								id="username"
+								name="username"
+								bind:value={username}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {usernameError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder="Choose a username"
 								disabled={isRegistering}
 								onblur={() => {
-									if (!password) passwordError = 'Password is required';
-									else if (password.length < 8) passwordError = 'Password must be at least 8 characters';
-									else passwordError = '';
+									if (!username) usernameError = 'Username is required';
+									else if (username.length < 3) usernameError = 'Username must be at least 3 characters';
+									else if (!/^[a-zA-Z0-9_-]+$/.test(username)) usernameError = 'Username can only contain letters, numbers, hyphens, and underscores';
+									else usernameError = '';
 								}}
 							/>
-							<button
-								type="button"
-								class="absolute inset-y-0 right-0 pr-3 flex items-center"
-								onclick={() => showPassword = !showPassword}
-							>
-								{#if showPassword}
-									<EyeOff class="h-4 w-4 text-gray-400" />
-								{:else}
-									<Eye class="h-4 w-4 text-gray-400" />
-								{/if}
-							</button>
+							{#if usernameError}
+								<p class="mt-1 text-xs text-red-600">{usernameError}</p>
+							{/if}
 						</div>
-						{#if passwordError}
-							<p class="mt-1 text-sm text-red-600">{passwordError}</p>
-						{/if}
-					</div>
 
-					<div>
-						<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
-							Confirm Password
-						</label>
-						<div class="relative">
+						<div>
+							<label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">
+								Email Address
+							</label>
 							<input
-								type={showConfirmPassword ? 'text' : 'password'}
-								id="confirmPassword"
-								name="confirmPassword"
-								bind:value={confirmPassword}
-								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-								placeholder="Confirm your password"
+								type="email"
+								id="email"
+								name="email"
+								bind:value={email}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder="your@email.com"
 								disabled={isRegistering}
 								onblur={() => {
-									if (!confirmPassword) confirmPasswordError = 'Please confirm your password';
-									else if (password !== confirmPassword) confirmPasswordError = 'Passwords do not match';
-									else confirmPasswordError = '';
+									if (!email) emailError = 'Email is required';
+									else if (!/^\S+@\S+\.\S+$/.test(email)) emailError = 'Please enter a valid email address';
+									else emailError = '';
 								}}
 							/>
-							<button
-								type="button"
-								class="absolute inset-y-0 right-0 pr-3 flex items-center"
-								onclick={() => showConfirmPassword = !showConfirmPassword}
-							>
-								{#if showConfirmPassword}
-									<EyeOff class="h-4 w-4 text-gray-400" />
-								{:else}
-									<Eye class="h-4 w-4 text-gray-400" />
-								{/if}
-							</button>
+							{#if emailError}
+								<p class="mt-1 text-xs text-red-600">{emailError}</p>
+							{/if}
 						</div>
-						{#if confirmPasswordError}
-							<p class="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
-						{/if}
 					</div>
 
-					<div>
-						<label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
-							Business Name <span class="text-gray-500 text-xs">(Optional)</span>
-						</label>
-						<input
-							type="text"
-							id="businessName"
-							name="businessName"
-							bind:value={businessName}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
-							placeholder="Your business or company name"
-							disabled={isRegistering}
-						/>
+					<!-- Password Grid -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+						<div>
+							<label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
+								Password
+							</label>
+							<div class="relative">
+								<input
+									type={showPassword ? 'text' : 'password'}
+									id="password"
+									name="password"
+									bind:value={password}
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									placeholder="Min. 8 characters"
+									disabled={isRegistering}
+									onblur={() => {
+										if (!password) passwordError = 'Password is required';
+										else if (password.length < 8) passwordError = 'Password must be at least 8 characters';
+										else passwordError = '';
+									}}
+								/>
+								<button
+									type="button"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									onclick={() => showPassword = !showPassword}
+								>
+									{#if showPassword}
+										<EyeOff class="h-4 w-4 text-gray-400" />
+									{:else}
+										<Eye class="h-4 w-4 text-gray-400" />
+									{/if}
+								</button>
+							</div>
+							{#if passwordError}
+								<p class="mt-1 text-xs text-red-600">{passwordError}</p>
+							{/if}
+						</div>
+
+						<div>
+							<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1.5">
+								Confirm Password
+							</label>
+							<div class="relative">
+								<input
+									type={showConfirmPassword ? 'text' : 'password'}
+									id="confirmPassword"
+									name="confirmPassword"
+									bind:value={confirmPassword}
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									placeholder="Confirm password"
+									disabled={isRegistering}
+									onblur={() => {
+										if (!confirmPassword) confirmPasswordError = 'Please confirm your password';
+										else if (password !== confirmPassword) confirmPasswordError = 'Passwords do not match';
+										else confirmPasswordError = '';
+									}}
+								/>
+								<button
+									type="button"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									onclick={() => showConfirmPassword = !showConfirmPassword}
+								>
+									{#if showConfirmPassword}
+										<EyeOff class="h-4 w-4 text-gray-400" />
+									{:else}
+										<Eye class="h-4 w-4 text-gray-400" />
+									{/if}
+								</button>
+							</div>
+							{#if confirmPasswordError}
+								<p class="mt-1 text-xs text-red-600">{confirmPasswordError}</p>
+							{/if}
+						</div>
 					</div>
 
-					<div>
-						<label for="location" class="block text-sm font-medium text-gray-700 mb-2">
-							Location <span class="text-gray-500 text-xs">(Optional)</span>
-						</label>
-						<input
-							type="text"
-							id="location"
-							name="location"
-							bind:value={location}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
-							placeholder="City, Country"
-							disabled={isRegistering}
-						/>
-					</div>
+					<!-- Optional Fields Section -->
+					<details class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+						<summary class="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+							Additional Information (Optional)
+						</summary>
+						<div class="mt-4 space-y-4">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<div>
+									<label for="businessName" class="block text-sm font-medium text-gray-700 mb-1.5">
+										Business Name
+									</label>
+									<input
+										type="text"
+										id="businessName"
+										name="businessName"
+										bind:value={businessName}
+										class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
+										placeholder="Your business name"
+										disabled={isRegistering}
+									/>
+								</div>
 
-					<div>
-						<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-2">
-							Promo Code <span class="text-gray-500 text-xs">(Optional)</span>
-						</label>
-						<input
-							type="text"
-							id="accessCode"
-							name="accessCode"
-							bind:value={accessCode}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
-							placeholder="Enter promo code if you have one"
-							disabled={isRegistering}
-						/>
-					</div>
+								<div>
+									<label for="location" class="block text-sm font-medium text-gray-700 mb-1.5">
+										Location
+									</label>
+									<input
+										type="text"
+										id="location"
+										name="location"
+										bind:value={location}
+										class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
+										placeholder="City, Country"
+										disabled={isRegistering}
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-1.5">
+									Promo Code
+								</label>
+								<input
+									type="text"
+									id="accessCode"
+									name="accessCode"
+									bind:value={accessCode}
+									class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
+									placeholder="Enter promo code if you have one"
+									disabled={isRegistering}
+								/>
+							</div>
+						</div>
+					</details>
 
 					<button
 						type="submit"
@@ -417,39 +433,5 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	/* Subtle retro section with minimal color - matches homepage */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-	}
-	
-	/* Very subtle texture overlay - matches homepage */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-</style>
 
  

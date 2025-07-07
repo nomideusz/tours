@@ -38,86 +38,53 @@
 	}
 </script>
 
-<section id="faq" class="subtle-retro-section py-20" in:fade={{ duration: 600 }}>
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<div class="text-center mb-12">
-			<div class="professional-badge mb-6">
-				<HelpCircle class="w-4 h-4" />
-				<span>Quick Questions</span>
-			</div>
-			<h2 class="marketing-heading marketing-heading-lg mb-4">
-				Get Started Quickly
-			</h2>
-			<p class="text-lg max-w-xl mx-auto text-secondary">
-				Common questions about getting started with Zaur
-			</p>
-		</div>
-		
-		<div class="max-w-4xl mx-auto">
-			<div class="faq-grid">
-				{#each faqs as faq, index}
-					<div class="faq-item" in:fade={{ duration: 400, delay: index * 100 }}>
-						<button 
-							class="faq-question"
-							onclick={() => toggleItem(index)}
-							aria-expanded={isOpen(index)}
-						>
-							<span class="faq-question-text">{faq.question}</span>
-							<div class="faq-toggle {isOpen(index) ? 'open' : ''}">
-								<ChevronDown class="w-4 h-4" />
-							</div>
-						</button>
-						{#if isOpen(index)}
-							<div class="faq-answer" in:fade={{ duration: 200 }}>
-								<p>{faq.answer}</p>
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-			
-			<div class="support-cta">
-				<p class="support-text">
-					More questions? <button 
-						class="support-link"
-						onclick={() => window.location.href = '/contact'}
-					>Contact our team</button>
-				</p>
-			</div>
-		</div>
+<div class="text-center mb-12">
+	<div class="professional-badge mb-6">
+		<HelpCircle class="w-4 h-4" />
+		<span>Quick Questions</span>
 	</div>
-</section>
+	<h2 class="marketing-heading marketing-heading-lg mb-4">
+		Get Started Quickly
+	</h2>
+	<p class="text-lg max-w-xl mx-auto text-secondary">
+		Common questions about getting started with Zaur
+	</p>
+</div>
+
+<div class="max-w-4xl mx-auto">
+	<div class="faq-grid">
+		{#each faqs as faq, index}
+			<div class="faq-item" in:fade={{ duration: 400, delay: index * 100 }}>
+				<button 
+					class="faq-question"
+					onclick={() => toggleItem(index)}
+					aria-expanded={isOpen(index)}
+				>
+					<span class="faq-question-text">{faq.question}</span>
+					<div class="faq-toggle {isOpen(index) ? 'open' : ''}">
+						<ChevronDown class="w-4 h-4" />
+					</div>
+				</button>
+				{#if isOpen(index)}
+					<div class="faq-answer" in:fade={{ duration: 200 }}>
+						<p>{faq.answer}</p>
+					</div>
+				{/if}
+			</div>
+		{/each}
+	</div>
+	
+	<div class="support-cta">
+		<p class="support-text">
+			More questions? <button 
+				class="support-link"
+				onclick={() => window.location.href = '/contact'}
+			>Contact our team</button>
+		</p>
+	</div>
+</div>
 
 <style>
-	/* Subtle retro section with minimal color - matches other sections */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	/* Very subtle texture overlay */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-
 	/* Professional badge */
 	.professional-badge {
 		display: inline-flex;

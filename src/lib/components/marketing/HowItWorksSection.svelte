@@ -11,148 +11,112 @@
 	}
 </script>
 
-<section id="how-it-works" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<div class="text-center mb-16">
-			<div class="professional-badge mb-6">
-				<span>How It Works</span>
+<div class="text-center mb-16">
+	<div class="professional-badge mb-6">
+		<span>How It Works</span>
+	</div>
+	<h2 class="marketing-heading marketing-heading-lg mb-4">
+		Start Getting Bookings in Minutes
+	</h2>
+	<p class="text-lg text-secondary max-w-2xl mx-auto">
+		No technical skills needed. If you can use WhatsApp, you can use Zaur.
+	</p>
+</div>
+
+<div class="grid md:grid-cols-3 gap-8">
+	<!-- Step 1: Create Your Tour -->
+	<div class="relative">
+		<div class="professional-card h-full flex flex-col">
+			<div class="step-number-container mb-6 mx-auto">
+				<div class="step-number step-number-coral">1</div>
 			</div>
-			<h2 class="marketing-heading marketing-heading-lg mb-4">
-				Start Getting Bookings in Minutes
-			</h2>
-			<p class="text-lg text-secondary max-w-2xl mx-auto">
-				No technical skills needed. If you can use WhatsApp, you can use Zaur.
+			<h3 class="step-title text-center mb-4">Create Your Tour</h3>
+			<p class="step-description text-center flex-grow mb-6">
+				Add your tour details, set your price, and choose when you're available. Takes 2 minutes.
 			</p>
-		</div>
-		
-		<div class="grid md:grid-cols-3 gap-8">
-			<!-- Step 1: Create Your Tour -->
-			<div class="relative">
-				<div class="professional-card h-full flex flex-col">
-					<div class="step-number-container mb-6 mx-auto">
-						<div class="step-number step-number-coral">1</div>
+			<div class="tour-preview-card">
+				<div class="space-y-3 text-sm">
+					<div class="flex justify-between items-center">
+						<span class="text-primary font-medium">Walking Tour of Old Town</span>
+						<span class="font-bold text-primary">€25</span>
 					</div>
-					<h3 class="step-title text-center mb-4">Create Your Tour</h3>
-					<p class="step-description text-center flex-grow mb-6">
-						Add your tour details, set your price, and choose when you're available. Takes 2 minutes.
-					</p>
-					<div class="tour-preview-card">
-						<div class="space-y-3 text-sm">
-							<div class="flex justify-between items-center">
-								<span class="text-primary font-medium">Walking Tour of Old Town</span>
-								<span class="font-bold text-primary">€25</span>
-							</div>
-							<div class="text-secondary text-xs">Duration: 2 hours</div>
-							<div class="flex gap-2 mt-3">
-								<span class="time-slot">10:00 AM</span>
-								<span class="time-slot">2:00 PM</span>
-								<span class="time-slot">5:00 PM</span>
-							</div>
-						</div>
-					</div>
-				</div>
-				<!-- Professional Arrow -->
-				<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-					<div class="professional-arrow">
-						<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
-					</div>
-				</div>
-			</div>
-			
-			<!-- Step 2: Get Your QR Code -->
-			<div class="relative">
-				<div class="professional-card h-full flex flex-col">
-					<div class="step-number-container mb-6 mx-auto">
-						<div class="step-number step-number-orange">2</div>
-					</div>
-					<h3 class="step-title text-center mb-4">Get Your QR Code</h3>
-					<p class="step-description text-center flex-grow mb-6">
-						Download your unique QR code. Print it on flyers, business cards, or display it anywhere.
-					</p>
-					<div class="qr-showcase-container">
-						<div class="qr-code-display">
-							<QrCode class="w-20 h-20 text-secondary" strokeWidth={1.5} />
-						</div>
-					</div>
-				</div>
-				<!-- Professional Arrow -->
-				<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-					<div class="professional-arrow">
-						<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
-					</div>
-				</div>
-			</div>
-			
-			<!-- Step 3: Get Instant Bookings -->
-			<div class="professional-card h-full flex flex-col">
-				<div class="step-number-container mb-6 mx-auto">
-					<div class="step-number step-number-success">
-						<Check class="w-8 h-8 text-white" strokeWidth={2.5} />
-					</div>
-				</div>
-				<h3 class="step-title text-center mb-4">Get Instant Bookings</h3>
-				<p class="step-description text-center flex-grow mb-6">
-					Tourists scan your code, pick a time, pay securely, and you get a notification. That's it!
-				</p>
-				<div class="booking-notification">
-					<div class="flex items-start gap-4">
-						<div class="notification-icon">
-							<Euro class="w-6 h-6 text-white" strokeWidth={2} />
-						</div>
-						<div class="notification-content">
-							<div class="notification-title">New booking received!</div>
-							<div class="notification-message">Sarah booked Walking Tour • +€25</div>
-							<div class="notification-time">Just now</div>
-						</div>
+					<div class="text-secondary text-xs">Duration: 2 hours</div>
+					<div class="flex gap-2 mt-3">
+						<span class="time-slot">10:00 AM</span>
+						<span class="time-slot">2:00 PM</span>
+						<span class="time-slot">5:00 PM</span>
 					</div>
 				</div>
 			</div>
 		</div>
-		
-		<!-- Professional CTA -->
-		<div class="text-center mt-16">
-			<p class="text-secondary mb-6 text-lg">Ready to start getting bookings?</p>
-			<button onclick={handleCreateTour} class="button-coral button--large button--gap">
-				Create Your First Tour
-				<ArrowRight class="w-4 h-4" strokeWidth={2} />
-			</button>
+		<!-- Professional Arrow -->
+		<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+			<div class="professional-arrow">
+				<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
+			</div>
 		</div>
 	</div>
-</section>
+	
+	<!-- Step 2: Get Your QR Code -->
+	<div class="relative">
+		<div class="professional-card h-full flex flex-col">
+			<div class="step-number-container mb-6 mx-auto">
+				<div class="step-number step-number-orange">2</div>
+			</div>
+			<h3 class="step-title text-center mb-4">Get Your QR Code</h3>
+			<p class="step-description text-center flex-grow mb-6">
+				Download your unique QR code. Print it on flyers, business cards, or display it anywhere.
+			</p>
+			<div class="qr-showcase-container">
+				<div class="qr-code-display">
+					<QrCode class="w-20 h-20 text-secondary" strokeWidth={1.5} />
+				</div>
+			</div>
+		</div>
+		<!-- Professional Arrow -->
+		<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+			<div class="professional-arrow">
+				<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
+			</div>
+		</div>
+	</div>
+	
+	<!-- Step 3: Get Instant Bookings -->
+	<div class="professional-card h-full flex flex-col">
+		<div class="step-number-container mb-6 mx-auto">
+			<div class="step-number step-number-success">
+				<Check class="w-8 h-8 text-white" strokeWidth={2.5} />
+			</div>
+		</div>
+		<h3 class="step-title text-center mb-4">Get Instant Bookings</h3>
+		<p class="step-description text-center flex-grow mb-6">
+			Tourists scan your code, pick a time, pay securely, and you get a notification. That's it!
+		</p>
+		<div class="booking-notification">
+			<div class="flex items-start gap-4">
+				<div class="notification-icon">
+					<Euro class="w-6 h-6 text-white" strokeWidth={2} />
+				</div>
+				<div class="notification-content">
+					<div class="notification-title">New booking received!</div>
+					<div class="notification-message">Sarah booked Walking Tour • +€25</div>
+					<div class="notification-time">Just now</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Professional CTA -->
+<div class="text-center mt-16">
+	<p class="text-secondary mb-6 text-lg">Ready to start getting bookings?</p>
+	<button onclick={handleCreateTour} class="button-coral button--large button--gap">
+		Create Your First Tour
+		<ArrowRight class="w-4 h-4" strokeWidth={2} />
+	</button>
+</div>
 
 <style>
-	/* Subtle retro section with minimal color - matches HeroSection */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-		min-height: 70vh;
-		display: flex;
-		align-items: center;
-	}
-	
-	/* Very subtle texture overlay - matches HeroSection */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-
 	/* Professional badge with subtle retro border - matches HeroSection */
 	.professional-badge {
 		display: inline-block;

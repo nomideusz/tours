@@ -28,174 +28,141 @@
 	}
 </script>
 
-<section id="pricing" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<!-- Professional Early Access Notice -->
-		<div class="mb-12">
-			<div class="info-alert max-w-4xl mx-auto">
-				<div class="flex items-start gap-3">
-					<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0 text-teal" />
-					<div class="flex-1">
-						<h3 class="font-semibold mb-1 text-primary">Early Access Program</h3>
-						<p class="text-sm text-secondary">
-							Founding members receive special pricing that remains locked in permanently. Features marked as "Soon" are in development and will be released progressively.
-						</p>
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<div class="text-center mb-12">
-			<div class="professional-badge mb-6">
-				<Crown class="w-4 h-4" />
-				<span>Founding Member Pricing</span>
-			</div>
-			<h2 class="marketing-heading marketing-heading-lg mb-4">
-				Transparent Subscription Pricing
-			</h2>
-			<p class="text-lg max-w-2xl mx-auto text-secondary">
-				No booking commissions or hidden fees. Choose a plan that fits your business needs. Keep 100% of your tour revenue.
-			</p>
-		</div>
-		
-		<!-- Professional Toggle -->
-		<div class="flex justify-center mb-16">
-			<div class="pricing-toggle">
-				<button 
-					class="toggle-option {!isYearly ? 'toggle-option--active' : ''}"
-					onclick={() => isYearly = false}
-				>
-					Monthly
-				</button>
-				<button 
-					class="toggle-option {isYearly ? 'toggle-option--active' : ''}"
-					onclick={() => isYearly = true}
-				>
-					Annual (Save 20%)
-				</button>
-			</div>
-		</div>
-		
-		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-			{#each PRICING_PLANS as plan}
-				{@const pricing = getPlanPricing(plan, isYearly)}
-				<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}" 
-					 role="button"
-					 tabindex="0"
-					 onclick={() => handlePlanSelect(plan)}
-					 onkeydown={(e) => e.key === 'Enter' && handlePlanSelect(plan)}>
-					
-					{#if plan.popular}
-						<div class="popular-badge">
-							<Crown class="w-3 h-3" />
-							<span>Recommended</span>
-						</div>
-					{/if}
-					
-					<div class="plan-header">
-						<h3 class="plan-name">{plan.name}</h3>
-						
-						<div class="plan-pricing">
-							{#if plan.id !== 'free' && pricing.savings > 0}
-								<span class="original-price">€{pricing.original}</span>
-								<span class="current-price">€{pricing.earlyAccess}</span>
-							{:else}
-								<span class="current-price">€{pricing.earlyAccess}</span>
-							{/if}
-							{#if plan.id !== 'free'}
-								<span class="billing-period">{pricing.period}</span>
-							{/if}
-						</div>
-						
-						<div class="plan-badge-container">
-							{#if plan.id !== 'free' && pricing.savings > 0}
-								<span class="founding-member-badge">
-									Founding Member Price
-								</span>
-							{/if}
-						</div>
-						
-						<p class="plan-description">{plan.description}</p>
-					</div>
-					
-					<ul class="feature-list">
-						{#each plan.features as feature}
-							<li class="feature-item">
-								{#if feature.included}
-									<Check class="feature-icon feature-icon--included" strokeWidth={2} />
-									<div class="feature-content">
-										<div class="feature-text-wrapper">
-											<span class="feature-text">
-												{feature.text}
-											</span>
-											{#if feature.comingSoon}
-												<span class="coming-soon-badge">
-													Soon
-												</span>
-											{/if}
-										</div>
-									</div>
-								{:else}
-									<X class="feature-icon feature-icon--excluded" strokeWidth={2} />
-									<span class="feature-text feature-text--excluded">{feature.text}</span>
-								{/if}
-							</li>
-						{/each}
-					</ul>
-					
-					<button onclick={(e) => { e.stopPropagation(); handlePlanSelect(plan); }} 
-						    class="plan-cta {plan.popular ? 'plan-cta--primary' : 'plan-cta--outline'}">
-						{plan.ctaText}
-					</button>
-				</div>
-			{/each}
-		</div>
-		
-		<!-- Professional No Commission Notice -->
-		<div class="mt-16">
-			<div class="no-commission-card max-w-4xl mx-auto text-center">
-				<p class="no-commission-title">
-					No Commission Model
-				</p>
-				<p class="no-commission-description">
-					Unlike competitors who charge 3-8% commission per booking, we use a simple subscription model. 
-					<span class="font-semibold">You keep 100% of your booking revenue.</span>
+<!-- Professional Early Access Notice -->
+<div class="mb-12">
+	<div class="info-alert max-w-4xl mx-auto">
+		<div class="flex items-start gap-3">
+			<AlertCircle class="w-5 h-5 mt-0.5 flex-shrink-0 text-teal" />
+			<div class="flex-1">
+				<h3 class="font-semibold mb-1 text-primary">Early Access Program</h3>
+				<p class="text-sm text-secondary">
+					Founding members receive special pricing that remains locked in permanently. Features marked as "Soon" are in development and will be released progressively.
 				</p>
 			</div>
 		</div>
 	</div>
-</section>
+</div>
+
+<div class="text-center mb-12">
+	<div class="professional-badge mb-6">
+		<Crown class="w-4 h-4" />
+		<span>Founding Member Pricing</span>
+	</div>
+	<h2 class="marketing-heading marketing-heading-lg mb-4">
+		Transparent Subscription Pricing
+	</h2>
+	<p class="text-lg max-w-2xl mx-auto text-secondary">
+		No booking commissions or hidden fees. Choose a plan that fits your business needs. Keep 100% of your tour revenue.
+	</p>
+</div>
+
+<!-- Professional Toggle -->
+<div class="flex justify-center mb-16">
+	<div class="pricing-toggle">
+		<button 
+			class="toggle-option {!isYearly ? 'toggle-option--active' : ''}"
+			onclick={() => isYearly = false}
+		>
+			Monthly
+		</button>
+		<button 
+			class="toggle-option {isYearly ? 'toggle-option--active' : ''}"
+			onclick={() => isYearly = true}
+		>
+			Annual (Save 20%)
+		</button>
+	</div>
+</div>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+	{#each PRICING_PLANS as plan}
+		{@const pricing = getPlanPricing(plan, isYearly)}
+		<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}" 
+			 role="button"
+			 tabindex="0"
+			 onclick={() => handlePlanSelect(plan)}
+			 onkeydown={(e) => e.key === 'Enter' && handlePlanSelect(plan)}>
+		
+		{#if plan.popular}
+			<div class="popular-badge">
+				<Crown class="w-3 h-3" />
+				<span>Recommended</span>
+			</div>
+		{/if}
+		
+		<div class="plan-header">
+			<h3 class="plan-name">{plan.name}</h3>
+			
+			<div class="plan-pricing">
+				{#if plan.id !== 'free' && pricing.savings > 0}
+					<span class="original-price">€{pricing.original}</span>
+					<span class="current-price">€{pricing.earlyAccess}</span>
+				{:else}
+					<span class="current-price">€{pricing.earlyAccess}</span>
+				{/if}
+				{#if plan.id !== 'free'}
+					<span class="billing-period">{pricing.period}</span>
+				{/if}
+			</div>
+			
+			<div class="plan-badge-container">
+				{#if plan.id !== 'free' && pricing.savings > 0}
+					<span class="founding-member-badge">
+						Founding Member Price
+					</span>
+				{/if}
+			</div>
+			
+			<p class="plan-description">{plan.description}</p>
+		</div>
+		
+		<ul class="feature-list">
+			{#each plan.features as feature}
+				<li class="feature-item">
+					{#if feature.included}
+						<Check class="feature-icon feature-icon--included" strokeWidth={2} />
+						<div class="feature-content">
+							<div class="feature-text-wrapper">
+								<span class="feature-text">
+									{feature.text}
+								</span>
+								{#if feature.comingSoon}
+									<span class="coming-soon-badge">
+										Soon
+									</span>
+								{/if}
+							</div>
+						</div>
+					{:else}
+						<X class="feature-icon feature-icon--excluded" strokeWidth={2} />
+						<span class="feature-text feature-text--excluded">{feature.text}</span>
+					{/if}
+				</li>
+			{/each}
+		</ul>
+		
+		<button onclick={(e) => { e.stopPropagation(); handlePlanSelect(plan); }} 
+				class="plan-cta {plan.popular ? 'plan-cta--primary' : 'plan-cta--outline'}">
+			{plan.ctaText}
+		</button>
+	</div>
+	{/each}
+</div>
+
+<!-- Professional No Commission Notice -->
+<div class="mt-16">
+	<div class="no-commission-card max-w-4xl mx-auto text-center">
+		<p class="no-commission-title">
+			No Commission Model
+		</p>
+		<p class="no-commission-description">
+			Unlike competitors who charge 3-8% commission per booking, we use a simple subscription model. 
+			<span class="font-semibold">You keep 100% of your booking revenue.</span>
+		</p>
+	</div>
+</div>
 
 <style>
-	/* Subtle retro section with minimal color - matches other sections */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	/* Very subtle texture overlay */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-
 	/* Professional badge */
 	.professional-badge {
 		display: inline-flex;

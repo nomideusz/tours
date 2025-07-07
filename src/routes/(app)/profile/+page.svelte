@@ -28,6 +28,7 @@
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
+	import PageContainer from '$lib/components/PageContainer.svelte';
 	
 	// Profile Components
 	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';
@@ -555,257 +556,288 @@
 	<title>Profile Settings - Zaur</title>
 </svelte:head>
 
-{#if isLoading}
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<PageContainer class="py-4 sm:py-8">
+	{#if isLoading}
 		<div class="flex justify-center items-center py-12">
 			<LoadingSpinner size="large" text="Loading profile..." />
 		</div>
-	</div>
-{:else if isError}
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	{:else if isError}
 		<ErrorAlert variant="error" message="Failed to load profile data. Please refresh the page." />
-	</div>
-{:else}
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<!-- Error Message Banner -->
-	{#if paymentSetupError}
-		<div class="alert-error mb-6 rounded-lg p-4">
-			<div class="flex items-start gap-3">
-				<div class="flex-shrink-0">
-					<AlertCircle class="h-5 w-5" />
+	{:else}
+		<!-- Error Message Banner -->
+		{#if paymentSetupError}
+			<div class="alert-error mb-6 rounded-lg p-4">
+				<div class="flex items-start gap-3">
+					<div class="flex-shrink-0">
+						<AlertCircle class="h-5 w-5" />
+					</div>
+					<div class="flex-1">
+						<h3 class="mb-1 text-sm font-medium">
+							Payment setup failed
+						</h3>
+						<p class="text-sm">
+							{paymentSetupError}
+						</p>
+					</div>
+					<button
+						onclick={() => (paymentSetupError = null)}
+						class="button-secondary button--small button--icon ml-2"
+						aria-label="Close"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							/>
+						</svg>
+					</button>
 				</div>
-				<div class="flex-1">
-					<h3 class="mb-1 text-sm font-medium">
-						Payment setup failed
-					</h3>
-					<p class="text-sm">
-						{paymentSetupError}
-					</p>
-				</div>
-				<button
-					onclick={() => (paymentSetupError = null)}
-					class="button-secondary button--small button--icon ml-2"
-					aria-label="Close"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-				</button>
 			</div>
-		</div>
-	{/if}
-	
-	<!-- Mobile-First Header -->
-	<div class="mb-6 sm:mb-8">
-		<!-- Mobile Compact Header -->
-		<MobilePageHeader
-			title="Profile Settings"
-			secondaryInfo={user?.email || 'Loading...'}
-			quickActions={mobileQuickActions}
-			infoItems={mobileInfoItems}
-		/>
-
-		<!-- Desktop Header -->
-		<div class="hidden sm:block">
-			<PageHeader 
+		{/if}
+		
+		<!-- Mobile-First Header -->
+		<div class="mb-6 sm:mb-8">
+			<!-- Mobile Compact Header -->
+			<MobilePageHeader
 				title="Profile Settings"
-				subtitle="Manage your account information and preferences"
-			>
-				<div class="flex gap-3">
-					{#if username}
-						<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button--gap">
-							<ExternalLink class="h-4 w-4" />
-							View Profile
-						</button>
-						<button onclick={copyProfileLink} class="button-secondary button--gap">
-							{#if profileLinkCopied}
-								<CheckCircle class="h-4 w-4" />
-								Copied!
-							{:else}
-								<Copy class="h-4 w-4" />
-								Copy Link
-							{/if}
-						</button>
-					{/if}
-				</div>
-			</PageHeader>
-		</div>
-	</div>
-
-	<!-- Promo Status Section -->
-	{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date())) && !promoBannerDismissed}
-		<div class="mb-4 sm:mb-6">
-			<PromoStatusBanner 
-				variant={browser && window.innerWidth < 640 ? 'default' : 'detailed'}
-				showDismiss={true}
-				onDismiss={() => {
-					promoBannerDismissed = true;
-					// Store dismissal in localStorage with expiry
-					if (browser) {
-						const dismissData = {
-							dismissed: true,
-							timestamp: Date.now(),
-							// Expire after 30 days for profile page
-							expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
-						};
-						localStorage.setItem('profilePromoBannerDismissed', JSON.stringify(dismissData));
-					}
-				}}
+				secondaryInfo={user?.email || 'Loading...'}
+				quickActions={mobileQuickActions}
+				infoItems={mobileInfoItems}
 			/>
-		</div>
-	{/if}
 
-	<!-- Main Content -->
-	<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">
-		<!-- Main Column -->
-		<div class="lg:col-span-2 space-y-6 lg:space-y-8">
-			<!-- Avatar & Personal Information -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Profile Information</h2>
-				</div>
-				<div class="p-4 sm:p-6 space-y-6">
-					<!-- Avatar -->
-					<ProfileAvatar
-						{user}
-						{avatarPreview}
-						avatarSaved={false}
-						avatarRemoved={false}
-						{avatarLoadError}
-						{uploadingAvatar}
-						onAvatarSelect={onAvatarSelect}
-						onRemoveAvatar={removeAvatar}
-					/>
-					
-					{#if avatarUploadError}
-						<div class="alert-error rounded-lg p-3 text-sm">
-							<p>{avatarUploadError}</p>
+			<!-- Desktop Header -->
+			<div class="hidden sm:block">
+				<PageHeader 
+					title="Profile Settings"
+					subtitle="Manage your account information and preferences"
+				>
+					<div class="flex gap-3">
+						{#if username}
+							<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button--gap">
+								<ExternalLink class="h-4 w-4" />
+								View Profile
+							</button>
+							<button onclick={copyProfileLink} class="button-secondary button--gap">
+								{#if profileLinkCopied}
+									<CheckCircle class="h-4 w-4" />
+									Copied!
+								{:else}
+									<Copy class="h-4 w-4" />
+									Copy Link
+								{/if}
+							</button>
+						{/if}
+					</div>
+				</PageHeader>
+			</div>
+		</div>
+
+		<!-- Promo Status Section -->
+		{#if user && (user.promoCodeUsed || user.subscriptionDiscountPercentage > 0 || (user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date())) && !promoBannerDismissed}
+			<div class="mb-4 sm:mb-6">
+				<PromoStatusBanner 
+					variant={browser && window.innerWidth < 640 ? 'default' : 'detailed'}
+					showDismiss={true}
+					onDismiss={() => {
+						promoBannerDismissed = true;
+						// Store dismissal in localStorage with expiry
+						if (browser) {
+							const dismissData = {
+								dismissed: true,
+								timestamp: Date.now(),
+								// Expire after 30 days for profile page
+								expiry: Date.now() + (30 * 24 * 60 * 60 * 1000)
+							};
+							localStorage.setItem('profilePromoBannerDismissed', JSON.stringify(dismissData));
+						}
+					}}
+				/>
+			</div>
+		{/if}
+
+		<!-- Main Content -->
+		<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">
+			<!-- Main Column -->
+			<div class="lg:col-span-2 space-y-6">
+				{#if profileSaveSuccess}
+					<!-- Success message at top of form -->
+					<div class="modern-card-compact border-green-200 bg-green-50">
+						<div class="flex items-center gap-3">
+							<div class="flex-shrink-0">
+								<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+									<CheckCircle class="w-4 h-4 text-green-600" />
+								</div>
+							</div>
+							<p class="text-sm font-medium text-green-800">Profile updated successfully!</p>
 						</div>
+					</div>
+				{/if}
+				
+				{#if passwordChangeSuccess}
+					<!-- Password change success message -->
+					<div class="modern-card-compact border-green-200 bg-green-50">
+						<div class="flex items-center gap-3">
+							<div class="flex-shrink-0">
+								<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+									<CheckCircle class="w-4 h-4 text-green-600" />
+								</div>
+							</div>
+							<p class="text-sm font-medium text-green-800">Password changed successfully!</p>
+						</div>
+					</div>
+				{/if}
+				
+				{#if user}
+					<!-- Personal Information -->
+					<div class="modern-card">
+						<div class="flex items-center justify-between border-b pb-4 mb-6" style="border-color: var(--border-primary);">
+							<h2 class="text-lg font-semibold flex items-center gap-2">
+								<User class="w-5 h-5 text-gray-500" />
+								Personal Information
+							</h2>
+						</div>
+
+						<!-- Avatar -->
+						<div class="mb-6">
+							<ProfileAvatar
+								{user}
+								{avatarPreview}
+								avatarSaved={false}
+								avatarRemoved={false}
+								{avatarLoadError}
+								{uploadingAvatar}
+								onAvatarSelect={onAvatarSelect}
+								onRemoveAvatar={removeAvatar}
+							/>
+							
+							{#if avatarUploadError}
+								<div class="alert-error rounded-lg p-3 text-sm mt-4">
+									<p>{avatarUploadError}</p>
+								</div>
+							{/if}
+						</div>
+						
+						<!-- Form -->
+						<PersonalInfoForm
+							{user}
+							bind:name
+							bind:username
+							bind:businessName
+							bind:description
+							bind:phone
+							bind:website
+							bind:location
+							bind:country
+							bind:currency
+							onSubmit={updatePersonalInfo}
+							loading={profileLoading}
+							paymentSetup={!!user?.stripeAccountId}
+							saveSuccess={profileSaveSuccess}
+						/>
+					</div>
+
+					<!-- Mobile: Payment Setup (higher priority on mobile) -->
+					<div class="lg:hidden">
+						<PaymentSetup
+							{paymentStatus}
+							onSetupPayments={setupPayments}
+							{isSettingUpPayment}
+							error={paymentSetupError}
+						/>
+					</div>
+
+					<!-- Security -->
+					{#if !user?.isOAuth2User}
+						<PasswordChangeForm
+							bind:currentPassword
+							bind:newPassword
+							bind:confirmPassword
+							{passwordError}
+							passwordChanged={passwordChangeSuccess}
+							{passwordLoading}
+							onSubmit={changePassword}
+						/>
 					{/if}
+
+					<!-- Mobile: Account Info -->
+					<div class="lg:hidden">
+						<AccountInfo {user} />
+					</div>
+
+					<!-- Mobile: Preferences -->
+					<div class="lg:hidden">
+						<PreferencesSection />
+					</div>
 					
-					<!-- Form -->
-					<PersonalInfoForm
+					<!-- Danger Zone (always last) -->
+					<DangerZone
 						{user}
-						bind:name
-						bind:username
-						bind:businessName
-						bind:description
-						bind:phone
-						bind:website
-						bind:location
-						bind:country
-						bind:currency
-						onSubmit={updatePersonalInfo}
-						loading={profileLoading}
-						paymentSetup={!!user?.stripeAccountId}
-						saveSuccess={profileSaveSuccess}
+						onDelete={deleteAccount}
 					/>
-				</div>
+				{/if}
 			</div>
 
-			<!-- Mobile: Payment Setup (higher priority on mobile) -->
-			<div class="lg:hidden">
+			<!-- Desktop Sidebar -->
+			<div class="hidden lg:block space-y-6">
+				<!-- Quick Links -->
+				<div class="modern-card">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<h3 class="font-medium" style="color: var(--text-primary);">Quick Links</h3>
+					</div>
+					<div class="p-4 space-y-2">
+						{#if username}
+							<a 
+								href="/{username}" 
+								target="_blank"
+								class="flex items-center gap-3 p-3 rounded-lg transition-colors"
+								style="border: 1px solid var(--border-primary);"
+								onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+								onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
+							>
+								<User class="h-4 w-4" style="color: var(--text-tertiary);" />
+								<div>
+									<p class="text-sm font-medium" style="color: var(--text-primary);">Public Profile</p>
+									<p class="text-xs" style="color: var(--text-secondary);">zaur.app/{username}</p>
+								</div>
+								<ExternalLink class="h-4 w-4 ml-auto" style="color: var(--text-tertiary);" />
+							</a>
+						{/if}
+						
+						<a 
+							href="/dashboard"
+							class="flex items-center gap-3 p-3 rounded-lg transition-colors"
+							style="border: 1px solid var(--border-primary);"
+							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+							onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
+						>
+							<Shield class="h-4 w-4" style="color: var(--text-tertiary);" />
+							<div>
+								<p class="text-sm font-medium" style="color: var(--text-primary);">Dashboard</p>
+								<p class="text-xs" style="color: var(--text-secondary);">View your operations</p>
+							</div>
+						</a>
+					</div>
+				</div>
+				
+				<!-- Payment Setup -->
 				<PaymentSetup
 					{paymentStatus}
 					onSetupPayments={setupPayments}
 					{isSettingUpPayment}
 					error={paymentSetupError}
 				/>
-			</div>
 
-			<!-- Security -->
-			{#if !user?.isOAuth2User}
-				<PasswordChangeForm
-					bind:currentPassword
-					bind:newPassword
-					bind:confirmPassword
-					{passwordError}
-					passwordChanged={passwordChangeSuccess}
-					{passwordLoading}
-					onSubmit={changePassword}
-				/>
-			{/if}
-
-			<!-- Mobile: Account Info -->
-			<div class="lg:hidden">
+				<!-- Account Info -->
 				<AccountInfo {user} />
-			</div>
 
-			<!-- Mobile: Preferences -->
-			<div class="lg:hidden">
+				<!-- Preferences -->
 				<PreferencesSection />
 			</div>
-			
-			<!-- Danger Zone (always last) -->
-			<DangerZone
-				{user}
-				onDelete={deleteAccount}
-			/>
 		</div>
-
-		<!-- Desktop Sidebar -->
-		<div class="hidden lg:block space-y-6">
-			<!-- Quick Links -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-medium" style="color: var(--text-primary);">Quick Links</h3>
-				</div>
-				<div class="p-4 space-y-2">
-					{#if username}
-						<a 
-							href="/{username}" 
-							target="_blank"
-							class="flex items-center gap-3 p-3 rounded-lg transition-colors"
-							style="border: 1px solid var(--border-primary);"
-							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-							onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
-						>
-							<User class="h-4 w-4" style="color: var(--text-tertiary);" />
-							<div>
-								<p class="text-sm font-medium" style="color: var(--text-primary);">Public Profile</p>
-								<p class="text-xs" style="color: var(--text-secondary);">zaur.app/{username}</p>
-							</div>
-							<ExternalLink class="h-4 w-4 ml-auto" style="color: var(--text-tertiary);" />
-						</a>
-					{/if}
-					
-					<a 
-						href="/dashboard"
-						class="flex items-center gap-3 p-3 rounded-lg transition-colors"
-						style="border: 1px solid var(--border-primary);"
-						onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-						onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
-					>
-						<Shield class="h-4 w-4" style="color: var(--text-tertiary);" />
-						<div>
-							<p class="text-sm font-medium" style="color: var(--text-primary);">Dashboard</p>
-							<p class="text-xs" style="color: var(--text-secondary);">View your operations</p>
-						</div>
-					</a>
-				</div>
-			</div>
-			
-			<!-- Payment Setup -->
-			<PaymentSetup
-				{paymentStatus}
-				onSetupPayments={setupPayments}
-				{isSettingUpPayment}
-				error={paymentSetupError}
-			/>
-
-			<!-- Account Info -->
-			<AccountInfo {user} />
-
-			<!-- Preferences -->
-			<PreferencesSection />
-		</div>
-	</div>
-</div>
+	{/if}
+</PageContainer>
 
 <!-- Payment Confirmation Modal -->
 {#if showPaymentConfirmModal && pendingPaymentCountry}
@@ -858,7 +890,6 @@ Please ensure this is the correct country where your business is legally registe
 			</p>
 		</div>
 	</div>
-{/if}
 {/if}
  
  

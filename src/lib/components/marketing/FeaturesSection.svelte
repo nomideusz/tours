@@ -13,184 +13,148 @@
 </script>
 
 <!-- Professional Features Section -->
-<section id="features" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<div class="text-center mb-16">
-			<div class="professional-badge mb-6">
-				<Compass class="w-4 h-4" />
-				<span>Professional Tools</span>
-			</div>
-			<h2 class="marketing-heading marketing-heading-lg mb-4">
-				Everything You Need to Succeed
-			</h2>
-			<p class="text-lg max-w-2xl mx-auto text-secondary">
-				Built specifically for tour guides, with zero risk and all the features that matter for your business.
+<div class="text-center mb-16">
+	<div class="professional-badge mb-6">
+		<Compass class="w-4 h-4" />
+		<span>Professional Tools</span>
+	</div>
+	<h2 class="marketing-heading marketing-heading-lg mb-4">
+		Everything You Need to Succeed
+	</h2>
+	<p class="text-lg max-w-2xl mx-auto text-secondary">
+		Built specifically for tour guides, with zero risk and all the features that matter for your business.
+	</p>
+</div>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+	<!-- Revenue Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--coral">
+			<DollarSign class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Keep 100% of Revenue</h3>
+			<p class="feature-description">
+				No commission fees, just a simple monthly subscription. Get paid directly to your bank account.
 			</p>
 		</div>
-		
-		<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-			<!-- Revenue Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--coral">
-					<DollarSign class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">Keep 100% of Revenue</h3>
-					<p class="feature-description">
-						No commission fees, just a simple monthly subscription. Get paid directly to your bank account.
-					</p>
-				</div>
-			</div>
+	</div>
 
-			<!-- Setup Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--orange">
-					<Zap class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">5-Minute Setup</h3>
-					<p class="feature-description">
-						Create your first tour and start accepting bookings in under 5 minutes. No technical skills needed.
-					</p>
-				</div>
-			</div>
-
-			<!-- Scheduling Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--teal">
-					<Calendar class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">Smart Scheduling</h3>
-					<p class="feature-description">
-						Manage availability, prevent double bookings, and set recurring schedules effortlessly.
-					</p>
-				</div>
-			</div>
-
-			<!-- Security Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--navy">
-					<CreditCard class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">Secure Payments</h3>
-					<p class="feature-description">
-						Enterprise-grade security with Stripe. Instant payouts, no chargebacks, full PCI compliance.
-					</p>
-				</div>
-			</div>
-
-			<!-- Analytics Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--coral">
-					<BarChart3 class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">Business Analytics</h3>
-					<p class="feature-description">
-						Track conversion rates, understand booking patterns, and optimize your tours for growth.
-					</p>
-				</div>
-			</div>
-
-			<!-- Data Feature -->
-			<div class="professional-feature-card">
-				<div class="professional-icon professional-icon--teal">
-					<Download class="w-6 h-6" strokeWidth={2} />
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">Keep Your Data</h3>
-					<p class="feature-description">
-						Export your customer data anytime. Cancel without losing your business information or contacts.
-					</p>
-				</div>
-			</div>
+	<!-- Setup Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--orange">
+			<Zap class="w-6 h-6" strokeWidth={2} />
 		</div>
-
-		<!-- Trust & Guarantee Section -->
-		<div class="mt-20">
-			<div class="text-center mb-12">
-				<div class="professional-badge mb-6">
-					<Heart class="w-4 h-4" />
-					<span>Your Success Guaranteed</span>
-				</div>
-				<h3 class="marketing-heading marketing-heading-md mb-4">
-					Zero Risk. 100% Satisfaction.
-				</h3>
-				<p class="text-lg max-w-2xl mx-auto text-secondary">
-					We're so confident you'll love Zaur, we guarantee your success.
-				</p>
-			</div>
-
-			<div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-				<div class="trust-card">
-					<div class="trust-icon trust-icon--coral">
-						<span class="trust-icon-text">FREE</span>
-					</div>
-					<h4 class="trust-title">Free Forever Plan</h4>
-					<p class="trust-description">
-						Start with our Free plan. No credit card required, no hidden fees.
-					</p>
-				</div>
-
-				<div class="trust-card">
-					<div class="trust-icon trust-icon--orange">
-						<span class="trust-icon-text">24/7</span>
-					</div>
-					<h4 class="trust-title">Cancel Anytime</h4>
-					<p class="trust-description">
-						No contracts, no commitments. Cancel with one click whenever you want.
-					</p>
-				</div>
-
-				<div class="trust-card">
-					<div class="trust-icon trust-icon--navy">
-						<span class="trust-icon-text">100%</span>
-					</div>
-					<h4 class="trust-title">Satisfaction Promise</h4>
-					<p class="trust-description">
-						Not happy? We'll work with you until you are, or help you migrate elsewhere.
-					</p>
-				</div>
-			</div>
+		<div class="feature-content">
+			<h3 class="feature-title">5-Minute Setup</h3>
+			<p class="feature-description">
+				Create your first tour and start accepting bookings in under 5 minutes. No technical skills needed.
+			</p>
 		</div>
 	</div>
-</section>
+
+	<!-- Scheduling Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--teal">
+			<Calendar class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Smart Scheduling</h3>
+			<p class="feature-description">
+				Manage availability, prevent double bookings, and set recurring schedules effortlessly.
+			</p>
+		</div>
+	</div>
+
+	<!-- Security Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--navy">
+			<CreditCard class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Secure Payments</h3>
+			<p class="feature-description">
+				Enterprise-grade security with Stripe. Instant payouts, no chargebacks, full PCI compliance.
+			</p>
+		</div>
+	</div>
+
+	<!-- Analytics Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--coral">
+			<BarChart3 class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Business Analytics</h3>
+			<p class="feature-description">
+				Track conversion rates, understand booking patterns, and optimize your tours for growth.
+			</p>
+		</div>
+	</div>
+
+	<!-- Data Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--teal">
+			<Download class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Keep Your Data</h3>
+			<p class="feature-description">
+				Export your customer data anytime. Cancel without losing your business information or contacts.
+			</p>
+		</div>
+	</div>
+</div>
+
+<!-- Trust & Guarantee Section -->
+<div class="mt-20">
+	<div class="text-center mb-12">
+		<div class="professional-badge mb-6">
+			<Heart class="w-4 h-4" />
+			<span>Your Success Guaranteed</span>
+		</div>
+		<h3 class="marketing-heading marketing-heading-md mb-4">
+			Zero Risk. 100% Satisfaction.
+		</h3>
+		<p class="text-lg max-w-2xl mx-auto text-secondary">
+			We're so confident you'll love Zaur, we guarantee your success.
+		</p>
+	</div>
+
+	<div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+		<div class="trust-card">
+			<div class="trust-icon trust-icon--coral">
+				<span class="trust-icon-text">FREE</span>
+			</div>
+			<h4 class="trust-title">Free Forever Plan</h4>
+			<p class="trust-description">
+				Start with our Free plan. No credit card required, no hidden fees.
+			</p>
+		</div>
+
+		<div class="trust-card">
+			<div class="trust-icon trust-icon--orange">
+				<span class="trust-icon-text">24/7</span>
+			</div>
+			<h4 class="trust-title">Cancel Anytime</h4>
+			<p class="trust-description">
+				No contracts, no commitments. Cancel with one click whenever you want.
+			</p>
+		</div>
+
+		<div class="trust-card">
+			<div class="trust-icon trust-icon--navy">
+				<span class="trust-icon-text">100%</span>
+			</div>
+			<h4 class="trust-title">Satisfaction Promise</h4>
+			<p class="trust-description">
+				Not happy? We'll work with you until you are, or help you migrate elsewhere.
+			</p>
+		</div>
+	</div>
+</div>
 
 <style>
-	/* Subtle retro section with minimal color - matches HeroSection */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-		min-height: 70vh;
-		display: flex;
-		align-items: center;
-	}
-	
-	/* Very subtle texture overlay - matches HeroSection */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-
 	/* Professional badge with subtle retro border - matches HeroSection */
 	.professional-badge {
 		display: inline-flex;

@@ -10,6 +10,8 @@
 	import Mail from 'lucide-svelte/icons/mail';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import Eye from 'lucide-svelte/icons/eye';
+	import EyeOff from 'lucide-svelte/icons/eye-off';
 
 	// Define the type for our form data
 	type LoginForm = {
@@ -34,6 +36,7 @@
 	// Form data - use server-returned values if available
 	let email = $state(form?.email || '');
 	let password = $state(''); // Don't restore password for security reasons
+	let showPassword = $state(false);
 
 	// Form validation
 	let emailError = $state('');
@@ -87,11 +90,11 @@
 	}
 </script>
 
-<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+<div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+	<div class="w-full max-w-lg relative z-10">
 		<!-- Header -->
-		<div class="text-center mb-8">
-			<h2 class="text-3xl font-bold text-gray-900 mb-2">
+		<div class="text-center mb-6 sm:mb-8">
+			<h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
 				Welcome Back
 			</h2>
 			<p class="text-gray-600 text-sm">
@@ -101,7 +104,7 @@
 
 		<!-- Status Messages -->
 		{#if form?.message || verificationSent || (data?.message && data?.type === 'success')}
-			<div class="bg-white border border-green-200 rounded-xl p-4 mb-6 shadow-sm">
+			<div class="bg-white border border-green-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 				<div class="flex items-center gap-3">
 					<div class="flex-shrink-0">
 						<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -112,7 +115,7 @@
 				</div>
 			</div>
 		{:else if form?.needsVerification}
-			<div class="bg-white border border-orange-200 rounded-xl p-4 mb-6 shadow-sm">
+			<div class="bg-white border border-orange-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 				<div class="flex items-start gap-3">
 					<div class="flex-shrink-0">
 						<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
@@ -140,7 +143,7 @@
 				</div>
 			</div>
 		{:else if form?.error || data?.error}
-			<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+			<div class="bg-white border border-red-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 				<div class="flex items-center gap-3">
 					<div class="flex-shrink-0">
 						<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -153,7 +156,7 @@
 		{/if}
 
 		<!-- Login Card -->
-		<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+		<div class="modern-card">
 			<div class="relative">
 				<!-- OAuth2 Login Options -->
 				{#if availableProviders.length > 0}
@@ -218,13 +221,13 @@
 							}
 						};
 					}}
-					class="space-y-6"
+					class="space-y-4 sm:space-y-5"
 				>
 					<!-- Hidden redirect field -->
 					<input type="hidden" name="redirectTo" value={form?.redirectTo || data.redirectTo || ''} />
 					
 					<div>
-						<label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">
 							{t('loginPage.email', $language)}
 						</label>
 						<input
@@ -232,7 +235,7 @@
 							id="email"
 							name="email"
 							bind:value={email}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 							placeholder={t('loginPage.emailPlaceholder', $language)}
 							disabled={isLoggingIn || manualLoading}
 							onblur={() => {
@@ -243,29 +246,42 @@
 							}}
 						/>
 						{#if emailError}
-							<p class="mt-1 text-sm text-red-600">{emailError}</p>
+							<p class="mt-1 text-xs text-red-600">{emailError}</p>
 						{/if}
 					</div>
 
 					<div>
-						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
 							{t('loginPage.password', $language)}
 						</label>
-						<input
-							type="password"
-							id="password"
-							name="password"
-							bind:value={password}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-							placeholder={t('loginPage.passwordPlaceholder', $language)}
-							disabled={isLoggingIn || manualLoading}
-							onblur={() => {
-								if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
-								else passwordError = '';
-							}}
-						/>
+						<div class="relative">
+							<input
+								type={showPassword ? 'text' : 'password'}
+								id="password"
+								name="password"
+								bind:value={password}
+								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								placeholder={t('loginPage.passwordPlaceholder', $language)}
+								disabled={isLoggingIn || manualLoading}
+								onblur={() => {
+									if (!password) passwordError = t('loginPage.validation.passwordRequired', $language);
+									else passwordError = '';
+								}}
+							/>
+							<button
+								type="button"
+								class="absolute inset-y-0 right-0 pr-3 flex items-center"
+								onclick={() => showPassword = !showPassword}
+							>
+								{#if showPassword}
+									<EyeOff class="h-4 w-4 text-gray-400" />
+								{:else}
+									<Eye class="h-4 w-4 text-gray-400" />
+								{/if}
+							</button>
+						</div>
 						{#if passwordError}
-							<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+							<p class="mt-1 text-xs text-red-600">{passwordError}</p>
 						{/if}
 					</div>
 
@@ -330,39 +346,5 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	/* Subtle retro section with minimal color - matches homepage */
-	.subtle-retro-section {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-		position: relative;
-		overflow: hidden;
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-	}
-	
-	/* Very subtle texture overlay - matches homepage */
-	.subtle-retro-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-	}
-</style>
 
  

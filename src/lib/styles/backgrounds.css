@@ -1,0 +1,176 @@
+/* ============================================
+   Shared Background Styles
+   Used across (marketing), (app), and (public) routes
+   ============================================ */
+
+/* Subtle retro gradient background */
+.subtle-retro-section {
+	background: linear-gradient(
+		180deg,
+		var(--bg-primary) 0%,
+		var(--bg-secondary) 100%
+	);
+	position: relative;
+	overflow: hidden;
+}
+
+/* Very subtle texture overlay */
+.subtle-retro-section::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 40px,
+		rgba(0, 0, 0, 0.02) 40px,
+		rgba(0, 0, 0, 0.02) 41px
+	);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Ensure content is above the texture */
+.subtle-retro-section > * {
+	position: relative;
+	z-index: 2;
+}
+
+/* App-specific variant with sidebar consideration */
+.app-main-gradient {
+	background: linear-gradient(
+		180deg,
+		var(--bg-secondary) 0%,
+		var(--bg-primary) 100%
+	);
+	position: relative;
+	min-height: 100vh;
+}
+
+/* Subtle texture for app pages */
+.app-texture-overlay {
+	position: relative;
+}
+
+.app-texture-overlay::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 40px,
+		rgba(0, 0, 0, 0.015) 40px,
+		rgba(0, 0, 0, 0.015) 41px
+	);
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* Responsive padding patterns */
+.page-padding {
+	padding: 2rem 1rem;
+}
+
+@media (min-width: 640px) {
+	.page-padding {
+		padding: 3rem 1.5rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.page-padding {
+		padding: 4rem 2rem;
+	}
+}
+
+/* Compact padding for smaller sections */
+.page-padding-compact {
+	padding: 1.5rem 1rem;
+}
+
+@media (min-width: 640px) {
+	.page-padding-compact {
+		padding: 2rem 1.5rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.page-padding-compact {
+		padding: 2.5rem 2rem;
+	}
+}
+
+/* Content containers with consistent max-widths */
+.content-container {
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 1536px; /* max-w-screen-2xl */
+}
+
+.content-container-lg {
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 1024px; /* max-w-lg on mobile, scales up */
+}
+
+@media (min-width: 1024px) {
+	.content-container-lg {
+		max-width: 1280px; /* max-w-2xl on desktop */
+	}
+}
+
+.content-container-md {
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 1024px; /* max-w-lg */
+}
+
+/* Card styles matching the marketing design */
+.modern-card {
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: 0.75rem;
+	padding: 1.5rem;
+	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 640px) {
+	.modern-card {
+		padding: 2rem;
+	}
+}
+
+.modern-card-compact {
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: 0.75rem;
+	padding: 1rem;
+	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .subtle-retro-section::before,
+[data-theme="dark"] .app-texture-overlay::before {
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 40px,
+		rgba(255, 255, 255, 0.02) 40px,
+		rgba(255, 255, 255, 0.02) 41px
+	);
+}
+
+[data-theme="dark"] .modern-card,
+[data-theme="dark"] .modern-card-compact {
+	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+} 

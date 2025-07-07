@@ -67,20 +67,28 @@
 </section>
 
 <!-- How it works with subtle texture -->
-<HowItWorksSection />
+<section id="how-it-works" class="subtle-retro-section py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<HowItWorksSection />
+	</div>
+</section>
 
 <!-- Pricing with subtle texture -->
-<section class="subtle-retro-section py-20">
+<section id="pricing" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<PricingSection />
 	</div>
 </section>
 
 <!-- Features with subtle texture -->
-<FeaturesSection />
+<section id="features" class="subtle-retro-section py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<FeaturesSection />
+	</div>
+</section>
 
 <!-- FAQ with subtle texture -->
-<section class="subtle-retro-section py-20">
+<section id="faq" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<FAQSection />
 	</div>

@@ -103,14 +103,14 @@
 </svelte:head>
 
 <!-- Clean Marketing Layout -->
-<div class="min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col subtle-retro-section">
 	<Header 
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
 	/>
 
-	<main class="flex-1 pt-20 relative">
+	<main class="flex-1 pt-20 relative z-10">
 		{@render children()}
 	</main>
 

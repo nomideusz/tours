@@ -34,7 +34,7 @@
 
 <a 
 	{href}
-	class="flex items-center gap-2 transition-all nav-link h-full px-2 {sizeClasses[size as LogoSize]} {className}"
+	class="flex items-center gap-2 transition-all nav-link h-full pr-2 {sizeClasses[size as LogoSize]} {className}"
 	style="color: var(--text-primary);"
 >
 	{#if showIcon || variant === 'icon'}

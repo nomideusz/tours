@@ -423,7 +423,7 @@
 	<NotificationInitializer />
 	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
-	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-secondary);">
+	<div class="min-h-screen flex flex-col overflow-x-hidden app-main-gradient">
 		<!-- App Header - Fixed at top -->
 		<div class="fixed top-0 left-0 right-0 z-40">
 			<AppHeader 
@@ -580,7 +580,7 @@
 			<!-- Main content -->
 			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-56">
 				<!-- Page content with bottom padding on mobile for bottom nav -->
-				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0">
+				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0 app-texture-overlay">
 					{@render children()}
 				</main>
 				

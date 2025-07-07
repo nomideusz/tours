@@ -24,7 +24,7 @@
 						size="large" 
 						href="/" 
 						showIcon={false}
-						class="justify-start p-0 -ml-2"
+						class="justify-start p-0"
 					/>
 				</div>
 				<p class="footer-description">

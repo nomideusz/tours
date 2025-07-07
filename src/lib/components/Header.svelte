@@ -330,6 +330,18 @@
 		z-index: 2;
 	}
 
+	@media (min-width: 640px) {
+		.professional-header-container {
+			padding: 0 2rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.professional-header-container {
+			padding: 0 3rem;
+		}
+	}
+
 	.professional-header-content {
 		display: flex;
 		height: 5rem;
