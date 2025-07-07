@@ -64,8 +64,8 @@
 
 <!-- Global loading indicator -->
 {#if navigationState.shouldShowLoader}
-	<div class="fixed top-0 right-0 left-0 z-50 h-1 bg-blue-100">
-		<div class="loading-bar h-full bg-blue-600"></div>
+	<div class="fixed top-0 right-0 left-0 z-50 h-1" style="background: var(--color-primary-100);">
+		<div class="loading-bar h-full" style="background: var(--color-primary-600);"></div>
 	</div>
 {/if}
 
@@ -73,7 +73,7 @@
 	@reference "tailwindcss";
 	
 	:global(html) {
-		background-color: theme(--color-gray-100);
+		background-color: var(--bg-primary);
 		scroll-behavior: smooth;
 		height: auto !important;
 		overflow-y: auto !important;
@@ -109,10 +109,10 @@
 		}
 	}
 
-	/* Simplified scrollbar styling */
+	/* Theme-aware scrollbar styling */
 	:global(html) {
 		scrollbar-width: thin;
-		scrollbar-color: #cbd5e0 #f7fafc;
+		scrollbar-color: var(--border-secondary) var(--bg-secondary);
 	}
 
 	:global(html::-webkit-scrollbar) {
@@ -120,16 +120,16 @@
 	}
 
 	:global(html::-webkit-scrollbar-track) {
-		background: #f7fafc;
+		background: var(--bg-secondary);
 	}
 
 	:global(html::-webkit-scrollbar-thumb) {
-		background-color: #cbd5e0;
+		background-color: var(--border-secondary);
 		border-radius: 6px;
-		border: 2px solid #f7fafc;
+		border: 2px solid var(--bg-secondary);
 	}
 
 	:global(html::-webkit-scrollbar-thumb:hover) {
-		background-color: #a0aec0;
+		background-color: var(--text-tertiary);
 	}
 </style>

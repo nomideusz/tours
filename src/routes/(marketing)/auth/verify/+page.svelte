@@ -7,11 +7,10 @@
 	import XCircle from 'lucide-svelte/icons/x-circle';
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import LogOut from 'lucide-svelte/icons/log-out';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Compass from 'lucide-svelte/icons/compass';
-	import Flag from 'lucide-svelte/icons/flag';
 	import Shield from 'lucide-svelte/icons/shield';
 	import Mail from 'lucide-svelte/icons/mail';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 
 	// Define the type for our form data
 	type VerifyEmailForm = {
@@ -76,208 +75,166 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-adventure-navy via-adventure-navy to-adventure-teal flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
-	<!-- Adventure Background Pattern -->
-	<div class="absolute inset-0 opacity-10">
-		<div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent animate-pulse"></div>
-		<div class="absolute top-10 left-10 w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
-		<div class="absolute top-20 right-20 w-2 h-2 bg-white rounded-full animate-pulse delay-1000"></div>
-		<div class="absolute bottom-20 left-20 w-1 h-1 bg-white rounded-full animate-pulse delay-2000"></div>
-		<div class="absolute bottom-10 right-10 w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-500"></div>
-		<div class="absolute top-1/2 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse delay-1500"></div>
-		<div class="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-3000"></div>
-	</div>
-	
-	<!-- Journey Lines -->
-	<div class="absolute inset-0 opacity-5">
-		<div class="absolute top-1/4 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white to-transparent transform -rotate-6"></div>
-		<div class="absolute top-3/4 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white to-transparent transform rotate-6"></div>
-	</div>
-
-	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+	<div class="w-full max-w-lg relative z-10">
 		<!-- Header -->
-		<div class="text-center mb-8">
-			<h2 class="text-3xl font-bold text-white mb-2">
+		<div class="text-center mb-6 sm:mb-8">
+			<h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
 				Email Verification
 			</h2>
-			<p class="text-white text-opacity-80 text-sm">
+			<p class="text-gray-600 text-sm">
 				{#if !token}
 					Verify your email address to activate your account
 				{:else if form?.success}
 					Your email has been successfully verified!
 				{:else if form?.message}
 					There was an issue with verification
+				{:else}
+					We're verifying your email address
 				{/if}
 			</p>
 		</div>
 
-		<!-- Error Messages -->
-		{#if form?.message && !form?.success}
-			<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-red-300 rounded-xl p-4 mb-6 relative overflow-hidden">
-				<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-500"></div>
-				<div class="flex items-center gap-3">
-					<div class="flex-shrink-0">
-						<div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center">
-							<XCircle class="w-4 h-4 text-white" />
-						</div>
+		<!-- Success Message -->
+		{#if form?.success}
+			<div class="bg-white border border-green-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+				<div class="text-center">
+					<div class="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+						<CheckCircle class="w-6 h-6 text-green-600" />
 					</div>
-					<p class="text-sm font-medium text-red-700">{form.message}</p>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Email Verified!</h3>
+					<p class="text-sm text-gray-600 mb-4">
+						Your email address has been verified and your account is now active.
+					</p>
+					<button
+						onclick={goToDashboard}
+						class="button-coral button--full-width"
+					>
+						<Shield class="w-4 h-4 mr-2" />
+						Go to Dashboard
+					</button>
 				</div>
 			</div>
-		{/if}
-
-		{#if form?.error || data?.error}
-			<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-adventure-golden/20 rounded-xl p-4 mb-6 relative overflow-hidden">
-				<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-adventure-golden to-adventure-sunset"></div>
-				<div class="flex items-center gap-3">
-					<div class="flex-shrink-0">
-						<div class="w-8 h-8 rounded-full bg-gradient-to-br from-adventure-golden to-adventure-sunset flex items-center justify-center">
-							{#if (form?.error || data?.error)?.includes('already verified')}
-								<MapPin class="w-4 h-4 text-adventure-navy" />
-							{:else}
-								<XCircle class="w-4 h-4 text-adventure-navy" />
-							{/if}
-						</div>
+		{:else if form?.alreadyVerified || data?.alreadyVerified}
+			<!-- Already verified -->
+			<div class="bg-white border border-blue-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+				<div class="text-center">
+					<div class="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+						<CheckCircle class="w-6 h-6 text-blue-600" />
 					</div>
-					<p class="text-sm font-medium text-adventure-navy">{form?.error || data?.error}</p>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Already Verified</h3>
+					<p class="text-sm text-gray-600 mb-4">
+						Your email address has already been verified.
+					</p>
+					<button
+						onclick={goToDashboard}
+						class="button-coral button--full-width"
+					>
+						<Shield class="w-4 h-4 mr-2" />
+						Go to Dashboard
+					</button>
 				</div>
 			</div>
-		{/if}
-
-		<!-- Adventure Verification Card -->
-		<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/30 border-2 border-adventure-golden/20 rounded-xl p-8 relative overflow-hidden shadow-2xl">
-			<!-- Card Pattern Overlay -->
-			<div class="absolute inset-0 opacity-5">
-				<div class="absolute inset-0 bg-gradient-to-br from-adventure-golden/10 to-transparent"></div>
-				<div class="absolute top-4 left-4 w-6 h-6 border-2 border-adventure-golden/20 rounded-full"></div>
-				<div class="absolute top-4 right-4 w-4 h-4 border-2 border-adventure-golden/20 rounded-full"></div>
-				<div class="absolute bottom-4 left-4 w-4 h-4 border-2 border-adventure-golden/20 rounded-full"></div>
-				<div class="absolute bottom-4 right-4 w-6 h-6 border-2 border-adventure-golden/20 rounded-full"></div>
+		{:else if data?.wrongAccount || form?.wrongAccount}
+			<!-- Wrong account -->
+			<div class="bg-white border border-orange-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+				<div class="text-center">
+					<div class="w-12 h-12 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-4">
+						<AlertTriangle class="w-6 h-6 text-orange-600" />
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-4">Wrong Account</h3>
+					<div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+						<p class="text-sm text-gray-700 mb-2">
+							This verification is for: <strong class="text-orange-700">{data?.tokenEmail || form?.tokenEmail}</strong>
+						</p>
+						<p class="text-sm text-gray-700">
+							You're currently logged in as: <strong class="text-orange-700">{data?.currentEmail || form?.currentEmail}</strong>
+						</p>
+					</div>
+					<p class="text-sm text-gray-600 mb-6">
+						To verify this email address, please log out first and click the verification link again.
+					</p>
+					<div class="space-y-3">
+						<button
+							type="button"
+							onclick={goToLogout}
+							class="w-full button-coral button--full-width"
+						>
+							<LogOut class="w-4 h-4 mr-2" />
+							Log Out
+						</button>
+						<button
+							onclick={goToDashboard}
+							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+						>
+							<Shield class="w-4 h-4 mr-2" />
+							Go to Dashboard
+						</button>
+					</div>
+				</div>
 			</div>
-			
-			<!-- Vintage Border -->
-			<div class="absolute inset-0 rounded-xl border-2 border-adventure-golden/10 m-2"></div>
-			
-			<div class="relative z-10">
-				{#if !token}
-					<!-- No token provided -->
-					<div class="text-center">
-						<div class="mb-6 adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-red-300 rounded-xl p-6 relative overflow-hidden">
-							<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-red-500"></div>
-							<div class="flex items-center gap-3 mb-4">
+		{:else if form?.error || data?.error}
+			<!-- Error Messages -->
+			<div class="bg-white border border-red-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+				<div class="text-center">
+					<div class="w-12 h-12 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+						<AlertCircle class="w-6 h-6 text-red-600" />
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Verification Failed</h3>
+					<p class="text-sm text-gray-600 mb-4">
+						{form?.error || data?.error}
+					</p>
+					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+						<ArrowLeft class="w-4 h-4" />
+						Back to sign in
+					</a>
+				</div>
+			</div>
+		{:else if !token}
+			<!-- No token provided -->
+			<div class="modern-card">
+				<div class="text-center">
+					<div class="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+						<Mail class="w-6 h-6 text-gray-600" />
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">No Verification Token</h3>
+					<p class="text-sm text-gray-600 mb-6">
+						Please check your email for the verification link.
+					</p>
+					<div class="space-y-3">
+						<button 
+							class="w-full button-coral button--full-width"
+							onclick={goToLogin}
+						>
+							<ArrowLeft class="w-4 h-4 mr-2" />
+							Back to Sign In
+						</button>
+						<button 
+							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							onclick={goToRegister}
+						>
+							Create Account
+						</button>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<!-- Verification Card -->
+			<div class="modern-card">
+				<div class="relative">
+					{#if form?.message && !form?.success}
+						<div class="bg-white border border-red-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
+							<div class="flex items-center gap-3">
 								<div class="flex-shrink-0">
-									<div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center">
-										<Mail class="w-6 h-6 text-white" />
+									<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+										<AlertCircle class="w-4 h-4 text-red-600" />
 									</div>
 								</div>
-								<div class="text-left">
-									<h3 class="text-lg font-semibold text-red-800">No Verification Token</h3>
-									<p class="text-sm text-red-600">Missing verification link</p>
-								</div>
-							</div>
-							<p class="text-sm text-red-700">Please check your email for the verification link.</p>
-						</div>
-						<div class="space-y-3">
-							<button 
-								class="w-full adventure-cta group relative overflow-hidden"
-								onclick={goToLogin}
-							>
-								<div class="relative z-10 flex justify-center items-center gap-2 py-3 px-4 text-sm font-bold text-adventure-navy transition-all duration-200">
-									<Compass size={16} />
-									<span>Back to Sign In</span>
-								</div>
-							</button>
-							<button 
-								class="w-full px-4 py-3 rounded-lg border-2 border-adventure-earth/20 bg-white/80 text-adventure-navy hover:bg-adventure-earth/5 transition-all duration-200"
-								onclick={goToRegister}
-							>
-								<span class="text-sm font-medium">Create Account</span>
-							</button>
-						</div>
-					</div>
-				{:else if data?.wrongAccount || form?.wrongAccount}
-					<!-- Wrong account -->
-					<div class="text-center">
-						<div class="mb-6">
-							<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-adventure-sunset to-adventure-golden mb-4">
-								<AlertTriangle class="w-8 h-8 text-adventure-navy" />
-							</div>
-							<h3 class="text-lg font-semibold text-adventure-navy mb-4">Wrong Account</h3>
-							<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-adventure-sunset/30 rounded-xl p-4 mb-4 relative overflow-hidden">
-								<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-adventure-sunset to-adventure-golden"></div>
-								<p class="text-sm text-adventure-navy mb-2">
-									This verification is for: <strong class="text-adventure-teal">{data?.tokenEmail || form?.tokenEmail}</strong>
-								</p>
-								<p class="text-sm text-adventure-navy">
-									You're currently logged in as: <strong class="text-adventure-teal">{data?.currentEmail || form?.currentEmail}</strong>
-								</p>
-							</div>
-							<p class="text-sm text-adventure-earth/80 mb-6">
-								To verify this email address, please log out first and click the verification link again.
-							</p>
-						</div>
-						<div class="space-y-3">
-							<button
-								type="button"
-								onclick={goToLogout}
-								class="w-full button-coral button--full-width"
-							>
-								<LogOut size={16} class="mr-2" />
-								<span>Log Out</span>
-							</button>
-							<button
-								onclick={goToDashboard}
-								class="w-full button-coral button--full-width"
-							>
-								<Compass size={16} class="mr-2" />
-								<span>Go to Dashboard</span>
-							</button>
-						</div>
-					</div>
-				{:else if form?.alreadyVerified || data?.alreadyVerified}
-					<!-- Already verified -->
-					<div class="text-center">
-						<div class="mb-6">
-							<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-adventure-golden to-adventure-sunset mb-4">
-								<CheckCircle class="w-8 h-8 text-adventure-navy" />
-							</div>
-							<h3 class="text-lg font-semibold text-adventure-navy mb-4">Already Verified</h3>
-							<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-adventure-golden/20 rounded-xl p-4 mb-4 relative overflow-hidden">
-								<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-adventure-golden to-adventure-sunset"></div>
-								<p class="text-sm text-adventure-navy">Your email address has already been verified.</p>
+								<p class="text-sm font-medium text-red-800">{form.message}</p>
 							</div>
 						</div>
-						<button
-							onclick={goToDashboard}
-							class="w-full button-coral button--full-width"
-						>
-							<Compass size={16} class="mr-2" />
-							<span>Go to Dashboard</span>
-						</button>
-					</div>
-				{:else if form?.success}
-					<!-- Verification successful -->
-					<div class="text-center">
-						<div class="mb-6">
-							<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-adventure-golden to-adventure-sunset mb-4">
-								<Shield class="w-8 h-8 text-adventure-navy" />
-							</div>
-							<h3 class="text-lg font-semibold text-adventure-navy mb-4">Email Verified!</h3>
-							<div class="adventure-card bg-gradient-to-br from-white to-adventure-cream/50 border-2 border-adventure-golden/20 rounded-xl p-4 mb-4 relative overflow-hidden">
-								<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-adventure-golden to-adventure-sunset"></div>
-								<p class="text-sm text-adventure-navy">Your email address has been verified and your account is now active.</p>
-							</div>
-						</div>
-						<button
-							onclick={goToDashboard}
-							class="w-full button-coral button--full-width"
-						>
-							<Compass size={16} class="mr-2" />
-							<span>Go to Dashboard</span>
-						</button>
-					</div>
-				{:else}
-					<!-- Verification in progress or form -->
+					{/if}
+
 					<form
 						id="verifyForm"
 						method="POST"
@@ -303,19 +260,19 @@
 
 						{#if isLoading}
 							<div class="mb-6">
-								<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-adventure-golden to-adventure-sunset mb-4">
-									<Loader class="w-8 h-8 text-adventure-navy animate-spin" />
+								<div class="w-12 h-12 mx-auto bg-coral-100 rounded-full flex items-center justify-center mb-4">
+									<Loader class="w-6 h-6 text-coral-600 animate-spin" />
 								</div>
-								<h3 class="text-lg font-semibold text-adventure-navy mb-2">Verifying Email...</h3>
-								<p class="text-sm text-adventure-earth/80">Please wait while we verify your email address</p>
+								<h3 class="text-lg font-semibold text-gray-900 mb-2">Verifying Email...</h3>
+								<p class="text-sm text-gray-600">Please wait while we verify your email address</p>
 							</div>
 						{:else}
 							<div class="mb-6">
-								<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-adventure-golden to-adventure-sunset mb-4">
-									<Flag class="w-8 h-8 text-adventure-navy" />
+								<div class="w-12 h-12 mx-auto bg-coral-100 rounded-full flex items-center justify-center mb-4">
+									<Mail class="w-6 h-6 text-coral-600" />
 								</div>
-								<h3 class="text-lg font-semibold text-adventure-navy mb-4">Ready to Verify</h3>
-								<p class="text-sm text-adventure-earth/80 mb-6">
+								<h3 class="text-lg font-semibold text-gray-900 mb-4">Ready to Verify</h3>
+								<p class="text-sm text-gray-600 mb-6">
 									Click below to verify your email address and activate your account.
 								</p>
 								<button
@@ -323,37 +280,56 @@
 									class="w-full button-coral button--full-width"
 									disabled={isLoading}
 								>
-									<MapPin size={16} class="mr-2" />
-									<span>Verify Email Address</span>
+									<Mail class="w-4 h-4 mr-2" />
+									Verify Email Address
 								</button>
 							</div>
 						{/if}
 					</form>
 
 					<!-- Navigation -->
-					<div class="mt-8 text-center">
-						<a href="/auth/login" class="text-coral-600 hover:text-coral-500 font-medium transition-colors duration-200 group">
-							<span class="relative">
-								Back to sign in
-								<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-coral-500 group-hover:w-full transition-all duration-200"></span>
-							</span>
+					<div class="mt-6 text-center">
+						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+							<ArrowLeft class="w-4 h-4" />
+							Back to sign in
 						</a>
 					</div>
-				{/if}
+				</div>
 			</div>
-		</div>
+		{/if}
 	</div>
 </div>
 
 <style>
-	/* Ensure proper cursor behavior */
-	.adventure-cta,
-	.adventure-cta * {
-		cursor: pointer !important;
+	/* Subtle retro section with minimal color - matches other auth pages */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
 	}
 	
-	.adventure-cta:disabled,
-	.adventure-cta:disabled * {
-		cursor: not-allowed !important;
+	/* Very subtle texture overlay - matches other auth pages */
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
 	}
 </style> 

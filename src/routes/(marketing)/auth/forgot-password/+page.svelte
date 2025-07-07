@@ -39,11 +39,11 @@
 	}
 </script>
 
-<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center sm:px-6 lg:px-8 pt-24 relative overflow-hidden">
-	<div class="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+	<div class="w-full max-w-lg relative z-10">
 		<!-- Header -->
-		<div class="text-center mb-8">
-			<h2 class="text-3xl font-bold text-gray-900 mb-2">
+		<div class="text-center mb-6 sm:mb-8">
+			<h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
 				Reset Password
 			</h2>
 			<p class="text-gray-600 text-sm">
@@ -53,7 +53,7 @@
 
 		<!-- Success Message -->
 		{#if form?.success}
-			<div class="bg-white border border-green-200 rounded-xl p-6 mb-6 shadow-sm">
+			<div class="bg-white border border-green-200 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
 				<div class="text-center">
 					<div class="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
 						<CheckCircle class="w-6 h-6 text-green-600" />
@@ -70,10 +70,10 @@
 			</div>
 		{:else}
 			<!-- Reset Password Card -->
-			<div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+			<div class="modern-card">
 				<div class="relative">
 					{#if form?.message}
-						<div class="bg-white border border-red-200 rounded-xl p-4 mb-6 shadow-sm">
+						<div class="bg-white border border-red-200 rounded-xl p-4 mb-4 sm:mb-6 shadow-sm">
 							<div class="flex items-center gap-3">
 								<div class="flex-shrink-0">
 									<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -110,7 +110,7 @@
 								}
 							};
 						}}
-						class="space-y-6"
+						class="space-y-4 sm:space-y-5"
 					>
 						<div>
 							<label for="email" class="block text-sm font-medium text-gray-700 mb-2">

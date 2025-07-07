@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth.js';
 	import { isAuthenticated, currentUser } from '$lib/stores/auth.js';
+	import { themeStore } from '$lib/stores/theme.js';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 
@@ -23,6 +25,16 @@
 
 	// Header reference for closing mobile menu
 	let headerRef: Header;
+
+	// Initialize theme store
+	let themeCleanup: (() => void) | undefined;
+	onMount(() => {
+		themeCleanup = themeStore.init();
+		
+		return () => {
+			themeCleanup?.();
+		};
+	});
 
 	// Close mobile menu on navigation
 	afterNavigate(() => {

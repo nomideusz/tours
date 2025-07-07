@@ -296,7 +296,7 @@
 		left: 0;
 		right: 0;
 		z-index: 100;
-		background: rgba(255, 255, 255, 0.95);
+		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
 		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
@@ -727,6 +727,130 @@
 	.mobile-login-link:hover {
 		color: var(--text-primary);
 		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Dark Mode Support */
+	/* Header background now uses theme-aware CSS variables automatically */
+
+	[data-theme="dark"] .professional-header::before {
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(255, 255, 255, 0.02) 40px,
+			rgba(255, 255, 255, 0.02) 41px
+		);
+	}
+
+	/* Dark mode navigation */
+	[data-theme="dark"] .nav-link {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .nav-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+	}
+
+	[data-theme="dark"] .nav-link::before {
+		background: var(--color-primary-500);
+	}
+
+	/* Dark mode auth section */
+	[data-theme="dark"] .loading-text,
+	[data-theme="dark"] .user-info {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .dashboard-link,
+	[data-theme="dark"] .login-link {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .dashboard-link:hover,
+	[data-theme="dark"] .login-link:hover {
+		color: var(--text-primary);
+	}
+
+	[data-theme="dark"] .separator {
+		color: var(--text-tertiary);
+	}
+
+	[data-theme="dark"] .logout-button {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .logout-button:hover {
+		color: var(--text-primary);
+	}
+
+	/* Dark mode mobile toggle */
+	[data-theme="dark"] .mobile-toggle {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .mobile-toggle:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	/* Dark mode mobile menu */
+	[data-theme="dark"] .mobile-backdrop {
+		background: rgba(0, 0, 0, 0.7);
+	}
+
+	[data-theme="dark"] .mobile-menu {
+		background: var(--bg-primary);
+		border-top-color: var(--border-primary);
+	}
+
+	[data-theme="dark"] .mobile-nav-link {
+		color: var(--text-secondary);
+		border-color: var(--border-primary);
+	}
+
+	[data-theme="dark"] .mobile-nav-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	[data-theme="dark"] .mobile-nav-link::before {
+		background: var(--color-primary-500);
+	}
+
+	/* Dark mode mobile auth */
+	[data-theme="dark"] .mobile-auth {
+		border-top-color: var(--border-primary);
+	}
+
+	[data-theme="dark"] .mobile-loading,
+	[data-theme="dark"] .mobile-user-info {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .mobile-dashboard-link,
+	[data-theme="dark"] .mobile-login-link {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+	}
+
+	[data-theme="dark"] .mobile-dashboard-link:hover,
+	[data-theme="dark"] .mobile-login-link:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+
+	[data-theme="dark"] .mobile-logout-button {
+		color: var(--text-secondary);
+		border-color: var(--border-primary);
+	}
+
+	[data-theme="dark"] .mobile-logout-button:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
 		border-color: var(--border-secondary);
 	}
 

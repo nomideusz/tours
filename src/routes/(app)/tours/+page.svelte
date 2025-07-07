@@ -17,7 +17,6 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import StyledQRCode from '$lib/components/StyledQRCode.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import type { Tour } from '$lib/types.js';
@@ -38,17 +37,14 @@
 	import Eye from 'lucide-svelte/icons/eye';
 	import Settings from 'lucide-svelte/icons/settings';
 	import Plus from 'lucide-svelte/icons/plus';
-	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Edit from 'lucide-svelte/icons/edit';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
-	import Copy from 'lucide-svelte/icons/copy';
 	import Search from 'lucide-svelte/icons/search';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import X from 'lucide-svelte/icons/x';
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-	import Check from 'lucide-svelte/icons/check';
 	import CircleDot from 'lucide-svelte/icons/circle-dot';
 	import Baby from 'lucide-svelte/icons/baby';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
@@ -92,7 +88,6 @@
 	let searchQuery = $state('');
 	let statusFilter = $state<'all' | 'active' | 'draft'>('all');
 	let actionMenuOpen = $state<string | null>(null);
-	let copiedQRCode = $state<string | null>(null);
 	
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -235,7 +230,6 @@
 	let dropdownOpenUpwards = $state<{ [key: string]: boolean }>({});
 
 	// Track timeouts for proper cleanup
-	let copyTimeouts: NodeJS.Timeout[] = [];
 	let statusTimeouts: NodeJS.Timeout[] = [];
 
 	// Helper functions
@@ -253,20 +247,7 @@
 		return getImageUrl(tour, tour.images[0]);
 	}
 
-	async function copyQRUrl(tour: Tour) {
-		if (!browser || !tour.qrCode) return;
-		try {
-			const bookingUrl = `${window.location.origin}/book/${tour.qrCode}`;
-			await navigator.clipboard.writeText(bookingUrl);
-			copiedQRCode = tour.qrCode;
-			const timeoutId = setTimeout(() => {
-				copiedQRCode = null;
-			}, 2000);
-			copyTimeouts.push(timeoutId);
-		} catch (err) {
-			console.error('Failed to copy URL:', err);
-		}
-	}
+
 
 	// Mutations
 	const updateStatusMutation = updateTourStatusMutation();
@@ -418,7 +399,6 @@
 
 	// Cleanup timeouts on component destruction
 	onDestroy(() => {
-		copyTimeouts.forEach(timeout => clearTimeout(timeout));
 		statusTimeouts.forEach(timeout => clearTimeout(timeout));
 	});
 </script>
@@ -626,15 +606,15 @@
 					onmouseenter={(e) => e.currentTarget.style.borderColor = 'var(--border-secondary)'}
 					onmouseleave={(e) => e.currentTarget.style.borderColor = 'var(--border-primary)'}
 					onclick={(e) => {
-						// Don't navigate if clicking on buttons or QR code
-						if (!(e.target as HTMLElement).closest('button, a, .qr-button')) {
+						// Don't navigate if clicking on buttons
+						if (!(e.target as HTMLElement).closest('button, a')) {
 							goto(`/tours/${tour.id}`);
 						}
 					}}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
-						if (e.key === 'Enter' && !(e.target as HTMLElement).closest('button, a, .qr-button')) {
+						if (e.key === 'Enter' && !(e.target as HTMLElement).closest('button, a')) {
 							goto(`/tours/${tour.id}`);
 						}
 					}}
@@ -662,27 +642,7 @@
 							</span>
 						</div>
 						
-						<!-- QR Code -->
-						{#if tour.qrCode}
-							<div class="absolute bottom-3 right-3">
-								<Tooltip text="Click to copy booking URL" position="top-left">
-									<div class="qr-button">
-										<StyledQRCode
-											qrCode={tour.qrCode}
-											tourName={tour.name}
-											size={100}
-											style="modern"
-											onclick={(e) => { e.stopPropagation(); copyQRUrl(tour); }}
-										/>
-										{#if copiedQRCode === tour.qrCode}
-											<div class="absolute top-1 right-1 rounded-full p-1 shadow-sm z-10" style="background: var(--bg-primary); box-shadow: var(--shadow-sm);">
-												<Check class="h-3 w-3" style="color: var(--color-success);" />
-											</div>
-										{/if}
-									</div>
-								</Tooltip>
-							</div>
-						{/if}
+
 					</div>
 					
 					<!-- Tour Info -->
@@ -978,11 +938,7 @@
 		border-radius: 0.75rem 0.75rem 0 0;
 	}
 	
-	/* QR button container */
-	.qr-button {
-		position: relative;
-		display: inline-block;
-	}
+
 	
 	/* Ensure dropdown has proper contrast in dark mode */
 	:global(.dark) .dropdown-container button {

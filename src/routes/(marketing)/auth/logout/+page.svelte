@@ -16,9 +16,9 @@
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50">
-	<div class="max-w-md w-full space-y-8">
+	<div class="max-w-md w-full space-y-6 sm:space-y-8 px-4 sm:px-6">
 		<div class="text-center">
-			<h2 class="mt-6 text-3xl font-bold text-gray-900">
+			<h2 class="mt-6 text-2xl sm:text-3xl font-bold text-gray-900">
 				Logging out...
 			</h2>
 			<p class="mt-2 text-sm text-gray-600">

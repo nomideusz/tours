@@ -145,17 +145,19 @@
 							</div>
 							<p class="section-text mb-4">We offer several subscription tiers:</p>
 							<ul class="billing-list">
-								<li><strong>Free Plan:</strong> Basic features with limitations</li>
-								<li><strong>Starter Pro:</strong> €12/month - Enhanced features</li>
-								<li><strong>Professional:</strong> €29/month - Advanced features</li>
-								<li><strong>Agency:</strong> €79/month - Multi-user features</li>
+								<li><strong>Free Starter:</strong> €0/month - 3 bookings/month, 1 tour type</li>
+								<li><strong>Solo Guide:</strong> €20/month (€17/month annually) - 60 bookings/month, 5 tour types</li>
+								<li><strong>Professional:</strong> €45/month (€37/month annually) - Unlimited bookings and tours</li>
+								<li><strong>Agency:</strong> €115/month (€95/month annually) - Team management features</li>
 							</ul>
 						</div>
 						
 						<div class="billing-section">
 							<h3 class="subsection-heading mb-4">Billing Terms</h3>
 							<ul class="billing-list">
-								<li>Subscriptions are billed monthly in advance</li>
+								<li>Subscriptions are available as monthly or annual plans</li>
+								<li>Annual plans offer significant savings (approximately 15% discount)</li>
+								<li>All subscriptions are billed in advance</li>
 								<li>All fees are non-refundable unless required by law</li>
 								<li>We may change pricing with 30 days' notice</li>
 								<li>Failed payments may result in service suspension</li>
