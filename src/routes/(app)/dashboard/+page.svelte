@@ -1134,7 +1134,7 @@
 				<div class="compact-progress">
 					<div class="compact-progress-text">
 						{#if showCompactOnboarding}
-							{stepsCompleted}/3 remaining steps
+							{stepsCompleted + (stats.totalTours > 0 ? 1 : 0)}/4 steps complete
 						{:else}
 							{stepsCompleted + (stats.totalTours > 0 ? 1 : 0)}/4 setup steps complete
 						{/if}
@@ -1143,7 +1143,7 @@
 						<div 
 							class="compact-progress-fill"
 							style="width: {showCompactOnboarding 
-								? (stepsCompleted / 3) * 100 
+								? ((stepsCompleted + (stats.totalTours > 0 ? 1 : 0)) / 4) * 100 
 								: ((stepsCompleted + (stats.totalTours > 0 ? 1 : 0)) / 4) * 100}%;"
 						></div>
 					</div>

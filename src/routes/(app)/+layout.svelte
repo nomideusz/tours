@@ -423,7 +423,7 @@
 	<NotificationInitializer />
 	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
-	<div class="min-h-screen flex flex-col overflow-x-hidden app-main-gradient">
+	<div class="min-h-screen flex flex-col overflow-x-hidden">
 		<!-- App Header - Fixed at top -->
 		<div class="fixed top-0 left-0 right-0 z-40">
 			<AppHeader 
@@ -432,48 +432,29 @@
 		</div>
 
 		<!-- Main content area with sidebar -->
-		<div class="flex flex-1 min-w-0 pt-16 overflow-x-hidden">
+		<div class="flex flex-1 min-w-0 pt-20 overflow-x-hidden">
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
-				<div class="fixed left-0 w-56 flex flex-col overflow-hidden" style="top: 4rem; height: calc(100vh - 4rem); z-index: 30;">
-					<div
-						class="flex flex-col h-full pt-5"
-						style="border-right: 1px solid var(--border-primary); background: var(--bg-primary);"
-					>
+				<div class="professional-sidebar">
+					<div class="sidebar-container">
 						<!-- Navigation - Scrollable area -->
-						<nav class="flex-1 overflow-y-auto px-3 min-h-0">
+						<nav class="sidebar-nav">
 							{#each navigationItems as section}
-								<div class="mb-6">
+								<div class="nav-section">
 									<h3 class="nav-section-header">
 										{section.name}
 									</h3>
-									<div class="space-y-1">
+									<div class="nav-section-items">
 										{#each section.items as item}
 											{@const shouldShow = item.showOnMobile !== false}
 											{#if shouldShow}
 												<a
 													href={item.href}
-													class="nav-link group flex items-center justify-between rounded-md px-2 py-2 text-sm font-medium transition-colors min-w-0"
-													style={item.current
-														? 'background: var(--color-primary-100); color: var(--color-primary-900);'
-														: 'color: var(--text-secondary);'}
-													onmouseenter={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'var(--bg-tertiary)'}
-													onmouseleave={(e) => e.currentTarget.style.background = item.current ? 'var(--color-primary-100)' : 'transparent'}
+													class="nav-link {item.current ? 'nav-link--active' : ''}"
 												>
-													<div class="flex items-center min-w-0 flex-1">
-														{#if item.current}
-															<item.icon
-																class="mr-3 h-5 w-5 flex-shrink-0 nav-icon-active"
-															/>
-														{:else}
-															<item.icon
-																class="mr-3 h-5 w-5 flex-shrink-0"
-																style="color: var(--text-tertiary);"
-															/>
-														{/if}
-														<span class="truncate">
-															{item.name}
-														</span>
+													<div class="nav-link-content">
+														<item.icon class="nav-link-icon" />
+														<span class="nav-link-text">{item.name}</span>
 													</div>
 													{#if item.badge}
 														<span class="nav-badge">
@@ -489,22 +470,16 @@
 						</nav>
 
 						<!-- User section - Sticky at bottom -->
-						<div class="flex-shrink-0 border-t px-3 py-3" style="border-color: var(--border-primary);">
+						<div class="sidebar-user">
 							{#if currentUserData}
-								<div class="px-2">
-									<a 
-										href="/profile"
-										class="flex items-center gap-3 rounded-md px-2 py-2 transition-colors block"
-										style="color: var(--text-secondary); text-decoration: none;"
-										onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-										onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-									>
-										<div class="flex-shrink-0">
+								<div class="user-profile">
+									<a href="/profile" class="user-profile-link">
+										<div class="user-avatar">
 											{#if currentUserData.avatar}
 												<img 
 													src={currentUserData.avatar} 
 													alt={currentUserData.name || 'User'} 
-													class="h-7 w-7 rounded-full object-cover"
+													class="avatar-image"
 													onerror={(e) => {
 														const img = e.currentTarget as HTMLImageElement;
 														img.style.display = 'none';
@@ -514,35 +489,25 @@
 														}
 													}}
 												/>
-												<div class="hidden h-7 w-7 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+												<div class="avatar-fallback hidden">
 													<User class="h-4 w-4" />
 												</div>
 											{:else}
-												<div class="h-7 w-7 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+												<div class="avatar-fallback">
 													<User class="h-4 w-4" />
 												</div>
 											{/if}
 										</div>
-										<div class="min-w-0 flex-1">
-											<p class="text-sm font-medium truncate">{currentUserData.name || 'Profile'}</p>
-											<p class="text-xs truncate" style="color: var(--text-tertiary);">{currentUserData.email}</p>
+										<div class="user-info">
+											<p class="user-name">{currentUserData.name || 'Profile'}</p>
+											<p class="user-email">{currentUserData.email}</p>
 										</div>
-										<Settings class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<Settings class="user-settings-icon" />
 									</a>
 									
-									<div class="mt-2 flex items-center gap-1">
+									<div class="user-actions">
 										{#if userIsAdmin}
-											<a
-												href="/admin"
-												class="flex-1 flex items-center justify-center gap-1 rounded py-1.5 text-xs font-medium transition-colors"
-												style="color: var(--text-secondary); background: var(--bg-tertiary); text-decoration: none;"
-												onmouseenter={(e) => {
-													e.currentTarget.style.backgroundColor = 'var(--bg-quaternary)';
-												}}
-												onmouseleave={(e) => {
-													e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-												}}
-											>
+											<a href="/admin" class="user-action-button">
 												<Shield class="h-3.5 w-3.5" />
 												<span>Admin</span>
 											</a>
@@ -550,17 +515,7 @@
 										<button
 											onclick={handleLogout}
 											disabled={isLoggingOut}
-											class="flex-1 flex items-center justify-center gap-1 rounded py-1.5 text-xs font-medium transition-all disabled:opacity-50"
-											style="color: var(--text-secondary); background: var(--bg-tertiary);"
-											onmouseenter={(e) => {
-												// Use semi-transparent red background with solid red text
-												e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; // Red with 10% opacity
-												e.currentTarget.style.color = 'rgb(239, 68, 68)'; // Solid red
-											}}
-											onmouseleave={(e) => {
-												e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-												e.currentTarget.style.color = 'var(--text-secondary)';
-											}}
+											class="user-action-button user-action-button--logout"
 										>
 											{#if isLoggingOut}
 												<Loader2 class="h-3.5 w-3.5 animate-spin" />
@@ -578,7 +533,7 @@
 			</div>
 
 			<!-- Main content -->
-			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-56">
+			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-72">
 				<!-- Page content with bottom padding on mobile for bottom nav -->
 				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0 app-texture-overlay">
 					{@render children()}
@@ -789,5 +744,359 @@
 	nav a:visited,
 	nav a:focus {
 		text-decoration: none !important;
+	}
+
+	/* Professional Sidebar */
+	.professional-sidebar {
+		position: fixed;
+		left: 0;
+		top: 5rem;
+		width: 18rem;
+		height: calc(100vh - 5rem);
+		z-index: 30;
+		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+		border-right: 1px solid var(--border-primary);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		box-shadow: var(--shadow-sm);
+		transition: all var(--transition-base) ease;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	/* Very subtle texture overlay - matches header */
+	.professional-sidebar::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.01) 40px,
+			rgba(0, 0, 0, 0.01) 41px
+		);
+		pointer-events: none;
+	}
+
+	.sidebar-container {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		padding-top: 1.5rem;
+		position: relative;
+		z-index: 2;
+	}
+
+	/* Navigation */
+	.sidebar-nav {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0 2rem;
+		min-height: 0;
+	}
+
+	.nav-section {
+		margin-bottom: 1.5rem;
+	}
+
+	.nav-section-header {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text-tertiary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: 0.75rem;
+		padding: 0 0.5rem;
+	}
+
+	.nav-section-items {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.nav-link {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: all var(--transition-base) ease;
+		padding: 0.75rem 0.5rem;
+		border-radius: var(--radius-md);
+		position: relative;
+		overflow: hidden;
+		min-width: 0;
+	}
+
+	/* Subtle coral accent on hover */
+	.nav-link::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.nav-link:hover::before {
+		transform: scaleX(1);
+	}
+
+	.nav-link:hover {
+		color: var(--text-primary);
+		background: var(--bg-secondary);
+		transform: translateY(-1px);
+	}
+
+	.nav-link--active {
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		font-weight: 600;
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.nav-link--active::before {
+		transform: scaleX(1);
+		background: var(--color-primary-500);
+	}
+
+	.nav-link-content {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+		flex: 1;
+		gap: 0.75rem;
+	}
+
+	.nav-link-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+		flex-shrink: 0;
+		color: var(--text-tertiary);
+		transition: color var(--transition-base) ease;
+	}
+
+	.nav-link:hover .nav-link-icon,
+	.nav-link--active .nav-link-icon {
+		color: currentColor;
+	}
+
+	.nav-link-text {
+		truncate: true;
+		font-size: inherit;
+		font-weight: inherit;
+	}
+
+	.nav-badge {
+		background: var(--color-coral-500);
+		color: white;
+		font-size: 0.625rem;
+		font-weight: 700;
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-full);
+		min-width: 1.25rem;
+		height: 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	/* User Section */
+	.sidebar-user {
+		flex-shrink: 0;
+		border-top: 1px solid var(--border-primary);
+		padding: 1.5rem 2rem;
+		position: relative;
+		z-index: 2;
+	}
+
+	.user-profile {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.user-profile-link {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.5rem;
+		border-radius: var(--radius-md);
+		text-decoration: none;
+		color: var(--text-secondary);
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.user-profile-link::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.user-profile-link:hover::before {
+		transform: scaleX(1);
+	}
+
+	.user-profile-link:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	.user-avatar {
+		flex-shrink: 0;
+		position: relative;
+	}
+
+	.avatar-image {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.avatar-fallback {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-tertiary);
+		color: var(--text-secondary);
+	}
+
+	.user-info {
+		min-width: 0;
+		flex: 1;
+	}
+
+	.user-name {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0;
+		truncate: true;
+	}
+
+	.user-email {
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
+		margin: 0;
+		truncate: true;
+	}
+
+	.user-settings-icon {
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		color: var(--text-tertiary);
+		transition: color var(--transition-base) ease;
+	}
+
+	.user-profile-link:hover .user-settings-icon {
+		color: var(--text-secondary);
+	}
+
+	.user-actions {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.user-action-button {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+		padding: 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: var(--bg-tertiary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		text-decoration: none;
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.user-action-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+
+	.user-action-button:hover::before {
+		transform: scaleX(1);
+	}
+
+	.user-action-button:hover {
+		background: var(--bg-quaternary);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	.user-action-button--logout:hover {
+		background: rgba(239, 68, 68, 0.1);
+		border-color: rgba(239, 68, 68, 0.3);
+		color: rgb(239, 68, 68);
+	}
+
+	.user-action-button--logout:hover::before {
+		background: rgb(239, 68, 68);
+	}
+
+	.user-action-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Dark Mode Support */
+	[data-theme="dark"] .professional-sidebar::before {
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(255, 255, 255, 0.02) 40px,
+			rgba(255, 255, 255, 0.02) 41px
+		);
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 1024px) {
+		.professional-sidebar {
+			display: none;
+		}
 	}
 </style>

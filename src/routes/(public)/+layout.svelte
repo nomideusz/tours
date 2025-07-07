@@ -33,7 +33,7 @@
 	<div class="min-h-screen flex flex-col subtle-retro-section">
 		<PublicHeader />
 		
-		<main class="flex-1 pt-20 relative z-10">
+		<main class="flex-1 pt-16 relative z-10">
 			{@render children()}
 		</main>
 		
