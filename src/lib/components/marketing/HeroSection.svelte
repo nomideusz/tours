@@ -28,7 +28,7 @@
 			</div>
 			
 			<h1 class="hero-title mb-6">
-				<span class="title-primary">More Bookings, Less Hassle</span>
+				<span class="title-primary">QR Bookings</span>
 				<span class="title-secondary">for Independent Tour Guides</span>
 			</h1>
 			

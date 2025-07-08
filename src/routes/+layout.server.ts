@@ -56,7 +56,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 };
 
 function generateSEOData(pathname: string, origin: string) {
-  const baseTitle = 'Zaur - More Bookings, Less Hassle for Independent Tour Guides';
+  const baseTitle = 'Zaur - QR Bookings for Independent Tour Guides';
   const baseDescription = 'The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.';
   const defaultImage = `${origin}/images/og-default.jpg`;
   
@@ -84,23 +84,23 @@ function generateSEOData(pathname: string, origin: string) {
 
   // Route-specific SEO customization
   if (pathname === '/') {
-    seoData.title = 'Zaur - More Bookings, Less Hassle for Independent Tour Guides';
+    seoData.title = 'Zaur - QR Bookings for Independent Tour Guides';
     seoData.description = 'The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever.';
-    seoData.keywords = 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission, more bookings';
+    seoData.keywords = 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission, QR code booking';
     seoData.openGraph.title = seoData.title;
     seoData.openGraph.description = seoData.description;
     seoData.twitter.title = seoData.title;
     seoData.twitter.description = seoData.description;
   } else if (pathname.startsWith('/auth/login')) {
     seoData.title = 'Login - Zaur';
-    seoData.description = 'Sign in to your Zaur account to manage your tour booking system and QR codes.';
+    seoData.description = 'Sign in to your Zaur account to manage your QR booking system and tour reservations.';
     seoData.openGraph.title = seoData.title;
     seoData.openGraph.description = seoData.description;
     seoData.twitter.title = seoData.title;
     seoData.twitter.description = seoData.description;
   } else if (pathname.startsWith('/auth/register')) {
     seoData.title = 'Create Account - Zaur';
-    seoData.description = 'Join Zaur to start your journey to more bookings. The simplest booking system - setup takes just 5 minutes.';
+    seoData.description = 'Join Zaur to start getting more bookings with QR codes. The simplest booking system - setup takes just 5 minutes.';
     seoData.openGraph.title = seoData.title;
     seoData.openGraph.description = seoData.description;
     seoData.twitter.title = seoData.title;
