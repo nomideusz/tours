@@ -69,7 +69,7 @@ async function applyPromoCodesChanges() {
     const promoCodes = [
       // First 10 users: 1 year free then 50% lifetime discount
       ['FOUNDER', 'Founder member - 1 year free + 50% lifetime discount', 'early_access', 50, 12, true, 10],
-      ['EARLY2025', 'Early 2025 member - 1 year free + 50% lifetime discount', 'early_access', 50, 12, true, 10],
+      ['EARLY2025', 'Early 2025 member - 50% discount forever', 'lifetime_discount', 50, 0, true, 10],
       
       // Various discount codes
       ['PREMIUM50', '50% lifetime discount', 'lifetime_discount', 50, 0, true, null],
