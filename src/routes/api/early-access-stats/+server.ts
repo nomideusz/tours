@@ -2,14 +2,20 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { users } from '$lib/db/schema/index.js';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, or } from 'drizzle-orm';
 
 export const GET: RequestHandler = async () => {
 	try {
 		// Get total user count and early access member count
 		const [totalUsersResult, earlyAccessUsersResult] = await Promise.all([
 			db.select({ count: count() }).from(users),
-			db.select({ count: count() }).from(users).where(eq(users.earlyAccessMember, true))
+			// Count users who are either marked as early access members OR used the EARLY2025 code
+			db.select({ count: count() }).from(users).where(
+				or(
+					eq(users.earlyAccessMember, true),
+					eq(users.promoCodeUsed, 'EARLY2025')
+				)
+			)
 		]);
 
 		const totalUsers = totalUsersResult[0]?.count || 0;
@@ -23,7 +29,12 @@ export const GET: RequestHandler = async () => {
 		const countriesResult = await db
 			.selectDistinct({ country: users.country })
 			.from(users)
-			.where(eq(users.earlyAccessMember, true));
+			.where(
+				or(
+					eq(users.earlyAccessMember, true),
+					eq(users.promoCodeUsed, 'EARLY2025')
+				)
+			);
 		
 		const countriesCount = countriesResult.filter(c => c.country && c.country.length > 0).length;
 
