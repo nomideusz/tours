@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { currentUser } from '$lib/stores/auth.js';
+	import { auth } from '$lib/stores/auth.js';
 	import type { SubscriptionPlan, BillingInterval } from '$lib/stripe-subscriptions.server.js';
 	import Check from 'lucide-svelte/icons/check';
 	import X from 'lucide-svelte/icons/x';
@@ -266,6 +267,17 @@
 	async function handlePromoCodeApplied(event: CustomEvent) {
 		// Refresh the page to show updated promo code benefits
 		await invalidateAll();
+		
+		// Also update the auth store with fresh user data
+		try {
+			const response = await fetch('/api/profile');
+			if (response.ok) {
+				const updatedUser = await response.json();
+				auth.updateUser(updatedUser);
+			}
+		} catch (error) {
+			console.error('Failed to refresh user data:', error);
+		}
 	}
 	
 	function handlePromoCodeError(event: CustomEvent) {
