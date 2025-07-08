@@ -56,8 +56,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 };
 
 function generateSEOData(pathname: string, origin: string) {
-  const baseTitle = 'Zaur - QR Booking for Tour Guides';
-  const baseDescription = 'Professional QR code booking system for tour guides. Let tourists book and pay instantly — no apps, no friction.';
+  const baseTitle = 'Zaur - More Bookings, Less Hassle for Independent Tour Guides';
+  const baseDescription = 'The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.';
   const defaultImage = `${origin}/images/og-default.jpg`;
   
   // Default SEO data
@@ -79,14 +79,14 @@ function generateSEOData(pathname: string, origin: string) {
       description: baseDescription,
       image: defaultImage
     },
-    keywords: 'QR booking, tour guides, instant booking, tourism, travel, booking system'
+    keywords: 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission'
   };
 
   // Route-specific SEO customization
   if (pathname === '/') {
-    seoData.title = 'Zaur - Turn Street Traffic into Instant Bookings for Tour Guides';
-    seoData.description = 'Professional QR code booking system for tour guides. Let tourists book and pay instantly with no apps required. Setup in 5 minutes.';
-    seoData.keywords = 'QR booking, tour guides, instant booking, tourism, travel, booking system, street marketing, tourist attraction';
+    seoData.title = 'Zaur - More Bookings, Less Hassle for Independent Tour Guides';
+    seoData.description = 'The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever.';
+    seoData.keywords = 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission, more bookings';
     seoData.openGraph.title = seoData.title;
     seoData.openGraph.description = seoData.description;
     seoData.twitter.title = seoData.title;
@@ -100,7 +100,7 @@ function generateSEOData(pathname: string, origin: string) {
     seoData.twitter.description = seoData.description;
   } else if (pathname.startsWith('/auth/register')) {
     seoData.title = 'Create Account - Zaur';
-    seoData.description = 'Join Zaur to create QR booking systems for your tours. Setup takes just 5 minutes.';
+    seoData.description = 'Join Zaur to start your journey to more bookings. The simplest booking system - setup takes just 5 minutes.';
     seoData.openGraph.title = seoData.title;
     seoData.openGraph.description = seoData.description;
     seoData.twitter.title = seoData.title;

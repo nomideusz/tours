@@ -45,10 +45,10 @@
 
 	// Get SEO data from server or provide defaults
 	const seo = $derived(data?.seo || {
-		title: 'Zaur - QR Booking for Tour Guides',
-		description: 'Professional QR code booking system for tour guides. Let tourists book and pay instantly — no apps, no friction.',
+		title: 'Zaur - More Bookings, Less Hassle for Independent Tour Guides',
+		description: 'The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.',
 		canonical: $page.url.href,
-		keywords: 'QR booking, tour guides, instant booking, tourism, travel'
+		keywords: 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission'
 	});
 </script>
 
@@ -95,7 +95,7 @@
 		"name": "Zaur",
 		"url": "https://zaur.app",
 		"logo": "https://zaur.app/images/logo.png",
-		"description": "Professional QR code booking system for tour guides",
+		"description": "The simplest booking system with QR codes for independent tour guides. More bookings, less hassle.",
 		"sameAs": [
 			"https://twitter.com/zaur_app",
 			"https://linkedin.com/company/zaur"

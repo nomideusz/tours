@@ -9,11 +9,13 @@ export const GET: RequestHandler = async () => {
 		{ url: '/auth/login', priority: '0.8', changefreq: 'monthly' },
 		{ url: '/auth/register', priority: '0.8', changefreq: 'monthly' },
 		{ url: '/auth/forgot-password', priority: '0.5', changefreq: 'monthly' },
-		{ url: '/pricing', priority: '0.9', changefreq: 'monthly' },
-		{ url: '/features', priority: '0.8', changefreq: 'monthly' },
+		{ url: '/about', priority: '0.8', changefreq: 'monthly' },
+		{ url: '/demo', priority: '0.7', changefreq: 'weekly' },
+		{ url: '/early-access', priority: '0.9', changefreq: 'weekly' },
 		{ url: '/contact', priority: '0.7', changefreq: 'monthly' },
 		{ url: '/privacy', priority: '0.6', changefreq: 'yearly' },
-		{ url: '/terms', priority: '0.6', changefreq: 'yearly' }
+		{ url: '/terms', priority: '0.6', changefreq: 'yearly' },
+		{ url: '/cookies', priority: '0.5', changefreq: 'yearly' }
 	];
 
 	const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

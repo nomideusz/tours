@@ -28,12 +28,12 @@
 			</div>
 			
 			<h1 class="hero-title mb-6">
-				<span class="title-primary">Professional QR Booking</span>
-				<span class="title-secondary">for Tour Guides</span>
+				<span class="title-primary">More Bookings, Less Hassle</span>
+				<span class="title-secondary">for Independent Tour Guides</span>
 			</h1>
 			
 			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
-				Transform your tours with instant QR code bookings. Professional booking system with real-time availability, secure payments, and no commission fees.
+				The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.
 			</p>
 			
 			<div class="hero-actions max-w-md mx-auto mb-8">
@@ -50,6 +50,7 @@
 						<span class="promo-code">EARLY2025</span>
 						<Copy class="w-5 h-5" />
 					</button>
+					<p class="promo-discount-text">Lifetime 50% discount on all plans</p>
 					{#if showCopied}
 						<p class="copy-feedback" in:fade={{ duration: 200 }}>
 							Code copied to clipboard
@@ -234,6 +235,14 @@
 		color: var(--text-secondary);
 		text-align: center;
 		margin-top: 0.5rem;
+	}
+	
+	.promo-discount-text {
+		font-size: 0.875rem;
+		color: var(--text-primary);
+		text-align: center;
+		margin-top: 0.75rem;
+		font-weight: 500;
 	}
 	
 	/* Social proof text */

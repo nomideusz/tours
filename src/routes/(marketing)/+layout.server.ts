@@ -25,33 +25,33 @@ export const load = async ({ url, locals }: { url: URL; locals: any }) => {
 	// Generate SEO data based on route
 	const pathname = url.pathname;
 	let seo = {
-		title: 'Zaur - QR Booking for Tour Guides',
-		description: 'Professional QR code booking system for tour guides. Let tourists book and pay instantly — no apps, no friction.',
+		title: 'Zaur - More Bookings, Less Hassle for Independent Tour Guides',
+		description: 'The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.',
 		canonical: url.href,
-		keywords: 'QR booking, tour guides, instant booking, tourism, travel'
+		keywords: 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission'
 	};
 
 	// Customize SEO for specific routes
 	if (pathname === '/') {
 		seo = {
-			title: 'Zaur - QR Booking for Tour Guides | Instant Tourist Bookings',
-			description: 'Transform how tourists book your tours with QR codes. No apps needed - instant booking and payment. Join tour guides worldwide using Zaur.',
+			title: 'Zaur - More Bookings, Less Hassle for Independent Tour Guides',
+			description: 'The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever.',
 			canonical: url.href,
-			keywords: 'QR booking, tour guides, instant booking, tourism, travel, tourist attractions, tour booking system'
+			keywords: 'QR booking, tour guides, instant booking, tourism, travel, independent tour guides, booking system, no commission, more bookings'
 		};
 	} else if (pathname.includes('/auth/login')) {
 		seo = {
 			title: 'Sign In to Zaur - Tour Guide Dashboard',
-			description: 'Access your tour guide dashboard to manage bookings, create QR codes, and grow your business.',
+			description: 'Access your tour guide dashboard to manage bookings, create QR codes, and grow your business with more bookings and less hassle.',
 			canonical: url.href,
 			keywords: 'tour guide login, dashboard access, booking management'
 		};
 	} else if (pathname.includes('/auth/register')) {
 		seo = {
-			title: 'Join Zaur - Start Your QR Booking Journey',
-			description: 'Create your free tour guide account and start accepting instant bookings with QR codes. Setup takes less than 5 minutes.',
+			title: 'Join Zaur - Start Your Journey to More Bookings',
+			description: 'Create your free tour guide account and start accepting instant bookings with QR codes. The simplest booking system - setup takes less than 5 minutes.',
 			canonical: url.href,
-			keywords: 'tour guide signup, QR booking registration, tour business'
+			keywords: 'tour guide signup, QR booking registration, tour business, independent tour guides'
 		};
 	}
 

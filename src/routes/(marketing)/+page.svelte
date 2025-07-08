@@ -12,13 +12,13 @@
 
 <svelte:head>
 	<!-- Override title for homepage specifically -->
-	<title>Zaur - QR Booking System for Tour Guides | Get Direct Bookings</title>
-	<meta name="title" content="Zaur - QR Booking System for Tour Guides | Get Direct Bookings" />
-	<meta name="description" content="Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings. No booking fees, ever!" />
+	<title>Zaur - More Bookings, Less Hassle for Independent Tour Guides</title>
+	<meta name="title" content="Zaur - More Bookings, Less Hassle for Independent Tour Guides" />
+	<meta name="description" content="The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever!" />
 	
 	<!-- Additional SEO signals for homepage -->
-	<meta property="og:title" content="Zaur - QR Booking System for Tour Guides | Get Direct Bookings" />
-	<meta property="og:description" content="Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings. No booking fees, ever!" />
+	<meta property="og:title" content="Zaur - More Bookings, Less Hassle for Independent Tour Guides" />
+	<meta property="og:description" content="The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever!" />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	
@@ -28,8 +28,8 @@
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
 		"name": "Zaur",
-		"headline": "QR Booking System for Tour Guides",
-		"description": "Professional QR booking system for independent tour guides. Tourists scan your code and book instantly — you keep 100% of earnings.",
+		"headline": "More Bookings, Less Hassle for Independent Tour Guides",
+		"description": "The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings.",
 		"url": "https://zaur.app",
 		"applicationCategory": "BusinessApplication",
 		"operatingSystem": "Web",
