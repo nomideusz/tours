@@ -45,7 +45,7 @@ export function createInvalidationHelper(queryClient: any) {
 			const promises = [
 				// Dashboard and stats
 				queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats }),
-				queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings() }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.recentBookings(10) }),
 				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
 			];
 			

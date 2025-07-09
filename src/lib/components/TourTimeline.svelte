@@ -114,7 +114,7 @@
 	// Query for timeline data - make reactive to date and view changes
 	let timelineQuery = $derived(createQuery({
 		queryKey: tourId 
-			? ['tour-schedule', tourId]
+			? queryKeys.tourSchedule(tourId)
 			: queryKeys.allTimeSlots(view, dateString),
 		queryFn: async () => {
 			console.log('🔍 Timeline: Fetching data for', { view, dateString, currentDate: currentDate.toISOString(), tourId });
@@ -445,7 +445,7 @@
 			if (!response.ok) throw new Error('Failed to update capacity');
 			
 			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
 			
 			cancelEdit();
 			showInlineSuccess(slot.id, 'Updated');
@@ -487,7 +487,7 @@
 			if (!response.ok) throw new Error('Failed to update status');
 			
 			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
 			
 			showInlineSuccess(slot.id, newStatus === 'cancelled' ? 'Cancelled' : 'Reactivated');
 		} catch (error) {

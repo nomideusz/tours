@@ -103,6 +103,9 @@
 
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
+	
+	// Avatar loading state
+	let avatarLoadError = $state(false);
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
@@ -110,6 +113,13 @@
 		mobileMenuOpen = false;
 		if (browser) {
 			currentPath = window.location.pathname;
+		}
+	});
+
+	// Reset avatar error state when user data changes
+	$effect(() => {
+		if (currentUserData?.avatar) {
+			avatarLoadError = false;
 		}
 	});
 
@@ -474,30 +484,20 @@
 							{#if currentUserData}
 								<div class="user-profile">
 									<a href="/profile" class="user-profile-link">
-										<div class="user-avatar">
-											{#if currentUserData.avatar}
-												<img 
-													src={currentUserData.avatar} 
-													alt={currentUserData.name || 'User'} 
-													class="avatar-image"
-													onerror={(e) => {
-														const img = e.currentTarget as HTMLImageElement;
-														img.style.display = 'none';
-														const fallback = img.nextElementSibling as HTMLElement | null;
-														if (fallback) {
-															fallback.classList.remove('hidden');
-														}
-													}}
-												/>
-												<div class="avatar-fallback hidden">
-													<User class="h-4 w-4" />
-												</div>
-											{:else}
-												<div class="avatar-fallback">
-													<User class="h-4 w-4" />
-												</div>
-											{/if}
-										</div>
+																			<div class="user-avatar">
+										{#if currentUserData.avatar && !avatarLoadError}
+											<img 
+												src={currentUserData.avatar} 
+												alt={currentUserData.name || 'User'} 
+												class="avatar-image"
+												onerror={() => avatarLoadError = true}
+											/>
+										{:else}
+											<div class="avatar-fallback">
+												<User class="h-4 w-4" />
+											</div>
+										{/if}
+									</div>
 										<div class="user-info">
 											<p class="user-name">{currentUserData.name || 'Profile'}</p>
 											<p class="user-email">{currentUserData.email}</p>
@@ -644,11 +644,12 @@
 									<div class="px-4 py-3">
 										<div class="flex items-center gap-3">
 											<div class="flex-shrink-0">
-												{#if currentUserData.avatar}
+												{#if currentUserData.avatar && !avatarLoadError}
 													<img 
 														src={currentUserData.avatar} 
 														alt={currentUserData.name || 'User'} 
 														class="h-10 w-10 rounded-full object-cover"
+														onerror={() => avatarLoadError = true}
 													/>
 												{:else}
 													<div class="h-10 w-10 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">

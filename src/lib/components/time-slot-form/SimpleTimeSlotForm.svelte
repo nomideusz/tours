@@ -12,6 +12,7 @@
 	import NumberInput from '$lib/components/NumberInput.svelte';
 	import ConflictWarning from './components/ConflictWarning.svelte';
 	import RecurringOptions from './components/RecurringOptions.svelte';
+	import DaySlotPreview from './components/DaySlotPreview.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -41,6 +42,16 @@
 	let startTime = $state('');
 	let endTime = $state('');
 	let capacity = $state(0);
+	
+	// Multiple time slots for the same date
+	interface TimeSlotEntry {
+		id: string;
+		startTime: string;
+		endTime: string;
+		capacity: number;
+	}
+	
+	let additionalSlots = $state<TimeSlotEntry[]>([]);
 	let recurring = $state(false);
 	let recurringEnd = $state('');
 	let recurringCount = $state(4);
@@ -129,11 +140,54 @@
 		return endMinutes - startMinutes;
 	});
 	
-	// Check for conflicts
+	// Check for conflicts (including additional slots)
 	let conflicts = $derived.by(() => {
-		if (!date || !startTime || !endTime || isSubmitting) return [];
+		if (!date || isSubmitting) return [];
 		const slots = $scheduleQuery.data?.timeSlots || [];
-		return checkConflicts(date, startTime, endTime, slots);
+		
+		// Check main slot
+		const mainConflicts = startTime && endTime ? checkConflicts(date, startTime, endTime, slots) : [];
+		
+		// Check additional slots
+		const additionalConflicts = additionalSlots
+			.filter(slot => slot.startTime && slot.endTime)
+			.flatMap(slot => checkConflicts(date, slot.startTime, slot.endTime, slots));
+		
+		// Check for conflicts between main slot and additional slots
+		const internalConflicts: any[] = [];
+		if (startTime && endTime) {
+			additionalSlots
+				.filter(slot => slot.startTime && slot.endTime)
+				.forEach(slot => {
+					// Create a mock slot array to check conflicts between main and additional
+					const mockSlot = {
+						id: 'temp',
+						startTime: new Date(`${date}T${slot.startTime}:00`).toISOString(),
+						endTime: new Date(`${date}T${slot.endTime}:00`).toISOString()
+					};
+					const conflicts = checkConflicts(date, startTime, endTime, [mockSlot]);
+					internalConflicts.push(...conflicts);
+				});
+		}
+		
+		// Check conflicts between additional slots
+		additionalSlots.forEach((slotA, indexA) => {
+			if (!slotA.startTime || !slotA.endTime) return;
+			
+			additionalSlots.slice(indexA + 1).forEach(slotB => {
+				if (!slotB.startTime || !slotB.endTime) return;
+				
+				const mockSlot = {
+					id: 'temp',
+					startTime: new Date(`${date}T${slotB.startTime}:00`).toISOString(),
+					endTime: new Date(`${date}T${slotB.endTime}:00`).toISOString()
+				};
+				const conflicts = checkConflicts(date, slotA.startTime, slotA.endTime, [mockSlot]);
+				internalConflicts.push(...conflicts.map(c => ({ ...c, isInternal: true })));
+			});
+		});
+		
+		return [...mainConflicts, ...additionalConflicts, ...internalConflicts];
 	});
 	
 	// Check for recurring conflicts
@@ -144,14 +198,37 @@
 	});
 	
 	// Form validation
-	let isValid = $derived(
-		date && 
-		startTime && 
-		endTime && 
-		capacity > 0 && 
-		duration > 0 &&
-		(recurring ? recurringConflictInfo?.conflictCount === 0 : conflicts.length === 0)
-	);
+	let isValid = $derived.by(() => {
+		// Basic validation
+		if (!date || !startTime || !endTime || capacity <= 0 || duration <= 0) return false;
+		
+		// Check if recurring conflicts exist
+		if (recurring && (recurringConflictInfo?.conflictCount || 0) > 0) return false;
+		
+		// Check if there are any conflicts
+		if (conflicts.length > 0) return false;
+		
+		// Validate additional slots
+		const validAdditionalSlots = additionalSlots.every(slot => {
+			if (!slot.startTime || !slot.endTime || slot.capacity <= 0) return false;
+			
+			// Calculate duration for additional slot
+			const [startHour, startMinute] = slot.startTime.split(':').map(Number);
+			const [endHour, endMinute] = slot.endTime.split(':').map(Number);
+			const startMinutes = startHour * 60 + startMinute;
+			let endMinutes = endHour * 60 + endMinute;
+			
+			// Handle midnight crossing
+			if (endMinutes <= startMinutes) {
+				endMinutes += 24 * 60;
+			}
+			
+			const slotDuration = endMinutes - startMinutes;
+			return slotDuration > 0;
+		});
+		
+		return validAdditionalSlots;
+	});
 	
 	// Initialize form with smart defaults
 	$effect(() => {
@@ -355,6 +432,137 @@
 		}, 8000);
 	}
 	
+	// Additional slots management
+	function addTimeSlot() {
+		// Calculate smart defaults for the new slot
+		let suggestedStartTime = '';
+		let suggestedEndTime = '';
+		
+		// Get the last slot's end time to suggest the next slot
+		let lastEndTime = '';
+		if (additionalSlots.length > 0) {
+			// Use the last additional slot's end time
+			const lastSlot = additionalSlots[additionalSlots.length - 1];
+			lastEndTime = lastSlot.endTime;
+		} else if (endTime) {
+			// Use the main slot's end time
+			lastEndTime = endTime;
+		}
+		
+		if (lastEndTime) {
+			// Add 15 minutes buffer after the last slot
+			const [hours, minutes] = lastEndTime.split(':').map(Number);
+			let totalMinutes = hours * 60 + minutes + 15; // 15 min buffer
+			
+			// Handle day overflow
+			if (totalMinutes >= 24 * 60) {
+				totalMinutes = totalMinutes % (24 * 60);
+			}
+			
+			const startHours = Math.floor(totalMinutes / 60);
+			const startMinutes = totalMinutes % 60;
+			suggestedStartTime = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
+			
+			// Calculate end time based on tour duration or custom duration
+			const slotDuration = customDuration || tour?.duration || 60;
+			const endTotalMinutes = totalMinutes + slotDuration;
+			const endHours = Math.floor(endTotalMinutes / 60) % 24;
+			const endMinutes = endTotalMinutes % 60;
+			suggestedEndTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+			
+			// Check for conflicts with existing slots
+			const currentSlots = $scheduleQuery.data?.timeSlots || [];
+			const allSlots = [
+				...currentSlots,
+				// Include main slot if it has times
+				...(startTime && endTime ? [{
+					startTime: new Date(`${date}T${startTime}:00`).toISOString(),
+					endTime: new Date(`${date}T${endTime}:00`).toISOString()
+				}] : []),
+				// Include existing additional slots
+				...additionalSlots.map(slot => ({
+					startTime: new Date(`${date}T${slot.startTime}:00`).toISOString(),
+					endTime: new Date(`${date}T${slot.endTime}:00`).toISOString()
+				}))
+			];
+			
+			// Find next available time that doesn't conflict
+			const nextTime = findNextAvailableTime(
+				date,
+				slotDuration,
+				suggestedStartTime,
+				date,
+				allSlots,
+				slotDuration
+			);
+			
+			suggestedStartTime = nextTime.startTime;
+			suggestedEndTime = nextTime.endTime;
+		} else {
+			// Fallback to default times
+			suggestedStartTime = '10:00';
+			const defaultDuration = customDuration || tour?.duration || 60;
+			const [hours, minutes] = suggestedStartTime.split(':').map(Number);
+			const totalMinutes = hours * 60 + minutes + defaultDuration;
+			const endHours = Math.floor(totalMinutes / 60);
+			const endMinutes = totalMinutes % 60;
+			suggestedEndTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+		}
+		
+		const newSlot: TimeSlotEntry = {
+			id: crypto.randomUUID(),
+			startTime: suggestedStartTime,
+			endTime: suggestedEndTime,
+			capacity: capacity || tour?.capacity || 10
+		};
+		additionalSlots = [...additionalSlots, newSlot];
+	}
+	
+	function removeTimeSlot(id: string) {
+		additionalSlots = additionalSlots.filter(slot => slot.id !== id);
+	}
+	
+	function updateTimeSlot(id: string, field: keyof TimeSlotEntry, value: string | number) {
+		additionalSlots = additionalSlots.map(slot => 
+			slot.id === id ? { ...slot, [field]: value } : slot
+		);
+	}
+	
+	// Calculate duration for additional slots
+	function calculateSlotDuration(startTime: string, endTime: string): number {
+		if (!startTime || !endTime) return 0;
+		
+		const [startHour, startMinute] = startTime.split(':').map(Number);
+		const [endHour, endMinute] = endTime.split(':').map(Number);
+		
+		const startMinutes = startHour * 60 + startMinute;
+		let endMinutes = endHour * 60 + endMinute;
+		
+		// If end time is before start time, it spans midnight
+		if (endMinutes <= startMinutes) {
+			endMinutes += 24 * 60; // Add 24 hours
+		}
+		
+		return endMinutes - startMinutes;
+	}
+	
+	// Reset slot duration to tour default
+	function resetSlotDuration(id: string) {
+		const slot = additionalSlots.find(s => s.id === id);
+		if (!slot || !slot.startTime) return;
+		
+		const defaultDuration = customDuration || tour?.duration || 60;
+		const [startHour, startMinute] = slot.startTime.split(':').map(Number);
+		const startMinutes = startHour * 60 + startMinute;
+		const endMinutes = startMinutes + defaultDuration;
+		
+		const endHour = Math.floor(endMinutes / 60) % 24;
+		const endMin = endMinutes % 60;
+		const newEndTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
+		
+		updateTimeSlot(id, 'endTime', newEndTime);
+	}
+
 	// Event handlers
 	function handleFieldChange(field: string) {
 		touchedFields.add(field);
@@ -368,10 +576,14 @@
 		error = null;
 		
 		try {
-			const start = new Date(`${date}T${startTime}:00`);
-			let end: Date;
+			// Prepare all slots to create (main slot + additional slots)
+			const slotsToCreate = [];
 			
-			// Check if slot spans midnight
+			// Add main slot
+			const mainStart = new Date(`${date}T${startTime}:00`);
+			let mainEnd: Date;
+			
+			// Check if main slot spans midnight
 			const [startHour, startMinute] = startTime.split(':').map(Number);
 			const [endHour, endMinute] = endTime.split(':').map(Number);
 			const startMinutes = startHour * 60 + startMinute;
@@ -382,15 +594,15 @@
 				const nextDay = new Date(date);
 				nextDay.setDate(nextDay.getDate() + 1);
 				const nextDayStr = nextDay.toISOString().split('T')[0];
-				end = new Date(`${nextDayStr}T${endTime}:00`);
+				mainEnd = new Date(`${nextDayStr}T${endTime}:00`);
 			} else {
 				// Same day slot
-				end = new Date(`${date}T${endTime}:00`);
+				mainEnd = new Date(`${date}T${endTime}:00`);
 			}
 			
-			const result = await $createSlotMutation.mutateAsync({
-				startTime: start.toISOString(),
-				endTime: end.toISOString(),
+			slotsToCreate.push({
+				startTime: mainStart.toISOString(),
+				endTime: mainEnd.toISOString(),
 				capacity,
 				status: 'available',
 				recurring,
@@ -399,9 +611,49 @@
 				recurringCount: recurring && !recurringEnd ? recurringCount : undefined
 			});
 			
-			setSuccessMessage(recurring && actualRecurringCount > 1
-				? `Created ${actualRecurringCount} time slots successfully!` 
-				: 'Time slot created successfully!');
+			// Add additional slots
+			additionalSlots.forEach(slot => {
+				const slotStart = new Date(`${date}T${slot.startTime}:00`);
+				let slotEnd: Date;
+				
+				// Check if additional slot spans midnight
+				const [slotStartHour, slotStartMinute] = slot.startTime.split(':').map(Number);
+				const [slotEndHour, slotEndMinute] = slot.endTime.split(':').map(Number);
+				const slotStartMinutes = slotStartHour * 60 + slotStartMinute;
+				const slotEndMinutes = slotEndHour * 60 + slotEndMinute;
+				
+				if (slotEndMinutes <= slotStartMinutes) {
+					// Slot spans midnight, end time is on the next day
+					const nextDay = new Date(date);
+					nextDay.setDate(nextDay.getDate() + 1);
+					const nextDayStr = nextDay.toISOString().split('T')[0];
+					slotEnd = new Date(`${nextDayStr}T${slot.endTime}:00`);
+				} else {
+					// Same day slot
+					slotEnd = new Date(`${date}T${slot.endTime}:00`);
+				}
+				
+				slotsToCreate.push({
+					startTime: slotStart.toISOString(),
+					endTime: slotEnd.toISOString(),
+					capacity: slot.capacity,
+					status: 'available'
+				});
+			});
+			
+			// Create all slots
+			const results = await Promise.all(
+				slotsToCreate.map(slotData => $createSlotMutation.mutateAsync(slotData))
+			);
+			
+			const totalCreated = slotsToCreate.length;
+			const totalMessage = recurring && actualRecurringCount > 1 
+				? `Created ${actualRecurringCount * totalCreated} time slots successfully!`
+				: totalCreated === 1 
+					? 'Time slot created successfully!'
+					: `Created ${totalCreated} time slots successfully!`;
+			
+			setSuccessMessage(totalMessage);
 			
 			// Store last created slot info for smart suggestions
 			lastCreatedSlot = { time: startTime, date: date };
@@ -437,6 +689,7 @@
 			recurring = false;
 			recurringCount = 4;
 			recurringEnd = '';
+			additionalSlots = []; // Clear additional slots
 			
 			// Clear touched fields to allow auto-calculation
 			touchedFields.clear();
@@ -445,11 +698,8 @@
 			resetTimeRangeFlag = true;
 			setTimeout(() => resetTimeRangeFlag = false, 100);
 			
-			// Call success callback after a short delay
-			setTimeout(() => {
-				justCreatedSlot = false;
-				// Don't close the form, let user create more slots
-			}, 3000);
+			// Keep the "justCreatedSlot" state - don't revert buttons
+			// This provides better UX by keeping "Finish" and "Create Another" buttons
 			
 		} catch (err) {
 			setErrorMessage(err instanceof Error ? err.message : 'Failed to create time slot');
@@ -528,6 +778,10 @@
 						<h3>Select Date</h3>
 					</div>
 					
+					<p class="section-hint">
+						Click on a date to view existing time slots
+					</p>
+					
 					<MiniMonthCalendar
 						slotsMap={slotsMap}
 						selectedDate={date}
@@ -539,10 +793,12 @@
 					/>
 					
 					{#if date}
-						<div class="selected-date-info">
-							<span>Selected:</span>
-							<strong>{formatDate(date)}</strong>
-						</div>
+						<!-- Show selected date and existing slots -->
+						<DaySlotPreview 
+							date={date}
+							slots={$scheduleQuery.data?.timeSlots || []}
+							isVisible={!!date}
+						/>
 					{/if}
 				</div>
 				
@@ -555,7 +811,7 @@
 					
 					<div class="form-fields">
 						<!-- Time Selection -->
-						<div class="form-field">
+						<div class="form-field time-field">
 							<TimeRange
 								bind:startTime
 								bind:endTime
@@ -574,34 +830,155 @@
 							{/if}
 						</div>
 						
-						<!-- Capacity -->
-						<div class="form-field">
-							<label for="capacity" class="form-label">
-								<Users class="w-4 h-4 inline mr-1" />
-								Max Group Size
-							</label>
-							<div class="capacity-input-wrapper">
-								<NumberInput
-									id="capacity"
-									name="capacity"
-									label=""
-									bind:value={capacity}
-									min={1}
-									max={500}
-									step={1}
-									integerOnly={true}
-								/>
+						<!-- Duration and Capacity Row -->
+						<div class="details-row">
+							<!-- Duration Display -->
+							{#if duration > 0}
+								<div class="duration-display">
+									<Clock class="w-4 h-4" />
+									<span class="duration-text">Duration: {formatDuration(duration)}</span>
+								</div>
+							{/if}
+							
+							<!-- Capacity -->
+							<div class="capacity-field">
+								<label for="capacity" class="capacity-label">
+									<Users class="w-4 h-4" />
+									Max Group Size
+								</label>
+								<div class="capacity-input-group">
+									<NumberInput
+										id="capacity"
+										name="capacity"
+										label=""
+										bind:value={capacity}
+										min={1}
+										max={500}
+										step={1}
+										integerOnly={true}
+									/>
+									{#if tour.capacity && capacity !== tour.capacity}
+										<button 
+											type="button"
+											onclick={() => capacity = tour.capacity}
+											class="use-default-button"
+											title="Use tour default ({tour.capacity} guests)"
+										>
+											Use default
+										</button>
+									{/if}
+								</div>
 							</div>
-							{#if tour.capacity && capacity !== tour.capacity}
-								<button 
-									type="button"
-									onclick={() => capacity = tour.capacity}
-									class="button--text button--small mt-1 max-w-fit"
-								>
-									Use tour default ({tour.capacity} guests)
-								</button>
+						</div>
+						
+						<!-- Add More Time Slots -->
+						<div class="form-field add-more-field">
+							<button 
+								type="button"
+								onclick={addTimeSlot}
+								class="add-more-button"
+							>
+								<Plus class="w-4 h-4" />
+								Add more time slots for this date
+							</button>
+							{#if additionalSlots.length > 0}
+								<p class="help-text">
+									Creating {additionalSlots.length + 1} time slot{additionalSlots.length + 1 === 1 ? '' : 's'} for {formatDate(date)} • You can add as many as needed
+								</p>
 							{/if}
 						</div>
+						
+						<!-- Additional Time Slots -->
+						{#each additionalSlots as slot, index (slot.id)}
+							<div class="additional-slot">
+								<div class="additional-slot-header">
+									<span class="slot-number">Time Slot #{index + 2}</span>
+									<button 
+										type="button"
+										onclick={() => removeTimeSlot(slot.id)}
+										class="remove-slot-button"
+										aria-label="Remove time slot"
+									>
+										<X class="w-4 h-4" />
+									</button>
+								</div>
+								
+								<div class="additional-slot-content">
+									<div class="slot-time-row">
+										<div class="time-input-wrapper">
+											<label for="start-{slot.id}" class="time-label">Start</label>
+											<input
+												id="start-{slot.id}"
+												type="time"
+												bind:value={slot.startTime}
+												class="time-input"
+												required
+											/>
+										</div>
+										
+										<span class="time-separator">to</span>
+										
+										<div class="time-input-wrapper">
+											<label for="end-{slot.id}" class="time-label">End</label>
+											<input
+												id="end-{slot.id}"
+												type="time"
+												bind:value={slot.endTime}
+												class="time-input"
+												required
+											/>
+										</div>
+										
+										<!-- Duration display inline with times -->
+										{#if calculateSlotDuration(slot.startTime, slot.endTime) > 0}
+											<div class="slot-duration-inline">
+												<Clock class="w-3 h-3" />
+												<span class="duration-text">{formatDuration(calculateSlotDuration(slot.startTime, slot.endTime))}</span>
+												{#if calculateSlotDuration(slot.startTime, slot.endTime) !== (customDuration || tour?.duration || 60)}
+													<button 
+														type="button"
+														onclick={() => resetSlotDuration(slot.id)}
+														class="reset-duration-inline"
+														title="Reset to {formatDuration(customDuration || tour?.duration || 60)}"
+													>
+														Reset
+													</button>
+												{/if}
+											</div>
+										{/if}
+									</div>
+									
+									<div class="slot-capacity-row">
+										<label for="capacity-{slot.id}" class="capacity-label">
+											<Users class="w-3 h-3" />
+											<span>Max Group Size</span>
+										</label>
+										<div class="capacity-input-with-default">
+											<NumberInput
+												id="capacity-{slot.id}"
+												name="capacity-{slot.id}"
+												label=""
+												bind:value={slot.capacity}
+												min={1}
+												max={500}
+												step={1}
+												integerOnly={true}
+											/>
+											{#if tour.capacity && slot.capacity !== tour.capacity}
+												<button 
+													type="button"
+													onclick={() => updateTimeSlot(slot.id, 'capacity', tour.capacity)}
+													class="use-default-small"
+													title="Use tour default ({tour.capacity} guests)"
+												>
+													Use default
+												</button>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</div>
+						{/each}
 					</div>
 				</div>
 			</div>
@@ -665,7 +1042,13 @@
 							Creating...
 						{:else}
 							<Plus class="w-4 h-4" />
-							Create {recurring && actualRecurringCount > 1 ? `${actualRecurringCount} Slots` : 'Slot'}
+							{#if recurring && actualRecurringCount > 1}
+								Create {actualRecurringCount * (additionalSlots.length + 1)} Slots
+							{:else if additionalSlots.length > 0}
+								Create {additionalSlots.length + 1} Slots
+							{:else}
+								Create Slot
+							{/if}
 						{/if}
 					</button>
 				{/if}
@@ -829,35 +1212,25 @@
 		color: var(--text-primary);
 	}
 	
-	.selected-date-info {
-		margin-top: 1rem;
-		padding: 0.75rem 1rem;
-		background: var(--bg-secondary);
-		border-radius: var(--radius-md);
-		font-size: var(--text-sm);
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--text-secondary);
+	.section-hint {
+		font-size: var(--text-xs);
+		color: var(--text-tertiary);
+		margin: -0.5rem 0 1rem 0;
+		font-style: italic;
 	}
 	
 	@media (max-width: 768px) {
-		.selected-date-info {
-			margin-top: 0.75rem;
-			padding: 0.5rem 0.75rem;
-			background: var(--bg-tertiary);
-			border-radius: var(--radius-sm);
+		.section-hint {
+			margin: -0.25rem 0 0.75rem 0;
 		}
 	}
 	
-	.selected-date-info strong {
-		color: var(--text-primary);
-	}
+
 	
 	.form-fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1.25rem;
 	}
 	
 	@media (max-width: 768px) {
@@ -872,6 +1245,322 @@
 		gap: 0.5rem;
 	}
 	
+	/* Time field specific */
+	.time-field {
+		margin-bottom: 0.5rem;
+	}
+	
+	/* Details row for duration and capacity */
+	.details-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 2rem;
+		flex-wrap: wrap;
+	}
+	
+	@media (max-width: 768px) {
+		.details-row {
+			gap: 1rem;
+		}
+	}
+	
+	.duration-display {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		border-radius: var(--radius-md);
+		color: var(--text-secondary);
+		font-size: var(--text-sm);
+	}
+	
+	.duration-text {
+		font-weight: 500;
+	}
+	
+	.capacity-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 200px;
+	}
+	
+	.capacity-label {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+	
+	.capacity-input-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.capacity-input-group :global(.number-input) {
+		max-width: 160px;
+	}
+	
+	.use-default-button {
+		padding: 0.375rem 0.75rem;
+		font-size: var(--text-xs);
+		background: transparent;
+		border: 1px solid var(--border-secondary);
+		color: var(--text-secondary);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+	}
+	
+	.use-default-button:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+		color: var(--text-primary);
+	}
+	
+	/* Add more slots section */
+	.add-more-field {
+		margin-top: 0.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-secondary);
+	}
+	
+	.add-more-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: transparent;
+		border: 2px dashed var(--border-secondary);
+		color: var(--text-secondary);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		width: fit-content;
+	}
+	
+	.add-more-button:hover {
+		border-color: var(--color-primary-500);
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
+	}
+	
+	.help-text {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+		margin: 0.5rem 0 0 0;
+		font-style: italic;
+	}
+	
+	/* Additional slots redesign */
+	.additional-slot {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-secondary);
+		border-radius: var(--radius-md);
+		animation: slideIn 0.2s ease;
+	}
+	
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	
+	.additional-slot-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+	
+	.slot-number {
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.remove-slot-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		background: transparent;
+		border: none;
+		color: var(--text-tertiary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		border-radius: var(--radius-sm);
+	}
+	
+	.remove-slot-button:hover {
+		background: var(--color-error-50);
+		color: var(--color-error-600);
+	}
+	
+	/* Simplified slot time row */
+	.slot-time-row {
+		display: flex;
+		align-items: flex-end;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.75rem;
+	}
+	
+	.time-input-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		flex: 1;
+		min-width: 90px;
+	}
+	
+	.time-label {
+		font-size: var(--text-xs);
+		color: var(--text-tertiary);
+		font-weight: 400;
+	}
+	
+	.time-input {
+		width: 100%;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		background: var(--bg-input);
+		color: var(--text-primary);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		transition: all var(--transition-fast) ease;
+	}
+	
+	.time-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 2px var(--color-primary-200);
+	}
+	
+	.time-input:hover {
+		border-color: var(--border-secondary);
+	}
+	
+	.time-separator {
+		color: var(--text-tertiary);
+		font-size: var(--text-sm);
+		padding-bottom: 0.5rem;
+	}
+	
+	/* Inline duration display */
+	.slot-duration-inline {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.5rem;
+		background: var(--bg-tertiary);
+		border: 1px solid var(--border-tertiary);
+		border-radius: var(--radius-sm);
+		color: var(--text-secondary);
+		font-size: var(--text-xs);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+	
+	.slot-duration-inline .duration-text {
+		font-weight: 500;
+	}
+	
+	.reset-duration-inline {
+		margin-left: 0.25rem;
+		padding: 0.125rem 0.375rem;
+		font-size: 0.6875rem;
+		background: transparent;
+		border: 1px solid var(--border-secondary);
+		color: var(--text-secondary);
+		border-radius: var(--radius-xs);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+	}
+	
+	.reset-duration-inline:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-200);
+		color: var(--color-primary-700);
+	}
+	
+	/* Capacity row */
+	.slot-capacity-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	
+	.slot-capacity-row .capacity-label {
+		font-size: var(--text-sm);
+		color: var(--text-secondary);
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-shrink: 0;
+	}
+	
+	.capacity-input-with-default {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+	
+	.capacity-input-with-default :global(.number-input) {
+		max-width: 120px;
+		min-width: 100px;
+	}
+	
+	.use-default-small {
+		padding: 0.25rem 0.5rem;
+		font-size: var(--text-xs);
+		background: transparent;
+		border: 1px solid var(--border-secondary);
+		color: var(--text-secondary);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+	
+	.use-default-small:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+		color: var(--text-primary);
+	}
+	
+	/* Remove old styles */
+	.slot-capacity,
+	.slot-duration-row,
+	.slot-duration-display,
+	.reset-duration-button {
+		/* These styles are no longer needed */
+	}
+	
+	/* Recurring options container */
 	.recurring-options-container {
 		display: flex;
 		justify-content: center;
@@ -891,6 +1580,7 @@
 		}
 	}
 	
+	/* Form actions */
 	.form-actions {
 		display: flex;
 		gap: 0.75rem;
@@ -908,53 +1598,14 @@
 		}
 	}
 	
-	/* Make TimeRange fit properly */
-	.form-field :global(.time-range) {
-		width: 100%;
-	}
-	
-	/* Constrain capacity input width */
-	.capacity-input-wrapper {
-		max-width: 150px;
-	}
-	
-	@media (max-width: 768px) {
-		.capacity-input-wrapper {
-			max-width: 200px;
-		}
-	}
-	
-	/* Button styles */
+	/* Button styles in form actions */
 	.form-actions button {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
 	}
 	
-	.button--text {
-		background: transparent;
-		border: none;
-		color: var(--color-primary-600);
-		padding: 0.25rem 0.5rem;
-		font-size: var(--text-xs);
-		cursor: pointer;
-		transition: all var(--transition-fast) ease;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	
-	.button--text:hover {
-		color: var(--color-primary-700);
-		background: var(--bg-secondary);
-		border-radius: var(--radius-sm);
-	}
-	
-	.button--text.button--small {
-		padding: 0.125rem 0.375rem;
-		font-size: 0.75rem;
-	}
-	
+	/* Auto suggest hint animation */
 	.auto-suggest-hint {
 		display: flex;
 		align-items: center;
@@ -973,6 +1624,75 @@
 		to {
 			opacity: 1;
 			transform: translateY(0);
+		}
+	}
+	
+	/* Additional slot content wrapper */
+	.additional-slot-content {
+		width: 100%;
+	}
+	
+	/* Make TimeRange fit properly */
+	.form-field :global(.time-range) {
+		width: 100%;
+	}
+	
+	/* Mobile adjustments */
+	@media (max-width: 768px) {
+		.details-row {
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+		
+		.duration-display {
+			width: fit-content;
+		}
+		
+		.capacity-field {
+			min-width: 100%;
+		}
+		
+		.additional-slot {
+			margin-top: 0.75rem;
+			padding: 0.75rem;
+		}
+		
+		.slot-time-row {
+			gap: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+		
+		.time-input-wrapper {
+			min-width: 80px;
+		}
+		
+		.time-input {
+			font-size: var(--text-sm);
+			padding: 0.375rem 0.5rem;
+		}
+		
+		.slot-duration-inline {
+			order: 10;
+			width: 100%;
+			margin-top: 0.5rem;
+			justify-content: center;
+		}
+		
+		.slot-capacity-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+		
+		.capacity-input-with-default {
+			width: 100%;
+			justify-content: space-between;
+		}
+		
+		.capacity-input-with-default :global(.number-input) {
+			flex: 1;
+			max-width: none;
+			min-width: 120px;
 		}
 	}
 </style> 

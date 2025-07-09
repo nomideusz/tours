@@ -1,0 +1,381 @@
+<script lang="ts">
+	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
+	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	
+	// Icons
+	import Clock from 'lucide-svelte/icons/clock';
+	import Users from 'lucide-svelte/icons/users';
+	import Euro from 'lucide-svelte/icons/euro';
+	import Calendar from 'lucide-svelte/icons/calendar';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import XCircle from 'lucide-svelte/icons/x-circle';
+	
+	interface TimeSlot {
+		id: string;
+		startTime: string;
+		endTime: string;
+		capacity: number;
+		bookedSpots: number;
+		availableSpots: number;
+		totalRevenue: number;
+		status: 'available' | 'cancelled';
+		notes?: string;
+	}
+	
+	interface Props {
+		date: string; // YYYY-MM-DD format
+		slots: TimeSlot[];
+		isVisible?: boolean;
+	}
+	
+	let { date, slots, isVisible = true }: Props = $props();
+	
+	// Sort slots by start time
+	let sortedSlots = $derived(
+		slots
+			.filter(slot => {
+				const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
+				return slotDate === date;
+			})
+			.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+	);
+	
+	function formatDate(dateStr: string): string {
+		const date = new Date(dateStr);
+		return date.toLocaleDateString('en-US', { 
+			weekday: 'long', 
+			month: 'long', 
+			day: 'numeric' 
+		});
+	}
+	
+	function getSlotStatusText(slot: TimeSlot): string {
+		if (slot.status === 'cancelled') return 'Cancelled';
+		if (slot.bookedSpots === 0) return 'Available';
+		if (slot.availableSpots === 0) return 'Full';
+		return `${slot.bookedSpots}/${slot.capacity} booked`;
+	}
+	
+	function getSlotStatusClass(slot: TimeSlot): string {
+		if (slot.status === 'cancelled') return 'slot-status--cancelled';
+		if (slot.bookedSpots === 0) return 'slot-status--available';
+		if (slot.availableSpots === 0) return 'slot-status--full';
+		return 'slot-status--partial';
+	}
+</script>
+
+{#if isVisible}
+	<div class="day-slot-preview">
+		<div class="preview-header">
+			<div class="header-info">
+				<Calendar class="w-4 h-4" />
+				<span class="date-text">{formatDate(date)}</span>
+			</div>
+			{#if sortedSlots.length > 0}
+				<span class="slot-count">{sortedSlots.length} existing slot{sortedSlots.length === 1 ? '' : 's'}</span>
+			{:else}
+				<span class="slot-count slot-count--empty">No slots scheduled</span>
+			{/if}
+		</div>
+		
+		{#if sortedSlots.length > 0}
+			<div class="slots-list">
+				{#each sortedSlots as slot (slot.id)}
+					<div class="slot-item {getSlotStatusClass(slot)}">
+						<div class="slot-main">
+							<div class="slot-time">
+								<Clock class="w-3.5 h-3.5" />
+								<span class="time-text">{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+							</div>
+							
+							<div class="slot-details">
+								<div class="detail-item">
+									<Users class="w-3.5 h-3.5" />
+									<span>{getSlotStatusText(slot)}</span>
+								</div>
+								
+								{#if slot.totalRevenue > 0}
+									<div class="detail-item">
+										<Euro class="w-3.5 h-3.5" />
+										<span>{$globalCurrencyFormatter(slot.totalRevenue)}</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+						
+						<div class="slot-status">
+							{#if slot.status === 'cancelled'}
+								<XCircle class="w-4 h-4 text-red-500" />
+							{:else if slot.availableSpots === 0}
+								<div class="status-badge status-badge--full">Full</div>
+							{:else if slot.bookedSpots > 0}
+								<div class="status-badge status-badge--partial">Partial</div>
+							{:else}
+								<CheckCircle class="w-4 h-4 text-green-500" />
+							{/if}
+						</div>
+					</div>
+				{/each}
+			</div>
+			
+			<div class="preview-footer">
+				<p class="help-text">Choose a different time to avoid conflicts</p>
+			</div>
+		{:else}
+			<div class="empty-state">
+				<div class="empty-icon">
+					<Clock class="w-8 h-8" />
+				</div>
+				<p class="empty-title">No time slots scheduled</p>
+				<p class="empty-description">This date is available for new time slots</p>
+			</div>
+		{/if}
+	</div>
+{/if}
+
+<style>
+	.day-slot-preview {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: var(--bg-tertiary);
+		border: 1px solid var(--border-secondary);
+		border-radius: var(--radius-md);
+		animation: slideIn 0.2s ease;
+	}
+	
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	
+	.preview-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border-primary);
+	}
+	
+	.header-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--text-primary);
+	}
+	
+	.date-text {
+		font-size: var(--text-sm);
+		font-weight: 500;
+	}
+	
+	.slot-count {
+		font-size: var(--text-xs);
+		color: var(--text-tertiary);
+		background: var(--bg-secondary);
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-sm);
+	}
+	
+	.slot-count--empty {
+		background: var(--color-success-100);
+		color: var(--color-success-700);
+	}
+	
+	.slots-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	
+	.slot-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	
+	.slot-item:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+	
+	.slot-item.slot-status--cancelled {
+		background: var(--color-error-50);
+		border-color: var(--color-error-200);
+		opacity: 0.8;
+	}
+	
+	.slot-item.slot-status--full {
+		background: var(--color-warning-50);
+		border-color: var(--color-warning-200);
+	}
+	
+	.slot-main {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		flex: 1;
+		min-width: 0;
+	}
+	
+	.slot-time {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--text-primary);
+	}
+	
+	.time-text {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		font-family: var(--font-mono);
+	}
+	
+	.slot-details {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	
+	.detail-item {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+	}
+	
+	.slot-status {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+	
+	.status-badge {
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-sm);
+		font-size: var(--text-xs);
+		font-weight: 500;
+	}
+	
+	.status-badge--full {
+		background: var(--color-warning-100);
+		color: var(--color-warning-700);
+	}
+	
+	.status-badge--partial {
+		background: var(--color-info-100);
+		color: var(--color-info-700);
+	}
+	
+	.preview-footer {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-primary);
+	}
+	
+	.help-text {
+		font-size: var(--text-xs);
+		color: var(--text-tertiary);
+		text-align: center;
+		margin: 0;
+		font-style: italic;
+	}
+	
+	/* Empty state */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem 1rem;
+		text-align: center;
+	}
+	
+	.empty-icon {
+		width: 3rem;
+		height: 3rem;
+		background: var(--color-success-100);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 1rem;
+		color: var(--color-success-600);
+	}
+	
+	.empty-title {
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--text-primary);
+		margin: 0 0 0.5rem 0;
+	}
+	
+	.empty-description {
+		font-size: var(--text-xs);
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	
+	/* Mobile responsive */
+	@media (max-width: 640px) {
+		.day-slot-preview {
+			margin-top: 0.75rem;
+			padding: 0.75rem;
+		}
+		
+		.preview-header {
+			margin-bottom: 0.5rem;
+			padding-bottom: 0.5rem;
+		}
+		
+		.date-text {
+			font-size: var(--text-xs);
+		}
+		
+		.slot-item {
+			padding: 0.5rem;
+		}
+		
+		.slot-main {
+			gap: 0.375rem;
+		}
+		
+		.slot-details {
+			gap: 0.75rem;
+		}
+		
+		.detail-item {
+			gap: 0.25rem;
+		}
+		
+		.empty-state {
+			padding: 1.5rem 0.75rem;
+		}
+		
+		.empty-icon {
+			width: 2.5rem;
+			height: 2.5rem;
+			margin-bottom: 0.75rem;
+		}
+		
+		.empty-title {
+			font-size: var(--text-xs);
+		}
+		
+		.empty-description {
+			font-size: 0.6875rem;
+		}
+	}
+</style> 
