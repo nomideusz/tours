@@ -434,10 +434,25 @@
 		background: var(--bg-primary);
 		color: var(--text-secondary);
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		min-height: 44px; /* Better touch target */
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top */
+	.toggle-btn::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
 	}
 
 	.toggle-btn:last-child {
@@ -445,12 +460,21 @@
 	}
 
 	.toggle-btn.active {
-		background: var(--color-primary-500);
-		color: white;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+	}
+
+	.toggle-btn.active::before {
+		transform: scaleX(1);
 	}
 
 	.toggle-btn:hover:not(.active) {
 		background: var(--bg-secondary);
+		transform: translateY(-1px);
+	}
+
+	.toggle-btn:hover:not(.active)::before {
+		transform: scaleX(1);
 	}
 
 	.mobile-preview {
@@ -545,9 +569,24 @@
 		color: var(--text-secondary);
 		border: none;
 		font-size: 0.8125rem;
-		font-weight: 500;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.15s ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top */
+	.toggle-option::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
 	}
 
 	.toggle-option:not(:last-child) {
@@ -555,12 +594,21 @@
 	}
 
 	.toggle-option.active {
-		background: var(--color-primary-500);
-		color: white;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+	}
+
+	.toggle-option.active::before {
+		transform: scaleX(1);
 	}
 
 	.toggle-option:hover:not(.active) {
 		background: var(--bg-secondary);
+		transform: translateY(-1px);
+	}
+
+	.toggle-option:hover:not(.active)::before {
+		transform: scaleX(1);
 	}
 
 	/* Preview section */

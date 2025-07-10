@@ -355,27 +355,52 @@
 		justify-content: center;
 		gap: 0.5rem;
 		background: transparent;
-		border: none;
+		border: 1px solid transparent;
 		border-radius: var(--radius-md);
 		padding: 1rem 1.5rem;
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--text-secondary);
 		cursor: pointer;
 		transition: all var(--transition-base) ease;
 		min-width: 140px;
 		height: 44px;
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Coral accent on hover */
+	.toggle-btn::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
 	}
 	
 	.toggle-btn:hover:not(.active) {
 		background: var(--bg-tertiary);
 		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+	
+	.toggle-btn:hover:not(.active)::before {
+		transform: scaleX(1);
 	}
 	
 	.toggle-btn.active {
-		background: var(--color-coral-500);
-		color: white;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border-color: var(--color-primary-200);
 		box-shadow: var(--shadow-md);
+	}
+
+	.toggle-btn.active::before {
+		transform: scaleX(1);
 	}
 	
 	/* QR Showcase */

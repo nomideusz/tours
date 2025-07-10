@@ -204,20 +204,45 @@
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		border: none;
+		border: 1px solid transparent;
 		background: transparent;
 		color: var(--text-secondary);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on hover */
+	.toggle-option::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
 	}
 
 	.toggle-option--active {
-		background: var(--color-coral-500);
-		color: white;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border-color: var(--color-primary-200);
 		box-shadow: var(--shadow-md);
+	}
+
+	.toggle-option--active::before {
+		transform: scaleX(1);
 	}
 
 	.toggle-option:not(.toggle-option--active):hover {
 		background: var(--bg-secondary);
 		color: var(--text-primary);
+		transform: translateY(-1px);
+	}
+
+	.toggle-option:not(.toggle-option--active):hover::before {
+		transform: scaleX(1);
 	}
 
 
@@ -413,7 +438,7 @@
 		flex-shrink: 0;
 	}
 
-	/* Plan CTA Buttons - Properly styled */
+	/* Plan CTA Buttons - Navigation style */
 	.plan-cta {
 		width: 100%;
 		padding: 0.875rem 1.5rem;
@@ -422,37 +447,63 @@
 		font-size: 0.875rem;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		border: none;
 		text-align: center;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top */
+	.plan-cta::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-primary-500);
+		transform: scaleX(1);
+		transition: transform var(--transition-fast) ease;
 	}
 
 	.plan-cta--primary {
-		background: var(--color-coral-500);
-		color: white;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border: 1px solid var(--color-primary-200);
 		box-shadow: var(--shadow-md);
 	}
 
 	.plan-cta--primary:hover {
-		background: var(--color-coral-600);
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-900);
 		box-shadow: var(--shadow-lg);
 		transform: translateY(-1px);
 	}
 
 	.plan-cta--outline {
-		background: transparent;
-		color: var(--text-primary);
-		border: 2px solid var(--border-primary);
+		background: var(--bg-primary);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-primary);
+	}
+
+	/* Outline version gets accent on hover */
+	.plan-cta--outline::before {
+		transform: scaleX(0);
 	}
 
 	.plan-cta--outline:hover {
 		background: var(--bg-secondary);
-		border-color: var(--color-coral-500);
-		color: var(--color-coral-600);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
 		transform: translateY(-1px);
+	}
+
+	.plan-cta--outline:hover::before {
+		transform: scaleX(1);
 	}
 
 	/* No Commission Card */

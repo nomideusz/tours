@@ -455,15 +455,15 @@
 
 /* Dark mode overrides */
 [data-theme="dark"] {
-	/* Primary Coral - adjusted for dark mode */
+	/* Primary Coral - adjusted for dark mode (darker for better contrast) */
 	--color-primary-50: #4c1f1d;
 	--color-primary-100: #872f29;
 	--color-primary-200: #a5342a;
 	--color-primary-300: #c73e2f;
 	--color-primary-400: #e8523e;
-	--color-primary-500: #fa6b5d;
-	--color-primary-600: #ff7a6b;
-	--color-primary-700: #ffaa98;
+	--color-primary-500: #ff4d36;
+	--color-primary-600: #ff6b55;
+	--color-primary-700: #ff8a73;
 	--color-primary-800: #ffcdc2;
 	--color-primary-900: #ffe4de;
 
@@ -471,15 +471,15 @@
 	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
 	   ============================================= */
 	
-	/* Coral Red - Dark mode adjustments */
+	/* Coral Red - Dark mode adjustments (darker for better contrast) */
 	--color-coral-50: #4c1f1d;
 	--color-coral-100: #872f29;
 	--color-coral-200: #a5342a;
 	--color-coral-300: #c73e2f;
 	--color-coral-400: #e8523e;
-	--color-coral-500: #fa6b5d;
-	--color-coral-600: #ff7a6b;
-	--color-coral-700: #ffaa98;
+	--color-coral-500: #ff4d36;
+	--color-coral-600: #ff6b55;
+	--color-coral-700: #ff8a73;
 	--color-coral-800: #ffcdc2;
 	--color-coral-900: #ffe4de;
 	
@@ -555,15 +555,15 @@
 	--color-sunset-800: #fbd38d;
 	--color-sunset-900: #feebc8;
 	
-	/* Journey Red - Dark mode adjustments */
+	/* Journey Red - Dark mode adjustments (darker for better contrast) */
 	--color-journey-50: #4c1f1d;
 	--color-journey-100: #872f29;
 	--color-journey-200: #a5342a;
 	--color-journey-300: #c73e2f;
 	--color-journey-400: #e8523e;
-	--color-journey-500: #fa6b5d;
-	--color-journey-600: #ff7a6b;
-	--color-journey-700: #ffaa98;
+	--color-journey-500: #ff4d36;
+	--color-journey-600: #ff6b55;
+	--color-journey-700: #ff8a73;
 	--color-journey-800: #ffcdc2;
 	--color-journey-900: #ffe4de;
 
@@ -813,16 +813,16 @@ nav a:hover,
 /* Dark mode adjustment for active nav icons */
 [data-theme="dark"] .nav-link .nav-icon-active,
 [data-theme="dark"] .nav-link .nav-icon-active svg {
-	stroke: var(--color-primary-400) !important;
+	stroke: var(--color-primary-600) !important;
 }
 
 /* Dark mode link adjustments */
 [data-theme="dark"] a {
-	color: var(--color-primary-500);
+	color: var(--color-primary-600);
 }
 
 [data-theme="dark"] a:hover {
-	color: var(--color-primary-400);
+	color: var(--color-primary-500);
 }
 
 /* Ensure buttons don't have hardcoded colors */

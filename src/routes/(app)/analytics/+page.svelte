@@ -347,7 +347,7 @@
 								data={analytics?.revenue.chartData || []} 
 								type="line"
 								showCurrency={true}
-								color="var(--color-primary-500)"
+								color="var(--color-primary-600)"
 								label="Revenue"
 								key={`revenue-${activeTab}-${timeRange}`}
 							/>
@@ -361,7 +361,7 @@
 							<AnalyticsChart 
 								data={analytics?.bookings.chartData || []} 
 								type="bar"
-								color="var(--color-primary-500)"
+								color="var(--color-primary-600)"
 								label="Bookings"
 								key={`bookings-${activeTab}-${timeRange}`}
 							/>
@@ -480,7 +480,7 @@
 							data={analytics?.revenue.chartData || []} 
 							type="line"
 							showCurrency={true}
-							color="var(--color-primary-500)"
+							color="var(--color-primary-600)"
 							label="Revenue"
 							key={`revenue-${activeTab}-${timeRange}`}
 						/>
@@ -550,7 +550,7 @@
 						<AnalyticsChart 
 							data={analytics?.bookings.chartData || []} 
 							type="bar"
-							color="var(--color-primary-500)"
+							color="var(--color-primary-600)"
 							label="Bookings"
 							key={`bookings-${activeTab}-${timeRange}`}
 						/>
@@ -661,7 +661,7 @@
 									<span class="text-sm" style="color: var(--text-primary);">QR Scans</span>
 									<span class="text-sm font-semibold" style="color: var(--text-primary);">{analytics?.qrCodes.scans}</span>
 								</div>
-								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--color-primary-500);">
+								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--color-primary-600);">
 									<div class="h-full flex items-center justify-center text-xs font-medium text-white">
 										100%
 									</div>
@@ -676,7 +676,7 @@
 								<div class="h-8 rounded-lg overflow-hidden" style="background: var(--bg-secondary);">
 									<div 
 										class="h-full flex items-center justify-center text-xs font-medium text-white rounded-lg"
-										style="width: {analytics?.qrCodes.conversionRate}%; background: var(--color-primary-500);"
+										style="width: {analytics?.qrCodes.conversionRate}%; background: var(--color-primary-600);"
 									>
 										{analytics?.qrCodes.conversionRate}%
 									</div>
@@ -781,7 +781,7 @@
 	.time-range-button {
 		padding: 0.5rem 0.875rem;
 		font-size: 0.75rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--text-secondary);
 		background: var(--bg-primary);
 		border: 1px solid var(--border-secondary);
@@ -794,6 +794,20 @@
 		align-items: center;
 		justify-content: center;
 		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	/* Coral accent on hover */
+	.time-range-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
 	}
 	
 	@media (min-width: 640px) {
@@ -807,20 +821,30 @@
 		color: var(--text-primary);
 		border-color: var(--border-primary);
 		background: var(--bg-secondary);
+		transform: translateY(-1px);
+	}
+
+	.time-range-button:hover::before {
+		transform: scaleX(1);
 	}
 	
 	.time-range-button.active {
-		color: #FFFFFF;
-		background: var(--color-primary-600);
-		border-color: var(--color-primary-600);
+		color: var(--color-primary-900);
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-200);
 		font-weight: 600;
 		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 	}
+
+	.time-range-button.active::before {
+		transform: scaleX(1);
+	}
 	
 	.time-range-button.active:hover {
-		background: var(--color-primary-700);
-		border-color: var(--color-primary-700);
-		color: #FFFFFF;
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-900);
+		transform: translateY(-1px);
 	}
 	
 
@@ -924,7 +948,7 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		background: var(--color-primary-500);
+		background: var(--color-primary-600);
 		transition: height 0.3s ease;
 	}
 	
@@ -941,7 +965,7 @@
 		left: 0;
 		top: 0;
 		bottom: 0;
-		background: var(--color-primary-500);
+		background: var(--color-primary-600);
 		transition: width 0.3s ease;
 	}
 </style>

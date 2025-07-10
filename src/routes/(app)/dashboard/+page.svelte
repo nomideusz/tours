@@ -1703,13 +1703,13 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-step-button {
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border: 1px solid var(--color-primary-200);
 		border-radius: 0.5rem;
 		padding: 0.5rem 1rem;
 		font-size: 0.75rem;
-		font-weight: 500;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		display: flex;
@@ -1717,10 +1717,27 @@ Please ensure this is the correct country where your business is legally registe
 		gap: 0.5rem;
 		justify-content: center;
 		width: 100%;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top - like navigation */
+	.compact-step-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-primary-500);
+		transform: scaleX(1);
+		transition: transform var(--transition-fast) ease;
 	}
 	
 	.compact-step-button:hover:not(:disabled) {
-		background: var(--color-primary-700);
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-900);
 		transform: translateY(-1px);
 	}
 	
@@ -1752,9 +1769,9 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-main-button {
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border: 1px solid var(--color-primary-200);
 		border-radius: 0.75rem;
 		padding: 1rem 2rem;
 		font-size: 1rem;
@@ -1767,10 +1784,27 @@ Please ensure this is the correct country where your business is legally registe
 		justify-content: center;
 		margin: 0 auto 0.5rem;
 		box-shadow: var(--shadow-sm);
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top - like navigation */
+	.compact-main-button::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-primary-500);
+		transform: scaleX(1);
+		transition: transform var(--transition-fast) ease;
 	}
 	
 	.compact-main-button:hover {
-		background: var(--color-primary-700);
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-900);
 		transform: translateY(-2px);
 		box-shadow: var(--shadow-md);
 	}
@@ -1939,22 +1973,40 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-location-confirm {
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border: 1px solid var(--color-primary-200);
 		border-radius: 0.5rem;
 		padding: 0.75rem 1.5rem;
 		font-size: 0.875rem;
-		font-weight: 500;
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on top - like navigation */
+	.compact-location-confirm::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-primary-500);
+		transform: scaleX(1);
+		transition: transform var(--transition-fast) ease;
 	}
 	
 	.compact-location-confirm:hover:not(:disabled) {
-		background: var(--color-primary-700);
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-900);
+		transform: translateY(-1px);
 	}
 	
 	.compact-location-cancel {

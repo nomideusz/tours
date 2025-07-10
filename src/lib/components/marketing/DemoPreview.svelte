@@ -259,19 +259,43 @@
 		gap: 0.25rem;
 		padding: 0.5rem;
 		background: transparent;
-		border: none;
+		border: 1px solid transparent;
 		border-radius: 0.375rem;
 		font-size: 0.75rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--text-secondary);
 		cursor: pointer;
 		transition: all 0.2s ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on hover */
+	.toggle-btn::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-fast) ease;
+	}
+
+	.toggle-btn:hover:not(.active)::before {
+		transform: scaleX(1);
 	}
 	
 	.toggle-btn.active {
-		background: var(--bg-primary);
-		color: var(--text-primary);
+		background: var(--color-primary-100);
+		color: var(--color-primary-900);
+		border-color: var(--color-primary-200);
 		box-shadow: var(--shadow-sm);
+	}
+
+	.toggle-btn.active::before {
+		transform: scaleX(1);
 	}
 	
 	.tours-preview {

@@ -52,7 +52,7 @@
 		height = 200,
 		showCurrency = false,
 		label = '',
-		color = '#3B82F6',
+		color = '#fa6b5d',
 		key = ''
 	}: Props = $props();
 	
@@ -136,8 +136,22 @@
 		const isDarkMode = document.documentElement.classList.contains('dark') || 
 						 window.matchMedia('(prefers-color-scheme: dark)').matches;
 		
-		// Explicit color values
-		const chartColor = isDarkMode ? '#60A5FA' : '#3B82F6';
+		// Resolve CSS variables to actual color values
+		const resolveColor = (colorValue: string): string => {
+			if (colorValue.startsWith('var(')) {
+				// Extract the CSS variable name from var(--variable-name)
+				const match = colorValue.match(/var\(([^)]+)\)/);
+				if (match) {
+					const cssVar = match[1];
+					const computedStyle = getComputedStyle(document.documentElement);
+					const resolvedColor = computedStyle.getPropertyValue(cssVar).trim();
+					return resolvedColor || (isDarkMode ? '#ff6b55' : '#fa6b5d');
+				}
+			}
+			return colorValue;
+		};
+		
+		const chartColor = resolveColor(color) || (isDarkMode ? '#ff6b55' : '#fa6b5d');
 		const textColor = isDarkMode ? '#D1D5DB' : '#6B7280';
 		const gridColor = isDarkMode ? '#374151' : '#F3F4F6';
 		const backgroundColor = isDarkMode ? '#1F2937' : '#FFFFFF';
@@ -150,7 +164,18 @@
 				data: data.map(d => d.value),
 				borderColor: chartColor,
 				backgroundColor: type === 'line' ? 
-					(isDarkMode ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 
+					(() => {
+						// Extract RGB values from chartColor and create transparent version
+						if (chartColor.startsWith('#')) {
+							const hex = chartColor.slice(1);
+							const r = parseInt(hex.substr(0, 2), 16);
+							const g = parseInt(hex.substr(2, 2), 16);  
+							const b = parseInt(hex.substr(4, 2), 16);
+							return `rgba(${r}, ${g}, ${b}, ${isDarkMode ? 0.2 : 0.1})`;
+						}
+						// Fallback to coral colors
+						return isDarkMode ? 'rgba(255, 107, 85, 0.2)' : 'rgba(250, 107, 93, 0.1)';
+					})() : 
 					chartColor,
 				borderWidth: 2,
 				fill: type === 'line',
