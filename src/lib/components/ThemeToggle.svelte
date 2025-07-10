@@ -41,29 +41,72 @@
 	}
 </script>
 
-<div class="flex items-center justify-center">
-	<div 
-		class="flex rounded-lg border p-1 transition-colors"
-		style="background: var(--bg-secondary); border-color: var(--border-primary);"
-	>
+<div class="theme-toggle-container">
+	<div class="theme-toggle-wrapper">
 		{#each themes as theme}
 			<Tooltip text={theme.label} position={tooltipPosition}>
 				<button
 					onclick={() => selectTheme(theme.value)}
-					class="flex items-center justify-center p-2 rounded-md transition-all duration-200 {theme.mobileHidden ? 'hidden sm:flex' : ''}"
-					style={currentTheme === theme.value 
-						? 'background: var(--bg-primary); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);' 
-						: ''}
+					class="theme-toggle-button"
+					class:active={currentTheme === theme.value}
 					aria-label={`Switch to ${theme.label.toLowerCase()} theme`}
 				>
-					<theme.icon 
-						class="h-4 w-4 transition-colors duration-200" 
-						style={currentTheme === theme.value 
-							? 'color: var(--color-primary-600);' 
-							: 'color: var(--text-tertiary);'}
-					/>
+					<theme.icon class="theme-toggle-icon" />
 				</button>
 			</Tooltip>
 		{/each}
 	</div>
 </div>
+
+<style>
+	.theme-toggle-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.theme-toggle-wrapper {
+		display: flex;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		padding: 0.125rem;
+		gap: 0;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	}
+
+	.theme-toggle-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.375rem;
+		border-radius: 0.25rem;
+		border: none;
+		background: transparent;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		color: var(--text-tertiary);
+	}
+
+	.theme-toggle-button:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-secondary);
+	}
+
+	.theme-toggle-button.active {
+		background: var(--bg-primary);
+		color: var(--color-primary-600);
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	}
+
+	.theme-toggle-icon {
+		width: 1rem;
+		height: 1rem;
+		transition: color 0.2s ease;
+	}
+
+	/* Dark mode adjustments */
+	[data-theme="dark"] .theme-toggle-wrapper {
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+	}
+</style>

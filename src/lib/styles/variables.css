@@ -2,32 +2,32 @@
 	/* Professional Color Palette - Tour Guide Edition */
 	
 	/* Primary Coral - Professional, warm, and engaging */
-	--color-primary-50: #fff5f5;
-	--color-primary-100: #fed7d7;
-	--color-primary-200: #feb2b2;
-	--color-primary-300: #fc8181;
-	--color-primary-400: #f56565;
-	--color-primary-500: #FF5959;
-	--color-primary-600: #e53e3e;
-	--color-primary-700: #c53030;
-	--color-primary-800: #9c2626;
-	--color-primary-900: #742a2a;
+	--color-primary-50: #fff5f3;
+	--color-primary-100: #ffe4de;
+	--color-primary-200: #ffcdc2;
+	--color-primary-300: #ffaa98;
+	--color-primary-400: #ff7a6b;
+	--color-primary-500: #fa6b5d;
+	--color-primary-600: #e8523e;
+	--color-primary-700: #c73e2f;
+	--color-primary-800: #a5342a;
+	--color-primary-900: #872f29;
 	
 	/* =============================================
 	   PROFESSIONAL ADVENTURE PALETTE - Clean & Modern
 	   ============================================= */
 	
 	/* Coral Red - Bold and energetic */
-	--color-coral-50: #fff5f5;
-	--color-coral-100: #fed7d7;
-	--color-coral-200: #feb2b2;
-	--color-coral-300: #fc8181;
-	--color-coral-400: #f56565;
-	--color-coral-500: #FF5959;
-	--color-coral-600: #e53e3e;
-	--color-coral-700: #c53030;
-	--color-coral-800: #9c2626;
-	--color-coral-900: #742a2a;
+	--color-coral-50: #fff5f3;
+	--color-coral-100: #ffe4de;
+	--color-coral-200: #ffcdc2;
+	--color-coral-300: #ffaa98;
+	--color-coral-400: #ff7a6b;
+	--color-coral-500: #fa6b5d;
+	--color-coral-600: #e8523e;
+	--color-coral-700: #c73e2f;
+	--color-coral-800: #a5342a;
+	--color-coral-900: #872f29;
 	
 	/* Warm Orange - Friendly and inviting */
 	--color-warm-orange-50: #fffaf0;
@@ -118,16 +118,16 @@
 	--color-golden-900: #78350f;
 	
 	/* Journey Red - Updated to use coral */
-	--color-journey-50: #fff5f5;
-	--color-journey-100: #fed7d7;
-	--color-journey-200: #feb2b2;
-	--color-journey-300: #fc8181;
-	--color-journey-400: #f56565;
-	--color-journey-500: #FF5959;
-	--color-journey-600: #e53e3e;
-	--color-journey-700: #c53030;
-	--color-journey-800: #9c2626;
-	--color-journey-900: #742a2a;
+	--color-journey-50: #fff5f3;
+	--color-journey-100: #ffe4de;
+	--color-journey-200: #ffcdc2;
+	--color-journey-300: #ffaa98;
+	--color-journey-400: #ff7a6b;
+	--color-journey-500: #fa6b5d;
+	--color-journey-600: #e8523e;
+	--color-journey-700: #c73e2f;
+	--color-journey-800: #a5342a;
+	--color-journey-900: #872f29;
 	
 	/* Earth Brown - Keep existing for compatibility */
 	--color-earth-50: #fdf8f6;
@@ -456,32 +456,32 @@
 /* Dark mode overrides */
 [data-theme="dark"] {
 	/* Primary Coral - adjusted for dark mode */
-	--color-primary-50: #4c1d1d;
-	--color-primary-100: #742a2a;
-	--color-primary-200: #9c2626;
-	--color-primary-300: #c53030;
-	--color-primary-400: #e53e3e;
-	--color-primary-500: #FF5959;
-	--color-primary-600: #f56565;
-	--color-primary-700: #fc8181;
-	--color-primary-800: #feb2b2;
-	--color-primary-900: #fed7d7;
+	--color-primary-50: #4c1f1d;
+	--color-primary-100: #872f29;
+	--color-primary-200: #a5342a;
+	--color-primary-300: #c73e2f;
+	--color-primary-400: #e8523e;
+	--color-primary-500: #fa6b5d;
+	--color-primary-600: #ff7a6b;
+	--color-primary-700: #ffaa98;
+	--color-primary-800: #ffcdc2;
+	--color-primary-900: #ffe4de;
 
 	/* =============================================
 	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
 	   ============================================= */
 	
 	/* Coral Red - Dark mode adjustments */
-	--color-coral-50: #4c1d1d;
-	--color-coral-100: #742a2a;
-	--color-coral-200: #9c2626;
-	--color-coral-300: #c53030;
-	--color-coral-400: #e53e3e;
-	--color-coral-500: #FF5959;
-	--color-coral-600: #f56565;
-	--color-coral-700: #fc8181;
-	--color-coral-800: #feb2b2;
-	--color-coral-900: #fed7d7;
+	--color-coral-50: #4c1f1d;
+	--color-coral-100: #872f29;
+	--color-coral-200: #a5342a;
+	--color-coral-300: #c73e2f;
+	--color-coral-400: #e8523e;
+	--color-coral-500: #fa6b5d;
+	--color-coral-600: #ff7a6b;
+	--color-coral-700: #ffaa98;
+	--color-coral-800: #ffcdc2;
+	--color-coral-900: #ffe4de;
 	
 	/* Warm Orange - Dark mode adjustments */
 	--color-warm-orange-50: #451a03;
@@ -556,16 +556,16 @@
 	--color-sunset-900: #feebc8;
 	
 	/* Journey Red - Dark mode adjustments */
-	--color-journey-50: #4c1d1d;
-	--color-journey-100: #742a2a;
-	--color-journey-200: #9c2626;
-	--color-journey-300: #c53030;
-	--color-journey-400: #e53e3e;
-	--color-journey-500: #FF5959;
-	--color-journey-600: #f56565;
-	--color-journey-700: #fc8181;
-	--color-journey-800: #feb2b2;
-	--color-journey-900: #fed7d7;
+	--color-journey-50: #4c1f1d;
+	--color-journey-100: #872f29;
+	--color-journey-200: #a5342a;
+	--color-journey-300: #c73e2f;
+	--color-journey-400: #e8523e;
+	--color-journey-500: #fa6b5d;
+	--color-journey-600: #ff7a6b;
+	--color-journey-700: #ffaa98;
+	--color-journey-800: #ffcdc2;
+	--color-journey-900: #ffe4de;
 
 	/* Professional gradients - dark mode */
 	--bg-professional-coral: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));

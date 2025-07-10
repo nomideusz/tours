@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -126,6 +127,11 @@
 		{@render children()}
 	</main>
 
+	<!-- Floating Theme Toggle -->
+	<div class="floating-theme-toggle">
+		<ThemeToggle tooltipPosition="top" />
+	</div>
+
 	<Footer />
 </div>
 
@@ -188,5 +194,24 @@
 	
 	:global(button) {
 		cursor: pointer;
+	}
+
+	/* Floating Theme Toggle */
+	.floating-theme-toggle {
+		position: fixed;
+		bottom: 1.5rem;
+		right: 1.5rem;
+		z-index: 1000;
+		pointer-events: auto;
+		opacity: 1;
+		visibility: visible;
+	}
+
+	/* Ensure it's visible on mobile too */
+	@media (max-width: 768px) {
+		.floating-theme-toggle {
+			bottom: 1rem;
+			right: 1rem;
+		}
 	}
 </style> 

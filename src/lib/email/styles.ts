@@ -2,8 +2,8 @@
 export const emailStyles = {
   // Brand colors
   colors: {
-    primary: '#2563eb',
-    primaryDark: '#1d4ed8',
+    primary: '#fa6b5d',
+    primaryDark: '#e8523e',
     success: '#059669',
     warning: '#f59e0b',
     danger: '#dc2626',
@@ -22,7 +22,7 @@ export const emailStyles = {
     },
     border: {
       light: '#e5e7eb',
-      primary: '#2563eb',
+      primary: '#fa6b5d',
       success: '#059669',
       danger: '#fecaca',
       info: '#0ea5e9'
@@ -78,7 +78,7 @@ export const emailStyles = {
     },
     qrCode: {
       size: '200px',
-      border: '2px solid #2563eb',
+      border: '2px solid #fa6b5d',
       borderRadius: '8px',
       padding: '20px'
     }
