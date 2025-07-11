@@ -682,25 +682,31 @@
 								</label>
 							</div>
 							
-							{#if recurring}
-								<div class="repeat-details">
-									<div class="repeat-until">
-										<DatePicker
-											bind:value={formData.recurringEnd}
-											label="Until date"
-											placeholder="Select end date"
-											minDate={date}
-											onchange={() => handleFieldChange('recurring')}
-										/>
-									</div>
-									
-									{#if actualRecurringCount > 1}
-										<div class="repeat-preview">
-											Will create {actualRecurringCount} {formData.recurringType} slots until {new Date(formData.recurringEnd).toLocaleDateString()}
+							<!-- Reserve space to prevent layout jumping -->
+							<div class="repeat-details-container">
+								{#if recurring}
+									<div class="repeat-details">
+										<div class="repeat-until">
+											<DatePicker
+												bind:value={formData.recurringEnd}
+												label="Until date"
+												placeholder="Select end date"
+												minDate={date}
+												onchange={() => handleFieldChange('recurring')}
+											/>
 										</div>
-									{/if}
-								</div>
-							{/if}
+										
+										{#if actualRecurringCount > 1}
+											<div class="repeat-preview">
+												Will create {actualRecurringCount} {formData.recurringType} slots until {new Date(formData.recurringEnd).toLocaleDateString()}
+											</div>
+										{/if}
+									</div>
+								{:else}
+									<!-- Reserve space for date picker to prevent layout jumping -->
+									<div class="repeat-spacer"></div>
+								{/if}
+							</div>
 						</div>
 
 					</div>
@@ -1025,6 +1031,16 @@
 		width: 100%;
 	}
 	
+	.repeat-details-container {
+		width: 100%;
+		min-height: 140px; /* Reserve space to prevent layout jumping */
+	}
+	
+	.repeat-spacer {
+		height: 140px; /* Match the typical height of repeat-details */
+		width: 100%;
+	}
+	
 	.repeat-options {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -1035,6 +1051,14 @@
 	@media (max-width: 640px) {
 		.repeat-options {
 			grid-template-columns: 1fr;
+		}
+		
+		.repeat-details-container {
+			min-height: 120px; /* Slightly smaller on mobile */
+		}
+		
+		.repeat-spacer {
+			height: 120px;
 		}
 	}
 	
