@@ -77,7 +77,7 @@
 	title=""
 	subtitle=""
 	onClose={handleClose}
-	closeOnClickOutside={!isSubmitting}
+	closeOnClickOutside={false}
 	closeOnEscape={!isSubmitting}
 	showCloseButton={false}
 	class="time-slot-overlay"

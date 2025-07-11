@@ -65,20 +65,16 @@
 </script>
 
 {#if isVisible}
-	<div class="day-slot-preview">
-		<div class="preview-header">
-			<div class="header-info">
-				<Calendar class="w-4 h-4" />
-				<span class="date-text">{formatDate(date)}</span>
-			</div>
-			{#if sortedSlots.length > 0}
-				<span class="slot-count">{sortedSlots.length} existing slot{sortedSlots.length === 1 ? '' : 's'}</span>
-			{:else}
-				<span class="slot-count slot-count--empty">No slots scheduled</span>
-			{/if}
-		</div>
-		
+	<div class="day-slot-preview {sortedSlots.length === 0 ? 'day-slot-preview--empty' : ''}">
 		{#if sortedSlots.length > 0}
+			<div class="preview-header">
+				<div class="header-info">
+					<Calendar class="w-4 h-4" />
+					<span class="date-text">{formatDate(date)}</span>
+				</div>
+				<span class="slot-count">{sortedSlots.length} existing slot{sortedSlots.length === 1 ? '' : 's'}</span>
+			</div>
+			
 			<div class="slots-list">
 				{#each sortedSlots as slot (slot.id)}
 					<div class="slot-item {getSlotStatusClass(slot)}">
@@ -122,12 +118,15 @@
 				<p class="help-text">Choose a different time to avoid conflicts</p>
 			</div>
 		{:else}
-			<div class="empty-state">
-				<div class="empty-icon">
-					<Clock class="w-8 h-8" />
+			<div class="empty-compact">
+				<div class="empty-header">
+					<Calendar class="w-4 h-4" />
+					<span class="date-text">{formatDate(date)}</span>
 				</div>
-				<p class="empty-title">No time slots scheduled</p>
-				<p class="empty-description">This date is available for new time slots</p>
+				<p class="empty-message">
+					<Clock class="w-3 h-3" />
+					No time slots scheduled - date is available
+				</p>
 			</div>
 		{/if}
 	</div>
@@ -141,6 +140,11 @@
 		border: 1px solid var(--border-secondary);
 		border-radius: var(--radius-md);
 		animation: slideIn 0.2s ease;
+	}
+	
+	.day-slot-preview--empty {
+		padding: 0.75rem;
+		margin-top: 0.75rem;
 	}
 	
 	@keyframes slideIn {
@@ -181,11 +185,6 @@
 		background: var(--bg-secondary);
 		padding: 0.25rem 0.5rem;
 		border-radius: var(--radius-sm);
-	}
-	
-	.slot-count--empty {
-		background: var(--color-success-100);
-		color: var(--color-success-700);
 	}
 	
 	.slots-list {
@@ -293,38 +292,30 @@
 		font-style: italic;
 	}
 	
-	/* Empty state */
-	.empty-state {
+	/* Empty compact state */
+	.empty-compact {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem 1rem;
-		text-align: center;
+		gap: 0.5rem;
 	}
 	
-	.empty-icon {
-		width: 3rem;
-		height: 3rem;
-		background: var(--color-success-100);
-		border-radius: 50%;
+	.empty-header {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		margin-bottom: 1rem;
-		color: var(--color-success-600);
-	}
-	
-	.empty-title {
-		font-size: var(--text-sm);
-		font-weight: 500;
+		gap: 0.5rem;
 		color: var(--text-primary);
-		margin: 0 0 0.5rem 0;
 	}
 	
-	.empty-description {
+	.empty-message {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
 		font-size: var(--text-xs);
-		color: var(--text-secondary);
+		color: var(--color-success-700);
+		background: var(--color-success-50);
+		padding: 0.375rem 0.5rem;
+		border-radius: var(--radius-sm);
+		border: 1px solid var(--color-success-200);
 		margin: 0;
 	}
 	
@@ -360,22 +351,19 @@
 			gap: 0.25rem;
 		}
 		
-		.empty-state {
-			padding: 1.5rem 0.75rem;
+		.day-slot-preview--empty {
+			padding: 0.5rem;
+			margin-top: 0.5rem;
 		}
 		
-		.empty-icon {
-			width: 2.5rem;
-			height: 2.5rem;
-			margin-bottom: 0.75rem;
+		.empty-compact {
+			gap: 0.375rem;
 		}
 		
-		.empty-title {
-			font-size: var(--text-xs);
-		}
-		
-		.empty-description {
+		.empty-message {
 			font-size: 0.6875rem;
+			padding: 0.25rem 0.375rem;
+			gap: 0.25rem;
 		}
 	}
 </style> 

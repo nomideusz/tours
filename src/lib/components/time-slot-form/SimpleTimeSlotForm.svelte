@@ -9,9 +9,10 @@
 	// Components
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
 	import TimeRange from '$lib/components/TimeRange.svelte';
+	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
 	import NumberInput from '$lib/components/NumberInput.svelte';
+	import DatePicker from '$lib/components/DatePicker.svelte';
 	import ConflictWarning from './components/ConflictWarning.svelte';
-	import RecurringOptions from './components/RecurringOptions.svelte';
 	import DaySlotPreview from './components/DaySlotPreview.svelte';
 	
 	// Icons
@@ -43,18 +44,9 @@
 	let endTime = $state('');
 	let capacity = $state(0);
 	
-	// Multiple time slots for the same date
-	interface TimeSlotEntry {
-		id: string;
-		startTime: string;
-		endTime: string;
-		capacity: number;
-	}
-	
-	let additionalSlots = $state<TimeSlotEntry[]>([]);
+
 	let recurring = $state(false);
 	let recurringEnd = $state('');
-	let recurringCount = $state(4);
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
 	let successMessage = $state<string | null>(null);
@@ -77,9 +69,8 @@
 		availability: 'available' as const,
 		notes: '',
 		recurring: false,
-		recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
-		recurringEnd: '',
-		recurringCount: 4
+		recurringType: 'none' as 'none' | 'daily' | 'weekly' | 'monthly',
+		recurringEnd: ''
 	});
 	
 	// Sync formData with individual fields reactively
@@ -90,7 +81,6 @@
 		formData.capacity = capacity;
 		formData.recurring = recurring;
 		formData.recurringEnd = recurringEnd;
-		formData.recurringCount = recurringCount;
 	});
 	
 	// Fetch tour details if not provided
@@ -140,54 +130,13 @@
 		return endMinutes - startMinutes;
 	});
 	
-	// Check for conflicts (including additional slots)
+	// Check for conflicts
 	let conflicts = $derived.by(() => {
 		if (!date || isSubmitting) return [];
 		const slots = $scheduleQuery.data?.timeSlots || [];
 		
 		// Check main slot
-		const mainConflicts = startTime && endTime ? checkConflicts(date, startTime, endTime, slots) : [];
-		
-		// Check additional slots
-		const additionalConflicts = additionalSlots
-			.filter(slot => slot.startTime && slot.endTime)
-			.flatMap(slot => checkConflicts(date, slot.startTime, slot.endTime, slots));
-		
-		// Check for conflicts between main slot and additional slots
-		const internalConflicts: any[] = [];
-		if (startTime && endTime) {
-			additionalSlots
-				.filter(slot => slot.startTime && slot.endTime)
-				.forEach(slot => {
-					// Create a mock slot array to check conflicts between main and additional
-					const mockSlot = {
-						id: 'temp',
-						startTime: new Date(`${date}T${slot.startTime}:00`).toISOString(),
-						endTime: new Date(`${date}T${slot.endTime}:00`).toISOString()
-					};
-					const conflicts = checkConflicts(date, startTime, endTime, [mockSlot]);
-					internalConflicts.push(...conflicts);
-				});
-		}
-		
-		// Check conflicts between additional slots
-		additionalSlots.forEach((slotA, indexA) => {
-			if (!slotA.startTime || !slotA.endTime) return;
-			
-			additionalSlots.slice(indexA + 1).forEach(slotB => {
-				if (!slotB.startTime || !slotB.endTime) return;
-				
-				const mockSlot = {
-					id: 'temp',
-					startTime: new Date(`${date}T${slotB.startTime}:00`).toISOString(),
-					endTime: new Date(`${date}T${slotB.endTime}:00`).toISOString()
-				};
-				const conflicts = checkConflicts(date, slotA.startTime, slotA.endTime, [mockSlot]);
-				internalConflicts.push(...conflicts.map(c => ({ ...c, isInternal: true })));
-			});
-		});
-		
-		return [...mainConflicts, ...additionalConflicts, ...internalConflicts];
+		return startTime && endTime ? checkConflicts(date, startTime, endTime, slots) : [];
 	});
 	
 	// Check for recurring conflicts
@@ -202,32 +151,16 @@
 		// Basic validation
 		if (!date || !startTime || !endTime || capacity <= 0 || duration <= 0) return false;
 		
+		// Check recurring requirements
+		if (recurring && (!formData.recurringEnd || new Date(formData.recurringEnd) <= new Date(date))) return false;
+		
 		// Check if recurring conflicts exist
 		if (recurring && (recurringConflictInfo?.conflictCount || 0) > 0) return false;
 		
 		// Check if there are any conflicts
 		if (conflicts.length > 0) return false;
 		
-		// Validate additional slots
-		const validAdditionalSlots = additionalSlots.every(slot => {
-			if (!slot.startTime || !slot.endTime || slot.capacity <= 0) return false;
-			
-			// Calculate duration for additional slot
-			const [startHour, startMinute] = slot.startTime.split(':').map(Number);
-			const [endHour, endMinute] = slot.endTime.split(':').map(Number);
-			const startMinutes = startHour * 60 + startMinute;
-			let endMinutes = endHour * 60 + endMinute;
-			
-			// Handle midnight crossing
-			if (endMinutes <= startMinutes) {
-				endMinutes += 24 * 60;
-			}
-			
-			const slotDuration = endMinutes - startMinutes;
-			return slotDuration > 0;
-		});
-		
-		return validAdditionalSlots;
+		return true;
 	});
 	
 	// Initialize form with smart defaults
@@ -352,9 +285,9 @@
 		availability: 'available',
 		notes: '',
 		recurring,
-		recurringType: formData.recurringType,
+		recurringType: formData.recurringType === 'none' ? 'weekly' : formData.recurringType,
 		recurringEnd,
-		recurringCount
+		recurringCount: 0
 	}));
 	
 	let actualRecurringCount = $derived(getActualRecurringCount({
@@ -365,9 +298,9 @@
 		availability: 'available',
 		notes: '',
 		recurring,
-		recurringType: formData.recurringType,
+		recurringType: formData.recurringType === 'none' ? 'weekly' : formData.recurringType,
 		recurringEnd,
-		recurringCount
+		recurringCount: 0
 	}));
 	
 	// Create mutation
@@ -432,136 +365,7 @@
 		}, 8000);
 	}
 	
-	// Additional slots management
-	function addTimeSlot() {
-		// Calculate smart defaults for the new slot
-		let suggestedStartTime = '';
-		let suggestedEndTime = '';
-		
-		// Get the last slot's end time to suggest the next slot
-		let lastEndTime = '';
-		if (additionalSlots.length > 0) {
-			// Use the last additional slot's end time
-			const lastSlot = additionalSlots[additionalSlots.length - 1];
-			lastEndTime = lastSlot.endTime;
-		} else if (endTime) {
-			// Use the main slot's end time
-			lastEndTime = endTime;
-		}
-		
-		if (lastEndTime) {
-			// Add 15 minutes buffer after the last slot
-			const [hours, minutes] = lastEndTime.split(':').map(Number);
-			let totalMinutes = hours * 60 + minutes + 15; // 15 min buffer
-			
-			// Handle day overflow
-			if (totalMinutes >= 24 * 60) {
-				totalMinutes = totalMinutes % (24 * 60);
-			}
-			
-			const startHours = Math.floor(totalMinutes / 60);
-			const startMinutes = totalMinutes % 60;
-			suggestedStartTime = `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
-			
-			// Calculate end time based on tour duration or custom duration
-			const slotDuration = customDuration || tour?.duration || 60;
-			const endTotalMinutes = totalMinutes + slotDuration;
-			const endHours = Math.floor(endTotalMinutes / 60) % 24;
-			const endMinutes = endTotalMinutes % 60;
-			suggestedEndTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
-			
-			// Check for conflicts with existing slots
-			const currentSlots = $scheduleQuery.data?.timeSlots || [];
-			const allSlots = [
-				...currentSlots,
-				// Include main slot if it has times
-				...(startTime && endTime ? [{
-					startTime: new Date(`${date}T${startTime}:00`).toISOString(),
-					endTime: new Date(`${date}T${endTime}:00`).toISOString()
-				}] : []),
-				// Include existing additional slots
-				...additionalSlots.map(slot => ({
-					startTime: new Date(`${date}T${slot.startTime}:00`).toISOString(),
-					endTime: new Date(`${date}T${slot.endTime}:00`).toISOString()
-				}))
-			];
-			
-			// Find next available time that doesn't conflict
-			const nextTime = findNextAvailableTime(
-				date,
-				slotDuration,
-				suggestedStartTime,
-				date,
-				allSlots,
-				slotDuration
-			);
-			
-			suggestedStartTime = nextTime.startTime;
-			suggestedEndTime = nextTime.endTime;
-		} else {
-			// Fallback to default times
-			suggestedStartTime = '10:00';
-			const defaultDuration = customDuration || tour?.duration || 60;
-			const [hours, minutes] = suggestedStartTime.split(':').map(Number);
-			const totalMinutes = hours * 60 + minutes + defaultDuration;
-			const endHours = Math.floor(totalMinutes / 60);
-			const endMinutes = totalMinutes % 60;
-			suggestedEndTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
-		}
-		
-		const newSlot: TimeSlotEntry = {
-			id: crypto.randomUUID(),
-			startTime: suggestedStartTime,
-			endTime: suggestedEndTime,
-			capacity: capacity || tour?.capacity || 10
-		};
-		additionalSlots = [...additionalSlots, newSlot];
-	}
-	
-	function removeTimeSlot(id: string) {
-		additionalSlots = additionalSlots.filter(slot => slot.id !== id);
-	}
-	
-	function updateTimeSlot(id: string, field: keyof TimeSlotEntry, value: string | number) {
-		additionalSlots = additionalSlots.map(slot => 
-			slot.id === id ? { ...slot, [field]: value } : slot
-		);
-	}
-	
-	// Calculate duration for additional slots
-	function calculateSlotDuration(startTime: string, endTime: string): number {
-		if (!startTime || !endTime) return 0;
-		
-		const [startHour, startMinute] = startTime.split(':').map(Number);
-		const [endHour, endMinute] = endTime.split(':').map(Number);
-		
-		const startMinutes = startHour * 60 + startMinute;
-		let endMinutes = endHour * 60 + endMinute;
-		
-		// If end time is before start time, it spans midnight
-		if (endMinutes <= startMinutes) {
-			endMinutes += 24 * 60; // Add 24 hours
-		}
-		
-		return endMinutes - startMinutes;
-	}
-	
-	// Reset slot duration to tour default
-	function resetSlotDuration(id: string) {
-		const slot = additionalSlots.find(s => s.id === id);
-		if (!slot || !slot.startTime) return;
-		
-		const defaultDuration = customDuration || tour?.duration || 60;
-		const [startHour, startMinute] = slot.startTime.split(':').map(Number);
-		const startMinutes = startHour * 60 + startMinute;
-		const endMinutes = startMinutes + defaultDuration;
-		
-		const endHour = Math.floor(endMinutes / 60) % 24;
-		const endMin = endMinutes % 60;
-		const newEndTime = `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
-		
-		updateTimeSlot(id, 'endTime', newEndTime);
-	}
+
 
 	// Event handlers
 	function handleFieldChange(field: string) {
@@ -576,14 +380,11 @@
 		error = null;
 		
 		try {
-			// Prepare all slots to create (main slot + additional slots)
-			const slotsToCreate = [];
-			
-			// Add main slot
+			// Prepare slot to create
 			const mainStart = new Date(`${date}T${startTime}:00`);
 			let mainEnd: Date;
 			
-			// Check if main slot spans midnight
+			// Check if slot spans midnight
 			const [startHour, startMinute] = startTime.split(':').map(Number);
 			const [endHour, endMinute] = endTime.split(':').map(Number);
 			const startMinutes = startHour * 60 + startMinute;
@@ -600,58 +401,22 @@
 				mainEnd = new Date(`${date}T${endTime}:00`);
 			}
 			
-			slotsToCreate.push({
+			const slotData = {
 				startTime: mainStart.toISOString(),
 				endTime: mainEnd.toISOString(),
 				capacity,
 				status: 'available',
 				recurring,
-				recurringType: recurring ? formData.recurringType : undefined,
-				recurringEnd: recurring && recurringEnd ? new Date(recurringEnd).toISOString() : undefined,
-				recurringCount: recurring && !recurringEnd ? recurringCount : undefined
-			});
+				recurringType: recurring && formData.recurringType !== 'none' ? formData.recurringType : undefined,
+				recurringEnd: recurring && formData.recurringEnd ? new Date(formData.recurringEnd).toISOString() : undefined
+			};
 			
-			// Add additional slots
-			additionalSlots.forEach(slot => {
-				const slotStart = new Date(`${date}T${slot.startTime}:00`);
-				let slotEnd: Date;
-				
-				// Check if additional slot spans midnight
-				const [slotStartHour, slotStartMinute] = slot.startTime.split(':').map(Number);
-				const [slotEndHour, slotEndMinute] = slot.endTime.split(':').map(Number);
-				const slotStartMinutes = slotStartHour * 60 + slotStartMinute;
-				const slotEndMinutes = slotEndHour * 60 + slotEndMinute;
-				
-				if (slotEndMinutes <= slotStartMinutes) {
-					// Slot spans midnight, end time is on the next day
-					const nextDay = new Date(date);
-					nextDay.setDate(nextDay.getDate() + 1);
-					const nextDayStr = nextDay.toISOString().split('T')[0];
-					slotEnd = new Date(`${nextDayStr}T${slot.endTime}:00`);
-				} else {
-					// Same day slot
-					slotEnd = new Date(`${date}T${slot.endTime}:00`);
-				}
-				
-				slotsToCreate.push({
-					startTime: slotStart.toISOString(),
-					endTime: slotEnd.toISOString(),
-					capacity: slot.capacity,
-					status: 'available'
-				});
-			});
+			// Create slot
+			await $createSlotMutation.mutateAsync(slotData);
 			
-			// Create all slots
-			const results = await Promise.all(
-				slotsToCreate.map(slotData => $createSlotMutation.mutateAsync(slotData))
-			);
-			
-			const totalCreated = slotsToCreate.length;
 			const totalMessage = recurring && actualRecurringCount > 1 
-				? `Created ${actualRecurringCount * totalCreated} time slots successfully!`
-				: totalCreated === 1 
-					? 'Time slot created successfully!'
-					: `Created ${totalCreated} time slots successfully!`;
+				? `Created ${actualRecurringCount} time slots successfully!`
+				: 'Time slot created successfully!';
 			
 			setSuccessMessage(totalMessage);
 			
@@ -687,9 +452,8 @@
 			
 			// Reset other fields
 			recurring = false;
-			recurringCount = 4;
+			formData.recurringType = 'none';
 			recurringEnd = '';
-			additionalSlots = []; // Clear additional slots
 			
 			// Clear touched fields to allow auto-calculation
 			touchedFields.clear();
@@ -774,7 +538,7 @@
 				<!-- Date Selection -->
 				<div class="form-section">
 					<div class="section-header">
-						<Calendar class="w-5 h-5" />
+						<Calendar class="w-6 h-6" />
 						<h3>Select Date</h3>
 					</div>
 					
@@ -786,6 +550,7 @@
 						slotsMap={slotsMap}
 						selectedDate={date}
 						minDate={new Date().toISOString().split('T')[0]}
+						size="large"
 						onDateClick={(newDate) => {
 							date = newDate;
 							handleFieldChange('date');
@@ -805,7 +570,7 @@
 				<!-- Time & Details -->
 				<div class="form-section">
 					<div class="section-header">
-						<Clock class="w-5 h-5" />
+						<Clock class="w-6 h-6" />
 						<h3>Time & Details</h3>
 					</div>
 					
@@ -830,173 +595,119 @@
 							{/if}
 						</div>
 						
-						<!-- Duration and Capacity Row -->
-						<div class="details-row">
-							<!-- Duration Display -->
-							{#if duration > 0}
-								<div class="duration-display">
-									<Clock class="w-4 h-4" />
-									<span class="duration-text">Duration: {formatDuration(duration)}</span>
-								</div>
-							{/if}
-							
-							<!-- Capacity -->
-							<div class="capacity-field">
-								<label for="capacity" class="capacity-label">
-									<Users class="w-4 h-4" />
-									Max Group Size
-								</label>
-								<div class="capacity-input-group">
-									<NumberInput
-										id="capacity"
-										name="capacity"
-										label=""
-										bind:value={capacity}
-										min={1}
-										max={500}
-										step={1}
-										integerOnly={true}
+						<!-- Capacity -->
+						<div class="capacity-field">
+							<CapacitySlider
+								bind:value={capacity}
+								label="Max Group Size"
+								min={1}
+								max={60}
+								step={1}
+								defaultValue={tour?.capacity}
+								onChange={(value) => {
+									capacity = value;
+									handleFieldChange('capacity');
+								}}
+							/>
+						</div>
+						
+						<!-- Recurring Options -->
+						<div class="recurring-field">
+							<label class="form-label">Repeat Options</label>
+							<div class="repeat-options">
+								<label class="repeat-option">
+									<input 
+										type="radio" 
+										bind:group={formData.recurringType} 
+										value="none" 
+										name="recurringType"
+										onchange={() => {
+											recurring = false;
+											formData.recurringEnd = '';
+											handleFieldChange('recurring');
+										}}
 									/>
-									{#if tour.capacity && capacity !== tour.capacity}
-										<button 
-											type="button"
-											onclick={() => capacity = tour.capacity}
-											class="use-default-button"
-											title="Use tour default ({tour.capacity} guests)"
-										>
-											Use default
-										</button>
-									{/if}
-								</div>
+									<span>Create single slot</span>
+								</label>
+								<label class="repeat-option">
+									<input 
+										type="radio" 
+										bind:group={formData.recurringType} 
+										value="daily"
+										name="recurringType"
+										onchange={() => {
+											recurring = true;
+											// Set default end date to 2 weeks from selected date
+											const endDate = new Date(date);
+											endDate.setDate(endDate.getDate() + 14); // 2 weeks
+											formData.recurringEnd = endDate.toISOString().split('T')[0];
+											handleFieldChange('recurring');
+										}}
+									/>
+									<span>Repeat daily</span>
+								</label>
+								<label class="repeat-option">
+									<input 
+										type="radio" 
+										bind:group={formData.recurringType} 
+										value="weekly"
+										name="recurringType"
+										onchange={() => {
+											recurring = true;
+											// Set default end date to 4 weeks from selected date
+											const endDate = new Date(date);
+											endDate.setDate(endDate.getDate() + 28); // 4 weeks
+											formData.recurringEnd = endDate.toISOString().split('T')[0];
+											handleFieldChange('recurring');
+										}}
+									/>
+									<span>Repeat weekly</span>
+								</label>
+								<label class="repeat-option">
+									<input 
+										type="radio" 
+										bind:group={formData.recurringType} 
+										value="monthly"
+										name="recurringType"
+										onchange={() => {
+											recurring = true;
+											// Set default end date to 6 months from selected date
+											const endDate = new Date(date);
+											endDate.setMonth(endDate.getMonth() + 6); // 6 months
+											formData.recurringEnd = endDate.toISOString().split('T')[0];
+											handleFieldChange('recurring');
+										}}
+									/>
+									<span>Repeat monthly</span>
+								</label>
 							</div>
-						</div>
-						
-						<!-- Add More Time Slots -->
-						<div class="form-field add-more-field">
-							<button 
-								type="button"
-								onclick={addTimeSlot}
-								class="add-more-button"
-							>
-								<Plus class="w-4 h-4" />
-								Add more time slots for this date
-							</button>
-							{#if additionalSlots.length > 0}
-								<p class="help-text">
-									Creating {additionalSlots.length + 1} time slot{additionalSlots.length + 1 === 1 ? '' : 's'} for {formatDate(date)} • You can add as many as needed
-								</p>
-							{/if}
-						</div>
-						
-						<!-- Additional Time Slots -->
-						{#each additionalSlots as slot, index (slot.id)}
-							<div class="additional-slot">
-								<div class="additional-slot-header">
-									<span class="slot-number">Time Slot #{index + 2}</span>
-									<button 
-										type="button"
-										onclick={() => removeTimeSlot(slot.id)}
-										class="remove-slot-button"
-										aria-label="Remove time slot"
-									>
-										<X class="w-4 h-4" />
-									</button>
-								</div>
-								
-								<div class="additional-slot-content">
-									<div class="slot-time-row">
-										<div class="time-input-wrapper">
-											<label for="start-{slot.id}" class="time-label">Start</label>
-											<input
-												id="start-{slot.id}"
-												type="time"
-												bind:value={slot.startTime}
-												class="time-input"
-												required
-											/>
-										</div>
-										
-										<span class="time-separator">to</span>
-										
-										<div class="time-input-wrapper">
-											<label for="end-{slot.id}" class="time-label">End</label>
-											<input
-												id="end-{slot.id}"
-												type="time"
-												bind:value={slot.endTime}
-												class="time-input"
-												required
-											/>
-										</div>
-										
-										<!-- Duration display inline with times -->
-										{#if calculateSlotDuration(slot.startTime, slot.endTime) > 0}
-											<div class="slot-duration-inline">
-												<Clock class="w-3 h-3" />
-												<span class="duration-text">{formatDuration(calculateSlotDuration(slot.startTime, slot.endTime))}</span>
-												{#if calculateSlotDuration(slot.startTime, slot.endTime) !== (customDuration || tour?.duration || 60)}
-													<button 
-														type="button"
-														onclick={() => resetSlotDuration(slot.id)}
-														class="reset-duration-inline"
-														title="Reset to {formatDuration(customDuration || tour?.duration || 60)}"
-													>
-														Reset
-													</button>
-												{/if}
-											</div>
-										{/if}
+							
+							{#if recurring}
+								<div class="repeat-details">
+									<div class="repeat-until">
+										<DatePicker
+											bind:value={formData.recurringEnd}
+											label="Until date"
+											placeholder="Select end date"
+											minDate={date}
+											onchange={() => handleFieldChange('recurring')}
+										/>
 									</div>
 									
-									<div class="slot-capacity-row">
-										<label for="capacity-{slot.id}" class="capacity-label">
-											<Users class="w-3 h-3" />
-											<span>Max Group Size</span>
-										</label>
-										<div class="capacity-input-with-default">
-											<NumberInput
-												id="capacity-{slot.id}"
-												name="capacity-{slot.id}"
-												label=""
-												bind:value={slot.capacity}
-												min={1}
-												max={500}
-												step={1}
-												integerOnly={true}
-											/>
-											{#if tour.capacity && slot.capacity !== tour.capacity}
-												<button 
-													type="button"
-													onclick={() => updateTimeSlot(slot.id, 'capacity', tour.capacity)}
-													class="use-default-small"
-													title="Use tour default ({tour.capacity} guests)"
-												>
-													Use default
-												</button>
-											{/if}
+									{#if actualRecurringCount > 1}
+										<div class="repeat-preview">
+											Will create {actualRecurringCount} {formData.recurringType} slots until {new Date(formData.recurringEnd).toLocaleDateString()}
 										</div>
-									</div>
+									{/if}
 								</div>
-							</div>
-						{/each}
+							{/if}
+						</div>
+
 					</div>
 				</div>
 			</div>
 			
-			<!-- Recurring Options -->
-			<div class="recurring-options-container">
-				<RecurringOptions
-					formData={formData}
-					isEditMode={false}
-					onRecurringChange={() => {
-						// Sync changes back to individual fields
-						recurring = formData.recurring;
-						recurringEnd = formData.recurringEnd;
-						recurringCount = formData.recurringCount;
-						handleFieldChange('recurring');
-					}}
-				/>
-			</div>
+
 			
 			<!-- Form Actions -->
 			<div class="form-actions">
@@ -1043,9 +754,7 @@
 						{:else}
 							<Plus class="w-4 h-4" />
 							{#if recurring && actualRecurringCount > 1}
-								Create {actualRecurringCount * (additionalSlots.length + 1)} Slots
-							{:else if additionalSlots.length > 0}
-								Create {additionalSlots.length + 1} Slots
+								Create {actualRecurringCount} Slots
 							{:else}
 								Create Slot
 							{/if}
@@ -1060,13 +769,26 @@
 <style>
 	.time-slot-form {
 		width: 100%;
-		max-width: 800px;
+		max-width: 1200px;
 		margin: 0 auto;
+	}
+	
+	@media (max-width: 1400px) {
+		.time-slot-form {
+			max-width: 1000px;
+		}
+	}
+	
+	@media (max-width: 1200px) {
+		.time-slot-form {
+			max-width: 900px;
+		}
 	}
 	
 	@media (max-width: 768px) {
 		.time-slot-form {
 			padding: 0;
+			max-width: 100%;
 		}
 	}
 	
@@ -1159,8 +881,20 @@
 	.form-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
+		gap: 2.5rem;
 		margin-bottom: 1.5rem;
+	}
+	
+	@media (max-width: 1200px) {
+		.form-grid {
+			gap: 2rem;
+		}
+	}
+	
+	@media (max-width: 1024px) {
+		.form-grid {
+			gap: 1.5rem;
+		}
 	}
 	
 	@media (max-width: 768px) {
@@ -1174,8 +908,20 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
-		padding: 1.5rem;
+		padding: 2.5rem;
 		box-shadow: var(--shadow-sm);
+	}
+	
+	/* Allow calendar to use full width in form context */
+	.form-section :global(.calendar-container) {
+		max-width: none;
+		width: 100%;
+	}
+	
+	@media (max-width: 1024px) {
+		.form-section {
+			padding: 2rem;
+		}
 	}
 	
 	@media (max-width: 768px) {
@@ -1190,9 +936,9 @@
 	.section-header {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-		padding-bottom: 1rem;
+		gap: 0.75rem;
+		margin-bottom: 2rem;
+		padding-bottom: 1.5rem;
 		border-bottom: 1px solid var(--border-primary);
 		color: var(--text-secondary);
 	}
@@ -1202,14 +948,26 @@
 			margin-bottom: 0.75rem;
 			padding-bottom: 0.5rem;
 			border-bottom: 1px solid var(--border-secondary);
+			gap: 0.5rem;
 		}
 	}
 	
 	.section-header h3 {
 		margin: 0;
-		font-size: var(--text-base);
+		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--text-primary);
+	}
+	
+	@media (max-width: 768px) {
+		.section-header h3 {
+			font-size: var(--text-base);
+		}
+		
+		.section-header :global(svg) {
+			width: 1.25rem;
+			height: 1.25rem;
+		}
 	}
 	
 	.section-hint {
@@ -1230,12 +988,18 @@
 	.form-fields {
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
+		gap: 2.5rem;
+	}
+	
+	@media (max-width: 1024px) {
+		.form-fields {
+			gap: 2rem;
+		}
 	}
 	
 	@media (max-width: 768px) {
 		.form-fields {
-			gap: 1rem;
+			gap: 1.5rem;
 		}
 	}
 	
@@ -1247,82 +1011,93 @@
 	
 	/* Time field specific */
 	.time-field {
-		margin-bottom: 0.5rem;
+		margin-bottom: 0;
 	}
 	
-	/* Details row for duration and capacity */
-	.details-row {
-		display: flex;
-		align-items: flex-start;
-		gap: 2rem;
-		flex-wrap: wrap;
+
+	
+	.capacity-field {
+		width: 100%;
 	}
 	
-	@media (max-width: 768px) {
-		.details-row {
-			gap: 1rem;
+	/* Recurring field styles */
+	.recurring-field {
+		width: 100%;
+	}
+	
+	.repeat-options {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+	
+	@media (max-width: 640px) {
+		.repeat-options {
+			grid-template-columns: 1fr;
 		}
 	}
 	
-	.duration-display {
+	.repeat-option {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
+		gap: 0.75rem;
+		cursor: pointer;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		transition: all 0.15s ease;
+		background: var(--bg-primary);
+	}
+	
+	.repeat-option:hover {
+		border-color: var(--color-primary-300);
+		background: var(--color-primary-50);
+	}
+	
+	.repeat-option:has(input:checked) {
+		border-color: var(--color-primary-500);
+		background: var(--color-primary-100);
+	}
+	
+	.repeat-option input[type="radio"] {
+		width: 1rem;
+		height: 1rem;
+		margin: 0;
+		accent-color: var(--color-primary-500);
+	}
+	
+	.repeat-option span {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+	
+	.repeat-details {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-secondary);
 		border-radius: var(--radius-md);
-		color: var(--text-secondary);
-		font-size: var(--text-sm);
+		margin-top: 0.5rem;
 	}
 	
-	.duration-text {
+
+	
+	.repeat-until {
+		width: 100%;
+	}
+	
+	.repeat-preview {
+		font-size: 0.8125rem;
+		color: var(--color-primary-600);
 		font-weight: 500;
-	}
-	
-	.capacity-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		flex: 1;
-		min-width: 200px;
-	}
-	
-	.capacity-label {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: var(--text-sm);
-		color: var(--text-secondary);
-		font-weight: 500;
-	}
-	
-	.capacity-input-group {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	
-	.capacity-input-group :global(.number-input) {
-		max-width: 160px;
-	}
-	
-	.use-default-button {
-		padding: 0.375rem 0.75rem;
-		font-size: var(--text-xs);
-		background: transparent;
-		border: 1px solid var(--border-secondary);
-		color: var(--text-secondary);
+		padding: 0.5rem 0.75rem;
+		background: var(--color-primary-50);
 		border-radius: var(--radius-sm);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		white-space: nowrap;
-	}
-	
-	.use-default-button:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-primary);
-		color: var(--text-primary);
+		border: 1px solid var(--color-primary-200);
 	}
 	
 	/* Add more slots section */
@@ -1505,59 +1280,8 @@
 	
 	/* Capacity row */
 	.slot-capacity-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-	
-	.slot-capacity-row .capacity-label {
-		font-size: var(--text-sm);
-		color: var(--text-secondary);
-		font-weight: 500;
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		flex-shrink: 0;
-	}
-	
-	.capacity-input-with-default {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-shrink: 0;
-	}
-	
-	.capacity-input-with-default :global(.number-input) {
-		max-width: 120px;
-		min-width: 100px;
-	}
-	
-	.use-default-small {
-		padding: 0.25rem 0.5rem;
-		font-size: var(--text-xs);
-		background: transparent;
-		border: 1px solid var(--border-secondary);
-		color: var(--text-secondary);
-		border-radius: var(--radius-sm);
-		cursor: pointer;
-		transition: all 0.15s ease;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-	
-	.use-default-small:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-primary);
-		color: var(--text-primary);
-	}
-	
-	/* Remove old styles */
-	.slot-capacity,
-	.slot-duration-row,
-	.slot-duration-display,
-	.reset-duration-button {
-		/* These styles are no longer needed */
+		width: 100%;
+		margin-top: 0.5rem;
 	}
 	
 	/* Recurring options container */
@@ -1639,19 +1363,6 @@
 	
 	/* Mobile adjustments */
 	@media (max-width: 768px) {
-		.details-row {
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-		
-		.duration-display {
-			width: fit-content;
-		}
-		
-		.capacity-field {
-			min-width: 100%;
-		}
-		
 		.additional-slot {
 			margin-top: 0.75rem;
 			padding: 0.75rem;
@@ -1676,23 +1387,6 @@
 			width: 100%;
 			margin-top: 0.5rem;
 			justify-content: center;
-		}
-		
-		.slot-capacity-row {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.5rem;
-		}
-		
-		.capacity-input-with-default {
-			width: 100%;
-			justify-content: space-between;
-		}
-		
-		.capacity-input-with-default :global(.number-input) {
-			flex: 1;
-			max-width: none;
-			min-width: 120px;
 		}
 	}
 </style> 

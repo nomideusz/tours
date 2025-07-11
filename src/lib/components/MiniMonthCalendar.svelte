@@ -403,24 +403,22 @@
 	.day-headers {
 		display: grid;
 		grid-template-columns: repeat(7, 1fr);
-		gap: 0.125rem;
-		padding: 0 0.75rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.calendar-container--medium .day-headers,
-	.calendar-container--large .day-headers {
-		padding: 0 1rem;
-		gap: 0.25rem;
-		margin-bottom: 0.75rem;
+		gap: 0;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-primary);
 	}
 
 	.day-header {
 		text-align: center;
 		font-size: 0.75rem;
 		font-weight: 500;
-		color: var(--text-tertiary);
+		color: var(--text-secondary);
 		padding: 0.5rem 0;
+		border-right: 1px solid var(--border-primary);
+	}
+
+	.day-header:last-child {
+		border-right: none;
 	}
 
 	.calendar-container--medium .day-header,
@@ -435,54 +433,60 @@
 		display: grid;
 		grid-template-columns: repeat(7, 1fr);
 		grid-template-rows: repeat(6, 2rem);
-		gap: 0.125rem;
-		padding: 0.25rem 0.75rem 0.75rem;
-		height: 13rem; /* 6 rows × 2rem + 5 gaps × 0.125rem + 0.25rem top padding */
+		gap: 0;
+		padding: 0;
 	}
 
 	.calendar-container--medium .calendar-grid {
 		grid-template-rows: repeat(6, 2.5rem);
-		gap: 0.25rem;
-		padding: 0.5rem 1rem 1rem;
-		height: 17rem; /* 6 rows × 2.5rem + 5 gaps × 0.25rem + 0.5rem top padding */
 	}
 
 	.calendar-container--large .calendar-grid {
 		grid-template-rows: repeat(6, 3rem);
-		gap: 0.25rem;
-		padding: 0.5rem 1rem 1rem;
-		height: 20rem; /* 6 rows × 3rem + 5 gaps × 0.25rem + 0.5rem top padding */
 	}
 
 	.day-button {
 		position: relative;
-		width: 2rem;
-		height: 2rem;
+		width: 100%;
+		height: 100%;
 		font-size: 0.75rem;
 		color: var(--text-secondary);
-		background: transparent;
-		border: 2px solid transparent;
-		border-radius: 0.375rem;
+		background: var(--bg-primary);
+		border: 0;
+		border-right: 1px solid var(--border-primary);
+		border-bottom: 1px solid var(--border-primary);
+		border-radius: 0;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		outline: none;
+		text-decoration: none;
+		text-shadow: none;
+		box-shadow: none;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		appearance: none;
+	}
+
+	/* Remove right border from last column */
+	.day-button:nth-child(7n) {
+		border-right: none;
+	}
+
+	/* Remove bottom border from last row */
+	.day-button:nth-last-child(-n+7) {
+		border-bottom: none;
 	}
 
 	.calendar-container--medium .day-button {
-		width: 2.5rem;
-		height: 2.5rem;
 		font-size: 0.875rem;
-		border-radius: 0.5rem;
 	}
 
 	.calendar-container--large .day-button {
-		width: 3rem;
-		height: 3rem;
 		font-size: 1rem;
 		font-weight: 500;
-		border-radius: 0.5rem;
 	}
 
 	.day-button:hover:not(.day-button--disabled):not(.day-button--empty) {
@@ -490,36 +494,43 @@
 		color: var(--text-primary);
 	}
 
+	.day-button:focus {
+		outline: none;
+		z-index: 1;
+		box-shadow: inset 0 0 0 2px var(--color-primary-500);
+	}
+
 	.day-button--today {
 		background: var(--color-primary-100);
 		color: var(--color-primary-800);
 		font-weight: 600;
-		border: 2px solid var(--color-primary-300);
+		z-index: 1;
+		box-shadow: inset 0 0 0 2px var(--color-primary-300);
 	}
 
 	.day-button--today:hover {
 		background: var(--color-primary-200);
-		border-color: var(--color-primary-400);
+		box-shadow: inset 0 0 0 2px var(--color-primary-400);
 	}
 
 	.day-button--selected {
 		background: var(--color-primary-600);
 		color: white;
 		font-weight: 600;
-		border: 2px solid var(--color-primary-700);
-		box-shadow: 0 0 0 2px var(--color-primary-200);
+		z-index: 2;
+		box-shadow: inset 0 0 0 2px var(--color-primary-700);
 	}
 
 	.day-button--selected:hover {
 		background: var(--color-primary-700);
-		border-color: var(--color-primary-800);
+		box-shadow: inset 0 0 0 2px var(--color-primary-800);
 	}
 
 	/* Selected takes priority over today */
 	.day-button--selected.day-button--today {
 		background: var(--color-primary-600);
 		color: white;
-		border-color: var(--color-primary-700);
+		box-shadow: inset 0 0 0 2px var(--color-primary-700);
 	}
 
 	.day-button--has-slots:not(.day-button--past) {
@@ -540,6 +551,22 @@
 
 	.day-button--empty {
 		cursor: default;
+	}
+
+	/* Ensure day numbers have no additional styling */
+	.day-button {
+		font-family: inherit;
+		font-variant-numeric: normal;
+		text-rendering: auto;
+		letter-spacing: normal;
+		word-spacing: normal;
+		line-height: normal;
+		text-indent: 0;
+	}
+
+	.day-button::-moz-focus-inner {
+		border: 0;
+		padding: 0;
 	}
 
 	/* Slot indicators */
@@ -714,14 +741,9 @@
 		
 		.calendar-grid {
 			grid-template-rows: repeat(6, 2.75rem) !important;
-			height: 18rem !important; /* 6 rows × 2.75rem + 5 gaps × 0.125rem + 0.5rem top padding */
-			padding: 0.5rem 0.75rem 0.75rem !important;
-			gap: 0.125rem !important;
 		}
 		
 		.day-button {
-			width: 2.25rem !important;
-			height: 2.75rem !important;
 			font-size: 0.75rem !important;
 			font-weight: 400 !important;
 		}

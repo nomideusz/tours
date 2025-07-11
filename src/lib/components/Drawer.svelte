@@ -279,7 +279,7 @@
 		>
 			<div 
 				bind:this={drawerElement}
-				class="relative w-full max-w-4xl max-h-[85vh] my-8 flex flex-col rounded-xl shadow-xl overflow-hidden {className}"
+				class="relative w-full max-w-6xl max-h-[85vh] my-8 flex flex-col rounded-xl shadow-xl overflow-hidden {className}"
 				style="background: var(--bg-primary); border: 1px solid var(--border-primary); transition: transform 0.2s ease-out;"
 				transition:fly={{ y: 0, duration: 200 }}
 				use:clickOutside={handleClickOutside}
