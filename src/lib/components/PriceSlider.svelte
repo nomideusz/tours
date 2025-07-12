@@ -160,27 +160,42 @@
 		const range = max - min;
 		const markerValues: number[] = [];
 		
-		// Dynamic marker generation based on price range
+		// Smarter marker generation to prevent overlap
 		if (range <= 50) {
-			// Small ranges: every 5-10
-			const interval = range <= 20 ? 5 : 10;
+			// Small ranges: every 10-20 units
+			const interval = range <= 25 ? 10 : 20;
 			for (let i = Math.ceil(min / interval) * interval; i <= max; i += interval) {
-				markerValues.push(i);
+				if (i >= min) markerValues.push(i);
 			}
 		} else if (range <= 200) {
-			// Medium ranges: every 25-50
-			const interval = range <= 100 ? 25 : 50;
-			for (let i = Math.ceil(min / interval) * interval; i <= max; i += interval) {
-				markerValues.push(i);
+			// Medium ranges: every 50 units
+			for (let i = Math.ceil(min / 50) * 50; i <= max; i += 50) {
+				if (i >= min) markerValues.push(i);
 			}
 		} else {
-			// Large ranges: every 100
+			// Large ranges: every 100 units
 			for (let i = Math.ceil(min / 100) * 100; i <= max; i += 100) {
-				markerValues.push(i);
+				if (i >= min) markerValues.push(i);
 			}
 		}
 		
-		return markerValues.map(val => ({
+		// Ensure minimum spacing between markers (at least 12% of slider width)
+		const filteredMarkers: number[] = [];
+		markerValues.forEach((value, index) => {
+			if (index === 0) {
+				filteredMarkers.push(value);
+			} else {
+				const prevPosition = ((markerValues[index - 1] - min) / range) * 100;
+				const currentPosition = ((value - min) / range) * 100;
+				
+				// Only add marker if it's at least 12% away from the previous one
+				if (currentPosition - prevPosition >= 12) {
+					filteredMarkers.push(value);
+				}
+			}
+		});
+		
+		return filteredMarkers.map(val => ({
 			value: val,
 			position: ((val - min) / (max - min)) * 100
 		}));
@@ -227,12 +242,8 @@
 	<div class="value-display">
 		<div class="value-main">
 			<div class="value-number">{currencySymbol}{formatPrice(value)}</div>
-			<div class="value-subtitle">per person</div>
 		</div>
-		<div class="value-tags">
-			<div class="value-category">{getPriceCategory(value)}</div>
-			<div class="value-comparison">{getPriceComparison(value)}</div>
-		</div>
+		<div class="value-category">{getPriceCategory(value)}</div>
 	</div>
 	
 	<!-- Slider -->
@@ -286,9 +297,9 @@
 		</button>
 	</div>
 	
-	<!-- Reset button -->
-	{#if defaultValue && value !== defaultValue && !disabled}
-		<div class="reset-container">
+	<!-- Reset button container with reserved space -->
+	<div class="reset-container">
+		{#if defaultValue && value !== defaultValue && !disabled}
 			<button
 				type="button"
 				onclick={() => {
@@ -299,8 +310,11 @@
 			>
 				Reset to {currencySymbol}{formatPrice(defaultValue)}
 			</button>
-		</div>
-	{/if}
+		{:else}
+			<!-- Reserve space to prevent layout jump -->
+			<div class="reset-button-spacer"></div>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -330,19 +344,6 @@
 		font-variant-numeric: tabular-nums;
 	}
 	
-	.value-subtitle {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		font-weight: 500;
-	}
-	
-	.value-tags {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-		justify-content: center;
-	}
-	
 	.value-category {
 		font-size: 0.875rem;
 		color: var(--text-secondary);
@@ -350,15 +351,6 @@
 		padding: 0.25rem 0.75rem;
 		border-radius: var(--radius-full);
 		border: 1px solid var(--border-secondary);
-	}
-	
-	.value-comparison {
-		font-size: 0.875rem;
-		color: var(--color-primary-700);
-		background: var(--color-primary-50);
-		padding: 0.25rem 0.75rem;
-		border-radius: var(--radius-full);
-		border: 1px solid var(--color-primary-200);
 	}
 	
 	.slider-container {
@@ -428,6 +420,18 @@
 		color: var(--text-tertiary);
 		white-space: nowrap;
 		font-variant-numeric: tabular-nums;
+		text-align: center;
+		min-width: fit-content;
+		font-weight: 500;
+	}
+	
+	/* Prevent marker overlap */
+	.marker:nth-child(odd) .marker-text {
+		transform: translateY(-0.25rem);
+	}
+	
+	.marker:nth-child(even) .marker-text {
+		transform: translateY(0.25rem);
 	}
 	
 	.slider-thumb {
@@ -528,6 +532,11 @@
 		border-color: var(--color-primary-200);
 	}
 	
+	.reset-button-spacer {
+		height: 2.125rem; /* Same height as reset button (padding + line-height) */
+		width: 100%;
+	}
+	
 	/* Disabled state */
 	.disabled {
 		opacity: 0.6;
@@ -576,11 +585,6 @@
 		.thumb-value {
 			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 		}
-		
-		.value-comparison {
-			background: var(--color-primary-900);
-			color: var(--color-primary-300);
-		}
 	}
 	
 	/* Mobile optimizations */
@@ -589,12 +593,7 @@
 			font-size: 1.75rem;
 		}
 		
-		.value-tags {
-			gap: 0.25rem;
-		}
-		
-		.value-category,
-		.value-comparison {
+		.value-category {
 			font-size: 0.75rem;
 			padding: 0.125rem 0.5rem;
 		}
@@ -625,7 +624,28 @@
 		}
 		
 		.markers {
-			display: none;
+			margin-top: 1rem;
+		}
+		
+		.marker-text {
+			font-size: 0.5rem;
+			font-weight: 600;
+		}
+		
+		/* Stagger markers more on mobile to prevent overlap */
+		.marker:nth-child(odd) .marker-text {
+			transform: translateY(-0.5rem);
+		}
+		
+		.marker:nth-child(even) .marker-text {
+			transform: translateY(0.5rem);
+		}
+		
+		/* Hide every third marker on very small screens */
+		@media (max-width: 480px) {
+			.marker:nth-child(3n) {
+				display: none;
+			}
 		}
 	}
 </style> 

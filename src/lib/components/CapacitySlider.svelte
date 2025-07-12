@@ -195,7 +195,8 @@
 		if (val <= 15) return 'Standard Group';
 		if (val <= 25) return 'Large Group';
 		if (val <= 40) return 'Bus Group';
-		return 'Large Event';
+		if (val <= 60) return 'Large Event';
+		return 'Mega Event';
 	}
 </script>
 
@@ -267,9 +268,9 @@
 		</button>
 	</div>
 	
-	<!-- Reset button -->
-	{#if defaultValue && value !== defaultValue && !disabled}
-		<div class="reset-container">
+	<!-- Reset button container with reserved space -->
+	<div class="reset-container">
+		{#if defaultValue && value !== defaultValue && !disabled}
 			<button
 				type="button"
 				onclick={() => {
@@ -280,8 +281,11 @@
 			>
 				Reset to {formatValue(defaultValue)} {unit}
 			</button>
-		</div>
-	{/if}
+		{:else}
+			<!-- Reserve space to prevent layout jump -->
+			<div class="reset-button-spacer"></div>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -490,6 +494,11 @@
 		color: var(--color-primary-700);
 		background: var(--bg-secondary);
 		border-color: var(--color-primary-200);
+	}
+	
+	.reset-button-spacer {
+		height: 2.125rem; /* Same height as reset button (padding + line-height) */
+		width: 100%;
 	}
 	
 	/* Disabled state */

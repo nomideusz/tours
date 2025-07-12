@@ -27,6 +27,8 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Save from 'lucide-svelte/icons/save';
 	import MapPin from 'lucide-svelte/icons/map-pin';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
 
 	interface Props {
@@ -106,6 +108,12 @@
 	let validationErrors = $state<ValidationError[]>([]);
 	let touchedFields = $state<Set<string>>(new Set());
 	
+	// Collapsible sections state
+	let showAdvancedPricing = $state(false);
+	let showTourDetails = $state(false);
+	let showCancellationPolicy = $state(false);
+	let showImages = $state(false);
+	
 	// Get currency symbol for display
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
 	
@@ -121,6 +129,29 @@
 	let missingSteps = $derived(activationCheck.missingSteps);
 	let onboardingMessage = $derived(getOnboardingMessage(missingSteps));
 	let nextStep = $derived(getNextOnboardingStep(missingSteps));
+
+	// Auto-expand sections if they have content or errors
+	$effect(() => {
+		// Auto-expand child pricing if it's already enabled
+		if (formData.enablePricingTiers || showChildPrice) {
+			showAdvancedPricing = true;
+		}
+		
+		// Auto-expand tour details if there are items/requirements
+		if (formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())) {
+			showTourDetails = true;
+		}
+		
+		// Auto-expand cancellation policy if there's content
+		if (formData.cancellationPolicy?.trim()) {
+			showCancellationPolicy = true;
+		}
+		
+		// Auto-expand images if there are uploaded images or existing images
+		if ((uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)) {
+			showImages = true;
+		}
+	});
 
 	// Note: Reactive validation is handled by individual field validation functions
 	// to avoid conflicts and ensure consistent error state management
@@ -605,7 +636,7 @@
 					<div>
 						<PriceSlider
 							bind:value={formData.price}
-							label="Price ({currencySymbol}) *"
+							label="Price per person ({currencySymbol}) *"
 							min={minimumPrice}
 							max={500}
 							step={priceStep}
@@ -631,7 +662,7 @@
 				<div>
 					<DurationSlider
 						bind:value={formData.duration}
-						label="Tour Duration *"
+						label="Duration *"
 						min={15}
 						max={480}
 						step={15}
@@ -652,7 +683,7 @@
 						bind:value={formData.capacity}
 						label="Max Group Size *"
 						min={bookingConstraints?.minimumCapacity || 1}
-						max={50}
+						max={60}
 						step={1}
 						required={true}
 						error={hasFieldError(allErrors, 'capacity')}
@@ -667,97 +698,6 @@
 				</div>
 	</div>
 
-				<!-- Optional Child Pricing -->
-				{#if !showChildPrice}
-					<div class="mt-6">
-						<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary); background: var(--bg-secondary);">
-							<div>
-								<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Child Pricing</p>
-								<p class="text-xs" style="color: var(--text-secondary);">Offer discounts for children (ages 3-12)</p>
-							</div>
-							<button
-								type="button"
-								onclick={enableChildPricing}
-								class="button-secondary button--small"
-							>
-								Add Child Price
-							</button>
-						</div>
-					</div>
-				{:else}
-					<div class="mt-6">
-						<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<div class="flex items-center justify-between mb-3">
-								<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
-															<button
-								type="button"
-								onclick={() => { 
-									showChildPrice = false; 
-									childPrice = 0;
-									formData.enablePricingTiers = false;
-									formData.pricingTiers = undefined;
-								}}
-								class="button-secondary button--small button--icon"
-								aria-label="Remove child pricing"
-							>
-								<X class="w-3 h-3" />
-							</button>
-							</div>
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<PriceSlider
-										bind:value={childPrice}
-										label="Child Price ({currencySymbol})"
-										min={0}
-										max={formData.price || 100}
-										step={priceStep}
-										error={hasFieldError(allErrors, 'pricingTiers.child')}
-										onChange={() => validateField('pricingTiers.child')}
-										currency={$userCurrency}
-										currencySymbol={currencySymbol}
-										defaultValue={0}
-									/>
-									{#if getFieldError(allErrors, 'pricingTiers.child')}
-										<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
-									{/if}
-									<!-- Hidden input for form submission -->
-									<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
-								</div>
-								<div class="flex items-end">
-									<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
-										<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
-										<div class="text-sm" style="color: var(--text-primary);">
-											{#if childPrice === 0}
-												<div class="flex items-center gap-1">
-													<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-													<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
-												</div>
-											{:else if formData.price > 0}
-												{@const discount = Math.round(((formData.price - childPrice) / formData.price) * 100)}
-												{#if discount > 0}
-													<div class="flex items-center gap-1">
-														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-														<span class="font-medium">{discount}% discount</span>
-													</div>
-												{:else if discount < 0}
-													<div class="flex items-center gap-1">
-														<AlertCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
-														<span class="font-medium" style="color: var(--color-warning-700);">Higher than adult price</span>
-													</div>
-												{:else}
-													<span class="font-medium">Same price for all</span>
-												{/if}
-											{:else}
-												<span style="color: var(--text-tertiary);">Set adult price first</span>
-											{/if}
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				{/if}
-
 				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
 					<div class="mt-4">
 						<p class="text-xs" style="color: var(--text-secondary);">
@@ -766,6 +706,128 @@
 						</p>
 					</div>
 				{/if}
+
+				<!-- Advanced Pricing Section (Collapsible) -->
+				<div class="mt-6">
+					<button
+						type="button"
+						onclick={() => showAdvancedPricing = !showAdvancedPricing}
+						class="flex items-center justify-between w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80"
+						style="
+							background: var(--bg-secondary);
+							border-color: var(--border-primary);
+							color: var(--text-primary);
+						"
+					>
+						<div class="flex items-center gap-2">
+							{#if showAdvancedPricing}
+								<ChevronDown class="w-4 h-4" />
+							{:else}
+								<ChevronRight class="w-4 h-4" />
+							{/if}
+							<span class="font-medium">Advanced Pricing Options</span>
+							{#if showChildPrice}
+								<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+									Child pricing enabled
+								</span>
+							{/if}
+						</div>
+						<span class="text-xs" style="color: var(--text-secondary);">
+							{showAdvancedPricing ? 'Hide' : 'Show'} child pricing options
+						</span>
+					</button>
+
+					{#if showAdvancedPricing}
+						<div class="mt-4 space-y-4">
+							<!-- Optional Child Pricing -->
+							{#if !showChildPrice}
+								<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary); background: var(--bg-secondary);">
+									<div>
+										<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Child Pricing</p>
+										<p class="text-xs" style="color: var(--text-secondary);">Offer discounts for children (ages 3-12)</p>
+									</div>
+									<button
+										type="button"
+										onclick={enableChildPricing}
+										class="button-secondary button--small"
+									>
+										Add Child Price
+									</button>
+								</div>
+							{:else}
+								<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<div class="flex items-center justify-between mb-3">
+										<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
+																	<button
+										type="button"
+										onclick={() => { 
+											showChildPrice = false; 
+											childPrice = 0;
+											formData.enablePricingTiers = false;
+											formData.pricingTiers = undefined;
+										}}
+										class="button-secondary button--small button--icon"
+										aria-label="Remove child pricing"
+									>
+										<X class="w-3 h-3" />
+									</button>
+									</div>
+									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div>
+											<PriceSlider
+												bind:value={childPrice}
+												label="Child price ({currencySymbol})"
+												min={0}
+												max={formData.price || 100}
+												step={priceStep}
+												error={hasFieldError(allErrors, 'pricingTiers.child')}
+												onChange={() => validateField('pricingTiers.child')}
+												currency={$userCurrency}
+												currencySymbol={currencySymbol}
+												defaultValue={0}
+											/>
+											{#if getFieldError(allErrors, 'pricingTiers.child')}
+												<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
+											{/if}
+											<!-- Hidden input for form submission -->
+											<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
+										</div>
+										<div class="flex items-end">
+											<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
+												<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
+												<div class="text-sm" style="color: var(--text-primary);">
+													{#if childPrice === 0}
+														<div class="flex items-center gap-1">
+															<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+															<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
+														</div>
+													{:else if formData.price > 0}
+														{@const discount = Math.round(((formData.price - childPrice) / formData.price) * 100)}
+														{#if discount > 0}
+															<div class="flex items-center gap-1">
+																<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+																<span class="font-medium">{discount}% discount</span>
+															</div>
+														{:else if discount < 0}
+															<div class="flex items-center gap-1">
+																<AlertCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
+																<span class="font-medium" style="color: var(--color-warning-700);">Higher than adult price</span>
+															</div>
+														{:else}
+															<span class="font-medium">Same price for all</span>
+														{/if}
+													{:else}
+														<span style="color: var(--text-tertiary);">Set adult price first</span>
+													{/if}
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
 
 				<!-- Hidden inputs for pricing tiers -->
 				<input type="hidden" name="enablePricingTiers" value={showChildPrice ? 'true' : 'false'} />
@@ -776,276 +838,322 @@
 		</div>
 	</div>
 
-				<!-- Tour Details -->
+				<!-- Tour Details (Collapsible) -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Tour Details</h2>
-			</div>
-			<div class="p-4">
-				<!-- What's Included Section -->
-				<div class="mb-8">
-					<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">What's Included</h3>
-					
-					<!-- Suggested Items -->
-					<div class="mb-4">
-						<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add popular items:</p>
-						<div class="flex flex-wrap gap-2">
-							{#each ['Professional tour guide', 'Historical insights', 'Photo opportunities', 'Small group experience', 'Route map', 'Local recommendations'] as suggestion}
-								<button
-									type="button"
-									onclick={() => {
-										if (!formData.includedItems.includes(suggestion)) {
-											formData.includedItems = [...formData.includedItems.filter(item => item.trim()), suggestion];
-										}
-									}}
-									class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
-									style="border-color: var(--border-primary); color: var(--text-secondary);"
-									disabled={formData.includedItems.includes(suggestion)}
-								>
-									{suggestion}
-								</button>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Selected Items as Tags -->
-					{#if formData.includedItems.filter(item => item.trim()).length > 0}
+			<button
+				type="button"
+				onclick={() => showTourDetails = !showTourDetails}
+				class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
+				style="border-color: var(--border-primary);"
+			>
+				<div class="flex items-center gap-2">
+					{#if showTourDetails}
+						<ChevronDown class="w-4 h-4" />
+					{:else}
+						<ChevronRight class="w-4 h-4" />
+					{/if}
+					<h2 class="font-semibold" style="color: var(--text-primary);">Tour Details</h2>
+					{#if formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())}
+						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+							{formData.includedItems.filter(item => item.trim()).length + formData.requirements.filter(req => req.trim()).length} items
+						</span>
+					{/if}
+				</div>
+				<span class="text-xs" style="color: var(--text-secondary);">
+					{showTourDetails ? 'Hide' : 'Show'} included items & requirements
+				</span>
+			</button>
+			
+			{#if showTourDetails}
+				<div class="p-4">
+					<!-- What's Included Section -->
+					<div class="mb-8">
+						<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">What's Included</h3>
+						
+						<!-- Suggested Items -->
 						<div class="mb-4">
-							<p class="text-sm mb-2" style="color: var(--text-secondary);">Included items:</p>
+							<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add popular items:</p>
 							<div class="flex flex-wrap gap-2">
-								{#each formData.includedItems.filter(item => item.trim()) as item, index (item)}
-									<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
-										{item}
-										<button
-											type="button"
-											onclick={() => {
-												formData.includedItems = formData.includedItems.filter(i => i !== item);
-											}}
-											class="ml-1 transition-colors"
-											style="color: var(--text-tertiary);"
-											aria-label="Remove {item}"
-										>
-											<X class="w-3 h-3" />
-										</button>
-									</span>
+								{#each ['Professional tour guide', 'Historical insights', 'Photo opportunities', 'Small group experience', 'Route map', 'Local recommendations'] as suggestion}
+									<button
+										type="button"
+										onclick={() => {
+											if (!formData.includedItems.includes(suggestion)) {
+												formData.includedItems = [...formData.includedItems.filter(item => item.trim()), suggestion];
+											}
+										}}
+										class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
+										style="border-color: var(--border-primary); color: var(--text-secondary);"
+										disabled={formData.includedItems.includes(suggestion)}
+									>
+										{suggestion}
+									</button>
 								{/each}
 							</div>
 						</div>
-					{/if}
 
-					<!-- Custom Item Input -->
-					<div class="flex gap-2">
-						<input
-							type="text"
-							placeholder="Add custom item..."
-							class="form-input flex-1"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									const input = e.target as HTMLInputElement;
-									const value = input.value.trim();
+						<!-- Selected Items as Tags -->
+						{#if formData.includedItems.filter(item => item.trim()).length > 0}
+							<div class="mb-4">
+								<p class="text-sm mb-2" style="color: var(--text-secondary);">Included items:</p>
+								<div class="flex flex-wrap gap-2">
+									{#each formData.includedItems.filter(item => item.trim()) as item, index (item)}
+										<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
+											{item}
+											<button
+												type="button"
+												onclick={() => {
+													formData.includedItems = formData.includedItems.filter(i => i !== item);
+												}}
+												class="ml-1 transition-colors"
+												style="color: var(--text-tertiary);"
+												aria-label="Remove {item}"
+											>
+												<X class="w-3 h-3" />
+											</button>
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- Custom Item Input -->
+						<div class="flex gap-2">
+							<input
+								type="text"
+								placeholder="Add custom item..."
+								class="form-input flex-1"
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										const input = e.target as HTMLInputElement;
+										const value = input.value.trim();
+										if (value && !formData.includedItems.includes(value)) {
+											formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
+											input.value = '';
+										}
+									}
+								}}
+							/>
+							<button
+								type="button"
+								onclick={(e) => {
+									const button = e.target as HTMLButtonElement;
+									const input = button.parentElement?.querySelector('input') as HTMLInputElement;
+									const value = input?.value.trim();
 									if (value && !formData.includedItems.includes(value)) {
 										formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
 										input.value = '';
 									}
-								}
-							}}
-						/>
-						<button
-							type="button"
-							onclick={(e) => {
-								const button = e.target as HTMLButtonElement;
-								const input = button.parentElement?.querySelector('input') as HTMLInputElement;
-								const value = input?.value.trim();
-								if (value && !formData.includedItems.includes(value)) {
-									formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
-									input.value = '';
-								}
-							}}
-							class="button-secondary button--small"
-						>
-							Add
-						</button>
-					</div>
-
-					<!-- Hidden inputs for form submission -->
-					{#each formData.includedItems.filter(item => item.trim()) as item}
-						<input type="hidden" name="includedItems" value={item} />
-					{/each}
-				</div>
-
-				<!-- Requirements Section -->
-				<div>
-					<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">Requirements</h3>
-					
-					<!-- Suggested Requirements -->
-					<div class="mb-4">
-						<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add common requirements:</p>
-						<div class="flex flex-wrap gap-2">
-							{#each ['Comfortable walking shoes', 'Basic fitness level', 'Weather-appropriate clothing', 'Minimum age 12+', 'No mobility issues', 'English speaking'] as suggestion}
-								<button
-									type="button"
-									onclick={() => {
-										if (!formData.requirements.includes(suggestion)) {
-											formData.requirements = [...formData.requirements.filter(req => req.trim()), suggestion];
-										}
-									}}
-									class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
-									style="border-color: var(--border-primary); color: var(--text-secondary);"
-									disabled={formData.requirements.includes(suggestion)}
-								>
-									{suggestion}
-								</button>
-							{/each}
+								}}
+								class="button-secondary button--small"
+							>
+								Add
+							</button>
 						</div>
+
+						<!-- Hidden inputs for form submission -->
+						{#each formData.includedItems.filter(item => item.trim()) as item}
+							<input type="hidden" name="includedItems" value={item} />
+						{/each}
 					</div>
 
-					<!-- Selected Requirements as Tags -->
-					{#if formData.requirements.filter(req => req.trim()).length > 0}
+					<!-- Requirements Section -->
+					<div>
+						<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">Requirements</h3>
+						
+						<!-- Suggested Requirements -->
 						<div class="mb-4">
-							<p class="text-sm mb-2" style="color: var(--text-secondary);">Requirements:</p>
+							<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add common requirements:</p>
 							<div class="flex flex-wrap gap-2">
-								{#each formData.requirements.filter(req => req.trim()) as requirement, index (requirement)}
-									<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
-										{requirement}
-										<button
-											type="button"
-											onclick={() => {
-												formData.requirements = formData.requirements.filter(r => r !== requirement);
-											}}
-											class="ml-1 transition-colors"
-											style="color: var(--text-tertiary);"
-											aria-label="Remove {requirement}"
-										>
-											<X class="w-3 h-3" />
-										</button>
-									</span>
+								{#each ['Comfortable walking shoes', 'Basic fitness level', 'Weather-appropriate clothing', 'Minimum age 12+', 'No mobility issues', 'English speaking'] as suggestion}
+									<button
+										type="button"
+										onclick={() => {
+											if (!formData.requirements.includes(suggestion)) {
+												formData.requirements = [...formData.requirements.filter(req => req.trim()), suggestion];
+											}
+										}}
+										class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
+										style="border-color: var(--border-primary); color: var(--text-secondary);"
+										disabled={formData.requirements.includes(suggestion)}
+									>
+										{suggestion}
+									</button>
 								{/each}
 							</div>
 						</div>
-					{/if}
 
-					<!-- Custom Requirement Input -->
-					<div class="flex gap-2">
-						<input
-							type="text"
-							placeholder="Add custom requirement..."
-							class="form-input flex-1"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									const input = e.target as HTMLInputElement;
-									const value = input.value.trim();
+						<!-- Selected Requirements as Tags -->
+						{#if formData.requirements.filter(req => req.trim()).length > 0}
+							<div class="mb-4">
+								<p class="text-sm mb-2" style="color: var(--text-secondary);">Requirements:</p>
+								<div class="flex flex-wrap gap-2">
+									{#each formData.requirements.filter(req => req.trim()) as requirement, index (requirement)}
+										<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
+											{requirement}
+											<button
+												type="button"
+												onclick={() => {
+													formData.requirements = formData.requirements.filter(r => r !== requirement);
+												}}
+												class="ml-1 transition-colors"
+												style="color: var(--text-tertiary);"
+												aria-label="Remove {requirement}"
+											>
+												<X class="w-3 h-3" />
+											</button>
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- Custom Requirement Input -->
+						<div class="flex gap-2">
+							<input
+								type="text"
+								placeholder="Add custom requirement..."
+								class="form-input flex-1"
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										const input = e.target as HTMLInputElement;
+										const value = input.value.trim();
+										if (value && !formData.requirements.includes(value)) {
+											formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
+											input.value = '';
+										}
+									}
+								}}
+							/>
+							<button
+								type="button"
+								onclick={(e) => {
+									const button = e.target as HTMLButtonElement;
+									const input = button.parentElement?.querySelector('input') as HTMLInputElement;
+									const value = input?.value.trim();
 									if (value && !formData.requirements.includes(value)) {
 										formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
 										input.value = '';
 									}
-								}
-							}}
-						/>
-						<button
-							type="button"
-							onclick={(e) => {
-								const button = e.target as HTMLButtonElement;
-								const input = button.parentElement?.querySelector('input') as HTMLInputElement;
-								const value = input?.value.trim();
-								if (value && !formData.requirements.includes(value)) {
-									formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
-									input.value = '';
-								}
-							}}
-							class="button-secondary button--small"
-						>
-							Add
-						</button>
-					</div>
+								}}
+								class="button-secondary button--small"
+							>
+								Add
+							</button>
+						</div>
 
-					<!-- Hidden inputs for form submission -->
-					{#each formData.requirements.filter(req => req.trim()) as requirement}
-						<input type="hidden" name="requirements" value={requirement} />
-					{/each}
+						<!-- Hidden inputs for form submission -->
+						{#each formData.requirements.filter(req => req.trim()) as requirement}
+							<input type="hidden" name="requirements" value={requirement} />
+						{/each}
+					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 
-		<!-- Cancellation Policy -->
+		<!-- Cancellation Policy (Collapsible) -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
+			<button
+				type="button"
+				onclick={() => showCancellationPolicy = !showCancellationPolicy}
+				class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
+				style="border-color: var(--border-primary);"
+			>
+				<div class="flex items-center gap-2">
+					{#if showCancellationPolicy}
+						<ChevronDown class="w-4 h-4" />
+					{:else}
+						<ChevronRight class="w-4 h-4" />
+					{/if}
 					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
-			</div>
-			<div class="p-4">
-				<div class="space-y-3">
-					<!-- Template Options -->
-					{#each policyTemplates as template}
-						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors" 
+					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
+						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+							{selectedPolicyTemplate || 'Custom'} policy set
+						</span>
+					{/if}
+				</div>
+				<span class="text-xs" style="color: var(--text-secondary);">
+					{showCancellationPolicy ? 'Hide' : 'Show'} cancellation terms
+				</span>
+			</button>
+			
+			{#if showCancellationPolicy}
+				<div class="p-4">
+					<div class="space-y-3">
+						<!-- Template Options -->
+						{#each policyTemplates as template}
+							<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors" 
+								style="
+									background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+									border-color: {selectedPolicyTemplate === template.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+								"
+							>
+								<input
+									type="radio"
+									name="policyTemplate"
+									value={template.id}
+									checked={selectedPolicyTemplate === template.id}
+									onchange={() => selectPolicyTemplate(template.id)}
+									class="form-radio mt-0.5"
+								/>
+								<div class="flex-1">
+									<div class="flex items-center gap-2 mb-1">
+										<div class="w-2 h-2 rounded-full" 
+											style="background: var(--color-{template.color}-500);"
+										></div>
+										<div class="font-medium text-sm" style="color: var(--text-primary);">
+											{template.name}
+										</div>
+									</div>
+									<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
+								</div>
+							</label>
+						{/each}
+
+						<!-- Custom Policy Option -->
+						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
 							style="
-								background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-								border-color: {selectedPolicyTemplate === template.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+								background: {showCustomPolicy ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+								border-color: {showCustomPolicy ? 'var(--color-primary-300)' : 'var(--border-primary)'};
 							"
 						>
 							<input
 								type="radio"
 								name="policyTemplate"
-								value={template.id}
-								checked={selectedPolicyTemplate === template.id}
-								onchange={() => selectPolicyTemplate(template.id)}
+								checked={showCustomPolicy}
+								onchange={enableCustomPolicy}
 								class="form-radio mt-0.5"
 							/>
 							<div class="flex-1">
 								<div class="flex items-center gap-2 mb-1">
-									<div class="w-2 h-2 rounded-full" 
-										style="background: var(--color-{template.color}-500);"
-									></div>
+									<Edit class="w-3 h-3" style="color: var(--text-secondary);" />
 									<div class="font-medium text-sm" style="color: var(--text-primary);">
-										{template.name}
+										Custom Policy
 									</div>
 								</div>
-								<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
+								<p class="text-xs" style="color: var(--text-secondary);">Write your own cancellation terms</p>
 							</div>
 						</label>
-					{/each}
-
-					<!-- Custom Policy Option -->
-					<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-						style="
-							background: {showCustomPolicy ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-							border-color: {showCustomPolicy ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-						"
-					>
-						<input
-							type="radio"
-							name="policyTemplate"
-							checked={showCustomPolicy}
-							onchange={enableCustomPolicy}
-							class="form-radio mt-0.5"
-						/>
-						<div class="flex-1">
-							<div class="flex items-center gap-2 mb-1">
-								<Edit class="w-3 h-3" style="color: var(--text-secondary);" />
-								<div class="font-medium text-sm" style="color: var(--text-primary);">
-									Custom Policy
-								</div>
 							</div>
-							<p class="text-xs" style="color: var(--text-secondary);">Write your own cancellation terms</p>
+							
+					{#if showCustomPolicy}
+						<div class="mt-4">
+							<textarea
+								name="cancellationPolicy"
+								bind:value={formData.cancellationPolicy}
+								rows="4"
+								placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
+								class="form-textarea"
+							></textarea>
 						</div>
-					</label>
-						</div>
-						
-				{#if showCustomPolicy}
-					<div class="mt-4">
-						<textarea
-							name="cancellationPolicy"
-							bind:value={formData.cancellationPolicy}
-							rows="4"
-							placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
-							class="form-textarea"
-						></textarea>
-					</div>
-				{/if}
+					{/if}
 
-				<!-- Hidden input for form submission -->
-				<input type="hidden" name="cancellationPolicy" bind:value={formData.cancellationPolicy} />
-			</div>
+					<!-- Hidden input for form submission -->
+					<input type="hidden" name="cancellationPolicy" bind:value={formData.cancellationPolicy} />
+				</div>
+			{/if}
 		</div>
 	</div>
 
@@ -1054,162 +1162,186 @@
 		<!-- Tour Images -->
 		{#if onImageUpload && onImageRemove}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Images</h3>
-				</div>
-				<div class="p-4">
-				
-				<!-- Existing Images (for edit mode) -->
-				{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
-					<div class="mb-6">
-						<h4 class="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
-						<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-							{#each existingImages as imageName, index (imageName)}
-								<div class="relative group aspect-square">
-									<img 
-										src={getExistingImageUrl(imageName)} 
-										alt="Tour image {index + 1}"
-										class="w-full h-full object-cover rounded-lg border border-gray-200"
-										loading="lazy"
-									/>
-									<button
-										type="button"
-										onclick={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											if (onExistingImageRemove) {
-												onExistingImageRemove(imageName);
-											}
-										}}
-										ontouchend={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											if (onExistingImageRemove) {
-												onExistingImageRemove(imageName);
-											}
-										}}
-										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-										style="
-											background: var(--color-error-500);
-											color: white;
-											touch-action: manipulation;
-											-webkit-tap-highlight-color: transparent;
-										"
-										aria-label="Remove image"
-									>
-										<X class="w-3 h-3" />
-									</button>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-				
-				<!-- Image Upload Area -->
-				<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
-					style="border-color: var(--border-secondary); background: var(--bg-secondary);"
+				<button
+					type="button"
+					onclick={() => showImages = !showImages}
+					class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
+					style="border-color: var(--border-primary);"
 				>
-					<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-					<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-					<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
-					
-					<!-- Mobile-optimized file input -->
-					<input
-						type="file"
-						multiple
-						accept="image/jpeg,image/jpg,image/png,image/webp"
-						class="hidden"
-						id="images-upload"
-						name="images"
-						onchange={onImageUpload}
-					/>
-					
-					<!-- Unified upload button - works on all devices -->
-					<label
-						for="images-upload"
-						class="button-secondary cursor-pointer inline-flex items-center gap-2"
-						style="touch-action: manipulation;"
-					>
-						<Camera class="w-4 h-4 sm:hidden" />
-						<Upload class="w-4 h-4 hidden sm:block" />
-						<span class="sm:hidden">Add Photos</span>
-						<span class="hidden sm:inline">Choose Files</span>
-					</label>
-
-					<!-- Mobile instruction -->
-					<div class="sm:hidden mt-3">
-						<p class="text-xs" style="color: var(--text-tertiary);">Tap to select from gallery or take new photos</p>
+					<div class="flex items-center gap-2">
+						{#if showImages}
+							<ChevronDown class="w-4 h-4" />
+						{:else}
+							<ChevronRight class="w-4 h-4" />
+						{/if}
+						<h3 class="font-semibold" style="color: var(--text-primary);">Tour Images</h3>
+						{#if (uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)}
+							{@const totalImages = (uploadedImages?.length || 0) + (existingImages?.length || 0)}
+							<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+								{totalImages} image{totalImages === 1 ? '' : 's'}
+							</span>
+						{/if}
 					</div>
-				</div>
-
-				<!-- Image Upload Errors - Show on all screen sizes -->
-				{#if imageUploadErrors && imageUploadErrors.length > 0}
-					<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-						<div class="flex items-start gap-2">
-							<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-							<div class="flex-1">
-								<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
-								<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
-									{#each imageUploadErrors as error}
-										<li>• {error}</li>
-									{/each}
-								</ul>
+					<span class="text-xs" style="color: var(--text-secondary);">
+						{showImages ? 'Hide' : 'Show'} image gallery
+					</span>
+				</button>
+				
+				{#if showImages}
+					<div class="p-4">
+					
+					<!-- Existing Images (for edit mode) -->
+					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
+						<div class="mb-6">
+							<h4 class="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
+							<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+								{#each existingImages as imageName, index (imageName)}
+									<div class="relative group aspect-square">
+										<img 
+											src={getExistingImageUrl(imageName)} 
+											alt="Tour image {index + 1}"
+											class="w-full h-full object-cover rounded-lg border border-gray-200"
+											loading="lazy"
+										/>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onExistingImageRemove) {
+													onExistingImageRemove(imageName);
+												}
+											}}
+											ontouchend={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onExistingImageRemove) {
+													onExistingImageRemove(imageName);
+												}
+											}}
+											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											style="
+												background: var(--color-error-500);
+												color: white;
+												touch-action: manipulation;
+												-webkit-tap-highlight-color: transparent;
+											"
+											aria-label="Remove image"
+										>
+											<X class="w-3 h-3" />
+										</button>
+									</div>
+								{/each}
 							</div>
 						</div>
-					</div>
-				{/if}
+					{/if}
+					
+					<!-- Image Upload Area -->
+					<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+						style="border-color: var(--border-secondary); background: var(--bg-secondary);"
+					>
+						<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+						<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
+						<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
+						
+						<!-- Mobile-optimized file input -->
+						<input
+							type="file"
+							multiple
+							accept="image/jpeg,image/jpg,image/png,image/webp"
+							class="hidden"
+							id="images-upload"
+							name="images"
+							onchange={onImageUpload}
+						/>
+						
+						<!-- Unified upload button - works on all devices -->
+						<label
+							for="images-upload"
+							class="button-secondary cursor-pointer inline-flex items-center gap-2"
+							style="touch-action: manipulation;"
+						>
+							<Camera class="w-4 h-4 sm:hidden" />
+							<Upload class="w-4 h-4 hidden sm:block" />
+							<span class="sm:hidden">Add Photos</span>
+							<span class="hidden sm:inline">Choose Files</span>
+						</label>
 
-
-
-				<!-- Image Previews -->
-				{#if uploadedImages && uploadedImages.length > 0}
-					<div class="mt-6">
-						<h4 class="text-sm font-medium text-gray-700 mb-3">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
-						<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-							{#each uploadedImages as image, index (index)}
-								<div class="relative group aspect-square">
-									<img 
-										src={getImagePreview(image)} 
-										alt="Tour preview {index + 1}"
-										class="w-full h-full object-cover rounded-lg border border-gray-200"
-										loading="lazy"
-									/>
-									<button
-										type="button"
-										onclick={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											if (onImageRemove) {
-												onImageRemove(index);
-											}
-										}}
-										ontouchend={(e) => {
-											e.preventDefault();
-											e.stopPropagation();
-											if (onImageRemove) {
-												onImageRemove(index);
-											}
-										}}
-										class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-										style="
-											background: var(--color-error-500);
-											color: white;
-											touch-action: manipulation;
-											-webkit-tap-highlight-color: transparent;
-										"
-										aria-label="Remove image"
-									>
-										<X class="w-3 h-3" />
-									</button>
-									<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
-										{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
-									</div>
-								</div>
-							{/each}
+						<!-- Mobile instruction -->
+						<div class="sm:hidden mt-3">
+							<p class="text-xs" style="color: var(--text-tertiary);">Tap to select from gallery or take new photos</p>
 						</div>
 					</div>
+
+					<!-- Image Upload Errors - Show on all screen sizes -->
+					{#if imageUploadErrors && imageUploadErrors.length > 0}
+						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<div class="flex-1">
+									<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
+									<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
+										{#each imageUploadErrors as error}
+											<li>• {error}</li>
+										{/each}
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+
+
+					<!-- Image Previews -->
+					{#if uploadedImages && uploadedImages.length > 0}
+						<div class="mt-6">
+							<h4 class="text-sm font-medium text-gray-700 mb-3">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
+							<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+								{#each uploadedImages as image, index (index)}
+									<div class="relative group aspect-square">
+										<img 
+											src={getImagePreview(image)} 
+											alt="Tour preview {index + 1}"
+											class="w-full h-full object-cover rounded-lg border border-gray-200"
+											loading="lazy"
+										/>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onImageRemove) {
+													onImageRemove(index);
+												}
+											}}
+											ontouchend={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onImageRemove) {
+													onImageRemove(index);
+												}
+											}}
+											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											style="
+												background: var(--color-error-500);
+												color: white;
+												touch-action: manipulation;
+												-webkit-tap-highlight-color: transparent;
+											"
+											aria-label="Remove image"
+										>
+											<X class="w-3 h-3" />
+										</button>
+										<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+											{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					</div>
 				{/if}
-				</div>
 			</div>
 		{/if}
 

@@ -153,10 +153,41 @@
 	let markers = $derived.by(() => {
 		if (!showMarkers) return [];
 		
-		const commonDurations = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480];
-		const markerValues = commonDurations.filter(duration => duration >= min && duration <= max);
+		const range = max - min;
+		let markerValues: number[] = [];
 		
-		return markerValues.map(val => ({
+		// Smarter marker generation to prevent overlap
+		if (range <= 120) {
+			// Small ranges (up to 2 hours): every 30 minutes
+			markerValues = [30, 60, 90, 120].filter(duration => duration >= min && duration <= max);
+		} else if (range <= 240) {
+			// Medium ranges (up to 4 hours): every hour
+			markerValues = [60, 120, 180, 240].filter(duration => duration >= min && duration <= max);
+		} else if (range <= 360) {
+			// Larger ranges (up to 6 hours): every 1.5 hours
+			markerValues = [60, 150, 240, 330].filter(duration => duration >= min && duration <= max);
+		} else {
+			// Very large ranges: every 2 hours
+			markerValues = [120, 240, 360, 480].filter(duration => duration >= min && duration <= max);
+		}
+		
+		// Ensure minimum spacing between markers (at least 15% of slider width)
+		const filteredMarkers: number[] = [];
+		markerValues.forEach((value, index) => {
+			if (index === 0) {
+				filteredMarkers.push(value);
+			} else {
+				const prevPosition = ((markerValues[index - 1] - min) / range) * 100;
+				const currentPosition = ((value - min) / range) * 100;
+				
+				// Only add marker if it's at least 15% away from the previous one
+				if (currentPosition - prevPosition >= 15) {
+					filteredMarkers.push(value);
+				}
+			}
+		});
+		
+		return filteredMarkers.map(val => ({
 			value: val,
 			position: ((val - min) / (max - min)) * 100
 		}));
@@ -202,12 +233,6 @@
 	<div class="value-display">
 		<div class="value-main">
 			<div class="value-number">{durationInfo.display}</div>
-			<div class="value-breakdown">
-				{#if durationInfo.hours > 0 && durationInfo.mins > 0}
-					<span class="breakdown-part">{durationInfo.hours} hour{durationInfo.hours === 1 ? '' : 's'}</span>
-					<span class="breakdown-part">{durationInfo.mins} minute{durationInfo.mins === 1 ? '' : 's'}</span>
-				{/if}
-			</div>
 		</div>
 		<div class="value-category">{getDurationCategory(value)}</div>
 	</div>
@@ -263,9 +288,9 @@
 		</button>
 	</div>
 	
-	<!-- Reset button -->
-	{#if defaultValue && value !== defaultValue && !disabled}
-		<div class="reset-container">
+	<!-- Reset button container with reserved space -->
+	<div class="reset-container">
+		{#if defaultValue && value !== defaultValue && !disabled}
 			<button
 				type="button"
 				onclick={() => {
@@ -276,8 +301,11 @@
 			>
 				Reset to {formatDuration(defaultValue).display}
 			</button>
-		</div>
-	{/if}
+		{:else}
+			<!-- Reserve space to prevent layout jump -->
+			<div class="reset-button-spacer"></div>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -305,19 +333,6 @@
 		font-weight: 700;
 		color: var(--text-primary);
 		font-variant-numeric: tabular-nums;
-	}
-	
-	.value-breakdown {
-		display: flex;
-		gap: 0.5rem;
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-	}
-	
-	.breakdown-part {
-		background: var(--bg-tertiary);
-		padding: 0.125rem 0.5rem;
-		border-radius: var(--radius-sm);
 	}
 	
 	.value-category {
@@ -396,6 +411,18 @@
 		color: var(--text-tertiary);
 		white-space: nowrap;
 		font-variant-numeric: tabular-nums;
+		text-align: center;
+		min-width: fit-content;
+		font-weight: 500;
+	}
+	
+	/* Prevent marker overlap */
+	.marker:nth-child(odd) .marker-text {
+		transform: translateY(-0.25rem);
+	}
+	
+	.marker:nth-child(even) .marker-text {
+		transform: translateY(0.25rem);
 	}
 	
 	.slider-thumb {
@@ -496,6 +523,11 @@
 		border-color: var(--color-primary-200);
 	}
 	
+	.reset-button-spacer {
+		height: 2.125rem; /* Same height as reset button (padding + line-height) */
+		width: 100%;
+	}
+	
 	/* Disabled state */
 	.disabled {
 		opacity: 0.6;
@@ -552,10 +584,6 @@
 			font-size: 1.75rem;
 		}
 		
-		.value-breakdown {
-			font-size: 0.625rem;
-		}
-		
 		.slider-container {
 			height: 5rem;
 			padding: 2rem 0.5rem;
@@ -582,7 +610,28 @@
 		}
 		
 		.markers {
-			display: none;
+			margin-top: 1rem;
+		}
+		
+		.marker-text {
+			font-size: 0.5rem;
+			font-weight: 600;
+		}
+		
+		/* Stagger markers more on mobile to prevent overlap */
+		.marker:nth-child(odd) .marker-text {
+			transform: translateY(-0.5rem);
+		}
+		
+		.marker:nth-child(even) .marker-text {
+			transform: translateY(0.5rem);
+		}
+		
+		/* Hide every third marker on very small screens */
+		@media (max-width: 480px) {
+			.marker:nth-child(3n) {
+				display: none;
+			}
 		}
 	}
 </style> 
