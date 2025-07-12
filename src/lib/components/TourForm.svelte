@@ -30,6 +30,7 @@
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
+	import Plus from 'lucide-svelte/icons/plus';
 
 	interface Props {
 		formData: {
@@ -432,6 +433,14 @@
 		}
 	});
 
+	// Auto-adjust child price when adult price changes
+	$effect(() => {
+		if (showChildPrice && formData.price > 0 && childPrice > formData.price) {
+			// Automatically reduce child price to match adult price if it exceeds
+			childPrice = formData.price;
+		}
+	});
+
 	// Set reasonable default for child price when enabling
 	function enableChildPricing() {
 		showChildPrice = true;
@@ -709,122 +718,122 @@
 
 				<!-- Advanced Pricing Section (Collapsible) -->
 				<div class="mt-6">
-					<button
-						type="button"
-						onclick={() => showAdvancedPricing = !showAdvancedPricing}
-						class="flex items-center justify-between w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80"
-						style="
-							background: var(--bg-secondary);
-							border-color: var(--border-primary);
-							color: var(--text-primary);
-						"
-					>
-						<div class="flex items-center gap-2">
-							{#if showAdvancedPricing}
-								<ChevronDown class="w-4 h-4" />
-							{:else}
-								<ChevronRight class="w-4 h-4" />
-							{/if}
-							<span class="font-medium">Advanced Pricing Options</span>
-							{#if showChildPrice}
+					{#if !showChildPrice}
+						<button
+							type="button"
+							onclick={() => {
+								showChildPrice = true;
+								showAdvancedPricing = true;
+								enableChildPricing();
+							}}
+							class="flex items-center justify-center w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80 gap-2"
+							style="
+								background: var(--bg-secondary);
+								border-color: var(--border-primary);
+								color: var(--text-primary);
+							"
+						>
+							<Plus class="w-4 h-4" />
+							<span class="font-medium">Add Child Pricing</span>
+							<span class="text-xs" style="color: var(--text-secondary);">
+								(ages 3-12)
+							</span>
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={() => showAdvancedPricing = !showAdvancedPricing}
+							class="flex items-center justify-between w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80"
+							style="
+								background: var(--bg-secondary);
+								border-color: var(--border-primary);
+								color: var(--text-primary);
+							"
+						>
+							<div class="flex items-center gap-2">
+								{#if showAdvancedPricing}
+									<ChevronDown class="w-4 h-4" />
+								{:else}
+									<ChevronRight class="w-4 h-4" />
+								{/if}
+								<span class="font-medium">Child Pricing Options</span>
 								<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-									Child pricing enabled
+									Active
 								</span>
-							{/if}
-						</div>
-						<span class="text-xs" style="color: var(--text-secondary);">
-							{showAdvancedPricing ? 'Hide' : 'Show'} child pricing options
-						</span>
-					</button>
+							</div>
+							<span class="text-xs" style="color: var(--text-secondary);">
+								{showAdvancedPricing ? 'Hide' : 'Show'} child pricing settings
+							</span>
+						</button>
+					{/if}
 
-					{#if showAdvancedPricing}
+					{#if showAdvancedPricing && showChildPrice}
 						<div class="mt-4 space-y-4">
-							<!-- Optional Child Pricing -->
-							{#if !showChildPrice}
-								<div class="flex items-center justify-between p-3 rounded-lg border-2 border-dashed" style="border-color: var(--border-secondary); background: var(--bg-secondary);">
-									<div>
-										<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Child Pricing</p>
-										<p class="text-xs" style="color: var(--text-secondary);">Offer discounts for children (ages 3-12)</p>
-									</div>
-									<button
-										type="button"
-										onclick={enableChildPricing}
-										class="button-secondary button--small"
-									>
-										Add Child Price
-									</button>
+							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+								<div class="flex items-center justify-between mb-3">
+									<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
+															<button
+									type="button"
+									onclick={() => { 
+										showChildPrice = false; 
+										childPrice = 0;
+										formData.enablePricingTiers = false;
+										formData.pricingTiers = undefined;
+										showAdvancedPricing = false;
+									}}
+									class="button-secondary button--small button--icon"
+									aria-label="Remove child pricing"
+								>
+									<X class="w-3 h-3" />
+								</button>
 								</div>
-							{:else}
-								<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-									<div class="flex items-center justify-between mb-3">
-										<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
-																	<button
-										type="button"
-										onclick={() => { 
-											showChildPrice = false; 
-											childPrice = 0;
-											formData.enablePricingTiers = false;
-											formData.pricingTiers = undefined;
-										}}
-										class="button-secondary button--small button--icon"
-										aria-label="Remove child pricing"
-									>
-										<X class="w-3 h-3" />
-									</button>
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<PriceSlider
+											bind:value={childPrice}
+											label="Child price ({currencySymbol})"
+											min={0}
+											max={formData.price || 100}
+											step={priceStep}
+											error={hasFieldError(allErrors, 'pricingTiers.child')}
+											onChange={() => validateField('pricingTiers.child')}
+											currency={$userCurrency}
+											currencySymbol={currencySymbol}
+											defaultValue={0}
+										/>
+										{#if getFieldError(allErrors, 'pricingTiers.child')}
+											<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
+										{/if}
+										<!-- Hidden input for form submission -->
+										<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
 									</div>
-									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div>
-											<PriceSlider
-												bind:value={childPrice}
-												label="Child price ({currencySymbol})"
-												min={0}
-												max={formData.price || 100}
-												step={priceStep}
-												error={hasFieldError(allErrors, 'pricingTiers.child')}
-												onChange={() => validateField('pricingTiers.child')}
-												currency={$userCurrency}
-												currencySymbol={currencySymbol}
-												defaultValue={0}
-											/>
-											{#if getFieldError(allErrors, 'pricingTiers.child')}
-												<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
-											{/if}
-											<!-- Hidden input for form submission -->
-											<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
-										</div>
-										<div class="flex items-end">
-											<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
-												<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
-												<div class="text-sm" style="color: var(--text-primary);">
-													{#if childPrice === 0}
+									<div class="flex items-end">
+										<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
+											<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
+											<div class="text-sm" style="color: var(--text-primary);">
+												{#if childPrice === 0}
+													<div class="flex items-center gap-1">
+														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+														<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
+													</div>
+												{:else if formData.price > 0}
+													{@const discount = Math.floor(((formData.price - childPrice) / formData.price) * 100)}
+													{#if discount > 0}
 														<div class="flex items-center gap-1">
 															<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-															<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
+															<span class="font-medium">{discount}% discount</span>
 														</div>
-													{:else if formData.price > 0}
-														{@const discount = Math.round(((formData.price - childPrice) / formData.price) * 100)}
-														{#if discount > 0}
-															<div class="flex items-center gap-1">
-																<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-																<span class="font-medium">{discount}% discount</span>
-															</div>
-														{:else if discount < 0}
-															<div class="flex items-center gap-1">
-																<AlertCircle class="w-3 h-3" style="color: var(--color-warning-600);" />
-																<span class="font-medium" style="color: var(--color-warning-700);">Higher than adult price</span>
-															</div>
-														{:else}
-															<span class="font-medium">Same price for all</span>
-														{/if}
 													{:else}
-														<span style="color: var(--text-tertiary);">Set adult price first</span>
+														<span class="font-medium">Same price for all</span>
 													{/if}
-												</div>
+												{:else}
+													<span style="color: var(--text-tertiary);">Set adult price first</span>
+												{/if}
 											</div>
 										</div>
 									</div>
 								</div>
-							{/if}
+							</div>
 						</div>
 					{/if}
 				</div>
