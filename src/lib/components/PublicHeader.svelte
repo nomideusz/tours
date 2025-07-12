@@ -38,7 +38,15 @@
 					</button>
 				{/if}
 				
-				<Logo variant="modern" href="/" size="large" />
+				<Logo 
+					variant="modern" 
+					href="/" 
+					showIcon={true} 
+					showIconBackground={false} 
+					iconSrc="/favicon-32x32.png" 
+					size="xl" 
+					textSize="large" 
+				/>
 				
 				{#if tourOwner && (isProfilePage || isBookingPage)}
 					<span class="tour-owner-context">

@@ -3,67 +3,128 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	
 	type LogoVariant = 'modern' | 'minimal' | 'rounded' | 'serif' | 'icon';
-	type LogoSize = 'small' | 'default' | 'large';
+	type LogoSize = 'small' | 'default' | 'large' | 'xl';
 	
 	let { 
 		variant = 'modern' as LogoVariant,
 		size = 'default' as LogoSize,
+		textSize = undefined,
+		iconSize = undefined,
 		href = '/dashboard',
 		showIcon = false,
+		iconSrc = undefined,
+		showIconBackground = true,
+		showText = true,
 		class: className = ''
 	} = $props<{
 		variant?: LogoVariant;
 		size?: LogoSize;
+		textSize?: LogoSize;
+		iconSize?: LogoSize;
 		href?: string;
 		showIcon?: boolean;
+		iconSrc?: string;
+		showIconBackground?: boolean;
+		showText?: boolean;
 		class?: string;
 	}>();
+	
+	// Use individual sizes if provided, otherwise fall back to main size
+	const effectiveTextSize = textSize || size;
+	const effectiveIconSize = iconSize || size;
 	
 	const sizeClasses: Record<LogoSize, string> = {
 		small: 'text-base',
 		default: 'text-lg lg:text-xl',
-		large: 'text-xl lg:text-2xl'
+		large: 'text-xl lg:text-2xl',
+		xl: 'text-2xl lg:text-3xl'
 	};
 	
 	const iconSizes: Record<LogoSize, string> = {
 		small: 'h-4 w-4',
 		default: 'h-5 w-5',
-		large: 'h-6 w-6'
+		large: 'h-6 w-6',
+		xl: 'h-8 w-8'
 	};
 </script>
 
 <a 
 	{href}
-	class="flex items-center gap-2 transition-all nav-link h-full pr-2 {sizeClasses[size as LogoSize]} {className}"
+	class="flex items-center gap-2 transition-all nav-link h-full pr-2 {sizeClasses[effectiveTextSize as LogoSize]} {className}"
 	style="color: var(--text-primary);"
 >
 	{#if showIcon || variant === 'icon'}
-		<div class="rounded-md p-1.5 flex items-center justify-center" style="background: var(--color-primary-100);">
-			<MapPin class={iconSizes[size as LogoSize]} style="color: var(--color-primary-600);" />
-		</div>
+		{#if showIconBackground}
+			<div class="rounded-md p-1.5 flex items-center justify-center" style="background: var(--color-primary-100);">
+				{#if iconSrc}
+					<!-- PNG/image icon -->
+					<img 
+						src={iconSrc} 
+						alt="Logo icon"
+						class="logo-icon-image {iconSizes[effectiveIconSize as LogoSize]}"
+						style="object-fit: contain;"
+					/>
+				{:else}
+					<!-- Default SVG icon -->
+					<MapPin class={iconSizes[effectiveIconSize as LogoSize]} style="color: var(--color-primary-600);" />
+				{/if}
+			</div>
+		{:else}
+			<!-- No background container -->
+			{#if iconSrc}
+				<!-- PNG/image icon -->
+				<img 
+					src={iconSrc} 
+					alt="Logo icon"
+					class="logo-icon-image {iconSizes[effectiveIconSize as LogoSize]}"
+					style="object-fit: contain;"
+				/>
+			{:else}
+				<!-- Default SVG icon -->
+				<MapPin class={iconSizes[effectiveIconSize as LogoSize]} style="color: var(--color-primary-600);" />
+			{/if}
+		{/if}
 	{/if}
 	
-	<div class="flex">
-		{#if variant === 'modern' || variant === 'icon'}
-			<!-- Modern: Bold name, lighter extension -->
-			<span class="font-semibold tracking-tight">zaur</span><span class="font-normal opacity-60">.app</span>
-		{:else if variant === 'minimal'}
-			<!-- Minimal: All lowercase, consistent weight -->
-			<span class="font-medium tracking-tight">zaur.app</span>
-		{:else if variant === 'rounded'}
-			<!-- Rounded: With background -->
-			<span class="px-2 py-0.5 rounded-md font-semibold tracking-tight" style="background: var(--bg-tertiary);">
-				zaur
-			</span>
-			<span class="font-normal ml-1 opacity-70">.app</span>
-		{:else if variant === 'serif'}
-			<!-- Original serif style -->
-			<span class="logo-serif">zaur.app</span>
-		{/if}
-	</div>
+	{#if showText}
+		<div class="flex">
+			{#if variant === 'modern' || variant === 'icon'}
+				<!-- Modern: Bold name, lighter extension -->
+				<span class="font-semibold tracking-tight logo-text">zaur</span><span class="font-normal opacity-60 logo-text">.app</span>
+			{:else if variant === 'minimal'}
+				<!-- Minimal: All lowercase, consistent weight -->
+				<span class="font-medium tracking-tight logo-text">zaur.app</span>
+			{:else if variant === 'rounded'}
+				<!-- Rounded: With background -->
+				<span class="px-2 py-0.5 rounded-md font-semibold tracking-tight logo-text" style="background: var(--bg-tertiary);">
+					zaur
+				</span>
+				<span class="font-normal ml-1 opacity-70 logo-text">.app</span>
+			{:else if variant === 'serif'}
+				<!-- Original serif style -->
+				<span class="logo-serif logo-text">zaur.app</span>
+			{/if}
+		</div>
+	{/if}
 </a>
 
 <style>
+	/* Text alignment and spacing normalization */
+	.logo-text {
+		line-height: 1;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	/* Dark mode image inversion */
+	.logo-icon-image {
+		transition: filter 0.2s ease;
+	}
+	
+	:global([data-theme="dark"]) .logo-icon-image {
+		filter: invert(1) brightness(0.9);
+	}
+
 	/* Serif variant styles */
 	.logo-serif {
 		font-family: var(--font-sans); /* Using modern font instead of Georgia */
@@ -78,6 +139,7 @@
 		pointer-events: auto !important; /* Force clickability */
 		display: inline-flex !important; /* Ensure proper layout */
 		isolation: isolate; /* Create new stacking context */
+		align-items: center; /* Ensure icon and text are perfectly centered */
 	}
 	
 	a:hover {

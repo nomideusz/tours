@@ -19,7 +19,7 @@
 		<div class="professional-header-content">
 			<!-- Logo and branding -->
 			<div class="professional-header-brand">
-				<Logo variant="modern" href="/dashboard" size="large" />
+				<Logo showIcon={true} showIconBackground={false} href="/dashboard" size="xl" textSize="large" iconSrc="/favicon-32x32.png" />
 		</div>
 
 			<!-- Right Side Actions -->

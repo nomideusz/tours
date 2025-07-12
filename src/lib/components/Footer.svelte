@@ -21,9 +21,13 @@
 				<div class="footer-logo">
 					<Logo 
 						variant="modern" 
-						size="large" 
+						size="xl" 
+						textSize="large"
 						href="/" 
 						showIcon={false}
+						showIconBackground={false}
+						showText={true}
+						iconSrc="/favicon-32x32.png"
 						class="justify-start p-0"
 					/>
 				</div>
