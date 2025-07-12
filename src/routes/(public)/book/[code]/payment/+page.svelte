@@ -464,7 +464,7 @@
 									<button
 										type="submit"
 										disabled={processing || !stripe || paymentSucceeded}
-										class="w-full {paymentSucceeded ? 'button-success' : 'button-primary'} button--large justify-center"
+										class="w-full {paymentSucceeded ? 'button-success' : 'button-primary'} button--large button-gap justify-center"
 									>
 										{#if paymentSucceeded}
 											<CheckCircle class="w-5 h-5" />

@@ -8,6 +8,7 @@
 	import Layout from 'lucide-svelte/icons/layout';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
+	import BookOpen from 'lucide-svelte/icons/book-open';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 
@@ -144,6 +145,10 @@
 					<DollarSign class="w-4 h-4" />
 					<span>Pricing</span>
 				</a>
+				<a href="/blog" class="nav-link">
+					<BookOpen class="w-4 h-4" />
+					<span>Blog</span>
+				</a>
 				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="nav-link">
 					<HelpCircle class="w-4 h-4" />
 					<span>FAQ</span>
@@ -245,6 +250,10 @@
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
 					<DollarSign class="w-4 h-4" />
 					<span>Pricing</span>
+				</a>
+				<a href="/blog" onclick={handleMobileLinkClick} class="mobile-nav-link">
+					<BookOpen class="w-4 h-4" />
+					<span>Blog</span>
 				</a>
 				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="mobile-nav-link">
 					<HelpCircle class="w-4 h-4" />

@@ -10,6 +10,7 @@
 	import Mail from 'lucide-svelte/icons/mail';
 	import LifeBuoy from 'lucide-svelte/icons/life-buoy';
 	import Rocket from 'lucide-svelte/icons/rocket';
+	import BookOpen from 'lucide-svelte/icons/book-open';
 </script>
 
 <!-- Professional Footer -->
@@ -73,6 +74,12 @@
 						<a href="/#faq" class="footer-link">
 							<HelpCircle class="w-4 h-4" />
 							<span>FAQ</span>
+						</a>
+					</li>
+					<li>
+						<a href="/blog" class="footer-link">
+							<BookOpen class="w-4 h-4" />
+							<span>Blog</span>
 						</a>
 					</li>
 				</ul>
