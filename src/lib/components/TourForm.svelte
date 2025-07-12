@@ -645,7 +645,7 @@
 					<div>
 						<PriceSlider
 							bind:value={formData.price}
-							label="Price per person ({currencySymbol}) *"
+							label="Price per person ({currencySymbol})"
 							min={minimumPrice}
 							max={500}
 							step={priceStep}
@@ -671,7 +671,7 @@
 				<div>
 					<DurationSlider
 						bind:value={formData.duration}
-						label="Duration *"
+						label="Duration"
 						min={15}
 						max={480}
 						step={15}
@@ -690,7 +690,7 @@
 				<div>
 					<CapacitySlider
 						bind:value={formData.capacity}
-						label="Max Group Size *"
+						label="Max Group Size"
 						min={bookingConstraints?.minimumCapacity || 1}
 						max={60}
 						step={1}
@@ -861,7 +861,7 @@
 					{:else}
 						<ChevronRight class="w-4 h-4" />
 					{/if}
-					<h2 class="font-semibold" style="color: var(--text-primary);">Tour Details</h2>
+					<h2 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Tour Details</h2>
 					{#if formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())}
 						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
 							{formData.includedItems.filter(item => item.trim()).length + formData.requirements.filter(req => req.trim()).length} items
@@ -1076,7 +1076,7 @@
 					{:else}
 						<ChevronRight class="w-4 h-4" />
 					{/if}
-					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
+					<h2 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Cancellation Policy</h2>
 					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
 						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
 							{selectedPolicyTemplate || 'Custom'} policy set
@@ -1183,7 +1183,7 @@
 						{:else}
 							<ChevronRight class="w-4 h-4" />
 						{/if}
-						<h3 class="font-semibold" style="color: var(--text-primary);">Tour Images</h3>
+						<h3 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Tour Images</h3>
 						{#if (uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)}
 							{@const totalImages = (uploadedImages?.length || 0) + (existingImages?.length || 0)}
 							<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">

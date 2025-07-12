@@ -72,16 +72,25 @@
 				});
 			});
 			
-			// For now, just use coordinates - in future we'd reverse geocode this
-			const lat = position.coords.latitude.toFixed(6);
-			const lng = position.coords.longitude.toFixed(6);
-			const locationString = `${lat}, ${lng}`;
+			const coordinates = {
+				lat: position.coords.latitude,
+				lng: position.coords.longitude
+			};
 			
-			// TODO: Implement reverse geocoding to get human-readable address
-			// This would require a geocoding service like Google Maps, OpenStreetMap, etc.
-			
-			value = locationString;
-			onLocationSelect?.(locationString);
+			// Try to reverse geocode to get human-readable address
+			try {
+				const result = await defaultMapService.reverseGeocode(coordinates);
+				value = result.fullAddress;
+				onLocationSelect?.(result.fullAddress);
+			} catch (reverseGeocodeError) {
+				console.warn('Reverse geocoding failed, using coordinates:', reverseGeocodeError);
+				// Fallback to coordinates if reverse geocoding fails
+				const lat = coordinates.lat.toFixed(6);
+				const lng = coordinates.lng.toFixed(6);
+				const locationString = `${lat}, ${lng}`;
+				value = locationString;
+				onLocationSelect?.(locationString);
+			}
 			
 		} catch (error) {
 			console.error('Error getting location:', error);
@@ -129,7 +138,7 @@
 			clearTimeout(searchTimeout);
 		}
 		
-		// Clear results if input is too short
+		// Clear results if input is too short or empty
 		if (query.trim().length < 2) {
 			locationSuggestions = [];
 			showSuggestions = false;
@@ -156,12 +165,11 @@
 		}
 	}
 	
-	// Handle input changes
-	function handleInput(event: Event) {
-		const target = event.target as HTMLInputElement;
-		value = target.value;
-		handleSearchInput(target.value);
-	}
+	// React to value changes for search functionality
+	$effect(() => {
+		// Trigger search when value changes
+		handleSearchInput(value);
+	});
 	
 	// Open map picker modal
 	function openMapPicker() {
@@ -188,7 +196,6 @@
 				id="location-input"
 				type="text"
 				bind:value={value}
-				oninput={handleInput}
 				onblur={() => {
 					// Delay hiding suggestions to allow clicks
 					setTimeout(() => {

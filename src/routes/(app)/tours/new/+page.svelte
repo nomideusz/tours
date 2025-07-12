@@ -107,12 +107,7 @@
 		}
 	});
 
-	// Auto-populate location from profile when available
-	$effect(() => {
-		if (profile?.location && !formData.location && !(form as any)?.formData?.location) {
-			formData.location = profile.location;
-		}
-	});
+	// Note: Location is not auto-populated - users can choose to use profile location via "Use my location" button
 
 	// Image upload state
 	let uploadedImages: File[] = $state([]);
