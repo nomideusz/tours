@@ -51,7 +51,7 @@
 					class:active={currentTheme === theme.value}
 					aria-label={`Switch to ${theme.label.toLowerCase()} theme`}
 				>
-					<theme.icon class="theme-toggle-icon" />
+					<theme.icon class="theme-toggle-icon w-5 h-5" />
 				</button>
 			</Tooltip>
 		{/each}
@@ -97,16 +97,5 @@
 		background: var(--bg-primary);
 		color: var(--color-primary-600);
 		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-	}
-
-	.theme-toggle-icon {
-		width: 1rem;
-		height: 1rem;
-		transition: color 0.2s ease;
-	}
-
-	/* Dark mode adjustments */
-	[data-theme="dark"] .theme-toggle-wrapper {
-		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 	}
 </style>

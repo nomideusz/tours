@@ -72,10 +72,26 @@ export function createInvalidationHelper(queryClient: any) {
 		// Invalidate schedule/time slot queries
 		async invalidateScheduleQueries(tourId: string, qrCode?: string) {
 			const promises = [
-				queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) }),
-				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) }),
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.tourSchedule(tourId),
+					exact: true,
+					refetchType: 'all'
+				}),
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.tourDetails(tourId),
+					exact: true,
+					refetchType: 'all'
+				}),
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.userTours,
+					exact: true,
+					refetchType: 'all'
+				}),
+				queryClient.invalidateQueries({ 
+					queryKey: queryKeys.toursStats,
+					exact: true,
+					refetchType: 'all'
+				}),
 			];
 			
 			// Also invalidate public booking pages

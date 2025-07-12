@@ -1392,8 +1392,12 @@
 	onSuccess={() => {
 		showAddSlotsModal = false;
 		preselectedDate = undefined; // Clear the preselected date
-		// Refresh the TourTimeline data (it uses tour-schedule query internally)
-		queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+		// Force immediate refetch of TourTimeline data with aggressive settings
+		queryClient.invalidateQueries({ 
+			queryKey: queryKeys.tourSchedule(tourId),
+			exact: true,
+			refetchType: 'all'
+		});
 		// Show success message
 		showAddSlotsSuccess = true;
 		// Close welcome prompt if it was open (newly created tour)

@@ -140,8 +140,8 @@
 		},
 		staleTime: 0, // Always consider data potentially stale for immediate updates
 		gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
-		refetchOnWindowFocus: true, // Enable window focus refetching for live updates
-		refetchOnMount: 'always', // Always refetch on mount
+		refetchOnWindowFocus: 'always', // Always refetch on window focus for immediate updates
+		refetchOnMount: 'always', // Always refetch on mount for immediate updates
 		enabled: browser,
 		retry: 1, // Reduce retries
 		retryDelay: 1000, // 1 second retry delay
@@ -444,8 +444,12 @@
 			
 			if (!response.ok) throw new Error('Failed to update capacity');
 			
-			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			// Invalidate queries to refresh data immediately
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourSchedule(tourId),
+				exact: true,
+				refetchType: 'all'
+			});
 			
 			cancelEdit();
 			showInlineSuccess(slot.id, 'Updated');
@@ -486,8 +490,12 @@
 			
 			if (!response.ok) throw new Error('Failed to update status');
 			
-			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: queryKeys.tourSchedule(tourId) });
+			// Invalidate queries to refresh data immediately
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourSchedule(tourId),
+				exact: true,
+				refetchType: 'all'
+			});
 			
 			showInlineSuccess(slot.id, newStatus === 'cancelled' ? 'Cancelled' : 'Reactivated');
 		} catch (error) {
@@ -517,8 +525,12 @@
 				throw new Error(error.error || 'Failed to delete time slot');
 			}
 			
-			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			// Invalidate queries to refresh data immediately
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourSchedule(tourId),
+				exact: true,
+				refetchType: 'all'
+			});
 			
 			showInlineSuccess(slotToDelete.id, 'Deleted');
 			slotToDelete = null;
@@ -817,8 +829,12 @@
 				throw new Error(error.error || 'Failed to create time slot');
 			}
 			
-			// Invalidate queries to refresh data
-			await queryClient.invalidateQueries({ queryKey: ['tour-schedule', tourId] });
+			// Invalidate queries to refresh data immediately
+			await queryClient.invalidateQueries({ 
+				queryKey: queryKeys.tourSchedule(tourId),
+				exact: true,
+				refetchType: 'all'
+			});
 			
 			// Close quick add form
 			showQuickAdd = null;
