@@ -414,14 +414,13 @@
 	bind:isOpen={isOpen} 
 	onClose={handleClose} 
 	closeOnClickOutside={false} 
-	title="Select Meeting Point" 
-	subtitle="Click on the map to set the exact meeting location for your tour"
+	title="Meeting Point"
 	class="map-drawer"
 >
 	{#snippet children()}
-		<div class="flex flex-col h-full min-h-[75vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
+		<div class="flex flex-col h-full min-h-[60vh] max-h-[80vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
 		<!-- Search and Controls -->
-		<div class="p-5 sm:p-4 border-b space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
+		<div class="p-4 sm:p-4 border-b space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
 			<!-- Search Bar -->
 			<div class="relative">
 				<div class="flex gap-2">
@@ -562,23 +561,23 @@
 		</div>
 		
 		<!-- Footer -->
-		<div class="p-5 sm:p-4 border-t flex items-center justify-between flex-shrink-0" style="border-color: var(--border-primary); background: var(--bg-primary); position: relative; z-index: 10; padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));">
+		<div class="p-4 sm:p-4 border-t flex items-center justify-between flex-shrink-0 map-footer" style="border-color: var(--border-primary); background: var(--bg-primary); position: relative; z-index: 10; padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));">
 			<div class="text-xs flex-1 pr-4" style="color: var(--text-secondary);">
 				<span class="hidden sm:inline">Click anywhere on the map to set your meeting point</span>
 				<span class="sm:hidden">Tap map to select location</span>
 			</div>
 			
-			<div class="flex items-center gap-3 flex-shrink-0">
+			<div class="flex items-center gap-2 flex-shrink-0">
 				<button
 					onclick={handleClose}
-					class="button-secondary px-4 py-3 text-sm rounded-md font-medium"
+					class="button-secondary px-3 py-2 text-sm rounded-md font-medium footer-button"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={handleConfirm}
 					disabled={!selectedCoordinates}
-					class="button-primary px-4 py-3 text-sm rounded-md disabled:opacity-50 flex items-center gap-2 font-medium"
+					class="button-primary px-3 py-2 text-sm rounded-md disabled:opacity-50 flex items-center gap-2 font-medium footer-button"
 				>
 					<Check class="w-4 h-4" />
 					<span class="hidden sm:inline">Select Location</span>
@@ -614,7 +613,7 @@
 		}
 		
 		:global(.map-drawer .rounded-t-xl) {
-			max-height: 85vh !important;
+			max-height: 80vh !important;
 		}
 		
 		/* Only remove padding from the main content wrapper, not individual sections */
@@ -624,6 +623,68 @@
 		
 		:global(.map-drawer .overscroll-contain) {
 			overscroll-behavior: none !important;
+		}
+	}
+	
+	/* Very small smartphone fixes */
+	@media (max-width: 375px) and (max-height: 667px) {
+		:global(.map-drawer .rounded-t-xl) {
+			max-height: 75vh !important;
+		}
+		
+		/* Reduce padding on very small screens */
+		.search-controls {
+			padding: 0.75rem !important;
+		}
+		
+		.search-controls .space-y-3 > * + * {
+			margin-top: 0.5rem !important;
+		}
+		
+		/* Compact footer buttons */
+		.footer-button {
+			padding: 0.5rem 1rem !important;
+			font-size: 0.8rem !important;
+		}
+		
+		/* Ensure footer is always visible */
+		.map-footer {
+			padding: 0.75rem !important;
+			min-height: 3.5rem !important;
+		}
+	}
+	
+	/* Extra small smartphones (like iPhone SE) */
+	@media (max-width: 320px) and (max-height: 568px) {
+		:global(.map-drawer .rounded-t-xl) {
+			max-height: 70vh !important;
+		}
+		
+		/* Even more aggressive space saving */
+		.search-controls {
+			padding: 0.5rem !important;
+		}
+		
+		.search-controls .space-y-3 > * + * {
+			margin-top: 0.25rem !important;
+		}
+		
+		/* Smaller buttons */
+		.search-controls button {
+			padding: 0.375rem 0.75rem !important;
+			font-size: 0.75rem !important;
+		}
+		
+		/* Compact footer buttons */
+		.footer-button {
+			padding: 0.375rem 0.75rem !important;
+			font-size: 0.75rem !important;
+		}
+		
+		/* Ensure footer is always visible */
+		.map-footer {
+			padding: 0.5rem !important;
+			min-height: 3rem !important;
 		}
 	}
 </style> 

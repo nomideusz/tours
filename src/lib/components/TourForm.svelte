@@ -638,7 +638,7 @@
 		<!-- Pricing & Logistics -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing</h2>
+				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
 			</div>
 			<div class="p-4">
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -655,6 +655,7 @@
 							currency={$userCurrency}
 							currencySymbol={currencySymbol}
 							defaultValue={25}
+							showMarkers={false}
 						/>
 						{#if getFieldError(allErrors, 'price')}
 							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'price')}</p>
@@ -666,6 +667,84 @@
 						{/if}
 						<!-- Hidden input for form submission -->
 						<input type="hidden" name="price" bind:value={formData.price} />
+						
+						<!-- Mobile-only Child Price Option -->
+						<div class="md:hidden mt-4">
+							{#if !showChildPrice}
+								<button
+									type="button"
+									onclick={() => {
+										showChildPrice = true;
+										enableChildPricing();
+									}}
+									class="flex items-center justify-center w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80 gap-2"
+									style="
+										background: var(--bg-secondary);
+										border-color: var(--border-primary);
+										color: var(--text-primary);
+									"
+								>
+									<Plus class="w-4 h-4" />
+									<span class="font-medium">Add Child Price</span>
+								</button>
+							{:else}
+								<div class="space-y-3">
+									<div class="flex items-center justify-between">
+										<span class="text-sm font-medium" style="color: var(--text-primary);">Child Price</span>
+										<button
+											type="button"
+											onclick={() => { 
+												showChildPrice = false; 
+												childPrice = 0;
+												formData.enablePricingTiers = false;
+												formData.pricingTiers = undefined;
+											}}
+											class="button-secondary button--small button--icon"
+											aria-label="Remove child pricing"
+										>
+											<X class="w-3 h-3" />
+										</button>
+									</div>
+									<PriceSlider
+										bind:value={childPrice}
+										min={0}
+										max={formData.price || 100}
+										step={priceStep}
+										error={hasFieldError(allErrors, 'pricingTiers.child')}
+										onChange={() => validateField('pricingTiers.child')}
+										currency={$userCurrency}
+										currencySymbol={currencySymbol}
+										defaultValue={0}
+										showMarkers={false}
+									/>
+									{#if getFieldError(allErrors, 'pricingTiers.child')}
+										<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
+									{/if}
+									<div class="p-2 rounded-lg text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
+										{#if childPrice === 0}
+											<div class="flex items-center gap-1">
+												<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+												<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
+											</div>
+										{:else if formData.price > 0}
+											{@const discount = Math.floor(((formData.price - childPrice) / formData.price) * 100)}
+											{#if discount > 0}
+												<div class="flex items-center gap-1">
+													<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+													<span class="font-medium">{discount}% discount for children</span>
+												</div>
+											{:else}
+												<span class="font-medium">Same price for all ages</span>
+											{/if}
+										{:else}
+											<span>Set adult price first</span>
+										{/if}
+									</div>
+									<!-- Hidden input for form submission -->
+									<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
+								</div>
+							{/if}
+						</div>
 					</div>
 
 				<div>
@@ -679,6 +758,7 @@
 						error={hasFieldError(allErrors, 'duration')}
 						onChange={() => validateField('duration')}
 						defaultValue={120}
+						showMarkers={false}
 					/>
 					{#if getFieldError(allErrors, 'duration')}
 						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'duration')}</p>
@@ -698,6 +778,7 @@
 						error={hasFieldError(allErrors, 'capacity')}
 						onChange={() => validateField('capacity')}
 						unit="guests"
+						showMarkers={false}
 					/>
 					{#if getFieldError(allErrors, 'capacity')}
 						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
@@ -716,8 +797,8 @@
 					</div>
 				{/if}
 
-				<!-- Advanced Pricing Section (Collapsible) -->
-				<div class="mt-6">
+				<!-- Advanced Pricing Section (Collapsible) - Desktop Only -->
+				<div class="mt-6 hidden md:block">
 					{#if !showChildPrice}
 						<button
 							type="button"
@@ -753,14 +834,11 @@
 								{:else}
 									<ChevronRight class="w-4 h-4" />
 								{/if}
-								<span class="font-medium">Child Pricing Options</span>
-								<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+								<span class="font-medium">Child Price</span>
+								<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-success-100); color: var(--color-success-700);">
 									Active
 								</span>
 							</div>
-							<span class="text-xs" style="color: var(--text-secondary);">
-								{showAdvancedPricing ? 'Hide' : 'Show'} child pricing settings
-							</span>
 						</button>
 					{/if}
 
@@ -768,8 +846,8 @@
 						<div class="mt-4 space-y-4">
 							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 								<div class="flex items-center justify-between mb-3">
-									<h4 class="text-sm font-medium" style="color: var(--text-primary);">Child Pricing (Ages 3-12)</h4>
-															<button
+									<h4 class="text-sm font-medium" style="color: var(--text-primary);">Ages 3-12</h4>
+									<button
 									type="button"
 									onclick={() => { 
 										showChildPrice = false; 
@@ -788,7 +866,7 @@
 									<div>
 										<PriceSlider
 											bind:value={childPrice}
-											label="Child price ({currencySymbol})"
+											label=""
 											min={0}
 											max={formData.price || 100}
 											step={priceStep}
@@ -797,6 +875,7 @@
 											currency={$userCurrency}
 											currencySymbol={currencySymbol}
 											defaultValue={0}
+											showMarkers={false}
 										/>
 										{#if getFieldError(allErrors, 'pricingTiers.child')}
 											<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>

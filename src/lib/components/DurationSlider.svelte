@@ -214,9 +214,28 @@
 
 <div class="duration-slider" class:disabled class:error>
 	{#if label}
-		<div class="form-label block mb-3">
-			{label}
-			{#if required}<span class="text-red-500 ml-1">*</span>{/if}
+		<div class="form-label block mb-2 sm:mb-3 flex items-center justify-between">
+			<span>
+				{label}
+				{#if required}<span class="text-red-500 ml-1">*</span>{/if}
+			</span>
+			<div class="reset-button-container">
+				{#if defaultValue && value !== defaultValue && !disabled}
+					<button
+						type="button"
+						onclick={() => {
+							value = defaultValue;
+							onChange?.(defaultValue);
+						}}
+						class="reset-button-top"
+					>
+						Reset
+					</button>
+				{:else}
+					<!-- Reserve space to prevent layout jump -->
+					<div class="reset-button-spacer"></div>
+				{/if}
+			</div>
 		</div>
 	{/if}
 	
@@ -267,6 +286,7 @@
 			type="button"
 			class="slider-thumb"
 			style="left: {sliderPosition}%"
+			data-value="{durationInfo.display}"
 			onmousedown={handleThumbDown}
 			ontouchstart={handleThumbDown}
 			aria-label="{label}: {durationInfo.display}"
@@ -278,24 +298,7 @@
 		</button>
 	</div>
 	
-	<!-- Reset button container with reserved space -->
-	<div class="reset-container">
-		{#if defaultValue && value !== defaultValue && !disabled}
-			<button
-				type="button"
-				onclick={() => {
-					value = defaultValue;
-					onChange?.(defaultValue);
-				}}
-				class="reset-button"
-			>
-				Reset to {formatDuration(defaultValue).display}
-			</button>
-		{:else}
-			<!-- Reserve space to prevent layout jump -->
-			<div class="reset-button-spacer"></div>
-		{/if}
-	</div>
+
 </div>
 
 <style>
@@ -496,33 +499,39 @@
 		opacity: 1;
 	}
 	
-	.reset-container {
+	.reset-button-container {
+		height: 1.75rem; /* Fixed height to prevent layout shifts */
 		display: flex;
-		justify-content: center;
-		margin-top: 1rem;
+		align-items: center;
+		justify-content: flex-end;
 	}
 	
-	.reset-button {
+	.reset-button-top {
 		background: transparent;
 		border: 1px solid var(--border-secondary);
 		color: var(--color-primary-600);
 		font-size: 0.75rem;
 		cursor: pointer;
-		padding: 0.375rem 0.75rem;
-		border-radius: var(--radius-md);
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-sm);
 		transition: all var(--transition-fast) ease;
 		white-space: nowrap;
+		font-weight: 500;
+		height: 1.75rem; /* Match container height */
+		display: flex;
+		align-items: center;
 	}
 	
-	.reset-button:hover {
+	.reset-button-top:hover {
 		color: var(--color-primary-700);
 		background: var(--bg-secondary);
 		border-color: var(--color-primary-200);
 	}
 	
 	.reset-button-spacer {
-		height: 2.125rem; /* Same height as reset button (padding + line-height) */
-		width: 100%;
+		height: 1.75rem; /* Same height as reset button */
+		width: 1px; /* Minimal width, just to reserve space */
+		opacity: 0; /* Invisible but still takes space */
 	}
 	
 	/* Disabled state */
@@ -577,13 +586,10 @@
 	
 	/* Mobile optimizations */
 	@media (max-width: 640px) {
-		.value-number {
-			font-size: 1.75rem;
-		}
-		
 		.slider-container {
-			height: 5rem;
-			padding: 2rem 0.5rem;
+			height: 4.25rem;
+			padding: 1rem 0.5rem 3.25rem 0.5rem;
+			margin-bottom: 0;
 		}
 		
 		.slider-thumb {
@@ -601,40 +607,30 @@
 			height: 1rem;
 		}
 		
+		/* Hide the hover value above thumb on mobile */
 		.thumb-value {
-			opacity: 1;
-			font-size: 0.75rem;
+			display: none;
+		}
+		
+		/* Add value below thumb on mobile */
+		.slider-thumb::after {
+			content: attr(data-value);
+			position: absolute;
+			top: 100%;
+			left: 50%;
+			transform: translateX(-50%);
+			margin-top: 0.5rem;
+			margin-bottom: 0.75rem;
+			font-size: 0.875rem;
 			font-weight: 700;
-			padding: 0.375rem 0.75rem;
-			background: var(--color-primary-600);
-			color: white;
-			border: none;
-			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+			color: var(--text-primary);
+			white-space: nowrap;
+			pointer-events: none;
 		}
 		
+		/* Hide markers completely on mobile */
 		.markers {
-			margin-top: 1rem;
-		}
-		
-		.marker-text {
-			font-size: 0.5rem;
-			font-weight: 600;
-		}
-		
-		/* Stagger markers more on mobile to prevent overlap */
-		.marker:nth-child(odd) .marker-text {
-			transform: translateY(-0.5rem);
-		}
-		
-		.marker:nth-child(even) .marker-text {
-			transform: translateY(0.5rem);
-		}
-		
-		/* Hide every third marker on very small screens */
-		@media (max-width: 480px) {
-			.marker:nth-child(3n) {
-				display: none;
-			}
+			display: none;
 		}
 	}
 </style> 
