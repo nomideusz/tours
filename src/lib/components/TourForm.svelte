@@ -1,5 +1,8 @@
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
+	import CapacitySlider from './CapacitySlider.svelte';
+	import DurationSlider from './DurationSlider.svelte';
+	import PriceSlider from './PriceSlider.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
@@ -23,6 +26,8 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Save from 'lucide-svelte/icons/save';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import LocationPicker from './LocationPicker.svelte';
 
 	interface Props {
 		formData: {
@@ -551,20 +556,19 @@
 					</div>
 
 					<div>
-						<label for="location" class="form-label">
-							Location
-						</label>
-						<input
-							type="text"
-							id="location"
-							name="location"
+						<LocationPicker
 							bind:value={formData.location}
+							label="Tour Meeting Point"
 							placeholder="e.g., Old Town Prague, Central Park NYC, Tower Bridge area"
-							class="form-input"
+							profileLocation={profile?.location}
+							enableGeolocation={true}
+							enableMapsIntegration={true}
+							onLocationSelect={(location) => {
+								formData.location = location;
+							}}
 						/>
-						<p class="text-xs mt-1" style="color: var(--text-secondary);">
-							Be specific to help customers find your tour meeting point
-						</p>
+						<!-- Hidden input for form submission -->
+						<input type="hidden" name="location" bind:value={formData.location} />
 					</div>
 
 					<div class="md:col-span-2">
@@ -599,62 +603,68 @@
 			<div class="p-4">
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					<div>
-						<NumberInput
-							id="price"
-							name="price"
-							label="Price ({currencySymbol})"
+						<PriceSlider
 							bind:value={formData.price}
+							label="Price ({currencySymbol}) *"
 							min={minimumPrice}
-							max={99999}
+							max={500}
 							step={priceStep}
-							placeholder="25.00"
-							incrementLabel="Increase price"
-							decrementLabel="Decrease price"
-							error={getFieldError(allErrors, 'price')}
-							hasError={hasFieldError(allErrors, 'price')}
-							decimalPlaces={2}
-							onblur={() => validateField('price')}
+							required={true}
+							error={hasFieldError(allErrors, 'price')}
+							onChange={() => validateField('price')}
+							currency={$userCurrency}
+							currencySymbol={currencySymbol}
+							defaultValue={25}
 						/>
+						{#if getFieldError(allErrors, 'price')}
+							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'price')}</p>
+						{/if}
 						{#if minimumPrice > 0.5}
 							<p class="text-xs mt-1" style="color: var(--text-secondary);">
 								Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
 							</p>
 						{/if}
+						<!-- Hidden input for form submission -->
+						<input type="hidden" name="price" bind:value={formData.price} />
 					</div>
 
-				<NumberInput
-					id="duration"
-					name="duration"
-					label="Duration (minutes)"
-					bind:value={formData.duration}
+				<div>
+					<DurationSlider
+						bind:value={formData.duration}
+						label="Tour Duration *"
 						min={15}
-					max={1440}
+						max={480}
 						step={15}
-						placeholder="120"
-					incrementLabel="Increase duration"
-					decrementLabel="Decrease duration"
-					error={getFieldError(allErrors, 'duration')}
-					hasError={hasFieldError(allErrors, 'duration')}
-					integerOnly={true}
-					onblur={() => validateField('duration')}
-				/>
+						required={true}
+						error={hasFieldError(allErrors, 'duration')}
+						onChange={() => validateField('duration')}
+						defaultValue={120}
+					/>
+					{#if getFieldError(allErrors, 'duration')}
+						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'duration')}</p>
+					{/if}
+					<!-- Hidden input for form submission -->
+					<input type="hidden" name="duration" bind:value={formData.duration} />
+				</div>
 
-				<NumberInput
-					id="capacity"
-					name="capacity"
-						label="Max Group Size"
-					bind:value={formData.capacity}
-					min={bookingConstraints?.minimumCapacity || 1}
-					max={500}
-					step={1}
-						placeholder="12"
-					incrementLabel="Increase capacity"
-					decrementLabel="Decrease capacity"
-					error={getFieldError(allErrors, 'capacity')}
-					hasError={hasFieldError(allErrors, 'capacity')}
-					integerOnly={true}
-					onblur={() => validateField('capacity')}
-				/>
+				<div>
+					<CapacitySlider
+						bind:value={formData.capacity}
+						label="Max Group Size *"
+						min={bookingConstraints?.minimumCapacity || 1}
+						max={50}
+						step={1}
+						required={true}
+						error={hasFieldError(allErrors, 'capacity')}
+						onChange={() => validateField('capacity')}
+						unit="guests"
+					/>
+					{#if getFieldError(allErrors, 'capacity')}
+						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
+					{/if}
+					<!-- Hidden input for form submission -->
+					<input type="hidden" name="capacity" bind:value={formData.capacity} />
+				</div>
 	</div>
 
 				<!-- Optional Child Pricing -->
@@ -694,21 +704,25 @@
 							</button>
 							</div>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<NumberInput
-									id="childPrice"
-									name="pricingTiers.child"
-									label="Child Price ({currencySymbol})"
-									bind:value={childPrice}
-									min={0}
-									max={formData.price || 99999}
-									step={priceStep}
-									placeholder="0.00"
-									incrementLabel="Increase child price"
-									decrementLabel="Decrease child price"
-									decimalPlaces={2}
-									error={getFieldError(allErrors, 'pricingTiers.child')}
-									hasError={hasFieldError(allErrors, 'pricingTiers.child')}
-								/>
+								<div>
+									<PriceSlider
+										bind:value={childPrice}
+										label="Child Price ({currencySymbol})"
+										min={0}
+										max={formData.price || 100}
+										step={priceStep}
+										error={hasFieldError(allErrors, 'pricingTiers.child')}
+										onChange={() => validateField('pricingTiers.child')}
+										currency={$userCurrency}
+										currencySymbol={currencySymbol}
+										defaultValue={0}
+									/>
+									{#if getFieldError(allErrors, 'pricingTiers.child')}
+										<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
+									{/if}
+									<!-- Hidden input for form submission -->
+									<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
+								</div>
 								<div class="flex items-end">
 									<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
 										<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
@@ -740,9 +754,6 @@
 									</div>
 								</div>
 							</div>
-							{#if getFieldError(allErrors, 'pricingTiers.child')}
-								<p class="form-error mt-2">{getFieldError(allErrors, 'pricingTiers.child')}</p>
-							{/if}
 						</div>
 					</div>
 				{/if}

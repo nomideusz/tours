@@ -56,14 +56,14 @@
 	let showCancelModal = $state(false);
 	
 	// Error element reference for scrolling
-	let errorElement: HTMLElement;
+	let errorElement = $state<HTMLElement>();
 	
 	// Scroll to error message when error appears
 	$effect(() => {
 		if (error && errorElement && browser) {
 			// Small delay to ensure the error element is rendered
 			setTimeout(() => {
-				errorElement.scrollIntoView({ 
+				errorElement?.scrollIntoView({ 
 					behavior: 'smooth', 
 					block: 'center' 
 				});
@@ -76,7 +76,7 @@
 		if (browser && form?.error && errorElement) {
 			// Delay to ensure page is fully loaded
 			setTimeout(() => {
-				errorElement.scrollIntoView({ 
+				errorElement?.scrollIntoView({ 
 					behavior: 'smooth', 
 					block: 'center' 
 				});
@@ -104,6 +104,13 @@
 		pricingTiers: (form as any)?.formData?.pricingTiers || {
 			adult: (form as any)?.formData?.price || 25, // default to same as price
 			child: 0 // will be set automatically when child pricing is enabled
+		}
+	});
+
+	// Auto-populate location from profile when available
+	$effect(() => {
+		if (profile?.location && !formData.location && !(form as any)?.formData?.location) {
+			formData.location = profile.location;
 		}
 	});
 

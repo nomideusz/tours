@@ -43,7 +43,7 @@
 					href="/" 
 					showIcon={true} 
 					showIconBackground={false} 
-					iconSrc="/favicon-32x32.png" 
+					iconSrc="/favicon.png" 
 					size="xl" 
 					textSize="large" 
 				/>
