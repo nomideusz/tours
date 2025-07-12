@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import Modal from './Modal.svelte';
+	import Drawer from './Drawer.svelte';
 	import { defaultMapService } from '$lib/utils/map-integration.js';
 	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
 	
@@ -291,10 +291,17 @@
 	});
 </script>
 
-<Modal bind:isOpen={isOpen} onClose={handleClose} size="lg" closeOnClickOutside={false} title="Select Meeting Point" subtitle="Click on the map to set the exact meeting location for your tour">
-	<div class="flex flex-col h-[70vh] max-h-[600px]">
+<Drawer 
+	bind:isOpen={isOpen} 
+	onClose={handleClose} 
+	closeOnClickOutside={false} 
+	title="Select Meeting Point" 
+	subtitle="Click on the map to set the exact meeting location for your tour"
+>
+	{#snippet children()}
+		<div class="flex flex-col h-[60vh] sm:h-[70vh] max-h-[600px]">
 		<!-- Search and Controls -->
-		<div class="p-4 border-b space-y-3" style="border-color: var(--border-primary);">
+		<div class="p-3 sm:p-4 border-b space-y-3" style="border-color: var(--border-primary);">
 			<!-- Search Bar -->
 			<div class="relative">
 				<div class="relative">
@@ -388,30 +395,33 @@
 		</div>
 		
 		<!-- Footer -->
-		<div class="p-4 border-t flex items-center justify-between" style="border-color: var(--border-primary);">
+		<div class="p-3 sm:p-4 border-t flex items-center justify-between" style="border-color: var(--border-primary);">
 			<div class="text-xs" style="color: var(--text-secondary);">
-				Click anywhere on the map to set your meeting point
+				<span class="hidden sm:inline">Click anywhere on the map to set your meeting point</span>
+				<span class="sm:hidden">Tap map to select location</span>
 			</div>
 			
 			<div class="flex items-center gap-2">
 				<button
 					onclick={handleClose}
-					class="button-secondary button--small"
+					class="button-secondary button--small sm:button--small"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={handleConfirm}
 					disabled={!selectedCoordinates}
-					class="button-primary button--small button--gap disabled:opacity-50"
+					class="button-primary button--small sm:button--small button--gap disabled:opacity-50"
 				>
 					<Check class="w-4 h-4" />
-					Select Location
+					<span class="hidden sm:inline">Select Location</span>
+					<span class="sm:hidden">Select</span>
 				</button>
 			</div>
 		</div>
-	</div>
-</Modal>
+		</div>
+	{/snippet}
+</Drawer>
 
 <style>
 	.animate-spin {
