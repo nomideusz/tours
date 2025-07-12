@@ -28,7 +28,7 @@
 						showIcon={false}
 						showIconBackground={false}
 						showText={true}
-						iconSrc="/favicon-32x32.png"
+						iconSrc="/favicon.png"
 						class="justify-start p-0"
 					/>
 				</div>
