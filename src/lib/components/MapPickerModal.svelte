@@ -10,6 +10,7 @@
 	import Search from 'lucide-svelte/icons/search';
 	import Navigation from 'lucide-svelte/icons/navigation';
 	import Check from 'lucide-svelte/icons/check';
+	import Layers from 'lucide-svelte/icons/layers';
 	
 	interface Props {
 		isOpen: boolean;
@@ -37,9 +38,81 @@
 	let searchResults = $state<any[]>([]);
 	let isGettingLocation = $state(false);
 	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+	let currentTileLayer = $state<any>(null);
+	let showMapStyles = $state(false);
+	let selectedMapStyle = $state('osm');
 	
 	// Default coordinates (Berlin, Germany - central Europe)
 	const defaultCoords = { lat: 52.5200, lng: 13.4050 };
+	
+	// Available map styles
+	const mapStyles = [
+		{
+			id: 'osm',
+			name: 'Street Map',
+			description: 'Default street view',
+			url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		},
+		{
+			id: 'carto-light',
+			name: 'Clean',
+			description: 'Minimal clean style',
+			url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+			attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+		},
+		{
+			id: 'carto-dark',
+			name: 'Dark',
+			description: 'Dark theme style',
+			url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+			attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+		},
+		{
+			id: 'topo',
+			name: 'Topographic',
+			description: 'Terrain and elevation',
+			url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+			attribution: 'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: © <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+		},
+		{
+			id: 'carto-voyager',
+			name: 'Voyager',
+			description: 'Balanced detailed style',
+			url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+			attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+		}
+	];
+	
+	function getCurrentMapStyle() {
+		return mapStyles.find(style => style.id === selectedMapStyle) || mapStyles[0];
+	}
+	
+	// Add or update tile layer
+	function addTileLayer() {
+		if (!map) return;
+		
+		const L = (window as any).L;
+		const style = getCurrentMapStyle();
+		
+		// Remove existing tile layer
+		if (currentTileLayer) {
+			map.removeLayer(currentTileLayer);
+		}
+		
+		// Add new tile layer
+		currentTileLayer = L.tileLayer(style.url, {
+			attribution: style.attribution,
+			maxZoom: 19
+		}).addTo(map);
+	}
+	
+	// Change map style
+	function changeMapStyle(styleId: string) {
+		selectedMapStyle = styleId;
+		addTileLayer();
+		showMapStyles = false;
+	}
 	
 	// Load Leaflet dynamically
 	async function loadLeaflet() {
@@ -75,7 +148,38 @@
 	// Initialize map when modal opens
 	$effect(() => {
 		if (isOpen && browser && mapContainer && !map) {
-			initializeMap();
+			// Add a small delay to ensure container has proper dimensions
+			setTimeout(() => {
+				if (mapContainer && !map) {
+					initializeMap();
+				}
+			}, 100);
+		}
+	});
+	
+	// Mobile-specific touch handling to prevent drawer interference on non-map elements
+	$effect(() => {
+		if (isOpen && browser) {
+			const handleTouchStart = (e: TouchEvent) => {
+				// Only prevent drawer interference for non-map elements
+				// Let the map handle its own touch events
+				const target = e.target as HTMLElement;
+				if (mapContainer && mapContainer.contains(target)) {
+					// Allow map to handle touch events naturally
+					return;
+				}
+				
+				// For search controls, prevent unintended drawer closing
+				if (target.closest('.search-controls')) {
+					e.stopPropagation();
+				}
+			};
+			
+			document.addEventListener('touchstart', handleTouchStart, { passive: true, capture: true });
+			
+			return () => {
+				document.removeEventListener('touchstart', handleTouchStart, { capture: true });
+			};
 		}
 	});
 	
@@ -90,6 +194,14 @@
 		try {
 			const L = await loadLeaflet();
 			if (!L || !mapContainer) return;
+			
+			// Ensure the container has proper dimensions
+			const rect = mapContainer.getBoundingClientRect();
+			if (rect.width === 0 || rect.height === 0) {
+				console.warn('Map container has zero dimensions, retrying...', rect);
+				setTimeout(() => initializeMap(), 100);
+				return;
+			}
 			
 			let initialCoords = initialCoordinates || defaultCoords;
 			let shouldAddMarker = false;
@@ -117,10 +229,15 @@
 			// Create map
 			map = L.map(mapContainer).setView([initialCoords.lat, initialCoords.lng], 13);
 			
-			// Add OpenStreetMap tiles
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-			}).addTo(map);
+			// Add tile layer with current style
+			addTileLayer();
+			
+			// Force map to recalculate size (important for mobile)
+			setTimeout(() => {
+				if (map) {
+					map.invalidateSize();
+				}
+			}, 200);
 			
 			// Add initial marker if we have coordinates
 			if (shouldAddMarker) {
@@ -267,6 +384,7 @@
 			map.remove();
 			map = null;
 			currentMarker = null;
+			currentTileLayer = null;
 		}
 		
 		// Clean up search timeout
@@ -280,6 +398,7 @@
 		searchResults = [];
 		selectedLocation = '';
 		selectedCoordinates = null;
+		showMapStyles = false;
 		
 		onClose();
 	}
@@ -297,35 +416,39 @@
 	closeOnClickOutside={false} 
 	title="Select Meeting Point" 
 	subtitle="Click on the map to set the exact meeting location for your tour"
+	class="map-drawer"
 >
 	{#snippet children()}
-		<div class="flex flex-col h-[60vh] sm:h-[70vh] max-h-[600px]">
+		<div class="flex flex-col h-full min-h-[80vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
 		<!-- Search and Controls -->
-		<div class="p-3 sm:p-4 border-b space-y-3" style="border-color: var(--border-primary);">
+		<div class="p-5 sm:p-4 border-b space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
 			<!-- Search Bar -->
 			<div class="relative">
-				<div class="relative">
-					<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-					<input
-						type="text"
-						bind:value={searchInput}
-						placeholder="Search for a location..."
-						class="form-input pl-10 pr-12"
-						oninput={handleSearchInput}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								searchLocation();
-							}
-						}}
-					/>
+				<div class="flex gap-2">
+					<div class="relative flex-1">
+						<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+						<input
+							type="text"
+							bind:value={searchInput}
+							placeholder="Search for a location..."
+							class="form-input pl-10 w-full"
+							oninput={handleSearchInput}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									searchLocation();
+								}
+							}}
+						/>
+					</div>
 					<button
 						onclick={searchLocation}
 						disabled={isSearching || !searchInput.trim()}
-						class="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-xs rounded-md transition-colors disabled:opacity-50"
+						class="px-3 py-2 text-xs rounded-md transition-colors disabled:opacity-50 flex-shrink-0"
 						style="background: var(--color-primary-600); color: white;"
 					>
-						{isSearching ? 'Searching...' : 'Search'}
+						<span class="sm:hidden">{isSearching ? '...' : 'Go'}</span>
+						<span class="hidden sm:inline">{isSearching ? 'Searching...' : 'Search'}</span>
 					</button>
 				</div>
 				
@@ -353,39 +476,83 @@
 			</div>
 			
 			<!-- Controls -->
-			<div class="flex items-center gap-2">
-				<button
-					onclick={getCurrentLocation}
-					disabled={isGettingLocation}
-					class="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80 disabled:opacity-50"
-					style="
-						background: var(--color-success-50);
-						border-color: var(--color-success-200);
-						color: var(--color-success-700);
-					"
-				>
-					{#if isGettingLocation}
-						<div class="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full"></div>
-					{:else}
-						<Navigation class="w-3 h-3" />
-					{/if}
-					{isGettingLocation ? 'Getting location...' : 'Use my location'}
-				</button>
+			<div class="space-y-2">
+				<div class="flex items-center gap-2">
+					<button
+						onclick={getCurrentLocation}
+						disabled={isGettingLocation}
+						class="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80 disabled:opacity-50"
+						style="
+							background: var(--color-success-50);
+							border-color: var(--color-success-200);
+							color: var(--color-success-700);
+						"
+					>
+						{#if isGettingLocation}
+							<div class="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full"></div>
+						{:else}
+							<Navigation class="w-3 h-3" />
+						{/if}
+						<span class="sm:hidden">{isGettingLocation ? 'Getting...' : 'GPS'}</span>
+						<span class="hidden sm:inline">{isGettingLocation ? 'Getting location...' : 'Use my location'}</span>
+					</button>
+					
+					<!-- Map Style Selector -->
+					<div class="relative" onclick={(e) => e.stopPropagation()}>
+						<button
+							onclick={() => showMapStyles = !showMapStyles}
+							class="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80"
+							style="
+								background: var(--color-info-50);
+								border-color: var(--color-info-200);
+								color: var(--color-info-700);
+							"
+						>
+							<Layers class="w-3 h-3" />
+							<span class="sm:hidden">Style</span>
+							<span class="hidden sm:inline">{getCurrentMapStyle().name}</span>
+						</button>
+						
+						{#if showMapStyles}
+							<div class="absolute z-[9999] top-full mt-1 left-0 w-48 rounded-md shadow-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+								<div class="py-1">
+									{#each mapStyles as style}
+										<button
+											type="button"
+											onclick={() => changeMapStyle(style.id)}
+											class="w-full px-3 py-2 text-left text-xs hover:bg-opacity-80 flex items-start gap-2"
+											style="background: {selectedMapStyle === style.id ? 'var(--bg-secondary)' : 'transparent'}; color: var(--text-primary);"
+										>
+											<div class="flex-1">
+												<div class="font-medium">{style.name}</div>
+												<div class="text-xs" style="color: var(--text-secondary);">{style.description}</div>
+											</div>
+											{#if selectedMapStyle === style.id}
+												<Check class="w-3 h-3 mt-0.5" style="color: var(--color-primary-600);" />
+											{/if}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
 				
 				{#if selectedLocation}
-					<div class="flex-1 text-xs" style="color: var(--text-secondary);">
-						Selected: {selectedLocation}
+					<div class="text-xs p-2 rounded-md" style="background: var(--bg-secondary); color: var(--text-secondary);">
+						<div class="font-medium mb-1" style="color: var(--text-primary);">Selected location:</div>
+						<div class="break-words leading-relaxed">{selectedLocation}</div>
 					</div>
 				{/if}
 			</div>
 		</div>
 		
 		<!-- Map Container -->
-		<div class="flex-1 relative">
-			<div bind:this={mapContainer} class="w-full h-full"></div>
+		<div class="flex-1 relative min-h-0" onclick={() => { if (showMapStyles) showMapStyles = false; }} style="touch-action: manipulation; background: var(--bg-secondary);">
+			<div bind:this={mapContainer} class="absolute inset-0 w-full h-full" style="touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; z-index: 1;"></div>
 			
 			{#if !map}
-				<div class="absolute inset-0 flex items-center justify-center" style="background: var(--bg-secondary);">
+				<div class="absolute inset-0 flex items-center justify-center" style="background: var(--bg-secondary); z-index: 1000;">
 					<div class="text-center">
 						<div class="animate-spin w-8 h-8 border-2 border-current border-t-transparent rounded-full mx-auto mb-2" style="color: var(--color-primary-600);"></div>
 						<p class="text-sm" style="color: var(--text-secondary);">Loading map...</p>
@@ -395,7 +562,7 @@
 		</div>
 		
 		<!-- Footer -->
-		<div class="p-3 sm:p-4 border-t flex items-center justify-between" style="border-color: var(--border-primary);">
+		<div class="p-5 sm:p-4 border-t flex items-center justify-between flex-shrink-0" style="border-color: var(--border-primary); background: var(--bg-primary);">
 			<div class="text-xs" style="color: var(--text-secondary);">
 				<span class="hidden sm:inline">Click anywhere on the map to set your meeting point</span>
 				<span class="sm:hidden">Tap map to select location</span>
@@ -431,5 +598,32 @@
 	@keyframes spin {
 		from { transform: rotate(0deg); }
 		to { transform: rotate(360deg); }
+	}
+	
+	/* Override drawer content styling for map */
+	:global(.map-drawer .flex-1.overflow-y-auto) {
+		overflow: hidden !important;
+		touch-action: none !important;
+	}
+	
+	/* Mobile-specific fixes */
+	@media (max-width: 768px) {
+		/* Make mobile drawer take up more space */
+		:global(.map-drawer .mobile-drawer-panel) {
+			touch-action: manipulation !important;
+		}
+		
+		:global(.map-drawer .rounded-t-xl) {
+			max-height: 95vh !important;
+		}
+		
+		/* Only remove padding from the main content wrapper, not individual sections */
+		:global(.map-drawer .flex-1.overflow-y-auto .px-6.py-6) {
+			padding: 0 !important;
+		}
+		
+		:global(.map-drawer .overscroll-contain) {
+			overscroll-behavior: none !important;
+		}
 	}
 </style> 
