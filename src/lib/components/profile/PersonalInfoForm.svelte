@@ -11,6 +11,7 @@
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
+	import LocationPicker from '../LocationPicker.svelte';
 
 	let {
 		user,
@@ -425,20 +426,18 @@
 
 		<!-- Location/Address -->
 		<div class="mt-4">
-			<label for="location" class="form-label">
-				City/Location
-			</label>
-			<div class="relative">
-				<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-				<input
-					type="text"
-					id="location"
-					name="location"
-					bind:value={location}
-					class="form-input pl-10"
-					placeholder="Berlin, Germany"
-				/>
-			</div>
+			<LocationPicker
+				bind:value={location}
+				label="City/Location"
+				placeholder="Berlin, Germany"
+				enableGeolocation={true}
+				enableMapsIntegration={true}
+				onLocationSelect={(selectedLocation) => {
+					location = selectedLocation;
+				}}
+			/>
+			<!-- Hidden input for form submission -->
+			<input type="hidden" name="location" bind:value={location} />
 			<p class="text-xs mt-1" style="color: var(--text-tertiary);">
 				Helps customers know where you operate
 			</p>

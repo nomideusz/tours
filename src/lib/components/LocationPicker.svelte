@@ -3,6 +3,7 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Navigation from 'lucide-svelte/icons/navigation';
 	import Search from 'lucide-svelte/icons/search';
+	import X from 'lucide-svelte/icons/x';
 	import MapPickerModal from './MapPickerModal.svelte';
 	import { defaultMapService } from '$lib/utils/map-integration.js';
 	
@@ -165,11 +166,21 @@
 		}
 	}
 	
-	// React to value changes for search functionality
-	$effect(() => {
-		// Trigger search when value changes
-		handleSearchInput(value);
-	});
+	// Handle input changes for search functionality
+	function handleInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const newValue = target.value;
+		// Trigger search functionality
+		handleSearchInput(newValue);
+	}
+	
+	// Clear the location input
+	function clearLocation() {
+		value = '';
+		showSuggestions = false;
+		locationSuggestions = [];
+		onLocationSelect?.('');
+	}
 	
 	// Open map picker modal
 	function openMapPicker() {
@@ -196,6 +207,7 @@
 				id="location-input"
 				type="text"
 				bind:value={value}
+				oninput={handleInput}
 				onblur={() => {
 					// Delay hiding suggestions to allow clicks
 					setTimeout(() => {
@@ -211,7 +223,19 @@
 				class="form-input pl-10 pr-12"
 				autocomplete="off"
 			/>
-			<Search class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+			{#if value && value.trim()}
+				<button
+					type="button"
+					onclick={clearLocation}
+					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-0.5 rounded hover:bg-opacity-20 transition-colors"
+					style="color: var(--text-tertiary); background: transparent;"
+					aria-label="Clear location"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			{:else}
+				<Search class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+			{/if}
 		</div>
 		
 				<!-- Location suggestions dropdown -->
