@@ -469,18 +469,16 @@
 	<div class="mb-6 sm:mb-8">
 		<!-- Mobile Compact Header -->
 		<MobilePageHeader
-			title="Create Tour"
-			secondaryInfo="New Tour"
+			title="New Tour"
 		/>
 
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
 			<PageHeader 
-				title="Create New Tour"
-				subtitle="Set up your tour details and start accepting bookings"
+				title="New Tour"
 				breadcrumbs={[
 					{ label: 'Tours', href: '/tours' },
-					{ label: 'Create Tour' }
+					{ label: 'New' }
 				]}
 			/>
 		</div>
@@ -513,35 +511,6 @@
 			{/if}
 		</div>
 	{/if}
-
-	<!-- Progress Steps - Desktop Only -->
-	<div class="hidden sm:block mb-8">
-		<div class="flex items-center gap-2 sm:gap-4 text-sm">
-			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--color-primary-600); color: #ffffff;">
-					1
-				</div>
-				<span class="font-medium hidden sm:inline" style="color: var(--color-primary-600);">Tour Details</span>
-				<span class="font-medium sm:hidden" style="color: var(--color-primary-600);">Details</span>
-			</div>
-			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
-			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-					2
-				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Quick Schedule (Optional)</span>
-				<span class="sm:hidden" style="color: var(--text-tertiary);">Schedule</span>
-			</div>
-			<div class="h-px flex-1 min-w-4" style="background: var(--border-primary);"></div>
-			<div class="flex items-center gap-2">
-				<div class="w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm" style="background: var(--bg-secondary); color: var(--text-tertiary);">
-					3
-				</div>
-				<span class="hidden sm:inline" style="color: var(--text-tertiary);">Review & Publish</span>
-				<span class="sm:hidden" style="color: var(--text-tertiary);">Publish</span>
-			</div>
-		</div>
-	</div>
 
 			<!-- Image Upload Errors -->
 			{#if imageUploadErrors.length > 0}

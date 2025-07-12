@@ -419,7 +419,7 @@
 	class="map-drawer"
 >
 	{#snippet children()}
-		<div class="flex flex-col h-full min-h-[80vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
+		<div class="flex flex-col h-full min-h-[75vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
 		<!-- Search and Controls -->
 		<div class="p-5 sm:p-4 border-b space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
 			<!-- Search Bar -->
@@ -562,27 +562,27 @@
 		</div>
 		
 		<!-- Footer -->
-		<div class="p-5 sm:p-4 border-t flex items-center justify-between flex-shrink-0" style="border-color: var(--border-primary); background: var(--bg-primary);">
-			<div class="text-xs" style="color: var(--text-secondary);">
+		<div class="p-5 sm:p-4 border-t flex items-center justify-between flex-shrink-0" style="border-color: var(--border-primary); background: var(--bg-primary); position: relative; z-index: 10; padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));">
+			<div class="text-xs flex-1 pr-4" style="color: var(--text-secondary);">
 				<span class="hidden sm:inline">Click anywhere on the map to set your meeting point</span>
 				<span class="sm:hidden">Tap map to select location</span>
 			</div>
 			
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-3 flex-shrink-0">
 				<button
 					onclick={handleClose}
-					class="button-secondary button--small sm:button--small"
+					class="button-secondary px-4 py-3 text-sm rounded-md font-medium"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={handleConfirm}
 					disabled={!selectedCoordinates}
-					class="button-primary button--small sm:button--small button--gap disabled:opacity-50"
+					class="button-primary px-4 py-3 text-sm rounded-md disabled:opacity-50 flex items-center gap-2 font-medium"
 				>
 					<Check class="w-4 h-4" />
 					<span class="hidden sm:inline">Select Location</span>
-					<span class="sm:hidden">Select</span>
+					<span class="sm:hidden">Save</span>
 				</button>
 			</div>
 		</div>
@@ -608,13 +608,13 @@
 	
 	/* Mobile-specific fixes */
 	@media (max-width: 768px) {
-		/* Make mobile drawer take up more space */
+		/* Make mobile drawer take up more space but leave room for footer */
 		:global(.map-drawer .mobile-drawer-panel) {
 			touch-action: manipulation !important;
 		}
 		
 		:global(.map-drawer .rounded-t-xl) {
-			max-height: 95vh !important;
+			max-height: 85vh !important;
 		}
 		
 		/* Only remove padding from the main content wrapper, not individual sections */

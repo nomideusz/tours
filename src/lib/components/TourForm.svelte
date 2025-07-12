@@ -598,8 +598,8 @@
 					<div>
 						<LocationPicker
 							bind:value={formData.location}
-							label="Tour Meeting Point"
-							placeholder="e.g., Old Town Prague, Central Park NYC, Tower Bridge area"
+							label="Meeting Point"
+							placeholder="Where does the tour start?"
 							profileLocation={profile?.location}
 							enableGeolocation={true}
 							enableMapsIntegration={true}
@@ -620,7 +620,7 @@
 							name="description"
 							bind:value={formData.description}
 							rows="4"
-							placeholder="Describe your tour, what makes it special, what guests will see and experience..."
+							placeholder="What will guests experience on this tour?"
 							class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
 							oninput={() => validateFieldRealtime('description')}
 							onblur={() => validateField('description')}
@@ -638,14 +638,14 @@
 		<!-- Pricing & Logistics -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
+				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing</h2>
 			</div>
 			<div class="p-4">
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					<div>
 						<PriceSlider
 							bind:value={formData.price}
-							label="Price per person ({currencySymbol})"
+							label="Price"
 							min={minimumPrice}
 							max={500}
 							step={priceStep}
@@ -734,10 +734,7 @@
 							"
 						>
 							<Plus class="w-4 h-4" />
-							<span class="font-medium">Add Child Pricing</span>
-							<span class="text-xs" style="color: var(--text-secondary);">
-								(ages 3-12)
-							</span>
+							<span class="font-medium">Child Price</span>
 						</button>
 					{:else}
 						<button
@@ -852,8 +849,8 @@
 			<button
 				type="button"
 				onclick={() => showTourDetails = !showTourDetails}
-				class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
-				style="border-color: var(--border-primary);"
+				class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showTourDetails ? 'border-b' : ''}"
+				style="{showTourDetails ? 'border-color: var(--border-primary);' : ''}"
 			>
 				<div class="flex items-center gap-2">
 					{#if showTourDetails}
@@ -1067,8 +1064,8 @@
 			<button
 				type="button"
 				onclick={() => showCancellationPolicy = !showCancellationPolicy}
-				class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
-				style="border-color: var(--border-primary);"
+				class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showCancellationPolicy ? 'border-b' : ''}"
+				style="{showCancellationPolicy ? 'border-color: var(--border-primary);' : ''}"
 			>
 				<div class="flex items-center gap-2">
 					{#if showCancellationPolicy}
@@ -1174,8 +1171,8 @@
 				<button
 					type="button"
 					onclick={() => showImages = !showImages}
-					class="flex items-center justify-between w-full p-4 border-b transition-colors hover:bg-opacity-80"
-					style="border-color: var(--border-primary);"
+					class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showImages ? 'border-b' : ''}"
+					style="{showImages ? 'border-color: var(--border-primary);' : ''}"
 				>
 					<div class="flex items-center gap-2">
 						{#if showImages}
@@ -1367,15 +1364,12 @@
 							<div class="flex items-start gap-3">
 								<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
 								<div class="flex-1">
-									<h4 class="font-medium text-sm mb-1" style="color: var(--color-warning-900);">
-										Complete Onboarding to Activate Tours
-									</h4>
-									<p class="text-sm mb-2" style="color: var(--color-warning-700);">
+									<p class="text-sm" style="color: var(--color-warning-700);">
 										{onboardingMessage}
 									</p>
 									{#if nextStep}
-										<p class="text-xs" style="color: var(--color-warning-600);">
-											Next: {nextStep.action}
+										<p class="text-xs mt-1" style="color: var(--color-warning-600);">
+											{nextStep.action}
 										</p>
 									{/if}
 								</div>
@@ -1396,17 +1390,15 @@
 							</div>
 							<div class="min-w-0 flex-1">
 								<h3 class="font-medium" style="color: var(--text-primary);">
-									{formData.status === 'active' 
-										? (isEdit ? 'Tour is Active' : 'Go Live Immediately') 
-										: (isEdit ? 'Tour is Draft' : 'Save as Draft')}
+									{formData.status === 'active' ? 'Active' : 'Draft'}
 								</h3>
 								<p class="text-sm" style="color: var(--text-secondary);">
 									{#if !canActivate && formData.status === 'active'}
-										Cannot activate - complete onboarding steps first
+										Complete setup to activate
 									{:else}
 										{formData.status === 'active' 
-											? (isEdit ? 'Your tour is live and accepting bookings' : 'Tour will be published and accept bookings right away') 
-											: (isEdit ? 'Your tour is saved but not visible to customers' : 'Tour will be saved privately for you to activate later')}
+											? 'Accepting bookings'
+											: 'Not visible to customers'}
 									{/if}
 								</p>
 							</div>

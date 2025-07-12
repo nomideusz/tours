@@ -207,18 +207,7 @@
 		return price.toFixed(decimalPlaces);
 	}
 	
-	// Get price category for display
-	function getPriceCategory(price: number): string {
-		// Dynamic categories based on price range
-		const range = max - min;
-		const position = (price - min) / range;
-		
-		if (position < 0.2) return 'Budget Friendly';
-		if (position < 0.4) return 'Affordable';
-		if (position < 0.6) return 'Standard';
-		if (position < 0.8) return 'Premium';
-		return 'Luxury';
-	}
+
 	
 	// Get price comparison text
 	function getPriceComparison(price: number): string {
@@ -243,7 +232,6 @@
 		<div class="value-main">
 			<div class="value-number">{currencySymbol}{formatPrice(value)}</div>
 		</div>
-		<div class="value-category">{getPriceCategory(value)}</div>
 	</div>
 	
 	<!-- Slider -->
@@ -328,6 +316,13 @@
 		align-items: center;
 		margin-bottom: 1.5rem;
 		gap: 0.5rem;
+	}
+	
+	/* Hide value display on mobile */
+	@media (max-width: 640px) {
+		.value-display {
+			display: none;
+		}
 	}
 	
 	.value-main {
@@ -620,7 +615,13 @@
 		
 		.thumb-value {
 			opacity: 1;
-			font-size: 0.625rem;
+			font-size: 0.75rem;
+			font-weight: 700;
+			padding: 0.375rem 0.75rem;
+			background: var(--color-primary-600);
+			color: white;
+			border: none;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 		}
 		
 		.markers {

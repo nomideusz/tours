@@ -207,16 +207,7 @@
 		}
 	}
 	
-	// Get duration category for display
-	function getDurationCategory(minutes: number): string {
-		if (minutes <= 30) return 'Quick Tour';
-		if (minutes <= 60) return 'Short Tour';
-		if (minutes <= 120) return 'Standard Tour';
-		if (minutes <= 180) return 'Extended Tour';
-		if (minutes <= 240) return 'Half Day';
-		if (minutes <= 360) return 'Long Tour';
-		return 'Full Day';
-	}
+
 	
 	let durationInfo = $derived(formatDuration(value));
 </script>
@@ -234,7 +225,6 @@
 		<div class="value-main">
 			<div class="value-number">{durationInfo.display}</div>
 		</div>
-		<div class="value-category">{getDurationCategory(value)}</div>
 	</div>
 	
 	<!-- Slider -->
@@ -319,6 +309,13 @@
 		align-items: center;
 		margin-bottom: 1.5rem;
 		gap: 0.5rem;
+	}
+	
+	/* Hide value display on mobile */
+	@media (max-width: 640px) {
+		.value-display {
+			display: none;
+		}
 	}
 	
 	.value-main {
@@ -606,7 +603,13 @@
 		
 		.thumb-value {
 			opacity: 1;
-			font-size: 0.625rem;
+			font-size: 0.75rem;
+			font-weight: 700;
+			padding: 0.375rem 0.75rem;
+			background: var(--color-primary-600);
+			color: white;
+			border: none;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 		}
 		
 		.markers {

@@ -330,10 +330,6 @@
 			</button>
 		{/if}
 	</div>
-	
-	<p class="text-xs" style="color: var(--text-secondary);">
-		Be specific to help customers find your tour meeting point
-	</p>
 </div>
 
 <!-- Map Picker Modal -->

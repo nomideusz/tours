@@ -187,17 +187,7 @@
 		return val.toLocaleString();
 	}
 	
-	// Get size category for display
-	function getSizeCategory(val: number): string {
-		if (val === 1) return 'Private Tour';
-		if (val <= 4) return 'Intimate Group';
-		if (val <= 8) return 'Small Group';
-		if (val <= 15) return 'Standard Group';
-		if (val <= 25) return 'Large Group';
-		if (val <= 40) return 'Bus Group';
-		if (val <= 60) return 'Large Event';
-		return 'Mega Event';
-	}
+
 </script>
 
 <div class="capacity-slider" class:disabled class:error>
@@ -214,7 +204,6 @@
 			<div class="value-number">{formatValue(value)}</div>
 			<div class="value-unit">{unit}</div>
 		</div>
-		<div class="value-category">{getSizeCategory(value)}</div>
 	</div>
 	
 	<!-- Slider -->
@@ -299,6 +288,13 @@
 		align-items: center;
 		margin-bottom: 1.5rem;
 		gap: 0.5rem;
+	}
+	
+	/* Hide value display on mobile */
+	@media (max-width: 640px) {
+		.value-display {
+			display: none;
+		}
 	}
 	
 	.value-main {
@@ -579,7 +575,13 @@
 		
 		.thumb-value {
 			opacity: 1;
-			font-size: 0.625rem;
+			font-size: 0.75rem;
+			font-weight: 700;
+			padding: 0.375rem 0.75rem;
+			background: var(--color-primary-600);
+			color: white;
+			border: none;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 		}
 		
 		.markers {
