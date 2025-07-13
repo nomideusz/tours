@@ -652,7 +652,7 @@
 							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'price')}</p>
 						{/if}
 						{#if minimumPrice > 0.5}
-							<p class="text-xs mt-1" style="color: var(--text-secondary);">
+							<p class="text-xs mt-1 pt-2" style="color: var(--text-secondary);">
 								Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
 							</p>
 						{/if}
