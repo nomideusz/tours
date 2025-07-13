@@ -27,8 +27,11 @@ export const GET: RequestHandler = async ({ locals }) => {
 			country: user.country,
 			currency: user.currency,
 			location: user.location,
+			businessName: user.businessName,
 			countryType: typeof user.country,
-			currencyType: typeof user.currency
+			currencyType: typeof user.currency,
+			locationHasValue: !!user.location,
+			businessNameHasValue: !!user.businessName
 		});
 
 		// Return user data for the profile form

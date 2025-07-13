@@ -28,8 +28,6 @@ export const actions: Actions = {
 		const password = data.get('password')?.toString();
 		const confirmPassword = data.get('confirmPassword')?.toString();
 		const accessCode = data.get('accessCode')?.toString();
-		const businessName = data.get('businessName')?.toString();
-		const location = data.get('location')?.toString();
 		// Don't set country/currency during registration - let users confirm later
 		// Country can be null, currency will use database default (EUR)
 		const country = null;
@@ -84,12 +82,10 @@ export const actions: Actions = {
 		try {
 			console.log('Attempting registration for:', email, 'with username:', username);
 			
-			// Log the business info being saved
-			console.log('📋 Business info from registration:', {
-				businessName: businessName || '(empty)',
-				location: location || '(empty)',
-				country: country || '(empty)'
-			});
+					// Log the country being saved
+		console.log('📋 Country from registration:', {
+			country: country || '(empty)'
+		});
 			
 			// Check if user already exists
 			const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -126,8 +122,6 @@ export const actions: Actions = {
 				username,
 				role: 'user' as const, // All new users get 'user' role (tour guides)
 				emailVerified: false,
-				businessName,
-				location,
 				country,
 				// currency will use database default (EUR) until user confirms their country
 				createdAt: new Date(),

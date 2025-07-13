@@ -38,8 +38,6 @@
 	let password = $state('');
 	let confirmPassword = $state('');
 	let accessCode = $state('');
-	let businessName = $state('');
-	let location = $state('');
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 
@@ -351,37 +349,7 @@
 							Additional Information (Optional)
 						</summary>
 						<div class="mt-4 space-y-4">
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								<div>
-									<label for="businessName" class="block text-sm font-medium text-gray-700 mb-1.5">
-										Business Name
-									</label>
-									<input
-										type="text"
-										id="businessName"
-										name="businessName"
-										bind:value={businessName}
-										class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
-										placeholder="Your business name"
-										disabled={isRegistering}
-									/>
-								</div>
-
-								<div>
-									<label for="location" class="block text-sm font-medium text-gray-700 mb-1.5">
-										Location
-									</label>
-									<input
-										type="text"
-										id="location"
-										name="location"
-										bind:value={location}
-										class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
-										placeholder="City, Country"
-										disabled={isRegistering}
-									/>
-								</div>
-							</div>
+							<!-- Business name and location removed from registration - users can add these in their profile later -->
 
 							<div>
 								<label for="accessCode" class="block text-sm font-medium text-gray-700 mb-1.5">
