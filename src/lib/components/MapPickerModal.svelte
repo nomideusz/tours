@@ -418,9 +418,9 @@
 	class="map-drawer"
 >
 	{#snippet children()}
-		<div class="flex flex-col h-full min-h-[60vh] max-h-[80vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
+		<div class="flex flex-col h-full min-h-[85vh] max-h-[90vh] sm:h-[70vh] sm:max-h-[600px]" style="touch-action: manipulation; overflow: hidden;">
 		<!-- Search and Controls -->
-		<div class="p-4 sm:p-4 border-b space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
+		<div class="p-3 sm:p-4 border-b space-y-2 sm:space-y-3 flex-shrink-0 search-controls" style="border-color: var(--border-primary); background: var(--bg-primary);">
 			<!-- Search Bar -->
 			<div class="relative">
 				<div class="flex gap-2">
@@ -561,7 +561,7 @@
 		</div>
 		
 		<!-- Footer -->
-		<div class="p-4 sm:p-4 border-t flex items-center justify-between flex-shrink-0 map-footer" style="border-color: var(--border-primary); background: var(--bg-primary); position: relative; z-index: 10; padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));">
+		<div class="p-3 sm:p-4 border-t flex items-center justify-between flex-shrink-0 map-footer" style="border-color: var(--border-primary); background: var(--bg-primary); position: relative; z-index: 10; padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));">
 			<div class="text-xs flex-1 pr-4" style="color: var(--text-secondary);">
 				<span class="hidden sm:inline">Click anywhere on the map to set your meeting point</span>
 				<span class="sm:hidden">Tap map to select location</span>
@@ -613,7 +613,7 @@
 		}
 		
 		:global(.map-drawer .rounded-t-xl) {
-			max-height: 80vh !important;
+			max-height: 92vh !important;
 		}
 		
 		/* Only remove padding from the main content wrapper, not individual sections */
@@ -629,16 +629,16 @@
 	/* Very small smartphone fixes */
 	@media (max-width: 375px) and (max-height: 667px) {
 		:global(.map-drawer .rounded-t-xl) {
-			max-height: 75vh !important;
+			max-height: 90vh !important;
 		}
 		
 		/* Reduce padding on very small screens */
 		.search-controls {
-			padding: 0.75rem !important;
+			padding: 0.5rem !important;
 		}
 		
-		.search-controls .space-y-3 > * + * {
-			margin-top: 0.5rem !important;
+		.search-controls .space-y-2 > * + * {
+			margin-top: 0.375rem !important;
 		}
 		
 		/* Compact footer buttons */
@@ -649,23 +649,23 @@
 		
 		/* Ensure footer is always visible */
 		.map-footer {
-			padding: 0.75rem !important;
-			min-height: 3.5rem !important;
+			padding: 0.5rem !important;
+			min-height: 3rem !important;
 		}
 	}
 	
 	/* Extra small smartphones (like iPhone SE) */
 	@media (max-width: 320px) and (max-height: 568px) {
 		:global(.map-drawer .rounded-t-xl) {
-			max-height: 70vh !important;
+			max-height: 88vh !important;
 		}
 		
 		/* Even more aggressive space saving */
 		.search-controls {
-			padding: 0.5rem !important;
+			padding: 0.375rem !important;
 		}
 		
-		.search-controls .space-y-3 > * + * {
+		.search-controls .space-y-2 > * + * {
 			margin-top: 0.25rem !important;
 		}
 		
@@ -683,8 +683,8 @@
 		
 		/* Ensure footer is always visible */
 		.map-footer {
-			padding: 0.5rem !important;
-			min-height: 3rem !important;
+			padding: 0.375rem !important;
+			min-height: 2.5rem !important;
 		}
 	}
 </style> 
