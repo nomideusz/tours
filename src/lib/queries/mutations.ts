@@ -204,6 +204,107 @@ export function updateTourMutation(tourId: string) {
 }
 
 /**
+ * Update tour with form data mutation (handles multipart form data for image uploads)
+ */
+export function updateTourWithFormDataMutation(tourId: string) {
+	const queryClient = useQueryClient();
+	const invalidate = createInvalidationHelper(queryClient);
+	
+	return createMutation({
+		mutationFn: async (formData: FormData) => {
+			const response = await fetch(`/tours/${tourId}/edit`, {
+				method: 'POST',
+				body: formData
+			});
+			
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({ error: 'Failed to update tour' }));
+				throw new Error(error.error || 'Failed to update tour');
+			}
+			
+			// Handle redirect response
+			if (response.redirected) {
+				return { success: true, redirected: true, url: response.url };
+			}
+			
+			return response.json();
+		},
+		onMutate: async (formData) => {
+			console.log('🔄 Tour update mutation: Starting optimistic update');
+			
+			// Get current tour data for optimistic update
+			const currentTour = queryClient.getQueryData(queryKeys.tourDetails(tourId)) as any;
+			
+			// Try to extract form data for optimistic update
+			const tourName = formData.get('name');
+			const tourPrice = formData.get('price');
+			const tourStatus = formData.get('status');
+			
+			// Optimistically update tour details if we have the data
+			if (currentTour && tourName) {
+				queryClient.setQueryData(queryKeys.tourDetails(tourId), (old: any) => {
+					if (!old?.tour) return old;
+					return {
+						...old,
+						tour: {
+							...old.tour,
+							name: tourName,
+							price: tourPrice ? parseFloat(tourPrice.toString()) : old.tour.price,
+							status: tourStatus || old.tour.status,
+							updatedAt: new Date().toISOString()
+						}
+					};
+				});
+			}
+			
+			// Also update tours list if status changed
+			if (tourStatus && currentTour?.tour?.status !== tourStatus) {
+				queryClient.setQueryData(queryKeys.userTours, (old: any) => {
+					if (!Array.isArray(old)) return old;
+					return old.map((tour: any) => 
+						tour.id === tourId 
+							? { ...tour, status: tourStatus, name: tourName || tour.name }
+							: tour
+					);
+				});
+			}
+			
+			return { currentTour };
+		},
+		onError: (error, variables, context) => {
+			console.error('🔄 Tour update mutation: Error occurred', error);
+			
+			// Rollback optimistic updates
+			if (context?.currentTour) {
+				queryClient.setQueryData(queryKeys.tourDetails(tourId), context.currentTour);
+			}
+			
+			// Force refetch to ensure we have correct data
+			setTimeout(() => {
+				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+			}, 100);
+		},
+		onSuccess: async (data) => {
+			console.log('🔄 Tour update mutation: Success', data);
+			
+			// Get QR code for public invalidation
+			const tour = queryClient.getQueryData(queryKeys.tourDetails(tourId)) as any;
+			
+			// Invalidate and refetch all related queries immediately
+			await Promise.all([
+				invalidate.invalidateTourQueries(tourId, tour?.tour?.qrCode),
+				queryClient.refetchQueries({ queryKey: queryKeys.tourDetails(tourId) }),
+				queryClient.refetchQueries({ queryKey: queryKeys.userTours }),
+				queryClient.refetchQueries({ queryKey: queryKeys.toursStats })
+			]);
+			
+			console.log('🔄 Tour update mutation: Cache refreshed');
+		}
+	});
+}
+
+/**
  * Delete tour mutation
  */
 export function deleteTourMutation() {

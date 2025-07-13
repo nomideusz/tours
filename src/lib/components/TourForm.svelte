@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
-	import CapacitySlider from './CapacitySlider.svelte';
+
 	import DurationSlider from './DurationSlider.svelte';
 	import PriceSlider from './PriceSlider.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
@@ -38,7 +38,6 @@
 			description: string;
 			price: number;
 			duration: number;
-			capacity: number;
 			status: 'active' | 'draft';
 			category: string;
 			location: string;
@@ -57,6 +56,7 @@
 		submitButtonText?: string;
 
 		onCancel: () => void;
+		onSubmit?: () => void;
 		onImageUpload?: (event: Event) => void;
 		onImageRemove?: (index: number) => void;
 		existingImages?: string[];
@@ -68,12 +68,6 @@
 		serverErrors?: ValidationError[];
 		// Validation trigger
 		triggerValidation?: boolean;
-		// Booking constraints for capacity validation
-		bookingConstraints?: {
-			maxBookedSpots: number;
-			minimumCapacity: number;
-			canReduceCapacity: boolean;
-		};
 		// Hide status field for new tour creation
 		hideStatusField?: boolean;
 		// Onboarding status props for activation restrictions
@@ -90,6 +84,7 @@
 		submitButtonText = '',
 
 		onCancel,
+		onSubmit,
 		onImageUpload,
 		onImageRemove,
 		existingImages = [],
@@ -98,7 +93,6 @@
 		imageUploadErrors = [],
 		serverErrors = [],
 		triggerValidation = false,
-		bookingConstraints,
 		hideStatusField = false,
 		profile = null,
 		hasConfirmedLocation = false,
@@ -165,11 +159,10 @@
 			touchedFields.add('description');
 			touchedFields.add('price');
 			touchedFields.add('duration');
-			touchedFields.add('capacity');
 			
 			// Validate all fields using the same field-specific approach
 			const validation = validateTourForm(formData);
-			const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+			const requiredFields = ['name', 'description', 'price', 'duration'];
 			
 			// Clear all validation errors first
 			validationErrors = [];
@@ -199,11 +192,10 @@
 		touchedFields.add('description');
 		touchedFields.add('price');
 		touchedFields.add('duration');
-		touchedFields.add('capacity');
 		
 		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+		const requiredFields = ['name', 'description', 'price', 'duration'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
@@ -285,11 +277,10 @@
 		touchedFields.add('description');
 		touchedFields.add('price');
 		touchedFields.add('duration');
-		touchedFields.add('capacity');
 		
 		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
+		const requiredFields = ['name', 'description', 'price', 'duration'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
@@ -641,7 +632,7 @@
 				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
 			</div>
 			<div class="p-4">
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div>
 						<PriceSlider
 							bind:value={formData.price}
@@ -767,35 +758,8 @@
 					<input type="hidden" name="duration" bind:value={formData.duration} />
 				</div>
 
-				<div>
-					<CapacitySlider
-						bind:value={formData.capacity}
-						label="Max Group Size"
-						min={bookingConstraints?.minimumCapacity || 1}
-						max={60}
-						step={1}
-						required={true}
-						error={hasFieldError(allErrors, 'capacity')}
-						onChange={() => validateField('capacity')}
-						unit="guests"
-						showMarkers={false}
-					/>
-					{#if getFieldError(allErrors, 'capacity')}
-						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
-					{/if}
-					<!-- Hidden input for form submission -->
-					<input type="hidden" name="capacity" bind:value={formData.capacity} />
-				</div>
-	</div>
 
-				{#if bookingConstraints && bookingConstraints.maxBookedSpots > 0}
-					<div class="mt-4">
-						<p class="text-xs" style="color: var(--text-secondary);">
-							⚠️ Minimum capacity: <strong>{bookingConstraints.minimumCapacity}</strong> 
-							(you have {bookingConstraints.maxBookedSpots} people booked in your busiest time slot)
-						</p>
-					</div>
-				{/if}
+	</div>
 
 				<!-- Advanced Pricing Section (Collapsible) - Desktop Only -->
 				<div class="mt-6 hidden md:block">
@@ -1334,6 +1298,7 @@
 							type="file"
 							multiple
 							accept="image/jpeg,image/jpg,image/png,image/webp"
+							capture="environment"
 							class="hidden"
 							id="images-upload"
 							name="images"
@@ -1344,17 +1309,17 @@
 						<label
 							for="images-upload"
 							class="button-secondary cursor-pointer inline-flex items-center gap-2"
-							style="touch-action: manipulation;"
+							style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
 						>
 							<Camera class="w-4 h-4 sm:hidden" />
 							<Upload class="w-4 h-4 hidden sm:block" />
-							<span class="sm:hidden">Add Photos</span>
+							<span class="sm:hidden">Take Photo / Add Photos</span>
 							<span class="hidden sm:inline">Choose Files</span>
 						</label>
 
 						<!-- Mobile instruction -->
 						<div class="sm:hidden mt-3">
-							<p class="text-xs" style="color: var(--text-tertiary);">Tap to select from gallery or take new photos</p>
+							<p class="text-xs" style="color: var(--text-tertiary);">Tap to take a photo with camera or select from gallery</p>
 						</div>
 					</div>
 
@@ -1519,7 +1484,8 @@
 			<div class="p-4">
 			<div class="space-y-3">
 				<button
-					type="submit"
+					type="button"
+					onclick={onSubmit}
 					disabled={isSubmitting}
 					class="button-primary button--full-width button--gap"
 				>

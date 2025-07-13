@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
+
 	import { browser } from '$app/environment';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import TourForm from '$lib/components/TourForm.svelte';
@@ -15,6 +15,7 @@
 	import { validateTourForm } from '$lib/validation.js';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { invalidatePublicTourData } from '$lib/queries/public-queries.js';
+	import { updateTourWithFormDataMutation } from '$lib/queries/mutations.js';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
@@ -38,6 +39,9 @@
 	
 	const queryClient = useQueryClient();
 	let tourId = $derived(data.tourId);
+	
+	// Initialize mutation for tour updates
+	let updateTourMutation = $derived(updateTourWithFormDataMutation(tourId));
 	
 	// TanStack Query for tour details
 	let tourQuery = $derived(createQuery({
@@ -110,7 +114,7 @@
 
 	let error = $state<string | null>(form?.error || null);
 	let validationErrors = $state<ValidationError[]>((form as any)?.validationErrors || []);
-	let capacityError = $state((form as any)?.capacityError || null);
+
 	let triggerValidation = $state(false);
 	let showCancelModal = $state(false);
 	let showDeleteModal = $state(false);
@@ -156,7 +160,6 @@
 		description: '',
 		price: 0,
 		duration: 60,
-		capacity: 10,
 		status: 'draft' as Tour['status'],
 		category: '',
 		location: '',
@@ -356,7 +359,6 @@
 			description: tour.description || '',
 			price: tour.price || 0,
 			duration: tour.duration || 60,
-			capacity: tour.capacity || 10,
 			status: tour.status || 'draft',
 			category: tour.category || '',
 			location: tour.location || '',
@@ -388,13 +390,77 @@
 		goto(`/tours/${tourId}`);
 	}
 
-	function handleSave() {
+	async function handleSave() {
 		if (isSubmitting) return;
 		
-		// Trigger form submission
-		const form = document.querySelector('form');
-		if (form) {
-			form.requestSubmit();
+		// Validate form before submission
+		const formValidation = validateForm();
+		if (formValidation.length > 0) {
+			error = formValidation[0];
+			scrollToFirstError();
+			return;
+		}
+		
+		try {
+			isSubmitting = true;
+			error = null;
+			
+			// Create form data
+			const formDataToSubmit = new FormData();
+			
+			// Add all form fields
+			Object.entries(formData).forEach(([key, value]) => {
+				if (key === 'includedItems' || key === 'requirements') {
+					(value as string[]).forEach(item => {
+						if (item.trim()) {
+							formDataToSubmit.append(key, item.trim());
+						}
+					});
+				} else if (key === 'pricingTiers') {
+					if (formData.enablePricingTiers && value) {
+						formDataToSubmit.append('pricingTiers.adult', String((value as any).adult));
+						formDataToSubmit.append('pricingTiers.child', String((value as any).child));
+					}
+				} else {
+					formDataToSubmit.append(key, String(value));
+				}
+			});
+			
+			// Add enablePricingTiers separately
+			formDataToSubmit.append('enablePricingTiers', formData.enablePricingTiers ? 'true' : 'false');
+			
+			// Add images to remove
+			imagesToRemove.forEach(imageUrl => {
+				formDataToSubmit.append('removeImages', imageUrl);
+			});
+			
+			// Add new images
+			uploadedImages.forEach(image => {
+				formDataToSubmit.append('images', image);
+			});
+			
+			// Use mutation instead of form submission
+			const result = await $updateTourMutation.mutateAsync(formDataToSubmit);
+			
+			console.log('✅ Tour updated successfully via mutation:', result);
+			
+			// Clear uploaded images and removed images since they're now saved
+			uploadedImages = [];
+			imagesToRemove = [];
+			
+			// Navigate to tour detail page
+			if (result.redirected) {
+				goto(`/tours/${tourId}`);
+			} else {
+				goto(`/tours/${tourId}?edited=true`);
+			}
+			
+		} catch (err) {
+			console.error('❌ Tour update failed:', err);
+			error = err instanceof Error ? err.message : 'Failed to save changes. Please try again.';
+			scrollToFirstError();
+		} finally {
+			isSubmitting = false;
 		}
 	}
 
@@ -437,15 +503,7 @@
 			errors.push('Duration must be greater than 0 minutes');
 		}
 		
-		// Capacity validation
-		if (formData.capacity <= 0) {
-			errors.push('Capacity must be at least 1 person');
-		}
-		
-		// Check booking constraints
-		if (bookingConstraints?.minimumCapacity && formData.capacity < bookingConstraints.minimumCapacity) {
-			errors.push(`Capacity must be at least ${bookingConstraints.minimumCapacity} due to existing bookings`);
-		}
+
 		
 		// Pricing tiers validation (if enabled)
 		if (formData.enablePricingTiers) {
@@ -527,7 +585,6 @@
 			formData.description !== tour.description ||
 			formData.price !== tour.price ||
 			formData.duration !== tour.duration ||
-			formData.capacity !== tour.capacity ||
 			formData.status !== tour.status ||
 			formData.category !== tour.category ||
 			formData.location !== tour.location ||
@@ -540,81 +597,7 @@
 		);
 	}
 
-	async function autoSaveChanges(): Promise<boolean> {
-		if (isSubmitting) return false;
-		
-		try {
-			isSubmitting = true;
-			
-			// Create form data
-			const formDataToSubmit = new FormData();
-			
-			// Add all form fields
-			Object.entries(formData).forEach(([key, value]) => {
-				if (key === 'includedItems' || key === 'requirements') {
-					(value as string[]).forEach((item, index) => {
-						if (item.trim()) {
-							formDataToSubmit.append(`${key}[${index}]`, item.trim());
-						}
-					});
-				} else if (key === 'pricingTiers') {
-					formDataToSubmit.append('pricingTiers', JSON.stringify(value));
-				} else {
-					formDataToSubmit.append(key, String(value));
-				}
-			});
-			
-			// Add images to remove
-			imagesToRemove.forEach(imageUrl => {
-				formDataToSubmit.append('removeImages', imageUrl);
-			});
-			
-			// Add new images
-			console.log('📱 AutoSave: Adding images to FormData:', uploadedImages.length);
-			uploadedImages.forEach((image, index) => {
-				console.log(`📱 AutoSave: Image ${index}:`, image.name, image.size);
-				formDataToSubmit.append('images', image);
-			});
-			
-			// Submit to server
-			const response = await fetch(`/tours/${tourId}/edit`, {
-				method: 'POST',
-				body: formDataToSubmit
-			});
-			
-			if (response.ok) {
-				// Invalidate queries to refetch when needed
-				queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
-				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-				queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-				
-				// Clear uploaded images and removed images since they're now saved
-				uploadedImages = [];
-				imagesToRemove = [];
-				
-				return true;
-			} else {
-				const errorData = await response.json().catch(() => ({}));
-				
-				// Set specific error message based on response
-				if (response.status === 400) {
-					error = errorData.error || 'Please check your form for errors and try again.';
-				} else if (response.status === 413) {
-					error = 'Files are too large. Please use smaller images.';
-				} else {
-					error = errorData.error || 'Failed to save changes. Please try again.';
-				}
-				
-				return false;
-			}
-		} catch (err) {
-			console.error('Auto-save failed:', err);
-			error = 'Failed to save changes. Please try again.';
-			return false;
-		} finally {
-			isSubmitting = false;
-		}
-	}
+
 
 	// Delete tour functionality
 	function handleDeleteTour() {
@@ -825,52 +808,13 @@
 					<div>
 						<p class="font-medium" style="color: var(--color-danger-900);">Error</p>
 						<p class="text-sm mt-1" style="color: var(--color-danger-700);">{error}</p>
-						{#if capacityError}
-							<p class="text-sm mt-2" style="color: var(--color-danger-700);">
-								<strong>Capacity Issue:</strong> You tried to set capacity to {capacityError.attempted}, 
-								but you need at least {capacityError.minimum} spots due to existing bookings.
-							</p>
-						{/if}
+
 					</div>
 				</div>
 			</div>
 		{/if}
 
-		<!-- Capacity Warning (if bookings exist) -->
-		{#if bookingConstraints?.maxBookedSpots > 0}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-warning-light); border: 1px solid var(--color-warning-200);">
-				<div class="flex gap-3">
-					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
-					<div>
-						<p class="font-medium" style="color: var(--color-warning-900);">Capacity Constraints</p>
-						<p class="text-sm mt-1" style="color: var(--color-warning-700);">
-							You have <strong>{bookingConstraints.maxBookedSpots} people booked</strong> in your busiest time slot.
-							You can only reduce capacity to <strong>{bookingConstraints.maxBookedSpots} or higher</strong>.
-						</p>
-						{#if !bookingConstraints.canReduceCapacity}
-							<p class="text-sm mt-1" style="color: var(--color-warning-700);">
-								<em>Your tour is at maximum booking capacity. You can increase capacity but cannot reduce it.</em>
-							</p>
-						{/if}
-					</div>
-				</div>
-			</div>
-		{/if}
 
-		<!-- Booking Constraints Warning -->
-		{#if capacityError}
-			<div class="mt-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-				<div class="flex items-start gap-3">
-					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
-					<div class="flex-1">
-						<h3 class="font-medium" style="color: var(--color-danger-900);">Capacity Reduction Blocked</h3>
-						<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-							{capacityError}
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
 
 		<!-- Tour Form -->
 		<div class="mt-6">
@@ -892,59 +836,7 @@
 					</div>
 				</div>
 			{:else}
-				<form method="POST" enctype="multipart/form-data" use:enhance={({ formData, cancel }) => {
-					if (isSubmitting) {
-						cancel();
-						return;
-					}
-					
-					isSubmitting = true;
-					
-					// Add images to remove
-					console.log('📤 Images to remove before submission:', imagesToRemove);
-					imagesToRemove.forEach(imageUrl => {
-						console.log('📤 Adding to FormData for removal:', imageUrl);
-						formData.append('removeImages', imageUrl);
-					});
-					
-					// Add new images
-					console.log('📱 Submitting form with uploaded images:', uploadedImages.length);
-					uploadedImages.forEach((image, index) => {
-						console.log(`📱 Adding image ${index}:`, image.name, image.size, image.type);
-						formData.append('images', image);
-					});
-					
-					// Debug: Log all FormData entries
-					console.log('📱 FormData entries:');
-					for (const [key, value] of formData.entries()) {
-						if (key === 'images') {
-							console.log(`  - ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
-						}
-					}
-					
-					return async ({ result, update }) => {
-						if (result.type === 'success') {
-							// Invalidate all related queries and wait for them to complete
-							await Promise.all([
-								queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) }),
-								queryClient.invalidateQueries({ queryKey: queryKeys.tourBookingConstraints(tourId) }),
-								queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
-								queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
-								invalidatePublicTourData(queryClient, tour?.qrCode)
-							]);
-							
-							// Clear uploaded images and removed images since they're now saved
-							uploadedImages = [];
-							imagesToRemove = [];
-							
-							// Navigate to tour detail page
-							goto(`/tours/${tourId}`);
-						}
-						
-						await update({ reset: false });
-						isSubmitting = false;
-					};
-				}}>
+				<div>
 					<TourForm
 						bind:formData
 						bind:uploadedImages
@@ -952,6 +844,7 @@
 						submitButtonText="Save Changes"
 						isEdit={true}
 						onCancel={handleCancel}
+						onSubmit={handleSave}
 						onImageUpload={handleImageUpload}
 						onImageRemove={removeImage}
 						{existingImages}
@@ -959,13 +852,12 @@
 						{imageUploadErrors}
 						serverErrors={[]}
 						{triggerValidation}
-						{bookingConstraints}
 						getExistingImageUrl={getExistingImageUrl}
 						{profile}
 						{hasConfirmedLocation}
 						{paymentStatus}
 					/>
-				</form>
+				</div>
 			{/if}
 		</div>
 

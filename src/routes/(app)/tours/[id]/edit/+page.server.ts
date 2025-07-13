@@ -6,10 +6,7 @@ import { eq, and, gte, sql } from 'drizzle-orm';
 import { validateTourForm, sanitizeTourFormData } from '$lib/validation.js';
 import { processAndSaveImage, initializeImageStorage, deleteImage } from '$lib/utils/image-storage.js';
 import { 
-	loadTourWithOwnership, 
-		getBookingConstraints,
-	validateCapacityChange,
-	updateTimeSlotsCapacity
+	loadTourWithOwnership
 } from '$lib/utils/tour-helpers-server.js';
 import { bookings, timeSlots } from '$lib/db/schema/index.js';
 
@@ -30,9 +27,6 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
   try {
     // Load tour and verify ownership
     const tour = await loadTourWithOwnership(params.id, locals.user.id);
-
-    // Get booking constraints
-    const bookingConstraints = await getBookingConstraints(params.id, tour.capacity);
 
     // Check for future bookings (for delete button logic)
     // Include both confirmed AND pending bookings to prevent deletion during payment processing
@@ -67,7 +61,6 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         description: tour.description,
         price: parseFloat(tour.price),
         duration: tour.duration,
-        capacity: tour.capacity,
         status: tour.status,
         category: tour.category,
         location: tour.location,
@@ -80,8 +73,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         hasFutureBookings: hasFutureBookings,
         createdAt: tour.createdAt,
         updatedAt: tour.updatedAt
-      },
-      bookingConstraints
+      }
     };
   } catch (err) {
     console.error('Error loading tour:', err);
@@ -253,19 +245,7 @@ export const actions: Actions = {
         });
       }
 
-      // Additional capacity validation - check if we can reduce capacity
-      const newCapacity = parseInt(String(sanitizedData.capacity));
-      const bookingConstraints = await getBookingConstraints(params.id, newCapacity);
-      const capacityValidation = validateCapacityChange(newCapacity, bookingConstraints.maxBookedSpots);
-      
-      if (!capacityValidation.isValid) {
-        return fail(400, {
-          error: 'Capacity validation failed',
-          message: capacityValidation.error,
-          formData: sanitizedData,
-          capacityError: capacityValidation.capacityError
-        });
-      }
+
 
       // Check if tour exists and belongs to user
       const existingTourResults = await db
@@ -361,7 +341,6 @@ export const actions: Actions = {
           description: sanitizedData.description as string,
           price: String(sanitizedData.price),
           duration: parseInt(String(sanitizedData.duration)),
-          capacity: parseInt(String(sanitizedData.capacity)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           category: sanitizedData.category as string || null,
           location: sanitizedData.location as string || null,
@@ -383,12 +362,7 @@ export const actions: Actions = {
         return fail(500, { error: 'Failed to update tour' });
       }
 
-      // Update existing time slots to match new tour capacity
-      // This ensures all time slots reflect the updated capacity
-      await updateTimeSlotsCapacity(params.id, newCapacity);
-
       console.log('✅ Tour updated successfully:', updatedTour[0].id);
-      console.log('✅ Time slots updated to new capacity:', newCapacity);
 
       // Redirect to tour detail page with success flag
       throw redirect(303, `/tours/${params.id}?edited=true`);
