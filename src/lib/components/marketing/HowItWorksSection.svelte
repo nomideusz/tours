@@ -19,7 +19,7 @@
 		Start Getting Bookings in Minutes
 	</h2>
 	<p class="text-lg text-secondary max-w-2xl mx-auto">
-		No technical skills needed. If you can use WhatsApp, you can use Zaur.
+		No technical skills needed.
 	</p>
 </div>
 
