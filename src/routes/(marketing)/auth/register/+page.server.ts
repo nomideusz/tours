@@ -84,6 +84,13 @@ export const actions: Actions = {
 		try {
 			console.log('Attempting registration for:', email, 'with username:', username);
 			
+			// Log the business info being saved
+			console.log('📋 Business info from registration:', {
+				businessName: businessName || '(empty)',
+				location: location || '(empty)',
+				country: country || '(empty)'
+			});
+			
 			// Check if user already exists
 			const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
 			if (existingUser.length > 0) {
