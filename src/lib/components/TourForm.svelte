@@ -1298,7 +1298,6 @@
 							type="file"
 							multiple
 							accept="image/jpeg,image/jpg,image/png,image/webp"
-							capture="environment"
 							class="hidden"
 							id="images-upload"
 							name="images"
@@ -1484,8 +1483,8 @@
 			<div class="p-4">
 			<div class="space-y-3">
 				<button
-					type="button"
-					onclick={onSubmit}
+					type={onSubmit ? "button" : "submit"}
+					onclick={onSubmit || handleSubmit}
 					disabled={isSubmitting}
 					class="button-primary button--full-width button--gap"
 				>
