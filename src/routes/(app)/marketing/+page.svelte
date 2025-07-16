@@ -3,6 +3,8 @@
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import { page } from '$app/stores';
+	// @ts-ignore
+	import html2canvas from 'html2canvas';
 	
 	// Icons
 	import CreditCard from 'lucide-svelte/icons/credit-card';
@@ -122,22 +124,159 @@
 	// Featured tours (top 3)
 	let featuredTours = $derived(tours.slice(0, 3));
 
-	function printBusinessCard() {
-		// Add a print class to body
-		document.body.classList.add('printing-business-card');
+	async function printBusinessCard() {
+		try {
+			// Find the business card preview element
+			const cardElement = document.querySelector('.business-card-container .business-card');
+			if (!cardElement) {
+				console.error('Business card element not found');
+				return;
+			}
+
+					// Generate high-resolution PNG for printing (300 DPI equivalent)
+		const rawCanvas = await (html2canvas as any)(cardElement, {
+			backgroundColor: null,
+			scale: 4, // Very high resolution for print quality
+			useCORS: true,
+			allowTaint: true,
+			width: 350,
+			height: 200,
+			logging: false,
+			x: 0,
+			y: 0,
+			scrollX: 0,
+			scrollY: 0
+		});
+
+		// Crop off the extra pixels (preserve borders for modern template)
+		const canvas = document.createElement('canvas');
+		const ctx = canvas.getContext('2d');
+		const cropX = selectedTemplate === 'modern' ? 2 : 4;
+		const cropY = 0; // No vertical cropping
+		const cropHeight = 0; // No vertical cropping
+		canvas.width = rawCanvas.width - cropX;
+		canvas.height = rawCanvas.height - cropHeight;
 		
-		// Print
-		window.print();
-		
-		// Remove the class after printing
-		setTimeout(() => {
-			document.body.classList.remove('printing-business-card');
-		}, 1000);
+		if (ctx) {
+			ctx.drawImage(rawCanvas, cropX, cropY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+		}
+
+			// Open the image in a new window for printing
+			canvas.toBlob((blob: Blob | null) => {
+				if (!blob) return;
+				
+				const url = URL.createObjectURL(blob);
+				const printWindow = window.open('', '_blank');
+				
+				if (printWindow) {
+					// Create HTML with landscape orientation and centered image
+					printWindow.document.write(`
+						<!DOCTYPE html>
+						<html>
+						<head>
+							<title>Business Card - Print</title>
+							<style>
+								@page {
+									size: A4 landscape;
+									margin: 1in;
+								}
+								body {
+									margin: 0;
+									padding: 0;
+									display: flex;
+									justify-content: center;
+									align-items: center;
+									min-height: 100vh;
+									background: white;
+								}
+								img {
+									width: 3.5in;
+									height: 2in;
+									display: block;
+									object-fit: contain;
+								}
+							</style>
+						</head>
+						<body>
+							<img src="${url}" alt="Business Card" />
+						</body>
+						</html>
+					`);
+					
+					printWindow.document.close();
+					
+					printWindow.onload = () => {
+						setTimeout(() => {
+							printWindow.print();
+							// Clean up after printing
+							setTimeout(() => {
+								printWindow.close();
+								URL.revokeObjectURL(url);
+							}, 1000);
+						}, 500);
+					};
+				}
+			}, 'image/png');
+		} catch (error) {
+			console.error('Error preparing business card for print:', error);
+			// Fallback to regular print if image generation fails
+			window.print();
+		}
 	}
 
-	function downloadPDF() {
-		// Simple print-to-PDF for now
-		window.print();
+	async function downloadImage() {
+		try {
+			// Find the business card preview element
+			const cardElement = document.querySelector('.business-card-container .business-card');
+			if (!cardElement) {
+				console.error('Business card element not found');
+				return;
+			}
+
+					// Capture the element as canvas
+		const rawCanvas = await (html2canvas as any)(cardElement, {
+			backgroundColor: null,
+			scale: 2, // Higher resolution
+			useCORS: true,
+			allowTaint: true,
+			width: 350, // Standard business card width in pixels  
+			height: 200, // Standard business card height in pixels
+			logging: false,
+			x: 0,
+			y: 0,
+			scrollX: 0,
+			scrollY: 0
+		});
+
+		// Crop off the extra pixels (preserve borders for modern template)
+		const canvas = document.createElement('canvas');
+		const ctx = canvas.getContext('2d');
+		const cropX = selectedTemplate === 'modern' ? 1 : 2;
+		const cropY = 0; // No vertical cropping
+		const cropHeight = 0; // No vertical cropping
+		canvas.width = rawCanvas.width - cropX;
+		canvas.height = rawCanvas.height - cropHeight;
+		
+		if (ctx) {
+			ctx.drawImage(rawCanvas, cropX, cropY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+		}
+
+			// Convert to blob and download
+			canvas.toBlob((blob: Blob | null) => {
+				if (!blob) return;
+				
+				const url = URL.createObjectURL(blob);
+				const link = document.createElement('a');
+				link.href = url;
+				link.download = `business-card-${selectedTemplate}-${selectedColorScheme}.png`;
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+				URL.revokeObjectURL(url);
+			}, 'image/png');
+		} catch (error) {
+			console.error('Error downloading business card:', error);
+		}
 	}
 </script>
 
@@ -305,18 +444,18 @@
 													{/if}
 													<div class="h-px" style="background: {colorSchemes[selectedColorScheme].accent};"></div>
 												</div>
-												<div class="space-y-1 text-xs" style="color: {colorSchemes[selectedColorScheme].text};">
-													{#if profile.phone}
-														<div>{profile.phone}</div>
-													{/if}
-													<div>{profile.email}</div>
-													{#if profile.website}
-														<div>{profile.website.replace(/^https?:\/\//, '')}</div>
-													{/if}
-													{#if profile.location}
-														<div>{profile.location}</div>
-													{/if}
-												</div>
+																					<div class="space-y-1 text-xs" style="color: #1F2937;">
+										{#if profile.phone}
+											<div>{profile.phone}</div>
+										{/if}
+										<div>{profile.email}</div>
+										{#if profile.website}
+											<div>{profile.website.replace(/^https?:\/\//, '')}</div>
+										{/if}
+										{#if profile.location}
+											<div>{profile.location}</div>
+										{/if}
+									</div>
 											</div>
 											<div class="w-16 sm:w-20 flex flex-col items-center justify-center">
 												{#if qrCodeURL}
@@ -338,11 +477,11 @@
 									<div class="absolute inset-0 p-4 sm:p-6">
 										<div class="flex h-full items-center">
 											<div class="flex-1">
-												<h3 class="text-xl sm:text-2xl font-light mb-2" style="color: {colorSchemes[selectedColorScheme].text};">{profile.name}</h3>
+												<h3 class="text-xl sm:text-2xl font-light mb-2" style="color: #1F2937;">{profile.name}</h3>
 												{#if profile.businessName}
-													<p class="text-sm font-normal mb-4 opacity-70" style="color: {colorSchemes[selectedColorScheme].text};">{profile.businessName}</p>
+													<p class="text-sm font-normal mb-4 opacity-70" style="color: #1F2937;">{profile.businessName}</p>
 												{/if}
-												<div class="space-y-1 text-xs font-light" style="color: {colorSchemes[selectedColorScheme].text};">
+												<div class="space-y-1 text-xs font-light" style="color: #1F2937;">
 													<div>{profile.email}</div>
 													{#if profile.phone}
 														<div>{profile.phone}</div>
@@ -376,9 +515,9 @@
 								<Printer class="w-4 h-4" />
 								Print Card
 							</button>
-							<button onclick={downloadPDF} class="button--secondary button--gap">
+							<button onclick={downloadImage} class="button--secondary button--gap">
 								<Download class="w-4 h-4" />
-								Download PDF
+								Download Image
 							</button>
 						</div>
 					</div>
@@ -472,119 +611,7 @@
 	{/if}
 </div> 
 
-<!-- Print-only business card (hidden on screen, shown only when printing) -->
-<div id="print-only-card" class="print-only">
-	{#if profile}
-		{#if selectedTemplate === 'professional'}
-			<!-- Professional Template -->
-			<div 
-				class="business-card business-card-professional color-{selectedColorScheme}"
-				style="background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary}); width: 3.5in; height: 2in; border-radius: 8px; padding: 16px; color: white; display: flex;"
-			>
-				<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-					<div>
-						<h3 style="font-size: 18px; font-weight: bold; margin: 0 0 4px 0; color: white;">{profile.name}</h3>
-						{#if profile.businessName}
-							<p style="font-size: 14px; margin: 0 0 12px 0; opacity: 0.9; color: white;">{profile.businessName}</p>
-						{/if}
-						<div style="font-size: 12px; line-height: 1.4;">
-							{#if profile.phone}
-								<div style="margin: 2px 0; color: white;">📞 {profile.phone}</div>
-							{/if}
-							<div style="margin: 2px 0; color: white;">✉️ {profile.email}</div>
-							{#if profile.website}
-								<div style="margin: 2px 0; color: white;">🌐 {profile.website.replace(/^https?:\/\//, '')}</div>
-							{/if}
-							{#if profile.location}
-								<div style="margin: 2px 0; color: white;">📍 {profile.location}</div>
-							{/if}
-						</div>
-					</div>
-					<div style="font-size: 12px; opacity: 0.9; color: white;">
-						{tours.length} Tour{tours.length === 1 ? '' : 's'} Available
-					</div>
-				</div>
-				<div style="width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-					{#if qrCodeURL}
-						<div style="width: 56px; height: 56px; background: white; padding: 4px; border-radius: 4px;">
-							<img src={qrCodeURL} alt="Profile QR Code" style="width: 100%; height: 100%; background: white;" />
-						</div>
-						<p style="font-size: 12px; margin: 4px 0 0 0; text-align: center; color: white;">Scan to Book</p>
-					{/if}
-				</div>
-			</div>
-		{:else if selectedTemplate === 'modern'}
-			<!-- Modern Template -->
-			<div 
-				class="business-card business-card-modern"
-				style="background: white; border-left: 6px solid {colorSchemes[selectedColorScheme].primary}; width: 3.5in; height: 2in; border-radius: 8px; padding: 16px; display: flex;"
-			>
-				<div style="flex: 1;">
-					<div style="margin-bottom: 16px;">
-						<h3 style="font-size: 20px; font-weight: bold; margin: 0 0 4px 0; color: {colorSchemes[selectedColorScheme].primary};">{profile.name}</h3>
-						{#if profile.businessName}
-							<p style="font-size: 14px; font-weight: 500; margin: 0 0 8px 0; color: {colorSchemes[selectedColorScheme].secondary};">{profile.businessName}</p>
-						{/if}
-						<div style="height: 1px; background: {colorSchemes[selectedColorScheme].accent};"></div>
-					</div>
-					<div style="font-size: 12px; line-height: 1.4; color: {colorSchemes[selectedColorScheme].text};">
-						{#if profile.phone}
-							<div style="margin: 2px 0;">{profile.phone}</div>
-						{/if}
-						<div style="margin: 2px 0;">{profile.email}</div>
-						{#if profile.website}
-							<div style="margin: 2px 0;">{profile.website.replace(/^https?:\/\//, '')}</div>
-						{/if}
-						{#if profile.location}
-							<div style="margin: 2px 0;">{profile.location}</div>
-						{/if}
-					</div>
-				</div>
-				<div style="width: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-					{#if qrCodeURL}
-						<div style="width: 64px; height: 64px; padding: 4px; border-radius: 8px; background: {colorSchemes[selectedColorScheme].primary};">
-							<img src={qrCodeURL} alt="Profile QR Code" style="width: 100%; height: 100%; background: white; border-radius: 4px;" />
-						</div>
-						<p style="font-size: 12px; margin: 8px 0 0 0; text-align: center; font-weight: 500; color: {colorSchemes[selectedColorScheme].primary};">SCAN</p>
-					{/if}
-				</div>
-			</div>
-		{:else if selectedTemplate === 'minimal'}
-			<!-- Minimal Template -->
-			<div 
-				class="business-card business-card-minimal"
-				style="background: white; width: 3.5in; height: 2in; border-radius: 8px; padding: 24px; position: relative; display: flex; align-items: center;"
-			>
-				<div style="flex: 1;">
-					<h3 style="font-size: 24px; font-weight: 300; margin: 0 0 8px 0; color: {colorSchemes[selectedColorScheme].text};">{profile.name}</h3>
-					{#if profile.businessName}
-						<p style="font-size: 14px; margin: 0 0 16px 0; opacity: 0.7; color: {colorSchemes[selectedColorScheme].text};">{profile.businessName}</p>
-					{/if}
-					<div style="font-size: 12px; font-weight: 300; line-height: 1.4; color: {colorSchemes[selectedColorScheme].text};">
-						<div style="margin: 2px 0;">{profile.email}</div>
-						{#if profile.phone}
-							<div style="margin: 2px 0;">{profile.phone}</div>
-						{/if}
-						{#if profile.location}
-							<div style="margin: 2px 0;">{profile.location}</div>
-						{/if}
-					</div>
-				</div>
-				<div style="margin-left: 24px;">
-					{#if qrCodeURL}
-						<div style="width: 48px; height: 48px; background: white; border-radius: 4px; padding: 2px;">
-							<img src={qrCodeURL} alt="Profile QR Code" style="width: 100%; height: 100%; background: white;" />
-						</div>
-					{/if}
-				</div>
-				<!-- Minimal accent line -->
-				<div 
-					style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: {colorSchemes[selectedColorScheme].primary};"
-				></div>
-			</div>
-		{/if}
-	{/if}
-</div>
+
 
 <style>
 	/* Ensure QR codes always have proper contrast */
@@ -602,57 +629,7 @@
 	}
 
 	
-	/* Hide print-only card on screen */
-	.print-only {
-		display: none !important;
-		position: absolute !important;
-		left: -9999px !important;
-		top: -9999px !important;
-	}
+
 	
-	/* Global print styles for business card printing */
-	@media print {
-		:global(body.printing-business-card) {
-			margin: 0 !important;
-			padding: 0 !important;
-			background: white !important;
-		}
-		
-		/* Hide everything when printing */
-		:global(body.printing-business-card nav),
-		:global(body.printing-business-card header),
-		:global(body.printing-business-card footer),
-		:global(body.printing-business-card .page-content),
-		:global(body.printing-business-card div[data-sveltekit-hydrate]),
-		:global(body.printing-business-card div[data-sveltekit-hydrate] > div) {
-			display: none !important;
-		}
-		
-		/* Show only the print card */
-		:global(body.printing-business-card .print-only) {
-			display: block !important;
-			visibility: visible !important;
-			position: fixed !important;
-			top: 50% !important;
-			left: 50% !important;
-			transform: translate(-50%, -50%) !important;
-			width: 3.5in !important;
-			height: 2in !important;
-			margin: 0 !important;
-			padding: 0 !important;
-			background: transparent !important;
-		}
-		
-		/* Force all elements in print card to be visible */
-		:global(body.printing-business-card .print-only *) {
-			visibility: visible !important;
-			-webkit-print-color-adjust: exact !important;
-			print-color-adjust: exact !important;
-		}
-		
-		/* Ensure business card displays with flex */
-		:global(body.printing-business-card .print-only .business-card) {
-			display: flex !important;
-		}
-	}
+
 </style>
