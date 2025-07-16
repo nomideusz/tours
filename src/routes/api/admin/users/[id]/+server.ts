@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { users, tours, bookings, sessions, notifications, timeSlots, payments } from '$lib/db/schema/index.js';
 import { eq, sql, inArray } from 'drizzle-orm';
+import { deleteAvatar } from '$lib/utils/avatar-storage.js';
+import { deleteImages } from '$lib/utils/image-storage.js';
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
 	// Check admin access
@@ -38,13 +40,45 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 		// Start a transaction to delete all related data
 		await db.transaction(async (tx) => {
-			// First, get all tour IDs for this user
+			// First, get all tour data for this user (including images)
 			const userTours = await tx
-				.select({ id: tours.id })
+				.select({ id: tours.id, images: tours.images })
 				.from(tours)
 				.where(eq(tours.userId, userId));
 			
 			const tourIds = userTours.map(tour => tour.id);
+
+			// Clean up images from MinIO storage before deleting database records
+			console.log(`🗂️ Cleaning up images for ${userTours.length} tours and user avatar...`);
+			
+			// Delete user's avatar from MinIO if it exists and is not an OAuth2 avatar
+			if (user.avatar && !user.avatar.startsWith('http')) {
+				try {
+					// Extract filename from current avatar URL (assumes format /api/avatars/userId/filename)
+					const avatarUrlParts = user.avatar.split('/');
+					const avatarFilename = avatarUrlParts[avatarUrlParts.length - 1]?.split('?')[0];
+					if (avatarFilename) {
+						await deleteAvatar(userId, avatarFilename);
+						console.log(`✅ Deleted user avatar from MinIO: ${avatarFilename}`);
+					}
+				} catch (avatarError) {
+					console.warn('⚠️ Failed to delete user avatar from MinIO:', avatarError);
+					// Continue with deletion even if avatar cleanup fails
+				}
+			}
+
+			// Delete tour images from MinIO
+			for (const tour of userTours) {
+				if (tour.images && Array.isArray(tour.images) && tour.images.length > 0) {
+					try {
+						await deleteImages(tour.id, tour.images);
+						console.log(`✅ Deleted ${tour.images.length} images for tour ${tour.id}`);
+					} catch (imageError) {
+						console.warn(`⚠️ Failed to delete images for tour ${tour.id}:`, imageError);
+						// Continue with deletion even if image cleanup fails
+					}
+				}
+			}
 
 			// If user has tours, delete related data in correct order
 			if (tourIds.length > 0) {
@@ -86,7 +120,7 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 		return json({ 
 			success: true,
-			message: `User ${user.email} and all their data (tours, bookings, payments, sessions) have been deleted`
+			message: `User ${user.email} and all their data (tours, bookings, payments, sessions, images) have been deleted`
 		});
 	} catch (error) {
 		console.error('Error deleting user:', error);
