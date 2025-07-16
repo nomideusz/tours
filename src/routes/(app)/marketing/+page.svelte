@@ -116,6 +116,7 @@
 		.business-card-modern {
 			background: white !important;
 		}
+
 		
 		@media print {
 			* {
@@ -237,17 +238,30 @@
 						<!-- Template & Color Selection -->
 						<div class="grid gap-4 sm:grid-cols-2 min-w-0">
 							<div>
-								<label for="template-select" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Template</label>
-								<select 
-									id="template-select"
-									bind:value={selectedTemplate}
-									class="w-full p-2 rounded-lg border min-w-0" 
-									style="background: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
-								>
-									<option value="professional">Professional</option>
-									<option value="modern">Modern</option>
-									<option value="minimal">Minimal</option>
-								</select>
+								<p class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Template</p>
+								<div class="grid grid-cols-3 gap-2">
+									<button
+										onclick={() => selectedTemplate = 'professional'}
+										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+										style="background: {selectedTemplate === 'professional' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'professional' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'professional' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
+									>
+										Professional
+									</button>
+									<button
+										onclick={() => selectedTemplate = 'modern'}
+										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+										style="background: {selectedTemplate === 'modern' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'modern' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'modern' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
+									>
+										Modern
+									</button>
+									<button
+										onclick={() => selectedTemplate = 'minimal'}
+										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+										style="background: {selectedTemplate === 'minimal' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'minimal' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'minimal' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
+									>
+										Minimal
+									</button>
+								</div>
 							</div>
 							<div>
 								<p class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Color Scheme</p>
