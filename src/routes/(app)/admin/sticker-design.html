@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaur Promotional Sticker</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .sticker-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 800px;
+        }
+        
+        .sticker {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+            border-radius: 20px;
+            border: 2px solid #e5e7eb;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .sticker::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 40px,
+                rgba(0, 0, 0, 0.01) 40px,
+                rgba(0, 0, 0, 0.01) 41px
+            );
+            border-radius: 18px;
+            pointer-events: none;
+        }
+        
+        .sticker-header {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .brand-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+        
+        .value-prop {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f97316;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+        
+        .qr-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .qr-code {
+            width: 120px;
+            height: 120px;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            line-height: 1.3;
+        }
+        
+        .website {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .website-url {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .promo-code {
+            background: #f97316;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .sticker-alt {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+        }
+        
+        .sticker-alt .brand-name {
+            color: white;
+        }
+        
+        .sticker-alt .tagline {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .sticker-alt .value-prop {
+            color: white;
+        }
+        
+        .sticker-alt .website-url {
+            color: white;
+        }
+        
+        .sticker-alt .qr-code {
+            background: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .sticker-alt .promo-code {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .features {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        
+        .sticker-alt .features {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .print-note {
+            text-align: center;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .print-note {
+                display: none;
+            }
+            
+            .sticker-container {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="sticker-container">
+            <!-- White version -->
+            <div class="sticker">
+                <div class="sticker-header">
+                    <div class="brand-name">ZAUR</div>
+                    <div class="tagline">QR Bookings for Tour Guides</div>
+                </div>
+                
+                <div class="value-prop">
+                    Zero Commission<br>
+                    Keep 100% of Revenue
+                </div>
+                
+                <div class="features">
+                    • 5-minute setup<br>
+                    • Instant bookings<br>
+                    • Tour discovery platform
+                </div>
+                
+                <div class="qr-section">
+                    <div class="qr-code">
+                        QR Code Here<br>
+                        (zaur.app)
+                    </div>
+                </div>
+                
+                <div class="website">
+                    <div class="website-url">zaur.app</div>
+                    <div class="promo-code">EARLY2025</div>
+                </div>
+            </div>
+            
+            <!-- Orange version -->
+            <div class="sticker sticker-alt">
+                <div class="sticker-header">
+                    <div class="brand-name">ZAUR</div>
+                    <div class="tagline">QR Bookings + Tour Discovery</div>
+                </div>
+                
+                <div class="value-prop">
+                    Professional Booking System<br>
+                    For Independent Tour Guides
+                </div>
+                
+                <div class="features">
+                    • No commission fees, ever<br>
+                    • Stripe secure payments<br>
+                    • Available in 40+ countries
+                </div>
+                
+                <div class="qr-section">
+                    <div class="qr-code">
+                        QR Code Here<br>
+                        (zaur.app)
+                    </div>
+                </div>
+                
+                <div class="website">
+                    <div class="website-url">zaur.app</div>
+                    <div class="promo-code">50% OFF LIFETIME</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="print-note">
+            Print at 300 DPI for best quality. Each sticker is 300x300px (ideal for 3" x 3" stickers)
+        </div>
+    </div>
+</body>
+</html> 

@@ -20,7 +20,8 @@
 		"db:deploy:caprover": "node scripts/deploy-database-caprover.js",
 		"db:export": "node scripts/export-database-structure.js",
 		"db:deploy:help": "node scripts/deploy-database-structure.js --help",
-		"test:minio": "tsx scripts/test-minio.ts"
+		"test:minio": "tsx scripts/test-minio.ts",
+		"generate:stickers": "node generate-stickers-html-only.js"
 	},
 	"files": [
 		"dist",
@@ -52,6 +53,7 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.1.8",
+		"@types/html-pdf-node": "^1.0.2",
 		"@types/node": "^22.15.27",
 		"@types/pg": "^8.11.6",
 		"@types/qrcode": "^1.5.5",
@@ -101,12 +103,14 @@
 		"drizzle-orm": "^0.33.0",
 		"express": "^4.21.2",
 		"glob": "^11.0.0",
+		"html-pdf-node": "^1.0.8",
 		"html2canvas": "^1.4.1",
 		"lucia": "^3.2.0",
 		"lucide-svelte": "^0.510.0",
 		"minio": "^8.0.5",
 		"pg": "^8.16.0",
 		"postgres": "^3.4.7",
+		"puppeteer": "^23.11.1",
 		"qr-code-styling": "^1.9.2",
 		"qr-scanner": "^1.4.2",
 		"qrcode": "^1.5.4",

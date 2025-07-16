@@ -36,6 +36,7 @@
 	import Crown from 'lucide-svelte/icons/crown';
 	import Globe from 'lucide-svelte/icons/globe';
 	import UserX from 'lucide-svelte/icons/user-x';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	
 	const queryClient = useQueryClient();
 	
@@ -304,6 +305,12 @@
 							variant: 'secondary'
 						},
 						{
+							label: 'Stickers',
+							icon: QrCode,
+							onclick: () => goto('/admin/stickers'),
+							variant: 'secondary'
+						},
+						{
 							label: 'Export',
 							icon: Download,
 							onclick: exportUsers,
@@ -349,6 +356,10 @@
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />
 							Email Tools
+						</button>
+						<button onclick={() => goto('/admin/stickers')} class="button-secondary button--gap">
+							<QrCode class="h-4 w-4" />
+							Stickers
 						</button>
 						<button onclick={exportUsers} class="button-primary button--gap">
 							<Download class="h-4 w-4" />
@@ -396,6 +407,16 @@
 					value={stats.totalTours}
 					subtitle="Click to manage →"
 					icon={MapPin}
+				/>
+			</button>
+			
+			<!-- Stickers Card - clickable to navigate to sticker generator -->
+			<button onclick={() => goto('/admin/stickers')} class="text-left cursor-pointer">
+				<StatsCard 
+					title="Stickers"
+					value="Generate"
+					subtitle="Marketing tools →"
+					icon={QrCode}
 				/>
 			</button>
 			
