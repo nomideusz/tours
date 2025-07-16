@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { users, tours, bookings, sessions, notifications } from '$lib/db/schema/index.js';
-import { eq } from 'drizzle-orm';
+import { users, tours, bookings, sessions, notifications, timeSlots, payments } from '$lib/db/schema/index.js';
+import { eq, sql, inArray } from 'drizzle-orm';
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
 	// Check admin access
@@ -38,22 +38,55 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 		// Start a transaction to delete all related data
 		await db.transaction(async (tx) => {
-			// Delete user's sessions
+			// First, get all tour IDs for this user
+			const userTours = await tx
+				.select({ id: tours.id })
+				.from(tours)
+				.where(eq(tours.userId, userId));
+			
+			const tourIds = userTours.map(tour => tour.id);
+
+			// If user has tours, delete related data in correct order
+			if (tourIds.length > 0) {
+				// 1. Get all booking IDs for user's tours
+				const userBookings = await tx
+					.select({ id: bookings.id })
+					.from(bookings)
+					.where(inArray(bookings.tourId, tourIds));
+				
+				const bookingIds = userBookings.map(booking => booking.id);
+
+				// 2. Delete payments for these bookings
+				if (bookingIds.length > 0) {
+					await tx.delete(payments)
+						.where(inArray(payments.bookingId, bookingIds));
+				}
+
+				// 3. Delete bookings for user's tours
+				await tx.delete(bookings)
+					.where(inArray(bookings.tourId, tourIds));
+
+				// 4. Delete time slots for user's tours
+				await tx.delete(timeSlots)
+					.where(inArray(timeSlots.tourId, tourIds));
+
+				// 5. Delete user's tours
+				await tx.delete(tours).where(eq(tours.userId, userId));
+			}
+
+			// 6. Delete user's sessions
 			await tx.delete(sessions).where(eq(sessions.userId, userId));
 
-			// Delete user's notifications
+			// 7. Delete user's notifications
 			await tx.delete(notifications).where(eq(notifications.userId, userId));
 
-			// Delete user's tours (cascade will handle timeSlots)
-			await tx.delete(tours).where(eq(tours.userId, userId));
-
-			// Finally delete the user (cascade will handle oauth accounts, tokens, etc.)
+			// 8. Finally delete the user (cascade will handle oauth accounts, tokens, etc.)
 			await tx.delete(users).where(eq(users.id, userId));
 		});
 
 		return json({ 
 			success: true,
-			message: `User ${user.email} and all their data have been deleted`
+			message: `User ${user.email} and all their data (tours, bookings, payments, sessions) have been deleted`
 		});
 	} catch (error) {
 		console.error('Error deleting user:', error);

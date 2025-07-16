@@ -9,7 +9,7 @@
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import TableSort from '$lib/components/TableSort.svelte';
 	import { formatDate } from '$lib/utils/date-helpers.js';
-	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	import { globalCurrencyFormatter, formatCurrency } from '$lib/utils/currency.js';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	import { createTableSort, sortData, createSortableFields } from '$lib/utils/table-sort.js';
 	
@@ -585,7 +585,7 @@
 										<div class="text-sm">
 											<p><span style="color: var(--text-secondary);">Tours:</span> <span class="font-medium" style="color: var(--text-primary);">{user.tourCount || 0}</span></p>
 											<p><span style="color: var(--text-secondary);">Bookings:</span> <span class="font-medium" style="color: var(--text-primary);">{user.bookingCount || 0}</span></p>
-											<p><span style="color: var(--text-secondary);">Revenue:</span> <span class="font-medium" style="color: var(--text-primary);">{$globalCurrencyFormatter(user.totalRevenue || 0)}</span></p>
+											<p><span style="color: var(--text-secondary);">Revenue:</span> <span class="font-medium" style="color: var(--text-primary);">{formatCurrency(user.totalRevenue || 0, { currency: user.currency || 'EUR' })}</span></p>
 										</div>
 									</td>
 									<td class="px-4 py-4">
@@ -694,7 +694,7 @@
 									<p class="text-xs" style="color: var(--text-secondary);">Bookings</p>
 								</div>
 								<div class="rounded-lg p-3" style="background: var(--bg-secondary);">
-									<p class="text-sm font-bold truncate" style="color: var(--text-primary);" title="{$globalCurrencyFormatter(user.totalRevenue || 0)}">{$globalCurrencyFormatter(user.totalRevenue || 0)}</p>
+									<p class="text-sm font-bold truncate" style="color: var(--text-primary);" title="{formatCurrency(user.totalRevenue || 0, { currency: user.currency || 'EUR' })}">{formatCurrency(user.totalRevenue || 0, { currency: user.currency || 'EUR' })}</p>
 									<p class="text-xs" style="color: var(--text-secondary);">Revenue</p>
 								</div>
 							</div>

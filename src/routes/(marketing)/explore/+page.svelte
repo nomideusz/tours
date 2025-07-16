@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { createPublicToursQuery } from '$lib/queries/public-queries.js';
-	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
+
 	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
 	import { generateBookingURL } from '$lib/utils/qr-generation.js';
 	
@@ -525,7 +525,7 @@
 									<div class="flex items-end justify-between flex-grow">
 										<div>
 											<p class="text-2xl font-bold" style="color: var(--text-primary);">
-												{getTourDisplayPriceFormattedWithCurrency(tour, formatTourOwnerCurrency(tour.operator.currency))}
+												{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
 											</p>
 											<p class="text-sm" style="color: var(--text-secondary);">per person</p>
 										</div>
