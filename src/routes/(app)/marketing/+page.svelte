@@ -103,11 +103,29 @@
 	<title>Marketing Materials - Zaur</title>
 	<meta name="description" content="Create professional marketing materials for your tour business" />
 	<style>
+		/* Ensure QR codes always have proper contrast */
+		.qr-container {
+			background: white !important;
+		}
+		.qr-container img {
+			background: white !important;
+		}
+		
+		/* Force minimal and modern cards to always be white */
+		.business-card-minimal,
+		.business-card-modern {
+			background: white !important;
+		}
+		
 		@media print {
 			* {
 				-webkit-print-color-adjust: exact !important;
 				color-adjust: exact !important;
 				print-color-adjust: exact !important;
+			}
+			/* Force white page background for printing */
+			body {
+				background: white !important;
 			}
 			body * {
 				visibility: hidden;
@@ -140,6 +158,14 @@
 				color-adjust: exact !important;
 				print-color-adjust: exact !important;
 			}
+			/* Force QR code backgrounds to be white in print */
+			.qr-container {
+				background: white !important;
+				border: none !important;
+			}
+			.qr-container img {
+				background: white !important;
+			}
 			/* Force solid background for professional template in print */
 			.business-card-professional {
 				background-image: none !important;
@@ -158,6 +184,11 @@
 			}
 			.business-card-professional * {
 				color: white !important;
+			}
+			/* Force minimal and modern templates to be white in print */
+			.business-card-minimal,
+			.business-card-modern {
+				background: white !important;
 			}
 		}
 	</style>
@@ -248,7 +279,7 @@
 										<div class="flex h-full">
 											<div class="flex-1 flex flex-col justify-between">
 												<div>
-													<h3 class="text-base sm:text-lg font-bold mb-1">{profile.name}</h3>
+													<h3 class="text-base sm:text-lg font-bold mb-1 text-white">{profile.name}</h3>
 													{#if profile.businessName}
 														<p class="text-sm opacity-90 mb-3">{profile.businessName}</p>
 													{/if}
@@ -283,8 +314,8 @@
 											</div>
 											<div class="w-12 sm:w-16 flex flex-col items-center justify-center">
 												{#if qrCodeURL}
-													<div class="w-10 h-10 sm:w-14 sm:h-14 bg-white p-1 rounded">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" />
+													<div class="qr-container w-10 h-10 sm:w-14 sm:h-14 bg-white p-1 rounded" style="background: white !important;">
+														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
 													</div>
 													<p class="text-xs mt-1 text-center">Scan to Book</p>
 												{/if}
@@ -295,8 +326,8 @@
 							{:else if selectedTemplate === 'modern'}
 								<!-- Modern Template -->
 								<div 
-									class="business-card w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden"
-									style="background: white; border-left: 6px solid {colorSchemes[selectedColorScheme].primary};"
+									class="business-card business-card-modern w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden"
+									style="background: white !important; border-left: 6px solid {colorSchemes[selectedColorScheme].primary};"
 								>
 									<div class="absolute inset-0 p-3 sm:p-4">
 										<div class="flex h-full">
@@ -323,8 +354,8 @@
 											</div>
 											<div class="w-16 sm:w-20 flex flex-col items-center justify-center">
 												{#if qrCodeURL}
-													<div class="w-12 h-12 sm:w-16 sm:h-16 p-1 rounded-lg" style="background: {colorSchemes[selectedColorScheme].primary};">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full bg-white rounded" />
+													<div class="qr-container w-12 h-12 sm:w-16 sm:h-16 p-1 rounded-lg" style="background: {colorSchemes[selectedColorScheme].primary};">
+														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full bg-white rounded" style="background: white !important;" />
 													</div>
 													<p class="text-xs mt-2 text-center font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">SCAN</p>
 												{/if}
@@ -335,7 +366,8 @@
 							{:else if selectedTemplate === 'minimal'}
 								<!-- Minimal Template -->
 								<div 
-									class="business-card w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden bg-white"
+									class="business-card business-card-minimal w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden bg-white"
+									style="background: white !important;"
 								>
 									<div class="absolute inset-0 p-4 sm:p-6">
 										<div class="flex h-full items-center">
@@ -356,8 +388,8 @@
 											</div>
 											<div class="ml-4 sm:ml-6">
 												{#if qrCodeURL}
-													<div class="w-10 h-10 sm:w-12 sm:h-12">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" />
+													<div class="qr-container w-10 h-10 sm:w-12 sm:h-12" style="background: white !important; border-radius: 4px; padding: 2px;">
+														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
 													</div>
 												{/if}
 											</div>
