@@ -23,6 +23,9 @@
 	import Phone from 'lucide-svelte/icons/phone';
 	import Mail from 'lucide-svelte/icons/mail';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	
+	// Components
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	// Profile data query
 	const profileQuery = createQuery({
@@ -358,13 +361,14 @@
 								<p class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Color Scheme</p>
 								<div class="flex gap-2 flex-wrap">
 									{#each Object.keys(colorSchemes) as scheme}
-										<button
-											onclick={() => selectedColorScheme = scheme as 'primary' | 'blue' | 'green' | 'purple' | 'orange'}
-											class="w-8 h-8 rounded-full border-2"
-											style="background: {colorSchemes[scheme].primary}; border-color: {selectedColorScheme === scheme ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
-											title={scheme === 'primary' ? 'Theme Color' : scheme}
-											aria-label="Select {scheme === 'primary' ? 'theme' : scheme} color scheme"
-										></button>
+										<Tooltip text={scheme === 'primary' ? 'Theme Color' : scheme.charAt(0).toUpperCase() + scheme.slice(1)} position="bottom">
+											<button
+												onclick={() => selectedColorScheme = scheme as 'primary' | 'blue' | 'green' | 'purple' | 'orange'}
+												class="w-8 h-8 rounded-full border-2"
+												style="background: {colorSchemes[scheme].primary}; border-color: {selectedColorScheme === scheme ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
+												aria-label="Select {scheme === 'primary' ? 'theme' : scheme} color scheme"
+											></button>
+										</Tooltip>
 									{/each}
 								</div>
 							</div>
