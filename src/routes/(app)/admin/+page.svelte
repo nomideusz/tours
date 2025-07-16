@@ -10,7 +10,7 @@
 	import TableSort from '$lib/components/TableSort.svelte';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { isAdmin } from '$lib/stores/auth.js';
+	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	import { createTableSort, sortData, createSortableFields } from '$lib/utils/table-sort.js';
 	
 	// Icons
@@ -39,10 +39,12 @@
 	
 	const queryClient = useQueryClient();
 	
-	// Check admin access
-	if (browser && !$isAdmin) {
-		goto('/dashboard');
-	}
+	// Check admin access - wait for auth to load before redirecting
+	$effect(() => {
+		if (browser && !$authLoading && !$isAdmin) {
+			goto('/dashboard');
+		}
+	});
 	
 	// Query for admin stats
 	const adminStatsQuery = createQuery({
@@ -266,7 +268,15 @@
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-{#if !$isAdmin}
+{#if $authLoading}
+	<div class="flex items-center justify-center min-h-[60vh]">
+		<div class="text-center">
+			<Loader2 class="h-12 w-12 mx-auto mb-4 animate-spin" style="color: var(--text-tertiary);" />
+			<h1 class="text-xl font-medium mb-2" style="color: var(--text-primary);">Loading...</h1>
+			<p class="text-sm" style="color: var(--text-secondary);">Checking access permissions...</p>
+		</div>
+	</div>
+{:else if !$isAdmin}
 	<div class="flex items-center justify-center min-h-[60vh]">
 		<div class="text-center">
 			<Shield class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
@@ -278,26 +288,27 @@
 		</div>
 	</div>
 {:else}
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 		<!-- Header -->
 		<div class="mb-6 sm:mb-8">
 			<!-- Mobile Header -->
-			<MobilePageHeader
-				title="Admin Panel"
-				secondaryInfo={isLoading ? 'Loading...' : `${stats.totalUsers} users`}
-				quickActions={[
-					{
-						label: 'Export',
-						icon: Download,
-						onclick: exportUsers,
-						variant: 'secondary'
-					}
-				]}
-				infoItems={[
-					{
-						icon: Users,
-						label: 'Total Users',
-						value: isLoading ? '...' : `${stats.totalUsers}`
+			<div class="block lg:hidden">
+				<MobilePageHeader
+					title="Admin Panel"
+					secondaryInfo={isLoading ? 'Loading...' : `${stats.totalUsers} users`}
+					quickActions={[
+						{
+							label: 'Export',
+							icon: Download,
+							onclick: exportUsers,
+							variant: 'secondary'
+						}
+					]}
+					infoItems={[
+						{
+							icon: Users,
+							label: 'Total Users',
+							value: isLoading ? '...' : `${stats.totalUsers}`
 					},
 					{
 						icon: CreditCard,
@@ -316,6 +327,7 @@
 					}
 				]}
 			/>
+			</div>
 			
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
@@ -475,7 +487,8 @@
 		{:else}
 			<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<!-- Desktop Table -->
-				<div class="hidden lg:block overflow-x-auto">
+				<div class="hidden lg:block">
+					<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead style="background: var(--bg-secondary);">
 							<TableSort 
@@ -605,39 +618,52 @@
 							{/each}
 						</tbody>
 					</table>
+					</div>
 				</div>
 				
 				<!-- Mobile Cards -->
 				<div class="lg:hidden divide-y" style="border-color: var(--border-primary);">
 					{#each filteredUsers as user}
 						<div class="p-4 space-y-3">
-							<div class="flex items-start justify-between">
-								<div class="flex items-center gap-3">
+							<div class="flex items-start justify-between gap-3">
+								<div class="flex items-center gap-3 min-w-0 flex-1">
 									{#if user.avatar}
-										<img src={user.avatar} alt={user.name} class="h-12 w-12 rounded-full object-cover" />
+										<img src={user.avatar} alt={user.name} class="h-12 w-12 rounded-full object-cover flex-shrink-0" />
 									{:else}
-										<div class="h-12 w-12 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary);">
+										<div class="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--bg-tertiary);">
 											<Users class="h-6 w-6" style="color: var(--text-tertiary);" />
 										</div>
 									{/if}
-									<div>
-										<p class="font-medium" style="color: var(--text-primary);">
+									<div class="min-w-0 flex-1">
+										<p class="font-medium truncate" style="color: var(--text-primary);">
 											{user.name || 'Unnamed User'}
 										</p>
-										<p class="text-sm" style="color: var(--text-secondary);">{user.email}</p>
+										<p class="text-sm truncate" style="color: var(--text-secondary);">{user.email}</p>
+										{#if user.businessName}
+											<p class="text-xs truncate" style="color: var(--text-tertiary);">{user.businessName}</p>
+										{/if}
 									</div>
 								</div>
-								{#if canDeleteUser(user)}
+								<div class="flex items-center gap-2 flex-shrink-0">
 									<button
-										onclick={() => {
-											userToDelete = user;
-											deleteUserModal = true;
-										}}
-										class="button-danger button--small button--icon"
+										onclick={() => window.open(`/${user.username}`, '_blank')}
+										class="button-secondary button--small button--icon"
+										disabled={!user.username}
 									>
-										<Trash2 class="h-4 w-4" />
+										<Eye class="h-4 w-4" />
 									</button>
-								{/if}
+									{#if canDeleteUser(user)}
+										<button
+											onclick={() => {
+												userToDelete = user;
+												deleteUserModal = true;
+											}}
+											class="button-danger button--small button--icon"
+										>
+											<Trash2 class="h-4 w-4" />
+										</button>
+									{/if}
+								</div>
 							</div>
 							
 							<div class="flex flex-wrap gap-2">
@@ -658,17 +684,17 @@
 								{/if}
 							</div>
 							
-							<div class="grid grid-cols-3 gap-3 text-center">
-								<div class="rounded-lg p-2" style="background: var(--bg-secondary);">
-									<p class="text-lg font-bold" style="color: var(--text-primary);">{user.tourCount || 0}</p>
+							<div class="grid grid-cols-3 gap-2 text-center">
+								<div class="rounded-lg p-3" style="background: var(--bg-secondary);">
+									<p class="text-base font-bold" style="color: var(--text-primary);">{user.tourCount || 0}</p>
 									<p class="text-xs" style="color: var(--text-secondary);">Tours</p>
 								</div>
-								<div class="rounded-lg p-2" style="background: var(--bg-secondary);">
-									<p class="text-lg font-bold" style="color: var(--text-primary);">{user.bookingCount || 0}</p>
+								<div class="rounded-lg p-3" style="background: var(--bg-secondary);">
+									<p class="text-base font-bold" style="color: var(--text-primary);">{user.bookingCount || 0}</p>
 									<p class="text-xs" style="color: var(--text-secondary);">Bookings</p>
 								</div>
-								<div class="rounded-lg p-2" style="background: var(--bg-secondary);">
-									<p class="text-lg font-bold" style="color: var(--text-primary);">{$globalCurrencyFormatter(user.totalRevenue || 0)}</p>
+								<div class="rounded-lg p-3" style="background: var(--bg-secondary);">
+									<p class="text-sm font-bold truncate" style="color: var(--text-primary);" title="{$globalCurrencyFormatter(user.totalRevenue || 0)}">{$globalCurrencyFormatter(user.totalRevenue || 0)}</p>
 									<p class="text-xs" style="color: var(--text-secondary);">Revenue</p>
 								</div>
 							</div>
@@ -697,8 +723,8 @@
 	<ConfirmationModal
 		isOpen={deleteUserModal}
 		title="Delete User?"
-		message={`Are you sure you want to delete ${userToDelete?.name || userToDelete?.email}? This will permanently delete their account, tours, and all associated data. This action cannot be undone.`}
-		confirmText="Delete User"
+		message={deleteError ? `Error: ${deleteError}` : `Are you sure you want to delete ${userToDelete?.name || userToDelete?.email}? This will permanently delete their account, tours, and all associated data. This action cannot be undone.`}
+		confirmText={isDeleting ? "Deleting..." : "Delete User"}
 		cancelText="Cancel"
 		variant="danger"
 		icon={UserX}

@@ -16,17 +16,17 @@
 <div class="text-center mb-16">
 	<div class="professional-badge mb-6">
 		<Compass class="w-4 h-4" />
-		<span>Professional Tools</span>
+		<span>Discovery + Bookings</span>
 	</div>
 	<h2 class="marketing-heading marketing-heading-lg mb-4">
-		Everything You Need to Succeed
+		Get Found. Get Booked.
 	</h2>
 	<p class="text-lg max-w-2xl mx-auto text-secondary">
-		Built specifically for tour guides, with zero risk and all the features that matter for your business.
+		The first platform that helps customers discover your tours AND book instantly. No commission fees on either.
 	</p>
 </div>
 
-<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="features-grid">
 	<!-- Revenue Feature -->
 	<div class="professional-feature-card">
 		<div class="professional-icon professional-icon--coral">
@@ -36,6 +36,19 @@
 			<h3 class="feature-title">Keep 100% of Revenue</h3>
 			<p class="feature-description">
 				No commission fees, just a simple monthly subscription. Get paid directly to your bank account.
+			</p>
+		</div>
+	</div>
+
+	<!-- Discovery Feature -->
+	<div class="professional-feature-card">
+		<div class="professional-icon professional-icon--coral">
+			<Compass class="w-6 h-6" strokeWidth={2} />
+		</div>
+		<div class="feature-content">
+			<h3 class="feature-title">Built-in Tour Discovery</h3>
+			<p class="feature-description">
+				Customers find your tours through our discovery platform. Get organic bookings without marketing costs.
 			</p>
 		</div>
 	</div>
@@ -168,6 +181,34 @@
 		font-weight: 600;
 		font-size: 0.875rem;
 		box-shadow: var(--shadow-sm);
+	}
+
+	/* Clean responsive grid layout for 7 cards */
+	.features-grid {
+		display: grid;
+		gap: 2rem;
+		grid-template-columns: 1fr;
+	}
+
+	/* Tablet and Desktop: 2 columns gives balanced 4+3 layout */
+	@media (min-width: 768px) {
+		.features-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	/* Large Desktop: 3 columns with better spacing */
+	@media (min-width: 1280px) {
+		.features-grid {
+			grid-template-columns: repeat(3, 1fr);
+			max-width: 1200px;
+			margin: 0 auto;
+		}
+		
+		/* Center the last card by spanning it and using auto margins */
+		.features-grid .professional-feature-card:nth-child(7) {
+			grid-column: 2 / 3;
+		}
 	}
 
 	/* Professional Feature Cards - matches HeroSection trust cards */
@@ -371,6 +412,57 @@
 
 		.professional-feature-card {
 			padding: 1.5rem;
+		}
+	}
+
+	/* Fix badge icons visibility in dark mode */
+	@media (prefers-color-scheme: dark) {
+		.professional-badge svg {
+			color: #1f2937 !important;
+			stroke: #1f2937 !important;
+		}
+		
+		/* Ensure feature card icon backgrounds are visible in dark mode */
+		.professional-icon--coral {
+			background: #ef4444 !important;
+		}
+		
+		.professional-icon--orange {
+			background: #f97316 !important;
+		}
+		
+		.professional-icon--teal {
+			background: #06b6d4 !important;
+		}
+		
+		.professional-icon--navy {
+			background: #1e293b !important;
+		}
+		
+		/* Ensure feature card icons are white on colored backgrounds */
+		.professional-icon svg {
+			color: white !important;
+			stroke: white !important;
+		}
+		
+		/* Ensure trust icon backgrounds are visible in dark mode */
+		.trust-icon--coral {
+			background: #ef4444 !important;
+		}
+		
+		.trust-icon--orange {
+			background: #f97316 !important;
+		}
+		
+		.trust-icon--navy {
+			background: #1e293b !important;
+		}
+		
+		/* Ensure trust icon text is white on colored backgrounds */
+		.trust-icon--coral .trust-icon-text,
+		.trust-icon--orange .trust-icon-text,
+		.trust-icon--navy .trust-icon-text {
+			color: white !important;
 		}
 	}
 </style> 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
+	import { goto } from '$app/navigation';
 	
 	// Icons
 	import Settings from 'lucide-svelte/icons/settings';
@@ -29,8 +30,7 @@
 	}
 	
 	function copyQrCode() {
-		const sampleUrl = 'https://zaur.app/book/TUR-BAR-A7X9';
-		navigator.clipboard.writeText(sampleUrl);
+		navigator.clipboard.writeText(sampleExploreUrl);
 		qrCopied = true;
 		setTimeout(() => qrCopied = false, 2000);
 	}
@@ -63,7 +63,7 @@
 		}
 	];
 	
-	const sampleBookingUrl = 'https://zaur.app/book/TUR-BAR-A7X9';
+	const sampleExploreUrl = 'https://zaur.app/explore';
 </script>
 
 {#if showcaseMounted}
@@ -108,23 +108,35 @@
 				<!-- QR Code Showcase -->
 				<div class="qr-showcase" in:fade={{ duration: 300 }}>
 					<div class="qr-header">
-						<h4 class="qr-title">Your Tour QR Code</h4>
-						<div class="qr-badge">Ready to Share</div>
+						<h4 class="qr-title">Discover Tours</h4>
+						<div class="qr-badge">Browse Real Tours</div>
 					</div>
 					
 					<div class="qr-content">
 						<div class="qr-main">
 							<!-- QR Code Display -->
 							<div class="qr-code-container">
-								<div class="qr-code-wrapper">
+								<div 
+									class="qr-code-wrapper"
+									onclick={() => goto('/explore')}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											goto('/explore');
+										}
+									}}
+									role="button"
+									tabindex="0"
+									aria-label="Explore real tours - click to browse available tours"
+								>
 									<img 
-										src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(sampleBookingUrl)}&qzone=2`}
-										alt="Sample QR Code"
+										src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(sampleExploreUrl)}&qzone=2`}
+										alt="Sample QR Code - Click to explore tours"
 										class="qr-code-image"
 									/>
 								</div>
 								<div class="qr-code-id">
-									<p class="qr-id-text">TUR-BAR-A7X9</p>
+									<p class="qr-id-text">EXPLORE</p>
 								</div>
 							</div>
 							
@@ -178,7 +190,7 @@
 									Link Copied!
 								{:else}
 									<Copy class="w-4 h-4" />
-									Copy Booking Link
+									Copy Explore Link
 								{/if}
 							</button>
 							<div class="qr-action-grid">
@@ -194,7 +206,7 @@
 						</div>
 						
 						<div class="qr-url">
-							<p class="url-text">{sampleBookingUrl}</p>
+							<p class="url-text">{sampleExploreUrl}</p>
 						</div>
 					</div>
 				</div>
@@ -461,6 +473,38 @@
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-sm);
 		border: 1px solid var(--border-primary);
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Coral accent on hover - matches HeroSection */
+	.qr-code-wrapper::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: var(--color-coral-500);
+		transform: scaleX(0);
+		transition: transform var(--transition-base) ease;
+	}
+	
+	.qr-code-wrapper:hover::before {
+		transform: scaleX(1);
+	}
+
+	.qr-code-wrapper:hover {
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg);
+		border-color: var(--color-coral-500);
+	}
+
+	.qr-code-wrapper:focus {
+		outline: 2px solid var(--color-coral-500);
+		outline-offset: 2px;
 	}
 	
 	.qr-code-image {

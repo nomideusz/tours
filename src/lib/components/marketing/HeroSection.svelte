@@ -24,16 +24,16 @@
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<div class="text-center max-w-4xl mx-auto py-20" in:fade={{ delay: 200 }}>
 			<div class="professional-badge mb-6">
-				<span>🚀 Available Now</span>
+				<span>Available Now</span>
 			</div>
 			
 			<h1 class="hero-title mb-6">
 				<span class="title-primary">QR Bookings</span>
-				<span class="title-secondary">for Independent Tour Guides</span>
+				<span class="title-secondary">+ Tour Discovery</span>
 			</h1>
 			
 			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
-				The simplest booking system with QR codes, instant reservations, and secure payments. No commission fees, ever.
+				The simplest booking system with QR codes, instant reservations, and tour discovery. No commission fees, ever.
 			</p>
 			
 			<div class="hero-actions max-w-md mx-auto mb-8">

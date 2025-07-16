@@ -9,7 +9,7 @@
 	const faqs = [
 		{
 			question: "When will Zaur be fully available?",
-			answer: "We're planning our public launch in Q2 2025. Early access members get all features progressively and full access before public launch."
+			answer: "We're planning our public launch in Q3 2025. Early access members get all features progressively and full access before public launch."
 		},
 		{
 			question: "What happens to my early access pricing?",
@@ -104,6 +104,9 @@
 	.faq-grid {
 		display: grid;
 		gap: 1rem;
+		width: 100%;
+		max-width: 100%;
+		min-width: 960px;
 	}
 	
 	/* FAQ Items - fixed width design */
@@ -115,6 +118,9 @@
 		transition: all var(--transition-base) ease;
 		box-shadow: var(--shadow-sm);
 		position: relative;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 	
 	/* Coral accent line on hover */
@@ -143,6 +149,7 @@
 	/* Compact FAQ Questions */
 	.faq-question {
 		width: 100%;
+		max-width: 100%;
 		padding: 1.25rem 1.5rem;
 		background: transparent;
 		border: none;
@@ -152,6 +159,7 @@
 		gap: 1rem;
 		text-align: left;
 		transition: all 0.3s ease;
+		box-sizing: border-box;
 	}
 	
 	.faq-item:hover .faq-question {
@@ -170,6 +178,8 @@
 		flex: 1;
 		word-wrap: break-word;
 		overflow-wrap: break-word;
+		min-width: 0;
+		max-width: 100%;
 	}
 	
 	/* Compact FAQ Toggle */
@@ -202,6 +212,8 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 1rem;
+		width: 100%;
+		max-width: 100%;
 	}
 
 	.faq-answer p {
@@ -212,6 +224,8 @@
 		flex: 1;
 		word-wrap: break-word;
 		overflow-wrap: break-word;
+		min-width: 0;
+		max-width: 100%;
 	}
 
 	/* Invisible spacer to match toggle button width */
@@ -255,6 +269,10 @@
 			padding: 1rem 1.25rem;
 			gap: 0.75rem;
 		}
+
+		.faq-grid {
+			min-width: 0;
+		}
 		
 		.faq-question-text {
 			font-size: 0.9375rem;
@@ -286,6 +304,10 @@
 	@media (max-width: 480px) {
 		.faq-question {
 			padding: 0.875rem 1rem;
+		}
+
+		.faq-grid {
+			min-width: 0;
 		}
 		
 		.faq-answer {

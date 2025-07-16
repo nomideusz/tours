@@ -170,7 +170,8 @@
 		pricingTiers: {
 			adult: 0,
 			child: 0
-		}
+		},
+		publicListing: true
 	});
 
 	// Image upload state
@@ -369,7 +370,8 @@
 			pricingTiers: tour.pricingTiers || {
 				adult: parseFloat(tour.price) || 0,
 				child: 0
-			}
+			},
+			publicListing: tour.publicListing || true
 		};
 
 		// Initialize existing images

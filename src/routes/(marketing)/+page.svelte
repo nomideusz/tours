@@ -12,13 +12,13 @@
 
 <svelte:head>
 	<!-- Override title for homepage specifically -->
-	<title>Zaur - More Bookings, Less Hassle for Independent Tour Guides</title>
-	<meta name="title" content="Zaur - More Bookings, Less Hassle for Independent Tour Guides" />
-	<meta name="description" content="The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever!" />
+	<title>Zaur - Tour Discovery Platform + QR Bookings for Tour Guides</title>
+	<meta name="title" content="Zaur - Tour Discovery Platform + QR Bookings for Tour Guides" />
+	<meta name="description" content="The first platform combining tour discovery with QR code bookings. Get found by customers and keep 100% of revenue. No commission fees on discovery or bookings." />
 	
 	<!-- Additional SEO signals for homepage -->
-	<meta property="og:title" content="Zaur - More Bookings, Less Hassle for Independent Tour Guides" />
-	<meta property="og:description" content="The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings. No commission fees, ever!" />
+	<meta property="og:title" content="Zaur - Tour Discovery Platform + QR Bookings for Tour Guides" />
+	<meta property="og:description" content="The first platform combining tour discovery with QR code bookings. Get found by customers and keep 100% of revenue. No commission fees on discovery or bookings." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	
@@ -28,8 +28,8 @@
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
 		"name": "Zaur",
-		"headline": "More Bookings, Less Hassle for Independent Tour Guides",
-		"description": "The simplest booking system with QR codes, instant reservations, and secure payments. Independent tour guides keep 100% of earnings.",
+		"headline": "Tour Discovery Platform + QR Bookings for Tour Guides",
+		"description": "The first platform combining tour discovery with QR code bookings. Get found by customers and keep 100% of revenue.",
 		"url": "https://zaur.app",
 		"applicationCategory": "BusinessApplication",
 		"operatingSystem": "Web",
@@ -41,6 +41,7 @@
 			"description": "Free to start, monthly subscription available"
 		},
 		"featureList": [
+			"Tour Discovery Platform",
 			"QR Code Generation",
 			"Instant Booking",
 			"Payment Processing",

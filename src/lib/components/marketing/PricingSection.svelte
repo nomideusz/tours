@@ -153,11 +153,11 @@
 <div class="mt-16">
 	<div class="no-commission-card max-w-4xl mx-auto text-center">
 		<p class="no-commission-title">
-			No Commission Model
+			Discovery + No Commission Model
 		</p>
 		<p class="no-commission-description">
-			Unlike competitors who charge 3-8% commission per booking, we use a simple subscription model. 
-			<span class="font-semibold">You keep 100% of your booking revenue.</span>
+			The first platform offering tour discovery AND no booking fees. Get found by customers through our discovery platform, then keep 100% of revenue.
+			<span class="font-semibold">Zero commissions. Maximum exposure.</span>
 		</p>
 	</div>
 </div>

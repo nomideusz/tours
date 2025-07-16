@@ -11,6 +11,7 @@
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
+	import Globe from 'lucide-svelte/icons/globe';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;
@@ -141,6 +142,10 @@
 					<Layout class="w-4 h-4" />
 					<span>Features</span>
 				</a>
+				<a href="/explore" class="nav-link">
+					<Globe class="w-4 h-4" />
+					<span>Explore Tours</span>
+				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
 					<DollarSign class="w-4 h-4" />
 					<span>Pricing</span>
@@ -246,6 +251,10 @@
 				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="mobile-nav-link">
 					<Layout class="w-4 h-4" />
 					<span>Features</span>
+				</a>
+				<a href="/explore" onclick={handleMobileLinkClick} class="mobile-nav-link">
+					<Globe class="w-4 h-4" />
+					<span>Explore Tours</span>
 				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
 					<DollarSign class="w-4 h-4" />

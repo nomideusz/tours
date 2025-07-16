@@ -1,6 +1,6 @@
 {
-  "id": "24f2a6e7-0de3-4e10-b9ed-3f1e3d250dea",
-  "prevId": "f078060a-abce-4156-bf2a-35f7fb47d3e5",
+  "id": "80bc1191-1a41-444e-921a-d9acf0b7a9ee",
+  "prevId": "24f2a6e7-0de3-4e10-b9ed-3f1e3d250dea",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -967,6 +967,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "public_listing": {
+          "name": "public_listing",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "created_at": {
           "name": "created_at",

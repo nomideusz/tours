@@ -30,6 +30,7 @@ export interface TourFormData {
 		adult: number;
 		child?: number;
 	};
+	publicListing?: string | boolean;
 }
 
 export interface TimeSlotFormData {
@@ -410,7 +411,8 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		pricingTiers: data.pricingTiers ? {
 			adult: Number(data.pricingTiers.adult) || 0,
 			child: Number(data.pricingTiers.child) || 0
-		} : undefined
+		} : undefined,
+		publicListing: data.publicListing
 	};
 }
 

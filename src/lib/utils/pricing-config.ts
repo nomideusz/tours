@@ -33,6 +33,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 			{ text: '1 tour type', included: true },
 			{ text: 'Basic QR codes', included: true },
 			{ text: 'Email notifications', included: true },
+			{ text: 'Tour discovery listing', included: true },
 			{ text: 'Zaur branding visible', included: false },
 			{ text: 'No SMS notifications', included: false },
 			{ text: 'No analytics', included: false }
@@ -52,6 +53,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 			{ text: '60 bookings/month', included: true },
 			{ text: '5 tour types', included: true },
 			{ text: 'Remove Zaur branding', included: true },
+			{ text: 'Priority discovery ranking', included: true },
 			{ text: 'Custom logo & colors', included: true, comingSoon: true },
 			{ text: 'Basic analytics', included: true },
 			{ text: 'QR code customization', included: true, comingSoon: true },
@@ -71,6 +73,9 @@ export const PRICING_PLANS: PricingPlan[] = [
 		features: [
 			{ text: 'Unlimited bookings', included: true },
 			{ text: 'Unlimited tour types', included: true },
+			{ text: 'Featured discovery listings', included: true },
+			{ text: '"Verified Operator" badge', included: true },
+			{ text: 'Discovery analytics', included: true },
 			{ text: 'Advanced analytics & insights', included: true },
 			{ text: 'WhatsApp notifications', included: true, comingSoon: true },
 			{ text: 'Calendar sync (Google/Outlook)', included: true, comingSoon: true },
@@ -93,6 +98,8 @@ export const PRICING_PLANS: PricingPlan[] = [
 		basePrice: { monthly: 115, yearly: 95 },
 		features: [
 			{ text: 'Everything in Professional', included: true },
+			{ text: 'Branded operator pages', included: true },
+			{ text: 'Multi-location discovery promotion', included: true },
 			{ text: 'SMS notifications', included: true, comingSoon: true },
 			{ text: 'Up to 10 tour guides', included: true, comingSoon: true },
 			{ text: 'Team management dashboard', included: true, comingSoon: true },
@@ -137,7 +144,14 @@ export const IMPLEMENTED_FEATURES = [
 	'Customer database export',
 	'Dedicated account manager',
 	'Basic analytics',
-	'Advanced analytics'
+	'Advanced analytics',
+	'Tour discovery listing',
+	'Priority discovery ranking',
+	'Featured discovery listings',
+	'"Verified Operator" badge',
+	'Discovery analytics',
+	'Branded operator pages',
+	'Multi-location discovery promotion'
 ];
 
 export function isFeatureImplemented(featureText: string): boolean {

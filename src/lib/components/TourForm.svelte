@@ -31,6 +31,7 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
+	import Globe from 'lucide-svelte/icons/globe';
 
 	interface Props {
 		formData: {
@@ -49,6 +50,7 @@
 			adult: number;
 			child?: number;
 		};
+		publicListing?: boolean;
 		};
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
@@ -1470,6 +1472,47 @@
 								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all {!canActivate ? 'opacity-50' : ''}"></div>
 								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
 									{formData.status === 'active' ? 'Active' : 'Draft'}
+								</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Public Listing Toggle (only show for active tours) -->
+		{#if formData.status === 'active'}
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-4">
+					<div class="flex items-center justify-between gap-4">
+						<div class="flex-1">
+							<div class="flex items-center gap-2 mb-1">
+								<Globe class="h-5 w-5" style="color: var(--text-accent);" />
+								<h3 class="font-semibold" style="color: var(--text-primary);">Public Discovery</h3>
+							</div>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								{formData.publicListing !== false 
+									? 'Tour is visible in public listings'
+									: 'Tour is only accessible via QR code or direct link'}
+							</p>
+						</div>
+						
+						<div class="flex items-center gap-3 flex-shrink-0">
+							<!-- Hidden input to send the actual publicListing value -->
+							<input type="hidden" name="publicListing" value={formData.publicListing !== false ? 'true' : 'false'} />
+							<label class="relative inline-flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									checked={formData.publicListing !== false}
+									onchange={(e) => {
+										const target = e.target as HTMLInputElement;
+										formData.publicListing = target.checked;
+									}}
+									class="sr-only peer"
+								/>
+								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
+									{formData.publicListing !== false ? 'Listed' : 'Unlisted'}
 								</span>
 							</label>
 						</div>

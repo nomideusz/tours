@@ -445,6 +445,7 @@ export const actions: Actions = {
           qrCode: qrCode,
           qrScans: 0,
           qrConversions: 0,
+          publicListing: sanitizedData.publicListing === 'false' ? false : true, // Default to true
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -493,6 +494,7 @@ export const actions: Actions = {
           qrCode: qrCode,
           qrScans: 0,
           qrConversions: 0,
+          publicListing: sanitizedData.publicListing === 'false' ? false : true, // Default to true
           createdAt: new Date(),
           updatedAt: new Date()
         };

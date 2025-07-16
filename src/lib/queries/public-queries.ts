@@ -171,3 +171,42 @@ export function prefetchPublicTourData(queryClient: any, qrCode: string) {
 		gcTime: 30000 // Keep in cache for 30 seconds
 	});
 } 
+
+/**
+ * Create a query for browsing public tours
+ */
+export function createPublicToursQuery(params: {
+	search?: string;
+	location?: string;
+	category?: string;
+	minPrice?: number;
+	maxPrice?: number;
+	sortBy?: string;
+	page?: number;
+	limit?: number;
+}) {
+	const searchParams = new URLSearchParams();
+	
+	if (params.search) searchParams.set('search', params.search);
+	if (params.location) searchParams.set('location', params.location);
+	if (params.category) searchParams.set('category', params.category);
+	if (params.minPrice !== undefined) searchParams.set('minPrice', params.minPrice.toString());
+	if (params.maxPrice !== undefined) searchParams.set('maxPrice', params.maxPrice.toString());
+	if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+	if (params.page) searchParams.set('page', params.page.toString());
+	if (params.limit) searchParams.set('limit', params.limit.toString());
+	
+	return createQuery({
+		queryKey: ['public-tours', params],
+		queryFn: async () => {
+			const response = await fetch(`/api/public/tours?${searchParams}`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch tours');
+			}
+			return response.json();
+		},
+		staleTime: 30 * 1000, // 30 seconds
+		gcTime: 5 * 60 * 1000, // 5 minutes
+		refetchOnWindowFocus: false
+	});
+} 

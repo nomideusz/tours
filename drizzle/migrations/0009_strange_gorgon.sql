@@ -1,0 +1,1 @@
+ALTER TABLE "tours" ADD COLUMN "public_listing" boolean DEFAULT true NOT NULL;

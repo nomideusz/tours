@@ -131,6 +131,9 @@ export const tours = pgTable('tours', {
   qrScans: integer('qr_scans').notNull().default(0),
   qrConversions: integer('qr_conversions').notNull().default(0),
   
+  // Public listing
+  publicListing: boolean('public_listing').notNull().default(true),
+  
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });

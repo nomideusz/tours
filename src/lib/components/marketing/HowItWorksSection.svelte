@@ -69,7 +69,12 @@
 			</p>
 			<div class="qr-showcase-container">
 				<div class="qr-code-display">
-					<QrCode class="w-20 h-20 text-secondary" strokeWidth={1.5} />
+					<img 
+						src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://zaur.app/?demo=true"
+						alt="QR Code - Scan to see Zaur in action"
+						class="w-20 h-20"
+						title="Scan me to see Zaur in action!"
+					/>
 				</div>
 			</div>
 		</div>
@@ -244,6 +249,14 @@
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-md);
 		border: 1px solid var(--border-secondary);
+	}
+
+	/* Make QR icon visible in dark mode */
+	@media (prefers-color-scheme: dark) {
+		.qr-code-display .lucide-icon.lucide-qr-code.text-secondary {
+			color: #000000 !important;
+			stroke: #000000 !important;
+		}
 	}
 
 	/* Booking Notification */

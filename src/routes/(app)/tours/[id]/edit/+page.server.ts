@@ -349,6 +349,7 @@ export const actions: Actions = {
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
           pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
+          publicListing: sanitizedData.publicListing === 'false' ? false : true, // Default to true
           images: finalImages,
           updatedAt: new Date()
         })

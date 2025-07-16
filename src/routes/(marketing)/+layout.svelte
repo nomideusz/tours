@@ -8,6 +8,8 @@
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { browser } from '$app/environment';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -124,7 +126,13 @@
 	/>
 
 	<main class="flex-1 pt-20 relative z-10">
-		{@render children()}
+		{#if browser && data?.queryClient}
+			<QueryClientProvider client={data.queryClient}>
+				{@render children()}
+			</QueryClientProvider>
+		{:else}
+			{@render children()}
+		{/if}
 	</main>
 
 	<!-- Floating Theme Toggle -->
