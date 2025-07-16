@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 
 export const POST: RequestHandler = async ({ locals }) => {
@@ -8,7 +8,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 	}
 
 	try {
-		// Import modules
+		// Import QRCode module
 		const QRCode = await import('qrcode');
 		
 		const STICKER_URL = 'https://zaur.app/auth/register?ref=sticker';
@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 		const qrCodeBase64 = Buffer.from(qrSvg).toString('base64');
 		const qrCodeDataUri = `data:image/svg+xml;base64,${qrCodeBase64}`;
 
-		// Create HTML content for PDF generation
+		// Create HTML content
 		const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -272,97 +272,12 @@ export const POST: RequestHandler = async ({ locals }) => {
 </body>
 </html>`;
 
-		// Try Puppeteer first, fallback to html-pdf-node if it fails
-		try {
-			const puppeteer = await import('puppeteer');
-			
-			// Launch Puppeteer and generate PDF
-			const browser = await puppeteer.launch({
-				headless: true,
-				args: [
-					'--no-sandbox',
-					'--disable-setuid-sandbox',
-					'--disable-dev-shm-usage',
-					'--disable-accelerated-2d-canvas',
-					'--no-first-run',
-					'--no-zygote',
-					'--single-process',
-					'--disable-gpu'
-				]
-			});
-
-			const page = await browser.newPage();
-			
-			// Set page content
-			await page.setContent(htmlContent, {
-				waitUntil: 'networkidle0'
-			});
-
-			// Generate PDF
-			const pdfBuffer = await page.pdf({
-				format: 'A4',
-				margin: {
-					top: '20mm',
-					right: '20mm',
-					bottom: '20mm',
-					left: '20mm'
-				},
-				printBackground: true,
-				preferCSSPageSize: true
-			});
-
-			await browser.close();
-
-			// Return PDF with proper headers
-			return new Response(pdfBuffer, {
-				headers: {
-					'Content-Type': 'application/pdf',
-					'Content-Disposition': 'attachment; filename="zaur-promotional-stickers.pdf"',
-					'Content-Length': pdfBuffer.length.toString()
-				}
-			});
-
-		} catch (puppeteerError) {
-			console.warn('Puppeteer failed, trying fallback method:', puppeteerError);
-			
-			// Fallback to html-pdf-node
-			try {
-				const htmlPdf = await import('html-pdf-node');
-				
-				const options = { 
-					format: 'A4',
-					margin: {
-						top: '20mm',
-						right: '20mm',
-						bottom: '20mm',
-						left: '20mm'
-					},
-					printBackground: true
-				};
-				
-				const file = { content: htmlContent };
-				const pdfBuffer = await htmlPdf.generatePdf(file, options);
-				
-				return new Response(pdfBuffer, {
-					headers: {
-						'Content-Type': 'application/pdf',
-						'Content-Disposition': 'attachment; filename="zaur-promotional-stickers.pdf"',
-						'Content-Length': pdfBuffer.length.toString()
-					}
-				});
-				
-			} catch (fallbackError) {
-				console.error('Both PDF generation methods failed:', fallbackError);
-				
-				// Final fallback - return HTML for browser printing
-				return new Response(htmlContent, {
-					headers: {
-						'Content-Type': 'text/html',
-						'X-PDF-Fallback': 'true'
-					}
-				});
+		// Return HTML that will open in new window for browser-based PDF generation
+		return new Response(htmlContent, {
+			headers: {
+				'Content-Type': 'text/html'
 			}
-		}
+		});
 
 	} catch (err) {
 		console.error('Error generating sticker PDF:', err);

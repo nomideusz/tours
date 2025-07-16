@@ -34,52 +34,26 @@
 			});
 			
 			if (response.ok) {
-				const contentType = response.headers.get('content-type');
-				const isFallback = response.headers.get('X-PDF-Fallback');
-				
-				if (contentType?.includes('application/pdf')) {
-					// Successfully generated PDF
-					const pdfBlob = await response.blob();
+				const htmlContent = await response.text();
+				const printWindow = window.open('', '_blank');
+				if (printWindow) {
+					printWindow.document.write(htmlContent);
+					printWindow.document.close();
 					
-					// Create download link
-					const url = window.URL.createObjectURL(pdfBlob);
-					const link = document.createElement('a');
-					link.href = url;
-					link.download = 'zaur-promotional-stickers.pdf';
-					document.body.appendChild(link);
-					link.click();
-					
-					// Cleanup
-					document.body.removeChild(link);
-					window.URL.revokeObjectURL(url);
-					
-				} else if (isFallback) {
-					// Fallback to browser printing
-					const htmlContent = await response.text();
-					const printWindow = window.open('', '_blank');
-					if (printWindow) {
-						printWindow.document.write(htmlContent);
-						printWindow.document.close();
-						
-						// Add instructions for manual printing
-						printWindow.onload = () => {
-							setTimeout(() => {
-								if (confirm('PDF generation failed. Use browser printing instead?\n\n1. Press Ctrl+P (or Cmd+P)\n2. Select "Save as PDF"\n3. Enable "Background graphics"\n4. Click Save')) {
-									printWindow.print();
-								}
-							}, 1000);
-						};
-					}
-				} else {
-					throw new Error('Unexpected response format');
+					// Add instructions and auto-print setup
+					printWindow.onload = () => {
+						setTimeout(() => {
+							if (confirm('Ready to save as PDF?\n\n1. Press Ctrl+P (or Cmd+P)\n2. Select "Save as PDF"\n3. Enable "Background graphics"\n4. Click Save')) {
+								printWindow.print();
+							}
+						}, 1000);
+					};
 				}
 			} else {
 				console.error('Failed to generate stickers');
-				alert('Failed to generate PDF. Please try again.');
 			}
 		} catch (error) {
 			console.error('Error generating stickers:', error);
-			alert('Error generating PDF. Please try again.');
 		} finally {
 			generating = false;
 		}
@@ -126,10 +100,10 @@
 					{/if}
 				</div>
 				<h3 class="text-lg font-semibold text-primary">
-					{generating ? 'Generating...' : 'Download PDF'}
+					{generating ? 'Generating...' : 'Generate PDF'}
 				</h3>
 			</div>
-			<p class="text-secondary text-sm">Generate and download high-quality PDF with 6 stickers per A4 page</p>
+			<p class="text-secondary text-sm">Open print-ready view to save as PDF with 6 stickers per A4 page</p>
 		</button>
 		
 		<button
@@ -200,25 +174,6 @@
 				<div class="website">
 					<div class="website-url">zaur.app</div>
 				</div>
-			</div>
-		</div>
-	</div>
-	
-	<!-- PDF Generation Status -->
-	<div class="professional-card mb-8">
-		<h3 class="text-lg font-semibold text-primary mb-4">PDF Generation Methods</h3>
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-			<div class="p-3 bg-green-50 border border-green-200 rounded-lg">
-				<h4 class="font-medium text-green-800 mb-1">Primary: Puppeteer</h4>
-				<p class="text-green-600">High-quality server-side PDF generation</p>
-			</div>
-			<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-				<h4 class="font-medium text-blue-800 mb-1">Backup: html-pdf-node</h4>
-				<p class="text-blue-600">Lightweight fallback method</p>
-			</div>
-			<div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-				<h4 class="font-medium text-orange-800 mb-1">Final: Browser Print</h4>
-				<p class="text-orange-600">Manual printing if needed</p>
 			</div>
 		</div>
 	</div>
