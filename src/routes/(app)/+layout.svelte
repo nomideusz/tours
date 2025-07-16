@@ -37,6 +37,7 @@
 	import TrendingUp from 'lucide-svelte/icons/trending-up';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
+	import Sparkles from 'lucide-svelte/icons/sparkles';
 	import X from 'lucide-svelte/icons/x';
 
 	// Type definitions
@@ -171,6 +172,14 @@
 			name: 'Business',
 			items: [
 				{
+					name: 'Marketing',
+					href: '/marketing',
+					icon: Sparkles,
+					description: 'Create promotional materials',
+					showOnMobile: true,
+					badge: null as number | null
+				},
+				{
 					name: 'Customers',
 					href: '/customers',
 					icon: Users,
@@ -246,6 +255,12 @@
 			href: '/profile',
 			icon: User,
 			description: 'Edit your profile'
+		},
+		{
+			name: 'Marketing',
+			href: '/marketing',
+			icon: Sparkles,
+			description: 'Create promotional materials'
 		},
 		{
 			name: 'Customers',
