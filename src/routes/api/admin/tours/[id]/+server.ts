@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, bookings, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq, and, sql, count, sum } from 'drizzle-orm';
+import { addAuditLog } from '$lib/utils/audit-log.js';
 
 export const GET: RequestHandler = async ({ locals, params }) => {
 	// Check admin access
@@ -204,14 +205,20 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 		}
 
 		// Log admin action for audit trail
-		console.log(`🔧 ADMIN ACTION: ${locals.user.email} updated tour ${params.id} (${tour.name})`, {
+		addAuditLog({
 			adminId: locals.user.id,
 			adminEmail: locals.user.email,
-			tourId: params.id,
-			tourName: tour.name,
-			tourOwnerId: tour.userId,
-			updates,
-			timestamp: new Date().toISOString()
+			action: 'update_tour',
+			resource: 'tour',
+			resourceId: params.id,
+			resourceName: tour.name,
+			details: {
+				tourOwnerId: tour.userId,
+				updates,
+				previousStatus: tour.status
+			},
+			ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+			userAgent: request.headers.get('user-agent') || 'unknown'
 		});
 
 		return json({
@@ -229,7 +236,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ locals, params }) => {
+export const DELETE: RequestHandler = async ({ request, locals, params }) => {
 	// Check admin access
 	if (!locals.user || locals.user.role !== 'admin') {
 		throw error(401, 'Unauthorized');
@@ -285,15 +292,20 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 		}
 
 		// Log admin action for audit trail
-		console.log(`🗑️  ADMIN ACTION: ${locals.user.email} deleted tour ${params.id} (${tour.name})`, {
+		addAuditLog({
 			adminId: locals.user.id,
 			adminEmail: locals.user.email,
-			tourId: params.id,
-			tourName: tour.name,
-			tourOwnerId: tour.userId,
-			tourStatus: tour.status,
-			stats,
-			timestamp: new Date().toISOString()
+			action: 'delete_tour',
+			resource: 'tour',
+			resourceId: params.id,
+			resourceName: tour.name,
+			details: {
+				tourOwnerId: tour.userId,
+				tourStatus: tour.status,
+				stats
+			},
+			ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+			userAgent: request.headers.get('user-agent') || 'unknown'
 		});
 
 		return json({
