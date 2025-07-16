@@ -298,6 +298,12 @@
 					secondaryInfo={isLoading ? 'Loading...' : `${stats.totalUsers} users`}
 					quickActions={[
 						{
+							label: 'Tours',
+							icon: MapPin,
+							onclick: () => goto('/admin/tours'),
+							variant: 'secondary'
+						},
+						{
 							label: 'Export',
 							icon: Download,
 							onclick: exportUsers,
@@ -336,6 +342,10 @@
 					subtitle="Manage users and monitor platform activity"
 				>
 					<div class="flex items-center gap-3">
+						<button onclick={() => goto('/admin/tours')} class="button-secondary button--gap">
+							<MapPin class="h-4 w-4" />
+							Tour Management
+						</button>
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />
 							Email Tools
@@ -379,12 +389,15 @@
 				icon={Calendar}
 			/>
 			
-			<StatsCard 
-				title="Tours"
-				value={stats.totalTours}
-				subtitle="Created tours"
-				icon={MapPin}
-			/>
+			<!-- Tours Card - clickable to navigate to tour management -->
+			<button onclick={() => goto('/admin/tours')} class="text-left cursor-pointer">
+				<StatsCard 
+					title="Tours"
+					value={stats.totalTours}
+					subtitle="Click to manage →"
+					icon={MapPin}
+				/>
+			</button>
 			
 			<StatsCard 
 				title="New Today"
