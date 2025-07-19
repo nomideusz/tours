@@ -1505,33 +1505,9 @@ button svg,
 	background: var(--color-primary-100);
 }
 
-/* Country code fallback when emoji not supported */
-.country-code-fallback {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 1.5rem;
-	height: 1.5rem;
-	font-size: 0.7rem;
-	font-weight: 600;
-	background: var(--bg-tertiary);
-	border: 1px solid var(--border-secondary);
-	border-radius: 0.25rem;
-	color: var(--text-primary);
-}
-
-/* Country flag */
+/* Country flag styles now handled by FlagIcon component */
 .country-flag {
-	font-size: 1.3rem;
-	line-height: 1;
-	flex-shrink: 0;
-	width: 1.5rem;
-	text-align: center;
-	font-family: "Twemoji Mozilla", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
-	font-weight: normal;
-	font-style: normal;
-	display: inline-block;
-	vertical-align: middle;
+	/* Styles moved to FlagIcon component */
 }
 
 /* Country info */

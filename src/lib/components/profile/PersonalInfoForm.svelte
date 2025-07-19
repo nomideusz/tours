@@ -12,6 +12,7 @@
 	import { userCurrency } from '$lib/stores/currency.js';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
 	import LocationPicker from '../LocationPicker.svelte';
+	import FlagIcon from '$lib/components/FlagIcon.svelte';
 
 	let {
 		user,
@@ -358,8 +359,9 @@
 					{@const countryInfo = getCountryInfo(country)}
 					<div class="relative">
 						<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
-						<div class="form-input pl-10" style="background: var(--bg-tertiary); cursor: not-allowed;">
-							{countryInfo?.flag || ''} {countryInfo?.name || country}
+						<div class="form-input pl-10 flex items-center gap-2" style="background: var(--bg-tertiary); cursor: not-allowed;">
+							<FlagIcon countryCode={countryInfo?.code || country} size="sm" />
+							{countryInfo?.name || country}
 						</div>
 					</div>
 					<input type="hidden" name="country" value={country} />

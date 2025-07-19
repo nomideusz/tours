@@ -13,6 +13,9 @@
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	
+	// Components
+	import FlagIcon from '$lib/components/FlagIcon.svelte';
 
 	// Props
 	interface Props {
@@ -135,24 +138,18 @@
 						{#if !needsConfirmation}
 							{#if profile?.country && profile?.currency}
 								{@const countryInfo = getCountryInfo(profile.country)}
-								{#if countryInfo?.flag && countryInfo.flag.length > 2}
-									{countryInfo.flag}
-								{:else if countryInfo?.code}
-									<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo.code}</span>
-								{/if}
-								{countryInfo?.name || profile.country} • {profile.currency}
+								<span class="inline-flex items-center gap-1">
+									<FlagIcon countryCode={countryInfo?.code || profile.country} size="sm" />
+									{countryInfo?.name || profile.country} • {profile.currency}
+								</span>
 							{:else}
 								Location confirmed!
 							{/if}
 						{:else if selectedCountry}
 							{@const countryInfo = getCountryInfo(selectedCountry)}
-							Detected: 
-							{#if countryInfo?.flag && countryInfo.flag.length > 2}
-								{countryInfo.flag}
-							{:else}
-								<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo?.code || selectedCountry}</span>
-							{/if}
-							{countryInfo?.name} • {countryInfo?.currency}
+							<span class="inline-flex items-center gap-1">
+								Detected: <FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • {countryInfo?.currency}
+							</span>
 						{:else}
 							Set your business location
 						{/if}
@@ -212,7 +209,7 @@
 									</button>
 								</div>
 								<p class="text-xs" style="color: var(--text-tertiary);">
-									Auto-detected from your location
+									Auto-detected from your IP address
 								</p>
 							</div>
 						{:else}
@@ -346,13 +343,7 @@
 				{@const countryInfo = getCountryInfo(selectedCountry)}
 				<div class="country-selected-info mb-4">
 					<div class="flex items-center gap-2 mb-2">
-						<span class="country-flag" style="font-size: 1.75rem;">
-							{#if countryInfo?.flag && countryInfo.flag.length > 2}
-								{countryInfo.flag}
-							{:else}
-								<span class="country-code-fallback" style="width: 2rem; height: 2rem; font-size: 0.9rem;">{countryInfo?.code || selectedCountry}</span>
-							{/if}
-						</span>
+						<FlagIcon countryCode={countryInfo?.code || selectedCountry} size="lg" />
 						<div>
 							<h4 class="country-selected-title">
 								{countryInfo?.name}
@@ -363,7 +354,7 @@
 						</div>
 					</div>
 					<p class="text-xs" style="color: var(--text-tertiary);">
-						✓ Auto-detected from your location
+						✓ Auto-detected from your IP address
 					</p>
 					<div class="flex gap-3 mt-3">
 						<button
@@ -411,13 +402,7 @@
 								onclick={() => onCountryChange(country.code)}
 								class="country-option {selectedCountry === country.code ? 'country-option--selected' : ''}"
 							>
-								<span class="country-flag" title="{country.name}">
-									{#if country.flag && country.flag.length > 2}
-										{country.flag}
-									{:else}
-										<span class="country-code-fallback">{country.code}</span>
-									{/if}
-								</span>
+								<FlagIcon countryCode={country.code} size="md" class="country-flag" />
 								<div class="flex-1 min-w-0">
 									<p class="country-name">
 										{country.name}

@@ -846,7 +846,7 @@
 	<ConfirmationModal
 		isOpen={showPaymentConfirmModal}
 		title="Confirm Payment Account Country"
-		message={`You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}.
+		message={`You are about to create a payment account for ${countryInfo?.name || pendingPaymentCountry}.
 
 Your payment account will use ${stripeCurrency} as the currency.
 

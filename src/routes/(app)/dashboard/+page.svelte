@@ -57,6 +57,9 @@
 	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 	import Check from 'lucide-svelte/icons/check';
 	import RefreshCcw from 'lucide-svelte/icons/refresh-ccw';
+	
+	// Components
+	import FlagIcon from '$lib/components/FlagIcon.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -917,13 +920,9 @@
 					<p class="text-xs sm:text-sm mb-2">
 						{#if profile?.country && profile?.currency}
 							{@const countryInfo = getCountryInfo(profile.country)}
-							Business location: 
-							{#if countryInfo?.flag && countryInfo.flag.length > 2}
-								{countryInfo.flag}
-							{:else if countryInfo?.code}
-								<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo.code}</span>
-							{/if}
-							{countryInfo?.name || profile.country} • Currency: {profile.currency}
+							<span class="inline-flex items-center gap-1">
+								Business location: <FlagIcon countryCode={countryInfo?.code || profile.country} size="sm" /> {countryInfo?.name || profile.country} • Currency: {profile.currency}
+							</span>
 						{:else}
 							Your business location has been saved.
 						{/if}
@@ -1103,13 +1102,9 @@
 								{#if selectedCountry}
 									{@const countryInfo = getCountryInfo(selectedCountry)}
 									<p class="compact-step-description">
-										Detected: 
-										{#if countryInfo?.flag && countryInfo.flag.length > 2}
-											{countryInfo.flag}
-										{:else}
-											<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem; transform: scale(0.8);">{countryInfo?.code || selectedCountry}</span>
-										{/if}
-										{countryInfo?.name} • {countryInfo?.currency}
+										<span class="inline-flex items-center gap-1">
+											Detected: <FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • {countryInfo?.currency}
+										</span>
 									</p>
 									<div class="compact-step-actions">
 										<button 
@@ -1130,7 +1125,7 @@
 											Change
 										</button>
 									</div>
-									<p class="compact-step-note">Auto-detected from your location</p>
+									<p class="compact-step-note">Auto-detected from your IP address</p>
 								{:else}
 									<p class="compact-step-description">Set your business location for payments</p>
 									<button 
@@ -1243,14 +1238,11 @@
 							<button
 								onclick={() => onCountryChange(country.code)}
 								class="compact-country-option {selectedCountry === country.code ? 'compact-country-option--selected' : ''}"
+								title="{country.name}"
 							>
-								<span class="compact-country-flag" title="{country.name}">
-									{#if country.flag && country.flag.length > 2}
-										{country.flag}
-									{:else}
-										<span class="country-code-fallback">{country.code}</span>
-									{/if}
-								</span>
+								<div class="compact-country-flag">
+									<FlagIcon countryCode={country.code} size="sm" />
+								</div>
 								<div class="compact-country-info">
 									<p class="compact-country-name">{country.name}</p>
 									<p class="compact-country-currency">{country.currency}</p>
@@ -1266,13 +1258,9 @@
 						{@const countryInfo = getCountryInfo(selectedCountry)}
 						<div class="compact-country-selected">
 							<p class="compact-country-selected-text">
-								✓ Selected: 
-					{#if countryInfo?.flag && countryInfo.flag.length > 2}
-						{countryInfo.flag}
-					{:else}
-						<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo?.code || selectedCountry}</span>
-					{/if}
-					{countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
+								<span class="inline-flex items-center gap-1">
+									✓ Selected: <FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
+								</span>
 							</p>
 						</div>
 					{/if}
@@ -2076,110 +2064,110 @@ Please ensure this is the correct country where your business is legally registe
 		}
 	}
 	
-	@media (min-width: 1100px) {
+	@media (min-width: 1200px) {
 		.compact-country-grid {
 			grid-template-columns: repeat(5, minmax(0, 1fr));
-		}
-	}
-	
-	@media (min-width: 1300px) {
-		.compact-country-grid {
-			grid-template-columns: repeat(6, minmax(0, 1fr));
-		}
-	}
-	
-	@media (min-width: 1500px) {
-		.compact-country-grid {
-			grid-template-columns: repeat(7, minmax(0, 1fr));
 		}
 	}
 	
 	.compact-country-option {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem;
+		gap: 0.75rem;
+		padding: 0.875rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
+		border-radius: 0.75rem;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all 0.2s ease;
 		text-align: left;
-		height: 3.5rem;
-		min-height: 3.5rem;
+		height: 4.25rem;
+		min-height: 4.25rem;
 		width: 100%;
 		min-width: 0;
 		overflow: hidden;
 		box-sizing: border-box;
+		position: relative;
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 	}
 	
 	.compact-country-option:hover {
-		border-color: var(--color-primary-300);
+		border-color: var(--color-primary-200);
 		background: var(--bg-tertiary);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+		transform: translateY(-1px);
 	}
 	
 	.compact-country-option--selected {
-		border-color: var(--color-primary-500);
-		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-50) 100%);
+		border-width: 2px;
+		padding: calc(0.875rem - 1px);
+		box-shadow: 0 4px 8px -2px rgba(99, 102, 241, 0.15), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
+		transform: scale(1.02);
 	}
 	
 	.compact-country-flag {
-		font-size: 1.3rem;
-		line-height: 1;
 		flex-shrink: 0;
-		width: 1.5rem;
-		text-align: center;
-		font-family: "Twemoji Mozilla", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
-		font-weight: normal;
-		font-style: normal;
-		display: inline-block;
-		vertical-align: middle;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		min-width: 18px;
+		min-height: 18px;
 	}
 	
 	.compact-country-info {
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
 	}
 	
 	.compact-country-name {
-		font-size: 0.8rem;
+		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-primary);
 		margin: 0;
-		line-height: 1.2;
+		line-height: 1.25;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		display: block;
+		letter-spacing: -0.01em;
 	}
 	
 	.compact-country-currency {
-		font-size: 0.7rem;
-		color: var(--text-secondary);
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
 		margin: 0;
-		line-height: 1.1;
+		line-height: 1.2;
 		display: block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-weight: 450;
+		letter-spacing: 0.01em;
+		opacity: 0.85;
 	}
 	
 	.compact-country-check {
-		color: var(--color-primary-600);
+		color: var(--color-primary-500);
 		flex-shrink: 0;
+		opacity: 0.9;
+		transition: all 0.2s ease;
 	}
 	
-	.country-code-fallback {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.5rem;
-		height: 1.5rem;
-		font-size: 0.7rem;
-		font-weight: 600;
-		background: var(--bg-tertiary);
-		border: 1px solid var(--border-secondary);
-		border-radius: 0.25rem;
-		color: var(--text-primary);
+	.compact-country-option--selected .compact-country-check {
+		color: var(--color-primary-600);
+		opacity: 1;
+		transform: scale(1.1);
 	}
+	
+	/* Fallback styles now handled by FlagIcon component */
 	
 	.compact-country-selected {
 		background: var(--color-success-50);
