@@ -206,45 +206,30 @@
 		cursor: pointer;
 	}
 
-	/* Subtle retro section with horizontal stripes - using fixed colors to avoid timing issues */
+	/* Subtle retro section with horizontal stripes */
 	:global(.subtle-retro-section) {
-		background: linear-gradient(
-			180deg,
-			#ffffff 0%,
-			#f8fafc 100%
-		);
+		background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 		position: relative;
 		overflow: hidden;
 	}
 
-	/* Dark mode backgrounds */
+	/* Dark mode */
 	@media (prefers-color-scheme: dark) {
 		:global(.subtle-retro-section) {
-			background: linear-gradient(
-				180deg,
-				#0f172a 0%,
-				#1e293b 100%
-			);
+			background: linear-gradient(180deg, #1f2937 0%, #374151 100%);
 		}
 	}
 
-	:global([data-theme="dark"]) :global(.subtle-retro-section) {
+	/* Theme system override when available */
+	:global(html[data-theme]) :global(.subtle-retro-section) {
 		background: linear-gradient(
 			180deg,
-			#0f172a 0%,
-			#1e293b 100%
-		) !important;
-	}
-
-	:global([data-theme="light"]) :global(.subtle-retro-section) {
-		background: linear-gradient(
-			180deg,
-			#ffffff 0%,
-			#f8fafc 100%
-		) !important;
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
 	}
 	
-	/* Enhanced texture overlay - always visible stripes */
+	/* Very subtle texture overlay */
 	:global(.subtle-retro-section::before) {
 		content: '';
 		position: absolute;
@@ -252,25 +237,15 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-image: 
-			repeating-linear-gradient(
-				0deg,
-				transparent,
-				transparent 30px,
-				rgba(0, 0, 0, 0.03) 30px,
-				rgba(0, 0, 0, 0.03) 32px
-			),
-			repeating-linear-gradient(
-				0deg,
-				transparent,
-				transparent 60px,
-				rgba(0, 0, 0, 0.015) 60px,
-				rgba(0, 0, 0, 0.015) 62px
-			);
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
 		pointer-events: none;
 		z-index: 0;
-		opacity: 1;
-		animation: none; /* Prevent any animation interference */
 	}
 
 	/* Ensure content is above the stripe overlay */
@@ -292,40 +267,24 @@
 	/* Dark mode texture overlay */
 	@media (prefers-color-scheme: dark) {
 		:global(.subtle-retro-section::before) {
-			background-image: 
-				repeating-linear-gradient(
-					0deg,
-					transparent,
-					transparent 30px,
-					rgba(255, 255, 255, 0.025) 30px,
-					rgba(255, 255, 255, 0.025) 32px
-				),
-				repeating-linear-gradient(
-					0deg,
-					transparent,
-					transparent 60px,
-					rgba(255, 255, 255, 0.012) 60px,
-					rgba(255, 255, 255, 0.012) 62px
-				);
+			background-image: repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(255, 255, 255, 0.02) 40px,
+				rgba(255, 255, 255, 0.02) 41px
+			);
 		}
 	}
 
-	:global([data-theme="dark"]) :global(.subtle-retro-section::before) {
-		background-image: 
-			repeating-linear-gradient(
-				0deg,
-				transparent,
-				transparent 30px,
-				rgba(255, 255, 255, 0.025) 30px,
-				rgba(255, 255, 255, 0.025) 32px
-			),
-			repeating-linear-gradient(
-				0deg,
-				transparent,
-				transparent 60px,
-				rgba(255, 255, 255, 0.012) 60px,
-				rgba(255, 255, 255, 0.012) 62px
-			) !important;
+	[data-theme="dark"] :global(.subtle-retro-section::before) {
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(255, 255, 255, 0.02) 40px,
+			rgba(255, 255, 255, 0.02) 41px
+		);
 	}
 
 	/* Floating Theme Toggle */
