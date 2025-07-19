@@ -119,9 +119,86 @@ export const PRICING_PLANS: PricingPlan[] = [
 // Early access discount (50% off)
 export const EARLY_ACCESS_DISCOUNT = 0.5;
 
-// Calculate discounted price
+// User context for pricing calculations
+export interface UserPricingContext {
+	subscriptionFreeUntil?: string | null;
+	subscriptionDiscountPercentage?: number | null;
+	isLifetimeDiscount?: boolean | null;
+	promoCodeUsed?: string | null;
+}
+
+// Pricing result interface
+export interface PricingResult {
+	original: number;
+	final: number;
+	savings: number;
+	isInFreePeriod?: boolean;
+	discountPercentage?: number;
+	isLifetimeDiscount?: boolean;
+}
+
+// Calculate discounted price with precision (legacy function for simple early access)
 export function calculateEarlyAccessPrice(basePrice: number): number {
-	return Math.round(basePrice * (1 - EARLY_ACCESS_DISCOUNT));
+	return Math.round(basePrice * (1 - EARLY_ACCESS_DISCOUNT) * 100) / 100;
+}
+
+// Advanced pricing calculation with user context
+export function calculatePlanPricing(
+	planId: 'free' | 'starter_pro' | 'professional' | 'agency',
+	interval: 'monthly' | 'yearly',
+	userContext?: UserPricingContext
+): PricingResult {
+	const plan = PRICING_PLANS.find(p => p.id === planId);
+	
+	if (!plan || planId === 'free') {
+		return { original: 0, final: 0, savings: 0 };
+	}
+	
+	const originalPrice = plan.basePrice[interval];
+	
+	// If no user context, use early access pricing (for marketing page)
+	if (!userContext) {
+		const finalPrice = calculateEarlyAccessPrice(originalPrice);
+		return {
+			original: originalPrice,
+			final: finalPrice,
+			savings: originalPrice - finalPrice
+		};
+	}
+	
+	// Check if user is in free period (from promo code)
+	const isInFreePeriod = userContext.subscriptionFreeUntil && 
+		new Date(userContext.subscriptionFreeUntil) > new Date();
+		
+	if (isInFreePeriod) {
+		return {
+			original: originalPrice,
+			final: 0,
+			savings: originalPrice,
+			isInFreePeriod: true
+		};
+	}
+	
+	// Apply promo code discount if user has one
+	const discountPercentage = userContext.subscriptionDiscountPercentage || 0;
+	if (discountPercentage > 0) {
+		const discount = Math.round((originalPrice * discountPercentage) / 100 * 100) / 100;
+		return {
+			original: originalPrice,
+			final: Math.round((originalPrice - discount) * 100) / 100,
+			savings: discount,
+			discountPercentage,
+			isLifetimeDiscount: userContext.isLifetimeDiscount || false
+		};
+	}
+	
+	// No user-specific discounts - use early access pricing
+	const finalPrice = calculateEarlyAccessPrice(originalPrice);
+	return {
+		original: originalPrice,
+		final: finalPrice,
+		savings: originalPrice - finalPrice
+	};
 }
 
 // Get plan by ID

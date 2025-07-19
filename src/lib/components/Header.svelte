@@ -198,10 +198,11 @@
 							{t('auth.login', $language)}
 						</a>
 						<button 
-							class="button-coral button--small"
+							class="button-coral guest-cta-button"
 							onclick={() => window.location.href = '/auth/register'}
 						>
-							Start for Free
+							<span class="guest-cta-text-mobile">Start Free</span>
+							<span class="guest-cta-text-desktop">Start for Free</span>
 						</button>
 					</div>
 				{/if}
@@ -270,11 +271,9 @@
 				</a>
 			</div>
 
-			<!-- Mobile Auth Section -->
-			<div class="mobile-auth">
-				{#if !isMounted.current}
-					<div class="mobile-loading">{t('auth.loading', $language)}</div>
-				{:else if isAuthenticated}
+			<!-- Mobile Auth Section - Only show for authenticated users -->
+			{#if isMounted.current && isAuthenticated}
+				<div class="mobile-auth">
 					<div class="mobile-auth-authenticated">
 						<a href="/dashboard" onclick={handleMobileLinkClick} class="mobile-dashboard-link">
 							My Dashboard
@@ -293,23 +292,8 @@
 							{t('auth.logout', $language)}
 						</button>
 					</div>
-				{:else}
-					<div class="mobile-auth-guest">
-						<a href="/auth/login" onclick={handleMobileLinkClick} class="mobile-login-link">
-							{t('auth.login', $language)}
-						</a>
-						<button 
-							class="button-coral button--full-width"
-							onclick={() => {
-								handleMobileLinkClick();
-								window.location.href = '/auth/register';
-							}}
-						>
-							Start for Free
-						</button>
-					</div>
-				{/if}
-			</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -531,21 +515,21 @@
 		cursor: not-allowed;
 	}
 
-	/* Guest Section */
+	/* Guest Section - Always visible on mobile */
 	.guest-section {
-		display: none;
+		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 	}
 
 	@media (min-width: 768px) {
 		.guest-section {
-			display: flex;
+			gap: 0.75rem;
 		}
 	}
 
 	.login-link {
-		font-size: 0.875rem;
+		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text-secondary);
 		text-decoration: none;
@@ -554,6 +538,45 @@
 
 	.login-link:hover {
 		color: var(--text-primary);
+	}
+
+	@media (min-width: 768px) {
+		.login-link {
+			font-size: 0.875rem;
+		}
+	}
+
+	/* Guest CTA Button - Responsive sizing */
+	.guest-cta-button {
+		font-size: 0.75rem;
+		padding: 0.5rem 0.75rem;
+		font-weight: 600;
+	}
+
+	@media (min-width: 768px) {
+		.guest-cta-button {
+			font-size: 0.875rem;
+			padding: 0.75rem 1rem;
+		}
+	}
+
+	/* Responsive button text */
+	.guest-cta-text-mobile {
+		display: inline;
+	}
+
+	.guest-cta-text-desktop {
+		display: none;
+	}
+
+	@media (min-width: 768px) {
+		.guest-cta-text-mobile {
+			display: none;
+		}
+
+		.guest-cta-text-desktop {
+			display: inline;
+		}
 	}
 
 	/* Mobile Toggle */
@@ -666,12 +689,7 @@
 		padding-top: 2rem;
 	}
 
-	.mobile-loading {
-		font-size: 1rem;
-		color: var(--text-secondary);
-		text-align: center;
-		padding: 1rem;
-	}
+
 
 	.mobile-auth-authenticated {
 		display: flex;
@@ -731,30 +749,7 @@
 		cursor: not-allowed;
 	}
 
-	.mobile-auth-guest {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
 
-	.mobile-login-link {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		text-decoration: none;
-		padding: 1rem;
-		border-radius: var(--radius-lg);
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		text-align: center;
-		transition: all var(--transition-base) ease;
-	}
-
-	.mobile-login-link:hover {
-		color: var(--text-primary);
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-	}
 
 	/* Dark Mode Support */
 	/* Header background now uses theme-aware CSS variables automatically */
@@ -851,20 +846,17 @@
 		border-top-color: var(--border-primary);
 	}
 
-	[data-theme="dark"] .mobile-loading,
 	[data-theme="dark"] .mobile-user-info {
 		color: var(--text-secondary);
 	}
 
-	[data-theme="dark"] .mobile-dashboard-link,
-	[data-theme="dark"] .mobile-login-link {
+	[data-theme="dark"] .mobile-dashboard-link {
 		color: var(--text-primary);
 		background: var(--bg-secondary);
 		border-color: var(--border-primary);
 	}
 
-	[data-theme="dark"] .mobile-dashboard-link:hover,
-	[data-theme="dark"] .mobile-login-link:hover {
+	[data-theme="dark"] .mobile-dashboard-link:hover {
 		background: var(--bg-tertiary);
 		border-color: var(--border-secondary);
 	}

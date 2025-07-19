@@ -4,23 +4,31 @@
 	import X from 'lucide-svelte/icons/x';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Crown from 'lucide-svelte/icons/crown';
-	import { PRICING_PLANS, calculateEarlyAccessPrice, type PricingPlan } from '$lib/utils/pricing-config.js';
+	import { PRICING_PLANS, calculatePlanPricing, type PricingPlan } from '$lib/utils/pricing-config.js';
 	
 	let isYearly = $state(true);
 	
-	// Calculate pricing with early access discount
+	// Calculate pricing with early access discount using unified function
 	function getPlanPricing(plan: PricingPlan, yearly: boolean) {
-		const basePrice = yearly ? plan.basePrice.yearly : plan.basePrice.monthly;
-		const originalPrice = basePrice;
-		const earlyAccessPrice = plan.id === 'free' ? 0 : calculateEarlyAccessPrice(basePrice);
+		const interval = yearly ? 'yearly' : 'monthly';
 		const billingPeriod = yearly ? '/month billed annually' : '/month';
 		
+		// Use unified pricing calculation (no user context = early access pricing)
+		const pricing = calculatePlanPricing(plan.id, interval);
+		
 		return {
-			original: originalPrice,
-			earlyAccess: earlyAccessPrice,
+			original: pricing.original,
+			earlyAccess: pricing.final,
 			period: billingPeriod,
-			savings: originalPrice - earlyAccessPrice
+			savings: pricing.savings
 		};
+	}
+	
+	// Format price for display (show .50 but not .00)
+	function formatPrice(price: number): string {
+		if (price === 0) return '0';
+		if (price % 1 === 0) return price.toString();
+		return price.toFixed(2);
 	}
 	
 	function handlePlanSelect(plan: PricingPlan) {
@@ -95,10 +103,10 @@
 			
 			<div class="plan-pricing">
 				{#if plan.id !== 'free' && pricing.savings > 0}
-					<span class="original-price">€{pricing.original}</span>
-					<span class="current-price">€{pricing.earlyAccess}</span>
+					<span class="original-price">€{formatPrice(pricing.original)}</span>
+					<span class="current-price">€{formatPrice(pricing.earlyAccess)}</span>
 				{:else}
-					<span class="current-price">€{pricing.earlyAccess}</span>
+					<span class="current-price">€{formatPrice(pricing.earlyAccess)}</span>
 				{/if}
 				{#if plan.id !== 'free'}
 					<span class="billing-period">{pricing.period}</span>

@@ -55,6 +55,37 @@
 	let passwordError = $state('');
 	let confirmPasswordError = $state('');
 
+	// Auto-correction visual feedback
+	let usernameCorrected = $state(false);
+	let promoCorrected = $state(false);
+
+	// Auto-correction functions
+	function sanitizeUsername(value: string) {
+		// Convert to lowercase and remove spaces
+		return value.toLowerCase().replace(/\s+/g, '');
+	}
+
+	function formatPromoCode(value: string) {
+		// Convert to uppercase
+		return value.toUpperCase();
+	}
+
+	// Error scrolling for mobile
+	function scrollToFirstError() {
+		// Only scroll on mobile devices
+		if (window.innerWidth <= 768) {
+			setTimeout(() => {
+				const firstError = document.querySelector('.border-red-300, .text-red-600');
+				if (firstError) {
+					firstError.scrollIntoView({ 
+						behavior: 'smooth', 
+						block: 'center' 
+					});
+				}
+			}, 100);
+		}
+	}
+
 	// Validate form inputs
 	function validateForm() {
 		// Reset errors
@@ -104,6 +135,11 @@
 			isValid = false;
 		}
 
+		// Scroll to first error on mobile if validation failed
+		if (!isValid) {
+			scrollToFirstError();
+		}
+
 		return isValid;
 	}
 
@@ -111,6 +147,8 @@
 		goto('/auth/login');
 	}
 </script>
+
+
 
 <div class="min-h-screen flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
 	<div class="w-full max-w-lg lg:max-w-2xl relative z-10">
@@ -232,6 +270,15 @@
 								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {usernameError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 								placeholder="Choose a username"
 								disabled={isRegistering}
+								oninput={(e) => {
+									const target = e.target as HTMLInputElement;
+									const sanitized = sanitizeUsername(target.value);
+									if (target.value !== sanitized) {
+										username = sanitized;
+										usernameCorrected = true;
+										setTimeout(() => usernameCorrected = false, 2000);
+									}
+								}}
 								onblur={() => {
 									if (!username) usernameError = 'Username is required';
 									else if (username.length < 3) usernameError = 'Username must be at least 3 characters';
@@ -241,6 +288,8 @@
 							/>
 							{#if usernameError}
 								<p class="mt-1 text-xs text-red-600">{usernameError}</p>
+							{:else if usernameCorrected}
+								<p class="mt-1 text-xs text-green-600">✓ Auto-corrected to lowercase</p>
 							{/if}
 						</div>
 
@@ -292,6 +341,7 @@
 								<button
 									type="button"
 									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									tabindex="-1"
 									onclick={() => showPassword = !showPassword}
 								>
 									{#if showPassword}
@@ -328,6 +378,7 @@
 								<button
 									type="button"
 									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									tabindex="-1"
 									onclick={() => showConfirmPassword = !showConfirmPassword}
 								>
 									{#if showConfirmPassword}
@@ -363,7 +414,19 @@
 									class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm"
 									placeholder="Enter promo code if you have one"
 									disabled={isRegistering}
+									oninput={(e) => {
+										const target = e.target as HTMLInputElement;
+										const formatted = formatPromoCode(target.value);
+										if (target.value !== formatted) {
+											accessCode = formatted;
+											promoCorrected = true;
+											setTimeout(() => promoCorrected = false, 2000);
+										}
+									}}
 								/>
+								{#if promoCorrected}
+									<p class="mt-1 text-xs text-green-600">✓ Auto-corrected to uppercase</p>
+								{/if}
 							</div>
 						</div>
 					</details>

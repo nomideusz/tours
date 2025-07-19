@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	
@@ -8,6 +9,40 @@
 	import Check from 'lucide-svelte/icons/check';
 	
 	let showCopied = $state(false);
+	
+	// State for early access stats
+	let stats = $state({
+		earlyAccessUsers: 0,
+		spotsTotal: 100,
+		loading: true
+	});
+
+	async function fetchStats() {
+		try {
+			const response = await fetch('/api/early-access-stats');
+			if (response.ok) {
+				const data = await response.json();
+				if (data.success) {
+					stats = {
+						earlyAccessUsers: data.stats.earlyAccessUsers,
+						spotsTotal: data.stats.spotsTotal,
+						loading: false
+					};
+				}
+			}
+		} catch (err) {
+			// Use fallback data if fetch fails
+			stats = {
+				earlyAccessUsers: 47,
+				spotsTotal: 100,
+				loading: false
+			};
+		}
+	}
+
+	onMount(() => {
+		fetchStats();
+	});
 	
 	function copyPromoCode() {
 		navigator.clipboard.writeText('EARLY2025');
@@ -66,8 +101,15 @@
 				</div>
 			</div>
 			
-			<!-- Social proof -->
+			<!-- Social proof with subtle early access counter -->
 			<div class="text-center mb-12">
+				{#if !stats.loading}
+					<div class="early-access-counter mb-3">
+						<span class="counter-text">{stats.earlyAccessUsers} founding members joined</span>
+						<span class="counter-divider">•</span>
+						<span class="counter-text">{stats.spotsTotal - stats.earlyAccessUsers} spots remaining</span>
+					</div>
+				{/if}
 				<p class="social-text mb-2">Use code EARLY2025 for founding member pricing</p>
 				<p class="social-text">Join tour guides building with Zaur</p>
 			</div>
@@ -245,6 +287,27 @@
 		font-weight: 500;
 	}
 	
+	/* Subtle early access counter */
+	.early-access-counter {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		font-weight: 500;
+		margin-bottom: 0.75rem;
+	}
+	
+	.counter-text {
+		color: var(--text-secondary);
+	}
+	
+	.counter-divider {
+		color: var(--text-tertiary);
+		font-weight: 300;
+	}
+	
 	/* Social proof text */
 	.social-text {
 		color: var(--text-secondary);
@@ -329,6 +392,16 @@
 		
 		.promo-code {
 			font-size: 1rem;
+		}
+		
+		.early-access-counter {
+			flex-direction: column;
+			gap: 0.25rem;
+			font-size: 0.75rem;
+		}
+		
+		.counter-divider {
+			display: none;
 		}
 	}
 </style>

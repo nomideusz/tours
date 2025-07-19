@@ -41,7 +41,7 @@
 						<span class="font-bold text-primary">€25</span>
 					</div>
 					<div class="text-secondary text-xs">Duration: 2 hours</div>
-					<div class="flex gap-2 mt-3">
+					<div class="flex gap-2 mt-3 justify-center">
 						<span class="time-slot">10:00 AM</span>
 						<span class="time-slot">2:00 PM</span>
 						<span class="time-slot">5:00 PM</span>

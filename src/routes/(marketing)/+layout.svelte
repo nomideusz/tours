@@ -10,6 +10,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
+	import '$lib/styles/auth.css';
 
 	let { children, data } = $props<{ data?: any }>();
 

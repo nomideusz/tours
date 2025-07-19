@@ -93,7 +93,7 @@
 					onclick={() => switchView('guide')}
 				>
 					<Settings class="w-3 h-3" />
-					Guide Dashboard
+					Dashboard
 				</button>
 				<button 
 					class="toggle-btn {viewMode === 'customer' ? 'active' : ''}"
@@ -288,7 +288,7 @@
 <style>
 	/* Professional Platform Showcase - matches HeroSection */
 	.platform-showcase {
-		max-width: 900px;
+		max-width: 1200px;
 		margin: 0 auto;
 		margin-top: 4rem;
 	}
@@ -320,6 +320,8 @@
 		transition: all var(--transition-base) ease;
 		position: relative;
 		overflow: hidden;
+		min-height: 500px;
+		min-width: 800px;
 	}
 
 	/* Subtle coral accent on hover - matches HeroSection */
@@ -417,7 +419,8 @@
 	
 	/* QR Showcase */
 	.qr-showcase {
-		min-height: 400px;
+		min-height: 420px;
+		width: 100%;
 	}
 	
 	.qr-header {
@@ -606,6 +609,8 @@
 	.tour-preview-stats {
 		display: flex;
 		justify-content: space-around;
+		gap: 1rem;
+		padding: 0 0.5rem;
 	}
 	
 	.preview-stat {
@@ -656,7 +661,8 @@
 	
 	/* Guide Dashboard */
 	.guide-preview {
-		min-height: 400px;
+		min-height: 420px;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
@@ -776,7 +782,10 @@
 	
 	/* Customer View */
 	.customer-preview {
-		min-height: 400px;
+		min-height: 420px;
+		width: 100%;
+		max-width: 600px;
+		margin: 0 auto;
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
@@ -913,6 +922,7 @@
 		
 		.showcase-preview {
 			padding: 1.5rem;
+			min-width: auto;
 		}
 		
 		.view-toggle {
@@ -971,6 +981,10 @@
 		.booking-features {
 			flex-direction: column;
 			gap: 0.5rem;
+		}
+		
+		.customer-preview {
+			max-width: none;
 		}
 	}
 </style>

@@ -36,4 +36,74 @@
 	.submit-button {
 		margin-top: 1.5rem;
 	}
+
+	/* Fix autofill styles with proper contrast */
+	input:-webkit-autofill,
+	input:-webkit-autofill:hover,
+	input:-webkit-autofill:focus,
+	input:-webkit-autofill:active {
+		/* Light mode autofill */
+		-webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+		-webkit-text-fill-color: #000000 !important;
+	}
+
+	/* Dark mode autofill */
+	@media (prefers-color-scheme: dark) {
+		input:-webkit-autofill,
+		input:-webkit-autofill:hover,
+		input:-webkit-autofill:focus,
+		input:-webkit-autofill:active {
+			-webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+			-webkit-text-fill-color: #ffffff !important;
+		}
+	}
+
+	[data-theme="dark"] input:-webkit-autofill,
+	[data-theme="dark"] input:-webkit-autofill:hover,
+	[data-theme="dark"] input:-webkit-autofill:focus,
+	[data-theme="dark"] input:-webkit-autofill:active {
+		-webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+		-webkit-text-fill-color: #ffffff !important;
+	}
+
+	/* Eye icon visibility - target SVG directly */
+	.relative button[type="button"] {
+		background: transparent !important;
+	}
+
+	.relative button[type="button"] svg {
+		color: #6b7280 !important;
+		stroke: #6b7280 !important;
+		fill: none !important;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.relative button[type="button"] svg {
+			color: #9ca3af !important;
+			stroke: #9ca3af !important;
+		}
+	}
+
+	[data-theme="dark"] .relative button[type="button"] svg {
+		color: #9ca3af !important;
+		stroke: #9ca3af !important;
+	}
+
+	/* Hover states for SVG */
+	.relative button[type="button"]:hover svg {
+		color: #374151 !important;
+		stroke: #374151 !important;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.relative button[type="button"]:hover svg {
+			color: #d1d5db !important;
+			stroke: #d1d5db !important;
+		}
+	}
+
+	[data-theme="dark"] .relative button[type="button"]:hover svg {
+		color: #d1d5db !important;
+		stroke: #d1d5db !important;
+	}
 } 

@@ -257,24 +257,28 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: white;
+		color: white !important;
 		box-shadow: var(--shadow-md);
 	}
 
 	.professional-icon--coral {
-		background: var(--color-coral-500);
+		background: #ef4444 !important;
+		color: white !important;
 	}
 
 	.professional-icon--orange {
-		background: var(--color-warm-orange-500);
+		background: #f97316 !important;
+		color: white !important;
 	}
 
 	.professional-icon--teal {
-		background: var(--color-pro-teal-500);
+		background: #06b6d4 !important;
+		color: white !important;
 	}
 
 	.professional-icon--navy {
-		background: var(--color-deep-navy-900);
+		background: #1e293b !important;
+		color: white !important;
 	}
 
 	/* Feature Content */
@@ -346,15 +350,18 @@
 	}
 
 	.trust-icon--coral {
-		background: var(--color-coral-500);
+		background: #ef4444 !important;
+		color: white !important;
 	}
 
 	.trust-icon--orange {
-		background: var(--color-warm-orange-500);
+		background: #f97316 !important;
+		color: white !important;
 	}
 
 	.trust-icon--navy {
-		background: var(--color-deep-navy-900);
+		background: #1e293b !important;
+		color: white !important;
 	}
 
 	.trust-icon-text {
@@ -420,49 +427,6 @@
 		.professional-badge svg {
 			color: #1f2937 !important;
 			stroke: #1f2937 !important;
-		}
-		
-		/* Ensure feature card icon backgrounds are visible in dark mode */
-		.professional-icon--coral {
-			background: #ef4444 !important;
-		}
-		
-		.professional-icon--orange {
-			background: #f97316 !important;
-		}
-		
-		.professional-icon--teal {
-			background: #06b6d4 !important;
-		}
-		
-		.professional-icon--navy {
-			background: #1e293b !important;
-		}
-		
-		/* Ensure feature card icons are white on colored backgrounds */
-		.professional-icon svg {
-			color: white !important;
-			stroke: white !important;
-		}
-		
-		/* Ensure trust icon backgrounds are visible in dark mode */
-		.trust-icon--coral {
-			background: #ef4444 !important;
-		}
-		
-		.trust-icon--orange {
-			background: #f97316 !important;
-		}
-		
-		.trust-icon--navy {
-			background: #1e293b !important;
-		}
-		
-		/* Ensure trust icon text is white on colored backgrounds */
-		.trust-icon--coral .trust-icon-text,
-		.trust-icon--orange .trust-icon-text,
-		.trust-icon--navy .trust-icon-text {
-			color: white !important;
 		}
 	}
 </style> 

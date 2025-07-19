@@ -16,7 +16,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import PromoCodeInput from '$lib/components/PromoCodeInput.svelte';
-	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented } from '$lib/utils/pricing-config.js';
+	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented, calculatePlanPricing, type UserPricingContext } from '$lib/utils/pricing-config.js';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -59,42 +59,27 @@
 	let discountPercentage = $derived(user?.subscriptionDiscountPercentage || 0);
 	let isLifetimeDiscount = $derived(user?.isLifetimeDiscount || false);
 	
-	// Calculate prices with promo code discounts
-	function calculatePrice(basePlan: 'starter_pro' | 'professional' | 'agency', interval: 'monthly' | 'yearly'): { original: number; final: number; savings: number } {
-		const planPricing = getPlanPricing(basePlan);
-		
-		if (!planPricing) {
-			console.error(`No pricing found for plan: ${basePlan}`);
-			return { original: 0, final: 0, savings: 0 };
-		}
-		
-		const originalPrice = planPricing[interval];
-		
-		// If user is in free period (from promo code), show as free
-		if (isInFreePeriod) {
-			return { original: originalPrice, final: 0, savings: originalPrice };
-		}
-		
-		// Apply promo code discount if user has one
-		if (discountPercentage > 0) {
-			const discount = Math.round((originalPrice * discountPercentage) / 100);
-			return { 
-				original: originalPrice, 
-				final: originalPrice - discount, 
-				savings: discount
-			};
-		}
-		
-		// No discounts - show regular pricing
-		return { original: originalPrice, final: originalPrice, savings: 0 };
-	}
+	// Get user context for pricing calculations
+	let userPricingContext = $derived<UserPricingContext | undefined>(user ? {
+		subscriptionFreeUntil: user.subscriptionFreeUntil,
+		subscriptionDiscountPercentage: user.subscriptionDiscountPercentage,
+		isLifetimeDiscount: user.isLifetimeDiscount,
+		promoCodeUsed: user.promoCodeUsed
+	} : undefined);
 	
-	// Calculate prices - updated pricing with promo consideration
-	let starterProPricing = $derived(calculatePrice('starter_pro', isYearly ? 'yearly' : 'monthly'));
-	let proPricing = $derived(calculatePrice('professional', isYearly ? 'yearly' : 'monthly'));
-	let agencyPricing = $derived(calculatePrice('agency', isYearly ? 'yearly' : 'monthly'));
+	// Calculate prices using unified function
+	let starterProPricing = $derived(calculatePlanPricing('starter_pro', isYearly ? 'yearly' : 'monthly', userPricingContext));
+	let proPricing = $derived(calculatePlanPricing('professional', isYearly ? 'yearly' : 'monthly', userPricingContext));
+	let agencyPricing = $derived(calculatePlanPricing('agency', isYearly ? 'yearly' : 'monthly', userPricingContext));
 	
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
+	
+	// Format price for display (show .50 but not .00)
+	function formatPrice(price: number): string {
+		if (price === 0) return '0';
+		if (price % 1 === 0) return price.toString();
+		return price.toFixed(2);
+	}
 	
 	// Format promo benefit text
 	function getPromoBenefitText(): string {
@@ -557,7 +542,7 @@
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 				{#each PRICING_PLANS as plan}
-					{@const pricing = plan.id === 'free' ? { original: 0, final: 0, savings: 0 } : calculatePrice(plan.id as 'starter_pro' | 'professional' | 'agency', isYearly ? 'yearly' : 'monthly')}
+					{@const pricing = calculatePlanPricing(plan.id, isYearly ? 'yearly' : 'monthly', userPricingContext)}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
 					{@const isFreePlan = plan.id === 'free'}
@@ -577,14 +562,14 @@
 							{#if !isFreePlan && pricing.savings > 0}
 								<!-- User has promo discount applied -->
 								<div class="text-center">
-									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{pricing.original}</span>
-									<span class="text-xl sm:text-2xl font-bold block" style="color: var(--text-primary);">€{pricing.final}</span>
+									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{formatPrice(pricing.original)}</span>
+									<span class="text-xl sm:text-2xl font-bold block" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
 									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isYearly ? ' billed annually' : ''}</span>
 								</div>
 							{:else}
 								<!-- Regular pricing -->
 								<div class="text-center">
-									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{isFreePlan ? 0 : pricing.final}</span>
+									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
 									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isFreePlan ? '' : isYearly ? ' billed annually' : ''}</span>
 								</div>
 							{/if}
@@ -593,7 +578,7 @@
 						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
 							{#if !isFreePlan && pricing.savings > 0}
 								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
-									{isInFreePeriod ? 'FREE during trial' : `${discountPercentage}% OFF - Save €${pricing.savings}`}
+									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage || 50}% OFF - Save €${formatPrice(pricing.savings)}`}
 								</span>
 							{:else if !isFreePlan && isYearly}
 								{@const planPricing = getPlanPricing(plan.id)}
