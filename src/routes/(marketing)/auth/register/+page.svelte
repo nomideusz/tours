@@ -323,7 +323,7 @@
 							<label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
 								Password
 							</label>
-							<div class="relative">
+							<div class="relative password-input-container">
 								<input
 									type={showPassword ? 'text' : 'password'}
 									id="password"
@@ -340,7 +340,7 @@
 								/>
 								<button
 									type="button"
-									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center password-toggle-btn"
 									tabindex="-1"
 									onclick={() => showPassword = !showPassword}
 								>
@@ -360,7 +360,7 @@
 							<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1.5">
 								Confirm Password
 							</label>
-							<div class="relative">
+							<div class="relative password-input-container">
 								<input
 									type={showConfirmPassword ? 'text' : 'password'}
 									id="confirmPassword"
@@ -377,7 +377,7 @@
 								/>
 								<button
 									type="button"
-									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center password-toggle-btn"
 									tabindex="-1"
 									onclick={() => showConfirmPassword = !showConfirmPassword}
 								>

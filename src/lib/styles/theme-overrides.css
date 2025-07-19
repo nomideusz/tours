@@ -300,4 +300,13 @@ body:has(video) #detach-button-host {
 	font-size: 0.6875rem !important; /* 11px instead of 13px */
 }
 
+.notification-bell .indicator {
+	background: var(--color-error) !important;
+}
+
+/* Notification timestamps - smaller text */
+.notification-timestamp {
+	font-size: 0.6875rem !important; /* 11px instead of 13px */
+}
+
  

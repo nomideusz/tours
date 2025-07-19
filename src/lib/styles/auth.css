@@ -1,61 +1,52 @@
-/* Shared auth page styling */
+/* Auth Form Styles */
 @layer components {
-	.auth-page {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		min-height: calc(100vh - 80px); /* Subtract header height */
-		padding: 2rem 0;
-		background: var(--bg-gradient-mist);
-	}
-
-	.auth-container {
-		width: 100%;
-		max-width: 480px;
-		padding: 2rem;
-		border-radius: 12px;
-		background-color: var(--bg-primary);
-		box-shadow: var(--shadow-lg);
+	/* Generic oauth2 button for auth pages */
+	.oauth2-button {
+		padding: 0.75rem 1rem;
 		border: 1px solid var(--border-primary);
-		margin: 0 1rem;
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		text-decoration: none;
+		transition: all var(--transition-fast) ease;
+		color: var(--text-primary);
+		background-color: var(--bg-primary);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		width: 100%;
+		justify-content: center;
 	}
 
-	@media (max-width: 520px) {
-		.auth-container {
-			padding: 1.5rem;
-			margin: 0 1rem;
-		}
-		
-		.auth-page {
-			padding: 1rem 0;
-		}
+	.oauth2-button:hover {
+		background-color: var(--bg-secondary);
+		border-color: var(--border-secondary);
 	}
 
-	/* Submit button spacing */
-	.submit-button {
-		margin-top: 1.5rem;
+	.oauth2-button:focus {
+		outline: none;
+		box-shadow: var(--focus-shadow-primary);
 	}
 
-	/* Fix autofill styles with proper contrast */
+	/* Dark mode */
+	[data-theme="dark"] .oauth2-button {
+		border-color: var(--border-primary);
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	[data-theme="dark"] .oauth2-button:hover {
+		background-color: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Auth input autofill handling */
 	input:-webkit-autofill,
 	input:-webkit-autofill:hover,
 	input:-webkit-autofill:focus,
 	input:-webkit-autofill:active {
-		/* Light mode autofill */
 		-webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
 		-webkit-text-fill-color: #000000 !important;
-	}
-
-	/* Dark mode autofill */
-	@media (prefers-color-scheme: dark) {
-		input:-webkit-autofill,
-		input:-webkit-autofill:hover,
-		input:-webkit-autofill:focus,
-		input:-webkit-autofill:active {
-			-webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
-			-webkit-text-fill-color: #ffffff !important;
-		}
 	}
 
 	[data-theme="dark"] input:-webkit-autofill,
@@ -66,44 +57,121 @@
 		-webkit-text-fill-color: #ffffff !important;
 	}
 
-	/* Eye icon visibility - target SVG directly */
-	.relative button[type="button"] {
-		background: transparent !important;
+	/* Password visibility toggle styles */
+	.password-input-container {
+		position: relative !important;
+		display: block !important;
+		width: 100% !important;
 	}
 
-	.relative button[type="button"] svg {
+	.password-toggle-btn {
+		background: transparent !important;
+		border: none !important;
+		cursor: pointer !important;
+		outline: none !important;
+		-webkit-tap-highlight-color: transparent !important;
+		touch-action: manipulation !important;
+	}
+
+	/* Mobile-specific positioning for password toggle buttons */
+	@media (max-width: 640px) {
+		.password-toggle-btn {
+			position: absolute !important;
+			inset: auto !important;
+			top: 50% !important;
+			right: 0.5rem !important;
+			bottom: auto !important;
+			left: auto !important;
+			transform: translateY(-50%) !important;
+			height: 2rem !important;
+			width: 2rem !important;
+			padding: 0 !important;
+			margin: 0 !important;
+			display: flex !important;
+			align-items: center !important;
+			justify-content: center !important;
+			z-index: 10 !important;
+		}
+		
+		/* Override any flex/padding classes on mobile */
+		.password-toggle-btn.flex {
+			display: flex !important;
+		}
+		
+		.password-toggle-btn.pr-3 {
+			padding-right: 0 !important;
+		}
+		
+		/* Ensure inputs have proper right padding for the button */
+		.password-input-container > input {
+			padding-right: 3rem !important;
+			min-height: 2.5rem !important;
+		}
+	}
+
+	/* Desktop positioning */
+	@media (min-width: 641px) {
+		.password-toggle-btn {
+			position: absolute !important;
+			top: 0 !important;
+			bottom: 0 !important;
+			right: 0 !important;
+			height: 100% !important;
+			display: flex !important;
+			align-items: center !important;
+			padding-right: 0.75rem !important;
+		}
+	}
+
+	/* Eye icon styles */
+	.password-toggle-btn svg {
 		color: #6b7280 !important;
 		stroke: #6b7280 !important;
 		fill: none !important;
+		width: 1rem !important;
+		height: 1rem !important;
+		flex-shrink: 0 !important;
+		pointer-events: none !important;
 	}
 
 	@media (prefers-color-scheme: dark) {
-		.relative button[type="button"] svg {
+		.password-toggle-btn svg {
 			color: #9ca3af !important;
 			stroke: #9ca3af !important;
 		}
 	}
 
-	[data-theme="dark"] .relative button[type="button"] svg {
+	[data-theme="dark"] .password-toggle-btn svg {
 		color: #9ca3af !important;
 		stroke: #9ca3af !important;
 	}
 
-	/* Hover states for SVG */
-	.relative button[type="button"]:hover svg {
+	/* Hover states */
+	.password-toggle-btn:hover svg {
 		color: #374151 !important;
 		stroke: #374151 !important;
 	}
 
 	@media (prefers-color-scheme: dark) {
-		.relative button[type="button"]:hover svg {
+		.password-toggle-btn:hover svg {
 			color: #d1d5db !important;
 			stroke: #d1d5db !important;
 		}
 	}
 
-	[data-theme="dark"] .relative button[type="button"]:hover svg {
+	[data-theme="dark"] .password-toggle-btn:hover svg {
 		color: #d1d5db !important;
 		stroke: #d1d5db !important;
+	}
+
+	/* Focus states for accessibility */
+	.password-toggle-btn:focus {
+		outline: 2px solid var(--color-primary-500) !important;
+		outline-offset: -2px !important;
+	}
+
+	/* Active state for better mobile feedback */
+	.password-toggle-btn:active {
+		opacity: 0.7 !important;
 	}
 } 

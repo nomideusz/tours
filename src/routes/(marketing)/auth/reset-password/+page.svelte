@@ -141,17 +141,17 @@
 						<input type="hidden" name="token" value={token} />
 
 						<div>
-							<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+							<label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
 								New Password
 							</label>
-							<div class="relative">
+							<div class="relative password-input-container">
 								<input
 									type={showPassword ? 'text' : 'password'}
 									id="password"
 									name="password"
 									bind:value={password}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-									placeholder="Enter your new password"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									placeholder="Enter new password"
 									disabled={isLoading}
 									onblur={() => {
 										if (!password) passwordError = 'Password is required';
@@ -161,7 +161,7 @@
 								/>
 								<button
 									type="button"
-									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center password-toggle-btn"
 									onclick={() => showPassword = !showPassword}
 								>
 									{#if showPassword}
@@ -172,22 +172,22 @@
 								</button>
 							</div>
 							{#if passwordError}
-								<p class="mt-1 text-sm text-red-600">{passwordError}</p>
+								<p class="mt-1 text-xs text-red-600">{passwordError}</p>
 							{/if}
 						</div>
 
 						<div>
-							<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
-								Confirm New Password
+							<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1.5">
+								Confirm Password
 							</label>
-							<div class="relative">
+							<div class="relative password-input-container">
 								<input
 									type={showConfirmPassword ? 'text' : 'password'}
 									id="confirmPassword"
 									name="confirmPassword"
 									bind:value={confirmPassword}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
-									placeholder="Confirm your new password"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									placeholder="Confirm new password"
 									disabled={isLoading}
 									onblur={() => {
 										if (!confirmPassword) confirmPasswordError = 'Please confirm your password';
@@ -197,7 +197,7 @@
 								/>
 								<button
 									type="button"
-									class="absolute inset-y-0 right-0 pr-3 flex items-center"
+									class="absolute inset-y-0 right-0 pr-3 flex items-center password-toggle-btn"
 									onclick={() => showConfirmPassword = !showConfirmPassword}
 								>
 									{#if showConfirmPassword}
@@ -208,7 +208,7 @@
 								</button>
 							</div>
 							{#if confirmPasswordError}
-								<p class="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
+								<p class="mt-1 text-xs text-red-600">{confirmPasswordError}</p>
 							{/if}
 						</div>
 
