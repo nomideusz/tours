@@ -232,6 +232,23 @@
 			rgba(0, 0, 0, 0.02) 41px
 		);
 		pointer-events: none;
+		z-index: 0;
+	}
+
+	/* Ensure content is above the stripe overlay */
+	:global(.subtle-retro-section > *) {
+		position: relative;
+		z-index: 1;
+	}
+
+	/* Ensure buttons work properly within retro sections */
+	:global(.subtle-retro-section button),
+	:global(.subtle-retro-section .button-coral),
+	:global(.subtle-retro-section .button-primary),
+	:global(.subtle-retro-section .button-secondary) {
+		position: relative;
+		z-index: 2;
+		pointer-events: auto;
 	}
 
 	/* Dark mode texture overlay */
