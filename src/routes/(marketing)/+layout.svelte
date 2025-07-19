@@ -205,6 +205,58 @@
 		cursor: pointer;
 	}
 
+	/* Subtle retro section with horizontal stripes */
+	:global(.subtle-retro-section) {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Very subtle texture overlay */
+	:global(.subtle-retro-section::before) {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
+	/* Dark mode texture overlay */
+	@media (prefers-color-scheme: dark) {
+		:global(.subtle-retro-section::before) {
+			background-image: repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(255, 255, 255, 0.02) 40px,
+				rgba(255, 255, 255, 0.02) 41px
+			);
+		}
+	}
+
+	[data-theme="dark"] :global(.subtle-retro-section::before) {
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(255, 255, 255, 0.02) 40px,
+			rgba(255, 255, 255, 0.02) 41px
+		);
+	}
+
 	/* Floating Theme Toggle */
 	.floating-theme-toggle {
 		position: fixed;
