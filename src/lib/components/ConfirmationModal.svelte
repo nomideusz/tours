@@ -6,6 +6,9 @@
 	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
 	import X from 'lucide-svelte/icons/x';
 
+	// Components
+	import FlagIcon from './FlagIcon.svelte';
+
 	export let isOpen = false;
 	export let title = 'Are you sure?';
 	export let message = 'This action cannot be undone.';
@@ -16,6 +19,11 @@
 	export let onConfirm: (() => void) | undefined = undefined;
 	export let onCancel: (() => void) | undefined = undefined;
 	export let onClose: (() => void) | undefined = undefined;
+
+	// New props for flag icon support in message
+	export let showFlagInMessage = false;
+	export let flagCountryCode: string | null = null;
+	export let flagCountryName: string | null = null;
 
 	function handleConfirm() {
 		onConfirm?.();
@@ -45,11 +53,11 @@
 		},
 		warning: {
 			iconClass: 'confirmation-icon-warning',
-			confirmButton: 'button-primary'
+			confirmButton: 'button-primary confirmation-button-enhanced'
 		},
 		info: {
 			iconClass: 'confirmation-icon-info',
-			confirmButton: 'button-primary'
+			confirmButton: 'button-primary confirmation-button-enhanced'
 		}
 	}[variant];
 </script>
@@ -82,9 +90,13 @@
 					<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
 						{title}
 					</h3>
-					<p class="text-sm" style="color: var(--text-secondary);">
-						{message}
-					</p>
+					<div class="text-sm message-content" style="color: var(--text-secondary);">
+						{#if showFlagInMessage && flagCountryCode && flagCountryName}
+							{@html message.replace(flagCountryName, `<span class="inline-flex items-center gap-1 font-medium"><span class="flag-wrapper"><img src="/flags/1x1/${flagCountryCode.toLowerCase()}.svg" alt="${flagCountryName} flag" width="16" height="16" class="flag-in-text" /></span>${flagCountryName}</span>`)}
+						{:else}
+							{message}
+						{/if}
+					</div>
 				</div>
 				
 				<!-- Close button -->
@@ -120,5 +132,38 @@
 	/* Ensure modal appears above everything */
 	:global(body:has(.fixed.inset-0.z-50)) {
 		overflow: hidden;
+	}
+
+	/* Enhanced confirmation button styling for better dark mode contrast */
+	:global(.confirmation-button-enhanced) {
+		font-weight: 600 !important;
+		/* Ensure proper text contrast in dark mode */
+		color: var(--text-on-primary, var(--color-primary-900)) !important;
+		/* Better background contrast */
+		background: var(--bg-button-primary, var(--color-primary-100)) !important;
+		border-color: var(--border-button-primary, var(--color-primary-200)) !important;
+	}
+
+	:global(.confirmation-button-enhanced:hover:not(:disabled)) {
+		background: var(--bg-button-primary-hover, var(--color-primary-200)) !important;
+		border-color: var(--border-button-primary-hover, var(--color-primary-300)) !important;
+		color: var(--text-on-primary-hover, var(--color-primary-900)) !important;
+	}
+
+	/* Styles for flag in message text */
+	.message-content :global(.flag-wrapper) {
+		display: inline-flex;
+		align-items: center;
+		margin-right: 0.25rem;
+	}
+
+	.message-content :global(.flag-in-text) {
+		border-radius: 0.125rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+		object-fit: cover;
+	}
+
+	.message-content :global(span) {
+		white-space: nowrap;
 	}
 </style> 

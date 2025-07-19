@@ -467,6 +467,14 @@
 	--color-primary-800: #ffcdc2;
 	--color-primary-900: #ffe4de;
 
+	/* Enhanced button styling for dark mode - better contrast */
+	--text-on-primary: #ffffff;
+	--text-on-primary-hover: #ffffff;
+	--bg-button-primary: #872f29;
+	--bg-button-primary-hover: #a5342a;
+	--border-button-primary: #a5342a;
+	--border-button-primary-hover: #c73e2f;
+
 	/* =============================================
 	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
 	   ============================================= */

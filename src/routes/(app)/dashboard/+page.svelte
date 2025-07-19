@@ -1455,10 +1455,13 @@ Your payment account will use ${stripeCurrency} as the currency.
 ⚠️ IMPORTANT: Once you proceed, your country selection will be IMMEDIATELY and PERMANENTLY locked. This cannot be changed later, even if you don't complete the setup process.
 
 Please ensure this is the correct country where your business is legally registered.`}
-		confirmText={`Yes, ${countryInfo?.name || pendingPaymentCountry} is correct`}
+		confirmText="Yes, this is correct"
 		cancelText="Cancel"
 		variant="warning"
 		icon={Globe}
+		showFlagInMessage={true}
+		flagCountryCode={countryInfo?.code || pendingPaymentCountry}
+		flagCountryName={countryInfo?.name || pendingPaymentCountry}
 		onConfirm={confirmPaymentSetup}
 		onCancel={() => {
 			showPaymentConfirmModal = false;
