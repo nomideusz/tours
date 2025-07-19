@@ -336,19 +336,35 @@
 	let showPaymentSetupSuccess = $derived(isPaymentSetupComplete && paymentStatus.isSetup);
 	let showLocationSaveSuccess = $derived(saveSuccess);
 
-	// Calculate completed setup steps - only for new users
-	let stepsCompleted = $derived(
-		(!needsEmailVerification ? 1 : 0) +
-			(paymentStatus.isSetup ? 1 : 0) +
-			(!needsConfirmation ? 1 : 0)
-	);
+	// Calculate total steps needed (3 for OAuth users, 4 for regular users)
+	let totalSteps = $derived(needsEmailVerification ? 4 : 3);
+	
+	// Calculate completed setup steps
+	let stepsCompleted = $derived.by(() => {
+		let completed = 0;
+		
+		// Step 1: Email verification (only for regular users)
+		if (needsEmailVerification) {
+			// This step exists but isn't completed yet
+		} else {
+			// OAuth users get this step for free, but we don't count it
+		}
+		
+		// Step 2 (or 1 for OAuth): Location confirmation
+		if (!needsConfirmation) completed += 1;
+		
+		// Step 3 (or 2 for OAuth): Payment setup
+		if (paymentStatus.isSetup) completed += 1;
+		
+		// Step 4 (or 3 for OAuth): Create tour
+		if (stats.totalTours > 0) completed += 1;
+		
+		return completed;
+	});
 
 	// Check if all onboarding steps are complete
 	let isOnboardingComplete = $derived(
-		!needsEmailVerification && 
-		!needsConfirmation && 
-		paymentStatus.isSetup && 
-		stats.totalTours > 0
+		stepsCompleted >= totalSteps
 	);
 	
 	// Show onboarding until ALL steps are complete
@@ -901,7 +917,13 @@
 					<p class="text-xs sm:text-sm mb-2">
 						{#if profile?.country && profile?.currency}
 							{@const countryInfo = getCountryInfo(profile.country)}
-							Business location: {countryInfo?.flag || ''} {countryInfo?.name || profile.country} • Currency: {profile.currency}
+							Business location: 
+							{#if countryInfo?.flag && countryInfo.flag.length > 2}
+								{countryInfo.flag}
+							{:else if countryInfo?.code}
+								<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo.code}</span>
+							{/if}
+							{countryInfo?.name || profile.country} • Currency: {profile.currency}
 						{:else}
 							Your business location has been saved.
 						{/if}
@@ -1078,13 +1100,46 @@
 									<Globe class="compact-step-icon" />
 									<span class="compact-step-title">Confirm Location</span>
 								</div>
-								<p class="compact-step-description">Set your business location for payments</p>
-								<button 
-									onclick={() => { currencyExpanded = true; }}
-									class="compact-step-button"
-								>
-									Set Location
-								</button>
+								{#if selectedCountry}
+									{@const countryInfo = getCountryInfo(selectedCountry)}
+									<p class="compact-step-description">
+										Detected: 
+										{#if countryInfo?.flag && countryInfo.flag.length > 2}
+											{countryInfo.flag}
+										{:else}
+											<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem; transform: scale(0.8);">{countryInfo?.code || selectedCountry}</span>
+										{/if}
+										{countryInfo?.name} • {countryInfo?.currency}
+									</p>
+									<div class="compact-step-actions">
+										<button 
+											onclick={saveCurrencySelection}
+											disabled={savingCurrency}
+											class="compact-step-button compact-step-button--primary"
+										>
+											{#if savingCurrency}
+												<Loader2 class="h-3 w-3 animate-spin" />
+											{:else}
+												✓ Confirm
+											{/if}
+										</button>
+										<button 
+											onclick={() => { currencyExpanded = true; }}
+											class="compact-step-button compact-step-button--secondary"
+										>
+											Change
+										</button>
+									</div>
+									<p class="compact-step-note">Auto-detected from your location</p>
+								{:else}
+									<p class="compact-step-description">Set your business location for payments</p>
+									<button 
+										onclick={() => { currencyExpanded = true; }}
+										class="compact-step-button"
+									>
+										Set Location
+									</button>
+								{/if}
 							</div>
 						{/if}
 
@@ -1134,17 +1189,15 @@
 				<div class="compact-progress">
 					<div class="compact-progress-text">
 						{#if showCompactOnboarding}
-							{stepsCompleted + (stats.totalTours > 0 ? 1 : 0)}/4 steps complete
+							{stepsCompleted}/{totalSteps} steps complete
 						{:else}
-							{stepsCompleted + (stats.totalTours > 0 ? 1 : 0)}/4 setup steps complete
+							{stepsCompleted}/{totalSteps} setup steps complete
 						{/if}
 					</div>
 					<div class="compact-progress-bar">
 						<div 
 							class="compact-progress-fill"
-							style="width: {showCompactOnboarding 
-								? ((stepsCompleted + (stats.totalTours > 0 ? 1 : 0)) / 4) * 100 
-								: ((stepsCompleted + (stats.totalTours > 0 ? 1 : 0)) / 4) * 100}%;"
+							style="width: {(stepsCompleted / totalSteps) * 100}%;"
 						></div>
 					</div>
 				</div>
@@ -1161,9 +1214,20 @@
 					tabindex="0"
 				></div>
 				<div class="compact-location-content">
-					<h3 class="compact-location-title">
-						Confirm Your Business Location
-					</h3>
+					<div class="compact-location-header">
+						<h3 class="compact-location-title">
+							Confirm Your Business Location
+						</h3>
+						<button
+							onclick={() => { currencyExpanded = false; resetSelections(); }}
+							class="compact-location-close"
+							aria-label="Close modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+							</svg>
+						</button>
+					</div>
 					<p class="compact-location-description">
 						This determines your payment currency and cannot be changed after payment setup begins.
 					</p>
@@ -1180,7 +1244,13 @@
 								onclick={() => onCountryChange(country.code)}
 								class="compact-country-option {selectedCountry === country.code ? 'compact-country-option--selected' : ''}"
 							>
-								<span class="compact-country-flag">{country.flag}</span>
+								<span class="compact-country-flag" title="{country.name}">
+									{#if country.flag && country.flag.length > 2}
+										{country.flag}
+									{:else}
+										<span class="country-code-fallback">{country.code}</span>
+									{/if}
+								</span>
 								<div class="compact-country-info">
 									<p class="compact-country-name">{country.name}</p>
 									<p class="compact-country-currency">{country.currency}</p>
@@ -1196,7 +1266,13 @@
 						{@const countryInfo = getCountryInfo(selectedCountry)}
 						<div class="compact-country-selected">
 							<p class="compact-country-selected-text">
-								✓ Selected: {countryInfo?.flag} {countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
+								✓ Selected: 
+					{#if countryInfo?.flag && countryInfo.flag.length > 2}
+						{countryInfo.flag}
+					{:else}
+						<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo?.code || selectedCountry}</span>
+					{/if}
+					{countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
 							</p>
 						</div>
 					{/if}
@@ -1384,7 +1460,7 @@
 	<ConfirmationModal
 		isOpen={showPaymentConfirmModal}
 		title="Confirm Payment Account Country"
-		message={`You are about to create a payment account for ${countryInfo?.flag || ''} ${countryInfo?.name || pendingPaymentCountry}.
+		message={`You are about to create a payment account for ${countryInfo?.name || pendingPaymentCountry}.
 
 Your payment account will use ${stripeCurrency} as the currency.
 
@@ -1746,6 +1822,41 @@ Please ensure this is the correct country where your business is legally registe
 		cursor: not-allowed;
 	}
 	
+	.compact-step-actions {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+	
+	.compact-step-button--primary {
+		background: var(--color-primary-600);
+		color: white;
+		border-color: var(--color-primary-600);
+	}
+	
+	.compact-step-button--primary:hover:not(:disabled) {
+		background: var(--color-primary-700);
+		border-color: var(--color-primary-700);
+	}
+	
+	.compact-step-button--secondary {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border-color: var(--border-primary);
+	}
+	
+	.compact-step-button--secondary:hover:not(:disabled) {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+	
+	.compact-step-actions .compact-step-button {
+		flex: 1;
+		min-width: 80px;
+		max-width: 120px;
+	}
+	
 	.compact-step-success {
 		color: var(--color-success-600);
 		font-size: 0.75rem;
@@ -1757,6 +1868,14 @@ Please ensure this is the correct country where your business is legally registe
 		color: var(--color-danger-600);
 		font-size: 0.75rem;
 		margin-top: 0.5rem;
+	}
+	
+	.compact-step-note {
+		color: var(--text-tertiary);
+		font-size: 0.7rem;
+		margin-top: 0.5rem;
+		text-align: center;
+		font-style: italic;
 	}
 	
 	.compact-onboarding-main-action {
@@ -1869,48 +1988,129 @@ Please ensure this is the correct country where your business is legally registe
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 1rem;
-		padding: 1.5rem;
-		max-width: 600px;
+		padding: 1rem;
+		max-width: min(98vw, 1200px);
 		width: 100%;
-		max-height: 80vh;
+		max-height: 90vh;
 		overflow-y: auto;
+		overflow-x: auto;
 		position: relative;
 		box-shadow: var(--shadow-lg);
+	}
+	
+	@media (min-width: 768px) {
+		.compact-location-content {
+			padding: 1.25rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.compact-location-content {
+			padding: 1.5rem;
+			max-width: min(95vw, 1200px);
+		}
+	}
+	
+	.compact-location-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
 	}
 	
 	.compact-location-title {
 		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--text-primary);
-		margin-bottom: 0.5rem;
+		margin: 0;
+		flex: 1;
 		text-align: center;
+	}
+	
+	.compact-location-close {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		flex-shrink: 0;
+	}
+	
+	.compact-location-close:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
 	}
 	
 	.compact-location-description {
 		color: var(--text-secondary);
 		font-size: 0.875rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.25rem;
 		text-align: center;
 	}
 	
 	.compact-country-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.75rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.25rem;
+		width: 100%;
+		overflow: visible;
+	}
+	
+	@media (min-width: 640px) {
+		.compact-country-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	
+	@media (min-width: 900px) {
+		.compact-country-grid {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+	
+	@media (min-width: 1100px) {
+		.compact-country-grid {
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+		}
+	}
+	
+	@media (min-width: 1300px) {
+		.compact-country-grid {
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+		}
+	}
+	
+	@media (min-width: 1500px) {
+		.compact-country-grid {
+			grid-template-columns: repeat(7, minmax(0, 1fr));
+		}
 	}
 	
 	.compact-country-option {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
+		gap: 0.5rem;
+		padding: 0.5rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.5rem;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;
+		height: 3.5rem;
+		min-height: 3.5rem;
+		width: 100%;
+		min-width: 0;
+		overflow: hidden;
+		box-sizing: border-box;
 	}
 	
 	.compact-country-option:hover {
@@ -1924,26 +2124,42 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-country-flag {
-		font-size: 1.25rem;
+		font-size: 1.3rem;
+		line-height: 1;
 		flex-shrink: 0;
+		width: 1.5rem;
+		text-align: center;
+		font-family: "Twemoji Mozilla", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
+		font-weight: normal;
+		font-style: normal;
+		display: inline-block;
+		vertical-align: middle;
 	}
 	
 	.compact-country-info {
 		flex: 1;
 		min-width: 0;
+		overflow: hidden;
 	}
 	
 	.compact-country-name {
-		font-size: 0.875rem;
+		font-size: 0.8rem;
 		font-weight: 500;
 		color: var(--text-primary);
 		margin: 0;
+		line-height: 1.2;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		display: block;
 	}
 	
 	.compact-country-currency {
-		font-size: 0.75rem;
+		font-size: 0.7rem;
 		color: var(--text-secondary);
 		margin: 0;
+		line-height: 1.1;
+		display: block;
 	}
 	
 	.compact-country-check {
@@ -1951,12 +2167,26 @@ Please ensure this is the correct country where your business is legally registe
 		flex-shrink: 0;
 	}
 	
+	.country-code-fallback {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		font-size: 0.7rem;
+		font-weight: 600;
+		background: var(--bg-tertiary);
+		border: 1px solid var(--border-secondary);
+		border-radius: 0.25rem;
+		color: var(--text-primary);
+	}
+	
 	.compact-country-selected {
 		background: var(--color-success-50);
 		border: 1px solid var(--color-success-200);
 		border-radius: 0.5rem;
 		padding: 0.75rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.25rem;
 	}
 	
 	.compact-country-selected-text {

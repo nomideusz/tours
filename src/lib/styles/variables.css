@@ -1427,24 +1427,46 @@ button svg,
 	border-radius: var(--radius-xl);
 	padding: var(--space-6);
 	margin-bottom: var(--space-8);
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 /* Country selection grid */
 .country-selection-grid {
 	display: grid;
-	gap: var(--space-2);
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 0.75rem;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	width: 100%;
+	overflow: visible;
 }
 
 @media (min-width: 640px) {
 	.country-selection-grid {
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
 	.country-selection-grid {
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1100px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1300px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1500px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(7, minmax(0, 1fr));
 	}
 }
 
@@ -1452,8 +1474,8 @@ button svg,
 .country-option {
 	display: flex;
 	align-items: center;
-	gap: var(--space-3);
-	padding: var(--space-3);
+	gap: 0.5rem;
+	padding: 0.5rem;
 	text-align: left;
 	border: 1px solid var(--border-primary);
 	border-radius: var(--radius-lg);
@@ -1461,6 +1483,12 @@ button svg,
 	color: var(--text-primary);
 	cursor: pointer;
 	transition: all var(--transition-base) ease;
+	height: 3.5rem;
+	min-height: 3.5rem;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+	box-sizing: border-box;
 }
 
 .country-option:hover {
@@ -1477,27 +1505,55 @@ button svg,
 	background: var(--color-primary-100);
 }
 
+/* Country code fallback when emoji not supported */
+.country-code-fallback {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border-secondary);
+	border-radius: 0.25rem;
+	color: var(--text-primary);
+}
+
 /* Country flag */
 .country-flag {
-	font-size: 1.25rem;
+	font-size: 1.3rem;
 	line-height: 1;
+	flex-shrink: 0;
+	width: 1.5rem;
+	text-align: center;
+	font-family: "Twemoji Mozilla", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
+	font-weight: normal;
+	font-style: normal;
+	display: inline-block;
+	vertical-align: middle;
 }
 
 /* Country info */
 .country-name {
+	font-size: 0.8rem;
 	font-weight: 500;
 	color: var(--text-primary);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	display: block;
+	line-height: 1.2;
 }
 
 .country-currency {
-	font-size: var(--text-xs);
+	font-size: 0.7rem;
 	color: var(--text-secondary);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	display: block;
+	line-height: 1.1;
 }
 
 /* Selected country highlight box */

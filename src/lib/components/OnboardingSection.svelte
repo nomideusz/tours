@@ -135,10 +135,24 @@
 						{#if !needsConfirmation}
 							{#if profile?.country && profile?.currency}
 								{@const countryInfo = getCountryInfo(profile.country)}
-								{countryInfo?.flag || ''} {countryInfo?.name || profile.country} • {profile.currency}
+								{#if countryInfo?.flag && countryInfo.flag.length > 2}
+									{countryInfo.flag}
+								{:else if countryInfo?.code}
+									<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo.code}</span>
+								{/if}
+								{countryInfo?.name || profile.country} • {profile.currency}
 							{:else}
 								Location confirmed!
 							{/if}
+						{:else if selectedCountry}
+							{@const countryInfo = getCountryInfo(selectedCountry)}
+							Detected: 
+							{#if countryInfo?.flag && countryInfo.flag.length > 2}
+								{countryInfo.flag}
+							{:else}
+								<span class="country-code-fallback" style="display: inline-flex; vertical-align: middle; margin: 0 0.25rem;">{countryInfo?.code || selectedCountry}</span>
+							{/if}
+							{countryInfo?.name} • {countryInfo?.currency}
 						{:else}
 							Set your business location
 						{/if}
@@ -163,24 +177,64 @@
 						</div>
 					{/if}
 					{#if needsConfirmation}
-						<button 
-							onclick={() => {
-								onCurrencyExpandedChange(true);
-								// Scroll to the expanded section on mobile
-								setTimeout(() => {
-									const expandedSection = document.querySelector('[data-location-section]');
-									if (expandedSection) {
-										expandedSection.scrollIntoView({ 
-											behavior: 'smooth', 
-											block: 'start' 
-										});
-									}
-								}, 100); // Small delay to ensure DOM is updated
-							}}
-							class="button-secondary button--small"
-						>
-							Set Location
-						</button>
+						{#if selectedCountry}
+							<!-- Auto-detected location - easy confirm/change -->
+							<div class="space-y-2 mt-2">
+								<div class="flex gap-2">
+									<button 
+										onclick={saveCurrencySelection}
+										disabled={savingCurrency}
+										class="button-primary button--small"
+									>
+										{#if savingCurrency}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											✓ Confirm
+										{/if}
+									</button>
+									<button 
+										onclick={() => {
+											onCurrencyExpandedChange(true);
+											// Scroll to the expanded section on mobile
+											setTimeout(() => {
+												const expandedSection = document.querySelector('[data-location-section]');
+												if (expandedSection) {
+													expandedSection.scrollIntoView({ 
+														behavior: 'smooth', 
+														block: 'start' 
+													});
+												}
+											}, 100);
+										}}
+										class="button-secondary button--small"
+									>
+										Change
+									</button>
+								</div>
+								<p class="text-xs" style="color: var(--text-tertiary);">
+									Auto-detected from your location
+								</p>
+							</div>
+						{:else}
+							<button 
+								onclick={() => {
+									onCurrencyExpandedChange(true);
+									// Scroll to the expanded section on mobile
+									setTimeout(() => {
+										const expandedSection = document.querySelector('[data-location-section]');
+										if (expandedSection) {
+											expandedSection.scrollIntoView({ 
+												behavior: 'smooth', 
+												block: 'start' 
+											});
+										}
+									}, 100); // Small delay to ensure DOM is updated
+								}}
+								class="button-secondary button--small"
+							>
+								Set Location
+							</button>
+						{/if}
 					{/if}
 				</div>
 			</div>
@@ -282,11 +336,61 @@
 	{#if needsConfirmation && currencyExpanded}
 		<div data-location-section class="onboarding-location-section">
 			<h3 class="onboarding-step-title">
-				Confirm Your Business Location
+				{selectedCountry ? 'Confirm or Change Your Location' : 'Select Your Business Location'}
 			</h3>
 			<p class="onboarding-step-description">
 				This determines your payment currency and cannot be changed after payment setup begins.
 			</p>
+			
+			{#if selectedCountry}
+				{@const countryInfo = getCountryInfo(selectedCountry)}
+				<div class="country-selected-info mb-4">
+					<div class="flex items-center gap-2 mb-2">
+						<span class="country-flag" style="font-size: 1.75rem;">
+							{#if countryInfo?.flag && countryInfo.flag.length > 2}
+								{countryInfo.flag}
+							{:else}
+								<span class="country-code-fallback" style="width: 2rem; height: 2rem; font-size: 0.9rem;">{countryInfo?.code || selectedCountry}</span>
+							{/if}
+						</span>
+						<div>
+							<h4 class="country-selected-title">
+								{countryInfo?.name}
+							</h4>
+							<p class="country-selected-text">
+								Currency: <strong>{countryInfo?.currency}</strong>
+							</p>
+						</div>
+					</div>
+					<p class="text-xs" style="color: var(--text-tertiary);">
+						✓ Auto-detected from your location
+					</p>
+					<div class="flex gap-3 mt-3">
+						<button
+							onclick={saveCurrencySelection}
+							disabled={savingCurrency}
+							class="button-primary"
+						>
+							{#if savingCurrency}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								Confirm This Location
+							{/if}
+						</button>
+						<button
+							onclick={() => { onCurrencyExpandedChange(false); resetSelections(); }}
+							class="button-secondary"
+						>
+							Cancel
+						</button>
+					</div>
+					<div class="mt-4 pt-4" style="border-top: 1px solid var(--border-primary);">
+						<p class="onboarding-step-description mb-3">
+							Or choose a different country:
+						</p>
+					</div>
+				</div>
+			{/if}
 			
 			{#if saveError}
 				<div class="alert-error mb-4 rounded-lg p-3">
@@ -296,16 +400,24 @@
 			
 			<div class="space-y-4">
 				<div>
-					<label class="block onboarding-step-title mb-2">
-						Select Country
-					</label>
+					{#if !selectedCountry}
+						<label class="block onboarding-step-title mb-2">
+							Select Country
+						</label>
+					{/if}
 					<div class="country-selection-grid">
 						{#each COUNTRY_LIST as country}
 							<button
 								onclick={() => onCountryChange(country.code)}
 								class="country-option {selectedCountry === country.code ? 'country-option--selected' : ''}"
 							>
-								<span class="country-flag">{country.flag}</span>
+								<span class="country-flag" title="{country.name}">
+									{#if country.flag && country.flag.length > 2}
+										{country.flag}
+									{:else}
+										<span class="country-code-fallback">{country.code}</span>
+									{/if}
+								</span>
 								<div class="flex-1 min-w-0">
 									<p class="country-name">
 										{country.name}
@@ -322,40 +434,27 @@
 					</div>
 				</div>
 				
-				{#if selectedCountry}
-					{@const countryInfo = getCountryInfo(selectedCountry)}
-					<div class="country-selected-info">
-						<h4 class="country-selected-title">
-							Selected: {countryInfo?.flag} {countryInfo?.name}
-						</h4>
-						<p class="country-selected-text">
-							Your payment currency will be: <strong>{countryInfo?.currency}</strong>
-						</p>
-						<p class="country-selected-warning">
-							⚠️ This cannot be changed after payment setup begins
-						</p>
+				{#if !selectedCountry}
+					<div class="flex gap-3">
+						<button
+							onclick={saveCurrencySelection}
+							disabled={!selectedCountry || savingCurrency}
+							class="button-primary {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
+						>
+							{#if savingCurrency}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								Confirm Location
+							{/if}
+						</button>
+						<button
+							onclick={() => { onCurrencyExpandedChange(false); resetSelections(); }}
+							class="button-secondary"
+						>
+							Cancel
+						</button>
 					</div>
 				{/if}
-				
-				<div class="flex gap-3">
-					<button
-						onclick={saveCurrencySelection}
-						disabled={!selectedCountry || savingCurrency}
-						class="button-primary {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
-					>
-						{#if savingCurrency}
-							<Loader2 class="h-4 w-4 animate-spin" />
-						{:else}
-							Confirm Location
-						{/if}
-					</button>
-					<button
-						onclick={() => { onCurrencyExpandedChange(false); resetSelections(); }}
-						class="button-secondary"
-					>
-						Cancel
-					</button>
-				</div>
 			</div>
 		</div>
 	{/if}
