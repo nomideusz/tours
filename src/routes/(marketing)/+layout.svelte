@@ -208,7 +208,15 @@
 
 	/* Subtle retro section with horizontal stripes */
 	:global(.subtle-retro-section) {
-		background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+		background: 
+			repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(0, 0, 0, 0.02) 40px,
+				rgba(0, 0, 0, 0.02) 41px
+			),
+			linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 		position: relative;
 		overflow: hidden;
 	}
@@ -216,42 +224,49 @@
 	/* Dark mode */
 	@media (prefers-color-scheme: dark) {
 		:global(.subtle-retro-section) {
-			background: linear-gradient(180deg, #1f2937 0%, #374151 100%);
+			background: 
+				repeating-linear-gradient(
+					0deg,
+					transparent,
+					transparent 40px,
+					rgba(255, 255, 255, 0.02) 40px,
+					rgba(255, 255, 255, 0.02) 41px
+				),
+				linear-gradient(180deg, #1f2937 0%, #374151 100%);
 		}
 	}
 
 	/* Theme system override when available */
 	:global(html[data-theme]) :global(.subtle-retro-section) {
-		background: linear-gradient(
-			180deg,
-			var(--bg-primary) 0%,
-			var(--bg-secondary) 100%
-		);
-	}
-	
-	/* Very subtle texture overlay */
-	:global(.subtle-retro-section::before) {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
-		);
-		pointer-events: none;
-		z-index: 0;
+		background: 
+			repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(0, 0, 0, 0.02) 40px,
+				rgba(0, 0, 0, 0.02) 41px
+			),
+			linear-gradient(
+				180deg,
+				var(--bg-primary) 0%,
+				var(--bg-secondary) 100%
+			);
 	}
 
-	/* Ensure content is above the stripe overlay */
-	:global(.subtle-retro-section > *) {
-		position: relative;
-		z-index: 1;
+	:global(html[data-theme="dark"]) :global(.subtle-retro-section) {
+		background: 
+			repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(255, 255, 255, 0.02) 40px,
+				rgba(255, 255, 255, 0.02) 41px
+			),
+			linear-gradient(
+				180deg,
+				var(--bg-primary) 0%,
+				var(--bg-secondary) 100%
+			);
 	}
 
 	/* Ensure buttons work properly within retro sections */
@@ -260,31 +275,8 @@
 	:global(.subtle-retro-section .button-primary),
 	:global(.subtle-retro-section .button-secondary) {
 		position: relative;
-		z-index: 2;
+		z-index: 1;
 		pointer-events: auto;
-	}
-
-	/* Dark mode texture overlay */
-	@media (prefers-color-scheme: dark) {
-		:global(.subtle-retro-section::before) {
-			background-image: repeating-linear-gradient(
-				0deg,
-				transparent,
-				transparent 40px,
-				rgba(255, 255, 255, 0.02) 40px,
-				rgba(255, 255, 255, 0.02) 41px
-			);
-		}
-	}
-
-	[data-theme="dark"] :global(.subtle-retro-section::before) {
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(255, 255, 255, 0.02) 40px,
-			rgba(255, 255, 255, 0.02) 41px
-		);
 	}
 
 	/* Floating Theme Toggle */
