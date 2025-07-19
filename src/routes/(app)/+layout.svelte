@@ -16,6 +16,7 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import InstallPWAPrompt from '$lib/components/InstallPWAPrompt.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
@@ -560,6 +561,9 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- PWA Install Prompt -->
+		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
 		<div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary); padding-bottom: env(safe-area-inset-bottom, 0);">
