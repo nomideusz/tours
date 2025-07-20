@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { createPublicTourQuery } from '$lib/queries/public-queries.js';
 	
 	// Icons
 	import Settings from 'lucide-svelte/icons/settings';
@@ -65,6 +66,12 @@
 	
 	const sampleBookingUrl = 'https://zaur.app/book/WYC-ZOCA2O';
 	const tourCode = 'WYC-ZOCA2O';
+	
+	// Fetch real tour data
+	const tourQuery = createPublicTourQuery(tourCode, { 
+		refetchInterval: undefined,
+		refetchOnWindowFocus: false 
+	});
 </script>
 
 {#if showcaseMounted}
@@ -143,43 +150,52 @@
 							
 							<!-- Tour Preview Card -->
 							<div class="tour-preview-card">
-								<div class="tour-preview-header">
-									<div class="tour-preview-title">Historic Walking Tour</div>
-									<div class="tour-preview-location">
-										<MapPin class="w-3 h-3" />
-										Barcelona, Spain
+								{#if $tourQuery.isLoading}
+									<div class="tour-preview-loading">Loading tour data...</div>
+								{:else if $tourQuery.error}
+									<div class="tour-preview-error">Unable to load tour</div>
+								{:else if $tourQuery.data}
+									{@const tour = $tourQuery.data.tour}
+									{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
+									{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+									<div class="tour-preview-header">
+										<div class="tour-preview-title">{tour.name}</div>
+										<div class="tour-preview-location">
+											<MapPin class="w-3 h-3" />
+											{tour.location}
+										</div>
 									</div>
-								</div>
-								
-								<div class="tour-preview-details">
-									<div class="tour-detail">
-										<DollarSign class="w-4 h-4" />
-										<span>€25</span>
+									
+									<div class="tour-preview-details">
+										<div class="tour-detail">
+											<DollarSign class="w-4 h-4" />
+											<span>{currencySymbol}{tour.price}</span>
+										</div>
+										<div class="tour-detail">
+											<Clock class="w-4 h-4" />
+											<span>{tour.duration} hours</span>
+										</div>
+										<div class="tour-detail">
+											<Users class="w-4 h-4" />
+											<span>{tour.capacity} max</span>
+										</div>
 									</div>
-									<div class="tour-detail">
-										<Clock class="w-4 h-4" />
-										<span>2 hours</span>
+									
+									<div class="tour-preview-stats">
+										<div class="preview-stat">
+											<span class="stat-value">{tour.scans || 0}</span>
+											<span class="stat-label">QR Scans</span>
+										</div>
+										<div class="preview-stat">
+											<span class="stat-value">{tour.conversions || 0}</span>
+											<span class="stat-label">Bookings</span>
+										</div>
+										<div class="preview-stat">
+											<span class="stat-value">{tour.scans > 0 ? Math.round((tour.conversions / tour.scans) * 100) : 0}%</span>
+											<span class="stat-label">Conversion</span>
+										</div>
 									</div>
-									<div class="tour-detail">
-										<Users class="w-4 h-4" />
-										<span>12 max</span>
-									</div>
-								</div>
-								
-								<div class="tour-preview-stats">
-									<div class="preview-stat">
-										<span class="stat-value">45</span>
-										<span class="stat-label">QR Scans</span>
-									</div>
-									<div class="preview-stat">
-										<span class="stat-value">12</span>
-										<span class="stat-label">Bookings</span>
-									</div>
-									<div class="preview-stat">
-										<span class="stat-value">27%</span>
-										<span class="stat-label">Conversion</span>
-									</div>
-								</div>
+								{/if}
 							</div>
 						</div>
 						
@@ -254,15 +270,23 @@
 			{:else}
 				<!-- Customer Booking Preview -->
 				<div class="customer-preview" in:fade={{ duration: 300 }}>
-					<div class="booking-header">
-						<h4 class="booking-title">Historic Walking Tour</h4>
-						<div class="booking-rating">⭐ 4.9 • 2 hours • Barcelona</div>
-					</div>
-					
-					<div class="booking-price">
-						<span class="price">€25</span>
-						<span class="price-label">per person</span>
-					</div>
+					{#if $tourQuery.isLoading}
+						<div class="booking-loading">Loading tour...</div>
+					{:else if $tourQuery.error}
+						<div class="booking-error">Unable to load tour</div>
+					{:else if $tourQuery.data}
+						{@const tour = $tourQuery.data.tour}
+						{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
+						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+						<div class="booking-header">
+							<h4 class="booking-title">{tour.name}</h4>
+							<div class="booking-rating">⭐ 4.9 • {tour.duration} hours • {tour.location}</div>
+						</div>
+						
+						<div class="booking-price">
+							<span class="price">{currencySymbol}{tour.price}</span>
+							<span class="price-label">per person</span>
+						</div>
 					
 					<div class="time-slots-mini">
 						<div class="slot active">10:00</div>
@@ -275,11 +299,12 @@
 						Book Instantly
 					</button>
 					
-					<div class="booking-features">
-						<div class="feature">✓ Instant confirmation</div>
-						<div class="feature">✓ Secure payment</div>
-						<div class="feature">✓ QR ticket</div>
-					</div>
+						<div class="booking-features">
+							<div class="feature">✓ Instant confirmation</div>
+							<div class="feature">✓ Secure payment</div>
+							<div class="feature">✓ QR ticket</div>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -913,6 +938,22 @@
 		color: var(--color-success-600);
 		font-weight: 500;
 		text-align: center;
+	}
+	
+	/* Loading and Error States */
+	.tour-preview-loading,
+	.tour-preview-error,
+	.booking-loading,
+	.booking-error {
+		text-align: center;
+		padding: 2rem;
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+	}
+	
+	.tour-preview-error,
+	.booking-error {
+		color: var(--color-danger-600);
 	}
 	
 	/* Responsive Design */
