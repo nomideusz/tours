@@ -30,7 +30,7 @@
 	}
 	
 	function copyQrCode() {
-		navigator.clipboard.writeText(sampleExploreUrl);
+		navigator.clipboard.writeText(sampleBookingUrl);
 		qrCopied = true;
 		setTimeout(() => qrCopied = false, 2000);
 	}
@@ -63,7 +63,8 @@
 		}
 	];
 	
-	const sampleExploreUrl = 'https://zaur.app/explore';
+	const sampleBookingUrl = 'https://zaur.app/book/WYC-ZOCA2O';
+	const tourCode = 'WYC-ZOCA2O';
 </script>
 
 {#if showcaseMounted}
@@ -108,8 +109,8 @@
 				<!-- QR Code Showcase -->
 				<div class="qr-showcase" in:fade={{ duration: 300 }}>
 					<div class="qr-header">
-						<h4 class="qr-title">Discover Tours</h4>
-						<div class="qr-badge">Browse Real Tours</div>
+						<h4 class="qr-title">Promote Your Tour</h4>
+						<div class="qr-badge">Real Tour Example</div>
 					</div>
 					
 					<div class="qr-content">
@@ -118,25 +119,25 @@
 							<div class="qr-code-container">
 								<div 
 									class="qr-code-wrapper"
-									onclick={() => goto('/explore')}
+									onclick={() => goto('/book/WYC-ZOCA2O')}
 									onkeydown={(e) => {
 										if (e.key === 'Enter' || e.key === ' ') {
 											e.preventDefault();
-											goto('/explore');
+											goto('/book/WYC-ZOCA2O');
 										}
 									}}
 									role="button"
 									tabindex="0"
-									aria-label="Explore real tours - click to browse available tours"
+									aria-label="View tour booking page - click to see how customers book your tour"
 								>
 									<img 
-										src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(sampleExploreUrl)}&qzone=2`}
-										alt="Sample QR Code - Click to explore tours"
+										src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(sampleBookingUrl)}&qzone=2`}
+										alt="Sample QR Code - Click to book tour"
 										class="qr-code-image"
 									/>
 								</div>
 								<div class="qr-code-id">
-									<p class="qr-id-text">EXPLORE</p>
+									<p class="qr-id-text">{tourCode}</p>
 								</div>
 							</div>
 							
@@ -190,7 +191,7 @@
 									Link Copied!
 								{:else}
 									<Copy class="w-4 h-4" />
-									Copy Explore Link
+									Copy Booking Link
 								{/if}
 							</button>
 							<div class="qr-action-grid">
@@ -206,7 +207,7 @@
 						</div>
 						
 						<div class="qr-url">
-							<p class="url-text">{sampleExploreUrl}</p>
+							<p class="url-text">{sampleBookingUrl}</p>
 						</div>
 					</div>
 				</div>
