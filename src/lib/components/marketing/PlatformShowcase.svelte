@@ -36,6 +36,18 @@
 		setTimeout(() => qrCopied = false, 2000);
 	}
 	
+	function downloadQrCode() {
+		const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(sampleBookingUrl)}&qzone=2`;
+		const link = document.createElement('a');
+		link.href = qrUrl;
+		link.download = `tour-qr-${tourCode}.png`;
+		link.click();
+	}
+	
+	function previewTour() {
+		window.open(sampleBookingUrl, '_blank');
+	}
+	
 	// Helper to format next slot time
 	function formatNextSlot(timeSlots: any[]) {
 		if (!timeSlots || timeSlots.length === 0) return 'No slots';
@@ -136,7 +148,7 @@
 								{:else if $tourQuery.data}
 									{@const tour = $tourQuery.data.tour}
 									{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
-									{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+									{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency === 'PLN' ? 'zł' : currency}
 									<div class="tour-preview-header">
 										<div class="tour-preview-title">{tour.name}</div>
 										<div class="tour-preview-location">
@@ -156,21 +168,21 @@
 										</div>
 										<div class="tour-detail">
 											<Users class="w-4 h-4" />
-											<span>{tour.capacity} max</span>
+											<span>6 max</span>
 										</div>
 									</div>
 									
 									<div class="tour-preview-stats">
 										<div class="preview-stat">
-											<span class="stat-value">{tour.scans || 0}</span>
+											<span class="stat-value">45</span>
 											<span class="stat-label">QR Scans</span>
 										</div>
 										<div class="preview-stat">
-											<span class="stat-value">{tour.conversions || 0}</span>
+											<span class="stat-value">12</span>
 											<span class="stat-label">Bookings</span>
 										</div>
 										<div class="preview-stat">
-											<span class="stat-value">{tour.scans > 0 ? Math.round((tour.conversions / tour.scans) * 100) : 0}%</span>
+											<span class="stat-value">27%</span>
 											<span class="stat-label">Conversion</span>
 										</div>
 									</div>
@@ -190,11 +202,11 @@
 								{/if}
 							</button>
 							<div class="qr-action-grid">
-								<button class="button-secondary button--gap">
+								<button onclick={previewTour} class="button-secondary button--gap">
 									<ExternalLink class="w-4 h-4" />
 									Preview
 								</button>
-								<button class="button-secondary button--gap">
+								<button onclick={downloadQrCode} class="button-secondary button--gap">
 									<Download class="w-4 h-4" />
 									Download
 								</button>
@@ -490,6 +502,8 @@
 	.qr-showcase {
 		min-height: 420px;
 		width: 100%;
+		max-width: 800px;
+		margin: 0 auto;
 	}
 	
 	.qr-header {
@@ -522,14 +536,16 @@
 	.qr-content {
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
+		gap: 1.5rem;
 	}
 	
 	.qr-main {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr 1.2fr;
 		gap: 2rem;
 		align-items: start;
+		max-width: 700px;
+		margin: 0 auto;
 	}
 	
 	.qr-code-container {
@@ -580,8 +596,8 @@
 	}
 	
 	.qr-code-image {
-		width: 160px;
-		height: 160px;
+		width: 180px;
+		height: 180px;
 		object-fit: contain;
 	}
 	
@@ -643,10 +659,11 @@
 	}
 	
 	.tour-preview-title {
-		font-size: 1.125rem;
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--text-primary);
 		margin-bottom: 0.5rem;
+		line-height: 1.3;
 	}
 	
 	.tour-preview-location {
@@ -704,6 +721,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		max-width: 700px;
+		margin: 0 auto;
 	}
 	
 	.qr-action-grid {
@@ -718,6 +737,8 @@
 		background: var(--bg-secondary);
 		border-radius: var(--radius-md);
 		border: 1px dashed var(--border-secondary);
+		max-width: 700px;
+		margin: 0 auto;
 	}
 	
 	.url-text {
@@ -1026,11 +1047,18 @@
 		.qr-main {
 			grid-template-columns: 1fr;
 			gap: 1.5rem;
+			max-width: none;
 		}
 		
 		.qr-code-image {
-			width: 120px;
-			height: 120px;
+			width: 140px;
+			height: 140px;
+		}
+		
+		.qr-showcase,
+		.qr-actions,
+		.qr-url {
+			max-width: none;
 		}
 		
 		.qr-action-grid {
