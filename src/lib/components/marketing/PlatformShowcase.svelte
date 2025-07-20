@@ -36,33 +36,12 @@
 		setTimeout(() => qrCopied = false, 2000);
 	}
 	
-	// Mock data for realistic showcase
-	const mockTours = [
-		{
-			name: 'Historic Walking Tour',
-			status: 'active',
-			bookings: 12,
-			revenue: 300,
-			qrScans: 45,
-			nextSlot: '10:00'
-		},
-		{
-			name: 'Food & Culture Experience',
-			status: 'active', 
-			bookings: 8,
-			revenue: 400,
-			qrScans: 23,
-			nextSlot: '14:30'
-		},
-		{
-			name: 'Photography Workshop',
-			status: 'active',
-			bookings: 6,
-			revenue: 180,
-			qrScans: 18,
-			nextSlot: '16:00'
-		}
-	];
+	// Helper to format next slot time
+	function formatNextSlot(timeSlots: any[]) {
+		if (!timeSlots || timeSlots.length === 0) return 'No slots';
+		const nextSlot = new Date(timeSlots[0].startTime);
+		return nextSlot.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+	}
 	
 	const sampleBookingUrl = 'https://zaur.app/book/WYC-ZOCA2O';
 	const tourCode = 'WYC-ZOCA2O';
@@ -173,7 +152,7 @@
 										</div>
 										<div class="tour-detail">
 											<Clock class="w-4 h-4" />
-											<span>{tour.duration} hours</span>
+											<span>{tour.duration >= 60 ? `${(tour.duration / 60).toFixed(1)} hours` : `${tour.duration} min`}</span>
 										</div>
 										<div class="tour-detail">
 											<Users class="w-4 h-4" />
@@ -230,42 +209,106 @@
 			{:else if viewMode === 'guide'}
 				<!-- Guide Dashboard Preview -->
 				<div class="guide-preview" in:fade={{ duration: 300 }}>
-					<div class="preview-header">
-						<h4 class="preview-title">Your Tour Dashboard</h4>
-						<div class="total-revenue">€{mockTours.reduce((sum, tour) => sum + tour.revenue, 0)}</div>
-					</div>
-					
-					<div class="tours-list">
-						{#each mockTours as tour, index}
-							<div class="tour-item" 
-								 in:scale={{ duration: 300, delay: index * 100 }}>
+					{#if $tourQuery.isLoading}
+						<div class="guide-loading">Loading dashboard...</div>
+					{:else if $tourQuery.error}
+						<div class="guide-error">Unable to load dashboard</div>
+					{:else if $tourQuery.data}
+						{@const tour = $tourQuery.data.tour}
+						{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
+						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+						{@const timeSlots = $tourQuery.data.timeSlots || []}
+						
+						<div class="preview-header">
+							<h4 class="preview-title">Your Tour Dashboard</h4>
+							<div class="total-revenue">{currencySymbol}{(tour.conversions || 0) * tour.price}</div>
+						</div>
+						
+						<div class="tours-list">
+							<!-- Show the real tour -->
+							<div class="tour-item" in:scale={{ duration: 300 }}>
 								<div class="tour-info">
 									<div class="tour-name">{tour.name}</div>
-									<div class="tour-status status-{tour.status}">
+									<div class="tour-status status-active">
 										● Active
 									</div>
 								</div>
 								<div class="tour-metrics">
 									<div class="metric">
 										<Calendar class="w-3 h-3" />
-										Next: {tour.nextSlot}
+										Next: {formatNextSlot(timeSlots)}
 									</div>
 									<div class="metric">
 										<Users class="w-3 h-3" />
-										{tour.bookings} bookings
+										{tour.conversions || 0} bookings
 									</div>
 									<div class="metric">
 										<QrCode class="w-3 h-3" />
-										{tour.qrScans} scans
+										{tour.scans || 0} scans
 									</div>
 									<div class="metric revenue">
 										<DollarSign class="w-3 h-3" />
-										€{tour.revenue}
+										{currencySymbol}{(tour.conversions || 0) * tour.price}
 									</div>
 								</div>
 							</div>
-						{/each}
-					</div>
+							
+							<!-- Show example additional tours for realistic dashboard -->
+							<div class="tour-item" in:scale={{ duration: 300, delay: 100 }}>
+								<div class="tour-info">
+									<div class="tour-name">Food & Culture Experience</div>
+									<div class="tour-status status-active">
+										● Active
+									</div>
+								</div>
+								<div class="tour-metrics">
+									<div class="metric">
+										<Calendar class="w-3 h-3" />
+										Next: 14:30
+									</div>
+									<div class="metric">
+										<Users class="w-3 h-3" />
+										8 bookings
+									</div>
+									<div class="metric">
+										<QrCode class="w-3 h-3" />
+										23 scans
+									</div>
+									<div class="metric revenue">
+										<DollarSign class="w-3 h-3" />
+										{currencySymbol}400
+									</div>
+								</div>
+							</div>
+							
+							<div class="tour-item" in:scale={{ duration: 300, delay: 200 }}>
+								<div class="tour-info">
+									<div class="tour-name">Photography Workshop</div>
+									<div class="tour-status status-active">
+										● Active
+									</div>
+								</div>
+								<div class="tour-metrics">
+									<div class="metric">
+										<Calendar class="w-3 h-3" />
+										Next: 16:00
+									</div>
+									<div class="metric">
+										<Users class="w-3 h-3" />
+										6 bookings
+									</div>
+									<div class="metric">
+										<QrCode class="w-3 h-3" />
+										18 scans
+									</div>
+									<div class="metric revenue">
+										<DollarSign class="w-3 h-3" />
+										{currencySymbol}180
+									</div>
+								</div>
+							</div>
+						</div>
+					{/if}
 				</div>
 			{:else}
 				<!-- Customer Booking Preview -->
@@ -280,7 +323,7 @@
 						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
 						<div class="booking-header">
 							<h4 class="booking-title">{tour.name}</h4>
-							<div class="booking-rating">⭐ 4.9 • {tour.duration} hours • {tour.location}</div>
+							<div class="booking-rating">⭐ 4.9 • {tour.duration >= 60 ? `${(tour.duration / 60).toFixed(1)} hours` : `${tour.duration} min`} • {tour.location}</div>
 						</div>
 						
 						<div class="booking-price">
@@ -944,7 +987,9 @@
 	.tour-preview-loading,
 	.tour-preview-error,
 	.booking-loading,
-	.booking-error {
+	.booking-error,
+	.guide-loading,
+	.guide-error {
 		text-align: center;
 		padding: 2rem;
 		color: var(--text-secondary);
@@ -952,7 +997,8 @@
 	}
 	
 	.tour-preview-error,
-	.booking-error {
+	.booking-error,
+	.guide-error {
 		color: var(--color-danger-600);
 	}
 	
