@@ -131,6 +131,26 @@ export const POST: RequestHandler = async () => {
           errors.push(`Booking ${booking.bookingReference}: ${emailResult.error}`);
           console.error(`❌ Failed to send reminder for booking ${booking.bookingReference}:`, emailResult.error);
         }
+        
+        // Also send WhatsApp reminder if customer has phone number
+        if (data.customerPhone) {
+          try {
+            const whatsappResponse = await fetch(`${new URL(request.url).origin}/api/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId: data.id,
+                notificationType: 'booking_reminder'
+              })
+            });
+            
+            if (whatsappResponse.ok) {
+              console.log(`📱 WhatsApp reminder queued for ${data.customerPhone}`);
+            }
+          } catch (whatsappError) {
+            console.warn('Failed to send WhatsApp reminder:', whatsappError);
+          }
+        }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         errors.push(`Booking ${data.bookingReference}: ${errorMsg}`);

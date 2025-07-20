@@ -110,7 +110,6 @@
 						<span class="counter-text">{stats.spotsTotal - stats.earlyAccessUsers} spots remaining</span>
 					</div>
 				{/if}
-				<p class="social-text mb-2">Use code EARLY2025 for founding member pricing</p>
 				<p class="social-text">Join tour guides building with Zaur</p>
 			</div>
 			

@@ -161,6 +161,39 @@ export const POST: RequestHandler = async ({ request }) => {
             console.warn('Webhook: Error sending emails:', emailError);
           }
           
+          // Send WhatsApp notifications (if enabled and user has professional/agency plan)
+          try {
+            // Send WhatsApp confirmation to customer
+            const whatsappResponse = await fetch(`${new URL(request.url).origin}/api/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId,
+                notificationType: 'booking_confirmation'
+              })
+            });
+            
+            if (whatsappResponse.ok) {
+              console.log(`Webhook: WhatsApp confirmation queued for booking ${bookingId}`);
+            }
+            
+            // Send WhatsApp notification to tour guide
+            const guideWhatsappResponse = await fetch(`${new URL(request.url).origin}/api/send-whatsapp-notification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId,
+                notificationType: 'guide_notification'
+              })
+            });
+            
+            if (guideWhatsappResponse.ok) {
+              console.log(`Webhook: WhatsApp guide notification queued for booking ${bookingId}`);
+            }
+          } catch (whatsappError) {
+            console.warn('Webhook: Error sending WhatsApp notifications:', whatsappError);
+          }
+          
           // Send real-time notification to tour owner
           try {
             // Get booking details for notification
