@@ -160,7 +160,7 @@
 									<div class="tour-preview-details">
 										<div class="tour-detail">
 											<DollarSign class="w-4 h-4" />
-											<span>{currencySymbol}{tour.price}</span>
+											<span>{currency === 'PLN' ? `${tour.price} ${currencySymbol}` : `${currencySymbol}${tour.price}`}</span>
 										</div>
 										<div class="tour-detail">
 											<Clock class="w-4 h-4" />
@@ -228,12 +228,12 @@
 					{:else if $tourQuery.data}
 						{@const tour = $tourQuery.data.tour}
 						{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
-						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency === 'PLN' ? 'zł' : currency}
 						{@const timeSlots = $tourQuery.data.timeSlots || []}
 						
 						<div class="preview-header">
 							<h4 class="preview-title">Your Tour Dashboard</h4>
-							<div class="total-revenue">{currencySymbol}{(tour.conversions || 0) * tour.price}</div>
+							<div class="total-revenue">{currency === 'PLN' ? `${12 * tour.price} ${currencySymbol}` : `${currencySymbol}${12 * tour.price}`}</div>
 						</div>
 						
 						<div class="tours-list">
@@ -252,15 +252,15 @@
 									</div>
 									<div class="metric">
 										<Users class="w-3 h-3" />
-										{tour.conversions || 0} bookings
+										12 bookings
 									</div>
 									<div class="metric">
 										<QrCode class="w-3 h-3" />
-										{tour.scans || 0} scans
+										45 scans
 									</div>
 									<div class="metric revenue">
 										<DollarSign class="w-3 h-3" />
-										{currencySymbol}{(tour.conversions || 0) * tour.price}
+										{currency === 'PLN' ? `${12 * tour.price} ${currencySymbol}` : `${currencySymbol}${12 * tour.price}`}
 									</div>
 								</div>
 							</div>
@@ -288,7 +288,7 @@
 									</div>
 									<div class="metric revenue">
 										<DollarSign class="w-3 h-3" />
-										{currencySymbol}400
+										{currency === 'PLN' ? `400 ${currencySymbol}` : `${currencySymbol}400`}
 									</div>
 								</div>
 							</div>
@@ -315,7 +315,7 @@
 									</div>
 									<div class="metric revenue">
 										<DollarSign class="w-3 h-3" />
-										{currencySymbol}180
+										{currency === 'PLN' ? `180 ${currencySymbol}` : `${currencySymbol}180`}
 									</div>
 								</div>
 							</div>
@@ -332,14 +332,14 @@
 					{:else if $tourQuery.data}
 						{@const tour = $tourQuery.data.tour}
 						{@const currency = $tourQuery.data.tourOwner?.currency || 'EUR'}
-						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency}
+						{@const currencySymbol = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency === 'GBP' ? '£' : currency === 'PLN' ? 'zł' : currency}
 						<div class="booking-header">
 							<h4 class="booking-title">{tour.name}</h4>
 							<div class="booking-rating">⭐ 4.9 • {tour.duration >= 60 ? `${(tour.duration / 60).toFixed(1)} hours` : `${tour.duration} min`} • {tour.location}</div>
 						</div>
 						
 						<div class="booking-price">
-							<span class="price">{currencySymbol}{tour.price}</span>
+							<span class="price">{currency === 'PLN' ? `${tour.price} ${currencySymbol}` : `${currencySymbol}${tour.price}`}</span>
 							<span class="price-label">per person</span>
 						</div>
 					
