@@ -198,7 +198,7 @@
 							{t('auth.login', $language)}
 						</a>
 						<button 
-							class="button-coral guest-cta-button"
+							class="button-primary guest-cta-button"
 							onclick={() => window.location.href = '/auth/register'}
 						>
 							<span class="guest-cta-text-mobile">Start Free</span>

@@ -271,9 +271,12 @@
 
 	/* Ensure buttons work properly within retro sections */
 	:global(.subtle-retro-section button),
-	:global(.subtle-retro-section .button-coral),
 	:global(.subtle-retro-section .button-primary),
-	:global(.subtle-retro-section .button-secondary) {
+	:global(.subtle-retro-section .button-secondary),
+	:global(.subtle-retro-section .button-success),
+	:global(.subtle-retro-section .button-danger),
+	:global(.subtle-retro-section .button-ghost),
+	:global(.subtle-retro-section .button-text) {
 		position: relative;
 		z-index: 1;
 		pointer-events: auto;

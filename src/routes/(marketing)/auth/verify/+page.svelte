@@ -108,7 +108,7 @@
 					</p>
 					<button
 						onclick={goToDashboard}
-						class="button-coral button--full-width"
+						class="button-primary button--full-width"
 					>
 						<Shield class="w-4 h-4 mr-2" />
 						Go to Dashboard
@@ -128,7 +128,7 @@
 					</p>
 					<button
 						onclick={goToDashboard}
-						class="button-coral button--full-width"
+						class="button-primary button--full-width"
 					>
 						<Shield class="w-4 h-4 mr-2" />
 						Go to Dashboard
@@ -158,7 +158,7 @@
 						<button
 							type="button"
 							onclick={goToLogout}
-							class="w-full button-coral button--full-width"
+							class="w-full button-primary button--full-width"
 						>
 							<LogOut class="w-4 h-4 mr-2" />
 							Log Out
@@ -203,7 +203,7 @@
 					</p>
 					<div class="space-y-3">
 						<button 
-							class="w-full button-coral button--full-width"
+							class="w-full button-primary button--full-width"
 							onclick={goToLogin}
 						>
 							<ArrowLeft class="w-4 h-4 mr-2" />
@@ -277,7 +277,7 @@
 								</p>
 								<button
 									type="submit"
-									class="w-full button-coral button--full-width"
+									class="w-full button-primary button--full-width"
 									disabled={isLoading}
 								>
 									<Mail class="w-4 h-4 mr-2" />

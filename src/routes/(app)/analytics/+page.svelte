@@ -267,7 +267,7 @@
 				{#each tabs as tab}
 					<button
 						onclick={() => activeTab = tab.id}
-						class="tab-button {activeTab === tab.id ? 'active' : ''}"
+						class="button-tab {activeTab === tab.id ? 'active' : ''}"
 					>
 						<div class="flex items-center gap-1">
 							<tab.icon class="h-4 w-4 flex-shrink-0" />
@@ -729,54 +729,7 @@
 
 
 <style>
-	.tab-button {
-		position: relative;
-		padding: 0.625rem 0.75rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		white-space: nowrap;
-		min-height: 44px; /* Better touch targets */
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		flex-shrink: 0; /* Prevent shrinking */
-	}
-	
-	@media (min-width: 640px) {
-		.tab-button {
-			padding: 0.5rem 1rem;
-			font-size: 0.875rem;
-			min-height: auto;
-			gap: 0.5rem;
-		}
-	}
-	
-	.tab-button:hover {
-		color: var(--text-primary);
-		background: var(--bg-secondary);
-	}
-	
-	.tab-button.active {
-		color: var(--color-primary-700);
-		font-weight: 600;
-	}
-	
-	.tab-button.active::after {
-		content: '';
-		position: absolute;
-		bottom: -1px;
-		left: 0;
-		right: 0;
-		height: 3px;
-		background-color: var(--color-primary-600);
-		border-radius: 2px 2px 0 0;
-	}
+
 	
 	.time-range-button {
 		padding: 0.5rem 0.875rem;
@@ -829,9 +782,9 @@
 	}
 	
 	.time-range-button.active {
-		color: var(--color-primary-900);
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-200);
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border-color: #2D2D2D; /* Dark border */
 		font-weight: 600;
 		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 	}
@@ -841,10 +794,35 @@
 	}
 	
 	.time-range-button.active:hover {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
+		background: #FF9999; /* More saturated on hover */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
 		transform: translateY(-1px);
+	}
+	
+	/* Dark mode adjustments for time range buttons */
+	[data-theme="dark"] .time-range-button {
+		background: var(--bg-primary);
+		border-color: var(--border-secondary);
+		color: var(--text-secondary);
+	}
+	
+	[data-theme="dark"] .time-range-button:hover {
+		background: #2A2A2A;
+		border-color: #444444;
+		color: var(--text-primary);
+	}
+	
+	[data-theme="dark"] .time-range-button.active {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
+	}
+	
+	[data-theme="dark"] .time-range-button.active:hover {
+		background: #BB8888;
+		border-color: #000000;
+		color: #000000;
 	}
 	
 

@@ -46,7 +46,7 @@
 							We're accepting a limited number of tour guides for our early access program. 
 							Contact us to learn more about special pricing and benefits.
 						</p>
-						<a href="/auth/register" class="button-coral button--small button--gap">
+						<a href="/auth/register" class="button-primary button--small button--gap">
 							<MessageCircle class="w-4 h-4" />
 							Request Early Access
 						</a>
@@ -96,7 +96,7 @@
 					Interested in being among the first tour guides to use Zaur? 
 					Get priority access and help shape the product.
 				</p>
-				<a href="/auth/register" class="button-coral button--gap button--full-width">
+				<a href="/auth/register" class="button-primary button--gap button--full-width">
 					<MessageCircle class="w-4 h-4" />
 					Request Early Access
 				</a>
@@ -194,7 +194,7 @@
 					Join our early access program and be among the first tour guides to 
 					experience the future of booking management.
 				</p>
-				<a href="/auth/register" class="button-coral button--large button--gap">
+				<a href="/auth/register" class="button-primary button--large button--gap">
 					<Rocket class="w-5 h-5" />
 					Get Early Access
 				</a>

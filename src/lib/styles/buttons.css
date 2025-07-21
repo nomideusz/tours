@@ -1,6 +1,6 @@
-/* Button Component Styles */
+/* Button Component Styles - Simple, App-like Design */
 @layer components {
-	/* Only apply cursor pointer to buttons with specific classes */
+	/* Base button reset and common styles */
 	.button,
 	.button-primary,
 	.button-secondary,
@@ -8,30 +8,32 @@
 		cursor: pointer;
 	}
 
+	/* Base button styles - clean and simple */
 	.button {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
-		border: 1px solid transparent;
+		border-radius: 0.75rem; /* 12px - slightly more rounded for modern feel */
+		border: 2px solid transparent; /* Updated to 2px for consistency */
 		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
+		font-size: 1rem; /* 16px - larger for better touch targets */
+		font-weight: 600;
+		line-height: 1.5;
 		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+		transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		box-shadow: var(--shadow-xs);
 		background: var(--bg-primary);
 		color: var(--text-primary);
 		border-color: var(--border-primary);
+		position: relative;
+		-webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 	}
 
-	.button:focus {
-		outline: 2px solid transparent;
+	.button:focus-visible {
+		outline: 2px solid var(--color-primary-500);
 		outline-offset: 2px;
 	}
 
@@ -40,58 +42,73 @@
 		cursor: not-allowed;
 	}
 
-	/* Primary button - navigation style with light coral background */
+	/* Primary button - light background with dark text and border */
 	.button-primary,
 	.button--primary {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
 		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
+		font-size: 1rem;
 		font-weight: 600;
-		line-height: 1.25rem;
+		line-height: 1.5;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Subtle coral accent on top - like navigation */
-	.button-primary::before,
-	.button--primary::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
+		background: #FFB3B3; /* Light coral/pink background */
+		color: #2D2D2D; /* Dark gray text for excellent contrast */
+		border: 2px solid #2D2D2D; /* Dark border */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.button-primary:hover:not(:disabled),
 	.button--primary:hover:not(:disabled) {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		transform: translateY(-1px);
+		background: #FF9999; /* Slightly more saturated on hover */
+		border-color: #1A1A1A; /* Even darker border */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
-	.button-primary:focus,
-	.button--primary:focus {
-		outline: 2px solid transparent;
+	.button-primary:active:not(:disabled),
+	.button--primary:active:not(:disabled) {
+		background: #FF8080; /* More saturated on click */
+		border-color: #000000; /* Black border */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+	}
+
+	/* Dark mode adjustments for primary button */
+	[data-theme="dark"] .button-primary,
+	[data-theme="dark"] .button--primary {
+		background: #CC9999; /* Muted coral background for dark mode */
+		border-color: #1A1A1A; /* Dark border */
+		color: #1A1A1A; /* Dark text */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	[data-theme="dark"] .button-primary:hover:not(:disabled),
+	[data-theme="dark"] .button--primary:hover:not(:disabled) {
+		background: #BB8888; /* Slightly darker on hover */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+	}
+
+	[data-theme="dark"] .button-primary:active:not(:disabled),
+	[data-theme="dark"] .button--primary:active:not(:disabled) {
+		background: #AA7777; /* Even darker on click */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	.button-primary:focus-visible,
+	.button--primary:focus-visible {
+		outline: 2px solid #FF5959;
 		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-primary);
 	}
 
 	.button-primary:disabled,
@@ -100,445 +117,64 @@
 		cursor: not-allowed;
 	}
 
-	/* =============================================
-	   PROFESSIONAL BUTTON VARIANTS
-	   ============================================= */
-	
-	/* Coral button - navigation style */
-	.button-coral,
-	.button--coral {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 600;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: all var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: var(--color-coral-100);
-		color: var(--color-coral-900);
-		border: 1px solid var(--color-coral-200);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on top */
-	.button-coral::before,
-	.button--coral::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
-	}
-
-	.button-coral:hover:not(:disabled),
-	.button--coral:hover:not(:disabled) {
-		background: var(--color-coral-200);
-		border-color: var(--color-coral-300);
-		color: var(--color-coral-900);
-		transform: translateY(-1px);
-	}
-
-	.button-coral:focus,
-	.button--coral:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(255, 89, 89, 0.3);
-	}
-
-	.button-coral:disabled,
-	.button--coral:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Warm Orange button - friendly and inviting */
-	.button-orange,
-	.button--orange {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: var(--color-warm-orange-500);
-		color: white;
-		border: 1px solid var(--color-warm-orange-500);
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-orange:hover:not(:disabled),
-	.button--orange:hover:not(:disabled) {
-		background: var(--color-warm-orange-600);
-		border-color: var(--color-warm-orange-600);
-	}
-
-	.button-orange:focus,
-	.button--orange:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(255, 173, 90, 0.3);
-	}
-
-	.button-orange:disabled,
-	.button--orange:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Professional Teal button - trustworthy and stable */
-	.button-teal,
-	.button--teal {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: var(--color-pro-teal-500);
-		color: white;
-		border: 1px solid var(--color-pro-teal-500);
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-teal:hover:not(:disabled),
-	.button--teal:hover:not(:disabled) {
-		background: var(--color-pro-teal-600);
-		border-color: var(--color-pro-teal-600);
-	}
-
-	.button-teal:focus,
-	.button--teal:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(79, 157, 166, 0.3);
-	}
-
-	.button-teal:disabled,
-	.button--teal:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Deep Navy button - professional and sophisticated */
-	.button-navy,
-	.button--navy {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: var(--color-deep-navy-900);
-		color: white;
-		border: 1px solid var(--color-deep-navy-900);
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-navy:hover:not(:disabled),
-	.button--navy:hover:not(:disabled) {
-		background: var(--color-deep-navy-800);
-		border-color: var(--color-deep-navy-800);
-	}
-
-	.button-navy:focus,
-	.button--navy:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: 0 0 0 3px rgba(26, 8, 65, 0.3);
-	}
-
-	.button-navy:disabled,
-	.button--navy:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Outlined variants of professional colors - navigation style */
-	.button-coral-outline,
-	.button--coral-outline {
-		background: transparent;
-		color: var(--color-coral-600);
-		border: 1px solid var(--color-coral-300);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: all var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on hover */
-	.button-coral-outline::before,
-	.button--coral-outline::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-fast) ease;
-	}
-
-	.button-coral-outline:hover:not(:disabled),
-	.button--coral-outline:hover:not(:disabled) {
-		background: var(--color-coral-50);
-		border-color: var(--color-coral-400);
-		color: var(--color-coral-700);
-		transform: translateY(-1px);
-	}
-
-	.button-coral-outline:hover:not(:disabled)::before,
-	.button--coral-outline:hover:not(:disabled)::before {
-		transform: scaleX(1);
-	}
-
-	.button-orange-outline,
-	.button--orange-outline {
-		background: transparent;
-		color: var(--color-warm-orange-600);
-		border: 1px solid var(--color-warm-orange-500);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-orange-outline:hover:not(:disabled),
-	.button--orange-outline:hover:not(:disabled) {
-		background: var(--color-warm-orange-50);
-		border-color: var(--color-warm-orange-600);
-		color: var(--color-warm-orange-700);
-	}
-
-	.button-teal-outline,
-	.button--teal-outline {
-		background: transparent;
-		color: var(--color-pro-teal-600);
-		border: 1px solid var(--color-pro-teal-500);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-teal-outline:hover:not(:disabled),
-	.button--teal-outline:hover:not(:disabled) {
-		background: var(--color-pro-teal-50);
-		border-color: var(--color-pro-teal-600);
-		color: var(--color-pro-teal-700);
-	}
-
-	.button-navy-outline,
-	.button--navy-outline {
-		background: transparent;
-		color: var(--color-deep-navy-700);
-		border: 1px solid var(--color-deep-navy-600);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: background-color var(--transition-fast) ease, border-color var(--transition-fast) ease, color var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		box-shadow: var(--shadow-xs);
-	}
-
-	.button-navy-outline:hover:not(:disabled),
-	.button--navy-outline:hover:not(:disabled) {
-		background: var(--color-deep-navy-50);
-		border-color: var(--color-deep-navy-700);
-		color: var(--color-deep-navy-800);
-	}
-
-	/* Dark mode adjustments for outlined buttons */
-	[data-theme="dark"] .button-coral-outline,
-	[data-theme="dark"] .button--coral-outline {
-		color: var(--color-coral-400);
-		border-color: var(--color-coral-500);
-	}
-
-	[data-theme="dark"] .button-coral-outline:hover:not(:disabled),
-	[data-theme="dark"] .button--coral-outline:hover:not(:disabled) {
-		background: rgba(255, 89, 89, 0.1);
-		border-color: var(--color-coral-400);
-		color: var(--color-coral-300);
-	}
-
-	[data-theme="dark"] .button-orange-outline,
-	[data-theme="dark"] .button--orange-outline {
-		color: var(--color-warm-orange-400);
-		border-color: var(--color-warm-orange-500);
-	}
-
-	[data-theme="dark"] .button-orange-outline:hover:not(:disabled),
-	[data-theme="dark"] .button--orange-outline:hover:not(:disabled) {
-		background: rgba(255, 173, 90, 0.1);
-		border-color: var(--color-warm-orange-400);
-		color: var(--color-warm-orange-300);
-	}
-
-	[data-theme="dark"] .button-teal-outline,
-	[data-theme="dark"] .button--teal-outline {
-		color: var(--color-pro-teal-400);
-		border-color: var(--color-pro-teal-500);
-	}
-
-	[data-theme="dark"] .button-teal-outline:hover:not(:disabled),
-	[data-theme="dark"] .button--teal-outline:hover:not(:disabled) {
-		background: rgba(79, 157, 166, 0.1);
-		border-color: var(--color-pro-teal-400);
-		color: var(--color-pro-teal-300);
-	}
-
-	[data-theme="dark"] .button-navy-outline,
-	[data-theme="dark"] .button--navy-outline {
-		color: var(--color-deep-navy-300);
-		border-color: var(--color-deep-navy-400);
-	}
-
-	[data-theme="dark"] .button-navy-outline:hover:not(:disabled),
-	[data-theme="dark"] .button--navy-outline:hover:not(:disabled) {
-		background: rgba(26, 8, 65, 0.1);
-		border-color: var(--color-deep-navy-300);
-		color: var(--color-deep-navy-200);
-	}
-
-	/* Secondary button - navigation hover style */
+	/* Secondary button - simple outline style with dark border */
 	.button-secondary,
 	.button--secondary {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
 		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		line-height: 1.25rem;
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.5;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background: var(--bg-primary);
-		color: var(--text-secondary);
-		border: 1px solid var(--border-primary);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Subtle accent on hover - like navigation hover */
-	.button-secondary::before,
-	.button--secondary::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-fast) ease;
+		background: transparent;
+		color: var(--text-primary);
+		border: 2px solid var(--text-primary); /* Match thickness with primary buttons */
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.button-secondary:hover:not(:disabled),
 	.button--secondary:hover:not(:disabled) {
 		background-color: var(--bg-secondary);
-		border-color: var(--border-secondary);
+		border-color: var(--text-primary);
+	}
+
+	.button-secondary:active:not(:disabled),
+	.button--secondary:active:not(:disabled) {
+		background-color: var(--bg-tertiary);
+	}
+
+	/* Dark mode adjustments for secondary button */
+	[data-theme="dark"] .button-secondary,
+	[data-theme="dark"] .button--secondary {
+		border-color: #A0A0A0; /* Medium gray border for better contrast */
 		color: var(--text-primary);
-		transform: translateY(-1px);
+		background: transparent;
 	}
 
-	.button-secondary:hover:not(:disabled)::before,
-	.button--secondary:hover:not(:disabled)::before {
-		transform: scaleX(1);
+	[data-theme="dark"] .button-secondary:hover:not(:disabled),
+	[data-theme="dark"] .button--secondary:hover:not(:disabled) {
+		background-color: #2A2A2A; /* Dark background on hover */
+		border-color: #B0B0B0; /* Lighter border on hover */
 	}
 
-	.button-secondary:focus,
-	.button--secondary:focus {
-		outline: 2px solid transparent;
+	[data-theme="dark"] .button-secondary:active:not(:disabled),
+	[data-theme="dark"] .button--secondary:active:not(:disabled) {
+		background-color: #1A1A1A; /* Even darker on click */
+		border-color: #C0C0C0; /* Even lighter border */
+	}
+
+	.button-secondary:focus-visible,
+	.button--secondary:focus-visible {
+		outline: 2px solid var(--color-primary-500);
 		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-primary);
 	}
 
 	.button-secondary:disabled,
@@ -547,490 +183,562 @@
 		cursor: not-allowed;
 	}
 
-	.button--danger, .button-danger {
+	/* Success button - light green background with dark text */
+	.button-success,
+	.button--success {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
 		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
+		font-size: 1rem;
 		font-weight: 600;
-		line-height: 1.25rem;
+		line-height: 1.5;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background-color: var(--color-error-100);
-		color: var(--color-error-900);
-		border: 1px solid var(--color-error-200);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
+		background: #A7F3D0; /* Light green background */
+		color: #1F2937; /* Dark gray text */
+		border: 1px solid #1F2937; /* Dark border */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		-webkit-tap-highlight-color: transparent;
 	}
 
-	/* Danger accent on top */
-	.button--danger::before, .button-danger::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-error-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
+	.button-success:hover:not(:disabled),
+	.button--success:hover:not(:disabled) {
+		background: #86EFAC; /* More saturated green on hover */
+		border-color: #111827; /* Darker border */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
-	.button--danger:hover:not(:disabled), .button-danger:hover:not(:disabled) {
-		background-color: var(--color-error-200);
-		border-color: var(--color-error-300);
-		color: var(--color-error-900);
-		transform: translateY(-1px);
+	.button-success:active:not(:disabled),
+	.button--success:active:not(:disabled) {
+		background: #6EE7B7; /* Even more saturated on click */
+		border-color: #000000; /* Black border */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 	}
 
-	.button--danger:focus, .button-danger:focus {
-		outline: 2px solid transparent;
+	/* Dark mode adjustments for success button */
+	[data-theme="dark"] .button-success,
+	[data-theme="dark"] .button--success {
+		background: #7ACC9E; /* Muted green background for dark mode */
+		border-color: #1A1A1A; /* Dark border */
+		color: #1A1A1A; /* Dark text */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	[data-theme="dark"] .button-success:hover:not(:disabled),
+	[data-theme="dark"] .button--success:hover:not(:disabled) {
+		background: #6ABB8E; /* Slightly darker on hover */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+	}
+
+	[data-theme="dark"] .button-success:active:not(:disabled),
+	[data-theme="dark"] .button--success:active:not(:disabled) {
+		background: #5AAA7E; /* Even darker on click */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	.button-success:focus-visible,
+	.button--success:focus-visible {
+		outline: 2px solid #10B981;
 		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-error);
 	}
 
-	.button--danger:disabled, .button-danger:disabled {
+	.button-success:disabled,
+	.button--success:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	/* Success button variant - navigation style */
-	.button-success {
+	/* Danger button - light red background with dark text */
+	.button-danger,
+	.button--danger {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
 		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
+		font-size: 1rem;
 		font-weight: 600;
-		line-height: 1.25rem;
+		line-height: 1.5;
 		cursor: pointer;
-		transition: all var(--transition-fast) ease;
+		transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
-		background-color: var(--color-success-100);
-		color: var(--color-success-900);
-		border: 1px solid var(--color-success-200);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
+		background: #FECACA; /* Light red background */
+		color: #1F2937; /* Dark gray text */
+		border: 1px solid #1F2937; /* Dark border */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+		-webkit-tap-highlight-color: transparent;
 	}
 
-	/* Success accent on top */
-	.button-success::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-success-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
+	.button-danger:hover:not(:disabled),
+	.button--danger:hover:not(:disabled) {
+		background: #FCA5A5; /* More saturated red on hover */
+		border-color: #111827; /* Darker border */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
-	.button-success:hover:not(:disabled) {
-		background-color: var(--color-success-200);
-		border-color: var(--color-success-300);
-		color: var(--color-success-900);
-		transform: translateY(-1px);
-		border-color: var(--color-success-700);
+	.button-danger:active:not(:disabled),
+	.button--danger:active:not(:disabled) {
+		background: #F87171; /* Even more saturated on click */
+		border-color: #000000; /* Black border */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 	}
 
-	.button-success:focus {
-		outline: 2px solid transparent;
+	/* Dark mode adjustments for danger button */
+	[data-theme="dark"] .button-danger,
+	[data-theme="dark"] .button--danger {
+		background: #CC9999; /* Muted red background for dark mode */
+		border-color: #1A1A1A; /* Dark border */
+		color: #1A1A1A; /* Dark text */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	[data-theme="dark"] .button-danger:hover:not(:disabled),
+	[data-theme="dark"] .button--danger:hover:not(:disabled) {
+		background: #BB8888; /* Slightly darker on hover */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+	}
+
+	[data-theme="dark"] .button-danger:active:not(:disabled),
+	[data-theme="dark"] .button--danger:active:not(:disabled) {
+		background: #AA7777; /* Even darker on click */
+		border-color: #000000; /* Black border */
+		color: #000000; /* Black text */
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+	}
+
+	.button-danger:focus-visible,
+	.button--danger:focus-visible {
+		outline: 2px solid #EF4444;
 		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-success);
 	}
 
-	.button-success:disabled {
+	.button-danger:disabled,
+	.button--danger:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	/* Warning button variant - navigation style */
-	.button-warning {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1.5rem;
-		font-size: var(--text-sm);
-		font-weight: 600;
-		line-height: 1.25rem;
-		cursor: pointer;
-		transition: all var(--transition-fast) ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background-color: var(--color-warning-100);
-		color: var(--color-warning-900);
-		border: 1px solid var(--color-warning-200);
-		box-shadow: var(--shadow-xs);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Warning accent on top */
-	.button-warning::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-warning-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
-	}
-
-	.button-warning:hover:not(:disabled) {
-		background-color: var(--color-warning-200);
-		border-color: var(--color-warning-300);
-		color: var(--color-warning-900);
-		transform: translateY(-1px);
-	}
-
-	.button-warning:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-warning, 0 0 0 3px rgba(245, 158, 11, 0.3));
-	}
-
-	.button-warning:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Button modifiers - Apply to all button variants */
-	.button--full-width,
-	.button-primary.button--full-width,
-	.button-secondary.button--full-width,
-	.button--danger.button--full-width,
-	.button-danger.button--full-width,
-	.button-success.button--full-width,
-	.button-warning.button--full-width,
-	.button-coral.button--full-width,
-	.button--coral.button--full-width,
-	.button-orange.button--full-width,
-	.button--orange.button--full-width,
-	.button-teal.button--full-width,
-	.button--teal.button--full-width,
-	.button-navy.button--full-width,
-	.button--navy.button--full-width {
-		width: 100%;
-	}
-
-	.button--gap,
-	.button-primary.button--gap,
-	.button-secondary.button--gap,
-	.button--danger.button--gap,
-	.button-danger.button--gap,
-	.button-success.button--gap,
-	.button-warning.button--gap,
-	.button-coral.button--gap,
-	.button--coral.button--gap,
-	.button-orange.button--gap,
-	.button--orange.button--gap,
-	.button-teal.button--gap,
-	.button--teal.button--gap,
-	.button-navy.button--gap,
-	.button--navy.button--gap {
-		gap: 0.5rem;
-	}
-
-	.button--large,
-	.button-primary.button--large,
-	.button-secondary.button--large,
-	.button--danger.button--large,
-	.button-danger.button--large,
-	.button-success.button--large,
-	.button-warning.button--large,
-	.button-coral.button--large,
-	.button--coral.button--large,
-	.button-orange.button--large,
-	.button--orange.button--large,
-	.button-teal.button--large,
-	.button--teal.button--large,
-	.button-navy.button--large,
-	.button--navy.button--large {
-		padding: 1rem 2rem;
-		font-size: var(--text-base);
-		line-height: 1.5rem;
-	}
-
-	.button--small,
-	.button-primary.button--small,
-	.button-secondary.button--small,
-	.button--danger.button--small,
-	.button-danger.button--small,
-	.button-success.button--small,
-	.button-warning.button--small,
-	.button-coral.button--small,
-	.button--coral.button--small,
-	.button-orange.button--small,
-	.button--orange.button--small,
-	.button-teal.button--small,
-	.button--teal.button--small,
-	.button-navy.button--small,
-	.button--navy.button--small {
-		padding: 0.5rem 1rem;
-		font-size: var(--text-xs);
-		line-height: 1.25rem;
-	}
-
-	/* Icon button variation */
-	.button--icon {
-		padding: 0.5rem;
-		min-width: 2.5rem;
-		min-height: 2.5rem;
-	}
-
-	/* Text-only button variation */
-	.button--text {
-		background: transparent;
-		border: none;
-		color: var(--color-primary-600);
-		text-decoration: none;
-		padding: 0.25rem 0.5rem;
-		font-weight: 500;
-		transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease;
-	}
-
-	.button--text:hover:not(:disabled) {
-		color: var(--color-primary-700);
-		background: var(--bg-secondary);
-	}
-
-	/* Ghost button variation - more subtle than secondary */
+	/* Ghost button - subtle hover state */
+	.button-ghost,
 	.button--ghost {
-		background: transparent;
-		border: 1px solid transparent;
-		color: var(--text-secondary);
-		text-decoration: none;
-		padding: 0.75rem 1.5rem;
-		font-weight: 500;
-		transition: background-color var(--transition-fast) ease, color var(--transition-fast) ease, border-color var(--transition-fast) ease;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
-		font-size: var(--text-sm);
-		line-height: 1.25rem;
+		border-radius: 0.75rem;
+		padding: 0.75rem 1.5rem;
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.5;
 		cursor: pointer;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+		text-decoration: none;
 		text-align: center;
 		white-space: nowrap;
 		user-select: none;
+		background: transparent;
+		color: var(--text-secondary);
+		border: 2px solid transparent; /* Match thickness, transparent by default */
+		-webkit-tap-highlight-color: transparent;
 	}
 
+	.button-ghost:hover:not(:disabled),
 	.button--ghost:hover:not(:disabled) {
 		background: var(--bg-secondary);
+		border-color: var(--border-primary);
 		color: var(--text-primary);
 	}
 
-	.button--ghost:focus {
-		outline: 2px solid transparent;
-		outline-offset: 2px;
-		box-shadow: var(--focus-shadow-primary);
+	.button-ghost:active:not(:disabled),
+	.button--ghost:active:not(:disabled) {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
 	}
 
+	/* Dark mode adjustments for ghost button */
+	[data-theme="dark"] .button-ghost,
+	[data-theme="dark"] .button--ghost {
+		color: var(--text-secondary);
+		background: transparent;
+	}
+
+	[data-theme="dark"] .button-ghost:hover:not(:disabled),
+	[data-theme="dark"] .button--ghost:hover:not(:disabled) {
+		background: #2A2A2A; /* Dark background instead of white overlay */
+		color: var(--text-primary);
+	}
+
+	[data-theme="dark"] .button-ghost:active:not(:disabled),
+	[data-theme="dark"] .button--ghost:active:not(:disabled) {
+		background: #1A1A1A; /* Even darker on click */
+	}
+
+	.button-ghost:focus-visible,
+	.button--ghost:focus-visible {
+		outline: 2px solid var(--color-primary-500);
+		outline-offset: 2px;
+	}
+
+	.button-ghost:disabled,
 	.button--ghost:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	/* Button spinner */
-	.button__spinner {
+	/* Text button - no background or border, just text */
+	.button-text,
+	.button--text {
 		display: inline-flex;
-		animation: spin 1s linear infinite;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.75rem;
+		padding: 0.5rem 1rem; /* Slightly smaller padding for text buttons */
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.5;
+		cursor: pointer;
+		transition: background-color 150ms ease, color 150ms ease, text-decoration-color 150ms ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: transparent;
+		color: var(--color-primary-600);
+		border: none; /* Text buttons typically don't have borders */
+		-webkit-tap-highlight-color: transparent;
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-underline-offset: 4px;
 	}
 
-	@keyframes spin {
+	.button-text:hover:not(:disabled),
+	.button--text:hover:not(:disabled) {
+		color: var(--color-primary-700);
+		text-decoration-color: currentColor;
+	}
+
+	.button-text:active:not(:disabled),
+	.button--text:active:not(:disabled) {
+		color: var(--color-primary-800);
+	}
+
+	/* Dark mode adjustments for text button */
+	[data-theme="dark"] .button-text,
+	[data-theme="dark"] .button--text {
+		color: #FF8080; /* Lighter coral for better contrast */
+	}
+
+	[data-theme="dark"] .button-text:hover:not(:disabled),
+	[data-theme="dark"] .button--text:hover:not(:disabled) {
+		color: #FFA0A0; /* Even lighter on hover */
+		text-decoration-color: currentColor;
+	}
+
+	.button-text:focus-visible,
+	.button--text:focus-visible {
+		outline: 2px solid var(--color-primary-500);
+		outline-offset: 2px;
+	}
+
+	.button-text:disabled,
+	.button--text:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Size modifiers */
+	.button--large {
+		padding: 1rem 2rem;
+		font-size: 1.125rem; /* 18px */
+		border-radius: 0.875rem; /* 14px */
+	}
+
+	.button--small {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem; /* 14px */
+		border-radius: 0.625rem; /* 10px */
+	}
+
+	.button--tiny {
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem; /* 12px */
+		border-radius: 0.5rem; /* 8px */
+		font-weight: 500;
+	}
+
+	/* Width modifiers */
+	.button--full-width {
+		width: 100%;
+	}
+
+	/* Icon button */
+	.button--icon {
+		padding: 0.75rem;
+		border-radius: 0.75rem;
+	}
+
+	.button--icon.button--small {
+		padding: 0.5rem;
+		border-radius: 0.625rem;
+	}
+
+	.button--icon.button--tiny {
+		padding: 0.375rem;
+		border-radius: 0.5rem;
+	}
+
+	/* Gap for buttons with icons and text */
+	.button--gap {
+		gap: 0.5rem;
+	}
+
+	/* Loading state */
+	.button--loading {
+		color: transparent;
+		pointer-events: none;
+		position: relative;
+	}
+
+	.button--loading::after {
+		content: "";
+		position: absolute;
+		width: 1rem;
+		height: 1rem;
+		top: 50%;
+		left: 50%;
+		margin-left: -0.5rem;
+		margin-top: -0.5rem;
+		border: 2px solid currentColor;
+		border-radius: 50%;
+		border-top-color: transparent;
+		animation: button-spin 0.6s linear infinite;
+	}
+
+	@keyframes button-spin {
 		to {
 			transform: rotate(360deg);
 		}
 	}
 
-	/* Ensure SVG icons in buttons inherit proper colors */
+	/* Ensure SVG icons in buttons have proper sizing and color */
 	.button svg,
 	.button-primary svg,
 	.button--primary svg,
 	.button-secondary svg,
 	.button--secondary svg,
-	.button--danger svg,
-	.button-danger svg,
 	.button-success svg,
-	.button-warning svg,
-	.button-coral svg,
-	.button--coral svg,
-	.button-orange svg,
-	.button--orange svg,
-	.button-teal svg,
-	.button--teal svg,
-	.button-navy svg,
-	.button--navy svg,
+	.button--success svg,
+	.button-danger svg,
+	.button--danger svg,
+	.button-ghost svg,
 	.button--ghost svg,
+	.button-text svg,
 	.button--text svg {
-		fill: currentColor;
-		stroke: currentColor;
-		color: inherit;
+		width: 1.25rem;
+		height: 1.25rem;
+		stroke-width: 2;
+		flex-shrink: 0;
+	}
+
+	/* Small buttons have smaller icons */
+	.button--small svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.button--tiny svg {
+		width: 0.875rem;
+		height: 0.875rem;
+	}
+
+	/* Dark mode adjustments */
+	[data-theme="dark"] .button-primary,
+	[data-theme="dark"] .button--primary {
+		background: #FF6B6B;
+		color: white;
+	}
+
+	[data-theme="dark"] .button-primary:hover:not(:disabled),
+	[data-theme="dark"] .button--primary:hover:not(:disabled) {
+		background: #FF5252;
+	}
+
+	[data-theme="dark"] .button-primary:active:not(:disabled),
+	[data-theme="dark"] .button--primary:active:not(:disabled) {
+		background: #FF4444;
+	}
+
+	[data-theme="dark"] .button-success,
+	[data-theme="dark"] .button--success {
+		background: #10B981;
+		color: white;
+	}
+
+	[data-theme="dark"] .button-success:hover:not(:disabled),
+	[data-theme="dark"] .button--success:hover:not(:disabled) {
+		background: #059669;
+	}
+
+	[data-theme="dark"] .button-danger,
+	[data-theme="dark"] .button--danger {
+		background: #F87171;
+		color: white;
+	}
+
+	[data-theme="dark"] .button-danger:hover:not(:disabled),
+	[data-theme="dark"] .button--danger:hover:not(:disabled) {
+		background: #EF4444;
+	}
+
+	/* Toggle button - for tab-like toggles */
+	.button-toggle,
+	.button--toggle {
+		flex: 1;
+		padding: 0.5rem 0.75rem;
+		background: transparent;
+		border: 2px solid transparent;
+		border-radius: 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+		text-decoration: none;
+		white-space: nowrap;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
 	}
 	
-	/* Ensure lucide icons in secondary/ghost buttons have proper contrast */
-	.button-secondary .lucide-icon,
-	.button--secondary .lucide-icon,
-	.button-secondary .lucide,
-	.button--secondary .lucide {
+	.button-toggle:hover:not(.active):not(:disabled),
+	.button--toggle:hover:not(.active):not(:disabled) {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
 		color: var(--text-primary);
-		stroke: var(--text-primary);
 	}
 	
-	/* Danger text button modifier */
-	.button--danger-text {
-		color: var(--color-danger-600);
-		border-color: var(--color-danger-300);
+	.button-toggle.active,
+	.button--toggle.active {
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border: 2px solid #2D2D2D; /* Dark border */
+		font-weight: 600;
 	}
 	
-	.button--danger-text:hover:not(:disabled) {
-		background: var(--color-danger-50);
-		color: var(--color-danger-700);
-		border-color: var(--color-danger-400);
+	/* Dark mode adjustments for toggle button */
+	[data-theme="dark"] .button-toggle,
+	[data-theme="dark"] .button--toggle {
+		color: var(--text-secondary);
 	}
 	
-	[data-theme="dark"] .button--danger-text {
-		color: var(--color-danger-400);
-		border-color: var(--color-danger-800);
+	[data-theme="dark"] .button-toggle:hover:not(.active):not(:disabled),
+	[data-theme="dark"] .button--toggle:hover:not(.active):not(:disabled) {
+		background: #2A2A2A;
+		border-color: #444444;
+		color: var(--text-primary);
 	}
 	
-	[data-theme="dark"] .button--danger-text:hover:not(:disabled) {
-		background: rgba(220, 38, 38, 0.1); /* Semi-transparent red background */
-		color: var(--color-danger-500);
-		border-color: var(--color-danger-600);
-	}
-	
-	.button--ghost .lucide-icon,
-	.button--ghost .lucide {
-		color: inherit;
-		stroke: inherit;
-	}
-	
-	.button--text .lucide-icon,
-	.button--text .lucide {
-		color: inherit;
-		stroke: inherit;
-	}
-	
-	/* Ensure proper contrast for primary buttons - now using dark text */
-	.button-primary,
-	.button--primary {
-		color: var(--color-primary-900) !important;
-	}
-	
-	.button-primary svg,
-	.button--primary svg,
-	.button-primary .lucide-icon,
-	.button--primary .lucide-icon,
-	.button-primary .lucide,
-	.button--primary .lucide {
-		color: var(--color-primary-900) !important;
-		stroke: var(--color-primary-900) !important;
-	}
-	
-	/* Ensure proper contrast for success buttons */
-	.button-success {
-		color: var(--color-success-900) !important;
-	}
-	
-	.button-success svg,
-	.button-success .lucide-icon,
-	.button-success .lucide {
-		color: var(--color-success-900) !important;
-		stroke: var(--color-success-900) !important;
-	}
-	
-	/* Ensure proper contrast for danger buttons */
-	.button--danger,
-	.button-danger {
-		color: var(--color-error-900) !important;
-	}
-	
-	.button--danger svg,
-	.button-danger svg,
-	.button--danger .lucide-icon,
-	.button-danger .lucide-icon,
-	.button--danger .lucide,
-	.button-danger .lucide {
-		color: var(--color-error-900) !important;
-		stroke: var(--color-error-900) !important;
+	[data-theme="dark"] .button-toggle.active,
+	[data-theme="dark"] .button--toggle.active {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
 	}
 
-	/* Ensure proper contrast for warning buttons */
-	.button-warning {
-		color: var(--color-warning-900) !important;
+	/* Tab button - for navigation tabs */
+	.button-tab,
+	.button--tab {
+		padding: 0.75rem 1.5rem;
+		background: transparent;
+		border: 2px solid transparent;
+		border-radius: 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		text-decoration: none;
+		white-space: nowrap;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
 	}
 	
-	.button-warning svg,
-	.button-warning .lucide-icon,
-	.button-warning .lucide {
-		color: var(--color-warning-900) !important;
-		stroke: var(--color-warning-900) !important;
-	}
-
-	/* Ensure proper contrast for professional colored buttons */
-	.button-coral,
-	.button--coral {
-		color: var(--color-coral-900) !important;
+	.button-tab:hover:not(.active):not(:disabled),
+	.button--tab:hover:not(.active):not(:disabled) {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+		color: var(--text-primary);
 	}
 	
-	.button-coral svg,
-	.button--coral svg,
-	.button-coral .lucide-icon,
-	.button--coral .lucide-icon,
-	.button-coral .lucide,
-	.button--coral .lucide {
-		color: var(--color-coral-900) !important;
-		stroke: var(--color-coral-900) !important;
-	}
-
-	/* Other professional buttons still use white text */
-	.button-orange,
-	.button--orange,
-	.button-teal,
-	.button--teal,
-	.button-navy,
-	.button--navy {
-		color: white !important;
+	.button-tab.active,
+	.button--tab.active {
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border: 2px solid #2D2D2D; /* Dark border */
+		font-weight: 600;
 	}
 	
-	.button-orange svg,
-	.button--orange svg,
-	.button-teal svg,
-	.button--teal svg,
-	.button-navy svg,
-	.button--navy svg,
-	.button-orange .lucide-icon,
-	.button--orange .lucide-icon,
-	.button-teal .lucide-icon,
-	.button--teal .lucide-icon,
-	.button-navy .lucide-icon,
-	.button--navy .lucide-icon,
-	.button-orange .lucide,
-	.button--orange .lucide,
-	.button-teal .lucide,
-	.button--teal .lucide,
-	.button-navy .lucide,
-	.button--navy .lucide {
-		color: white !important;
-		stroke: white !important;
+	/* Dark mode adjustments for tab button */
+	[data-theme="dark"] .button-tab,
+	[data-theme="dark"] .button--tab {
+		color: var(--text-secondary);
+	}
+	
+	[data-theme="dark"] .button-tab:hover:not(.active):not(:disabled),
+	[data-theme="dark"] .button--tab:hover:not(.active):not(:disabled) {
+		background: #2A2A2A;
+		border-color: #444444;
+		color: var(--text-primary);
+	}
+	
+	[data-theme="dark"] .button-tab.active,
+	[data-theme="dark"] .button--tab.active {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
+	}
+	/* Keep it simple and focused on usability */
+	
+	/* Mobile-specific adjustments for better touch targets */
+	@media (max-width: 640px) {
+		.button,
+		.button-primary,
+		.button--primary,
+		.button-secondary,
+		.button--secondary,
+		.button-success,
+		.button--success,
+		.button-danger,
+		.button--danger,
+		.button-ghost,
+		.button--ghost {
+			min-height: 48px; /* Minimum touch target size */
+			font-size: 1rem; /* Ensure readable text on mobile */
+		}
+		
+		.button--small {
+			min-height: 40px;
+		}
 	}
 }

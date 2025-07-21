@@ -1,5 +1,16 @@
 /* Typography Optimization for Professional SaaS Dashboard */
 
+/* Font family variables for easy customization */
+:root {
+  /* Use Inter for both headers and body for consistency */
+  /* --font-header: var(--font-sans); */
+  
+  /* Alternative: Use a different font for headers
+     Uncomment one of these options to try different header fonts:
+  */
+  --font-header: 'Plus Jakarta Sans', var(--font-sans);
+}
+
 /* Font smoothing for better rendering */
 body {
   font-family: var(--font-sans);
@@ -20,7 +31,23 @@ body {
   font-weight: 400;
 }
 
+/* Inter-specific optimizations for Apple-like appearance */
+@supports (font-variation-settings: normal) {
+  body {
+    /* Use Inter's variable font features for better rendering */
+    font-family: 'Inter var', var(--font-sans);
+  }
+}
 
+/* Apple-like letter spacing adjustments */
+body {
+  letter-spacing: -0.011em; /* Subtle tightening like San Francisco */
+}
+
+/* Font pairing creates visual hierarchy:
+   - Plus Jakarta Sans headers: Friendly, approachable, modern
+   - Inter body text: Clean, readable, professional
+   This combination adds personality while maintaining readability */
 
 /* Ensure consistent rendering of monospace fonts */
 code, pre, kbd, samp, .font-mono {
@@ -30,28 +57,87 @@ code, pre, kbd, samp, .font-mono {
 
 /* Optimize font rendering for headings */
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-header);
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.2;
+  /* Plus Jakarta Sans doesn't need Inter's CV features */
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+/* Enhanced header styles for better visual hierarchy */
+h1, h2, h3 {
+  /* Plus Jakarta Sans looks great at 700-800 weight */
+  font-weight: 700;
+  /* Tighter line-height for more compact appearance */
+  line-height: 1.1;
+  /* Plus Jakarta Sans benefits from slightly tighter tracking */
+  letter-spacing: -0.03em;
+}
+
+/* Dashboard-specific header optimizations */
+.page-header-title,
+.section-title,
+.card-title {
+  font-family: var(--font-header);
+  font-weight: 700; /* Plus Jakarta Sans looks great at 700 */
+  letter-spacing: -0.025em;
+  line-height: 1.15;
 }
 
 /* Size scale for consistency - responsive */
 /* Mobile-first approach */
-h1 { font-size: 1.5rem; } /* 24px on mobile */
-h2 { font-size: 1.25rem; } /* 20px on mobile */
-h3 { font-size: 1.125rem; } /* 18px on mobile */
-h4 { font-size: 1rem; } /* 16px on mobile */
-h5 { font-size: 0.875rem; } /* 14px on mobile */
-h6 { font-size: 0.75rem; } /* 12px on mobile */
+h1 { 
+  font-size: 1.5rem; /* 24px on mobile */
+  letter-spacing: -0.035em; /* Tighter for Plus Jakarta Sans */
+}
+h2 { 
+  font-size: 1.25rem; /* 20px on mobile */
+  letter-spacing: -0.03em;
+}
+h3 { 
+  font-size: 1.125rem; /* 18px on mobile */
+  letter-spacing: -0.025em;
+}
+h4 { 
+  font-size: 1rem; /* 16px on mobile */
+  letter-spacing: -0.02em;
+}
+h5 { 
+  font-size: 0.875rem; /* 14px on mobile */
+  letter-spacing: -0.015em;
+}
+h6 { 
+  font-size: 0.75rem; /* 12px on mobile */
+  letter-spacing: -0.01em;
+}
 
 /* Desktop sizes */
 @media (min-width: 640px) {
-  h1 { font-size: 2rem; } /* 32px on desktop */
-  h2 { font-size: 1.5rem; } /* 24px on desktop */
-  h3 { font-size: 1.25rem; } /* 20px on desktop */
-  h4 { font-size: 1.125rem; } /* 18px on desktop */
-  h5 { font-size: 1rem; } /* 16px on desktop */
-  h6 { font-size: 0.875rem; } /* 14px on desktop */
+  h1 { 
+    font-size: 2rem; /* 32px on desktop */
+    letter-spacing: -0.04em; /* Plus Jakarta Sans needs tighter tracking at larger sizes */
+  }
+  h2 { 
+    font-size: 1.5rem; /* 24px on desktop */
+    letter-spacing: -0.035em;
+  }
+  h3 { 
+    font-size: 1.25rem; /* 20px on desktop */
+    letter-spacing: -0.03em;
+  }
+  h4 { 
+    font-size: 1.125rem; /* 18px on desktop */
+    letter-spacing: -0.025em;
+  }
+  h5 { 
+    font-size: 1rem; /* 16px on desktop */
+    letter-spacing: -0.02em;
+  }
+  h6 { 
+    font-size: 0.875rem; /* 14px on desktop */
+    letter-spacing: -0.015em;
+  }
 }
 
 /* Better number rendering for data-heavy dashboard */
@@ -59,7 +145,11 @@ h6 { font-size: 0.75rem; } /* 12px on mobile */
   font-variant-numeric: tabular-nums;
 }
 
-
+/* Apple-like font weights */
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
 
 /* Small text improvements */
 .text-xs {
@@ -69,6 +159,7 @@ h6 { font-size: 0.75rem; } /* 12px on mobile */
 /* Improve readability for body text */
 p {
   line-height: 1.6;
+  letter-spacing: -0.011em;
 }
 
 /* Dashboard-specific text styles */
@@ -82,4 +173,39 @@ p {
   letter-spacing: 0.025em;
   text-transform: uppercase;
   opacity: 0.7;
-} 
+}
+
+/* ============================================
+   TYPOGRAPHY OPTIONS COMPARISON
+   ============================================
+   
+   Current Setup (ACTIVE):
+   - Headers: Plus Jakarta Sans
+   - Body: Inter
+   - Character: Modern geometric sans with rounded edges
+   - Pros: Adds visual interest while maintaining professionalism
+   - Great for: Making the interface feel friendlier and more approachable
+   
+   Alternative Options:
+   
+   1. Inter for headers (Original)
+      - Character: Neutral, highly readable
+      - Density: Well-balanced
+      - Use case: Maximum consistency and readability
+      
+   2. DM Sans for headers
+      - Character: Geometric, slightly more playful
+      - Density: More compact than Inter
+      - Use case: If you want headers with more personality
+      
+   3. Geist for headers
+      - Character: Technical, precise (by Vercel)
+      - Density: Very compact, excellent for dashboards
+      - Use case: For a more technical/developer feel
+      
+   To try an alternative:
+   1. Uncomment the font link in app.html
+   2. Change --font-header in this file
+   3. Headers will use the new font automatically
+   
+   ============================================ */ 

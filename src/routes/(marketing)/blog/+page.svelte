@@ -166,7 +166,7 @@
 						Get the latest tips and strategies delivered to your inbox. 
 						Join tour guides who are growing their business with Zaur.
 					</p>
-					<button onclick={() => window.location.href='/auth/register'} class="button-coral button--large button-gap">
+					<button onclick={() => window.location.href='/auth/register'} class="button-primary button--large button-gap">
 						<BookOpen class="w-5 h-5" />
 						Join Zaur Today
 					</button>

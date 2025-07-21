@@ -10,6 +10,8 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Settings from 'lucide-svelte/icons/settings';
+	import House from 'lucide-svelte/icons/house';
+	import Heart from 'lucide-svelte/icons/heart';
 	
 	let showPreview = $state(false);
 	let isHovered = $state(false);
@@ -75,18 +77,20 @@
 			<!-- View Toggle -->
 			<div class="view-toggle">
 				<button 
-					class="toggle-btn {viewMode === 'guide' ? 'active' : ''}"
-					onclick={(e) => { e.stopPropagation(); switchView('guide'); }}
+					class="button-toggle {viewMode === 'guide' ? 'active' : ''}"
+					onclick={() => viewMode = 'guide'}
+					aria-label="View Tour Guide Dashboard"
 				>
-					<Settings class="w-3 h-3" />
-					Guide View
+					<House class="w-4 h-4" />
+					Tour Guide
 				</button>
 				<button 
-					class="toggle-btn {viewMode === 'customer' ? 'active' : ''}"
-					onclick={(e) => { e.stopPropagation(); switchView('customer'); }}
+					class="button-toggle {viewMode === 'customer' ? 'active' : ''}"
+					onclick={() => viewMode = 'customer'}
+					aria-label="View Customer Booking Experience"
 				>
-					<Eye class="w-3 h-3" />
-					Customer View
+					<Heart class="w-4 h-4" />
+					Customer
 				</button>
 			</div>
 			
@@ -251,52 +255,7 @@
 		padding: 0.25rem;
 	}
 	
-	.toggle-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.25rem;
-		padding: 0.5rem;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: 0.375rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all 0.2s ease;
-		position: relative;
-		overflow: hidden;
-	}
 
-	/* Coral accent on hover */
-	.toggle-btn::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-fast) ease;
-	}
-
-	.toggle-btn:hover:not(.active)::before {
-		transform: scaleX(1);
-	}
-	
-	.toggle-btn.active {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border-color: var(--color-primary-200);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.toggle-btn.active::before {
-		transform: scaleX(1);
-	}
 	
 	.tours-preview {
 		margin-bottom: 1.5rem;
@@ -532,11 +491,6 @@
 		
 		.demo-title {
 			font-size: 1.125rem;
-		}
-		
-		.toggle-btn {
-			font-size: 0.6875rem;
-			padding: 0.375rem;
 		}
 		
 		.tour-item {

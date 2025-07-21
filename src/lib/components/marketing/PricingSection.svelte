@@ -68,13 +68,13 @@
 <div class="flex justify-center mb-16">
 	<div class="pricing-toggle">
 		<button 
-			class="toggle-option {!isYearly ? 'toggle-option--active' : ''}"
+			class="button-toggle {!isYearly ? 'active' : ''}"
 			onclick={() => isYearly = false}
 		>
 			Monthly
 		</button>
 		<button 
-			class="toggle-option {isYearly ? 'toggle-option--active' : ''}"
+			class="button-toggle {isYearly ? 'active' : ''}"
 			onclick={() => isYearly = true}
 		>
 			Annual (Save 20%)
@@ -189,7 +189,7 @@
 	/* Professional Alert Styling */
 	.info-alert {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		border-radius: var(--radius-lg);
 		padding: 1.25rem;
 		box-shadow: var(--shadow-md);
@@ -206,59 +206,13 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	.toggle-option {
-		padding: 0.75rem 1.5rem;
-		border-radius: var(--radius-md);
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		border: 1px solid transparent;
-		background: transparent;
-		color: var(--text-secondary);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on hover */
-	.toggle-option::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-fast) ease;
-	}
-
-	.toggle-option--active {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border-color: var(--color-primary-200);
-		box-shadow: var(--shadow-md);
-	}
-
-	.toggle-option--active::before {
-		transform: scaleX(1);
-	}
-
-	.toggle-option:not(.toggle-option--active):hover {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		transform: translateY(-1px);
-	}
-
-	.toggle-option:not(.toggle-option--active):hover::before {
-		transform: scaleX(1);
-	}
 
 
 
 	/* Pricing Cards - Fixed badge positioning */
 	.pricing-card {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		border-radius: var(--radius-lg);
 		padding: 2rem;
 		display: flex;
@@ -446,78 +400,80 @@
 		flex-shrink: 0;
 	}
 
-	/* Plan CTA Buttons - Navigation style */
+	/* Plan CTA Buttons - New button style */
 	.plan-cta {
 		width: 100%;
-		padding: 0.875rem 1.5rem;
-		border-radius: var(--radius-lg);
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.75rem;
 		font-weight: 600;
 		font-size: 0.875rem;
 		cursor: pointer;
-		transition: all 0.3s ease;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 		text-align: center;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on top */
-	.plan-cta::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
+		text-decoration: none;
+		white-space: nowrap;
+		user-select: none;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.plan-cta--primary {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
-		box-shadow: var(--shadow-md);
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border: 2px solid #2D2D2D; /* Dark border */
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 	}
 
 	.plan-cta--primary:hover {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		box-shadow: var(--shadow-lg);
-		transform: translateY(-1px);
+		background: #FF9999; /* More saturated on hover */
+		border-color: #1A1A1A; /* Darker border */
+		color: #1A1A1A;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 
 	.plan-cta--outline {
-		background: var(--bg-primary);
-		color: var(--text-secondary);
-		border: 1px solid var(--border-primary);
-	}
-
-	/* Outline version gets accent on hover */
-	.plan-cta--outline::before {
-		transform: scaleX(0);
+		background: transparent;
+		color: var(--text-primary);
+		border: 2px solid var(--text-primary);
 	}
 
 	.plan-cta--outline:hover {
 		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
+		border-color: var(--text-primary);
 		color: var(--text-primary);
-		transform: translateY(-1px);
 	}
-
-	.plan-cta--outline:hover::before {
-		transform: scaleX(1);
+	
+	/* Dark mode adjustments */
+	[data-theme="dark"] .plan-cta--primary {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
+	}
+	
+	[data-theme="dark"] .plan-cta--primary:hover {
+		background: #BB8888;
+		border-color: #000000;
+		color: #000000;
+	}
+	
+	[data-theme="dark"] .plan-cta--outline {
+		border-color: #A0A0A0;
+		color: var(--text-primary);
+		background: transparent;
+	}
+	
+	[data-theme="dark"] .plan-cta--outline:hover {
+		background: #2A2A2A;
+		border-color: #B0B0B0;
 	}
 
 	/* No Commission Card */
 	.no-commission-card {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		box-shadow: var(--shadow-md);

@@ -324,8 +324,8 @@
 	--color-refunded: var(--color-gray-600);
 	
 	/* Typography */
-	--font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-	--font-mono: ui-monospace, 'SF Mono', Monaco, 'Cascadia Mono', 'Roboto Mono', monospace;
+	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'SF Mono', ui-monospace, Monaco, 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
 	
 	/* Font Sizes - Increased for better Chrome rendering */
 	--text-xs: 0.8125rem;   /* 13px instead of 12px */

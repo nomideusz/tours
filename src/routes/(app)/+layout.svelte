@@ -840,56 +840,45 @@
 		gap: 0.125rem;
 	}
 
+	/* Navigation Links */
 	.nav-link {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		font-size: 0.875rem;
-		font-weight: 500;
 		color: var(--text-secondary);
 		text-decoration: none;
-		transition: all var(--transition-base) ease;
+		transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 		padding: 0.75rem 0.5rem;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
+		border: 1px solid transparent;
 		position: relative;
-		overflow: hidden;
 		min-width: 0;
-	}
-
-	/* Subtle coral accent on hover */
-	.nav-link::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-
-	.nav-link:hover::before {
-		transform: scaleX(1);
+		font-weight: 500;
 	}
 
 	.nav-link:hover {
 		color: var(--text-primary);
 		background: var(--bg-secondary);
-		transform: translateY(-1px);
+		border-color: var(--border-primary);
 	}
 
 	.nav-link--active {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
+		background: #FFE5E5; /* Light coral background */
+		color: #2D2D2D; /* Dark text for better contrast */
+		border: 1px solid #E0E0E0; /* Light gray border */
 		font-weight: 600;
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
 	}
 
-	.nav-link--active::before {
-		transform: scaleX(1);
-		background: var(--color-primary-500);
+	/* Dark mode adjustments for sidebar nav links */
+	[data-theme="dark"] .nav-link--active {
+		background: #3D3D3D; /* Dark gray background */
+		color: #FFB3B3; /* Light coral text */
+		border-color: #555555; /* Medium gray border */
+	}
+
+	[data-theme="dark"] .nav-link:hover {
+		background: #2A2A2A; /* Dark background on hover */
+		border-color: #444444; /* Darker border */
 	}
 
 	.nav-link-content {
@@ -905,7 +894,7 @@
 		height: 1.25rem;
 		flex-shrink: 0;
 		color: var(--text-tertiary);
-		transition: color var(--transition-base) ease;
+		transition: color 150ms ease;
 	}
 
 	.nav-link:hover .nav-link-icon,
@@ -914,18 +903,20 @@
 	}
 
 	.nav-link-text {
-		truncate: true;
 		font-size: inherit;
 		font-weight: inherit;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.nav-badge {
-		background: var(--color-coral-500);
+		background: #FF5959;
 		color: white;
 		font-size: 0.625rem;
 		font-weight: 700;
 		padding: 0.25rem 0.5rem;
-		border-radius: var(--radius-full);
+		border-radius: 9999px;
 		min-width: 1.25rem;
 		height: 1.25rem;
 		display: flex;
@@ -954,34 +945,23 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.5rem;
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
+		border: 1px solid transparent;
 		text-decoration: none;
 		color: var(--text-secondary);
-		transition: all var(--transition-base) ease;
-		position: relative;
-		overflow: hidden;
-	}
-
-	.user-profile-link::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-
-	.user-profile-link:hover::before {
-		transform: scaleX(1);
+		transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 	}
 
 	.user-profile-link:hover {
 		background: var(--bg-secondary);
+		border-color: var(--border-primary);
 		color: var(--text-primary);
-		transform: translateY(-1px);
+	}
+
+	/* Dark mode adjustments for user profile */
+	[data-theme="dark"] .user-profile-link:hover {
+		background: #2A2A2A;
+		border-color: #444444;
 	}
 
 	.user-avatar {
@@ -1056,45 +1036,43 @@
 		color: var(--text-secondary);
 		background: var(--bg-tertiary);
 		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-md);
+		border-radius: 0.75rem;
 		text-decoration: none;
 		cursor: pointer;
-		transition: all var(--transition-base) ease;
-		position: relative;
-		overflow: hidden;
-	}
-
-	.user-action-button::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-
-	.user-action-button:hover::before {
-		transform: scaleX(1);
+		transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 	}
 
 	.user-action-button:hover {
-		background: var(--bg-quaternary);
+		background: var(--bg-secondary);
 		border-color: var(--border-secondary);
 		color: var(--text-primary);
-		transform: translateY(-1px);
+	}
+
+	/* Dark mode adjustments for user action buttons */
+	[data-theme="dark"] .user-action-button:hover {
+		background: #2A2A2A;
+		border-color: #444444;
+	}
+
+	.user-action-button--logout {
+		color: #F87171; /* Light red for logout button */
 	}
 
 	.user-action-button--logout:hover {
-		background: rgba(239, 68, 68, 0.1);
-		border-color: rgba(239, 68, 68, 0.3);
-		color: rgb(239, 68, 68);
+		background: #FEE2E2; /* Light red background */
+		border-color: #FECACA; /* Light red border */
+		color: #DC2626; /* Darker red text */
 	}
 
-	.user-action-button--logout:hover::before {
-		background: rgb(239, 68, 68);
+	/* Dark mode adjustments for logout button */
+	[data-theme="dark"] .user-action-button--logout {
+		color: #FECACA; /* Light red text in dark mode */
+	}
+
+	[data-theme="dark"] .user-action-button--logout:hover {
+		background: #3D2A2A; /* Dark red background */
+		border-color: #664444; /* Medium red border */
+		color: #FCA5A5; /* Lighter red text */
 	}
 
 	.user-action-button:disabled {

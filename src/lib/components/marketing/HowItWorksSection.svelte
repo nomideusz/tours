@@ -115,7 +115,7 @@
 <!-- Professional CTA -->
 <div class="text-center mt-16">
 	<p class="text-secondary mb-6 text-lg">Ready to start getting bookings?</p>
-	<button onclick={handleCreateTour} class="button-coral button--large button--gap">
+	<button onclick={handleCreateTour} class="button-primary button--large button--gap">
 		Create Your First Tour
 		<ArrowRight class="w-4 h-4" strokeWidth={2} />
 	</button>

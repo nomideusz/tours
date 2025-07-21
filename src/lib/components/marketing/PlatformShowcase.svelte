@@ -17,6 +17,8 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Clock from 'lucide-svelte/icons/clock';
+	import House from 'lucide-svelte/icons/house';
+	import Heart from 'lucide-svelte/icons/heart';
 	
 	let showcaseMounted = $state(false);
 	let viewMode = $state<'guide' | 'customer' | 'qr'>('qr');
@@ -25,10 +27,6 @@
 	onMount(() => {
 		setTimeout(() => showcaseMounted = true, 600);
 	});
-	
-	function switchView(mode: 'guide' | 'customer' | 'qr') {
-		viewMode = mode;
-	}
 	
 	function copyQrCode() {
 		navigator.clipboard.writeText(sampleBookingUrl);
@@ -81,25 +79,28 @@
 			<!-- View Toggle -->
 			<div class="view-toggle">
 				<button 
-					class="toggle-btn {viewMode === 'qr' ? 'active' : ''}"
-					onclick={() => switchView('qr')}
+					class="button-toggle {viewMode === 'qr' ? 'active' : ''}"
+					onclick={() => viewMode = 'qr'}
+					aria-label="View QR Code preview"
 				>
-					<QrCode class="w-3 h-3" />
+					<QrCode class="w-4 h-4" />
 					QR Code
 				</button>
 				<button 
-					class="toggle-btn {viewMode === 'guide' ? 'active' : ''}"
-					onclick={() => switchView('guide')}
+					class="button-toggle {viewMode === 'guide' ? 'active' : ''}"
+					onclick={() => viewMode = 'guide'}
+					aria-label="View Tour Guide Dashboard"
 				>
-					<Settings class="w-3 h-3" />
-					Dashboard
+					<House class="w-4 h-4" />
+					Tour Guide
 				</button>
 				<button 
-					class="toggle-btn {viewMode === 'customer' ? 'active' : ''}"
-					onclick={() => switchView('customer')}
+					class="button-toggle {viewMode === 'customer' ? 'active' : ''}"
+					onclick={() => viewMode = 'customer'}
+					aria-label="View Customer Booking Experience"
 				>
-					<Eye class="w-3 h-3" />
-					Customer View
+					<Heart class="w-4 h-4" />
+					Customer
 				</button>
 			</div>
 			
@@ -192,7 +193,7 @@
 						
 						<!-- QR Actions -->
 						<div class="qr-actions">
-							<button onclick={copyQrCode} class="button-coral button--large button--gap button--full-width">
+							<button onclick={copyQrCode} class="button-primary button--large button--gap button--full-width">
 								{#if qrCopied}
 									<CheckCircle class="w-4 h-4" />
 									Link Copied!
@@ -349,7 +350,7 @@
 						<div class="slot">16:30</div>
 					</div>
 					
-					<button class="button-coral button--large button--gap button--full-width">
+					<button class="button-primary button--large button--gap button--full-width">
 						<DollarSign class="w-4 h-4" />
 						Book Instantly
 					</button>
@@ -394,8 +395,8 @@
 	/* Main showcase container - matches HeroSection trust cards */
 	.showcase-preview {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-xl);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
+		border-radius: var(--radius-lg);
 		padding: 2rem;
 		box-shadow: var(--shadow-lg);
 		transition: all var(--transition-base) ease;
@@ -431,71 +432,16 @@
 	/* View Toggle - professional design */
 	.view-toggle {
 		display: flex;
-		gap: 0;
+		gap: 0.5rem;
 		justify-content: center;
 		margin-bottom: 2rem;
 		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
+		border-radius: 0.75rem;
 		padding: 0.5rem;
 		max-width: 600px;
 		margin-left: auto;
 		margin-right: auto;
-	}
-	
-	.toggle-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: var(--radius-md);
-		padding: 1rem 1.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		cursor: pointer;
-		transition: all var(--transition-base) ease;
-		min-width: 140px;
-		height: 44px;
-		position: relative;
-		overflow: hidden;
-	}
-	
-	/* Coral accent on hover */
-	.toggle-btn::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-fast) ease;
-	}
-	
-	.toggle-btn:hover:not(.active) {
-		background: var(--bg-tertiary);
-		color: var(--text-primary);
-		transform: translateY(-1px);
-	}
-	
-	.toggle-btn:hover:not(.active)::before {
-		transform: scaleX(1);
-	}
-	
-	.toggle-btn.active {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border-color: var(--color-primary-200);
-		box-shadow: var(--shadow-md);
-	}
-
-	.toggle-btn.active::before {
-		transform: scaleX(1);
 	}
 	
 	/* QR Showcase */
@@ -527,7 +473,7 @@
 		padding: 0.25rem 0.75rem;
 		background: var(--bg-primary);
 		color: var(--text-secondary);
-		border: 1px solid var(--color-coral-500);
+		border: 2px solid var(--color-coral-500); /* Updated to 2px */
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
 		font-weight: 500;
@@ -560,7 +506,7 @@
 		padding: 1.5rem;
 		border-radius: var(--radius-lg);
 		box-shadow: var(--shadow-sm);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		cursor: pointer;
 		transition: all var(--transition-base) ease;
 		position: relative;

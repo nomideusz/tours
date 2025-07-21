@@ -78,7 +78,7 @@
 
 				<div class="card-actions">
 					<button 
-						class="button-coral button--large button--gap button--full-width"
+						class="button-primary button--large button--gap button--full-width"
 						onclick={() => window.location.href = '/auth/register'}
 					>
 						<Rocket class="w-5 h-5" />

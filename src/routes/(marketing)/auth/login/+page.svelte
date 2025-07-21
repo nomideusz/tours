@@ -287,7 +287,7 @@
 
 					<button
 						type="submit"
-						class="w-full button-coral button--full-width"
+						class="w-full button-primary button--full-width"
 						disabled={isLoggingIn || manualLoading}
 						onclick={(e) => {
 							if (!validateForm()) {

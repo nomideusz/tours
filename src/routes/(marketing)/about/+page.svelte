@@ -269,7 +269,7 @@
 					Be part of building the future of tour guide technology. 
 					Join our early access program today.
 				</p>
-				<a href="/auth/register" class="button-coral button--large button--gap">
+				<a href="/auth/register" class="button-primary button--large button--gap">
 					<Rocket class="w-5 h-5" />
 					Get Early Access
 				</a>

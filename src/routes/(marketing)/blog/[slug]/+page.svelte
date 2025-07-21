@@ -185,7 +185,7 @@
 							Join thousands of tour guides using Zaur to streamline bookings 
 							and grow their business.
 						</p>
-						<button onclick={() => window.location.href='/auth/register'} class="button-coral button--large button-gap">
+						<button onclick={() => window.location.href='/auth/register'} class="button-primary button--large button-gap">
 							<BookOpen class="w-5 h-5" />
 							Start Free Trial
 						</button>

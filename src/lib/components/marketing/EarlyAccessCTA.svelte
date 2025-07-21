@@ -162,7 +162,7 @@
 				<!-- CTA Button -->
 				<div class="cta-section">
 					<button 
-						class="button-coral button--large button--gap"
+						class="button-primary button--large button--gap"
 						onclick={() => window.location.href = '/auth/register'}
 					>
 						<Rocket class="w-5 h-5" />

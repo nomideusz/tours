@@ -1770,42 +1770,39 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-step-button {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border: 1px solid #2D2D2D; /* Dark border */
 		border-radius: 0.5rem;
 		padding: 0.5rem 1rem;
 		font-size: 0.75rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		justify-content: center;
 		width: 100%;
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on top - like navigation */
-	.compact-step-button::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
 	}
 	
 	.compact-step-button:hover:not(:disabled) {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		transform: translateY(-1px);
+		background: #FF9999; /* Slightly more saturated on hover */
+		border-color: #1A1A1A; /* Darker border */
+		color: #1A1A1A;
+	}
+	
+	/* Dark mode adjustments */
+	[data-theme="dark"] .compact-step-button {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A; /* Dark border */
+		color: #1A1A1A; /* Dark text */
+	}
+	
+	[data-theme="dark"] .compact-step-button:hover:not(:disabled) {
+		background: #BB8888; /* Slightly darker on hover */
+		border-color: #000000; /* Black border */
+		color: #000000;
 	}
 	
 	.compact-step-button:disabled {
@@ -1821,25 +1818,49 @@ Please ensure this is the correct country where your business is legally registe
 	}
 	
 	.compact-step-button--primary {
-		background: var(--color-primary-600);
-		color: white;
-		border-color: var(--color-primary-600);
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border-color: #2D2D2D; /* Dark border */
 	}
 	
 	.compact-step-button--primary:hover:not(:disabled) {
-		background: var(--color-primary-700);
-		border-color: var(--color-primary-700);
+		background: #FF9999; /* More saturated on hover */
+		border-color: #1A1A1A; /* Darker border */
+		color: #1A1A1A;
+	}
+	
+	[data-theme="dark"] .compact-step-button--primary {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A;
+		color: #1A1A1A;
+	}
+	
+	[data-theme="dark"] .compact-step-button--primary:hover:not(:disabled) {
+		background: #BB8888;
+		border-color: #000000;
+		color: #000000;
 	}
 	
 	.compact-step-button--secondary {
 		background: var(--bg-secondary);
 		color: var(--text-primary);
-		border-color: var(--border-primary);
+		border: 1px solid var(--text-primary); /* Use text color for border */
 	}
 	
 	.compact-step-button--secondary:hover:not(:disabled) {
 		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
+		border-color: var(--text-primary);
+	}
+	
+	[data-theme="dark"] .compact-step-button--secondary {
+		border-color: #A0A0A0; /* Medium gray border */
+		color: var(--text-primary);
+		background: transparent;
+	}
+	
+	[data-theme="dark"] .compact-step-button--secondary:hover:not(:disabled) {
+		background: #2A2A2A; /* Dark background on hover */
+		border-color: #B0B0B0; /* Lighter border */
 	}
 	
 	.compact-step-actions .compact-step-button {

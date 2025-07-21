@@ -433,7 +433,7 @@
 
 					<button
 						type="submit"
-						class="w-full button-coral button--full-width"
+						class="w-full button-primary button--full-width"
 						disabled={isRegistering}
 						onclick={(e) => {
 							if (!validateForm()) {

@@ -94,7 +94,7 @@
 				</div>
 				
 				<div class="action-button-container">
-					<button onclick={handleGetStarted} class="button-coral button--large button--gap button--full-width">
+					<button onclick={handleGetStarted} class="button-primary button--large button--gap button--full-width">
 						Get Started
 						<ArrowRight class="w-4 h-4" />
 					</button>
@@ -215,7 +215,7 @@
 	/* Clean promo card */
 	.promo-card {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		border-radius: var(--radius-lg);
 		padding: 1.5rem;
 		box-shadow: var(--shadow-md);
@@ -319,7 +319,7 @@
 		text-align: center;
 		padding: 1.5rem 1rem;
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--border-primary); /* Updated to 2px */
 		border-radius: var(--radius-lg);
 		transition: all var(--transition-base) ease;
 		box-shadow: var(--shadow-sm);
