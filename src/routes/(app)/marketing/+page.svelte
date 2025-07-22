@@ -234,33 +234,71 @@
 </div>
 
 <style>
-	/* Dark mode icon visibility fixes */
-	:global(.dark) .marketing-header-icon {
-		background-color: white !important;
+	/* Icon backgrounds - light mode */
+	.marketing-header-icon {
+		background-color: rgba(250, 107, 93, 0.1);
 	}
 	
-	:global(.dark) .marketing-header-icon svg {
-		color: #2563EB !important;
+	.material-icon[data-color="primary"] {
+		background-color: rgba(250, 107, 93, 0.1);
 	}
 	
-	/* Material icon backgrounds in dark mode */
-	:global(.dark) .material-icon {
-		background-color: white !important;
+	.material-icon[data-color="orange"] {
+		background-color: rgba(255, 173, 90, 0.1);
 	}
 	
-	:global(.dark) .material-icon[data-color="primary"] svg {
-		color: #2563EB !important;
+	.material-icon[data-color="teal"] {
+		background-color: rgba(79, 157, 166, 0.1);
 	}
 	
-	:global(.dark) .material-icon[data-color="orange"] svg {
-		color: #EA580C !important;
+	.material-icon[data-color="purple"] {
+		background-color: rgba(139, 92, 246, 0.1);
 	}
 	
-	:global(.dark) .material-icon[data-color="teal"] svg {
-		color: #0F766E !important;
+	/* Icon colors - light mode */
+	.marketing-header-icon svg {
+		color: #e8523e;
 	}
 	
-	:global(.dark) .material-icon[data-color="purple"] svg {
-		color: #7C3AED !important;
+	.material-icon[data-color="primary"] svg {
+		color: #e8523e;
+	}
+	
+	.material-icon[data-color="orange"] svg {
+		color: #dd6b20;
+	}
+	
+	.material-icon[data-color="teal"] svg {
+		color: #0d9488;
+	}
+	
+	.material-icon[data-color="purple"] svg {
+		color: #7c3aed;
+	}
+	
+	/* Dark mode adjustments */
+	[data-theme="dark"] .marketing-header-icon,
+	[data-theme="dark"] .material-icon {
+		background-color: rgba(255, 255, 255, 0.1) !important;
+	}
+	
+	[data-theme="dark"] .marketing-header-icon svg {
+		color: #ff8a73 !important;
+	}
+	
+	[data-theme="dark"] .material-icon[data-color="primary"] svg {
+		color: #ff8a73 !important;
+	}
+	
+	[data-theme="dark"] .material-icon[data-color="orange"] svg {
+		color: #ffad5a !important;
+	}
+	
+	[data-theme="dark"] .material-icon[data-color="teal"] svg {
+		color: #5eead4 !important;
+	}
+	
+	[data-theme="dark"] .material-icon[data-color="purple"] svg {
+		color: #a78bfa !important;
 	}
 </style>
