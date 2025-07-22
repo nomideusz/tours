@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
+	import { goto } from '$app/navigation';
 	
 	// Icons
 	import CreditCard from 'lucide-svelte/icons/credit-card';
@@ -90,7 +91,7 @@
 	<meta name="description" content="Create professional marketing materials for your tour business" />
 </svelte:head>
 
-<div class="page-content max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
+<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 	<!-- Page Header -->
 	<div class="mb-8">
 		<div class="flex items-center gap-3 mb-2">
@@ -127,9 +128,9 @@
 			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
 			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
 			<p class="text-secondary mb-6">Set up your username to start creating marketing materials</p>
-			<a href="/profile" class="button button--primary">
+			<button onclick={() => goto('/profile')} class="button button--primary">
 				Complete Profile
-			</a>
+			</button>
 		</div>
 	{:else}
 		<!-- Marketing Materials Overview -->
@@ -158,10 +159,10 @@
 									{/each}
 								</ul>
 								
-								<a href={material.href} class="button button--primary w-full flex items-center justify-center gap-2 group-hover:bg-{material.color}-600">
+								<button onclick={() => goto(material.href)} class="button button--primary w-full flex items-center justify-center gap-2 group-hover:bg-{material.color}-600">
 									Create {material.title}
 									<ArrowRight class="w-4 h-4" />
-								</a>
+								</button>
 							</div>
 						</div>
 					{/each}

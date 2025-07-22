@@ -3,6 +3,7 @@
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
 	
@@ -374,7 +375,7 @@
 											
 											<div class="flex flex-col justify-center items-center ml-3">
 												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
+													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20" style="background: white !important;" />
 												{/if}
 											</div>
 										</div>
@@ -514,9 +515,9 @@
 			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
 			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
 			<p class="text-secondary mb-6">Set up your profile to create professional business cards</p>
-			<a href="/profile" class="button button--primary">
+			<button onclick={() => goto('/profile')} class="button button--primary">
 				Complete Profile
-			</a>
+			</button>
 		</div>
 	{/if}
 </div>
