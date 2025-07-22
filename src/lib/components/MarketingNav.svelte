@@ -54,12 +54,14 @@
 </script>
 
 <nav class="mb-6">
-	<div class="flex items-center justify-between mb-4">
-		<a href="/marketing" class="text-sm text-secondary hover:text-primary transition-colors flex items-center gap-1">
-			<ArrowLeft class="w-4 h-4" />
-			Marketing Hub
-		</a>
-	</div>
+	{#if currentPath !== '/marketing'}
+		<div class="flex items-center justify-between mb-4">
+			<a href="/marketing" class="text-sm text-secondary hover:text-primary transition-colors flex items-center gap-1">
+				<ArrowLeft class="w-4 h-4" />
+				Marketing Hub
+			</a>
+		</div>
+	{/if}
 	
 	<div class="flex flex-wrap gap-2">
 		{#each navItems as item}
