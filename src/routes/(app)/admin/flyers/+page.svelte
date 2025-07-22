@@ -9,7 +9,7 @@
 	import Layout from 'lucide-svelte/icons/layout';
 	import Image from 'lucide-svelte/icons/image';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+
 	// @ts-ignore
 	import jsPDF from 'jspdf';
 	
@@ -30,11 +30,7 @@
 	let qrCodeURL = $derived.by(() => {
 		if (!includeQR) return '';
 		const url = 'https://zaur.app/auth/register?ref=flyer';
-		return generateQRImageURL(url, { 
-			size: 300, 
-			color: '1f2937',
-			style: 'modern'
-		});
+		return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&color=1f2937&bgcolor=FFFFFF&margin=2&ecc=M`;
 	});
 	
 	// Layout configurations

@@ -9,7 +9,7 @@
 	import Type from 'lucide-svelte/icons/type';
 	import Image from 'lucide-svelte/icons/image';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+
 	// @ts-ignore
 	import jsPDF from 'jspdf';
 	
@@ -28,11 +28,8 @@
 	// Generate QR code for registration
 	let qrCodeURL = $derived.by(() => {
 		const url = 'https://zaur.app/auth/register?ref=card';
-		return generateQRImageURL(url, { 
-			size: 150, 
-			color: selectedColor === 'elegant' ? '7C3AED' : '1f2937',
-			style: 'modern'
-		});
+		const color = selectedColor === 'elegant' ? '7C3AED' : '1f2937';
+		return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}&color=${color}&bgcolor=FFFFFF&margin=2&ecc=M`;
 	});
 	
 	// Template configurations
@@ -237,24 +234,24 @@
 					<div class="bg-secondary rounded-lg p-8">
 						<!-- Business card preview -->
 						<div class="max-w-md mx-auto">
-							<div class="aspect-[3.5/2] bg-white rounded-lg shadow-xl p-4 text-black" style="background: {colorSchemes[selectedColor].background};">
+							<div class="aspect-[3.5/2] bg-white rounded-lg shadow-xl p-4 text-black">
 								{#if selectedTemplate === 'modern'}
 									<div class="h-full flex">
 										<div class="flex-1 flex flex-direction: column; justify-content: space-between;">
 											<div>
 												<h1 class="text-xl font-bold" style="color: {colorSchemes[selectedColor].primary};">Zaur</h1>
 												{#if includeTagline}
-													<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].text};">Tour Platform</p>
+													<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].secondary};">Tour Platform</p>
 												{/if}
 											</div>
-											<div class="text-xs" style="color: {colorSchemes[selectedColor].text};">
+											<div class="text-xs" style="color: {colorSchemes[selectedColor].secondary};">
 												<p>zaur.app</p>
 												<p>hello@zaur.app</p>
 											</div>
 										</div>
 										<div class="text-center ml-4">
 											<img src={qrCodeURL} alt="QR Code" class="w-12 h-12 mx-auto mb-1" />
-											<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].text};">Scan to join</p>
+											<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].secondary};">Scan to join</p>
 										</div>
 									</div>
 								{:else if selectedTemplate === 'classic'}
@@ -262,9 +259,9 @@
 										<div class="flex-1">
 											<h1 class="text-lg font-serif font-bold" style="color: {colorSchemes[selectedColor].primary};">ZAUR</h1>
 											{#if includeTagline}
-												<p class="text-xs mt-1 uppercase tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].text};">Tour Platform</p>
+												<p class="text-xs mt-1 uppercase tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].secondary};">Tour Platform</p>
 											{/if}
-											<div class="mt-4 text-xs" style="color: {colorSchemes[selectedColor].text};">
+											<div class="mt-4 text-xs" style="color: {colorSchemes[selectedColor].secondary};">
 												<p>zaur.app</p>
 												<p>hello@zaur.app</p>
 											</div>
@@ -275,7 +272,7 @@
 									<div class="text-center h-full flex flex-col justify-center">
 										<h1 class="text-lg font-light tracking-widest" style="color: {colorSchemes[selectedColor].primary};">ZAUR</h1>
 										{#if includeTagline}
-											<p class="text-xs mt-1 tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].text};">TOUR PLATFORM</p>
+											<p class="text-xs mt-1 tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].secondary};">TOUR PLATFORM</p>
 										{/if}
 										<div class="mt-3">
 											<img src={qrCodeURL} alt="QR Code" class="w-10 h-10 mx-auto" />
