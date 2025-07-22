@@ -11,6 +11,9 @@
 	import Palette from 'lucide-svelte/icons/palette';
 	import User from 'lucide-svelte/icons/user';
 	
+	// Components
+	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	
 	// Profile data query
 	const profileQuery = createQuery({
 		queryKey: ['profile'],
@@ -98,9 +101,9 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-	<PageHeader 
-		title="Promotional Stickers"
-	/>
+	<PageHeader title="Promotional Stickers" />
+	
+	<MarketingNav />
 	
 	{#if $profileQuery.isLoading}
 		<div class="flex justify-center items-center py-12">

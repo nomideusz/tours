@@ -1,10 +1,5 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
-	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
-	import { page } from '$app/stores';
-	// @ts-ignore
-	import html2canvas from 'html2canvas';
 	
 	// Icons
 	import CreditCard from 'lucide-svelte/icons/credit-card';
@@ -17,16 +12,14 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import User from 'lucide-svelte/icons/user';
-	import Building from 'lucide-svelte/icons/building';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Globe from 'lucide-svelte/icons/globe';
-	import Phone from 'lucide-svelte/icons/phone';
-	import Mail from 'lucide-svelte/icons/mail';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
 	import Sticker from 'lucide-svelte/icons/sticker';
-
+	import Image from 'lucide-svelte/icons/image';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	
 	// Components
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import MarketingNav from '$lib/components/MarketingNav.svelte';
 
 	// Profile data query
 	const profileQuery = createQuery({
@@ -50,624 +43,191 @@
 		staleTime: 30000
 	});
 
-	// Reactive data
-	let profile = $derived($profileQuery.data || null);
-	let tours = $derived($toursQuery.data || []);
+	let profile = $derived($profileQuery.data);
+	let tours = $derived($toursQuery.data?.tours || []);
 	let isLoading = $derived($profileQuery.isLoading || $toursQuery.isLoading);
 	let error = $derived($profileQuery.error || $toursQuery.error);
+	let activeTours = $derived(tours.filter((tour: any) => tour.status === 'active'));
 
-	// Business card template selection
-	let selectedTemplate = $state('professional');
-	let selectedColorScheme = $state<'primary' | 'blue' | 'green' | 'purple' | 'orange'>('primary');
-
-	// Color schemes
-	const colorSchemes: Record<string, { primary: string; secondary: string; accent: string; text: string }> = {
-		primary: {
-			primary: 'var(--color-primary-600)',
-			secondary: 'var(--color-primary-700)',
-			accent: 'var(--color-primary-500)',
-			text: 'var(--text-primary)'
+	const materials = [
+		{
+			title: 'Business Cards',
+			description: 'Professional business cards with your QR code and contact details',
+			href: '/marketing/business-cards',
+			icon: CreditCard,
+			color: 'primary',
+			features: ['Multiple templates', 'Custom color schemes', 'Print-ready quality', 'QR code integration']
 		},
-		blue: {
-			primary: '#3B82F6',
-			secondary: '#1E40AF',
-			accent: '#60A5FA',
-			text: '#1F2937'
+		{
+			title: 'Promotional Stickers',
+			description: 'Personalized stickers with your profile QR code for marketing campaigns',
+			href: '/marketing/stickers',
+			icon: Sticker,
+			color: 'orange',
+			features: ['3 design styles', 'Custom taglines', '6 per A4 page', 'Easy distribution']
 		},
-		green: {
-			primary: '#10B981',
-			secondary: '#047857',
-			accent: '#34D399',
-			text: '#1F2937'
+		{
+			title: 'Promotional Flyers',
+			description: 'A4 flyers to showcase your tours at events and partner locations',
+			href: '/marketing/flyers',
+			icon: FileText,
+			color: 'teal',
+			features: ['Single/multi tour layouts', '3 visual styles', 'Tour details included', 'Contact information']
 		},
-		purple: {
-			primary: '#8B5CF6',
-			secondary: '#7C3AED',
-			accent: '#A78BFA',
-			text: '#1F2937'
-		},
-		orange: {
-			primary: '#F59E0B',
-			secondary: '#D97706',
-			accent: '#FCD34D',
-			text: '#1F2937'
+		{
+			title: 'Social Media Graphics',
+			description: 'Eye-catching graphics for Instagram, Facebook, and other platforms',
+			href: '/marketing/social',
+			icon: Image,
+			color: 'purple',
+			features: ['5 platform formats', '4 content templates', 'Multiple color themes', 'Optimized dimensions']
 		}
-	};
-
-	// Generate profile URL and QR code
-	let profileURL = $derived(profile?.username ? `${$page.url.origin}/${profile.username}` : '');
-	let qrCodeURL = $derived.by(() => {
-		if (!profileURL) return '';
-		
-		// Get the primary color for the selected scheme
-		const scheme = colorSchemes[selectedColorScheme];
-		let qrColor = scheme.primary;
-		
-		// Convert CSS variables to hex colors for QR generation
-		if (qrColor.startsWith('var(')) {
-			// Get the actual computed value of the CSS variable
-			if (typeof window !== 'undefined') {
-				const computedStyle = getComputedStyle(document.documentElement);
-				const actualColor = computedStyle.getPropertyValue('--color-primary-600').trim();
-				qrColor = actualColor || '#2563EB'; // Fallback if not found
-			} else {
-				qrColor = '#2563EB'; // Server-side fallback
-			}
-		}
-		
-		// Remove # from hex color for API
-		qrColor = qrColor.replace('#', '');
-		
-		return generateQRImageURL(profileURL, { 
-			size: 200, 
-			color: qrColor,
-			style: 'modern'
-		});
-	});
-
-	// Featured tours (top 3)
-	let featuredTours = $derived(tours.slice(0, 3));
-
-	async function printBusinessCard() {
-		try {
-			// Find the business card preview element
-			const cardElement = document.querySelector('.business-card-container .business-card');
-			if (!cardElement) {
-				console.error('Business card element not found');
-				return;
-			}
-
-					// Generate high-resolution PNG for printing (300 DPI equivalent)
-		const rawCanvas = await (html2canvas as any)(cardElement, {
-			backgroundColor: null,
-			scale: 4, // Very high resolution for print quality
-			useCORS: true,
-			allowTaint: true,
-			width: 350,
-			height: 200,
-			logging: false,
-			x: 0,
-			y: 0,
-			scrollX: 0,
-			scrollY: 0
-		});
-
-		// Crop off the extra pixels (preserve borders for modern template)
-		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
-		const cropX = selectedTemplate === 'modern' ? 2 : 4;
-		const cropY = 0; // No vertical cropping
-		const cropHeight = 0; // No vertical cropping
-		canvas.width = rawCanvas.width - cropX;
-		canvas.height = rawCanvas.height - cropHeight;
-		
-		if (ctx) {
-			ctx.drawImage(rawCanvas, cropX, cropY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-		}
-
-			// Open the image in a new window for printing
-			canvas.toBlob((blob: Blob | null) => {
-				if (!blob) return;
-				
-				const url = URL.createObjectURL(blob);
-				const printWindow = window.open('', '_blank');
-				
-				if (printWindow) {
-					// Create HTML with landscape orientation and centered image
-					printWindow.document.write(`
-						<!DOCTYPE html>
-						<html>
-						<head>
-							<title>Business Card - Print</title>
-							<style>
-								@page {
-									size: A4 landscape;
-									margin: 1in;
-								}
-								body {
-									margin: 0;
-									padding: 0;
-									display: flex;
-									justify-content: center;
-									align-items: center;
-									min-height: 100vh;
-									background: white;
-								}
-								img {
-									width: 3.5in;
-									height: 2in;
-									display: block;
-									object-fit: contain;
-								}
-							</style>
-						</head>
-						<body>
-							<img src="${url}" alt="Business Card" />
-						</body>
-						</html>
-					`);
-					
-					printWindow.document.close();
-					
-					printWindow.onload = () => {
-						setTimeout(() => {
-							printWindow.print();
-							// Clean up after printing
-							setTimeout(() => {
-								printWindow.close();
-								URL.revokeObjectURL(url);
-							}, 1000);
-						}, 500);
-					};
-				}
-			}, 'image/png');
-		} catch (error) {
-			console.error('Error preparing business card for print:', error);
-			// Fallback to regular print if image generation fails
-			window.print();
-		}
-	}
-
-	async function downloadImage() {
-		try {
-			// Find the business card preview element
-			const cardElement = document.querySelector('.business-card-container .business-card');
-			if (!cardElement) {
-				console.error('Business card element not found');
-				return;
-			}
-
-					// Capture the element as canvas
-		const rawCanvas = await (html2canvas as any)(cardElement, {
-			backgroundColor: null,
-			scale: 2, // Higher resolution
-			useCORS: true,
-			allowTaint: true,
-			width: 350, // Standard business card width in pixels  
-			height: 200, // Standard business card height in pixels
-			logging: false,
-			x: 0,
-			y: 0,
-			scrollX: 0,
-			scrollY: 0
-		});
-
-		// Crop off the extra pixels (preserve borders for modern template)
-		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
-		const cropX = selectedTemplate === 'modern' ? 1 : 2;
-		const cropY = 0; // No vertical cropping
-		const cropHeight = 0; // No vertical cropping
-		canvas.width = rawCanvas.width - cropX;
-		canvas.height = rawCanvas.height - cropHeight;
-		
-		if (ctx) {
-			ctx.drawImage(rawCanvas, cropX, cropY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-		}
-
-			// Convert to blob and download
-			canvas.toBlob((blob: Blob | null) => {
-				if (!blob) return;
-				
-				const url = URL.createObjectURL(blob);
-				const link = document.createElement('a');
-				link.href = url;
-				link.download = `business-card-${selectedTemplate}-${selectedColorScheme}.png`;
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
-				URL.revokeObjectURL(url);
-			}, 'image/png');
-		} catch (error) {
-			console.error('Error downloading business card:', error);
-		}
-	}
+	];
 </script>
 
 <svelte:head>
 	<title>Marketing Materials - Zaur</title>
 	<meta name="description" content="Create professional marketing materials for your tour business" />
-
 </svelte:head>
 
 <div class="page-content max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
 	<!-- Page Header -->
 	<div class="mb-8">
 		<div class="flex items-center gap-3 mb-2">
-			<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-50);">
-				<Sparkles class="w-5 h-5" style="color: var(--color-primary-600);" />
+			<div class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary-50">
+				<Sparkles class="w-5 h-5 text-primary" />
 			</div>
-			<h1 class="text-2xl font-bold" style="color: var(--text-primary);">Marketing Materials</h1>
+			<h1 class="text-2xl font-bold text-primary">Marketing Materials</h1>
 		</div>
-		<p class="text-lg" style="color: var(--text-secondary);">
+		<p class="text-lg text-secondary">
 			Create professional marketing materials to promote your tours
 		</p>
 	</div>
 
-	<!-- Marketing Materials Grid -->
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-		<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center gap-3 mb-3">
-				<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-50);">
-					<CreditCard class="w-5 h-5" style="color: var(--color-primary-600);" />
-				</div>
-				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Business Cards</h3>
-			</div>
-			<p class="text-sm mb-4" style="color: var(--text-secondary);">
-				Professional business cards with your QR code and contact details
-			</p>
-			<a href="#business-cards" class="text-sm font-medium" style="color: var(--color-primary-600);">
-				Create Now →
-			</a>
-		</div>
-		
-		<a href="/marketing/stickers" class="rounded-xl p-6 transition-colors hover:opacity-80 block" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="flex items-center gap-3 mb-3">
-				<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-orange-50);">
-					<Sticker class="w-5 h-5" style="color: var(--color-orange-600);" />
-				</div>
-				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Promotional Stickers</h3>
-			</div>
-			<p class="text-sm mb-4" style="color: var(--text-secondary);">
-				Personalized stickers with your profile QR code for marketing campaigns
-			</p>
-			<span class="text-sm font-medium" style="color: var(--color-orange-600);">
-				Generate Stickers →
-			</span>
-		</a>
-	</div>
+	<MarketingNav />
 
 	{#if isLoading}
 		<!-- Loading State -->
 		<div class="flex items-center justify-center min-h-[400px]">
 			<div class="text-center">
-				<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4" style="color: var(--color-primary-600);" />
-				<p class="font-medium" style="color: var(--text-primary);">Loading your data...</p>
+				<Loader2 class="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+				<p class="font-medium text-primary">Loading your data...</p>
 			</div>
 		</div>
 	{:else if error}
 		<!-- Error State -->
-		<div class="rounded-xl p-8 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<AlertCircle class="w-12 h-12 mx-auto mb-4" style="color: var(--color-danger-600);" />
-			<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Unable to Load Data</h3>
-			<p style="color: var(--text-secondary);">Please try refreshing the page or check your connection.</p>
+		<div class="professional-card text-center py-12">
+			<AlertCircle class="w-12 h-12 mx-auto mb-4 text-danger" />
+			<h3 class="text-lg font-semibold mb-2 text-primary">Unable to Load Data</h3>
+			<p class="text-secondary">Please try refreshing the page or check your connection.</p>
 		</div>
-	{:else if profile}
-		<div class="grid gap-6 lg:gap-8 lg:grid-cols-3" id="business-cards">
-			<!-- Business Card Generator -->
-			<div class="lg:col-span-2 min-w-0">
-				<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 sm:p-6 border-b" style="border-color: var(--border-primary);">
-						<div class="flex items-center gap-3 mb-4">
-							<CreditCard class="w-5 h-5" style="color: var(--color-primary-600);" />
-							<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Business Card Generator</h2>
-						</div>
-						
-						<!-- Template & Color Selection -->
-						<div class="grid gap-4 sm:grid-cols-2 min-w-0">
-							<div>
-								<p class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Template</p>
-								<div class="grid grid-cols-3 gap-2">
-									<button
-										onclick={() => selectedTemplate = 'professional'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-										style="background: {selectedTemplate === 'professional' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'professional' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'professional' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
-									>
-										Professional
-									</button>
-									<button
-										onclick={() => selectedTemplate = 'modern'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-										style="background: {selectedTemplate === 'modern' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'modern' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'modern' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
-									>
-										Modern
-									</button>
-									<button
-										onclick={() => selectedTemplate = 'minimal'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-										style="background: {selectedTemplate === 'minimal' ? 'var(--color-primary-600)' : 'var(--bg-secondary)'}; color: {selectedTemplate === 'minimal' ? 'white' : 'var(--text-primary)'}; border: 1px solid {selectedTemplate === 'minimal' ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
-									>
-										Minimal
-									</button>
+	{:else if !profile?.username}
+		<!-- Setup Required -->
+		<div class="professional-card max-w-2xl mx-auto text-center py-12">
+			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
+			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
+			<p class="text-secondary mb-6">Set up your username to start creating marketing materials</p>
+			<a href="/profile" class="button button--primary">
+				Complete Profile
+			</a>
+		</div>
+	{:else}
+		<!-- Marketing Materials Overview -->
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+			<!-- Materials Grid -->
+			<div class="lg:col-span-2 space-y-6">
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					{#each materials as material}
+						<div class="professional-card group hover:border-{material.color}-200 transition-all duration-200">
+							<div class="p-6">
+								<div class="flex items-center gap-3 mb-4">
+									<div class="w-12 h-12 rounded-xl flex items-center justify-center bg-{material.color}-50">
+										<svelte:component this={material.icon} class="w-6 h-6 text-{material.color}-600" />
+									</div>
+									<h3 class="text-xl font-semibold text-primary">{material.title}</h3>
 								</div>
-							</div>
-							<div>
-								<p class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Color Scheme</p>
-								<div class="flex gap-2 flex-wrap">
-									{#each Object.keys(colorSchemes) as scheme}
-										<Tooltip text={scheme === 'primary' ? 'Theme Color' : scheme.charAt(0).toUpperCase() + scheme.slice(1)} position="bottom">
-											<button
-												onclick={() => selectedColorScheme = scheme as 'primary' | 'blue' | 'green' | 'purple' | 'orange'}
-												class="w-8 h-8 rounded-full border-2"
-												style="background: {colorSchemes[scheme].primary}; border-color: {selectedColorScheme === scheme ? 'var(--color-primary-600)' : 'var(--border-primary)'};"
-												aria-label="Select {scheme === 'primary' ? 'theme' : scheme} color scheme"
-											></button>
-										</Tooltip>
+								
+								<p class="text-secondary mb-4">{material.description}</p>
+								
+								<ul class="space-y-2 mb-6">
+									{#each material.features as feature}
+										<li class="flex items-center gap-2 text-sm text-secondary">
+											<CheckCircle class="w-4 h-4 text-{material.color}-500 flex-shrink-0" />
+											{feature}
+										</li>
 									{/each}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Business Card Preview -->
-					<div class="p-4 sm:p-6">
-						<div class="business-card-container mb-6 overflow-hidden">
-							{#if selectedTemplate === 'professional'}
-								<!-- Professional Template -->
-								<div 
-									class="business-card business-card-professional color-{selectedColorScheme} w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden"
-									style="background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"
-								>
-									<div class="absolute inset-0 p-3 sm:p-4 text-white">
-										<div class="flex h-full">
-											<div class="flex-1 flex flex-col justify-between">
-												<div>
-													<h3 class="text-base sm:text-lg font-bold mb-1 text-white">{profile.name}</h3>
-													{#if profile.businessName}
-														<p class="text-sm opacity-90 mb-3">{profile.businessName}</p>
-													{/if}
-													<div class="space-y-1 text-xs">
-														{#if profile.phone}
-															<div class="flex items-center gap-2">
-																<Phone class="w-3 h-3" />
-																<span>{profile.phone}</span>
-															</div>
-														{/if}
-														<div class="flex items-center gap-2">
-															<Mail class="w-3 h-3" />
-															<span>{profile.email}</span>
-														</div>
-														{#if profile.website}
-															<div class="flex items-center gap-2">
-																<Globe class="w-3 h-3" />
-																<span>{profile.website.replace(/^https?:\/\//, '')}</span>
-															</div>
-														{/if}
-														{#if profile.location}
-															<div class="flex items-center gap-2">
-																<MapPin class="w-3 h-3" />
-																<span>{profile.location}</span>
-															</div>
-														{/if}
-													</div>
-												</div>
-												<div class="text-xs opacity-90">
-													<span>{tours.length} Tour{tours.length === 1 ? '' : 's'} Available</span>
-												</div>
-											</div>
-											<div class="w-12 sm:w-16 flex flex-col items-center justify-center">
-												{#if qrCodeURL}
-													<div class="qr-container w-10 h-10 sm:w-14 sm:h-14 bg-white p-1 rounded" style="background: white !important;">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
-													</div>
-													<p class="text-xs mt-1 text-center">Scan to Book</p>
-												{/if}
-											</div>
-										</div>
-									</div>
-								</div>
-							{:else if selectedTemplate === 'modern'}
-								<!-- Modern Template -->
-								<div 
-									class="business-card business-card-modern w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden"
-									style="background: white !important; border-left: 6px solid {colorSchemes[selectedColorScheme].primary};"
-								>
-									<div class="absolute inset-0 p-3 sm:p-4">
-										<div class="flex h-full">
-											<div class="flex-1">
-												<div class="mb-4">
-													<h3 class="text-lg sm:text-xl font-bold mb-1" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.name}</h3>
-													{#if profile.businessName}
-														<p class="text-sm font-medium mb-2" style="color: {colorSchemes[selectedColorScheme].secondary};">{profile.businessName}</p>
-													{/if}
-													<div class="h-px" style="background: {colorSchemes[selectedColorScheme].accent};"></div>
-												</div>
-																					<div class="space-y-1 text-xs" style="color: #1F2937;">
-										{#if profile.phone}
-											<div>{profile.phone}</div>
-										{/if}
-										<div>{profile.email}</div>
-										{#if profile.website}
-											<div>{profile.website.replace(/^https?:\/\//, '')}</div>
-										{/if}
-										{#if profile.location}
-											<div>{profile.location}</div>
-										{/if}
-									</div>
-											</div>
-											<div class="w-16 sm:w-20 flex flex-col items-center justify-center">
-												{#if qrCodeURL}
-													<div class="qr-container w-12 h-12 sm:w-16 sm:h-16 p-1 rounded-lg" style="background: {colorSchemes[selectedColorScheme].primary};">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full bg-white rounded" style="background: white !important;" />
-													</div>
-													<p class="text-xs mt-2 text-center font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">SCAN</p>
-												{/if}
-											</div>
-										</div>
-									</div>
-								</div>
-							{:else if selectedTemplate === 'minimal'}
-								<!-- Minimal Template -->
-								<div 
-									class="business-card business-card-minimal w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden bg-white"
-									style="background: white !important;"
-								>
-									<div class="absolute inset-0 p-4 sm:p-6">
-										<div class="flex h-full items-center">
-											<div class="flex-1">
-												<h3 class="text-xl sm:text-2xl font-light mb-2" style="color: #1F2937;">{profile.name}</h3>
-												{#if profile.businessName}
-													<p class="text-sm font-normal mb-4 opacity-70" style="color: #1F2937;">{profile.businessName}</p>
-												{/if}
-												<div class="space-y-1 text-xs font-light" style="color: #1F2937;">
-													<div>{profile.email}</div>
-													{#if profile.phone}
-														<div>{profile.phone}</div>
-													{/if}
-													{#if profile.location}
-														<div>{profile.location}</div>
-													{/if}
-												</div>
-											</div>
-											<div class="ml-4 sm:ml-6">
-												{#if qrCodeURL}
-													<div class="qr-container w-10 h-10 sm:w-12 sm:h-12" style="background: white !important; border-radius: 4px; padding: 2px;">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
-													</div>
-												{/if}
-											</div>
-										</div>
-										<!-- Minimal accent line -->
-										<div 
-											class="absolute bottom-0 left-0 right-0 h-1"
-											style="background: {colorSchemes[selectedColorScheme].primary};"
-										></div>
-									</div>
-								</div>
-							{/if}
-						</div>
-
-						<!-- Print Actions -->
-						<div class="flex flex-col sm:flex-row gap-3 justify-center">
-							<button onclick={printBusinessCard} class="button-primary button--gap">
-								<Printer class="w-4 h-4" />
-								Print Card
-							</button>
-							<button onclick={downloadImage} class="button--secondary button--gap">
-								<Download class="w-4 h-4" />
-								Download Image
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sidebar - Marketing Tools -->
-			<div class="space-y-6 min-w-0">
-				<!-- Profile Summary -->
-				<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<h3 class="font-semibold" style="color: var(--text-primary);">Your Profile</h3>
-					</div>
-					<div class="p-4 space-y-3">
-						<div class="flex items-center gap-3">
-							{#if profile.avatar}
-								<img src={profile.avatar} alt={profile.name} class="w-10 h-10 rounded-full" />
-							{:else}
-								<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-									<User class="w-5 h-5" style="color: var(--text-tertiary);" />
-								</div>
-							{/if}
-							<div>
-								<p class="font-medium" style="color: var(--text-primary);">{profile.name}</p>
-								<p class="text-sm" style="color: var(--text-secondary);">@{profile.username}</p>
-							</div>
-						</div>
-						
-						{#if profileURL}
-							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-								<p class="text-xs font-medium mb-1" style="color: var(--text-tertiary);">Booking Page</p>
-								<a 
-									href={profileURL} 
-									target="_blank"
-									class="text-sm hover-link flex items-center gap-1"
-									style="color: var(--color-primary-600);"
-								>
-									{profileURL.replace('https://', '')}
-									<ExternalLink class="w-3 h-3" />
+								</ul>
+								
+								<a href={material.href} class="button button--primary w-full flex items-center justify-center gap-2 group-hover:bg-{material.color}-600">
+									Create {material.title}
+									<ArrowRight class="w-4 h-4" />
 								</a>
 							</div>
-						{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+			
+			<!-- Sidebar Info -->
+			<div class="space-y-6">
+				<!-- Profile Status -->
+				<div class="professional-card">
+					<div class="p-4 border-b border-border">
+						<h3 class="font-semibold text-primary">Profile Status</h3>
+					</div>
+					<div class="p-4 space-y-4">
+						<div class="flex items-center gap-3">
+							<CheckCircle class="w-5 h-5 text-success" />
+							<span class="text-sm text-primary">Profile completed</span>
+						</div>
+						<div class="flex items-center gap-3">
+							<CheckCircle class="w-5 h-5 text-success" />
+							<span class="text-sm text-primary">Username set: {profile.username}</span>
+						</div>
+						<div class="flex items-center gap-3">
+							<CheckCircle class="w-5 h-5 {activeTours.length > 0 ? 'text-success' : 'text-secondary'}" />
+							<span class="text-sm {activeTours.length > 0 ? 'text-primary' : 'text-secondary'}">
+								{activeTours.length} active tour{activeTours.length !== 1 ? 's' : ''}
+							</span>
+						</div>
 					</div>
 				</div>
-
-				<!-- Quick Stats -->
-				<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<h3 class="font-semibold" style="color: var(--text-primary);">Quick Stats</h3>
+				
+				<!-- Quick Links -->
+				<div class="professional-card">
+					<div class="p-4 border-b border-border">
+						<h3 class="font-semibold text-primary">Quick Links</h3>
 					</div>
 					<div class="p-4 space-y-3">
-						<div class="flex justify-between">
-							<span class="text-sm" style="color: var(--text-secondary);">Active Tours</span>
-							<span class="font-medium" style="color: var(--text-primary);">{tours.length}</span>
-						</div>
-						{#if featuredTours.length > 0}
-							<div>
-								<p class="text-xs font-medium mb-2" style="color: var(--text-tertiary);">Featured Tours</p>
-								<div class="space-y-1">
-									{#each featuredTours as tour}
-										<p class="text-xs" style="color: var(--text-secondary);">• {tour.name}</p>
-									{/each}
-								</div>
-							</div>
-						{/if}
+						<a href="https://zaur.app/{profile.username}" target="_blank" class="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors">
+							<ExternalLink class="w-4 h-4" />
+							Your public profile
+						</a>
+						<a href="/profile" class="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors">
+							<User class="w-4 h-4" />
+							Edit profile
+						</a>
+						<a href="/tours" class="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors">
+							<FileText class="w-4 h-4" />
+							Manage tours
+						</a>
 					</div>
 				</div>
-
-				<!-- Coming Soon -->
-				<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="p-4 border-b" style="border-color: var(--border-primary);">
-						<h3 class="font-semibold" style="color: var(--text-primary);">Coming Soon</h3>
+				
+				<!-- Tips -->
+				<div class="professional-card">
+					<div class="p-4 border-b border-border">
+						<h3 class="font-semibold text-primary">Marketing Tips</h3>
 					</div>
-					<div class="p-4 space-y-3">
-						<div class="flex items-center gap-3 opacity-60">
-							<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span class="text-sm" style="color: var(--text-secondary);">Tour Flyers</span>
-						</div>
-						<div class="flex items-center gap-3 opacity-60">
-							<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span class="text-sm" style="color: var(--text-secondary);">Social Media Graphics</span>
-						</div>
-						<div class="flex items-center gap-3 opacity-60">
-							<QrCode class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span class="text-sm" style="color: var(--text-secondary);">Custom QR Materials</span>
-						</div>
+					<div class="p-4 space-y-3 text-sm text-secondary">
+						<p>• Use QR codes on all materials for easy booking</p>
+						<p>• Maintain consistent branding across platforms</p>
+						<p>• Include contact info on printed materials</p>
+						<p>• Test designs on mobile devices</p>
+						<p>• Track performance with analytics</p>
 					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
-</div> 
-
-
-
-<style>
-	/* Ensure QR codes always have proper contrast */
-	.qr-container {
-		background: white !important;
-	}
-	.qr-container img {
-		background: white !important;
-	}
-	
-	/* Force minimal and modern cards to always be white */
-	.business-card-minimal,
-	.business-card-modern {
-		background: white !important;
-	}
-
-	
-
-	
-
-</style>
+</div>
