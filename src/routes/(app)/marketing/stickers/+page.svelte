@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { currentUser } from '$lib/stores/auth.js';
 	import { createQuery } from '@tanstack/svelte-query';
+	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Copy from 'lucide-svelte/icons/copy';
@@ -10,6 +11,10 @@
 	import Printer from 'lucide-svelte/icons/printer';
 	import Palette from 'lucide-svelte/icons/palette';
 	import User from 'lucide-svelte/icons/user';
+	// @ts-ignore
+	import html2canvas from 'html2canvas';
+	// @ts-ignore
+	import jsPDF from 'jspdf';
 	
 	// Components
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
@@ -46,6 +51,24 @@
 	
 	let tagline = $derived(customTagline || defaultTagline);
 	
+	// Generate QR code URL with appropriate colors
+	let qrCodeURL = $derived.by(() => {
+		if (!personalizedURL) return '';
+		
+		const colors = {
+			professional: '1f2937',
+			colorful: 'ffffff', 
+			minimal: '000000'
+		};
+		
+		return generateQRImageURL(personalizedURL, { 
+			size: 200, 
+			color: colors[selectedDesign],
+			style: 'modern',
+			margin: 1
+		});
+	});
+	
 	function copyURL() {
 		if (personalizedURL) {
 			navigator.clipboard.writeText(personalizedURL);
@@ -55,47 +78,57 @@
 	}
 	
 	async function generatePDF() {
-		if (!profile?.username) {
+		if (!profile?.username || !browser) {
 			alert('Please complete your profile first');
 			return;
 		}
 		
 		generating = true;
 		try {
-			const response = await fetch('/api/marketing/generate-stickers', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					design: selectedDesign,
-					tagline,
-					businessName: profile.businessName || profile.name,
-					username: profile.username
-				})
+			// Get the stickers container
+			const container = document.querySelector('.stickers-print-container');
+			if (!container) {
+				throw new Error('Stickers container not found');
+			}
+			
+			// Show the container temporarily for capture
+			container.classList.remove('hidden');
+			
+			// Wait for images to load
+			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			// Generate canvas with high resolution
+			const canvas = await (html2canvas as any)(container as HTMLElement, {
+				backgroundColor: '#ffffff',
+				scale: 3,
+				useCORS: true,
+				allowTaint: true,
+				logging: false
 			});
 			
-			if (response.ok) {
-				const blob = await response.blob();
-				const url = window.URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = `${profile.username}-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf`;
-				a.click();
-				window.URL.revokeObjectURL(url);
-			} else {
-				const errorText = await response.text();
-				console.error('Failed to generate stickers PDF:', errorText);
-				
-				if (response.status === 503) {
-					alert('The PDF generation service is temporarily unavailable. Please try again in a few moments.');
-				} else {
-					alert('Failed to generate PDF. Please try again.');
-				}
-			}
+			// Hide the container again
+			container.classList.add('hidden');
+			
+			// Create PDF
+			const pdf = new jsPDF({
+				orientation: 'portrait',
+				unit: 'mm',
+				format: 'a4'
+			});
+			
+			// Calculate dimensions
+			const imgWidth = 210; // A4 width in mm
+			const imgHeight = 297; // A4 height in mm
+			
+			// Add image to PDF
+			const imgData = canvas.toDataURL('image/png');
+			pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+			
+			// Download PDF
+			pdf.save(`${profile.username}-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf`);
 		} catch (error) {
 			console.error('Error generating stickers:', error);
-			alert('Error generating PDF. Please try again.');
+			alert('Failed to generate PDF. Please try again.');
 		} finally {
 			generating = false;
 		}
@@ -231,7 +264,11 @@
 						<div class="business-name">{profile.businessName || profile.name}</div>
 						<div class="tagline">{tagline}</div>
 						<div class="qr-placeholder">
-							<QrCode class="w-10 h-10" style="color: #374151;" />
+							{#if qrCodeURL}
+								<img src={qrCodeURL} alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
+							{:else}
+								<QrCode class="w-10 h-10" style="color: #374151;" />
+							{/if}
 						</div>
 						<div class="website-url">zaur.app/{profile.username}</div>
 					</div>
@@ -286,6 +323,32 @@
 	{/if}
 </div>
 
+<!-- Hidden Print Container -->
+<div class="stickers-print-container hidden" style="position: absolute; left: -9999px; background: white;">
+	<div class="print-page" style="width: 210mm; height: 297mm; padding: 15mm; background: white; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, 1fr); gap: 12mm;">
+		{#each Array(6) as _, i}
+			<div class="print-sticker print-sticker--{selectedDesign}" style="width: 80mm; height: 80mm; border-radius: 12mm; padding: 8mm; display: flex; flex-direction: column; justify-content: space-between; {selectedDesign === 'professional' ? 'background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%); border: 2px solid #e5e7eb;' : selectedDesign === 'colorful' ? 'background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);' : 'background: #ffffff; border: 2px solid #000000;'}">
+				<div style="text-align: center;">
+					<div style="font-size: 18pt; font-weight: 800; margin-bottom: 2mm; letter-spacing: -0.5pt; {selectedDesign === 'professional' ? 'color: #1f2937;' : selectedDesign === 'colorful' ? 'color: #ffffff;' : 'color: #000000;'}">{profile?.businessName || profile?.name}</div>
+					<div style="font-size: 9pt; font-weight: 500; {selectedDesign === 'professional' ? 'color: #6b7280;' : selectedDesign === 'colorful' ? 'color: rgba(255, 255, 255, 0.9);' : 'color: #666666;'}">{tagline}</div>
+				</div>
+				
+				<div style="display: flex; justify-content: center; align-items: center; margin: 6mm 0;">
+					<div style="width: 25mm; height: 25mm; border-radius: 3mm; display: flex; align-items: center; justify-content: center; overflow: hidden; {selectedDesign === 'professional' ? 'background: #ffffff; border: 1px solid #e5e7eb;' : selectedDesign === 'colorful' ? 'background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(255, 255, 255, 0.3);' : 'background: #f5f5f5; border: 1px solid #000000;'}">
+						{#if qrCodeURL}
+							<img src={qrCodeURL} alt="QR Code" style="width: 95%; height: 95%; object-fit: contain;" />
+						{/if}
+					</div>
+				</div>
+				
+				<div style="text-align: center;">
+					<div style="font-size: 11pt; font-weight: 700; {selectedDesign === 'professional' ? 'color: #f97316;' : selectedDesign === 'colorful' ? 'color: #ffffff;' : 'color: #000000;'}">zaur.app/{profile?.username}</div>
+				</div>
+			</div>
+		{/each}
+	</div>
+</div>
+
 <style>
 	/* Ensure icon containers have proper colors */
 	.professional-icon svg {
@@ -295,6 +358,16 @@
 	/* Ensure preview section has proper contrast */
 	.qr-placeholder svg {
 		color: #374151 !important;
+	}
+	
+	/* Hidden print container */
+	.hidden {
+		display: none !important;
+	}
+	
+	/* Print page styles */
+	.print-page {
+		font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	}
 	
 	/* Sticker preview styles */
