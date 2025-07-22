@@ -22,6 +22,19 @@ RUN pnpm run build
 # Production stage
 FROM node:18-alpine AS runner
 
+# Install Puppeteer dependencies for admin functionality
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Install pnpm in production stage
 RUN npm install -g pnpm
 
