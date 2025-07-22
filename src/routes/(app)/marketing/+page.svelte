@@ -23,7 +23,8 @@
 	import Phone from 'lucide-svelte/icons/phone';
 	import Mail from 'lucide-svelte/icons/mail';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
-	
+	import Sticker from 'lucide-svelte/icons/sticker';
+
 	// Components
 	import Tooltip from '$lib/components/Tooltip.svelte';
 
@@ -303,6 +304,39 @@
 		</p>
 	</div>
 
+	<!-- Marketing Materials Grid -->
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+		<div class="rounded-xl p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="flex items-center gap-3 mb-3">
+				<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-primary-50);">
+					<CreditCard class="w-5 h-5" style="color: var(--color-primary-600);" />
+				</div>
+				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Business Cards</h3>
+			</div>
+			<p class="text-sm mb-4" style="color: var(--text-secondary);">
+				Professional business cards with your QR code and contact details
+			</p>
+			<a href="#business-cards" class="text-sm font-medium" style="color: var(--color-primary-600);">
+				Create Now →
+			</a>
+		</div>
+		
+		<a href="/marketing/stickers" class="rounded-xl p-6 transition-colors hover:opacity-80 block" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="flex items-center gap-3 mb-3">
+				<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--color-orange-50);">
+					<Sticker class="w-5 h-5" style="color: var(--color-orange-600);" />
+				</div>
+				<h3 class="text-lg font-semibold" style="color: var(--text-primary);">Promotional Stickers</h3>
+			</div>
+			<p class="text-sm mb-4" style="color: var(--text-secondary);">
+				Personalized stickers with your profile QR code for marketing campaigns
+			</p>
+			<span class="text-sm font-medium" style="color: var(--color-orange-600);">
+				Generate Stickers →
+			</span>
+		</a>
+	</div>
+
 	{#if isLoading}
 		<!-- Loading State -->
 		<div class="flex items-center justify-center min-h-[400px]">
@@ -319,7 +353,7 @@
 			<p style="color: var(--text-secondary);">Please try refreshing the page or check your connection.</p>
 		</div>
 	{:else if profile}
-		<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">
+		<div class="grid gap-6 lg:gap-8 lg:grid-cols-3" id="business-cards">
 			<!-- Business Card Generator -->
 			<div class="lg:col-span-2 min-w-0">
 				<div class="rounded-xl shadow-sm" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">

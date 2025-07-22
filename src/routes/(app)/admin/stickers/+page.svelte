@@ -4,7 +4,6 @@
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
-	import Eye from 'lucide-svelte/icons/eye';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Check from 'lucide-svelte/icons/check';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -34,33 +33,23 @@
 			});
 			
 			if (response.ok) {
-				const htmlContent = await response.text();
-				const printWindow = window.open('', '_blank');
-				if (printWindow) {
-					printWindow.document.write(htmlContent);
-					printWindow.document.close();
-					
-					// Add instructions and auto-print setup
-					printWindow.onload = () => {
-						setTimeout(() => {
-							if (confirm('Ready to save as PDF?\n\n1. Press Ctrl+P (or Cmd+P)\n2. Select "Save as PDF"\n3. Enable "Background graphics"\n4. Click Save')) {
-								printWindow.print();
-							}
-						}, 1000);
-					};
-				}
+				const blob = await response.blob();
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `zaur-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf`;
+				a.click();
+				window.URL.revokeObjectURL(url);
 			} else {
-				console.error('Failed to generate stickers');
+				console.error('Failed to generate stickers PDF');
+				alert('Failed to generate PDF. Please try again.');
 			}
 		} catch (error) {
 			console.error('Error generating stickers:', error);
+			alert('Error generating PDF. Please try again.');
 		} finally {
 			generating = false;
 		}
-	}
-	
-	function previewHTML() {
-		window.open('/admin/stickers/preview', '_blank');
 	}
 </script>
 
@@ -72,20 +61,7 @@
 	<PageHeader title="Promotional Stickers" />
 	
 	<!-- Quick Actions -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-		<button
-			class="professional-card hover:border-coral-200 transition-colors cursor-pointer text-left"
-			onclick={previewHTML}
-		>
-			<div class="flex items-center gap-3 mb-3">
-				<div class="professional-icon professional-icon--teal">
-					<Eye class="w-5 h-5" strokeWidth={2} />
-				</div>
-				<h3 class="text-lg font-semibold text-primary">Preview Design</h3>
-			</div>
-			<p class="text-secondary text-sm">View the sticker designs in your browser before printing</p>
-		</button>
-		
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 		<button
 			class="professional-card hover:border-coral-200 transition-colors cursor-pointer text-left"
 			onclick={generatePDF}
@@ -103,7 +79,7 @@
 					{generating ? 'Generating...' : 'Generate PDF'}
 				</h3>
 			</div>
-			<p class="text-secondary text-sm">Open print-ready view to save as PDF with 6 stickers per A4 page</p>
+			<p class="text-secondary text-sm">Download print-ready PDF with 6 stickers per A4 page</p>
 		</button>
 		
 		<button
@@ -124,58 +100,6 @@
 			</div>
 			<p class="text-secondary text-sm">Copy the registration URL used in the QR codes</p>
 		</button>
-	</div>
-	
-	<!-- Design Preview -->
-	<div class="professional-card mb-8">
-		<h2 class="text-xl font-semibold text-primary mb-6">Clean Sticker Designs</h2>
-		<p class="text-secondary text-sm mb-6">Simplified design with minimal text, prominent QR code, and key value proposition.</p>
-		
-		<div class="flex flex-col md:flex-row gap-6 justify-center items-center max-w-6xl mx-auto p-6">
-			<!-- Clean White Version -->
-			<div class="sticker-preview sticker-preview--white">
-				<div class="sticker-header">
-					<div class="brand-name">ZAUR</div>
-					<div class="tagline">Tour Guide Platform</div>
-				</div>
-				
-				<div class="qr-section">
-					<div class="qr-placeholder">
-						<QrCode class="w-12 h-12 text-secondary" />
-					</div>
-				</div>
-				
-				<div class="value-prop">
-					Zero Commission
-				</div>
-				
-				<div class="website">
-					<div class="website-url">zaur.app</div>
-				</div>
-			</div>
-			
-			<!-- Clean Orange Version -->
-			<div class="sticker-preview sticker-preview--orange">
-				<div class="sticker-header">
-					<div class="brand-name">ZAUR</div>
-					<div class="tagline">QR Bookings</div>
-				</div>
-				
-				<div class="qr-section">
-					<div class="qr-placeholder qr-placeholder--orange">
-						<QrCode class="w-12 h-12 text-orange-600" />
-					</div>
-				</div>
-				
-				<div class="value-prop">
-					Keep 100% Revenue
-				</div>
-				
-				<div class="website">
-					<div class="website-url">zaur.app</div>
-				</div>
-			</div>
-		</div>
 	</div>
 	
 	<!-- Technical Specifications -->
@@ -260,102 +184,4 @@
 </div>
 
 <style>
-	.sticker-preview {
-		width: 200px;
-		height: 200px;
-		border-radius: 12px;
-		padding: 14px;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		position: relative;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-		flex-shrink: 0;
-	}
-	
-	.sticker-preview--white {
-		background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-		border: 2px solid #e5e7eb;
-	}
-	
-	.sticker-preview--orange {
-		background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-		color: white;
-	}
-	
-	.sticker-header {
-		text-align: center;
-		margin-bottom: 20px;
-	}
-	
-	.brand-name {
-		font-size: 24px;
-		font-weight: 800;
-		margin-bottom: 4px;
-		letter-spacing: -0.5px;
-	}
-	
-	.sticker-preview--white .brand-name {
-		color: #1f2937;
-	}
-	
-	.tagline {
-		font-size: 12px;
-		font-weight: 500;
-	}
-	
-	.sticker-preview--white .tagline {
-		color: #6b7280;
-	}
-	
-	.sticker-preview--orange .tagline {
-		color: rgba(255, 255, 255, 0.9);
-	}
-	
-	.qr-section {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		margin-bottom: 20px;
-	}
-	
-	.qr-placeholder {
-		width: 70px;
-		height: 70px;
-		background: #ffffff;
-		border: 2px solid #e5e7eb;
-		border-radius: 8px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.qr-placeholder--orange {
-		background: rgba(255, 255, 255, 0.95);
-		border-color: rgba(255, 255, 255, 0.3);
-	}
-	
-	.value-prop {
-		font-size: 14px;
-		font-weight: 700;
-		text-align: center;
-		margin-bottom: 20px;
-	}
-	
-	.sticker-preview--white .value-prop {
-		color: #f97316;
-	}
-	
-	.website {
-		text-align: center;
-	}
-	
-	.website-url {
-		font-size: 15px;
-		font-weight: 700;
-	}
-	
-	.sticker-preview--white .website-url {
-		color: #1f2937;
-	}
 </style> 

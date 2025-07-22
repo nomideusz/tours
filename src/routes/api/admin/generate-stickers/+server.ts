@@ -1,5 +1,6 @@
-import { json, error } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
+import puppeteer from 'puppeteer';
 
 export const POST: RequestHandler = async ({ locals }) => {
 	// Check admin access
@@ -272,12 +273,46 @@ export const POST: RequestHandler = async ({ locals }) => {
 </body>
 </html>`;
 
-		// Return HTML that will open in new window for browser-based PDF generation
-		return new Response(htmlContent, {
-			headers: {
-				'Content-Type': 'text/html'
-			}
+		// Launch puppeteer
+		const browser = await puppeteer.launch({
+			headless: true,
+			args: ['--no-sandbox', '--disable-setuid-sandbox']
 		});
+
+		try {
+			const page = await browser.newPage();
+			
+			// Set the HTML content
+			await page.setContent(htmlContent, {
+				waitUntil: 'networkidle2'
+			});
+
+			// Wait for fonts to load
+			await page.evaluateHandle('document.fonts.ready');
+
+			// Generate PDF
+			const pdfBuffer = await page.pdf({
+				format: 'A4',
+				printBackground: true,
+				margin: {
+					top: '20mm',
+					right: '20mm',
+					bottom: '20mm',
+					left: '20mm'
+				}
+			});
+
+			// Return PDF as response
+			return new Response(pdfBuffer, {
+				headers: {
+					'Content-Type': 'application/pdf',
+					'Content-Disposition': `attachment; filename="zaur-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf"`
+				}
+			});
+
+		} finally {
+			await browser.close();
+		}
 
 	} catch (err) {
 		console.error('Error generating sticker PDF:', err);
