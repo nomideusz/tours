@@ -2393,12 +2393,13 @@ button svg,
 }
 
 /* Ensure icons in light background sections have proper contrast in dark mode */
-:root.dark .bg-purple-50 svg,
-:root.dark .bg-blue-50 svg,
-:root.dark .bg-sky-50 svg,
-:root.dark .bg-orange-50 svg,
-:root.dark .bg-coral-50 svg,
-:root.dark .bg-teal-50 svg {
+/* NOTE: Excluding platform, template, and color cards which have their own rules */
+:root.dark .bg-purple-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg),
+:root.dark .bg-blue-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg),
+:root.dark .bg-sky-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg),
+:root.dark .bg-orange-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg),
+:root.dark .bg-coral-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg),
+:root.dark .bg-teal-50 svg:not(.platform-card svg):not(.template-card svg):not(.color-card svg) {
 	color: inherit !important;
 }
 

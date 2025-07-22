@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { createQuery } from '@tanstack/svelte-query';
+	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
+	import { formatCurrency } from '$lib/utils/currency.js';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import Download from 'lucide-svelte/icons/download';
@@ -12,6 +14,8 @@
 	import Facebook from 'lucide-svelte/icons/facebook';
 	import Twitter from 'lucide-svelte/icons/twitter';
 	import Linkedin from 'lucide-svelte/icons/linkedin';
+	// @ts-ignore
+	import html2canvas from 'html2canvas';
 	
 	// Profile data query
 	const profileQuery = createQuery({
@@ -48,82 +52,113 @@
 	let selectedColor = $state<'brand' | 'vibrant' | 'minimal' | 'dark'>('brand');
 	
 	let selectedTour = $derived(
-		selectedTourId ? tours.find((t: any) => t.id === selectedTourId) : null
+		selectedTourId ? tours.find((t: any) => t.id === selectedTourId) : activeTours[0]
 	);
 	
 	// Platform dimensions
 	const platformDimensions = {
-		'instagram-post': { width: 1080, height: 1080, name: 'Instagram Post' },
-		'instagram-story': { width: 1080, height: 1920, name: 'Instagram Story' },
-		'facebook': { width: 1200, height: 630, name: 'Facebook Post' },
-		'twitter': { width: 1200, height: 675, name: 'Twitter Post' },
-		'linkedin': { width: 1200, height: 627, name: 'LinkedIn Post' }
+		'instagram-post': { width: 1080, height: 1080 },
+		'instagram-story': { width: 1080, height: 1920 },
+		'facebook': { width: 1200, height: 630 },
+		'twitter': { width: 1200, height: 675 },
+		'linkedin': { width: 1200, height: 627 }
 	};
 	
-	// Default text based on template
-	let defaultText = $derived(
-		selectedTemplate === 'tour-promo' && selectedTour
-			? `Join us for ${selectedTour.name}! 🌟\n\nBook now at zaur.app/${profile?.username}`
-			: selectedTemplate === 'profile-intro'
-			? `Discover amazing tours with ${profile?.businessName || profile?.name} 🗺️\n\nExplore at zaur.app/${profile?.username}`
-			: selectedTemplate === 'schedule'
-			? `Check out our upcoming tours! 📅\n\nFull schedule at zaur.app/${profile?.username}`
-			: `"Amazing experience!" - Happy Customer ⭐⭐⭐⭐⭐\n\nBook your tour at zaur.app/${profile?.username}`
-	);
+	let dimensions = $derived(platformDimensions[selectedPlatform]);
 	
-	let text = $derived(customText || defaultText);
+	// Generate QR code
+	let qrCodeURL = $derived.by(() => {
+		if (!profile?.username || !includeQR) return '';
+		const url = `https://zaur.app/${profile.username}`;
+		return generateQRImageURL(url, { 
+			size: 200, 
+			color: selectedColor === 'dark' ? 'ffffff' : '1f2937',
+			style: 'modern'
+		});
+	});
+	
+	// Color schemes
+	const colorSchemes = {
+		brand: {
+			background: 'linear-gradient(135deg, #F97316 0%, #FB923C 100%)',
+			text: '#FFFFFF',
+			accent: '#FED7AA'
+		},
+		vibrant: {
+			background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)',
+			text: '#FFFFFF',
+			accent: '#FDF4FF'
+		},
+		minimal: {
+			background: '#FFFFFF',
+			text: '#1F2937',
+			accent: '#E5E7EB'
+		},
+		dark: {
+			background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+			text: '#FFFFFF',
+			accent: '#374151'
+		}
+	};
+	
+	let colorScheme = $derived(colorSchemes[selectedColor]);
 	
 	async function generateGraphic() {
-		if (!profile?.username) {
+		if (!profile?.username || !browser) {
 			alert('Please complete your profile first');
 			return;
 		}
 		
-		if (selectedTemplate === 'tour-promo' && !selectedTourId) {
-			alert('Please select a tour for tour promotion graphic');
+		if (selectedTemplate === 'tour-promo' && !selectedTour) {
+			alert('Please select a tour or create one first');
 			return;
 		}
 		
 		generating = true;
 		try {
-			const response = await fetch('/api/marketing/generate-social', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					platform: selectedPlatform,
-					template: selectedTemplate,
-					tourId: selectedTourId,
-					tour: selectedTour,
-					profile,
-					text,
-					includeQR,
-					color: selectedColor
-				})
+			// Get the graphic container
+			const container = document.querySelector('.social-graphic-container');
+			if (!container) {
+				throw new Error('Graphic container not found');
+			}
+			
+			// Show the container temporarily for capture
+			container.classList.remove('hidden');
+			
+			// Wait for images to load
+			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			// Generate canvas
+			const canvas = await (html2canvas as any)(container as HTMLElement, {
+				backgroundColor: null,
+				scale: 1, // Use actual size
+				useCORS: true,
+				allowTaint: true,
+				logging: false,
+				width: dimensions.width,
+				height: dimensions.height
 			});
 			
-			if (response.ok) {
-				const blob = await response.blob();
-				const url = window.URL.createObjectURL(blob);
+			// Hide the container again
+			container.classList.add('hidden');
+			
+			// Convert to blob and download
+			canvas.toBlob((blob: Blob | null) => {
+				if (!blob) {
+					throw new Error('Failed to generate image');
+				}
+				
+				const url = URL.createObjectURL(blob);
 				const a = document.createElement('a');
 				a.href = url;
 				a.download = `${profile.username}-${selectedPlatform}-${selectedTemplate}-${new Date().toISOString().split('T')[0]}.png`;
 				a.click();
-				window.URL.revokeObjectURL(url);
-			} else {
-				const errorText = await response.text();
-				console.error('Failed to generate social media graphic:', errorText);
-				
-				if (response.status === 503) {
-					alert('The image generation service is temporarily unavailable. Please try again in a few moments.');
-				} else {
-					alert('Failed to generate graphic. Please try again.');
-				}
-			}
+				URL.revokeObjectURL(url);
+			}, 'image/png');
+			
 		} catch (error) {
 			console.error('Error generating social media graphic:', error);
-			alert('Error generating graphic. Please try again.');
+			alert('Failed to generate graphic. Please try again.');
 		} finally {
 			generating = false;
 		}
@@ -331,7 +366,7 @@
 					<textarea
 						id="custom-text"
 						bind:value={customText}
-						placeholder={defaultText}
+						placeholder="Add custom text for your graphic"
 						rows="4"
 						class="w-full max-w-md"
 					/>
@@ -397,11 +432,166 @@
 	{/if}
 </div>
 
+<!-- Hidden Graphic Container -->
+<div class="social-graphic-container hidden" style="position: absolute; left: -9999px;">
+	<div 
+		class="social-graphic" 
+		style="width: {dimensions.width}px; height: {dimensions.height}px; background: {colorScheme.background}; color: {colorScheme.text}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; position: relative; overflow: hidden;"
+	>
+		<!-- Tour Promo Template -->
+		{#if selectedTemplate === 'tour-promo' && selectedTour}
+			<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+				<div>
+					<h1 style="font-size: {dimensions.width * 0.08}px; font-weight: 800; margin: 0 0 {dimensions.width * 0.03}px 0; line-height: 1.2;">
+						{selectedTour.name}
+					</h1>
+					<p style="font-size: {dimensions.width * 0.045}px; opacity: 0.9; margin: 0 0 {dimensions.width * 0.04}px 0; line-height: 1.4;">
+						{selectedTour.description || 'Join us for an unforgettable experience!'}
+					</p>
+					<div style="font-size: {dimensions.width * 0.06}px; font-weight: 700; margin: {dimensions.width * 0.03}px 0;">
+						{formatCurrency(selectedTour.price, selectedTour.currency)}
+					</div>
+				</div>
+				
+				<div style="display: flex; justify-content: space-between; align-items: flex-end;">
+					<div>
+						<p style="font-size: {dimensions.width * 0.035}px; opacity: 0.8; margin: 0;">
+							{profile?.businessName || profile?.name}
+						</p>
+						<p style="font-size: {dimensions.width * 0.03}px; opacity: 0.7; margin: {dimensions.width * 0.01}px 0 0 0;">
+							zaur.app/{profile?.username}
+						</p>
+					</div>
+					{#if includeQR && qrCodeURL}
+						<img src={qrCodeURL} alt="QR Code" style="width: {dimensions.width * 0.15}px; height: {dimensions.width * 0.15}px; background: white; padding: {dimensions.width * 0.01}px; border-radius: {dimensions.width * 0.02}px;" />
+					{/if}
+				</div>
+			</div>
+		{:else if selectedTemplate === 'profile-intro'}
+			<!-- Profile Intro Template -->
+			<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+				<h1 style="font-size: {dimensions.width * 0.09}px; font-weight: 800; margin: 0 0 {dimensions.width * 0.03}px 0;">
+					{profile?.businessName || profile?.name}
+				</h1>
+				<p style="font-size: {dimensions.width * 0.05}px; opacity: 0.9; margin: 0 0 {dimensions.width * 0.05}px 0; line-height: 1.4;">
+					Discover Amazing Tours & Experiences
+				</p>
+				
+				{#if activeTours.length > 0}
+					<div style="margin: {dimensions.width * 0.04}px 0;">
+						<p style="font-size: {dimensions.width * 0.035}px; opacity: 0.8; margin-bottom: {dimensions.width * 0.02}px;">Our Tours:</p>
+						{#each activeTours.slice(0, 3) as tour}
+							<p style="font-size: {dimensions.width * 0.04}px; margin: {dimensions.width * 0.01}px 0;">
+								• {tour.name}
+							</p>
+						{/each}
+					</div>
+				{/if}
+				
+				<div style="margin-top: auto;">
+					{#if includeQR && qrCodeURL}
+						<img src={qrCodeURL} alt="QR Code" style="width: {dimensions.width * 0.2}px; height: {dimensions.width * 0.2}px; background: white; padding: {dimensions.width * 0.015}px; border-radius: {dimensions.width * 0.02}px; margin: 0 auto {dimensions.width * 0.03}px;" />
+					{/if}
+					<p style="font-size: {dimensions.width * 0.04}px; font-weight: 600;">
+						Book Now: zaur.app/{profile?.username}
+					</p>
+				</div>
+			</div>
+		{:else if selectedTemplate === 'schedule'}
+			<!-- Schedule Template -->
+			<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column;">
+				<h1 style="font-size: {dimensions.width * 0.08}px; font-weight: 800; margin: 0 0 {dimensions.width * 0.04}px 0; text-align: center;">
+					Upcoming Tours
+				</h1>
+				
+				<div style="flex: 1; overflow: hidden;">
+					{#if activeTours.length > 0}
+						{#each activeTours.slice(0, selectedPlatform === 'instagram-story' ? 5 : 4) as tour}
+							<div style="margin-bottom: {dimensions.width * 0.03}px; padding-bottom: {dimensions.width * 0.03}px; border-bottom: 1px solid {colorScheme.accent};">
+								<h3 style="font-size: {dimensions.width * 0.045}px; font-weight: 700; margin: 0 0 {dimensions.width * 0.01}px 0;">
+									{tour.name}
+								</h3>
+								<div style="display: flex; justify-content: space-between; font-size: {dimensions.width * 0.035}px; opacity: 0.8;">
+									<span>{formatCurrency(tour.price, tour.currency)}</span>
+									<span>{tour.duration || 60} min</span>
+								</div>
+							</div>
+						{/each}
+					{:else}
+						<p style="font-size: {dimensions.width * 0.04}px; text-align: center; opacity: 0.7;">
+							Tours coming soon!
+						</p>
+					{/if}
+				</div>
+				
+				<div style="text-align: center; margin-top: auto;">
+					{#if includeQR && qrCodeURL}
+						<img src={qrCodeURL} alt="QR Code" style="width: {dimensions.width * 0.15}px; height: {dimensions.width * 0.15}px; background: white; padding: {dimensions.width * 0.01}px; border-radius: {dimensions.width * 0.02}px; margin: 0 auto {dimensions.width * 0.02}px;" />
+					{/if}
+					<p style="font-size: {dimensions.width * 0.04}px; font-weight: 600;">
+						zaur.app/{profile?.username}
+					</p>
+				</div>
+			</div>
+		{:else if selectedTemplate === 'testimonial'}
+			<!-- Testimonial Template -->
+			<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+				<div style="font-size: {dimensions.width * 0.15}px; margin-bottom: {dimensions.width * 0.04}px;">
+					⭐⭐⭐⭐⭐
+				</div>
+				<p style="font-size: {dimensions.width * 0.055}px; font-style: italic; line-height: 1.4; margin: 0 0 {dimensions.width * 0.04}px 0;">
+					"An absolutely amazing experience! The tour guide was knowledgeable and friendly. Highly recommend!"
+				</p>
+				<p style="font-size: {dimensions.width * 0.04}px; opacity: 0.8; margin-bottom: {dimensions.width * 0.06}px;">
+					- Happy Customer
+				</p>
+				
+				<div>
+					<p style="font-size: {dimensions.width * 0.045}px; font-weight: 700; margin-bottom: {dimensions.width * 0.02}px;">
+						{profile?.businessName || profile?.name}
+					</p>
+					{#if includeQR && qrCodeURL}
+						<img src={qrCodeURL} alt="QR Code" style="width: {dimensions.width * 0.15}px; height: {dimensions.width * 0.15}px; background: white; padding: {dimensions.width * 0.01}px; border-radius: {dimensions.width * 0.02}px; margin: {dimensions.width * 0.03}px auto;" />
+					{/if}
+					<p style="font-size: {dimensions.width * 0.04}px;">
+						Book your tour: zaur.app/{profile?.username}
+					</p>
+				</div>
+			</div>
+		{/if}
+		
+		<!-- Watermark -->
+		<div style="position: absolute; bottom: {dimensions.width * 0.03}px; right: {dimensions.width * 0.03}px; font-size: {dimensions.width * 0.025}px; opacity: 0.5;">
+			Created with Zaur
+		</div>
+	</div>
+</div>
+
 <style>
+	.hidden {
+		display: none !important;
+	}
+	
+	/* Base styles for all platform/template/color card icons */
+	.platform-card svg,
+	.template-card svg,
+	.color-card svg {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+	
 	/* Platform card icon styles */
 	.platform-card svg {
 		color: #6B7280;
 		transition: color 0.2s;
+	}
+	
+	/* Default unselected state - gray in light mode */
+	.platform-card:not([data-selected="true"]) svg {
+		color: #6B7280 !important;
 	}
 	
 	/* Selected state icons - use specific colors for each platform */
@@ -429,25 +619,46 @@
 		background-color: white !important;
 	}
 	
+	/* Platform icons in dark mode - unselected state */
+	:global(.dark) .platform-card:not([data-selected="true"]) svg {
+		color: #9CA3AF !important; /* Medium gray for visibility in dark mode */
+		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
+	}
+	
+	/* Platform text in dark mode - selected state */
+	:global(.dark) .platform-card[data-selected="true"] {
+		color: #1F2937 !important; /* Dark text on white background */
+	}
+	
 	/* Ensure platform icons remain colored in dark mode when selected */
 	:global(.dark) .platform-card[data-selected="true"].border-purple-200 svg {
 		color: #9333EA !important;
 		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
 	}
 	
 	:global(.dark) .platform-card[data-selected="true"].border-blue-200:not(:nth-child(5)) svg {
 		color: #2563EB !important;
 		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
 	}
 	
 	:global(.dark) .platform-card[data-selected="true"].border-sky-200 svg {
 		color: #0EA5E9 !important;
 		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
 	}
 	
 	:global(.dark) .platform-card[data-selected="true"].border-blue-200:nth-child(5) svg {
 		color: #1E40AF !important;
 		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
 	}
 	
 	/* Ensure text has proper contrast in dark mode on white backgrounds */
@@ -463,5 +674,28 @@
 	:global(.dark) .color-card[data-selected="true"] .bg-gray-200 {
 		background-color: #E5E7EB !important;
 		border-color: #9CA3AF !important;
+	}
+	
+	/* Template and color card icon styles */
+	.template-card svg,
+	.color-card svg {
+		color: #6B7280;
+	}
+	
+	/* Template and color cards in dark mode */
+	:global(.dark) .template-card:not([data-selected="true"]) svg,
+	:global(.dark) .color-card:not([data-selected="true"]) svg {
+		color: #9CA3AF !important;
+		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
+	}
+	
+	:global(.dark) .template-card[data-selected="true"] svg,
+	:global(.dark) .color-card[data-selected="true"] svg {
+		color: #4B5563 !important;
+		opacity: 1 !important;
+		fill: none !important;
+		stroke: currentColor !important;
 	}
 </style> 
