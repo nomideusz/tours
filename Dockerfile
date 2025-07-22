@@ -22,6 +22,23 @@ RUN pnpm run build
 # Production stage
 FROM node:18-alpine AS runner
 
+# Install dependencies for Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    udev \
+    xvfb \
+    && rm -rf /var/cache/apk/*
+
+# Tell Puppeteer to use installed Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 WORKDIR /app
 
 # Install pnpm in production stage

@@ -49,7 +49,7 @@
 	});
 
 	let profile = $derived($profileQuery.data);
-	let tours = $derived($toursQuery.data?.tours || []);
+	let tours = $derived($toursQuery.data || []);
 	let isLoading = $derived($profileQuery.isLoading || $toursQuery.isLoading);
 	let error = $derived($profileQuery.error || $toursQuery.error);
 
@@ -127,7 +127,7 @@
 
 			// Generate high-resolution PNG for printing (300 DPI equivalent)
 			const rawCanvas = await (html2canvas as any)(cardElement, {
-				backgroundColor: null,
+				backgroundColor: '#ffffff', // Force white background
 				scale: 4, // Very high resolution for print quality
 				useCORS: true,
 				allowTaint: true,
@@ -220,7 +220,7 @@
 
 			// Generate high-resolution canvas
 			const canvas = await (html2canvas as any)(cardElement, {
-				backgroundColor: null,
+				backgroundColor: '#ffffff', // Force white background
 				scale: 3, // High resolution
 				useCORS: true,
 				allowTaint: true,
@@ -383,7 +383,7 @@
 								</div>
 							{:else if selectedTemplate === 'modern'}
 								<!-- Modern Template -->
-								<div class="business-card business-card-modern w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-xl shadow-lg bg-white relative overflow-hidden">
+								<div class="business-card business-card-modern w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-xl shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
 									<div class="absolute inset-0 p-3 sm:p-4">
 										<div class="flex h-full">
 											<div class="flex-1">
@@ -391,9 +391,9 @@
 													<div>
 														<h3 class="text-base sm:text-lg font-bold mb-1" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.name}</h3>
 														{#if profile.businessName}
-															<p class="text-sm text-gray-600 mb-3">{profile.businessName}</p>
+															<p class="text-sm mb-3" style="color: #4B5563;">{profile.businessName}</p>
 														{/if}
-														<div class="space-y-1 text-xs text-gray-700">
+														<div class="space-y-1 text-xs" style="color: #374151;">
 															{#if profile.phone}
 																<div class="flex items-center gap-2">
 																	<Phone class="w-3 h-3" style="color: {colorSchemes[selectedColorScheme].primary};" />
@@ -423,7 +423,7 @@
 											
 											<div class="w-16 sm:w-20 h-16 sm:h-20 ml-3 flex items-center justify-center">
 												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full bg-white rounded" style="background: white !important;" />
+													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20 rounded" style="background: white !important;" />
 												{/if}
 											</div>
 										</div>
@@ -431,16 +431,16 @@
 								</div>
 							{:else if selectedTemplate === 'minimal'}
 								<!-- Minimal Template -->
-								<div class="business-card business-card-minimal w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto border-2 bg-white relative overflow-hidden" style="border-color: {colorSchemes[selectedColorScheme].primary};">
+								<div class="business-card business-card-minimal w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto border-2 relative overflow-hidden" style="border-color: {colorSchemes[selectedColorScheme].primary}; background-color: #ffffff;">
 									<div class="absolute inset-0 p-3 sm:p-4">
 										<div class="flex h-full">
 											<div class="flex-1">
 												<div class="h-full flex flex-col justify-center">
-													<h3 class="text-base sm:text-lg font-bold mb-1 text-gray-900">{profile.name}</h3>
+													<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
 													{#if profile.businessName}
-														<p class="text-sm text-gray-600 mb-4">{profile.businessName}</p>
+														<p class="text-sm mb-4" style="color: #4B5563;">{profile.businessName}</p>
 													{/if}
-													<div class="space-y-1 text-xs text-gray-700">
+													<div class="space-y-1 text-xs" style="color: #374151;">
 														{#if profile.phone}
 															<div>{profile.phone}</div>
 														{/if}
@@ -460,7 +460,7 @@
 											
 											<div class="w-16 sm:w-20 h-16 sm:h-20 ml-3 flex items-center justify-center">
 												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-full h-full" style="background: white !important;" />
+													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20" style="background: white !important;" />
 												{/if}
 											</div>
 										</div>
@@ -526,5 +526,23 @@
 	/* Ensure QR codes always have proper contrast */
 	.business-card img {
 		background: white !important;
+	}
+	
+	/* Force light mode styles on business cards */
+	.business-card-container {
+		color-scheme: light;
+	}
+	
+	.business-card {
+		color-scheme: light;
+	}
+	
+	/* Ensure professional template always has white text */
+	.business-card-professional {
+		color: white !important;
+	}
+	
+	.business-card-professional * {
+		color: inherit;
 	}
 </style> 

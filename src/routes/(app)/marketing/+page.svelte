@@ -45,7 +45,7 @@
 	});
 
 	let profile = $derived($profileQuery.data);
-	let tours = $derived($toursQuery.data?.tours || []);
+	let tours = $derived($toursQuery.data || []);
 	let isLoading = $derived($profileQuery.isLoading || $toursQuery.isLoading);
 	let error = $derived($profileQuery.error || $toursQuery.error);
 	let activeTours = $derived(tours.filter((tour: any) => tour.status === 'active'));

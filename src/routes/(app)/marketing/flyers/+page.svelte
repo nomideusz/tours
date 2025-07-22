@@ -37,7 +37,7 @@
 	});
 	
 	let profile = $derived($profileQuery.data);
-	let tours = $derived($toursQuery.data?.tours || []);
+	let tours = $derived($toursQuery.data || []);
 	let activeTours = $derived(tours.filter((tour: any) => tour.status === 'active'));
 	
 	let generating = $state(false);
