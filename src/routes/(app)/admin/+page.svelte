@@ -37,6 +37,8 @@
 	import Globe from 'lucide-svelte/icons/globe';
 	import UserX from 'lucide-svelte/icons/user-x';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import Image from 'lucide-svelte/icons/image';
 	
 	const queryClient = useQueryClient();
 	
@@ -305,12 +307,6 @@
 							variant: 'secondary'
 						},
 						{
-							label: 'Stickers',
-							icon: QrCode,
-							onclick: () => goto('/admin/stickers'),
-							variant: 'secondary'
-						},
-						{
 							label: 'Export',
 							icon: Download,
 							onclick: exportUsers,
@@ -348,18 +344,14 @@
 					title="Admin Dashboard"
 					subtitle="Manage users and monitor platform activity"
 				>
-					<div class="flex items-center gap-3">
+					<div class="flex flex-wrap items-center gap-3">
 						<button onclick={() => goto('/admin/tours')} class="button-secondary button--gap">
 							<MapPin class="h-4 w-4" />
-							Tour Management
+							Tours
 						</button>
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />
-							Email Tools
-						</button>
-						<button onclick={() => goto('/admin/stickers')} class="button-secondary button--gap">
-							<QrCode class="h-4 w-4" />
-							Stickers
+							Email
 						</button>
 						<button onclick={exportUsers} class="button-primary button--gap">
 							<Download class="h-4 w-4" />
@@ -410,22 +402,87 @@
 				/>
 			</button>
 			
-			<!-- Stickers Card - clickable to navigate to sticker generator -->
-			<button onclick={() => goto('/admin/stickers')} class="text-left cursor-pointer">
-				<StatsCard 
-					title="Stickers"
-					value="Generate"
-					subtitle="Marketing tools →"
-					icon={QrCode}
-				/>
-			</button>
-			
 			<StatsCard 
 				title="New Today"
 				value={stats.newUsersToday}
 				subtitle="New signups"
 				icon={Users}
 			/>
+		</div>
+		
+		<!-- Marketing Tools Section -->
+		<div class="mb-6">
+			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Marketing Tools</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Generate promotional materials for the platform</p>
+				</div>
+				<div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<!-- Stickers -->
+					<button 
+						onclick={() => goto('/admin/stickers')} 
+						class="group p-4 rounded-lg border transition-all hover:border-primary"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
+								<QrCode class="w-5 h-5" style="color: #e8523e;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Promotional Stickers</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">Generate QR code stickers for marketing campaigns</p>
+						<p class="text-xs text-primary group-hover:underline">Generate PDF →</p>
+					</button>
+					
+					<!-- Business Cards -->
+					<button 
+						onclick={() => goto('/admin/business-cards')} 
+						class="group p-4 rounded-lg border transition-all hover:border-primary"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
+								<CreditCard class="w-5 h-5" style="color: #e8523e;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Business Cards</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">Professional cards with platform branding</p>
+						<p class="text-xs text-primary group-hover:underline">Create Templates →</p>
+					</button>
+					
+					<!-- Flyers -->
+					<button 
+						onclick={() => goto('/admin/flyers')} 
+						class="group p-4 rounded-lg border transition-all hover:border-primary"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(79, 157, 166, 0.1);">
+								<FileText class="w-5 h-5" style="color: #0d9488;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Promotional Flyers</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">A4 flyers for events and partner locations</p>
+						<p class="text-xs text-primary group-hover:underline">Design Flyers →</p>
+					</button>
+					
+					<!-- Social Graphics -->
+					<button 
+						onclick={() => goto('/admin/social-graphics')} 
+						class="group p-4 rounded-lg border transition-all hover:border-primary"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(139, 92, 246, 0.1);">
+								<Image class="w-5 h-5" style="color: #7c3aed;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Social Media Graphics</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">Eye-catching graphics for social platforms</p>
+						<p class="text-xs text-primary group-hover:underline">Create Graphics →</p>
+					</button>
+				</div>
+			</div>
 		</div>
 		
 		<!-- Search and Filters -->
