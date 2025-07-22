@@ -239,11 +239,101 @@
 						Preview
 					</h3>
 					<div class="bg-secondary rounded-lg p-8">
-						<!-- Preview will show selected layout -->
-						<div class="aspect-[210/297] bg-white rounded-lg shadow-lg p-8 flex items-center justify-center">
-							<p class="text-center text-gray-500">
-								{layouts[selectedLayout].name} preview with {styles[selectedStyle].name} style
-							</p>
+						<!-- Flyer preview -->
+						<div class="max-w-xs mx-auto">
+							<div class="aspect-[210/297] rounded-lg shadow-xl p-4 text-xs overflow-hidden" style="background: {selectedStyle === 'vibrant' ? 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%)' : selectedStyle === 'professional' ? 'linear-gradient(135deg, #1E40AF 0%, #1E3A8A 100%)' : '#ffffff'}; color: {selectedStyle === 'modern' ? '#000000' : '#ffffff'}">
+								{#if selectedLayout === 'event'}
+									<div class="text-center mb-3">
+										<h1 class="text-base font-bold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">Zaur</h1>
+										<p class="text-xs" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Tour QR Ticket Platform</p>
+									</div>
+									<h2 class="text-sm font-bold text-center mb-2" style="color: {selectedStyle === 'modern' ? '#1F2937' : '#FFFFFF'}">
+										Revolutionize Your Tour Business
+									</h2>
+									{#if includeFeatures}
+										<div class="grid grid-cols-2 gap-1 mb-3 text-xs">
+											<div class="p-1">
+												<p class="font-semibold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">✓ No Booking Fees</p>
+												<p style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Keep 100% revenue</p>
+											</div>
+											<div class="p-1">
+												<p class="font-semibold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">✓ QR Tickets</p>
+												<p style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Digital ticketing</p>
+											</div>
+											<div class="p-1">
+												<p class="font-semibold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">✓ Real-time</p>
+												<p style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Instant notifications</p>
+											</div>
+											<div class="p-1">
+												<p class="font-semibold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">✓ Marketing</p>
+												<p style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Built-in tools</p>
+											</div>
+										</div>
+									{/if}
+									{#if includeQR && qrCodeURL}
+										<div class="text-center my-2">
+											<img src={qrCodeURL} alt="QR Code" class="w-8 h-8 mx-auto" />
+											<p class="text-xs" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Scan to join</p>
+										</div>
+									{/if}
+									<div class="text-center pt-1 mt-2" style="border-top: 1px solid {selectedStyle === 'modern' ? '#E5E7EB' : 'rgba(255,255,255,0.3)'}">
+										<p class="font-semibold" style="color: {selectedStyle === 'modern' ? '#1F2937' : '#FFFFFF'}">zaur.app</p>
+									</div>
+								{:else if selectedLayout === 'partner'}
+									<div class="mb-2">
+										<h1 class="text-sm font-bold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">Partner with Zaur</h1>
+										<p class="text-xs" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">Empower Your Tour Guides</p>
+									</div>
+									<h2 class="text-xs font-bold mb-1" style="color: {selectedStyle === 'modern' ? '#1F2937' : '#FFFFFF'}">
+										Why Hotels Choose Zaur
+									</h2>
+									<ul class="text-xs space-y-1 mb-2" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">
+										<li>• Help guides accept bookings 24/7</li>
+										<li>• Professional QR ticketing</li>
+										<li>• Real-time availability</li>
+										<li>• No commission fees</li>
+									</ul>
+									<div class="bg-yellow-100 p-1 rounded mb-2">
+										<p class="text-xs font-semibold text-yellow-800">Special Partner Benefits</p>
+									</div>
+									<div class="text-center">
+										<p class="text-xs font-semibold text-red-500">zaur.app/partners</p>
+									</div>
+								{:else}
+									<div class="mb-2">
+										<h1 class="text-sm font-bold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">Zaur Platform Overview</h1>
+									</div>
+									<div class="grid grid-cols-2 gap-2 mb-2 text-xs">
+										<div>
+											<h3 class="font-semibold" style="color: {selectedStyle === 'modern' ? '#1F2937' : '#FFFFFF'}">For Tour Guides</h3>
+											<ul class="space-y-0.5" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">
+												<li>• Booking management</li>
+												<li>• Digital QR tickets</li>
+												<li>• Real-time notifications</li>
+											</ul>
+										</div>
+										<div>
+											<h3 class="font-semibold" style="color: {selectedStyle === 'modern' ? '#1F2937' : '#FFFFFF'}">For Customers</h3>
+											<ul class="space-y-0.5" style="color: {selectedStyle === 'modern' ? '#6B7280' : 'rgba(255,255,255,0.8)'}">
+												<li>• Easy online booking</li>
+												<li>• Secure payments</li>
+												<li>• Instant QR tickets</li>
+											</ul>
+										</div>
+									</div>
+									<div class="bg-gray-100 p-1 rounded mb-1">
+										<div class="grid grid-cols-4 gap-1 text-center text-xs">
+											<div><p class="font-semibold">Free</p></div>
+											<div><p class="font-semibold">€12/mo</p></div>
+											<div><p class="font-semibold">€29/mo</p></div>
+											<div><p class="font-semibold">€79/mo</p></div>
+										</div>
+									</div>
+									<div class="text-center">
+										<p class="text-xs font-bold" style="color: {selectedStyle === 'modern' ? '#EF4444' : selectedStyle === 'vibrant' ? '#FBBF24' : '#60A5FA'}">No Booking Fees, Ever!</p>
+									</div>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>

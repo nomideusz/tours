@@ -235,11 +235,54 @@
 						Preview
 					</h3>
 					<div class="bg-secondary rounded-lg p-8">
-						<!-- Preview will show selected template -->
-						<div class="aspect-[3.5/2] bg-white rounded-lg shadow-lg p-6 flex items-center justify-center">
-							<p class="text-center text-gray-500">
-								Business card preview for {templates[selectedTemplate].name} template
-							</p>
+						<!-- Business card preview -->
+						<div class="max-w-md mx-auto">
+							<div class="aspect-[3.5/2] bg-white rounded-lg shadow-xl p-4 text-black" style="background: {colorSchemes[selectedColor].background};">
+								{#if selectedTemplate === 'modern'}
+									<div class="h-full flex">
+										<div class="flex-1 flex flex-direction: column; justify-content: space-between;">
+											<div>
+												<h1 class="text-xl font-bold" style="color: {colorSchemes[selectedColor].primary};">Zaur</h1>
+												{#if includeTagline}
+													<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].text};">Tour Platform</p>
+												{/if}
+											</div>
+											<div class="text-xs" style="color: {colorSchemes[selectedColor].text};">
+												<p>zaur.app</p>
+												<p>hello@zaur.app</p>
+											</div>
+										</div>
+										<div class="text-center ml-4">
+											<img src={qrCodeURL} alt="QR Code" class="w-12 h-12 mx-auto mb-1" />
+											<p class="text-xs opacity-75" style="color: {colorSchemes[selectedColor].text};">Scan to join</p>
+										</div>
+									</div>
+								{:else if selectedTemplate === 'classic'}
+									<div class="h-full flex justify-between items-start">
+										<div class="flex-1">
+											<h1 class="text-lg font-serif font-bold" style="color: {colorSchemes[selectedColor].primary};">ZAUR</h1>
+											{#if includeTagline}
+												<p class="text-xs mt-1 uppercase tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].text};">Tour Platform</p>
+											{/if}
+											<div class="mt-4 text-xs" style="color: {colorSchemes[selectedColor].text};">
+												<p>zaur.app</p>
+												<p>hello@zaur.app</p>
+											</div>
+										</div>
+										<img src={qrCodeURL} alt="QR Code" class="w-8 h-8" />
+									</div>
+								{:else}
+									<div class="text-center h-full flex flex-col justify-center">
+										<h1 class="text-lg font-light tracking-widest" style="color: {colorSchemes[selectedColor].primary};">ZAUR</h1>
+										{#if includeTagline}
+											<p class="text-xs mt-1 tracking-wide opacity-75" style="color: {colorSchemes[selectedColor].text};">TOUR PLATFORM</p>
+										{/if}
+										<div class="mt-3">
+											<img src={qrCodeURL} alt="QR Code" class="w-10 h-10 mx-auto" />
+										</div>
+									</div>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>

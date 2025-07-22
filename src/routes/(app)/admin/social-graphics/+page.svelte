@@ -12,8 +12,7 @@
 	import Type from 'lucide-svelte/icons/type';
 	import Palette from 'lucide-svelte/icons/palette';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	// @ts-ignore
-	import html2canvas from 'html2canvas';
+
 	
 	// Check admin access
 	$effect(() => {
@@ -93,6 +92,7 @@
 			await new Promise(resolve => setTimeout(resolve, 500));
 			
 			// Generate canvas
+			const html2canvas = (await import('html2canvas')).default as any;
 			const canvas = await html2canvas(container as HTMLElement, {
 				backgroundColor: null,
 				scale: 1,
@@ -163,7 +163,7 @@
 									name="platform"
 									value={key}
 									checked={selectedPlatform === key}
-									onchange={() => selectedPlatform = key}
+									onchange={() => selectedPlatform = key as typeof selectedPlatform}
 									class="hidden"
 								/>
 								<span class="font-medium">{platform.name}</span>
@@ -187,7 +187,7 @@
 									name="template"
 									value={key}
 									checked={selectedTemplate === key}
-									onchange={() => selectedTemplate = key}
+									onchange={() => selectedTemplate = key as typeof selectedTemplate}
 									class="mt-0.5"
 								/>
 								<div>
@@ -213,7 +213,7 @@
 									name="color"
 									value={key}
 									checked={selectedColor === key}
-									onchange={() => selectedColor = key}
+									onchange={() => selectedColor = key as typeof selectedColor}
 									class="hidden"
 								/>
 								<div class="w-8 h-8 rounded" style="background: {key === 'minimal' ? '#f3f4f6' : scheme.background}; border: 1px solid #e5e7eb;"></div>
@@ -247,13 +247,80 @@
 						Preview
 					</h3>
 					<div class="bg-secondary rounded-lg p-8">
-						<!-- Preview container -->
-						<div style="aspect-ratio: {dimensions.width}/{dimensions.height}; max-width: 500px; margin: 0 auto;">
-							<div class="w-full h-full bg-white rounded-lg shadow-lg flex items-center justify-center">
-								<p class="text-center text-gray-500 p-4">
-									{platformDimensions[selectedPlatform].name} preview<br />
-									{templates[selectedTemplate].name} template
-								</p>
+						<!-- Social media graphic preview -->
+						<div style="aspect-ratio: {dimensions.width}/{dimensions.height}; max-width: 400px; margin: 0 auto;">
+							<div class="w-full h-full rounded-lg shadow-xl overflow-hidden" style="background: {colorSchemes[selectedColor].background}; color: {colorSchemes[selectedColor].text};">
+								{#if selectedTemplate === 'promo'}
+									<div class="h-full flex flex-col justify-center text-center p-6">
+										<h1 class="text-2xl font-bold mb-2 leading-tight">
+											Join 1000+ Tour Guides
+										</h1>
+										<p class="text-sm opacity-90 mb-4">
+											Use Zaur's QR ticketing platform
+										</p>
+										<div class="space-y-2 text-sm">
+											<div class="flex justify-center items-center gap-2">
+												<span>✓</span> No Commission Fees
+											</div>
+											<div class="flex justify-center items-center gap-2">
+												<span>✓</span> QR Digital Tickets
+											</div>
+											<div class="flex justify-center items-center gap-2">
+												<span>✓</span> Real-time Bookings
+											</div>
+										</div>
+										<div class="mt-6 text-lg font-semibold">
+											zaur.app
+										</div>
+									</div>
+								{:else if selectedTemplate === 'stats'}
+									<div class="h-full flex flex-col justify-center text-center p-6">
+										<h1 class="text-xl font-bold mb-4">
+											Zaur Platform Growth
+										</h1>
+										<div class="grid grid-cols-2 gap-4 mb-4">
+											<div>
+												<div class="text-xl font-bold">1000+</div>
+												<div class="text-xs opacity-80">Tour Guides</div>
+											</div>
+											<div>
+												<div class="text-xl font-bold">50K+</div>
+												<div class="text-xs opacity-80">Bookings</div>
+											</div>
+											<div>
+												<div class="text-xl font-bold">25+</div>
+												<div class="text-xs opacity-80">Countries</div>
+											</div>
+											<div>
+												<div class="text-xl font-bold">0%</div>
+												<div class="text-xs opacity-80">Commission</div>
+											</div>
+										</div>
+										<p class="text-sm mt-auto">
+											Join the revolution at zaur.app
+										</p>
+									</div>
+								{:else}
+									<div class="h-full flex flex-col justify-center p-6">
+										<div class="text-sm font-bold mb-3">
+											NEW FEATURE
+										</div>
+										<h1 class="text-xl font-bold mb-3 leading-tight">
+											QR Code Marketing Materials
+										</h1>
+										<p class="text-sm opacity-90 leading-relaxed mb-4">
+											Generate professional business cards, flyers, and social media graphics with built-in QR codes.
+										</p>
+										<div class="bg-white bg-opacity-20 p-3 rounded mb-4">
+											<p class="text-xs margin-0">
+												Boost your tour bookings with instant promotional materials
+											</p>
+										</div>
+										<p class="text-sm font-semibold mt-auto">
+											Start creating at zaur.app
+										</p>
+									</div>
+								{/if}
 							</div>
 						</div>
 					</div>
