@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import puppeteer from 'puppeteer';
+import { getBrowser } from '$lib/utils/puppeteer-helper.js';
 import { formatCurrency } from '$lib/utils/currency.js';
 
 type Platform = 'instagram-post' | 'instagram-story' | 'facebook' | 'twitter' | 'linkedin';
@@ -275,24 +275,12 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 </body>
 </html>`;
 
-		// Launch puppeteer
-		const browser = await puppeteer.launch({
-			headless: true,
-			args: [
-				'--no-sandbox',
-				'--disable-setuid-sandbox',
-				'--disable-dev-shm-usage',
-				'--disable-gpu',
-				'--no-first-run',
-				'--no-zygote',
-				'--single-process',
-				'--disable-extensions'
-			],
-			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
-		});
+		// Get shared browser instance
+		const browser = await getBrowser();
+		let page = null;
 
 		try {
-			const page = await browser.newPage();
+			page = await browser.newPage();
 			
 			// Set viewport to exact dimensions
 			await page.setViewport({
@@ -303,7 +291,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			
 			// Set the HTML content
 			await page.setContent(htmlContent, {
-				waitUntil: 'networkidle2'
+				waitUntil: 'networkidle2',
+				timeout: 20000
 			});
 
 			// Wait for fonts to load
@@ -315,6 +304,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				fullPage: false
 			});
 
+			// Close page but keep browser open for reuse
+			await page.close();
+
 			// Return PNG as response
 			return new Response(screenshot, {
 				headers: {
@@ -324,11 +316,26 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			});
 
 		} finally {
-			await browser.close();
+			// Clean up page if it exists
+			if (page && !page.isClosed()) {
+				try {
+					await page.close();
+				} catch (e) {
+					console.error('Error closing page:', e);
+				}
+			}
 		}
 
 	} catch (err) {
 		console.error('Error generating social media graphic:', err);
+		
+		// Provide more specific error messages
+		if (err instanceof Error && err.message.includes('timeout')) {
+			return error(503, 'Image generation timed out. Please try again.');
+		} else if (err instanceof Error && err.message.includes('Target closed')) {
+			return error(503, 'Image generation service is temporarily unavailable. Please try again later.');
+		}
+		
 		return error(500, 'Failed to generate social media graphic');
 	}
 }; 

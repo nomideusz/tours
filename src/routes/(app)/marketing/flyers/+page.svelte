@@ -102,8 +102,14 @@
 				a.click();
 				window.URL.revokeObjectURL(url);
 			} else {
-				console.error('Failed to generate flyer PDF');
-				alert('Failed to generate PDF. Please try again.');
+				const errorText = await response.text();
+				console.error('Failed to generate flyer PDF:', errorText);
+				
+				if (response.status === 503) {
+					alert('The PDF generation service is temporarily unavailable. Please try again in a few moments.');
+				} else {
+					alert('Failed to generate PDF. Please try again.');
+				}
 			}
 		} catch (error) {
 			console.error('Error generating flyer:', error);

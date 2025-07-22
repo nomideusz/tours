@@ -84,8 +84,14 @@
 				a.click();
 				window.URL.revokeObjectURL(url);
 			} else {
-				console.error('Failed to generate stickers PDF');
-				alert('Failed to generate PDF. Please try again.');
+				const errorText = await response.text();
+				console.error('Failed to generate stickers PDF:', errorText);
+				
+				if (response.status === 503) {
+					alert('The PDF generation service is temporarily unavailable. Please try again in a few moments.');
+				} else {
+					alert('Failed to generate PDF. Please try again.');
+				}
 			}
 		} catch (error) {
 			console.error('Error generating stickers:', error);
@@ -225,7 +231,7 @@
 						<div class="business-name">{profile.businessName || profile.name}</div>
 						<div class="tagline">{tagline}</div>
 						<div class="qr-placeholder">
-							<QrCode class="w-10 h-10" />
+							<QrCode class="w-10 h-10" style="color: #374151;" />
 						</div>
 						<div class="website-url">zaur.app/{profile.username}</div>
 					</div>
@@ -281,15 +287,25 @@
 </div>
 
 <style>
+	/* Ensure icon containers have proper colors */
+	.professional-icon svg {
+		color: white !important;
+	}
+	
+	/* Ensure preview section has proper contrast */
+	.qr-placeholder svg {
+		color: #374151 !important;
+	}
+	
+	/* Sticker preview styles */
 	.sticker-preview {
 		width: 200px;
 		height: 200px;
-		border-radius: 12px;
-		padding: 20px;
+		padding: 1rem;
+		border-radius: 1rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 	}
 	
 	.sticker-preview--professional {
@@ -299,12 +315,11 @@
 	
 	.sticker-preview--colorful {
 		background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-		color: white;
 	}
 	
 	.sticker-preview--minimal {
-		background: white;
-		border: 2px solid #000;
+		background: #ffffff;
+		border: 2px solid #000000;
 	}
 	
 	.sticker-content {
@@ -312,56 +327,58 @@
 	}
 	
 	.business-name {
-		font-size: 18px;
-		font-weight: 700;
-		margin-bottom: 8px;
+		font-size: 1.125rem;
+		font-weight: 800;
+		margin-bottom: 0.25rem;
 	}
 	
-	.sticker-preview--professional .business-name {
+	.sticker-preview--professional .business-name,
+	.sticker-preview--minimal .business-name {
 		color: #1f2937;
 	}
 	
-	.sticker-preview--minimal .business-name {
-		color: #000;
+	.sticker-preview--colorful .business-name {
+		color: #ffffff;
 	}
 	
 	.tagline {
-		font-size: 12px;
-		margin-bottom: 16px;
-		opacity: 0.8;
+		font-size: 0.75rem;
+		font-weight: 500;
+		margin-bottom: 1rem;
+	}
+	
+	.sticker-preview--professional .tagline,
+	.sticker-preview--minimal .tagline {
+		color: #6b7280;
+	}
+	
+	.sticker-preview--colorful .tagline {
+		color: rgba(255, 255, 255, 0.9);
 	}
 	
 	.qr-placeholder {
-		width: 80px;
-		height: 80px;
-		background: rgba(0, 0, 0, 0.05);
-		border-radius: 8px;
+		width: 2.5rem;
+		height: 2.5rem;
+		margin: 1rem auto;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin: 0 auto 16px;
-	}
-	
-	.sticker-preview--colorful .qr-placeholder {
-		background: rgba(255, 255, 255, 0.2);
-		color: white;
-	}
-	
-	.sticker-preview--minimal .qr-placeholder {
-		background: #f5f5f5;
-		color: #666;
 	}
 	
 	.website-url {
-		font-size: 14px;
-		font-weight: 600;
+		font-size: 0.875rem;
+		font-weight: 700;
 	}
 	
 	.sticker-preview--professional .website-url {
 		color: #f97316;
 	}
 	
+	.sticker-preview--colorful .website-url {
+		color: #ffffff;
+	}
+	
 	.sticker-preview--minimal .website-url {
-		color: #000;
+		color: #000000;
 	}
 </style> 

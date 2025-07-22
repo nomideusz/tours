@@ -112,8 +112,14 @@
 				a.click();
 				window.URL.revokeObjectURL(url);
 			} else {
-				console.error('Failed to generate social media graphic');
-				alert('Failed to generate graphic. Please try again.');
+				const errorText = await response.text();
+				console.error('Failed to generate social media graphic:', errorText);
+				
+				if (response.status === 503) {
+					alert('The image generation service is temporarily unavailable. Please try again in a few moments.');
+				} else {
+					alert('Failed to generate graphic. Please try again.');
+				}
 			}
 		} catch (error) {
 			console.error('Error generating social media graphic:', error);
@@ -155,46 +161,51 @@
 			</h2>
 			<div class="grid grid-cols-2 md:grid-cols-5 gap-3">
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-post' ? 'border-purple-200 bg-purple-50' : 'border-border'}"
+					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-post' ? 'border-purple-200 bg-purple-50' : 'border-border'}"
 					onclick={() => selectedPlatform = 'instagram-post'}
+					data-selected={selectedPlatform === 'instagram-post'}
 				>
-					<Instagram class="w-6 h-6 mx-auto mb-2 {selectedPlatform === 'instagram-post' ? 'text-purple-600' : 'text-secondary'}" />
+					<Instagram class="w-6 h-6 mx-auto mb-2" />
 					<h3 class="text-sm font-medium text-primary">Instagram</h3>
 					<p class="text-xs text-secondary">Square Post</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-story' ? 'border-purple-200 bg-purple-50' : 'border-border'}"
+					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-story' ? 'border-purple-200 bg-purple-50' : 'border-border'}"
 					onclick={() => selectedPlatform = 'instagram-story'}
+					data-selected={selectedPlatform === 'instagram-story'}
 				>
-					<Instagram class="w-6 h-6 mx-auto mb-2 {selectedPlatform === 'instagram-story' ? 'text-purple-600' : 'text-secondary'}" />
+					<Instagram class="w-6 h-6 mx-auto mb-2" />
 					<h3 class="text-sm font-medium text-primary">IG Story</h3>
 					<p class="text-xs text-secondary">9:16 Vertical</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'facebook' ? 'border-blue-200 bg-blue-50' : 'border-border'}"
+					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'facebook' ? 'border-blue-200 bg-blue-50' : 'border-border'}"
 					onclick={() => selectedPlatform = 'facebook'}
+					data-selected={selectedPlatform === 'facebook'}
 				>
-					<Facebook class="w-6 h-6 mx-auto mb-2 {selectedPlatform === 'facebook' ? 'text-blue-600' : 'text-secondary'}" />
+					<Facebook class="w-6 h-6 mx-auto mb-2" />
 					<h3 class="text-sm font-medium text-primary">Facebook</h3>
 					<p class="text-xs text-secondary">Link Post</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'twitter' ? 'border-sky-200 bg-sky-50' : 'border-border'}"
+					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'twitter' ? 'border-sky-200 bg-sky-50' : 'border-border'}"
 					onclick={() => selectedPlatform = 'twitter'}
+					data-selected={selectedPlatform === 'twitter'}
 				>
-					<Twitter class="w-6 h-6 mx-auto mb-2 {selectedPlatform === 'twitter' ? 'text-sky-600' : 'text-secondary'}" />
+					<Twitter class="w-6 h-6 mx-auto mb-2" />
 					<h3 class="text-sm font-medium text-primary">Twitter</h3>
 					<p class="text-xs text-secondary">Tweet Image</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'linkedin' ? 'border-blue-200 bg-blue-50' : 'border-border'}"
+					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'linkedin' ? 'border-blue-200 bg-blue-50' : 'border-border'}"
 					onclick={() => selectedPlatform = 'linkedin'}
+					data-selected={selectedPlatform === 'linkedin'}
 				>
-					<Linkedin class="w-6 h-6 mx-auto mb-2 {selectedPlatform === 'linkedin' ? 'text-blue-700' : 'text-secondary'}" />
+					<Linkedin class="w-6 h-6 mx-auto mb-2" />
 					<h3 class="text-sm font-medium text-primary">LinkedIn</h3>
 					<p class="text-xs text-secondary">Feed Post</p>
 				</button>
@@ -207,37 +218,41 @@
 				<Type class="w-5 h-5" />
 				Content Template
 			</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'tour-promo' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'tour-promo' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedTemplate = 'tour-promo'}
+					data-selected={selectedTemplate === 'tour-promo'}
 				>
-					<h3 class="font-semibold text-primary mb-1">Tour Promotion</h3>
-					<p class="text-sm text-secondary">Highlight a specific tour</p>
+					<h3 class="text-sm font-medium text-primary">Tour Promotion</h3>
+					<p class="text-xs text-secondary">Highlight a specific tour</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'profile-intro' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'profile-intro' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedTemplate = 'profile-intro'}
+					data-selected={selectedTemplate === 'profile-intro'}
 				>
-					<h3 class="font-semibold text-primary mb-1">Profile Introduction</h3>
-					<p class="text-sm text-secondary">Introduce your business</p>
+					<h3 class="text-sm font-medium text-primary">Profile Intro</h3>
+					<p class="text-xs text-secondary">Introduce yourself</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'schedule' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'schedule' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedTemplate = 'schedule'}
+					data-selected={selectedTemplate === 'schedule'}
 				>
-					<h3 class="font-semibold text-primary mb-1">Tour Schedule</h3>
-					<p class="text-sm text-secondary">Show upcoming tours</p>
+					<h3 class="text-sm font-medium text-primary">Tour Schedule</h3>
+					<p class="text-xs text-secondary">Weekly tour times</p>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'testimonial' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'testimonial' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedTemplate = 'testimonial'}
+					data-selected={selectedTemplate === 'testimonial'}
 				>
-					<h3 class="font-semibold text-primary mb-1">Testimonial</h3>
-					<p class="text-sm text-secondary">Customer review template</p>
+					<h3 class="text-sm font-medium text-primary">Testimonial</h3>
+					<p class="text-xs text-secondary">Customer review</p>
 				</button>
 			</div>
 		</div>
@@ -250,34 +265,38 @@
 			</h2>
 			<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'brand' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'brand' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedColor = 'brand'}
+					data-selected={selectedColor === 'brand'}
 				>
 					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-orange-400 to-coral-500"></div>
 					<h3 class="text-sm font-medium text-primary">Brand Colors</h3>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'vibrant' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'vibrant' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedColor = 'vibrant'}
+					data-selected={selectedColor === 'vibrant'}
 				>
 					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-500"></div>
 					<h3 class="text-sm font-medium text-primary">Vibrant</h3>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'minimal' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'minimal' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedColor = 'minimal'}
+					data-selected={selectedColor === 'minimal'}
 				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gray-100 border-2 border-gray-300"></div>
+					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gray-200 border-2 border-gray-300"></div>
 					<h3 class="text-sm font-medium text-primary">Minimal</h3>
 				</button>
 				
 				<button
-					class="p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'dark' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
+					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'dark' ? 'border-coral-200 bg-coral-50' : 'border-border'}"
 					onclick={() => selectedColor = 'dark'}
+					data-selected={selectedColor === 'dark'}
 				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gray-900"></div>
+					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-gray-800 to-gray-900"></div>
 					<h3 class="text-sm font-medium text-primary">Dark Mode</h3>
 				</button>
 			</div>
@@ -376,4 +395,73 @@
 			</div>
 		</div>
 	{/if}
-</div> 
+</div>
+
+<style>
+	/* Platform card icon styles */
+	.platform-card svg {
+		color: #6B7280;
+		transition: color 0.2s;
+	}
+	
+	/* Selected state icons - use specific colors for each platform */
+	.platform-card[data-selected="true"].border-purple-200 svg {
+		color: #9333EA !important;
+	}
+	
+	.platform-card[data-selected="true"].border-blue-200 svg {
+		color: #2563EB !important;
+	}
+	
+	.platform-card[data-selected="true"].border-sky-200 svg {
+		color: #0EA5E9 !important;
+	}
+	
+	/* LinkedIn needs more specific selector since it also has border-blue-200 */
+	.platform-card[data-selected="true"].border-blue-200:nth-child(5) svg {
+		color: #1E40AF !important;
+	}
+	
+	/* Dark mode overrides for better contrast */
+	:global(.dark) .platform-card[data-selected="true"],
+	:global(.dark) .template-card[data-selected="true"],
+	:global(.dark) .color-card[data-selected="true"] {
+		background-color: white !important;
+	}
+	
+	/* Ensure platform icons remain colored in dark mode when selected */
+	:global(.dark) .platform-card[data-selected="true"].border-purple-200 svg {
+		color: #9333EA !important;
+		opacity: 1 !important;
+	}
+	
+	:global(.dark) .platform-card[data-selected="true"].border-blue-200:not(:nth-child(5)) svg {
+		color: #2563EB !important;
+		opacity: 1 !important;
+	}
+	
+	:global(.dark) .platform-card[data-selected="true"].border-sky-200 svg {
+		color: #0EA5E9 !important;
+		opacity: 1 !important;
+	}
+	
+	:global(.dark) .platform-card[data-selected="true"].border-blue-200:nth-child(5) svg {
+		color: #1E40AF !important;
+		opacity: 1 !important;
+	}
+	
+	/* Ensure text has proper contrast in dark mode on white backgrounds */
+	:global(.dark) .platform-card[data-selected="true"] h3,
+	:global(.dark) .platform-card[data-selected="true"] p,
+	:global(.dark) .template-card[data-selected="true"] h3,
+	:global(.dark) .template-card[data-selected="true"] p,
+	:global(.dark) .color-card[data-selected="true"] h3 {
+		color: #1F2937 !important;
+	}
+	
+	/* Fix color theme swatches in dark mode */
+	:global(.dark) .color-card[data-selected="true"] .bg-gray-200 {
+		background-color: #E5E7EB !important;
+		border-color: #9CA3AF !important;
+	}
+</style> 

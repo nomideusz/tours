@@ -69,14 +69,41 @@
 				href={item.href}
 				class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {isActive(item.href) 
 					? `bg-${item.color}-50 text-${item.color}-700 border-${item.color}-200` 
-					: 'bg-bg-secondary text-secondary hover:bg-bg-tertiary'} border"
+					: 'bg-bg-secondary text-secondary hover:bg-bg-tertiary'} border marketing-nav-item"
 				style="{isActive(item.href) 
 					? `background: var(--color-${item.color}-50); color: var(--color-${item.color}-700); border-color: var(--color-${item.color}-200);`
 					: 'background: var(--bg-secondary); color: var(--text-secondary); border-color: var(--border-primary);'}"
+				data-active={isActive(item.href)}
+				data-color={item.color}
 			>
 				<svelte:component this={item.icon} class="w-4 h-4" />
 				{item.label}
 			</a>
 		{/each}
 	</div>
-</nav> 
+</nav>
+
+<style>
+	/* Force dark icons on light backgrounds in dark mode */
+	:global(.dark) .marketing-nav-item[data-active="true"] :global(svg) {
+		color: inherit !important;
+		opacity: 1 !important;
+	}
+	
+	/* Ensure proper contrast for each color */
+	:global(.dark) .marketing-nav-item[data-active="true"][data-color="primary"] {
+		color: #2563EB !important;
+	}
+	
+	:global(.dark) .marketing-nav-item[data-active="true"][data-color="orange"] {
+		color: #EA580C !important;
+	}
+	
+	:global(.dark) .marketing-nav-item[data-active="true"][data-color="teal"] {
+		color: #0F766E !important;
+	}
+	
+	:global(.dark) .marketing-nav-item[data-active="true"][data-color="purple"] {
+		color: #7C3AED !important;
+	}
+</style> 

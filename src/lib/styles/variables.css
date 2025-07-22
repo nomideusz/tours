@@ -2165,6 +2165,12 @@ button svg,
 	flex-shrink: 0;
 }
 
+/* Ensure professional icons have white color in all themes */
+.professional-icon > svg {
+	color: white !important;
+	stroke: white !important;
+}
+
 .professional-icon--coral {
 	background: var(--color-coral-500);
 }
@@ -2373,4 +2379,31 @@ button svg,
 
 .text-red-800 {
 	color: var(--color-error-800);
+}
+
+/* Marketing page icon visibility fixes */
+.professional-card button:not(.button) svg:not(.professional-icon svg) {
+	color: var(--text-primary);
+	opacity: 0.8;
+}
+
+/* Selected state icons get theme colors */
+.professional-card button[class*="border-"][class*="-200"] svg {
+	opacity: 1;
+}
+
+/* Ensure icons in light background sections have proper contrast in dark mode */
+:root.dark .bg-purple-50 svg,
+:root.dark .bg-blue-50 svg,
+:root.dark .bg-sky-50 svg,
+:root.dark .bg-orange-50 svg,
+:root.dark .bg-coral-50 svg,
+:root.dark .bg-teal-50 svg {
+	color: inherit !important;
+}
+
+/* Fix navigation icons in dark mode */
+.dark nav a[style*="background: var(--bg-secondary)"] svg {
+	color: var(--text-secondary);
+	opacity: 0.8;
 }

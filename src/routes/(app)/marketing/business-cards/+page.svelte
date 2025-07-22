@@ -346,22 +346,22 @@
 													{#if profile.businessName}
 														<p class="text-sm opacity-90 mb-3">{profile.businessName}</p>
 													{/if}
-													<div class="space-y-1 text-xs">
+													<div class="space-y-1 text-xs text-white">
 														{#if profile.phone}
 															<div class="flex items-center gap-2">
-																<Phone class="w-3 h-3" />
+																<Phone class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
 																<span>{profile.phone}</span>
 															</div>
 														{/if}
 														{#if profile.email}
 															<div class="flex items-center gap-2">
-																<Mail class="w-3 h-3" />
+																<Mail class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
 																<span>{profile.email}</span>
 															</div>
 														{/if}
 														{#if profile.website}
 															<div class="flex items-center gap-2">
-																<Globe class="w-3 h-3" />
+																<Globe class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
 																<span>{profile.website}</span>
 															</div>
 														{/if}
@@ -396,19 +396,19 @@
 														<div class="space-y-1 text-xs" style="color: #374151;">
 															{#if profile.phone}
 																<div class="flex items-center gap-2">
-																	<Phone class="w-3 h-3" style="color: {colorSchemes[selectedColorScheme].primary};" />
+																	<Phone class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
 																	<span>{profile.phone}</span>
 																</div>
 															{/if}
 															{#if profile.email}
 																<div class="flex items-center gap-2">
-																	<Mail class="w-3 h-3" style="color: {colorSchemes[selectedColorScheme].primary};" />
+																	<Mail class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
 																	<span>{profile.email}</span>
 																</div>
 															{/if}
 															{#if profile.website}
 																<div class="flex items-center gap-2">
-																	<Globe class="w-3 h-3" style="color: {colorSchemes[selectedColorScheme].primary};" />
+																	<Globe class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
 																	<span>{profile.website}</span>
 																</div>
 															{/if}

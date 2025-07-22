@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import puppeteer from 'puppeteer';
+import { getBrowser } from '$lib/utils/puppeteer-helper.js';
 
 type StickerDesign = 'professional' | 'colorful' | 'minimal';
 
@@ -9,6 +9,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user) {
 		return error(401, 'Unauthorized');
 	}
+
+	let browser = null;
+	let page = null;
 
 	try {
 		const { design, tagline, businessName, username }: {
@@ -208,59 +211,61 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 </body>
 </html>`;
 
-		// Launch puppeteer
-		const browser = await puppeteer.launch({
-			headless: true,
-			args: [
-				'--no-sandbox',
-				'--disable-setuid-sandbox',
-				'--disable-dev-shm-usage',
-				'--disable-gpu',
-				'--no-first-run',
-				'--no-zygote',
-				'--single-process',
-				'--disable-extensions'
-			],
-			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+		// Get shared browser instance
+		browser = await getBrowser();
+		page = await browser.newPage();
+		
+		// Set the HTML content
+		await page.setContent(htmlContent, {
+			waitUntil: 'networkidle2',
+			timeout: 20000
 		});
 
-		try {
-			const page = await browser.newPage();
-			
-			// Set the HTML content
-			await page.setContent(htmlContent, {
-				waitUntil: 'networkidle2'
-			});
+		// Wait for fonts to load
+		await page.evaluateHandle('document.fonts.ready');
 
-			// Wait for fonts to load
-			await page.evaluateHandle('document.fonts.ready');
+		// Generate PDF
+		const pdfBuffer = await page.pdf({
+			format: 'A4',
+			printBackground: true,
+			margin: {
+				top: '20mm',
+				right: '20mm',
+				bottom: '20mm',
+				left: '20mm'
+			}
+		});
 
-			// Generate PDF
-			const pdfBuffer = await page.pdf({
-				format: 'A4',
-				printBackground: true,
-				margin: {
-					top: '20mm',
-					right: '20mm',
-					bottom: '20mm',
-					left: '20mm'
-				}
-			});
+		// Close page but keep browser open for reuse
+		await page.close();
 
-			// Return PDF as response
-			return new Response(pdfBuffer, {
-				headers: {
-					'Content-Type': 'application/pdf',
-					'Content-Disposition': `attachment; filename="${username}-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf"`
-				}
-			});
-
-		} finally {
-			await browser.close();
-		}
+		// Return PDF as response
+		return new Response(pdfBuffer, {
+			headers: {
+				'Content-Type': 'application/pdf',
+				'Content-Disposition': `attachment; filename="${username}-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf"`
+			}
+		});
 
 	} catch (err) {
 		console.error('Error generating personalized sticker PDF:', err);
+		
+		// Provide more specific error messages
+		if (err instanceof Error && err.message.includes('timeout')) {
+			return error(503, 'PDF generation timed out. Please try again.');
+		} else if (err instanceof Error && err.message.includes('Target closed')) {
+			return error(503, 'PDF generation service is temporarily unavailable. Please try again later.');
+		}
+		
 		return error(500, 'Failed to generate sticker PDF');
+	} finally {
+		// Clean up page if it exists
+		if (page && !page.isClosed()) {
+			try {
+				await page.close();
+			} catch (e) {
+				console.error('Error closing page:', e);
+			}
+		}
 	}
 }; 

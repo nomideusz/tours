@@ -22,7 +22,7 @@ RUN pnpm run build
 # Production stage
 FROM node:18-alpine AS runner
 
-# Install dependencies for Puppeteer
+# Install dependencies for Puppeteer and Chrome
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -33,35 +33,40 @@ RUN apk add --no-cache \
     ttf-freefont \
     udev \
     xvfb \
+    dbus \
+    mesa-gl \
+    mesa-egl \
+    mesa-gbm \
+    libxcomposite \
+    libxdamage \
+    libxrandr \
+    libxss \
+    libxtst \
     && rm -rf /var/cache/apk/*
+
+# Create a non-root user for Chrome
+RUN addgroup -g 1001 -S pptruser && adduser -u 1001 -S pptruser -G pptruser
 
 # Tell Puppeteer to use installed Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    CHROME_BIN=/usr/bin/chromium-browser \
+    CHROME_PATH=/usr/bin/chromium-browser
 
-WORKDIR /app
-
-# Install pnpm in production stage
-RUN npm install -g pnpm
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy built application from builder stage
+# Copy everything from builder
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/static ./static
-# Copy scripts directory for production setup
-COPY --from=builder /app/scripts ./scripts
-# Copy source files needed by scripts
-COPY --from=builder /app/src/lib/db ./src/lib/db
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S svelte -u 1001
-USER svelte
+# Change ownership to pptruser for Chrome compatibility
+RUN chown -R pptruser:pptruser /app
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /tmp/.cache/puppeteer && \
+    chown -R pptruser:pptruser /tmp/.cache/puppeteer
+
+# Switch to non-root user
+USER pptruser
 
 # Expose port (will be set dynamically by CapRover)
 EXPOSE 3000

@@ -95,7 +95,7 @@
 	<!-- Page Header -->
 	<div class="mb-8">
 		<div class="flex items-center gap-3 mb-2">
-			<div class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary-50">
+			<div class="marketing-header-icon w-10 h-10 rounded-lg flex items-center justify-center bg-primary-50">
 				<Sparkles class="w-5 h-5 text-primary" />
 			</div>
 			<h1 class="text-2xl font-bold text-primary">Marketing Materials</h1>
@@ -142,7 +142,7 @@
 						<div class="professional-card group hover:border-{material.color}-200 transition-all duration-200">
 							<div class="p-6">
 								<div class="flex items-center gap-3 mb-4">
-									<div class="w-12 h-12 rounded-xl flex items-center justify-center bg-{material.color}-50">
+									<div class="material-icon w-12 h-12 rounded-xl flex items-center justify-center bg-{material.color}-50" data-color={material.color}>
 										<svelte:component this={material.icon} class="w-6 h-6 text-{material.color}-600" />
 									</div>
 									<h3 class="text-xl font-semibold text-primary">{material.title}</h3>
@@ -232,3 +232,35 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* Dark mode icon visibility fixes */
+	:global(.dark) .marketing-header-icon {
+		background-color: white !important;
+	}
+	
+	:global(.dark) .marketing-header-icon svg {
+		color: #2563EB !important;
+	}
+	
+	/* Material icon backgrounds in dark mode */
+	:global(.dark) .material-icon {
+		background-color: white !important;
+	}
+	
+	:global(.dark) .material-icon[data-color="primary"] svg {
+		color: #2563EB !important;
+	}
+	
+	:global(.dark) .material-icon[data-color="orange"] svg {
+		color: #EA580C !important;
+	}
+	
+	:global(.dark) .material-icon[data-color="teal"] svg {
+		color: #0F766E !important;
+	}
+	
+	:global(.dark) .material-icon[data-color="purple"] svg {
+		color: #7C3AED !important;
+	}
+</style>
