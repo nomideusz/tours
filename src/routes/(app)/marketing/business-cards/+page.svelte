@@ -83,11 +83,11 @@
 
 	// Generate profile URL and QR code
 	let profileURL = $derived(profile?.username ? `https://zaur.app/${profile.username}` : '');
-	let qrCodeURL = $derived(() => {
+	let qrCodeURL = $derived.by(() => {
 		if (!profileURL) return '';
 		
 		// Get the primary color for the selected scheme
-		const scheme = colorSchemes[selectedColorScheme];
+		const scheme = colorSchemes[selectedColorScheme as keyof typeof colorSchemes];
 		let qrColor = scheme.primary;
 		
 		// Convert CSS variables to hex colors for QR generation
@@ -196,7 +196,7 @@
 										window.print();
 									}, 1000);
 								};
-							</script>
+							<\/script>
 						</body>
 						</html>
 					`);
@@ -318,7 +318,7 @@
 											<button
 												onclick={() => selectedColorScheme = scheme as 'primary' | 'blue' | 'green' | 'purple' | 'orange'}
 												class="w-8 h-8 rounded-full border-2 {selectedColorScheme === scheme ? 'border-primary' : 'border-border'}"
-												style="background: {colorSchemes[scheme].primary};"
+												style="background: {colorSchemes[scheme as keyof typeof colorSchemes].primary};"
 												aria-label="Select {scheme === 'primary' ? 'theme' : scheme} color scheme"
 											></button>
 										</Tooltip>
