@@ -224,6 +224,55 @@
 	.search-no-cancel::-ms-clear {
 		display: none;
 	}
+
+	/* Search container styling */
+	.search-container {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+	}
+
+	/* Dark mode: match page background better */
+	[data-theme="dark"] .search-container {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Search button styling */
+	.search-button {
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+	}
+
+	.search-button:hover {
+		background: var(--color-primary-700);
+	}
+
+	/* Dark mode search button */
+	[data-theme="dark"] .search-button {
+		background: var(--color-primary-500);
+		color: white;
+		border: none;
+	}
+
+	[data-theme="dark"] .search-button:hover {
+		background: var(--color-primary-400);
+	}
+
+	/* Clear button styling */
+	.clear-button:hover {
+		background: var(--bg-tertiary);
+	}
+
+	[data-theme="dark"] .clear-button:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	/* Ensure placeholder text is properly styled */
+	.search-container input::placeholder {
+		color: var(--text-tertiary);
+		opacity: 0.7;
+	}
 </style>
 
 <svelte:head>
@@ -246,36 +295,36 @@
 			
 			<!-- Search Bar -->
 			<div class="max-w-2xl mx-auto">
-				<form onsubmit={(e) => { e.preventDefault(); handleSearch(); }} class="relative">
-					<Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5" style="color: var(--text-tertiary);" />
+				<div class="flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm search-container">
+					<Search class="h-5 w-5 flex-shrink-0" style="color: var(--text-secondary);" />
 					<input
 						type="search"
 						value={searchInput}
 						oninput={(e) => handleSearchInput(e.currentTarget.value)}
+						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
 						placeholder="Search tours, destinations, or activities..."
-						class="form-input form-input--large pl-12 pr-32 search-no-cancel"
-						style="background: var(--bg-primary); border-color: var(--border-secondary);"
+						class="flex-1 bg-transparent border-0 outline-0 search-no-cancel text-base"
+						style="color: var(--text-primary);"
 					/>
 					{#if searchInput}
 						<button
 							type="button"
 							onclick={clearSearch}
-							class="absolute right-24 top-1/2 -translate-y-1/2 p-1.5 rounded-md cursor-pointer transition-colors"
-							style="color: var(--text-tertiary); background: transparent;"
-							onmouseenter={(e) => e.currentTarget.style.background = 'var(--bg-tertiary)'}
-							onmouseleave={(e) => e.currentTarget.style.background = 'transparent'}
+							class="p-1.5 rounded-md transition-colors flex-shrink-0 clear-button"
+							style="color: var(--text-tertiary); border: none; background: transparent;"
 							aria-label="Clear search"
 						>
 							<X class="h-4 w-4" />
 						</button>
 					{/if}
 					<button
-						type="submit"
-						class="absolute right-2 top-1/2 -translate-y-1/2 button-primary button--small"
+						type="button"
+						onclick={handleSearch}
+						class="px-4 py-2 rounded-lg font-semibold transition-colors flex-shrink-0 text-sm search-button"
 					>
 						Search
 					</button>
-				</form>
+				</div>
 			</div>
 		</div>
 	</div>
