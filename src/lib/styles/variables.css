@@ -475,6 +475,20 @@
 	--border-button-primary: #a5342a;
 	--border-button-primary-hover: #c73e2f;
 
+	/* Muted colors for buttons and badges in dark mode - professional and subtle */
+	--color-muted-coral: #D4A5A5;
+	--color-muted-coral-hover: #C49494;
+	--color-muted-coral-active: #B48383;
+	--color-muted-success: #A8E6A3;
+	--color-muted-warning: #F2D17A;
+	--color-muted-error: #FFB3B3;
+	--color-muted-info: #B8D4FF;
+	--color-muted-gray: #D1D5DB;
+	--color-muted-border: #666666;
+	--color-muted-border-hover: #777777;
+	--color-muted-border-active: #888888;
+	--color-muted-text: #1A1A1A;
+
 	/* =============================================
 	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
 	   ============================================= */

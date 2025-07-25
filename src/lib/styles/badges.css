@@ -31,6 +31,37 @@
 		color: var(--text-secondary);
 	}
 
+	/* Dark mode adjustments for status badges - professional and consistent */
+	[data-theme="dark"] .status-confirmed {
+		background: var(--color-muted-success);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .status-pending {
+		background: var(--color-muted-warning);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .status-cancelled {
+		background: var(--color-muted-error);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .status-completed {
+		background: var(--color-muted-info);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .status-default {
+		background: var(--color-muted-gray);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
 	/* Payment Status Badges */
 	.payment-paid {
 		border-color: var(--color-success-200);
@@ -54,6 +85,31 @@
 		border-color: var(--border-primary);
 		background: var(--bg-secondary);
 		color: var(--text-secondary);
+	}
+
+	/* Dark mode adjustments for payment badges - consistent with professional design */
+	[data-theme="dark"] .payment-paid {
+		background: var(--color-muted-success);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .payment-pending {
+		background: var(--color-muted-info);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .payment-failed {
+		background: var(--color-muted-error);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .payment-refunded {
+		background: var(--color-muted-gray);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
 	}
 
 	/* Generic badge style */
@@ -392,6 +448,19 @@
 		border-color: var(--color-warning-200);
 	}
 
+	/* Dark mode adjustments for tour status badges - consistent with button approach */
+	[data-theme="dark"] .tour-status-badge--active {
+		background-color: var(--color-muted-success);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
+	[data-theme="dark"] .tour-status-badge--draft {
+		background-color: var(--color-muted-warning);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
+	}
+
 	.tour-status-indicator {
 		width: 0.375rem;
 		height: 0.375rem;
@@ -404,5 +473,14 @@
 
 	.tour-status-indicator--draft {
 		background-color: var(--color-warning-500);
+	}
+
+	/* Dark mode adjustments for tour status indicators */
+	[data-theme="dark"] .tour-status-indicator--active {
+		background-color: var(--color-success-600); /* Use existing bright green */
+	}
+
+	[data-theme="dark"] .tour-status-indicator--draft {
+		background-color: var(--color-warning-600); /* Use existing bright orange */
 	}
 } 

@@ -63,8 +63,8 @@
 			</div>
 			
 			<h1 class="hero-title mb-6">
-				<span class="title-primary">QR Bookings</span>
-				<span class="title-secondary">+ Tour Discovery</span>
+				<span class="title-primary">QR Bookings for Tour Guides</span>
+				<span class="title-secondary">+ Discovery</span>
 			</h1>
 			
 			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
@@ -241,6 +241,13 @@
 		border-radius: 1rem;
 		font-size: 0.75rem;
 		font-weight: 500;
+	}
+
+	/* Dark mode styling for promo badge - consistent with our variable system */
+	[data-theme="dark"] .promo-badge {
+		background: var(--color-muted-coral);
+		color: var(--color-muted-text);
+		border: 1px solid var(--color-muted-border);
 	}
 	
 	.promo-button {

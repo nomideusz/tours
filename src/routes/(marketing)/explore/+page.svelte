@@ -209,71 +209,6 @@
 	let avatarErrors = $state(new Set());
 </script>
 
-<style>
-	/* Hide browser's default search input clear button */
-	.search-no-cancel::-webkit-search-cancel-button {
-		-webkit-appearance: none;
-		appearance: none;
-	}
-	
-	.search-no-cancel::-webkit-search-decoration {
-		-webkit-appearance: none;
-		appearance: none;
-	}
-	
-	.search-no-cancel::-ms-clear {
-		display: none;
-	}
-
-	/* Search container styling */
-	.search-container {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-	}
-
-	/* Dark mode: match page background better */
-	[data-theme="dark"] .search-container {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-	}
-
-	/* Search button styling */
-	.search-button {
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
-	}
-
-	.search-button:hover {
-		background: var(--color-primary-700);
-	}
-
-	/* Dark mode search button */
-	[data-theme="dark"] .search-button {
-		background: var(--color-primary-500);
-		color: white;
-		border: none;
-	}
-
-	[data-theme="dark"] .search-button:hover {
-		background: var(--color-primary-400);
-	}
-
-	/* Clear button styling */
-	.clear-button:hover {
-		background: var(--bg-tertiary);
-	}
-
-	[data-theme="dark"] .clear-button:hover {
-		background: rgba(255, 255, 255, 0.1);
-	}
-
-	/* Ensure placeholder text is properly styled */
-	.search-container input::placeholder {
-		color: var(--text-tertiary);
-		opacity: 0.7;
-	}
-</style>
 
 <svelte:head>
 	<title>Explore Tours - Zaur</title>
@@ -696,3 +631,70 @@
 		</div>
 	</div>
 </div> 
+
+
+<style>
+	/* Hide browser's default search input clear button */
+	.search-no-cancel::-webkit-search-cancel-button {
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	
+	.search-no-cancel::-webkit-search-decoration {
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	
+	.search-no-cancel::-ms-clear {
+		display: none;
+	}
+
+	/* Search container styling */
+	.search-container {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+	}
+
+	/* Dark mode: match page background better */
+	[data-theme="dark"] .search-container {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Search button styling */
+	.search-button {
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+	}
+
+	.search-button:hover {
+		background: var(--color-primary-700);
+	}
+
+	/* Dark mode search button */
+	[data-theme="dark"] .search-button {
+		background: var(--color-primary-500);
+		color: white;
+		border: none;
+	}
+
+	[data-theme="dark"] .search-button:hover {
+		background: var(--color-primary-400);
+	}
+
+	/* Clear button styling */
+	.clear-button:hover {
+		background: var(--bg-tertiary);
+	}
+
+	[data-theme="dark"] .clear-button:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	/* Ensure placeholder text is properly styled */
+	.search-container input::placeholder {
+		color: var(--text-tertiary);
+		opacity: 0.7;
+	}
+</style>

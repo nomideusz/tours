@@ -565,21 +565,24 @@
 		height: 0.875rem;
 	}
 
-	/* Dark mode adjustments */
+	/* Dark mode adjustments - subtle and professional */
 	[data-theme="dark"] .button-primary,
 	[data-theme="dark"] .button--primary {
-		background: #FF6B6B;
-		color: white;
+		background: var(--color-muted-coral);
+		color: var(--color-muted-text);
+		border-color: var(--color-muted-border);
 	}
 
 	[data-theme="dark"] .button-primary:hover:not(:disabled),
 	[data-theme="dark"] .button--primary:hover:not(:disabled) {
-		background: #FF5252;
+		background: var(--color-muted-coral-hover);
+		border-color: var(--color-muted-border-hover);
 	}
 
 	[data-theme="dark"] .button-primary:active:not(:disabled),
 	[data-theme="dark"] .button--primary:active:not(:disabled) {
-		background: #FF4444;
+		background: var(--color-muted-coral-active);
+		border-color: var(--color-muted-border-active);
 	}
 
 	[data-theme="dark"] .button-success,
