@@ -607,7 +607,7 @@
 				<div 
 					in:fade={{ duration: 200 }}
 					out:fade={{ duration: deletingTourIds.has(tour.id) ? 300 : 200 }}
-					class="rounded-xl transition-all hover:shadow-md tour-card cursor-pointer {recentlyUpdated === tour.id ? 'recently-updated' : ''} {deletingTourIds.has(tour.id) ? 'deleting' : ''}"
+					class="rounded-xl transition-all hover:shadow-md tour-card cursor-pointer flex flex-col {recentlyUpdated === tour.id ? 'recently-updated' : ''} {deletingTourIds.has(tour.id) ? 'deleting' : ''}"
 					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
 					onmouseenter={(e) => e.currentTarget.style.borderColor = 'var(--border-secondary)'}
 					onmouseleave={(e) => e.currentTarget.style.borderColor = 'var(--border-primary)'}
@@ -652,73 +652,73 @@
 					</div>
 					
 					<!-- Tour Info -->
-					<div class="p-4 sm:p-6">
-						<h3 class="text-lg font-semibold mb-2 hover:underline" style="color: var(--text-primary);">
-							{tour.name}
-						</h3>
-						
-						<!-- Details -->
-						<div class="space-y-2 mb-4">
-							<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
-								<MapPin class="h-3 w-3" />
-								{tour.location || 'Location not set'}
-							</div>
-							<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
-								<div class="flex items-center gap-1">
-									<Clock class="h-3 w-3" />
-									{formatDuration(tour.duration)}
+					<div class="p-4 sm:p-6 flex flex-col flex-grow">
+						<div class="flex-grow">
+							<h3 class="text-lg font-semibold mb-2 hover:underline" style="color: var(--text-primary);">
+								{tour.name}
+							</h3>
+							
+							<!-- Details -->
+							<div class="space-y-2 mb-4">
+								<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+									<MapPin class="h-3 w-3" />
+									{tour.location || 'Location not set'}
 								</div>
-								<div class="flex items-center gap-1">
-									<Users class="h-3 w-3" />
-									{tour.capacity} max
+								<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
+									<div class="flex items-center gap-1">
+										<Clock class="h-3 w-3" />
+										{formatDuration(tour.duration)}
+									</div>
+									<div class="flex items-center gap-1">
+										<Users class="h-3 w-3" />
+										{tour.capacity} max
+									</div>
 								</div>
-							</div>
-							<div class="min-h-[2.5rem] flex items-center">
-								<div class="flex items-baseline gap-2 flex-wrap">
-									<span class="text-lg font-semibold" style="color: var(--color-primary-600);">
-										{getTourDisplayPriceFormatted(tour)}
-									</span>
-									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
-										<span class="text-xs" style="color: var(--text-secondary);">
-											<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
-											{$globalCurrencyFormatter(tour.pricingTiers.child)}
+								<div class="min-h-[2.5rem] flex items-center">
+									<div class="flex items-baseline gap-2 flex-wrap">
+										<span class="text-lg font-semibold" style="color: var(--color-primary-600);">
+											{getTourDisplayPriceFormatted(tour)}
 										</span>
-									{/if}
+										{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+											<span class="text-xs" style="color: var(--text-secondary);">
+												<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
+												{$globalCurrencyFormatter(tour.pricingTiers.child)}
+											</span>
+										{/if}
+									</div>
+								</div>
+							</div>
+							
+							<!-- Desktop Stats (like tour details page) -->
+							<div class="hidden sm:grid grid-cols-4 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
+								<div>
+									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
+									<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
+								</div>
+								<div class="relative">
+									<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
+										{tour.qrConversions || 0}
+										{#if tour.hasFutureBookings}
+											<Tooltip text="Has upcoming bookings" position="top">
+												<Calendar class="h-3 w-3" style="color: var(--color-warning-600);" />
+											</Tooltip>
+										{/if}
+									</p>
+									<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
+								</div>
+								<div>
+									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.capacity}</p>
+									<p class="text-xs" style="color: var(--text-tertiary);">Capacity</p>
+								</div>
+								<div>
+									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.upcomingSlots || 0}</p>
+									<p class="text-xs" style="color: var(--text-tertiary);">Time slots</p>
 								</div>
 							</div>
 						</div>
 						
-
-						
-						<!-- Desktop Stats (like tour details page) -->
-						<div class="hidden sm:grid grid-cols-4 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
-							<div>
-								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
-							</div>
-							<div class="relative">
-								<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
-									{tour.qrConversions || 0}
-									{#if tour.hasFutureBookings}
-										<Tooltip text="Has upcoming bookings" position="top">
-											<Calendar class="h-3 w-3" style="color: var(--color-warning-600);" />
-										</Tooltip>
-									{/if}
-								</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
-							</div>
-							<div>
-								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.capacity}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Capacity</p>
-							</div>
-							<div>
-								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.upcomingSlots || 0}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Time slots</p>
-							</div>
-						</div>
-						
-						<!-- Actions -->
-						<div class="flex gap-2 items-center">
+						<!-- Actions - Always at bottom -->
+						<div class="flex gap-2 items-center mt-auto">
 							<div class="flex gap-2 flex-1">
 								<Tooltip text="Manage tour details & schedule" position="top">
 									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="button-secondary button--small button--gap">
