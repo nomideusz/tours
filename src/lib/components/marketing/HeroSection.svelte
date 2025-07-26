@@ -245,8 +245,8 @@
 
 	/* Dark mode styling for promo badge - consistent with our variable system */
 	[data-theme="dark"] .promo-badge {
-		background: var(--color-muted-coral);
-		color: var(--color-muted-text);
+		background: var(--color-muted-coral) !important;
+		color: var(--color-muted-text) !important;
 		border: 1px solid var(--color-muted-border);
 	}
 	

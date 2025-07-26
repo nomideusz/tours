@@ -33,33 +33,33 @@
 
 	/* Dark mode adjustments for status badges - professional and consistent */
 	[data-theme="dark"] .status-confirmed {
-		background: var(--color-muted-success);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-success) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .status-pending {
-		background: var(--color-muted-warning);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-warning) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .status-cancelled {
-		background: var(--color-muted-error);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-error) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .status-completed {
-		background: var(--color-muted-info);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-info) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .status-default {
-		background: var(--color-muted-gray);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-gray) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	/* Payment Status Badges */
@@ -89,27 +89,27 @@
 
 	/* Dark mode adjustments for payment badges - consistent with professional design */
 	[data-theme="dark"] .payment-paid {
-		background: var(--color-muted-success);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-success) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .payment-pending {
-		background: var(--color-muted-info);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-info) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .payment-failed {
-		background: var(--color-muted-error);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-error) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .payment-refunded {
-		background: var(--color-muted-gray);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background: var(--color-muted-gray) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	/* Generic badge style */
@@ -450,15 +450,15 @@
 
 	/* Dark mode adjustments for tour status badges - consistent with button approach */
 	[data-theme="dark"] .tour-status-badge--active {
-		background-color: var(--color-muted-success);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background-color: var(--color-muted-success) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	[data-theme="dark"] .tour-status-badge--draft {
-		background-color: var(--color-muted-warning);
-		color: var(--color-muted-text);
-		border-color: var(--color-muted-border);
+		background-color: var(--color-muted-warning) !important;
+		color: var(--color-muted-text) !important;
+		border-color: var(--color-muted-border) !important;
 	}
 
 	.tour-status-indicator {
