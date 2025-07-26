@@ -20,6 +20,8 @@ export function createInvalidationHelper(queryClient: any) {
 				// Main tour queries
 				queryClient.invalidateQueries({ queryKey: queryKeys.userTours }),
 				queryClient.invalidateQueries({ queryKey: queryKeys.toursStats }),
+				// Usage query to update tour count display
+				queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] }),
 			];
 			
 			// Tour-specific queries
@@ -166,6 +168,9 @@ export function createTourMutation() {
 					queryKey: queryKeys.toursStats,
 					type: 'active' 
 				});
+				
+				// Invalidate usage query to update tour count display
+				queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
 				
 				console.log('✅ Create mutation: Cache synced with server');
 			}
@@ -409,6 +414,9 @@ export function deleteTourMutation() {
 				queryKey: queryKeys.toursStats,
 				type: 'active' 
 			});
+			
+			// Invalidate usage query to update tour count display
+			queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
 			
 			console.log('🗑️ Delete mutation: Cache synced with server');
 			

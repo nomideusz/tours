@@ -284,6 +284,8 @@
 			// Invalidate queries to refetch data
 			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
 			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+			// Invalidate usage query to update tour count display
+			queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
 		}
 	});
 	
@@ -688,32 +690,32 @@
 									</div>
 								</div>
 							</div>
-							
-							<!-- Desktop Stats (like tour details page) -->
-							<div class="hidden sm:grid grid-cols-4 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
-								<div>
-									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
-								</div>
-								<div class="relative">
-									<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
-										{tour.qrConversions || 0}
-										{#if tour.hasFutureBookings}
-											<Tooltip text="Has upcoming bookings" position="top">
-												<Calendar class="h-3 w-3" style="color: var(--color-warning-600);" />
-											</Tooltip>
-										{/if}
-									</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
-								</div>
-								<div>
-									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.capacity}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Capacity</p>
-								</div>
-								<div>
-									<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.upcomingSlots || 0}</p>
-									<p class="text-xs" style="color: var(--text-tertiary);">Time slots</p>
-								</div>
+						</div>
+						
+						<!-- Desktop Stats - Positioned just above actions -->
+						<div class="hidden sm:grid grid-cols-4 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
+							<div>
+								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
+							</div>
+							<div class="relative">
+								<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
+									{tour.qrConversions || 0}
+									{#if tour.hasFutureBookings}
+										<Tooltip text="Has upcoming bookings" position="top">
+											<Calendar class="h-3 w-3" style="color: var(--color-warning-600);" />
+										</Tooltip>
+									{/if}
+								</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
+							</div>
+							<div>
+								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.capacity}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Capacity</p>
+							</div>
+							<div>
+								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.upcomingSlots || 0}</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Time slots</p>
 							</div>
 						</div>
 						
