@@ -641,6 +641,7 @@
 							label="Price"
 							min={minimumPrice}
 							max={500}
+							inputMax={5000}
 							step={priceStep}
 							required={true}
 							error={hasFieldError(allErrors, 'price')}

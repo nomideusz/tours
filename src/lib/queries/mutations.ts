@@ -547,7 +547,9 @@ export function updateTourStatusMutation() {
 					queryKey: queryKeys.tourDetails(variables.tourId),
 					exact: true,
 					refetchType: 'all'
-				})
+				}),
+				// Invalidate usage query to update tour count display
+				queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] })
 			]);
 			
 			console.log('🔄 Status mutation: Cache invalidated and refetched');
