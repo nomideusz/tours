@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Clock from 'lucide-svelte/icons/clock';
+	import Pencil from 'lucide-svelte/icons/pencil';
 	
 	interface Props {
 		value: number; // duration in minutes
@@ -29,14 +29,110 @@
 		showMarkers = true
 	}: Props = $props();
 	
-	// Track which thumb is being dragged
+	// Track state
 	let dragging = $state(false);
-	let sliderRef: HTMLDivElement;
+	let sliderRef = $state<HTMLDivElement>();
+	let svgRef = $state<SVGSVGElement>();
+	let isMobile = $state(false);
+	let isEditing = $state(false);
+	let editValue = $state('');
+	let editInputRef = $state<HTMLInputElement>();
 	
-	// Convert value to slider position (0-100)
+	// Circular slider constants
+	const RADIUS = 80;
+	const STROKE_WIDTH = 12;
+	const CENTER = 125;
+	const START_ANGLE = -135;
+	const END_ANGLE = 135;
+	
+	// Convert value to slider position (0-100) for linear slider
 	let sliderPosition = $derived(((value - min) / (max - min)) * 100);
 	
-	// Get position from mouse/touch event
+	// Convert value to angle for circular slider
+	let currentAngle = $derived((() => {
+		const normalized = (value - min) / (max - min);
+		return START_ANGLE + normalized * (END_ANGLE - START_ANGLE);
+	})());
+	
+	// Calculate thumb position for circular slider
+	let thumbX = $derived(CENTER + RADIUS * Math.cos(currentAngle * Math.PI / 180));
+	let thumbY = $derived(CENTER + RADIUS * Math.sin(currentAngle * Math.PI / 180));
+	
+	// Calculate arc path for circular slider
+	let arcPath = $derived((() => {
+		const startRad = START_ANGLE * Math.PI / 180;
+		const endRad = currentAngle * Math.PI / 180;
+		
+		const x1 = CENTER + RADIUS * Math.cos(startRad);
+		const y1 = CENTER + RADIUS * Math.sin(startRad);
+		const x2 = CENTER + RADIUS * Math.cos(endRad);
+		const y2 = CENTER + RADIUS * Math.sin(endRad);
+		
+		const largeArc = Math.abs(currentAngle - START_ANGLE) > 180 ? 1 : 0;
+		
+		return `M ${x1} ${y1} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${x2} ${y2}`;
+	})());
+	
+	// Check if mobile
+	$effect(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 640;
+		};
+		
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+		
+		return () => {
+			window.removeEventListener('resize', checkMobile);
+		};
+	});
+	
+	// Handle circular slider interaction
+	function handleCircularInteraction(event: MouseEvent | TouchEvent) {
+		if (disabled || !svgRef) return;
+		
+		const rect = svgRef.getBoundingClientRect();
+		let clientX: number, clientY: number;
+		
+		if ('touches' in event) {
+			clientX = event.touches[0].clientX;
+			clientY = event.touches[0].clientY;
+		} else {
+			clientX = event.clientX;
+			clientY = event.clientY;
+		}
+		
+		// Convert to SVG coordinates
+		const x = clientX - rect.left;
+		const y = clientY - rect.top;
+		
+		// Calculate angle from center
+		const dx = x - CENTER;
+		const dy = y - CENTER;
+		let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+		
+		// Constrain to valid range
+		if (angle < START_ANGLE && angle > -180) {
+			angle = START_ANGLE;
+		} else if (angle > END_ANGLE || angle < -180) {
+			angle = END_ANGLE;
+		}
+		
+		// Convert angle to value
+		const normalized = (angle - START_ANGLE) / (END_ANGLE - START_ANGLE);
+		const newValue = min + normalized * (max - min);
+		
+		// Apply step
+		const stepped = Math.round(newValue / step) * step;
+		const clamped = Math.max(min, Math.min(max, stepped));
+		
+		if (clamped !== value) {
+			value = clamped;
+			onChange?.(clamped);
+		}
+	}
+	
+	// Get position from mouse/touch event for linear slider
 	function getPositionFromEvent(event: MouseEvent | TouchEvent): number {
 		if (!sliderRef) return 0;
 		
@@ -82,7 +178,7 @@
 	}
 	
 	// Handle track click
-	function handleTrackClick(event: MouseEvent) {
+	function handleTrackClick(event: MouseEvent | TouchEvent) {
 		if (disabled || dragging) return;
 		
 		const position = getPositionFromEvent(event);
@@ -186,8 +282,9 @@
 				}
 			}
 		});
+		markerValues = filteredMarkers;
 		
-		return filteredMarkers.map(val => ({
+		return markerValues.map(val => ({
 			value: val,
 			position: ((val - min) / (max - min)) * 100
 		}));
@@ -207,12 +304,48 @@
 		}
 	}
 	
-
+	// Handle manual input
+	function startEditing() {
+		if (disabled) return;
+		isEditing = true;
+		editValue = value.toString();
+		
+		// Focus input after DOM update
+		setTimeout(() => {
+			if (editInputRef) {
+				editInputRef.focus();
+				editInputRef.select();
+			}
+		}, 100);
+	}
+	
+	function handleEditSubmit() {
+		const parsed = parseInt(editValue);
+		
+		if (!isNaN(parsed)) {
+			const stepped = Math.round(parsed / step) * step;
+			const clamped = Math.max(min, Math.min(max, stepped));
+			value = clamped;
+			onChange?.(clamped);
+		}
+		
+		isEditing = false;
+	}
+	
+	function handleEditKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			handleEditSubmit();
+		} else if (event.key === 'Escape') {
+			event.preventDefault();
+			isEditing = false;
+		}
+	}
 	
 	let durationInfo = $derived(formatDuration(value));
 </script>
 
-<div class="duration-slider" class:disabled class:error>
+<div class="duration-slider" class:disabled class:error class:mobile={isMobile} class:editing={isEditing}>
 	{#if label}
 		<div class="form-label block mb-2 sm:mb-3 flex items-center justify-between">
 			<span>
@@ -232,79 +365,230 @@
 						Reset
 					</button>
 				{:else}
-					<!-- Reserve space to prevent layout jump -->
 					<div class="reset-button-spacer"></div>
 				{/if}
 			</div>
 		</div>
 	{/if}
 	
-	<!-- Value display -->
-	<div class="value-display">
-		<div class="value-main">
-			<div class="value-number">{durationInfo.display}</div>
-		</div>
-	</div>
-	
-	<!-- Slider -->
-	<div 
-		class="slider-container"
-		bind:this={sliderRef}
-		onmousedown={handleTrackClick}
-		onkeydown={handleKeyDown}
-		role="slider"
-		aria-label={label}
-		aria-valuemin={min}
-		aria-valuemax={max}
-		aria-valuenow={value}
-		aria-valuetext="{durationInfo.display}"
-		tabindex={disabled ? -1 : 0}
-	>
-		<!-- Track -->
-		<div class="slider-track">
-			<!-- Filled portion -->
-			<div 
-				class="slider-fill"
-				style="width: {sliderPosition}%"
-			></div>
-			
-			<!-- Markers -->
-			{#if showMarkers && markers.length > 0}
-				<div class="markers">
-					{#each markers as marker}
-						<div class="marker" style="left: {marker.position}%">
-							<div class="marker-dot"></div>
-							<span class="marker-text">{formatDuration(marker.value).display}</span>
-						</div>
-					{/each}
-				</div>
-			{/if}
+	<!-- Linear slider -->
+	<!-- {#if isMobile}
+		Circular slider temporarily hidden
+	{:else} -->
+		<div class="value-display">
+			<div class="value-main">
+				{#if isEditing}
+					<input
+						bind:this={editInputRef}
+						bind:value={editValue}
+						type="number"
+						inputmode="numeric"
+						min={min}
+						max={max}
+						step={step}
+						class="value-edit-input"
+						onblur={handleEditSubmit}
+						onkeydown={handleEditKeyDown}
+					/>
+				{:else}
+					<div 
+						class="value-number"
+						onclick={startEditing}
+						role="button"
+						tabindex={disabled ? -1 : 0}
+						onkeydown={(e) => { if (e.key === 'Enter') startEditing(); }}
+					>
+						{durationInfo.display}
+						{#if !disabled}
+							<Pencil class="edit-icon" />
+						{/if}
+					</div>
+				{/if}
+			</div>
 		</div>
 		
-		<!-- Thumb -->
-		<button
-			type="button"
-			class="slider-thumb"
-			style="left: {sliderPosition}%"
-			data-value="{durationInfo.display}"
-			onmousedown={handleThumbDown}
-			ontouchstart={handleThumbDown}
-			aria-label="{label}: {durationInfo.display}"
+		<div 
+			class="slider-container"
+			bind:this={sliderRef}
+			onmousedown={handleTrackClick}
+			ontouchstart={handleTrackClick}
+			onkeydown={handleKeyDown}
+			role="slider"
+			aria-label={label}
+			aria-valuemin={min}
+			aria-valuemax={max}
+			aria-valuenow={value}
+			aria-valuetext="{durationInfo.display}"
 			tabindex={disabled ? -1 : 0}
-			{disabled}
 		>
-			<Clock class="thumb-icon" />
-			<span class="thumb-value">{durationInfo.display}</span>
-		</button>
-	</div>
-	
-
+			<div class="slider-track">
+				<div 
+					class="slider-fill"
+					style="width: {sliderPosition}%"
+				></div>
+				
+				{#if showMarkers && markers.length > 0}
+					<div class="markers">
+						{#each markers as marker}
+							<div class="marker" style="left: {marker.position}%">
+								<div class="marker-dot"></div>
+								<span class="marker-text">{formatDuration(marker.value).display}</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			
+			<button
+				type="button"
+				class="slider-thumb"
+				style="left: calc(0.75rem + ({sliderPosition} / 100) * (100% - 1.5rem))"
+				data-value="{durationInfo.display}"
+				onmousedown={handleThumbDown}
+				ontouchstart={handleThumbDown}
+				aria-label="{label}: {durationInfo.display}"
+				tabindex={disabled ? -1 : 0}
+				{disabled}
+			>
+				<span class="thumb-value">{durationInfo.display}</span>
+			</button>
+		</div>
+	<!-- {/if} -->
 </div>
 
 <style>
 	.duration-slider {
 		width: 100%;
 	}
+	
+	/* Circular slider styles */
+	.circular-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+		margin: 0 auto;
+		width: 320px;
+		height: 320px;
+		position: relative;
+	}
+
+	.circular-edit-button {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		background: transparent;
+		border: none;
+		font-size: 2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		font-variant-numeric: tabular-nums;
+		cursor: pointer;
+		padding: 1rem;
+		z-index: 15;
+		-webkit-tap-highlight-color: transparent;
+		outline: none;
+		text-align: center;
+		min-width: 100px;
+		transition: color 0.2s ease;
+	}
+
+	.circular-edit-button:focus {
+		outline: none;
+	}
+
+	.circular-edit-button:active {
+		color: var(--color-primary-600);
+	}
+
+	.circular-edit-button-hint {
+		font-size: 0.65rem;
+		color: var(--text-tertiary);
+		margin-top: 0.25rem;
+		font-weight: 400;
+	}
+
+	@media (min-width: 641px) {
+		.circular-edit-button-hint {
+			opacity: 0;
+			transition: opacity 0.2s ease;
+		}
+		
+		.circular-edit-button:hover .circular-edit-button-hint {
+			opacity: 1;
+		}
+	}
+	
+	.circular-container svg {
+		-webkit-tap-highlight-color: transparent;
+		touch-action: none;
+		outline: none;
+	}
+
+	.circular-container svg:focus {
+		outline: none;
+	}
+	
+	.circular-container svg.editing {
+		pointer-events: none;
+		opacity: 0.8;
+	}
+	
+	.circular-container svg.editing foreignObject {
+		pointer-events: all;
+	}
+	
+	.circular-edit-input {
+		width: 100%;
+		height: 100%;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-primary-500);
+		border-radius: var(--radius-sm);
+		text-align: center;
+		font-size: 1.5rem;
+		font-weight: 700 !important;
+		color: var(--text-primary);
+		font-variant-numeric: tabular-nums;
+		padding: 2px;
+		box-sizing: border-box;
+		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		z-index: 100;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		appearance: none;
+	}
+
+	.circular-edit-input::-webkit-outer-spin-button,
+	.circular-edit-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+
+	.circular-edit-input:focus {
+		outline: none;
+		border-color: var(--color-primary-600);
+	}
+	
+	.circular-marker {
+		font-size: 0.75rem;
+		fill: var(--text-tertiary);
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
+	}
+	
+	.thumb-outer {
+		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+		transition: all 0.2s ease;
+	}
+
+
 	
 	.value-display {
 		display: flex;
@@ -314,12 +598,7 @@
 		gap: 0.5rem;
 	}
 	
-	/* Hide value display on mobile */
-	@media (max-width: 640px) {
-		.value-display {
-			display: none;
-		}
-	}
+
 	
 	.value-main {
 		display: flex;
@@ -333,6 +612,76 @@
 		font-weight: 700;
 		color: var(--text-primary);
 		font-variant-numeric: tabular-nums;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		transition: color 0.2s ease;
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-sm);
+		border: 2px solid transparent;
+		user-select: none;
+		box-sizing: border-box;
+		line-height: 1;
+		height: calc(2rem + 0.5rem + 4px);
+	}
+	
+	.duration-slider:not(.disabled) .value-number:hover {
+		color: var(--color-primary-600);
+		background: var(--bg-secondary);
+	}
+	
+	.value-number:focus-visible {
+		outline: 2px solid var(--color-primary-500);
+		outline-offset: 2px;
+	}
+
+	:global(.edit-icon) {
+		width: 0.875rem;
+		height: 0.875rem;
+		opacity: 0.5;
+		transition: opacity 0.2s ease;
+	}
+
+	.value-number:hover :global(.edit-icon) {
+		opacity: 1;
+	}
+	
+	.value-edit-input {
+		font-size: 2rem;
+		font-weight: 700 !important;
+		color: var(--text-primary);
+		font-variant-numeric: tabular-nums;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-primary-500);
+		border-radius: var(--radius-sm);
+		padding: 0.25rem 0.5rem;
+		text-align: center;
+		min-width: 140px;
+		max-width: 180px;
+		box-sizing: border-box;
+		line-height: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: calc(2rem + 0.5rem + 4px);
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		appearance: none;
+	}
+
+	.value-edit-input::-webkit-outer-spin-button,
+	.value-edit-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+
+	.value-edit-input:focus {
+		outline: none;
+		border-color: var(--color-primary-600);
+		background: var(--bg-secondary);
 	}
 	
 	.value-category {
@@ -466,11 +815,7 @@
 		outline-offset: 2px;
 	}
 	
-	.thumb-icon {
-		width: 0.75rem;
-		height: 0.75rem;
-		color: var(--color-primary-600);
-	}
+
 	
 	.thumb-value {
 		position: absolute;
@@ -561,12 +906,18 @@
 		border-color: var(--color-danger-500);
 	}
 	
-	.error .thumb-icon {
+		.error .value-number {
 		color: var(--color-danger-600);
 	}
 	
-	.error .value-number {
-		color: var(--color-danger-600);
+	/* Editing state */
+	.duration-slider.editing .slider-track {
+		opacity: 0.5;
+		pointer-events: none;
+	}
+
+	.duration-slider.editing .slider-thumb {
+		pointer-events: none;
 	}
 	
 	/* Dark mode adjustments */
@@ -581,6 +932,10 @@
 		
 		.thumb-value {
 			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+		}
+
+		.thumb-outer {
+			filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 		}
 	}
 	
@@ -602,10 +957,7 @@
 			height: 2.5rem;
 		}
 		
-		.thumb-icon {
-			width: 1rem;
-			height: 1rem;
-		}
+
 		
 		/* Hide the hover value above thumb on mobile */
 		.thumb-value {

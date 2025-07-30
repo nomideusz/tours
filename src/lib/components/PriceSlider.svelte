@@ -170,11 +170,12 @@
 	}
 	
 	// Linear slider functions
-	function getPositionFromEvent(event: MouseEvent): number {
+	function getPositionFromEvent(event: MouseEvent | TouchEvent): number {
 		if (!sliderRef) return 0;
 		
 		const rect = sliderRef.getBoundingClientRect();
-		const x = event.clientX - rect.left;
+		const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+		const x = clientX - rect.left;
 		const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
 		
 		return percentage;
@@ -202,27 +203,19 @@
 		if (!dragging || disabled) return;
 		event.preventDefault();
 		
-		if (isMobile) {
-			handleCircularInteraction(event);
-		} else {
-			const position = getPositionFromEvent(event as MouseEvent);
-			updateValueFromPosition(position);
-		}
+		const position = getPositionFromEvent(event);
+		updateValueFromPosition(position);
 	}
 	
 	function handleUp() {
 		dragging = false;
 	}
 	
-	function handleTrackClick(event: MouseEvent) {
+	function handleTrackClick(event: MouseEvent | TouchEvent) {
 		if (disabled || dragging) return;
 		
-		if (isMobile) {
-			handleCircularInteraction(event);
-		} else {
-			const position = getPositionFromEvent(event);
-			updateValueFromPosition(position);
-		}
+		const position = getPositionFromEvent(event);
+		updateValueFromPosition(position);
 	}
 	
 	function handleKeyDown(event: KeyboardEvent) {
@@ -283,34 +276,25 @@
 		const range = max - min;
 		const markerValues: number[] = [];
 		
-		if (isMobile) {
-			// Fewer markers for mobile
-			const count = Math.min(5, Math.ceil(range / 100));
-			for (let i = 0; i <= count; i++) {
-				markerValues.push(min + (i / count) * range);
+		// Smart marker generation based on range
+		if (range <= 50) {
+			const interval = range <= 25 ? 10 : 20;
+			for (let i = Math.ceil(min / interval) * interval; i <= max; i += interval) {
+				if (i >= min) markerValues.push(i);
+			}
+		} else if (range <= 200) {
+			for (let i = Math.ceil(min / 50) * 50; i <= max; i += 50) {
+				if (i >= min) markerValues.push(i);
 			}
 		} else {
-			// Desktop markers
-			if (range <= 50) {
-				const interval = range <= 25 ? 10 : 20;
-				for (let i = Math.ceil(min / interval) * interval; i <= max; i += interval) {
-					if (i >= min) markerValues.push(i);
-				}
-			} else if (range <= 200) {
-				for (let i = Math.ceil(min / 50) * 50; i <= max; i += 50) {
-					if (i >= min) markerValues.push(i);
-				}
-			} else {
-				for (let i = Math.ceil(min / 100) * 100; i <= max; i += 100) {
-					if (i >= min) markerValues.push(i);
-				}
+			for (let i = Math.ceil(min / 100) * 100; i <= max; i += 100) {
+				if (i >= min) markerValues.push(i);
 			}
 		}
 		
 		return markerValues.map(val => ({
 			value: val,
-			position: valueToNormalized(val) * 100,
-			angle: START_ANGLE + valueToNormalized(val) * (END_ANGLE - START_ANGLE)
+			position: valueToNormalized(val) * 100
 		}));
 	});
 	
@@ -386,189 +370,10 @@
 		</div>
 	{/if}
 	
-	{#if isMobile}
-		<!-- Circular slider for mobile -->
-		<div class="circular-container">
-			{#if !isEditing}
-				<!-- Touch overlay for center area -->
-				<button
-					type="button"
-					class="circular-edit-button"
-					onclick={startEditing}
-					disabled={disabled}
-					aria-label="Edit price"
-				>
-					<div>{currencySymbol}{formatPrice(value)}</div>
-					{#if !disabled}
-						<div class="circular-edit-button-hint">tap to edit</div>
-					{/if}
-				</button>
-			{/if}
-			<svg 
-				bind:this={svgRef}
-				width="320" 
-				height="320" 
-				viewBox="0 0 250 250"
-				onkeydown={handleKeyDown}
-				role="slider"
-				aria-label={label}
-				aria-valuemin={min}
-				aria-valuemax={max}
-				aria-valuenow={value}
-				aria-valuetext="{currencySymbol}{formatPrice(value)}"
-				tabindex={disabled ? -1 : 0}
-				class:editing={isEditing}
-			>
-				<!-- Background track -->
-				<path
-					d={`M ${CENTER + RADIUS * Math.cos(START_ANGLE * Math.PI / 180)} ${CENTER + RADIUS * Math.sin(START_ANGLE * Math.PI / 180)} A ${RADIUS} ${RADIUS} 0 1 1 ${CENTER + RADIUS * Math.cos(END_ANGLE * Math.PI / 180)} ${CENTER + RADIUS * Math.sin(END_ANGLE * Math.PI / 180)}`}
-					fill="none"
-					stroke="var(--bg-tertiary)"
-					stroke-width={STROKE_WIDTH}
-					stroke-linecap="round"
-					onmousedown={handleTrackClick}
-					ontouchstart={(e) => {
-						e.stopPropagation();
-						handleCircularInteraction(e);
-					}}
-					style="cursor: pointer"
-					role="button"
-					tabindex="0"
-				/>
-				
-				<!-- Value arc -->
-				<path
-					d={arcPath}
-					fill="none"
-					stroke={error ? "var(--color-danger-500)" : "var(--color-primary-500)"}
-					stroke-width={STROKE_WIDTH}
-					stroke-linecap="round"
-					onmousedown={handleTrackClick}
-					ontouchstart={(e) => {
-						e.stopPropagation();
-						handleCircularInteraction(e);
-					}}
-					style="cursor: pointer"
-					role="button"
-					tabindex="0"
-				/>
-				
-				<!-- Center value -->
-				{#if isEditing}
-					<foreignObject x={CENTER - 60} y={CENTER - 15} width="120" height="30" style="z-index: 20; pointer-events: all;">
-						<input
-							bind:this={editInputRef}
-							bind:value={editValue}
-							type="text"
-							inputmode="decimal"
-							pattern="[0-9]*[.]?[0-9]*"
-							min={min}
-							max={inputMax}
-							step="any"
-							class="circular-edit-input"
-							onblur={handleEditSubmit}
-							onkeydown={handleEditKeyDown}
-							oninput={(e) => {
-								const target = e.target as HTMLInputElement;
-								// Replace comma with period globally
-								const newValue = target.value.replace(/,/g, '.');
-								if (newValue !== target.value) {
-									target.value = newValue;
-									editValue = newValue;
-								}
-							}}
-						/>
-					</foreignObject>
-				{:else}
-					{#if !isMobile}
-					<g 
-						onclick={startEditing}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								startEditing();
-							}
-						}}
-						style="cursor: {disabled ? 'not-allowed' : 'pointer'}"
-						class="circular-value-group"
-						role="button"
-						tabindex={disabled ? -1 : 0}
-					>
-						<!-- Invisible touch target -->
-						<rect
-							x={CENTER - 50}
-							y={CENTER - 25}
-							width="100"
-							height="50"
-							fill="transparent"
-							style="pointer-events: all;"
-						/>
-						<text
-							x={CENTER}
-							y={CENTER}
-							text-anchor="middle"
-							dominant-baseline="middle"
-							class="circular-value"
-						>
-							{currencySymbol}{formatPrice(value)}
-						</text>
-						{#if !disabled}
-							<text
-								x={CENTER}
-								y={CENTER + 20}
-								text-anchor="middle"
-								dominant-baseline="middle"
-								class="circular-edit-hint"
-							>
-								tap to edit
-							</text>
-						{/if}
-					</g>
-					{/if}
-				{/if}
-				
-				<!-- Markers -->
-				{#if showMarkers}
-					{#each markers as marker}
-						{@const markerX = CENTER + (RADIUS + 20) * Math.cos(marker.angle * Math.PI / 180)}
-						{@const markerY = CENTER + (RADIUS + 20) * Math.sin(marker.angle * Math.PI / 180)}
-						<text
-							x={markerX}
-							y={markerY}
-							text-anchor="middle"
-							dominant-baseline="middle"
-							class="circular-marker"
-						>
-							{currencySymbol}{formatPrice(marker.value)}
-						</text>
-					{/each}
-				{/if}
-				
-				<!-- Thumb -->
-				<g
-					transform="translate({thumbX}, {thumbY})"
-					onmousedown={handleThumbDown}
-					ontouchstart={handleThumbDown}
-					style="cursor: {disabled ? 'not-allowed' : dragging ? 'grabbing' : 'grab'}"
-					role="button"
-					tabindex={disabled ? -1 : 0}
-				>
-					<circle
-						r="16"
-						fill="var(--bg-primary)"
-						stroke={error ? "var(--color-danger-500)" : "var(--color-primary-500)"}
-						stroke-width="3"
-						class="thumb-outer"
-					/>
-					<circle
-						r="12"
-						fill="var(--bg-primary)"
-					/>
-				</g>
-			</svg>
-		</div>
-	{:else}
-		<!-- Linear slider for desktop -->
+	<!-- Linear slider -->
+	<!-- {#if isMobile}
+		Circular slider temporarily hidden
+	{:else} -->
 		<div class="value-display">
 			<div class="value-main">
 				{#if isEditing}
@@ -615,6 +420,7 @@
 			class="slider-container"
 			bind:this={sliderRef}
 			onmousedown={handleTrackClick}
+			ontouchstart={handleTrackClick}
 			onkeydown={handleKeyDown}
 			role="slider"
 			aria-label={label}
@@ -655,12 +461,12 @@
 				<span class="thumb-value">{currencySymbol}{formatPrice(value)}</span>
 			</button>
 		</div>
-	{/if}
+	<!-- {/if} -->
 	
-	<!-- Above slider range message for both mobile and desktop -->
+	<!-- Above slider range message -->
 	{#if value > max}
 		<div class="value-note">
-			Above slider range - {isMobile ? 'tap' : 'click'} price to edit
+			Above slider range - click price to edit
 		</div>
 	{/if}
 </div>
