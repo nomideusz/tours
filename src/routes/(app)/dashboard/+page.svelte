@@ -365,6 +365,9 @@
 		return completed;
 	});
 
+	// Calculate remaining steps
+	let stepsRemaining = $derived(totalSteps - stepsCompleted);
+
 	// Check if all onboarding steps are complete
 	let isOnboardingComplete = $derived(
 		stepsCompleted >= totalSteps
@@ -1053,12 +1056,12 @@
 			<div class="compact-onboarding mb-8 {showCompactOnboarding ? 'compact-onboarding--compact' : ''}">
 				<div class="compact-onboarding-header">
 					<h2 class="compact-onboarding-title">
-						{showCompactOnboarding ? 'Complete Setup' : 'Account Setup'}
+						{showCompactOnboarding ? 'Finish Setup' : 'Account Setup'}
 					</h2>
 					<p class="compact-onboarding-description">
 						{showCompactOnboarding 
-							? 'Finish these remaining steps to complete your setup'
-							: 'Complete these essential steps to begin accepting bookings'}
+							? (stepsRemaining === 1 ? 'Just one more step' : `Just ${stepsRemaining} more steps`)
+							: 'Essential steps to start accepting bookings'}
 					</p>
 				</div>
 
@@ -1069,23 +1072,23 @@
 							<div class="compact-step">
 								<div class="compact-step-header">
 									<Mail class="compact-step-icon" />
-									<span class="compact-step-title">Verify Email</span>
+									<span class="compact-step-title">Email Verification</span>
 								</div>
-								<p class="compact-step-description">Check your inbox and click the verification link</p>
+								<p class="compact-step-description">Check your inbox for the verification link</p>
 								<button 
 									onclick={resendVerificationEmail}
 									disabled={resendingEmail}
-									class="compact-step-button"
+									class="button-primary button--small button--gap"
 								>
 									{#if resendingEmail}
 										<Loader2 class="h-4 w-4 animate-spin" />
 										Sending...
 									{:else}
-										Resend Email
+										Resend
 									{/if}
 								</button>
 								{#if resendEmailSuccess}
-									<p class="compact-step-success">✓ Email sent! Check your inbox.</p>
+									<p class="compact-step-success">✓ Sent! Check your inbox.</p>
 								{/if}
 								{#if resendEmailError}
 									<p class="compact-step-error">{resendEmailError}</p>
@@ -1097,42 +1100,42 @@
 							<div class="compact-step">
 								<div class="compact-step-header">
 									<Globe class="compact-step-icon" />
-									<span class="compact-step-title">Confirm Location</span>
+									<span class="compact-step-title">Business Location</span>
 								</div>
 								{#if selectedCountry}
 									{@const countryInfo = getCountryInfo(selectedCountry)}
 									<p class="compact-step-description">
 										<span class="inline-flex items-center gap-1">
-											Detected: <FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • {countryInfo?.currency}
+											<FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • {countryInfo?.currency}
 										</span>
 									</p>
 									<div class="compact-step-actions">
 										<button 
 											onclick={saveCurrencySelection}
 											disabled={savingCurrency}
-											class="compact-step-button compact-step-button--primary"
+											class="button-primary button--small button--gap"
 										>
 											{#if savingCurrency}
 												<Loader2 class="h-3 w-3 animate-spin" />
 											{:else}
-												✓ Confirm
+												Confirm
 											{/if}
 										</button>
 										<button 
 											onclick={() => { currencyExpanded = true; }}
-											class="compact-step-button compact-step-button--secondary"
+											class="button-secondary button--small"
 										>
 											Change
 										</button>
 									</div>
-									<p class="compact-step-note">Auto-detected from your IP address</p>
+									<p class="compact-step-note">Auto-detected</p>
 								{:else}
-									<p class="compact-step-description">Set your business location for payments</p>
+									<p class="compact-step-description">Required for payment processing</p>
 									<button 
 										onclick={() => { currencyExpanded = true; }}
-										class="compact-step-button"
+										class="button-primary button--small"
 									>
-										Set Location
+										Choose Country
 									</button>
 								{/if}
 							</div>
@@ -1142,21 +1145,21 @@
 							<div class="compact-step">
 								<div class="compact-step-header">
 									<CreditCard class="compact-step-icon" />
-									<span class="compact-step-title">Setup Payments</span>
+									<span class="compact-step-title">Payment Account</span>
 								</div>
-								<p class="compact-step-description">Connect your payment account to receive money</p>
+								<p class="compact-step-description">Connect with Stripe to receive payments</p>
 								<button 
 									onclick={setupPayments}
 									disabled={isSettingUpPayment || needsConfirmation}
-									class="compact-step-button {needsConfirmation ? 'opacity-50' : ''}"
+									class="button-primary button--small button--gap {needsConfirmation ? 'opacity-50' : ''}"
 								>
 									{#if isSettingUpPayment}
 										<Loader2 class="h-4 w-4 animate-spin" />
-										Setting up...
+										Connecting...
 									{:else if needsConfirmation}
 										Confirm location first
 									{:else}
-										Setup Payments
+										Connect Account
 									{/if}
 								</button>
 							</div>
@@ -1168,13 +1171,13 @@
 						<div class="compact-onboarding-main-action">
 							<button 
 								onclick={() => goto('/tours/new')}
-								class="compact-main-button"
+								class="button-hero"
 							>
 								<Plus class="h-5 w-5" />
 								Create Your First Tour
 							</button>
 							<p class="compact-main-description">
-								Begin accepting bookings for your business
+								Start accepting customer bookings
 							</p>
 						</div>
 					{/if}
@@ -1269,7 +1272,7 @@
 						<button
 							onclick={saveCurrencySelection}
 							disabled={!selectedCountry || savingCurrency}
-							class="compact-location-confirm {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
+							class="button-hero {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
 						>
 							{#if savingCurrency}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -1279,7 +1282,7 @@
 						</button>
 						<button
 							onclick={() => { currencyExpanded = false; resetSelections(); }}
-							class="compact-location-cancel"
+							class="button-secondary"
 						>
 							Cancel
 						</button>
@@ -1410,31 +1413,31 @@
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 			<button
 				onclick={() => goto('/tours/new')}
-				class="quick-action-card"
+				class="button-card"
 			>
 				<Plus class="h-5 w-5 mb-2" style="color: var(--color-primary-600);" />
-				<span class="font-medium" style="color: var(--text-primary);">Create Tour</span>
+				<span class="font-medium">Create Tour</span>
 			</button>
 			<button
 				onclick={() => goto('/checkin-scanner')}
-				class="quick-action-card"
+				class="button-card"
 			>
 				<QrCode class="h-5 w-5 mb-2" style="color: var(--color-success-600);" />
-				<span class="font-medium" style="color: var(--text-primary);">Check-in Scanner</span>
+				<span class="font-medium">Check-in Scanner</span>
 			</button>
 			<button
 				onclick={() => goto('/analytics')}
-				class="quick-action-card"
+				class="button-card"
 			>
 				<TrendingUp class="h-5 w-5 mb-2" style="color: var(--color-warning-600);" />
-				<span class="font-medium" style="color: var(--text-primary);">View Analytics</span>
+				<span class="font-medium">View Analytics</span>
 			</button>
 			<button
 				onclick={() => goto('/profile')}
-				class="quick-action-card"
+				class="button-card"
 			>
 				<UserCheck class="h-5 w-5 mb-2" style="color: var(--color-info-600);" />
-				<span class="font-medium" style="color: var(--text-primary);">Update Profile</span>
+				<span class="font-medium">Update Profile</span>
 			</button>
 		</div>
 		{/if}
@@ -1487,14 +1490,7 @@ Please ensure this is the correct country where your business is legally registe
 		background-color: var(--bg-tertiary);
 	}
 
-	.schedule-item .schedule-actions {
-		opacity: 0;
-		transition: opacity 0.2s ease-in-out;
-	}
 
-	.schedule-item:hover .schedule-actions {
-		opacity: 1;
-	}
 
 
 
@@ -1572,26 +1568,7 @@ Please ensure this is the correct country where your business is legally registe
 		}
 	}
 
-	.quick-action-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 1.5rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.15s;
-		text-align: center;
-	}
 
-	.quick-action-card:hover {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
-	}
 	
 	/* Timeline container - prevent layout jumps during navigation */
 	.timeline-container {
@@ -1769,104 +1746,13 @@ Please ensure this is the correct country where your business is legally registe
 		line-height: 1.4;
 	}
 	
-	.compact-step-button {
-		background: #FFB3B3; /* Light coral background */
-		color: #2D2D2D; /* Dark text */
-		border: 1px solid #2D2D2D; /* Dark border */
-		border-radius: 0.5rem;
-		padding: 0.5rem 1rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		justify-content: center;
-		width: 100%;
-	}
-	
-	.compact-step-button:hover:not(:disabled) {
-		background: #FF9999; /* Slightly more saturated on hover */
-		border-color: #1A1A1A; /* Darker border */
-		color: #1A1A1A;
-	}
-	
-	/* Dark mode adjustments */
-	[data-theme="dark"] .compact-step-button {
-		background: #CC9999; /* Muted coral for dark mode */
-		border-color: #1A1A1A; /* Dark border */
-		color: #1A1A1A; /* Dark text */
-	}
-	
-	[data-theme="dark"] .compact-step-button:hover:not(:disabled) {
-		background: #BB8888; /* Slightly darker on hover */
-		border-color: #000000; /* Black border */
-		color: #000000;
-	}
-	
-	.compact-step-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
+
 	
 	.compact-step-actions {
 		display: flex;
 		gap: 0.5rem;
 		justify-content: center;
 		flex-wrap: wrap;
-	}
-	
-	.compact-step-button--primary {
-		background: #FFB3B3; /* Light coral background */
-		color: #2D2D2D; /* Dark text */
-		border-color: #2D2D2D; /* Dark border */
-	}
-	
-	.compact-step-button--primary:hover:not(:disabled) {
-		background: #FF9999; /* More saturated on hover */
-		border-color: #1A1A1A; /* Darker border */
-		color: #1A1A1A;
-	}
-	
-	[data-theme="dark"] .compact-step-button--primary {
-		background: #CC9999; /* Muted coral for dark mode */
-		border-color: #1A1A1A;
-		color: #1A1A1A;
-	}
-	
-	[data-theme="dark"] .compact-step-button--primary:hover:not(:disabled) {
-		background: #BB8888;
-		border-color: #000000;
-		color: #000000;
-	}
-	
-	.compact-step-button--secondary {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--text-primary); /* Use text color for border */
-	}
-	
-	.compact-step-button--secondary:hover:not(:disabled) {
-		background: var(--bg-tertiary);
-		border-color: var(--text-primary);
-	}
-	
-	[data-theme="dark"] .compact-step-button--secondary {
-		border-color: #A0A0A0; /* Medium gray border */
-		color: var(--text-primary);
-		background: transparent;
-	}
-	
-	[data-theme="dark"] .compact-step-button--secondary:hover:not(:disabled) {
-		background: #2A2A2A; /* Dark background on hover */
-		border-color: #B0B0B0; /* Lighter border */
-	}
-	
-	.compact-step-actions .compact-step-button {
-		flex: 1;
-		min-width: 80px;
-		max-width: 120px;
 	}
 	
 	.compact-step-success {
@@ -1899,46 +1785,7 @@ Please ensure this is the correct country where your business is legally registe
 		margin-top: 0.5rem;
 	}
 	
-	.compact-main-button {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.75rem;
-		padding: 1rem 2rem;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		justify-content: center;
-		margin: 0 auto 0.5rem;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
-	}
 
-	/* Coral accent on top - like navigation */
-	.compact-main-button::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
-	}
-	
-	.compact-main-button:hover {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
-	}
 	
 	.compact-main-description {
 		color: var(--text-secondary);
@@ -2185,11 +2032,7 @@ Please ensure this is the correct country where your business is legally registe
 		transition: all 0.2s ease;
 	}
 	
-	.compact-country-option--selected .compact-country-check {
-		color: var(--color-primary-600);
-		opacity: 1;
-		transform: scale(1.1);
-	}
+
 	
 	/* Fallback styles now handled by FlagIcon component */
 	
@@ -2214,59 +2057,7 @@ Please ensure this is the correct country where your business is legally registe
 		justify-content: center;
 	}
 	
-	.compact-location-confirm {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.5rem;
-		padding: 0.75rem 1.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s ease;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		position: relative;
-		overflow: hidden;
-	}
 
-	/* Coral accent on top - like navigation */
-	.compact-location-confirm::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
-	}
-	
-	.compact-location-confirm:hover:not(:disabled) {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		transform: translateY(-1px);
-	}
-	
-	.compact-location-cancel {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		padding: 0.75rem 1.5rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-	
-	.compact-location-cancel:hover {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-	}
 	
 	/* Mobile Responsive */
 	@media (max-width: 768px) {

@@ -43,13 +43,13 @@
 						</div>
 						<h3 class="text-xl font-semibold text-primary mb-3">Join Our Early Access Program</h3>
 						<p class="text-secondary mb-4">
-							We're accepting a limited number of tour guides for our early access program. 
-							Contact us to learn more about special pricing and benefits.
+							We're accepting a limited number of tour guides for our early access program. Use code <span class="font-bold">EARLY2025</span> to get a lifetime 50% discount.
 						</p>
-						<a href="/auth/register" class="button-primary button--small button--gap">
-							<MessageCircle class="w-4 h-4" />
-							Request Early Access
-						</a>
+						<button onclick={() => {
+							window.location.href = '/auth/register';
+						}} class="button-primary button--small button--gap">
+							Get Early Access
+						</button>
 					</div>
 				</div>
 			</div>
@@ -72,13 +72,11 @@
 					For general inquiries, technical support, or questions about getting started with Zaur. 
 					We typically respond within 24 hours.
 				</p>
-				<a 
-					href="mailto:support@zaur.app" 
-					class="button-secondary button--gap button--full-width"
-				>
-					<Mail class="w-4 h-4" />
+				<button onclick={() => {
+					window.location.href = 'mailto:support@zaur.app';
+				}} class="button-secondary button--gap button--full-width">
 					<span>support@zaur.app</span>
-				</a>
+				</button>
 			</div>
 
 			<!-- Early Access -->
@@ -96,10 +94,11 @@
 					Interested in being among the first tour guides to use Zaur? 
 					Get priority access and help shape the product.
 				</p>
-				<a href="/auth/register" class="button-primary button--gap button--full-width">
-					<MessageCircle class="w-4 h-4" />
-					Request Early Access
-				</a>
+				<button onclick={() => {
+					window.location.href = '/auth/register';
+				}} class="button-primary button--gap button--full-width">
+					Get Early Access
+				</button>
 			</div>
 		</div>
 
@@ -194,10 +193,11 @@
 					Join our early access program and be among the first tour guides to 
 					experience the future of booking management.
 				</p>
-				<a href="/auth/register" class="button-primary button--large button--gap">
-					<Rocket class="w-5 h-5" />
+				<button onclick={() => {
+					window.location.href = '/auth/register';
+				}} class="button-primary button--gap">
 					Get Early Access
-				</a>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -325,7 +325,7 @@
 	}
 
 	.professional-icon--navy {
-		background: var(--color-deep-navy-900);
+		background: var(--color-deep-navy-500);
 	}
 
 	/* Responsive adjustments */

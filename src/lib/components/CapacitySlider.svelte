@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Users from 'lucide-svelte/icons/users';
+	import '../styles/sliders.css';
 	
 	interface Props {
 		value: number;
@@ -190,7 +191,7 @@
 
 </script>
 
-<div class="capacity-slider" class:disabled class:error>
+<div class="slider-base capacity-slider" class:disabled class:error>
 	{#if label}
 		<div class="form-label block mb-2 sm:mb-3 flex items-center justify-between">
 			<span>
@@ -281,17 +282,7 @@
 </div>
 
 <style>
-	.capacity-slider {
-		width: 100%;
-	}
-	
-	.value-display {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin-bottom: 1.5rem;
-		gap: 0.5rem;
-	}
+	/* Capacity-specific styles */
 	
 	/* Hide value display on mobile */
 	@media (max-width: 640px) {
@@ -301,16 +292,12 @@
 	}
 	
 	.value-main {
-		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
 	}
 	
 	.value-number {
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		font-variant-numeric: tabular-nums;
+		cursor: default; /* Override the pointer cursor from shared styles */
 	}
 	
 	.value-unit {
@@ -319,290 +306,21 @@
 		font-weight: 500;
 	}
 	
-	.value-category {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		background: var(--bg-secondary);
-		padding: 0.25rem 0.75rem;
-		border-radius: var(--radius-full);
-		border: 1px solid var(--border-secondary);
-	}
-	
-	.slider-container {
-		position: relative;
-		height: 4rem;
-		padding: 1.5rem 0.75rem;
-		cursor: pointer;
-	}
-	
-	.slider-container:focus {
-		outline: none;
-	}
-	
-	.slider-container:focus-visible {
-		outline: 2px solid var(--color-primary-500);
-		outline-offset: 2px;
-		border-radius: var(--radius-md);
-	}
-	
-	.slider-track {
-		position: absolute;
-		top: 50%;
-		left: 0.75rem;
-		right: 0.75rem;
-		height: 0.5rem;
-		background: var(--bg-tertiary);
-		border-radius: var(--radius-full);
-		transform: translateY(-50%);
-	}
-	
-	.slider-fill {
-		position: absolute;
-		top: 0;
-		left: 0;
-		height: 100%;
-		background: var(--color-primary-500);
-		border-radius: var(--radius-full);
-		transition: all 0.2s ease;
-	}
-	
-	.markers {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		right: 0;
-		margin-top: 0.5rem;
-	}
-	
-	.marker {
-		position: absolute;
-		transform: translateX(-50%);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	
-	.marker-dot {
-		width: 0.25rem;
-		height: 0.25rem;
-		background: var(--border-secondary);
-		border-radius: 50%;
-	}
-	
-	.marker-text {
-		font-size: 0.625rem;
-		color: var(--text-tertiary);
-		white-space: nowrap;
-		font-variant-numeric: tabular-nums;
-	}
-	
-	.slider-thumb {
-		position: absolute;
-		top: 50%;
-		width: 2rem;
-		height: 2rem;
-		background: var(--bg-primary);
-		border: 3px solid var(--color-primary-500);
-		border-radius: var(--radius-full);
-		transform: translate(-50%, -50%);
-		cursor: grab;
-		transition: all 0.2s ease;
-		z-index: 10;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-		gap: 0.125rem;
-	}
-	
-	.slider-thumb:hover:not(:disabled) {
-		width: 2.25rem;
-		height: 2.25rem;
-		border-width: 4px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	}
-	
-	.slider-thumb:active:not(:disabled) {
-		cursor: grabbing;
-		transform: translate(-50%, -50%) scale(0.95);
-	}
-	
-	.slider-thumb:focus {
-		outline: none;
-	}
-	
-	.slider-thumb:focus-visible {
-		outline: 2px solid var(--color-primary-500);
-		outline-offset: 2px;
-	}
-	
-	.thumb-icon {
+	:global(.thumb-icon) {
 		width: 0.75rem;
 		height: 0.75rem;
 		color: var(--color-primary-600);
 	}
 	
-	.thumb-value {
-		position: absolute;
-		bottom: 100%;
-		left: 50%;
-		transform: translateX(-50%);
-		margin-bottom: 0.5rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		background: var(--bg-primary);
-		padding: 0.25rem 0.5rem;
-		border-radius: var(--radius-sm);
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		white-space: nowrap;
-		opacity: 0;
-		transition: opacity 0.2s ease;
-		pointer-events: none;
-		border: 1px solid var(--border-secondary);
-		font-variant-numeric: tabular-nums;
-	}
-	
-	.slider-thumb:hover .thumb-value,
-	.slider-thumb:active .thumb-value,
-	.slider-thumb:focus .thumb-value {
-		opacity: 1;
-	}
-	
-	.reset-button-container {
-		height: 1.75rem; /* Fixed height to prevent layout shifts */
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-	}
-	
-	.reset-button-top {
-		background: transparent;
-		border: 1px solid var(--border-secondary);
-		color: var(--color-primary-600);
-		font-size: 0.75rem;
-		cursor: pointer;
-		padding: 0.25rem 0.5rem;
-		border-radius: var(--radius-sm);
-		transition: all var(--transition-fast) ease;
-		white-space: nowrap;
-		font-weight: 500;
-		height: 1.75rem; /* Match container height */
-		display: flex;
-		align-items: center;
-	}
-	
-	.reset-button-top:hover {
-		color: var(--color-primary-700);
-		background: var(--bg-secondary);
-		border-color: var(--color-primary-200);
-	}
-	
-	.reset-button-spacer {
-		height: 1.75rem; /* Same height as reset button */
-		width: 1px; /* Minimal width, just to reserve space */
-		opacity: 0; /* Invisible but still takes space */
-	}
-	
-	/* Disabled state */
-	.disabled {
-		opacity: 0.6;
-		pointer-events: none;
-	}
-	
-	.disabled .slider-container {
-		cursor: not-allowed;
-	}
-	
-	.disabled .slider-thumb {
-		cursor: not-allowed;
-	}
-	
-	/* Error state */
-	.error .slider-track {
-		background: var(--color-danger-100);
-	}
-	
-	.error .slider-fill {
-		background: var(--color-danger-500);
-	}
-	
-	.error .slider-thumb {
-		border-color: var(--color-danger-500);
-	}
-	
-	.error .thumb-icon {
+	.error :global(.thumb-icon) {
 		color: var(--color-danger-600);
 	}
 	
-	.error .value-number {
-		color: var(--color-danger-600);
-	}
-	
-	/* Dark mode adjustments */
-	@media (prefers-color-scheme: dark) {
-		.slider-thumb {
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-		}
-		
-		.slider-thumb:hover:not(:disabled) {
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-		}
-		
-		.thumb-value {
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-		}
-	}
-	
-	/* Mobile optimizations */
+	/* Mobile thumb icon size */
 	@media (max-width: 640px) {
-		.slider-container {
-			height: 4.25rem;
-			padding: 1rem 0.5rem 3.25rem 0.5rem;
-			margin-bottom: 0;
-		}
-		
-		.slider-thumb {
-			width: 2.5rem;
-			height: 2.5rem;
-		}
-		
-		.slider-thumb:hover:not(:disabled) {
-			width: 2.5rem;
-			height: 2.5rem;
-		}
-		
-		.thumb-icon {
+		:global(.thumb-icon) {
 			width: 1rem;
 			height: 1rem;
-		}
-		
-		/* Hide the hover value above thumb on mobile */
-		.thumb-value {
-			display: none;
-		}
-		
-		/* Add value below thumb on mobile */
-		.slider-thumb::after {
-			content: attr(data-value);
-			position: absolute;
-			top: 100%;
-			left: 50%;
-			transform: translateX(-50%);
-			margin-top: 0.5rem;
-			margin-bottom: 0.75rem;
-			font-size: 0.875rem;
-			font-weight: 700;
-			color: var(--text-primary);
-			white-space: nowrap;
-			pointer-events: none;
-		}
-		
-		/* Hide markers completely on mobile */
-		.markers {
-			display: none;
 		}
 	}
 </style> 

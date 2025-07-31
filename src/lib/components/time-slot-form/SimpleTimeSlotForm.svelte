@@ -38,6 +38,20 @@
 	
 	let { tourId, tour: propTour, onSuccess, onCancel }: Props = $props();
 	
+	// Helper function to get last used capacity from existing time slots
+	function getLastUsedCapacity(timeSlots: any[]): number | null {
+		if (!timeSlots || timeSlots.length === 0) return null;
+		
+		// Sort by creation time descending and get the first one
+		const sortedSlots = [...timeSlots].sort((a, b) => {
+			const aTime = new Date(a.createdAt || a.startTime).getTime();
+			const bTime = new Date(b.createdAt || b.startTime).getTime();
+			return bTime - aTime; // Most recent first
+		});
+		
+		return sortedSlots[0]?.capacity || null;
+	}
+	
 	// State
 	let date = $state('');
 	let startTime = $state('');
@@ -53,7 +67,7 @@
 	let touchedFields = $state(new Set<string>());
 	let customDuration = $state<number | null>(null);
 	let isInitialized = $state(false);
-	let lastCreatedSlot = $state<{time: string, date: string} | null>(null);
+	let lastCreatedSlot = $state<{time: string, date: string, capacity: number} | null>(null);
 	let justCreatedSlot = $state(false);
 	let autoSuggestedTime = $state(false);
 	let resetTimeRangeFlag = $state(false);
@@ -168,7 +182,10 @@
 		if (tour && !isInitialized && !$scheduleQuery.isLoading) {
 			untrack(() => {
 				isInitialized = true;
-				capacity = tour.capacity || 10;
+				// Use capacity from most recent time slot, or default to 10
+				const currentSlots = $scheduleQuery.data?.timeSlots || [];
+				const lastUsedCapacity = getLastUsedCapacity(currentSlots);
+				capacity = lastUsedCapacity || 10;
 				
 				// Set smart date/time defaults
 				const today = new Date();
@@ -180,7 +197,6 @@
 				date = defaultDate.toISOString().split('T')[0];
 				
 				// Find next available time
-				const currentSlots = $scheduleQuery.data?.timeSlots || [];
 				const smartTime = findNextAvailableTime(
 					date,
 					customDuration,
@@ -421,7 +437,7 @@
 			setSuccessMessage(totalMessage);
 			
 			// Store last created slot info for smart suggestions
-			lastCreatedSlot = { time: startTime, date: date };
+			lastCreatedSlot = { time: startTime, date: date, capacity: capacity };
 			justCreatedSlot = true;
 			
 			// Reset form for next slot with smart suggestions

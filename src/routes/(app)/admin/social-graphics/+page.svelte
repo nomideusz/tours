@@ -23,8 +23,14 @@
 	
 	let generating = $state(false);
 	let selectedPlatform = $state<'instagram-post' | 'instagram-story' | 'facebook' | 'twitter' | 'linkedin'>('instagram-post');
-	let selectedTemplate = $state<'promo' | 'stats' | 'feature'>('promo');
+	let selectedTemplate = $state<'promo' | 'stats' | 'feature' | 'custom'>('promo');
 	let selectedColor = $state<'brand' | 'vibrant' | 'minimal'>('brand');
+	
+	// Custom text fields
+	let customTitle = $state('Your Tour Business');
+	let customSubtitle = $state('Amazing experiences await');
+	let customFeatures = $state(['Professional QR ticketing', 'No booking fees', 'Easy management']);
+	let customCallToAction = $state('Book now at your-website.com');
 	
 	// Platform dimensions
 	const platformDimensions = {
@@ -48,6 +54,10 @@
 		feature: {
 			name: 'Feature Focus',
 			description: 'Highlight specific features'
+		},
+		custom: {
+			name: 'Custom Text',
+			description: 'Create graphics with your own content'
 		}
 	};
 	
@@ -223,6 +233,65 @@
 					</div>
 				</div>
 				
+				<!-- Custom Text Fields (only shown when custom template is selected) -->
+				{#if selectedTemplate === 'custom'}
+					<div class="professional-card">
+						<h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+							<Type class="w-5 h-5" />
+							Custom Content
+						</h3>
+						<div class="space-y-4">
+							<div>
+								<label for="custom-title" class="block text-sm font-medium mb-2">Main Title</label>
+								<input
+									id="custom-title"
+									type="text"
+									bind:value={customTitle}
+									placeholder="Enter your main headline..."
+									class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+								/>
+							</div>
+							
+							<div>
+								<label for="custom-subtitle" class="block text-sm font-medium mb-2">Subtitle</label>
+								<input
+									id="custom-subtitle"
+									type="text"
+									bind:value={customSubtitle}
+									placeholder="Enter your subtitle..."
+									class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+								/>
+							</div>
+							
+							<div>
+								<label for="custom-features" class="block text-sm font-medium mb-2">Features/Benefits (one per line)</label>
+								<textarea
+									id="custom-features"
+									value={customFeatures.join('\n')}
+									oninput={(e) => {
+										const target = e.target as HTMLTextAreaElement;
+										customFeatures = target.value.split('\n').filter((f: string) => f.trim());
+									}}
+									placeholder="Professional service&#10;Great experience&#10;Affordable pricing"
+									rows="3"
+									class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+								></textarea>
+							</div>
+							
+							<div>
+								<label for="custom-cta" class="block text-sm font-medium mb-2">Call to Action</label>
+								<input
+									id="custom-cta"
+									type="text"
+									bind:value={customCallToAction}
+									placeholder="Visit our website or contact info..."
+									class="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+								/>
+							</div>
+						</div>
+					</div>
+				{/if}
+				
 				<!-- Generate Button -->
 				<button
 					onclick={generateGraphic}
@@ -300,7 +369,7 @@
 											Join the revolution at zaur.app
 										</p>
 									</div>
-								{:else}
+								{:else if selectedTemplate === 'feature'}
 									<div class="h-full flex flex-col justify-center p-6">
 										<div class="text-sm font-bold mb-3">
 											NEW FEATURE
@@ -319,6 +388,26 @@
 										<p class="text-sm font-semibold mt-auto">
 											Start creating at zaur.app
 										</p>
+									</div>
+								{:else}
+									<!-- Custom Template Preview -->
+									<div class="h-full flex flex-col justify-center text-center p-6">
+										<h1 class="text-2xl font-bold mb-2 leading-tight">
+											{customTitle}
+										</h1>
+										<p class="text-sm opacity-90 mb-4">
+											{customSubtitle}
+										</p>
+										<div class="space-y-2 text-sm">
+											{#each customFeatures.slice(0, 4) as feature}
+												<div class="flex justify-center items-center gap-2">
+													<span>✓</span> {feature}
+												</div>
+											{/each}
+										</div>
+										<div class="mt-6 text-lg font-semibold">
+											{customCallToAction}
+										</div>
 									</div>
 								{/if}
 							</div>
@@ -395,7 +484,7 @@
 						Join the Revolution
 					</p>
 				</div>
-			{:else}
+			{:else if selectedTemplate === 'feature'}
 				<!-- Feature Focus Template -->
 				<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
 					<div style="font-size: {dimensions.width * 0.06}px; font-weight: 700; margin-bottom: {dimensions.width * 0.04}px;">
@@ -420,6 +509,30 @@
 					<p style="font-size: {dimensions.width * 0.04}px; font-weight: 600; margin-top: auto;">
 						Start Free at zaur.app
 					</p>
+				</div>
+			{:else}
+				<!-- Custom Template -->
+				<div style="padding: {dimensions.width * 0.08}px; height: 100%; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+					<h1 style="font-size: {dimensions.width * 0.08}px; font-weight: 800; margin: 0 0 {dimensions.width * 0.03}px 0; line-height: 1.2;">
+						{customTitle}
+					</h1>
+					<p style="font-size: {dimensions.width * 0.04}px; opacity: 0.9; margin: 0 0 {dimensions.width * 0.05}px 0;">
+						{customSubtitle}
+					</p>
+					
+					<div style="margin: {dimensions.width * 0.04}px 0;">
+						<div style="font-size: {dimensions.width * 0.045}px; line-height: 1.8;">
+							{#each customFeatures.slice(0, 4) as feature}
+								✓ {feature}<br />
+							{/each}
+						</div>
+					</div>
+					
+					<div style="margin-top: auto;">
+						<p style="font-size: {dimensions.width * 0.045}px; font-weight: 700; margin: 0;">
+							{customCallToAction}
+						</p>
+					</div>
 				</div>
 			{/if}
 			
@@ -457,5 +570,20 @@
 	
 	.hidden {
 		display: none !important;
+	}
+	
+	input, textarea {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border-color: var(--border-primary);
+	}
+	
+	input:focus, textarea:focus {
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 2px var(--color-primary-100);
+	}
+	
+	label {
+		color: var(--text-primary);
 	}
 </style> 

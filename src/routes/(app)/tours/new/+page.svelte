@@ -93,7 +93,7 @@
 		description: (form as any)?.formData?.description || '',
 		price: (form as any)?.formData?.price || 25, // reasonable default price
 		duration: (form as any)?.formData?.duration || 120, // in minutes - 2 hours is common for tours
-		capacity: (form as any)?.formData?.capacity || 12, // slightly larger group size
+		capacity: (form as any)?.formData?.capacity || 10, // reasonable default group size
 		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
 		category: (form as any)?.formData?.category || '',
 		location: (form as any)?.formData?.location || '',

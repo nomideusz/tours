@@ -269,10 +269,11 @@
 					Be part of building the future of tour guide technology. 
 					Join our early access program today.
 				</p>
-				<a href="/auth/register" class="button-primary button--large button--gap">
-					<Rocket class="w-5 h-5" />
+				<button onclick={() => {
+					window.location.href = '/auth/register';
+				}} class="button-primary button--large button--gap">
 					Get Early Access
-				</a>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -400,7 +401,7 @@
 	}
 
 	.professional-icon--navy {
-		background: var(--color-deep-navy-900);
+		background: var(--color-deep-navy-500);
 	}
 
 	/* Responsive adjustments */
