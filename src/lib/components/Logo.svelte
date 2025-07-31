@@ -111,9 +111,12 @@
 <style>
 	/* Text alignment and spacing normalization */
 	.logo-text {
+		font-family: var(--font-header); /* Use headings font for logo */
 		line-height: 1;
 		display: inline-flex;
 		align-items: center;
+		/* Fine-tune vertical alignment for Plus Jakarta Sans optical centering */
+		transform: translateY(-1px);
 	}
 
 	/* Dark mode image inversion */
@@ -127,7 +130,7 @@
 
 	/* Serif variant styles */
 	.logo-serif {
-		font-family: var(--font-sans); /* Using modern font instead of Georgia */
+		font-family: var(--font-header); /* Using headings font for consistency */
 		font-weight: 500;
 		letter-spacing: -0.025em;
 	}
