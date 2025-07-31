@@ -1171,12 +1171,12 @@
 						<div class="compact-onboarding-main-action">
 							<button 
 								onclick={() => goto('/tours/new')}
-								class="button-hero"
+								class="button-primary button--large button--gap"
 							>
 								<Plus class="h-5 w-5" />
 								Create Your First Tour
 							</button>
-							<p class="compact-main-description">
+							<p class="compact-main-description text-sm">
 								Start accepting customer bookings
 							</p>
 						</div>
