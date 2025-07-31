@@ -1171,12 +1171,12 @@
 						<div class="compact-onboarding-main-action">
 							<button 
 								onclick={() => goto('/tours/new')}
-								class="button-primary button--large button--gap"
+								class="button-primary button--gap"
 							>
 								<Plus class="h-5 w-5" />
 								Create Your First Tour
 							</button>
-							<p class="compact-main-description text-sm">
+							<p class="compact-main-description">
 								Start accepting customer bookings
 							</p>
 						</div>
@@ -1272,7 +1272,7 @@
 						<button
 							onclick={saveCurrencySelection}
 							disabled={!selectedCountry || savingCurrency}
-							class="button-hero {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
+							class="button-primary button--large button--gap {!selectedCountry || savingCurrency ? 'opacity-50' : ''}"
 						>
 							{#if savingCurrency}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -1768,7 +1768,7 @@ Please ensure this is the correct country where your business is legally registe
 		margin-top: 0.5rem;
 	}
 	
-	.compact-step-note {
+	.compact-step-note, .compact-main-description {
 		color: var(--text-tertiary);
 		font-size: 0.7rem;
 		margin-top: 0.5rem;
@@ -1783,14 +1783,6 @@ Please ensure this is the correct country where your business is legally registe
 		border: 2px dashed var(--color-primary-300);
 		border-radius: 0.75rem;
 		margin-top: 0.5rem;
-	}
-	
-
-	
-	.compact-main-description {
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-		margin: 0;
 	}
 	
 	.compact-progress {
