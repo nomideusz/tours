@@ -725,48 +725,56 @@
 	
 
 
-	/* Hero button - large, prominent button with coral accent */
+	/* Hero button - large, prominent button with modern coral design */
 	.button-hero,
 	.button--hero {
-		background: var(--color-primary-100);
-		color: var(--color-primary-900);
-		border: 1px solid var(--color-primary-200);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: #FFB3B3; /* Light coral background */
+		color: #2D2D2D; /* Dark text */
+		border: 2px solid #2D2D2D; /* Dark border */
 		border-radius: 0.75rem;
 		padding: 1rem 2rem;
-		font-size: 1rem;
+		font-size: 1.125rem; /* Slightly larger for hero button */
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.15s ease;
-		display: flex;
-		align-items: center;
+		transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
 		gap: 0.5rem;
-		justify-content: center;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Coral accent on top */
-	.button-hero::before,
-	.button--hero::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-primary-500);
-		transform: scaleX(1);
-		transition: transform var(--transition-fast) ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 	
 	.button-hero:hover:not(:disabled),
 	.button--hero:hover:not(:disabled) {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-900);
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
+		background: #FF9999; /* Slightly more saturated on hover */
+		border-color: #1A1A1A; /* Darker border */
+		color: #1A1A1A;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	}
+	
+	/* Dark mode adjustments for hero button */
+	[data-theme="dark"] .button-hero,
+	[data-theme="dark"] .button--hero {
+		background: #CC9999; /* Muted coral for dark mode */
+		border-color: #1A1A1A; /* Dark border */
+		color: #1A1A1A; /* Dark text */
+	}
+	
+	[data-theme="dark"] .button-hero:hover:not(:disabled),
+	[data-theme="dark"] .button--hero:hover:not(:disabled) {
+		background: #BB8888; /* Slightly darker on hover */
+		border-color: #000000; /* Black border */
+		color: #000000;
+	}
+	
+	.button-hero:disabled,
+	.button--hero:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	/* Action card button - card-style interactive element */

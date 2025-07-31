@@ -1024,7 +1024,7 @@
 		<MobilePageHeader
 			title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
 			secondaryInfo={isLoading ? "Loading..." : (isNewUser ? "Account Setup Required" : "")}
-			quickActions={[
+			quickActions={showOnboarding ? [] : [
 				{
 					label: 'Create Tour',
 					icon: Plus,
@@ -1040,12 +1040,14 @@
 					title={isLoading ? "Dashboard" : (isNewUser ? "Welcome to Zaur!" : "Dashboard")}
 					subtitle={isLoading ? "Loading your data..." : (isNewUser ? "Complete these steps to start accepting tour bookings" : "Manage your daily tour operations")}
 				>
-					<div class="flex items-center gap-4">
-						<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-							<Plus class="h-4 w-4" />
-							Create Tour
-						</button>
-					</div>
+					{#if !showOnboarding}
+						<div class="flex items-center gap-4">
+							<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+								<Plus class="h-4 w-4" />
+								Create Tour
+							</button>
+						</div>
+					{/if}
 				</PageHeader>
 			</div>
 		</div>
@@ -1105,11 +1107,9 @@
 								{#if selectedCountry}
 									{@const countryInfo = getCountryInfo(selectedCountry)}
 									<p class="compact-step-description">
-										<span class="inline-flex items-center gap-1">
-											<FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • {countryInfo?.currency}
-										</span>
+										{countryInfo?.name} • {countryInfo?.currency}
 									</p>
-									<div class="compact-step-actions">
+									<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
 										<button 
 											onclick={saveCurrencySelection}
 											disabled={savingCurrency}
@@ -1169,9 +1169,12 @@
 					<!-- Main Action - only show if no tours created yet -->
 					{#if !showCompactOnboarding}
 						<div class="compact-onboarding-main-action">
+							<div class="main-action-icon">
+								<MapPin class="h-8 w-8" />
+							</div>
 							<button 
 								onclick={() => goto('/tours/new')}
-								class="button-primary button--gap"
+								class="button-primary button--large button--gap"
 							>
 								<Plus class="h-5 w-5" />
 								Create Your First Tour
@@ -1291,8 +1294,8 @@
 			</div>
 		{/if}
 
-		<!-- Message when no tours created yet -->
-		{#if !showDashboardContent && !isLoading}
+		<!-- Message when no tours created yet (only show if onboarding is complete but no tours) -->
+		{#if !showDashboardContent && !isLoading && !showOnboarding}
 			<div class="no-content-message">
 				<div class="no-content-icon">
 					<MapPin class="h-12 w-12" />
@@ -1607,11 +1610,33 @@ Please ensure this is the correct country where your business is legally registe
 	
 	/* Compact Onboarding Styles */
 	.compact-onboarding {
-		background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+		background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-75) 100%);
 		border: 1px solid var(--color-primary-200);
 		border-radius: 1rem;
-		padding: 1.5rem;
+		padding: 2rem;
 		margin-bottom: 2rem;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Subtle pattern overlay for main onboarding */
+	.compact-onboarding::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+		            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+		pointer-events: none;
+	}
+	
+	/* Ensure onboarding content stays above overlay */
+	.compact-onboarding > * {
+		position: relative;
+		z-index: 1;
 	}
 	
 	/* Compact variant for when user has tours but setup incomplete */
@@ -1701,22 +1726,43 @@ Please ensure this is the correct country where your business is legally registe
 	
 	.compact-onboarding-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 		gap: 1rem;
 	}
 	
 	.compact-step {
-		background: var(--bg-primary);
+		background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
-		padding: 1rem;
+		border-radius: 1rem;
+		padding: 1.25rem;
 		text-align: center;
-		transition: all 0.2s ease;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Subtle pattern overlay for steps */
+	.compact-step::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+		pointer-events: none;
 	}
 	
 	.compact-step:hover {
 		border-color: var(--color-primary-300);
-		box-shadow: var(--shadow-sm);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	}
+	
+	/* Ensure step content stays above overlay */
+	.compact-step > * {
+		position: relative;
+		z-index: 1;
 	}
 	
 	.compact-step-header {
@@ -1746,15 +1792,6 @@ Please ensure this is the correct country where your business is legally registe
 		line-height: 1.4;
 	}
 	
-
-	
-	.compact-step-actions {
-		display: flex;
-		gap: 0.5rem;
-		justify-content: center;
-		flex-wrap: wrap;
-	}
-	
 	.compact-step-success {
 		color: var(--color-success-600);
 		font-size: 0.75rem;
@@ -1768,7 +1805,7 @@ Please ensure this is the correct country where your business is legally registe
 		margin-top: 0.5rem;
 	}
 	
-	.compact-step-note, .compact-main-description {
+	.compact-step-note {
 		color: var(--text-tertiary);
 		font-size: 0.7rem;
 		margin-top: 0.5rem;
@@ -1776,13 +1813,70 @@ Please ensure this is the correct country where your business is legally registe
 		font-style: italic;
 	}
 	
+	.compact-main-description {
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		margin-top: 0.75rem;
+		text-align: center;
+		font-weight: 500;
+		opacity: 0.8;
+	}
+	
 	.compact-onboarding-main-action {
 		text-align: center;
-		padding: 1rem;
-		background: var(--bg-primary);
-		border: 2px dashed var(--color-primary-300);
-		border-radius: 0.75rem;
-		margin-top: 0.5rem;
+		padding: 2rem 1.5rem;
+		background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-50) 100%);
+		border: 1px solid var(--color-primary-200);
+		border-radius: 1rem;
+		margin-top: 1rem;
+		position: relative;
+		overflow: hidden;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+		transition: all 0.3s ease;
+	}
+	
+	/* Subtle pattern overlay */
+	.compact-onboarding-main-action::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+		            radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+		pointer-events: none;
+	}
+	
+	.compact-onboarding-main-action:hover {
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+		border-color: var(--color-primary-300);
+	}
+	
+	/* Ensure content stays above overlay */
+	.compact-onboarding-main-action > * {
+		position: relative;
+		z-index: 1;
+	}
+	
+	/* Main action decorative icon */
+	.main-action-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 3rem;
+		height: 3rem;
+		margin: 0 auto 1rem;
+		background: var(--color-primary-100);
+		border: 2px solid var(--color-primary-200);
+		border-radius: 1rem;
+		color: var(--color-primary-600);
+		transition: all 0.3s ease;
+	}
+	
+	.compact-onboarding-main-action:hover .main-action-icon {
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-300);
 	}
 	
 	.compact-progress {
@@ -2054,11 +2148,28 @@ Please ensure this is the correct country where your business is legally registe
 	/* Mobile Responsive */
 	@media (max-width: 768px) {
 		.compact-onboarding {
-			padding: 1rem;
+			padding: 1.5rem;
 		}
 		
 		.compact-onboarding-grid {
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 0.75rem;
+		}
+		
+		.compact-step {
+			padding: 1rem;
+		}
+	}
+	
+	/* Very small phones - force stacking */
+	@media (max-width: 480px) {
+		.compact-onboarding-grid {
 			grid-template-columns: 1fr;
+			gap: 0.75rem;
+		}
+		
+		.compact-step {
+			padding: 0.875rem;
 		}
 		
 		.compact-country-grid {
@@ -2073,6 +2184,21 @@ Please ensure this is the correct country where your business is legally registe
 		.compact-location-cancel {
 			width: 100%;
 			justify-content: center;
+		}
+		
+		.compact-onboarding-main-action {
+			padding: 1.5rem 1rem;
+			margin-top: 0.75rem;
+		}
+		
+		.main-action-icon {
+			width: 2.5rem;
+			height: 2.5rem;
+			margin-bottom: 0.75rem;
+		}
+		
+		.compact-main-description {
+			font-size: 0.8rem;
 		}
 	}
 </style>
