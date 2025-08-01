@@ -15,17 +15,25 @@ const defaultPreferences: UserPreferences = {
 
 // Load preferences from localStorage
 function loadPreferences(): UserPreferences {
-  if (!browser) return defaultPreferences;
+  if (!browser) {
+    console.log('🔄 Not in browser, using default preferences');
+    return defaultPreferences;
+  }
   
   try {
     const stored = localStorage.getItem('userPreferences');
+    console.log('🔄 Loading preferences from localStorage:', stored);
     if (stored) {
-      return { ...defaultPreferences, ...JSON.parse(stored) };
+      const parsed = JSON.parse(stored);
+      const merged = { ...defaultPreferences, ...parsed };
+      console.log('🔄 Merged preferences:', merged);
+      return merged;
     }
   } catch (error) {
     console.error('Failed to load preferences:', error);
   }
   
+  console.log('🔄 Using default preferences:', defaultPreferences);
   return defaultPreferences;
 }
 
@@ -35,7 +43,11 @@ export const preferences = writable<UserPreferences>(loadPreferences());
 // Save to localStorage whenever preferences change
 preferences.subscribe((value) => {
   if (browser) {
+    console.log('💾 Saving preferences to localStorage:', value);
     localStorage.setItem('userPreferences', JSON.stringify(value));
+    // Verify it was saved
+    const saved = localStorage.getItem('userPreferences');
+    console.log('✅ Verified saved preferences:', saved);
   }
 });
 

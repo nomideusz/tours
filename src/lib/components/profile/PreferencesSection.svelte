@@ -23,7 +23,10 @@
 	let whatsappLoading = $state(false);
 	
 	function handlePreferenceChange(key: string, value: any) {
+		console.log('🔧 Preference change:', key, '=', value);
+		console.log('🔧 Before update:', $preferences);
 		updatePreferences({ [key]: value });
+		console.log('🔧 After update:', $preferences);
 		showSuccess = true;
 		setTimeout(() => {
 			showSuccess = false;

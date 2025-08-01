@@ -68,7 +68,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 			subscriptionDiscountPercentage: user.subscriptionDiscountPercentage || 0,
 			subscriptionFreeUntil: user.subscriptionFreeUntil || null,
 			isLifetimeDiscount: user.isLifetimeDiscount || false,
-			earlyAccessMember: user.earlyAccessMember || false
+			earlyAccessMember: user.earlyAccessMember || false,
+			// Notification preferences
+			whatsappNotifications: user.whatsappNotifications ?? true
 		};
 
 		return json(userData, {
