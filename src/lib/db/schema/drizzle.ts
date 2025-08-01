@@ -59,6 +59,10 @@ export const users = pgTable('users', {
   monthlyBookingsResetAt: timestamp('monthly_bookings_reset_at', { withTimezone: true }),
   
   emailVerified: boolean('email_verified').notNull().default(false),
+  
+  // Notification preferences
+  whatsappNotifications: boolean('whatsapp_notifications').notNull().default(true),
+  
   lastLogin: timestamp('last_login', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -226,11 +226,39 @@
 			}, 5000);
 		} catch (error) {
 			toastError(error instanceof Error ? error.message : 'Failed to update profile');
-		} finally {
+				} finally {
 			profileLoading = false;
 		}
 	}
-	
+
+	// Toggle WhatsApp notifications
+	async function toggleWhatsAppNotifications(enabled: boolean) {
+		try {
+			const formData = new FormData();
+			formData.append('whatsappNotifications', enabled.toString());
+
+			const response = await fetch('/api/profile/update', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to update WhatsApp preferences');
+			}
+			
+			// Refresh profile data
+			await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+			
+			toastSuccess(enabled ? 'WhatsApp notifications enabled' : 'WhatsApp notifications disabled');
+		} catch (error) {
+			console.error('WhatsApp toggle error:', error);
+			toastError(error instanceof Error ? error.message : 'Failed to update WhatsApp preferences');
+			throw error; // Re-throw to let the component handle loading state
+		}
+	}
+
 	// Change password
 	async function changePassword() {
 		passwordLoading = true;
@@ -769,7 +797,10 @@
 
 					<!-- Mobile: Preferences -->
 					<div class="lg:hidden">
-						<PreferencesSection />
+						<PreferencesSection 
+							{user}
+							onWhatsAppToggle={toggleWhatsAppNotifications}
+						/>
 					</div>
 					
 					<!-- Danger Zone (always last) -->
@@ -834,7 +865,10 @@
 				<AccountInfo {user} />
 
 				<!-- Preferences -->
-				<PreferencesSection />
+				<PreferencesSection 
+					{user}
+					onWhatsAppToggle={toggleWhatsAppNotifications}
+				/>
 			</div>
 		</div>
 	{/if}

@@ -16,6 +16,13 @@ export async function sendWhatsAppBookingConfirmation(
 	tourOwner: AuthUser
 ): Promise<void> {
 	try {
+		// Check if tour guide has Professional+ subscription for WhatsApp
+		const canSend = await canSendWhatsApp(tourOwner);
+		if (!canSend) {
+			console.log(`Tour guide ${tourOwner.id} (${tourOwner.subscriptionPlan}) cannot send WhatsApp notifications to customers`);
+			return;
+		}
+		
 		// Check if customer provided phone number
 		if (!booking.customerPhone) {
 			console.log('No customer phone number provided for WhatsApp notification');
@@ -66,9 +73,17 @@ export async function sendWhatsAppBookingConfirmation(
 export async function sendWhatsAppBookingReminder(
 	booking: Booking,
 	tour: Tour,
-	timeSlot: TimeSlot
+	timeSlot: TimeSlot,
+	tourOwner: AuthUser
 ): Promise<void> {
 	try {
+		// Check if tour guide has Professional+ subscription for WhatsApp
+		const canSend = await canSendWhatsApp(tourOwner);
+		if (!canSend) {
+			console.log(`Tour guide ${tourOwner.id} (${tourOwner.subscriptionPlan}) cannot send WhatsApp reminders to customers`);
+			return;
+		}
+		
 		// Check if customer provided phone number
 		if (!booking.customerPhone) {
 			return;
@@ -162,9 +177,17 @@ export async function sendWhatsAppBookingCancellation(
 	booking: Booking,
 	tour: Tour,
 	timeSlot: TimeSlot,
+	tourOwner: AuthUser,
 	reason?: string
 ): Promise<void> {
 	try {
+		// Check if tour guide has Professional+ subscription for WhatsApp
+		const canSend = await canSendWhatsApp(tourOwner);
+		if (!canSend) {
+			console.log(`Tour guide ${tourOwner.id} (${tourOwner.subscriptionPlan}) cannot send WhatsApp cancellations to customers`);
+			return;
+		}
+		
 		// Check if customer provided phone number
 		if (!booking.customerPhone) {
 			return;

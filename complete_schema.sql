@@ -81,6 +81,10 @@ CREATE TABLE users (
     early_access_member BOOLEAN NOT NULL DEFAULT FALSE,
     
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    
+    -- Notification preferences
+    whatsapp_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+    
     last_login TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()

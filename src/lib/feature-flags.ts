@@ -15,7 +15,7 @@ export const FEATURES = {
 	// Phase 3 - Future
 	MULTI_LANGUAGE: false,
 	CALENDAR_SYNC: false,
-	WHATSAPP_NOTIFICATIONS: false,
+	WHATSAPP_NOTIFICATIONS: true, // ✅ Enabled for Professional+ users
 	REVIEW_COLLECTION: false,
 	QR_CUSTOMIZATION: false,
 	

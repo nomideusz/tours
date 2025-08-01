@@ -1,6 +1,6 @@
 {
-  "id": "80bc1191-1a41-444e-921a-d9acf0b7a9ee",
-  "prevId": "24f2a6e7-0de3-4e10-b9ed-3f1e3d250dea",
+  "id": "5c1c7ec7-960e-491c-9da8-42c603518d5d",
+  "prevId": "80bc1191-1a41-444e-921a-d9acf0b7a9ee",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1226,6 +1226,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "whatsapp_notifications": {
+          "name": "whatsapp_notifications",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "last_login": {
           "name": "last_login",

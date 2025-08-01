@@ -1,14 +1,26 @@
 <script lang="ts">
 	import { preferences, updatePreferences } from '$lib/stores/preferences.js';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import { isFeatureEnabled, hasFeatureAccess } from '$lib/feature-flags.js';
 	
 	// Icons
 	import Settings from 'lucide-svelte/icons/settings';
 	import Bell from 'lucide-svelte/icons/bell';
 	import Volume2 from 'lucide-svelte/icons/volume-2';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import MessageCircle from 'lucide-svelte/icons/message-circle';
+	import Crown from 'lucide-svelte/icons/crown';
+	
+	let {
+		user,
+		onWhatsAppToggle
+	}: {
+		user: any;
+		onWhatsAppToggle?: (enabled: boolean) => void;
+	} = $props();
 	
 	let showSuccess = $state(false);
+	let whatsappLoading = $state(false);
 	
 	function handlePreferenceChange(key: string, value: any) {
 		updatePreferences({ [key]: value });
@@ -17,6 +29,28 @@
 			showSuccess = false;
 		}, 3000);
 	}
+	
+	async function handleWhatsAppToggle(enabled: boolean) {
+		if (!onWhatsAppToggle) return;
+		
+		whatsappLoading = true;
+		try {
+			await onWhatsAppToggle(enabled);
+			showSuccess = true;
+			setTimeout(() => {
+				showSuccess = false;
+			}, 3000);
+		} catch (error) {
+			console.error('Failed to update WhatsApp preference:', error);
+		} finally {
+			whatsappLoading = false;
+		}
+	}
+	
+	// Check if user can use WhatsApp features
+	const whatsappFeatureEnabled = isFeatureEnabled('WHATSAPP_NOTIFICATIONS');
+	const hasWhatsAppAccess = user?.subscriptionPlan && hasFeatureAccess('WHATSAPP_NOTIFICATIONS', user.subscriptionPlan);
+	const showWhatsAppOption = whatsappFeatureEnabled && hasWhatsAppAccess;
 </script>
 
 <div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -64,6 +98,42 @@
 					</Tooltip>
 				</div>
 			</div>
+			
+			<!-- WhatsApp Notifications (Professional+ only) -->
+			{#if showWhatsAppOption}
+				<div class="flex items-start justify-between">
+					<div class="flex-1 pr-4">
+						<div class="flex items-center gap-2 mb-1">
+							<MessageCircle class="h-4 w-4" style="color: var(--color-primary-600);" />
+							<label for="whatsapp-notifications" class="font-medium" style="color: var(--text-primary);">
+								WhatsApp Notifications
+							</label>
+							<Crown class="h-3 w-3" style="color: var(--color-warning-600);" />
+						</div>
+						<p class="text-sm" style="color: var(--text-secondary);">
+							Send booking confirmations and reminders to your customers via WhatsApp
+						</p>
+						<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+							Professional+ feature • Creates premium customer experience
+						</p>
+					</div>
+					<div class="flex items-center">
+						<Tooltip text="Toggle WhatsApp notifications for your customers">
+							<label class="relative inline-flex items-center cursor-pointer">
+								<input
+									id="whatsapp-notifications"
+									type="checkbox"
+									checked={user?.whatsappNotifications ?? true}
+									onchange={(e) => handleWhatsAppToggle(e.currentTarget.checked)}
+									disabled={whatsappLoading}
+									class="sr-only peer"
+								/>
+								<div class="toggle-switch" class:loading={whatsappLoading}></div>
+							</label>
+						</Tooltip>
+					</div>
+				</div>
+			{/if}
 			
 			<!-- More preferences can be added here -->
 			<div class="pt-4 border-t" style="border-color: var(--border-primary);">
@@ -137,5 +207,20 @@
 	input:disabled ~ .toggle-switch {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	
+	/* Loading state */
+	.toggle-switch.loading {
+		opacity: 0.6;
+		cursor: wait;
+	}
+	
+	.toggle-switch.loading::after {
+		animation: pulse 1.5s infinite;
+	}
+	
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
 	}
 </style> 

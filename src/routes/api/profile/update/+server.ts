@@ -34,6 +34,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const currencyValue = formData.get('currency')?.toString();
 		const currency = currencyValue || locals.user.currency || 'EUR';
 		
+		// Handle WhatsApp notifications preference
+		const whatsappNotificationsValue = formData.get('whatsappNotifications')?.toString();
+		const whatsappNotifications = whatsappNotificationsValue ? whatsappNotificationsValue === 'true' : locals.user.whatsappNotifications ?? true;
+		
 		const avatarFile = formData.get('avatar') as File;
 		const avatarValue = formData.get('avatar')?.toString(); // Check if avatar is being explicitly removed
 
@@ -161,6 +165,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			location,
 			country,
 			currency,
+			whatsappNotifications,
 			avatar: newAvatarUrl,
 			updatedAt: new Date()
 		};
@@ -190,6 +195,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			location: updatedUser.location || '',
 			country: updatedUser.country || '',
 			currency: updatedUser.currency || 'EUR',
+			whatsappNotifications: updatedUser.whatsappNotifications ?? true,
 			avatar: updatedUser.avatar || '',
 		};
 

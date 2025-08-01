@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "whatsapp_notifications" boolean DEFAULT true NOT NULL;

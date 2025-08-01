@@ -266,8 +266,10 @@ export async function canSendWhatsApp(user: AuthUser): Promise<boolean> {
 		return false;
 	}
 	
-	// TODO: Check if user has opted in to WhatsApp notifications
-	// This could be stored in user preferences
+	// Check if user has enabled WhatsApp notifications in their preferences
+	if (user.whatsappNotifications === false) {
+		return false;
+	}
 	
 	return true;
 }

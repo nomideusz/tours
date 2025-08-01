@@ -17,6 +17,8 @@ export interface AuthUser {
 	currency?: string;
 	emailVerified?: boolean;
 	lastLogin?: Date;
+	// Notification preferences
+	whatsappNotifications?: boolean;
 	// Payment fields
 	stripeAccountId?: string;
 	// Subscription fields

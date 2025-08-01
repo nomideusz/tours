@@ -152,14 +152,14 @@ export const POST: RequestHandler = async ({ request }) => {
 				// Send reminder to customer
 				if (booking.customerPhone) {
 					const { sendWhatsAppBookingReminder } = await import('$lib/whatsapp/notifications.js');
-					await sendWhatsAppBookingReminder(booking, tour, timeSlot);
+					await sendWhatsAppBookingReminder(booking, tour, timeSlot, tourOwner);
 				}
 				break;
 				
 			case 'booking_cancellation':
 				// Send cancellation to customer
 				const { cancellationReason } = body;
-				await sendWhatsAppBookingCancellation(booking, tour, timeSlot, cancellationReason);
+				await sendWhatsAppBookingCancellation(booking, tour, timeSlot, tourOwner, cancellationReason);
 				break;
 				
 			default:
