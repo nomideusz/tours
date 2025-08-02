@@ -20,12 +20,12 @@
 			icon: Sticker,
 			color: 'orange'
 		},
-		{
-			href: '/marketing/flyers',
-			label: 'Flyers',
-			icon: FileText,
-			color: 'teal'
-		},
+		// {
+		// 	href: '/marketing/flyers',
+		// 	label: 'Flyers',
+		// 	icon: FileText,
+		// 	color: 'teal'
+		// },
 		{
 			href: '/marketing/social',
 			label: 'Social Media',

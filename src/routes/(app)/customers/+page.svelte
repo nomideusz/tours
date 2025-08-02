@@ -855,18 +855,4 @@
 	{/if}
 </div>
 
-<style>
-	.form-checkbox {
-		width: 1rem;
-		height: 1rem;
-		border-radius: 0.25rem;
-		border: 1px solid var(--border-primary);
-		background: var(--bg-primary);
-		cursor: pointer;
-	}
-	
-	.form-checkbox:checked {
-		background: var(--color-primary-600);
-		border-color: var(--color-primary-600);
-	}
-</style> 
+ 

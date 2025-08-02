@@ -5,6 +5,7 @@
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
+	import Printer from 'lucide-svelte/icons/printer';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Check from 'lucide-svelte/icons/check';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -33,7 +34,7 @@
 	let profile = $derived($profileQuery.data);
 	
 	let showCopied = $state(false);
-	let generating = $state(false);
+	let generatingPDF = $state(false);
 	let selectedDesign = $state<'professional' | 'colorful' | 'minimal'>('professional');
 	let selectedColorScheme = $state<'primary' | 'blue' | 'green' | 'purple' | 'orange'>('primary');
 	let customTagline = $state('');
@@ -103,13 +104,13 @@
 		}
 	}
 	
-	async function generatePDF() {
+	async function printStickers() {
 		if (!profile?.username || !browser) {
 			alert('Please complete your profile first');
 			return;
 		}
 		
-		generating = true;
+		generatingPDF = true;
 		try {
 			// Get the stickers container
 			const container = document.querySelector('.stickers-print-container');
@@ -120,8 +121,19 @@
 			// Show the container temporarily for capture
 			container.classList.remove('hidden');
 			
-			// Wait for images to load
-			await new Promise(resolve => setTimeout(resolve, 500));
+			// Ensure QR code images are loaded
+			const qrImages = container.querySelectorAll('img');
+			await Promise.all(Array.from(qrImages).map(img => {
+				if (img.complete) return Promise.resolve();
+				return new Promise((resolve) => {
+					img.onload = () => resolve(null);
+					img.onerror = () => resolve(null); // Continue even if QR fails
+					setTimeout(() => resolve(null), 1000); // Fallback timeout
+				});
+			}));
+			
+			// Wait a moment for final rendering
+			await new Promise(resolve => setTimeout(resolve, 200));
 			
 			// Generate canvas with high resolution
 			const canvas = await (html2canvas as any)(container as HTMLElement, {
@@ -135,6 +147,42 @@
 			// Hide the container again
 			container.classList.add('hidden');
 			
+			// Convert canvas to blob first for better reliability
+			const blob = await new Promise<Blob>((resolve, reject) => {
+				canvas.toBlob((blob: Blob | null) => {
+					if (blob) {
+						resolve(blob);
+					} else {
+						reject(new Error('Failed to create blob from canvas'));
+					}
+				}, 'image/png', 1.0);
+			});
+
+			// Validate blob size
+			if (blob.size === 0) {
+				throw new Error('Generated image is empty');
+			}
+
+			// Convert blob to data URL
+			const imgData = await new Promise<string>((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => {
+					const result = reader.result as string;
+					if (result && result.length > 0) {
+						resolve(result);
+					} else {
+						reject(new Error('Failed to read image data'));
+					}
+				};
+				reader.onerror = () => reject(new Error('FileReader error'));
+				reader.readAsDataURL(blob);
+			});
+
+			// Validate image data
+			if (!imgData.startsWith('data:image/png;base64,')) {
+				throw new Error('Invalid image data format');
+			}
+			
 			// Create PDF
 			const pdf = new jsPDF({
 				orientation: 'portrait',
@@ -142,21 +190,76 @@
 				format: 'a4'
 			});
 			
-			// Calculate dimensions
+			// Calculate dimensions to fit A4 page
 			const imgWidth = 210; // A4 width in mm
 			const imgHeight = 297; // A4 height in mm
 			
 			// Add image to PDF
-			const imgData = canvas.toDataURL('image/png');
 			pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
 			
 			// Download PDF
-			pdf.save(`${profile.username}-promotional-stickers-${new Date().toISOString().split('T')[0]}.pdf`);
+			pdf.save(`${profile.username}-stickers-${selectedDesign}-${selectedColorScheme}.pdf`);
 		} catch (error) {
-			console.error('Error generating stickers:', error);
-			alert('Failed to generate PDF. Please try again.');
+			console.error('Error generating stickers PDF:', error);
+			alert('Failed to generate PDF. Please try again or refresh the page.');
 		} finally {
-			generating = false;
+			generatingPDF = false;
+		}
+	}
+
+	async function downloadSticker() {
+		if (!profile?.username || !browser) {
+			alert('Please complete your profile first');
+			return;
+		}
+
+		try {
+			// Find the sticker preview element
+			const stickerElement = document.querySelector('.sticker-preview');
+			if (!stickerElement) {
+				console.error('Sticker element not found');
+				return;
+			}
+
+			// Ensure QR code image is fully loaded
+			const qrImage = stickerElement.querySelector('img');
+			if (qrImage && !qrImage.complete) {
+				await new Promise((resolve) => {
+					qrImage.onload = resolve;
+					qrImage.onerror = resolve; // Continue even if QR fails
+					setTimeout(resolve, 1000); // Fallback timeout
+				});
+			}
+
+			// Wait a small moment for any final rendering
+			await new Promise(resolve => setTimeout(resolve, 100));
+
+			// Generate high-resolution image of the sticker
+			const canvas = await (html2canvas as any)(stickerElement, {
+				backgroundColor: '#ffffff',
+				scale: 3, // High resolution
+				useCORS: true,
+				allowTaint: true,
+				logging: false
+			});
+
+			// Download as PNG
+			canvas.toBlob((blob: Blob | null) => {
+				if (!blob) return;
+				
+				const url = URL.createObjectURL(blob);
+				const link = document.createElement('a');
+				link.download = `${profile.username}-sticker-${selectedDesign}-${selectedColorScheme}.png`;
+				link.href = url;
+				link.click();
+				
+				// Clean up
+				setTimeout(() => URL.revokeObjectURL(url), 100);
+			}, 'image/png');
+
+		} catch (error) {
+			console.error('Error downloading sticker:', error);
+			alert('Failed to download image. Please try again.');
 		}
 	}
 </script>
@@ -196,7 +299,7 @@
 						selectedDesign={selectedDesign}
 						designs={['professional', 'colorful', 'minimal']}
 						onDesignChange={(design) => selectedDesign = design as 'professional' | 'colorful' | 'minimal'}
-						label="Sticker Style"
+						label="Template"
 					/>
 					
 					<!-- Color Selection -->
@@ -230,30 +333,25 @@
 					<h3 class="font-semibold text-primary">Preview</h3>
 					<div class="flex gap-2">
 						<button
-							onclick={copyURL}
-							class="button--secondary button--small"
-							disabled={!personalizedURL}
+							onclick={printStickers}
+							class="button--secondary button--small button--gap"
+							disabled={!personalizedURL || generatingPDF}
 						>
-							{#if showCopied}
-								<Check class="w-4 h-4" />
-								Copied!
+							{#if generatingPDF}
+								<div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+								Generating...
 							{:else}
-								<Copy class="w-4 h-4" />
-								Copy URL
+								<Printer class="w-4 h-4" />
+								Print PDF
 							{/if}
 						</button>
 						<button
-							onclick={generatePDF}
-							class="button--primary button--small"
-							disabled={generating}
+							onclick={downloadSticker}
+							class="button--primary button--small button--gap"
+							disabled={!personalizedURL}
 						>
-							{#if generating}
-								<div class="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-								Generating...
-							{:else}
-								<Download class="w-4 h-4" />
-								Download PDF
-							{/if}
+							<Download class="w-4 h-4" />
+							Download PNG
 						</button>
 					</div>
 				</div>

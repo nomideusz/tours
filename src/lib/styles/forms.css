@@ -268,10 +268,10 @@
 		border: 2px solid white !important;
 		border-top: none !important;
 		border-left: none !important;
-		transform: rotate(45deg);
-		/* Use margin auto for perfect centering */
-		margin-top: -0.15rem !important;
-		margin-left: 0.05rem !important;
+		transform: rotate(45deg) translate(-100%, -25%);
+		position: absolute;
+		top: 50%;
+		left: 50%;
 	}
 
 	.form-radio {
