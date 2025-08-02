@@ -1,30 +1,23 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
-	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
+	// @ts-ignore
+	import jsPDF from 'jspdf';
 	
 	// Icons
-	import CreditCard from 'lucide-svelte/icons/credit-card';
-	import QrCode from 'lucide-svelte/icons/qr-code';
 	import Download from 'lucide-svelte/icons/download';
 	import Printer from 'lucide-svelte/icons/printer';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import User from 'lucide-svelte/icons/user';
-	import Building from 'lucide-svelte/icons/building';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Globe from 'lucide-svelte/icons/globe';
-	import Phone from 'lucide-svelte/icons/phone';
-	import Mail from 'lucide-svelte/icons/mail';
-	import ExternalLink from 'lucide-svelte/icons/external-link';
 	
 	// Components
-	import Tooltip from '$lib/components/Tooltip.svelte';
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import ColorSchemeSelector from '$lib/components/ColorSchemeSelector.svelte';
+	import DesignSelector from '$lib/components/DesignSelector.svelte';
 
 	// Profile data query
 	const profileQuery = createQuery({
@@ -37,24 +30,13 @@
 		staleTime: 30000
 	});
 
-	// Tours data query for statistics
-	const toursQuery = createQuery({
-		queryKey: ['userTours'],
-		queryFn: async () => {
-			const response = await fetch('/api/tours');
-			if (!response.ok) throw new Error('Failed to fetch tours');
-			return response.json();
-		},
-		staleTime: 30000
-	});
-
 	let profile = $derived($profileQuery.data);
-	let tours = $derived($toursQuery.data || []);
-	let isLoading = $derived($profileQuery.isLoading || $toursQuery.isLoading);
-	let error = $derived($profileQuery.error || $toursQuery.error);
+	let isLoading = $derived($profileQuery.isLoading);
+	let error = $derived($profileQuery.error);
+	let generatingPDF = $state(false);
 
 	// Business card template selection
-	let selectedTemplate = $state<'professional' | 'modern' | 'minimal'>('professional');
+	let selectedTemplate = $state<'professional' | 'colorful' | 'minimal'>('professional');
 
 	// Color scheme selection
 	let selectedColorScheme = $state<'primary' | 'blue' | 'green' | 'purple' | 'orange'>('primary');
@@ -107,105 +89,92 @@
 		qrColor = qrColor.replace('#', '');
 		
 		return generateQRImageURL(profileURL, { 
-			size: 200, 
+			size: 120, 
 			color: qrColor,
 			style: 'modern'
 		});
 	});
 
-	// Featured tours (top 3)
-	let featuredTours = $derived(tours.slice(0, 3));
-
 	async function printBusinessCard() {
+		if (!profile?.username) {
+			alert('Please complete your profile first');
+			return;
+		}
+
+		generatingPDF = true;
 		try {
-			// Find the business card preview element
-			const cardElement = document.querySelector('.business-card-container .business-card');
+			// Find the hidden print business card element
+			const cardElement = document.querySelector('.business-cards-print-container .print-business-card');
 			if (!cardElement) {
-				console.error('Business card element not found');
+				console.error('Print business card element not found');
 				return;
 			}
 
-			// Generate high-resolution PNG for printing (300 DPI equivalent)
-			const rawCanvas = await (html2canvas as any)(cardElement, {
-				backgroundColor: '#ffffff', // Force white background
-				scale: 4, // Very high resolution for print quality
-				useCORS: true,
-				allowTaint: true,
-				width: 350,
-				height: 200,
-				logging: false,
-				x: 0,
-				y: 0,
-				scrollX: 0,
-				scrollY: 0
-			});
-
-			// Crop off the extra pixels (preserve borders for modern template)
-			const canvas = document.createElement('canvas');
-			const ctx = canvas.getContext('2d');
-			const cropX = selectedTemplate === 'modern' ? 2 : 4;
-			const cropY = 0; // No vertical cropping
-			const cropHeight = 0; // No vertical cropping
-			canvas.width = rawCanvas.width - cropX;
-			canvas.height = rawCanvas.height - cropHeight;
-			
-			if (ctx) {
-				ctx.drawImage(rawCanvas, cropX, cropY, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+			// Temporarily show the container for rendering
+			const container = document.querySelector('.business-cards-print-container') as HTMLElement;
+			if (container) {
+				container.style.position = 'fixed';
+				container.style.left = '0';
+				container.style.top = '0';
+				container.style.zIndex = '-1';
 			}
 
-			// Open the image in a new window for printing
-			canvas.toBlob((blob: Blob | null) => {
-				if (!blob) return;
-				
-				const url = URL.createObjectURL(blob);
-				const printWindow = window.open('', '_blank');
-				
-				if (printWindow) {
-					// Create HTML with landscape orientation and centered image
-					printWindow.document.write(`
-						<!DOCTYPE html>
-						<html>
-						<head>
-							<title>Business Card - Print</title>
-							<style>
-								@page {
-									size: A4 landscape;
-									margin: 1in;
-								}
-								body {
-									margin: 0;
-									padding: 0;
-									display: flex;
-									justify-content: center;
-									align-items: center;
-									min-height: 100vh;
-									background: white;
-								}
-								img {
-									width: 3.5in;
-									height: 2in;
-									display: block;
-									object-fit: contain;
-								}
-							</style>
-						</head>
-						<body>
-							<img src="${url}" alt="Business Card" />
-							<script>
-								window.onload = () => {
-									setTimeout(() => {
-										window.print();
-									}, 1000);
-								};
-							<\/script>
-						</body>
-						</html>
-					`);
-					printWindow.document.close();
-				}
+			// Generate high-resolution image of the business card
+			const canvas = await (html2canvas as any)(cardElement, {
+				backgroundColor: '#ffffff',
+				scale: 3, // High resolution for print quality
+				useCORS: true,
+				allowTaint: true,
+				logging: false
 			});
+
+			// Hide the container again
+			if (container) {
+				container.style.position = 'absolute';
+				container.style.left = '-9999px';
+				container.style.zIndex = 'auto';
+			}
+
+			// Convert canvas to image data
+			const imgData = canvas.toDataURL('image/png');
+
+			// Create PDF with multiple business cards arranged for printing
+			const pdf = new jsPDF('portrait', 'mm', 'a4'); // A4 portrait
+			
+			// Business card dimensions in mm (standard business card: 3.5" x 2" = 89mm x 51mm)
+			const cardWidth = 89;
+			const cardHeight = 51;
+			const margin = 10;
+			const spacingX = 5;
+			const spacingY = 5;
+			
+			// Calculate how many cards fit on a page
+			const cardsPerRow = 2;
+			const cardsPerColumn = 5;
+			const totalCards = cardsPerRow * cardsPerColumn; // 10 cards per page
+			
+			// Calculate starting positions to center the grid
+			const totalWidth = (cardsPerRow * cardWidth) + ((cardsPerRow - 1) * spacingX);
+			const totalHeight = (cardsPerColumn * cardHeight) + ((cardsPerColumn - 1) * spacingY);
+			const startX = (210 - totalWidth) / 2; // A4 width is 210mm
+			const startY = (297 - totalHeight) / 2; // A4 height is 297mm
+			
+			// Add business cards to PDF
+			for (let row = 0; row < cardsPerColumn; row++) {
+				for (let col = 0; col < cardsPerRow; col++) {
+					const x = startX + (col * (cardWidth + spacingX));
+					const y = startY + (row * (cardHeight + spacingY));
+					
+					pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
+				}
+			}
+			
+			// Save the PDF
+			pdf.save(`${profile.username}-business-cards-${selectedTemplate}-${selectedColorScheme}.pdf`);
 		} catch (error) {
-			console.error('Error preparing business card for print:', error);
+			console.error('Error generating business cards PDF:', error);
+		} finally {
+			generatingPDF = false;
 		}
 	}
 
@@ -255,7 +224,7 @@
 	<meta name="description" content="Create professional business cards for your tour business" />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<PageHeader title="Business Cards" />
 	
 	<MarketingNav />
@@ -276,66 +245,108 @@
 			<p class="text-secondary">Please try refreshing the page or check your connection.</p>
 		</div>
 	{:else if profile}
-		<div class="grid gap-6 lg:gap-8 lg:grid-cols-3">
-			<!-- Business Card Generator -->
-			<div class="lg:col-span-2 min-w-0">
-				<div class="professional-card">
-					<div class="p-4 sm:p-6 border-b border-border">
-						<div class="flex items-center gap-3 mb-4">
-							<CreditCard class="w-5 h-5 text-primary" />
-							<h2 class="text-xl font-semibold text-primary">Business Card Generator</h2>
-						</div>
-						
-						<!-- Template & Color Selection -->
-						<div class="grid gap-4 sm:grid-cols-2 min-w-0">
-							<div>
-								<p class="block text-sm font-medium mb-2 text-primary">Template</p>
-								<div class="grid grid-cols-3 gap-2">
-									<button
-										onclick={() => selectedTemplate = 'professional'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors border {selectedTemplate === 'professional' ? 'bg-primary text-white border-primary' : 'bg-bg-secondary text-primary border-border'}"
-									>
-										Professional
-									</button>
-									<button
-										onclick={() => selectedTemplate = 'modern'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors border {selectedTemplate === 'modern' ? 'bg-primary text-white border-primary' : 'bg-bg-secondary text-primary border-border'}"
-									>
-										Modern
-									</button>
-									<button
-										onclick={() => selectedTemplate = 'minimal'}
-										class="px-3 py-2 rounded-lg text-sm font-medium transition-colors border {selectedTemplate === 'minimal' ? 'bg-primary text-white border-primary' : 'bg-bg-secondary text-primary border-border'}"
-									>
-										Minimal
-									</button>
-								</div>
-							</div>
-							<div>
-								<p class="block text-sm font-medium mb-2 text-primary">Color Scheme</p>
-								<div class="flex gap-2 flex-wrap">
-									{#each Object.keys(colorSchemes) as scheme}
-										<Tooltip text={scheme === 'primary' ? 'Theme Color' : scheme.charAt(0).toUpperCase() + scheme.slice(1)} position="bottom">
-											<button
-												onclick={() => selectedColorScheme = scheme as 'primary' | 'blue' | 'green' | 'purple' | 'orange'}
-												class="w-8 h-8 rounded-full border-2 {selectedColorScheme === scheme ? 'border-primary' : 'border-border'}"
-												style="background: {colorSchemes[scheme as keyof typeof colorSchemes].primary};"
-												aria-label="Select {scheme === 'primary' ? 'theme' : scheme} color scheme"
-											></button>
-										</Tooltip>
-									{/each}
-								</div>
-							</div>
-						</div>
+		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
+			<!-- Options Sidebar -->
+			<div class="professional-card h-fit">
+				<div class="p-4 border-b border-border">
+					<h3 class="font-semibold text-primary">Design Options</h3>
+				</div>
+				<div class="p-4 space-y-6">
+					<!-- Template Selection -->
+					<DesignSelector 
+						selectedDesign={selectedTemplate}
+						designs={['professional', 'colorful', 'minimal']}
+						onDesignChange={(design) => selectedTemplate = design as 'professional' | 'colorful' | 'minimal'}
+						label="Template"
+					/>
+					
+					<!-- Color Selection -->
+					<ColorSchemeSelector 
+						{selectedColorScheme}
+						{colorSchemes}
+						onColorSchemeChange={(scheme) => selectedColorScheme = scheme}
+					/>
+				</div>
+			</div>
+
+			<!-- Preview Area -->
+			<div class="professional-card">
+				<div class="p-4 border-b border-border flex items-center justify-between">
+					<h3 class="font-semibold text-primary">Preview</h3>
+					<div class="flex gap-2">
+						<button
+							onclick={printBusinessCard}
+							class="button--secondary button--small button--gap"
+							disabled={!profileURL || generatingPDF}
+						>
+							{#if generatingPDF}
+								<div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+								Generating...
+							{:else}
+								<Printer class="w-4 h-4" />
+								Print PDF
+							{/if}
+						</button>
+						<button
+							onclick={downloadBusinessCard}
+							class="button--primary button--small button--gap"
+							disabled={!profileURL}
+						>
+							<Download class="w-4 h-4" />
+							Download PNG
+						</button>
 					</div>
+				</div>
 
 					<!-- Business Card Preview -->
 					<div class="p-4 sm:p-6">
 						<div class="business-card-container mb-6 overflow-hidden">
 							{#if selectedTemplate === 'professional'}
 								<!-- Professional Template -->
+								<div class="business-card business-card-professional w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto relative overflow-hidden" style="background-color: #fafafa; border: 1px solid #e5e7eb;">
+									<!-- Color accent on left side -->
+									<div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: {colorSchemes[selectedColorScheme].primary};"></div>
+									
+									<div class="absolute inset-0 p-3 sm:p-4 pl-4 sm:pl-5">
+										<div class="flex h-full">
+											<div class="flex-1">
+												<div class="h-full flex flex-col justify-center">
+													<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+													{#if profile.businessName}
+														<p class="text-sm mb-3 uppercase tracking-wide" style="color: {colorSchemes[selectedColorScheme].primary}; font-size: 0.625rem; font-weight: 600;">{profile.businessName}</p>
+													{/if}
+													<div class="space-y-1 text-xs" style="color: #4B5563;">
+														{#if profile.phone}
+															<div>{profile.phone}</div>
+														{/if}
+														{#if profile.email}
+															<div>{profile.email}</div>
+														{/if}
+														{#if profile.website}
+															<div>{profile.website}</div>
+														{/if}
+													</div>
+													
+													<div class="text-xs mt-3 font-medium" style="color: #111827;">
+														zaur.app/{profile.username}
+													</div>
+												</div>
+											</div>
+											
+											<div class="flex items-center justify-center ml-3">
+												{#if qrCodeURL}
+													<div style="padding: 2px; background-color: {colorSchemes[selectedColorScheme].primary};">
+														<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white; padding: 0.125rem; display: block;" />
+													</div>
+												{/if}
+											</div>
+										</div>
+									</div>
+								</div>
+							{:else if selectedTemplate === 'colorful'}
+								<!-- Colorful Template -->
 								<div 
-									class="business-card business-card-professional color-{selectedColorScheme} w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-lg shadow-lg relative overflow-hidden"
+									class="business-card business-card-colorful color-{selectedColorScheme} w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto shadow-lg relative overflow-hidden"
 									style="background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"
 								>
 									<div class="absolute inset-0 p-3 sm:p-4 text-white">
@@ -348,22 +359,13 @@
 													{/if}
 													<div class="space-y-1 text-xs text-white">
 														{#if profile.phone}
-															<div class="flex items-center gap-2">
-																<Phone class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
-																<span>{profile.phone}</span>
-															</div>
+															<div class="contact-item">{profile.phone}</div>
 														{/if}
 														{#if profile.email}
-															<div class="flex items-center gap-2">
-																<Mail class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
-																<span>{profile.email}</span>
-															</div>
+															<div class="contact-item">{profile.email}</div>
 														{/if}
 														{#if profile.website}
-															<div class="flex items-center gap-2">
-																<Globe class="w-3 h-3 flex-shrink-0" style="align-self: center;" />
-																<span>{profile.website}</span>
-															</div>
+															<div class="contact-item">{profile.website}</div>
 														{/if}
 													</div>
 												</div>
@@ -375,55 +377,7 @@
 											
 											<div class="flex flex-col justify-center items-center ml-3">
 												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20" style="background: white !important;" />
-												{/if}
-											</div>
-										</div>
-									</div>
-								</div>
-							{:else if selectedTemplate === 'modern'}
-								<!-- Modern Template -->
-								<div class="business-card business-card-modern w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto rounded-xl shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
-									<div class="absolute inset-0 p-3 sm:p-4">
-										<div class="flex h-full">
-											<div class="flex-1">
-												<div class="h-full flex flex-col justify-between">
-													<div>
-														<h3 class="text-base sm:text-lg font-bold mb-1" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.name}</h3>
-														{#if profile.businessName}
-															<p class="text-sm mb-3" style="color: #4B5563;">{profile.businessName}</p>
-														{/if}
-														<div class="space-y-1 text-xs" style="color: #374151;">
-															{#if profile.phone}
-																<div class="flex items-center gap-2">
-																	<Phone class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
-																	<span>{profile.phone}</span>
-																</div>
-															{/if}
-															{#if profile.email}
-																<div class="flex items-center gap-2">
-																	<Mail class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
-																	<span>{profile.email}</span>
-																</div>
-															{/if}
-															{#if profile.website}
-																<div class="flex items-center gap-2">
-																	<Globe class="w-3 h-3 flex-shrink-0" style="color: {colorSchemes[selectedColorScheme].primary}; align-self: center;" />
-																	<span>{profile.website}</span>
-																</div>
-															{/if}
-														</div>
-													</div>
-													
-													<div class="text-xs" style="color: {colorSchemes[selectedColorScheme].primary};">
-														zaur.app/{profile.username}
-													</div>
-												</div>
-											</div>
-											
-											<div class="w-16 sm:w-20 h-16 sm:h-20 ml-3 flex items-center justify-center">
-												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20 rounded" style="background: white !important;" />
+													<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white; padding: 0.125rem;" />
 												{/if}
 											</div>
 										</div>
@@ -431,36 +385,43 @@
 								</div>
 							{:else if selectedTemplate === 'minimal'}
 								<!-- Minimal Template -->
-								<div class="business-card business-card-minimal w-full max-w-[280px] sm:max-w-[350px] h-[160px] sm:h-[200px] mx-auto border-2 relative overflow-hidden" style="border-color: {colorSchemes[selectedColorScheme].primary}; background-color: #ffffff;">
-									<div class="absolute inset-0 p-3 sm:p-4">
+								<div class="business-card business-card-minimal w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
+									<!-- Gradient accent bar -->
+									<div class="absolute top-0 left-0 right-0 h-1" style="background: linear-gradient(90deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"></div>
+									
+									<div class="absolute inset-0 p-3 sm:p-4 pt-4 sm:pt-5">
 										<div class="flex h-full">
 											<div class="flex-1">
-												<div class="h-full flex flex-col justify-center">
-													<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
-													{#if profile.businessName}
-														<p class="text-sm mb-4" style="color: #4B5563;">{profile.businessName}</p>
-													{/if}
-													<div class="space-y-1 text-xs" style="color: #374151;">
-														{#if profile.phone}
-															<div>{profile.phone}</div>
+												<div class="h-full flex flex-col justify-between">
+													<div>
+														<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+														{#if profile.businessName}
+															<p class="text-sm mb-3 font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
 														{/if}
-														{#if profile.email}
-															<div>{profile.email}</div>
-														{/if}
-														{#if profile.website}
-															<div>{profile.website}</div>
-														{/if}
+														<div class="space-y-1 text-xs" style="color: #4B5563;">
+															{#if profile.phone}
+																<div class="contact-item">{profile.phone}</div>
+															{/if}
+															{#if profile.email}
+																<div class="contact-item">{profile.email}</div>
+															{/if}
+															{#if profile.website}
+																<div class="contact-item">{profile.website}</div>
+															{/if}
+														</div>
 													</div>
 													
-													<div class="text-xs mt-3" style="color: {colorSchemes[selectedColorScheme].primary};">
+													<div class="text-xs font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">
 														zaur.app/{profile.username}
 													</div>
 												</div>
 											</div>
 											
-											<div class="w-16 sm:w-20 h-16 sm:h-20 ml-3 flex items-center justify-center">
+											<div class="flex items-center justify-center ml-3">
 												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-16 h-16 sm:w-20 sm:h-20" style="background: white !important;" />
+													<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.125rem;">
+														<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white;" />
+													</div>
 												{/if}
 											</div>
 										</div>
@@ -468,59 +429,141 @@
 								</div>
 							{/if}
 						</div>
-
-						<!-- Action Buttons -->
-						<div class="flex flex-col sm:flex-row gap-3">
-							<button onclick={printBusinessCard} class="button button--primary flex items-center justify-center gap-2">
-								<Printer class="w-4 h-4" />
-								Print Card
-							</button>
-							<button onclick={downloadBusinessCard} class="button button--secondary flex items-center justify-center gap-2">
-								<Download class="w-4 h-4" />
-								Download PNG
-							</button>
-						</div>
 					</div>
 				</div>
 			</div>
-
-			<!-- Information Panel -->
-			<div class="space-y-6">
-				<!-- Profile Stats -->
-				{#if featuredTours.length > 0}
-					<div class="professional-card">
-						<div class="p-4 border-b border-border">
-							<h3 class="font-semibold text-primary">Featured Tours</h3>
-						</div>
-						<div class="p-4 space-y-3">
-							{#each featuredTours as tour}
-								<div class="flex items-center justify-between">
-									<div class="min-w-0 flex-1">
-										<p class="text-sm font-medium text-primary truncate">{tour.name}</p>
-										<p class="text-xs text-secondary">{formatTourOwnerCurrency(tour.price, tour.currency)}</p>
-									</div>
-									<div class="ml-2 text-xs text-secondary">
-										{tour.capacity} max
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-			</div>
-		</div>
 	{:else}
 		<!-- No Profile State -->
 		<div class="professional-card max-w-2xl mx-auto text-center py-12">
 			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
 			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
 			<p class="text-secondary mb-6">Set up your profile to create professional business cards</p>
-			<button onclick={() => goto('/profile')} class="button button--primary">
+			<button onclick={() => goto('/profile')} class="button--primary">
 				Complete Profile
 			</button>
 		</div>
 	{/if}
 </div>
+
+<!-- Hidden Print Container for PDF Generation -->
+{#if profile}
+<div class="business-cards-print-container hidden" style="position: absolute; left: -9999px; background: white;">
+	{#if selectedTemplate === 'professional'}
+		<!-- Professional Template for Print -->
+		<div class="print-business-card" style="width: 89mm; height: 51mm; background-color: #fafafa; border: 1px solid #e5e7eb; position: relative; font-family: 'Inter', sans-serif;">
+			<!-- Color accent on left side -->
+			<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 1mm; background-color: {colorSchemes[selectedColorScheme].primary};"></div>
+			
+			<div style="position: absolute; inset: 0; padding: 6mm 8mm 6mm 9mm; display: flex; height: 100%;">
+				<div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+					<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: #111827;">{profile.name}</h3>
+					{#if profile.businessName}
+						<p style="font-size: 8pt; margin-bottom: 3mm; text-transform: uppercase; letter-spacing: 0.5pt; color: {colorSchemes[selectedColorScheme].primary}; font-weight: 600;">{profile.businessName}</p>
+					{/if}
+					<div style="margin-bottom: 3mm; font-size: 7pt; color: #4B5563; line-height: 1.3;">
+						{#if profile.phone}
+							<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
+						{/if}
+						{#if profile.email}
+							<div style="margin-bottom: 0.5mm;">{profile.email}</div>
+						{/if}
+						{#if profile.website}
+							<div style="margin-bottom: 0.5mm;">{profile.website}</div>
+						{/if}
+					</div>
+					
+					<div style="font-size: 7pt; font-weight: 600; color: #111827;">
+						zaur.app/{profile.username}
+					</div>
+				</div>
+				
+				<div style="display: flex; align-items: center; margin-left: 3mm;">
+					{#if qrCodeURL}
+						<div style="padding: 1mm; background-color: {colorSchemes[selectedColorScheme].primary};">
+							<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white; padding: 0.5mm; display: block;" />
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{:else if selectedTemplate === 'colorful'}
+		<!-- Colorful Template for Print -->
+		<div class="print-business-card" style="width: 89mm; height: 51mm; background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary}); position: relative; font-family: 'Inter', sans-serif;">
+			<div style="position: absolute; inset: 0; padding: 6mm 8mm; color: white; display: flex; height: 100%;">
+				<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+					<div>
+						<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: white;">{profile.name}</h3>
+						{#if profile.businessName}
+							<p style="font-size: 8pt; opacity: 0.9; margin-bottom: 3mm;">{profile.businessName}</p>
+						{/if}
+						<div style="font-size: 7pt; color: white; line-height: 1.3;">
+							{#if profile.phone}
+								<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
+							{/if}
+							{#if profile.email}
+								<div style="margin-bottom: 0.5mm;">{profile.email}</div>
+							{/if}
+							{#if profile.website}
+								<div style="margin-bottom: 0.5mm;">{profile.website}</div>
+							{/if}
+						</div>
+					</div>
+					
+					<div style="font-size: 7pt; opacity: 0.9;">
+						zaur.app/{profile.username}
+					</div>
+				</div>
+				
+				<div style="display: flex; align-items: center; margin-left: 3mm;">
+					{#if qrCodeURL}
+						<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white; padding: 0.5mm;" />
+					{/if}
+				</div>
+			</div>
+		</div>
+	{:else if selectedTemplate === 'minimal'}
+		<!-- Minimal Template for Print -->
+		<div class="print-business-card" style="width: 89mm; height: 51mm; background-color: #ffffff; position: relative; font-family: 'Inter', sans-serif;">
+			<!-- Gradient accent bar -->
+			<div style="position: absolute; top: 0; left: 0; right: 0; height: 1mm; background: linear-gradient(90deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"></div>
+			
+			<div style="position: absolute; inset: 0; padding: 6mm 8mm; padding-top: 8mm; display: flex; height: 100%;">
+				<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+					<div>
+						<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: #111827;">{profile.name}</h3>
+						{#if profile.businessName}
+							<p style="font-size: 8pt; margin-bottom: 3mm; font-weight: 600; color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
+						{/if}
+						<div style="font-size: 7pt; color: #4B5563; line-height: 1.3;">
+							{#if profile.phone}
+								<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
+							{/if}
+							{#if profile.email}
+								<div style="margin-bottom: 0.5mm;">{profile.email}</div>
+							{/if}
+							{#if profile.website}
+								<div style="margin-bottom: 0.5mm;">{profile.website}</div>
+							{/if}
+						</div>
+					</div>
+					
+					<div style="font-size: 7pt; font-weight: 600; color: {colorSchemes[selectedColorScheme].primary};">
+						zaur.app/{profile.username}
+					</div>
+				</div>
+				
+				<div style="display: flex; align-items: center; margin-left: 3mm;">
+					{#if qrCodeURL}
+						<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.5mm;">
+							<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white;" />
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+</div>
+{/if}
 
 <style>
 	/* Ensure QR codes always have proper contrast */
@@ -544,5 +587,35 @@
 	
 	.business-card-professional * {
 		color: inherit;
+	}
+	
+	/* Contact information styling */
+	.business-card .contact-item {
+		font-size: 0.75rem !important;
+		line-height: 1.3 !important;
+		display: block !important;
+	}
+	
+	/* QR Code styling */
+	/* QR codes now have inline styles for better control */
+	
+	/* Professional template enhancements */
+	.business-card-professional {
+		box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	}
+	
+	/* Colorful template enhancements */
+	.business-card-colorful {
+		background-size: 100% 100%;
+	}
+	
+	/* Minimal template enhancements */
+	.business-card-minimal {
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+
+	/* Hidden print container */
+	.hidden {
+		display: none !important;
 	}
 </style> 

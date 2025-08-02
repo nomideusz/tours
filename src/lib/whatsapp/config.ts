@@ -64,6 +64,16 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'footer',
 				text: 'Thank you for booking with {{8}}'
+			},
+			{
+				type: 'buttons',
+				buttons: [
+					{
+						type: 'url',
+						text: 'View Ticket',
+						url: '{{9}}'  // Ticket URL will be parameter 9
+					}
+				]
 			}
 		]
 	},
@@ -79,6 +89,16 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'body',
 				text: 'Hi {{1}},\n\nThis is a friendly reminder about your tour tomorrow!\n\n🎯 *{{2}}*\n📅 {{3}}\n📍 Meeting point: {{4}}\n\nYour ticket code: *{{5}}*\n\nPlease arrive 10 minutes early. See you there!'
+			},
+			{
+				type: 'buttons',
+				buttons: [
+					{
+						type: 'url',
+						text: 'View Ticket',
+						url: '{{6}}'  // Ticket URL will be parameter 6
+					}
+				]
 			}
 		]
 	},
@@ -94,6 +114,16 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'body',
 				text: 'Hello {{1}},\n\nYou have a new booking!\n\n🎯 Tour: *{{2}}*\n📅 Date: {{3}}\n👤 Customer: {{4}}\n👥 Participants: {{5}}\n💰 Amount: {{6}}\n\nCheck your dashboard for full details.'
+			},
+			{
+				type: 'buttons',
+				buttons: [
+					{
+						type: 'url',
+						text: 'View Booking',
+						url: '{{7}}'  // Dashboard booking URL will be parameter 7
+					}
+				]
 			}
 		]
 	},

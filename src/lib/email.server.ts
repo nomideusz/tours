@@ -97,7 +97,7 @@ function generateEmailVerificationEmail(data: AuthEmailData): { subject: string;
     ${contentWrapper(`
       <h2>🎉 Welcome to Zaur!</h2>
       <p>Hello ${userName},</p>
-      <p>Thanks for signing up! Please verify your email address to get started with booking amazing tours.</p>
+      <p>Thanks for signing up! Please verify your email address to get started.</p>
       
       ${infoBox({
         title: '✨ Why verify?',
@@ -126,7 +126,7 @@ function generateEmailVerificationEmail(data: AuthEmailData): { subject: string;
 
   return {
     subject: '🎉 Verify Your Email - Zaur',
-    html: baseTemplate({ content, preheader: 'Verify your email to start booking tours' })
+    html: baseTemplate({ content, preheader: 'Verify your email to start using Zaur' })
   };
 }
 
@@ -139,29 +139,29 @@ function generateWelcomeEmail(data: AuthEmailData): { subject: string; html: str
     ${contentWrapper(`
       <h2>🎊 Welcome Aboard!</h2>
       <p>Hello ${userName},</p>
-      <p>Your email is verified and you're all set to start exploring amazing tour experiences!</p>
+      <p>Your email is verified and you're all set to start using Zaur!</p>
       
       ${infoBox({
         title: '🚀 You\'re Ready to Go!',
-        content: '<p style="margin: 0;">Start discovering unique tours and creating unforgettable memories.</p>',
+        content: '<p style="margin: 0;">Start with creating your first tour.</p>',
         variant: 'success'
       })}
       
       <h3>What You Can Do Now:</h3>
       ${list([
-        { text: 'Browse available tours in your area', icon: '🗺️' },
-        { text: 'Book instantly with secure payment', icon: '💳' },
+        { text: 'Create your first tour', icon: '🗺️' },
+        { text: 'Manage your bookings', icon: '💳' },
         { text: 'Get QR tickets delivered to your email', icon: '🎫' },
-        { text: 'Manage all your bookings in one place', icon: '📱' }
+        { text: 'Manage your bookings in one place', icon: '📱' }
       ])}
       
       ${button({
-        text: 'Explore Tours',
-        href: 'https://zaur.app/tours'
+        text: 'Create Your First Tour',
+        href: 'https://zaur.app/tours/new'
       })}
       
       <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 30px;">
-        Ready for your next adventure? Let's go! 🎒
+        Ready for your next adventure? Let's go!
       </p>
     `)}
     ${footer()}

@@ -56,6 +56,26 @@ async function sendViaPlivio(message: WhatsAppMessage): Promise<WhatsAppResult> 
 			body = body.replace(`{{${index + 1}}}`, param);
 		});
 		
+		// Build template components
+		const components: any[] = [
+			{
+				type: 'body',
+				parameters: message.parameters.slice(0, template.components.find(c => c.type === 'body')?.text.match(/\{\{\d+\}\}/g)?.length || 0).map(text => ({ type: 'text', text }))
+			}
+		];
+		
+		// Add button components if template has buttons
+		const buttonComponent = template.components.find(c => c.type === 'buttons');
+		if (buttonComponent && 'buttons' in buttonComponent) {
+			const buttonParams = message.parameters.slice(components[0].parameters.length);
+			components.push({
+				type: 'button',
+				sub_type: 'url',
+				index: '0',
+				parameters: buttonParams.map(text => ({ type: 'text', text }))
+			});
+		}
+
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -69,12 +89,7 @@ async function sendViaPlivio(message: WhatsAppMessage): Promise<WhatsAppResult> 
 				template: {
 					name: template.name,
 					language: message.languageCode || 'en',
-					components: [
-						{
-							type: 'body',
-							parameters: message.parameters.map(text => ({ type: 'text', text }))
-						}
-					]
+					components: components
 				}
 			})
 		});
@@ -123,11 +138,18 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 		const template = WHATSAPP_TEMPLATES[message.template];
 		const url = `${WHATSAPP_PROVIDERS.gupshup.apiUrl}/msg`;
 		
-		// Build template message
+		// Build template message with button support
 		const templateMessage = {
 			id: template.name,
 			params: message.parameters
 		};
+		
+		// Check if template has buttons and add button parameters
+		const buttonComponent = template.components.find(c => c.type === 'buttons');
+		if (buttonComponent && 'buttons' in buttonComponent) {
+			// For URL buttons, the URL parameter should be included in the params array
+			// Gupshup expects all template parameters in the params array in order
+		}
 		
 		const params = new URLSearchParams({
 			channel: 'whatsapp',

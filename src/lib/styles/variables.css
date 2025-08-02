@@ -1304,9 +1304,13 @@ svg[stroke="currentColor"] {
 button svg,
 .button svg,
 .button-primary svg,
+.button--primary svg,
 .button-secondary svg,
+.button--secondary svg,
 .button-danger svg,
-.button-success svg {
+.button--danger svg,
+.button-success svg,
+.button--success svg {
 	opacity: 1;
 	stroke-width: 2;
 	color: inherit; /* Ensure they inherit button text color */
@@ -2396,7 +2400,7 @@ button svg,
 }
 
 /* Marketing page icon visibility fixes */
-.professional-card button:not(.button) svg:not(.professional-icon svg) {
+.professional-card button:not(.button):not([class*="button--"]) svg:not(.professional-icon svg) {
 	color: var(--text-primary);
 	opacity: 0.8;
 }

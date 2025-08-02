@@ -3,17 +3,17 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { formatCurrency } from '$lib/utils/currency.js';
+	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Image from 'lucide-svelte/icons/image';
-	import Type from 'lucide-svelte/icons/type';
-	import Palette from 'lucide-svelte/icons/palette';
 	import User from 'lucide-svelte/icons/user';
 	import Instagram from 'lucide-svelte/icons/instagram';
 	import Facebook from 'lucide-svelte/icons/facebook';
 	import Twitter from 'lucide-svelte/icons/twitter';
 	import Linkedin from 'lucide-svelte/icons/linkedin';
+	import QrCode from 'lucide-svelte/icons/qr-code';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
 	
@@ -169,7 +169,7 @@
 	<title>Social Media Graphics - Marketing - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<PageHeader title="Social Media Graphics" />
 	
 	<MarketingNav />
@@ -179,253 +179,242 @@
 			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 		</div>
 	{:else if !profile?.username}
-		<div class="professional-card max-w-2xl mx-auto text-center py-12">
-			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
-			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
-			<p class="text-secondary mb-6">You need to set up your username to generate social media graphics</p>
-			<a href="/profile" class="button button--primary">
-				Go to Profile
-			</a>
-		</div>
-	{:else}
-		<!-- Platform Selection -->
-		<div class="professional-card mb-6">
-			<h2 class="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-				<Image class="w-5 h-5" />
-				Choose Platform
-			</h2>
-			<div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-				<button
-					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-post' ? 'border-purple-200 platform-selected platform-instagram' : 'border-border'}"
-					onclick={() => selectedPlatform = 'instagram-post'}
-					data-selected={selectedPlatform === 'instagram-post'}
-				>
-					<Instagram class="w-6 h-6 mx-auto mb-2" />
-					<h3 class="text-sm font-medium">Instagram</h3>
-					<p class="text-xs">Square Post</p>
-				</button>
-				
-				<button
-					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'instagram-story' ? 'border-purple-200 platform-selected platform-instagram' : 'border-border'}"
-					onclick={() => selectedPlatform = 'instagram-story'}
-					data-selected={selectedPlatform === 'instagram-story'}
-				>
-					<Instagram class="w-6 h-6 mx-auto mb-2" />
-					<h3 class="text-sm font-medium">IG Story</h3>
-					<p class="text-xs">9:16 Vertical</p>
-				</button>
-				
-				<button
-					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'facebook' ? 'border-blue-200 platform-selected platform-facebook' : 'border-border'}"
-					onclick={() => selectedPlatform = 'facebook'}
-					data-selected={selectedPlatform === 'facebook'}
-				>
-					<Facebook class="w-6 h-6 mx-auto mb-2" />
-					<h3 class="text-sm font-medium">Facebook</h3>
-					<p class="text-xs">Link Post</p>
-				</button>
-				
-				<button
-					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'twitter' ? 'border-sky-200 platform-selected platform-twitter' : 'border-border'}"
-					onclick={() => selectedPlatform = 'twitter'}
-					data-selected={selectedPlatform === 'twitter'}
-				>
-					<Twitter class="w-6 h-6 mx-auto mb-2" />
-					<h3 class="text-sm font-medium">Twitter</h3>
-					<p class="text-xs">Tweet Image</p>
-				</button>
-				
-				<button
-					class="platform-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedPlatform === 'linkedin' ? 'border-blue-200 platform-selected platform-linkedin' : 'border-border'}"
-					onclick={() => selectedPlatform = 'linkedin'}
-					data-selected={selectedPlatform === 'linkedin'}
-				>
-					<Linkedin class="w-6 h-6 mx-auto mb-2" />
-					<h3 class="text-sm font-medium">LinkedIn</h3>
-					<p class="text-xs">Feed Post</p>
-				</button>
-			</div>
-		</div>
-		
-		<!-- Template Selection -->
-		<div class="professional-card mb-6">
-			<h2 class="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-				<Type class="w-5 h-5" />
-				Content Template
-			</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-				<button
-					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'tour-promo' ? 'border-coral-200 template-selected' : 'border-border'}"
-					onclick={() => selectedTemplate = 'tour-promo'}
-					data-selected={selectedTemplate === 'tour-promo'}
-				>
-					<h3 class="text-sm font-medium">Tour Promotion</h3>
-					<p class="text-xs">Highlight a specific tour</p>
-				</button>
-				
-				<button
-					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'profile-intro' ? 'border-coral-200 template-selected' : 'border-border'}"
-					onclick={() => selectedTemplate = 'profile-intro'}
-					data-selected={selectedTemplate === 'profile-intro'}
-				>
-					<h3 class="text-sm font-medium">Profile Intro</h3>
-					<p class="text-xs">Introduce yourself</p>
-				</button>
-				
-				<button
-					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'schedule' ? 'border-coral-200 template-selected' : 'border-border'}"
-					onclick={() => selectedTemplate = 'schedule'}
-					data-selected={selectedTemplate === 'schedule'}
-				>
-					<h3 class="text-sm font-medium">Tour Schedule</h3>
-					<p class="text-xs">Weekly tour times</p>
-				</button>
-				
-				<button
-					class="template-card p-4 rounded-lg border-2 transition-all cursor-pointer text-left {selectedTemplate === 'testimonial' ? 'border-coral-200 template-selected' : 'border-border'}"
-					onclick={() => selectedTemplate = 'testimonial'}
-					data-selected={selectedTemplate === 'testimonial'}
-				>
-					<h3 class="text-sm font-medium">Testimonial</h3>
-					<p class="text-xs">Customer review</p>
-				</button>
-			</div>
-		</div>
-		
-		<!-- Style Selection -->
-		<div class="professional-card mb-6">
-			<h2 class="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-				<Palette class="w-5 h-5" />
-				Color Theme
-			</h2>
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-				<button
-					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'brand' ? 'border-coral-200 color-selected' : 'border-border'}"
-					onclick={() => selectedColor = 'brand'}
-					data-selected={selectedColor === 'brand'}
-				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-orange-400 to-coral-500"></div>
-					<h3 class="text-sm font-medium">Brand Colors</h3>
-				</button>
-				
-				<button
-					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'vibrant' ? 'border-coral-200 color-selected' : 'border-border'}"
-					onclick={() => selectedColor = 'vibrant'}
-					data-selected={selectedColor === 'vibrant'}
-				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-purple-500 to-pink-500"></div>
-					<h3 class="text-sm font-medium">Vibrant</h3>
-				</button>
-				
-				<button
-					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'minimal' ? 'border-coral-200 color-selected' : 'border-border'}"
-					onclick={() => selectedColor = 'minimal'}
-					data-selected={selectedColor === 'minimal'}
-				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 color-swatch-minimal"></div>
-					<h3 class="text-sm font-medium">Minimal</h3>
-				</button>
-				
-				<button
-					class="color-card p-4 rounded-lg border-2 transition-all cursor-pointer text-center {selectedColor === 'dark' ? 'border-coral-200 color-selected' : 'border-border'}"
-					onclick={() => selectedColor = 'dark'}
-					data-selected={selectedColor === 'dark'}
-				>
-					<div class="w-12 h-12 rounded-full mx-auto mb-2 bg-gradient-to-br from-gray-800 to-gray-900"></div>
-					<h3 class="text-sm font-medium">Dark Mode</h3>
-				</button>
-			</div>
-		</div>
-		
-		<!-- Configuration -->
-		<div class="professional-card mb-6">
-			<h2 class="text-lg font-semibold text-primary mb-4">Content</h2>
-			<div class="space-y-4">
-				{#if selectedTemplate === 'tour-promo' && activeTours.length > 0}
-					<div>
-						<label for="tour-select" class="block text-sm font-medium text-secondary mb-2">
-							Select Tour
-						</label>
-						<select
-							id="tour-select"
-							bind:value={selectedTourId}
-							class="w-full max-w-md"
-						>
-							<option value="">Choose a tour...</option>
-							{#each activeTours as tour}
-								<option value={tour.id}>{tour.name}</option>
-							{/each}
-						</select>
-					</div>
-				{/if}
-				
-				<div>
-					<label for="custom-text" class="block text-sm font-medium text-secondary mb-2">
-						Custom Text (optional)
-					</label>
-					<textarea
-						id="custom-text"
-						bind:value={customText}
-						placeholder="Add custom text for your graphic"
-						rows="4"
-						class="w-full max-w-md"
-					/>
-					<p class="text-xs text-secondary mt-1">Leave empty to use template default</p>
-				</div>
-				
-				<div class="max-w-md">
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={includeQR}
-							class="rounded"
-						/>
-						<span class="text-sm text-primary">Include QR code</span>
-					</label>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Generate Button -->
-		<div class="flex justify-center">
-			<button
-				class="button button--primary button--large flex items-center gap-2"
-				onclick={generateGraphic}
-				disabled={generating || (selectedTemplate === 'tour-promo' && !selectedTourId)}
-			>
-				{#if generating}
-					<div class="w-5 h-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-					Generating...
-				{:else}
-					<Download class="w-5 h-5" />
-					Generate Graphic
-				{/if}
+		<div class="professional-card max-w-md mx-auto text-center py-8">
+			<User class="w-8 h-8 mx-auto mb-3 text-secondary" />
+			<h2 class="text-lg font-semibold text-primary mb-2">Complete Profile First</h2>
+			<p class="text-secondary mb-4">Set up your username to create graphics</p>
+			<button onclick={() => goto('/profile')} class="button--primary">
+				Complete Profile
 			</button>
 		</div>
-		
-		<!-- Platform Info -->
-		<div class="professional-card mt-8">
-			<h3 class="text-lg font-semibold text-primary mb-4">Platform Guidelines</h3>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-				<div>
-					<h4 class="font-medium text-primary mb-2">Image Dimensions:</h4>
-					<ul class="space-y-1 text-secondary">
-						<li>• Instagram Post: 1080×1080px (Square)</li>
-						<li>• Instagram Story: 1080×1920px (9:16)</li>
-						<li>• Facebook: 1200×630px</li>
-						<li>• Twitter: 1200×675px</li>
-						<li>• LinkedIn: 1200×627px</li>
-					</ul>
+	{:else}
+		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
+			<!-- Options Sidebar -->
+			<div class="professional-card h-fit">
+				<div class="p-4 border-b border-border">
+					<h3 class="font-semibold text-primary">Design Options</h3>
 				</div>
-				<div>
-					<h4 class="font-medium text-primary mb-2">Best Practices:</h4>
-					<ul class="space-y-1 text-secondary">
-						<li>• Keep text concise and readable</li>
-						<li>• Use high contrast colors</li>
-						<li>• Include a clear call-to-action</li>
-						<li>• Add your QR code for easy booking</li>
-						<li>• Test on mobile devices</li>
-					</ul>
+				<div class="p-4 space-y-6">
+					<!-- Platform Selection -->
+					<div>
+						<label class="text-sm font-medium text-primary mb-3 block">Platform</label>
+						<div class="space-y-2">
+							<button
+								onclick={() => selectedPlatform = 'instagram-post'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 {selectedPlatform === 'instagram-post' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								<Instagram class="w-4 h-4" />
+								Instagram Post
+							</button>
+							<button
+								onclick={() => selectedPlatform = 'instagram-story'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 {selectedPlatform === 'instagram-story' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								<Instagram class="w-4 h-4" />
+								Instagram Story
+							</button>
+							<button
+								onclick={() => selectedPlatform = 'facebook'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 {selectedPlatform === 'facebook' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								<Facebook class="w-4 h-4" />
+								Facebook
+							</button>
+							<button
+								onclick={() => selectedPlatform = 'twitter'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 {selectedPlatform === 'twitter' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								<Twitter class="w-4 h-4" />
+								Twitter
+							</button>
+							<button
+								onclick={() => selectedPlatform = 'linkedin'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 {selectedPlatform === 'linkedin' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								<Linkedin class="w-4 h-4" />
+								LinkedIn
+							</button>
+						</div>
+					</div>
+					
+					<!-- Template Selection -->
+					<div>
+						<label class="text-sm font-medium text-primary mb-3 block">Template</label>
+						<div class="space-y-2">
+							{#each ['tour-promo', 'profile-intro', 'schedule', 'testimonial'] as template}
+								<button
+									onclick={() => selectedTemplate = template as 'tour-promo' | 'profile-intro' | 'schedule' | 'testimonial'}
+									class="w-full text-left px-3 py-2 rounded-md text-sm transition-all {selectedTemplate === template 
+										? 'bg-secondary text-primary font-medium' 
+										: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+								>
+									{template === 'tour-promo' && 'Tour Promotion'}
+									{template === 'profile-intro' && 'Profile Intro'}
+									{template === 'schedule' && 'Tour Schedule'}
+									{template === 'testimonial' && 'Testimonial'}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<!-- Color Theme -->
+					<div>
+						<label class="text-sm font-medium text-primary mb-3 block">Color Theme</label>
+						<div class="grid grid-cols-2 gap-2">
+							{#each ['brand', 'vibrant', 'minimal', 'dark'] as color}
+								<button
+									onclick={() => selectedColor = color as 'brand' | 'vibrant' | 'minimal' | 'dark'}
+									class="aspect-square rounded-md border-2 transition-all relative overflow-hidden {selectedColor === color 
+										? 'border-primary scale-110 shadow-md' 
+										: 'border-border hover:border-secondary'}"
+									aria-label="{color} color theme"
+								>
+									<div class="w-full h-full {color === 'brand' ? 'bg-gradient-to-br from-orange-400 to-coral-500' : color === 'vibrant' ? 'bg-gradient-to-br from-purple-500 to-pink-500' : color === 'minimal' ? 'bg-gradient-to-br from-gray-100 to-gray-300' : 'bg-gradient-to-br from-gray-800 to-gray-900'}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<!-- Tour Selection -->
+					{#if selectedTemplate === 'tour-promo' && activeTours.length > 0}
+						<div>
+							<label for="tour-select" class="text-sm font-medium text-primary mb-2 block">
+								Select Tour
+							</label>
+							<select
+								id="tour-select"
+								bind:value={selectedTourId}
+								class="form-select"
+							>
+								<option value="">Choose...</option>
+								{#each activeTours as tour}
+									<option value={tour.id}>{tour.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+					
+					<!-- Custom Text -->
+					<div>
+						<label for="custom-text" class="text-sm font-medium text-primary mb-2 block">
+							Custom Text
+						</label>
+						<textarea
+							id="custom-text"
+							bind:value={customText}
+							placeholder="Optional"
+							rows="3"
+							class="form-textarea resize-none"
+						></textarea>
+					</div>
+					
+					<!-- Options -->
+					<div>
+						<label class="flex items-center gap-2 cursor-pointer text-sm">
+							<input
+								type="checkbox"
+								bind:checked={includeQR}
+								class="rounded"
+							/>
+							<span class="text-primary">Include QR code</span>
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<!-- Preview Area -->
+			<div class="professional-card">
+				<div class="p-4 border-b border-border flex items-center justify-between">
+					<h3 class="font-semibold text-primary">Preview</h3>
+					<button
+						onclick={generateGraphic}
+						class="button--primary button--small"
+						disabled={generating || (selectedTemplate === 'tour-promo' && !selectedTourId)}
+					>
+						{#if generating}
+							<div class="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+							Generating...
+						{:else}
+							<Download class="w-4 h-4" />
+							Download
+						{/if}
+					</button>
+				</div>
+				
+				<div class="p-6">
+					<!-- Graphic Preview -->
+					<div class="mx-auto overflow-hidden rounded-lg shadow-lg border border-border" style="max-width: 400px; aspect-ratio: {dimensions.width}/{dimensions.height};">
+						<div class="w-full h-full {selectedColor === 'dark' ? 'bg-gray-900 text-white' : selectedColor === 'minimal' ? 'bg-gray-50 text-gray-900' : 'bg-white text-gray-900'} relative">
+							{#if selectedTemplate === 'tour-promo' && selectedTour}
+								<!-- Tour Promo Preview -->
+								<div class="p-6 h-full flex flex-col justify-between">
+									<div>
+										<h2 class="text-2xl font-bold mb-2">{selectedTour.name}</h2>
+										<p class="text-sm opacity-90 mb-3 line-clamp-3">{customText || selectedTour.description || 'Join us for an unforgettable experience!'}</p>
+										<p class="text-xl font-bold">{formatCurrency(selectedTour.price, selectedTour.currency)}</p>
+									</div>
+									{#if includeQR}
+										<div class="flex justify-end">
+											<div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+												<QrCode class="w-10 h-10 text-gray-400" />
+											</div>
+										</div>
+									{/if}
+								</div>
+							{:else if selectedTemplate === 'profile-intro'}
+								<!-- Profile Intro Preview -->
+								<div class="p-6 h-full flex flex-col justify-center text-center">
+									<h2 class="text-2xl font-bold mb-2">{profile?.businessName || profile?.name}</h2>
+									<p class="text-sm opacity-90">{customText || 'Professional tour guide'}</p>
+									{#if includeQR}
+										<div class="mt-4 flex justify-center">
+											<div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+												<QrCode class="w-10 h-10 text-gray-400" />
+											</div>
+										</div>
+									{/if}
+								</div>
+							{:else if selectedTemplate === 'schedule'}
+								<!-- Schedule Preview -->
+								<div class="p-6 h-full">
+									<h2 class="text-xl font-bold mb-4">Tour Schedule</h2>
+									<div class="space-y-2">
+										{#each activeTours.slice(0, 4) as tour}
+											<div class="text-sm">
+												<span class="font-medium">{tour.name}</span>
+												<span class="opacity-75 ml-2">{formatCurrency(tour.price, tour.currency)}</span>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{:else if selectedTemplate === 'testimonial'}
+								<!-- Testimonial Preview -->
+								<div class="p-6 h-full flex flex-col justify-center">
+									<div class="text-3xl opacity-20 mb-2">"</div>
+									<p class="text-sm italic mb-4">{customText || 'Amazing tour! Highly recommended.'}</p>
+									<p class="text-xs opacity-75">- Happy Customer</p>
+								</div>
+							{:else}
+								<!-- No template selected -->
+								<div class="h-full flex items-center justify-center">
+									<div class="text-center">
+										<Image class="w-12 h-12 mx-auto mb-3 opacity-30" />
+										<p class="text-sm opacity-50">Select options to preview</p>
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -570,124 +559,5 @@
 <style>
 	.hidden {
 		display: none !important;
-	}
-	
-	/* Base card styles */
-	.platform-card,
-	.template-card,
-	.color-card {
-		background-color: transparent;
-		transition: all 0.2s ease;
-	}
-	
-	/* Text styles for all cards */
-	.platform-card h3,
-	.template-card h3,
-	.color-card h3 {
-		color: var(--text-primary);
-	}
-	
-	.platform-card p,
-	.template-card p {
-		color: var(--text-secondary);
-		opacity: 0.8;
-	}
-	
-	/* Icon styles */
-	.platform-card svg,
-	.template-card svg,
-	.color-card svg {
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 2;
-		width: 1.5rem;
-		height: 1.5rem;
-		color: var(--text-secondary);
-		opacity: 0.7;
-	}
-	
-	/* Hover states for unselected cards */
-	.platform-card:not([data-selected="true"]):hover,
-	.template-card:not([data-selected="true"]):hover,
-	.color-card:not([data-selected="true"]):hover {
-		background-color: var(--bg-secondary);
-	}
-	
-	/* Selected state backgrounds - subtle tints in light mode */
-	.platform-instagram.platform-selected {
-		background-color: rgba(147, 51, 234, 0.08);
-	}
-	
-	.platform-facebook.platform-selected {
-		background-color: rgba(37, 99, 235, 0.08);
-	}
-	
-	.platform-twitter.platform-selected {
-		background-color: rgba(14, 165, 233, 0.08);
-	}
-	
-	.platform-linkedin.platform-selected {
-		background-color: rgba(30, 64, 175, 0.08);
-	}
-	
-	.template-selected,
-	.color-selected {
-		background-color: rgba(250, 107, 93, 0.08);
-	}
-	
-	/* Selected state icon colors */
-	.platform-card[data-selected="true"] svg {
-		opacity: 1;
-	}
-	
-	.platform-card[data-selected="true"].border-purple-200 svg {
-		color: #9333EA;
-	}
-	
-	.platform-card[data-selected="true"].border-blue-200:not(:nth-child(5)) svg {
-		color: #2563EB;
-	}
-	
-	.platform-card[data-selected="true"].border-sky-200 svg {
-		color: #0EA5E9;
-	}
-	
-	.platform-card[data-selected="true"].border-blue-200:nth-child(5) svg {
-		color: #1E40AF;
-	}
-	
-	/* Dark mode styles */
-	[data-theme="dark"] .platform-selected,
-	[data-theme="dark"] .template-selected,
-	[data-theme="dark"] .color-selected {
-		background-color: rgba(255, 255, 255, 0.08);
-	}
-	
-	/* Dark mode icon adjustments for selected state */
-	[data-theme="dark"] .platform-card[data-selected="true"].border-purple-200 svg {
-		color: #A855F7;
-	}
-	
-	[data-theme="dark"] .platform-card[data-selected="true"].border-blue-200:not(:nth-child(5)) svg {
-		color: #3B82F6;
-	}
-	
-	[data-theme="dark"] .platform-card[data-selected="true"].border-sky-200 svg {
-		color: #38BDF8;
-	}
-	
-	[data-theme="dark"] .platform-card[data-selected="true"].border-blue-200:nth-child(5) svg {
-		color: #2563EB;
-	}
-	
-	/* Color swatch for minimal theme */
-	.color-swatch-minimal {
-		background-color: #e5e7eb;
-		border: 2px solid #9ca3af;
-	}
-	
-	[data-theme="dark"] .color-swatch-minimal {
-		background-color: #4b5563;
-		border-color: #6b7280;
 	}
 </style> 
