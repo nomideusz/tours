@@ -103,21 +103,26 @@
 
 		generatingPDF = true;
 		try {
-			// Find the hidden print business card element
-			const cardElement = document.querySelector('.business-cards-print-container .print-business-card');
+			// Use the visible business card preview element instead of hidden one
+			const cardElement = document.querySelector('.business-card-container .business-card');
 			if (!cardElement) {
-				console.error('Print business card element not found');
+				console.error('Business card element not found');
 				return;
 			}
 
-			// Temporarily show the container for rendering
-			const container = document.querySelector('.business-cards-print-container') as HTMLElement;
-			if (container) {
-				container.style.position = 'fixed';
-				container.style.left = '0';
-				container.style.top = '0';
-				container.style.zIndex = '-1';
+			// Ensure QR code image is fully loaded
+			const qrImage = cardElement.querySelector('img');
+			if (qrImage && !qrImage.complete) {
+				await new Promise((resolve) => {
+					qrImage.onload = resolve;
+					qrImage.onerror = resolve; // Continue even if QR fails
+					// Fallback timeout
+					setTimeout(resolve, 1000);
+				});
 			}
+			
+			// Wait a small moment for any final rendering
+			await new Promise(resolve => setTimeout(resolve, 100));
 
 			// Generate high-resolution image of the business card
 			const canvas = await (html2canvas as any)(cardElement, {
@@ -125,18 +130,62 @@
 				scale: 3, // High resolution for print quality
 				useCORS: true,
 				allowTaint: true,
-				logging: false
+				width: 350,
+				height: 200,
+				logging: false,
+				x: 0,
+				y: 0,
+				scrollX: 0,
+				scrollY: 0
 			});
 
-			// Hide the container again
-			if (container) {
-				container.style.position = 'absolute';
-				container.style.left = '-9999px';
-				container.style.zIndex = 'auto';
+			// Crop off the extra pixels to get clean edges
+			const cropCanvas = document.createElement('canvas');
+			const cropCtx = cropCanvas.getContext('2d');
+			const cropX = selectedTemplate === 'minimal' ? 2 : 4;
+			const cropY = 0;
+			cropCanvas.width = canvas.width - cropX;
+			cropCanvas.height = canvas.height - cropY;
+			
+			if (cropCtx) {
+				cropCtx.drawImage(canvas, cropX, cropY, cropCanvas.width, cropCanvas.height, 0, 0, cropCanvas.width, cropCanvas.height);
 			}
 
-			// Convert canvas to image data
-			const imgData = canvas.toDataURL('image/png');
+			// Convert canvas to blob first, then to data URL for better reliability
+			const blob = await new Promise<Blob>((resolve, reject) => {
+				cropCanvas.toBlob((blob) => {
+					if (blob) {
+						resolve(blob);
+					} else {
+						reject(new Error('Failed to create blob from canvas'));
+					}
+				}, 'image/png', 1.0);
+			});
+
+			// Validate blob size
+			if (blob.size === 0) {
+				throw new Error('Generated image is empty');
+			}
+
+			// Convert blob to data URL
+			const imgData = await new Promise<string>((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => {
+					const result = reader.result as string;
+					if (result && result.length > 0) {
+						resolve(result);
+					} else {
+						reject(new Error('Failed to read image data'));
+					}
+				};
+				reader.onerror = () => reject(new Error('FileReader error'));
+				reader.readAsDataURL(blob);
+			});
+
+			// Validate image data
+			if (!imgData.startsWith('data:image/png;base64,')) {
+				throw new Error('Invalid image data format');
+			}
 
 			// Create PDF with multiple business cards arranged for printing
 			const pdf = new jsPDF('portrait', 'mm', 'a4'); // A4 portrait
@@ -173,6 +222,8 @@
 			pdf.save(`${profile.username}-business-cards-${selectedTemplate}-${selectedColorScheme}.pdf`);
 		} catch (error) {
 			console.error('Error generating business cards PDF:', error);
+			// Show user-friendly error message
+			alert('Failed to generate PDF. Please try again or refresh the page.');
 		} finally {
 			generatingPDF = false;
 		}
@@ -445,125 +496,7 @@
 	{/if}
 </div>
 
-<!-- Hidden Print Container for PDF Generation -->
-{#if profile}
-<div class="business-cards-print-container hidden" style="position: absolute; left: -9999px; background: white;">
-	{#if selectedTemplate === 'professional'}
-		<!-- Professional Template for Print -->
-		<div class="print-business-card" style="width: 89mm; height: 51mm; background-color: #fafafa; border: 1px solid #e5e7eb; position: relative; font-family: 'Inter', sans-serif;">
-			<!-- Color accent on left side -->
-			<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 1mm; background-color: {colorSchemes[selectedColorScheme].primary};"></div>
-			
-			<div style="position: absolute; inset: 0; padding: 6mm 8mm 6mm 9mm; display: flex; height: 100%;">
-				<div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-					<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: #111827;">{profile.name}</h3>
-					{#if profile.businessName}
-						<p style="font-size: 8pt; margin-bottom: 3mm; text-transform: uppercase; letter-spacing: 0.5pt; color: {colorSchemes[selectedColorScheme].primary}; font-weight: 600;">{profile.businessName}</p>
-					{/if}
-					<div style="margin-bottom: 3mm; font-size: 7pt; color: #4B5563; line-height: 1.3;">
-						{#if profile.phone}
-							<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
-						{/if}
-						{#if profile.email}
-							<div style="margin-bottom: 0.5mm;">{profile.email}</div>
-						{/if}
-						{#if profile.website}
-							<div style="margin-bottom: 0.5mm;">{profile.website}</div>
-						{/if}
-					</div>
-					
-					<div style="font-size: 7pt; font-weight: 600; color: #111827;">
-						zaur.app/{profile.username}
-					</div>
-				</div>
-				
-				<div style="display: flex; align-items: center; margin-left: 3mm;">
-					{#if qrCodeURL}
-						<div style="padding: 1mm; background-color: {colorSchemes[selectedColorScheme].primary};">
-							<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white; padding: 0.5mm; display: block;" />
-						</div>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{:else if selectedTemplate === 'colorful'}
-		<!-- Colorful Template for Print -->
-		<div class="print-business-card" style="width: 89mm; height: 51mm; background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary}); position: relative; font-family: 'Inter', sans-serif;">
-			<div style="position: absolute; inset: 0; padding: 6mm 8mm; color: white; display: flex; height: 100%;">
-				<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-					<div>
-						<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: white;">{profile.name}</h3>
-						{#if profile.businessName}
-							<p style="font-size: 8pt; opacity: 0.9; margin-bottom: 3mm;">{profile.businessName}</p>
-						{/if}
-						<div style="font-size: 7pt; color: white; line-height: 1.3;">
-							{#if profile.phone}
-								<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
-							{/if}
-							{#if profile.email}
-								<div style="margin-bottom: 0.5mm;">{profile.email}</div>
-							{/if}
-							{#if profile.website}
-								<div style="margin-bottom: 0.5mm;">{profile.website}</div>
-							{/if}
-						</div>
-					</div>
-					
-					<div style="font-size: 7pt; opacity: 0.9;">
-						zaur.app/{profile.username}
-					</div>
-				</div>
-				
-				<div style="display: flex; align-items: center; margin-left: 3mm;">
-					{#if qrCodeURL}
-						<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white; padding: 0.5mm;" />
-					{/if}
-				</div>
-			</div>
-		</div>
-	{:else if selectedTemplate === 'minimal'}
-		<!-- Minimal Template for Print -->
-		<div class="print-business-card" style="width: 89mm; height: 51mm; background-color: #ffffff; position: relative; font-family: 'Inter', sans-serif;">
-			<!-- Gradient accent bar -->
-			<div style="position: absolute; top: 0; left: 0; right: 0; height: 1mm; background: linear-gradient(90deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"></div>
-			
-			<div style="position: absolute; inset: 0; padding: 6mm 8mm; padding-top: 8mm; display: flex; height: 100%;">
-				<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-					<div>
-						<h3 style="font-size: 14pt; font-weight: 800; margin-bottom: 1mm; color: #111827;">{profile.name}</h3>
-						{#if profile.businessName}
-							<p style="font-size: 8pt; margin-bottom: 3mm; font-weight: 600; color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
-						{/if}
-						<div style="font-size: 7pt; color: #4B5563; line-height: 1.3;">
-							{#if profile.phone}
-								<div style="margin-bottom: 0.5mm;">{profile.phone}</div>
-							{/if}
-							{#if profile.email}
-								<div style="margin-bottom: 0.5mm;">{profile.email}</div>
-							{/if}
-							{#if profile.website}
-								<div style="margin-bottom: 0.5mm;">{profile.website}</div>
-							{/if}
-						</div>
-					</div>
-					
-					<div style="font-size: 7pt; font-weight: 600; color: {colorSchemes[selectedColorScheme].primary};">
-						zaur.app/{profile.username}
-					</div>
-				</div>
-				
-				<div style="display: flex; align-items: center; margin-left: 3mm;">
-					{#if qrCodeURL}
-						<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.5mm;">
-							<img src={qrCodeURL} alt="QR Code" style="width: 12mm; height: 12mm; background: white;" />
-						</div>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{/if}
-</div>
-{/if}
+
 
 <style>
 	/* Ensure QR codes always have proper contrast */
@@ -612,10 +545,5 @@
 	/* Minimal template enhancements */
 	.business-card-minimal {
 		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-	}
-
-	/* Hidden print container */
-	.hidden {
-		display: none !important;
 	}
 </style> 
