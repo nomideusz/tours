@@ -4,12 +4,16 @@
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Printer from 'lucide-svelte/icons/printer';
 	import Copy from 'lucide-svelte/icons/copy';
 	import Check from 'lucide-svelte/icons/check';
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import User from 'lucide-svelte/icons/user';
+	import Sticker from 'lucide-svelte/icons/sticker';
+	import Palette from 'lucide-svelte/icons/palette';
+	import Type from 'lucide-svelte/icons/type';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
 	// @ts-ignore
@@ -269,7 +273,32 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<PageHeader title="Promotional Stickers" />
+	<!-- Mobile Header -->
+	<MobilePageHeader
+		title="Promotional Stickers"
+		secondaryInfo={profile ? `${selectedDesign} • ${selectedColorScheme} • "${tagline.length > 20 ? tagline.substring(0, 17) + '...' : tagline}"` : 'Set up your profile first'}
+		primaryAction={{
+			label: "Download",
+			icon: Download,
+			onclick: downloadSticker,
+			disabled: !personalizedURL,
+			variant: "primary"
+		}}
+		quickActions={[
+			{
+				label: "PDF",
+				icon: Printer,
+				onclick: printStickers,
+				disabled: !personalizedURL || generatingPDF,
+				variant: "secondary"
+			}
+		]}
+	/>
+	
+	<!-- Desktop Header -->
+	<div class="hidden sm:block">
+		<PageHeader title="Promotional Stickers" />
+	</div>
 	
 	<MarketingNav />
 	
@@ -287,13 +316,13 @@
 			</button>
 		</div>
 	{:else}
-		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
+		<div class="grid gap-4 lg:gap-6 lg:grid-cols-[300px_1fr]">
 			<!-- Options Sidebar -->
-			<div class="professional-card h-fit">
-				<div class="p-4 border-b border-border">
+			<div class="professional-card h-fit order-2 lg:order-1">
+				<div class="p-3 sm:p-4 border-b border-border">
 					<h3 class="font-semibold text-primary">Design Options</h3>
 				</div>
-				<div class="p-4 space-y-6">
+				<div class="p-3 sm:p-4 space-y-4 lg:space-y-6">
 					<!-- Design Selection -->
 					<DesignSelector 
 						selectedDesign={selectedDesign}
@@ -328,35 +357,43 @@
 			</div>
 
 			<!-- Preview Area -->
-			<div class="professional-card">
-				<div class="p-4 border-b border-border flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Preview</h3>
-					<div class="flex gap-2">
-						<button
-							onclick={printStickers}
-							class="button--secondary button--small button--gap"
-							disabled={!personalizedURL || generatingPDF}
-						>
-							{#if generatingPDF}
-								<div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-								Generating...
-							{:else}
-								<Printer class="w-4 h-4" />
-								Print PDF
-							{/if}
-						</button>
-						<button
-							onclick={downloadSticker}
-							class="button--primary button--small button--gap"
-							disabled={!personalizedURL}
-						>
-							<Download class="w-4 h-4" />
-							Download PNG
-						</button>
+			<div class="professional-card order-1 lg:order-2">
+				<!-- Desktop Header -->
+				<div class="hidden sm:block p-4 border-b border-border">
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">Preview</h3>
+						<div class="flex gap-2">
+							<button
+								onclick={printStickers}
+								class="button--secondary button--small button--gap"
+								disabled={!personalizedURL || generatingPDF}
+							>
+								{#if generatingPDF}
+									<div class="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+									Generating...
+								{:else}
+									<Printer class="w-4 h-4" />
+									Print PDF
+								{/if}
+							</button>
+							<button
+								onclick={downloadSticker}
+								class="button--primary button--small button--gap"
+								disabled={!personalizedURL}
+							>
+								<Download class="w-4 h-4" />
+								Download PNG
+							</button>
+						</div>
 					</div>
 				</div>
 				
-				<div class="p-6 flex justify-center">
+				<!-- Mobile Header -->
+				<div class="sm:hidden p-3 border-b border-border">
+					<h3 class="font-semibold text-primary text-center">Preview</h3>
+				</div>
+				
+				<div class="p-3 sm:p-4 lg:p-6 flex justify-center">
 					<div 
 						class="sticker-preview"
 						style="
@@ -457,13 +494,22 @@
 	
 	/* Sticker preview styles */
 	.sticker-preview {
-		width: 200px;
-		height: 200px;
-		padding: 1rem;
+		width: 180px;
+		height: 180px;
+		padding: 0.875rem;
 		border-radius: 1rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+	
+	/* Responsive sticker preview */
+	@media (min-width: 640px) {
+		.sticker-preview {
+			width: 200px;
+			height: 200px;
+			padding: 1rem;
+		}
 	}
 	
 	/* Sticker preview backgrounds are now handled with inline styles */
@@ -473,16 +519,29 @@
 	}
 	
 	.business-name {
-		font-size: 1.125rem;
+		font-size: 0.875rem;
 		font-weight: 800;
 		margin-bottom: 0.25rem;
 	}
 	
+	@media (min-width: 640px) {
+		.business-name {
+			font-size: 1.125rem;
+		}
+	}
+	
 	.tagline {
-		font-size: 0.75rem;
+		font-size: 0.625rem;
 		font-weight: 500;
-		margin-bottom: 1rem;
+		margin-bottom: 0.75rem;
 		/* Color handled with inline styles */
+	}
+	
+	@media (min-width: 640px) {
+		.tagline {
+			font-size: 0.75rem;
+			margin-bottom: 1rem;
+		}
 	}
 	
 	.qr-placeholder {

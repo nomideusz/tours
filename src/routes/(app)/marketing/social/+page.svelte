@@ -5,6 +5,7 @@
 	import { formatCurrency } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Image from 'lucide-svelte/icons/image';
@@ -14,6 +15,9 @@
 	import Twitter from 'lucide-svelte/icons/twitter';
 	import Linkedin from 'lucide-svelte/icons/linkedin';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Smartphone from 'lucide-svelte/icons/smartphone';
+	import FileType from 'lucide-svelte/icons/file-type';
+	import Palette from 'lucide-svelte/icons/palette';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
 	
@@ -224,7 +228,23 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<PageHeader title="Social Media Graphics" />
+	<!-- Mobile Header -->
+	<MobilePageHeader
+		title="Social Graphics"
+		secondaryInfo={profile ? `${selectedPlatform} • ${selectedTemplate.replace('-', ' ')} • ${selectedColorScheme}` : 'Set up your profile first'}
+		primaryAction={{
+			label: "Download",
+			icon: Download,
+			onclick: generateGraphic,
+			disabled: generating || (selectedTemplate === 'tour-promo' && !selectedTourId),
+			variant: "primary"
+		}}
+	/>
+	
+	<!-- Desktop Header -->
+	<div class="hidden sm:block">
+		<PageHeader title="Social Media Graphics" />
+	</div>
 	
 	<MarketingNav />
 	
@@ -242,13 +262,13 @@
 			</button>
 		</div>
 	{:else}
-		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
+		<div class="grid gap-4 lg:gap-6 lg:grid-cols-[300px_1fr]">
 			<!-- Options Sidebar -->
-			<div class="professional-card h-fit">
-				<div class="p-4 border-b border-border">
+			<div class="professional-card h-fit order-2 lg:order-1">
+				<div class="p-3 sm:p-4 border-b border-border">
 					<h3 class="font-semibold text-primary">Design Options</h3>
 				</div>
-				<div class="p-4 space-y-6">
+				<div class="p-3 sm:p-4 space-y-4 lg:space-y-6">
 					<!-- Platform Selection -->
 					<div>
 						<div class="text-sm font-medium text-primary mb-3">Platform</div>
@@ -380,33 +400,41 @@
 			</div>
 
 			<!-- Preview Area -->
-			<div class="professional-card">
-				<div class="p-4 border-b border-border flex items-center justify-between">
-					<h3 class="font-semibold text-primary">Preview</h3>
-					<button
-						onclick={generateGraphic}
-						class="button--primary button--small button--gap"
-						disabled={generating || (selectedTemplate === 'tour-promo' && !selectedTourId)}
-					>
-						{#if generating}
-							<div class="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-							Generating...
-						{:else}
-							<Download class="w-4 h-4" />
-							Download PNG
-						{/if}
-					</button>
+			<div class="professional-card order-1 lg:order-2">
+				<!-- Desktop Header -->
+				<div class="hidden sm:block p-4 border-b border-border">
+					<div class="flex items-center justify-between">
+						<h3 class="font-semibold text-primary">Preview</h3>
+						<button
+							onclick={generateGraphic}
+							class="button--primary button--small button--gap"
+							disabled={generating || (selectedTemplate === 'tour-promo' && !selectedTourId)}
+						>
+							{#if generating}
+								<div class="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+								Generating...
+							{:else}
+								<Download class="w-4 h-4" />
+								Download PNG
+							{/if}
+						</button>
+					</div>
 				</div>
 				
-				<div class="p-6">
+				<!-- Mobile Header -->
+				<div class="sm:hidden p-3 border-b border-border">
+					<h3 class="font-semibold text-primary text-center">Preview</h3>
+				</div>
+				
+				<div class="p-3 sm:p-4 lg:p-6">
 					<!-- Graphic Preview -->
-					<div class="mx-auto overflow-hidden rounded-lg shadow-lg border border-border" style="{selectedPlatform === 'instagram-post' || selectedPlatform === 'instagram-story' ? 'max-width: 400px;' : 'max-width: 500px; max-height: 280px;'} aspect-ratio: {dimensions.width}/{dimensions.height};">
+					<div class="mx-auto overflow-hidden rounded-lg shadow-lg border border-border" style="{selectedPlatform === 'instagram-post' || selectedPlatform === 'instagram-story' ? 'max-width: 280px;' : 'max-width: 320px; max-height: 180px;'} {selectedPlatform === 'instagram-post' || selectedPlatform === 'instagram-story' ? 'sm:max-width: 400px;' : 'sm:max-width: 500px; sm:max-height: 280px;'} aspect-ratio: {dimensions.width}/{dimensions.height};">
 						<div class="w-full h-full relative" style="background: {displayColors.background}; color: {displayColors.text};">
 							{#if selectedTemplate === 'tour-promo' && selectedTour}
 								<!-- Tour Promo Preview -->
-								<div class="p-6 h-full flex flex-col justify-between">
+								<div class="p-3 sm:p-6 h-full flex flex-col justify-between">
 									<div>
-										<h2 class="text-2xl font-bold mb-2">{selectedTour.name}</h2>
+										<h2 class="text-base sm:text-2xl font-bold mb-1 sm:mb-2">{selectedTour.name}</h2>
 										<p class="text-sm opacity-90 mb-3 line-clamp-3">{customText || selectedTour.description || 'Join us for an unforgettable experience!'}</p>
 										<p class="text-xl font-bold">{formatCurrency(selectedTour.price, selectedTour.currency)}</p>
 									</div>
@@ -488,11 +516,11 @@
 										<p class="text-sm opacity-50">Select options to preview</p>
 									</div>
 								</div>
-							{/if}
-						</div>
+						{/if}
 					</div>
 				</div>
 			</div>
+		</div>
 		</div>
 	{/if}
 </div>

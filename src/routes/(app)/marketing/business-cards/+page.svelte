@@ -12,10 +12,14 @@
 	import Printer from 'lucide-svelte/icons/printer';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import User from 'lucide-svelte/icons/user';
+	import CreditCard from 'lucide-svelte/icons/credit-card';
+	import Palette from 'lucide-svelte/icons/palette';
+	import Layout from 'lucide-svelte/icons/layout';
 	
 	// Components
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ColorSchemeSelector from '$lib/components/ColorSchemeSelector.svelte';
 	import DesignSelector from '$lib/components/DesignSelector.svelte';
 
@@ -276,7 +280,32 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<PageHeader title="Business Cards" />
+	<!-- Mobile Header -->
+	<MobilePageHeader
+		title="Business Cards"
+		secondaryInfo={profile ? `${selectedTemplate} • ${selectedColorScheme} theme` : 'Set up your profile first'}
+		primaryAction={{
+			label: "Download",
+			icon: Download,
+			onclick: downloadBusinessCard,
+			disabled: !profileURL || generatingPDF,
+			variant: "primary"
+		}}
+		quickActions={[
+			{
+				label: "PDF",
+				icon: Printer,
+				onclick: printBusinessCard,
+				disabled: !profileURL || generatingPDF,
+				variant: "secondary"
+			}
+		]}
+	/>
+	
+	<!-- Desktop Header -->
+	<div class="hidden sm:block">
+		<PageHeader title="Business Cards" />
+	</div>
 	
 	<MarketingNav />
 
@@ -296,22 +325,142 @@
 			<p class="text-secondary">Please try refreshing the page or check your connection.</p>
 		</div>
 	{:else if profile}
-		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
-			<!-- Options Sidebar -->
-			<div class="professional-card h-fit">
+		<!-- Mobile Layout -->
+		<div class="sm:hidden space-y-4">
+			<!-- Business Card Preview -->
+			<div class="professional-card">
+				<div class="p-4">
+					<div class="business-card-container mb-4 overflow-hidden">
+						{#if selectedTemplate === 'professional'}
+							<!-- Mobile Professional Template -->
+							<div class="business-card business-card-professional w-full max-w-[280px] h-[160px] mx-auto relative overflow-hidden" style="background-color: #fafafa; border: 1px solid #e5e7eb;">
+								<div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: {colorSchemes[selectedColorScheme].primary};"></div>
+								<div class="absolute inset-0 p-3 pl-4">
+									<div class="flex h-full">
+										<div class="flex-1">
+											<div class="h-full flex flex-col justify-center">
+												<h3 class="text-sm font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+												{#if profile.businessName}
+													<p class="mb-2 uppercase tracking-wide" style="color: {colorSchemes[selectedColorScheme].primary}; font-size: 0.5625rem; font-weight: 600;">{profile.businessName}</p>
+												{/if}
+												<div class="space-y-0.5" style="color: #4B5563; font-size: 0.625rem;">
+													{#if profile.phone}<div>{profile.phone}</div>{/if}
+													{#if profile.email}<div>{profile.email}</div>{/if}
+												</div>
+												<div class="mt-2 font-medium" style="color: #111827; font-size: 0.625rem;">
+													zaur.app/{profile.username}
+												</div>
+											</div>
+										</div>
+										<div class="flex items-center justify-center ml-3">
+											{#if qrCodeURL}
+												<div style="padding: 2px; background-color: {colorSchemes[selectedColorScheme].primary};">
+													<img src={qrCodeURL} alt="QR Code" class="w-10 h-10" style="background: white; padding: 0.125rem;" />
+												</div>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</div>
+						{:else if selectedTemplate === 'colorful'}
+							<!-- Mobile Colorful Template -->
+							<div class="business-card business-card-colorful w-full max-w-[280px] h-[160px] mx-auto shadow-lg relative overflow-hidden" style="background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});">
+								<div class="absolute inset-0 p-3 text-white">
+									<div class="flex h-full">
+										<div class="flex-1 flex flex-col justify-between">
+											<div>
+												<h3 class="text-sm font-bold mb-1 text-white">{profile.name}</h3>
+												{#if profile.businessName}
+													<p class="text-xs opacity-90 mb-2">{profile.businessName}</p>
+												{/if}
+												<div class="space-y-0.5 text-white" style="font-size: 0.625rem;">
+													{#if profile.phone}<div>{profile.phone}</div>{/if}
+													{#if profile.email}<div>{profile.email}</div>{/if}
+												</div>
+											</div>
+											<div class="text-xs opacity-90">zaur.app/{profile.username}</div>
+										</div>
+										<div class="flex flex-col justify-center items-center ml-3">
+											{#if qrCodeURL}
+												<img src={qrCodeURL} alt="QR Code" class="w-10 h-10" style="background: white; padding: 0.125rem;" />
+											{/if}
+										</div>
+									</div>
+								</div>
+							</div>
+						{:else if selectedTemplate === 'minimal'}
+							<!-- Mobile Minimal Template -->
+							<div class="business-card business-card-minimal w-full max-w-[280px] h-[160px] mx-auto shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
+								<div class="absolute top-0 left-0 right-0 h-1" style="background: linear-gradient(90deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"></div>
+								<div class="absolute inset-0 p-3 pt-4">
+									<div class="flex h-full">
+										<div class="flex-1">
+											<div class="h-full flex flex-col justify-between">
+												<div>
+													<h3 class="text-sm font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+													{#if profile.businessName}
+														<p class="text-xs mb-2 font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
+													{/if}
+													<div class="space-y-0.5" style="color: #4B5563; font-size: 0.625rem;">
+														{#if profile.phone}<div>{profile.phone}</div>{/if}
+														{#if profile.email}<div>{profile.email}</div>{/if}
+													</div>
+												</div>
+												<div class="font-medium" style="color: {colorSchemes[selectedColorScheme].primary}; font-size: 0.625rem;">
+													zaur.app/{profile.username}
+												</div>
+											</div>
+										</div>
+										<div class="flex items-center justify-center ml-3">
+											{#if qrCodeURL}
+												<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.125rem;">
+													<img src={qrCodeURL} alt="QR Code" class="w-10 h-10" style="background: white;" />
+												</div>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+			
+			<!-- Design Options -->
+			<div class="professional-card">
 				<div class="p-4 border-b border-border">
 					<h3 class="font-semibold text-primary">Design Options</h3>
 				</div>
-				<div class="p-4 space-y-6">
-					<!-- Template Selection -->
+				<div class="p-4 space-y-4">
 					<DesignSelector 
 						selectedDesign={selectedTemplate}
 						designs={['professional', 'colorful', 'minimal']}
 						onDesignChange={(design) => selectedTemplate = design as 'professional' | 'colorful' | 'minimal'}
 						label="Template"
 					/>
-					
-					<!-- Color Selection -->
+					<ColorSchemeSelector 
+						{selectedColorScheme}
+						{colorSchemes}
+						onColorSchemeChange={(scheme) => selectedColorScheme = scheme}
+					/>
+				</div>
+			</div>
+		</div>
+
+		<!-- Desktop Layout -->
+		<div class="hidden sm:grid gap-6 lg:grid-cols-[300px_1fr]">
+			<!-- Options Sidebar -->
+			<div class="professional-card h-fit">
+				<div class="p-4 border-b border-border">
+					<h3 class="font-semibold text-primary">Design Options</h3>
+				</div>
+				<div class="p-4 space-y-6">
+					<DesignSelector 
+						selectedDesign={selectedTemplate}
+						designs={['professional', 'colorful', 'minimal']}
+						onDesignChange={(design) => selectedTemplate = design as 'professional' | 'colorful' | 'minimal'}
+						label="Template"
+					/>
 					<ColorSchemeSelector 
 						{selectedColorScheme}
 						{colorSchemes}
@@ -349,24 +498,24 @@
 					</div>
 				</div>
 
-					<!-- Business Card Preview -->
-					<div class="p-4 sm:p-6">
-						<div class="business-card-container mb-6 overflow-hidden">
-							{#if selectedTemplate === 'professional'}
-								<!-- Professional Template -->
-								<div class="business-card business-card-professional w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto relative overflow-hidden" style="background-color: #fafafa; border: 1px solid #e5e7eb;">
+				<!-- Desktop Business Card Preview -->
+				<div class="p-6">
+					<div class="business-card-container mb-6 overflow-hidden">
+						{#if selectedTemplate === 'professional'}
+							<!-- Desktop Professional Template -->
+							<div class="business-card business-card-professional w-full max-w-[350px] h-[200px] mx-auto relative overflow-hidden" style="background-color: #fafafa; border: 1px solid #e5e7eb;">
 									<!-- Color accent on left side -->
 									<div class="absolute left-0 top-0 bottom-0 w-1" style="background-color: {colorSchemes[selectedColorScheme].primary};"></div>
 									
-									<div class="absolute inset-0 p-3 sm:p-4 pl-4 sm:pl-5">
+								<div class="absolute inset-0 p-4 pl-5">
 										<div class="flex h-full">
 											<div class="flex-1">
 												<div class="h-full flex flex-col justify-center">
-													<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+													<h3 class="text-sm sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
 													{#if profile.businessName}
-														<p class="text-sm mb-3 uppercase tracking-wide" style="color: {colorSchemes[selectedColorScheme].primary}; font-size: 0.625rem; font-weight: 600;">{profile.businessName}</p>
+										<p class="text-sm mb-3 uppercase tracking-wide" style="color: {colorSchemes[selectedColorScheme].primary}; font-size: 0.625rem; font-weight: 600;">{profile.businessName}</p>
 													{/if}
-													<div class="space-y-1 text-xs" style="color: #4B5563;">
+													<div class="space-y-0.5 sm:space-y-1" style="color: #4B5563; font-size: 0.625rem;">
 														{#if profile.phone}
 															<div>{profile.phone}</div>
 														{/if}
@@ -378,37 +527,37 @@
 														{/if}
 													</div>
 													
-													<div class="text-xs mt-3 font-medium" style="color: #111827;">
+										<div class="text-xs mt-3 font-medium" style="color: #111827;">
 														zaur.app/{profile.username}
 													</div>
 												</div>
 											</div>
 											
 											<div class="flex items-center justify-center ml-3">
-												{#if qrCodeURL}
-													<div style="padding: 2px; background-color: {colorSchemes[selectedColorScheme].primary};">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white; padding: 0.125rem; display: block;" />
-													</div>
-												{/if}
+										{#if qrCodeURL}
+											<div style="padding: 2px; background-color: {colorSchemes[selectedColorScheme].primary};">
+												<img src={qrCodeURL} alt="Profile QR Code" class="w-12 h-12" style="background: white; padding: 0.125rem; display: block;" />
+											</div>
+										{/if}
 											</div>
 										</div>
 									</div>
 								</div>
-							{:else if selectedTemplate === 'colorful'}
-								<!-- Colorful Template -->
-								<div 
-									class="business-card business-card-colorful color-{selectedColorScheme} w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto shadow-lg relative overflow-hidden"
+						{:else if selectedTemplate === 'colorful'}
+							<!-- Desktop Colorful Template -->
+							<div 
+								class="business-card business-card-colorful color-{selectedColorScheme} w-full max-w-[350px] h-[200px] mx-auto shadow-lg relative overflow-hidden"
 									style="background: linear-gradient(135deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"
 								>
-									<div class="absolute inset-0 p-3 sm:p-4 text-white">
+								<div class="absolute inset-0 p-4 text-white">
 										<div class="flex h-full">
 											<div class="flex-1 flex flex-col justify-between">
 												<div>
-													<h3 class="text-base sm:text-lg font-bold mb-1 text-white">{profile.name}</h3>
+											<h3 class="text-lg font-bold mb-1 text-white">{profile.name}</h3>
 													{#if profile.businessName}
-														<p class="text-sm opacity-90 mb-3">{profile.businessName}</p>
+										<p class="text-sm opacity-90 mb-3">{profile.businessName}</p>
 													{/if}
-													<div class="space-y-1 text-xs text-white">
+										<div class="space-y-1 text-xs text-white">
 														{#if profile.phone}
 															<div class="contact-item">{profile.phone}</div>
 														{/if}
@@ -427,29 +576,29 @@
 											</div>
 											
 											<div class="flex flex-col justify-center items-center ml-3">
-												{#if qrCodeURL}
-													<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white; padding: 0.125rem;" />
-												{/if}
+										{#if qrCodeURL}
+											<img src={qrCodeURL} alt="Profile QR Code" class="w-12 h-12" style="background: white; padding: 0.125rem;" />
+										{/if}
 											</div>
 										</div>
 									</div>
 								</div>
-							{:else if selectedTemplate === 'minimal'}
-								<!-- Minimal Template -->
-								<div class="business-card business-card-minimal w-full max-w-[300px] sm:max-w-[350px] h-[170px] sm:h-[200px] mx-auto shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
+						{:else if selectedTemplate === 'minimal'}
+							<!-- Desktop Minimal Template -->
+							<div class="business-card business-card-minimal w-full max-w-[350px] h-[200px] mx-auto shadow-lg relative overflow-hidden" style="background-color: #ffffff;">
 									<!-- Gradient accent bar -->
 									<div class="absolute top-0 left-0 right-0 h-1" style="background: linear-gradient(90deg, {colorSchemes[selectedColorScheme].primary}, {colorSchemes[selectedColorScheme].secondary});"></div>
 									
-									<div class="absolute inset-0 p-3 sm:p-4 pt-4 sm:pt-5">
+								<div class="absolute inset-0 p-4 pt-5">
 										<div class="flex h-full">
 											<div class="flex-1">
 												<div class="h-full flex flex-col justify-between">
 													<div>
-														<h3 class="text-base sm:text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
+											<h3 class="text-lg font-bold mb-1" style="color: #111827;">{profile.name}</h3>
 														{#if profile.businessName}
-															<p class="text-sm mb-3 font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
+										<p class="text-sm mb-3 font-medium" style="color: {colorSchemes[selectedColorScheme].primary};">{profile.businessName}</p>
 														{/if}
-														<div class="space-y-1 text-xs" style="color: #4B5563;">
+										<div class="space-y-1 text-xs" style="color: #4B5563;">
 															{#if profile.phone}
 																<div class="contact-item">{profile.phone}</div>
 															{/if}
@@ -469,20 +618,20 @@
 											</div>
 											
 											<div class="flex items-center justify-center ml-3">
-												{#if qrCodeURL}
-													<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.125rem;">
-														<img src={qrCodeURL} alt="Profile QR Code" class="w-10 h-10 sm:w-12 sm:h-12" style="background: white;" />
-													</div>
-												{/if}
+										{#if qrCodeURL}
+											<div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 0.125rem;">
+												<img src={qrCodeURL} alt="Profile QR Code" class="w-12 h-12" style="background: white;" />
+											</div>
+										{/if}
 											</div>
 										</div>
 									</div>
 								</div>
-							{/if}
-						</div>
+						{/if}
 					</div>
 				</div>
 			</div>
+		</div>
 	{:else}
 		<!-- No Profile State -->
 		<div class="professional-card max-w-2xl mx-auto text-center py-12">
@@ -511,6 +660,19 @@
 	
 	.business-card {
 		color-scheme: light;
+		transition: transform 0.2s ease;
+	}
+	
+	/* Mobile touch feedback */
+	@media (max-width: 640px) {
+		.business-card {
+			cursor: pointer;
+			touch-action: manipulation;
+		}
+		
+		.business-card:active {
+			transform: scale(0.98);
+		}
 	}
 	
 	/* Ensure professional template always has white text */
@@ -522,11 +684,18 @@
 		color: inherit;
 	}
 	
-	/* Contact information styling */
+	/* Contact information styling - responsive */
 	.business-card .contact-item {
-		font-size: 0.75rem !important;
-		line-height: 1.3 !important;
+		font-size: 0.625rem !important;
+		line-height: 1.2 !important;
 		display: block !important;
+	}
+	
+	@media (min-width: 640px) {
+		.business-card .contact-item {
+			font-size: 0.75rem !important;
+			line-height: 1.3 !important;
+		}
 	}
 	
 	/* QR Code styling */
@@ -545,5 +714,12 @@
 	/* Minimal template enhancements */
 	.business-card-minimal {
 		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+	
+	/* Mobile font size improvements */
+	@media (max-width: 640px) {
+		.business-card {
+			font-size: 0.875rem; /* Base font size for cards */
+		}
 	}
 </style> 

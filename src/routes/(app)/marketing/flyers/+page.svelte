@@ -5,11 +5,14 @@
 	import { formatCurrency } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import User from 'lucide-svelte/icons/user';
 	import Image from 'lucide-svelte/icons/image';
 	import QrCode from 'lucide-svelte/icons/qr-code';
+	import Layout from 'lucide-svelte/icons/layout';
+	import Type from 'lucide-svelte/icons/type';
 	// @ts-ignore
 	import html2canvas from 'html2canvas';
 	// @ts-ignore
@@ -146,7 +149,23 @@
 </svelte:head>
 
 <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-	<PageHeader title="Promotional Flyers" />
+	<!-- Mobile Header -->
+	<MobilePageHeader
+		title="Promotional Flyers"
+		secondaryInfo={profile && activeTours.length > 0 ? `${selectedLayout} layout • ${selectedStyle} style` : activeTours.length === 0 ? 'No active tours' : 'Set up your profile first'}
+		primaryAction={{
+			label: "Generate PDF",
+			icon: Download,
+			onclick: generatePDF,
+			disabled: generating || (selectedLayout === 'single' && !selectedTourId),
+			variant: "primary"
+		}}
+	/>
+	
+	<!-- Desktop Header -->
+	<div class="hidden sm:block">
+		<PageHeader title="Promotional Flyers" />
+	</div>
 	
 	<MarketingNav />
 	
@@ -173,16 +192,95 @@
 			</button>
 		</div>
 	{:else}
-		<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
-			<!-- Options Sidebar -->
-			<div class="professional-card h-fit">
+		<!-- Mobile Layout -->
+		<div class="sm:hidden space-y-4">
+			<!-- Flyer Preview -->
+			<div class="professional-card">
+				<div class="p-4">
+					<div class="aspect-[210/297] max-w-[280px] mx-auto bg-white rounded-lg shadow-lg overflow-hidden border border-border">
+						{#if selectedLayout === 'single' && selectedTour}
+							<!-- Mobile Single Tour Preview -->
+							<div class="p-3 h-full flex flex-col">
+								<div class="text-center mb-2">
+									<h2 class="text-lg font-bold text-primary">{headline}</h2>
+									{#if profile?.businessName}
+										<p class="text-secondary mt-1 text-xs">by {profile.businessName}</p>
+									{/if}
+								</div>
+								<div class="flex-1 bg-secondary rounded-lg mb-3 flex items-center justify-center">
+									<Image class="w-8 h-8 text-tertiary" />
+								</div>
+								<div class="space-y-1">
+									<h3 class="font-semibold text-sm">{selectedTour.name}</h3>
+									<p class="text-xs text-secondary line-clamp-2">{selectedTour.description}</p>
+									<p class="font-bold text-sm text-primary">{formatCurrency(selectedTour.price, selectedTour.currency)}</p>
+								</div>
+								{#if includeQR && profileQRCode}
+									<div class="mt-3 flex justify-center">
+										<div class="w-12 h-12 bg-secondary rounded flex items-center justify-center">
+											<QrCode class="w-8 h-8 text-tertiary" />
+										</div>
+									</div>
+								{/if}
+							</div>
+						{:else if selectedLayout === 'multi'}
+							<!-- Mobile Multi Tour Preview -->
+							<div class="p-3 h-full flex flex-col">
+								<div class="text-center mb-2">
+									<h2 class="text-lg font-bold text-primary">{headline}</h2>
+									{#if profile?.businessName}
+										<p class="text-secondary mt-1 text-xs">by {profile.businessName}</p>
+									{/if}
+								</div>
+								<div class="grid grid-cols-2 gap-2 flex-1">
+									{#each activeTours.slice(0, 4) as tour}
+										<div class="bg-secondary rounded p-2">
+											<h4 class="font-medium text-xs mb-1">{tour.name}</h4>
+											<p class="text-xs text-secondary">{formatCurrency(tour.price, tour.currency)}</p>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else if selectedLayout === 'list'}
+							<!-- Mobile List Preview -->
+							<div class="p-3 h-full flex flex-col">
+								<div class="text-center mb-2">
+									<h2 class="text-lg font-bold text-primary">{headline}</h2>
+									{#if profile?.businessName}
+										<p class="text-secondary mt-1 text-xs">by {profile.businessName}</p>
+									{/if}
+								</div>
+								<div class="space-y-1 flex-1">
+									{#each activeTours.slice(0, 6) as tour}
+										<div class="flex justify-between items-center py-0.5 border-b border-border">
+											<span class="text-xs">{tour.name}</span>
+											<span class="text-xs font-medium">{formatCurrency(tour.price, tour.currency)}</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else}
+							<!-- No tour selected -->
+							<div class="h-full flex items-center justify-center">
+								<div class="text-center">
+									<FileText class="w-8 h-8 mx-auto mb-2 text-tertiary" />
+									<p class="text-secondary text-xs">Select options</p>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+			
+			<!-- Design Options -->
+			<div class="professional-card">
 				<div class="p-4 border-b border-border">
 					<h3 class="font-semibold text-primary">Design Options</h3>
 				</div>
-				<div class="p-4 space-y-6">
+				<div class="p-4 space-y-4">
 					<!-- Layout Selection -->
 					<div>
-						<label class="text-sm font-medium text-primary mb-3 block">Flyer Layout</label>
+						<div class="text-sm font-medium text-primary mb-3">Flyer Layout</div>
 						<div class="space-y-2">
 							<button
 								onclick={() => selectedLayout = 'single'}
@@ -213,7 +311,121 @@
 					
 					<!-- Style Selection -->
 					<div>
-						<label class="text-sm font-medium text-primary mb-3 block">Visual Style</label>
+						<div class="text-sm font-medium text-primary mb-3">Visual Style</div>
+						<div class="space-y-2">
+							{#each ['modern', 'classic', 'bold'] as style}
+								<button
+									onclick={() => selectedStyle = style as 'modern' | 'classic' | 'bold'}
+									class="w-full text-left px-3 py-2 rounded-md text-sm transition-all {selectedStyle === style 
+										? 'bg-secondary text-primary font-medium' 
+										: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+								>
+									{style.charAt(0).toUpperCase() + style.slice(1)}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<!-- Tour Selection -->
+					{#if selectedLayout === 'single'}
+						<div>
+							<label for="tour-select" class="text-sm font-medium text-primary mb-2 block">
+								Select Tour
+							</label>
+							<select
+								id="tour-select"
+								bind:value={selectedTourId}
+								class="form-select"
+							>
+								<option value="">Choose...</option>
+								{#each activeTours as tour}
+									<option value={tour.id}>{tour.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+					
+					<!-- Headline -->
+					<div>
+						<label for="headline" class="text-sm font-medium text-primary mb-2 block">
+							Custom Headline
+						</label>
+						<input
+							id="headline"
+							type="text"
+							bind:value={customHeadline}
+							placeholder={defaultHeadline}
+							maxlength="60"
+							class="form-input"
+						/>
+						<p class="text-xs text-secondary mt-1">Default: "{defaultHeadline}"</p>
+					</div>
+					
+					<!-- Options -->
+					<div class="space-y-2">
+						<label class="flex items-center gap-2 cursor-pointer text-sm">
+							<input
+								type="checkbox"
+								bind:checked={includeContact}
+								class="rounded"
+							/>
+							<span class="text-primary">Include contact info</span>
+						</label>
+						<label class="flex items-center gap-2 cursor-pointer text-sm">
+							<input
+								type="checkbox"
+								bind:checked={includeQR}
+								class="rounded"
+							/>
+							<span class="text-primary">Include QR code</span>
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Desktop Layout -->
+		<div class="hidden sm:grid gap-6 lg:grid-cols-[300px_1fr]">
+			<!-- Options Sidebar -->
+			<div class="professional-card h-fit">
+				<div class="p-4 border-b border-border">
+					<h3 class="font-semibold text-primary">Design Options</h3>
+				</div>
+				<div class="p-4 space-y-6">
+					<!-- Layout Selection -->
+					<div>
+						<div class="text-sm font-medium text-primary mb-3">Flyer Layout</div>
+						<div class="space-y-2">
+							<button
+								onclick={() => selectedLayout = 'single'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all {selectedLayout === 'single' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								Single Tour
+							</button>
+							<button
+								onclick={() => selectedLayout = 'multi'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all {selectedLayout === 'multi' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								Multi Tour
+							</button>
+							<button
+								onclick={() => selectedLayout = 'list'}
+								class="w-full text-left px-3 py-2 rounded-md text-sm transition-all {selectedLayout === 'list' 
+									? 'bg-secondary text-primary font-medium' 
+									: 'text-secondary hover:bg-tertiary hover:text-primary'}"
+							>
+								Tour List
+							</button>
+						</div>
+					</div>
+					
+					<!-- Style Selection -->
+					<div>
+						<div class="text-sm font-medium text-primary mb-3">Visual Style</div>
 						<div class="space-y-2">
 							{#each ['modern', 'classic', 'bold'] as style}
 								<button
@@ -306,10 +518,10 @@
 				</div>
 				
 				<div class="p-6">
-					<!-- Flyer Preview -->
+					<!-- Desktop Flyer Preview -->
 					<div class="aspect-[210/297] max-w-[400px] mx-auto bg-white rounded-lg shadow-lg overflow-hidden border border-border">
 						{#if selectedLayout === 'single' && selectedTour}
-							<!-- Single Tour Preview -->
+							<!-- Desktop Single Tour Preview -->
 							<div class="p-6 h-full flex flex-col">
 								<div class="text-center mb-4">
 									<h2 class="text-2xl font-bold text-primary">{headline}</h2>

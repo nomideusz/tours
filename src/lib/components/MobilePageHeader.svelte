@@ -119,7 +119,7 @@
 	<div class="mb-4">
 		<div class="flex items-start justify-between mb-2">
 			<div class="flex-1 min-w-0 {primaryAction ? 'pr-4' : ''}">
-				<h1 class="text-2xl font-bold truncate leading-tight" style="color: var(--text-primary);">{title}</h1>
+				<h1 class="text-xl sm:text-2xl font-bold truncate leading-tight" style="color: var(--text-primary);">{title}</h1>
 				<div class="flex items-center gap-2 mt-1">
 					{#if statusButton}
 						<span
@@ -215,26 +215,45 @@
 	{#if statCards.length > 0}
 		<div class="grid grid-cols-2 gap-3 mb-4">
 			{#each statCards as card}
-				<div 
-					class="p-4 rounded-xl border-2 transition-all duration-200 {card.onclick ? 'cursor-pointer active:scale-95' : ''}"
-					style="
-						background: {card.accent ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-						border-color: {card.accent ? 'var(--color-primary-200)' : 'var(--border-primary)'};
-					"
-					onclick={card.onclick}
-					role={card.onclick ? 'button' : 'presentation'}
-					tabindex={card.onclick ? 0 : -1}
-				>
-					<div class="flex items-center gap-3">
-						<div class="p-2 rounded-lg" style="background: {card.accent ? 'var(--color-primary-100)' : 'var(--bg-secondary)'};">
-							<card.icon class="h-5 w-5" style="color: {card.accent ? 'var(--color-primary-600)' : 'var(--text-secondary)'};" />
+				{#if card.onclick}
+					<button
+						class="p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer active:scale-95 text-left"
+						style="
+							background: {card.accent ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+							border-color: {card.accent ? 'var(--color-primary-200)' : 'var(--border-primary)'};
+							width: 100%;
+						"
+						onclick={card.onclick}
+					>
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg" style="background: {card.accent ? 'var(--color-primary-100)' : 'var(--bg-secondary)'};">
+								<card.icon class="h-5 w-5" style="color: {card.accent ? 'var(--color-primary-600)' : 'var(--text-secondary)'};" />
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm sm:text-lg font-bold truncate" style="color: var(--text-primary);">{card.value}</p>
+								<p class="text-xs font-medium truncate" style="color: var(--text-secondary);">{card.label}</p>
+							</div>
 						</div>
-						<div class="min-w-0 flex-1">
-							<p class="text-xl font-bold truncate" style="color: var(--text-primary);">{card.value}</p>
-							<p class="text-sm font-medium truncate" style="color: var(--text-secondary);">{card.label}</p>
+					</button>
+				{:else}
+					<div 
+						class="p-4 rounded-xl border-2 transition-all duration-200"
+						style="
+							background: {card.accent ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+							border-color: {card.accent ? 'var(--color-primary-200)' : 'var(--border-primary)'};
+						"
+					>
+						<div class="flex items-center gap-3">
+							<div class="p-2 rounded-lg" style="background: {card.accent ? 'var(--color-primary-100)' : 'var(--bg-secondary)'};">
+								<card.icon class="h-5 w-5" style="color: {card.accent ? 'var(--color-primary-600)' : 'var(--text-secondary)'};" />
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm sm:text-lg font-bold truncate" style="color: var(--text-primary);">{card.value}</p>
+								<p class="text-xs font-medium truncate" style="color: var(--text-secondary);">{card.label}</p>
+							</div>
 						</div>
 					</div>
-				</div>
+				{/if}
 			{/each}
 		</div>
 	{/if}
@@ -247,8 +266,8 @@
 					<div class="flex items-center gap-2">
 						<item.icon class="h-4 w-4 flex-shrink-0" style="color: var(--text-secondary);" />
 						<div class="min-w-0 flex-1">
-							<p class="text-sm font-medium truncate" style="color: var(--text-primary);">{item.value}</p>
-							<p class="text-xs truncate" style="color: var(--text-secondary);">{item.label}</p>
+													<p class="text-xs sm:text-sm font-medium truncate" style="color: var(--text-primary);">{item.value}</p>
+						<p class="text-[0.625rem] sm:text-xs truncate" style="color: var(--text-secondary);">{item.label}</p>
 						</div>
 					</div>
 				</div>
@@ -263,17 +282,36 @@
 		min-height: 44px;
 		min-width: 44px;
 		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 	
 	/* Apply touch targets to primary action and quick action buttons */
 	button:not(.tour-status-badge):not(.status-badge) {
 		min-height: 44px;
 		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 	
 	/* Quick action buttons should have minimum width */
 	button[class*="button-"] {
 		min-width: 44px;
+	}
+	
+	/* Mobile font optimizations */
+	@media (max-width: 640px) {
+		/* Ensure minimum readable font sizes */
+		.text-xs {
+			font-size: 0.75rem; /* 12px minimum */
+		}
+		
+		.text-sm {
+			font-size: 0.875rem; /* 14px */
+		}
+		
+		/* Special handling for very small text */
+		.text-\[0\.625rem\] {
+			font-size: 0.6875rem; /* 11px minimum */
+		}
 	}
 	
 	/* Smooth transitions */
