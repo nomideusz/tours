@@ -171,6 +171,14 @@ export const paymentStatusEnum = pgEnum('payment_status', [
   'pending', 'paid', 'failed', 'refunded'
 ]);
 
+export const paymentTypeEnum = pgEnum('payment_type', [
+  'direct', 'platform_collected'
+]);
+
+export const payoutStatusEnum = pgEnum('payout_status', [
+  'pending', 'processing', 'completed', 'failed'
+]);
+
 export const attendanceStatusEnum = pgEnum('attendance_status', [
   'not_arrived', 'checked_in', 'no_show'
 ]);
@@ -221,11 +229,66 @@ export const payments = pgTable('payments', {
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   currency: varchar('currency', { length: 3 }).notNull().default('EUR'),
   status: paymentStatusEnum('status').notNull().default('pending'),
+  paymentType: paymentTypeEnum('payment_type').notNull().default('direct'),
   refundAmount: decimal('refund_amount', { precision: 10, scale: 2 }),
   processingFee: decimal('processing_fee', { precision: 10, scale: 2 }).notNull().default('0'),
   netAmount: decimal('net_amount', { precision: 10, scale: 2 }).notNull(),
+  
+  // For platform_collected payments - tracking tour guide payout
+  tourGuideUserId: text('tour_guide_user_id').references(() => users.id),
+  payoutId: text('payout_id'), // Will reference payouts table
+  payoutCompleted: boolean('payout_completed').notNull().default(false),
+  
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Cross-border payouts table
+export const payouts = pgTable('payouts', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  tourGuideUserId: text('tour_guide_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Payout details
+  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
+  payoutCurrency: varchar('payout_currency', { length: 3 }).notNull(),
+  exchangeRate: decimal('exchange_rate', { precision: 10, scale: 6 }),
+  payoutAmountLocal: decimal('payout_amount_local', { precision: 10, scale: 2 }),
+  
+  // Stripe payout tracking
+  stripePayoutId: varchar('stripe_payout_id', { length: 255 }).unique(),
+  status: payoutStatusEnum('status').notNull().default('pending'),
+  
+  // Period covered by this payout
+  periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+  periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+  
+  // Bank details used for payout
+  bankAccountInfo: json('bank_account_info').$type<{
+    accountNumber?: string;
+    routingNumber?: string;
+    bankName?: string;
+    country: string;
+  }>(),
+  
+  // Processing details
+  processingStartedAt: timestamp('processing_started_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  failureReason: text('failure_reason'),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Payout items - individual payments included in each payout
+export const payoutItems = pgTable('payout_items', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  payoutId: text('payout_id').notNull().references(() => payouts.id, { onDelete: 'cascade' }),
+  paymentId: text('payment_id').notNull().references(() => payments.id, { onDelete: 'cascade' }),
+  
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  currency: varchar('currency', { length: 3 }).notNull(),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 // Notifications table  

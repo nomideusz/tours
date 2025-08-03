@@ -2,6 +2,8 @@
 -- This script creates the complete database schema for the current application state
 
 -- Drop existing tables if they exist (in reverse dependency order)
+DROP TABLE IF EXISTS payout_items CASCADE;
+DROP TABLE IF EXISTS payouts CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS bookings CASCADE;
 DROP TABLE IF EXISTS time_slots CASCADE;
@@ -15,6 +17,8 @@ DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Drop existing enums
+DROP TYPE IF EXISTS payout_status CASCADE;
+DROP TYPE IF EXISTS payment_type CASCADE;
 DROP TYPE IF EXISTS subscription_status CASCADE;
 DROP TYPE IF EXISTS subscription_plan CASCADE;
 DROP TYPE IF EXISTS booking_source CASCADE;
@@ -39,6 +43,10 @@ CREATE TYPE booking_source AS ENUM ('main_qr', 'tour_qr', 'direct', 'referral', 
 -- Create subscription enums
 CREATE TYPE subscription_plan AS ENUM ('free', 'starter_pro', 'professional', 'agency');
 CREATE TYPE subscription_status AS ENUM ('active', 'canceled', 'past_due', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing');
+
+-- Create payment and payout enums for cross-border payments
+CREATE TYPE payment_type AS ENUM ('direct', 'platform_collected');
+CREATE TYPE payout_status AS ENUM ('pending', 'processing', 'completed', 'failed');
 
 -- Users table
 CREATE TABLE users (
@@ -210,11 +218,61 @@ CREATE TABLE payments (
     amount DECIMAL(10, 2) NOT NULL,
     currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
     status payment_status NOT NULL DEFAULT 'pending',
+    payment_type payment_type NOT NULL DEFAULT 'direct',
     refund_amount DECIMAL(10, 2),
     processing_fee DECIMAL(10, 2) NOT NULL DEFAULT '0',
     net_amount DECIMAL(10, 2) NOT NULL,
+    
+    -- For platform_collected payments - tracking tour guide payout
+    tour_guide_user_id TEXT REFERENCES users(id),
+    payout_id TEXT, -- Will reference payouts table
+    payout_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Cross-border payouts table
+CREATE TABLE payouts (
+    id TEXT PRIMARY KEY,
+    tour_guide_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Payout details
+    total_amount DECIMAL(10, 2) NOT NULL,
+    payout_currency VARCHAR(3) NOT NULL,
+    exchange_rate DECIMAL(10, 6),
+    payout_amount_local DECIMAL(10, 2),
+    
+    -- Stripe payout tracking
+    stripe_payout_id VARCHAR(255) UNIQUE,
+    status payout_status NOT NULL DEFAULT 'pending',
+    
+    -- Period covered by this payout
+    period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    
+    -- Bank details used for payout
+    bank_account_info JSONB,
+    
+    -- Processing details
+    processing_started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    failure_reason TEXT,
+    
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Payout items - individual payments included in each payout
+CREATE TABLE payout_items (
+    id TEXT PRIMARY KEY,
+    payout_id TEXT NOT NULL REFERENCES payouts(id) ON DELETE CASCADE,
+    payment_id TEXT NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+    
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Notifications table (for hybrid SSE + polling notification system)
@@ -327,7 +385,24 @@ CREATE INDEX idx_bookings_created_at ON bookings(created_at);
 CREATE INDEX idx_payments_booking_id ON payments(booking_id);
 CREATE INDEX idx_payments_stripe_payment_intent_id ON payments(stripe_payment_intent_id);
 CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX idx_payments_payment_type ON payments(payment_type);
+CREATE INDEX idx_payments_tour_guide_user_id ON payments(tour_guide_user_id);
+CREATE INDEX idx_payments_payout_id ON payments(payout_id);
+CREATE INDEX idx_payments_payout_completed ON payments(payout_completed);
 CREATE INDEX idx_payments_created_at ON payments(created_at);
+
+-- Payouts indexes
+CREATE INDEX idx_payouts_tour_guide_user_id ON payouts(tour_guide_user_id);
+CREATE INDEX idx_payouts_status ON payouts(status);
+CREATE INDEX idx_payouts_stripe_payout_id ON payouts(stripe_payout_id);
+CREATE INDEX idx_payouts_period_start ON payouts(period_start);
+CREATE INDEX idx_payouts_period_end ON payouts(period_end);
+CREATE INDEX idx_payouts_created_at ON payouts(created_at);
+
+-- Payout items indexes
+CREATE INDEX idx_payout_items_payout_id ON payout_items(payout_id);
+CREATE INDEX idx_payout_items_payment_id ON payout_items(payment_id);
+CREATE INDEX idx_payout_items_created_at ON payout_items(created_at);
 
 -- Notifications indexes
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
@@ -359,6 +434,7 @@ CREATE TRIGGER update_tours_updated_at BEFORE UPDATE ON tours FOR EACH ROW EXECU
 CREATE TRIGGER update_time_slots_updated_at BEFORE UPDATE ON time_slots FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_payouts_updated_at BEFORE UPDATE ON payouts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Add constraints for data validation
@@ -380,6 +456,15 @@ ALTER TABLE bookings ADD CONSTRAINT check_total_amount_positive CHECK (total_amo
 ALTER TABLE payments ADD CONSTRAINT check_amount_positive CHECK (amount >= 0);
 ALTER TABLE payments ADD CONSTRAINT check_processing_fee_positive CHECK (processing_fee >= 0);
 ALTER TABLE payments ADD CONSTRAINT check_net_amount_positive CHECK (net_amount >= 0);
+
+-- Payouts constraints
+ALTER TABLE payouts ADD CONSTRAINT check_total_amount_positive CHECK (total_amount >= 0);
+ALTER TABLE payouts ADD CONSTRAINT check_exchange_rate_positive CHECK (exchange_rate IS NULL OR exchange_rate > 0);
+ALTER TABLE payouts ADD CONSTRAINT check_payout_amount_local_positive CHECK (payout_amount_local IS NULL OR payout_amount_local >= 0);
+ALTER TABLE payouts ADD CONSTRAINT check_period_end_after_start CHECK (period_end > period_start);
+
+-- Payout items constraints
+ALTER TABLE payout_items ADD CONSTRAINT check_payout_item_amount_positive CHECK (amount >= 0);
 
 -- Create helper functions for generating unique codes
 CREATE OR REPLACE FUNCTION generate_promo_code()
@@ -488,7 +573,7 @@ SELECT
     tableowner
 FROM pg_tables 
 WHERE schemaname = 'public' 
-    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'time_slots', 'sessions', 'notifications', 'promo_codes', 'oauth_accounts', 'email_verification_tokens', 'password_reset_tokens')
+    AND tablename IN ('users', 'tours', 'bookings', 'payments', 'payouts', 'payout_items', 'time_slots', 'sessions', 'notifications', 'promo_codes', 'oauth_accounts', 'email_verification_tokens', 'password_reset_tokens')
 ORDER BY tablename;
 
 -- Show enum types
@@ -497,7 +582,7 @@ SELECT
     e.enumlabel as enum_value
 FROM pg_type t 
 JOIN pg_enum e ON t.oid = e.enumtypid  
-WHERE t.typname IN ('user_role', 'tour_status', 'booking_status', 'payment_status', 'subscription_plan', 'subscription_status')
+WHERE t.typname IN ('user_role', 'tour_status', 'booking_status', 'payment_status', 'payment_type', 'payout_status', 'subscription_plan', 'subscription_status')
 ORDER BY t.typname, e.enumsortorder;
 
 COMMIT; 

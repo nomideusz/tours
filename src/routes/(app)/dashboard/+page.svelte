@@ -304,15 +304,28 @@
 	// Show country dropdown UI
 	let showCountryDropdown = $state(false);
 
+	// Country search functionality
+	let countrySearchTerm = $state('');
+
 	// Track if user manually changed currency (different from country default)
 
 
 
 	// Import country data from shared module
-	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, type CountryInfo } from '$lib/utils/countries.js';
+	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod, getPaymentMethodExplanation, type CountryInfo } from '$lib/utils/countries.js';
 
 	// Get current country info
 	let currentCountryInfo = $derived(getCountryInfo(selectedCountry));
+
+	// Filter countries based on search term
+	let filteredCountryList = $derived(
+		countrySearchTerm.trim() === '' 
+			? COUNTRY_LIST 
+			: COUNTRY_LIST.filter(country => 
+				country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+				country.code.toLowerCase().includes(countrySearchTerm.toLowerCase())
+			)
+	);
 
 	// Check if settings need confirmation - only show if location hasn't been explicitly confirmed
 	// Even if country is auto-detected during registration, users must explicitly confirm
@@ -526,6 +539,13 @@
 			userCurrency.set(selectedCurrency);
 		}
 		showCountryDropdown = false;
+		// Clear search when country is selected
+		countrySearchTerm = '';
+	}
+
+	// Clear country search
+	function clearCountrySearch() {
+		countrySearchTerm = '';
 	}
 
 
@@ -1239,34 +1259,86 @@
 						</div>
 					{/if}
 					
+					<!-- Country search input -->
+					<div class="compact-country-search">
+						<div class="compact-search-container">
+							<input
+								type="text"
+								bind:value={countrySearchTerm}
+								placeholder="Search countries..."
+								class="compact-search-input"
+								autocomplete="off"
+							/>
+							{#if countrySearchTerm}
+								<button
+									onclick={clearCountrySearch}
+									class="compact-search-clear"
+									aria-label="Clear search"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+									</svg>
+								</button>
+							{:else}
+								<svg class="compact-search-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+								</svg>
+							{/if}
+						</div>
+						<p class="compact-search-results">
+							{filteredCountryList.length} of {COUNTRY_LIST.length} countries
+						</p>
+					</div>
+					
 					<div class="compact-country-grid">
-						{#each COUNTRY_LIST as country}
+						{#each filteredCountryList as country}
+							{@const paymentMethod = getPaymentMethod(country.code)}
 							<button
 								onclick={() => onCountryChange(country.code)}
 								class="compact-country-option {selectedCountry === country.code ? 'compact-country-option--selected' : ''}"
-								title="{country.name}"
+								title="{country.name} • {paymentMethod === 'connect' ? 'Direct payments' : paymentMethod === 'crossborder' ? 'Weekly payouts' : 'Not supported'}"
 							>
 								<div class="compact-country-flag">
 									<FlagIcon countryCode={country.code} size="sm" />
 								</div>
 								<div class="compact-country-info">
 									<p class="compact-country-name">{country.name}</p>
-									<p class="compact-country-currency">{country.currency}</p>
+									<p class="compact-country-currency">
+										{country.currency}
+										{#if paymentMethod === 'connect'}
+											<span class="compact-payment-method compact-payment-method--direct">Direct</span>
+										{:else if paymentMethod === 'crossborder'}
+											<span class="compact-payment-method compact-payment-method--weekly">Weekly</span>
+										{/if}
+									</p>
 								</div>
 								{#if selectedCountry === country.code}
 									<CheckCircle class="h-4 w-4 compact-country-check" />
 								{/if}
 							</button>
+						{:else}
+							{#if countrySearchTerm.trim() !== ''}
+								<div class="compact-no-results">
+									<p>No countries found matching "<strong>{countrySearchTerm}</strong>"</p>
+									<button onclick={clearCountrySearch} class="compact-clear-search-link">
+										Clear search
+									</button>
+								</div>
+							{/if}
 						{/each}
 					</div>
 					
 					{#if selectedCountry}
 						{@const countryInfo = getCountryInfo(selectedCountry)}
+						{@const paymentMethodInfo = getPaymentMethodExplanation(selectedCountry)}
 						<div class="compact-country-selected">
 							<p class="compact-country-selected-text">
 								<span class="inline-flex items-center gap-1">
 									✓ Selected: <FlagIcon countryCode={countryInfo?.code || selectedCountry} size="sm" /> {countryInfo?.name} • Currency: <strong>{countryInfo?.currency}</strong>
 								</span>
+							</p>
+							<p class="compact-payment-info">
+								<strong>{paymentMethodInfo.title}:</strong> {paymentMethodInfo.description}
 							</p>
 						</div>
 					{/if}
@@ -2200,5 +2272,131 @@ Please ensure this is the correct country where your business is legally registe
 		.compact-main-description {
 			font-size: 0.8rem;
 		}
+	}
+
+	/* Payment method indicators */
+	.compact-payment-method {
+		display: inline-block;
+		font-size: 0.65rem;
+		font-weight: 600;
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		margin-left: 0.25rem;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+
+	.compact-payment-method--direct {
+		background-color: var(--color-success-bg);
+		color: var(--color-success-text);
+	}
+
+	.compact-payment-method--weekly {
+		background-color: var(--color-info-bg);
+		color: var(--color-info-text);
+	}
+
+	.compact-payment-info {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		margin-top: 0.25rem;
+		line-height: 1.3;
+		text-align: center;
+	}
+
+	.compact-payment-info strong {
+		color: var(--text-primary);
+	}
+
+	/* Country search styles */
+	.compact-country-search {
+		margin-bottom: 1rem;
+	}
+
+	.compact-search-container {
+		position: relative;
+		margin-bottom: 0.5rem;
+	}
+
+	.compact-search-input {
+		width: 100%;
+		padding: 0.75rem 2.5rem 0.75rem 1rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.5rem;
+		background-color: var(--color-card-bg);
+		color: var(--text-primary);
+		font-size: 0.875rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.compact-search-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px rgba(var(--color-primary-500-rgb), 0.1);
+	}
+
+	.compact-search-input::placeholder {
+		color: var(--text-tertiary);
+	}
+
+	.compact-search-icon {
+		position: absolute;
+		right: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--text-tertiary);
+		pointer-events: none;
+	}
+
+	.compact-search-clear {
+		position: absolute;
+		right: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		padding: 0.25rem;
+		border: none;
+		background: none;
+		color: var(--text-tertiary);
+		cursor: pointer;
+		border-radius: 0.25rem;
+		transition: color 0.2s ease, background-color 0.2s ease;
+	}
+
+	.compact-search-clear:hover {
+		color: var(--text-primary);
+		background-color: var(--color-gray-100);
+	}
+
+	.compact-search-results {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		text-align: center;
+		margin: 0;
+	}
+
+	.compact-no-results {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 2rem 1rem;
+		color: var(--text-secondary);
+	}
+
+	.compact-no-results p {
+		margin: 0 0 0.5rem 0;
+		font-size: 0.875rem;
+	}
+
+	.compact-clear-search-link {
+		background: none;
+		border: none;
+		color: var(--color-primary-600);
+		cursor: pointer;
+		font-size: 0.75rem;
+		text-decoration: underline;
+		padding: 0;
+	}
+
+	.compact-clear-search-link:hover {
+		color: var(--color-primary-700);
 	}
 </style>

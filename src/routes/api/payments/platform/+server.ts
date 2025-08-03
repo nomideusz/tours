@@ -1,19 +1,24 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { createDirectPaymentIntent } from '$lib/stripe.server.js';
+import { createPaymentIntent } from '$lib/stripe.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { getMinimumChargeAmount, formatCurrencyWithCode } from '$lib/utils/currency.js';
+import { getMinimumChargeAmount } from '$lib/utils/currency.js';
 import { getPaymentMethod } from '$lib/utils/countries.js';
-import type { Currency } from '$lib/stores/currency.js';
+import type { Currency } from '$lib/utils/countries.js';
 
+/**
+ * Platform payment collection endpoint for tour guides in countries 
+ * that don't support Stripe Connect but do support cross-border payouts.
+ * 
+ * This endpoint collects payments on the platform account and tracks
+ * them for later payout to the tour guide.
+ */
 export const POST: RequestHandler = async ({ request, locals }) => {
-  // Declare variables outside try block for error handling
   let bookingId: string | undefined;
   let amount: number | undefined;
   let currency: string = 'eur';
-  let connectedAccountId: string | null | undefined;
   
   try {
     const body = await request.json();
@@ -30,11 +35,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const minimumAmount = getMinimumChargeAmount(currency.toUpperCase() as Currency);
     if (requestAmount < minimumAmount) {
       return json({ 
-        error: `Amount must be at least ${formatCurrencyWithCode(minimumAmount, currency.toUpperCase() as Currency)}` 
+        error: `Minimum charge amount is ${minimumAmount} ${currency.toUpperCase()}` 
       }, { status: 400 });
     }
 
-    // Get booking details with tour and user data INCLUDING Stripe account ID and country
+    // Get booking details with tour and user data
     const bookingData = await db.select({
       id: bookings.id,
       totalAmount: bookings.totalAmount,
@@ -42,8 +47,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       customerEmail: bookings.customerEmail,
       customerName: bookings.customerName,
       tourId: bookings.tourId,
+      tourName: tours.name,
       tourUserId: users.id,
       tourUserCountry: users.country,
+      tourUserCurrency: users.currency,
       tourUserStripeAccountId: users.stripeAccountId
     })
     .from(bookings)
@@ -58,38 +65,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
     const booking = bookingData[0];
     
-    // Store connected account ID for error handling
-    connectedAccountId = booking.tourUserStripeAccountId;
-    
-    // Determine payment method based on tour guide's country
+    // Verify that the tour guide's country requires platform collection
     const paymentMethod = getPaymentMethod(booking.tourUserCountry || 'DE');
+    
+    if (paymentMethod === 'connect') {
+      return json({ 
+        error: 'This tour guide supports direct payments. Use the regular payment endpoint.' 
+      }, { status: 400 });
+    }
     
     if (paymentMethod === 'unsupported') {
       return json({ 
-        error: 'Payment processing is not available for this tour guide\'s country yet.' 
-      }, { status: 400 });
-    }
-    
-    if (paymentMethod === 'crossborder') {
-      // Redirect to platform payment collection
-      return json({ 
-        error: 'REDIRECT_TO_PLATFORM_PAYMENT',
-        message: 'This tour guide requires platform payment collection.',
-        redirectEndpoint: '/api/payments/platform',
-        paymentMethod: 'crossborder'
-      }, { status: 400 });
-    }
-
-    // For 'connect' method, continue with existing direct payment flow
-    
-    // Check if tour guide has a Stripe account
-    if (!connectedAccountId) {
-      console.error('Tour guide missing Stripe account:', { 
-        tourUserId: booking.tourUserId,
-        bookingId: booking.id 
-      });
-      return json({ 
-        error: 'Tour guide has not set up payment processing. Please contact them directly.' 
+        error: 'Payment processing is not available for this tour guide\'s country.' 
       }, { status: 400 });
     }
 
@@ -104,34 +91,39 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         bookingTotalAmount: booking.totalAmount,
         originalAmount: amount 
       });
-      return json({ error: 'Amount mismatch' }, { status: 400 });
+      return json({ 
+        error: 'Payment amount does not match booking total' 
+      }, { status: 400 });
     }
 
-    // Create payment intent DIRECTLY on the tour guide's Stripe account
-    // No platform fee since this is a no-commission model
-    const paymentIntent = await createDirectPaymentIntent(
+    // Create payment intent on the PLATFORM account (not tour guide's account)
+    const paymentIntent = await createPaymentIntent(
       requestAmount, 
       currency,
-      connectedAccountId, // We already checked this is not null
       {
         bookingId: booking.id,
         bookingReference: booking.bookingReference,
         tourId: booking.tourId,
+        tourName: booking.tourName,
         customerEmail: booking.customerEmail,
         customerName: booking.customerName,
+        tourGuideUserId: booking.tourUserId,
+        paymentType: 'platform_collected'
       }
-      // No platform fee parameter - tour guides keep 100%
     );
 
-    // Create payment record in database
+    // Create payment record with platform collection tracking
     const paymentResult = await db.insert(payments).values({
       bookingId: bookingId,
       stripePaymentIntentId: paymentIntent.id,
       amount: requestAmount.toString(),
       currency: currency.toUpperCase(),
       status: 'pending',
+      paymentType: 'platform_collected',
+      tourGuideUserId: booking.tourUserId,
+      payoutCompleted: false,
       processingFee: '0', // Will be updated after payment
-      netAmount: requestAmount.toString(), // Tour guide gets 100%
+      netAmount: requestAmount.toString(), // Tour guide gets 100% (minus actual processing fees)
     }).returning();
 
     const payment = paymentResult[0];
@@ -148,25 +140,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       paymentId: payment.id,
-      connectedAccountId: booking.tourUserStripeAccountId // Include for frontend to handle properly
+      paymentType: 'platform_collected',
+      message: 'Payment will be collected on behalf of the tour guide and paid out weekly.'
     });
+    
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('Error creating platform payment intent:', error);
     
     // Provide more specific error messages for common Stripe errors
     if (error instanceof Error) {
       // Check for Stripe-specific errors
       if ('type' in error && error.type === 'StripeInvalidRequestError') {
-        // Common Stripe errors
-        if (error.message.includes('account')) {
-          return json(
-            { error: 'The tour guide\'s payment account is not properly configured. Please contact them.' },
-            { status: 400 }
-          );
-        }
         if (error.message.includes('currency')) {
           return json(
-            { error: 'This currency is not supported for the tour guide\'s location.' },
+            { error: 'This currency is not supported for platform payments.' },
             { status: 400 }
           );
         }
@@ -179,14 +166,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }
       
       // Log detailed error for debugging
-      console.error('Stripe error details:', {
+      console.error('Platform payment error details:', {
         message: error.message,
         type: 'type' in error ? error.type : 'unknown',
         code: 'code' in error ? error.code : 'unknown',
         bookingId,
         amount,
-        currency,
-        connectedAccountId
+        currency
       });
     }
     
@@ -195,4 +181,4 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       { status: 500 }
     );
   }
-}; 
+};

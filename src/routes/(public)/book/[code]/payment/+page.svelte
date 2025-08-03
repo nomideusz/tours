@@ -128,9 +128,9 @@
 				return;
 			}
 			
-			// Create payment intent
+			// Create payment intent with automatic routing
 			try {
-				const response = await fetch('/api/payments', {
+				let response = await fetch('/api/payments', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -142,24 +142,59 @@
 					}),
 				});
 				
+				// Handle redirect to platform payment for cross-border countries
 				if (!response.ok) {
 					const errorData = await response.json();
-					throw new Error(errorData.error || 'Failed to create payment intent');
+					
+					// Check if we need to redirect to platform payment collection
+					if (errorData.error === 'REDIRECT_TO_PLATFORM_PAYMENT' && errorData.redirectEndpoint) {
+						console.log('Tour guide requires platform payment collection, redirecting...');
+						
+						// Retry with platform payment endpoint
+						response = await fetch(errorData.redirectEndpoint, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								bookingId: data.booking.id,
+								amount: parseFloat(data.booking.totalAmount),
+								currency: data.tourOwner.currency?.toLowerCase() || 'eur',
+							}),
+						});
+						
+						if (!response.ok) {
+							const platformErrorData = await response.json();
+							throw new Error(platformErrorData.error || 'Failed to create platform payment');
+						}
+					} else {
+						throw new Error(errorData.error || 'Failed to create payment intent');
+					}
 				}
 				
-				const { clientSecret: paymentClientSecret, connectedAccountId } = await response.json();
+				const paymentResponse = await response.json();
+				const { clientSecret: paymentClientSecret, connectedAccountId, paymentType } = paymentResponse;
 				
 				// Save clientSecret for later use
 				clientSecret = paymentClientSecret;
 				
-				// Initialize Stripe Elements with connected account for direct charges
+				// Initialize Stripe Elements based on payment type
 				const elementsOptions: any = {
 					clientSecret: paymentClientSecret,
 					appearance: getStripeAppearance()
 				};
 				
-				// For direct charges, Elements must be initialized with the connected account context
-				if (connectedAccountId) {
+				if (paymentType === 'platform_collected') {
+					// Platform collection - use main platform Stripe account
+					console.log('Initializing platform payment collection for cross-border tour guide');
+					elements = stripe.elements(elementsOptions);
+					
+					// Show informational message about platform collection
+					if (paymentResponse.message) {
+						console.log('Payment info:', paymentResponse.message);
+					}
+				} else if (connectedAccountId) {
+					// Direct payment - use connected account
 					console.log('Initializing payment for direct charge to tour guide account:', connectedAccountId);
 					// Create a new Stripe instance for the connected account
 					const connectedStripe = await loadStripe(stripePublicKey, {
@@ -174,8 +209,8 @@
 					stripe = connectedStripe;
 					elements = stripe.elements(elementsOptions);
 				} else {
-					// Fallback to platform account (shouldn't happen with new system)
-					console.warn('No connected account ID - payment will go to platform');
+					// Fallback to platform account
+					console.warn('No connected account ID - using platform account');
 					elements = stripe.elements(elementsOptions);
 				}
 				

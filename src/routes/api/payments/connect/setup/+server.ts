@@ -5,7 +5,7 @@ import { users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { formatPhoneForStripe } from '$lib/utils/phone-formatter.js';
 import { getStripeLocale } from '$lib/utils/locale-mapper.js';
-import { getCurrencyForCountry } from '$lib/utils/countries.js';
+import { getCurrencyForCountry, getPaymentMethod, getPaymentMethodExplanation, supportsStripeConnect } from '$lib/utils/countries.js';
 
 export const POST: RequestHandler = async ({ request, url }) => {
     try {
@@ -27,6 +27,20 @@ export const POST: RequestHandler = async ({ request, url }) => {
         // Use the most current data from the database, with fallbacks
         const userCountry = user.country || country || 'DE';
         const userBusinessName = user.businessName || businessName || user.name;
+        
+        // Check payment method support for the user's country
+        const paymentMethod = getPaymentMethod(userCountry);
+        const paymentMethodInfo = getPaymentMethodExplanation(userCountry);
+        
+        if (paymentMethod !== 'connect') {
+            return json({ 
+                error: 'STRIPE_CONNECT_NOT_AVAILABLE',
+                message: paymentMethodInfo.description,
+                paymentMethod: paymentMethod,
+                paymentMethodInfo: paymentMethodInfo,
+                alternativeAvailable: paymentMethod === 'crossborder'
+            }, { status: 400 });
+        }
         const userPhone = formatPhoneForStripe(user.phone);
         const userWebsite = user.website || '';
         const userLocation = user.location || '';

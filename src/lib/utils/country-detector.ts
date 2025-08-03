@@ -2,6 +2,7 @@ import { getCountryByLocale, getCountryByTimezone } from './countries.js';
 
 /**
  * Default country if we can't detect anything else
+ * Use Poland since Zaur is Poland-registered
  */
 const DEFAULT_COUNTRY = 'PL';
 
