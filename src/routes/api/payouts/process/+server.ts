@@ -110,12 +110,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         console.log(`Processing payout for ${tourGuide.userName}: ${totalAmount} ${payoutCurrency} (${tourGuidePayments.length} payments)`);
 
-        // Create cross-border payout using Stripe
-        const stripePayout = await stripe.transfers.create({
+        // Parse bank account info
+        const bankAccountInfo = JSON.parse(tourGuide.bankAccountInfo || '{}');
+        
+        // Create cross-border payout using Stripe Cross-Border Payouts API
+        const stripePayout = await stripe.payouts.create({
           amount: Math.round(totalAmount * 100), // Stripe expects amount in cents
           currency: payoutCurrency.toLowerCase(),
-          destination: tourGuide.userId, // This would need to be the tour guide's bank details
+          method: 'instant', // or 'standard' for slower but cheaper payouts
           description: `Weekly payout for ${tourGuide.userName} (${lastWeekStart.toISOString().split('T')[0]} to ${lastWeekEnd.toISOString().split('T')[0]})`,
+          destination: {
+            // Bank account details from stored bank info
+            object: 'bank_account',
+            country: tourGuide.country,
+            currency: payoutCurrency.toLowerCase(),
+            account_holder_name: bankAccountInfo.accountHolderName,
+            account_number: bankAccountInfo.accountNumber,
+            routing_number: bankAccountInfo.routingNumber,
+            ...(bankAccountInfo.iban && { account_number: bankAccountInfo.iban }),
+            ...(bankAccountInfo.swiftCode && { swift_code: bankAccountInfo.swiftCode })
+          },
           metadata: {
             tourGuideUserId: tourGuide.tourGuideUserId!,
             periodStart: lastWeekStart.toISOString(),
