@@ -25,6 +25,8 @@ export const users = pgTable('users', {
   username: varchar('username', { length: 50 }).unique(),
   businessName: varchar('business_name', { length: 255 }),
   stripeAccountId: varchar('stripe_account_id', { length: 255 }),
+  bankAccountInfo: text('bank_account_info'),
+  paymentSetup: boolean('payment_setup').notNull().default(false),
   avatar: text('avatar'),
   role: userRoleEnum('role').notNull().default('user'),
   phone: varchar('phone', { length: 50 }),

@@ -21,6 +21,8 @@ export interface AuthUser {
 	whatsappNotifications?: boolean;
 	// Payment fields
 	stripeAccountId?: string;
+	bankAccountInfo?: string;
+	paymentSetup?: boolean;
 	// Subscription fields
 	subscriptionPlan?: 'free' | 'starter_pro' | 'professional' | 'agency';
 	subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing';

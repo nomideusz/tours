@@ -48,6 +48,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			avatar: user.avatar || '',
 			emailVerified: user.emailVerified || false,
 			stripeAccountId: user.stripeAccountId || '',
+			paymentSetup: user.paymentSetup || false,
 			country: user.country || '',
 			currency: user.currency || 'EUR',
 			role: user.role || 'user',

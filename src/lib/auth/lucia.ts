@@ -36,6 +36,7 @@ export const lucia = new Lucia(adapter, {
       lastLogin: attributes.lastLogin,
       // Payment fields
       stripeAccountId: attributes.stripeAccountId,
+      paymentSetup: attributes.paymentSetup,
       // Subscription fields
       subscriptionPlan: attributes.subscriptionPlan,
       subscriptionStatus: attributes.subscriptionStatus,

@@ -57,9 +57,12 @@
 	import ReceiptText from 'lucide-svelte/icons/receipt-text';
 	import Check from 'lucide-svelte/icons/check';
 	import RefreshCcw from 'lucide-svelte/icons/refresh-ccw';
+	import Wallet from 'lucide-svelte/icons/wallet';
 	
 	// Components
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
+	import BankAccountSetup from '$lib/components/profile/BankAccountSetup.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -112,6 +115,11 @@
 		// Payment confirmation modal state
 	let showPaymentConfirmModal = $state(false);
 	let pendingPaymentCountry = $state<string | null>(null);
+	
+	// Bank account setup modal state
+	let showBankAccountModal = $state(false);
+	let bankAccountCountry = $state<string | null>(null);
+	let bankAccountCurrency = $state<string | null>(null);
 
 	// Force refresh on mount to ensure we have latest user data
 	onMount(() => {
@@ -181,9 +189,9 @@
 		// Only set this for users who have explicitly confirmed, not just those with auto-detected country
 		hasConfirmedLocation = localStorage.getItem('locationConfirmed') === 'true';
 		
-		// For users with complete setup (email verified + stripe account + country), 
+		// For users with complete setup (email verified + payment setup + country), 
 		// assume location is confirmed to prevent onboarding flash
-		if (profile && profile.emailVerified && profile.stripeAccountId && profile.country && !hasConfirmedLocation) {
+		if (profile && profile.emailVerified && (profile.stripeAccountId || profile.paymentSetup) && profile.country && !hasConfirmedLocation) {
 			hasConfirmedLocation = true;
 			localStorage.setItem('locationConfirmed', 'true');
 		}
@@ -300,6 +308,7 @@
 	let savingCurrency = $state(false);
 	let saveSuccess = $state(false);
 	let saveError = $state<string | null>(null);
+	let crossBorderInfo = $state<any>(null);
 
 	// Show country dropdown UI
 	let showCountryDropdown = $state(false);
@@ -541,6 +550,8 @@
 		showCountryDropdown = false;
 		// Clear search when country is selected
 		countrySearchTerm = '';
+		// Clear cross-border info when country changes
+		crossBorderInfo = null;
 	}
 
 	// Clear country search
@@ -560,7 +571,8 @@
 			// Reset to user currency store value
 			selectedCurrency = $userCurrency;
 		}
-
+		// Clear cross-border info when resetting
+		crossBorderInfo = null;
 	}
 
 	// Load currency settings and check if confirmation needed - run only once per profile
@@ -591,8 +603,12 @@
 	function setupPayments() {
 		if (!profile || isSettingUpPayment) return;
 
-		// If stripeAccountId already exists, country is already locked - skip the modal
-		if (profile.stripeAccountId) {
+		// Clear any previous errors or cross-border info
+		saveError = null;
+		crossBorderInfo = null;
+
+		// If payment setup already exists (Stripe Connect or bank account), country is already locked - skip the modal
+		if (profile.stripeAccountId || profile.paymentSetup) {
 			// Go directly to payment setup without warning
 			confirmPaymentSetup();
 			return;
@@ -600,8 +616,19 @@
 
 		// Get the country for payment setup
 		const userCountry = profile.country || selectedCountry || 'US';
-		pendingPaymentCountry = userCountry;
-		showPaymentConfirmModal = true;
+		const paymentMethod = getPaymentMethod(userCountry);
+		
+		// Check if this is a cross-border country
+		if (paymentMethod === 'crossborder') {
+			// Show bank account setup instead of Stripe Connect
+			bankAccountCountry = userCountry;
+			bankAccountCurrency = getCurrencyForCountry(userCountry) || 'USD';
+			showBankAccountModal = true;
+		} else {
+			// Show regular payment confirmation modal for Stripe Connect countries
+			pendingPaymentCountry = userCountry;
+			showPaymentConfirmModal = true;
+		}
 	}
 	
 	// Actually setup payments after confirmation
@@ -629,15 +656,27 @@
 				})
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				console.error('Payment setup API error:', errorData);
+					if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Payment setup API error:', errorData);
+			
+			// Handle cross-border payment case
+			if (errorData.error === 'STRIPE_CONNECT_NOT_AVAILABLE' && errorData.alternativeAvailable) {
+				crossBorderInfo = {
+					country: countryForSetup,
+					paymentMethod: errorData.paymentMethod,
+					paymentMethodInfo: errorData.paymentMethodInfo
+				};
+				saveError = null; // Clear any previous errors
+			} else {
 				// Store the error for display
 				saveError = errorData.error || 'Failed to setup payment account';
-				isSettingUpPayment = false;
-				pendingPaymentCountry = null;
-				return;
 			}
+			
+			isSettingUpPayment = false;
+			pendingPaymentCountry = null;
+			return;
+		}
 
 			const { accountLink } = await response.json();
 			window.location.href = accountLink;
@@ -651,9 +690,37 @@
 			pendingPaymentCountry = null;
 		}
 	}
+	
+	// Handle successful bank account setup
+	function handleBankAccountSuccess() {
+		showBankAccountModal = false;
+		bankAccountCountry = null;
+		bankAccountCurrency = null;
+		
+		// Mark payment as setup
+		if (profile) {
+			profile.paymentSetup = true;
+		}
+		
+		// Refresh data
+		invalidateAll();
+		
+		// Show success message
+		saveSuccess = true;
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 5000);
+	}
 
 	// Function to check payment status
 	async function checkPaymentStatus() {
+		// Check if user has bank account setup (cross-border payments)
+		if (profile?.paymentSetup && !profile?.stripeAccountId) {
+			paymentStatus = { isSetup: true, loading: false };
+			return;
+		}
+		
+		// Check Stripe Connect status
 		if (!profile?.stripeAccountId) {
 			paymentStatus = { isSetup: false, loading: false };
 			return;
@@ -682,7 +749,7 @@
 	}
 
 	$effect(() => {
-		if (profile?.stripeAccountId) {
+		if (profile?.stripeAccountId || profile?.paymentSetup) {
 			checkPaymentStatus();
 		} else {
 			paymentStatus = { isSetup: false, loading: false };
@@ -951,7 +1018,7 @@
 						{/if}
 					</p>
 					<p class="text-xs" style="color: var(--text-tertiary);">
-						{#if profile?.stripeAccountId}
+						{#if profile?.stripeAccountId || profile?.paymentSetup}
 							Location is permanently locked because payment setup has been started.
 						{:else}
 							You can still update this in your <a href="/profile" class="underline hover:no-underline" style="color: var(--color-primary-600);">profile settings</a> until payment setup starts.
@@ -1162,27 +1229,75 @@
 						{/if}
 
 						{#if !paymentStatus.isSetup}
-							<div class="compact-step">
-								<div class="compact-step-header">
-									<CreditCard class="compact-step-icon" />
-									<span class="compact-step-title">Payment Account</span>
+							{#if crossBorderInfo}
+								<div class="compact-step">
+									<div class="compact-step-header">
+										<CreditCard class="compact-step-icon" />
+										<span class="compact-step-title">Payment Collection Method</span>
+									</div>
+									<div class="compact-step-info">
+										<div class="compact-payment-method compact-payment-method--weekly">Weekly</div>
+										<p class="compact-step-description">{crossBorderInfo.paymentMethodInfo.description}</p>
+										<div class="compact-step-details">
+											<p class="text-sm text-gray-600 dark:text-gray-400">
+												<strong>How it works:</strong> Customers pay through our platform, and we transfer funds to your bank account weekly.
+											</p>
+											<p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+												<strong>Processing time:</strong> {crossBorderInfo.paymentMethodInfo.processingTime}
+											</p>
+										</div>
+									</div>
+									<button 
+										onclick={() => crossBorderInfo = null}
+										class="button-secondary button--small mt-4"
+									>
+										Choose Different Country
+									</button>
 								</div>
-								<p class="compact-step-description">Connect with Stripe to receive payments</p>
-								<button 
-									onclick={setupPayments}
-									disabled={isSettingUpPayment || needsConfirmation}
-									class="button-primary button--small button--gap {needsConfirmation ? 'opacity-50' : ''}"
-								>
-									{#if isSettingUpPayment}
-										<Loader2 class="h-4 w-4 animate-spin" />
-										Connecting...
-									{:else if needsConfirmation}
-										Confirm location first
-									{:else}
-										Connect Account
-									{/if}
-								</button>
-							</div>
+							{:else}
+								<div class="compact-step">
+									<div class="compact-step-header">
+										<CreditCard class="compact-step-icon" />
+										<span class="compact-step-title">Payment Account</span>
+									</div>
+									<p class="compact-step-description">Connect with Stripe to receive payments</p>
+									<button 
+										onclick={setupPayments}
+										disabled={isSettingUpPayment || needsConfirmation}
+										class="button-primary button--small button--gap {needsConfirmation ? 'opacity-50' : ''}"
+									>
+										{#if isSettingUpPayment}
+											<Loader2 class="h-4 w-4 animate-spin" />
+											Connecting...
+										{:else if needsConfirmation}
+											Confirm location first
+										{:else}
+											Connect Account
+										{/if}
+									</button>
+								</div>
+							{/if}
+						{/if}
+						
+						<!-- Show payout info for cross-border users with payment setup -->
+						{#if paymentStatus.isSetup && profile?.paymentSetup && !profile?.stripeAccountId}
+							{@const paymentMethod = getPaymentMethod(profile.country || selectedCountry || 'US')}
+							{#if paymentMethod === 'crossborder'}
+								<div class="compact-step">
+									<div class="compact-step-header">
+										<Wallet class="compact-step-icon" />
+										<span class="compact-step-title">Weekly Payouts Active</span>
+									</div>
+									<p class="compact-step-description">Your payments are collected weekly</p>
+									<button 
+										onclick={() => goto('/profile#payment-setup')}
+										class="button-secondary button--small button--gap mt-2"
+									>
+										<CreditCard class="h-3 w-3" />
+										View Payouts
+									</button>
+								</div>
+							{/if}
 						{/if}
 					</div>
 
@@ -1552,6 +1667,26 @@ Please ensure this is the correct country where your business is legally registe
 	/>
 {/if}
 
+<!-- Bank Account Setup Modal -->
+{#if showBankAccountModal && bankAccountCountry && bankAccountCurrency}
+	<Modal isOpen={showBankAccountModal} onClose={() => {
+		showBankAccountModal = false;
+		bankAccountCountry = null;
+		bankAccountCurrency = null;
+	}}>
+		<BankAccountSetup
+			country={bankAccountCountry}
+			currency={bankAccountCurrency}
+			onSuccess={handleBankAccountSuccess}
+			onCancel={() => {
+				showBankAccountModal = false;
+				bankAccountCountry = null;
+				bankAccountCurrency = null;
+			}}
+		/>
+	</Modal>
+{/if}
+
 <style>
 	.opacity-50 {
 		opacity: 0.5;
@@ -1883,6 +2018,26 @@ Please ensure this is the correct country where your business is legally registe
 		margin-top: 0.5rem;
 		text-align: center;
 		font-style: italic;
+	}
+	
+	.compact-step-info {
+		margin-top: 0.75rem;
+	}
+	
+	.compact-step-details {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: var(--color-gray-50);
+		border-radius: 0.5rem;
+		border: 1px solid var(--color-gray-200);
+	}
+	
+	.compact-step-details p {
+		margin: 0;
+	}
+	
+	.compact-step-details p + p {
+		margin-top: 0.5rem;
 	}
 	
 	.compact-main-description {

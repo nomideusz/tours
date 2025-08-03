@@ -5,7 +5,7 @@
 	import { toastError, toastSuccess } from '$lib/utils/toast.js';
 	import { detectCountry } from '$lib/utils/country-detector.js';
 	import { userCurrency, setUserCurrencyFromServer, SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
-	import { getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
+	import { getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
 	
 	// Icons
 	import User from 'lucide-svelte/icons/user';
@@ -39,6 +39,8 @@
 	import AccountInfo from '$lib/components/profile/AccountInfo.svelte';
 	import PreferencesSection from '$lib/components/profile/PreferencesSection.svelte';
 	import DangerZone from '$lib/components/profile/DangerZone.svelte';
+	import BankAccountSetup from '$lib/components/profile/BankAccountSetup.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -107,6 +109,12 @@
 	let pendingPaymentCountry = $state<string | null>(null);
 	let isSettingUpPayment = $state(false);
 	let paymentSetupError = $state<string | null>(null);
+	let crossBorderInfo = $state<any>(null);
+	
+	// Bank account setup modal state
+	let showBankAccountModal = $state(false);
+	let bankAccountCountry = $state<string | null>(null);
+	let bankAccountCurrency = $state<string | null>(null);
 	
 	// Initialize form data when user loads
 	let formInitialized = $state(false);
@@ -127,6 +135,13 @@
 	
 	// Check payment status
 	async function checkPaymentStatus() {
+		// Check if user has bank account setup (cross-border payments)
+		if (user?.paymentSetup && !user?.stripeAccountId) {
+			paymentStatus = { isSetup: true, loading: false };
+			return;
+		}
+		
+		// Check Stripe Connect status
 		if (!user?.stripeAccountId) {
 			paymentStatus = { isSetup: false, loading: false };
 			return;
@@ -155,7 +170,7 @@
 	}
 
 	$effect(() => {
-		if (user?.stripeAccountId) {
+		if (user?.stripeAccountId || user?.paymentSetup) {
 			checkPaymentStatus();
 		} else {
 			paymentStatus = { isSetup: false, loading: false };
@@ -305,6 +320,10 @@
 	function setupPayments() {
 		if (!user || isSettingUpPayment) return;
 
+		// Clear any previous errors or cross-border info
+		paymentSetupError = null;
+		crossBorderInfo = null;
+
 		// If stripeAccountId already exists, country is already locked - skip the modal
 		if (user.stripeAccountId) {
 			// Go directly to payment setup without warning
@@ -314,8 +333,19 @@
 
 		// Get the country for payment setup
 		const userCountry = country || user.country || 'US';
-		pendingPaymentCountry = userCountry;
-		showPaymentConfirmModal = true;
+		const paymentMethod = getPaymentMethod(userCountry);
+		
+		// Check if this is a cross-border country
+		if (paymentMethod === 'crossborder') {
+			// Show bank account setup instead of Stripe Connect
+			bankAccountCountry = userCountry;
+			bankAccountCurrency = getCurrencyForCountry(userCountry) || 'USD';
+			showBankAccountModal = true;
+		} else {
+			// Show regular payment confirmation modal for Stripe Connect countries
+			pendingPaymentCountry = userCountry;
+			showPaymentConfirmModal = true;
+		}
 	}
 	
 	// Actually setup payments after confirmation
@@ -343,15 +373,27 @@
 				})
 			});
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				console.error('Payment setup API error:', errorData);
+					if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Payment setup API error:', errorData);
+			
+			// Handle cross-border payment case
+			if (errorData.error === 'STRIPE_CONNECT_NOT_AVAILABLE' && errorData.alternativeAvailable) {
+				crossBorderInfo = {
+					country: countryForSetup,
+					paymentMethod: errorData.paymentMethod,
+					paymentMethodInfo: errorData.paymentMethodInfo
+				};
+				paymentSetupError = null; // Clear any previous errors
+			} else {
 				// Show error in UI
 				paymentSetupError = errorData.error || 'Failed to setup payment account';
-				isSettingUpPayment = false;
-				pendingPaymentCountry = null;
-				return;
 			}
+			
+			isSettingUpPayment = false;
+			pendingPaymentCountry = null;
+			return;
+		}
 
 			const { accountLink } = await response.json();
 			window.location.href = accountLink;
@@ -364,6 +406,27 @@
 		} finally {
 			pendingPaymentCountry = null;
 		}
+	}
+	
+	// Handle successful bank account setup
+	function handleBankAccountSuccess() {
+		showBankAccountModal = false;
+		bankAccountCountry = null;
+		bankAccountCurrency = null;
+		
+		// Mark payment as setup
+		if (user) {
+			user.paymentSetup = true;
+		}
+		
+		// Refresh data
+		$profileQuery.refetch();
+		
+		// Show success message
+		profileSaveSuccess = true;
+		setTimeout(() => {
+			profileSaveSuccess = false;
+		}, 5000);
 	}
 	
 	// Avatar functions
@@ -762,18 +825,23 @@
 							bind:currency
 							onSubmit={updatePersonalInfo}
 							loading={profileLoading}
-							paymentSetup={!!user?.stripeAccountId}
+							paymentSetup={!!user?.stripeAccountId || !!user?.paymentSetup}
 							saveSuccess={profileSaveSuccess}
 						/>
 					</div>
 
 					<!-- Mobile: Payment Setup (higher priority on mobile) -->
-					<div class="lg:hidden">
+					<div class="lg:hidden" id="payment-setup-mobile">
 						<PaymentSetup
 							{paymentStatus}
 							onSetupPayments={setupPayments}
 							{isSettingUpPayment}
 							error={paymentSetupError}
+							{crossBorderInfo}
+							onClearCrossBorderInfo={() => crossBorderInfo = null}
+							userCountry={country || user?.country}
+							userId={user?.id}
+							currency={currency || user?.currency || 'EUR'}
 						/>
 					</div>
 
@@ -854,12 +922,19 @@
 				</div>
 				
 				<!-- Payment Setup -->
-				<PaymentSetup
+				<div id="payment-setup">
+					<PaymentSetup
 					{paymentStatus}
 					onSetupPayments={setupPayments}
 					{isSettingUpPayment}
 					error={paymentSetupError}
-				/>
+					{crossBorderInfo}
+					onClearCrossBorderInfo={() => crossBorderInfo = null}
+					userCountry={country || user?.country}
+					userId={user?.id}
+					currency={currency || user?.currency || 'EUR'}
+					/>
+				</div>
 
 				<!-- Account Info -->
 				<AccountInfo {user} />
@@ -905,6 +980,26 @@ Please ensure this is the correct country where your business is legally registe
 			pendingPaymentCountry = null;
 		}}
 	/>
+{/if}
+
+<!-- Bank Account Setup Modal -->
+{#if showBankAccountModal && bankAccountCountry && bankAccountCurrency}
+	<Modal isOpen={showBankAccountModal} onClose={() => {
+		showBankAccountModal = false;
+		bankAccountCountry = null;
+		bankAccountCurrency = null;
+	}}>
+		<BankAccountSetup
+			country={bankAccountCountry}
+			currency={bankAccountCurrency}
+			onSuccess={handleBankAccountSuccess}
+			onCancel={() => {
+				showBankAccountModal = false;
+				bankAccountCountry = null;
+				bankAccountCurrency = null;
+			}}
+		/>
+	</Modal>
 {/if}
 
 <!-- Payment Setup Loading Overlay -->

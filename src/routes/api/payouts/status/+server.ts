@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { payments, payouts, payoutItems, users } from '$lib/db/schema/index.js';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, gte } from 'drizzle-orm';
 
 /**
  * Get payout status and history for a tour guide
@@ -57,7 +57,7 @@ export const GET: RequestHandler = async ({ request, url, locals }) => {
       .where(
         and(
           eq(payouts.tourGuideUserId, userId),
-          sql`${payouts.createdAt} >= ${sixMonthsAgo}`
+          gte(payouts.createdAt, sixMonthsAgo)
         )
       )
       .orderBy(desc(payouts.createdAt))

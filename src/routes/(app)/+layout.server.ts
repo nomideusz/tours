@@ -41,6 +41,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
       lastLogin: userData.lastLogin,
       // Payment fields
       stripeAccountId: userData.stripeAccountId,
+      paymentSetup: userData.paymentSetup,
       // Subscription fields
       subscriptionPlan: userData.subscriptionPlan,
       subscriptionStatus: userData.subscriptionStatus,

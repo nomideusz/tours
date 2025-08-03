@@ -10,7 +10,7 @@
 	import CircleDollarSign from 'lucide-svelte/icons/circle-dollar-sign';
 	import { SUPPORTED_CURRENCIES, type Currency } from '$lib/stores/currency.js';
 	import { userCurrency } from '$lib/stores/currency.js';
-	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
+	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod, getPaymentMethodExplanation } from '$lib/utils/countries.js';
 	import LocationPicker from '../LocationPicker.svelte';
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
 
@@ -357,11 +357,17 @@
 				</label>
 				{#if paymentSetup}
 					{@const countryInfo = getCountryInfo(country)}
+					{@const paymentMethod = getPaymentMethod(country)}
 					<div class="relative">
 						<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
 						<div class="form-input pl-10 flex items-center gap-2" style="background: var(--bg-tertiary); cursor: not-allowed;">
 							<FlagIcon countryCode={countryInfo?.code || country} size="sm" />
-							{countryInfo?.name || country}
+							<span>{countryInfo?.name || country}</span>
+							{#if paymentMethod === 'connect'}
+								<span class="payment-method-badge payment-method-badge--direct">Direct</span>
+							{:else if paymentMethod === 'crossborder'}
+								<span class="payment-method-badge payment-method-badge--weekly">Weekly</span>
+							{/if}
 						</div>
 					</div>
 					<input type="hidden" name="country" value={country} />
@@ -385,6 +391,26 @@
 							{/each}
 						</select>
 					</div>
+					{#if country}
+						{@const selectedCountryInfo = getCountryInfo(country)}
+						{@const paymentMethod = getPaymentMethod(country)}
+						{@const paymentMethodInfo = getPaymentMethodExplanation(country)}
+						<div class="mt-2 text-xs" style="color: var(--text-secondary);">
+							<div class="flex items-center gap-2">
+								<span>Payment method:</span>
+								{#if paymentMethod === 'connect'}
+									<span class="payment-method-badge payment-method-badge--direct">Direct</span>
+								{:else if paymentMethod === 'crossborder'}
+									<span class="payment-method-badge payment-method-badge--weekly">Weekly</span>
+								{:else}
+									<span class="payment-method-badge payment-method-badge--unsupported">Not supported</span>
+								{/if}
+							</div>
+							<p class="mt-1" style="color: var(--text-tertiary);">
+								{paymentMethodInfo.description}
+							</p>
+						</div>
+					{/if}
 				{/if}
 			</div>
 
@@ -617,5 +643,32 @@
 	
 	.country-code-button:active {
 		transform: scale(0.98);
+	}
+	
+	/* Payment method indicators */
+	.payment-method-badge {
+		display: inline-block;
+		font-size: 0.65rem;
+		font-weight: 600;
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
+		margin-left: 0.25rem;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+	
+	.payment-method-badge--direct {
+		background-color: var(--color-success-bg);
+		color: var(--color-success-text);
+	}
+	
+	.payment-method-badge--weekly {
+		background-color: var(--color-info-bg);
+		color: var(--color-info-text);
+	}
+	
+	.payment-method-badge--unsupported {
+		background-color: var(--color-error-bg);
+		color: var(--color-error-text);
 	}
 </style> 
