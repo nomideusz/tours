@@ -550,6 +550,8 @@ export const STRIPE_SUPPORTED_COUNTRIES: Record<CountryCode, CountryInfo> = {
 export const SUPPORTED_COUNTRY_CODES = Object.keys(STRIPE_SUPPORTED_COUNTRIES) as CountryCode[];
 
 // Additional cross-border countries with basic info (countries not in Stripe Connect but supported via cross-border payouts)
+// NOTE: Cross-border payouts are DISABLED for Polish business (Stripe requires US-based platform)
+// This code structure is preserved for future use if/when expanding to US operations
 export const CROSSBORDER_ONLY_COUNTRIES: Record<string, CountryInfo> = {
   // Asia-Pacific
   'MV': { code: 'MV' as CountryCode, name: 'Maldives', flag: '🇲🇻', currency: 'USD', phoneCode: '+960', stripeLocale: 'en-US', locales: ['en'], timezones: ['Indian/Maldives'] }, // USD is actually used in Maldives
@@ -620,8 +622,10 @@ export const ALL_SUPPORTED_COUNTRIES = {
   ...CROSSBORDER_ONLY_COUNTRIES
 };
 
-// Get country list for dropdowns (sorted alphabetically) - includes ALL supported countries
-export const COUNTRY_LIST = Object.values(ALL_SUPPORTED_COUNTRIES).sort((a, b) => 
+// Get country list for dropdowns (sorted alphabetically)
+// NOTE: Cross-border payouts are disabled for Polish business (Stripe requires US-based platform)
+// To re-enable: change STRIPE_SUPPORTED_COUNTRIES to ALL_SUPPORTED_COUNTRIES
+export const COUNTRY_LIST = Object.values(STRIPE_SUPPORTED_COUNTRIES).sort((a, b) => 
   a.name.localeCompare(b.name)
 );
 
@@ -714,7 +718,11 @@ export function getPaymentMethod(countryCode: string): 'connect' | 'crossborder'
   if (supportsStripeConnect(countryCode)) {
     return 'connect';
   } else if (supportsCrossBorderPayouts(countryCode)) {
-    return 'crossborder';
+    // Cross-border payouts temporarily disabled for Polish business
+    // Stripe cross-border payouts require US-based platform
+    // To re-enable: remove this comment block and return 'crossborder'
+    return 'unsupported';
+    // return 'crossborder';
   } else {
     return 'unsupported';
   }

@@ -1,13 +1,17 @@
 # Cross-Border Payment System
 
-This document explains the cross-border payment system that enables tour guides from countries not supported by Stripe Connect to receive payments.
+## ⚠️ CURRENT STATUS: DISABLED
+
+**Cross-border payouts are currently DISABLED** because Stripe's cross-border payout feature requires a US-based platform business. Since Zaur is registered in Poland, this feature cannot be used.
+
+See `ENABLE_CROSSBORDER_GUIDE.md` for details on how to enable this feature if/when a US entity is established.
 
 ## Overview
 
-The system supports tour guides in **100+ countries** through two payment methods:
+This document explains the cross-border payment system infrastructure that was built to enable tour guides from countries not supported by Stripe Connect to receive payments.
 
-1. **Direct Payments** (46 countries) - Tour guides have their own Stripe Connect accounts
-2. **Platform Collection** (50+ additional countries) - Platform collects payments and sends weekly payouts
+**Currently Active:** Tour guides in **46 countries** via Stripe Connect Direct Payments
+**Infrastructure Ready:** Additional 50+ countries via Platform Collection (disabled)
 
 ## Supported Countries
 
