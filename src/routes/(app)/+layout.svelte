@@ -456,7 +456,7 @@
 		/>
 
 		<!-- Main content area with sidebar -->
-		<div class="flex flex-1 min-w-0 pt-[12rem] overflow-x-hidden"> <!-- Increased padding for Header + BetaBanner -->
+		<div class="flex flex-1 min-w-0 pt-20 overflow-x-hidden"> <!-- Increased padding for Header + BetaBanner -->
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
 				<div class="professional-sidebar">
