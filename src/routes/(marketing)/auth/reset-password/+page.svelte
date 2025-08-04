@@ -71,7 +71,7 @@
 	}
 </script>
 
-<div class="min-h-screen subtle-retro-section flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+<div class="min-h-[calc(100vh-5rem)] sm:min-h-[calc(100vh-8.5rem)] subtle-retro-section flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 	<div class="w-full max-w-lg relative z-10">
 		<!-- Header -->
 		<div class="text-center mb-6 sm:mb-8">

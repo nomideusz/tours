@@ -14,6 +14,8 @@
 	import '$lib/styles/auth.css';
 	import '$lib/styles/variables.css';
 	import '$lib/styles/cards.css';
+	import '$lib/styles/forms.css';
+	import '$lib/styles/buttons.css';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -128,7 +130,7 @@
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
 	/>
-	<main class="flex-1 pt-[8.5rem] relative z-10"> <!-- Standard padding for Header only -->
+	<main class="flex-1 pt-20 sm:pt-[8.5rem] relative z-10"> <!-- Responsive padding for Header -->
 		{#if browser && data?.queryClient}
 			<QueryClientProvider client={data.queryClient}>
 				{@render children()}

@@ -1,107 +1,303 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	
+	// Components
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageContainer from '$lib/components/PageContainer.svelte';
+	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+	
+	// Icons
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Loader from 'lucide-svelte/icons/loader';
+	import User from 'lucide-svelte/icons/user';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Send from 'lucide-svelte/icons/send';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	
 	// Form state
 	let isSubmitting = $state(false);
 	let error = $state('');
 	let success = $state(false);
 	
-	// Form data
+	// Simplified form data - removed unnecessary fields
 	let formData = $state({
 		// Basic info
 		name: '',
 		email: '',
-		phone: '',
-		website: '',
-		
-		// Business info
 		businessName: '',
-		location: '',
-		country: '',
+		location: '', // City, Country format
 		
-		// Screening questions
+		// Essential screening questions only
 		tourTypes: '',
-		tourFrequency: '',
-		currentBookingMethod: '',
+		tourVolume: '', // Simplified from frequency
 		biggestChallenge: '',
-		betaContribution: '',
 		
-		// Additional info
-		yearsExperience: 1,
-		teamSize: 1,
-		interestedFeatures: [] as string[],
-		availabilityForFeedback: true,
-		referralSource: ''
+		// Optional
+		website: ''
 	});
 	
-	// Feature options
-	const featureOptions = [
-		{ value: 'qr_codes', label: 'QR Code Bookings' },
-		{ value: 'calendar_management', label: 'Calendar Management' },
-		{ value: 'customer_database', label: 'Customer Database' },
-		{ value: 'email_automation', label: 'Email Automation' },
-		{ value: 'payment_processing', label: 'Payment Processing' },
-		{ value: 'analytics', label: 'Analytics & Reports' },
-		{ value: 'multi_language', label: 'Multi-language Support' },
-		{ value: 'team_management', label: 'Team Management' }
+	// Simplified tour volume options
+	const tourVolumeOptions = [
+		{ value: 'starting', label: 'Just starting out' },
+		{ value: 'part-time', label: 'Part-time (1-10 tours/week)' },
+		{ value: 'full-time', label: 'Full-time (10+ tours/week)' },
+		{ value: 'team', label: 'Team operation' }
 	];
 	
-	// Tour frequency options
-	const frequencyOptions = [
-		'1-2 tours per week',
-		'3-5 tours per week',
-		'6-10 tours per week',
-		'10+ tours per week',
-		'Daily tours',
-		'Seasonal/occasional'
+	// Example countries for quick selection (not limiting - all countries accepted)
+	const exampleCountries = [
+		{ code: 'US', name: 'United States', flag: '🇺🇸' },
+		{ code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+		{ code: 'ES', name: 'Spain', flag: '🇪🇸' },
+		{ code: 'FR', name: 'France', flag: '🇫🇷' },
+		{ code: 'IT', name: 'Italy', flag: '🇮🇹' },
+		{ code: 'DE', name: 'Germany', flag: '🇩🇪' }
 	];
 	
-	// Handle feature toggle
-	function toggleFeature(feature: string) {
-		if (formData.interestedFeatures.includes(feature)) {
-			formData.interestedFeatures = formData.interestedFeatures.filter(f => f !== feature);
-		} else {
-			formData.interestedFeatures = [...formData.interestedFeatures, feature];
+	// Common country name to code mappings
+	const countryMappings: Record<string, string> = {
+		// Common full names
+		'united states': 'US', 'usa': 'US', 'america': 'US', 'united states of america': 'US',
+		'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB',
+		'spain': 'ES', 'españa': 'ES',
+		'france': 'FR',
+		'italy': 'IT', 'italia': 'IT',
+		'germany': 'DE', 'deutschland': 'DE',
+		'portugal': 'PT',
+		'netherlands': 'NL', 'holland': 'NL',
+		'belgium': 'BE',
+		'switzerland': 'CH',
+		'austria': 'AT',
+		'poland': 'PL', 'polska': 'PL',
+		'czech republic': 'CZ', 'czechia': 'CZ',
+		'greece': 'GR',
+		'turkey': 'TR',
+		'mexico': 'MX', 'méxico': 'MX',
+		'canada': 'CA',
+		'brazil': 'BR', 'brasil': 'BR',
+		'argentina': 'AR',
+		'australia': 'AU',
+		'new zealand': 'NZ',
+		'japan': 'JP',
+		'china': 'CN',
+		'india': 'IN',
+		'thailand': 'TH',
+		'vietnam': 'VN',
+		'indonesia': 'ID',
+		'malaysia': 'MY',
+		'singapore': 'SG',
+		'south korea': 'KR', 'korea': 'KR',
+		'egypt': 'EG',
+		'morocco': 'MA',
+		'south africa': 'ZA',
+		'israel': 'IL',
+		'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE',
+		'norway': 'NO',
+		'sweden': 'SE',
+		'denmark': 'DK',
+		'finland': 'FI',
+		'ireland': 'IE',
+		'scotland': 'GB',
+		'wales': 'GB'
+	};
+	
+	// Helper function to get country code
+	function getCountryCode(input: string): string {
+		if (!input) return 'XX'; // Default fallback
+		
+		// If it's already a 2-letter code, return it
+		if (input.length === 2 && /^[A-Z]{2}$/i.test(input)) {
+			return input.toUpperCase();
 		}
+		
+		// Try to find in mappings
+		const normalized = input.toLowerCase().trim();
+		const code = countryMappings[normalized];
+		if (code) return code;
+		
+		// If not found, use first 2 letters as fallback
+		return input.substring(0, 2).toUpperCase();
+	}
+	
+	// Validation state
+	let touchedFields = $state<Set<string>>(new Set());
+	let validationErrors = $state<{ field: string; message: string }[]>([]);
+	
+	// Error element reference for scrolling
+	let errorElement = $state<HTMLElement>();
+	
+	// Scroll to error when it appears
+	$effect(() => {
+		if (error && errorElement && browser) {
+			setTimeout(() => {
+				errorElement?.scrollIntoView({ 
+					behavior: 'smooth', 
+					block: 'center' 
+				});
+			}, 100);
+		}
+	});
+	
+	// Location suggestion helper
+	function handleLocationInput(value: string) {
+		formData.location = value;
+		// Auto-format common inputs
+		if (value && !value.includes(',')) {
+			// Suggest adding country after city
+			// This is just a UX hint, not enforced
+		}
+	}
+	
+	// Field validation functions
+	function validateField(field: string, value: any): string | null {
+		switch (field) {
+			case 'name':
+				return !value || value.trim() === '' ? 'Your name is required' : null;
+			case 'email':
+				if (!value || value.trim() === '') return 'Email address is required';
+				
+				const email = value.trim().toLowerCase();
+				
+				// More comprehensive email validation
+				const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+				
+				if (!emailRegex.test(email)) {
+					return 'Please enter a valid email address';
+				}
+				
+				// Additional checks for common mistakes
+				if (email.includes('..')) {
+					return 'Email cannot contain consecutive dots';
+				}
+				
+				if (email.startsWith('.') || email.endsWith('.')) {
+					return 'Email cannot start or end with a dot';
+				}
+				
+				if (email.includes('@.') || email.includes('.@')) {
+					return 'Invalid email format around @ symbol';
+				}
+				
+				return null;
+			case 'location':
+				return !value || value.trim() === '' ? 'City and country are required' : null;
+			case 'tourTypes':
+				return !value || value.trim() === '' ? 'Please describe your tours' : null;
+			case 'tourVolume':
+				return !value || value.trim() === '' ? 'Please select your tour volume' : null;
+			case 'biggestChallenge':
+				return !value || value.trim() === '' ? 'Please share your main challenge' : null;
+			default:
+				return null;
+		}
+	}
+	
+	// Handle field blur for validation
+	function handleFieldBlur(field: string, value: any) {
+		// Create new Set for reactivity
+		touchedFields = new Set([...touchedFields, field]);
+		
+		const errorMessage = validateField(field, value);
+		validationErrors = validationErrors.filter(e => e.field !== field);
+		
+		if (errorMessage) {
+			validationErrors = [...validationErrors, { field, message: errorMessage }];
+		}
+	}
+	
+	// Get field error
+	function getFieldError(field: string): string | null {
+		if (!touchedFields.has(field)) return null;
+		return validationErrors.find(e => e.field === field)?.message || null;
+	}
+	
+	// Has field error
+	function hasFieldError(field: string): boolean {
+		return touchedFields.has(field) && validationErrors.some(e => e.field === field);
 	}
 	
 	// Form validation
-	function validateForm() {
-		if (!formData.name || !formData.email || !formData.location || !formData.country) {
-			return 'Please fill in all required fields';
-		}
+	function validateForm(): boolean {
+		const requiredFields = [
+			'name', 'email', 'location', 
+			'tourTypes', 'tourVolume', 'biggestChallenge'
+		];
 		
-		if (!formData.tourTypes || !formData.tourFrequency || !formData.currentBookingMethod || 
-			!formData.biggestChallenge || !formData.betaContribution) {
-			return 'Please answer all screening questions';
-		}
+		// Mark all fields as touched (create new Set for reactivity)
+		touchedFields = new Set([...touchedFields, ...requiredFields]);
 		
-		if (formData.interestedFeatures.length === 0) {
-			return 'Please select at least one feature you\'re interested in';
-		}
+		// Clear existing errors
+		validationErrors = [];
 		
-		// Email validation
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(formData.email)) {
-			return 'Please enter a valid email address';
-		}
+		// Validate all fields
+		let hasErrors = false;
+		requiredFields.forEach(field => {
+			const value = formData[field as keyof typeof formData];
+			const errorMessage = validateField(field, value);
+			if (errorMessage) {
+				validationErrors = [...validationErrors, { field, message: errorMessage }];
+				hasErrors = true;
+			}
+		});
 		
-		return null;
+		return !hasErrors;
 	}
+	
+	// Calculate form completion percentage
+	let formCompletion = $derived.by(() => {
+		const fields = [
+			formData.name,
+			formData.email,
+			formData.location,
+			formData.tourTypes,
+			formData.tourVolume,
+			formData.biggestChallenge
+		];
+		
+		const completed = fields.filter(field => field && field.toString().trim() !== '').length;
+		const total = fields.length;
+		const percentage = Math.round((completed / total) * 100);
+		
+		return {
+			completed,
+			total,
+			percentage,
+			isComplete: percentage === 100
+		};
+	});
 	
 	// Handle form submission
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		
-		// Validate form
-		const validationError = validateForm();
-		if (validationError) {
-			error = validationError;
+		// Clear any previous general error
+		error = '';
+		
+		if (!validateForm()) {
+			// Don't show generic error if we have specific field errors
+			if (validationErrors.length === 0) {
+				error = 'Please complete all required fields';
+			} else {
+				// Clear generic error, let field-specific errors show
+				error = '';
+				
+				// Scroll to first error field for better UX
+				setTimeout(() => {
+					const firstErrorField = validationErrors[0]?.field;
+					if (firstErrorField) {
+						const element = document.getElementById(firstErrorField);
+						if (element) {
+							element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							element.focus();
+						}
+					}
+				}, 100);
+			}
 			return;
 		}
 		
@@ -109,12 +305,43 @@
 		isSubmitting = true;
 		
 		try {
+			// Extract city and country from location
+			const locationParts = formData.location.split(',').map(p => p.trim()).filter(p => p);
+			let country = '';
+			let city = '';
+			
+			if (locationParts.length >= 2) {
+				// Format: "City, Country"
+				city = locationParts[0];
+				country = getCountryCode(locationParts[locationParts.length - 1]);
+			} else if (locationParts.length === 1) {
+				// Single value - could be either city or country
+				const value = locationParts[0];
+				city = value;
+				// For country, try to extract a 2-letter code or use first 2 letters
+				country = getCountryCode(value);
+			}
+			
 			const response = await fetch('/api/beta-applications', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify(formData)
+				body: JSON.stringify({
+					...formData,
+					city: city || formData.location,
+					country: country || 'XX', // Always use 2-letter code
+					// Set defaults for removed fields
+					phone: '',
+					yearsExperience: 0,
+					teamSize: 1,
+					tourFrequency: formData.tourVolume,
+					currentBookingMethod: 'Not specified',
+					betaContribution: 'Interested in testing and providing feedback',
+					interestedFeatures: ['qr_codes', 'payment_processing', 'calendar_management'],
+					availabilityForFeedback: true,
+					referralSource: 'Beta application form'
+				})
 			});
 			
 			const data = await response.json();
@@ -137,572 +364,364 @@
 </script>
 
 <svelte:head>
-	<title>Apply for Zaur Beta Program - Help Shape the Future</title>
-	<meta name="description" content="Apply to be one of 50 tour guides in the Zaur beta program. Get free access, provide feedback, and shape the platform." />
+	<title>Apply for Zaur Beta - Quick Application</title>
+	<meta name="description" content="Join the Zaur beta program in 2 minutes. We're selecting tour guides to test our QR booking platform." />
 </svelte:head>
 
-<div class="apply-page" in:fade={{ duration: 300 }}>
-	<div class="container">
+<PageContainer>
+	<div class="max-w-3xl mx-auto pb-16">
 		<!-- Header -->
-		<div class="header-section">
-			<div class="beta-badge-large">
-				<FlaskConical class="w-6 h-6" />
-				<span>Beta Application</span>
-			</div>
+		<div class="mb-6 sm:mb-8">
+			<!-- Mobile Header -->
+			<MobilePageHeader
+				title="Beta Application"
+				secondaryInfo={`${formCompletion.percentage}% complete`}
+				primaryAction={{
+					label: 'Quick Form',
+					icon: FlaskConical,
+					variant: 'secondary',
+					disabled: true,
+					onclick: () => {}
+				}}
+			/>
 			
-			<h1 class="page-title">Apply for the Beta Program</h1>
-			<p class="page-description">
-				We're looking for 50 passionate tour guides to help test and shape Zaur. 
-				Tell us about your business and how you can contribute to making Zaur better.
-			</p>
+			<!-- Desktop Header -->
+			<div class="hidden sm:block">
+				<PageHeader 
+					title="Apply for Beta Program"
+					subtitle="2-minute application • 50 spots available"
+				>
+					<div class="flex items-center gap-4">
+						<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+							<FlaskConical class="h-4 w-4" />
+							Limited Beta
+						</div>
+					</div>
+				</PageHeader>
+			</div>
 		</div>
-		
+
+		{#if error}
+			<div bind:this={errorElement} class="mb-6">
+				<ErrorAlert variant="error" title="Error" message={error} />
+			</div>
+		{/if}
+
 		{#if success}
-			<div class="success-message" in:fade={{ duration: 200 }}>
-				<CheckCircle class="w-6 h-6" />
-				<div>
-					<h3>Application Submitted!</h3>
-					<p>Thank you for applying. We'll review your application and get back to you by January 20.</p>
+			<div class="mb-6 p-6 rounded-xl" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);" in:fade={{ duration: 200 }}>
+				<div class="flex items-start gap-3">
+					<CheckCircle class="h-6 w-6 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
+					<div>
+						<h3 class="text-lg font-semibold mb-2" style="color: var(--color-success-900);">Application Submitted!</h3>
+						<p style="color: var(--color-success-700);">Thank you! We'll review your application and contact you within 48 hours.</p>
+					</div>
 				</div>
 			</div>
 		{:else}
-			<form class="application-form" onsubmit={handleSubmit}>
-				{#if error}
-					<div class="error-message" in:fade={{ duration: 200 }}>
-						<AlertCircle class="w-5 h-5" />
-						<span>{error}</span>
-					</div>
-				{/if}
+			<form onsubmit={handleSubmit} class="space-y-6 sm:space-y-8">
+			<!-- Contact Information -->
+			<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="flex items-center gap-3 mb-4 sm:mb-6">
+					<User class="h-5 w-5" style="color: var(--color-primary-600);" />
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Contact Information</h2>
+				</div>
 				
-				<!-- Basic Information -->
-				<section class="form-section">
-					<h2 class="section-title">Basic Information</h2>
-					
-					<div class="form-grid">
-						<div class="form-group">
-							<label for="name" class="required">Your Name</label>
-							<input
-								type="text"
-								id="name"
-								bind:value={formData.name}
-								placeholder="John Smith"
-								required
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="email" class="required">Email Address</label>
-							<input
-								type="email"
-								id="email"
-								bind:value={formData.email}
-								placeholder="john@example.com"
-								required
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="phone">Phone Number</label>
-							<input
-								type="tel"
-								id="phone"
-								bind:value={formData.phone}
-								placeholder="+1 234 567 8900"
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="website">Website/Social Media</label>
-							<input
-								type="text"
-								id="website"
-								bind:value={formData.website}
-								placeholder="www.example.com"
-								disabled={isSubmitting}
-							/>
-						</div>
+				<div class="grid sm:grid-cols-2 gap-4">
+					<div class="sm:col-span-2 lg:col-span-1">
+						<label for="name" class="form-label">
+							Your Name <span style="color: var(--color-error);">*</span>
+						</label>
+						<input
+							type="text"
+							id="name"
+							bind:value={formData.name}
+							onblur={() => handleFieldBlur('name', formData.name)}
+							placeholder="John Smith"
+							class="form-input {hasFieldError('name') ? 'error' : ''}"
+							disabled={isSubmitting}
+							autocomplete="name"
+						/>
+						{#if getFieldError('name')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('name')}</p>
+						{/if}
 					</div>
-				</section>
-				
-				<!-- Business Information -->
-				<section class="form-section">
-					<h2 class="section-title">Business Information</h2>
 					
-					<div class="form-grid">
-						<div class="form-group">
-							<label for="businessName">Business Name</label>
-							<input
-								type="text"
-								id="businessName"
-								bind:value={formData.businessName}
-								placeholder="Adventure Tours Co."
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="location" class="required">City/Location</label>
-							<input
-								type="text"
-								id="location"
-								bind:value={formData.location}
-								placeholder="Barcelona, Spain"
-								required
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="country" class="required">Country Code</label>
-							<input
-								type="text"
-								id="country"
-								bind:value={formData.country}
-								placeholder="ES"
-								maxlength="2"
-								required
-								disabled={isSubmitting}
-								style="text-transform: uppercase"
-								oninput={(e) => {
-									const target = e.target as HTMLInputElement;
-									target.value = target.value.toUpperCase();
-								}}
-							/>
-							<p class="field-hint">2-letter country code (e.g., US, GB, ES)</p>
-						</div>
-						
-						<div class="form-group">
-							<label for="yearsExperience" class="required">Years in Business</label>
-							<input
-								type="number"
-								id="yearsExperience"
-								bind:value={formData.yearsExperience}
-								min="0"
-								max="50"
-								required
-								disabled={isSubmitting}
-							/>
-						</div>
-						
-						<div class="form-group">
-							<label for="teamSize" class="required">Team Size</label>
-							<input
-								type="number"
-								id="teamSize"
-								bind:value={formData.teamSize}
-								min="1"
-								max="100"
-								required
-								disabled={isSubmitting}
-							/>
-							<p class="field-hint">Including yourself</p>
-						</div>
+					<div class="sm:col-span-2 lg:col-span-1">
+						<label for="email" class="form-label">
+							Email Address <span style="color: var(--color-error);">*</span>
+						</label>
+						<input
+							type="text"
+							id="email"
+							bind:value={formData.email}
+							onblur={() => handleFieldBlur('email', formData.email)}
+							oninput={() => {
+								// Real-time validation for email
+								if (touchedFields.has('email')) {
+									handleFieldBlur('email', formData.email);
+								}
+							}}
+							placeholder="john@example.com"
+							class="form-input {hasFieldError('email') ? 'error' : ''}"
+							disabled={isSubmitting}
+							autocomplete="email"
+						/>
+						{#if getFieldError('email')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('email')}</p>
+						{/if}
 					</div>
-				</section>
-				
-				<!-- Screening Questions -->
-				<section class="form-section">
-					<h2 class="section-title">About Your Tours</h2>
 					
-					<div class="form-group">
-						<label for="tourTypes" class="required">What types of tours do you offer?</label>
+					<div class="sm:col-span-2">
+						<label for="businessName" class="form-label">
+							Business Name <span class="text-sm" style="color: var(--text-tertiary);">(optional)</span>
+						</label>
+						<input
+							type="text"
+							id="businessName"
+							bind:value={formData.businessName}
+							placeholder="Adventure Tours Co."
+							class="form-input"
+							disabled={isSubmitting}
+							autocomplete="organization"
+						/>
+					</div>
+					
+					<div class="sm:col-span-2">
+						<label for="location" class="form-label">
+							Your Location <span style="color: var(--color-error);">*</span>
+						</label>
+						<input
+							type="text"
+							id="location"
+							bind:value={formData.location}
+							oninput={(e) => handleLocationInput((e.target as HTMLInputElement).value)}
+							onblur={() => handleFieldBlur('location', formData.location)}
+							placeholder="Barcelona, Spain or just Spain"
+							class="form-input {hasFieldError('location') ? 'error' : ''}"
+							disabled={isSubmitting}
+							autocomplete="address-level2"
+						/>
+						{#if getFieldError('location')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('location')}</p>
+						{/if}
+					</div>
+				</div>
+			</div>
+			
+			<!-- About Your Tours -->
+			<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="flex items-center gap-3 mb-4 sm:mb-6">
+					<MapPin class="h-5 w-5" style="color: var(--color-primary-600);" />
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">About Your Tours</h2>
+				</div>
+				
+				<div class="grid sm:grid-cols-2 gap-4">
+					<div class="sm:col-span-2">
+						<label for="tourTypes" class="form-label">
+							What tours do you offer? <span style="color: var(--color-error);">*</span>
+						</label>
 						<textarea
 							id="tourTypes"
 							bind:value={formData.tourTypes}
-							placeholder="Walking tours, food tours, adventure activities..."
+							onblur={() => handleFieldBlur('tourTypes', formData.tourTypes)}
+							placeholder="Walking tours, food experiences, adventure activities..."
 							rows="3"
-							required
+							class="form-input {hasFieldError('tourTypes') ? 'error' : ''}"
 							disabled={isSubmitting}
 						></textarea>
+						{#if getFieldError('tourTypes')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('tourTypes')}</p>
+						{/if}
 					</div>
 					
-					<div class="form-group">
-						<label for="tourFrequency" class="required">How many tours do you typically run?</label>
+					<div>
+						<label for="tourVolume" class="form-label">
+							Business Size <span style="color: var(--color-error);">*</span>
+						</label>
 						<select
-							id="tourFrequency"
-							bind:value={formData.tourFrequency}
-							required
+							id="tourVolume"
+							bind:value={formData.tourVolume}
+							onblur={() => handleFieldBlur('tourVolume', formData.tourVolume)}
+							class="form-select {hasFieldError('tourVolume') ? 'error' : ''}"
 							disabled={isSubmitting}
 						>
-							<option value="">Select frequency...</option>
-							{#each frequencyOptions as option}
-								<option value={option}>{option}</option>
+							<option value="">Select your tour volume...</option>
+							{#each tourVolumeOptions as option}
+								<option value={option.value}>{option.label}</option>
 							{/each}
 						</select>
+						{#if getFieldError('tourVolume')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('tourVolume')}</p>
+						{/if}
 					</div>
 					
-					<div class="form-group">
-						<label for="currentBookingMethod" class="required">
-							How do you currently manage bookings?
+					<div>
+						<label for="website" class="form-label">
+							Website or Social Media <span class="text-sm" style="color: var(--text-tertiary);">(optional)</span>
 						</label>
-						<textarea
-							id="currentBookingMethod"
-							bind:value={formData.currentBookingMethod}
-							placeholder="Paper forms, WhatsApp, existing booking software..."
-							rows="3"
-							required
+						<input
+							type="text"
+							id="website"
+							bind:value={formData.website}
+							placeholder="www.example.com or @yourtours"
+							class="form-input"
 							disabled={isSubmitting}
-						></textarea>
+						/>
 					</div>
 					
-					<div class="form-group">
-						<label for="biggestChallenge" class="required">
-							What's your biggest challenge with tour management?
+					<div class="sm:col-span-2">
+						<label for="biggestChallenge" class="form-label">
+							What's your biggest booking challenge? <span style="color: var(--color-error);">*</span>
 						</label>
 						<textarea
 							id="biggestChallenge"
 							bind:value={formData.biggestChallenge}
-							placeholder="Last-minute cancellations, payment processing, customer communication..."
+							onblur={() => handleFieldBlur('biggestChallenge', formData.biggestChallenge)}
+							placeholder="Last-minute cancellations, payment processing, managing availability..."
 							rows="3"
-							required
+							class="form-input {hasFieldError('biggestChallenge') ? 'error' : ''}"
 							disabled={isSubmitting}
 						></textarea>
-					</div>
-				</section>
-				
-				<!-- Beta Contribution -->
-				<section class="form-section">
-					<h2 class="section-title">Beta Program Contribution</h2>
-					
-					<div class="form-group">
-						<label for="betaContribution" class="required">
-							How would you contribute to the beta program?
-						</label>
-						<textarea
-							id="betaContribution"
-							bind:value={formData.betaContribution}
-							placeholder="I can provide feedback on mobile features, test with real customers, participate in weekly calls..."
-							rows="4"
-							required
-							disabled={isSubmitting}
-						></textarea>
-						<p class="field-hint">
-							We're looking for guides who can actively test features and provide detailed feedback
-						</p>
-					</div>
-					
-					<div class="form-group">
-						<label class="required">Which features are you most interested in?</label>
-						<div class="checkbox-grid">
-							{#each featureOptions as feature}
-								<label class="checkbox-label">
-									<input
-										type="checkbox"
-										checked={formData.interestedFeatures.includes(feature.value)}
-										onchange={() => toggleFeature(feature.value)}
-										disabled={isSubmitting}
-									/>
-									<span>{feature.label}</span>
-								</label>
-							{/each}
-						</div>
-					</div>
-					
-					<div class="form-group">
-						<label class="checkbox-label standalone">
-							<input
-								type="checkbox"
-								bind:checked={formData.availabilityForFeedback}
-								disabled={isSubmitting}
-							/>
-							<span>I'm available for weekly feedback sessions and testing new features</span>
-						</label>
-					</div>
-				</section>
-				
-				<!-- Additional Information -->
-				<section class="form-section">
-					<h2 class="section-title">How Did You Hear About Us?</h2>
-					
-					<div class="form-group">
-						<label for="referralSource">Referral Source</label>
-						<input
-							type="text"
-							id="referralSource"
-							bind:value={formData.referralSource}
-							placeholder="Social media, friend, search engine..."
-							disabled={isSubmitting}
-						/>
-					</div>
-				</section>
-				
-				<!-- Submit Button -->
-				<div class="form-actions">
-					<button 
-						type="submit" 
-						class="button-primary button--large"
-						disabled={isSubmitting}
-					>
-						{#if isSubmitting}
-							<Loader class="w-5 h-5 animate-spin" />
-							<span>Submitting...</span>
-						{:else}
-							<span>Submit Application</span>
+						{#if getFieldError('biggestChallenge')}
+							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('biggestChallenge')}</p>
 						{/if}
-					</button>
-					
-					<p class="submit-note">
-						We'll review all applications and notify selected beta testers by September 30, 2025
+					</div>
+				</div>
+			</div>
+			
+			<!-- Beta Program Info -->
+			<div class="rounded-xl p-4 sm:p-6" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+				<h3 class="font-semibold mb-3" style="color: var(--color-primary-900);">What you'll get as a beta tester:</h3>
+				<ul class="space-y-2 text-sm" style="color: var(--color-primary-700);">
+					<li class="flex items-start gap-2">
+						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+						<span>Free access during beta period</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+						<span>30% lifetime discount after launch</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+						<span>Direct influence on product features</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
+						<span>Priority support and onboarding</span>
+					</li>
+				</ul>
+			</div>
+			
+			<!-- Submit Section -->
+			<div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+				<div class="text-center sm:text-left">
+					<p class="text-sm" style="color: var(--text-secondary);">
+						Takes 2 minutes • {formCompletion.completed}/{formCompletion.total} fields
 					</p>
 				</div>
-			</form>
+				
+				<button 
+					type="submit" 
+					class="button-primary button--gap button--large w-full sm:w-auto"
+					disabled={isSubmitting || !formCompletion.isComplete}
+				>
+					{#if isSubmitting}
+						<Loader class="w-5 h-5 animate-spin" />
+						<span>Submitting...</span>
+					{:else}
+						<Send class="h-5 w-5" />
+						<span>Submit Application</span>
+					{/if}
+				</button>
+			</div>
+		</form>
 		{/if}
 	</div>
-</div>
+</PageContainer>
 
-<style>
-	.apply-page {
-		min-height: 100vh;
-		padding: 2rem 0 4rem;
-		background: var(--bg-primary);
-	}
-	
-	.container {
-		max-width: 800px;
-		margin: 0 auto;
-		padding: 0 1.5rem;
-	}
-	
-	/* Header */
-	.header-section {
-		text-align: center;
-		margin-bottom: 3rem;
-	}
-	
-	.beta-badge-large {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1.5rem;
-		background: var(--primary);
-		color: white;
-		border-radius: 9999px;
-		font-size: 1rem;
-		font-weight: 600;
-		margin-bottom: 1.5rem;
-	}
-	
-	.page-title {
-		font-size: 2.5rem;
-		font-weight: 700;
+<style lang="postcss">
+	/* Ensure form styles work correctly in this component */
+	:global(.form-input),
+	:global(.form-select),
+	:global(.form-textarea) {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-xs);
+		font-size: var(--text-sm);
+		transition: all var(--transition-fast) ease;
+		background-color: var(--bg-input);
 		color: var(--text-primary);
-		margin-bottom: 1rem;
 	}
-	
-	.page-description {
-		font-size: 1.125rem;
-		color: var(--text-secondary);
-		line-height: 1.6;
-		max-width: 600px;
-		margin: 0 auto;
+
+	:global(.form-select) {
+		padding-right: 2.5rem;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right 0.75rem center;
+		background-repeat: no-repeat;
+		background-size: 1.25em 1.25em;
+		appearance: none;
+		cursor: pointer;
 	}
-	
-	/* Messages */
-	.success-message,
-	.error-message {
-		display: flex;
-		align-items: flex-start;
-		gap: 1rem;
-		padding: 1rem 1.25rem;
-		border-radius: 0.75rem;
-		margin-bottom: 2rem;
+
+	:global(.form-input:focus),
+	:global(.form-select:focus),
+	:global(.form-textarea:focus) {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: var(--focus-shadow-primary);
 	}
-	
-	.success-message {
-		background: var(--success-light);
-		color: var(--success);
-		border: 1px solid var(--success);
+
+	:global(.form-input.error),
+	:global(.form-select.error),
+	:global(.form-textarea.error) {
+		border-color: var(--color-error);
 	}
-	
-	.success-message h3 {
-		font-size: 1.125rem;
-		font-weight: 600;
-		margin-bottom: 0.25rem;
+
+	:global(.form-input.error:focus),
+	:global(.form-select.error:focus),
+	:global(.form-textarea.error:focus) {
+		border-color: var(--color-error);
+		box-shadow: var(--focus-shadow-error);
 	}
-	
-	.error-message {
-		background: var(--danger-light);
-		color: var(--danger);
-		border: 1px solid var(--danger);
-	}
-	
-	/* Form */
-	.application-form {
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-color);
-		border-radius: 1rem;
-		padding: 2rem;
-	}
-	
-	.form-section {
-		margin-bottom: 2.5rem;
-	}
-	
-	.form-section:last-of-type {
-		margin-bottom: 2rem;
-	}
-	
-	.section-title {
-		font-size: 1.375rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 1.5rem;
-		padding-bottom: 0.75rem;
-		border-bottom: 1px solid var(--border-color);
-	}
-	
-	.form-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1.5rem;
-	}
-	
-	.form-group {
-		display: flex;
-		flex-direction: column;
-	}
-	
-	.form-group label {
-		font-size: 0.875rem;
+
+	:global(.form-label) {
+		display: block;
+		font-size: var(--text-sm);
 		font-weight: 500;
 		color: var(--text-primary);
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.375rem;
 	}
-	
-	.form-group label.required::after {
-		content: ' *';
-		color: var(--danger);
-	}
-	
-	.form-group input,
-	.form-group select,
-	.form-group textarea {
-		padding: 0.625rem 0.875rem;
-		border: 1px solid var(--border-color);
-		border-radius: 0.5rem;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		font-size: 0.875rem;
-		transition: all 0.2s ease;
-	}
-	
-	.form-group input:focus,
-	.form-group select:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: var(--primary);
-		box-shadow: 0 0 0 3px var(--primary-light);
-	}
-	
-	.form-group input:disabled,
-	.form-group select:disabled,
-	.form-group textarea:disabled {
-		opacity: 0.6;
+
+	:global(.form-input:disabled),
+	:global(.form-select:disabled),
+	:global(.form-textarea:disabled) {
+		background-color: var(--bg-tertiary);
+		color: var(--text-tertiary);
 		cursor: not-allowed;
+		opacity: 0.6;
 	}
-	
-	.form-group textarea {
+
+	/* Dark mode select arrow */
+	:global([data-theme="dark"] .form-select) {
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23c9d1d9' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+	}
+
+	/* Ensure textarea resizing works */
+	:global(.form-textarea) {
 		resize: vertical;
-		min-height: 80px;
+		min-height: 60px;
 		font-family: inherit;
 		line-height: 1.5;
 	}
 	
-	.field-hint {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-		margin-top: 0.25rem;
-	}
-	
-	/* Checkboxes */
-	.checkbox-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 0.75rem;
-	}
-	
-	.checkbox-label {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		cursor: pointer;
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		padding: 0.5rem;
-		border-radius: 0.375rem;
-		transition: background 0.2s ease;
-	}
-	
-	.checkbox-label:hover {
-		background: var(--bg-tertiary);
-	}
-	
-	.checkbox-label.standalone {
-		padding: 0.75rem;
-		background: var(--bg-tertiary);
-		border: 1px solid var(--border-color);
-		border-radius: 0.5rem;
-		margin-top: 0.5rem;
-	}
-	
-	.checkbox-label input[type="checkbox"] {
-		width: 1rem;
-		height: 1rem;
-		cursor: pointer;
-	}
-	
-	/* Form Actions */
-	.form-actions {
-		text-align: center;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--border-color);
-	}
-	
-	.form-actions button {
-		min-width: 200px;
-	}
-	
-	.submit-note {
-		margin-top: 1rem;
-		font-size: 0.875rem;
-		color: var(--text-tertiary);
-	}
-	
-	/* Mobile */
+	/* Mobile optimizations */
 	@media (max-width: 640px) {
-		.apply-page {
-			padding: 1.5rem 0 3rem;
+		:global(.form-input),
+		:global(.form-select),
+		:global(.form-textarea) {
+			font-size: 1rem; /* Prevent zoom on iOS */
 		}
-		
-		.page-title {
-			font-size: 2rem;
-		}
-		
-		.application-form {
-			padding: 1.5rem;
-		}
-		
-		.form-grid {
-			grid-template-columns: 1fr;
-			gap: 1.25rem;
-		}
-		
-		.checkbox-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-	
-	/* Dark mode adjustments */
-	:global(.dark) .application-form {
-		background: var(--bg-secondary);
-	}
-	
-	:global(.dark) .form-group input,
-	:global(.dark) .form-group select,
-	:global(.dark) .form-group textarea {
-		background: var(--bg-primary);
 	}
 </style>
