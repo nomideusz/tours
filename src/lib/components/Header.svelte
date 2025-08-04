@@ -9,6 +9,7 @@
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import BookOpen from 'lucide-svelte/icons/book-open';
+	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 
@@ -129,6 +130,11 @@
 					size="xl" 
 					textSize="large" 
 				/>
+				<!-- Beta Badge -->
+				<div class="beta-badge">
+					<FlaskConical class="w-3 h-3" />
+					<span>Beta</span>
+				</div>
 			</div>
 
 			<!-- Desktop Navigation -->
@@ -293,7 +299,7 @@
 	/* Site Header */
 	.site-header {
 		position: fixed;
-		top: 3.5rem;
+		top: 0;
 		left: 0;
 		right: 0;
 		z-index: var(--z-70);
@@ -354,7 +360,28 @@
 	.site-header-brand {
 		display: flex;
 		align-items: center;
+		gap: 0.75rem;
 		height: 100%;
+	}
+
+	/* Beta Badge */
+	.beta-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.125rem 0.5rem;
+		background: var(--primary);
+		color: white;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		white-space: nowrap;
+		opacity: 0.9;
+		transition: opacity var(--transition-base) ease;
+	}
+
+	.beta-badge:hover {
+		opacity: 1;
 	}
 
 	/* Desktop Navigation */
@@ -385,7 +412,7 @@
 		overflow: hidden;
 	}
 
-	/* Subtle coral accent on hover - matches HeroSection */
+	/* Subtle accent on hover */
 	.nav-link::before {
 		content: '';
 		position: absolute;
@@ -393,7 +420,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -651,7 +678,7 @@
 		overflow: hidden;
 	}
 
-	/* Subtle coral accent on hover - matches HeroSection */
+	/* Subtle accent on hover */
 	.mobile-nav-link::before {
 		content: '';
 		position: absolute;
@@ -659,7 +686,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -766,7 +793,7 @@
 	}
 
 	[data-theme="dark"] .nav-link::before {
-		background: var(--color-primary-500);
+		background: var(--primary);
 	}
 
 	/* Dark mode auth section */
@@ -829,7 +856,7 @@
 	}
 
 	[data-theme="dark"] .mobile-nav-link::before {
-		background: var(--color-primary-500);
+		background: var(--primary);
 	}
 
 	/* Dark mode mobile auth */
@@ -864,6 +891,12 @@
 	}
 
 	/* Responsive adjustments */
+	@media (max-width: 640px) {
+		.beta-badge {
+			display: none; /* Hide beta badge on small mobile to save space */
+		}
+	}
+
 	@media (max-width: 480px) {
 		.site-header-container {
 			padding: 0 1rem;

@@ -445,7 +445,7 @@
 					</button>
 					
 					<p class="submit-note">
-						We'll review all applications and notify selected beta testers by January 20, 2025
+						We'll review all applications and notify selected beta testers by September 30, 2025
 					</p>
 				</div>
 			</form>

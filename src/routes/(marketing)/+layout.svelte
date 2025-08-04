@@ -7,12 +7,13 @@
 	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
-	import BetaBanner from '$lib/components/BetaBanner.svelte';
+
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
 	import '$lib/styles/auth.css';
 	import '$lib/styles/variables.css';
+	import '$lib/styles/cards.css';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -127,11 +128,7 @@
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
 	/>
-	
-	<!-- Beta Program Banner -->
-	<BetaBanner />
-
-	<main class="flex-1 pt-[12rem] relative z-10"> <!-- Increased padding for Header + BetaBanner -->
+	<main class="flex-1 pt-[8.5rem] relative z-10"> <!-- Standard padding for Header only -->
 		{#if browser && data?.queryClient}
 			<QueryClientProvider client={data.queryClient}>
 				{@render children()}
