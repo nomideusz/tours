@@ -7,7 +7,7 @@
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	
 	function handleCreateTour() {
-		goto('/auth/register');
+		goto('/beta/apply');
 	}
 </script>
 
@@ -26,25 +26,27 @@
 <div class="grid md:grid-cols-3 gap-8">
 	<!-- Step 1: Create Your Tour -->
 	<div class="relative">
-		<div class="professional-card h-full flex flex-col">
+		<div class="card card--elevated step-card h-full flex flex-col">
 			<div class="step-number-container mb-6 mx-auto">
 				<div class="step-number step-number-coral">1</div>
 			</div>
-			<h3 class="step-title text-center mb-4">Create Your Tour</h3>
-			<p class="step-description text-center flex-grow mb-6">
+			<h3 class="card-title text-center mb-4">Create Your Tour</h3>
+			<p class="card-description text-center pb-6">
 				Add your tour details, set your price, and choose when you're available. Takes 2 minutes.
 			</p>
-			<div class="tour-preview-card">
-				<div class="space-y-3 text-sm">
-					<div class="flex justify-between items-center">
-						<span class="text-primary font-medium">Walking Tour of Old Town</span>
-						<span class="font-bold text-primary">€25</span>
-					</div>
-					<div class="text-secondary text-xs">Duration: 2 hours</div>
-					<div class="flex gap-2 mt-3 justify-center">
-						<span class="time-slot">10:00 AM</span>
-						<span class="time-slot">2:00 PM</span>
-						<span class="time-slot">5:00 PM</span>
+			<div class="step-content-area flex-grow">
+				<div class="card-item tour-preview-item">
+					<div class="space-y-3 text-sm">
+						<div class="flex justify-between items-center">
+							<span class="text-primary font-medium">Walking Tour of Old Town</span>
+							<span class="font-bold text-primary">€25</span>
+						</div>
+						<div class="text-secondary text-xs">Duration: 2 hours</div>
+						<div class="flex gap-2 mt-3 justify-center">
+							<span class="time-slot">10:00 AM</span>
+							<span class="time-slot">2:00 PM</span>
+							<span class="time-slot">5:00 PM</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -52,60 +54,64 @@
 		<!-- Professional Arrow -->
 		<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
 			<div class="professional-arrow">
-				<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
+				<ChevronRight class="w-4 h-4 text-primary" strokeWidth={2.5} />
 			</div>
 		</div>
 	</div>
 	
 	<!-- Step 2: Get Your QR Code -->
 	<div class="relative">
-		<div class="professional-card h-full flex flex-col">
+		<div class="card card--elevated step-card h-full flex flex-col">
 			<div class="step-number-container mb-6 mx-auto">
 				<div class="step-number step-number-orange">2</div>
 			</div>
-			<h3 class="step-title text-center mb-4">Get Your QR Code</h3>
-			<p class="step-description text-center flex-grow mb-6">
+			<h3 class="card-title text-center mb-4">Get Your QR Code</h3>
+			<p class="card-description text-center pb-6">
 				Download your unique QR code. Print it on flyers, business cards, or display it anywhere.
 			</p>
-			<div class="qr-showcase-container">
-				<div class="qr-code-display">
-					<img 
-						src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://zaur.app/?demo=true"
-						alt="QR Code - Scan to see Zaur in action"
-						class="w-20 h-20"
-						title="Scan me to see Zaur in action!"
-					/>
+			<div class="step-content-area flex-grow">
+				<div class="card-item qr-showcase-item">
+					<div class="qr-code-display">
+						<img 
+							src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://zaur.app/?demo=true"
+							alt="QR Code - Scan to see Zaur in action"
+							class="w-20 h-20"
+							title="Scan me to see Zaur in action!"
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
 		<!-- Professional Arrow -->
 		<div class="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
 			<div class="professional-arrow">
-				<ChevronRight class="w-4 h-4 text-coral" strokeWidth={2.5} />
+				<ChevronRight class="w-4 h-4 text-primary" strokeWidth={2.5} />
 			</div>
 		</div>
 	</div>
 	
 	<!-- Step 3: Get Instant Bookings -->
-	<div class="professional-card h-full flex flex-col">
+	<div class="card card--elevated step-card h-full flex flex-col">
 		<div class="step-number-container mb-6 mx-auto">
 			<div class="step-number step-number-success">
 				<Check class="w-8 h-8 text-white" strokeWidth={2.5} />
 			</div>
 		</div>
-		<h3 class="step-title text-center mb-4">Get Instant Bookings</h3>
-		<p class="step-description text-center flex-grow mb-6">
+		<h3 class="card-title text-center mb-4">Get Instant Bookings</h3>
+		<p class="card-description text-center pb-6">
 			Tourists scan your code, pick a time, pay securely, and you get a notification. That's it!
 		</p>
-		<div class="booking-notification">
-			<div class="flex items-start gap-4">
-				<div class="notification-icon">
-					<Euro class="w-6 h-6 text-white" strokeWidth={2} />
-				</div>
-				<div class="notification-content">
-					<div class="notification-title">New booking received!</div>
-					<div class="notification-message">Sarah booked Walking Tour • +€25</div>
-					<div class="notification-time">Just now</div>
+		<div class="step-content-area flex-grow">
+			<div class="card-item booking-notification-item">
+				<div class="flex items-start gap-4">
+					<div class="notification-icon">
+						<Euro class="w-6 h-6 text-white" strokeWidth={2} />
+					</div>
+					<div class="notification-content">
+						<div class="notification-title">New booking received!</div>
+						<div class="notification-message">Sarah booked Walking Tour • +€25</div>
+						<div class="notification-time">Just now</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -116,7 +122,7 @@
 <div class="text-center mt-16">
 	<p class="text-secondary mb-6 text-lg">Ready to start getting bookings?</p>
 	<button onclick={handleCreateTour} class="button-primary button--large button--gap">
-		Create Your First Tour
+		Apply for Beta Access
 		<ArrowRight class="w-4 h-4" strokeWidth={2} />
 	</button>
 </div>
@@ -126,7 +132,7 @@
 	.professional-badge {
 		display: inline-block;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--primary);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -135,41 +141,49 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	/* Professional cards - matches HeroSection trust cards */
-	.professional-card {
+	/* Step cards - Enhanced with card system */
+	.step-card {
+		/* Card system handles base styling */
 		text-align: center;
-		padding: 2rem 1.5rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		transition: all var(--transition-base) ease;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
+		overflow: visible; /* Allow step numbers to extend above */
+		min-height: 350px; /* Ensure consistent minimum height */
 	}
 	
-	/* Subtle accent line on hover - matches HeroSection */
-	.professional-card::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
+	/* Step content area for consistent height */
+	.step-content-area {
+		display: flex;
+		flex-direction: column;
+		justify-content: center; /* Center content vertically */
+		min-height: 120px; /* Consistent content area height */
+	}
+
+	/* Make all step card items consistent height */
+	.tour-preview-item,
+	.qr-showcase-item,
+	.booking-notification-item {
+		min-height: 100px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Tour preview and QR showcase stack content vertically */
+	.tour-preview-item,
+	.qr-showcase-item {
+		flex-direction: column;
+	}
+
+	/* Booking notification keeps horizontal layout */
+	.booking-notification-item {
+		flex-direction: row;
+	}
+
+	/* Ensure tour preview content flows properly */
+	.tour-preview-item > * {
+		width: 100%;
 	}
 	
-	.professional-card:hover::before {
-		transform: scaleX(1);
-	}
-	
-	.professional-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-lg);
-		border-color: var(--border-secondary);
-	}
+	/* Top border animation removed for cleaner hover effect */
 
 	/* Step Number Styling */
 	.step-number-container {
@@ -190,37 +204,18 @@
 	}
 
 	.step-number-coral {
-		background: var(--color-coral-500);
+		background: var(--primary);
 	}
 
 	.step-number-orange {
-		background: var(--color-warm-orange-500);
+		background: var(--warning);
 	}
 
 	.step-number-success {
-		background: var(--color-pro-teal-500);
+		background: var(--success);
 	}
 
-	/* Step Content Styling */
-	.step-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.step-description {
-		color: var(--text-secondary);
-		line-height: 1.6;
-	}
-
-	/* Tour Preview Card - matches HeroSection promo card */
-	.tour-preview-card {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: 1.5rem;
-		box-shadow: var(--shadow-md);
-	}
+	/* Card system handles most styling for tour preview, QR showcase, and booking notification */
 
 	.time-slot {
 		padding: 0.375rem 0.75rem;
@@ -232,16 +227,7 @@
 		font-weight: 500;
 	}
 
-	/* QR Code Showcase */
-	.qr-showcase-container {
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: 1.5rem;
-		display: flex;
-		justify-content: center;
-		box-shadow: var(--shadow-sm);
-	}
+	/* QR Code Showcase - inherits consistent height and centering from base rule above */
 
 	.qr-code-display {
 		background: white;
@@ -251,27 +237,19 @@
 		border: 1px solid var(--border-secondary);
 	}
 
-	/* Make QR icon visible in dark mode */
-	@media (prefers-color-scheme: dark) {
-		.qr-code-display .lucide-icon.lucide-qr-code.text-secondary {
-			color: #000000 !important;
-			stroke: #000000 !important;
-		}
-	}
+	/* QR code image styling for dark mode compatibility */
 
-	/* Booking Notification */
-	.booking-notification {
+	/* Booking Notification - enhanced with card item */
+	.booking-notification-item {
+		border: 2px solid var(--primary);
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
-		border-radius: var(--radius-lg);
-		padding: 1.25rem;
-		box-shadow: var(--shadow-md);
+		/* Inherits consistent height and centering from base rule above */
 	}
 
 	.notification-icon {
 		width: 3rem;
 		height: 3rem;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -292,7 +270,7 @@
 	}
 
 	.notification-time {
-		color: var(--color-coral-600);
+		color: var(--primary);
 		font-size: 0.75rem;
 		margin-top: 0.25rem;
 		font-weight: 500;
@@ -313,18 +291,34 @@
 
 	/* Responsive Design */
 	@media (max-width: 768px) {
+		.step-card {
+			min-height: auto; /* Remove fixed height on mobile */
+		}
+		
+		.step-content-area {
+			min-height: 100px; /* Smaller content area on mobile */
+		}
+
+		.tour-preview-item,
+		.qr-showcase-item,
+		.booking-notification-item {
+			min-height: 80px; /* Smaller consistent height on mobile */
+		}
+
+		/* Maintain layout directions on mobile */
+		.tour-preview-item,
+		.qr-showcase-item {
+			flex-direction: column;
+		}
+
+		.booking-notification-item {
+			flex-direction: row;
+		}
+
 		.step-number {
 			width: 3rem;
 			height: 3rem;
 			font-size: 1.25rem;
-		}
-
-		.step-title {
-			font-size: 1.125rem;
-		}
-
-		.step-description {
-			font-size: 0.9rem;
 		}
 
 		.time-slot {

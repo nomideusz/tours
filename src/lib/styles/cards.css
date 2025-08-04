@@ -1,0 +1,424 @@
+/* ===== CARD SYSTEM ===== */
+/* Reusable card components based on compact-onboarding patterns */
+
+/* Base Card */
+.card {
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-primary);
+	border-radius: 1rem;
+	padding: 1.5rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s ease;
+}
+
+.card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Card with gradient background (like compact-onboarding) */
+.card--gradient {
+	background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-75) 100%);
+	border: 1px solid var(--color-primary-200);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Subtle pattern overlay for gradient cards */
+.card--gradient::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+	            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+	pointer-events: none;
+}
+
+/* Ensure card content stays above overlay */
+.card--gradient > *,
+.card-item--pattern > * {
+	position: relative;
+	z-index: 1;
+}
+
+/* Compact card variant */
+.card--compact {
+	padding: 1rem;
+	border-radius: 0.75rem;
+}
+
+/* Large card variant */
+.card--large {
+	padding: 2rem;
+	border-radius: 1.25rem;
+}
+
+/* Primary colored card */
+.card--primary {
+	background: var(--color-primary-50);
+	border-color: var(--color-primary-200);
+}
+
+/* Success colored card */
+.card--success {
+	background: var(--color-success-50);
+	border-color: var(--color-success-200);
+}
+
+/* Warning colored card */
+.card--warning {
+	background: var(--color-warning-50);
+	border-color: var(--color-warning-200);
+}
+
+/* Danger colored card */
+.card--danger {
+	background: var(--color-danger-50);
+	border-color: var(--color-danger-200);
+}
+
+/* Card without border */
+.card--borderless {
+	border: none;
+}
+
+/* Card with enhanced shadow */
+.card--elevated {
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.card--elevated:hover {
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+/* ===== CARD STRUCTURE ===== */
+
+/* Card Header */
+.card-header {
+	margin-bottom: 1.5rem;
+}
+
+.card-header--compact {
+	margin-bottom: 1rem;
+}
+
+.card-header--center {
+	text-align: center;
+}
+
+/* Card Content */
+.card-content {
+	flex: 1;
+}
+
+/* Card Footer */
+.card-footer {
+	margin-top: 1.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--border-primary);
+}
+
+.card-footer--compact {
+	margin-top: 1rem;
+	padding-top: 1rem;
+}
+
+.card-footer--center {
+	text-align: center;
+}
+
+/* ===== CARD TITLES AND TEXT ===== */
+
+.card-title {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+	line-height: 1.3;
+}
+
+.card-title--large {
+	font-size: 1.5rem;
+}
+
+.card-title--small {
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.card-description {
+	color: var(--text-secondary);
+	font-size: 0.875rem;
+	line-height: 1.5;
+	margin: 0;
+}
+
+.card-description--large {
+	font-size: 1rem;
+}
+
+.card-description--small {
+	font-size: 0.75rem;
+}
+
+/* ===== CARD ITEMS (nested cards like compact-step) ===== */
+
+.card-item {
+	background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+	border: 1px solid var(--border-primary);
+	border-radius: 1rem;
+	padding: 1.25rem;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	position: relative;
+	overflow: hidden;
+}
+
+.card-item:hover {
+	border-color: var(--color-primary-300);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Pattern overlay for card items */
+.card-item--pattern::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%);
+	pointer-events: none;
+}
+
+.card-item--compact {
+	padding: 0.75rem;
+	border-radius: 0.75rem;
+}
+
+.card-item--center {
+	text-align: center;
+}
+
+/* Card Item Header */
+.card-item-header {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.card-item-header--center {
+	justify-content: center;
+}
+
+.card-item-icon {
+	width: 1.25rem;
+	height: 1.25rem;
+	color: var(--color-primary-600);
+	flex-shrink: 0;
+}
+
+.card-item-title {
+	font-weight: 600;
+	color: var(--text-primary);
+	font-size: 0.875rem;
+	margin: 0;
+}
+
+.card-item-description {
+	color: var(--text-secondary);
+	font-size: 0.75rem;
+	margin: 0 0 0.75rem 0;
+	line-height: 1.4;
+}
+
+/* ===== CARD GRIDS ===== */
+
+.card-grid {
+	display: grid;
+	gap: 1rem;
+}
+
+.card-grid--2 {
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.card-grid--3 {
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card-grid--4 {
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.card-grid--compact {
+	gap: 0.75rem;
+}
+
+.card-grid--loose {
+	gap: 1.5rem;
+}
+
+/* ===== CARD STATES ===== */
+
+.card-success,
+.card-item-success {
+	color: var(--color-success-600);
+	font-size: 0.75rem;
+	margin-top: 0.5rem;
+	font-weight: 500;
+}
+
+.card-error,
+.card-item-error {
+	color: var(--color-danger-600);
+	font-size: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.card-warning,
+.card-item-warning {
+	color: var(--color-warning-600);
+	font-size: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.card-info,
+.card-item-info {
+	color: var(--color-primary-600);
+	font-size: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.card-note,
+.card-item-note {
+	color: var(--text-tertiary);
+	font-size: 0.7rem;
+	margin-top: 0.5rem;
+	text-align: center;
+	font-style: italic;
+}
+
+/* ===== CARD ACTIONS ===== */
+
+.card-action {
+	background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-50) 100%);
+	border: 1px solid var(--color-primary-200);
+	border-radius: 1rem;
+	padding: 2rem 1.5rem;
+	text-align: center;
+	position: relative;
+	overflow: hidden;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+	transition: all 0.3s ease;
+}
+
+.card-action:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.card-action--compact {
+	padding: 1.5rem 1rem;
+}
+
+/* ===== CARD DETAILS ===== */
+
+.card-details {
+	margin-top: 1rem;
+	padding: 1rem;
+	background: var(--color-gray-50);
+	border-radius: 0.5rem;
+	border: 1px solid var(--color-gray-200);
+}
+
+.card-details p {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.card-details p + p {
+	margin-top: 0.5rem;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 768px) {
+	.card {
+		padding: 1rem;
+		border-radius: 0.75rem;
+	}
+	
+	.card--large {
+		padding: 1.5rem;
+	}
+	
+	.card-grid--2,
+	.card-grid--3,
+	.card-grid--4 {
+		grid-template-columns: 1fr;
+	}
+	
+	.card-title {
+		font-size: 1.125rem;
+	}
+	
+	.card-title--large {
+		font-size: 1.25rem;
+	}
+	
+	.card-action {
+		padding: 1.5rem 1rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.card {
+		padding: 0.875rem;
+	}
+	
+	.card-item {
+		padding: 1rem;
+	}
+	
+	.card-item--compact {
+		padding: 0.625rem;
+	}
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+
+:global(.dark) .card {
+	background: var(--bg-secondary);
+	border-color: var(--border-primary);
+}
+
+:global(.dark) .card--gradient {
+	background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.2) 100%);
+	border-color: var(--color-primary-800);
+}
+
+:global(.dark) .card--gradient::before {
+	background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+	            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
+}
+
+:global(.dark) .card-item {
+	background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+	border-color: var(--border-primary);
+}
+
+:global(.dark) .card-item--pattern::before {
+	background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 40%);
+}
+
+:global(.dark) .card-details {
+	background: var(--bg-primary);
+	border-color: var(--border-primary);
+}

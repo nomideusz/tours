@@ -17,18 +17,52 @@ export interface WhatsAppResult {
 }
 
 /**
- * Format phone number to WhatsApp format (without + prefix)
+ * Format phone number to E.164 format (international standard)
  */
-function formatWhatsAppPhone(phone: string): string {
-	// Remove all non-digit characters
-	let cleaned = phone.replace(/\D/g, '');
+function formatPhoneToE164(phone: string): string {
+	// Remove all non-digit characters except the leading +
+	let cleaned = phone.replace(/[^\d+]/g, '');
 	
-	// Ensure it has a country code
-	if (cleaned.length < 10) {
-		throw new Error('Phone number too short');
+	// Ensure it starts with +
+	if (!cleaned.startsWith('+')) {
+		// If it's a 10-digit number, assume US/Canada and add +1
+		if (cleaned.length === 10 && cleaned[0] >= '2' && cleaned[0] <= '9') {
+			cleaned = '+1' + cleaned;
+		} else if (cleaned.length > 10) {
+			// For longer numbers, add + prefix
+			cleaned = '+' + cleaned;
+		} else {
+			throw new Error('Phone number too short or invalid format');
+		}
+	}
+	
+	// Validate the format (must start with + and have at least 7 digits after country code)
+	const e164Regex = /^\+[1-9]\d{6,14}$/;
+	
+	if (!e164Regex.test(cleaned)) {
+		throw new Error(`Invalid phone number format: ${phone}`);
 	}
 	
 	return cleaned;
+}
+
+/**
+ * Format phone number for specific WhatsApp provider
+ */
+function formatPhoneForProvider(e164Phone: string, provider: WhatsAppProviderType): string {
+	switch (provider) {
+		case 'gupshup':
+			// Gupshup expects phone without + prefix
+			return e164Phone.replace('+', '');
+		case 'twilio':
+			// Twilio expects full E.164 format with +
+			return e164Phone;
+		case 'plivo':
+			// Plivo expects phone without + prefix
+			return e164Phone.replace('+', '');
+		default:
+			return e164Phone.replace('+', '');
+	}
 }
 
 /**
@@ -225,7 +259,7 @@ async function sendViaTwilio(message: WhatsAppMessage): Promise<WhatsAppResult> 
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
 			body: new URLSearchParams({
-				To: `whatsapp:+${message.to}`,
+				To: `whatsapp:${message.to}`, // message.to already includes + for Twilio
 				MessagingServiceSid: messagingServiceSid,
 				ContentSid: template.name, // Assumes template is pre-approved in Twilio
 				ContentVariables: JSON.stringify(contentVariables)
@@ -301,11 +335,7 @@ export async function canSendWhatsApp(user: AuthUser): Promise<boolean> {
  */
 export async function sendWhatsAppMessage(message: WhatsAppMessage): Promise<WhatsAppResult> {
 	try {
-		// Format phone number
-		const formattedPhone = formatWhatsAppPhone(message.to);
-		const formattedMessage = { ...message, to: formattedPhone };
-		
-		// Get configured provider
+		// Get configured provider first
 		const provider = getConfiguredProvider();
 		
 		if (!provider) {
@@ -314,6 +344,13 @@ export async function sendWhatsAppMessage(message: WhatsAppMessage): Promise<Wha
 				error: 'No WhatsApp provider configured'
 			};
 		}
+		
+		// Format phone number to E.164 first, then provider-specific format
+		const e164Phone = formatPhoneToE164(message.to);
+		const providerPhone = formatPhoneForProvider(e164Phone, provider);
+		const formattedMessage = { ...message, to: providerPhone };
+		
+		console.log(`📱 Formatting phone for ${provider}: ${message.to} → ${e164Phone} → ${providerPhone}`);
 		
 		// Send via appropriate provider
 		switch (provider) {

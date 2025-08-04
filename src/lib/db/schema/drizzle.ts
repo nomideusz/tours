@@ -16,6 +16,9 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', '
 // Promo code type enum
 export const promoCodeTypeEnum = pgEnum('promo_code_type', ['early_access', 'lifetime_discount', 'free_period', 'percentage_discount']);
 
+// Beta application status enum
+export const betaApplicationStatusEnum = pgEnum('beta_application_status', ['pending', 'accepted', 'rejected', 'waitlisted']);
+
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -103,6 +106,46 @@ export const oauthAccounts = pgTable('oauth_accounts', {
   provider: varchar('provider', { length: 50 }).notNull(),
   providerUserId: varchar('provider_user_id', { length: 255 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Beta applications table
+export const betaApplications = pgTable('beta_applications', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  
+  // Basic contact info
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  phone: varchar('phone', { length: 50 }),
+  website: varchar('website', { length: 255 }),
+  
+  // Business info
+  businessName: varchar('business_name', { length: 255 }),
+  location: varchar('location', { length: 255 }).notNull(),
+  country: varchar('country', { length: 2 }).notNull(),
+  
+  // Screening questions
+  tourTypes: text('tour_types').notNull(),
+  tourFrequency: text('tour_frequency').notNull(),
+  currentBookingMethod: text('current_booking_method').notNull(),
+  biggestChallenge: text('biggest_challenge').notNull(),
+  betaContribution: text('beta_contribution').notNull(),
+  
+  // Additional info
+  yearsExperience: integer('years_experience').notNull(),
+  teamSize: integer('team_size').notNull().default(1),
+  interestedFeatures: text('interested_features').array().default([]),
+  availabilityForFeedback: boolean('availability_for_feedback').notNull().default(true),
+  
+  // Application status
+  status: betaApplicationStatusEnum('status').notNull().default('pending'),
+  reviewerNotes: text('reviewer_notes'),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewedBy: text('reviewed_by'),
+  
+  // Metadata
+  referralSource: varchar('referral_source', { length: 100 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 // Tour status enum

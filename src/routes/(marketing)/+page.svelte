@@ -1,24 +1,27 @@
 <script lang="ts">
-	import HeroSection from '$lib/components/marketing/HeroSection.svelte';
-	import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
+	// import HeroSection from '$lib/components/marketing/HeroSection.svelte';
+	import BetaHeroSection from '$lib/components/marketing/BetaHeroSection.svelte';
+	// import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
 	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
-	import PricingSection from '$lib/components/marketing/PricingSection.svelte';
+	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
+	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
 	import FeaturesSection from '$lib/components/marketing/FeaturesSection.svelte';
 	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
-	import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
-	import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
+	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
+	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
+	import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
 </script>
 
 <svelte:head>
 	<!-- Override title for homepage specifically -->
-	<title>Zaur - Tour Discovery Platform + QR Bookings for Tour Guides</title>
-	<meta name="title" content="Zaur - Tour Discovery Platform + QR Bookings for Tour Guides" />
-	<meta name="description" content="The first platform combining tour discovery with QR code bookings. Get found by customers and keep 100% of revenue. No commission fees on discovery or bookings." />
+	<title>Zaur Beta - Help Shape the Future of Tour Bookings</title>
+	<meta name="title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
+	<meta name="description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get free access, provide feedback, and receive 50% lifetime discount." />
 	
 	<!-- Additional SEO signals for homepage -->
-	<meta property="og:title" content="Zaur - Tour Discovery Platform + QR Bookings for Tour Guides" />
-	<meta property="og:description" content="The first platform combining tour discovery with QR code bookings. Get found by customers and keep 100% of revenue. No commission fees on discovery or bookings." />
+	<meta property="og:title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
+	<meta property="og:description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get free access, provide feedback, and receive 50% lifetime discount." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	
@@ -57,15 +60,8 @@
 	</script>`}
 </svelte:head>
 
-<!-- Hero Section with subtle texture -->
-<HeroSection />
-
-<!-- Platform showcase with subtle texture -->
-<section class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<PlatformShowcase />
-	</div>
-</section>
+<!-- Beta Hero Section -->
+<BetaHeroSection />
 
 <!-- How it works with subtle texture -->
 <section id="how-it-works" class="subtle-retro-section py-20">
@@ -74,10 +70,10 @@
 	</div>
 </section>
 
-<!-- Pricing with subtle texture -->
+<!-- Beta Pricing Section -->
 <section id="pricing" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<PricingSection />
+		<BetaPricingSection />
 	</div>
 </section>
 
@@ -95,8 +91,8 @@
 	</div>
 </section>
 
-<!-- Final CTA with subtle texture -->
-<FinalCtaSection />
+<!-- Beta Final CTA -->
+<BetaFinalCtaSection />
 
 <style>
 	/* Subtle retro section with minimal color - matches HeroSection */

@@ -11,7 +11,6 @@
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import Globe from 'lucide-svelte/icons/globe';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;
@@ -116,11 +115,11 @@
 </script>
 
 <!-- Professional Header -->
-<header class="professional-header">
-	<div class="professional-header-container">
-		<div class="professional-header-content">
+<header class="site-header">
+	<div class="site-header-container">
+		<div class="site-header-content">
 			<!-- Logo and branding -->
-			<div class="professional-header-brand">
+			<div class="site-header-brand">
 				<Logo 
 					variant="modern" 
 					href={isAuthenticated ? '/?view=home' : '/'} 
@@ -141,10 +140,6 @@
 				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="nav-link">
 					<Layout class="w-4 h-4" />
 					<span>Features</span>
-				</a>
-				<a href="/explore" class="nav-link">
-					<Globe class="w-4 h-4" />
-					<span>Explore Tours</span>
 				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
 					<DollarSign class="w-4 h-4" />
@@ -199,10 +194,10 @@
 						</a>
 						<button 
 							class="button-primary guest-cta-button"
-							onclick={() => window.location.href = '/auth/register'}
+							onclick={() => window.location.href = '/beta/apply'}
 						>
-							<span class="guest-cta-text-mobile">Start Free</span>
-							<span class="guest-cta-text-desktop">Start for Free</span>
+							<span class="guest-cta-text-mobile">Join Beta</span>
+							<span class="guest-cta-text-desktop">Apply for Beta</span>
 						</button>
 					</div>
 				{/if}
@@ -253,10 +248,6 @@
 					<Layout class="w-4 h-4" />
 					<span>Features</span>
 				</a>
-				<a href="/explore" onclick={handleMobileLinkClick} class="mobile-nav-link">
-					<Globe class="w-4 h-4" />
-					<span>Explore Tours</span>
-				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
 					<DollarSign class="w-4 h-4" />
 					<span>Pricing</span>
@@ -299,13 +290,13 @@
 {/if}
 
 <style>
-	/* Professional Header */
-	.professional-header {
+	/* Site Header */
+	.site-header {
 		position: fixed;
-		top: 0;
+		top: 3.5rem;
 		left: 0;
 		right: 0;
-		z-index: 100;
+		z-index: var(--z-70);
 		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
 		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(12px);
@@ -315,7 +306,7 @@
 	}
 
 	/* Very subtle texture overlay - matches HeroSection */
-	.professional-header::before {
+	.site-header::before {
 		content: '';
 		position: absolute;
 		top: 0;
@@ -332,7 +323,7 @@
 		pointer-events: none;
 	}
 
-	.professional-header-container {
+	.site-header-container {
 		max-width: 1536px;
 		margin: 0 auto;
 		padding: 0 1.5rem;
@@ -341,18 +332,18 @@
 	}
 
 	@media (min-width: 640px) {
-		.professional-header-container {
+		.site-header-container {
 			padding: 0 2rem;
 		}
 	}
 
 	@media (min-width: 1024px) {
-		.professional-header-container {
+		.site-header-container {
 			padding: 0 3rem;
 		}
 	}
 
-	.professional-header-content {
+	.site-header-content {
 		display: flex;
 		height: 5rem;
 		align-items: center;
@@ -360,7 +351,7 @@
 	}
 
 	/* Brand */
-	.professional-header-brand {
+	.site-header-brand {
 		display: flex;
 		align-items: center;
 		height: 100%;
@@ -754,7 +745,7 @@
 	/* Dark Mode Support */
 	/* Header background now uses theme-aware CSS variables automatically */
 
-	[data-theme="dark"] .professional-header::before {
+	[data-theme="dark"] .site-header::before {
 		background-image: repeating-linear-gradient(
 			0deg,
 			transparent,
@@ -874,7 +865,7 @@
 
 	/* Responsive adjustments */
 	@media (max-width: 480px) {
-		.professional-header-container {
+		.site-header-container {
 			padding: 0 1rem;
 		}
 

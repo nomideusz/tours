@@ -58,9 +58,10 @@ export async function authenticateWithOAuth2(provider: OAuth2Provider, redirectT
 // Get available OAuth2 providers
 export async function getAvailableOAuth2Providers(): Promise<OAuth2Provider[]> {
     try {
+        // OAuth2 disabled during beta program - users must apply for beta access
         // Return the providers we have configured
         // In a real app, you might want to check server configuration
-        return ['google'];
+        return []; // Disabled for beta program
     } catch (error) {
         console.error('Failed to fetch available OAuth2 providers:', error);
         return [];

@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import BetaBanner from '$lib/components/BetaBanner.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
@@ -126,8 +127,11 @@
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
 	/>
+	
+	<!-- Beta Program Banner -->
+	<BetaBanner />
 
-	<main class="flex-1 pt-20 relative z-10">
+	<main class="flex-1 pt-[12rem] relative z-10"> <!-- Increased padding for Header + BetaBanner -->
 		{#if browser && data?.queryClient}
 			<QueryClientProvider client={data.queryClient}>
 				{@render children()}

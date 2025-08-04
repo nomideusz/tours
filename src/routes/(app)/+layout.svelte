@@ -450,15 +450,13 @@
 	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
 	<div class="min-h-screen flex flex-col overflow-x-hidden">
-		<!-- App Header - Fixed at top -->
-		<div class="fixed top-0 left-0 right-0 z-40">
-			<AppHeader 
-				user={currentUserData}
-			/>
-		</div>
+		<!-- App Header -->
+		<AppHeader 
+			user={currentUserData}
+		/>
 
 		<!-- Main content area with sidebar -->
-		<div class="flex flex-1 min-w-0 pt-20 overflow-x-hidden">
+		<div class="flex flex-1 min-w-0 pt-[12rem] overflow-x-hidden"> <!-- Increased padding for Header + BetaBanner -->
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
 				<div class="professional-sidebar">

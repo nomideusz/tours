@@ -10,6 +10,7 @@
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Compass from 'lucide-svelte/icons/compass';
 	import Heart from 'lucide-svelte/icons/heart';
+	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 </script>
 
 <!-- Professional Features Section -->
@@ -28,91 +29,91 @@
 
 <div class="features-grid">
 	<!-- Revenue Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--coral">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--primary">
 			<DollarSign class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Keep 100% of Revenue</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Keep 100% of Revenue</h3>
+			<p class="card-description">
 				No commission fees, just a simple monthly subscription. Get paid directly to your bank account.
 			</p>
 		</div>
 	</div>
 
 	<!-- Discovery Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--coral">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--primary">
 			<Compass class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Built-in Tour Discovery</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Built-in Tour Discovery</h3>
+			<p class="card-description">
 				Customers find your tours through our discovery platform. Get organic bookings without marketing costs.
 			</p>
 		</div>
 	</div>
 
 	<!-- Setup Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--orange">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--warning">
 			<Zap class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">5-Minute Setup</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">5-Minute Setup</h3>
+			<p class="card-description">
 				Create your first tour and start accepting bookings in under 5 minutes. No technical skills needed.
 			</p>
 		</div>
 	</div>
 
 	<!-- Scheduling Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--teal">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--success">
 			<Calendar class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Smart Scheduling</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Smart Scheduling</h3>
+			<p class="card-description">
 				Manage availability, prevent double bookings, and set recurring schedules effortlessly.
 			</p>
 		</div>
 	</div>
 
 	<!-- Security Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--navy">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--secondary">
 			<CreditCard class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Secure Payments</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Secure Payments</h3>
+			<p class="card-description">
 				Enterprise-grade security with Stripe. Instant payouts, no chargebacks, full PCI compliance.
 			</p>
 		</div>
 	</div>
 
 	<!-- Analytics Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--coral">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--primary">
 			<BarChart3 class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Business Analytics</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Business Analytics</h3>
+			<p class="card-description">
 				Track conversion rates, understand booking patterns, and optimize your tours for growth.
 			</p>
 		</div>
 	</div>
 
 	<!-- Data Feature -->
-	<div class="professional-feature-card">
-		<div class="professional-icon professional-icon--teal">
+	<div class="card card--elevated feature-card">
+		<div class="professional-icon professional-icon--success">
 			<Download class="w-6 h-6" strokeWidth={2} />
 		</div>
 		<div class="feature-content">
-			<h3 class="feature-title">Keep Your Data</h3>
-			<p class="feature-description">
+			<h3 class="card-title card-title--small">Keep Your Data</h3>
+			<p class="card-description">
 				Export your customer data anytime. Cancel without losing your business information or contacts.
 			</p>
 		</div>
@@ -134,34 +135,52 @@
 		</p>
 	</div>
 
-	<div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-		<div class="trust-card">
-			<div class="trust-icon trust-icon--coral">
+	<div class="card-grid card-grid--3 trust-grid max-w-4xl mx-auto">
+		<div class="card card--elevated trust-card">
+			<div class="trust-icon trust-icon--primary">
 				<span class="trust-icon-text">FREE</span>
 			</div>
-			<h4 class="trust-title">Free Forever Plan</h4>
-			<p class="trust-description">
+			<h4 class="card-title card-title--small">Free Forever Plan</h4>
+			<p class="card-description">
 				Start with our Free plan. No credit card required, no hidden fees.
 			</p>
 		</div>
 
-		<div class="trust-card">
-			<div class="trust-icon trust-icon--orange">
+		<div class="card card--elevated trust-card">
+			<div class="trust-icon trust-icon--warning">
 				<span class="trust-icon-text">24/7</span>
 			</div>
-			<h4 class="trust-title">Cancel Anytime</h4>
-			<p class="trust-description">
+			<h4 class="card-title card-title--small">Cancel Anytime</h4>
+			<p class="card-description">
 				No contracts, no commitments. Cancel with one click whenever you want.
 			</p>
 		</div>
 
-		<div class="trust-card">
-			<div class="trust-icon trust-icon--navy">
+		<div class="card card--elevated trust-card">
+			<div class="trust-icon trust-icon--secondary">
 				<span class="trust-icon-text">100%</span>
 			</div>
-			<h4 class="trust-title">Satisfaction Promise</h4>
-			<p class="trust-description">
+			<h4 class="card-title card-title--small">Satisfaction Promise</h4>
+			<p class="card-description">
 				Not happy? We'll work with you until you are, or help you migrate elsewhere.
+			</p>
+		</div>
+	</div>
+</div>
+
+<!-- Beta Program Disclaimer -->
+<div class="mt-16">
+	<div class="card card--primary beta-disclaimer-card max-w-3xl mx-auto">
+		<div class="card-header card-header--center">
+			<div class="flex items-center justify-center gap-2 mb-4">
+				<FlaskConical class="w-5 h-5" />
+				<span class="font-semibold">Beta Program Notice</span>
+			</div>
+			<p class="card-description card-description--small">
+				<strong>Currently in Beta:</strong> Features shown are available to beta members. 
+				Some advanced features may be refined based on feedback from our beta community. 
+				<a href="/beta/apply" class="text-primary underline font-medium">Apply for beta access</a> 
+				to help shape these features and receive 30% lifetime discount.
 			</p>
 		</div>
 	</div>
@@ -174,7 +193,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--primary);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -206,47 +225,17 @@
 		}
 		
 		/* Center the last card by spanning it and using auto margins */
-		.features-grid .professional-feature-card:nth-child(7) {
+		.features-grid .feature-card:nth-child(7) {
 			grid-column: 2 / 3;
 		}
 	}
 
-	/* Professional Feature Cards - matches HeroSection trust cards */
-	.professional-feature-card {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: 2rem;
+	/* Feature cards - Enhanced with card system */
+	.feature-card {
+		/* Card system handles base styling */
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
-		transition: all var(--transition-base) ease;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Subtle accent line on hover - matches HeroSection */
-	.professional-feature-card::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-	
-	.professional-feature-card:hover::before {
-		transform: scaleX(1);
-	}
-
-	.professional-feature-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-lg);
-		border-color: var(--border-secondary);
 	}
 
 	/* Professional Icons */
@@ -261,23 +250,23 @@
 		box-shadow: var(--shadow-md);
 	}
 
-	.professional-icon--coral {
-		background: #ef4444 !important;
+	.professional-icon--primary {
+		background: var(--primary) !important;
 		color: white !important;
 	}
 
-	.professional-icon--orange {
-		background: #f97316 !important;
+	.professional-icon--warning {
+		background: var(--warning) !important;
 		color: white !important;
 	}
 
-	.professional-icon--teal {
-		background: #06b6d4 !important;
+	.professional-icon--success {
+		background: var(--success) !important;
 		color: white !important;
 	}
 
-	.professional-icon--navy {
-		background: #1e293b !important;
+	.professional-icon--secondary {
+		background: var(--secondary) !important;
 		color: white !important;
 	}
 
@@ -286,54 +275,10 @@
 		flex: 1;
 	}
 
-	.feature-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.75rem;
-		line-height: 1.3;
-	}
-
-	.feature-description {
-		font-size: 1rem;
-		color: var(--text-secondary);
-		line-height: 1.6;
-	}
-
-	/* Trust Cards - matches HeroSection trust cards */
+	/* Trust cards - Enhanced with card system */
 	.trust-card {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: 2rem;
+		/* Card system handles base styling */
 		text-align: center;
-		transition: all var(--transition-base) ease;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Subtle accent line on hover - matches HeroSection */
-	.trust-card::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--color-coral-500);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-	
-	.trust-card:hover::before {
-		transform: scaleX(1);
-	}
-
-	.trust-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-lg);
-		border-color: var(--border-secondary);
 	}
 
 	/* Trust Icons */
@@ -349,18 +294,18 @@
 		box-shadow: var(--shadow-md);
 	}
 
-	.trust-icon--coral {
-		background: #ef4444 !important;
+	.trust-icon--primary {
+		background: var(--primary) !important;
 		color: white !important;
 	}
 
-	.trust-icon--orange {
-		background: #f97316 !important;
+	.trust-icon--warning {
+		background: var(--warning) !important;
 		color: white !important;
 	}
 
-	.trust-icon--navy {
-		background: #1e293b !important;
+	.trust-icon--secondary {
+		background: var(--secondary) !important;
 		color: white !important;
 	}
 
@@ -371,26 +316,10 @@
 		line-height: 1;
 	}
 
-	/* Trust Content */
-	.trust-title {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.75rem;
-	}
+	/* Card system handles beta disclaimer styling automatically */
 
-	.trust-description {
-		font-size: 1rem;
-		color: var(--text-secondary);
-		line-height: 1.6;
-	}
-
-	/* Responsive Design */
+	/* Responsive Design - Card system handles most styling */
 	@media (max-width: 768px) {
-		.trust-card {
-			padding: 1.5rem;
-		}
-
 		.trust-icon {
 			width: 3.5rem;
 			height: 3.5rem;
@@ -400,33 +329,7 @@
 		.trust-icon-text {
 			font-size: 0.6875rem;
 		}
-
-		.trust-title {
-			font-size: 1rem;
-		}
-
-		.trust-description {
-			font-size: 0.875rem;
-		}
-
-		.feature-title {
-			font-size: 1.125rem;
-		}
-
-		.feature-description {
-			font-size: 0.875rem;
-		}
-
-		.professional-feature-card {
-			padding: 1.5rem;
-		}
 	}
 
-	/* Fix badge icons visibility in dark mode */
-	@media (prefers-color-scheme: dark) {
-		.professional-badge svg {
-			color: #1f2937 !important;
-			stroke: #1f2937 !important;
-		}
-	}
+	/* Badge uses proper CSS variables that adapt to dark mode automatically */
 </style> 

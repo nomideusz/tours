@@ -23,11 +23,11 @@
 </script>
 
 <!-- Professional Public Header -->
-<header class="professional-header">
-	<div class="professional-header-container">
-		<div class="professional-header-content">
+<header class="public-header">
+	<div class="public-header-container">
+		<div class="public-header-content">
 			<!-- Logo/Brand with contextual info -->
-			<div class="professional-header-brand">
+			<div class="public-header-brand">
 				{#if showBackButton && tourOwner}
 					<button 
 						onclick={() => history.back()} 
@@ -96,11 +96,11 @@
 </header>
 
 <style>
-	/* Professional Header - matches marketing style */
-	.professional-header {
+	/* Public Header - matches marketing style */
+	.public-header {
 		position: sticky;
 		top: 0;
-		z-index: 100;
+		z-index: var(--z-70);
 		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
 		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(12px);
@@ -110,7 +110,7 @@
 	}
 
 	/* Very subtle texture overlay - matches marketing header */
-	.professional-header::before {
+	.public-header::before {
 		content: '';
 		position: absolute;
 		top: 0;
@@ -127,7 +127,7 @@
 		pointer-events: none;
 	}
 
-	.professional-header-container {
+	.public-header-container {
 		max-width: 1536px;
 		margin: 0 auto;
 		padding: 0 1.5rem;
@@ -136,18 +136,18 @@
 	}
 
 	@media (min-width: 640px) {
-		.professional-header-container {
+		.public-header-container {
 			padding: 0 2rem;
 		}
 	}
 
 	@media (min-width: 1024px) {
-		.professional-header-container {
+		.public-header-container {
 			padding: 0 3rem;
 		}
 	}
 
-	.professional-header-content {
+	.public-header-content {
 		display: flex;
 		height: 5rem;
 		align-items: center;
@@ -155,7 +155,7 @@
 	}
 
 	/* Brand */
-	.professional-header-brand {
+	.public-header-brand {
 		display: flex;
 		align-items: center;
 		height: 100%;
@@ -230,14 +230,14 @@
 	.auth-link {
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		text-decoration: none;
 		transition: color var(--transition-base) ease;
 		position: relative;
 	}
 
 	.auth-link:hover {
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 	}
 
 	/* Coral accent underline on hover - matches marketing header */
@@ -248,7 +248,7 @@
 		left: 0;
 		width: 0;
 		height: 0.125rem;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transition: width var(--transition-base) ease;
 	}
 
@@ -259,14 +259,14 @@
 	.dashboard-link {
 		font-size: 0.875rem;
 		font-weight: 600;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		text-decoration: none;
 		transition: color var(--transition-base) ease;
 		position: relative;
 	}
 
 	.dashboard-link:hover {
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 	}
 
 	/* Coral accent underline on hover - matches marketing header */
@@ -277,7 +277,7 @@
 		left: 0;
 		width: 0;
 		height: 0.125rem;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transition: width var(--transition-base) ease;
 	}
 
@@ -286,7 +286,7 @@
 	}
 
 	/* Dark Mode Support */
-	[data-theme="dark"] .professional-header::before {
+	[data-theme="dark"] .public-header::before {
 		background-image: repeating-linear-gradient(
 			0deg,
 			transparent,
@@ -298,11 +298,11 @@
 
 	/* Responsive adjustments */
 	@media (max-width: 480px) {
-		.professional-header-container {
+		.public-header-container {
 			padding: 0 1rem;
 		}
 
-		.professional-header-content {
+		.public-header-content {
 			height: 4rem;
 		}
 

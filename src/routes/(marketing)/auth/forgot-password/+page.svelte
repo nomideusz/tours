@@ -121,7 +121,7 @@
 								id="email"
 								name="email"
 								bind:value={email}
-								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 								placeholder="Enter your email address"
 								disabled={isLoading}
 								onblur={() => {
@@ -157,7 +157,7 @@
 
 					<!-- Navigation -->
 					<div class="mt-6 text-center">
-						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80">
 							<ArrowLeft class="w-4 h-4" />
 							Back to sign in
 						</a>

@@ -25,9 +25,11 @@ export async function sendWhatsAppBookingConfirmation(
 		
 		// Check if customer provided phone number
 		if (!booking.customerPhone) {
-			console.log('No customer phone number provided for WhatsApp notification');
+			console.log('❌ No customer phone number provided for WhatsApp notification');
 			return;
 		}
+		
+		console.log(`📱 Attempting to send WhatsApp confirmation to: ${booking.customerPhone}`);
 		
 		// Format parameters for the template
 		const startTime = new Date(timeSlot.startTime);
@@ -130,9 +132,11 @@ export async function sendWhatsAppGuideNotification(
 		}
 		
 		if (!tourGuide.phone) {
-			console.log('Tour guide has no phone number configured');
+			console.log('❌ Tour guide has no phone number configured');
 			return;
 		}
+		
+		console.log(`📱 Attempting to send WhatsApp guide notification to: ${tourGuide.phone}`);
 		
 		// Format parameters for the template
 		const startTime = new Date(timeSlot.startTime);

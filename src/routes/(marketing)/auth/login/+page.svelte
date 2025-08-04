@@ -98,7 +98,7 @@
 				Welcome Back
 			</h2>
 			<p class="text-gray-600 text-sm">
-				Sign in to your account to continue
+				Sign in to your account to continue • Currently in Beta Program
 			</p>
 		</div>
 
@@ -235,7 +235,7 @@
 							id="email"
 							name="email"
 							bind:value={email}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 							placeholder={t('loginPage.emailPlaceholder', $language)}
 							disabled={isLoggingIn || manualLoading}
 							onblur={() => {
@@ -260,7 +260,7 @@
 								id="password"
 								name="password"
 								bind:value={password}
-								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 								placeholder={t('loginPage.passwordPlaceholder', $language)}
 								disabled={isLoggingIn || manualLoading}
 								onblur={() => {
@@ -334,12 +334,12 @@
 
 				<!-- Navigation -->
 				<div class="mt-6 flex items-center justify-center gap-4 text-sm">
-					<a href="/auth/forgot-password" class="text-coral-600 hover:text-coral-500 font-medium">
+					<a href="/auth/forgot-password" class="text-primary hover:opacity-80 font-medium">
 						Forgot password?
 					</a>
 					<div class="w-1 h-1 rounded-full bg-gray-400"></div>
-					<a href="/auth/register" class="text-coral-600 hover:text-coral-500 font-medium">
-						Create account
+					<a href="/beta/apply" class="text-primary hover:opacity-80 font-medium">
+						Apply for beta access
 					</a>
 				</div>
 			</div>

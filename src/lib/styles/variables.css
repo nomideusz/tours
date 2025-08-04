@@ -1,6 +1,6 @@
 :root {
 	/* Professional Color Palette - Tour Guide Edition */
-	
+
 	/* Primary Coral - Professional, warm, and engaging */
 	--color-primary-50: #fff5f3;
 	--color-primary-100: #ffe4de;
@@ -12,205 +12,46 @@
 	--color-primary-700: #c73e2f;
 	--color-primary-800: #a5342a;
 	--color-primary-900: #872f29;
-	
-	/* =============================================
-	   PROFESSIONAL ADVENTURE PALETTE - Clean & Modern
-	   ============================================= */
-	
-	/* Coral Red - Bold and energetic */
-	--color-coral-50: #fff5f3;
-	--color-coral-100: #ffe4de;
-	--color-coral-200: #ffcdc2;
-	--color-coral-300: #ffaa98;
-	--color-coral-400: #ff7a6b;
-	--color-coral-500: #fa6b5d;
-	--color-coral-600: #e8523e;
-	--color-coral-700: #c73e2f;
-	--color-coral-800: #a5342a;
-	--color-coral-900: #872f29;
-	
-	/* Warm Orange - Friendly and inviting */
-	--color-warm-orange-50: #fffaf0;
-	--color-warm-orange-100: #feebc8;
-	--color-warm-orange-200: #fbd38d;
-	--color-warm-orange-300: #f6ad55;
-	--color-warm-orange-400: #ed8936;
-	--color-warm-orange-500: #FFAD5A;
-	--color-warm-orange-600: #dd6b20;
-	--color-warm-orange-700: #c05621;
-	--color-warm-orange-800: #9c4221;
-	--color-warm-orange-900: #7b341e;
-	
-	/* Professional Teal - Trustworthy and stable */
-	--color-pro-teal-50: #f0fdfa;
-	--color-pro-teal-100: #ccfbf1;
-	--color-pro-teal-200: #99f6e4;
-	--color-pro-teal-300: #5eead4;
-	--color-pro-teal-400: #2dd4bf;
-	--color-pro-teal-500: #4F9DA6;
-	--color-pro-teal-600: #0d9488;
-	--color-pro-teal-700: #0f766e;
-	--color-pro-teal-800: #115e59;
-	--color-pro-teal-900: #134e4a;
-	
-	/* Deep Navy - Professional and sophisticated */
-	--color-deep-navy-50: #f8fafc;
-	--color-deep-navy-100: #f1f5f9;
-	--color-deep-navy-200: #e2e8f0;
-	--color-deep-navy-300: #cbd5e1;
-	--color-deep-navy-400: #94a3b8;
-	--color-deep-navy-500: #64748b;
-	--color-deep-navy-600: #475569;
-	--color-deep-navy-700: #334155;
-	--color-deep-navy-800: #1e293b;
-	--color-deep-navy-900: #1A0841;
+
+	/* Secondary Color Scale - Orange tones */
+	--color-secondary-50: #fffaf0;
+	--color-secondary-100: #feebc8;
+	--color-secondary-200: #fbd38d;
+	--color-secondary-300: #f6ad55;
+	--color-secondary-400: #ed8936;
+	--color-secondary-500: #FFAD5A;
+	--color-secondary-600: #dd6b20;
+	--color-secondary-700: #c05621;
+	--color-secondary-800: #9c4221;
+	--color-secondary-900: #7b341e;
+
+	/* Accent Color Scale - Teal tones */
+	--color-accent-50: #f0fdfa;
+	--color-accent-100: #ccfbf1;
+	--color-accent-200: #99f6e4;
+	--color-accent-300: #5eead4;
+	--color-accent-400: #2dd4bf;
+	--color-accent-500: #4F9DA6;
+	--color-accent-600: #0d9488;
+	--color-accent-700: #0f766e;
+	--color-accent-800: #115e59;
+	--color-accent-900: #134e4a;
+
+
 
 	/* =============================================
-	   ADVENTURE COLOR PALETTE - Vintage Travel Inspired (Updated)
+	   GRADIENTS
 	   ============================================= */
-	
-	/* Deep Expedition Navy - Updated to use professional navy */
-	--color-expedition-50: #f8fafc;
-	--color-expedition-100: #f1f5f9;
-	--color-expedition-200: #e2e8f0;
-	--color-expedition-300: #cbd5e1;
-	--color-expedition-400: #94a3b8;
-	--color-expedition-500: #64748b;
-	--color-expedition-600: #475569;
-	--color-expedition-700: #334155;
-	--color-expedition-800: #1e293b;
-	--color-expedition-900: #1A0841;
-	
-	/* Explorer Teal - Updated to use professional teal */
-	--color-explorer-50: #f0fdfa;
-	--color-explorer-100: #ccfbf1;
-	--color-explorer-200: #99f6e4;
-	--color-explorer-300: #5eead4;
-	--color-explorer-400: #2dd4bf;
-	--color-explorer-500: #4F9DA6;
-	--color-explorer-600: #0d9488;
-	--color-explorer-700: #0f766e;
-	--color-explorer-800: #115e59;
-	--color-explorer-900: #134e4a;
-	
-	/* Sunset Orange - Updated to use warm orange */
-	--color-sunset-50: #fffaf0;
-	--color-sunset-100: #feebc8;
-	--color-sunset-200: #fbd38d;
-	--color-sunset-300: #f6ad55;
-	--color-sunset-400: #ed8936;
-	--color-sunset-500: #FFAD5A;
-	--color-sunset-600: #dd6b20;
-	--color-sunset-700: #c05621;
-	--color-sunset-800: #9c4221;
-	--color-sunset-900: #7b341e;
-	
-	/* Golden Hour - Keep existing for compatibility */
-	--color-golden-50: #fffbeb;
-	--color-golden-100: #fef3c7;
-	--color-golden-200: #fde68a;
-	--color-golden-300: #fcd34d;
-	--color-golden-400: #fbbf24;
-	--color-golden-500: #f59e0b;
-	--color-golden-600: #faca78;
-	--color-golden-700: #b45309;
-	--color-golden-800: #92400e;
-	--color-golden-900: #78350f;
-	
-	/* Journey Red - Updated to use coral */
-	--color-journey-50: #fff5f3;
-	--color-journey-100: #ffe4de;
-	--color-journey-200: #ffcdc2;
-	--color-journey-300: #ffaa98;
-	--color-journey-400: #ff7a6b;
-	--color-journey-500: #fa6b5d;
-	--color-journey-600: #e8523e;
-	--color-journey-700: #c73e2f;
-	--color-journey-800: #a5342a;
-	--color-journey-900: #872f29;
-	
-	/* Earth Brown - Keep existing for compatibility */
-	--color-earth-50: #fdf8f6;
-	--color-earth-100: #f2e8e5;
-	--color-earth-200: #eaddd7;
-	--color-earth-300: #e0cfc7;
-	--color-earth-400: #d2bab0;
-	--color-earth-500: #bfa094;
-	--color-earth-600: #a18072;
-	--color-earth-700: #764338;
-	--color-earth-800: #6c3f18;
-	--color-earth-900: #5c2e04;
-	
-	/* Vintage Cream - Keep existing for compatibility */
-	--color-vintage-50: #fefdfb;
-	--color-vintage-100: #fef9f3;
-	--color-vintage-200: #fdf2e9;
-	--color-vintage-300: #f6dcac;
-	--color-vintage-400: #f2d089;
-	--color-vintage-500: #e4c063;
-	--color-vintage-600: #d4a843;
-	--color-vintage-700: #b8943a;
-	--color-vintage-800: #8f7533;
-	--color-vintage-900: #73612b;
 
-	/* =============================================
-	   PROFESSIONAL ADVENTURE GRADIENTS & PATTERNS
-	   ============================================= */
-	
-	/* Professional gradients - clean and modern */
-	--bg-professional-coral: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
-	--bg-professional-orange: linear-gradient(135deg, var(--color-warm-orange-500), var(--color-warm-orange-600));
-	--bg-professional-teal: linear-gradient(135deg, var(--color-pro-teal-500), var(--color-pro-teal-600));
-	--bg-professional-navy: linear-gradient(135deg, var(--color-deep-navy-800), var(--color-deep-navy-900));
-	
-	/* Adventure Gradients - Updated with professional colors */
-	--bg-adventure-sunset: linear-gradient(135deg, var(--color-sunset-500), var(--color-journey-500));
-	--bg-adventure-dawn: linear-gradient(135deg, var(--color-explorer-500) 0%, var(--color-sunset-500) 50%, var(--color-warm-orange-500) 100%);
-	--bg-expedition-depth: linear-gradient(135deg, var(--color-expedition-900) 0%, var(--color-expedition-700) 50%, var(--color-explorer-600) 100%);
-	--bg-journey-path: linear-gradient(90deg, var(--color-earth-600), var(--color-journey-500), var(--color-sunset-500), var(--color-warm-orange-500));
-	--bg-vintage-burst: conic-gradient(from 0deg at 50% 50%, var(--color-expedition-900), var(--color-explorer-600), var(--color-sunset-500), var(--color-warm-orange-500), var(--color-journey-500), var(--color-expedition-900));
-	
-	/* Subtle Character Gradients - For sections */
-	--bg-warm-welcome: linear-gradient(135deg, var(--color-vintage-50) 0%, var(--color-warm-orange-50) 100%);
-	--bg-ocean-breeze: linear-gradient(135deg, var(--color-explorer-50) 0%, var(--color-primary-50) 100%);
-	--bg-adventure-card: linear-gradient(135deg, var(--color-vintage-100) 0%, var(--color-sunset-50) 50%, var(--color-warm-orange-100) 100%);
-	
-	/* Professional card backgrounds */
-	--bg-professional-card: #ffffff;
-	--bg-professional-card-hover: #f8fafc;
-	
-	/* Texture Patterns - Vintage travel feel */
-	--pattern-vintage-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-	--pattern-compass-points: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='%23f97316' fill-opacity='0.03'%3E%3Cpolygon points='30,0 35,25 30,30 25,25'/%3E%3Cpolygon points='60,30 35,25 30,30 35,35'/%3E%3Cpolygon points='30,60 25,35 30,30 35,35'/%3E%3Cpolygon points='0,30 25,35 30,30 25,25'/%3E%3C/g%3E%3C/svg%3E");
-	--pattern-journey-lines: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M0 40c20-20 60-20 80 0' stroke='%23028391' stroke-width='1' fill='none' opacity='0.08'/%3E%3Cpath d='M0 20c20-10 60-10 80 0' stroke='%23f97316' stroke-width='1' fill='none' opacity='0.05'/%3E%3Cpath d='M0 60c20-10 60-10 80 0' stroke='%23faca78' stroke-width='1' fill='none' opacity='0.06'/%3E%3C/svg%3E");
-	
-	/* Sunburst Patterns - For hero sections */
-	--pattern-sunburst-subtle: conic-gradient(from 0deg at 50% 50%, 
-		transparent 0deg, 
-		rgba(255, 89, 89, 0.02) 45deg, 
-		transparent 90deg,
-		rgba(79, 157, 166, 0.02) 135deg,
-		transparent 180deg,
-		rgba(255, 173, 90, 0.02) 225deg,
-		transparent 270deg,
-		rgba(26, 8, 65, 0.02) 315deg,
-		transparent 360deg
-	);
-	
-	/* Professional Marketing Color Shortcuts */
-	--professional-coral: var(--color-coral-500);
-	--professional-orange: var(--color-warm-orange-500);
-	--professional-teal: var(--color-pro-teal-500);
-	--professional-navy: var(--color-deep-navy-900);
-	
-	/* Marketing Color Shortcuts - Updated */
-	--adventure-primary: var(--color-expedition-900);
-	--adventure-secondary: var(--color-explorer-500);
-	--adventure-accent: var(--color-sunset-500);
-	--adventure-warm: var(--color-warm-orange-500);
-	--adventure-bold: var(--color-journey-500);
-	--adventure-earth: var(--color-earth-600);
-	--adventure-neutral: var(--color-vintage-300);
+	/* Primary gradients */
+	--gradient-primary: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+	--gradient-secondary: linear-gradient(135deg, var(--color-secondary-500), var(--color-secondary-600));
+	--gradient-accent: linear-gradient(135deg, var(--color-accent-500), var(--color-accent-600));
+
+	/* Subtle gradients for backgrounds */
+	--gradient-subtle-primary: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
+	--gradient-subtle-secondary: linear-gradient(135deg, var(--color-secondary-50) 0%, var(--color-secondary-100) 100%);
+	--gradient-subtle-accent: linear-gradient(135deg, var(--color-accent-50) 0%, var(--color-accent-100) 100%);
 
 	/* Neutral Grays - With subtle blue undertones for cohesion */
 	--color-gray-50: #f8fafb;
@@ -223,9 +64,9 @@
 	--color-gray-700: #334155;
 	--color-gray-800: #1e293b;
 	--color-gray-900: #0f172a;
-	
+
 	/* Semantic Colors - More vibrant and friendly */
-	
+
 	/* Success Green - Fresh and lively */
 	--color-success-50: #f0fdf4;
 	--color-success-100: #dcfce7;
@@ -239,7 +80,7 @@
 	--color-success-900: #14532d;
 	--color-success: #22c55e;
 	--color-success-light: #dcfce7;
-	
+
 	/* Warning Amber - Warm and attention-grabbing */
 	--color-warning-50: #fffbeb;
 	--color-warning-100: #fef3c7;
@@ -253,7 +94,7 @@
 	--color-warning-900: #78350f;
 	--color-warning: #f59e0b;
 	--color-warning-light: #fef3c7;
-	
+
 	/* Error Rose - Softer than pure red */
 	--color-error-50: #fff1f2;
 	--color-error-100: #ffe4e6;
@@ -281,7 +122,7 @@
 	--color-danger-900: var(--color-error-900);
 	--color-danger: var(--color-error);
 	--color-danger-light: var(--color-error-light);
-	
+
 	/* Info Violet - Sophisticated and trustworthy */
 	--color-info-50: #f5f3ff;
 	--color-info-100: #ede9fe;
@@ -295,21 +136,26 @@
 	--color-info-900: #4c1d95;
 	--color-info: #8b5cf6;
 	--color-info-light: #ede9fe;
-	
-	/* Legacy variables (for compatibility) */
+
+	/* Semantic System Variables */
 	--text-primary: var(--color-gray-900);
 	--text-secondary: var(--color-gray-600);
-	--accent-primary: var(--color-primary-600);
-	--border-primary: var(--color-gray-200);
+	--text-tertiary: var(--color-gray-500);
+	--bg-primary: #ffffff;
+	--bg-secondary: var(--color-gray-50);
+	--bg-tertiary: var(--color-gray-100);
 	--bg-input: #ffffff;
+	--border-primary: var(--color-gray-200);
+	--border-secondary: var(--color-gray-300);
 
 	/* Common shortcut colors for easier use */
 	--primary: var(--color-primary-600);
-	--secondary: var(--color-gray-600);
+	--secondary: var(--color-secondary-600);
+	--accent: var(--color-accent-600);
 	--success: var(--color-success-600);
 	--warning: var(--color-warning-600);
 	--error: var(--color-error-600);
-	--danger: var(--color-danger-600);
+	--danger: var(--color-error-600);
 	--info: var(--color-info-600);
 
 	/* Tour guide app specific colors */
@@ -322,38 +168,56 @@
 	--color-paid: var(--color-success-600);
 	--color-failed: var(--color-error-600);
 	--color-refunded: var(--color-gray-600);
-	
+
 	/* Typography */
 	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 	--font-mono: 'SF Mono', ui-monospace, Monaco, 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
-	
+
 	/* Font Sizes - Increased for better Chrome rendering */
-	--text-xs: 0.8125rem;   /* 13px instead of 12px */
-	--text-sm: 0.9375rem;   /* 15px instead of 14px */
-	--text-base: 1.0625rem; /* 17px instead of 16px */
-	--text-lg: 1.1875rem;   /* 19px instead of 18px */
-	--text-xl: 1.375rem;    /* 22px instead of 20px */
-	--text-2xl: 1.625rem;   /* 26px instead of 24px */
-	--text-3xl: 2rem;       /* 32px instead of 30px */
-	--text-4xl: 2.375rem;   /* 38px instead of 36px */
-	--text-5xl: 3.125rem;   /* 50px instead of 48px */
-	
+	--text-xs: 0.8125rem;
+	/* 13px instead of 12px */
+	--text-sm: 0.9375rem;
+	/* 15px instead of 14px */
+	--text-base: 1.0625rem;
+	/* 17px instead of 16px */
+	--text-lg: 1.1875rem;
+	/* 19px instead of 18px */
+	--text-xl: 1.375rem;
+	/* 22px instead of 20px */
+	--text-2xl: 1.625rem;
+	/* 26px instead of 24px */
+	--text-3xl: 2rem;
+	/* 32px instead of 30px */
+	--text-4xl: 2.375rem;
+	/* 38px instead of 36px */
+	--text-5xl: 3.125rem;
+	/* 50px instead of 48px */
+
 	/* Line Heights */
 	--leading-tight: 1.25;
 	--leading-normal: 1.5;
 	--leading-relaxed: 1.75;
-	
+
 	/* Line heights for each text size */
-	--text-xs--line-height: 1.125rem;   /* 18px */
-	--text-sm--line-height: 1.375rem;   /* 22px */
-	--text-base--line-height: 1.625rem; /* 26px */
-	--text-lg--line-height: 1.75rem;    /* 28px */
-	--text-xl--line-height: 2rem;       /* 32px */
-	--text-2xl--line-height: 2.25rem;   /* 36px */
-	--text-3xl--line-height: 2.5rem;    /* 40px */
-	--text-4xl--line-height: 2.75rem;   /* 44px */
-	--text-5xl--line-height: 3.5rem;    /* 56px */
-	
+	--text-xs--line-height: 1.125rem;
+	/* 18px */
+	--text-sm--line-height: 1.375rem;
+	/* 22px */
+	--text-base--line-height: 1.625rem;
+	/* 26px */
+	--text-lg--line-height: 1.75rem;
+	/* 28px */
+	--text-xl--line-height: 2rem;
+	/* 32px */
+	--text-2xl--line-height: 2.25rem;
+	/* 36px */
+	--text-3xl--line-height: 2.5rem;
+	/* 40px */
+	--text-4xl--line-height: 2.75rem;
+	/* 44px */
+	--text-5xl--line-height: 3.5rem;
+	/* 56px */
+
 	/* Spacing Scale */
 	--space-0: 0;
 	--space-1: 0.25rem;
@@ -368,7 +232,7 @@
 	--space-16: 4rem;
 	--space-20: 5rem;
 	--space-24: 6rem;
-	
+
 	/* Border Radius */
 	--radius-none: 0;
 	--radius-sm: 0.125rem;
@@ -377,19 +241,19 @@
 	--radius-lg: 0.75rem;
 	--radius-xl: 1rem;
 	--radius-full: 9999px;
-	
+
 	/* Shadows - More subtle */
 	--shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 	--shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
 	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
 	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-	
+
 	/* Transitions */
 	--transition-fast: 150ms;
 	--transition-base: 200ms;
 	--transition-slow: 300ms;
-	
+
 	/* Z-index Scale */
 	--z-0: 0;
 	--z-10: 10;
@@ -402,7 +266,7 @@
 	--z-80: 80;
 	--z-90: 90;
 	--z-100: 100;
-	
+
 	/* Semantic Z-index values for consistent layering */
 	--z-content: 30;
 	--z-header: 40;
@@ -411,7 +275,7 @@
 	--z-modal: 70;
 	--z-lightbox: 9999;
 	--z-toast: 90;
-	
+
 	/* Container */
 	--container-max: 1600px;
 	--container-padding: var(--space-6);
@@ -425,16 +289,8 @@
 	/* Form elements */
 	--select-arrow-color: #6b7280;
 
-	/* Theme-aware semantic colors */
-	--bg-primary: #ffffff;
-	--bg-secondary: var(--color-gray-50);
-	--bg-tertiary: var(--color-gray-100);
-	--text-primary: var(--color-gray-900);
-	--text-secondary: var(--color-gray-600);
-	--text-tertiary: var(--color-gray-500);
-	--border-primary: var(--color-gray-200);
-	--border-secondary: var(--color-gray-300);
-	
+
+
 	/* Subtle background variations for visual interest */
 	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #fff5f5 0%, #ffffff 50%);
 	--bg-gradient-ocean: linear-gradient(135deg, #f8fafb 0%, #fff5f5 100%);
@@ -446,7 +302,7 @@
 	/* Component variables */
 	--modal-backdrop: rgba(0, 0, 0, 0.5);
 	--modal-close-button-hover: var(--gray-100);
-	
+
 	/* Overlay variables */
 	--overlay-dark: rgba(0, 0, 0, 0.8);
 	--overlay-light: rgba(255, 255, 255, 0.8);
@@ -475,10 +331,10 @@
 	--border-button-primary: #a5342a;
 	--border-button-primary-hover: #c73e2f;
 
-	/* Muted colors for buttons and badges in dark mode - professional and subtle */
-	--color-muted-coral: #D4A5A5;
-	--color-muted-coral-hover: #C49494;
-	--color-muted-coral-active: #B48383;
+	/* Muted colors for buttons and badges in dark mode */
+	--color-muted-primary: #D4A5A5;
+	--color-muted-secondary: #F2D17A;
+	--color-muted-accent: #B8D4FF;
 	--color-muted-success: #A8E6A3;
 	--color-muted-warning: #F2D17A;
 	--color-muted-error: #FFB3B3;
@@ -489,130 +345,36 @@
 	--color-muted-border-active: #888888;
 	--color-muted-text: #1A1A1A;
 
-	/* =============================================
-	   PROFESSIONAL ADVENTURE PALETTE - Dark Mode
-	   ============================================= */
-	
-	/* Coral Red - Dark mode adjustments (darker for better contrast) */
-	--color-coral-50: #4c1f1d;
-	--color-coral-100: #872f29;
-	--color-coral-200: #a5342a;
-	--color-coral-300: #c73e2f;
-	--color-coral-400: #e8523e;
-	--color-coral-500: #ff4d36;
-	--color-coral-600: #ff6b55;
-	--color-coral-700: #ff8a73;
-	--color-coral-800: #ffcdc2;
-	--color-coral-900: #ffe4de;
-	
-	/* Warm Orange - Dark mode adjustments */
-	--color-warm-orange-50: #451a03;
-	--color-warm-orange-100: #7b341e;
-	--color-warm-orange-200: #9c4221;
-	--color-warm-orange-300: #c05621;
-	--color-warm-orange-400: #dd6b20;
-	--color-warm-orange-500: #FFAD5A;
-	--color-warm-orange-600: #ed8936;
-	--color-warm-orange-700: #f6ad55;
-	--color-warm-orange-800: #fbd38d;
-	--color-warm-orange-900: #feebc8;
-	
-	/* Professional Teal - Dark mode adjustments */
-	--color-pro-teal-50: #022c22;
-	--color-pro-teal-100: #134e4a;
-	--color-pro-teal-200: #115e59;
-	--color-pro-teal-300: #0f766e;
-	--color-pro-teal-400: #0d9488;
-	--color-pro-teal-500: #4F9DA6;
-	--color-pro-teal-600: #2dd4bf;
-	--color-pro-teal-700: #5eead4;
-	--color-pro-teal-800: #99f6e4;
-	--color-pro-teal-900: #ccfbf1;
-	
-	/* Deep Navy - Dark mode adjustments */
-	--color-deep-navy-50: #0a0612;
-	--color-deep-navy-100: #1A0841;
-	--color-deep-navy-200: #1e293b;
-	--color-deep-navy-300: #334155;
-	--color-deep-navy-400: #475569;
-	--color-deep-navy-500: #64748b;
-	--color-deep-navy-600: #94a3b8;
-	--color-deep-navy-700: #cbd5e1;
-	--color-deep-navy-800: #e2e8f0;
-	--color-deep-navy-900: #f8fafc;
+	/* Secondary Color Scale - Dark mode adjustments */
+	--color-secondary-50: #451a03;
+	--color-secondary-100: #7b341e;
+	--color-secondary-200: #9c4221;
+	--color-secondary-300: #c05621;
+	--color-secondary-400: #dd6b20;
+	--color-secondary-500: #FFAD5A;
+	--color-secondary-600: #ed8936;
+	--color-secondary-700: #f6ad55;
+	--color-secondary-800: #fbd38d;
+	--color-secondary-900: #feebc8;
 
-	/* Adventure colors - Updated for dark mode */
-	--color-expedition-50: #0a0612;
-	--color-expedition-100: #1A0841;
-	--color-expedition-200: #1e293b;
-	--color-expedition-300: #334155;
-	--color-expedition-400: #475569;
-	--color-expedition-500: #64748b;
-	--color-expedition-600: #94a3b8;
-	--color-expedition-700: #cbd5e1;
-	--color-expedition-800: #e2e8f0;
-	--color-expedition-900: #f8fafc;
-	
-	/* Explorer Teal - Dark mode adjustments */
-	--color-explorer-50: #022c22;
-	--color-explorer-100: #134e4a;
-	--color-explorer-200: #115e59;
-	--color-explorer-300: #0f766e;
-	--color-explorer-400: #0d9488;
-	--color-explorer-500: #4F9DA6;
-	--color-explorer-600: #2dd4bf;
-	--color-explorer-700: #5eead4;
-	--color-explorer-800: #99f6e4;
-	--color-explorer-900: #ccfbf1;
-	
-	/* Sunset Orange - Dark mode adjustments */
-	--color-sunset-50: #451a03;
-	--color-sunset-100: #7b341e;
-	--color-sunset-200: #9c4221;
-	--color-sunset-300: #c05621;
-	--color-sunset-400: #dd6b20;
-	--color-sunset-500: #FFAD5A;
-	--color-sunset-600: #ed8936;
-	--color-sunset-700: #f6ad55;
-	--color-sunset-800: #fbd38d;
-	--color-sunset-900: #feebc8;
-	
-	/* Journey Red - Dark mode adjustments (darker for better contrast) */
-	--color-journey-50: #4c1f1d;
-	--color-journey-100: #872f29;
-	--color-journey-200: #a5342a;
-	--color-journey-300: #c73e2f;
-	--color-journey-400: #e8523e;
-	--color-journey-500: #ff4d36;
-	--color-journey-600: #ff6b55;
-	--color-journey-700: #ff8a73;
-	--color-journey-800: #ffcdc2;
-	--color-journey-900: #ffe4de;
+	/* Accent Color Scale - Dark mode adjustments */
+	--color-accent-50: #022c22;
+	--color-accent-100: #134e4a;
+	--color-accent-200: #115e59;
+	--color-accent-300: #0f766e;
+	--color-accent-400: #0d9488;
+	--color-accent-500: #4F9DA6;
+	--color-accent-600: #2dd4bf;
+	--color-accent-700: #5eead4;
+	--color-accent-800: #99f6e4;
+	--color-accent-900: #ccfbf1;
 
-	/* Professional gradients - dark mode */
-	--bg-professional-coral: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
-	--bg-professional-orange: linear-gradient(135deg, var(--color-warm-orange-500), var(--color-warm-orange-600));
-	--bg-professional-teal: linear-gradient(135deg, var(--color-pro-teal-500), var(--color-pro-teal-600));
-	--bg-professional-navy: linear-gradient(135deg, var(--color-deep-navy-100), var(--color-deep-navy-200));
-	
-	/* Professional card backgrounds - dark mode */
-	--bg-professional-card: #181b1f;
-	--bg-professional-card-hover: #2a2d32;
-	
-	/* Professional Marketing Color Shortcuts - Dark mode */
-	--professional-coral: var(--color-coral-500);
-	--professional-orange: var(--color-warm-orange-500);
-	--professional-teal: var(--color-pro-teal-500);
-	--professional-navy: var(--color-deep-navy-100);
-	
-	/* Marketing Color Shortcuts - Updated for dark mode */
-	--adventure-primary: var(--color-expedition-100);
-	--adventure-secondary: var(--color-explorer-500);
-	--adventure-accent: var(--color-sunset-500);
-	--adventure-warm: var(--color-warm-orange-500);
-	--adventure-bold: var(--color-journey-500);
-	--adventure-earth: var(--color-earth-600);
-	--adventure-neutral: var(--color-vintage-300);
+
+
+	/* Gradients - dark mode */
+	--gradient-primary: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+	--gradient-secondary: linear-gradient(135deg, var(--color-secondary-500), var(--color-secondary-600));
+	--gradient-accent: linear-gradient(135deg, var(--color-accent-500), var(--color-accent-600));
 
 	/* Dark mode gray scale - cool grays with slight blue undertone */
 	--color-gray-50: #0b0d10;
@@ -729,7 +491,7 @@
 	--color-paid: var(--color-success-600);
 	--color-failed: var(--color-error-600);
 	--color-refunded: var(--color-gray-400);
-	
+
 	/* Dark mode background variations - warm coral undertones */
 	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #181b1f 0%, #0b0d10 60%);
 	--bg-gradient-ocean: linear-gradient(135deg, #0b0d10 0%, #181b1f 50%, #1d2025 100%);
@@ -757,7 +519,7 @@
 	/* Component variables - dark mode */
 	--modal-backdrop: rgba(0, 0, 0, 0.7);
 	--modal-close-button-hover: var(--gray-800);
-	
+
 	/* Overlay variables - dark mode */
 	--overlay-dark: rgba(0, 0, 0, 0.9);
 	--overlay-light: rgba(0, 0, 0, 0.6);
@@ -776,14 +538,45 @@ body {
 }
 
 /* Ensure all text elements use the proper color */
-h1, h2, h3, h4, h5, h6,
-p, span, div, section, article, aside,
-li, dt, dd, td, th,
-label, legend, figcaption,
-blockquote, q, cite,
-code, pre, kbd, samp, var,
-small, strong, em, b, i, u, s,
-time, mark, abbr, address {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div,
+section,
+article,
+aside,
+li,
+dt,
+dd,
+td,
+th,
+label,
+legend,
+figcaption,
+blockquote,
+q,
+cite,
+code,
+pre,
+kbd,
+samp,
+var,
+small,
+strong,
+em,
+b,
+i,
+u,
+s,
+time,
+mark,
+abbr,
+address {
 	color: inherit;
 }
 
@@ -855,7 +648,9 @@ button {
 */
 
 /* Form elements should use proper colors */
-input, textarea, select {
+input,
+textarea,
+select {
 	color: var(--text-primary);
 	background-color: var(--bg-input);
 }
@@ -863,7 +658,8 @@ input, textarea, select {
 /* Placeholder text should be slightly muted */
 ::placeholder {
 	color: var(--text-tertiary);
-	opacity: 0.5; /* Make it more muted */
+	opacity: 0.5;
+	/* Make it more muted */
 }
 
 /* Firefox specific - needs opacity in the pseudo-element */
@@ -909,7 +705,8 @@ a:not(.preserve-icon-colors) svg:not([fill="none"]),
 .lucide,
 svg.lucide {
 	stroke: currentColor;
-	fill: none !important; /* Force stroke-based icons to not be filled */
+	fill: none !important;
+	/* Force stroke-based icons to not be filled */
 	color: inherit;
 }
 
@@ -1081,20 +878,25 @@ nav .lucide {
 }
 */
 
-/* Allow colorful icons to maintain their colors */
-.icon-colorful svg,
-.preserve-icon-colors svg,
-.colorful-icon svg {
-	/* Don't override fill - let them keep their original colors */
-}
+
 
 /* Additional global text color fixes */
-nav, header, footer, aside, section, article {
+nav,
+header,
+footer,
+aside,
+section,
+article {
 	color: inherit;
 }
 
 /* Ensure all headings use proper colors */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	color: var(--text-primary);
 }
 
@@ -1117,12 +919,29 @@ td {
 /* These are now handled by more specific overrides below */
 
 /* More specific Tailwind overrides for common patterns */
-.text-gray-900 { color: var(--text-primary) !important; }
-.text-gray-800 { color: var(--text-primary) !important; }
-.text-gray-700 { color: var(--text-primary) !important; }
-.text-gray-600 { color: var(--text-secondary) !important; }
-.text-gray-500 { color: var(--text-tertiary) !important; }
-.text-gray-400 { color: var(--text-tertiary) !important; }
+.text-gray-900 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-800 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-700 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-600 {
+	color: var(--text-secondary) !important;
+}
+
+.text-gray-500 {
+	color: var(--text-tertiary) !important;
+}
+
+.text-gray-400 {
+	color: var(--text-tertiary) !important;
+}
 
 /* Ensure icons within gray text have proper contrast */
 .text-gray-400 svg,
@@ -1139,22 +958,51 @@ td {
 	stroke: var(--text-primary) !important;
 }
 
-.bg-gray-50 { background-color: var(--bg-secondary) !important; }
-.bg-gray-100 { background-color: var(--bg-tertiary) !important; }
-.bg-gray-200 { background-color: var(--bg-tertiary) !important; }
+.bg-gray-50 {
+	background-color: var(--bg-secondary) !important;
+}
 
-.border-gray-100 { border-color: var(--border-primary) !important; }
-.border-gray-200 { border-color: var(--border-primary) !important; }
-.border-gray-300 { border-color: var(--border-secondary) !important; }
+.bg-gray-100 {
+	background-color: var(--bg-tertiary) !important;
+}
+
+.bg-gray-200 {
+	background-color: var(--bg-tertiary) !important;
+}
+
+.border-gray-100 {
+	border-color: var(--border-primary) !important;
+}
+
+.border-gray-200 {
+	border-color: var(--border-primary) !important;
+}
+
+.border-gray-300 {
+	border-color: var(--border-secondary) !important;
+}
 
 /* Hover states */
-.hover\:text-gray-900:hover { color: var(--text-primary) !important; }
-.hover\:text-gray-700:hover { color: var(--text-primary) !important; }
-.hover\:bg-gray-100:hover { background-color: var(--bg-secondary) !important; }
-.hover\:bg-gray-50:hover { background-color: var(--bg-secondary) !important; }
+.hover\:text-gray-900:hover {
+	color: var(--text-primary) !important;
+}
+
+.hover\:text-gray-700:hover {
+	color: var(--text-primary) !important;
+}
+
+.hover\:bg-gray-100:hover {
+	background-color: var(--bg-secondary) !important;
+}
+
+.hover\:bg-gray-50:hover {
+	background-color: var(--bg-secondary) !important;
+}
 
 /* Focus states */
-.focus\:border-gray-500:focus { border-color: var(--color-primary-500) !important; }
+.focus\:border-gray-500:focus {
+	border-color: var(--color-primary-500) !important;
+}
 
 /* Ensure proper contrast for specific button types */
 .bg-blue-600,
@@ -1313,7 +1161,8 @@ button svg,
 .button--success svg {
 	opacity: 1;
 	stroke-width: 2;
-	color: inherit; /* Ensure they inherit button text color */
+	color: inherit;
+	/* Ensure they inherit button text color */
 }
 
 /* =============================================
@@ -1531,10 +1380,7 @@ button svg,
 	background: var(--color-primary-100);
 }
 
-/* Country flag styles now handled by FlagIcon component */
-.country-flag {
-	/* Styles moved to FlagIcon component */
-}
+
 
 /* Country info */
 .country-name {
@@ -1666,30 +1512,7 @@ button svg,
    MARKETING CHARACTER UTILITIES - Vintage Travel Theme
    ============================================= */
 
-/* Adventure background utilities */
-.bg-adventure-sunset {
-	background: var(--bg-adventure-sunset);
-}
 
-.bg-adventure-dawn {
-	background: var(--bg-adventure-dawn);
-}
-
-.bg-expedition-depth {
-	background: var(--bg-expedition-depth);
-}
-
-.bg-warm-welcome {
-	background: var(--bg-warm-welcome);
-}
-
-.bg-ocean-breeze {
-	background: var(--bg-ocean-breeze);
-}
-
-.bg-adventure-card {
-	background: var(--bg-adventure-card);
-}
 
 /* Pattern overlays */
 .pattern-vintage-grain {
@@ -1740,147 +1563,18 @@ button svg,
 	pointer-events: none;
 }
 
-.pattern-sunburst-subtle {
-	position: relative;
-}
 
-.pattern-sunburst-subtle::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: var(--pattern-sunburst-subtle);
-	pointer-events: none;
-}
 
-/* Adventure text colors */
-.text-adventure-primary {
-	color: var(--adventure-primary);
-}
 
-.text-adventure-secondary {
-	color: var(--adventure-secondary);
-}
 
-.text-adventure-accent {
-	color: var(--adventure-accent);
-}
 
-.text-adventure-warm {
-	color: var(--adventure-warm);
-}
 
-.text-adventure-bold {
-	color: var(--adventure-bold);
-}
 
-.text-adventure-earth {
-	color: var(--adventure-earth);
-}
 
-/* Adventure cards and sections */
-.adventure-hero {
-	background: var(--bg-expedition-depth);
-	position: relative;
-	overflow: hidden;
-}
 
-.adventure-hero::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: var(--pattern-sunburst-subtle);
-	pointer-events: none;
-}
 
-.adventure-section {
-	position: relative;
-	padding: 4rem 0;
-}
 
-.adventure-section:nth-child(odd) {
-	background: var(--bg-warm-welcome);
-}
 
-.adventure-section:nth-child(even) {
-	background: var(--bg-ocean-breeze);
-}
-
-.adventure-card {
-	background: var(--bg-adventure-card);
-	border: 1px solid var(--color-vintage-200);
-	border-radius: 1rem;
-	padding: 2rem;
-	position: relative;
-	transition: all 0.3s ease;
-}
-
-.adventure-card::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: var(--pattern-vintage-grain);
-	border-radius: 1rem;
-	pointer-events: none;
-	opacity: 0.3;
-}
-
-.adventure-card:hover {
-	box-shadow: 0 12px 32px rgba(1, 32, 78, 0.15);
-	border-color: var(--color-sunset-300);
-}
-
-/* Vintage badge styles */
-.vintage-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.5rem 1rem;
-	background: var(--color-vintage-100);
-	border: 2px solid var(--color-earth-600);
-	border-radius: 2rem;
-	font-weight: 600;
-	font-size: 0.875rem;
-	color: var(--color-earth-700);
-	position: relative;
-	overflow: hidden;
-}
-
-.vintage-badge::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: var(--pattern-vintage-grain);
-	pointer-events: none;
-	opacity: 0.2;
-}
-
-/* Adventure CTA buttons */
-.adventure-cta {
-	background: linear-gradient(135deg, var(--color-sunset-500), var(--color-journey-600));
-	border: none;
-	border-radius: 0.75rem;
-	padding: 1rem 2rem;
-	color: white;
-	font-weight: 600;
-	font-size: 1rem;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	position: relative;
-	overflow: hidden;
-	box-shadow: 0 4px 16px rgba(248, 85, 37, 0.3);
-}
 
 .adventure-cta::before {
 	content: '';
@@ -1961,11 +1655,11 @@ button svg,
 	.adventure-section {
 		padding: 2rem 0;
 	}
-	
+
 	.adventure-card {
 		padding: 1.5rem;
 	}
-	
+
 	.adventure-cta,
 	.adventure-cta-secondary {
 		padding: 0.875rem 1.5rem;
@@ -2184,7 +1878,7 @@ button svg,
 }
 
 /* Ensure professional icons have white color in all themes */
-.professional-icon > svg {
+.professional-icon>svg {
 	color: white !important;
 	stroke: white !important;
 }

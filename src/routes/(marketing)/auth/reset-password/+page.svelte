@@ -150,7 +150,7 @@
 									id="password"
 									name="password"
 									bind:value={password}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 									placeholder="Enter new password"
 									disabled={isLoading}
 									onblur={() => {
@@ -186,7 +186,7 @@
 									id="confirmPassword"
 									name="confirmPassword"
 									bind:value={confirmPassword}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500 text-sm {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {confirmPasswordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 									placeholder="Confirm new password"
 									disabled={isLoading}
 									onblur={() => {
@@ -234,7 +234,7 @@
 
 					<!-- Navigation -->
 					<div class="mt-6 text-center">
-						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:opacity-80">
 							<ArrowLeft class="w-4 h-4" />
 							Back to sign in
 						</a>

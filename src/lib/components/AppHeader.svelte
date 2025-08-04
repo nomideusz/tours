@@ -14,11 +14,11 @@
 </script>
 
 <!-- Professional App Header -->
-<header class="professional-header {className}">
-	<div class="professional-header-container">
-		<div class="professional-header-content">
+<header class="app-header {className}">
+	<div class="app-header-container">
+		<div class="app-header-content">
 			<!-- Logo and branding -->
-			<div class="professional-header-brand">
+			<div class="app-header-brand">
 				<Logo showIcon={true} showIconBackground={false} href="/dashboard" size="xl" textSize="large" iconSrc="/favicon.png" />
 		</div>
 
@@ -35,13 +35,13 @@
 </header> 
 
 <style>
-	/* Professional Header - matches marketing style */
-	.professional-header {
+	/* App Header - matches marketing style */
+	.app-header {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 100;
+		z-index: var(--z-70);
 		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
 		border-bottom: 1px solid var(--border-primary);
 		backdrop-filter: blur(12px);
@@ -51,7 +51,7 @@
 	}
 
 	/* Very subtle texture overlay - matches marketing header */
-	.professional-header::before {
+	.app-header::before {
 		content: '';
 		position: absolute;
 		top: 0;
@@ -68,7 +68,7 @@
 		pointer-events: none;
 	}
 
-	.professional-header-container {
+	.app-header-container {
 		width: 100%;
 		padding: 0 1.5rem;
 		position: relative;
@@ -76,18 +76,18 @@
 	}
 
 	@media (min-width: 640px) {
-		.professional-header-container {
+		.app-header-container {
 			padding: 0 2rem;
 		}
 	}
 
 	@media (min-width: 1024px) {
-		.professional-header-container {
+		.app-header-container {
 			padding: 0 2rem;
 		}
 	}
 
-	.professional-header-content {
+	.app-header-content {
 		display: flex;
 		height: 5rem;
 		align-items: center;
@@ -95,7 +95,7 @@
 	}
 
 	/* Brand */
-	.professional-header-brand {
+	.app-header-brand {
 		display: flex;
 		align-items: center;
 		height: 100%;
@@ -109,7 +109,7 @@
 	}
 
 	/* Dark Mode Support */
-	[data-theme="dark"] .professional-header::before {
+	[data-theme="dark"] .app-header::before {
 		background-image: repeating-linear-gradient(
 			0deg,
 			transparent,
@@ -121,7 +121,7 @@
 
 	/* Responsive adjustments */
 	@media (max-width: 480px) {
-		.professional-header-container {
+		.app-header-container {
 			padding: 0 1rem;
 		}
 	}

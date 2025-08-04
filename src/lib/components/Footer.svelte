@@ -11,6 +11,7 @@
 	import LifeBuoy from 'lucide-svelte/icons/life-buoy';
 	import Rocket from 'lucide-svelte/icons/rocket';
 	import BookOpen from 'lucide-svelte/icons/book-open';
+	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 </script>
 
 <!-- Professional Footer -->
@@ -33,10 +34,14 @@
 					/>
 				</div>
 				<p class="footer-description">
-					The simplest booking system for independent tour guides. More bookings, less hassle.
+					Currently in Beta: Building the simplest booking system for independent tour guides. Join 50 selected guides shaping the future of tour booking.
 				</p>
 				<!-- Trust Badges -->
 				<div class="trust-badges">
+					<div class="trust-badge beta-badge">
+						<FlaskConical class="w-4 h-4" />
+						<span>Beta Program</span>
+					</div>
 					<div class="trust-badge">
 						<CreditCard class="w-4 h-4" />
 						<span>Stripe Secured</span>
@@ -115,10 +120,10 @@
 					<li>
 						<button 
 							class="footer-link footer-button"
-							onclick={() => window.location.href = '/auth/register'}
+							onclick={() => window.location.href = '/beta/apply'}
 						>
-							<Rocket class="w-4 h-4" />
-							<span>Get Started</span>
+							<FlaskConical class="w-4 h-4" />
+							<span>Apply for Beta</span>
 						</button>
 					</li>
 				</ul>
@@ -250,7 +255,7 @@
 		overflow: hidden;
 	}
 
-	/* Subtle coral accent on hover - matches HeroSection */
+	/* Subtle primary accent on hover */
 	.trust-badge::before {
 		content: '';
 		position: absolute;
@@ -258,7 +263,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -272,6 +277,20 @@
 		border-color: var(--border-secondary);
 		color: var(--text-primary);
 		transform: translateY(-1px);
+	}
+
+	/* Special styling for beta badge */
+	.beta-badge {
+		background: var(--primary);
+		color: white;
+		border-color: var(--primary);
+	}
+
+	.beta-badge:hover {
+		background: var(--primary);
+		color: white;
+		opacity: 0.9;
+		border-color: var(--primary);
 	}
 
 	/* Footer Sections */
@@ -288,7 +307,7 @@
 		position: relative;
 	}
 
-	/* Coral accent line under headings - matches HeroSection */
+	/* Primary accent line under headings */
 	.footer-heading::after {
 		content: '';
 		position: absolute;
@@ -296,7 +315,7 @@
 		left: 0;
 		width: 2rem;
 		height: 0.125rem;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		border-radius: 0.0625rem;
 	}
 
@@ -335,12 +354,13 @@
 
 	/* Special styling for footer button */
 	.footer-button {
-		color: var(--color-coral-600);
+		color: var(--primary);
 		font-weight: 600;
 	}
 
 	.footer-button:hover {
-		color: var(--color-coral-700);
+		color: var(--primary);
+		opacity: 0.8;
 	}
 
 	/* Footer Bottom */
@@ -398,7 +418,7 @@
 		color: var(--text-primary);
 	}
 
-	/* Coral accent underline on hover - matches HeroSection */
+	/* Primary accent underline on hover */
 	.footer-legal-link::after {
 		content: '';
 		position: absolute;
@@ -406,7 +426,7 @@
 		left: 0;
 		width: 0;
 		height: 0.125rem;
-		background: var(--color-coral-500);
+		background: var(--primary);
 		transition: width var(--transition-base) ease;
 	}
 
