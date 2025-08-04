@@ -616,7 +616,7 @@
 			<div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
 				<div class="text-center sm:text-left">
 					<p class="text-sm" style="color: var(--text-secondary);">
-						Takes 2 minutes • {formCompletion.completed}/{formCompletion.total} fields
+						{formCompletion.completed}/{formCompletion.total} fields completed
 					</p>
 				</div>
 				

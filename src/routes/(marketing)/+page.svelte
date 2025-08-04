@@ -11,6 +11,7 @@
 	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
 	import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
+	import BetaTimelineSection from '$lib/components/marketing/BetaTimelineSection.svelte';
 </script>
 
 <svelte:head>
@@ -62,6 +63,13 @@
 
 <!-- Beta Hero Section -->
 <BetaHeroSection />
+
+<!-- Timeline Section -->
+<section id="timeline" class="timeline-section">
+	<div class="mx-auto px-6 sm:px-8 lg:px-12" style="max-width: 50rem;">
+		<BetaTimelineSection />
+	</div>
+</section>
 
 <!-- How it works with subtle texture -->
 <section id="how-it-works" class="subtle-retro-section py-20">
@@ -125,5 +133,43 @@
 			rgba(0, 0, 0, 0.02) 41px
 		);
 		pointer-events: none;
+	}
+	
+	/* Timeline section - matches subtle-retro-section pattern */
+	.timeline-section {
+		background: 
+			repeating-linear-gradient(
+				0deg,
+				transparent,
+				transparent 40px,
+				rgba(0, 0, 0, 0.02) 40px,
+				rgba(0, 0, 0, 0.02) 41px
+			),
+			linear-gradient(
+				180deg,
+				var(--bg-primary) 0%,
+				var(--bg-secondary) 100%
+			);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Dark mode support */
+	@media (prefers-color-scheme: dark) {
+		.timeline-section {
+			background: 
+				repeating-linear-gradient(
+					0deg,
+					transparent,
+					transparent 40px,
+					rgba(255, 255, 255, 0.02) 40px,
+					rgba(255, 255, 255, 0.02) 41px
+				),
+				linear-gradient(
+					180deg,
+					var(--bg-primary) 0%,
+					var(--bg-secondary) 100%
+				);
+		}
 	}
 </style> 
