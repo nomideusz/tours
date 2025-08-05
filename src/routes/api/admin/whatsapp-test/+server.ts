@@ -1,13 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { sendWhatsAppMessage } from '$lib/whatsapp/sender.js';
-import { isAdmin } from '$lib/auth/server.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		// Check admin authentication
-		const user = locals.user;
-		if (!user || !isAdmin(user)) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return error(403, 'Admin access required');
 		}
 
