@@ -194,17 +194,17 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 			source: fromNumber.replace('+', '')
 		});
 		
-		// Debug: Try text message first to ensure basic API works
-		const isTemplate = false; // Temporarily back to text for debugging
+		// Basic API works! Now use templates
+		const isTemplate = true; // Back to approved templates
 		
 		let params;
 		if (isTemplate) {
-			// Gupshup template message format - using HSM template structure
+			// Gupshup template message format - using correct HSM structure
 			const hsmTemplate = {
 				isHSM: true,
 				type: 'template',
 				template: {
-					templateType: 'ACCOUNT_UPDATE',
+					templateType: 'TRANSACTIONAL',
 					id: template.name,
 					params: message.parameters
 				}
