@@ -76,6 +76,9 @@ export const POST: RequestHandler = async ({ request, url }) => {
 			timestamp: new Date(payload.timestamp || Date.now()).toISOString()
 		});
 		
+		// Debug: Log the full payload structure to understand the format
+		console.log('🔍 Full webhook payload:', JSON.stringify(payload, null, 2));
+		
 		// Handle different event types
 		switch (payload.type) {
 			case 'message-event':
