@@ -194,17 +194,15 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 			source: fromNumber.replace('+', '')
 		});
 		
-		// Basic API works! Now use templates
-		const isTemplate = true; // Back to approved templates
+		// Temporarily use text format until template rendering is fixed
+		const isTemplate = false; // Use formatted text that matches template
 		
 		let params;
 		if (isTemplate) {
-			// Gupshup template message format - using correct HSM structure
-			const hsmTemplate = {
-				isHSM: true,
+			// Try simpler Gupshup template format
+			const simpleTemplate = {
 				type: 'template',
 				template: {
-					templateType: 'TRANSACTIONAL',
 					id: template.name,
 					params: message.parameters
 				}
@@ -215,31 +213,95 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 				source: fromNumber.replace('+', ''),
 				destination: message.to,
 				'src.name': appName,
-				'message': JSON.stringify(hsmTemplate)
+				'message': JSON.stringify(simpleTemplate)
 			});
 			
-			console.log('📤 Gupshup HSM payload:', JSON.stringify(hsmTemplate, null, 2));
+			console.log('📤 Gupshup simple template payload:', JSON.stringify(simpleTemplate, null, 2));
 		} else {
-			// Simple text message format for testing
-			let textMessage = template.components.find(c => c.type === 'body')?.text || 'Test message';
+			// Format text message to match approved template structure
+			let formattedMessage = '';
 			
-			// Replace parameters in the text
-			message.parameters.forEach((param, index) => {
-				textMessage = textMessage.replace(`{{${index + 1}}}`, param);
-			});
+			// Build message based on template type
+			switch (message.template) {
+				case 'booking_confirmation':
+					formattedMessage = `*🎉 Booking Confirmed!*
+
+Hello ${message.parameters[0]},
+
+Your booking for *${message.parameters[1]}* on ${message.parameters[2]} has been confirmed!
+
+📍 Meeting point: ${message.parameters[3]}
+👥 Participants: ${message.parameters[4]}
+💰 Total: ${message.parameters[5]}
+
+Your ticket code: *${message.parameters[6]}*
+
+Show this code at check-in.
+
+Thank you for booking with ${message.parameters[7]}`;
+					break;
+					
+				case 'booking_reminder':
+					formattedMessage = `*⏰ Tour Reminder*
+
+Hi ${message.parameters[0]},
+
+This is a friendly reminder about your tour tomorrow!
+
+🎯 *${message.parameters[1]}*
+📅 ${message.parameters[2]}
+📍 Meeting point: ${message.parameters[3]}
+
+Your ticket code: *${message.parameters[4]}*
+
+Please arrive 10 minutes early. See you there!`;
+					break;
+					
+				case 'new_booking_guide':
+					formattedMessage = `*🎉 New Booking Received!*
+
+Hello ${message.parameters[0]},
+
+You have a new booking!
+
+🎯 Tour: *${message.parameters[1]}*
+📅 Date: ${message.parameters[2]}
+👤 Customer: ${message.parameters[3]}
+👥 Participants: ${message.parameters[4]}
+💰 Amount: ${message.parameters[5]}
+
+Check your dashboard for full details.`;
+					break;
+					
+				case 'booking_cancelled':
+					formattedMessage = `*❌ Booking Cancelled*
+
+Hi ${message.parameters[0]},
+
+Your booking for *${message.parameters[1]}* on ${message.parameters[2]} has been cancelled.
+
+${message.parameters[3]}
+
+If you have any questions, please contact us.`;
+					break;
+					
+				default:
+					// Fallback to basic template replacement
+					formattedMessage = template.components.find(c => c.type === 'body')?.text || 'Test message';
+					message.parameters.forEach((param, index) => {
+						formattedMessage = formattedMessage.replace(`{{${index + 1}}}`, param);
+					});
+			}
 			
-			console.log('📤 Gupshup text message:', textMessage);
+			console.log('📤 Formatted text message:', formattedMessage);
 			
-			// Try simplest possible format
 			params = new URLSearchParams({
 				channel: 'whatsapp',
 				source: fromNumber.replace('+', ''),
 				destination: message.to,
 				'src.name': appName,
-				message: textMessage  // Try without JSON.stringify
+				message: formattedMessage
 			});
-			
-			console.log('📤 All request params:', params.toString());
 		}
 		
 		const response = await fetch(url, {
