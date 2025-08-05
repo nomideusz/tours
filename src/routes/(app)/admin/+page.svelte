@@ -400,6 +400,10 @@
 							<MapPin class="h-4 w-4" />
 							Tours
 						</button>
+						<button onclick={() => goto('/admin/beta-applications')} class="button-secondary button--gap">
+							<Users class="h-4 w-4" />
+							Beta Applications
+						</button>
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />
 							Email
