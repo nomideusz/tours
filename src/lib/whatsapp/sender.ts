@@ -194,20 +194,31 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 			source: fromNumber.replace('+', '')
 		});
 		
-		// Use approved templates from Gupshup
-		const isTemplate = true; // Now using approved templates!
+		// Debug: Try text message first to ensure basic API works
+		const isTemplate = false; // Temporarily back to text for debugging
 		
 		let params;
 		if (isTemplate) {
-			// Template message format
+			// Gupshup template message format - using HSM template structure
+			const hsmTemplate = {
+				isHSM: true,
+				type: 'template',
+				template: {
+					templateType: 'ACCOUNT_UPDATE',
+					id: template.name,
+					params: message.parameters
+				}
+			};
+			
 			params = new URLSearchParams({
 				channel: 'whatsapp',
 				source: fromNumber.replace('+', ''),
 				destination: message.to,
 				'src.name': appName,
-				'message.contentType': 'template',
-				'message.payload': JSON.stringify(templateMessage)
+				'message': JSON.stringify(hsmTemplate)
 			});
+			
+			console.log('📤 Gupshup HSM payload:', JSON.stringify(hsmTemplate, null, 2));
 		} else {
 			// Simple text message format for testing
 			let textMessage = template.components.find(c => c.type === 'body')?.text || 'Test message';
@@ -217,14 +228,18 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 				textMessage = textMessage.replace(`{{${index + 1}}}`, param);
 			});
 			
+			console.log('📤 Gupshup text message:', textMessage);
+			
+			// Try simplest possible format
 			params = new URLSearchParams({
 				channel: 'whatsapp',
 				source: fromNumber.replace('+', ''),
 				destination: message.to,
 				'src.name': appName,
-				'message.contentType': 'text',
-				'message.payload': JSON.stringify({ text: textMessage })
+				message: textMessage  // Try without JSON.stringify
 			});
+			
+			console.log('📤 All request params:', params.toString());
 		}
 		
 		const response = await fetch(url, {
