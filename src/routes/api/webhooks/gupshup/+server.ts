@@ -6,23 +6,32 @@ import { createId } from '@paralleldrive/cuid2';
 import { sendNotificationToUser } from '$lib/notifications/server.js';
 
 interface GupshupWebhookPayload {
+	app?: string;
+	timestamp?: number;
+	version?: number;
 	type: 'message-event' | 'user-event' | 'message' | 'system-event';
 	payload: {
 		id?: string;
-		type?: string;
+		gsId?: string;  // Gupshup message ID
+		type?: string;  // Status: sent, delivered, read, failed, etc.
 		destination?: string;
 		phone?: string;
 		whatsappMessageId?: string;
+		payload?: {  // Error details when status is failed
+			code?: number;
+			reason?: string;
+			message?: string;
+		};
 		context?: {
 			id?: string;
 			gsId?: string;
 		};
 	};
-	// For message events
+	// For message events (legacy fields - may not be used)
 	messageId?: string;
 	destAddr?: string;
 	srcAddr?: string;
-	// Status events
+	// Status events (legacy fields - may not be used)
 	status?: 'sent' | 'delivered' | 'read' | 'failed' | 'deleted';
 	statusCode?: number;
 	errors?: Array<{
@@ -30,7 +39,6 @@ interface GupshupWebhookPayload {
 		title: string;
 		details?: string;
 	}>;
-	timestamp?: number;
 	// For incoming messages
 	message?: {
 		text?: string;
@@ -69,10 +77,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
 			payload = JSON.parse(params.get('payload') || '{}');
 		}
 		
+		// Extract data from the correct Gupshup webhook structure
+		const messageId = payload.payload?.gsId || payload.payload?.id;
+		const status = payload.payload?.type;
+		const recipient = payload.payload?.destination;
+		const errorDetails = payload.payload?.payload;
+		
 		console.log('📱 Gupshup webhook received:', {
 			type: payload.type,
-			messageId: payload.messageId,
-			status: payload.status,
+			messageId: messageId,
+			status: status,
+			recipient: recipient,
 			timestamp: new Date(payload.timestamp || Date.now()).toISOString()
 		});
 		
@@ -117,13 +132,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
  * Handle message delivery status events
  */
 async function handleMessageEvent(payload: GupshupWebhookPayload) {
-	const { messageId, status, destAddr, errors, timestamp } = payload;
+	// Extract from the correct Gupshup webhook structure
+	const messageId = payload.payload?.gsId || payload.payload?.id;
+	const status = payload.payload?.type;
+	const recipient = payload.payload?.destination;
+	const errorDetails = payload.payload?.payload;
 	
 	console.log(`📊 Message status update:`, {
 		messageId,
 		status,
-		recipient: destAddr,
-		errors: errors?.length ? errors : undefined
+		recipient,
+		errors: errorDetails ? [errorDetails] : undefined
 	});
 	
 	// Map Gupshup status to user-friendly message
@@ -144,13 +163,17 @@ async function handleMessageEvent(payload: GupshupWebhookPayload) {
 			notificationType = 'success';
 			break;
 		case 'failed':
-			statusMessage = `WhatsApp delivery failed: ${errors?.[0]?.title || 'Unknown error'}`;
+			const errorMessage = errorDetails?.reason || errorDetails?.message || 'Unknown error';
+			statusMessage = `WhatsApp delivery failed: ${errorMessage}`;
 			notificationType = 'error';
 			break;
 		case 'deleted':
 			statusMessage = 'WhatsApp message was deleted';
 			notificationType = 'info';
 			break;
+		default:
+			statusMessage = `WhatsApp message status: ${status}`;
+			notificationType = status === 'failed' ? 'error' : 'info';
 	}
 	
 	// TODO: Update message status in database if you're tracking messages
@@ -160,8 +183,8 @@ async function handleMessageEvent(payload: GupshupWebhookPayload) {
 	if (status === 'failed' || status === 'deleted') {
 		console.error(`⚠️ WhatsApp message ${status}:`, {
 			messageId,
-			recipient: destAddr,
-			errors
+			recipient,
+			errorDetails
 		});
 	}
 }
