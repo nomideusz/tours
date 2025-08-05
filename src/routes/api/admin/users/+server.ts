@@ -3,6 +3,9 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { users, tours, bookings } from '$lib/db/schema/index.js';
 import { sql, count, sum, eq } from 'drizzle-orm';
+import { createId } from '@paralleldrive/cuid2';
+import { hash } from '@node-rs/argon2';
+import { generateUniqueUsername } from '$lib/utils/username.js';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	// Check admin access
@@ -74,5 +77,106 @@ export const GET: RequestHandler = async ({ locals }) => {
 	} catch (error) {
 		console.error('Error fetching users:', error);
 		return json({ error: 'Failed to fetch users' }, { status: 500 });
+	}
+};
+
+export const POST: RequestHandler = async ({ locals, request }) => {
+	// Check admin access
+	if (!locals.user || locals.user.role !== 'admin') {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	try {
+		const formData = await request.formData();
+		const email = formData.get('email')?.toString()?.trim();
+		const name = formData.get('name')?.toString()?.trim();
+		const password = formData.get('password')?.toString();
+		const role = formData.get('role')?.toString() || 'user';
+
+		// Validation
+		if (!email || !name || !password) {
+			return json({ 
+				error: 'Email, name, and password are required' 
+			}, { status: 400 });
+		}
+
+		if (password.length < 8) {
+			return json({ 
+				error: 'Password must be at least 8 characters long' 
+			}, { status: 400 });
+		}
+
+		// Validate email format
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return json({ 
+				error: 'Please provide a valid email address' 
+			}, { status: 400 });
+		}
+
+		// Validate role
+		if (!['user', 'admin'].includes(role)) {
+			return json({ 
+				error: 'Role must be either user or admin' 
+			}, { status: 400 });
+		}
+
+		// Check if user already exists
+		const existingUser = await db
+			.select({ id: users.id })
+			.from(users)
+			.where(eq(users.email, email.toLowerCase()))
+			.limit(1);
+
+		if (existingUser.length > 0) {
+			return json({ 
+				error: 'A user with this email already exists' 
+			}, { status: 400 });
+		}
+
+		// Generate unique username
+		const username = await generateUniqueUsername(name);
+
+		// Hash password
+		const hashedPassword = await hash(password, {
+			memoryCost: 19456,
+			timeCost: 2,
+			outputLen: 32,
+			parallelism: 1
+		});
+
+		// Create user
+		const newUserId = createId();
+		await db.insert(users).values({
+			id: newUserId,
+			email: email.toLowerCase(),
+			name,
+			username,
+			hashedPassword,
+			role: role as 'user' | 'admin',
+			emailVerified: true, // Admin-created accounts are pre-verified
+			country: null, // User will set during onboarding
+			currency: 'EUR' // Default currency
+		});
+
+		// Return success without sensitive data
+		return json({ 
+			success: true,
+			message: `User account created successfully for ${email}`,
+			user: {
+				id: newUserId,
+				email: email.toLowerCase(),
+				name,
+				username,
+				role,
+				emailVerified: true
+			}
+		});
+
+	} catch (error) {
+		console.error('Error creating user:', error);
+		return json({ 
+			error: 'Failed to create user account' 
+		}, { status: 500 });
 	}
 }; 

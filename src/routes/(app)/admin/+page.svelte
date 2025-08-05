@@ -5,6 +5,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import TableSort from '$lib/components/TableSort.svelte';
@@ -15,6 +16,7 @@
 	
 	// Icons
 	import Users from 'lucide-svelte/icons/users';
+	import UserPlus from 'lucide-svelte/icons/user-plus';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Shield from 'lucide-svelte/icons/shield';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
@@ -123,6 +125,12 @@
 	let isDeleting = $state(false);
 	let deleteError = $state<string | null>(null);
 	
+	// Create user modal states
+	let showCreateUserModal = $state(false);
+	let isCreatingUser = $state(false);
+	let createUserError = $state<string | null>(null);
+	let createUserSuccess = $state<string | null>(null);
+	
 	// Filter users
 	let filteredUsers = $derived.by(() => {
 		let result = [...users];
@@ -181,6 +189,49 @@
 			deleteError = error instanceof Error ? error.message : 'Failed to delete user';
 		} finally {
 			isDeleting = false;
+		}
+	}
+	
+	// Create user function
+	async function createUser(event: SubmitEvent) {
+		event.preventDefault();
+		const formData = new FormData(event.target as HTMLFormElement);
+		
+		isCreatingUser = true;
+		createUserError = null;
+		createUserSuccess = null;
+		
+		try {
+			const response = await fetch('/api/admin/users', {
+				method: 'POST',
+				body: formData
+			});
+			
+			const result = await response.json();
+			
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to create user');
+			}
+			
+			// Show success message
+			createUserSuccess = result.message;
+			
+			// Refresh users list and stats
+			await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+			await queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+			
+			// Clear form and close modal after a short delay
+			setTimeout(() => {
+				showCreateUserModal = false;
+				createUserSuccess = null;
+				// Reset form
+				const form = event.target as HTMLFormElement;
+				form.reset();
+			}, 2000);
+		} catch (error) {
+			createUserError = error instanceof Error ? error.message : 'Failed to create user';
+		} finally {
+			isCreatingUser = false;
 		}
 	}
 	
@@ -498,6 +549,15 @@
 						class="form-input pl-10 w-full"
 					/>
 				</div>
+				
+				<!-- Create User Button -->
+				<button
+					onclick={() => showCreateUserModal = true}
+					class="button-primary button--gap"
+				>
+					<UserPlus class="h-4 w-4" />
+					Create User
+				</button>
 				
 				<!-- Filter Button -->
 				<button
@@ -831,6 +891,130 @@
 			deleteError = null;
 		}}
 	/>
+	
+	<!-- Create User Modal -->
+	<Modal 
+		isOpen={showCreateUserModal}
+		onClose={() => {
+			showCreateUserModal = false;
+			createUserError = null;
+			createUserSuccess = null;
+		}}
+	>
+		<div class="p-6">
+			<h2 class="text-xl font-semibold mb-4" style="color: var(--text-primary);">
+				Create New User Account
+			</h2>
+			
+			<form onsubmit={createUser} class="space-y-4">
+				<div>
+					<label for="user-email" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Email Address
+					</label>
+					<input
+						id="user-email"
+						name="email"
+						type="email"
+						required
+						class="form-input w-full"
+						placeholder="user@example.com"
+						disabled={isCreatingUser}
+					/>
+				</div>
+				
+				<div>
+					<label for="user-name" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Full Name
+					</label>
+					<input
+						id="user-name"
+						name="name"
+						type="text"
+						required
+						class="form-input w-full"
+						placeholder="John Doe"
+						disabled={isCreatingUser}
+					/>
+				</div>
+				
+				<div>
+					<label for="user-password" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Password
+					</label>
+					<input
+						id="user-password"
+						name="password"
+						type="password"
+						required
+						minlength="8"
+						class="form-input w-full"
+						placeholder="Minimum 8 characters"
+						disabled={isCreatingUser}
+					/>
+				</div>
+				
+				<div>
+					<label for="user-role" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Role
+					</label>
+					<select
+						id="user-role"
+						name="role"
+						class="form-select w-full"
+						disabled={isCreatingUser}
+					>
+						<option value="user">User (Tour Guide)</option>
+						<option value="admin">Admin</option>
+					</select>
+				</div>
+				
+				{#if createUserError}
+					<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
+						<p class="text-sm" style="color: var(--color-danger-700);">
+							{createUserError}
+						</p>
+					</div>
+				{/if}
+				
+				{#if createUserSuccess}
+					<div class="rounded-lg p-3" style="background: var(--color-success-100); border: 1px solid var(--color-success-200);">
+						<p class="text-sm" style="color: var(--color-success-700);">
+							<CheckCircle class="h-4 w-4 inline mr-1" />
+							{createUserSuccess}
+						</p>
+					</div>
+				{/if}
+				
+				<div class="flex gap-3 pt-4">
+					<button
+						type="submit"
+						disabled={isCreatingUser}
+						class="button-primary flex-1 button--gap"
+					>
+						{#if isCreatingUser}
+							<Loader2 class="h-4 w-4 animate-spin" />
+							Creating...
+						{:else}
+							<UserPlus class="h-4 w-4" />
+							Create User
+						{/if}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							showCreateUserModal = false;
+							createUserError = null;
+							createUserSuccess = null;
+						}}
+						disabled={isCreatingUser}
+						class="button-secondary"
+					>
+						Cancel
+					</button>
+				</div>
+			</form>
+		</div>
+	</Modal>
 {/if}
 
 <style>
