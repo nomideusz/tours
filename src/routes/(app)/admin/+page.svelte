@@ -139,7 +139,7 @@
 	let whatsAppTestSuccess = $state<string | null>(null);
 	let testPhoneNumber = $state('');
 	let testTemplate = $state('booking_confirmation');
-	let testParameters = $state(['Test User', 'Test Tour', 'Tomorrow at 2:00 PM', 'Main Square', '2', '$50', 'TEST123', 'Zaur', 'https://zaur.app/ticket/TEST123']);
+	let testParameters = $state(['Test User', 'Test Tour', 'Tomorrow at 2:00 PM', 'Main Square', '2', '$50', 'TEST123', 'Zaur']);
 	
 	// Filter users
 	let filteredUsers = $derived.by(() => {

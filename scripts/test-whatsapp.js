@@ -19,41 +19,38 @@ async function testWhatsApp() {
 	console.log(`📋 Template: ${template}`);
 	console.log('');
 
-	// Test parameters for different templates
+	// Test parameters for different templates (updated for approved Gupshup templates)
 	const testParameters = {
 		booking_confirmation: [
-			'Test User',
-			'Test Tour from Script',
-			'Tomorrow at 2:00 PM',
-			'Main Square',
-			'2',
-			'$50',
-			'SCRIPT123',
-			'Zaur',
-			'https://zaur.app/ticket/SCRIPT123'
+			'Test User',           // {{1}} - Customer name
+			'Test Tour from Script', // {{2}} - Tour name  
+			'Tomorrow at 2:00 PM',   // {{3}} - Date/time
+			'Main Square',          // {{4}} - Meeting point
+			'2',                   // {{5}} - Participants
+			'$50',                 // {{6}} - Total amount
+			'SCRIPT123',           // {{7}} - Ticket code
+			'Zaur'                 // {{8}} - Business name
 		],
 		booking_reminder: [
-			'Test User',
-			'Test Tour from Script',
-			'Tomorrow at 2:00 PM',
-			'Main Square',
-			'SCRIPT123',
-			'https://zaur.app/ticket/SCRIPT123'
+			'Test User',           // {{1}} - Customer name (also used in URL)
+			'Test Tour from Script', // {{2}} - Tour name
+			'Tomorrow at 2:00 PM',   // {{3}} - Date/time  
+			'Main Square',          // {{4}} - Meeting point
+			'SCRIPT123'            // {{5}} - Ticket code
 		],
 		new_booking_guide: [
-			'Zaur',
-			'Test Tour from Script',
-			'Tomorrow at 2:00 PM',
-			'Test User',
-			'2',
-			'$50',
-			'https://zaur.app/dashboard/bookings/123'
+			'Zaur',               // {{1}} - Guide name (also used in URL)
+			'Test Tour from Script', // {{2}} - Tour name
+			'Tomorrow at 2:00 PM',   // {{3}} - Date/time
+			'Test User',          // {{4}} - Customer name
+			'2',                  // {{5}} - Participants
+			'$50'                 // {{6}} - Amount
 		],
 		booking_cancelled: [
-			'Test User',
-			'Test Tour from Script',
-			'Tomorrow at 2:00 PM',
-			'Test cancellation from script'
+			'Test User',          // {{1}} - Customer name
+			'Test Tour from Script', // {{2}} - Tour name
+			'Tomorrow at 2:00 PM',   // {{3}} - Date/time
+			'Test cancellation from script' // {{4}} - Reason
 		]
 	};
 
@@ -81,7 +78,7 @@ async function testWhatsApp() {
 
 // Check if script is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-	testWhatsApp();
+testWhatsApp(); 
 }
 
 export { testWhatsApp };

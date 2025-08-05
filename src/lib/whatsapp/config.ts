@@ -46,7 +46,7 @@ export const WHATSAPP_PROVIDERS = {
 
 export type WhatsAppProviderType = keyof typeof WHATSAPP_PROVIDERS;
 
-// WhatsApp message templates
+// WhatsApp message templates - Updated to match approved Gupshup templates
 export const WHATSAPP_TEMPLATES = {
 	booking_confirmation: {
 		name: 'booking_confirmation',
@@ -55,15 +55,11 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'header',
 				format: 'text',
-				text: '🎉 Booking Confirmed!'
+				text: 'Booking Confirmed!'
 			},
 			{
 				type: 'body',
-				text: 'Hello {{1}},\n\nYour booking for *{{2}}* on {{3}} has been confirmed!\n\n📍 Meeting point: {{4}}\n👥 Participants: {{5}}\n💰 Total: {{6}}\n\nYour ticket code: *{{7}}*\n\nShow this code at check-in.'
-			},
-			{
-				type: 'footer',
-				text: 'Thank you for booking with {{8}}'
+				text: 'Hello {{1}},\n\nYour booking for *{{2}}* on {{3}} has been confirmed!\n\n📍 Meeting point: {{4}}\n👥 Participants: {{5}}\n💰 Total: {{6}}\n\nYour ticket code: *{{7}}*\n\nShow this code at check-in.\n\nThank you for booking with {{8}}'
 			},
 			{
 				type: 'buttons',
@@ -71,7 +67,7 @@ export const WHATSAPP_TEMPLATES = {
 					{
 						type: 'url',
 						text: 'View Ticket',
-						url: '{{9}}'  // Ticket URL will be parameter 9
+						url: 'https://zaur.app/ticket/{{1}}'  // Uses customer name/code parameter
 					}
 				]
 			}
@@ -84,7 +80,7 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'header',
 				format: 'text',
-				text: '⏰ Tour Reminder'
+				text: 'Tour Reminder'
 			},
 			{
 				type: 'body',
@@ -96,7 +92,7 @@ export const WHATSAPP_TEMPLATES = {
 					{
 						type: 'url',
 						text: 'View Ticket',
-						url: '{{6}}'  // Ticket URL will be parameter 6
+						url: 'https://zaur.app/ticket{{1}}'  // Uses customer parameter
 					}
 				]
 			}
@@ -109,7 +105,7 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'header',
 				format: 'text',
-				text: '🎉 New Booking Received!'
+				text: 'New Booking Received!'
 			},
 			{
 				type: 'body',
@@ -120,8 +116,8 @@ export const WHATSAPP_TEMPLATES = {
 				buttons: [
 					{
 						type: 'url',
-						text: 'View Booking',
-						url: '{{7}}'  // Dashboard booking URL will be parameter 7
+						text: 'View Bookin',  // Matches Gupshup template exactly
+						url: 'https://zaur.app/bookings{{1}}'  // Uses guide parameter
 					}
 				]
 			}
@@ -134,7 +130,7 @@ export const WHATSAPP_TEMPLATES = {
 			{
 				type: 'header',
 				format: 'text',
-				text: '❌ Booking Cancelled'
+				text: 'Booking Cancelled'
 			},
 			{
 				type: 'body',

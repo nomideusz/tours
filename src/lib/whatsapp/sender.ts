@@ -128,7 +128,16 @@ async function sendViaPlivio(message: WhatsAppMessage): Promise<WhatsAppResult> 
 			})
 		});
 		
-		const data = await response.json();
+		// Handle both JSON and non-JSON responses
+		let data;
+		const responseText = await response.text();
+		
+		try {
+			data = JSON.parse(responseText);
+		} catch {
+			// If response is not JSON, treat it as an error message
+			data = { error: responseText };
+		}
 		
 		if (response.ok) {
 			return {
@@ -139,7 +148,7 @@ async function sendViaPlivio(message: WhatsAppMessage): Promise<WhatsAppResult> 
 		} else {
 			return {
 				success: false,
-				error: data.error || 'Failed to send message',
+				error: data.error || responseText || 'Failed to send message',
 				provider: 'plivo'
 			};
 		}
@@ -172,26 +181,51 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 		const template = WHATSAPP_TEMPLATES[message.template];
 		const url = `${WHATSAPP_PROVIDERS.gupshup.apiUrl}/msg`;
 		
-		// Build template message with button support
+		// Build template message for Gupshup
 		const templateMessage = {
 			id: template.name,
 			params: message.parameters
 		};
 		
-		// Check if template has buttons and add button parameters
-		const buttonComponent = template.components.find(c => c.type === 'buttons');
-		if (buttonComponent && 'buttons' in buttonComponent) {
-			// For URL buttons, the URL parameter should be included in the params array
-			// Gupshup expects all template parameters in the params array in order
-		}
-		
-		const params = new URLSearchParams({
-			channel: 'whatsapp',
-			source: fromNumber.replace('+', ''),
+		console.log('📤 Gupshup template payload:', {
+			template: template.name,
+			parameters: message.parameters,
 			destination: message.to,
-			'src.name': appName,
-			template: JSON.stringify(templateMessage)
+			source: fromNumber.replace('+', '')
 		});
+		
+		// Use approved templates from Gupshup
+		const isTemplate = true; // Now using approved templates!
+		
+		let params;
+		if (isTemplate) {
+			// Template message format
+			params = new URLSearchParams({
+				channel: 'whatsapp',
+				source: fromNumber.replace('+', ''),
+				destination: message.to,
+				'src.name': appName,
+				'message.contentType': 'template',
+				'message.payload': JSON.stringify(templateMessage)
+			});
+		} else {
+			// Simple text message format for testing
+			let textMessage = template.components.find(c => c.type === 'body')?.text || 'Test message';
+			
+			// Replace parameters in the text
+			message.parameters.forEach((param, index) => {
+				textMessage = textMessage.replace(`{{${index + 1}}}`, param);
+			});
+			
+			params = new URLSearchParams({
+				channel: 'whatsapp',
+				source: fromNumber.replace('+', ''),
+				destination: message.to,
+				'src.name': appName,
+				'message.contentType': 'text',
+				'message.payload': JSON.stringify({ text: textMessage })
+			});
+		}
 		
 		const response = await fetch(url, {
 			method: 'POST',
@@ -202,7 +236,19 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 			body: params.toString()
 		});
 		
-		const data = await response.json();
+		console.log('📥 Gupshup response status:', response.status);
+		
+		// Handle both JSON and non-JSON responses
+		let data;
+		const responseText = await response.text();
+		console.log('📥 Gupshup response body:', responseText);
+		
+		try {
+			data = JSON.parse(responseText);
+		} catch {
+			// If response is not JSON, treat it as an error message
+			data = { message: responseText };
+		}
 		
 		if (response.ok && data.status === 'submitted') {
 			return {
@@ -213,7 +259,7 @@ async function sendViaGupshup(message: WhatsAppMessage): Promise<WhatsAppResult>
 		} else {
 			return {
 				success: false,
-				error: data.message || 'Failed to send message',
+				error: data.message || responseText || 'Failed to send message',
 				provider: 'gupshup'
 			};
 		}
@@ -295,11 +341,24 @@ async function sendViaTwilio(message: WhatsAppMessage): Promise<WhatsAppResult> 
  * Get the configured WhatsApp provider
  */
 function getConfiguredProvider(): WhatsAppProviderType | null {
-	// Check which provider is configured
-	if (env.PLIVO_AUTH_ID && env.PLIVO_AUTH_TOKEN) {
-		return 'plivo';
-	} else if (env.GUPSHUP_API_KEY && env.GUPSHUP_APP_NAME) {
+	// Check for explicit provider setting first
+	const explicitProvider = env.WHATSAPP_PROVIDER as WhatsAppProviderType;
+	if (explicitProvider && ['plivo', 'gupshup', 'twilio'].includes(explicitProvider)) {
+		// Verify the explicit provider has required credentials
+		if (explicitProvider === 'plivo' && env.PLIVO_AUTH_ID && env.PLIVO_AUTH_TOKEN) {
+			return 'plivo';
+		} else if (explicitProvider === 'gupshup' && env.GUPSHUP_API_KEY && env.GUPSHUP_APP_NAME) {
+			return 'gupshup';
+		} else if (explicitProvider === 'twilio' && env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN) {
+			return 'twilio';
+		}
+	}
+	
+	// Fall back to auto-detection (prioritize Gupshup since that's what's configured)
+	if (env.GUPSHUP_API_KEY && env.GUPSHUP_APP_NAME) {
 		return 'gupshup';
+	} else if (env.PLIVO_AUTH_ID && env.PLIVO_AUTH_TOKEN) {
+		return 'plivo';
 	} else if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN) {
 		return 'twilio';
 	}

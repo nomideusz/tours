@@ -37,6 +37,7 @@ When customers need help:
 
 ```env
 WHATSAPP_PHONE_NUMBER=15558084471
+WHATSAPP_PROVIDER=gupshup
 GUPSHUP_API_KEY=configured ✅
 GUPSHUP_APP_NAME=configured ✅
 GUPSHUP_WEBHOOK_TOKEN=configured ✅
