@@ -41,6 +41,7 @@
 	import QrCode from 'lucide-svelte/icons/qr-code';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Image from 'lucide-svelte/icons/image';
+	import MessageSquare from 'lucide-svelte/icons/message-square';
 	
 	const queryClient = useQueryClient();
 	
@@ -130,6 +131,15 @@
 	let isCreatingUser = $state(false);
 	let createUserError = $state<string | null>(null);
 	let createUserSuccess = $state<string | null>(null);
+	
+	// WhatsApp test modal states
+	let showWhatsAppTestModal = $state(false);
+	let isTestingWhatsApp = $state(false);
+	let whatsAppTestError = $state<string | null>(null);
+	let whatsAppTestSuccess = $state<string | null>(null);
+	let testPhoneNumber = $state('');
+	let testTemplate = $state('booking_confirmation');
+	let testParameters = $state(['Test User', 'Test Tour', 'Tomorrow at 2:00 PM', 'Main Square', '2', '$50', 'TEST123', 'Zaur', 'https://zaur.app/ticket/TEST123']);
 	
 	// Filter users
 	let filteredUsers = $derived.by(() => {
@@ -232,6 +242,47 @@
 			createUserError = error instanceof Error ? error.message : 'Failed to create user';
 		} finally {
 			isCreatingUser = false;
+		}
+	}
+	
+	// Test WhatsApp message
+	async function testWhatsAppMessage(event: SubmitEvent) {
+		event.preventDefault();
+		
+		whatsAppTestError = null;
+		whatsAppTestSuccess = null;
+		isTestingWhatsApp = true;
+		
+		try {
+			const response = await fetch('/api/admin/whatsapp-test', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					phoneNumber: testPhoneNumber,
+					template: testTemplate,
+					parameters: testParameters
+				})
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.message || 'Failed to send test message');
+			}
+			
+			const result = await response.json();
+			whatsAppTestSuccess = `Test message sent successfully! Message ID: ${result.messageId} (via ${result.provider})`;
+			
+			// Clear form after success
+			setTimeout(() => {
+				whatsAppTestSuccess = null;
+				showWhatsAppTestModal = false;
+				testPhoneNumber = '';
+			}, 3000);
+			
+		} catch (error) {
+			whatsAppTestError = error instanceof Error ? error.message : 'Failed to send test message';
+		} finally {
+			isTestingWhatsApp = false;
 		}
 	}
 	
@@ -535,6 +586,32 @@
 						</div>
 						<p class="text-sm mb-3" style="color: var(--text-secondary);">Eye-catching graphics for social platforms</p>
 						<p class="text-xs text-primary group-hover:underline">Create Graphics →</p>
+					</button>
+				</div>
+			</div>
+		</div>
+		
+		<!-- WhatsApp Testing Section -->
+		<div class="mb-6">
+			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">WhatsApp Testing</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Test WhatsApp message delivery in production</p>
+				</div>
+				<div class="p-4">
+					<button 
+						onclick={() => showWhatsAppTestModal = true}
+						class="group p-4 rounded-lg border transition-all hover:border-primary w-full max-w-md"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(34, 197, 94, 0.1);">
+								<MessageSquare class="w-5 h-5" style="color: #16a34a;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Send Test Message</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">Send a test WhatsApp message to verify integration</p>
+						<p class="text-xs text-primary group-hover:underline">Open Test Panel →</p>
 					</button>
 				</div>
 			</div>
@@ -1011,6 +1088,148 @@
 							createUserSuccess = null;
 						}}
 						disabled={isCreatingUser}
+						class="button-secondary"
+					>
+						Cancel
+					</button>
+				</div>
+			</form>
+		</div>
+	</Modal>
+	
+	<!-- WhatsApp Test Modal -->
+	<Modal 
+		isOpen={showWhatsAppTestModal}
+		onClose={() => {
+			showWhatsAppTestModal = false;
+			whatsAppTestError = null;
+			whatsAppTestSuccess = null;
+		}}
+	>
+		<div class="p-6">
+			<h2 class="text-xl font-semibold mb-4" style="color: var(--text-primary);">
+				Send Test WhatsApp Message
+			</h2>
+			
+			<form onsubmit={testWhatsAppMessage} class="space-y-4">
+				<div>
+					<label for="test-phone" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Phone Number
+					</label>
+					<input
+						id="test-phone"
+						bind:value={testPhoneNumber}
+						type="tel"
+						required
+						class="form-input w-full"
+						placeholder="+48602846912 or 15558149967"
+						disabled={isTestingWhatsApp}
+					/>
+					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+						Enter phone number with country code (e.g., +48602846912)
+					</p>
+				</div>
+				
+				<div>
+					<label for="test-template" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Message Template
+					</label>
+					<select
+						id="test-template"
+						bind:value={testTemplate}
+						class="form-select w-full"
+						disabled={isTestingWhatsApp}
+					>
+						<option value="booking_confirmation">Booking Confirmation</option>
+						<option value="booking_reminder">Tour Reminder</option>
+						<option value="new_booking_guide">Guide Notification</option>
+						<option value="booking_cancelled">Booking Cancelled</option>
+					</select>
+				</div>
+				
+				<div>
+					<label for="message-preview" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Test Message Preview
+					</label>
+					<div id="message-preview" class="rounded-lg p-3 text-sm" style="background: var(--bg-tertiary); border: 1px solid var(--border-primary); color: var(--text-secondary);" role="region" aria-live="polite">
+						{#if testTemplate === 'booking_confirmation'}
+							🎉 <strong>Booking Confirmed!</strong><br/>
+							Hello Test User,<br/><br/>
+							Your booking for <strong>Test Tour</strong> on Tomorrow at 2:00 PM has been confirmed!<br/><br/>
+							📍 Meeting point: Main Square<br/>
+							👥 Participants: 2<br/>
+							💰 Total: $50<br/><br/>
+							Your ticket code: <strong>TEST123</strong><br/><br/>
+							Show this code at check-in.<br/><br/>
+							Thank you for booking with Zaur
+						{:else if testTemplate === 'booking_reminder'}
+							⏰ <strong>Tour Reminder</strong><br/>
+							Hi Test User,<br/><br/>
+							This is a friendly reminder about your tour tomorrow!<br/><br/>
+							🎯 <strong>Test Tour</strong><br/>
+							📅 Tomorrow at 2:00 PM<br/>
+							📍 Meeting point: Main Square<br/><br/>
+							Your ticket code: <strong>TEST123</strong><br/><br/>
+							Please arrive 10 minutes early. See you there!
+						{:else if testTemplate === 'new_booking_guide'}
+							🎉 <strong>New Booking Received!</strong><br/>
+							Hello Zaur,<br/><br/>
+							You have a new booking!<br/><br/>
+							🎯 Tour: <strong>Test Tour</strong><br/>
+							📅 Date: Tomorrow at 2:00 PM<br/>
+							👤 Customer: Test User<br/>
+							👥 Participants: 2<br/>
+							💰 Amount: $50<br/><br/>
+							Check your dashboard for full details.
+						{:else if testTemplate === 'booking_cancelled'}
+							❌ <strong>Booking Cancelled</strong><br/>
+							Hi Test User,<br/><br/>
+							Your booking for <strong>Test Tour</strong> on Tomorrow at 2:00 PM has been cancelled.<br/><br/>
+							If you have any questions, please contact us.
+						{/if}
+					</div>
+				</div>
+				
+				{#if whatsAppTestError}
+					<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
+						<p class="text-sm" style="color: var(--color-danger-700);">
+							<XCircle class="h-4 w-4 inline mr-1" />
+							{whatsAppTestError}
+						</p>
+					</div>
+				{/if}
+				
+				{#if whatsAppTestSuccess}
+					<div class="rounded-lg p-3" style="background: var(--color-success-100); border: 1px solid var(--color-success-200);">
+						<p class="text-sm" style="color: var(--color-success-700);">
+							<CheckCircle class="h-4 w-4 inline mr-1" />
+							{whatsAppTestSuccess}
+						</p>
+					</div>
+				{/if}
+				
+				<div class="flex gap-3 pt-4">
+					<button
+						type="submit"
+						disabled={isTestingWhatsApp || !testPhoneNumber}
+						class="button-primary flex-1 button--gap"
+					>
+						{#if isTestingWhatsApp}
+							<Loader2 class="h-4 w-4 animate-spin" />
+							Sending...
+						{:else}
+							<MessageSquare class="h-4 w-4" />
+							Send Test Message
+						{/if}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							showWhatsAppTestModal = false;
+							whatsAppTestError = null;
+							whatsAppTestSuccess = null;
+						}}
+						disabled={isTestingWhatsApp}
 						class="button-secondary"
 					>
 						Cancel
