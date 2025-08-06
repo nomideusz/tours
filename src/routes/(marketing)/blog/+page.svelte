@@ -5,6 +5,7 @@
 	import User from 'lucide-svelte/icons/user';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Tag from 'lucide-svelte/icons/tag';
+	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
 	let { data } = $props();
 	
@@ -27,10 +28,7 @@
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
 		<!-- Header -->
 		<div class="text-center mb-16">
-			<div class="professional-badge mb-6">
-				<BookOpen class="w-4 h-4" />
-				<span>Blog</span>
-			</div>
+			<BetaBadge text="Blog" icon={BookOpen} variant="large" class="mb-6" />
 			<h1 class="marketing-heading marketing-heading-xl mb-6">
 				Insights for Tour Guides
 			</h1>
@@ -206,20 +204,7 @@
 		pointer-events: none;
 	}
 
-	/* Professional badge */
-	.professional-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
-		color: var(--text-primary);
-		padding: 0.5rem 1.5rem;
-		border-radius: 2rem;
-		font-weight: 600;
-		font-size: 0.875rem;
-		box-shadow: var(--shadow-sm);
-	}
+
 
 	/* Featured post card */
 	.featured-card {

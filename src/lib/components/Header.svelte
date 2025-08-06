@@ -5,13 +5,14 @@
 	import { onMount } from 'svelte';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Layout from 'lucide-svelte/icons/layout';
+	import Calendar from 'lucide-svelte/icons/calendar';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
+	import BetaBadge from '$lib/components/BetaBadge.svelte';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;
@@ -131,10 +132,7 @@
 					textSize="large" 
 				/>
 				<!-- Beta Badge -->
-				<div class="beta-badge">
-					<FlaskConical class="w-3 h-3" />
-					<span>Beta</span>
-				</div>
+				<BetaBadge text="Beta" icon={FlaskConical} variant="small" class="header-beta-badge" />
 			</div>
 
 			<!-- Desktop Navigation -->
@@ -143,9 +141,9 @@
 					<MapPin class="w-4 h-4" />
 					<span>How it Works</span>
 				</a>
-				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="nav-link">
-					<Layout class="w-4 h-4" />
-					<span>Features</span>
+				<a href={isAuthenticated ? '/?view=home#timeline' : '/#timeline'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#timeline' : '/#timeline')} class="nav-link">
+					<Calendar class="w-4 h-4" />
+					<span>Roadmap</span>
 				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
 					<DollarSign class="w-4 h-4" />
@@ -250,9 +248,9 @@
 					<MapPin class="w-4 h-4" />
 					<span>How it Works</span>
 				</a>
-				<a href={isAuthenticated ? '/?view=home#features' : '/#features'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#features' : '/#features')} class="mobile-nav-link">
-					<Layout class="w-4 h-4" />
-					<span>Features</span>
+				<a href={isAuthenticated ? '/?view=home#timeline' : '/#timeline'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#timeline' : '/#timeline')} class="mobile-nav-link">
+					<Calendar class="w-4 h-4" />
+					<span>Roadmap</span>
 				</a>
 				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
 					<DollarSign class="w-4 h-4" />
@@ -364,23 +362,13 @@
 		height: 100%;
 	}
 
-	/* Beta Badge */
-	.beta-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0.125rem 0.5rem;
-		background: var(--primary);
-		color: white;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 500;
-		white-space: nowrap;
+	/* Beta Badge positioning */
+	:global(.header-beta-badge) {
 		opacity: 0.9;
 		transition: opacity var(--transition-base) ease;
 	}
 
-	.beta-badge:hover {
+	:global(.header-beta-badge:hover) {
 		opacity: 1;
 	}
 
@@ -892,7 +880,7 @@
 
 	/* Responsive adjustments */
 	@media (max-width: 640px) {
-		.beta-badge {
+		:global(.header-beta-badge) {
 			display: none; /* Hide beta badge on small mobile to save space */
 		}
 	}

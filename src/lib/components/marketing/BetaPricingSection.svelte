@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Check from 'lucide-svelte/icons/check';
-	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import { PRICING_PLANS, type PricingPlan } from '$lib/utils/pricing-config.js';
+	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
 	let isYearly = $state(true);
 	
@@ -38,177 +39,157 @@
 	}
 </script>
 
-<div class="text-center mb-12">
-	<div class="beta-badge-inline mb-6">
-		<Sparkles class="w-4 h-4" />
-		<span>Future Pricing (Free During Beta)</span>
-	</div>
-	<h2 class="marketing-heading marketing-heading-lg mb-4">
+<!-- Simple Header -->
+<div class="section-header">
+	<BetaBadge text="Free During Beta" icon={Sparkles} variant="large" class="mb-6" />
+	<h2 class="section-title">
 		Simple, Transparent Pricing
 	</h2>
-	<p class="text-lg max-w-2xl mx-auto text-secondary">
-		No booking commissions, ever. Choose a plan that fits your business. 
-		Beta members lock in 30% off these prices for life + exclusive features.
+	<p class="section-subtitle">
+		No booking commissions, ever. Just pick a plan and grow your business.
 	</p>
 </div>
 
 <!-- Pricing Toggle -->
-<div class="flex justify-center mb-16">
+<div class="pricing-toggle-container">
 	<div class="pricing-toggle">
 		<button 
-			class="button-toggle {!isYearly ? 'active' : ''}"
+			class="toggle-button {!isYearly ? 'active' : ''}"
 			onclick={() => isYearly = false}
 		>
 			Monthly
 		</button>
 		<button 
-			class="button-toggle {isYearly ? 'active' : ''}"
+			class="toggle-button {isYearly ? 'active' : ''}"
 			onclick={() => isYearly = true}
 		>
-			Annual (Save 20%)
+			Annual <span class="save-badge">Save 20%</span>
 		</button>
 	</div>
 </div>
 
-<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 pricing-grid">
-	{#each PRICING_PLANS as plan}
-		{@const pricing = getPlanPricing(plan, isYearly)}
-		{@const includedFeatures = plan.features.filter(f => f.included)}
-		<div class="card card--elevated pricing-card {plan.popular ? 'pricing-card--beta-popular' : ''}">
-			
-			{#if plan.popular}
-				<div class="beta-recommended">
-					<span>Most Popular</span>
-				</div>
-			{/if}
-			
-			<h3 class="pricing-plan-name">{plan.name}</h3>
-			
-			<!-- Beta Pricing Display -->
-			<div class="beta-pricing-display">
-				<div class="price-during-beta">
-					<span class="price-label">During Beta:</span>
-					<span class="price-free">FREE</span>
+<!-- Simplified Pricing Cards -->
+<div class="pricing-container">
+	<div class="pricing-grid">
+		{#each PRICING_PLANS as plan}
+			{@const pricing = getPlanPricing(plan, isYearly)}
+			{@const keyFeatures = plan.features.filter(f => f.included).slice(0, 4)}
+			<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}">
+				
+				{#if plan.popular}
+					<div class="popular-badge">Most Popular</div>
+				{/if}
+				
+				<div class="plan-header">
+					<h3 class="plan-name">{plan.name}</h3>
+					<p class="plan-description">{plan.description}</p>
 				</div>
 				
-				<div class="price-after-launch">
-					<span class="price-label">After Launch:</span>
-					<div class="price-comparison">
+				<!-- Simple Pricing Display -->
+				<div class="pricing-display">
+					<div class="price-row">
+						<span class="price-label">Now:</span>
+						<span class="price-value price-value--free">FREE</span>
+					</div>
+					<div class="price-row">
+						<span class="price-label">Later:</span>
 						{#if plan.id !== 'free'}
-							<span class="price-regular">€{formatPrice(pricing.regular)}</span>
-							<span class="price-beta">€{formatPrice(pricing.beta)}</span>
-							<span class="price-period">{pricing.period}</span>
+							<span class="price-value">€{formatPrice(pricing.beta)}<span class="price-period">/mo</span></span>
 						{:else}
-							<span class="price-beta">FREE</span>
-							<span class="price-period">forever</span>
+							<span class="price-value">FREE</span>
 						{/if}
 					</div>
 					{#if plan.id !== 'free'}
-						<div class="beta-discount-badge">
-							30% off + exclusive features
-						</div>
+						<div class="beta-benefit">Beta: 30% off forever</div>
 					{/if}
 				</div>
-			</div>
-			
-			<p class="pricing-description">{plan.description}</p>
-			
-			<!-- Key Features -->
-			<div class="pricing-features">
-				<h4 class="features-header">Key Features:</h4>
-				<ul class="features-list">
-					{#each includedFeatures.slice(0, 6) as feature}
+				
+				<!-- Key Features - Simplified -->
+				<ul class="feature-list">
+					{#each keyFeatures as feature}
 						<li class="feature-item">
-							<Check class="w-4 h-4 text-success" />
+							<Check class="w-4 h-4" />
 							<span>{feature.text}</span>
-							{#if feature.comingSoon}
-								<span class="coming-soon-badge">Soon</span>
-							{/if}
 						</li>
 					{/each}
-					{#if includedFeatures.length > 6}
-						<li class="feature-item more-features">
-							<span>+ {includedFeatures.length - 6} more features</span>
-						</li>
-					{/if}
 				</ul>
-			</div>
-			
-			<!-- Plan Limits -->
-			<div class="plan-limits">
-				<div class="limit-item">
-					<span class="limit-label">Tours:</span>
-					<span class="limit-value">{plan.tourLimit === null ? 'Unlimited' : plan.tourLimit}</span>
-				</div>
-				<div class="limit-item">
-					<span class="limit-label">Bookings:</span>
-					<span class="limit-value">{plan.monthlyBookingLimit === null ? 'Unlimited' : plan.monthlyBookingLimit + '/mo'}</span>
+				
+				<!-- Simple Limits -->
+				<div class="plan-footer">
+					<span class="limit-text">
+						{plan.tourLimit === null ? 'Unlimited' : plan.tourLimit} tours • 
+						{plan.monthlyBookingLimit === null ? 'Unlimited' : plan.monthlyBookingLimit} bookings/mo
+					</span>
 				</div>
 			</div>
-		</div>
-	{/each}
+		{/each}
+	</div>
 </div>
 
-<!-- Exclusive Beta Benefits -->
-<div class="card card--gradient exclusive-benefits-card">
-	<div class="card-header card-header--center">
-		<h3 class="card-title">Exclusive Beta Member Benefits</h3>
-		<p class="card-description">Forever perks for our founding tour guides</p>
-	</div>
-	<div class="card-grid card-grid--3">
-		<div class="card-item card-item--pattern card-item--center">
-			<div class="card-item-header card-item-header--center">
-				<Sparkles class="card-item-icon" />
-				<h4 class="card-item-title">Priority Features</h4>
-			</div>
-			<p class="card-item-description">First access to new features and integrations before general release</p>
+<!-- Simple CTA -->
+<div class="cta-section">
+	<div class="cta-content">
+		<h3 class="cta-title">
+			Start Free. Stay Simple.
+		</h3>
+		<p class="cta-description">
+			Join the beta program now. Lock in your 30% discount forever. No credit card required.
+		</p>
+		<div class="cta-actions">
+			<button onclick={handleApplyNow} class="button-primary button--large button--gap">
+				Apply for Beta Access
+				<ArrowRight class="w-4 h-4" />
+			</button>
 		</div>
-		<div class="card-item card-item--pattern card-item--center">
-			<div class="card-item-header card-item-header--center">
-				<FlaskConical class="card-item-icon" />
-				<h4 class="card-item-title">Beta Member Badge</h4>
-			</div>
-			<p class="card-item-description">Special founder status displayed on your public tour pages</p>
-		</div>
-		<div class="card-item card-item--pattern card-item--center">
-			<div class="card-item-header card-item-header--center">
-				<Check class="card-item-icon" />
-				<h4 class="card-item-title">Premium Support</h4>
-			</div>
-			<p class="card-item-description">Dedicated support channel and direct access to our development team</p>
-		</div>
+		<p class="cta-note">
+			✨ Beta members get priority features, founder badge, and premium support
+		</p>
 	</div>
 </div>
 
 <style>
-	/* Card system handles beta notice styling automatically */
+	/* Section Header */
+	.section-header {
+		text-align: center;
+		margin-bottom: 3rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
 	
-	/* Beta Badge */
-	.beta-badge-inline {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		padding: 0.375rem 1rem;
-		background: var(--bg-secondary);
+	.section-title {
+		font-size: 2.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		line-height: 1.2;
+		margin-bottom: 1rem;
+	}
+	
+	.section-subtitle {
+		font-size: 1.125rem;
 		color: var(--text-secondary);
-		border: 1px solid var(--border-color);
-		border-radius: 9999px;
-		font-size: 0.875rem;
-		font-weight: 500;
+		max-width: 42rem;
+		margin: 0 auto;
 	}
 	
 	/* Pricing Toggle */
+	.pricing-toggle-container {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 3rem;
+	}
+	
 	.pricing-toggle {
 		display: inline-flex;
 		background: var(--bg-secondary);
 		padding: 0.25rem;
-		border-radius: 0.75rem;
-		border: 1px solid var(--border-color);
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--border-primary);
 	}
 	
-	.button-toggle {
-		padding: 0.625rem 1.5rem;
-		border-radius: 0.5rem;
+	.toggle-button {
+		padding: 0.625rem 1.25rem;
+		border-radius: var(--radius-md);
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-secondary);
@@ -216,145 +197,147 @@
 		border: none;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 	
-	.button-toggle.active {
+	.toggle-button.active {
 		background: var(--bg-primary);
 		color: var(--text-primary);
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 	}
 	
-	/* Pricing Grid - Add space for badges */
+	.save-badge {
+		font-size: 0.75rem;
+		padding: 0.125rem 0.375rem;
+		background: var(--primary);
+		color: white;
+		border-radius: var(--radius-sm);
+		font-weight: 600;
+	}
+	
+	/* Pricing Container */
+	.pricing-container {
+		max-width: 72rem;
+		margin: 0 auto;
+	}
+	
+	/* Pricing Grid */
 	.pricing-grid {
-		margin-top: 1rem; /* Space for "Most Popular" badges that extend above cards */
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1.5rem;
+		margin-bottom: 3rem;
 	}
 	
-	/* Pricing Cards - Enhanced with card system */
+	/* Pricing Cards */
 	.pricing-card {
-		/* Base styling handled by card system */
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
 		position: relative;
-		overflow: visible; /* Override card system to allow badges to extend above */
+		transition: all 0.3s ease;
 	}
 	
-	.pricing-card--beta-popular {
+	.pricing-card:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+	}
+	
+	.pricing-card--popular {
 		border-color: var(--primary);
-		box-shadow: 0 0 0 1px var(--primary);
+		box-shadow: 0 0 0 2px var(--primary);
 	}
 	
-	.beta-recommended {
+	.popular-badge {
 		position: absolute;
-		top: -12px;
+		top: -10px;
 		left: 50%;
 		transform: translateX(-50%);
 		background: var(--primary);
 		color: white;
-		padding: 0.25rem 1rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
+		padding: 0.25rem 0.75rem;
+		border-radius: var(--radius-full);
+		font-size: 0.625rem;
 		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 		white-space: nowrap;
-		z-index: 10;
 	}
 	
-	.pricing-plan-name {
-		font-size: 1.5rem;
-		font-weight: 700;
+	/* Plan Header */
+	.plan-header {
+		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-secondary);
+	}
+	
+	.plan-name {
+		font-size: 1.25rem;
+		font-weight: 600;
 		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+	
+	.plan-description {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.4;
+	}
+	
+	/* Pricing Display */
+	.pricing-display {
 		margin-bottom: 1.5rem;
 	}
 	
-	/* Beta Pricing Display */
-	.beta-pricing-display {
-		margin-bottom: 1.5rem;
-		padding-bottom: 1.5rem;
-		border-bottom: 1px solid var(--border-color);
-	}
-	
-	.price-during-beta {
+	.price-row {
 		display: flex;
 		align-items: baseline;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
+		gap: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
 	
 	.price-label {
-		font-size: 0.875rem;
+		font-size: 0.75rem;
 		color: var(--text-tertiary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		min-width: 3rem;
 	}
 	
-	.price-free {
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--success);
-	}
-	
-	.price-after-launch {
-		margin-top: 1rem;
-	}
-	
-	.price-comparison {
-		display: flex;
-		align-items: baseline;
-		gap: 0.5rem;
-		margin-top: 0.25rem;
-	}
-	
-	.price-regular {
-		font-size: 1.25rem;
-		color: var(--text-tertiary);
-		text-decoration: line-through;
-		opacity: 0.6;
-	}
-	
-	.price-beta {
+	.price-value {
 		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--text-primary);
+	}
+	
+	.price-value--free {
+		color: var(--primary);
 	}
 	
 	.price-period {
 		font-size: 0.875rem;
 		color: var(--text-secondary);
+		font-weight: 400;
 	}
 	
-	.beta-discount-badge {
-		display: inline-block;
+	.beta-benefit {
 		margin-top: 0.5rem;
-		padding: 0.25rem 0.75rem;
-		background: var(--success-light);
-		color: var(--success);
-		border-radius: 9999px;
 		font-size: 0.75rem;
-		font-weight: 600;
+		color: var(--primary);
+		font-weight: 500;
 	}
 	
-	/* Description */
-	.pricing-description {
-		font-size: 0.9375rem;
-		color: var(--text-secondary);
-		margin-bottom: 1.5rem;
-		line-height: 1.5;
-	}
-	
-	/* Features */
-	.pricing-features {
-		margin-bottom: 1.5rem;
-	}
-	
-	.features-header {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.75rem;
-	}
-	
-	.features-list {
+	/* Feature List */
+	.feature-list {
 		list-style: none;
 		padding: 0;
-		margin: 0;
+		margin: 0 0 1.5rem 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.625rem;
 	}
 	
 	.feature-item {
@@ -363,97 +346,181 @@
 		gap: 0.5rem;
 		font-size: 0.875rem;
 		color: var(--text-secondary);
+		line-height: 1.3;
 	}
 	
-	.more-features {
-		color: var(--text-tertiary);
-		font-style: italic;
-		margin-left: 1.5rem;
+	.feature-item :global(svg) {
+		color: var(--primary);
+		flex-shrink: 0;
+		margin-top: 1px;
 	}
 	
-	.coming-soon-badge {
-		display: inline-block;
-		padding: 0.125rem 0.375rem;
-		background: var(--bg-tertiary);
-		color: var(--text-tertiary);
-		border-radius: 0.25rem;
-		font-size: 0.625rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		margin-left: 0.25rem;
-	}
-	
-	/* Plan Limits */
-	.plan-limits {
+	/* Plan Footer */
+	.plan-footer {
 		padding-top: 1rem;
-		border-top: 1px solid var(--border-color);
-		display: flex;
-		gap: 1.5rem;
+		border-top: 1px solid var(--border-secondary);
 	}
 	
-	.limit-item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-	
-	.limit-label {
+	.limit-text {
 		font-size: 0.75rem;
 		color: var(--text-tertiary);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
 	
-	.limit-value {
-		font-size: 0.875rem;
+	/* CTA Section */
+	.cta-section {
+		margin-top: 3rem;
+		text-align: center;
+	}
+	
+	.cta-content {
+		max-width: 36rem;
+		margin: 0 auto;
+	}
+	
+	.cta-title {
+		font-size: 1.5rem;
 		font-weight: 600;
 		color: var(--text-primary);
+		margin-bottom: 1rem;
 	}
 	
-	/* Exclusive Benefits Card */
-	.exclusive-benefits-card {
-		margin-top: 3rem;
+	.cta-description {
+		font-size: 1rem;
+		color: var(--text-secondary);
 		margin-bottom: 2rem;
-		max-width: 1000px;
-		margin-left: auto;
-		margin-right: auto;
+		line-height: 1.6;
 	}
 	
-	/* Beta CTA Card Customizations */
-	.beta-cta-card {
-		margin-top: 2rem;
-		/* Other styling handled by card-action system */
+	.cta-actions {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 1rem;
 	}
 	
-	/* Mobile Styles */
-	@media (max-width: 768px) {
+	.cta-note {
+		font-size: 0.875rem;
+		color: var(--text-tertiary);
+		margin-top: 1rem;
+	}
+	
+	/* Mobile responsive - Mobile First! */
+	@media (max-width: 640px) {
+		/* Header adjustments */
+		.section-header {
+			margin-bottom: 2rem;
+		}
 		
-		.pricing-plan-name {
+		.section-title {
+			font-size: 1.75rem;
+			line-height: 1.15;
+			margin-bottom: 0.75rem;
+		}
+		
+		.section-subtitle {
+			font-size: 0.9375rem;
+			line-height: 1.5;
+		}
+		
+		/* Toggle adjustments */
+		.pricing-toggle-container {
+			margin-bottom: 2rem;
+		}
+		
+		.toggle-button {
+			padding: 0.5rem 0.875rem;
+			font-size: 0.8125rem;
+		}
+		
+		.save-badge {
+			font-size: 0.625rem;
+		}
+		
+		/* Grid on mobile - single column */
+		.pricing-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+			margin-bottom: 2rem;
+		}
+		
+		/* Card adjustments */
+		.pricing-card {
+			padding: 1.25rem;
+		}
+		
+		.plan-name {
+			font-size: 1.125rem;
+		}
+		
+		.plan-description {
+			font-size: 0.8125rem;
+		}
+		
+		.price-value {
 			font-size: 1.25rem;
 		}
 		
-		.price-free {
+		.price-period {
+			font-size: 0.75rem;
+		}
+		
+		.feature-item {
+			font-size: 0.8125rem;
+		}
+		
+		.limit-text {
+			font-size: 0.625rem;
+		}
+		
+		/* CTA adjustments */
+		.cta-title {
+			font-size: 1.25rem;
+		}
+		
+		.cta-description {
+			font-size: 0.875rem;
+			margin-bottom: 1.5rem;
+		}
+		
+		/* Full-width button on mobile */
+		.cta-actions button {
+			width: 100%;
+			padding: 1rem;
+			font-size: 1rem;
+		}
+		
+		.cta-note {
+			font-size: 0.75rem;
+		}
+	}
+	
+	/* Very small phones */
+	@media (max-width: 360px) {
+		.section-title {
 			font-size: 1.5rem;
 		}
 		
-		.price-beta {
-			font-size: 1.25rem;
+		.plan-name {
+			font-size: 1rem;
 		}
 		
-		.plan-limits {
-			flex-direction: column;
-			gap: 1rem;
+		.price-value {
+			font-size: 1.125rem;
 		}
 	}
 	
-	/* Dark mode - card system handles most styling automatically */
-	
-	:global(.dark) .pricing-toggle {
-		background: var(--bg-primary);
+	/* Tablet and larger */
+	@media (min-width: 768px) {
+		.pricing-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 	
-	:global(.dark) .button-toggle.active {
-		background: var(--bg-secondary);
+	/* Desktop */
+	@media (min-width: 1024px) {
+		.pricing-grid {
+			grid-template-columns: repeat(4, 1fr);
+		}
 	}
 </style>

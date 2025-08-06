@@ -3,6 +3,17 @@ import type { PageServerLoad } from './$types.js';
 // In a real app, these would come from a database or CMS
 const blogPosts = [
 	{
+		slug: 'zaur-beta-program-launch',
+		title: 'Zaur Beta Program is Now Open: Join 50 Tour Guides Shaping the Future',
+		excerpt: 'We\'re excited to announce the official launch of our beta program! Be among the first 50 tour guides to experience the simplest QR-based booking system and help shape its development.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-08-07'),
+		readTime: '5 min read',
+		category: 'Announcement',
+		featured: true,
+		image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop'
+	},
+	{
 		slug: 'sustainable-tourism-practices-2025',
 		title: 'Sustainable Tourism Practices That Boost Your Business in 2025',
 		excerpt: 'Learn how implementing eco-friendly practices can attract conscious travelers and increase your tour bookings while protecting local environments.',
@@ -10,7 +21,7 @@ const blogPosts = [
 		publishedAt: new Date('2025-07-30'),
 		readTime: '8 min read',
 		category: 'Sustainability',
-		featured: true,
+		featured: false,
 		image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop'
 	},
 	{

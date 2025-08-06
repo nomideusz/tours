@@ -10,6 +10,9 @@
 	import Globe from 'lucide-svelte/icons/globe';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
 	
+	// Components
+	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	
 	// State for beta stats
 	let stats = $state({
 		applications: 0,
@@ -57,13 +60,10 @@
 </script>
 
 <section class="subtle-retro-section">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<div class="text-center max-w-4xl mx-auto py-20" in:fade={{ delay: 200 }}>
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
+		<div class="text-center max-w-4xl mx-auto py-12 sm:py-20" in:fade={{ delay: 200 }}>
 			<!-- Beta Badge -->
-			<div class="beta-badge-hero mb-6">
-				<FlaskConical class="w-5 h-5" />
-				<span>Beta Program Open</span>
-			</div>
+			<BetaBadge text="Beta Program Open" icon={FlaskConical} variant="large" class="mb-6" />
 			
 			<!-- Main Title -->
 			<h1 class="hero-title mb-6">
@@ -104,16 +104,12 @@
 			</div>
 			
 			<!-- Beta Benefits Preview -->
-			<div class="card card--elevated benefits-preview-card">
-				<div class="card-header card-header--center">
-					<p class="benefits-label">Beta members get:</p>
-				</div>
-				<div class="card-content">
-					<div class="benefits-list">
-						<span class="benefit-item">✓ Free access during beta</span>
-						<span class="benefit-item">✓ 30% lifetime discount</span>
-						<span class="benefit-item">✓ Direct influence on features</span>
-					</div>
+			<div class="benefits-preview">
+				<p class="benefits-label">Beta members get:</p>
+				<div class="benefits-list">
+					<span class="benefit-item">✓ Free access during beta</span>
+					<span class="benefit-item">✓ 30% lifetime discount</span>
+					<span class="benefit-item">✓ Direct influence on features</span>
 				</div>
 			</div>
 		</div>
@@ -121,30 +117,7 @@
 </section>
 
 <style>
-	/* Beta badge for hero */
-	.beta-badge-hero {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1.25rem;
-		background: var(--primary);
-		color: white;
-		border-radius: 9999px;
-		font-size: 0.875rem;
-		font-weight: 600;
-		animation: pulse 2s ease-in-out infinite;
-	}
-	
-	@keyframes pulse {
-		0%, 100% {
-			opacity: 1;
-			transform: scale(1);
-		}
-		50% {
-			opacity: 0.9;
-			transform: scale(1.02);
-		}
-	}
+	/* Badge styles now handled by BetaBadge component */
 	
 	/* Hero title */
 	.hero-title {
@@ -215,16 +188,21 @@
 		margin-bottom: 3rem;
 	}
 	
-	/* Benefits preview card customizations */
-	.benefits-preview-card {
+	/* Benefits preview - simple and clean */
+	.benefits-preview {
+		margin-top: 2rem;
+		padding: 1.5rem;
+		background: var(--bg-secondary);
+		border-radius: var(--radius-lg);
 		max-width: 500px;
-		margin: 0 auto;
+		margin-left: auto;
+		margin-right: auto;
 	}
 	
 	.benefits-label {
-		font-size: 0.875rem;
+		font-size: 0.75rem;
 		color: var(--text-tertiary);
-		margin: 0;
+		margin: 0 0 1rem 0;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		font-weight: 600;
@@ -238,41 +216,94 @@
 	}
 	
 	.benefit-item {
-		font-size: 0.9375rem;
-		color: var(--text-primary);
+		font-size: 0.875rem;
+		color: var(--text-secondary);
 		font-weight: 500;
 	}
 	
-	/* Mobile styles */
-	@media (max-width: 768px) {
-		.hero-title {
-			font-size: 2.5rem;
+	/* Mobile-first styles */
+	@media (max-width: 640px) {
+		/* Optimize padding for mobile screens */
+		section {
+			padding: 1rem 0;
 		}
 		
+		.hero-title {
+			font-size: 2rem;
+			line-height: 1.15;
+		}
+		
+		.title-secondary {
+			margin-top: 0.125rem;
+		}
+		
+		.hero-subtitle {
+			font-size: 1rem;
+			padding: 0 1rem;
+		}
+		
+		/* Stats optimized for mobile */
 		.card-grid {
 			margin: 1.5rem 0;
+			gap: 0.75rem;
+		}
+		
+		.card-grid--3 {
+			grid-template-columns: repeat(2, 1fr);
 		}
 		
 		.stat-number {
-			font-size: 1.25rem;
+			font-size: 1.5rem;
+			font-weight: 600;
 		}
 		
 		.stat-label {
-			font-size: 0.8125rem;
+			font-size: 0.75rem;
 		}
 		
+		/* Full-width button on mobile */
 		.hero-actions {
-			flex-direction: column;
-			align-items: stretch;
-			max-width: 300px;
-			margin-left: auto;
-			margin-right: auto;
+			margin-bottom: 2rem;
+		}
+		
+		.hero-actions button {
+			width: 100%;
+			padding: 1rem;
+			font-size: 1rem;
+		}
+		
+		/* Benefits optimized for mobile */
+		.benefits-preview {
+			margin-top: 1.5rem;
+			padding: 1.25rem;
+			border-radius: var(--radius-md);
+		}
+		
+		.benefits-label {
+			font-size: 0.7rem;
+			margin-bottom: 0.75rem;
 		}
 		
 		.benefits-list {
 			flex-direction: column;
-			gap: 0.75rem;
-			text-align: center;
+			gap: 0.625rem;
+			text-align: left;
+			align-items: flex-start;
+		}
+		
+		.benefit-item {
+			font-size: 0.8125rem;
+		}
+	}
+	
+	/* Small mobile adjustments */
+	@media (max-width: 400px) {
+		.hero-title {
+			font-size: 1.75rem;
+		}
+		
+		.stat-number {
+			font-size: 1.25rem;
 		}
 	}
 	

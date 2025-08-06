@@ -3,6 +3,89 @@ import type { PageServerLoad } from './$types.js';
 
 // In a real app, this would come from a database or CMS
 const blogPosts = {
+	'zaur-beta-program-launch': {
+		slug: 'zaur-beta-program-launch',
+		title: 'Zaur Beta Program is Now Open: Join 50 Tour Guides Shaping the Future',
+		excerpt: 'We\'re excited to announce the official launch of our beta program! Be among the first 50 tour guides to experience the simplest QR-based booking system and help shape its development.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-08-07'),
+		readTime: '5 min read',
+		category: 'Announcement',
+		content: `
+			<p>Today marks an exciting milestone in our journey to revolutionize tour bookings. After months of development and careful planning, we're thrilled to announce that the Zaur Beta Program is officially open for applications!</p>
+
+			<h2>Our Vision: Simplicity Meets Power</h2>
+			<p>We believe tour guides deserve better than complicated booking systems that eat into their profits with hefty commissions. That's why we're building Zaur – the simplest booking system with QR codes for independent tour guides. No complexity, no commissions, just a straightforward tool that works.</p>
+
+			<h2>What is the Zaur Beta Program?</h2>
+			<p>We're selecting 50 passionate tour guides from around the world to be the first to use Zaur. As a beta member, you'll get exclusive access to our platform completely free during the testing phase, plus lifetime benefits that will save you thousands of euros.</p>
+
+			<h2>Beta Member Benefits</h2>
+			<p>Being a beta member isn't just about early access – it's about becoming a founding member of the Zaur community:</p>
+			<ul>
+				<li><strong>Free Access During Beta:</strong> Use all features at no cost through September 2025</li>
+				<li><strong>30% Lifetime Discount:</strong> Lock in discounted pricing forever (that's €100+ in savings every year)</li>
+				<li><strong>Shape the Product:</strong> Your feedback will directly influence features and improvements</li>
+				<li><strong>Priority Support:</strong> Direct access to our development team for immediate assistance</li>
+				<li><strong>Founder Status:</strong> Special badge on your public profile showing you're a founding member</li>
+				<li><strong>Early Access to Features:</strong> Be the first to try new features before public release</li>
+			</ul>
+
+			<h2>How Zaur Works</h2>
+			<p>We've designed Zaur around three simple principles:</p>
+			<ol>
+				<li><strong>Create Your QR Code:</strong> Set up your tour and schedule in minutes, get your unique QR code instantly</li>
+				<li><strong>Share Anywhere:</strong> Put your QR code on business cards, flyers, or even t-shirts – customers scan to see real-time availability</li>
+				<li><strong>Get Booked & Paid:</strong> Accept instant bookings with secure payments, and keep 100% of your revenue</li>
+			</ol>
+
+			<h2>Who We're Looking For</h2>
+			<p>We're seeking tour guides who:</p>
+			<ul>
+				<li>Are passionate about providing exceptional tour experiences</li>
+				<li>Currently struggle with expensive or complicated booking systems</li>
+				<li>Want to grow their business with modern technology</li>
+				<li>Are willing to provide feedback and help us improve</li>
+				<li>Operate tours regularly (at least weekly)</li>
+			</ul>
+
+			<p>We're particularly interested in geographic diversity – we want beta testers from different countries and tour types to ensure Zaur works perfectly for everyone.</p>
+
+			<h2>The Beta Timeline</h2>
+			<p>Here's what you can expect:</p>
+			<ul>
+				<li><strong>August 2025:</strong> Applications open (now!)</li>
+				<li><strong>September 2025:</strong> Beta testing begins with selected guides</li>
+				<li><strong>November 2025:</strong> Expanded features based on feedback</li>
+				<li><strong>March 2026:</strong> Public launch with your input incorporated</li>
+			</ul>
+
+			<h2>Our Commitment to You</h2>
+			<p>We're not just building another booking platform – we're creating a tool by tour guides, for tour guides. Every feature, every design decision, and every update will be driven by real feedback from professionals like you who use the system daily.</p>
+
+			<p>During the beta phase, you can expect:</p>
+			<ul>
+				<li>Weekly updates and improvements based on your feedback</li>
+				<li>24-hour response time on support requests</li>
+				<li>Regular video calls to discuss your experience</li>
+				<li>Complete transparency about our development roadmap</li>
+			</ul>
+
+			<h2>No Strings Attached</h2>
+			<p>We believe in earning your trust, not locking you in. There are no contracts, no commitments, and no credit card required during the beta phase. If Zaur isn't right for you, you can leave anytime with no questions asked. We're confident that once you experience the simplicity and power of Zaur, you'll never want to go back to traditional booking systems.</p>
+
+			<h2>Ready to Join?</h2>
+			<p>Applications are open now, but spaces are limited to ensure we can provide personalized support to each beta member. We'll review applications on a rolling basis and notify selected guides within 2-3 business days.</p>
+
+			<p>This is more than just a beta test – it's an opportunity to be part of something transformative. Join us in building the future of tour bookings, where technology serves tour guides, not the other way around.</p>
+
+			<div style="text-align: center; margin: 2rem 0;">
+				<a href="/beta/apply" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Apply for Beta Access Now →</a>
+			</div>
+
+			<p><em>Questions about the beta program? Email us at beta@zaur.app or visit our FAQ section for more details.</em></p>
+		`
+	},
 	'sustainable-tourism-practices-2025': {
 		slug: 'sustainable-tourism-practices-2025',
 		title: 'Sustainable Tourism Practices That Boost Your Business in 2025',

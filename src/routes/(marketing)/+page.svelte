@@ -6,7 +6,6 @@
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
-	import FeaturesSection from '$lib/components/marketing/FeaturesSection.svelte';
 	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
 	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
@@ -73,28 +72,21 @@
 
 <!-- How it works with subtle texture -->
 <section id="how-it-works" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<HowItWorksSection />
 	</div>
 </section>
 
 <!-- Beta Pricing Section -->
 <section id="pricing" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<BetaPricingSection />
-	</div>
-</section>
-
-<!-- Features with subtle texture -->
-<section id="features" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-		<FeaturesSection />
 	</div>
 </section>
 
 <!-- FAQ with subtle texture -->
 <section id="faq" class="subtle-retro-section py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<FAQSection />
 	</div>
 </section>

@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import MessageCircle from 'lucide-svelte/icons/message-circle';
-	import FlaskConical from 'lucide-svelte/icons/flask-conical';
+	import HelpCircle from 'lucide-svelte/icons/help-circle';
+	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
 	let openItems = $state<number[]>([]);
 	
@@ -43,36 +42,35 @@
 	}
 </script>
 
-<div class="text-center mb-12">
-	<div class="professional-badge mb-6">
-		<FlaskConical class="w-4 h-4" />
-		<span>Beta Program FAQ</span>
-	</div>
-	<h2 class="marketing-heading marketing-heading-lg mb-4">
-		Beta Program Questions
+<!-- Simple Header -->
+<div class="section-header">
+	<BetaBadge text="Beta Program FAQ" icon={HelpCircle} variant="large" class="mb-6" />
+	<h2 class="section-title">
+		Got Questions?
 	</h2>
-	<p class="text-lg max-w-xl mx-auto text-secondary">
+	<p class="section-subtitle">
 		Everything you need to know about joining our beta program
 	</p>
 </div>
 
-<div class="max-w-4xl mx-auto">
-	<div class="faq-grid">
+<!-- FAQ Items -->
+<div class="faq-container">
+	<div class="faq-list">
 		{#each faqs as faq, index}
-			<div class="card card--elevated faq-card" in:fade={{ duration: 400, delay: index * 100 }}>
+			<div class="faq-item">
 				<button 
 					class="faq-question"
 					onclick={() => toggleItem(index)}
 					aria-expanded={isOpen(index)}
 				>
-					<span class="card-title card-title--small faq-question-text">{faq.question}</span>
-					<div class="faq-toggle {isOpen(index) ? 'open' : ''}">
+					<span class="faq-question-text">{faq.question}</span>
+					<div class="faq-icon {isOpen(index) ? 'open' : ''}">
 						<ChevronDown class="w-4 h-4" />
 					</div>
 				</button>
 				{#if isOpen(index)}
 					<div class="faq-answer" in:fade={{ duration: 200 }}>
-						<p class="card-description">{faq.answer}</p>
+						<p>{faq.answer}</p>
 					</div>
 				{/if}
 			</div>
@@ -81,152 +79,156 @@
 </div>
 
 <style>
-	/* Professional badge */
-	.professional-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		background: var(--bg-primary);
-		border: 2px solid var(--primary);
+	/* Section Header */
+	.section-header {
+		text-align: center;
+		margin-bottom: 3rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	.section-title {
+		font-size: 2.5rem;
+		font-weight: 700;
 		color: var(--text-primary);
-		padding: 0.5rem 1.5rem;
-		border-radius: 2rem;
-		font-weight: 600;
-		font-size: 0.875rem;
-		box-shadow: var(--shadow-sm);
-	}
-
-	/* FAQ Grid - prevents width expansion */
-	.faq-grid {
-		display: grid;
-		gap: 1rem;
-		width: 100%;
-		max-width: 100%;
-		min-width: 960px;
+		line-height: 1.2;
+		margin-bottom: 1rem;
 	}
 	
-	/* FAQ Cards - Enhanced with card system */
-	.faq-card {
-		/* Card system handles base styling, animations, and hover effects */
-		width: 100%;
-		max-width: 100%;
-		box-sizing: border-box;
+	.section-subtitle {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
+		max-width: 42rem;
+		margin: 0 auto;
 	}
 	
-	/* FAQ Questions */
+	/* FAQ Container */
+	.faq-container {
+		max-width: 48rem;
+		margin: 0 auto;
+	}
+	
+	/* FAQ List */
+	.faq-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	
+	/* FAQ Item */
+	.faq-item {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		overflow: hidden;
+		transition: all 0.3s ease;
+	}
+	
+	.faq-item:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	}
+	
+	/* FAQ Question Button */
 	.faq-question {
 		width: 100%;
-		max-width: 100%;
 		padding: 1.25rem 1.5rem;
 		background: transparent;
 		border: none;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 1rem;
 		text-align: left;
-		transition: all 0.3s ease;
-		box-sizing: border-box;
+		transition: all 0.2s ease;
+	}
+	
+	.faq-question:hover {
+		background: var(--bg-secondary);
 	}
 	
 	.faq-question-text {
-		/* Card system handles typography */
 		flex: 1;
-		word-wrap: break-word;
-		overflow-wrap: break-word;
-		min-width: 0;
-		max-width: 100%;
-		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		line-height: 1.4;
 	}
 	
-	/* FAQ Toggle */
-	.faq-toggle {
-		width: 2rem;
-		height: 2rem;
+	/* FAQ Icon */
+	.faq-icon {
+		width: 1.75rem;
+		height: 1.75rem;
 		border-radius: 50%;
 		background: var(--primary);
+		color: white;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-		transition: all 0.3s ease;
-		color: white;
-	}
-
-	.faq-question:hover .faq-toggle {
-		background: var(--primary);
-		opacity: 0.8;
+		transition: transform 0.3s ease;
 	}
 	
-	.faq-toggle.open {
+	.faq-icon.open {
 		transform: rotate(180deg);
-		background: var(--primary);
-		opacity: 0.9;
 	}
 	
-	/* FAQ Answers */
+	.faq-icon :global(svg) {
+		width: 1rem;
+		height: 1rem;
+	}
+	
+	/* FAQ Answer */
 	.faq-answer {
 		padding: 0 1.5rem 1.25rem 1.5rem;
-		box-sizing: border-box;
-		display: flex;
-		align-items: flex-start;
-		gap: 1rem;
-		width: 100%;
-		max-width: 100%;
 	}
-
+	
 	.faq-answer p {
-		/* Card system handles typography */
 		margin: 0;
-		flex: 1;
-		word-wrap: break-word;
-		overflow-wrap: break-word;
-		min-width: 0;
-		max-width: 100%;
+		font-size: 0.9375rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
 	}
-
-	/* Invisible spacer to match toggle button width */
-	.faq-answer::after {
-		content: '';
-		width: 2rem;
-		flex-shrink: 0;
-	}
-
-	/* Support Card - Card system handles base styling */
-
-	.support-link {
-		color: var(--primary);
-		text-decoration: underline;
-		text-underline-offset: 2px;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		font-size: inherit;
-		font-weight: 500;
-		transition: opacity 0.2s ease;
-	}
-
-	.support-link:hover {
-		opacity: 0.8;
-	}
-
-	/* Responsive Design - Card system handles most styling */
-	@media (max-width: 768px) {
+	
+	/* Mobile responsive - Mobile First! */
+	@media (max-width: 640px) {
+		/* Header adjustments */
+		.section-header {
+			margin-bottom: 2rem;
+		}
+		
+		.section-title {
+			font-size: 1.75rem;
+			line-height: 1.15;
+			margin-bottom: 0.75rem;
+		}
+		
+		.section-subtitle {
+			font-size: 0.9375rem;
+			line-height: 1.5;
+		}
+		
+		/* FAQ adjustments */
+		.faq-list {
+			gap: 0.5rem;
+		}
+		
 		.faq-question {
 			padding: 1rem 1.25rem;
 			gap: 0.75rem;
 		}
-
-		.faq-grid {
-			min-width: 0;
+		
+		.faq-question-text {
+			font-size: 0.9375rem;
 		}
-
-		.faq-toggle {
-			width: 1.75rem;
-			height: 1.75rem;
+		
+		.faq-icon {
+			width: 1.5rem;
+			height: 1.5rem;
 		}
-
-		.faq-toggle :global(.w-4) {
+		
+		.faq-icon :global(svg) {
 			width: 0.875rem;
 			height: 0.875rem;
 		}
@@ -234,23 +236,33 @@
 		.faq-answer {
 			padding: 0 1.25rem 1rem 1.25rem;
 		}
-
-		.faq-answer::after {
-			width: 1.75rem; /* Match smaller mobile toggle */
+		
+		.faq-answer p {
+			font-size: 0.875rem;
+			line-height: 1.5;
 		}
 	}
 	
-	@media (max-width: 480px) {
+	/* Very small phones */
+	@media (max-width: 360px) {
+		.section-title {
+			font-size: 1.5rem;
+		}
+		
 		.faq-question {
 			padding: 0.875rem 1rem;
 		}
-
-		.faq-grid {
-			min-width: 0;
+		
+		.faq-question-text {
+			font-size: 0.875rem;
 		}
 		
 		.faq-answer {
 			padding: 0 1rem 0.875rem 1rem;
+		}
+		
+		.faq-answer p {
+			font-size: 0.8125rem;
 		}
 	}
 </style> 

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Logo from './Logo.svelte';
+	import BetaBadge from './BetaBadge.svelte';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Layout from 'lucide-svelte/icons/layout';
+	import Calendar from 'lucide-svelte/icons/calendar';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import Shield from 'lucide-svelte/icons/shield';
@@ -38,10 +39,7 @@
 				</p>
 				<!-- Trust Badges -->
 				<div class="trust-badges">
-					<div class="trust-badge beta-badge">
-						<FlaskConical class="w-4 h-4" />
-						<span>Beta Program</span>
-					</div>
+					<BetaBadge text="Beta Program" icon={FlaskConical} variant="small" class="footer-beta-badge" />
 					<div class="trust-badge">
 						<CreditCard class="w-4 h-4" />
 						<span>Stripe Secured</span>
@@ -64,9 +62,9 @@
 						</a>
 					</li>
 					<li>
-						<a href="/#features" class="footer-link">
-							<Layout class="w-4 h-4" />
-							<span>Features</span>
+						<a href="/#timeline" class="footer-link">
+							<Calendar class="w-4 h-4" />
+							<span>Roadmap</span>
 						</a>
 					</li>
 					<li>
@@ -279,18 +277,9 @@
 		transform: translateY(-1px);
 	}
 
-	/* Special styling for beta badge */
-	.beta-badge {
-		background: var(--primary);
-		color: white;
-		border-color: var(--primary);
-	}
-
-	.beta-badge:hover {
-		background: var(--primary);
-		color: white;
-		opacity: 0.9;
-		border-color: var(--primary);
+	/* Footer beta badge - ensure it aligns with other trust badges */
+	:global(.footer-beta-badge) {
+		display: inline-flex;
 	}
 
 	/* Footer Sections */
