@@ -11,7 +11,7 @@ const blogPosts = [
 		readTime: '5 min read',
 		category: 'Announcement',
 		featured: true,
-		image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop'
+		image: '/blog/beta-launch-hero.svg' // Custom beta launch graphic
 	},
 	{
 		slug: 'sustainable-tourism-practices-2025',

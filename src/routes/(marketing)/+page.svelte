@@ -11,6 +11,7 @@
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
 	import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
 	import BetaTimelineSection from '$lib/components/marketing/BetaTimelineSection.svelte';
+	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 </script>
 
 <svelte:head>
@@ -88,6 +89,17 @@
 <section id="faq" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<FAQSection />
+	</div>
+</section>
+
+<!-- Newsletter Signup -->
+<section id="newsletter" class="py-12 sm:py-16">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
+		<NewsletterSignup 
+			title="Not Ready for Beta? Stay in the Loop!"
+			description="Get notified when we launch publicly and receive exclusive tips for tour guides. No spam, just valuable updates."
+			buttonText="Notify Me"
+		/>
 	</div>
 </section>
 

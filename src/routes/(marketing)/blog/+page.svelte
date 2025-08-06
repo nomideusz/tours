@@ -6,6 +6,7 @@
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Tag from 'lucide-svelte/icons/tag';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 	
 	let { data } = $props();
 	
@@ -155,21 +156,12 @@
 		
 		<!-- Newsletter CTA -->
 		<div class="mt-16">
-			<div class="newsletter-cta">
-				<div class="text-center max-w-2xl mx-auto">
-					<h3 class="text-2xl font-semibold text-primary mb-4">
-						Stay Updated with Tour Industry Insights
-					</h3>
-					<p class="text-lg text-secondary mb-6">
-						Get the latest tips and strategies delivered to your inbox. 
-						Join tour guides who are growing their business with Zaur.
-					</p>
-					<button onclick={() => window.location.href='/auth/register'} class="button-primary button--large button-gap">
-						<BookOpen class="w-5 h-5" />
-						Join Zaur Today
-					</button>
-				</div>
-			</div>
+			<NewsletterSignup 
+				variant="default"
+				title="Stay Updated on Zaur's Progress"
+				description="Get notified about new QR features, early access opportunities, and success stories from tour guides using Zaur. No spam, just valuable updates."
+				buttonText="Subscribe to Newsletter"
+			/>
 		</div>
 	</div>
 </div>
@@ -390,28 +382,7 @@
 		color: var(--text-tertiary);
 	}
 
-	/* Newsletter CTA */
-	.newsletter-cta {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-lg);
-		padding: 3rem 2rem;
-		box-shadow: var(--shadow-sm);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.newsletter-cta::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 100px;
-		height: 3px;
-		background: var(--color-coral-500);
-		border-radius: var(--radius-full);
-	}
+
 
 	/* Utility classes */
 	.text-primary {
@@ -420,19 +391,6 @@
 	
 	.text-secondary {
 		color: var(--text-secondary);
-	}
-	
-	.text-tertiary {
-		color: var(--text-tertiary);
-	}
-	
-	.button-gap {
-		gap: 0.5rem;
-	}
-	
-	.button--large {
-		padding: 1rem 2rem;
-		font-size: 1.125rem;
 	}
 	
 	/* Post title link */
@@ -456,8 +414,6 @@
 			grid-template-columns: 1fr;
 		}
 		
-		.newsletter-cta {
-			padding: 2rem 1.5rem;
-		}
+
 	}
 </style> 
