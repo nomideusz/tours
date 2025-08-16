@@ -17,6 +17,7 @@
 	import AppFooter from '$lib/components/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import InstallPWAPrompt from '$lib/components/InstallPWAPrompt.svelte';
+	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
@@ -559,6 +560,9 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Feedback Widget for Beta Users -->
+		<FeedbackWidget />
 
 		<!-- PWA Install Prompt -->
 		<InstallPWAPrompt />
