@@ -455,6 +455,10 @@
 							<Users class="h-4 w-4" />
 							Beta Applications
 						</button>
+						<button onclick={() => goto('/admin/feedback')} class="button-secondary button--gap">
+							<MessageSquare class="h-4 w-4" />
+							Feedback
+						</button>
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />
 							Email
