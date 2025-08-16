@@ -1049,6 +1049,24 @@
 					</select>
 				</div>
 				
+				<div class="flex items-start gap-3">
+					<input
+						id="beta-tester"
+						name="betaTester"
+						type="checkbox"
+						class="form-checkbox mt-1"
+						disabled={isCreatingUser}
+					/>
+					<div class="flex-1">
+						<label for="beta-tester" class="block text-sm font-medium" style="color: var(--text-secondary);">
+							Beta Tester Account
+						</label>
+						<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+							Automatically applies BETA_APPRECIATION promo code (12 months free + 30% lifetime discount)
+						</p>
+					</div>
+				</div>
+				
 				{#if createUserError}
 					<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
 						<p class="text-sm" style="color: var(--color-danger-700);">

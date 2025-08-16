@@ -1,11 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { users, tours, bookings } from '$lib/db/schema/index.js';
+import { users, tours, bookings, promoCodes } from '$lib/db/schema/index.js';
 import { sql, count, sum, eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { hash } from '@node-rs/argon2';
 import { generateUniqueUsername } from '$lib/utils/username.js';
+import { applyPromoCodeToUser } from '$lib/utils/promo-codes.js';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	// Check admin access
@@ -92,6 +93,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const name = formData.get('name')?.toString()?.trim();
 		const password = formData.get('password')?.toString();
 		const role = formData.get('role')?.toString() || 'user';
+		const isBetaTester = formData.get('betaTester') === 'on';
 
 		// Validation
 		if (!email || !name || !password) {
@@ -159,17 +161,47 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			currency: 'EUR' // Default currency
 		});
 
+		// Apply BETA_APPRECIATION promo code if this is a beta tester
+		let promoMessage = '';
+		if (isBetaTester) {
+			try {
+				// Get the BETA_APPRECIATION promo code
+				const betaPromoCode = await db
+					.select()
+					.from(promoCodes)
+					.where(eq(promoCodes.code, 'BETA_APPRECIATION'))
+					.limit(1);
+
+				if (betaPromoCode.length > 0) {
+					const result = await applyPromoCodeToUser(newUserId, betaPromoCode[0]);
+					if (result.success) {
+						promoMessage = ' Beta benefits applied: 12 months free + 30% lifetime discount.';
+					} else {
+						console.error('Failed to apply beta promo code:', result.error);
+						promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+					}
+				} else {
+					console.error('BETA_APPRECIATION promo code not found in database');
+					promoMessage = ' (Note: Beta promo code not found - please apply manually)';
+				}
+			} catch (error) {
+				console.error('Error applying beta promo code:', error);
+				promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+			}
+		}
+
 		// Return success without sensitive data
 		return json({ 
 			success: true,
-			message: `User account created successfully for ${email}`,
+			message: `User account created successfully for ${email}.${promoMessage}`,
 			user: {
 				id: newUserId,
 				email: email.toLowerCase(),
 				name,
 				username,
 				role,
-				emailVerified: true
+				emailVerified: true,
+				isBetaTester
 			}
 		});
 
