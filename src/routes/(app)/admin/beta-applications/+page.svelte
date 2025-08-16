@@ -61,6 +61,11 @@
 	let showApplicationModal = $state(false);
 	let isUpdating = $state(false);
 	let updateError = $state<string | null>(null);
+	
+	// Beta account creation states
+	let isCreatingAccount = $state(false);
+	let createAccountError = $state<string | null>(null);
+	let createAccountSuccess = $state<string | null>(null);
 
 	// Filter applications
 	let filteredApplications = $derived.by(() => {
@@ -133,6 +138,50 @@
 			updateError = error instanceof Error ? error.message : 'Failed to update application';
 		} finally {
 			isUpdating = false;
+		}
+	}
+
+	// Create beta account from application
+	async function createBetaAccount(application: any) {
+		isCreatingAccount = true;
+		createAccountError = null;
+		createAccountSuccess = null;
+
+		try {
+			// Generate a professional temporary password
+			const randomDigits = Math.floor(1000 + Math.random() * 9000);
+			const tempPassword = `BetaZaur2025!${randomDigits}`;
+
+			const response = await fetch('/api/admin/beta-applications/create-account', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					applicationId: application.id,
+					email: application.email,
+					name: application.name,
+					password: tempPassword,
+					businessName: application.businessName,
+					phone: application.phone,
+					location: application.location,
+					country: application.country
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to create beta account');
+			}
+
+			createAccountSuccess = `Beta account created successfully! Temporary password: ${tempPassword}`;
+
+			// Refresh applications list to show updated status
+			await queryClient.invalidateQueries({ queryKey: ['admin', 'beta-applications'] });
+
+		} catch (error) {
+			createAccountError = error instanceof Error ? error.message : 'Failed to create beta account';
+		} finally {
+			isCreatingAccount = false;
 		}
 	}
 
@@ -439,6 +488,21 @@
 							</div>
 						{/if}
 
+						{#if createAccountError}
+							<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
+								<p class="text-sm" style="color: var(--color-danger-700);">{createAccountError}</p>
+							</div>
+						{/if}
+
+						{#if createAccountSuccess}
+							<div class="rounded-lg p-3" style="background: var(--color-success-100); border: 1px solid var(--color-success-200);">
+								<p class="text-sm font-medium" style="color: var(--color-success-700);">{createAccountSuccess}</p>
+								<p class="text-xs mt-1" style="color: var(--color-success-600);">
+									Copy this password and send it to the beta tester via email.
+								</p>
+							</div>
+						{/if}
+
 						<!-- Action Buttons -->
 						{#if selectedApplication.status === 'pending'}
 							<div class="flex flex-wrap gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
@@ -470,6 +534,24 @@
 									<XCircle class="h-4 w-4" />
 									Reject
 								</button>
+							</div>
+						{:else if selectedApplication.status === 'accepted'}
+							<div class="flex flex-wrap gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
+								<button
+									onclick={() => createBetaAccount(selectedApplication)}
+									disabled={isCreatingAccount}
+									class="button-primary button--gap flex-1 sm:flex-none"
+								>
+									{#if isCreatingAccount}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										<Users class="h-4 w-4" />
+									{/if}
+									Create Beta Account
+								</button>
+								<p class="text-xs flex-1 text-center self-center" style="color: var(--text-tertiary);">
+									This will create a user account with BETA_APPRECIATION promo code applied
+								</p>
 							</div>
 						{/if}
 					</div>
