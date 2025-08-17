@@ -248,7 +248,7 @@
 <style>
 	.feedback-button {
 		position: fixed;
-		bottom: 24px;
+		bottom: 104px; /* Above mobile nav (80px) + margin (24px) */
 		right: 24px;
 		z-index: 9998;
 		display: flex;
@@ -263,6 +263,17 @@
 		cursor: pointer;
 		transition: all 0.2s;
 		font-weight: 500;
+	}
+
+	/* Desktop positioning */
+	@media (min-width: 1024px) {
+		.feedback-button {
+			bottom: 24px;
+		}
+		
+		.feedback-panel {
+			bottom: 24px;
+		}
 	}
 
 	.feedback-button:hover {
@@ -282,7 +293,7 @@
 
 	.feedback-panel {
 		position: fixed;
-		bottom: 24px;
+		bottom: 104px; /* Above mobile nav */
 		right: 24px;
 		z-index: 9999;
 		width: 90%;

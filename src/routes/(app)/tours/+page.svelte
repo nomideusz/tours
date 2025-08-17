@@ -379,8 +379,8 @@
 	
 	function handleOnboardingModalConfirm() {
 		showOnboardingModal = false;
-		// Redirect to dashboard for onboarding
-		goto('/dashboard');
+			// Redirect to calendar for onboarding
+	goto('/calendar');
 	}
 	
 	function handleDeleteErrorViewBookings() {

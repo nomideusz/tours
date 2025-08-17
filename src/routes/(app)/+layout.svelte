@@ -96,7 +96,7 @@
 	let isLoggingOut = $state(false);
 	
 	// Current pathname for navigation
-	let currentPath = $state(browser ? window.location.pathname : '/dashboard');
+	let currentPath = $state(browser ? window.location.pathname : '/calendar');
 
 	// Set language context from the store
 	languageContext.set(languageStore);
@@ -132,10 +132,10 @@
 			name: 'Main',
 			items: [
 				{
-					name: 'Dashboard',
-					href: '/dashboard',
-					icon: Home,
-					description: 'Operations center',
+									name: 'Calendar',
+				href: '/calendar',
+				icon: Home,
+				description: 'Tour schedule & bookings',
 					showOnMobile: true,
 					badge: null as number | null
 				}
@@ -216,10 +216,10 @@
 		
 		return [
 			{
-				name: 'Dashboard',
-				href: '/dashboard',
-				icon: Home,
-				active: currentPath === '/dashboard'
+							name: 'Calendar',
+			href: '/calendar',
+			icon: Home,
+			active: currentPath === '/calendar'
 			},
 			{
 				name: 'Bookings',
@@ -309,7 +309,7 @@
 				} else {
 					// Normal navigation highlighting logic
 					current = currentPath === item.href || 
-					         (currentPath.startsWith(item.href) && item.href !== '/dashboard');
+					         (currentPath.startsWith(item.href) && item.href !== '/calendar');
 				}
 				
 				return {
@@ -550,7 +550,7 @@
 			<!-- Main content -->
 			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-72">
 				<!-- Page content with bottom padding on mobile for bottom nav -->
-				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0 app-texture-overlay">
+				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0 app-texture-overlay pt-6 lg:pt-0">
 					{@render children()}
 				</main>
 				

@@ -19,7 +19,7 @@
 		<div class="app-header-content">
 			<!-- Logo and branding -->
 			<div class="app-header-brand">
-				<Logo showIcon={true} showIconBackground={false} href="/dashboard" size="xl" textSize="large" iconSrc="/favicon.png" />
+				<Logo showIcon={true} showIconBackground={false} href="/calendar" size="xl" textSize="large" iconSrc="/favicon.png" />
 		</div>
 
 			<!-- Right Side Actions -->

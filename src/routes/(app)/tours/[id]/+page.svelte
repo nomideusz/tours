@@ -335,8 +335,8 @@
 	
 	function handleOnboardingModalConfirm() {
 		showOnboardingModal = false;
-		// Redirect to dashboard for onboarding
-		goto('/dashboard');
+			// Redirect to calendar for onboarding
+	goto('/calendar');
 	}
 
 	// Check for success messages from navigation
@@ -443,10 +443,10 @@
 					fullUrl: referrer
 				});
 				
-				// Check if they came from dashboard
-				if (referrerPath === '/dashboard') {
-					console.log('✅ Going back to dashboard');
-					return '/dashboard';
+				// Check if they came from calendar/dashboard
+				if (referrerPath === '/dashboard' || referrerPath === '/calendar') {
+					console.log('✅ Going back to calendar');
+					return '/calendar';
 				}
 				
 				// Check if they came from a specific booking page
@@ -527,7 +527,7 @@
 	// Get smart back button text
 	function getSmartBackText(): string {
 		const destination = getSmartBackDestination();
-		if (destination === '/dashboard') return 'Back to Dashboard';
+		if (destination === '/calendar') return 'Back to Calendar';
 		if (destination.startsWith('/bookings/')) return 'Back to Booking';
 		if (destination.startsWith('/bookings')) return 'Back to Bookings';
 		if (destination.startsWith('/tours')) return 'Back to Tours';
