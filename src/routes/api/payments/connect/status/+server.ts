@@ -33,7 +33,34 @@ export const GET: RequestHandler = async ({ locals }) => {
         const stripe = getStripe();
         
         // Get account details from Stripe
-        const account = await stripe.accounts.retrieve(user.stripeAccountId);
+        let account;
+        try {
+            account = await stripe.accounts.retrieve(user.stripeAccountId);
+        } catch (error: any) {
+            // If account doesn't exist or we don't have access, return as not setup
+            if (error.code === 'account_invalid' || error.statusCode === 403) {
+                console.log(`Invalid Stripe account ${user.stripeAccountId} - clearing from user record`);
+                
+                // Clear the invalid account ID from database
+                await db.update(users)
+                    .set({
+                        stripeAccountId: null,
+                        paymentSetup: false,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(users.id, session.user.id));
+                
+                return json({ 
+                    hasAccount: false,
+                    isSetupComplete: false,
+                    chargesEnabled: false,
+                    canReceivePayments: false
+                });
+            }
+            
+            // For other errors, throw them
+            throw error;
+        }
         
         // Check and register domain if needed (non-blocking)
         if (account.charges_enabled) {
@@ -66,6 +93,16 @@ export const GET: RequestHandler = async ({ locals }) => {
             }).catch(() => {
                 // Ignore errors in background domain check
             });
+        }
+        
+        // Update paymentSetup status in database if charges are enabled
+        if (account.charges_enabled && !user.paymentSetup) {
+            await db.update(users)
+                .set({
+                    paymentSetup: true,
+                    updatedAt: new Date()
+                })
+                .where(eq(users.id, session.user.id));
         }
         
         return json({
@@ -115,7 +152,33 @@ export const POST: RequestHandler = async ({ request }) => {
         const stripe = getStripe();
         
         // Get account details from Stripe
-        const account = await stripe.accounts.retrieve(user.stripeAccountId);
+        let account;
+        try {
+            account = await stripe.accounts.retrieve(user.stripeAccountId);
+        } catch (error: any) {
+            // If account doesn't exist or we don't have access, return as not setup
+            if (error.code === 'account_invalid' || error.statusCode === 403) {
+                console.log(`Invalid Stripe account ${user.stripeAccountId} - clearing from user record`);
+                
+                // Clear the invalid account ID from database
+                await db.update(users)
+                    .set({
+                        stripeAccountId: null,
+                        paymentSetup: false,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(users.id, userId));
+                
+                return json({ 
+                    hasAccount: false,
+                    isSetupComplete: false,
+                    canReceivePayments: false
+                });
+            }
+            
+            // For other errors, throw them
+            throw error;
+        }
         
         // Check and register domain if needed (non-blocking)
         if (account.charges_enabled) {
@@ -148,6 +211,16 @@ export const POST: RequestHandler = async ({ request }) => {
             }).catch(() => {
                 // Ignore errors in background domain check
             });
+        }
+        
+        // Update paymentSetup status in database if charges are enabled
+        if (account.charges_enabled && !user.paymentSetup) {
+            await db.update(users)
+                .set({
+                    paymentSetup: true,
+                    updatedAt: new Date()
+                })
+                .where(eq(users.id, userId));
         }
         
         return json({

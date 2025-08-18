@@ -217,7 +217,35 @@ export const POST: RequestHandler = async ({ request, url }) => {
         }
 
         // Check if account needs onboarding or is ready for dashboard
-        const account = await stripe.accounts.retrieve(accountId);
+        let account;
+        try {
+            account = await stripe.accounts.retrieve(accountId);
+        } catch (error: any) {
+            console.error(`Failed to retrieve Stripe account ${accountId}:`, error.message);
+            
+            // If account doesn't exist or we don't have access, clear it and create a new one
+            if (error.code === 'account_invalid' || error.statusCode === 403) {
+                console.log(`Clearing invalid Stripe account ID ${accountId} and creating a new one`);
+                
+                // Clear the invalid account ID from database
+                await db.update(users)
+                    .set({
+                        stripeAccountId: null,
+                        paymentSetup: false,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(users.id, userId));
+                
+                // Return error asking user to try again
+                return json({ 
+                    error: 'Your previous payment account is no longer accessible. Please try connecting again.',
+                    requiresRetry: true
+                }, { status: 400 });
+            }
+            
+            // For other errors, throw them
+            throw error;
+        }
         
         let finalUrl;
         if (account.details_submitted) {

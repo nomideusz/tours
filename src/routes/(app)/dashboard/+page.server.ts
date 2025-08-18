@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types.js';
 
 // Redirect from old dashboard route to new calendar route
 export const load: PageServerLoad = async () => {

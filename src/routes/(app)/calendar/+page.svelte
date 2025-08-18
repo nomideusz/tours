@@ -45,9 +45,9 @@
 		retryDelay: 2000
 	});
 
-	// Get profile from layout data
-	const user = data?.user;
-	const profile = data?.profile;
+	// Get profile from layout data (reactive)
+	let user = $derived(data?.user);
+	let profile = $derived(data?.profile);
 
 	// Timeline state
 	let timelineView = $state<'month' | 'week' | 'day'>('month');
@@ -142,6 +142,52 @@
 
 	let showOnboarding = $derived(!isLoading && onboardingSteps.length > 0);
 
+	// Function to check payment status
+	async function checkPaymentStatus() {
+		if (!profile) {
+			paymentStatus = { isSetup: false, loading: false };
+			return;
+		}
+		
+		// Always check with the API for the most current status
+		if (profile.stripeAccountId) {
+			try {
+				const response = await fetch('/api/payments/connect/status');
+				const data = await response.json();
+				paymentStatus = {
+					isSetup: data.chargesEnabled || false,
+					loading: false
+				};
+			} catch (error) {
+				console.error('Failed to check payment status:', error);
+				// Fallback to profile data
+				paymentStatus = { 
+					isSetup: profile.paymentSetup || false, 
+					loading: false 
+				};
+			}
+		} else {
+			paymentStatus = { 
+				isSetup: profile.paymentSetup || false, 
+				loading: false 
+			};
+		}
+	}
+	
+	// Re-check payment status when profile changes
+	$effect(() => {
+		if (profile && browser && !paymentStatus.loading) {
+			// If profile indicates payment is setup but our state doesn't match, re-check
+			if (profile.paymentSetup && !paymentStatus.isSetup) {
+				checkPaymentStatus();
+			}
+			// Also re-check if profile has stripeAccountId but we think payment isn't setup
+			if (profile.stripeAccountId && !paymentStatus.isSetup && !paymentStatus.loading) {
+				checkPaymentStatus();
+			}
+		}
+	});
+	
 	// Initialize
 	onMount(async () => {
 		// Check if returning from Stripe setup
@@ -152,32 +198,19 @@
 			newUrl.searchParams.delete('setup');
 			window.history.replaceState({}, '', newUrl.toString());
 			
+			// Show loading state while refreshing
+			paymentStatus.loading = true;
+			
 			// Refresh all data to reflect the new payment status
 			await invalidateAll();
-		}
-		
-		// Check payment status
-		if (profile) {
-			const checkPaymentStatus = async () => {
-				if (profile.paymentSetup) {
-					paymentStatus = { isSetup: true, loading: false };
-				} else if (profile.stripeAccountId) {
-					try {
-						const response = await fetch('/api/payments/connect/status');
-						const data = await response.json();
-						paymentStatus = {
-							isSetup: data.chargesEnabled || false,
-							loading: false
-						};
-					} catch (error) {
-						console.error('Failed to check payment status:', error);
-						paymentStatus = { isSetup: false, loading: false };
-					}
-				} else {
-					paymentStatus = { isSetup: false, loading: false };
-				}
-			};
 			
+			// Small delay to ensure database is updated
+			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			// Force re-check payment status after data refresh
+			await checkPaymentStatus();
+		} else {
+			// Check payment status on normal page load
 			await checkPaymentStatus();
 		}
 
@@ -292,6 +325,21 @@
 			if (!response.ok) {
 				const errorData = await response.json();
 				console.error('Payment setup error:', errorData);
+				
+				// If the account was invalid and cleared, retry automatically
+				if (errorData.requiresRetry) {
+					// Refresh the page data to get the cleared account state
+					await invalidateAll();
+					
+					// Retry the setup after a short delay
+					setTimeout(async () => {
+						isSettingUpPayment = false;
+						await setupPayments();
+					}, 1000);
+					return;
+				}
+				
+				isSettingUpPayment = false;
 				return;
 			}
 			
@@ -301,7 +349,6 @@
 			}
 		} catch (error) {
 			console.error('Failed to setup payments:', error);
-		} finally {
 			isSettingUpPayment = false;
 		}
 	}
