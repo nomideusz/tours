@@ -6,14 +6,13 @@ import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals }) => {
     try {
-        const session = await locals.auth();
-        
-        if (!session?.user?.id) {
+        // Check if user is authenticated
+        if (!locals.user?.id) {
             return json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get user record
-        const userRecords = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+        const userRecords = await db.select().from(users).where(eq(users.id, locals.user.id)).limit(1);
         
         if (userRecords.length === 0) {
             return json({ error: 'User not found' }, { status: 404 });
@@ -48,7 +47,7 @@ export const GET: RequestHandler = async ({ locals }) => {
                         paymentSetup: false,
                         updatedAt: new Date()
                     })
-                    .where(eq(users.id, session.user.id));
+                    .where(eq(users.id, locals.user.id));
                 
                 return json({ 
                     hasAccount: false,
@@ -102,7 +101,7 @@ export const GET: RequestHandler = async ({ locals }) => {
                     paymentSetup: true,
                     updatedAt: new Date()
                 })
-                .where(eq(users.id, session.user.id));
+                .where(eq(users.id, locals.user.id));
         }
         
         return json({

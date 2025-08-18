@@ -116,7 +116,7 @@
 			});
 		}
 		
-		if (!paymentStatus.isSetup) {
+		if (!paymentStatus.isSetup && !paymentStatus.loading) {
 			steps.push({
 				id: 'payment',
 				title: 'Payment Setup',
@@ -183,17 +183,10 @@
 		}
 	}
 	
-	// Re-check payment status when user data changes
+	// Check payment status whenever profile data is available or changes
 	$effect(() => {
-		if (profile && browser && !paymentStatus.loading) {
-			// If profile indicates payment is setup but our state doesn't match, re-check
-			if (profile.paymentSetup && !paymentStatus.isSetup) {
-				checkPaymentStatus();
-			}
-			// Also re-check if profile has stripeAccountId but we think payment isn't setup
-			if (profile.stripeAccountId && !paymentStatus.isSetup && !paymentStatus.loading) {
-				checkPaymentStatus();
-			}
+		if (profile && browser) {
+			checkPaymentStatus();
 		}
 	});
 	
@@ -214,14 +207,12 @@
 			await invalidateAll();
 			
 			// Small delay to ensure database is updated
-			await new Promise(resolve => setTimeout(resolve, 500));
-			
-			// Force re-check payment status after data refresh
-			await checkPaymentStatus();
-		} else {
-			// Check payment status on normal page load
-			await checkPaymentStatus();
+			await new Promise(resolve => setTimeout(resolve, 1000));
 		}
+		
+		// The effect will trigger when profile data loads
+		// But also do an initial check if profile is already available
+		await checkPaymentStatus();
 
 		// Check location confirmation
 		if (browser) {
