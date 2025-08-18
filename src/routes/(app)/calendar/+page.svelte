@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -121,8 +122,7 @@
 				description: 'Connect Stripe',
 				icon: CreditCard,
 				complete: false,
-				action: setupPayments,
-				disabled: needsConfirmation
+				action: setupPayments
 			});
 		}
 		
@@ -144,6 +144,18 @@
 
 	// Initialize
 	onMount(async () => {
+		// Check if returning from Stripe setup
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('setup') === 'complete') {
+			// Remove the query parameter
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('setup');
+			window.history.replaceState({}, '', newUrl.toString());
+			
+			// Refresh all data to reflect the new payment status
+			await invalidateAll();
+		}
+		
 		// Check payment status
 		if (profile) {
 			const checkPaymentStatus = async () => {
@@ -261,14 +273,27 @@
 	}
 
 	async function setupPayments() {
-		if (needsConfirmation || isSettingUpPayment) return;
+		if (isSettingUpPayment || !user) return;
 		
 		isSettingUpPayment = true;
 		try {
 			const response = await fetch('/api/payments/connect/setup', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' }
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					userId: user.id,
+					email: user.email,
+					businessName: profile?.businessName || user.name,
+					country: profile?.country || selectedCountry || 'US',
+					returnUrl: `${window.location.origin}/calendar?setup=complete`
+				})
 			});
+			
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('Payment setup error:', errorData);
+				return;
+			}
 			
 			const data = await response.json();
 			if (data.accountLink) {
@@ -585,7 +610,6 @@
 								{#if !step.complete && step.action}
 									<button 
 										onclick={step.action}
-										disabled={step.disabled}
 										class="button-primary button--small w-full"
 									>
 										{#if step.id === 'email' && resendingEmail}
