@@ -45,9 +45,10 @@
 		retryDelay: 2000
 	});
 
-	// Get profile from layout data (reactive)
+	// Get user from layout data (reactive)
 	let user = $derived(data?.user);
-	let profile = $derived(data?.profile);
+	// Profile is the same as user in this context
+	let profile = $derived(data?.user);
 
 	// Timeline state
 	let timelineView = $state<'month' | 'week' | 'day'>('month');
@@ -149,7 +150,14 @@
 			return;
 		}
 		
-		// Always check with the API for the most current status
+		// Check if user has bank account setup (cross-border payments)
+		// In this case, paymentSetup is true but stripeAccountId is null
+		if (profile.paymentSetup && !profile.stripeAccountId) {
+			paymentStatus = { isSetup: true, loading: false };
+			return;
+		}
+		
+		// Check with the API for Stripe Connect status
 		if (profile.stripeAccountId) {
 			try {
 				const response = await fetch('/api/payments/connect/status');
@@ -167,14 +175,15 @@
 				};
 			}
 		} else {
+			// No payment setup at all
 			paymentStatus = { 
-				isSetup: profile.paymentSetup || false, 
+				isSetup: false, 
 				loading: false 
 			};
 		}
 	}
 	
-	// Re-check payment status when profile changes
+	// Re-check payment status when user data changes
 	$effect(() => {
 		if (profile && browser && !paymentStatus.loading) {
 			// If profile indicates payment is setup but our state doesn't match, re-check
