@@ -28,7 +28,8 @@
 	
 	// Components
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
-	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
+	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
 
 	let { data }: { data: PageData } = $props();
 
@@ -84,6 +85,10 @@
 		isSetup: false,
 		loading: true
 	});
+	
+	// Payment setup modal state
+	let showPaymentConfirmModal = $state(false);
+	let pendingPaymentCountry = $state<string | null>(null);
 
 	// Check onboarding status
 	let needsEmailVerification = $derived(Boolean(profile && !profile.emailVerified));
@@ -306,9 +311,42 @@
 	}
 
 	async function setupPayments() {
-		if (isSettingUpPayment || !user) return;
+		if (!user || isSettingUpPayment) return;
+
+		// If stripeAccountId already exists, country is already locked - skip the modal
+		if (user.stripeAccountId) {
+			// Go directly to payment setup without warning
+			confirmPaymentSetup();
+			return;
+		}
+
+		// Get the country for payment setup
+		const userCountry = profile?.country || selectedCountry || 'US';
+		const paymentMethod = getPaymentMethod(userCountry);
 		
+		// Check if this is a cross-border country
+		if (paymentMethod === 'crossborder') {
+			// For cross-border payments, go directly to setup (no Stripe Connect modal needed)
+			confirmPaymentSetup();
+		} else {
+			// Show regular payment confirmation modal for Stripe Connect countries
+			pendingPaymentCountry = userCountry;
+			showPaymentConfirmModal = true;
+		}
+	}
+	
+	// Actually setup payments after confirmation
+	async function confirmPaymentSetup() {
+		if (!user || isSettingUpPayment) return;
+
+		// Use existing country if stripeAccountId exists, otherwise use pending country
+		const countryForSetup = user.stripeAccountId ? 
+			(user.country || 'US') : 
+			(pendingPaymentCountry || profile?.country || selectedCountry || 'US');
+
+		showPaymentConfirmModal = false;
 		isSettingUpPayment = true;
+		
 		try {
 			const response = await fetch('/api/payments/connect/setup', {
 				method: 'POST',
@@ -317,7 +355,7 @@
 					userId: user.id,
 					email: user.email,
 					businessName: profile?.businessName || user.name,
-					country: profile?.country || selectedCountry || 'US',
+					country: countryForSetup,
 					returnUrl: `${window.location.origin}/calendar?setup=complete`
 				})
 			});
@@ -340,6 +378,7 @@
 				}
 				
 				isSettingUpPayment = false;
+				pendingPaymentCountry = null;
 				return;
 			}
 			
@@ -350,6 +389,8 @@
 		} catch (error) {
 			console.error('Failed to setup payments:', error);
 			isSettingUpPayment = false;
+		} finally {
+			pendingPaymentCountry = null;
 		}
 	}
 </script>
@@ -787,3 +828,34 @@
 		{/if}
 	{/if}
 </div>
+
+<!-- Payment Confirmation Modal -->
+{#if showPaymentConfirmModal && pendingPaymentCountry}
+	{@const countryInfo = getCountryInfo(pendingPaymentCountry || '')}
+	{@const stripeCurrency = getCurrencyForCountry(pendingPaymentCountry || '')}
+	<ConfirmationModal
+		isOpen={showPaymentConfirmModal}
+		title="Confirm Payment Account Country"
+		message={`You are about to create a payment account for ${countryInfo?.name || pendingPaymentCountry}.
+
+Your payment account will use ${stripeCurrency} as the currency.
+
+⚠️ This choice is permanent and cannot be changed later. Make sure this is the correct country for your business.`}
+		confirmText="Create Payment Account"
+		cancelText="Cancel"
+		variant="warning"
+		icon={Globe}
+		showFlagInMessage={true}
+		flagCountryCode={countryInfo?.code || pendingPaymentCountry}
+		flagCountryName={countryInfo?.name || pendingPaymentCountry}
+		onConfirm={confirmPaymentSetup}
+		onCancel={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+		onClose={() => {
+			showPaymentConfirmModal = false;
+			pendingPaymentCountry = null;
+		}}
+	/>
+{/if}

@@ -255,8 +255,8 @@
 		align-items: center;
 		gap: 8px;
 		padding: 12px 16px;
-		background: var(--color-primary);
-		color: white;
+		background: var(--primary);
+		color: #ffffff;
 		border: none;
 		border-radius: 24px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -438,7 +438,7 @@
 	}
 
 	.urgency-btn.active {
-		background: var(--color-primary);
+		background: var(--primary);
 		border-color: var(--color-primary);
 		color: white;
 	}
@@ -459,7 +459,7 @@
 		gap: 8px;
 		width: 100%;
 		padding: 12px;
-		background: var(--color-primary);
+		background: var(--primary);
 		color: white;
 		border: none;
 		border-radius: 8px;
