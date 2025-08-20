@@ -595,7 +595,7 @@
 				<ul class="space-y-2 text-sm" style="color: var(--color-primary-700);">
 					<li class="flex items-start gap-2">
 						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
-						<span>Free access during beta period</span>
+						<span>12 months free</span>
 					</li>
 					<li class="flex items-start gap-2">
 						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />

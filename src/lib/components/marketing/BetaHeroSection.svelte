@@ -74,7 +74,7 @@
 			<!-- Subtitle -->
 			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
 				We're building the simplest booking system with QR codes for tour guides. 
-				Join our beta program to get free access and help shape the platform.
+				Join our beta program to get 12 months free and help shape the platform.
 			</p>
 			
 			<!-- Beta Stats -->
@@ -107,7 +107,7 @@
 			<div class="benefits-preview">
 				<p class="benefits-label">Beta members get:</p>
 				<div class="benefits-list">
-					<span class="benefit-item">✓ Free access during beta</span>
+					<span class="benefit-item">✓ 12 months free</span>
 					<span class="benefit-item">✓ 30% lifetime discount</span>
 					<span class="benefit-item">✓ Direct influence on features</span>
 				</div>

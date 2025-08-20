@@ -9,7 +9,7 @@
 	const faqs = [
 		{
 			question: "What does being a beta member include?",
-			answer: "Beta members get free access to all features during the beta period, 30% lifetime discount after launch, direct input on feature development, and priority support. You'll help shape the future of tour booking."
+			answer: "Beta members get 12 months free, 30% lifetime discount after that, direct input on feature development, and priority support. You'll help shape the future of tour booking."
 		},
 		{
 			question: "How long does the beta program last?",

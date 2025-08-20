@@ -71,7 +71,7 @@
 
 <svelte:head>
 	<title>Join the Zaur Beta Program - Shape the Future of Tour Bookings</title>
-	<meta name="description" content="We're selecting 50 tour guides to test and shape Zaur before public launch. Get free access, founding member benefits, and help build the perfect booking platform." />
+	<meta name="description" content="We're selecting 50 tour guides to test and shape Zaur before public launch. Get 12 months free, founding member benefits, and help build the perfect booking platform." />
 </svelte:head>
 
 <div class="beta-page" in:fade={{ duration: 300 }}>
@@ -91,7 +91,7 @@
 				
 				<p class="hero-description">
 					We're selecting 50 tour guides from around the world to test Zaur before 
-					our public launch. Get free access, shape features with your feedback, 
+					our public launch. Get 12 months free, shape features with your feedback, 
 					and become a founding member.
 				</p>
 				

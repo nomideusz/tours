@@ -18,11 +18,11 @@
 	<!-- Override title for homepage specifically -->
 	<title>Zaur Beta - Help Shape the Future of Tour Bookings</title>
 	<meta name="title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
-	<meta name="description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get free access, provide feedback, and receive 50% lifetime discount." />
+	<meta name="description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get 12 months free, provide feedback, and receive 30% lifetime discount." />
 	
 	<!-- Additional SEO signals for homepage -->
 	<meta property="og:title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
-	<meta property="og:description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get free access, provide feedback, and receive 50% lifetime discount." />
+	<meta property="og:description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get 12 months free, provide feedback, and receive 30% lifetime discount." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	

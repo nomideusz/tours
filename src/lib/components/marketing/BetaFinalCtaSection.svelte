@@ -30,7 +30,7 @@
 			</button>
 			
 			<p class="cta-reminder">
-				Free during beta • 30% lifetime discount • Direct influence on features
+				12 months free • 30% lifetime discount • Direct influence on features
 			</p>
 		</div>
 	</div>
