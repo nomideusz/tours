@@ -5,6 +5,9 @@
 	import Check from 'lucide-svelte/icons/check';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
+	// Umami tracking
+	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
+	
 	interface Props {
 		variant?: 'default' | 'compact' | 'inline';
 		title?: string;
@@ -34,6 +37,14 @@
 			return;
 		}
 		
+		// Track newsletter signup attempt
+		trackEvent(UMAMI_EVENTS.NEWSLETTER_SIGNUP, {
+			category: 'newsletter',
+			email_domain: email.split('@')[1] || 'unknown',
+			variant: variant,
+			page: typeof window !== 'undefined' ? window.location.pathname : 'unknown'
+		});
+		
 		status = 'loading';
 		
 		try {
@@ -51,6 +62,15 @@
 				if (data.success) {
 					status = 'success';
 					message = data.message;
+					
+					// Track successful newsletter signup
+					trackEvent('newsletter_success', {
+						category: 'newsletter',
+						email_domain: email.split('@')[1] || 'unknown',
+						variant: variant,
+						page: typeof window !== 'undefined' ? window.location.pathname : 'unknown'
+					});
+					
 					email = '';
 					
 					// Reset after 5 seconds
@@ -61,14 +81,38 @@
 				} else {
 					status = 'error';
 					message = data.message || 'Something went wrong. Please try again.';
+					
+					// Track newsletter signup error
+					trackEvent('newsletter_error', {
+						category: 'newsletter',
+						error_type: 'server_error',
+						error_message: data.message || 'Unknown server error',
+						variant: variant
+					});
 				}
 			} else {
 				status = 'error';
 				message = data.message || 'Something went wrong. Please try again.';
+				
+				// Track newsletter signup error
+				trackEvent('newsletter_error', {
+					category: 'newsletter',
+					error_type: 'server_error',
+					error_message: data.message || 'Unknown server error',
+					variant: variant
+				});
 			}
 		} catch (error) {
 			status = 'error';
 			message = 'Unable to subscribe. Please try again later.';
+			
+			// Track network error
+			trackEvent('newsletter_error', {
+				category: 'newsletter',
+				error_type: 'network_error',
+				error_message: error instanceof Error ? error.message : 'Unknown network error',
+				variant: variant
+			});
 		}
 	}
 </script>

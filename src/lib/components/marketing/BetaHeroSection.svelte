@@ -13,6 +13,9 @@
 	// Components
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
+	// Umami tracking
+	import { trackCTAClick } from '$lib/utils/umami-tracking.js';
+	
 	// State for beta stats
 	let stats = $state({
 		acceptedApplications: 0,
@@ -51,10 +54,12 @@
 	});
 	
 	function handleApplyNow() {
+		trackCTAClick('hero', 'Apply for Beta Access', '/beta/apply');
 		goto('/beta/apply');
 	}
 	
 	function handleLearnMore() {
+		trackCTAClick('hero', 'Learn More', '/beta');
 		goto('/beta');
 	}
 </script>

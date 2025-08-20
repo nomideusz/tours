@@ -4,6 +4,9 @@
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
+	// Umami tracking
+	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
+	
 	let openItems = $state<number[]>([]);
 	
 	const faqs = [
@@ -30,10 +33,20 @@
 	];
 	
 	function toggleItem(index: number) {
-		if (openItems.includes(index)) {
+		const wasOpen = openItems.includes(index);
+		
+		if (wasOpen) {
 			openItems = openItems.filter(i => i !== index);
 		} else {
 			openItems = [...openItems, index];
+			
+			// Track FAQ expansion
+			trackEvent(UMAMI_EVENTS.FAQ_EXPAND, {
+				category: 'engagement',
+				faq_question: faqs[index].question,
+				faq_index: index,
+				page: 'homepage'
+			});
 		}
 	}
 	

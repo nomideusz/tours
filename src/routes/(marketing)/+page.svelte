@@ -12,6 +12,41 @@
 	import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
 	import BetaTimelineSection from '$lib/components/marketing/BetaTimelineSection.svelte';
 	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
+	
+	// Umami tracking
+	import { initScrollTracking, initSectionTracking, trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
+	import { onMount } from 'svelte';
+	
+	// Initialize tracking on mount
+	onMount(() => {
+		// Track homepage visit
+		trackEvent(UMAMI_EVENTS.PAGE_VIEW, {
+			category: 'marketing',
+			page: 'homepage',
+			page_type: 'beta_marketing'
+		});
+		
+		// Initialize scroll tracking for engagement
+		const cleanupScroll = initScrollTracking();
+		
+		// Initialize section visibility tracking
+		const cleanupSections = initSectionTracking([
+			'hero',
+			'platform-showcase', 
+			'timeline',
+			'how-it-works',
+			'pricing',
+			'faq',
+			'newsletter',
+			'final-cta'
+		]);
+		
+		// Cleanup on unmount
+		return () => {
+			cleanupScroll?.();
+			cleanupSections?.();
+		};
+	});
 </script>
 
 <svelte:head>
@@ -62,7 +97,14 @@
 </svelte:head>
 
 <!-- Beta Hero Section -->
-<BetaHeroSection />
+<section id="hero">
+	<BetaHeroSection />
+</section>
+
+<!-- Platform Showcase Section -->
+<section id="platform-showcase">
+	<PlatformShowcase />
+</section>
 
 <!-- Timeline Section -->
 <section id="timeline" class="timeline-section">
@@ -104,7 +146,9 @@
 </section>
 
 <!-- Beta Final CTA -->
-<BetaFinalCtaSection />
+<section id="final-cta">
+	<BetaFinalCtaSection />
+</section>
 
 <style>
 	/* Subtle retro section with minimal color - matches HeroSection */

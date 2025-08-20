@@ -31,6 +31,45 @@
 	// Use auth stores for reactive auth state
 	let userIsAuthenticated = $derived($isAuthenticated);
 	let currentUserData = $derived($currentUser);
+	
+	// Device fingerprint exclusion for Umami
+	function shouldExcludeFromAnalytics(): boolean {
+		if (!browser) return false;
+		
+		// Admin user exclusion
+		if (currentUserData?.role === 'admin') {
+			return true;
+		}
+		
+		// Device fingerprint for Zaur's computer
+		// Characteristics: Poland, Krakow, Windows 10/11, Desktop, Opera
+		const userAgent = navigator.userAgent;
+		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		const language = navigator.language;
+		const screenWidth = screen.width;
+		const screenHeight = screen.height;
+		
+		// Check for Zaur's device characteristics
+		const isOpera = /OPR\/|Opera/i.test(userAgent);
+		const isWindows = /Windows/i.test(userAgent);
+		const isPolandTimezone = timezone === 'Europe/Warsaw';
+		const isDesktop = screenWidth >= 1024 && screenHeight >= 768;
+		const isPolishLocale = language.toLowerCase().startsWith('pl') || language.toUpperCase().includes('PL');
+		
+		// High confidence match - exclude if most characteristics match
+		let matchScore = 0;
+		if (isOpera) matchScore++;
+		if (isWindows) matchScore++;
+		if (isPolandTimezone) matchScore++;
+		if (isDesktop) matchScore++;
+		if (isPolishLocale) matchScore++;
+		
+		// Exclude if 4 out of 5 characteristics match
+		return matchScore >= 4;
+	}
+	
+	// Reactive exclusion check
+	let shouldExclude = $derived(shouldExcludeFromAnalytics());
 
 	// Header reference for closing mobile menu
 	let headerRef: Header;
@@ -117,8 +156,8 @@
 	}
 	</script>`}
 	
-	<!-- Umami Analytics - Production Only -->
-	{#if !import.meta.env.DEV}
+	<!-- Umami Analytics - Production Only, Exclude Specific Users -->
+	{#if !import.meta.env.DEV && !shouldExclude}
 		<script defer src="https://umami.zaur.app/script.js" data-website-id="92ff6091-acae-433b-813b-561a4f524314"></script>
 	{/if}
 </svelte:head>

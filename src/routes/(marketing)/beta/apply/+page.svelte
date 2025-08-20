@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -19,10 +20,18 @@
 	import Send from 'lucide-svelte/icons/send';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	
+	// Umami tracking
+	import { trackEvent, trackFormProgress, trackFormAbandon, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
+	
 	// Form state
 	let isSubmitting = $state(false);
 	let error = $state('');
 	let success = $state(false);
+	
+	// Tracking state
+	let formStarted = $state(false);
+	let fieldsInteracted = $state(new Set<string>());
+	let formStartTime = $state<number>(0);
 	
 	// Simplified form data - removed unnecessary fields
 	let formData = $state({
@@ -60,6 +69,57 @@
 	];
 	
 	// Common country name to code mappings
+	// Initialize tracking
+	onMount(() => {
+		// Track beta application page visit
+		trackEvent(UMAMI_EVENTS.BETA_APPLY_START, {
+			category: 'beta_funnel',
+			step: 'form',
+			page: 'beta_application'
+		});
+		
+		// Track form abandonment on page unload
+		const handleBeforeUnload = () => {
+			if (formStarted && !success) {
+				const completionPercentage = calculateFormCompletion();
+				const lastField = Array.from(fieldsInteracted).pop();
+				trackFormAbandon('beta_application', completionPercentage, lastField);
+			}
+		};
+		
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+	});
+	
+	// Calculate form completion percentage
+	function calculateFormCompletion(): number {
+		const requiredFields = ['name', 'email', 'businessName', 'location', 'tourTypes', 'tourVolume', 'biggestChallenge'];
+		const completedFields = requiredFields.filter(field => {
+			const value = formData[field as keyof typeof formData];
+			return value && value.toString().trim() !== '';
+		});
+		return Math.round((completedFields.length / requiredFields.length) * 100);
+	}
+	
+	// Track field interactions
+	function trackFieldInteraction(fieldName: string) {
+		if (!formStarted) {
+			formStarted = true;
+			formStartTime = Date.now();
+			trackEvent(UMAMI_EVENTS.BETA_FORM_FIELD_FOCUS, {
+				category: 'form_interaction',
+				field_name: 'first_interaction',
+				form_name: 'beta_application'
+			});
+		}
+		
+		if (!fieldsInteracted.has(fieldName)) {
+			fieldsInteracted.add(fieldName);
+			const completionPercentage = calculateFormCompletion();
+			trackFormProgress('beta_application', fieldName, completionPercentage);
+		}
+	}
+
 	const countryMappings: Record<string, string> = {
 		// Common full names
 		'united states': 'US', 'usa': 'US', 'america': 'US', 'united states of america': 'US',
@@ -275,10 +335,31 @@
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		
+		// Track form submission attempt
+		const completionPercentage = calculateFormCompletion();
+		const formDuration = formStartTime ? Date.now() - formStartTime : 0;
+		
+		trackEvent(UMAMI_EVENTS.BETA_FORM_SUBMIT, {
+			category: 'beta_funnel',
+			form_name: 'beta_application',
+			completion_percentage: completionPercentage,
+			form_duration_seconds: Math.round(formDuration / 1000),
+			fields_interacted: fieldsInteracted.size
+		});
+		
 		// Clear any previous general error
 		error = '';
 		
 		if (!validateForm()) {
+			// Track validation errors
+			trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
+				category: 'form_errors',
+				form_name: 'beta_application',
+				error_type: 'validation',
+				error_fields: validationErrors.map(e => e.field).join(','),
+				completion_percentage: completionPercentage
+			});
+			
 			// Don't show generic error if we have specific field errors
 			if (validationErrors.length === 0) {
 				error = 'Please complete all required fields';
@@ -348,15 +429,44 @@
 			
 			if (response.ok) {
 				success = true;
+				
+				// Track successful form submission
+				trackEvent(UMAMI_EVENTS.BETA_FORM_SUCCESS, {
+					category: 'beta_funnel',
+					form_name: 'beta_application',
+					completion_percentage: 100,
+					form_duration_seconds: Math.round(formDuration / 1000),
+					tour_volume: formData.tourVolume,
+					location: formData.location
+				});
+				
 				// Show success message for a moment then redirect
 				setTimeout(() => {
 					goto('/beta/success');
 				}, 2000);
 			} else {
 				error = data.error || 'Failed to submit application. Please try again.';
+				
+				// Track submission error
+				trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
+					category: 'form_errors',
+					form_name: 'beta_application',
+					error_type: 'server_error',
+					error_message: data.error || 'Unknown server error',
+					completion_percentage: completionPercentage
+				});
 			}
 		} catch (err) {
 			error = 'Network error. Please check your connection and try again.';
+			
+			// Track network error
+			trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
+				category: 'form_errors',
+				form_name: 'beta_application',
+				error_type: 'network_error',
+				error_message: err instanceof Error ? err.message : 'Unknown network error',
+				completion_percentage: completionPercentage
+			});
 		} finally {
 			isSubmitting = false;
 		}
@@ -435,6 +545,7 @@
 							type="text"
 							id="name"
 							bind:value={formData.name}
+							onfocus={() => trackFieldInteraction('name')}
 							onblur={() => handleFieldBlur('name', formData.name)}
 							placeholder="John Smith"
 							class="form-input {hasFieldError('name') ? 'error' : ''}"
@@ -454,6 +565,7 @@
 							type="text"
 							id="email"
 							bind:value={formData.email}
+							onfocus={() => trackFieldInteraction('email')}
 							onblur={() => handleFieldBlur('email', formData.email)}
 							oninput={() => {
 								// Real-time validation for email
@@ -479,6 +591,7 @@
 							type="text"
 							id="businessName"
 							bind:value={formData.businessName}
+							onfocus={() => trackFieldInteraction('businessName')}
 							placeholder="Adventure Tours Co."
 							class="form-input"
 							disabled={isSubmitting}
@@ -494,6 +607,7 @@
 							type="text"
 							id="location"
 							bind:value={formData.location}
+							onfocus={() => trackFieldInteraction('location')}
 							oninput={(e) => handleLocationInput((e.target as HTMLInputElement).value)}
 							onblur={() => handleFieldBlur('location', formData.location)}
 							placeholder="Barcelona, Spain or just Spain"
@@ -523,6 +637,7 @@
 						<textarea
 							id="tourTypes"
 							bind:value={formData.tourTypes}
+							onfocus={() => trackFieldInteraction('tourTypes')}
 							onblur={() => handleFieldBlur('tourTypes', formData.tourTypes)}
 							placeholder="Walking tours, food experiences, adventure activities..."
 							rows="3"
@@ -541,6 +656,7 @@
 						<select
 							id="tourVolume"
 							bind:value={formData.tourVolume}
+							onfocus={() => trackFieldInteraction('tourVolume')}
 							onblur={() => handleFieldBlur('tourVolume', formData.tourVolume)}
 							class="form-select {hasFieldError('tourVolume') ? 'error' : ''}"
 							disabled={isSubmitting}
@@ -563,6 +679,7 @@
 							type="text"
 							id="website"
 							bind:value={formData.website}
+							onfocus={() => trackFieldInteraction('website')}
 							placeholder="www.example.com or @yourtours"
 							class="form-input"
 							disabled={isSubmitting}
@@ -576,6 +693,7 @@
 						<textarea
 							id="biggestChallenge"
 							bind:value={formData.biggestChallenge}
+							onfocus={() => trackFieldInteraction('biggestChallenge')}
 							onblur={() => handleFieldBlur('biggestChallenge', formData.biggestChallenge)}
 							placeholder="Last-minute cancellations, payment processing, managing availability..."
 							rows="3"

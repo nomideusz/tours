@@ -4,6 +4,14 @@
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Rocket from 'lucide-svelte/icons/rocket';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	
+	// Umami tracking
+	import { trackCTAClick } from '$lib/utils/umami-tracking.js';
+	
+	function handleApplyClick() {
+		trackCTAClick('final', 'Apply for Beta Access', '/beta/apply');
+		goto('/beta/apply');
+	}
 </script>
 
 <!-- Final CTA - Simple and Focused -->
@@ -23,7 +31,7 @@
 			
 			<button 
 				class="button-primary button--large button--gap"
-				onclick={() => goto('/beta/apply')}
+				onclick={handleApplyClick}
 			>
 				Apply for Beta Access
 				<ArrowRight class="w-4 h-4" />

@@ -27,12 +27,13 @@
 	];
 </script>
 
-<div class="py-16 sm:py-20">
-	<div class="text-center mb-12 sm:mb-16">
-		<h2 class="marketing-heading marketing-heading-lg mb-4">
-			Roadmap
-		</h2>
-	</div>
+<div class="timeline-section py-16 sm:py-20">
+	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+		<div class="text-center mb-12 sm:mb-16">
+			<h2 class="marketing-heading marketing-heading-lg mb-4">
+				Roadmap
+			</h2>
+		</div>
 	
 	<!-- Timeline Container -->
 	<div class="mx-auto">
@@ -168,9 +169,39 @@
 			{/each}
 		</div>
 	</div>
+	</div>
 </div>
 
 <style>
+	/* Timeline section background */
+	.timeline-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Very subtle texture overlay */
+	.timeline-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+	}
+
 	@keyframes pulse {
 		0%, 100% {
 			opacity: 1;
