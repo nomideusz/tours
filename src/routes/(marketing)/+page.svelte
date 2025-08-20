@@ -101,11 +101,6 @@
 	<BetaHeroSection />
 </section>
 
-<!-- Platform Showcase Section -->
-<section id="platform-showcase">
-	<PlatformShowcase />
-</section>
-
 <!-- Timeline Section -->
 <section id="timeline" class="timeline-section">
 	<div class="mx-auto px-6 sm:px-8 lg:px-12" style="max-width: 50rem;">
