@@ -15,7 +15,7 @@
 	
 	// State for beta stats
 	let stats = $state({
-		applications: 0,
+		acceptedApplications: 0,
 		spotsTotal: 50,
 		countries: 0,
 		loading: true
@@ -28,7 +28,7 @@
 				const data = await response.json();
 				if (data.success) {
 					stats = {
-						applications: data.stats.totalApplications,
+						acceptedApplications: data.stats.acceptedApplications,
 						spotsTotal: data.stats.spotsTotal,
 						countries: data.stats.countriesRepresented,
 						loading: false
@@ -38,7 +38,7 @@
 		} catch (err) {
 			// Use fallback data if fetch fails
 			stats = {
-				applications: 12,
+				acceptedApplications: 3,
 				spotsTotal: 50,
 				countries: 5,
 				loading: false
@@ -82,13 +82,13 @@
 				<div class="card-grid card-grid--3">
 					<div class="card-item card-item--center">
 						<div>
-							<div class="stat-number">{stats.applications}</div>
-							<div class="stat-label">Applications</div>
+							<div class="stat-number">{stats.acceptedApplications}</div>
+							<div class="stat-label">Beta Members</div>
 						</div>
 					</div>
 					<div class="card-item card-item--center">
 						<div>
-							<div class="stat-number">{stats.spotsTotal - stats.applications}</div>
+							<div class="stat-number">{stats.spotsTotal - stats.acceptedApplications}</div>
 							<div class="stat-label">Spots Remaining</div>
 						</div>
 					</div>
