@@ -125,9 +125,29 @@
 		color: var(--color-primary-600);
 	}
 	
+	/* Ensure icons inside wrapper inherit the color */
+	.icon-wrapper-primary svg,
+	.icon-wrapper-primary .lucide {
+		color: inherit !important;
+		stroke: currentColor !important;
+		fill: none !important;
+		stroke-width: 2 !important;
+		opacity: 1 !important;
+	}
+	
 	[data-theme="dark"] .icon-wrapper-primary {
 		background: var(--color-primary-900);
 		color: var(--color-primary-400);
+	}
+	
+	/* Dark mode icon override */
+	[data-theme="dark"] .icon-wrapper-primary svg,
+	[data-theme="dark"] .icon-wrapper-primary .lucide {
+		color: var(--color-primary-400) !important;
+		stroke: var(--color-primary-400) !important;
+		fill: none !important;
+		stroke-width: 2 !important;
+		opacity: 1 !important;
 	}
 	
 	/* Text color utilities */

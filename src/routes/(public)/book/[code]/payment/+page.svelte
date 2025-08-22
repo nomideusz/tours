@@ -220,12 +220,7 @@
 					// All payment methods will be shown based on what's enabled for the connected account
 					fields: {
 						billingDetails: {
-							address: {
-								mode: 'billing',
-								autocomplete: {
-									mode: 'automatic'
-								}
-							}
+							address: 'auto' // Simplified address collection mode
 						}
 					}
 				});

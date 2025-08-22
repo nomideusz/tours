@@ -16,6 +16,7 @@
 		getSlotStatusColor,
 		isSlotFull
 	} from '$lib/utils/time-slot-client.js';
+	import BookingCalendar from '$lib/components/BookingCalendar.svelte';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -103,7 +104,6 @@
 	});
 	
 	// Booking form state
-	let selectedDate = $state<string>('');
 	let selectedTimeSlot = $state<TimeSlot | null>(null);
 	let participants = $state(1);
 	let adultParticipants = $state(1);
@@ -123,8 +123,6 @@
 	);
 	
 	// Process time slots from query
-	let availableDates = $state<string[]>([]);
-	let availableTimeSlots = $state<TimeSlot[]>([]);
 	let hasRealTimeSlots = $derived(allTimeSlots?.length > 0);
 	
 	// Calculate total price based on pricing model
@@ -148,48 +146,8 @@
 	// Total participant count for validation
 	let totalParticipants = $derived(tour?.enablePricingTiers ? adultParticipants + childParticipants : participants);
 	
-	// Process available dates when time slots change
-	$effect(() => {
-		if (allTimeSlots && allTimeSlots.length > 0) {
-			const now = new Date();
-			// Only include dates that have future time slots
-			const futureSlotsOnly = allTimeSlots.filter((slot: TimeSlot) => new Date(slot.startTime) > now);
-			const dates = [...new Set(
-				futureSlotsOnly.map((slot: TimeSlot) => slot.startTime.split('T')[0])
-			)] as string[];
-			availableDates = dates.sort();
-			
-			// If we have a selected date, reload slots for that date
-			if (selectedDate && dates.includes(selectedDate)) {
-				loadTimeSlotsForDate(selectedDate);
-			}
-		}
-	});
-	
-	function selectDate(date: string) {
-		selectedDate = date;
-		selectedTimeSlot = null; // Reset time slot selection
-		loadTimeSlotsForDate(date);
-	}
-	
-	function loadTimeSlotsForDate(date: string) {
-		const now = new Date();
-		availableTimeSlots = allTimeSlots.filter((slot: TimeSlot) => 
-			slot.startTime.startsWith(date) && 
-			!isSlotFull(slot) &&
-			new Date(slot.startTime) > now // Ensure slot is in the future
-		).sort((a: TimeSlot, b: TimeSlot) => a.startTime.localeCompare(b.startTime));
-	}
-	
-	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('en-US', {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
-	
-	function selectTimeSlot(slot: TimeSlot) {
+	// Handle time slot selection from calendar
+	function handleSlotSelect(slot: TimeSlot | null) {
 		selectedTimeSlot = slot;
 	}
 	
@@ -202,6 +160,43 @@
 		}
 	});
 </script>
+
+<style>
+	.booking-summary {
+		position: sticky;
+		top: 1rem;
+		z-index: 10;
+		animation: slideIn 0.3s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Smooth transitions for disabled states */
+	.opacity-50 {
+		transition: opacity 0.2s ease, filter 0.2s ease;
+	}
+
+	.pointer-events-none {
+		filter: grayscale(0.3);
+	}
+
+	/* Mobile: make summary less sticky to avoid covering content */
+	@media (max-width: 640px) {
+		.booking-summary {
+			position: relative;
+			top: 0;
+		}
+	}
+</style>
 
 <svelte:head>
 	<title>Book {tour?.name || 'Tour'} - Zaur</title>
@@ -485,133 +480,109 @@
 									{/if}
 								{/if}
 								
-								<!-- Date Selection -->
+								<!-- Date & Time Selection -->
 								<div>
-									<label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
-										Select Date
-									</label>
-									<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-										{#each availableDates as date}
-											<button
-												type="button"
-												onclick={() => selectDate(date)}
-												class="p-3 text-sm rounded-lg border text-center transition-colors"
-												style="border-color: {selectedDate === date ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {selectedDate === date ? 'var(--color-primary-50)' : 'transparent'}; color: {selectedDate === date ? 'var(--color-primary-900)' : 'var(--text-primary)'}"
-												onmouseenter={(e) => {
-													if (selectedDate !== date) {
-														e.currentTarget.style.borderColor = 'var(--border-secondary)';
-														e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-													}
-												}}
-												onmouseleave={(e) => {
-													if (selectedDate !== date) {
-														e.currentTarget.style.borderColor = 'var(--border-primary)';
-														e.currentTarget.style.backgroundColor = 'transparent';
-													}
-												}}
-											>
-												{formatDate(date)}
-											</button>
-										{/each}
+									<div class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
+										Select Date & Time
 									</div>
+									<BookingCalendar 
+										timeSlots={allTimeSlots || []}
+										selectedSlot={selectedTimeSlot}
+										onSlotSelect={handleSlotSelect}
+										tour={tour}
+										tourOwner={tourOwner}
+									/>
 								</div>
 								
-								<!-- Time Slot Selection -->
-								{#if selectedDate}
-									<div>
-										<label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
-											Select Time
-										</label>
-										<div class="space-y-2 max-h-48 overflow-y-auto">
-											{#each availableTimeSlots as slot}
-												<button
-													type="button"
-													onclick={() => selectTimeSlot(slot)}
-													class="w-full p-4 text-left rounded-lg border transition-colors"
-													style="border-color: {selectedTimeSlot?.id === slot.id ? 'var(--color-primary-500)' : 'var(--border-primary)'}; background: {selectedTimeSlot?.id === slot.id ? 'var(--color-primary-50)' : 'transparent'}"
-													onmouseenter={(e) => {
-														if (selectedTimeSlot?.id !== slot.id) {
-															e.currentTarget.style.borderColor = 'var(--border-secondary)';
-															e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-														}
-													}}
-													onmouseleave={(e) => {
-														if (selectedTimeSlot?.id !== slot.id) {
-															e.currentTarget.style.borderColor = 'var(--border-primary)';
-															e.currentTarget.style.backgroundColor = 'transparent';
-														}
-													}}
-												>
-													<div class="flex justify-between items-center">
-														<div>
-															<p class="font-medium" style="color: var(--text-primary);">
-																{formatSlotTimeRange(slot.startTime, slot.endTime)}
-															</p>
-															<p class="text-sm" style="color: var(--text-secondary);">
-																{getSlotAvailabilityText(slot)}
-															</p>
-														</div>
-														<div class="text-right">
-															{#if tour.enablePricingTiers && tour.pricingTiers}
-																<p class="text-xs font-medium" style="color: var(--color-primary-600);">
-																	Adults: {formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
-																</p>
-																{#if parseFloat(tour.pricingTiers.child) > 0}
-																	<p class="text-xs" style="color: var(--color-primary-600);">
-																		Children: {formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency)}
-																	</p>
-																{:else}
-																	<p class="text-xs" style="color: var(--color-primary-600);">
-																		Children: Free
-																	</p>
-																{/if}
-															{:else}
-																<p class="text-sm font-medium" style="color: var(--color-primary-600);">
-																	{getTourDisplayPriceFormattedWithCurrency(tour, tourOwner?.currency)}
-																</p>
-															{/if}
-														</div>
+								<!-- Booking Summary -->
+								{#if selectedTimeSlot}
+									<div class="booking-summary rounded-lg p-4" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+										<div class="flex items-start gap-3">
+											<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--color-primary-100);">
+												<Calendar class="w-4 h-4" style="color: var(--color-primary-600);" />
+											</div>
+											<div class="flex-1 min-w-0">
+												<h3 class="font-semibold text-sm mb-1" style="color: var(--color-primary-800);">Your Selection</h3>
+												<div class="space-y-1">
+													<div class="flex items-center gap-2 text-sm">
+														<Clock class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
+														<span style="color: var(--color-primary-700);">
+															{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
+														</span>
 													</div>
-												</button>
-											{/each}
+													<div class="flex items-center gap-2 text-sm">
+														<Calendar class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
+														<span style="color: var(--color-primary-700);">
+															{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+														</span>
+													</div>
+													{#if totalParticipants > 0}
+														<div class="flex items-center gap-2 text-sm">
+															<Users class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
+															<span style="color: var(--color-primary-700);">
+																{totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
+															</span>
+														</div>
+													{/if}
+												</div>
+											</div>
+											{#if displayPrice > 0}
+												<div class="text-right">
+													<div class="text-lg font-bold" style="color: var(--color-primary-800);">
+														{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+													</div>
+													<div class="text-xs" style="color: var(--color-primary-600);">
+														Total
+													</div>
+												</div>
+											{/if}
 										</div>
 									</div>
 								{/if}
 								
 								<!-- Participants -->
-								{#if selectedTimeSlot}
+								<div class="space-y-4" class:opacity-50={!selectedTimeSlot} class:pointer-events-none={!selectedTimeSlot}>
+									{#if !selectedTimeSlot}
+										<div class="text-sm p-3 rounded-lg text-center" style="background: var(--bg-secondary); border: 2px dashed var(--border-primary); color: var(--text-secondary);">
+											<span class="font-medium">👆 Select a time slot above to continue</span>
+										</div>
+									{/if}
+								
+									{#if selectedTimeSlot || !selectedTimeSlot}
 									{#if tour.enablePricingTiers && tour.pricingTiers}
 										<!-- Pricing Tiers: Adult/Child Selection -->
 										<div class="space-y-4">
-											<h3 class="text-sm font-medium" style="color: var(--text-primary);">Number of Participants</h3>
+											<div class="text-sm font-medium" style="color: var(--text-primary);">Number of Participants</div>
 											
 											<div class="grid grid-cols-2 gap-4">
 												<div>
-													<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+													<label for="adultParticipants" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 														Adults ({formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)} each)
 													</label>
 													<select
+														id="adultParticipants"
 														bind:value={adultParticipants}
 														name="adultParticipants"
 														class="form-select w-full"
 														required
 													>
-														{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots, 10)}, (_, i) => i + 1) as num}
+														{#each Array.from({length: Math.min((selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0), 10)}, (_, i) => i + 1) as num}
 															<option value={num}>{num}</option>
 														{/each}
 													</select>
 												</div>
 												
 												<div>
-													<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+													<label for="childParticipants" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 														Children ({parseFloat(tour.pricingTiers.child) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) + ' each' : 'Free'})
 													</label>
 													<select
+														id="childParticipants"
 														bind:value={childParticipants}
 														name="childParticipants"
 														class="form-select w-full"
 													>
-														{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots - adultParticipants + 1, 11)}, (_, i) => i) as num}
+														{#each Array.from({length: Math.min((selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0) - adultParticipants + 1, 11)}, (_, i) => i) as num}
 															<option value={num}>{num}</option>
 														{/each}
 													</select>
@@ -620,9 +591,9 @@
 											
 											<div class="text-sm p-3 rounded-lg" style="background: var(--bg-secondary); color: var(--text-secondary);">
 												Total: {totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
-												{#if totalParticipants > (selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots)}
+												{#if totalParticipants > ((selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0))}
 													<span class="font-medium" style="color: var(--color-danger-600);">
-														• Exceeds available spots ({selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots} remaining)
+														• Exceeds available spots ({(selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0)} remaining)
 													</span>
 												{/if}
 											</div>
@@ -630,32 +601,41 @@
 									{:else}
 										<!-- Single Pricing: Traditional Selection -->
 										<div>
-											<label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
+											<label for="participants" class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
 												Number of Participants
 											</label>
 											<select
+												id="participants"
 												bind:value={participants}
 												name="participants"
 												class="form-select w-full"
 												required
 											>
-												{#each Array.from({length: Math.min(selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots, 10)}, (_, i) => i + 1) as num}
+												{#each Array.from({length: Math.min((selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0), 10)}, (_, i) => i + 1) as num}
 													<option value={num}>{num} {num === 1 ? 'person' : 'people'}</option>
 												{/each}
 											</select>
 										</div>
 									{/if}
 								{/if}
+								</div>
 									
 									<!-- Customer Information -->
+									<div class="space-y-4" class:opacity-50={!selectedTimeSlot} class:pointer-events-none={!selectedTimeSlot}>
+										{#if !selectedTimeSlot}
+											<div class="text-sm p-3 rounded-lg text-center" style="background: var(--bg-secondary); border: 2px dashed var(--border-primary); color: var(--text-secondary);">
+												<span class="font-medium">Complete the steps above first</span>
+											</div>
+										{/if}
 									<div class="space-y-4">
-										<h3 class="font-medium" style="color: var(--text-primary);">Your Information</h3>
+										<div class="font-medium" style="color: var(--text-primary);">Your Information</div>
 										
 										<div>
-											<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+											<label for="customerName" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 												Full Name *
 											</label>
 											<input
+												id="customerName"
 												type="text"
 												bind:value={customerName}
 												name="customerName"
@@ -665,10 +645,11 @@
 										</div>
 										
 										<div>
-											<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+											<label for="customerEmail" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 												Email Address *
 											</label>
 											<input
+												id="customerEmail"
 												type="email"
 												bind:value={customerEmail}
 												name="customerEmail"
@@ -678,10 +659,11 @@
 										</div>
 										
 										<div>
-											<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+											<label for="customerPhone" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 												Phone Number
 											</label>
 											<input
+												id="customerPhone"
 												type="tel"
 												bind:value={customerPhone}
 												name="customerPhone"
@@ -690,10 +672,11 @@
 										</div>
 										
 										<div>
-											<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+											<label for="specialRequests" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
 												Special Requests
 											</label>
 											<textarea
+												id="specialRequests"
 												bind:value={specialRequests}
 												name="specialRequests"
 												rows="3"
@@ -702,8 +685,10 @@
 											></textarea>
 										</div>
 									</div>
+									</div>
 									
 									<!-- Total Price -->
+									<div class="space-y-4" class:opacity-50={!selectedTimeSlot} class:pointer-events-none={!selectedTimeSlot}>
 									<div class="border-t pt-4" style="border-color: var(--border-primary);">
 										{#if tour.enablePricingTiers && tour.pricingTiers && (adultParticipants > 0 || childParticipants > 0)}
 											<!-- Pricing Breakdown -->
@@ -728,11 +713,12 @@
 											<span style="color: var(--color-primary-600);">{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}</span>
 										</div>
 									</div>
+									</div>
 									
 									<!-- Submit Button -->
 									<button
 										type="submit"
-										disabled={isSubmitting || !customerName || !customerEmail || !selectedTimeSlot || totalParticipants > (selectedTimeSlot.availableSpots - selectedTimeSlot.bookedSpots) || totalParticipants === 0}
+										disabled={isSubmitting || !customerName || !customerEmail || !selectedTimeSlot || totalParticipants > ((selectedTimeSlot?.availableSpots || 0) - (selectedTimeSlot?.bookedSpots || 0)) || totalParticipants === 0}
 										class="w-full button-primary button--gap justify-center py-4 text-base"
 									>
 										{#if isSubmitting}
