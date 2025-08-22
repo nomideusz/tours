@@ -113,6 +113,9 @@
 	}
 
 	function handleDateHover(day: number | null) {
+		// Don't handle hover on touch devices to avoid conflicts
+		if ('ontouchstart' in window) return;
+		
 		if (day === null) {
 			hoveredDate = null;
 		} else {
@@ -268,6 +271,12 @@
 							onclick={() => !isDisabled && handleDateClick(day)}
 							onmouseenter={() => handleDateHover(day)}
 							onmouseleave={() => handleDateHover(null)}
+							ontouchend={(e) => {
+								if (!isDisabled) {
+									e.preventDefault();
+									handleDateClick(day);
+								}
+							}}
 							disabled={isDisabled}
 							class="day-button"
 							class:day-button--today={isToday(day)}
@@ -322,6 +331,10 @@
 						<button
 							type="button"
 							onclick={() => handleSlotSelect(slot)}
+							ontouchend={(e) => {
+								e.preventDefault();
+								handleSlotSelect(slot);
+							}}
 							class="slot-button"
 							class:slot-button--selected={selectedSlot?.id === slot.id}
 						>
@@ -510,11 +523,16 @@
 		justify-content: center;
 		gap: 0.25rem;
 		padding: 0.5rem;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
 	}
 
-	.day-button:hover:not(.day-button--disabled):not(.day-button--empty) {
-		background: var(--bg-tertiary);
-		color: var(--text-primary);
+	/* Only apply hover effects on non-touch devices */
+	@media (hover: hover) and (pointer: fine) {
+		.day-button:hover:not(.day-button--disabled):not(.day-button--empty) {
+			background: var(--bg-tertiary);
+			color: var(--text-primary);
+		}
 	}
 
 	.day-button--today {
@@ -705,12 +723,18 @@
 		cursor: pointer;
 		transition: all 0.15s ease;
 		text-align: left;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+		min-height: 44px; /* iOS minimum touch target */
 	}
 
-	.slot-button:hover {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
+	/* Only apply hover effects on non-touch devices */
+	@media (hover: hover) and (pointer: fine) {
+		.slot-button:hover {
+			background: var(--bg-tertiary);
+			border-color: var(--border-secondary);
+			transform: translateY(-1px);
+		}
 	}
 
 	.slot-button--selected {
