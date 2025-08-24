@@ -329,9 +329,11 @@
 	// Handle day click in calendar view
 	function handleDayClick(date: Date, slots: TimeSlot[]) {
 		if (slots.length === 0) {
-			// Empty day - start quick add if in tour view
+			// Empty day - start quick add if in tour view, or call onQuickAdd callback
 			if (tourId) {
 				startQuickAdd(date);
+			} else if (onQuickAdd) {
+				onQuickAdd(date);
 			}
 			return;
 		}
@@ -908,10 +910,10 @@
 						<div class="hidden sm:flex items-center gap-2">
 							<div class="view-toggle">
 								<button
-									onclick={() => { view = 'day'; onViewChange?.('day'); }}
-									class="view-button {view === 'day' ? 'active' : ''}"
+									onclick={() => { view = 'month'; onViewChange?.('month'); }}
+									class="view-button {view === 'month' ? 'active' : ''}"
 								>
-									Day
+									Month
 								</button>
 								<button
 									onclick={() => { view = 'week'; onViewChange?.('week'); }}
@@ -920,10 +922,10 @@
 									Week
 								</button>
 								<button
-									onclick={() => { view = 'month'; onViewChange?.('month'); }}
-									class="view-button {view === 'month' ? 'active' : ''}"
+									onclick={() => { view = 'day'; onViewChange?.('day'); }}
+									class="view-button {view === 'day' ? 'active' : ''}"
 								>
-									Month
+									Day
 								</button>
 							</div>
 						</div>
@@ -996,10 +998,10 @@
 					<div class="hidden sm:flex items-center justify-center">
 						<div class="view-toggle">
 							<button
-								onclick={() => { view = 'day'; onViewChange?.('day'); }}
-								class="view-button {view === 'day' ? 'active' : ''}"
+								onclick={() => { view = 'month'; onViewChange?.('month'); }}
+								class="view-button {view === 'month' ? 'active' : ''}"
 							>
-								Day
+								Month
 							</button>
 							<button
 								onclick={() => { view = 'week'; onViewChange?.('week'); }}
@@ -1008,10 +1010,10 @@
 								Week
 							</button>
 							<button
-								onclick={() => { view = 'month'; onViewChange?.('month'); }}
-								class="view-button {view === 'month' ? 'active' : ''}"
+								onclick={() => { view = 'day'; onViewChange?.('day'); }}
+								class="view-button {view === 'day' ? 'active' : ''}"
 							>
-								Month
+								Day
 							</button>
 						</div>
 					</div>
@@ -1316,11 +1318,11 @@
 							class:weekend={isWeekend}
 							class:quick-add-active={showQuickAdd === dayDate?.toDateString()}
 							onclick={daySlots.length > 0 && !isPast ? () => dayDate && handleDayClick(dayDate, daySlots) : 
-									(daySlots.length === 0 && !isPast && tourId ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined)}
+									(daySlots.length === 0 && !isPast && (tourId || onQuickAdd) ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined)}
 							onkeydown={(e) => {
 								if ((e.key === 'Enter' || e.key === ' ') && dayDate && !isPast) {
 									e.preventDefault();
-									if (daySlots.length > 0 || tourId) {
+									if (daySlots.length > 0 || tourId || onQuickAdd) {
 										handleDayClick(dayDate, daySlots);
 									}
 								}
@@ -1336,10 +1338,10 @@
 									hidePopover();
 								}
 							}}
-							role={daySlots.length > 0 || (tourId && !isPast) ? "button" : "gridcell"}
-							{...(daySlots.length > 0 || (tourId && !isPast) ? { tabindex: 0 } : {})}
+							role={daySlots.length > 0 || ((tourId || onQuickAdd) && !isPast) ? "button" : "gridcell"}
+							{...(daySlots.length > 0 || ((tourId || onQuickAdd) && !isPast) ? { tabindex: 0 } : {})}
 							aria-label={dayDate && daySlots.length > 0 ? `${dayDate.toLocaleDateString()} - ${daySlots.length} tour slots` : 
-									   dayDate && tourId && !isPast ? `${dayDate.toLocaleDateString()} - Click to add time slot` :
+									   dayDate && (tourId || onQuickAdd) && !isPast ? `${dayDate.toLocaleDateString()} - Click to add time slot` :
 									   dayDate?.getDate().toString()}
 						>
 							{#if dayDate}
@@ -1681,6 +1683,11 @@
 	
 	.calendar-day[role="button"] {
 		cursor: pointer;
+	}
+	
+	.calendar-day[role="button"]:hover:not(.has-slots) {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
 	}
 	
 	.quick-add-form {
