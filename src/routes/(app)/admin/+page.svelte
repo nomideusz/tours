@@ -9,7 +9,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import TableSort from '$lib/components/TableSort.svelte';
-	import { formatDate } from '$lib/utils/date-helpers.js';
+	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
 	import { globalCurrencyFormatter, formatCurrency } from '$lib/utils/currency.js';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	import { createTableSort, sortData, createSortableFields } from '$lib/utils/table-sort.js';
@@ -115,7 +115,7 @@
 		{ key: 'name', label: 'USER' },
 		{ key: 'roleplan', label: 'ROLE/PLAN', sortable: false },
 		{ key: 'location', label: 'LOCATION', sortable: false },
-		{ key: 'lastLogin', label: 'ACTIVITY' },
+		{ key: 'lastLogin', label: 'JOINED / ACTIVITY' },
 		{ key: 'revenue', label: 'STATS' },
 		{ key: 'actions', label: 'ACTIONS', sortable: false }
 	];
@@ -297,8 +297,8 @@
 			Tours: user.tourCount || 0,
 			Bookings: user.bookingCount || 0,
 			Revenue: user.totalRevenue || 0,
-			Created: formatDate(user.createdAt),
-			LastLogin: user.lastLogin ? formatDate(user.lastLogin) : 'Never'
+			Created: formatDateTime(user.createdAt),
+			LastLogin: user.lastLogin ? formatDateTime(user.lastLogin) : 'Never'
 		}));
 		
 		const headers = Object.keys(csvData[0]);
@@ -793,11 +793,11 @@
 									<td class="px-4 py-4">
 										<div class="text-sm">
 											<p class="text-xs" style="color: var(--text-secondary);">
-												Joined {formatDate(user.createdAt)}
+												Joined {formatDateTime(user.createdAt)}
 											</p>
 											{#if user.lastLogin}
 												<p class="text-xs" style="color: var(--text-tertiary);">
-													Last login: {formatDate(user.lastLogin)}
+													Last login: {formatDateTime(user.lastLogin)}
 												</p>
 											{:else}
 												<p class="text-xs" style="color: var(--text-tertiary);">
@@ -936,9 +936,9 @@
 							</div>
 							
 							<div class="text-xs" style="color: var(--text-tertiary);">
-								Joined {formatDate(user.createdAt)}
+								Joined {formatDateTime(user.createdAt)}
 								{#if user.lastLogin}
-									• Last login {formatDate(user.lastLogin)}
+									• Last login {formatDateTime(user.lastLogin)}
 								{/if}
 							</div>
 						</div>
