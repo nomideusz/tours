@@ -203,6 +203,8 @@
 
 	let showOnboarding = $derived(!isLoading && onboardingSteps.length > 0);
 	
+
+	
 	// Helper function to format date for input (timezone-safe)
 
 	

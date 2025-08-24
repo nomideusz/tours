@@ -160,12 +160,12 @@
 	</div>
 {/if}
 
-<!-- New User Onboarding -->
-{#if isNewUser && !needsEmailVerification && !needsConfirmation}
+<!-- User Onboarding -->
+{#if onboardingSteps.length > 0 && !needsEmailVerification && !needsConfirmation}
 	<div class="onboarding-section" transition:fade>
 		<div class="onboarding-header">
-			<h2>Welcome to Zaur! 🎉</h2>
-			<p>Let's get your tour business set up in just a few steps.</p>
+			<h2>{isNewUser ? 'Welcome to Zaur! 🎉' : 'Complete Your Setup'}</h2>
+			<p>{isNewUser ? "Let's get your tour business set up in just a few steps." : "Finish setting up your account to start accepting bookings."}</p>
 			
 			<!-- Progress Bar -->
 			<div class="progress-container">
