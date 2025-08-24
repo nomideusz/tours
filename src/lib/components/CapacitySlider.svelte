@@ -267,30 +267,73 @@
 			style="left: {sliderPosition}%"
 			data-value="{formatValue(value)}"
 		>
-			<!-- Editable value above thumb -->
-			<input
-				type="number"
-				bind:value={value}
-				{min}
-				{max}
-				{step}
-				{disabled}
-				class="thumb-value-input {value > sliderMax ? 'above-slider-max' : ''}"
-				onchange={() => {
-					// Clamp value to bounds
-					value = Math.max(min, Math.min(max, value || min));
-					onChange?.(value);
-				}}
-				onblur={() => {
-					// Ensure valid value on blur
-					if (!value || value < min) value = min;
-					if (value > max) value = max;
-				}}
-				onclick={(e) => e.stopPropagation()}
-				onmousedown={(e) => e.stopPropagation()}
-				ontouchstart={(e) => e.stopPropagation()}
-				aria-label="{label}: {formatValue(value)} {unit}"
-			/>
+			<!-- Value input container with custom controls -->
+			<div class="thumb-value-container">
+				<button
+					type="button"
+					class="thumb-value-btn thumb-value-btn-up"
+					onclick={(e) => {
+						e.stopPropagation();
+						if (!disabled && value < max) {
+							value = Math.min(max, value + step);
+							onChange?.(value);
+						}
+					}}
+					onmousedown={(e) => e.stopPropagation()}
+					ontouchstart={(e) => e.stopPropagation()}
+					{disabled}
+					aria-label="Increase value"
+				>
+					<svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+						<path d="M4 0L8 6H0L4 0Z" fill="currentColor"/>
+					</svg>
+				</button>
+				
+				<input
+					type="number"
+					bind:value={value}
+					{min}
+					{max}
+					{step}
+					{disabled}
+					class="thumb-value-input {value > sliderMax ? 'above-slider-max' : ''}"
+					onchange={() => {
+						// Clamp value to bounds
+						value = Math.max(min, Math.min(max, value || min));
+						onChange?.(value);
+					}}
+					onblur={() => {
+						// Ensure valid value on blur
+						if (!value || value < min) value = min;
+						if (value > max) value = max;
+					}}
+					onclick={(e) => e.stopPropagation()}
+					onmousedown={(e) => e.stopPropagation()}
+					ontouchstart={(e) => e.stopPropagation()}
+					aria-label="{label}: {formatValue(value)} {unit}"
+				/>
+				
+				<button
+					type="button"
+					class="thumb-value-btn thumb-value-btn-down"
+					onclick={(e) => {
+						e.stopPropagation();
+						if (!disabled && value > min) {
+							value = Math.max(min, value - step);
+							onChange?.(value);
+						}
+					}}
+					onmousedown={(e) => e.stopPropagation()}
+					ontouchstart={(e) => e.stopPropagation()}
+					{disabled}
+					aria-label="Decrease value"
+				>
+					<svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+						<path d="M4 6L0 0H8L4 6Z" fill="currentColor"/>
+					</svg>
+				</button>
+			</div>
+			
 			<!-- Icon in the center of thumb -->
 			<Users class="thumb-icon" />
 			<!-- Invisible draggable area -->
@@ -315,36 +358,99 @@
 <style>
 	/* Capacity-specific styles */
 	
-	/* Editable thumb value input positioned above thumb */
-	.thumb-value-input {
+	/* Container for value input and custom controls */
+	.thumb-value-container {
 		position: absolute;
 		bottom: 100%;
 		left: 50%;
 		transform: translateX(-50%);
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.75rem;
+		display: flex;
+		align-items: center;
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		text-align: center;
-		width: 2.5rem;
-		padding: 0.25rem 0.125rem;
 		border-radius: 0.375rem;
-		transition: all 0.2s ease;
-		z-index: 10;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		z-index: 10;
+		transition: all 0.2s ease;
 	}
 
-	.thumb-value-input:hover {
+	.thumb-value-container:hover {
 		border-color: var(--color-primary);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
+	/* Editable thumb value input */
+	.thumb-value-input {
+		background: transparent;
+		border: none;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		text-align: center;
+		width: 2rem;
+		padding: 0.25rem 0.125rem;
+		transition: all 0.2s ease;
+		
+		/* Hide browser's default number input arrows */
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+
+	/* Hide webkit number input arrows */
+	.thumb-value-input::-webkit-outer-spin-button,
+	.thumb-value-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
 	.thumb-value-input:focus {
 		outline: none;
-		border-color: var(--color-primary);
-		box-shadow: 0 0 0 3px var(--color-primary-50), 0 2px 8px rgba(0, 0, 0, 0.15);
+		background: var(--bg-secondary);
+		border-radius: 0.25rem;
+	}
+
+	/* Custom increment/decrement buttons */
+	.thumb-value-btn {
+		background: transparent;
+		border: none;
+		width: 1rem;
+		height: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		color: var(--text-tertiary);
+		transition: all 0.15s ease;
+		border-radius: 0.25rem;
+		padding: 0;
+	}
+
+	.thumb-value-btn:hover:not(:disabled) {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.thumb-value-btn:active:not(:disabled) {
+		background: var(--bg-tertiary);
+		transform: scale(0.95);
+	}
+
+	.thumb-value-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.thumb-value-btn-up {
+		border-top-left-radius: 0.375rem;
+		border-bottom-left-radius: 0.375rem;
+		padding-left: 0.125rem;
+	}
+
+	.thumb-value-btn-down {
+		border-top-right-radius: 0.375rem;
+		border-bottom-right-radius: 0.375rem;
+		padding-right: 0.125rem;
 	}
 
 	.thumb-value-input:disabled {
@@ -353,15 +459,17 @@
 	}
 
 	/* Highlight when value exceeds slider max */
-	.thumb-value-input.above-slider-max {
+	.thumb-value-container:has(.thumb-value-input.above-slider-max) {
 		background: var(--color-info-50);
 		border-color: var(--color-info-300);
+	}
+
+	.thumb-value-input.above-slider-max {
 		color: var(--color-info-700);
 	}
 
-	.thumb-value-input.above-slider-max:focus {
+	.thumb-value-container:has(.thumb-value-input.above-slider-max):hover {
 		border-color: var(--color-info-500);
-		box-shadow: 0 0 0 3px var(--color-info-50), 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	/* Invisible drag area that covers the thumb */
@@ -406,11 +514,19 @@
 			display: none;
 		}
 		
+		.thumb-value-container {
+			margin-bottom: 1rem;
+		}
+		
 		.thumb-value-input {
 			font-size: 0.875rem;
-			width: 3rem;
+			width: 2.5rem;
 			padding: 0.375rem 0.25rem;
-			margin-bottom: 0.75rem;
+		}
+		
+		.thumb-value-btn {
+			width: 1.25rem;
+			height: 1.25rem;
 		}
 	}
 	
