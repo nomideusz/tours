@@ -897,9 +897,6 @@
 			</div>
 		{/if}
 		
-		<!-- Tours Legend Section - Show whenever tours exist -->
-		<ToursLegend {tours} {highlightedTourId} />
-
 		<!-- Location Selection Modal -->
 		<LocationModal 
 			bind:show={showLocationModal}
