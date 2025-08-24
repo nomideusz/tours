@@ -23,6 +23,7 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Plus from 'lucide-svelte/icons/plus';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Globe from 'lucide-svelte/icons/globe';
@@ -43,6 +44,7 @@
 	// Tour helpers
 	import { formatDuration, getImageUrl, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
+	import { checkConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';
 	import type { Tour } from '$lib/types.js';
 
 	let { data }: { data: PageData } = $props();
@@ -87,6 +89,9 @@
 	let selectedTourForSlot = $state<string>('');
 	let isAddingSlot = $state(false);
 	let lastCreatedSlot = $state<{time: string, date: string, capacity: number, tourId: string} | null>(null);
+	let selectedTourSlots = $state<any[]>([]);
+	let hasConflict = $state(false);
+	let conflictMessage = $state<string>('');
 	
 	// Time Slot Form state
 	let timeSlotForm = $state({
@@ -217,6 +222,27 @@
 		// API returns 'capacity' but database stores as 'availableSpots'
 		return sortedSlots[0]?.capacity || sortedSlots[0]?.availableSpots || null;
 	}
+	
+	// Check for conflicts when time changes
+	$effect(() => {
+		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime && selectedTourSlots.length > 0) {
+			const dateStr = formatDateForInput(quickAddDate);
+			const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots);
+			
+			hasConflict = conflicts.length > 0;
+			if (hasConflict && conflicts[0]) {
+				const conflictSlot = conflicts[0];
+				const conflictStart = new Date(conflictSlot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+				const conflictEnd = new Date(conflictSlot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+				conflictMessage = `Conflicts with existing slot: ${conflictStart} - ${conflictEnd}`;
+			} else {
+				conflictMessage = '';
+			}
+		} else {
+			hasConflict = false;
+			conflictMessage = '';
+		}
+	});
 	
 	// Helper function to get smart capacity default
 	function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[]): number {
@@ -1626,6 +1652,36 @@
 			margin: 0 0.5rem;
 		}
 	}
+	
+	/* Conflict warning styles */
+	.conflict-warning {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		margin-top: -0.5rem;
+		margin-bottom: 1rem;
+		background: var(--color-error-50);
+		color: var(--color-error-700);
+		border: 1px solid var(--color-error-200);
+		border-radius: var(--radius-md);
+		font-size: var(--text-sm);
+		font-weight: 500;
+	}
+	
+	.conflict-warning :global(svg) {
+		flex-shrink: 0;
+		color: var(--color-error-600);
+	}
+	
+	.form-input.input-error {
+		border-color: var(--color-error-500) !important;
+		background: var(--color-error-50);
+	}
+	
+	.form-input.input-error:focus {
+		box-shadow: 0 0 0 3px var(--color-error-100);
+	}
 </style>
 
 <svelte:head>
@@ -1791,6 +1847,9 @@
 							quickAddDate = date;
 							quickAddStep = 'select-tour';
 							selectedTourForSlot = '';
+							selectedTourSlots = [];
+							hasConflict = false;
+							conflictMessage = '';
 							
 							// Use smart defaults for capacity (keep last used or default to 10)
 							const defaultCapacity = lastCreatedSlot?.capacity || 10;
@@ -2055,18 +2114,21 @@
 											onclick={async () => {
 												selectedTourForSlot = tour.id;
 												
-												// Fetch tour schedule to get smart capacity
+												// Fetch tour schedule to get smart capacity and existing slots
 												try {
 													const response = await fetch(`/api/tours/${tour.id}/schedule`);
 													if (response.ok) {
 														const data = await response.json();
+														selectedTourSlots = data.timeSlots || [];
 														const smartCapacity = getSmartCapacity(tour.id, tour, data.timeSlots);
 														timeSlotForm.capacity = smartCapacity;
 													} else {
+														selectedTourSlots = [];
 														// Fallback to tour capacity or last created
 														timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
 													}
 												} catch (error) {
+													selectedTourSlots = [];
 													// Fallback to tour capacity or last created
 													timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
 												}
@@ -2133,7 +2195,7 @@
 							class="slot-form"
 							onsubmit={async (e) => {
 								e.preventDefault();
-								if (!selectedTourForSlot || !quickAddDate || isAddingSlot) return;
+								if (!selectedTourForSlot || !quickAddDate || isAddingSlot || hasConflict) return;
 								
 								isAddingSlot = true;
 								
@@ -2225,7 +2287,7 @@
 										id="slot-start-time"
 										type="time"
 										bind:value={timeSlotForm.startTime}
-										class="form-input"
+										class="form-input {hasConflict ? 'input-error' : ''}"
 										required
 										disabled={isAddingSlot}
 									/>
@@ -2237,12 +2299,19 @@
 										id="slot-end-time"
 										type="time"
 										bind:value={timeSlotForm.endTime}
-										class="form-input"
+										class="form-input {hasConflict ? 'input-error' : ''}"
 										required
 										disabled={isAddingSlot}
 									/>
 								</div>
 							</div>
+							
+							{#if hasConflict}
+								<div class="conflict-warning">
+									<AlertCircle class="w-4 h-4" />
+									<span>{conflictMessage}</span>
+								</div>
+							{/if}
 							
 							<!-- Capacity Slider -->
 							<div class="capacity-slider-container">
@@ -2341,11 +2410,14 @@
 								<button
 									type="submit"
 									class="button-primary button--gap"
-									disabled={isAddingSlot}
+									disabled={isAddingSlot || hasConflict}
 								>
 									{#if isAddingSlot}
 										<Loader2 class="h-4 w-4 animate-spin" />
 										Adding...
+									{:else if hasConflict}
+										<AlertCircle class="h-4 w-4" />
+										Time Conflict
 									{:else}
 										<Plus class="h-4 w-4" />
 										Add {timeSlotForm.recurring ? `${timeSlotForm.recurringCount} Slots` : 'Slot'}
