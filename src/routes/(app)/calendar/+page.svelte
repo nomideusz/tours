@@ -10,6 +10,7 @@
 	import QuickAddModal from '$lib/components/calendar/QuickAddModal.svelte';
 	import LocationModal from '$lib/components/calendar/LocationModal.svelte';
 	import ToursLegend from '$lib/components/calendar/ToursLegend.svelte';
+	import OnboardingSection from '$lib/components/calendar/OnboardingSection.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -131,6 +132,7 @@
 	let selectedCountry = $state('');
 	let savingCurrency = $state(false);
 	let showLocationModal = $state(false);
+	let countrySearchTerm = $state('');
 	let resendingEmail = $state(false);
 	let resendEmailSuccess = $state(false);
 	let isSettingUpPayment = $state(false);
@@ -294,7 +296,7 @@
 				hasConflict = recurringResult.hasConflicts;
 				if (hasConflict) {
 					conflictMessage = `${recurringConflictCount} of ${totalRecurringSlots} recurring slots conflict with existing time slots`;
-				} else {
+		} else {
 					conflictMessage = '';
 				}
 			} else {
@@ -594,85 +596,7 @@
 		min-height: 400px;
 	}
 
-	/* Onboarding styles - simple and clean like marketing pages */
-	.onboarding-section {
-		margin-bottom: 2rem;
-	}
 
-	.onboarding-card {
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 1rem;
-		padding: 2rem;
-	}
-
-	.onboarding-title {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--text-primary);
-		margin-bottom: 0.5rem;
-	}
-
-	.onboarding-subtitle {
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.onboarding-steps {
-		display: grid;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-	}
-
-	@media (min-width: 640px) {
-		.onboarding-steps {
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		}
-	}
-
-	.onboarding-step {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
-		padding: 1rem;
-		text-align: center;
-		transition: all 0.2s ease;
-	}
-
-	.onboarding-step:hover {
-		border-color: var(--color-primary);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-	}
-
-	.onboarding-step-complete {
-		background: var(--color-success-50);
-		border-color: var(--color-success-200);
-	}
-
-	.step-icon {
-		width: 2rem;
-		height: 2rem;
-		margin: 0 auto 0.5rem;
-		color: var(--color-primary);
-	}
-
-	.step-icon-complete {
-		color: var(--color-success);
-	}
-
-	.step-title {
-		font-weight: 600;
-		color: var(--text-primary);
-		font-size: 0.875rem;
-		margin-bottom: 0.25rem;
-	}
-
-	.step-description {
-		color: var(--text-secondary);
-		font-size: 0.75rem;
-		margin-bottom: 0.75rem;
-	}
 
 
 
@@ -772,62 +696,37 @@
 			</div>
 		</div>
 
-		<!-- Simple Onboarding Section -->
+		<!-- Onboarding Section -->
 		{#if showOnboarding}
-			<div class="onboarding-section" in:fade={{ duration: 200 }}>
-				<div class="onboarding-card">
-					<h2 class="onboarding-title">Quick Setup</h2>
-					<p class="onboarding-subtitle">
-						{onboardingSteps.length === 1 ? 'Just one step' : `${onboardingSteps.length} simple steps`} to get started
-					</p>
-
-					<div class="onboarding-steps">
-						{#each onboardingSteps as step}
-							<div class="onboarding-step {step.complete ? 'onboarding-step-complete' : ''}">
-								<div class="step-icon {step.complete ? 'step-icon-complete' : ''}">
-									{#if step.complete}
-										<CheckCircle class="w-8 h-8" />
-									{:else if step.icon === Mail}
-										<Mail class="w-8 h-8" />
-									{:else if step.icon === Globe}
-										<Globe class="w-8 h-8" />
-									{:else if step.icon === CreditCard}
-										<CreditCard class="w-8 h-8" />
-									{:else if step.icon === MapPin}
-										<MapPin class="w-8 h-8" />
-									{/if}
-								</div>
-								<h3 class="step-title">{step.title}</h3>
-								<p class="step-description">{step.description}</p>
-								{#if !step.complete && step.action}
-									<button 
-										onclick={step.action}
-										class="button-primary button--small w-full"
-									>
-										{#if step.id === 'email' && resendingEmail}
-											<Loader2 class="h-3 w-3 animate-spin" />
-										{:else if step.id === 'payment' && isSettingUpPayment}
-											<Loader2 class="h-3 w-3 animate-spin" />
-										{:else if step.id === 'location' && savingCurrency}
-											<Loader2 class="h-3 w-3 animate-spin" />
-										{:else}
-											{step.id === 'email' ? 'Resend' : 
-											 step.id === 'location' ? 'Select' :
-											 step.id === 'payment' ? 'Connect' : 
-											 'Create'}
-										{/if}
-									</button>
-								{/if}
-								{#if step.id === 'email' && resendEmailSuccess}
-									<p class="text-xs text-green-600 mt-1">✓ Email sent!</p>
-								{/if}
-							</div>
-						{/each}
-					</div>
-
-
-				</div>
-			</div>
+			<OnboardingSection
+				{user}
+				{profile}
+				{needsEmailVerification}
+				{needsConfirmation}
+				{isNewUser}
+				{onboardingSteps}
+				bind:hasConfirmedLocation={hasConfirmedLocation}
+				bind:selectedCountry={selectedCountry}
+				bind:savingCurrency={savingCurrency}
+				bind:showLocationModal={showLocationModal}
+				bind:countrySearchTerm={countrySearchTerm}
+				bind:resendingEmail={resendingEmail}
+				bind:resendEmailSuccess={resendEmailSuccess}
+				bind:isSettingUpPayment={isSettingUpPayment}
+				bind:paymentStatus={paymentStatus}
+				bind:showPaymentConfirmModal={showPaymentConfirmModal}
+				bind:pendingPaymentCountry={pendingPaymentCountry}
+				on:resendEmail={resendVerificationEmail}
+				on:confirmLocation={(e) => {
+					selectedCountry = e.detail.country;
+					saveCurrencySelection();
+				}}
+				on:setupPayment={(e) => {
+					pendingPaymentCountry = e.detail.country;
+					confirmPaymentSetup();
+				}}
+				on:createFirstTour={() => goto('/tours/new')}
+			/>
 		{/if}
 
 		<!-- Calendar - Main Focus -->
@@ -920,8 +819,8 @@
 			on:close={() => showLocationModal = false}
 			on:save={saveCurrencySelection}
 		/>
-	{/if}
-	
+					{/if}
+
 	<!-- Quick Add Modal Component -->
 	<QuickAddModal
 		bind:show={showQuickAddModal}
@@ -950,12 +849,12 @@
 			
 			try {
 				const response = await fetch(`/api/tours/${tourId}/schedule`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(formData)
-				});
-				
-				if (response.ok) {
+							});
+							
+							if (response.ok) {
 					// Remember the last created slot info for smart suggestions
 					lastCreatedSlot = {
 						time: formData.startTime,
@@ -965,7 +864,7 @@
 					};
 					
 					// Invalidate timeline query to refresh the calendar
-					await queryClient.invalidateQueries({
+								await queryClient.invalidateQueries({ 
 						queryKey: ['timeline']
 					});
 					
@@ -985,12 +884,12 @@
 						recurringType: 'weekly',
 						recurringCount: 4
 					};
-				} else {
+							} else {
 					const error = await response.json();
 					console.error('Failed to add time slot:', error);
-				}
-			} catch (error) {
-				console.error('Error adding time slot:', error);
+							}
+						} catch (error) {
+							console.error('Error adding time slot:', error);
 			} finally {
 				isAddingSlot = false;
 			}
