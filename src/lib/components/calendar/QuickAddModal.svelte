@@ -1011,6 +1011,65 @@
 		font-weight: 500;
 		transition: all 0.2s ease;
 		font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+		
+		/* Style the time picker icon */
+		color-scheme: light dark;
+	}
+
+	/* WebKit browsers (Chrome, Safari, Edge) - Style the time picker icon */
+	.time-input::-webkit-calendar-picker-indicator {
+		/* Convert black icon to match our text-tertiary color */
+		filter: invert(0.5) brightness(0.8);
+		opacity: 0.7;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		width: 18px;
+		height: 18px;
+	}
+
+	.time-input:hover::-webkit-calendar-picker-indicator {
+		opacity: 1;
+		filter: invert(0.3) brightness(0.9);
+	}
+
+	.time-input:focus::-webkit-calendar-picker-indicator {
+		filter: invert(0.2) brightness(1);
+		opacity: 1;
+	}
+
+	/* Firefox */
+	.time-input::-moz-time-picker-indicator {
+		filter: invert(0.5) brightness(0.8);
+		opacity: 0.7;
+		transition: opacity 0.2s ease;
+	}
+
+	/* Dark theme adjustments - make icon lighter for dark backgrounds */
+	:global([data-theme="dark"]) .time-input::-webkit-calendar-picker-indicator {
+		filter: invert(0.8) brightness(1.2);
+	}
+
+	:global([data-theme="dark"]) .time-input:hover::-webkit-calendar-picker-indicator {
+		filter: invert(0.9) brightness(1.3);
+	}
+
+	:global([data-theme="dark"]) .time-input:focus::-webkit-calendar-picker-indicator {
+		filter: invert(1) brightness(1.4);
+	}
+
+	:global([data-theme="dark"]) .time-input::-moz-time-picker-indicator {
+		filter: invert(0.8) brightness(1.2);
+	}
+
+	/* System dark mode fallback */
+	@media (prefers-color-scheme: dark) {
+		.time-input::-webkit-calendar-picker-indicator {
+			filter: invert(0.8) brightness(1.2);
+		}
+		
+		.time-input:hover::-webkit-calendar-picker-indicator {
+			filter: invert(0.9) brightness(1.3);
+		}
 	}
 
 	.time-input:focus {
