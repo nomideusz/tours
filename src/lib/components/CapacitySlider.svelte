@@ -358,9 +358,9 @@
 <style>
 	/* Capacity-specific styles */
 	
-	/* Override slider container padding to make room for absolute positioned thumb value */
+	/* Add margin-top to create space for absolute positioned thumb value */
 	:global(.capacity-slider .slider-container) {
-		padding-top: 3rem; /* Increased from 1.5rem to make room for thumb value above */
+		margin-top: 1.5rem; /* Extra space above slider for thumb value container */
 	}
 	
 	/* Container for value input and custom controls */
@@ -520,7 +520,7 @@
 		}
 		
 		:global(.capacity-slider .slider-container) {
-			padding-top: 3.5rem; /* Extra space on mobile for larger thumb value container */
+			margin-top: 2rem; /* Extra space on mobile for larger thumb value container */
 		}
 		
 		.thumb-value-container {
