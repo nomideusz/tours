@@ -268,9 +268,49 @@
 					recurringCount: timeSlotForm.recurringCount
 				};
 				
+				// Debug: Log what we're checking
+				console.log('=== RECURRING CONFLICT CHECK ===');
+				console.log('Form data:', formData);
+				console.log('Existing slots count:', selectedTourSlots.length);
+				if (selectedTourSlots.length > 0) {
+					console.log('First slot example:', selectedTourSlots[0]);
+					console.log('Slot dates:', selectedTourSlots.map(s => ({
+						start: new Date(s.startTime).toISOString(),
+						end: new Date(s.endTime).toISOString()
+					})));
+				}
+				
+				// Debug: Check each date manually
+				let debugConflictCount = 0;
+				let currentDebugDate = new Date(formData.date);
+				for (let i = 0; i < formData.recurringCount; i++) {
+					const checkDateStr = currentDebugDate.toISOString().split('T')[0];
+					const dayConflicts = checkConflicts(checkDateStr, formData.startTime, formData.endTime, selectedTourSlots);
+					if (dayConflicts.length > 0) {
+						debugConflictCount++;
+						console.log(`Day ${i + 1} (${checkDateStr}): CONFLICT FOUND`, dayConflicts);
+					} else {
+						console.log(`Day ${i + 1} (${checkDateStr}): No conflict`);
+					}
+					
+					// Move to next date
+					if (formData.recurringType === 'daily') {
+						currentDebugDate.setDate(currentDebugDate.getDate() + 1);
+					} else if (formData.recurringType === 'weekly') {
+						currentDebugDate.setDate(currentDebugDate.getDate() + 7);
+					} else if (formData.recurringType === 'monthly') {
+						currentDebugDate.setMonth(currentDebugDate.getMonth() + 1);
+					}
+				}
+				console.log('Manual debug conflict count:', debugConflictCount);
+				
 				const recurringResult = checkRecurringConflicts(formData, selectedTourSlots);
+				console.log('Function conflict result:', recurringResult);
+				
 				recurringConflictCount = recurringResult.conflictCount;
 				totalRecurringSlots = calculateTotalRecurringSlots(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount);
+				console.log(`Found ${recurringConflictCount} conflicts out of ${totalRecurringSlots} slots`);
+				console.log('=== END CONFLICT CHECK ===');
 				
 				hasConflict = recurringResult.hasConflicts;
 				if (hasConflict) {
@@ -2221,10 +2261,18 @@
 													if (response.ok) {
 														const data = await response.json();
 														selectedTourSlots = data.timeSlots || [];
+														console.log('=== FETCHED TOUR SLOTS ===');
+														console.log('Tour ID:', tour.id);
+														console.log('Number of slots:', selectedTourSlots.length);
+														if (selectedTourSlots.length > 0) {
+															console.log('Sample slot:', selectedTourSlots[0]);
+														}
+														console.log('=== END FETCH ===');
 														const smartCapacity = getSmartCapacity(tour.id, tour, data.timeSlots);
 														timeSlotForm.capacity = smartCapacity;
 													} else {
 														selectedTourSlots = [];
+														console.warn('Failed to fetch slots - response not ok');
 														// Fallback to tour capacity or last created
 														timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
 													}
