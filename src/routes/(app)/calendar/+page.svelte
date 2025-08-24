@@ -1470,6 +1470,16 @@
 		font-style: italic;
 	}
 
+	.capacity-override-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--color-info-600);
+		margin-top: 0.5rem;
+		font-style: italic;
+	}
+
 	.form-group {
 		margin-bottom: 0;
 	}
@@ -1587,7 +1597,8 @@
 			margin-bottom: 1rem;
 		}
 
-		.smart-capacity-hint {
+		.smart-capacity-hint,
+		.capacity-override-hint {
 			font-size: 0.75rem;
 		}
 
@@ -2236,7 +2247,7 @@
 									bind:value={timeSlotForm.capacity}
 									label="Available Spots"
 									min={1}
-									max={selectedTour?.capacity || 50}
+									max={200}
 									step={1}
 									disabled={isAddingSlot}
 									showMarkers={true}
@@ -2247,6 +2258,11 @@
 									<p class="smart-capacity-hint">
 										<CheckCircle class="w-4 h-4 inline" />
 										Using capacity from your last slot
+									</p>
+								{:else if selectedTour?.capacity && timeSlotForm.capacity > selectedTour.capacity}
+									<p class="capacity-override-hint">
+										<Info class="w-4 h-4 inline" />
+										Exceeds tour's default capacity of {selectedTour.capacity}
 									</p>
 								{/if}
 							</div>
