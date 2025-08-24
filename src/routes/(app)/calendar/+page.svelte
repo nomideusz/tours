@@ -44,7 +44,7 @@
 	// Tour helpers
 	import { formatDuration, getImageUrl, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { checkConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';
+	import { checkConflicts, checkRecurringConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';
 	import type { Tour } from '$lib/types.js';
 
 	let { data }: { data: PageData } = $props();
@@ -92,6 +92,8 @@
 	let selectedTourSlots = $state<any[]>([]);
 	let hasConflict = $state(false);
 	let conflictMessage = $state<string>('');
+	let recurringConflictCount = $state(0);
+	let totalRecurringSlots = $state(0);
 	
 	// Time Slot Form state
 	let timeSlotForm = $state({
@@ -227,22 +229,76 @@
 	$effect(() => {
 		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime && selectedTourSlots.length > 0) {
 			const dateStr = formatDateForInput(quickAddDate);
-			const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots);
 			
-			hasConflict = conflicts.length > 0;
-			if (hasConflict && conflicts[0]) {
-				const conflictSlot = conflicts[0];
-				const conflictStart = new Date(conflictSlot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-				const conflictEnd = new Date(conflictSlot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-				conflictMessage = `Conflicts with existing slot: ${conflictStart} - ${conflictEnd}`;
+			if (timeSlotForm.recurring) {
+				// Check recurring conflicts
+				const formData = {
+					date: dateStr,
+					startTime: timeSlotForm.startTime,
+					endTime: timeSlotForm.endTime,
+					recurring: true,
+					recurringType: timeSlotForm.recurringType,
+					recurringEnd: getRecurringEndDate(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount)
+				};
+				
+				const recurringResult = checkRecurringConflicts(formData, selectedTourSlots);
+				recurringConflictCount = recurringResult.conflictCount;
+				totalRecurringSlots = calculateTotalRecurringSlots(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount);
+				
+				hasConflict = recurringResult.hasConflicts;
+				if (hasConflict) {
+					conflictMessage = `${recurringConflictCount} of ${totalRecurringSlots} recurring slots conflict with existing time slots`;
+				} else {
+					conflictMessage = '';
+				}
 			} else {
-				conflictMessage = '';
+				// Check single slot conflict
+				const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots);
+				
+				hasConflict = conflicts.length > 0;
+				if (hasConflict && conflicts[0]) {
+					const conflictSlot = conflicts[0];
+					const conflictStart = new Date(conflictSlot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+					const conflictEnd = new Date(conflictSlot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+					conflictMessage = `Conflicts with existing slot: ${conflictStart} - ${conflictEnd}`;
+				} else {
+					conflictMessage = '';
+				}
+				
+				recurringConflictCount = 0;
+				totalRecurringSlots = 0;
 			}
 		} else {
 			hasConflict = false;
 			conflictMessage = '';
+			recurringConflictCount = 0;
+			totalRecurringSlots = 0;
 		}
 	});
+	
+	// Helper function to calculate recurring end date
+	function getRecurringEndDate(startDate: string, recurringType: string, count: number): string {
+		const date = new Date(startDate);
+		
+		switch (recurringType) {
+			case 'daily':
+				date.setDate(date.getDate() + count - 1);
+				break;
+			case 'weekly':
+				date.setDate(date.getDate() + (count - 1) * 7);
+				break;
+			case 'monthly':
+				date.setMonth(date.getMonth() + count - 1);
+				break;
+		}
+		
+		return date.toISOString().split('T')[0];
+	}
+	
+	// Helper function to calculate total recurring slots
+	function calculateTotalRecurringSlots(startDate: string, recurringType: string, count: number): number {
+		return count; // Simple: the count is the total number of slots
+	}
 	
 	// Helper function to get smart capacity default
 	function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[]): number {
@@ -1674,6 +1730,16 @@
 		color: var(--color-error-600);
 	}
 	
+	.conflict-warning.recurring-conflict {
+		background: var(--color-warning-50);
+		color: var(--color-warning-700);
+		border-color: var(--color-warning-200);
+	}
+	
+	.conflict-warning.recurring-conflict :global(svg) {
+		color: var(--color-warning-600);
+	}
+	
 	.form-input.input-error {
 		border-color: var(--color-error-500) !important;
 		background: var(--color-error-50);
@@ -1850,6 +1916,8 @@
 							selectedTourSlots = [];
 							hasConflict = false;
 							conflictMessage = '';
+							recurringConflictCount = 0;
+							totalRecurringSlots = 0;
 							
 							// Use smart defaults for capacity (keep last used or default to 10)
 							const defaultCapacity = lastCreatedSlot?.capacity || 10;
@@ -2307,7 +2375,7 @@
 							</div>
 							
 							{#if hasConflict}
-								<div class="conflict-warning">
+								<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
 									<AlertCircle class="w-4 h-4" />
 									<span>{conflictMessage}</span>
 								</div>
@@ -2417,7 +2485,7 @@
 										Adding...
 									{:else if hasConflict}
 										<AlertCircle class="h-4 w-4" />
-										Time Conflict
+										{timeSlotForm.recurring ? `${recurringConflictCount} Conflicts` : 'Time Conflict'}
 									{:else}
 										<Plus class="h-4 w-4" />
 										Add {timeSlotForm.recurring ? `${timeSlotForm.recurringCount} Slots` : 'Slot'}
