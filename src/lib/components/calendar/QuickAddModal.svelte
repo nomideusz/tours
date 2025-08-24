@@ -1011,9 +1011,6 @@
 		font-weight: 500;
 		transition: all 0.2s ease;
 		font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-		
-		/* Style the time picker icon */
-		color-scheme: light dark;
 	}
 
 	/* WebKit browsers (Chrome, Safari, Edge) - Style the time picker icon */
