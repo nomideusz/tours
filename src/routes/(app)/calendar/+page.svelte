@@ -2091,16 +2091,12 @@
 											{/if}
 											<div class="tour-card-content">
 												<h4 class="tour-card-name">{tour.name}</h4>
-												<div class="tour-card-meta">
-													<span class="tour-card-duration">
-														<Clock class="h-3.5 w-3.5" />
-														{formatDuration(tour.duration)}
-													</span>
-													<span class="tour-card-capacity">
-														<Users class="h-3.5 w-3.5" />
-														{tour.capacity > 1 ? tour.capacity : 10} spots
-													</span>
-												</div>
+																		<div class="tour-card-meta">
+							<span class="tour-card-duration">
+								<Clock class="h-3.5 w-3.5" />
+								{formatDuration(tour.duration)}
+							</span>
+						</div>
 												{#if tour.status === 'draft'}
 													<span class="tour-card-badge">Draft</span>
 												{/if}
