@@ -369,17 +369,14 @@
 								<div class="time-inputs">
 									<div class="time-input-group">
 										<label for="slot-start-time" class="form-label">Start Time</label>
-										<div class="time-input-wrapper">
-											<input
-												id="slot-start-time"
-												type="time"
-												bind:value={timeSlotForm.startTime}
-												class="time-input {hasConflict ? 'input-error' : ''}"
-												required
-												disabled={isAddingSlot}
-											/>
-											<Clock class="time-icon" />
-										</div>
+										<input
+											id="slot-start-time"
+											type="time"
+											bind:value={timeSlotForm.startTime}
+											class="time-input {hasConflict ? 'input-error' : ''}"
+											required
+											disabled={isAddingSlot}
+										/>
 									</div>
 									
 									<div class="time-separator">
@@ -390,17 +387,14 @@
 									
 									<div class="time-input-group">
 										<label for="slot-end-time" class="form-label">End Time</label>
-										<div class="time-input-wrapper">
-											<input
-												id="slot-end-time"
-												type="time"
-												bind:value={timeSlotForm.endTime}
-												class="time-input {hasConflict ? 'input-error' : ''}"
-												required
-												disabled={isAddingSlot}
-											/>
-											<Clock class="time-icon" />
-										</div>
+										<input
+											id="slot-end-time"
+											type="time"
+											bind:value={timeSlotForm.endTime}
+											class="time-input {hasConflict ? 'input-error' : ''}"
+											required
+											disabled={isAddingSlot}
+										/>
 									</div>
 								</div>
 								
@@ -1006,15 +1000,9 @@
 		gap: 0.5rem;
 	}
 
-	.time-input-wrapper {
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-
 	.time-input {
 		width: 100%;
-		padding: 0.875rem 2.5rem 0.875rem 0.875rem;
+		padding: 0.875rem;
 		border: 2px solid var(--border-primary);
 		border-radius: 0.5rem;
 		background: var(--bg-primary);
@@ -1034,15 +1022,6 @@
 	.time-input.input-error {
 		border-color: var(--color-error-500);
 		box-shadow: 0 0 0 3px var(--color-error-50);
-	}
-
-	:global(.time-icon) {
-		position: absolute;
-		right: 0.875rem;
-		color: var(--text-tertiary);
-		pointer-events: none;
-		width: 18px;
-		height: 18px;
 	}
 
 	.time-separator {
@@ -1295,7 +1274,7 @@
 
 		.time-input {
 			font-size: 0.875rem;
-			padding: 0.75rem 2.25rem 0.75rem 0.75rem;
+			padding: 0.75rem;
 		}
 
 		.duration-info {
