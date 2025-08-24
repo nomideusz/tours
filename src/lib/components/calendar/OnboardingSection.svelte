@@ -176,9 +176,9 @@
 			</div>
 		</div>
 
-		<div class="onboarding-steps">
+		<div class="onboarding-steps" class:single-step={onboardingSteps.length === 1}>
 			{#each onboardingSteps as step}
-				<div class="onboarding-step" class:completed={step.completed}>
+				<div class="onboarding-step" class:completed={step.completed} class:single={onboardingSteps.length === 1}>
 					<div class="step-icon">
 						{#if step.completed}
 							<CheckCircle class="w-5 h-5 text-green-600" />
@@ -390,7 +390,7 @@
 		align-items: flex-start;
 		gap: 1rem;
 		padding: 1.5rem;
-		background: var(--surface-primary);
+		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
 		border-radius: 8px;
 		transition: all 0.2s ease;
@@ -399,6 +399,37 @@
 	.onboarding-step.completed {
 		background: var(--success-light);
 		border-color: var(--success);
+	}
+
+	/* Single step layout - centered and more compact */
+	.onboarding-steps.single-step {
+		align-items: center;
+	}
+
+	.onboarding-step.single {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		max-width: 400px;
+		margin: 0 auto;
+		gap: 1.5rem;
+	}
+
+	.onboarding-step.single .step-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.onboarding-step.single .step-content h4 {
+		margin: 0;
+		font-size: 1.25rem;
+	}
+
+	.onboarding-step.single .step-content p {
+		margin: 0;
+		font-size: 0.9375rem;
 	}
 
 	.step-icon {
@@ -442,7 +473,7 @@
 	}
 
 	.modal-content {
-		background: var(--surface-primary);
+		background: var(--bg-secondary);
 		border-radius: 12px;
 		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 		width: 100%;
@@ -486,7 +517,7 @@
 		padding: 0.75rem;
 		border: 1px solid var(--border-primary);
 		border-radius: 6px;
-		background: var(--surface-primary);
+		background: var(--bg-secondary);
 		color: var(--text-primary);
 		font-size: 0.875rem;
 	}
@@ -509,7 +540,7 @@
 		align-items: center;
 		gap: 0.75rem;
 		padding: 0.75rem;
-		background: var(--surface-primary);
+		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
 		border-radius: 6px;
 		cursor: pointer;
