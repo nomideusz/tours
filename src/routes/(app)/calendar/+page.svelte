@@ -37,6 +37,7 @@
 	// Components
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
 	
 	// Tour helpers
@@ -1418,8 +1419,8 @@
 		margin-bottom: 1.5rem;
 	}
 
-	.form-grid .form-group:last-child {
-		grid-column: 1 / -1;
+	.capacity-slider-container {
+		margin-bottom: 1.5rem;
 	}
 
 	.form-group {
@@ -1533,6 +1534,10 @@
 
 		.form-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.capacity-slider-container {
+			margin-bottom: 1rem;
 		}
 
 		.recurring-options {
@@ -2144,20 +2149,21 @@
 										disabled={isAddingSlot}
 									/>
 								</div>
-								
-								<div class="form-group">
-									<label for="slot-capacity" class="form-label">Available Spots</label>
-									<input
-										id="slot-capacity"
-										type="number"
-										bind:value={timeSlotForm.capacity}
-										class="form-input"
-										min="1"
-										max="100"
-										required
-										disabled={isAddingSlot}
-									/>
-								</div>
+							</div>
+							
+							<!-- Capacity Slider -->
+							<div class="capacity-slider-container">
+								<CapacitySlider
+									bind:value={timeSlotForm.capacity}
+									label="Available Spots"
+									min={1}
+									max={selectedTour?.capacity || 50}
+									step={1}
+									disabled={isAddingSlot}
+									showMarkers={true}
+									unit="spots"
+									defaultValue={selectedTour?.capacity}
+								/>
 							</div>
 							
 							<!-- Recurring Options -->
