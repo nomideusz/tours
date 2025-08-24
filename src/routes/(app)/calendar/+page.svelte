@@ -2257,7 +2257,7 @@
 												// Fetch tour schedule to get smart capacity and existing slots
 												// Add timestamp to prevent caching issues
 												try {
-													const response = await fetch(`/api/tours/${tour.id}/schedule?t=${Date.now()}`);
+													const response = await fetch(`/api/tour-schedule/${tour.id}?t=${Date.now()}`);
 													if (response.ok) {
 														const data = await response.json();
 														selectedTourSlots = data.timeSlots || [];
