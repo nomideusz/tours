@@ -602,6 +602,11 @@
 		min-height: 400px;
 	}
 
+	/* Tours Legend spacing */
+	.tours-legend-wrapper {
+		margin-bottom: 2rem;
+	}
+
 
 
 
@@ -736,7 +741,9 @@
 									{/if}
 		
 		<!-- Tours Legend Section - Show whenever tours exist -->
-		<ToursLegend {tours} {highlightedTourId} />
+		<div class="tours-legend-wrapper">
+			<ToursLegend {tours} {highlightedTourId} />
+		</div>
 
 		<!-- Location Selection Modal -->
 		<LocationModal 
