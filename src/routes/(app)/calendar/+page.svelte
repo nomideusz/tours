@@ -8,6 +8,8 @@
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
+	import QuickAddModal from '$lib/components/calendar/QuickAddModal.svelte';
+	import OnboardingSection from '$lib/components/calendar/OnboardingSection.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -33,18 +35,16 @@
 	import Settings from 'lucide-svelte/icons/settings';
 	import Baby from 'lucide-svelte/icons/baby';
 	import Info from 'lucide-svelte/icons/info';
-	import X from 'lucide-svelte/icons/x';
 	
 	// Components
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
+	import { formatDateForInput } from '$lib/utils/calendar-helpers.js';
 	
 	// Tour helpers
 	import { formatDuration, getImageUrl, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
-	import { checkConflicts, checkRecurringConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';
 	import type { Tour } from '$lib/types.js';
 
 	let { data }: { data: PageData } = $props();
@@ -94,6 +94,7 @@
 	let conflictMessage = $state<string>('');
 	let recurringConflictCount = $state(0);
 	let totalRecurringSlots = $state(0);
+	let selectedTourData = $state<any>(null);
 	
 	// Time Slot Form state
 	let timeSlotForm = $state({
@@ -104,9 +105,6 @@
 		recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
 		recurringCount: 4
 	});
-	
-	// Store selected tour for duration calculation
-	let selectedTourData = $state<any>(null);
 
 	// Loading and error states
 	let isLoading = $derived($dashboardStatsQuery.isLoading);
@@ -205,28 +203,7 @@
 	let showOnboarding = $derived(!isLoading && onboardingSteps.length > 0);
 	
 	// Helper function to format date for input (timezone-safe)
-	function formatDateForInput(date: Date): string {
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const day = String(date.getDate()).padStart(2, '0');
-		return `${year}-${month}-${day}`;
-	}
-	
-	// Helper function to get last used capacity from existing time slots
-	function getLastUsedCapacity(timeSlots: any[]): number | null {
-		if (!timeSlots || timeSlots.length === 0) return null;
-		
-		// Sort by creation time descending and get the first one
-		const sortedSlots = [...timeSlots].sort((a, b) => {
-			const aTime = new Date(a.createdAt || a.created || a.startTime).getTime();
-			const bTime = new Date(b.createdAt || b.created || b.startTime).getTime();
-			return bTime - aTime; // Most recent first
-		});
-		
-		// Check both field names for compatibility
-		// API returns 'capacity' but database stores as 'availableSpots'
-		return sortedSlots[0]?.capacity || sortedSlots[0]?.availableSpots || null;
-	}
+
 	
 
 	
@@ -2196,8 +2173,82 @@
 		{/if}
 	{/if}
 	
-	<!-- Enhanced Quick Add Modal -->
-	{#if showQuickAddModal}
+	<!-- Quick Add Modal Component -->
+	<QuickAddModal
+		bind:show={showQuickAddModal}
+		bind:date={quickAddDate}
+		bind:step={quickAddStep}
+		bind:selectedTourId={selectedTourForSlot}
+		bind:selectedTourData={selectedTourData}
+		bind:selectedTourSlots={selectedTourSlots}
+		bind:timeSlotForm={timeSlotForm}
+		bind:isAddingSlot={isAddingSlot}
+		bind:lastCreatedSlot={lastCreatedSlot}
+		bind:hasConflict={hasConflict}
+		bind:conflictMessage={conflictMessage}
+		bind:recurringConflictCount={recurringConflictCount}
+		bind:totalRecurringSlots={totalRecurringSlots}
+		{tours}
+		on:close={() => {
+			showQuickAddModal = false;
+			quickAddStep = 'select-tour';
+			selectedTourForSlot = '';
+			selectedTourData = null;
+		}}
+		on:submit={async (e) => {
+			const { tourId, formData } = e.detail;
+			isAddingSlot = true;
+			
+			try {
+				const response = await fetch(`/api/tours/${tourId}/schedule`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(formData)
+				});
+				
+				if (response.ok) {
+					// Remember the last created slot info for smart suggestions
+					lastCreatedSlot = {
+						time: formData.startTime,
+						date: formatDateForInput(quickAddDate!),
+						capacity: formData.capacity,
+						tourId: tourId
+					};
+					
+					// Invalidate timeline query to refresh the calendar
+					await queryClient.invalidateQueries({
+						queryKey: ['timeline']
+					});
+					
+					// Clear the cached slots for this tour to force refetch next time
+					selectedTourSlots = [];
+					
+					// Close modal and reset form
+					showQuickAddModal = false;
+					quickAddStep = 'select-tour';
+					selectedTourForSlot = '';
+					selectedTourData = null;
+					timeSlotForm = {
+						startTime: '10:00',
+						endTime: '12:00',
+						capacity: 10,
+						recurring: false,
+						recurringType: 'weekly',
+						recurringCount: 4
+					};
+				} else {
+					const error = await response.json();
+					console.error('Failed to add time slot:', error);
+				}
+			} catch (error) {
+				console.error('Error adding time slot:', error);
+			} finally {
+				isAddingSlot = false;
+			}
+		}}
+	/>
+
+	{#if false}
 		<div 
 			class="modal-backdrop" 
 			onclick={(e) => {
@@ -2625,11 +2676,7 @@
 							</div>
 						</form>
 					{/if}
-				</div>
-			</div>
-		</div>
-	{/if}
-</div>
+
 
 <!-- Payment Confirmation Modal -->
 {#if showPaymentConfirmModal && pendingPaymentCountry}
