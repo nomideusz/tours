@@ -227,7 +227,7 @@
 	
 	// Check for conflicts when time changes
 	$effect(() => {
-		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime && selectedTourSlots.length > 0) {
+		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime) {
 			const dateStr = formatDateForInput(quickAddDate);
 			
 			if (timeSlotForm.recurring) {
@@ -238,7 +238,8 @@
 					endTime: timeSlotForm.endTime,
 					recurring: true,
 					recurringType: timeSlotForm.recurringType,
-					recurringEnd: getRecurringEndDate(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount)
+					recurringEnd: getRecurringEndDate(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount),
+					recurringCount: timeSlotForm.recurringCount
 				};
 				
 				const recurringResult = checkRecurringConflicts(formData, selectedTourSlots);
@@ -2183,8 +2184,9 @@
 												selectedTourForSlot = tour.id;
 												
 												// Fetch tour schedule to get smart capacity and existing slots
+												// Add timestamp to prevent caching issues
 												try {
-													const response = await fetch(`/api/tours/${tour.id}/schedule`);
+													const response = await fetch(`/api/tours/${tour.id}/schedule?t=${Date.now()}`);
 													if (response.ok) {
 														const data = await response.json();
 														selectedTourSlots = data.timeSlots || [];
@@ -2298,10 +2300,22 @@
 											tourId: selectedTourForSlot
 										};
 										
+										const savedTourId = selectedTourForSlot; // Save for cache invalidation
+										
+										// Invalidate cache immediately to ensure fresh data on next open
+										await queryClient.invalidateQueries({ 
+											queryKey: ['tour-schedule', savedTourId]
+										});
+										await queryClient.invalidateQueries({ 
+											queryKey: ['allTimeSlots']
+										});
+										
+										// Clear the cached slots for this tour to force refetch next time
+										selectedTourSlots = [];
+										
 										// Close modal and reset form
 										showQuickAddModal = false;
 										quickAddStep = 'select-tour';
-										const savedTourId = selectedTourForSlot; // Save for cache invalidation
 										selectedTourForSlot = '';
 										timeSlotForm = {
 											startTime: '10:00',
@@ -2311,14 +2325,6 @@
 											recurringType: 'weekly',
 											recurringCount: 4
 										};
-										
-										// Refresh the calendar data
-										await queryClient.invalidateQueries({ 
-											queryKey: ['allTimeSlots']
-										});
-										await queryClient.invalidateQueries({ 
-											queryKey: ['tour-schedule', savedTourId]
-										});
 										
 										// You could add a toast notification here for success
 									} else {
