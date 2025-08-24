@@ -246,7 +246,6 @@
 					if (value > max) value = max;
 				}}
 			/>
-			<div class="value-unit">{unit}</div>
 		</div>
 	</div>
 	
@@ -316,8 +315,8 @@
 	}
 	
 	.value-main {
-		align-items: baseline;
-		gap: 0.5rem;
+		display: flex;
+		justify-content: center;
 	}
 	
 	.value-input {
@@ -356,12 +355,6 @@
 
 	.value-input.above-slider-max:focus {
 		border-color: var(--color-info-500);
-	}
-	
-	.value-unit {
-		font-size: 1rem;
-		color: var(--text-secondary);
-		font-weight: 500;
 	}
 	
 	:global(.thumb-icon) {
