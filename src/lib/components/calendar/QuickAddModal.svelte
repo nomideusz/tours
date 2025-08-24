@@ -410,22 +410,18 @@
 						<!-- Capacity Configuration -->
 						<div class="form-section">
 							<h5 class="section-title">Capacity</h5>
-							<div class="capacity-slider-container">
-								<div class="form-label">Available Spots</div>
-								<CapacitySlider
-									bind:value={timeSlotForm.capacity}
-									min={1}
-									max={200}
-									step={1}
-									defaultValue={timeSlotForm.capacity}
-									disabled={isAddingSlot}
-								/>
-							</div>
+							<CapacitySlider
+								bind:value={timeSlotForm.capacity}
+								min={1}
+								max={200}
+								step={1}
+								defaultValue={timeSlotForm.capacity}
+								disabled={isAddingSlot}
+							/>
 						</div>
 
 						<!-- Recurring Options -->
 						<div class="form-section">
-							<h5 class="section-title">Recurring Options</h5>
 							<div class="recurring-section">
 								<div class="recurring-toggle">
 									<label class="checkbox-label">
@@ -435,18 +431,15 @@
 											disabled={isAddingSlot}
 											class="checkbox-input"
 										/>
-										<span class="checkbox-text">Create recurring slots</span>
+										<span class="checkbox-text">Recurring</span>
 									</label>
-									<div class="recurring-description">
-										Automatically create multiple time slots with the same settings
-									</div>
 								</div>
 								
 								{#if timeSlotForm.recurring}
 									<div class="recurring-config">
 										<div class="recurring-fields">
 											<div class="form-group">
-												<label for="recurring-type" class="form-label">Frequency</label>
+												<label for="recurring-type" class="form-label">Repeat</label>
 												<select
 													id="recurring-type"
 													bind:value={timeSlotForm.recurringType}
@@ -454,13 +447,13 @@
 													disabled={isAddingSlot}
 												>
 													<option value="daily">Daily</option>
-													<option value="weekly">Weekly (same day each week)</option>
-													<option value="monthly">Monthly (same date each month)</option>
+													<option value="weekly">Weekly</option>
+													<option value="monthly">Monthly</option>
 												</select>
 											</div>
 											
 											<div class="form-group">
-												<label for="recurring-count" class="form-label">Number of slots</label>
+												<label for="recurring-count" class="form-label">Count</label>
 												<input
 													id="recurring-count"
 													type="number"
@@ -475,31 +468,15 @@
 										
 										{#if totalRecurringSlots > 0}
 											<div class="recurring-summary">
-												<div class="summary-header">
-													<Info class="w-4 h-4" />
-													<span class="summary-title">Recurring Summary</span>
-												</div>
-												<div class="summary-content">
-													<div class="summary-item">
-														<span class="summary-label">Total slots:</span>
-														<span class="summary-value">{totalRecurringSlots}</span>
+												{#if recurringConflictCount > 0}
+													<div class="summary-item warning">
+														Will create {totalRecurringSlots - recurringConflictCount} slots ({recurringConflictCount} conflicts)
 													</div>
-													{#if recurringConflictCount > 0}
-														<div class="summary-item warning">
-															<span class="summary-label">Conflicts:</span>
-															<span class="summary-value">{recurringConflictCount} will be skipped</span>
-														</div>
-														<div class="summary-item success">
-															<span class="summary-label">Will create:</span>
-															<span class="summary-value">{totalRecurringSlots - recurringConflictCount} new slots</span>
-														</div>
-													{:else}
-														<div class="summary-item success">
-															<span class="summary-label">Status:</span>
-															<span class="summary-value">All slots available</span>
-														</div>
-													{/if}
-												</div>
+												{:else}
+													<div class="summary-item success">
+														Will create {totalRecurringSlots} slots
+													</div>
+												{/if}
 											</div>
 										{/if}
 									</div>
@@ -1128,10 +1105,6 @@
 		font-size: 0.875rem;
 	}
 
-	.capacity-slider-container {
-		margin-bottom: 1.5rem;
-	}
-
 
 
 
@@ -1172,12 +1145,7 @@
 		color: var(--text-primary);
 	}
 
-	.recurring-description {
-		font-size: 0.8125rem;
-		color: var(--text-tertiary);
-		margin-left: 2.75rem;
-		line-height: 1.4;
-	}
+
 
 	.recurring-config {
 		padding: 1rem;
@@ -1199,47 +1167,19 @@
 		margin-top: 1rem;
 	}
 
-	.summary-header {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
 
-	.summary-title {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.summary-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
 
 	.summary-item {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
 		font-size: 0.8125rem;
-	}
-
-	.summary-label {
-		color: var(--text-secondary);
+		text-align: center;
 		font-weight: 500;
 	}
 
-	.summary-value {
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.summary-item.warning .summary-value {
+	.summary-item.warning {
 		color: var(--color-warning-600);
 	}
 
-	.summary-item.success .summary-value {
+	.summary-item.success {
 		color: var(--color-success-600);
 	}
 
@@ -1294,9 +1234,7 @@
 
 
 
-		.capacity-slider-container {
-			margin-bottom: 1rem;
-		}
+
 
 
 
@@ -1304,10 +1242,7 @@
 			grid-template-columns: 1fr;
 		}
 
-		.recurring-description {
-			margin-left: 0;
-			margin-top: 0.5rem;
-		}
+
 
 		.summary-item {
 			font-size: 0.75rem;
