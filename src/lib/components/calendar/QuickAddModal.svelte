@@ -199,9 +199,9 @@
 
 {#if show}
 	<!-- Modal backdrop -->
-	<div class="modal-backdrop" onclick={handleClose}>
+	<div class="modal-backdrop" onclick={handleClose} onkeydown={(e) => e.key === 'Escape' && handleClose()} role="button" tabindex="-1">
 		<!-- Modal content -->
-		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+		<div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
 			<!-- Modal header -->
 			<div class="modal-header">
 				<h3 class="modal-title">
@@ -261,7 +261,7 @@
 										<h4 class="tour-card-title">{tour.name}</h4>
 										<div class="tour-card-details">
 											<span class="tour-card-duration">{formatDuration(tour.duration)}</span>
-											<span class="tour-card-price">{getTourDisplayPriceFormatted(tour, globalCurrencyFormatter)}</span>
+											<span class="tour-card-price">{getTourDisplayPriceFormatted(tour)}</span>
 										</div>
 									</div>
 								</button>
@@ -291,7 +291,7 @@
 								</div>
 								<div class="selected-tour-details">
 									<h4>{selectedTour.name}</h4>
-									<p>{formatDuration(selectedTour.duration)} • {getTourDisplayPriceFormatted(selectedTour, globalCurrencyFormatter)}</p>
+									<p>{formatDuration(selectedTour.duration)} • {getTourDisplayPriceFormatted(selectedTour)}</p>
 								</div>
 							</div>
 						{/if}
