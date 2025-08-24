@@ -162,53 +162,40 @@
 
 <!-- User Onboarding -->
 {#if onboardingSteps.length > 0 && !needsEmailVerification && !needsConfirmation}
-	<div class="onboarding-section" transition:fade>
-		<div class="onboarding-header">
-			<h2>{isNewUser ? 'Welcome to Zaur! 🎉' : 'Complete Your Setup'}</h2>
-			<p>{isNewUser ? "Let's get your tour business set up in just a few steps." : "Finish setting up your account to start accepting bookings."}</p>
-			
-			<!-- Progress Bar -->
-			<div class="progress-container">
-				<div class="progress-bar">
-					<div class="progress-fill" style="width: {progressPercentage}%"></div>
-				</div>
-				<span class="progress-text">{completedSteps} of {totalSteps} completed</span>
-			</div>
-		</div>
-
-		<div class="onboarding-steps" class:single-step={onboardingSteps.length === 1}>
-			{#each onboardingSteps as step}
-				<div class="onboarding-step" class:completed={step.completed} class:single={onboardingSteps.length === 1}>
-					<div class="step-icon">
+	<div class="setup-notice" transition:fade>
+		{#each onboardingSteps as step}
+			<div class="setup-card">
+				<div class="setup-content">
+					<div class="setup-icon">
 						{#if step.completed}
-							<CheckCircle class="w-5 h-5 text-green-600" />
+							<CheckCircle class="w-5 h-5" />
 						{:else if step.id === 'payment' && paymentStatus.loading}
 							<Loader2 class="w-5 h-5 animate-spin" />
 						{:else}
 							<svelte:component this={step.icon} class="w-5 h-5" />
 						{/if}
 					</div>
-					<div class="step-content">
-						<h4>{step.title}</h4>
+					<div class="setup-text">
+						<h3>{step.title}</h3>
 						<p>{step.description}</p>
-						{#if !step.completed && step.action}
-							<button 
-								onclick={step.action}
-								class="button--primary button--small"
-								disabled={step.disabled || (step.id === 'payment' && (paymentStatus.loading || isSettingUpPayment))}
-							>
-								{#if step.id === 'payment' && isSettingUpPayment}
-									<Loader2 class="w-4 h-4 animate-spin" />
-									Setting up...
-								{:else}
-									{step.actionText}
-								{/if}
-							</button>
-						{/if}
 					</div>
 				</div>
-			{/each}
-		</div>
+				{#if !step.completed && step.action}
+					<button 
+						onclick={step.action}
+						class="button-primary"
+						disabled={step.disabled || (step.id === 'payment' && (paymentStatus.loading || isSettingUpPayment))}
+					>
+						{#if step.id === 'payment' && isSettingUpPayment}
+							<Loader2 class="w-4 h-4 animate-spin" />
+							Setting up...
+						{:else}
+							{step.actionText}
+						{/if}
+					</button>
+				{/if}
+			</div>
+		{/each}
 	</div>
 {/if}
 
@@ -326,136 +313,73 @@
 		font-size: 0.875rem;
 	}
 
-	.onboarding-section {
-		background: var(--surface-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 12px;
-		padding: 2rem;
+	/* Clean, professional setup notice */
+	.setup-notice {
 		margin-bottom: 2rem;
 	}
 
-	.onboarding-header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	.onboarding-header h2 {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--text-primary);
-	}
-
-	.onboarding-header p {
-		margin: 0 0 1.5rem 0;
-		color: var(--text-secondary);
-		font-size: 1.125rem;
-	}
-
-	.progress-container {
+	.setup-card {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 1rem;
-	}
-
-	.progress-bar {
-		flex: 1;
-		height: 8px;
-		background: var(--surface-tertiary);
-		border-radius: 4px;
-		overflow: hidden;
-	}
-
-	.progress-fill {
-		height: 100%;
-		background: var(--primary);
-		border-radius: 4px;
-		transition: width 0.3s ease;
-	}
-
-	.progress-text {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-		white-space: nowrap;
-	}
-
-	.onboarding-steps {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-
-	.onboarding-step {
-		display: flex;
-		align-items: flex-start;
-		gap: 1rem;
-		padding: 1.5rem;
-		background: var(--bg-secondary);
+		padding: 1rem 1.25rem;
+		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 8px;
+		border-radius: 0.75rem;
+		margin-bottom: 1rem;
 		transition: all 0.2s ease;
 	}
 
-	.onboarding-step.completed {
-		background: var(--success-light);
-		border-color: var(--success);
+	.setup-card:hover {
+		border-color: var(--color-primary);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 	}
 
-	/* Single step layout - centered and more compact */
-	.onboarding-steps.single-step {
-		align-items: center;
-	}
-
-	.onboarding-step.single {
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		max-width: 400px;
-		margin: 0 auto;
-		gap: 1.5rem;
-	}
-
-	.onboarding-step.single .step-content {
+	.setup-content {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
-	}
-
-	.onboarding-step.single .step-content h4 {
-		margin: 0;
-		font-size: 1.25rem;
-	}
-
-	.onboarding-step.single .step-content p {
-		margin: 0;
-		font-size: 0.9375rem;
-	}
-
-	.step-icon {
-		flex-shrink: 0;
-		color: var(--text-secondary);
-	}
-
-	.onboarding-step.completed .step-icon {
-		color: var(--success);
-	}
-
-	.step-content {
+		gap: 0.75rem;
 		flex: 1;
 	}
 
-	.step-content h4 {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.125rem;
+	.setup-icon {
+		flex-shrink: 0;
+		color: var(--color-primary);
+		display: flex;
+		align-items: center;
+	}
+
+	.setup-text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.setup-text h3 {
+		margin: 0 0 0.25rem 0;
+		font-size: 0.9375rem;
 		font-weight: 600;
 		color: var(--text-primary);
 	}
 
-	.step-content p {
-		margin: 0 0 1rem 0;
+	.setup-text p {
+		margin: 0;
+		font-size: 0.8125rem;
 		color: var(--text-secondary);
-		line-height: 1.5;
+		line-height: 1.4;
+	}
+
+	/* Responsive design */
+	@media (max-width: 640px) {
+		.setup-card {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
+		}
+
+		.setup-content {
+			justify-content: center;
+		}
 	}
 
 	.modal-backdrop {
