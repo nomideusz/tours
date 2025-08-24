@@ -798,10 +798,17 @@
 						tourId: tourId
 					};
 					
-					// Invalidate timeline query to refresh the calendar
+					// Invalidate timeline queries to refresh the calendar
 					await queryClient.invalidateQueries({
-						queryKey: ['timeline']
+						queryKey: ['allTimeSlots']
 					});
+					
+					// Also invalidate specific tour schedule if we have a tour ID
+					if (tourId) {
+						await queryClient.invalidateQueries({
+							queryKey: ['tourSchedule', tourId]
+						});
+					}
 					
 					// Clear the cached slots for this tour to force refetch next time
 					selectedTourSlots = [];
@@ -919,80 +926,7 @@
 			on:save={saveCurrencySelection}
 		/>
 
-	<!-- Quick Add Modal Component -->
-	<QuickAddModal
-		bind:show={showQuickAddModal}
-		bind:date={quickAddDate}
-		bind:step={quickAddStep}
-		bind:selectedTourId={selectedTourForSlot}
-		bind:selectedTourData={selectedTourData}
-		bind:selectedTourSlots={selectedTourSlots}
-		bind:timeSlotForm={timeSlotForm}
-		bind:isAddingSlot={isAddingSlot}
-		bind:lastCreatedSlot={lastCreatedSlot}
-		bind:hasConflict={hasConflict}
-		bind:conflictMessage={conflictMessage}
-		bind:recurringConflictCount={recurringConflictCount}
-		bind:totalRecurringSlots={totalRecurringSlots}
-		{tours}
-		on:close={() => {
-			showQuickAddModal = false;
-			quickAddStep = 'select-tour';
-			selectedTourForSlot = '';
-			selectedTourData = null;
-		}}
-		on:submit={async (e) => {
-			const { tourId, formData } = e.detail;
-			isAddingSlot = true;
-			
-			try {
-				const response = await fetch(`/api/tours/${tourId}/schedule`, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(formData)
-							});
-							
-							if (response.ok) {
-					// Remember the last created slot info for smart suggestions
-					lastCreatedSlot = {
-						time: formData.startTime,
-						date: formatDateForInput(quickAddDate!),
-						capacity: formData.capacity,
-						tourId: tourId
-					};
-					
-					// Invalidate timeline query to refresh the calendar
-								await queryClient.invalidateQueries({ 
-						queryKey: ['timeline']
-					});
-					
-					// Clear the cached slots for this tour to force refetch next time
-					selectedTourSlots = [];
-					
-					// Close modal and reset form
-					showQuickAddModal = false;
-					quickAddStep = 'select-tour';
-					selectedTourForSlot = '';
-					selectedTourData = null;
-					timeSlotForm = {
-						startTime: '10:00',
-						endTime: '12:00',
-						capacity: 10,
-						recurring: false,
-						recurringType: 'weekly',
-						recurringCount: 4
-					};
-							} else {
-					const error = await response.json();
-					console.error('Failed to add time slot:', error);
-							}
-						} catch (error) {
-							console.error('Error adding time slot:', error);
-			} finally {
-				isAddingSlot = false;
-			}
-		}}
-	/>
+	
 
 
 
