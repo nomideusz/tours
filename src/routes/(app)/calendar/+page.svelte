@@ -104,6 +104,9 @@
 		recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
 		recurringCount: 4
 	});
+	
+	// Store selected tour for duration calculation
+	let selectedTourData = $state<any>(null);
 
 	// Loading and error states
 	let isLoading = $derived($dashboardStatsQuery.isLoading);
@@ -366,6 +369,27 @@
 	function calculateTotalRecurringSlots(startDate: string, recurringType: string, count: number): number {
 		return count; // Simple: the count is the total number of slots
 	}
+	
+	// Helper function to calculate end time based on start time and duration
+	function calculateEndTime(startTime: string, duration: number): string {
+		if (!startTime || !duration) return startTime;
+		
+		const [hours, minutes] = startTime.split(':').map(Number);
+		const totalMinutes = hours * 60 + minutes + duration;
+		
+		const endHours = Math.floor(totalMinutes / 60) % 24;
+		const endMinutes = totalMinutes % 60;
+		
+		return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+	}
+	
+	// Auto-calculate end time when start time changes
+	$effect(() => {
+		if (selectedTourData && timeSlotForm.startTime) {
+			const newEndTime = calculateEndTime(timeSlotForm.startTime, selectedTourData.duration);
+			timeSlotForm.endTime = newEndTime;
+		}
+	});
 	
 	// Helper function to get smart capacity default
 	function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[]): number {
@@ -930,6 +954,13 @@
 		font-weight: 500;
 		color: var(--text-primary);
 		margin-bottom: 0.5rem;
+	}
+	
+	.form-label-hint {
+		font-weight: 400;
+		color: var(--text-tertiary);
+		font-size: 0.75rem;
+		margin-left: 0.5rem;
 	}
 	
 	.form-actions {
@@ -1980,6 +2011,7 @@
 							quickAddDate = date;
 							quickAddStep = 'select-tour';
 							selectedTourForSlot = '';
+							selectedTourData = null;
 							selectedTourSlots = [];
 							hasConflict = false;
 							conflictMessage = '';
@@ -2250,6 +2282,7 @@
 												// Always fetch fresh data, even if same tour selected again
 												const isAlreadySelected = selectedTourForSlot === tour.id;
 												selectedTourForSlot = tour.id;
+												selectedTourData = tour; // Store tour data for duration
 												
 												// Always clear and refetch to ensure we have latest data
 												selectedTourSlots = [];
@@ -2281,6 +2314,11 @@
 													selectedTourSlots = [];
 													// Fallback to tour capacity or last created
 													timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
+												}
+												
+												// Auto-calculate end time based on tour duration
+												if (tour.duration && timeSlotForm.startTime) {
+													timeSlotForm.endTime = calculateEndTime(timeSlotForm.startTime, tour.duration);
 												}
 												
 												// Auto-advance to next step only after slots are loaded
@@ -2398,6 +2436,7 @@
 										showQuickAddModal = false;
 										quickAddStep = 'select-tour';
 										selectedTourForSlot = '';
+										selectedTourData = null;
 										timeSlotForm = {
 											startTime: '10:00',
 											endTime: '12:00',
@@ -2449,7 +2488,12 @@
 								</div>
 								
 								<div class="form-group">
-									<label for="slot-end-time" class="form-label">End Time</label>
+									<label for="slot-end-time" class="form-label">
+										End Time
+										{#if selectedTourData?.duration}
+											<span class="form-label-hint">({formatDuration(selectedTourData.duration)} tour)</span>
+										{/if}
+									</label>
 									<input
 										id="slot-end-time"
 										type="time"
