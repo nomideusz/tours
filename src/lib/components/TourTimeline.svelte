@@ -196,8 +196,10 @@
 				const slotDate = new Date(slot.startTime);
 				
 				if (view === 'day') {
-					// Show only slots for the current day
-					return slotDate.toDateString() === currentDate.toDateString();
+					// Show only slots for the current day - use UTC date comparison to avoid timezone issues
+					const slotDateUTC = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+					const currentDateUTC = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+					return slotDateUTC.getTime() === currentDateUTC.getTime();
 				} else if (view === 'week') {
 					// Show only slots for the current week
 					const weekStart = new Date(currentDate);
@@ -219,7 +221,9 @@
 		
 		filteredSlots.forEach((slot: TimeSlot) => {
 			const date = new Date(slot.startTime);
-			const dateKey = date.toDateString();
+			// Use local date components to create consistent date key regardless of timezone
+			const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+			const dateKey = localDate.toDateString();
 			
 			if (!groups.has(dateKey)) {
 				groups.set(dateKey, []);
@@ -374,9 +378,14 @@
 	}
 	
 	function getDaySlots(date: Date): TimeSlot[] {
-		const dateStr = date.toDateString();
 		// Use processedTimeSlots to ensure utilizationRate is calculated
-		return processedTimeSlots.filter((slot: TimeSlot) => new Date(slot.startTime).toDateString() === dateStr);
+		return processedTimeSlots.filter((slot: TimeSlot) => {
+			const slotDate = new Date(slot.startTime);
+			// Compare using local date components to avoid timezone issues
+			const slotDateLocal = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+			const targetDateLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+			return slotDateLocal.getTime() === targetDateLocal.getTime();
+		});
 	}
 	
 	// Get query client for prefetching
