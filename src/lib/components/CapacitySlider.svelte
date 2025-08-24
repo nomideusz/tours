@@ -40,7 +40,7 @@
 	let sliderRef: HTMLDivElement;
 	
 	// Convert value to slider position (0-100), clamped to slider max
-	let sliderPosition = $derived(() => {
+	let sliderPosition = $derived.by(() => {
 		const clampedValue = Math.min(value, sliderMax);
 		return ((clampedValue - min) / (sliderMax - min)) * 100;
 	});
