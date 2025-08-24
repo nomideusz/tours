@@ -365,43 +365,59 @@
 						<!-- Time Configuration -->
 						<div class="form-section">
 							<h5 class="section-title">Time & Duration</h5>
-							<div class="form-grid">
-								<div class="form-group">
-									<label for="slot-start-time" class="form-label">Start Time</label>
-									<input
-										id="slot-start-time"
-										type="time"
-										bind:value={timeSlotForm.startTime}
-										class="form-input {hasConflict ? 'input-error' : ''}"
-										required
-										disabled={isAddingSlot}
-									/>
+							<div class="time-config">
+								<div class="time-inputs">
+									<div class="time-input-group">
+										<label for="slot-start-time" class="form-label">Start Time</label>
+										<div class="time-input-wrapper">
+											<input
+												id="slot-start-time"
+												type="time"
+												bind:value={timeSlotForm.startTime}
+												class="time-input {hasConflict ? 'input-error' : ''}"
+												required
+												disabled={isAddingSlot}
+											/>
+											<Clock class="time-icon" />
+										</div>
+									</div>
+									
+									<div class="time-separator">
+										<div class="separator-line"></div>
+										<span class="separator-text">to</span>
+										<div class="separator-line"></div>
+									</div>
+									
+									<div class="time-input-group">
+										<label for="slot-end-time" class="form-label">End Time</label>
+										<div class="time-input-wrapper">
+											<input
+												id="slot-end-time"
+												type="time"
+												bind:value={timeSlotForm.endTime}
+												class="time-input {hasConflict ? 'input-error' : ''}"
+												required
+												disabled={isAddingSlot}
+											/>
+											<Clock class="time-icon" />
+										</div>
+									</div>
 								</div>
 								
-								<div class="form-group">
-									<label for="slot-end-time" class="form-label">
-										End Time
-										{#if selectedTourData?.duration}
-											<span class="form-label-hint">({formatDuration(selectedTourData.duration)} tour)</span>
-										{/if}
-									</label>
-									<input
-										id="slot-end-time"
-										type="time"
-										bind:value={timeSlotForm.endTime}
-										class="form-input {hasConflict ? 'input-error' : ''}"
-										required
-										disabled={isAddingSlot}
-									/>
-								</div>
+								{#if selectedTourData?.duration}
+									<div class="duration-info">
+										<Info class="w-4 h-4" />
+										<span>Auto-calculated based on {formatDuration(selectedTourData.duration)} tour duration</span>
+									</div>
+								{/if}
+								
+								{#if hasConflict}
+									<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
+										<AlertCircle class="w-4 h-4" />
+										<span>{conflictMessage}</span>
+									</div>
+								{/if}
 							</div>
-							
-							{#if hasConflict}
-								<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
-									<AlertCircle class="w-4 h-4" />
-									<span>{conflictMessage}</span>
-								</div>
-							{/if}
 						</div>
 
 						<!-- Capacity Configuration -->
@@ -968,10 +984,98 @@
 		border-bottom: 1px solid var(--border-primary);
 	}
 
-	.form-grid {
+	/* Time Configuration */
+	.time-config {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		padding: 1rem;
+	}
+
+	.time-inputs {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: end;
 		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.time-input-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.time-input-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.time-input {
+		width: 100%;
+		padding: 0.875rem 2.5rem 0.875rem 0.875rem;
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 1rem;
+		font-weight: 500;
+		transition: all 0.2s ease;
+		font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+	}
+
+	.time-input:focus {
+		outline: none;
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-50);
+	}
+
+	.time-input.input-error {
+		border-color: var(--color-error-500);
+		box-shadow: 0 0 0 3px var(--color-error-50);
+	}
+
+	:global(.time-icon) {
+		position: absolute;
+		right: 0.875rem;
+		color: var(--text-tertiary);
+		pointer-events: none;
+		width: 18px;
+		height: 18px;
+	}
+
+	.time-separator {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-bottom: 1.5rem;
+	}
+
+	.separator-line {
+		flex: 1;
+		height: 1px;
+		background: var(--border-primary);
+	}
+
+	.separator-text {
+		font-size: 0.875rem;
+		color: var(--text-tertiary);
+		font-weight: 500;
+		padding: 0 0.25rem;
+	}
+
+	.duration-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
+		border-radius: 0.5rem;
+		font-size: 0.8125rem;
+		color: var(--color-info-700);
+		margin-bottom: 1rem;
 	}
 
 	.form-group {
@@ -986,14 +1090,6 @@
 		margin-bottom: 0.5rem;
 	}
 
-	.form-label-hint {
-		font-weight: 400;
-		color: var(--text-tertiary);
-		font-size: 0.75rem;
-		margin-left: 0.5rem;
-	}
-
-	.form-input,
 	.form-select {
 		width: 100%;
 		padding: 0.75rem;
@@ -1005,14 +1101,9 @@
 		transition: border-color 0.2s ease;
 	}
 
-	.form-input:focus,
 	.form-select:focus {
 		outline: none;
 		border-color: var(--color-primary);
-	}
-
-	.form-input.input-error {
-		border-color: var(--color-error-500);
 	}
 
 	.conflict-warning {
@@ -1191,8 +1282,24 @@
 			grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 		}
 
-		.form-grid {
+
+
+		.time-inputs {
 			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+
+		.time-separator {
+			display: none;
+		}
+
+		.time-input {
+			font-size: 0.875rem;
+			padding: 0.75rem 2.25rem 0.75rem 0.75rem;
+		}
+
+		.duration-info {
+			font-size: 0.75rem;
 		}
 
 		.capacity-slider-container {
