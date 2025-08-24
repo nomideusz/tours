@@ -8,6 +8,7 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
+	import Info from 'lucide-svelte/icons/info';
 	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
 	import { formatDuration, getImageUrl, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
@@ -333,127 +334,161 @@
 						{/if}
 					</div>
 				{:else if step === 'configure-slot'}
-					<!-- Step 2: Configure Time Slot -->
+					<!-- Configure Slot Step -->
 					{@const selectedTour = tours.find(t => t.id === selectedTourId)}
-					<form 
-						class="slot-form"
-						onsubmit={(e) => {
-							e.preventDefault();
-							handleSubmit();
-						}}
-					>
+					<div class="slot-form">
 						{#if selectedTour}
 							<div class="selected-tour-info">
 								<div class="selected-tour-header">
+									<h4 class="selected-tour-name">{selectedTour.name}</h4>
 									<button 
 										type="button"
 										onclick={handleBackToTourSelection}
-										class="back-button"
+										class="change-tour-btn"
 									>
-										← Back to Tours
+										Change Tour
 									</button>
 								</div>
-								<div class="selected-tour-details">
-									<h4>{selectedTour.name}</h4>
-									<p>{formatDuration(selectedTour.duration)} • {getTourDisplayPriceFormatted(selectedTour)}</p>
+								<div class="selected-tour-meta">
+									<span>
+										<Clock class="w-4 h-4" />
+										{formatDuration(selectedTour.duration)}
+									</span>
+									<span>
+										<Users class="w-4 h-4" />
+										{getTourDisplayPriceFormatted(selectedTour)}
+									</span>
 								</div>
 							</div>
 						{/if}
 						
-						<div class="form-grid">
-							<div class="form-group">
-								<label for="slot-start-time" class="form-label">Start Time</label>
-								<input
-									id="slot-start-time"
-									type="time"
-									bind:value={timeSlotForm.startTime}
-									class="form-input {hasConflict ? 'input-error' : ''}"
-									required
-									disabled={isAddingSlot}
-								/>
+						<!-- Time Configuration -->
+						<div class="form-section">
+							<h5 class="section-title">Time & Duration</h5>
+							<div class="form-grid">
+								<div class="form-group">
+									<label for="slot-start-time" class="form-label">Start Time</label>
+									<input
+										id="slot-start-time"
+										type="time"
+										bind:value={timeSlotForm.startTime}
+										class="form-input {hasConflict ? 'input-error' : ''}"
+										required
+										disabled={isAddingSlot}
+									/>
+								</div>
+								
+								<div class="form-group">
+									<label for="slot-end-time" class="form-label">
+										End Time
+										{#if selectedTourData?.duration}
+											<span class="form-label-hint">({formatDuration(selectedTourData.duration)} tour)</span>
+										{/if}
+									</label>
+									<input
+										id="slot-end-time"
+										type="time"
+										bind:value={timeSlotForm.endTime}
+										class="form-input {hasConflict ? 'input-error' : ''}"
+										required
+										disabled={isAddingSlot}
+									/>
+								</div>
 							</div>
 							
-							<div class="form-group">
-								<label for="slot-end-time" class="form-label">
-									End Time
-									{#if selectedTourData?.duration}
-										<span class="form-label-hint">({formatDuration(selectedTourData.duration)} tour)</span>
-									{/if}
-								</label>
-								<input
-									id="slot-end-time"
-									type="time"
-									bind:value={timeSlotForm.endTime}
-									class="form-input {hasConflict ? 'input-error' : ''}"
-									required
+							{#if hasConflict}
+								<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
+									<AlertCircle class="w-4 h-4" />
+									<span>{conflictMessage}</span>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Capacity Configuration -->
+						<div class="form-section">
+							<h5 class="section-title">Capacity</h5>
+							<div class="capacity-slider-container">
+								<div class="form-label">Available Spots</div>
+								<CapacitySlider
+									bind:value={timeSlotForm.capacity}
+									min={1}
+									max={200}
+									step={1}
+									defaultValue={timeSlotForm.capacity}
 									disabled={isAddingSlot}
 								/>
+								{#if timeSlotForm.capacity !== selectedTour?.capacity}
+									<div class="capacity-override-hint">
+										<Info class="w-4 h-4" />
+										Custom capacity for this slot (tour default: {selectedTour?.capacity || 'N/A'})
+									</div>
+								{:else}
+									<div class="smart-capacity-hint">
+										<CheckCircle class="w-4 h-4" />
+										Using tour default capacity
+									</div>
+								{/if}
 							</div>
-						</div>
-						
-						{#if hasConflict}
-							<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
-								<AlertCircle class="w-4 h-4" />
-								<span>{conflictMessage}</span>
-							</div>
-						{/if}
-
-						<!-- Capacity -->
-						<div class="form-group">
-							<div class="form-label">Available Spots</div>
-							<CapacitySlider
-								bind:value={timeSlotForm.capacity}
-								min={1}
-								max={200}
-								step={1}
-								defaultValue={timeSlotForm.capacity}
-								disabled={isAddingSlot}
-							/>
 						</div>
 
 						<!-- Recurring Options -->
-						<div class="form-group">
-							<label class="form-label">
-								<input
-									type="checkbox"
-									bind:checked={timeSlotForm.recurring}
-									disabled={isAddingSlot}
-								/>
-								Create recurring slots
-							</label>
-							
-							{#if timeSlotForm.recurring}
-								<div class="recurring-options">
-									<div class="form-grid">
-										<div class="form-group">
-											<label for="recurring-type" class="form-label">Repeat</label>
-											<select
-												id="recurring-type"
-												bind:value={timeSlotForm.recurringType}
-												class="form-select"
-												disabled={isAddingSlot}
-											>
-												<option value="daily">Daily</option>
-												<option value="weekly">Weekly</option>
-												<option value="monthly">Monthly</option>
-											</select>
+						<div class="form-section">
+							<div class="recurring-section">
+								<label class="checkbox-label">
+									<input
+										type="checkbox"
+										bind:checked={timeSlotForm.recurring}
+										disabled={isAddingSlot}
+										class="checkbox-input"
+									/>
+									Create recurring slots
+								</label>
+								
+								{#if timeSlotForm.recurring}
+									<div class="recurring-options">
+										<div class="form-grid">
+											<div class="form-group">
+												<label for="recurring-type" class="form-label">Repeat</label>
+												<select
+													id="recurring-type"
+													bind:value={timeSlotForm.recurringType}
+													class="form-select"
+													disabled={isAddingSlot}
+												>
+													<option value="daily">Daily</option>
+													<option value="weekly">Weekly</option>
+													<option value="monthly">Monthly</option>
+												</select>
+											</div>
+											
+											<div class="form-group">
+												<label for="recurring-count" class="form-label">Number of slots</label>
+												<input
+													id="recurring-count"
+													type="number"
+													bind:value={timeSlotForm.recurringCount}
+													min="1"
+													max="52"
+													class="form-input"
+													disabled={isAddingSlot}
+												/>
+											</div>
 										</div>
 										
-										<div class="form-group">
-											<label for="recurring-count" class="form-label">Number of slots</label>
-											<input
-												id="recurring-count"
-												type="number"
-												bind:value={timeSlotForm.recurringCount}
-												min="1"
-												max="52"
-												class="form-input"
-												disabled={isAddingSlot}
-											/>
-										</div>
+										{#if totalRecurringSlots > 0}
+											<div class="recurring-preview">
+												<Info class="w-4 h-4" />
+												<span>
+													Will create {totalRecurringSlots} slots
+													{#if recurringConflictCount > 0}
+														({recurringConflictCount} conflicts will be skipped)
+													{/if}
+												</span>
+											</div>
+										{/if}
 									</div>
-								</div>
-							{/if}
+								{/if}
+							</div>
 						</div>
 
 						<!-- Form Actions -->
@@ -461,14 +496,15 @@
 							<button 
 								type="button" 
 								onclick={handleClose}
-								class="button--secondary"
+								class="button-secondary"
 								disabled={isAddingSlot}
 							>
 								Cancel
 							</button>
 							<button 
-								type="submit"
-								class="button--primary"
+								type="button"
+								onclick={handleSubmit}
+								class="button-primary"
 								disabled={isAddingSlot || hasConflict}
 							>
 								{#if isAddingSlot}
@@ -483,7 +519,7 @@
 								{/if}
 							</button>
 						</div>
-					</form>
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -840,44 +876,72 @@
 
 	.selected-tour-info {
 		background: var(--bg-secondary);
-		border-radius: 8px;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
 		padding: 1rem;
 		margin-bottom: 1.5rem;
 	}
 
 	.selected-tour-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		margin-bottom: 0.75rem;
 	}
 
-	.back-button {
-		background: none;
-		border: none;
-		color: var(--color-primary);
-		cursor: pointer;
-		font-size: 0.875rem;
-		padding: 0;
-	}
-
-	.back-button:hover {
-		text-decoration: underline;
-	}
-
-	.selected-tour-details h4 {
-		margin: 0 0 0.25rem 0;
+	.selected-tour-name {
+		font-size: 1rem;
 		font-weight: 600;
 		color: var(--text-primary);
+		margin: 0;
 	}
 
-	.selected-tour-details p {
-		margin: 0;
+	.selected-tour-meta {
+		display: flex;
+		gap: 1rem;
 		font-size: 0.875rem;
 		color: var(--text-secondary);
 	}
 
-	.slot-form {
+	.selected-tour-meta span {
 		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.change-tour-btn {
+		background: transparent;
+		border: none;
+		color: var(--color-primary);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		padding: 0.25rem 0.5rem;
+		border-radius: 0.375rem;
+		transition: all 0.15s ease;
+	}
+
+	.change-tour-btn:hover {
+		background: var(--color-primary-50);
+	}
+
+
+
+	.slot-form {
+		animation: fadeIn 0.2s ease;
+	}
+
+	.form-section {
+		margin-bottom: 1.5rem;
+	}
+
+	.section-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 1rem 0;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid var(--border-primary);
 	}
 
 	.form-grid {
@@ -939,11 +1003,80 @@
 		font-size: 0.875rem;
 	}
 
-	.recurring-options {
-		margin-top: 1rem;
-		padding: 1rem;
+	.capacity-slider-container {
+		margin-bottom: 1.5rem;
+	}
+
+	.smart-capacity-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--color-success-600);
+		margin-top: 0.5rem;
+		font-style: italic;
+	}
+
+	.capacity-override-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--color-info-600);
+		margin-top: 0.5rem;
+		font-style: italic;
+	}
+
+	/* Recurring Section */
+	.recurring-section {
 		background: var(--bg-secondary);
-		border-radius: 6px;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		user-select: none;
+	}
+
+	.checkbox-input {
+		width: 18px;
+		height: 18px;
+		cursor: pointer;
+	}
+
+	.recurring-options {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-primary);
+	}
+
+	.recurring-preview {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		margin-top: 1rem;
+		padding: 0.75rem;
+		background: var(--color-info-50);
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--color-info-600);
+	}
+
+	.recurring-preview :global(svg) {
+		flex-shrink: 0;
+		margin-top: 1px;
 	}
 
 	.form-actions {
@@ -969,6 +1102,19 @@
 		}
 
 		.form-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.capacity-slider-container {
+			margin-bottom: 1rem;
+		}
+
+		.smart-capacity-hint,
+		.capacity-override-hint {
+			font-size: 0.75rem;
+		}
+
+		.recurring-options {
 			grid-template-columns: 1fr;
 		}
 
