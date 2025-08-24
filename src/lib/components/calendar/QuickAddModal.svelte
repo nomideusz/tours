@@ -398,13 +398,6 @@
 									</div>
 								</div>
 								
-								{#if selectedTour?.duration}
-									<div class="duration-info">
-										<Info class="w-4 h-4" />
-										<span>Auto-calculated based on {formatDuration(selectedTour.duration)} tour duration</span>
-									</div>
-								{/if}
-								
 								{#if hasConflict}
 									<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
 										<AlertCircle class="w-4 h-4" />
@@ -427,10 +420,6 @@
 									defaultValue={timeSlotForm.capacity}
 									disabled={isAddingSlot}
 								/>
-								<div class="smart-capacity-hint">
-									<CheckCircle class="w-4 h-4" />
-									Using smart capacity based on tour settings
-								</div>
 							</div>
 						</div>
 
@@ -1099,19 +1088,6 @@
 		padding: 0 0.25rem;
 	}
 
-	.duration-info {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		background: var(--color-info-50);
-		border: 1px solid var(--color-info-200);
-		border-radius: 0.5rem;
-		font-size: 0.8125rem;
-		color: var(--color-info-700);
-		margin-bottom: 1rem;
-	}
-
 	.form-group {
 		margin-bottom: 1rem;
 	}
@@ -1156,15 +1132,7 @@
 		margin-bottom: 1.5rem;
 	}
 
-	.smart-capacity-hint {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.8125rem;
-		color: var(--color-success-600);
-		margin-top: 0.5rem;
-		font-style: italic;
-	}
+
 
 
 
@@ -1324,17 +1292,13 @@
 			padding: 0.75rem;
 		}
 
-		.duration-info {
-			font-size: 0.75rem;
-		}
+
 
 		.capacity-slider-container {
 			margin-bottom: 1rem;
 		}
 
-		.smart-capacity-hint {
-			font-size: 0.75rem;
-		}
+
 
 		.recurring-fields {
 			grid-template-columns: 1fr;
