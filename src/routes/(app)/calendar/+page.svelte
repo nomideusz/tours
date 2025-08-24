@@ -208,12 +208,14 @@
 		
 		// Sort by creation time descending and get the first one
 		const sortedSlots = [...timeSlots].sort((a, b) => {
-			const aTime = new Date(a.createdAt || a.startTime).getTime();
-			const bTime = new Date(b.createdAt || b.startTime).getTime();
+			const aTime = new Date(a.createdAt || a.created || a.startTime).getTime();
+			const bTime = new Date(b.createdAt || b.created || b.startTime).getTime();
 			return bTime - aTime; // Most recent first
 		});
 		
-		return sortedSlots[0]?.availableSpots || sortedSlots[0]?.capacity || null;
+		// Check both field names for compatibility
+		// API returns 'capacity' but database stores as 'availableSpots'
+		return sortedSlots[0]?.capacity || sortedSlots[0]?.availableSpots || null;
 	}
 	
 	// Helper function to get smart capacity default

@@ -54,8 +54,8 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 
 		// Validate capacity
 		const slotCapacity = parseInt(capacity) || tour.capacity;
-		if (slotCapacity < 1 || slotCapacity > 100) {
-			return json({ error: 'Capacity must be between 1 and 100' }, { status: 400 });
+		if (slotCapacity < 1 || slotCapacity > 200) {
+			return json({ error: 'Capacity must be between 1 and 200' }, { status: 400 });
 		}
 
 		// Check for conflicts with existing slots
