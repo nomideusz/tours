@@ -161,7 +161,8 @@
 				description: 'Check your inbox',
 				icon: Mail,
 				complete: false,
-				action: resendVerificationEmail
+				action: resendVerificationEmail,
+				actionText: 'Resend Email'
 			});
 		}
 		
@@ -172,7 +173,8 @@
 				description: selectedCountry ? getCountryInfo(selectedCountry)?.name : 'Select country',
 				icon: Globe,
 				complete: false,
-				action: () => showLocationModal = true
+				action: () => showLocationModal = true,
+				actionText: 'Select Location'
 			});
 		}
 		
@@ -183,7 +185,8 @@
 				description: 'Connect Stripe',
 				icon: CreditCard,
 				complete: false,
-				action: setupPayments
+				action: setupPayments,
+				actionText: 'Setup Payments'
 			});
 		}
 		
@@ -194,7 +197,8 @@
 				description: 'Add your first tour',
 				icon: MapPin,
 				complete: false,
-				action: () => goto('/tours/new')
+				action: () => goto('/tours/new'),
+				actionText: 'Create Tour'
 			});
 		}
 		
@@ -896,9 +900,9 @@
 						}}
 					/>
 				{/if}
-			</div>
+				</div>
 		{/if}
-		
+
 		<!-- Location Selection Modal -->
 		<LocationModal 
 			bind:show={showLocationModal}
