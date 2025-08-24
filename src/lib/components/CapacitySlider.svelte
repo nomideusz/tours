@@ -267,7 +267,7 @@
 			style="left: {sliderPosition}%"
 			data-value="{formatValue(value)}"
 		>
-			<Users class="thumb-icon" />
+			<!-- Editable value above thumb -->
 			<input
 				type="number"
 				bind:value={value}
@@ -291,6 +291,8 @@
 				ontouchstart={(e) => e.stopPropagation()}
 				aria-label="{label}: {formatValue(value)} {unit}"
 			/>
+			<!-- Icon in the center of thumb -->
+			<Users class="thumb-icon" />
 			<!-- Invisible draggable area -->
 			<div
 				class="thumb-drag-area"
@@ -313,31 +315,36 @@
 <style>
 	/* Capacity-specific styles */
 	
-	/* Editable thumb value input */
+	/* Editable thumb value input positioned above thumb */
 	.thumb-value-input {
-		background: transparent;
-		border: none;
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		margin-bottom: 0.5rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--color-primary-600);
+		color: var(--text-primary);
 		text-align: center;
-		width: 2rem;
-		padding: 0.125rem;
-		border-radius: 0.25rem;
+		width: 2.5rem;
+		padding: 0.25rem 0.125rem;
+		border-radius: 0.375rem;
 		transition: all 0.2s ease;
-		position: relative;
-		z-index: 2;
+		z-index: 10;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.thumb-value-input:hover {
-		background: rgba(255, 255, 255, 0.2);
+		border-color: var(--color-primary);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.thumb-value-input:focus {
 		outline: none;
-		background: var(--bg-primary);
-		border: 1px solid var(--color-primary);
-		box-shadow: 0 0 0 2px var(--color-primary-50);
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px var(--color-primary-50), 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.thumb-value-input:disabled {
@@ -347,13 +354,14 @@
 
 	/* Highlight when value exceeds slider max */
 	.thumb-value-input.above-slider-max {
-		background: var(--color-info-100);
+		background: var(--color-info-50);
+		border-color: var(--color-info-300);
 		color: var(--color-info-700);
 	}
 
 	.thumb-value-input.above-slider-max:focus {
 		border-color: var(--color-info-500);
-		box-shadow: 0 0 0 2px var(--color-info-50);
+		box-shadow: 0 0 0 3px var(--color-info-50), 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	/* Invisible drag area that covers the thumb */
@@ -400,7 +408,9 @@
 		
 		.thumb-value-input {
 			font-size: 0.875rem;
-			width: 2.5rem;
+			width: 3rem;
+			padding: 0.375rem 0.25rem;
+			margin-bottom: 0.75rem;
 		}
 	}
 	
