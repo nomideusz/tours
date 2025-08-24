@@ -8,9 +8,8 @@
 	import Globe from 'lucide-svelte/icons/globe';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Plus from 'lucide-svelte/icons/plus';
-	import FlagIcon from '$lib/components/FlagIcon.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry } from '$lib/utils/countries.js';
+	import { getCountryInfo } from '$lib/utils/countries.js';
 
 	// Props
 	let {
@@ -58,13 +57,7 @@
 		createFirstTour: void;
 	}>();
 
-	// Computed values
-	let filteredCountries = $derived(
-		COUNTRY_LIST.filter(country => 
-			country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-			country.code.toLowerCase().includes(countrySearchTerm.toLowerCase())
-		).slice(0, 10)
-	);
+
 
 	let completedSteps = $derived(onboardingSteps.filter(step => step.completed).length);
 	let totalSteps = $derived(onboardingSteps.length);
@@ -74,12 +67,7 @@
 		dispatch('resendEmail');
 	}
 
-	function handleCountrySelect(countryCode: string) {
-		selectedCountry = countryCode;
-		showLocationModal = false;
-		countrySearchTerm = '';
-		dispatch('confirmLocation', { country: countryCode });
-	}
+
 
 	function handleSetupPayment() {
 		if (selectedCountry) {
@@ -199,41 +187,7 @@
 	</div>
 {/if}
 
-<!-- Location Selection Modal -->
-{#if showLocationModal}
-	<div class="modal-backdrop" onclick={() => showLocationModal = false}>
-		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
-			<div class="modal-header">
-				<h3>Select Your Business Location</h3>
-				<p>This determines your currency and cannot be changed after payment setup.</p>
-			</div>
-			
-			<div class="modal-body">
-				<div class="search-container">
-					<input
-						type="text"
-						placeholder="Search countries..."
-						bind:value={countrySearchTerm}
-						class="search-input"
-					/>
-				</div>
-				
-				<div class="countries-list">
-					{#each filteredCountries as country}
-						<button
-							onclick={() => handleCountrySelect(country.code)}
-							class="country-option"
-						>
-							<FlagIcon countryCode={country.code} class="flag-icon" />
-							<span class="country-name">{country.name}</span>
-							<span class="country-currency">{getCurrencyForCountry(country.code)}</span>
-						</button>
-					{/each}
-				</div>
-			</div>
-		</div>
-	</div>
-{/if}
+
 
 <!-- Payment Setup Confirmation Modal -->
 <ConfirmationModal
@@ -382,118 +336,7 @@
 		}
 	}
 
-	.modal-backdrop {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1000;
-		padding: 1rem;
-	}
 
-	.modal-content {
-		background: var(--bg-secondary);
-		border-radius: 12px;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-		width: 100%;
-		max-width: 500px;
-		max-height: 80vh;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.modal-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid var(--border-primary);
-	}
-
-	.modal-header h3 {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.modal-header p {
-		margin: 0;
-		color: var(--text-secondary);
-		font-size: 0.875rem;
-	}
-
-	.modal-body {
-		padding: 1.5rem;
-		overflow-y: auto;
-		flex: 1;
-	}
-
-	.search-container {
-		margin-bottom: 1rem;
-	}
-
-	.search-input {
-		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid var(--border-primary);
-		border-radius: 6px;
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		font-size: 0.875rem;
-	}
-
-	.search-input:focus {
-		outline: none;
-		border-color: var(--primary);
-	}
-
-	.countries-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		max-height: 300px;
-		overflow-y: auto;
-	}
-
-	.country-option {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		text-align: left;
-		width: 100%;
-	}
-
-	.country-option:hover {
-		background: var(--surface-secondary);
-		border-color: var(--primary);
-	}
-
-	.flag-icon {
-		width: 24px;
-		height: 18px;
-		flex-shrink: 0;
-	}
-
-	.country-name {
-		flex: 1;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-
-	.country-currency {
-		font-size: 0.875rem;
-		color: var(--text-secondary);
-	}
 
 	@media (max-width: 640px) {
 		.notice-content {
