@@ -433,22 +433,28 @@
 
 						<!-- Recurring Options -->
 						<div class="form-section">
+							<h5 class="section-title">Recurring Options</h5>
 							<div class="recurring-section">
-								<label class="checkbox-label">
-									<input
-										type="checkbox"
-										bind:checked={timeSlotForm.recurring}
-										disabled={isAddingSlot}
-										class="checkbox-input"
-									/>
-									Create recurring slots
-								</label>
+								<div class="recurring-toggle">
+									<label class="checkbox-label">
+										<input
+											type="checkbox"
+											bind:checked={timeSlotForm.recurring}
+											disabled={isAddingSlot}
+											class="checkbox-input"
+										/>
+										<span class="checkbox-text">Create recurring slots</span>
+									</label>
+									<div class="recurring-description">
+										Automatically create multiple time slots with the same settings
+									</div>
+								</div>
 								
 								{#if timeSlotForm.recurring}
-									<div class="recurring-options">
-										<div class="form-grid">
+									<div class="recurring-config">
+										<div class="recurring-fields">
 											<div class="form-group">
-												<label for="recurring-type" class="form-label">Repeat</label>
+												<label for="recurring-type" class="form-label">Frequency</label>
 												<select
 													id="recurring-type"
 													bind:value={timeSlotForm.recurringType}
@@ -456,8 +462,8 @@
 													disabled={isAddingSlot}
 												>
 													<option value="daily">Daily</option>
-													<option value="weekly">Weekly</option>
-													<option value="monthly">Monthly</option>
+													<option value="weekly">Weekly (same day each week)</option>
+													<option value="monthly">Monthly (same date each month)</option>
 												</select>
 											</div>
 											
@@ -476,14 +482,32 @@
 										</div>
 										
 										{#if totalRecurringSlots > 0}
-											<div class="recurring-preview">
-												<Info class="w-4 h-4" />
-												<span>
-													Will create {totalRecurringSlots} slots
+											<div class="recurring-summary">
+												<div class="summary-header">
+													<Info class="w-4 h-4" />
+													<span class="summary-title">Recurring Summary</span>
+												</div>
+												<div class="summary-content">
+													<div class="summary-item">
+														<span class="summary-label">Total slots:</span>
+														<span class="summary-value">{totalRecurringSlots}</span>
+													</div>
 													{#if recurringConflictCount > 0}
-														({recurringConflictCount} conflicts will be skipped)
+														<div class="summary-item warning">
+															<span class="summary-label">Conflicts:</span>
+															<span class="summary-value">{recurringConflictCount} will be skipped</span>
+														</div>
+														<div class="summary-item success">
+															<span class="summary-label">Will create:</span>
+															<span class="summary-value">{totalRecurringSlots - recurringConflictCount} new slots</span>
+														</div>
+													{:else}
+														<div class="summary-item success">
+															<span class="summary-label">Status:</span>
+															<span class="summary-value">All slots available</span>
+														</div>
 													{/if}
-												</span>
+												</div>
 											</div>
 										{/if}
 									</div>
@@ -1029,54 +1053,120 @@
 
 	/* Recurring Section */
 	.recurring-section {
-		background: var(--bg-secondary);
+		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.75rem;
+		overflow: hidden;
+	}
+
+	.recurring-toggle {
 		padding: 1rem;
-		margin-bottom: 1.5rem;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-primary);
 	}
 
 	.checkbox-label {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
 		cursor: pointer;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
 		user-select: none;
+		margin-bottom: 0.5rem;
 	}
 
 	.checkbox-input {
-		width: 18px;
-		height: 18px;
+		width: 20px;
+		height: 20px;
 		cursor: pointer;
+		accent-color: var(--color-primary);
 	}
 
-	.recurring-options {
+	.checkbox-text {
+		font-size: 0.9375rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.recurring-description {
+		font-size: 0.8125rem;
+		color: var(--text-tertiary);
+		margin-left: 2.75rem;
+		line-height: 1.4;
+	}
+
+	.recurring-config {
+		padding: 1rem;
+		animation: slideDown 0.2s ease;
+	}
+
+	.recurring-fields {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 2fr 1fr;
 		gap: 1rem;
-		margin-top: 1rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--border-primary);
+		margin-bottom: 1rem;
 	}
 
-	.recurring-preview {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.5rem;
-		margin-top: 1rem;
-		padding: 0.75rem;
-		background: var(--color-info-50);
+	.recurring-summary {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
 		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		color: var(--color-info-600);
+		padding: 1rem;
+		margin-top: 1rem;
 	}
 
-	.recurring-preview :global(svg) {
-		flex-shrink: 0;
-		margin-top: 1px;
+	.summary-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.summary-title {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.summary-content {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.summary-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.8125rem;
+	}
+
+	.summary-label {
+		color: var(--text-secondary);
+		font-weight: 500;
+	}
+
+	.summary-value {
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.summary-item.warning .summary-value {
+		color: var(--color-warning-600);
+	}
+
+	.summary-item.success .summary-value {
+		color: var(--color-success-600);
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.form-actions {
@@ -1114,8 +1204,17 @@
 			font-size: 0.75rem;
 		}
 
-		.recurring-options {
+		.recurring-fields {
 			grid-template-columns: 1fr;
+		}
+
+		.recurring-description {
+			margin-left: 0;
+			margin-top: 0.5rem;
+		}
+
+		.summary-item {
+			font-size: 0.75rem;
 		}
 
 		.modal-steps {
