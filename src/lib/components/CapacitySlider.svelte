@@ -199,7 +199,7 @@
 
 <div class="slider-base capacity-slider" class:disabled class:error>
 	{#if label}
-		<div class="form-label block mb-2 sm:mb-3 flex items-center justify-between">
+		<div class="form-label block mb-3 sm:mb-4 flex items-center justify-between">
 			<span>
 				{label}
 				{#if required}<span class="text-red-500 ml-1">*</span>{/if}
