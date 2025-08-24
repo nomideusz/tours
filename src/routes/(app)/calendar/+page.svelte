@@ -86,6 +86,7 @@
 	let quickAddStep = $state<'select-tour' | 'configure-slot'>('select-tour');
 	let selectedTourForSlot = $state<string>('');
 	let isAddingSlot = $state(false);
+	let lastCreatedSlot = $state<{time: string, date: string, capacity: number, tourId: string} | null>(null);
 	
 	// Time Slot Form state
 	let timeSlotForm = $state({
@@ -199,6 +200,42 @@
 		const month = String(date.getMonth() + 1).padStart(2, '0');
 		const day = String(date.getDate()).padStart(2, '0');
 		return `${year}-${month}-${day}`;
+	}
+	
+	// Helper function to get last used capacity from existing time slots
+	function getLastUsedCapacity(timeSlots: any[]): number | null {
+		if (!timeSlots || timeSlots.length === 0) return null;
+		
+		// Sort by creation time descending and get the first one
+		const sortedSlots = [...timeSlots].sort((a, b) => {
+			const aTime = new Date(a.createdAt || a.startTime).getTime();
+			const bTime = new Date(b.createdAt || b.startTime).getTime();
+			return bTime - aTime; // Most recent first
+		});
+		
+		return sortedSlots[0]?.availableSpots || sortedSlots[0]?.capacity || null;
+	}
+	
+	// Helper function to get smart capacity default
+	function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[]): number {
+		// Priority order:
+		// 1. Last created slot for the same tour (if within this session)
+		// 2. Last used capacity from existing time slots
+		// 3. Tour's default capacity
+		// 4. Fallback to 10
+		
+		if (lastCreatedSlot && lastCreatedSlot.tourId === tourId) {
+			return lastCreatedSlot.capacity;
+		}
+		
+		if (timeSlots) {
+			const lastUsed = getLastUsedCapacity(timeSlots);
+			if (lastUsed !== null) return lastUsed;
+		}
+		
+		if (tour?.capacity) return tour.capacity;
+		
+		return 10;
 	}
 
 	// Generate color for tour based on tour ID/name (same algorithm as TourTimeline)
@@ -1423,6 +1460,16 @@
 		margin-bottom: 1.5rem;
 	}
 
+	.smart-capacity-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--color-success-600);
+		margin-top: 0.5rem;
+		font-style: italic;
+	}
+
 	.form-group {
 		margin-bottom: 0;
 	}
@@ -1538,6 +1585,10 @@
 
 		.capacity-slider-container {
 			margin-bottom: 1rem;
+		}
+
+		.smart-capacity-hint {
+			font-size: 0.75rem;
 		}
 
 		.recurring-options {
@@ -1722,10 +1773,14 @@
 							quickAddDate = date;
 							quickAddStep = 'select-tour';
 							selectedTourForSlot = '';
+							
+							// Use smart defaults for capacity (keep last used or default to 10)
+							const defaultCapacity = lastCreatedSlot?.capacity || 10;
+							
 							timeSlotForm = {
 								startTime: '10:00',
 								endTime: '12:00',
-								capacity: 10,
+								capacity: defaultCapacity,
 								recurring: false,
 								recurringType: 'weekly',
 								recurringCount: 4
@@ -1979,10 +2034,25 @@
 									{#each tours as tour}
 										{@const isSelected = selectedTourForSlot === tour.id}
 										<button
-											onclick={() => {
+											onclick={async () => {
 												selectedTourForSlot = tour.id;
-												// Set default capacity from tour
-												timeSlotForm.capacity = tour.capacity;
+												
+												// Fetch tour schedule to get smart capacity
+												try {
+													const response = await fetch(`/api/tours/${tour.id}/schedule`);
+													if (response.ok) {
+														const data = await response.json();
+														const smartCapacity = getSmartCapacity(tour.id, tour, data.timeSlots);
+														timeSlotForm.capacity = smartCapacity;
+													} else {
+														// Fallback to tour capacity or last created
+														timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
+													}
+												} catch (error) {
+													// Fallback to tour capacity or last created
+													timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
+												}
+												
 												// Auto-advance to next step
 												setTimeout(() => {
 													quickAddStep = 'configure-slot';
@@ -2076,9 +2146,18 @@
 									});
 									
 									if (response.ok) {
+										// Remember the last created slot info for smart suggestions
+										lastCreatedSlot = {
+											time: timeSlotForm.startTime,
+											date: formatDateForInput(quickAddDate),
+											capacity: timeSlotForm.capacity,
+											tourId: selectedTourForSlot
+										};
+										
 										// Close modal and reset form
 										showQuickAddModal = false;
 										quickAddStep = 'select-tour';
+										const savedTourId = selectedTourForSlot; // Save for cache invalidation
 										selectedTourForSlot = '';
 										timeSlotForm = {
 											startTime: '10:00',
@@ -2094,7 +2173,7 @@
 											queryKey: ['allTimeSlots']
 										});
 										await queryClient.invalidateQueries({ 
-											queryKey: ['tour-schedule', selectedTourForSlot]
+											queryKey: ['tour-schedule', savedTourId]
 										});
 										
 										// You could add a toast notification here for success
@@ -2162,8 +2241,14 @@
 									disabled={isAddingSlot}
 									showMarkers={true}
 									unit="spots"
-									defaultValue={selectedTour?.capacity}
+									defaultValue={lastCreatedSlot?.tourId === selectedTourForSlot ? lastCreatedSlot.capacity : selectedTour?.capacity}
 								/>
+								{#if lastCreatedSlot?.tourId === selectedTourForSlot}
+									<p class="smart-capacity-hint">
+										<CheckCircle class="w-4 h-4 inline" />
+										Using capacity from your last slot
+									</p>
+								{/if}
 							</div>
 							
 							<!-- Recurring Options -->
