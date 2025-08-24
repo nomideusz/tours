@@ -68,7 +68,7 @@ const VALIDATION_RULES = {
 	capacity: {
 		required: true,
 		min: 1,
-		max: 200
+		max: 100
 	},
 	category: {
 		required: false,
@@ -222,7 +222,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 			errors.push({ field: 'capacity', message: `Capacity must be at least ${VALIDATION_RULES.capacity.min} person` });
 		}
 		if (data.capacity > VALIDATION_RULES.capacity.max) {
-			errors.push({ field: 'capacity', message: `Capacity must be no more than ${VALIDATION_RULES.capacity.max} guests` });
+			errors.push({ field: 'capacity', message: `Capacity must be no more than ${VALIDATION_RULES.capacity.max} people` });
 		}
 	}
 
@@ -400,7 +400,7 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		description: String(data.description || '').trim(),
 		price: Number(data.price) || 0,
 		duration: Number(data.duration) || 60,
-		capacity: Number(data.capacity) || 10,
+		capacity: Number(data.capacity) || 1,
 		status: (data.status as Tour['status']) || 'draft',
 		category: String(data.category || '').trim(),
 		location: String(data.location || '').trim(),

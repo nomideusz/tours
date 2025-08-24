@@ -221,7 +221,7 @@
 		// Priority order:
 		// 1. Last created slot for the same tour (if within this session)
 		// 2. Last used capacity from existing time slots
-		// 3. Tour's default capacity
+		// 3. Tour's default capacity (if reasonable)
 		// 4. Fallback to 10
 		
 		if (lastCreatedSlot && lastCreatedSlot.tourId === tourId) {
@@ -233,8 +233,13 @@
 			if (lastUsed !== null) return lastUsed;
 		}
 		
-		if (tour?.capacity) return tour.capacity;
+		// Only use tour capacity if it's a reasonable number (not 1)
+		// Tours with capacity of 1 are likely misconfigured
+		if (tour?.capacity && tour.capacity > 1) {
+			return tour.capacity;
+		}
 		
+		// Default to 10 for better UX
 		return 10;
 	}
 
@@ -2091,7 +2096,7 @@
 													</span>
 													<span class="tour-card-capacity">
 														<Users class="h-3.5 w-3.5" />
-														{tour.capacity} spots
+														{tour.capacity > 1 ? tour.capacity : 10} spots
 													</span>
 												</div>
 												{#if tour.status === 'draft'}
@@ -2252,14 +2257,19 @@
 									disabled={isAddingSlot}
 									showMarkers={true}
 									unit="spots"
-									defaultValue={lastCreatedSlot?.tourId === selectedTourForSlot ? lastCreatedSlot.capacity : selectedTour?.capacity}
+									defaultValue={lastCreatedSlot?.tourId === selectedTourForSlot ? lastCreatedSlot.capacity : (selectedTour?.capacity && selectedTour.capacity > 1 ? selectedTour.capacity : 10)}
 								/>
 								{#if lastCreatedSlot?.tourId === selectedTourForSlot}
 									<p class="smart-capacity-hint">
 										<CheckCircle class="w-4 h-4 inline" />
 										Using capacity from your last slot
 									</p>
-								{:else if selectedTour?.capacity && timeSlotForm.capacity > selectedTour.capacity}
+								{:else if selectedTour?.capacity === 1 && timeSlotForm.capacity === 10}
+									<p class="smart-capacity-hint">
+										<CheckCircle class="w-4 h-4 inline" />
+										Using recommended default capacity
+									</p>
+								{:else if selectedTour?.capacity && selectedTour.capacity > 1 && timeSlotForm.capacity > selectedTour.capacity}
 									<p class="capacity-override-hint">
 										<Info class="w-4 h-4 inline" />
 										Exceeds tour's default capacity of {selectedTour.capacity}

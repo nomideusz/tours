@@ -3,7 +3,6 @@
 
 	import DurationSlider from './DurationSlider.svelte';
 	import PriceSlider from './PriceSlider.svelte';
-	import CapacitySlider from './CapacitySlider.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
@@ -40,7 +39,6 @@
 			description: string;
 			price: number;
 			duration: number;
-			capacity: number;
 			status: 'active' | 'draft';
 			category: string;
 			location: string;
@@ -761,27 +759,6 @@
 					{/if}
 					<!-- Hidden input for form submission -->
 					<input type="hidden" name="duration" bind:value={formData.duration} />
-				</div>
-
-				<div>
-					<CapacitySlider
-						bind:value={formData.capacity}
-						label="Max Group Size"
-						min={1}
-						max={200}
-						step={1}
-						required={true}
-						error={hasFieldError(allErrors, 'capacity')}
-						onChange={() => validateField('capacity')}
-						defaultValue={10}
-						showMarkers={true}
-						unit="guests"
-					/>
-					{#if getFieldError(allErrors, 'capacity')}
-						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
-					{/if}
-					<!-- Hidden input for form submission -->
-					<input type="hidden" name="capacity" bind:value={formData.capacity} />
 				</div>
 
 
