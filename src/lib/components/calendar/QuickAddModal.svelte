@@ -398,10 +398,10 @@
 									</div>
 								</div>
 								
-								{#if selectedTourData?.duration}
+								{#if selectedTour?.duration}
 									<div class="duration-info">
 										<Info class="w-4 h-4" />
-										<span>Auto-calculated based on {formatDuration(selectedTourData.duration)} tour duration</span>
+										<span>Auto-calculated based on {formatDuration(selectedTour.duration)} tour duration</span>
 									</div>
 								{/if}
 								
@@ -427,17 +427,10 @@
 									defaultValue={timeSlotForm.capacity}
 									disabled={isAddingSlot}
 								/>
-								{#if timeSlotForm.capacity !== selectedTour?.capacity}
-									<div class="capacity-override-hint">
-										<Info class="w-4 h-4" />
-										Custom capacity for this slot (tour default: {selectedTour?.capacity || 'N/A'})
-									</div>
-								{:else}
-									<div class="smart-capacity-hint">
-										<CheckCircle class="w-4 h-4" />
-										Using tour default capacity
-									</div>
-								{/if}
+								<div class="smart-capacity-hint">
+									<CheckCircle class="w-4 h-4" />
+									Using smart capacity based on tour settings
+								</div>
 							</div>
 						</div>
 
@@ -1173,15 +1166,7 @@
 		font-style: italic;
 	}
 
-	.capacity-override-hint {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.8125rem;
-		color: var(--color-info-600);
-		margin-top: 0.5rem;
-		font-style: italic;
-	}
+
 
 	/* Recurring Section */
 	.recurring-section {
@@ -1347,8 +1332,7 @@
 			margin-bottom: 1rem;
 		}
 
-		.smart-capacity-hint,
-		.capacity-override-hint {
+		.smart-capacity-hint {
 			font-size: 0.75rem;
 		}
 
