@@ -19,7 +19,7 @@
 	
 	let {
 		value = $bindable(),
-		label = 'Max Group Size',
+		label = '',
 		min = 1,
 		max = 50,
 		step = 1,
@@ -218,10 +218,28 @@
 		</div>
 	{/if}
 	
-	<!-- Value display -->
+	<!-- Editable value display -->
 	<div class="value-display">
 		<div class="value-main">
-			<div class="value-number">{formatValue(value)}</div>
+			<input
+				type="number"
+				bind:value={value}
+				{min}
+				{max}
+				{step}
+				{disabled}
+				class="value-input"
+				onchange={() => {
+					// Clamp value to bounds
+					value = Math.max(min, Math.min(max, value || min));
+					onChange?.(value);
+				}}
+				onblur={() => {
+					// Ensure valid value on blur
+					if (!value || value < min) value = min;
+					if (value > max) value = max;
+				}}
+			/>
 			<div class="value-unit">{unit}</div>
 		</div>
 	</div>
@@ -296,8 +314,32 @@
 		gap: 0.5rem;
 	}
 	
-	.value-number {
-		cursor: default; /* Override the pointer cursor from shared styles */
+	.value-input {
+		background: transparent;
+		border: none;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		text-align: center;
+		width: 4rem;
+		padding: 0.25rem;
+		border-radius: 0.375rem;
+		transition: all 0.2s ease;
+	}
+
+	.value-input:hover {
+		background: var(--bg-secondary);
+	}
+
+	.value-input:focus {
+		outline: none;
+		background: var(--bg-secondary);
+		border: 1px solid var(--color-primary);
+	}
+
+	.value-input:disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
 	}
 	
 	.value-unit {
