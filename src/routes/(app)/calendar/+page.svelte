@@ -225,10 +225,36 @@
 		return sortedSlots[0]?.capacity || sortedSlots[0]?.availableSpots || null;
 	}
 	
-	// Check for conflicts when time changes
+
+	
+	// Check for conflicts when time or recurring settings change
 	$effect(() => {
-		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime) {
+		// Trigger on any form changes including recurring settings
+		const triggerCheck = {
+			date: quickAddDate,
+			startTime: timeSlotForm.startTime,
+			endTime: timeSlotForm.endTime,
+			recurring: timeSlotForm.recurring,
+			recurringType: timeSlotForm.recurringType,
+			recurringCount: timeSlotForm.recurringCount,
+			tourId: selectedTourForSlot,
+			slotsCount: selectedTourSlots.length
+		};
+		
+		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime && selectedTourForSlot) {
 			const dateStr = formatDateForInput(quickAddDate);
+			
+			// Only skip conflict checking if we haven't selected a tour yet
+			// Empty array is valid (tour might have no slots)
+			if (!selectedTourForSlot) {
+				hasConflict = false;
+				conflictMessage = '';
+				recurringConflictCount = 0;
+				totalRecurringSlots = 0;
+				return;
+			}
+			
+
 			
 			if (timeSlotForm.recurring) {
 				// Check recurring conflicts
@@ -2181,7 +2207,12 @@
 										{@const isSelected = selectedTourForSlot === tour.id}
 										<button
 											onclick={async () => {
+												// Always fetch fresh data, even if same tour selected again
+												const isAlreadySelected = selectedTourForSlot === tour.id;
 												selectedTourForSlot = tour.id;
+												
+												// Always clear and refetch to ensure we have latest data
+												selectedTourSlots = [];
 												
 												// Fetch tour schedule to get smart capacity and existing slots
 												// Add timestamp to prevent caching issues
@@ -2198,15 +2229,17 @@
 														timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
 													}
 												} catch (error) {
+													console.error('Error fetching tour schedule:', error);
 													selectedTourSlots = [];
 													// Fallback to tour capacity or last created
 													timeSlotForm.capacity = getSmartCapacity(tour.id, tour);
 												}
 												
-												// Auto-advance to next step
+												// Auto-advance to next step only after slots are loaded
+												// Small delay for better UX
 												setTimeout(() => {
 													quickAddStep = 'configure-slot';
-												}, 150);
+												}, 200);
 											}}
 											class="tour-card {isSelected ? 'selected' : ''}"
 										>
