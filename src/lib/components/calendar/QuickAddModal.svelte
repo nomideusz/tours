@@ -409,7 +409,7 @@
 
 						<!-- Capacity Configuration -->
 						<div class="form-section">
-							<h5 class="section-title">Capacity</h5>
+							<h5 class="section-title">Max Group Size</h5>
 							<CapacitySlider
 								bind:value={timeSlotForm.capacity}
 								min={1}

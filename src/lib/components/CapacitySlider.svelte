@@ -32,12 +32,18 @@
 		unit = 'guests'
 	}: Props = $props();
 	
+	// Slider max is limited to 60, but input can go higher
+	const sliderMax = Math.min(max, 60);
+	
 	// Track which thumb is being dragged
 	let dragging = $state(false);
 	let sliderRef: HTMLDivElement;
 	
-	// Convert value to slider position (0-100)
-	let sliderPosition = $derived(((value - min) / (max - min)) * 100);
+	// Convert value to slider position (0-100), clamped to slider max
+	let sliderPosition = $derived(() => {
+		const clampedValue = Math.min(value, sliderMax);
+		return ((clampedValue - min) / (sliderMax - min)) * 100;
+	});
 	
 	// Get position from mouse/touch event
 	function getPositionFromEvent(event: MouseEvent | TouchEvent): number {
@@ -51,11 +57,11 @@
 		return percentage;
 	}
 	
-	// Update value from slider position
+	// Update value from slider position (limited to slider max)
 	function updateValueFromPosition(position: number) {
-		const rawValue = min + (position / 100) * (max - min);
+		const rawValue = min + (position / 100) * (sliderMax - min);
 		const steppedValue = Math.round(rawValue / step) * step;
-		const clampedValue = Math.max(min, Math.min(max, steppedValue));
+		const clampedValue = Math.max(min, Math.min(sliderMax, steppedValue));
 		
 		if (clampedValue !== value) {
 			value = clampedValue;
@@ -106,7 +112,7 @@
 			case 'ArrowRight':
 			case 'ArrowUp':
 				event.preventDefault();
-				value = Math.min(max, value + step);
+				value = Math.min(sliderMax, value + step);
 				onChange?.(value);
 				break;
 			case 'Home':
@@ -116,12 +122,12 @@
 				break;
 			case 'End':
 				event.preventDefault();
-				value = max;
+				value = sliderMax;
 				onChange?.(value);
 				break;
 			case 'PageUp':
 				event.preventDefault();
-				value = Math.min(max, value + step * 10);
+				value = Math.min(sliderMax, value + step * 10);
 				onChange?.(value);
 				break;
 			case 'PageDown':
@@ -152,34 +158,34 @@
 		}
 	});
 	
-	// Generate marker values
+	// Generate marker values (based on slider max, not input max)
 	let markers = $derived.by(() => {
 		if (!showMarkers) return [];
 		
-		const range = max - min;
+		const range = sliderMax - min;
 		const markerValues: number[] = [];
 		
 		// For tour group sizes, show practical intervals
 		if (range <= 30) {
 			// Small ranges: every 5
-			for (let i = min; i <= max; i += 5) {
+			for (let i = min; i <= sliderMax; i += 5) {
 				markerValues.push(i);
 			}
 		} else if (range <= 60) {
 			// Medium ranges: every 10
-			for (let i = min; i <= max; i += 10) {
+			for (let i = min; i <= sliderMax; i += 10) {
 				markerValues.push(i);
 			}
 		} else {
 			// Larger ranges: every 20
-			for (let i = min; i <= max; i += 20) {
+			for (let i = min; i <= sliderMax; i += 20) {
 				markerValues.push(i);
 			}
 		}
 		
 		return markerValues.map(val => ({
 			value: val,
-			position: ((val - min) / (max - min)) * 100
+			position: ((val - min) / (sliderMax - min)) * 100
 		}));
 	});
 	
@@ -228,7 +234,7 @@
 				{max}
 				{step}
 				{disabled}
-				class="value-input"
+				class="value-input {value > sliderMax ? 'above-slider-max' : ''}"
 				onchange={() => {
 					// Clamp value to bounds
 					value = Math.max(min, Math.min(max, value || min));
@@ -253,9 +259,9 @@
 		role="slider"
 		aria-label={label}
 		aria-valuemin={min}
-		aria-valuemax={max}
-		aria-valuenow={value}
-		aria-valuetext="{formatValue(value)} {unit}"
+		aria-valuemax={sliderMax}
+		aria-valuenow={Math.min(value, sliderMax)}
+		aria-valuetext="{formatValue(Math.min(value, sliderMax))} {unit}"
 		tabindex={disabled ? -1 : 0}
 	>
 		<!-- Track -->
@@ -340,6 +346,16 @@
 	.value-input:disabled {
 		cursor: not-allowed;
 		opacity: 0.6;
+	}
+
+	/* Highlight when value exceeds slider max */
+	.value-input.above-slider-max {
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
+	}
+
+	.value-input.above-slider-max:focus {
+		border-color: var(--color-info-500);
 	}
 	
 	.value-unit {
