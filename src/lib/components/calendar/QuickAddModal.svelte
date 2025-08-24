@@ -9,6 +9,7 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
 	import Info from 'lucide-svelte/icons/info';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
 	import { formatDuration, getImageUrl, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
@@ -488,29 +489,40 @@
 						<div class="form-actions">
 							<button 
 								type="button" 
-								onclick={handleClose}
-								class="button-secondary"
+								onclick={handleBackToTourSelection}
+								class="button-secondary button--gap"
 								disabled={isAddingSlot}
 							>
-								Cancel
+								<ChevronLeft class="w-4 h-4" />
+								Back
 							</button>
-							<button 
-								type="button"
-								onclick={handleSubmit}
-								class="button-primary"
-								disabled={isAddingSlot || hasConflict}
-							>
-								{#if isAddingSlot}
-									<Loader2 class="w-4 h-4 animate-spin" />
-									Adding...
-								{:else if timeSlotForm.recurring && recurringConflictCount > 0}
-									Add {totalRecurringSlots - recurringConflictCount} Slots
-								{:else if timeSlotForm.recurring}
-									Add {totalRecurringSlots} Slots
-								{:else}
-									Add Slot
-								{/if}
-							</button>
+							<div class="form-actions-right">
+								<button 
+									type="button" 
+									onclick={handleClose}
+									class="button-secondary"
+									disabled={isAddingSlot}
+								>
+									Cancel
+								</button>
+								<button 
+									type="button"
+									onclick={handleSubmit}
+									class="button-primary"
+									disabled={isAddingSlot || hasConflict}
+								>
+									{#if isAddingSlot}
+										<Loader2 class="w-4 h-4 animate-spin" />
+										Adding...
+									{:else if timeSlotForm.recurring && recurringConflictCount > 0}
+										Add {totalRecurringSlots - recurringConflictCount} Slots
+									{:else if timeSlotForm.recurring}
+										Add {totalRecurringSlots} Slots
+									{:else}
+										Add Slot
+									{/if}
+								</button>
+							</div>
 						</div>
 					</div>
 				{/if}
@@ -1196,11 +1208,16 @@
 
 	.form-actions {
 		display: flex;
-		gap: 0.75rem;
-		justify-content: flex-end;
+		justify-content: space-between;
+		align-items: center;
 		margin-top: 1.5rem;
 		padding-top: 1rem;
 		border-top: 1px solid var(--border-primary);
+	}
+
+	.form-actions-right {
+		display: flex;
+		gap: 0.75rem;
 	}
 
 	/* Responsive Design */
@@ -1263,6 +1280,11 @@
 
 		.form-actions {
 			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.form-actions-right {
+			order: 2;
 		}
 	}
 </style>
