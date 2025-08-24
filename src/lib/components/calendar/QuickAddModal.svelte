@@ -201,7 +201,7 @@
 	<!-- Modal backdrop -->
 	<div class="modal-backdrop" onclick={handleClose} onkeydown={(e) => e.key === 'Escape' && handleClose()} role="button" tabindex="-1">
 		<!-- Modal content -->
-		<div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+		<div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<!-- Modal header -->
 			<div class="modal-header">
 				<h3 class="modal-title">
@@ -336,7 +336,7 @@
 
 						<!-- Capacity -->
 						<div class="form-group">
-							<label class="form-label">Available Spots</label>
+							<div class="form-label">Available Spots</div>
 							<CapacitySlider
 								bind:value={timeSlotForm.capacity}
 								min={1}
@@ -442,7 +442,7 @@
 	}
 
 	.modal-content {
-		background: var(--surface-primary);
+		background: var(--bg-primary);
 		border-radius: 12px;
 		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 		width: 100%;
@@ -479,7 +479,7 @@
 	}
 
 	.modal-close-btn:hover {
-		background: var(--surface-secondary);
+		background: var(--bg-secondary);
 		color: var(--text-primary);
 	}
 
@@ -490,7 +490,7 @@
 	}
 
 	.selected-date {
-		background: var(--surface-secondary);
+		background: var(--bg-secondary);
 		padding: 1rem;
 		border-radius: 8px;
 		margin-bottom: 1.5rem;
@@ -518,7 +518,7 @@
 		padding: 1rem;
 		border: 2px solid var(--border-primary);
 		border-radius: 8px;
-		background: var(--surface-primary);
+		background: var(--bg-primary);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		text-align: left;
@@ -526,13 +526,13 @@
 	}
 
 	.tour-card:hover {
-		border-color: var(--primary);
-		background: var(--surface-secondary);
+		border-color: var(--color-primary);
+		background: var(--bg-secondary);
 	}
 
 	.tour-card.selected {
-		border-color: var(--primary);
-		background: var(--primary-light);
+		border-color: var(--color-primary);
+		background: var(--color-primary-50);
 	}
 
 	.tour-card-image {
@@ -547,7 +547,7 @@
 		width: 60px;
 		height: 60px;
 		border-radius: 8px;
-		background: var(--surface-tertiary);
+		background: var(--bg-tertiary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -581,7 +581,7 @@
 	}
 
 	.selected-tour-info {
-		background: var(--surface-secondary);
+		background: var(--bg-secondary);
 		border-radius: 8px;
 		padding: 1rem;
 		margin-bottom: 1.5rem;
@@ -594,7 +594,7 @@
 	.back-button {
 		background: none;
 		border: none;
-		color: var(--primary);
+		color: var(--color-primary);
 		cursor: pointer;
 		font-size: 0.875rem;
 		padding: 0;
@@ -653,7 +653,7 @@
 		padding: 0.75rem;
 		border: 1px solid var(--border-primary);
 		border-radius: 6px;
-		background: var(--surface-primary);
+		background: var(--bg-primary);
 		color: var(--text-primary);
 		font-size: 0.875rem;
 		transition: border-color 0.2s ease;
@@ -662,11 +662,11 @@
 	.form-input:focus,
 	.form-select:focus {
 		outline: none;
-		border-color: var(--primary);
+		border-color: var(--color-primary);
 	}
 
 	.form-input.input-error {
-		border-color: var(--danger);
+		border-color: var(--color-error-500);
 	}
 
 	.conflict-warning {
@@ -674,17 +674,17 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.75rem;
-		background: var(--danger-light);
-		border: 1px solid var(--danger);
+		background: var(--color-error-50);
+		border: 1px solid var(--color-error-200);
 		border-radius: 6px;
-		color: var(--danger-dark);
+		color: var(--color-error-700);
 		font-size: 0.875rem;
 	}
 
 	.recurring-options {
 		margin-top: 1rem;
 		padding: 1rem;
-		background: var(--surface-secondary);
+		background: var(--bg-secondary);
 		border-radius: 6px;
 	}
 
