@@ -224,30 +224,7 @@
 		</div>
 	{/if}
 	
-	<!-- Editable value display -->
-	<div class="value-display">
-		<div class="value-main">
-			<input
-				type="number"
-				bind:value={value}
-				{min}
-				{max}
-				{step}
-				{disabled}
-				class="value-input {value > sliderMax ? 'above-slider-max' : ''}"
-				onchange={() => {
-					// Clamp value to bounds
-					value = Math.max(min, Math.min(max, value || min));
-					onChange?.(value);
-				}}
-				onblur={() => {
-					// Ensure valid value on blur
-					if (!value || value < min) value = min;
-					if (value > max) value = max;
-				}}
-			/>
-		</div>
-	</div>
+
 	
 	<!-- Slider -->
 	<div 
@@ -285,20 +262,49 @@
 		</div>
 		
 		<!-- Thumb -->
-		<button
-			type="button"
+		<div
 			class="slider-thumb"
 			style="left: {sliderPosition}%"
 			data-value="{formatValue(value)}"
-			onmousedown={handleThumbDown}
-			ontouchstart={handleThumbDown}
-			aria-label="{label}: {formatValue(value)} {unit}"
-			tabindex={disabled ? -1 : 0}
-			{disabled}
 		>
 			<Users class="thumb-icon" />
-			<span class="thumb-value">{formatValue(value)}</span>
-		</button>
+			<input
+				type="number"
+				bind:value={value}
+				{min}
+				{max}
+				{step}
+				{disabled}
+				class="thumb-value-input {value > sliderMax ? 'above-slider-max' : ''}"
+				onchange={() => {
+					// Clamp value to bounds
+					value = Math.max(min, Math.min(max, value || min));
+					onChange?.(value);
+				}}
+				onblur={() => {
+					// Ensure valid value on blur
+					if (!value || value < min) value = min;
+					if (value > max) value = max;
+				}}
+				onclick={(e) => e.stopPropagation()}
+				onmousedown={(e) => e.stopPropagation()}
+				ontouchstart={(e) => e.stopPropagation()}
+				aria-label="{label}: {formatValue(value)} {unit}"
+			/>
+			<!-- Invisible draggable area -->
+			<div
+				class="thumb-drag-area"
+				onmousedown={handleThumbDown}
+				ontouchstart={handleThumbDown}
+				tabindex={disabled ? -1 : 0}
+				role="slider"
+				aria-label="{label}: {formatValue(value)} {unit}"
+				aria-valuemin={min}
+				aria-valuemax={sliderMax}
+				aria-valuenow={Math.min(value, sliderMax)}
+				aria-valuetext="{formatValue(Math.min(value, sliderMax))} {unit}"
+			></div>
+		</div>
 	</div>
 	
 
@@ -307,54 +313,95 @@
 <style>
 	/* Capacity-specific styles */
 	
-	/* Hide value display on mobile */
-	@media (max-width: 640px) {
-		.value-display {
-			display: none;
-		}
-	}
-	
-	.value-main {
-		display: flex;
-		justify-content: center;
-	}
-	
-	.value-input {
+	/* Editable thumb value input */
+	.thumb-value-input {
 		background: transparent;
 		border: none;
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--text-primary);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-primary-600);
 		text-align: center;
-		width: 4rem;
-		padding: 0.25rem;
-		border-radius: 0.375rem;
+		width: 2rem;
+		padding: 0.125rem;
+		border-radius: 0.25rem;
 		transition: all 0.2s ease;
+		position: relative;
+		z-index: 2;
 	}
 
-	.value-input:hover {
-		background: var(--bg-secondary);
+	.thumb-value-input:hover {
+		background: rgba(255, 255, 255, 0.2);
 	}
 
-	.value-input:focus {
+	.thumb-value-input:focus {
 		outline: none;
-		background: var(--bg-secondary);
+		background: var(--bg-primary);
 		border: 1px solid var(--color-primary);
+		box-shadow: 0 0 0 2px var(--color-primary-50);
 	}
 
-	.value-input:disabled {
+	.thumb-value-input:disabled {
 		cursor: not-allowed;
 		opacity: 0.6;
 	}
 
 	/* Highlight when value exceeds slider max */
-	.value-input.above-slider-max {
-		background: var(--color-info-50);
-		border: 1px solid var(--color-info-200);
+	.thumb-value-input.above-slider-max {
+		background: var(--color-info-100);
+		color: var(--color-info-700);
 	}
 
-	.value-input.above-slider-max:focus {
+	.thumb-value-input.above-slider-max:focus {
 		border-color: var(--color-info-500);
+		box-shadow: 0 0 0 2px var(--color-info-50);
+	}
+
+	/* Invisible drag area that covers the thumb */
+	.thumb-drag-area {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		cursor: grab;
+		z-index: 1;
+	}
+
+	.thumb-drag-area:active {
+		cursor: grabbing;
+	}
+
+	.thumb-drag-area:disabled {
+		cursor: not-allowed;
+	}
+
+	/* Override slider thumb styles for editable input */
+	:global(.capacity-slider .slider-thumb) {
+		position: relative;
+		cursor: default;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	:global(.capacity-slider .slider-thumb:hover) {
+		cursor: default;
+	}
+
+	/* Hide the old thumb value tooltip */
+	:global(.capacity-slider .thumb-value) {
+		display: none;
+	}
+
+	/* Mobile: hide the ::after content since we have the input */
+	@media (max-width: 640px) {
+		:global(.capacity-slider .slider-thumb::after) {
+			display: none;
+		}
+		
+		.thumb-value-input {
+			font-size: 0.875rem;
+			width: 2.5rem;
+		}
 	}
 	
 	:global(.thumb-icon) {
