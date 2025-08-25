@@ -649,11 +649,16 @@
 
 	/* Removed old quick-add styles since we're using the new modal design */
 	
-
-	
-
-
-
+	/* Mobile optimizations */
+	@media (max-width: 640px) {
+		.tours-legend-wrapper {
+			margin-bottom: 0.5rem;
+		}
+		
+		.calendar-container {
+			margin-top: 0.5rem;
+		}
+	}
 </style>
 
 <svelte:head>
@@ -741,9 +746,11 @@
 									{/if}
 		
 		<!-- Tours Legend Section - Show whenever tours exist -->
-		<div class="tours-legend-wrapper">
-			<ToursLegend {tours} {highlightedTourId} />
-		</div>
+		{#if tours.length > 0}
+			<div class="tours-legend-wrapper">
+				<ToursLegend {tours} {highlightedTourId} />
+			</div>
+		{/if}
 
 		<!-- Location Selection Modal -->
 		<LocationModal 

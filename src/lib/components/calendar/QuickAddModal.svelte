@@ -1222,69 +1222,183 @@
 
 	/* Responsive Design */
 	@media (max-width: 640px) {
+		.modal-backdrop {
+			padding: 0;
+		}
+		
 		.modal-container {
 			max-width: 100%;
-			max-height: 100%;
-			height: 100%;
+			max-height: 100vh;
+			height: 100vh;
 			border-radius: 0;
+			margin: 0;
 		}
-
+		
+		/* Reduce vertical spacing throughout */
+		.modal-header {
+			padding: 1rem;
+		}
+		
+		.modal-steps {
+			padding: 0.75rem 1rem;
+			background: var(--bg-secondary);
+		}
+		
+		.step {
+			font-size: 0.75rem;
+		}
+		
+		.step-label {
+			display: none; /* Hide labels to save space */
+		}
+		
+		.step-number {
+			width: 24px;
+			height: 24px;
+			font-size: 0.625rem;
+		}
+		
+		.step-connector {
+			width: 30px;
+			margin: 0 0.5rem;
+		}
+		
+		.modal-content {
+			padding: 1rem;
+		}
+		
+		/* Tour grid - 2 columns */
 		.tour-grid {
-			grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.75rem;
+			margin-bottom: 1rem;
 		}
-
-
-
+		
+		.tour-card-image,
+		.tour-card-placeholder {
+			height: 80px;
+		}
+		
+		.tour-card-content {
+			padding: 0.5rem;
+		}
+		
+		.tour-card-name {
+			font-size: 0.8125rem;
+		}
+		
+		/* Selected tour info */
+		.selected-tour-info {
+			padding: 0.75rem;
+			margin-bottom: 1rem;
+		}
+		
+		.selected-tour-header {
+			margin-bottom: 0.5rem;
+		}
+		
+		.selected-tour-name {
+			font-size: 0.875rem;
+		}
+		
+		.selected-tour-meta {
+			font-size: 0.75rem;
+			gap: 0.5rem;
+		}
+		
+		/* Form sections */
+		.form-section {
+			margin-bottom: 1rem;
+		}
+		
+		.section-title {
+			font-size: 0.875rem;
+			margin-bottom: 0.75rem;
+			padding-bottom: 0.375rem;
+		}
+		
+		/* Time Configuration - Compact mobile layout */
+		.time-config {
+			padding: 0.75rem;
+			width: 100%; /* Ensure full width */
+		}
+		
 		.time-inputs {
-			grid-template-columns: 1fr;
-			gap: 1.5rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+			margin-bottom: 0.75rem;
+			width: 100%; /* Ensure full width */
 		}
-
+		
+		.time-input-group {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			width: 100%; /* Ensure full width */
+		}
+		
+		.time-input-group .form-label {
+			margin-bottom: 0;
+			font-size: 0.8125rem;
+			white-space: nowrap;
+			flex-shrink: 0; /* Prevent label from shrinking */
+			width: 65px; /* Fixed width for both labels */
+		}
+		
 		.time-separator {
 			display: none;
 		}
-
+		
 		.time-input {
-			font-size: 0.875rem;
+			font-size: 0.9375rem;
+			padding: 0.625rem;
+			height: 42px;
+			flex: 1; /* Take remaining space */
+			width: 100%; /* Full width of flex container */
+		}
+		
+		/* Recurring section */
+		.recurring-toggle {
 			padding: 0.75rem;
 		}
-
-
-
-
-
-
-
+		
+		.recurring-config {
+			padding: 0.75rem;
+		}
+		
 		.recurring-fields {
 			grid-template-columns: 1fr;
+			gap: 0.75rem;
 		}
-
-
-
+		
+		.recurring-summary {
+			padding: 0.75rem;
+			margin-top: 0.75rem;
+		}
+		
 		.summary-item {
 			font-size: 0.75rem;
 		}
-
-		.modal-steps {
-			padding: 1rem;
-		}
-
-		.step-label {
-			display: none;
-		}
-
-		.step-connector {
-			width: 40px;
-			margin: 0 0.5rem;
-		}
-
+		
+		/* Form actions - Stack buttons on mobile */
 		.form-actions {
-			flex-direction: column;
-			gap: 0.75rem;
+			flex-direction: column-reverse;
+			gap: 0.5rem;
+			margin-top: 1rem;
+			padding-top: 1rem;
 		}
-
+		
 		.form-actions-right {
-			order: 2;
+			width: 100%;
+			flex-direction: column-reverse;
+			gap: 0.5rem;
+		}
+		
+		.form-actions button,
+		.form-actions-right button {
+			width: 100%;
+			justify-content: center;
 		}
 	}
 </style>

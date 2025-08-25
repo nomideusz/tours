@@ -348,7 +348,8 @@
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
-	.slider-container {
+	/* Default mobile styles for regular sliders (not capacity slider) */
+	.slider-base:not(.capacity-slider) .slider-container {
 		height: 4.25rem;
 		padding: 1rem 0.5rem 3.25rem 0.5rem;
 		margin-bottom: 0;
@@ -364,13 +365,13 @@
 		height: 2.5rem;
 	}
 	
-	/* Hide the hover value above thumb on mobile */
-	.thumb-value {
+	/* Hide the hover value above thumb on mobile for regular sliders */
+	.slider-base:not(.capacity-slider) .thumb-value {
 		display: none;
 	}
 	
-	/* Add value below thumb on mobile */
-	.slider-thumb::after {
+	/* Add value below thumb on mobile for regular sliders */
+	.slider-base:not(.capacity-slider) .slider-thumb::after {
 		content: attr(data-value);
 		position: absolute;
 		top: 100%;
@@ -385,8 +386,8 @@
 		pointer-events: none;
 	}
 	
-	/* Hide markers completely on mobile */
-	.markers {
+	/* Hide markers completely on mobile for non-capacity sliders */
+	.slider-base:not(.capacity-slider) .markers {
 		display: none;
 	}
 }

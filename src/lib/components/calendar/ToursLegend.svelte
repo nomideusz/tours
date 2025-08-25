@@ -3,6 +3,8 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Settings from 'lucide-svelte/icons/settings';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ChevronUp from 'lucide-svelte/icons/chevron-up';
 	import { getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import type { Tour } from '$lib/types.js';
 
@@ -14,6 +16,9 @@
 		tours?: Tour[];
 		highlightedTourId?: string;
 	} = $props();
+
+	// Mobile collapse state
+	let isCollapsed = $state(true); // Start collapsed on mobile to save space
 
 	// Generate color for tour based on tour ID/name (same algorithm as TourTimeline)
 	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
@@ -74,14 +79,31 @@
 {#if tours && tours.length > 0}
 	<div class="tours-legend-section">
 		<div class="tours-legend-header">
-			<h2 class="tours-legend-title">Tour Calendar Legend</h2>
+			<div class="tours-legend-header-content">
+				<h2 class="tours-legend-title">
+					<span class="hidden sm:inline">Tour Calendar Legend</span>
+					<span class="sm:hidden">Tours ({tours.length})</span>
+				</h2>
+				<!-- Mobile collapse toggle -->
+				<button 
+					onclick={() => isCollapsed = !isCollapsed}
+					class="collapse-toggle sm:hidden"
+					aria-label="{isCollapsed ? 'Show' : 'Hide'} tours"
+				>
+					{#if isCollapsed}
+						<ChevronDown class="h-4 w-4" />
+					{:else}
+						<ChevronUp class="h-4 w-4" />
+					{/if}
+				</button>
+			</div>
 			<button onclick={() => goto('/tours/new')} class="button-primary button--small button--gap">
 				<Plus class="h-4 w-4" />
 				<span class="hidden sm:inline">Add Tour</span>
 			</button>
 		</div>
 		
-		<div class="tours-legend-table">
+		<div class="tours-legend-table {isCollapsed ? 'collapsed-mobile' : ''}">
 			<div class="table-wrapper">
 				<table class="tours-table">
 				<thead>
@@ -173,12 +195,41 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 1.5rem;
+		gap: 1rem;
+	}
+	
+	.tours-legend-header-content {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 	
 	.tours-legend-title {
 		font-size: 1.25rem;
 		font-weight: 600;
 		color: var(--text-primary);
+	}
+	
+	/* Collapse toggle button */
+	.collapse-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		background: transparent;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	
+	.collapse-toggle:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border-color: var(--border-secondary);
 	}
 	
 	.tours-legend-table {
@@ -413,6 +464,24 @@
 	
 	/* Responsive adjustments */
 	@media (max-width: 640px) {
+		/* Mobile header adjustments */
+		.tours-legend-section {
+			margin-top: 1rem;
+		}
+		
+		.tours-legend-header {
+			margin-bottom: 0.75rem;
+		}
+		
+		.tours-legend-title {
+			font-size: 1rem;
+		}
+		
+		/* Collapsed state on mobile */
+		.tours-legend-table.collapsed-mobile {
+			display: none;
+		}
+		
 		.tours-table th,
 		.tours-table td {
 			padding: 0.5rem 0.25rem;

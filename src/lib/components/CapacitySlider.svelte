@@ -363,6 +363,25 @@
 		margin-top: 2rem; /* Extra space above slider for thumb value container */
 	}
 	
+	/* Increase margin on mobile for absolute positioned thumb */
+	@media (max-width: 640px) {
+		:global(.capacity-slider .slider-container) {
+			/* Override the default mobile styles from sliders.css */
+			height: 5rem !important;
+			padding: 2.5rem 0.5rem 1rem 0.5rem !important; /* Balanced padding */
+			margin-top: 0 !important;
+			margin-bottom: 1rem;
+			position: relative;
+		}
+		
+		/* Position track explicitly on mobile */
+		:global(.capacity-slider .slider-track) {
+			position: absolute;
+			top: 3rem !important; /* Fixed position from top */
+			transform: translateY(-50%) !important; /* Center on this position */
+		}
+	}
+	
 	/* Container for value input and custom controls */
 	.thumb-value-container {
 		position: absolute;
@@ -519,23 +538,36 @@
 			display: none;
 		}
 		
-		:global(.capacity-slider .slider-container) {
-			margin-top: 2.5rem; /* Extra space on mobile for larger thumb value container */
+		/* Remove duplicate margin-top since it's already set above */
+		
+		/* Adjust thumb value container positioning on mobile */
+		.thumb-value-container {
+			bottom: 100%; /* Position directly above thumb */
+			margin-bottom: 0.5rem; /* Gap between value and thumb */
+			transform: translateX(-50%) scale(0.9); /* Slightly smaller on mobile */
 		}
 		
-		.thumb-value-container {
-			margin-bottom: 1rem;
+		/* Ensure proper thumb positioning on mobile */
+		:global(.capacity-slider .slider-thumb) {
+			/* Thumb should be centered on track, value container goes above */
+			top: 0.4rem !important; /* Match track position */
+			z-index: 10;
 		}
 		
 		.thumb-value-input {
-			font-size: 0.875rem;
-			width: 2.5rem;
-			padding: 0.375rem 0.25rem;
+			font-size: 0.75rem;
+			width: 2rem;
+			padding: 0.25rem 0.125rem;
 		}
 		
 		.thumb-value-btn {
-			width: 1.25rem;
-			height: 1.25rem;
+			width: 1.125rem;
+			height: 2rem;
+		}
+		
+		.thumb-value-btn svg {
+			width: 6px;
+			height: 4px;
 		}
 	}
 	
