@@ -29,6 +29,8 @@
 	import Shield from 'lucide-svelte/icons/shield';
 	import Info from 'lucide-svelte/icons/info';
 	import X from 'lucide-svelte/icons/x';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	
 	let { data, form }: { data: PageData; form: any } = $props();
 	
@@ -163,9 +165,6 @@
 
 <style>
 	.booking-summary {
-		position: sticky;
-		top: 1rem;
-		z-index: 10;
 		animation: slideIn 0.3s ease-out;
 	}
 
@@ -186,15 +185,7 @@
 	}
 
 	.pointer-events-none {
-		filter: grayscale(0.3);
-	}
-
-	/* Mobile: make summary less sticky to avoid covering content */
-	@media (max-width: 640px) {
-		.booking-summary {
-			position: relative;
-			top: 0;
-		}
+		filter: grayscale(0.2);
 	}
 </style>
 
@@ -247,167 +238,203 @@
 			</div>
 		{:else if tour}
 			<!-- Hero Section -->
-			<div class="mb-6 rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				{#if imageUrl}
-					<div class="h-64 sm:h-80" style="background: var(--bg-secondary);">
-						<img 
-							src={imageUrl} 
-							alt={tour.name}
-							class="w-full h-full object-cover"
-							loading="lazy"
-						/>
-					</div>
-				{/if}
-				
-				<div class="p-4 sm:p-6">
-					<h1 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--text-primary);">{tour.name}</h1>
+			<div class="space-y-4">
+				<!-- Tour Header Card -->
+				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					{#if imageUrl}
+						<div class="h-48 sm:h-64" style="background: var(--bg-secondary);">
+							<img 
+								src={imageUrl} 
+								alt={tour.name}
+								class="w-full h-full object-cover"
+								loading="lazy"
+							/>
+						</div>
+					{/if}
 					
-					<div class="flex flex-wrap gap-4 text-sm mb-4" style="color: var(--text-secondary);">
-						{#if tour.location}
-							<span class="flex items-center gap-1">
-								<MapPin class="w-4 h-4" />
-								{tour.location}
-							</span>
+					<div class="p-6">
+						<h1 class="text-2xl font-semibold mb-3" style="color: var(--text-primary);">{tour.name}</h1>
+						
+						{#if tour.description}
+							<p class="text-sm mb-4" style="color: var(--text-secondary);">{tour.description}</p>
 						{/if}
-						<span class="flex items-center gap-1">
-							<Clock class="w-4 h-4" />
-							{tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'Duration TBD'}
-						</span>
-						<span class="flex items-center gap-1">
-							<Users class="w-4 h-4" />
-							Max {tour.capacity} people
-						</span>
-						{#if tour.enablePricingTiers && tour.pricingTiers}
-							<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
-								<DollarSign class="w-4 h-4" />
-								Adults: {formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
-								{#if parseFloat(tour.pricingTiers.child) > 0}
-									• Children: {formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency)}
-								{:else}
-									• Children: Free
-								{/if}
-							</span>
-						{:else}
-							<span class="flex items-center gap-1 font-semibold" style="color: var(--color-primary-600);">
-								<DollarSign class="w-4 h-4" />
-								{getTourDisplayPriceFormattedWithCurrency(tour, tourOwner?.currency)} per person
-							</span>
-						{/if}
-					</div>
-					
-					{#if tour.description}
-						<p class="mb-4" style="color: var(--text-primary);">{tour.description}</p>
-					{/if}
-					
-					<!-- What's Included -->
-					{#if tour.includedItems && tour.includedItems.length > 0}
-						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
-							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">✅ What's Included</h3>
-							<ul class="space-y-1">
-								{#each tour.includedItems as item}
-									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
-										<Check class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-					
-					<!-- What's Not Included -->
-					{#if tour.excludedItems && tour.excludedItems.length > 0}
-						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
-							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">❌ What's Not Included</h3>
-							<ul class="space-y-1">
-								{#each tour.excludedItems as item}
-									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
-										<X class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-danger-600);" />
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-					
-					<!-- Requirements -->
-					{#if tour.requirements && tour.requirements.length > 0}
-						<div class="pt-4 border-t" style="border-color: var(--border-primary);">
-							<h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">📋 Requirements</h3>
-							<ul class="space-y-1">
-								{#each tour.requirements as requirement}
-									<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
-										<AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-warning-600);" />
-										<span>{requirement}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
-			</div>
-			
-			<!-- Additional Tour Information Cards -->
-			{#if tour.cancellationPolicy || tour.minParticipants || (tour.enablePricingTiers && tour.pricingTiers)}
-				<div class="mb-6 grid gap-4 sm:grid-cols-2">
-					<!-- Cancellation Policy -->
-					{#if tour.cancellationPolicy}
-						<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-							<div class="flex items-start gap-3">
-								<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-primary-600);" />
-								<div class="flex-1">
-									<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Cancellation Policy</h3>
-									<div class="text-sm space-y-1" style="color: var(--text-secondary);">
-										{#each tour.cancellationPolicy.split('\n') as line}
-											{#if line.trim()}
-												<p>{line}</p>
-											{/if}
-										{/each}
-									</div>
+						
+						<!-- Tour Info Badges -->
+						<div class="flex flex-wrap gap-3 mb-4">
+							{#if tour.location}
+								<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm" style="background: var(--bg-secondary);">
+									<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
+									<span style="color: var(--text-primary);">{tour.location}</span>
 								</div>
+							{/if}
+							<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm" style="background: var(--bg-secondary);">
+								<Clock class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span style="color: var(--text-primary);">
+									{tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'Duration TBD'}
+								</span>
 							</div>
 						</div>
-					{:else}
-						<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-							<div class="flex items-start gap-3">
-								<Shield class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-primary-600);" />
-								<div class="flex-1">
-									<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Standard Cancellation Policy</h3>
-									<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
-										<li>• Free cancellation up to 24 hours before the tour</li>
-										<li>• 50% refund for cancellations within 24 hours</li>
-										<li>• No refund for no-shows</li>
+						
+						<!-- Pricing Info -->
+						<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+							<div class="text-sm">
+								{#if tour.enablePricingTiers && tour.pricingTiers}
+									{#if parseFloat(tour.pricingTiers.child) < parseFloat(tour.pricingTiers.adult)}
+										<div class="grid grid-cols-2 gap-3">
+											<div>
+												<span style="color: var(--text-secondary);">Adults</span>
+												<div class="font-semibold" style="color: var(--text-primary);">
+													{formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
+												</div>
+											</div>
+											<div>
+												<span style="color: var(--text-secondary);">Children</span>
+												<div class="font-semibold" style="color: var(--text-primary);">
+													{parseFloat(tour.pricingTiers.child) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) : 'Free'}
+												</div>
+											</div>
+										</div>
+									{:else}
+										<div class="flex justify-between items-center">
+											<span style="color: var(--text-secondary);">Per person</span>
+											<span class="font-semibold" style="color: var(--text-primary);">
+												{formatTourOwnerCurrency(tour.pricingTiers.adult, tourOwner?.currency)}
+											</span>
+										</div>
+									{/if}
+								{:else}
+									<div class="flex justify-between items-center">
+										<span style="color: var(--text-secondary);">Per person</span>
+										<span class="font-semibold" style="color: var(--text-primary);">
+											{getTourDisplayPriceFormattedWithCurrency(tour, tourOwner?.currency)}
+										</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Tour Details -->
+				{#if (tour.includedItems && tour.includedItems.length > 0) || 
+					 (tour.excludedItems && tour.excludedItems.length > 0) || 
+					 (tour.requirements && tour.requirements.length > 0)}
+					<div class="grid gap-4 sm:grid-cols-2">
+						<!-- What's Included -->
+						{#if tour.includedItems && tour.includedItems.length > 0}
+							<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<div class="p-4 border-b" style="border-color: var(--border-primary);">
+									<h3 class="font-semibold text-sm" style="color: var(--text-primary);">What's Included</h3>
+								</div>
+								<div class="p-4">
+									<ul class="space-y-2">
+										{#each tour.includedItems as item}
+											<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+												<Check class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-success-600);" />
+												<span>{item}</span>
+											</li>
+										{/each}
 									</ul>
 								</div>
 							</div>
+						{/if}
+						
+						<!-- What's Not Included -->
+						{#if tour.excludedItems && tour.excludedItems.length > 0}
+							<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<div class="p-4 border-b" style="border-color: var(--border-primary);">
+									<h3 class="font-semibold text-sm" style="color: var(--text-primary);">Not Included</h3>
+								</div>
+								<div class="p-4">
+									<ul class="space-y-2">
+										{#each tour.excludedItems as item}
+											<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+												<X class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+												<span>{item}</span>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							</div>
+						{/if}
+						
+						<!-- Requirements -->
+						{#if tour.requirements && tour.requirements.length > 0}
+							<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<div class="p-4 border-b" style="border-color: var(--border-primary);">
+									<h3 class="font-semibold text-sm" style="color: var(--text-primary);">Requirements</h3>
+								</div>
+								<div class="p-4">
+									<ul class="space-y-2">
+										{#each tour.requirements as requirement}
+											<li class="flex items-start gap-2 text-sm" style="color: var(--text-secondary);">
+												<Info class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--text-tertiary);" />
+												<span>{requirement}</span>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
+				
+				<!-- Tour Policies -->
+				<div class="grid gap-4 sm:grid-cols-2">
+					<!-- Cancellation Policy -->
+					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-4 border-b" style="border-color: var(--border-primary);">
+							<div class="flex items-center gap-2">
+								<Shield class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<h3 class="font-semibold text-sm" style="color: var(--text-primary);">Cancellation Policy</h3>
+							</div>
 						</div>
-					{/if}
+						<div class="p-4">
+							{#if tour.cancellationPolicy}
+								<div class="text-sm space-y-1" style="color: var(--text-secondary);">
+									{#each tour.cancellationPolicy.split('\n') as line}
+										{#if line.trim()}
+											<p>{line}</p>
+										{/if}
+									{/each}
+								</div>
+							{:else}
+								<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+									<li>• Free cancellation up to 24 hours before</li>
+									<li>• 50% refund within 24 hours</li>
+									<li>• No refund for no-shows</li>
+								</ul>
+							{/if}
+						</div>
+					</div>
 					
 					<!-- Important Information -->
-					<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="flex items-start gap-3">
-							<Info class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
-							<div class="flex-1">
-								<h3 class="font-semibold mb-2" style="color: var(--text-primary);">Important Information</h3>
-								<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
-									<li>• Meeting point: {tour.location || 'Will be provided after booking'}</li>
-									{#if tour.minParticipants && tour.minParticipants > 1}
-										<li>• Minimum {tour.minParticipants} participants required</li>
-									{/if}
-									<li>• Duration: {tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'See tour details'}</li>
-									<li>• Please arrive 10-15 minutes early</li>
-								</ul>
+					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="p-4 border-b" style="border-color: var(--border-primary);">
+							<div class="flex items-center gap-2">
+								<Info class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<h3 class="font-semibold text-sm" style="color: var(--text-primary);">Important Information</h3>
 							</div>
+						</div>
+						<div class="p-4">
+							<ul class="text-sm space-y-1" style="color: var(--text-secondary);">
+								<li>• Meeting: {tour.location || 'Will be provided'}</li>
+								{#if tour.minParticipants && tour.minParticipants > 1}
+									<li>• Min. {tour.minParticipants} participants required</li>
+								{/if}
+								<li>• Duration: {tour.duration ? `${Math.floor(tour.duration / 60)}h ${tour.duration % 60}m` : 'See details'}</li>
+								<li>• Arrive 10-15 minutes early</li>
+							</ul>
 						</div>
 					</div>
 				</div>
-			{/if}
 			
-			<!-- Booking Form -->
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h2 class="font-semibold" style="color: var(--text-primary);">Book Your Tour</h2>
-				</div>
-				<div class="p-4 sm:p-6">
+				<!-- Booking Form -->
+				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Book Your Tour</h2>
+					</div>
+					<div class="p-6">
 					{#if showSuccess}
 						<!-- Success Message -->
 						<div class="mb-6 rounded-lg p-6 text-center" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
@@ -496,44 +523,38 @@
 								
 								<!-- Booking Summary -->
 								{#if selectedTimeSlot}
-									<div class="booking-summary rounded-lg p-4" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-										<div class="flex items-start gap-3">
-											<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--color-primary-100);">
-												<Calendar class="w-4 h-4" style="color: var(--color-primary-600);" />
+									<div class="booking-summary rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+										<div class="flex items-center gap-2 mb-3">
+											<CalendarDays class="w-4 h-4" style="color: var(--color-primary-600);" />
+											<h3 class="font-semibold text-sm" style="color: var(--text-primary);">Your Selection</h3>
+										</div>
+										<div class="space-y-2">
+											<div class="flex justify-between text-sm">
+												<span style="color: var(--text-secondary);">Date</span>
+												<span style="color: var(--text-primary);">
+													{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+												</span>
 											</div>
-											<div class="flex-1 min-w-0">
-												<h3 class="font-semibold text-sm mb-1" style="color: var(--color-primary-800);">Your Selection</h3>
-												<div class="space-y-1">
-													<div class="flex items-center gap-2 text-sm">
-														<Clock class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
-														<span style="color: var(--color-primary-700);">
-															{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
-														</span>
-													</div>
-													<div class="flex items-center gap-2 text-sm">
-														<Calendar class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
-														<span style="color: var(--color-primary-700);">
-															{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-														</span>
-													</div>
-													{#if totalParticipants > 0}
-														<div class="flex items-center gap-2 text-sm">
-															<Users class="w-3 h-3 flex-shrink-0" style="color: var(--color-primary-600);" />
-															<span style="color: var(--color-primary-700);">
-																{totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
-															</span>
-														</div>
-													{/if}
+											<div class="flex justify-between text-sm">
+												<span style="color: var(--text-secondary);">Time</span>
+												<span style="color: var(--text-primary);">
+													{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
+												</span>
+											</div>
+											{#if totalParticipants > 0}
+												<div class="flex justify-between text-sm">
+													<span style="color: var(--text-secondary);">Participants</span>
+													<span style="color: var(--text-primary);">
+														{totalParticipants} {totalParticipants === 1 ? 'person' : 'people'}
+													</span>
 												</div>
-											</div>
+											{/if}
 											{#if displayPrice > 0}
-												<div class="text-right">
-													<div class="text-lg font-bold" style="color: var(--color-primary-800);">
+												<div class="pt-2 mt-2 border-t flex justify-between" style="border-color: var(--border-primary);">
+													<span class="font-semibold text-sm" style="color: var(--text-primary);">Total</span>
+													<span class="font-semibold" style="color: var(--color-primary-600);">
 														{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
-													</div>
-													<div class="text-xs" style="color: var(--color-primary-600);">
-														Total
-													</div>
+													</span>
 												</div>
 											{/if}
 										</div>
@@ -719,19 +740,20 @@
 									<button
 										type="submit"
 										disabled={isSubmitting || !customerName || !customerEmail || !selectedTimeSlot || totalParticipants > ((selectedTimeSlot?.availableSpots || 0) - (selectedTimeSlot?.bookedSpots || 0)) || totalParticipants === 0}
-										class="w-full button-primary button--gap justify-center py-4 text-base"
+										class="w-full button-primary"
 									>
 										{#if isSubmitting}
-											<Loader2 class="w-5 h-5 animate-spin" />
+											<Loader2 class="w-4 h-4 animate-spin" />
 											Processing...
 										{:else}
-											<ChevronRight class="w-5 h-5" />
-											Book Now - {formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+											<ArrowRight class="w-4 h-4" />
+											Continue to Payment • {formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
 										{/if}
 									</button>
 							</form>
 						{/if}
 					{/if}
+					</div>
 				</div>
 			</div>
 		{/if}
