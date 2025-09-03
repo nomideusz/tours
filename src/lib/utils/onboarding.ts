@@ -7,7 +7,8 @@ import type { AuthUser } from '$lib/stores/auth.js';
 export function canActivateTours(
 	profile: AuthUser | null,
 	hasConfirmedLocation: boolean,
-	paymentStatus: { isSetup: boolean; loading: boolean }
+	paymentStatus: { isSetup: boolean; loading: boolean },
+	tourPrice?: number | null
 ): { canActivate: boolean; missingSteps: string[] } {
 	if (!profile) {
 		return { canActivate: false, missingSteps: ['Authentication required'] };
@@ -30,8 +31,10 @@ export function canActivateTours(
 		missingSteps.push('Location confirmation');
 	}
 
-	// Step 3: Payment setup
-	if (!paymentStatus.isSetup && !paymentStatus.loading) {
+	// Step 3: Payment setup - NOT required for free tours
+	// If tourPrice is explicitly 0, skip payment setup requirement
+	const isFreeTour = tourPrice === 0;
+	if (!isFreeTour && !paymentStatus.isSetup && !paymentStatus.loading) {
 		missingSteps.push('Payment setup');
 	}
 
@@ -44,13 +47,18 @@ export function canActivateTours(
 /**
  * Get user-friendly message about missing onboarding steps
  */
-export function getOnboardingMessage(missingSteps: string[]): string {
+export function getOnboardingMessage(missingSteps: string[], isFreeTour?: boolean): string {
 	if (missingSteps.length === 0) {
 		return 'All onboarding steps completed!';
 	}
 
 	if (missingSteps.length === 1) {
-		return `Complete ${missingSteps[0]} to activate tours`;
+		const step = missingSteps[0];
+		if (isFreeTour && step === 'Payment setup') {
+			// This shouldn't happen with our logic, but just in case
+			return 'Free tours can be activated without payment setup';
+		}
+		return `Complete ${step} to activate tours`;
 	}
 
 	const lastStep = missingSteps.pop();

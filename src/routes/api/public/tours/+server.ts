@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { tours, users, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, gte, ilike, or, sql, desc, asc, inArray } from 'drizzle-orm';
+import { getLocationGroups, matchesLocationGroup } from '$lib/utils/location-grouping.js';
 
 export const GET: RequestHandler = async ({ url }) => {
 	try {
@@ -40,10 +41,8 @@ export const GET: RequestHandler = async ({ url }) => {
 			);
 		}
 
-		// Location filter
-		if (location) {
-			conditions.push(ilike(tours.location, `%${location}%`));
-		}
+		// Location filter will be handled after fetching tours
+		// to support location grouping
 
 		// Category filter
 		if (category) {
@@ -79,16 +78,10 @@ export const GET: RequestHandler = async ({ url }) => {
 				break;
 		}
 
-		// Get total count for pagination
-		const countResult = await db
-			.select({ count: sql<number>`count(*)` })
-			.from(tours)
-			.where(and(...conditions));
-		
-		const totalCount = Number(countResult[0]?.count || 0);
+		// Get total count for pagination will be calculated after location filtering
 
-		// Get tours with user information
-		const publicTours = await db
+		// Get tours with user information (without location filter applied yet)
+		const allPublicTours = await db
 			.select({
 				// Tour fields
 				id: tours.id,
@@ -113,9 +106,18 @@ export const GET: RequestHandler = async ({ url }) => {
 			.from(tours)
 			.leftJoin(users, eq(tours.userId, users.id))
 			.where(and(...conditions))
-			.orderBy(orderByClause)
-			.limit(limit)
-			.offset(offset);
+			.orderBy(orderByClause);
+
+		// Apply location group filtering
+		const locationFilteredTours = location 
+			? allPublicTours.filter(tour => matchesLocationGroup(tour.location || '', location))
+			: allPublicTours;
+
+		// Calculate total count after filtering
+		const totalCount = locationFilteredTours.length;
+
+		// Apply pagination after location filtering
+		const publicTours = locationFilteredTours.slice(offset, offset + limit);
 
 		// Get upcoming availability for each tour
 		const tourIds = publicTours.map(tour => tour.id);
@@ -188,7 +190,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			.filter(Boolean)
 			.sort();
 
-		// Get unique locations for filters
+		// Get unique locations for filters and group them
 		const locationsResult = await db
 			.selectDistinct({ location: tours.location })
 			.from(tours)
@@ -197,10 +199,12 @@ export const GET: RequestHandler = async ({ url }) => {
 				sql`${tours.location} IS NOT NULL`
 			));
 		
-		const locations = locationsResult
+		const rawLocations = locationsResult
 			.map(r => r.location)
-			.filter(Boolean)
-			.sort();
+			.filter(Boolean);
+			
+		// Group locations into manageable categories
+		const locations = getLocationGroups(rawLocations);
 
 		return json({
 			tours: formattedTours,

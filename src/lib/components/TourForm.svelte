@@ -121,10 +121,10 @@
 	let priceStep = $derived(minimumPrice >= 10 ? 1 : 0.5);
 	
 	// Check if user can activate tours based on onboarding completion
-	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus));
+	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus, formData.price));
 	let canActivate = $derived(activationCheck.canActivate);
 	let missingSteps = $derived(activationCheck.missingSteps);
-	let onboardingMessage = $derived(getOnboardingMessage(missingSteps));
+	let onboardingMessage = $derived(getOnboardingMessage(missingSteps, formData.price === 0));
 	let nextStep = $derived(getNextOnboardingStep(missingSteps));
 
 	// Auto-expand sections if they have content or errors
@@ -428,18 +428,28 @@
 
 	// Auto-adjust child price when adult price changes
 	$effect(() => {
-		if (showChildPrice && formData.price > 0 && childPrice > formData.price) {
-			// Automatically reduce child price to match adult price if it exceeds
-			childPrice = formData.price;
+		if (showChildPrice) {
+			if (formData.price === 0) {
+				// If adult price is FREE, child price must also be FREE
+				childPrice = 0;
+			} else if (childPrice > formData.price) {
+				// Automatically reduce child price to match adult price if it exceeds
+				childPrice = formData.price;
+			}
 		}
 	});
 
 	// Set reasonable default for child price when enabling
 	function enableChildPricing() {
 		showChildPrice = true;
-		// Set default to 70% of adult price (reasonable discount)
-		const reasonableDefault = Math.round(formData.price * 0.7 * 2) / 2; // Round to nearest 0.5
-		childPrice = Math.max(0, reasonableDefault);
+		// If adult price is FREE, child price must also be FREE
+		if (formData.price === 0) {
+			childPrice = 0;
+		} else {
+			// Set default to 70% of adult price (reasonable discount)
+			const reasonableDefault = Math.round(formData.price * 0.7 * 2) / 2; // Round to nearest 0.5
+			childPrice = Math.max(0, reasonableDefault);
+		}
 	}
 
 
@@ -639,7 +649,7 @@
 						<PriceSlider
 							bind:value={formData.price}
 							label="Price"
-							min={minimumPrice}
+							min={0}
 							max={500}
 							inputMax={5000}
 							step={priceStep}
@@ -654,9 +664,13 @@
 						{#if getFieldError(allErrors, 'price')}
 							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'price')}</p>
 						{/if}
-						{#if minimumPrice > 0.5}
+						{#if formData.price === 0}
+							<p class="text-xs mt-1 pt-2" style="color: var(--color-success-600);">
+								✨ This will be a free tour - no payment required
+							</p>
+						{:else if minimumPrice > 0.5}
 							<p class="text-xs mt-1 pt-2" style="color: var(--text-secondary);">
-								Minimum price for {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
+								Minimum price for paid tours in {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
 							</p>
 						{/if}
 						<!-- Hidden input for form submission -->
@@ -710,12 +724,18 @@
 										currencySymbol={currencySymbol}
 										defaultValue={0}
 										showMarkers={false}
+										disabled={formData.price === 0}
 									/>
 									{#if getFieldError(allErrors, 'pricingTiers.child')}
 										<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
 									{/if}
 									<div class="p-2 rounded-lg text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
-										{#if childPrice === 0}
+										{#if formData.price === 0}
+											<div class="flex items-center gap-1">
+												<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+												<span class="font-medium" style="color: var(--color-success-700);">Free tour - children automatically free</span>
+											</div>
+										{:else if childPrice === 0}
 											<div class="flex items-center gap-1">
 												<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
 												<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
@@ -843,6 +863,7 @@
 											currencySymbol={currencySymbol}
 											defaultValue={0}
 											showMarkers={false}
+											disabled={formData.price === 0}
 										/>
 										{#if getFieldError(allErrors, 'pricingTiers.child')}
 											<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
@@ -854,7 +875,12 @@
 										<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
 											<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
 											<div class="text-sm" style="color: var(--text-primary);">
-												{#if childPrice === 0}
+												{#if formData.price === 0}
+													<div class="flex items-center gap-1">
+														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
+														<span class="font-medium" style="color: var(--color-success-700);">Free tour - children automatically free</span>
+													</div>
+												{:else if childPrice === 0}
 													<div class="flex items-center gap-1">
 														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
 														<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>

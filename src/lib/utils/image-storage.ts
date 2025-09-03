@@ -303,4 +303,60 @@ export async function listTourImages(tourId: string): Promise<string[]> {
     console.error(`❌ Failed to list images for tour ${tourId}:`, error);
     throw new Error(`Failed to list tour images: ${error}`);
   }
+}
+
+/**
+ * Copy all images from one tour to another
+ */
+export async function copyTourImages(sourceTourId: string, targetTourId: string, imageFilenames: string[]): Promise<string[]> {
+  try {
+    if (!imageFilenames || imageFilenames.length === 0) {
+      return [];
+    }
+
+    console.log(`📸 Copying ${imageFilenames.length} images from tour ${sourceTourId} to ${targetTourId}`);
+    
+    const copiedImages: string[] = [];
+    const { copyObject } = await import('./minio-client.js');
+    
+    for (const filename of imageFilenames) {
+      try {
+        // Use the same filename for the copy (no need to generate new ones)
+        // This preserves the original image names which is more intuitive
+        
+        // Copy all sizes (original, thumbnail, medium, large)
+        const sizes = [
+          { prefix: '' }, // original
+          { prefix: 'thumb_' },
+          { prefix: 'med_' },
+          { prefix: 'large_' }
+        ];
+        
+        for (const size of sizes) {
+          const sourceObject = `tours/${sourceTourId}/${size.prefix}${filename}`;
+          const targetObject = `tours/${targetTourId}/${size.prefix}${filename}`;
+          
+          try {
+            await copyObject(sourceObject, targetObject);
+            console.log(`✅ Copied ${sourceObject} to ${targetObject}`);
+          } catch (err) {
+            console.warn(`⚠️ Failed to copy size ${size.prefix} for ${filename}:`, err);
+            // Continue with other sizes even if one fails
+          }
+        }
+        
+        copiedImages.push(filename);
+      } catch (error) {
+        console.error(`❌ Failed to copy image ${filename}:`, error);
+        // Continue with other images even if one fails
+      }
+    }
+    
+    console.log(`✅ Successfully copied ${copiedImages.length} images`);
+    return copiedImages;
+  } catch (error) {
+    console.error(`❌ Failed to copy tour images:`, error);
+    // Return empty array instead of throwing to allow tour copy to continue
+    return [];
+  }
 } 

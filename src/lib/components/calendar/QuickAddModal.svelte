@@ -203,6 +203,61 @@
 		selectedTourId = '';
 		selectedTourData = null;
 	}
+	
+	// Generate color for tour based on tour ID/name (same algorithm as tours page)
+	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
+		if (!tourId || !tourName) {
+			// Fallback color if data is missing
+			return '#3B82F6';
+		}
+		
+		// Use a hash function to generate consistent colors
+		let hash = 0;
+		const str = tourId + tourName;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash; // Convert to 32-bit integer
+		}
+		
+		// Generate HSL values
+		const hue = Math.abs(hash) % 360;
+		const saturation = 65 + (Math.abs(hash >> 8) % 20); // 65-85%
+		const lightness = 45 + (Math.abs(hash >> 16) % 15); // 45-60%
+		
+		// Convert HSL to RGB for better browser compatibility
+		const h = hue / 360;
+		const s = saturation / 100;
+		const l = lightness / 100;
+		
+		let r, g, b;
+		
+		if (s === 0) {
+			r = g = b = l; // achromatic
+		} else {
+			const hue2rgb = (p: number, q: number, t: number) => {
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1/6) return p + (q - p) * 6 * t;
+				if (t < 1/2) return q;
+				if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			};
+			
+			const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			const p = 2 * l - q;
+			r = hue2rgb(p, q, h + 1/3);
+			g = hue2rgb(p, q, h);
+			b = hue2rgb(p, q, h - 1/3);
+		}
+		
+		// Convert to hex
+		const toHex = (x: number) => {
+			const hex = Math.round(x * 255).toString(16);
+			return hex.length === 1 ? '0' + hex : hex;
+		};
+		
+		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	}
 </script>
 
 {#if show}
@@ -280,6 +335,9 @@
 										onclick={() => handleTourSelection(tour)}
 										class="tour-card {isSelected ? 'selected' : ''}"
 									>
+										<!-- Calendar color strip -->
+										<div class="tour-color-strip" style="background-color: {getTourCalendarColor(tour.id, tour.name)}"></div>
+										
 										{#if tour.images && tour.images.length > 0}
 											<img 
 												src={getImageUrl(tour, tour.images[0])} 
@@ -341,7 +399,13 @@
 						{#if selectedTour}
 							<div class="selected-tour-info">
 								<div class="selected-tour-header">
-									<h4 class="selected-tour-name">{selectedTour.name}</h4>
+									<h4 class="selected-tour-name">
+										<span 
+											class="tour-color-dot" 
+											style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: {getTourCalendarColor(selectedTour.id, selectedTour.name)}; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); margin-right: 8px; vertical-align: middle;"
+										></span>
+										{selectedTour.name}
+									</h4>
 									<button 
 										type="button"
 										onclick={handleBackToTourSelection}
@@ -722,6 +786,25 @@
 	.tour-card.selected {
 		border-color: var(--color-primary);
 		background: var(--color-primary-50);
+	}
+	
+	/* Tour color strip */
+	.tour-color-strip {
+		height: 4px;
+		width: 100%;
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.tour-color-strip::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+	}
+	
+	:global(.dark) .tour-color-strip::after {
+		background: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent);
 	}
 
 	.tour-card-image {

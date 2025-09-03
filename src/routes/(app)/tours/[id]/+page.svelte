@@ -62,6 +62,65 @@
 	// Initialize mutations
 	const updateStatusMutation = updateTourStatusMutation();
 	
+	// Copy tour state
+	let isCopyingTour = $state(false);
+	let copyError = $state<string | null>(null);
+	
+	// Generate color for tour based on tour ID/name (same algorithm as tours page)
+	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
+		if (!tourId || !tourName) {
+			// Fallback color if data is missing
+			return '#3B82F6';
+		}
+		
+		// Use a hash function to generate consistent colors
+		let hash = 0;
+		const str = tourId + tourName;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash; // Convert to 32-bit integer
+		}
+		
+		// Generate HSL values
+		const hue = Math.abs(hash) % 360;
+		const saturation = 65 + (Math.abs(hash >> 8) % 20); // 65-85%
+		const lightness = 45 + (Math.abs(hash >> 16) % 15); // 45-60%
+		
+		// Convert HSL to RGB for better browser compatibility
+		const h = hue / 360;
+		const s = saturation / 100;
+		const l = lightness / 100;
+		
+		let r, g, b;
+		
+		if (s === 0) {
+			r = g = b = l; // achromatic
+		} else {
+			const hue2rgb = (p: number, q: number, t: number) => {
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1/6) return p + (q - p) * 6 * t;
+				if (t < 1/2) return q;
+				if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			};
+			
+			const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			const p = 2 * l - q;
+			r = hue2rgb(p, q, h + 1/3);
+			g = hue2rgb(p, q, h);
+			b = hue2rgb(p, q, h - 1/3);
+		}
+		
+		// Convert to hex
+		const toHex = (x: number) => {
+			const hex = Math.round(x * 255).toString(16);
+			return hex.length === 1 ? '0' + hex : hex;
+		};
+		
+		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	}
+	
 	// Time range state (always show all time)
 	let timeRange = $state<'week' | 'month' | 'quarter' | 'year' | 'all'>('all');
 	
@@ -302,9 +361,9 @@
 		if (!tour || tour.status === 'active') return;
 		
 		// Check onboarding completion
-		const activationCheck = canActivateTours(profile, hasConfirmedLocation, paymentStatus);
+		const activationCheck = canActivateTours(profile, hasConfirmedLocation, paymentStatus, tour.price);
 		if (!activationCheck.canActivate) {
-			const onboardingMessage = getOnboardingMessage(activationCheck.missingSteps);
+			const onboardingMessage = getOnboardingMessage(activationCheck.missingSteps, tour.price === 0);
 			const nextStep = getNextOnboardingStep(activationCheck.missingSteps);
 			
 			onboardingModalMessage = `${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
@@ -337,6 +396,49 @@
 		showOnboardingModal = false;
 			// Redirect to calendar for onboarding
 	goto('/calendar');
+	}
+	
+	// Copy tour function
+	async function handleCopyTour() {
+		if (!tour || isCopyingTour) return;
+		
+		try {
+			isCopyingTour = true;
+			copyError = null;
+			
+			const response = await fetch(`/api/tours/${tour.id}/copy`, {
+				method: 'POST'
+			});
+			
+			if (!response.ok) {
+				const error = await response.text();
+				throw new Error(error || 'Failed to copy tour');
+			}
+			
+			const result = await response.json();
+			
+			// Navigate to the new tour's edit page
+			if (result.id) {
+				goto(`/tours/${result.id}/edit`);
+			}
+		} catch (error: any) {
+			console.error('Failed to copy tour:', error);
+			
+			// Show error message
+			if (error.message?.includes('Tour limit reached')) {
+				copyError = 'Tour limit reached. Please upgrade your subscription to create more tours.';
+			} else {
+				copyError = error.message || 'Failed to copy tour. Please try again.';
+			}
+			
+			// Clear error after 5 seconds
+			const timeoutId = setTimeout(() => {
+				copyError = null;
+			}, 5000);
+			copyTimeouts.push(timeoutId);
+		} finally {
+			isCopyingTour = false;
+		}
 	}
 
 	// Check for success messages from navigation
@@ -737,13 +839,30 @@
 				onclick: () => showAddSlotsModal = true,
 				variant: 'primary'
 			}}
-			quickActions={[]}
+			quickActions={[
+				{
+					icon: Edit,
+					label: 'Edit',
+					onclick: () => goto(`/tours/${tourId}/edit`)
+				},
+				{
+					icon: Copy,
+					label: 'Copy',
+					onclick: () => handleCopyTour(),
+					disabled: isCopyingTour
+				}
+			]}
 			showBackButton={true}
 			onBackClick={handleSmartBack}
+			tourColor={tour ? getTourCalendarColor(tour.id, tour.name) : undefined}
 		/>
 		
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
+			{#if tour}
+				<!-- Tour color strip -->
+				<div class="tour-color-strip mb-2" style="background-color: {getTourCalendarColor(tour.id, tour.name)}; height: 4px; border-radius: 2px;"></div>
+			{/if}
 			<PageHeader 
 				title={tour?.name || 'Loading...'}
 				subtitle={tour ? `${tour.category ? tour.category + ' tour' : 'Tour'} • ${tour.location || 'Location not set'}` : 'Loading tour details...'}
@@ -766,6 +885,15 @@
 					<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
 						<Edit class="h-4 w-4" />
 						Edit Tour
+					</button>
+					<button onclick={() => handleCopyTour()} class="button-secondary button--gap" disabled={isCopyingTour}>
+						{#if isCopyingTour}
+							<RefreshCw class="h-4 w-4 animate-spin" />
+							Copying...
+						{:else}
+							<Copy class="h-4 w-4" />
+							Copy Tour
+						{/if}
 					</button>
 					<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
 						<Plus class="h-4 w-4" />
@@ -792,6 +920,15 @@
 						Retry
 					</button>
 				</div>
+			</div>
+		</div>
+	{/if}
+	
+	{#if copyError}
+		<div class="mb-6 rounded-xl p-4 alert-error animate-fade-in">
+			<div class="flex items-center gap-3">
+				<AlertCircle class="h-5 w-5" />
+				<p>{copyError}</p>
 			</div>
 		</div>
 	{/if}
@@ -927,6 +1064,18 @@
 									<Edit class="h-4 w-4" />
 									<span class="hidden sm:inline">Edit</span>
 									<span class="sm:hidden">Edit Tour</span>
+								</button>
+								<!-- Copy button - visible on both mobile and desktop -->
+								<button onclick={() => handleCopyTour()} class="button-secondary button--small button--gap" disabled={isCopyingTour}>
+									{#if isCopyingTour}
+										<RefreshCw class="h-4 w-4 animate-spin" />
+										<span class="hidden sm:inline">Copying...</span>
+										<span class="sm:hidden">Copy</span>
+									{:else}
+										<Copy class="h-4 w-4" />
+										<span class="hidden sm:inline">Copy</span>
+										<span class="sm:hidden">Copy</span>
+									{/if}
 								</button>
 							</div>
 						</div>
@@ -1624,6 +1773,21 @@
 	@keyframes spin {
 		0% { transform: rotate(0deg); }
 		100% { transform: rotate(360deg); }
+	}
+	
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	
+	.animate-fade-in {
+		animation: fadeIn 0.3s ease-out;
 	}
 	
 	/* Gallery thumbnail loading */

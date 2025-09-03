@@ -28,8 +28,9 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Shield from 'lucide-svelte/icons/shield';
 	import Info from 'lucide-svelte/icons/info';
-	import X from 'lucide-svelte/icons/x';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import X from 'lucide-svelte/icons/x';
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	
 	let { data, form }: { data: PageData; form: any } = $props();
@@ -722,7 +723,7 @@
 												{/if}
 												{#if childParticipants > 0}
 													<div class="flex justify-between text-sm" style="color: var(--text-secondary);">
-														<span>{childParticipants} Child{childParticipants === 1 ? '' : 'ren'} × {parseFloat(tour.pricingTiers.child) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) : 'Free'}</span>
+														<span>{childParticipants} Child{childParticipants === 1 ? '' : 'ren'} × {parseFloat(tour.pricingTiers.child || 0) > 0 ? formatTourOwnerCurrency(tour.pricingTiers.child, tourOwner?.currency) : 'Free'}</span>
 														<span>{formatTourOwnerCurrency(childParticipants * parseFloat(tour.pricingTiers.child), tourOwner?.currency)}</span>
 													</div>
 												{/if}
@@ -731,7 +732,13 @@
 										
 										<div class="flex justify-between items-center text-lg font-semibold">
 											<span style="color: var(--text-primary);">Total Price</span>
-											<span style="color: var(--color-primary-600);">{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}</span>
+											<span style="color: var(--color-primary-600);">
+												{#if displayPrice === 0}
+													Free
+												{:else}
+													{formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+												{/if}
+											</span>
 										</div>
 									</div>
 									</div>
@@ -745,6 +752,9 @@
 										{#if isSubmitting}
 											<Loader2 class="w-4 h-4 animate-spin" />
 											Processing...
+										{:else if displayPrice === 0}
+											<CheckCircle class="w-4 h-4" />
+											Confirm Free Booking
 										{:else}
 											<ArrowRight class="w-4 h-4" />
 											Continue to Payment • {formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}

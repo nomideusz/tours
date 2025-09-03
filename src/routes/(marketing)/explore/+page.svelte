@@ -231,7 +231,7 @@
 			<!-- Search Bar -->
 			<div class="max-w-2xl mx-auto">
 				<div class="flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm search-container">
-					<Search class="h-5 w-5 flex-shrink-0" style="color: var(--text-secondary);" />
+					<Search class="h-5 w-5 flex-shrink-0 search-icon" />
 					<input
 						type="search"
 						value={searchInput}
@@ -239,14 +239,12 @@
 						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
 						placeholder="Search tours, destinations, or activities..."
 						class="flex-1 bg-transparent border-0 outline-0 search-no-cancel text-base"
-						style="color: var(--text-primary);"
 					/>
 					{#if searchInput}
 						<button
 							type="button"
 							onclick={clearSearch}
 							class="p-1.5 rounded-md transition-colors flex-shrink-0 clear-button"
-							style="color: var(--text-tertiary); border: none; background: transparent;"
 							aria-label="Clear search"
 						>
 							<X class="h-4 w-4" />
@@ -255,7 +253,7 @@
 					<button
 						type="button"
 						onclick={handleSearch}
-						class="px-4 py-2 rounded-lg font-semibold transition-colors flex-shrink-0 text-sm search-button"
+						class="button-primary button--small"
 					>
 						Search
 					</button>
@@ -360,6 +358,9 @@
 									<option value={location}>{location}</option>
 								{/each}
 							</select>
+							<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+								Locations are grouped by city/region for easier browsing
+							</p>
 						</div>
 					{/if}
 					
@@ -653,48 +654,96 @@
 	.search-container {
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
+		transition: all var(--transition-base) ease;
 	}
 
-	/* Dark mode: match page background better */
+	.search-container:focus-within {
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+	}
+
+	/* Search button now uses standard button-primary class from buttons.css */
+
+	/* Clear button styling */
+	.clear-button {
+		color: var(--text-tertiary);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+	}
+
+	.clear-button:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-secondary);
+	}
+
+	/* Input styling */
+	.search-container input {
+		background: transparent;
+		color: var(--text-primary);
+	}
+
+	.search-container input::placeholder {
+		color: var(--text-tertiary);
+		opacity: 0.8;
+	}
+
+	.search-container input:focus {
+		outline: none;
+	}
+
+	/* Icon styling */
+	.search-container .search-icon {
+		color: var(--text-secondary);
+		transition: color var(--transition-base) ease;
+	}
+
+	.search-container:focus-within .search-icon {
+		color: var(--primary);
+	}
+
+	/* Dark Mode Specific Overrides */
 	[data-theme="dark"] .search-container {
 		background: var(--bg-secondary);
 		border-color: var(--border-secondary);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 
+		           inset 0 1px 0 rgba(255, 255, 255, 0.05);
 	}
 
-	/* Search button styling */
-	.search-button {
-		background: var(--color-primary-600);
-		color: white;
-		border: none;
+	[data-theme="dark"] .search-container:focus-within {
+		border-color: var(--primary);
+		background: var(--bg-primary);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), 
+		           0 2px 8px rgba(0, 0, 0, 0.4),
+		           inset 0 1px 0 rgba(255, 255, 255, 0.1);
 	}
 
-	.search-button:hover {
-		background: var(--color-primary-700);
+	[data-theme="dark"] .search-container input {
+		color: var(--text-primary);
 	}
 
-	/* Dark mode search button */
-	[data-theme="dark"] .search-button {
-		background: var(--color-primary-500);
-		color: white;
-		border: none;
+	[data-theme="dark"] .search-container input::placeholder {
+		color: var(--text-tertiary);
+		opacity: 0.9;
 	}
 
-	[data-theme="dark"] .search-button:hover {
-		background: var(--color-primary-400);
-	}
+	/* Search button dark mode handled automatically by button-primary class */
 
-	/* Clear button styling */
-	.clear-button:hover {
-		background: var(--bg-tertiary);
+	[data-theme="dark"] .clear-button {
+		color: var(--text-tertiary);
 	}
 
 	[data-theme="dark"] .clear-button:hover {
 		background: rgba(255, 255, 255, 0.1);
+		color: var(--text-primary);
 	}
 
-	/* Ensure placeholder text is properly styled */
-	.search-container input::placeholder {
-		color: var(--text-tertiary);
-		opacity: 0.7;
+	[data-theme="dark"] .search-container .search-icon {
+		color: var(--text-secondary);
+	}
+
+	[data-theme="dark"] .search-container:focus-within .search-icon {
+		color: var(--primary);
 	}
 </style>

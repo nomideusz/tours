@@ -10,6 +10,7 @@
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
+	import Search from 'lucide-svelte/icons/search';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
@@ -137,6 +138,10 @@
 
 			<!-- Desktop Navigation -->
 			<nav class="nav-desktop">
+				<a href="/explore" class="nav-link">
+					<Search class="w-4 h-4" />
+					<span>Explore Tours</span>
+				</a>
 				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="nav-link">
 					<MapPin class="w-4 h-4" />
 					<span>How it Works</span>
@@ -244,6 +249,10 @@
 		<div class="mobile-menu-content">
 			<!-- Navigation Links -->
 			<div class="mobile-nav">
+				<a href="/explore" onclick={handleMobileLinkClick} class="mobile-nav-link">
+					<Search class="w-4 h-4" />
+					<span>Explore Tours</span>
+				</a>
 				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="mobile-nav-link">
 					<MapPin class="w-4 h-4" />
 					<span>How it Works</span>

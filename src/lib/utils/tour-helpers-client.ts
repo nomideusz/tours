@@ -42,6 +42,10 @@ export function getTourDisplayPrice(tour: Tour): number {
  */
 export function getTourDisplayPriceFormatted(tour: Tour): string {
 	const price = getTourDisplayPrice(tour);
+	// Show "Free" for zero-price tours
+	if (price === 0) {
+		return 'Free';
+	}
 	return formatCurrency(price);
 }
 
@@ -50,6 +54,10 @@ export function getTourDisplayPriceFormatted(tour: Tour): string {
  */
 export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurrency?: string): string {
 	const price = getTourDisplayPrice(tour);
+	// Show "Free" for zero-price tours
+	if (price === 0) {
+		return 'Free';
+	}
 	return formatTourOwnerCurrency(price, ownerCurrency);
 }
 
@@ -57,6 +65,11 @@ export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurren
  * Format tour price with currency
  */
 export function formatTourPrice(price: number | string): string {
+	const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+	// Show "Free" for zero-price tours
+	if (numPrice === 0) {
+		return 'Free';
+	}
 	return formatCurrency(price);
 }
 

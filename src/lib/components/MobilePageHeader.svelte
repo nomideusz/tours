@@ -53,6 +53,7 @@
 		searchValue = '',
 		onSearchChange = null,
 		searchPlaceholder = 'Search...',
+		tourColor = null,
 		class: className = ''
 	} = $props<{
 		title: string;
@@ -79,6 +80,7 @@
 		searchValue?: string;
 		onSearchChange?: ((value: string) => void) | null;
 		searchPlaceholder?: string;
+		tourColor?: string | null;
 		class?: string;
 	}>();
 
@@ -119,7 +121,15 @@
 	<div class="mb-4">
 		<div class="flex items-start justify-between mb-2">
 			<div class="flex-1 min-w-0 {primaryAction ? 'pr-4' : ''}">
-				<h1 class="text-xl sm:text-2xl font-bold truncate leading-tight" style="color: var(--text-primary);">{title}</h1>
+				<h1 class="text-xl sm:text-2xl font-bold truncate leading-tight flex items-center gap-2" style="color: var(--text-primary);">
+					{#if tourColor}
+						<span 
+							class="tour-color-dot flex-shrink-0" 
+							style="background-color: {tourColor}; width: 12px; height: 12px; border-radius: 50%;"
+						></span>
+					{/if}
+					{title}
+				</h1>
 				<div class="flex items-center gap-2 mt-1">
 					{#if statusButton}
 						<span
@@ -331,5 +341,13 @@
 	button.tour-status-badge {
 		min-height: auto !important;
 		min-width: auto !important;
+	}
+	/* Tour color dot */
+	.tour-color-dot {
+		box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+	}
+	
+	:global(.dark) .tour-color-dot {
+		box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
 	}
 </style> 

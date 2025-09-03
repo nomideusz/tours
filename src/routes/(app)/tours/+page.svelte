@@ -48,6 +48,7 @@
 	import CircleDot from 'lucide-svelte/icons/circle-dot';
 	import Baby from 'lucide-svelte/icons/baby';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import Copy from 'lucide-svelte/icons/copy';
 
 	const queryClient = useQueryClient();
 	
@@ -110,6 +111,8 @@
 	// Feedback state
 	let recentlyUpdated = $state<string | null>(null);
 	let deletingTourIds = $state<Set<string>>(new Set());
+	let copyingTourId = $state<string | null>(null);
+	let copyError = $state<string | null>(null);
 	
 	// Onboarding modal state
 	let showOnboardingModal = $state(false);
@@ -165,12 +168,19 @@
 		}
 	}
 	
-	// Check if user can activate tours based on onboarding completion
-	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus));
-	let canActivate = $derived(activationCheck.canActivate);
-	let missingSteps = $derived(activationCheck.missingSteps);
-	let onboardingMessage = $derived(getOnboardingMessage(missingSteps));
-	let nextStep = $derived(getNextOnboardingStep(missingSteps));
+	// Helper function to check if a specific tour can be activated
+	function canActivateTour(tour: Tour) {
+		const price = parseFloat(tour.price) || 0;
+		const check = canActivateTours(profile, hasConfirmedLocation, paymentStatus, price);
+		return check.canActivate;
+	}
+	
+	// Helper function to get onboarding message for a specific tour
+	function getTourOnboardingMessage(tour: Tour) {
+		const price = parseFloat(tour.price) || 0;
+		const check = canActivateTours(profile, hasConfirmedLocation, paymentStatus, price);
+		return getOnboardingMessage(check.missingSteps, price === 0);
+	}
 	
 	// Filtered and sorted tours
 	let filteredTours = $derived(tours
@@ -247,10 +257,99 @@
 		return getImageUrl(tour, tour.images[0]);
 	}
 
+	// Generate color for tour based on tour ID/name (same algorithm as calendar)
+	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
+		if (!tourId || !tourName) {
+			// Fallback color if data is missing
+			return '#3B82F6';
+		}
+		
+		// Use a hash function to generate consistent colors
+		let hash = 0;
+		const str = tourId + tourName;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash; // Convert to 32-bit integer
+		}
+		
+		// Generate HSL values
+		const hue = Math.abs(hash) % 360;
+		const saturation = 65 + (Math.abs(hash >> 8) % 20); // 65-85%
+		const lightness = 45 + (Math.abs(hash >> 16) % 15); // 45-60%
+		
+		// Convert HSL to RGB for better browser compatibility
+		const h = hue / 360;
+		const s = saturation / 100;
+		const l = lightness / 100;
+		
+		let r, g, b;
+		
+		if (s === 0) {
+			r = g = b = l; // achromatic
+		} else {
+			const hue2rgb = (p: number, q: number, t: number) => {
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1/6) return p + (q - p) * 6 * t;
+				if (t < 1/2) return q;
+				if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			};
+			
+			const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			const p = 2 * l - q;
+			r = hue2rgb(p, q, h + 1/3);
+			g = hue2rgb(p, q, h);
+			b = hue2rgb(p, q, h - 1/3);
+		}
+		
+		// Convert to hex
+		const toHex = (x: number) => {
+			const hex = Math.round(x * 255).toString(16);
+			return hex.length === 1 ? '0' + hex : hex;
+		};
+		
+		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	}
+
 
 
 	// Mutations
 	const updateStatusMutation = updateTourStatusMutation();
+	
+	// Custom copy mutation
+	const copyMutation = createMutation({
+		mutationFn: async (tourId: string) => {
+			const response = await fetch(`/api/tours/${tourId}/copy`, {
+				method: 'POST'
+			});
+			
+			if (!response.ok) {
+				const error = await response.text();
+				throw new Error(error || 'Failed to copy tour');
+			}
+			
+			return response.json();
+		},
+		onSuccess: (data) => {
+			// Clear loading state
+			copyingTourId = null;
+			
+			// Invalidate queries to refetch data
+			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
+			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
+			queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
+			
+			// Navigate to the new tour's edit page
+			if (data.id) {
+				goto(`/tours/${data.id}/edit`);
+			}
+		},
+		onError: (error: any) => {
+			// Error is already handled in the copyTour function
+			console.error('Copy mutation error:', error);
+		}
+	});
 	
 	// Custom delete mutation without optimistic updates
 	const deleteMutation = createMutation({
@@ -344,9 +443,17 @@
 	
 	async function updateTourStatus(tourId: string, newStatus: 'active' | 'draft') {
 		try {
+			// Find the tour
+			const tour = tours.find(t => t.id === tourId);
+			if (!tour) return;
+			
 			// Check onboarding completion before allowing activation
-			if (newStatus === 'active' && !canActivate) {
-				onboardingModalMessage = `${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
+			if (newStatus === 'active' && !canActivateTour(tour)) {
+				const message = getTourOnboardingMessage(tour);
+				const price = parseFloat(tour.price) || 0;
+				const check = canActivateTours(profile, hasConfirmedLocation, paymentStatus, price);
+				const nextStep = getNextOnboardingStep(check.missingSteps);
+				onboardingModalMessage = `${message}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
 				showOnboardingModal = true;
 				return;
 			}
@@ -374,6 +481,31 @@
 		} catch (error) {
 			recentlyUpdated = null;
 			console.error('Failed to update tour status:', error);
+		}
+	}
+	
+	async function copyTour(tourId: string) {
+		try {
+			copyingTourId = tourId;
+			copyError = null;
+			console.log('Starting tour copy for:', tourId);
+			const result = await $copyMutation.mutateAsync(tourId);
+			console.log('Copy successful:', result);
+		} catch (error: any) {
+			console.error('Failed to copy tour:', error);
+			copyingTourId = null;
+			
+			// Show error message
+			if (error.message?.includes('Tour limit reached')) {
+				copyError = 'Tour limit reached. Please upgrade your subscription to create more tours.';
+			} else {
+				copyError = error.message || 'Failed to copy tour. Please try again.';
+			}
+			
+			// Clear error after 5 seconds
+			setTimeout(() => {
+				copyError = null;
+			}, 5000);
 		}
 	}
 	
@@ -569,6 +701,16 @@
 		</div>
 	</div>
 
+	<!-- Copy Error Alert -->
+	{#if copyError}
+		<div class="mb-4 rounded-xl p-4 alert-error animate-fade-in">
+			<div class="flex items-center gap-3">
+				<AlertTriangle class="h-5 w-5" />
+				<p>{copyError}</p>
+			</div>
+		</div>
+	{/if}
+	
 	<!-- Tours List -->
 	{#if isLoading}
 		<div class="flex justify-center py-12">
@@ -627,6 +769,11 @@
 						}
 					}}
 				>
+					<!-- Calendar Color Strip -->
+					<div class="tour-color-strip" style="background-color: {getTourCalendarColor(tour.id, tour.name)}">
+						<div class="tour-color-strip-inner"></div>
+					</div>
+
 					<!-- Tour Image -->
 					<div class="h-48 relative" style="background: var(--bg-secondary);">
 						{#if tour.images && tour.images[0]}
@@ -656,7 +803,8 @@
 					<!-- Tour Info -->
 					<div class="p-4 sm:p-6 flex flex-col flex-grow">
 						<div class="flex-grow">
-							<h3 class="text-lg font-semibold mb-2 hover:underline" style="color: var(--text-primary);">
+							<h3 class="text-lg font-semibold mb-2 hover:underline flex items-center gap-2" style="color: var(--text-primary);">
+								<span class="tour-color-dot" style="background-color: {getTourCalendarColor(tour.id, tour.name)}"></span>
 								{tour.name}
 							</h3>
 							
@@ -693,10 +841,10 @@
 						</div>
 						
 						<!-- Desktop Stats - Positioned just above actions -->
-						<div class="hidden sm:grid grid-cols-4 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="hidden sm:grid grid-cols-3 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
 							<div>
 								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Scans</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Views</p>
 							</div>
 							<div class="relative">
 								<p class="text-xs font-medium flex items-center justify-center gap-1" style="color: var(--text-primary);">
@@ -710,12 +858,8 @@
 								<p class="text-xs" style="color: var(--text-tertiary);">Bookings</p>
 							</div>
 							<div>
-								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.capacity}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Capacity</p>
-							</div>
-							<div>
 								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.upcomingSlots || 0}</p>
-								<p class="text-xs" style="color: var(--text-tertiary);">Time slots</p>
+								<p class="text-xs" style="color: var(--text-tertiary);">Upcoming</p>
 							</div>
 						</div>
 						
@@ -729,7 +873,7 @@
 									</button>
 								</Tooltip>
 								{#if tour.status === 'draft'}
-									{#if canActivate}
+									{#if canActivateTour(tour)}
 										<button 
 											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
 											class="button-primary button--small button--gap"
@@ -738,7 +882,7 @@
 											<span>Activate</span>
 										</button>
 									{:else}
-										<Tooltip text={`Complete onboarding first: ${onboardingMessage}`} position="top">
+										<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
 											<button 
 												class="button-secondary button--small button--gap opacity-50 cursor-not-allowed"
 												disabled
@@ -789,6 +933,23 @@
 											<span class="hidden sm:inline">Edit Tour</span>
 										</button>
 										<button
+											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; copyTour(tour.id); }}
+											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+											style="color: var(--text-primary); background: transparent;"
+											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+											disabled={copyingTourId === tour.id}
+										>
+											{#if copyingTourId === tour.id}
+												<div class="animate-spin h-4 w-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
+												<span>Copying...</span>
+											{:else}
+												<Copy class="h-4 w-4" />
+												<span class="sm:hidden">Copy</span>
+												<span class="hidden sm:inline">Copy Tour</span>
+											{/if}
+										</button>
+										<button
 											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/bookings?tour=${tour.id}`); }}
 											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
 											style="color: var(--text-primary); background: transparent;"
@@ -829,8 +990,8 @@
 												<span class="hidden sm:inline">Set to Draft</span>
 											</button>
 										{:else}
-											{#if !canActivate}
-												<Tooltip text={`Complete onboarding first: ${onboardingMessage}`} position="top">
+											{#if !canActivateTour(tour)}
+												<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
 													<button
 														class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 opacity-50 cursor-not-allowed"
 														style="color: var(--text-tertiary); background: transparent;"
@@ -938,12 +1099,46 @@
 		/* Don't use overflow-hidden so dropdown can extend outside */
 		position: relative;
 		transition: opacity 0.3s ease-out;
+		/* Remove overflow: hidden to allow dropdown to show */
 	}
 	
-	.tour-card > div:first-child {
-		/* Only the image container needs overflow hidden */
+	/* Calendar color strip at top of card */
+	.tour-color-strip {
+		height: 6px;
+		position: relative;
 		overflow: hidden;
-		border-radius: 0.75rem 0.75rem 0 0;
+		border-radius: 0.75rem 0.75rem 0 0; /* Round top corners only */
+	}
+	
+	.tour-color-strip-inner {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+	}
+	
+	/* Color dot next to tour name */
+	.tour-color-dot {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+	}
+	
+	/* Dark mode adjustments */
+	:global(.dark) .tour-color-strip-inner {
+		background: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent);
+	}
+	
+	:global(.dark) .tour-color-dot {
+		box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
+	}
+	
+	/* Tour image container adjustment */
+	.tour-card > div:nth-child(2) {
+		/* The image container */
+		overflow: hidden;
 	}
 	
 
@@ -979,5 +1174,21 @@
 		filter: blur(1px);
 		pointer-events: none;
 		transform: scale(0.98);
+	}
+	
+	/* Fade in animation */
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	
+	.animate-fade-in {
+		animation: fadeIn 0.3s ease-out;
 	}
 </style> 

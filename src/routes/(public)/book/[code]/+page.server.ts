@@ -201,6 +201,30 @@ export const actions: Actions = {
 				})
 				.where(eq(tours.id, tour.id));
 
+			// Check if this is a free tour
+			const totalAmountNum = parseFloat(totalAmount);
+			if (totalAmountNum === 0) {
+				console.log(`✅ Free tour booking ${booking.bookingReference} - ${tour.name} - confirming immediately`);
+				
+				// Update booking to confirmed status since no payment is needed
+				await db.update(bookings)
+					.set({
+						status: 'confirmed',
+						paymentStatus: 'paid', // Mark as 'paid' even though it's free
+						updatedAt: new Date()
+					})
+					.where(eq(bookings.id, booking.id));
+				
+				console.log(`🎉 Free tour booking confirmed - redirecting to success page`);
+				
+				// TODO: Send notification for free tour booking
+				// Notification will be sent via webhook when payment is confirmed
+				// For free tours, we might want to send notification immediately
+				
+				// Redirect directly to success page for free tours
+				redirect(303, `/book/${qrCode}/success?booking=${booking.id}`);
+			}
+
 			// Notification will be sent via webhook when payment is confirmed
 			// This prevents duplicate notifications for pending bookings
 

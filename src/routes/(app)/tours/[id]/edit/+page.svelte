@@ -492,12 +492,13 @@
 		}
 		
 		// Price validation
-		if (formData.price <= 0) {
-			errors.push('Price must be greater than €0');
+		if (formData.price < 0) {
+			errors.push('Price cannot be negative');
 		}
 		
-		if (formData.price < 0.5) {
-			errors.push('Price must be at least €0.50');
+		// Only check minimum price for paid tours
+		if (formData.price > 0 && formData.price < 0.5) {
+			errors.push('Minimum price for paid tours is €0.50');
 		}
 		
 		// Duration validation
@@ -509,9 +510,14 @@
 		
 		// Pricing tiers validation (if enabled)
 		if (formData.enablePricingTiers) {
-			if (!formData.pricingTiers.adult || formData.pricingTiers.adult < 0.5) {
-				errors.push('Adult price must be at least €0.50');
+			if (formData.pricingTiers.adult === undefined || formData.pricingTiers.adult === null) {
+				errors.push('Adult price is required');
+			} else if (formData.pricingTiers.adult < 0) {
+				errors.push('Adult price cannot be negative');
+			} else if (formData.pricingTiers.adult > 0 && formData.pricingTiers.adult < 0.5) {
+				errors.push('Minimum price for paid tours is €0.50');
 			}
+			
 			if (formData.pricingTiers.child < 0) {
 				errors.push('Child price cannot be negative');
 			}

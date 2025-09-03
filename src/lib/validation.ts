@@ -160,8 +160,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		if (data.price === undefined || data.price === null) {
 			errors.push({ field: 'price', message: 'Price is required' });
 		} else {
-			if (data.price < minimumPrice) {
-				errors.push({ field: 'price', message: `Price must be at least ${currencySymbol}${minimumPrice}` });
+			// Allow 0 for free tours
+			if (data.price < 0) {
+				errors.push({ field: 'price', message: 'Price cannot be negative' });
+			} else if (data.price > 0 && data.price < minimumPrice) {
+				errors.push({ field: 'price', message: `Minimum price for paid tours is ${currencySymbol}${minimumPrice}` });
 			}
 			if (data.price > VALIDATION_RULES.price.max) {
 				errors.push({ field: 'price', message: `Price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
@@ -178,8 +181,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 			if (data.pricingTiers.adult === undefined || data.pricingTiers.adult === null) {
 				errors.push({ field: 'pricingTiers.adult', message: 'Adult price is required' });
 			} else {
-				if (data.pricingTiers.adult < minimumPrice) {
-					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be at least ${currencySymbol}${minimumPrice}` });
+				// Allow 0 for free tours
+				if (data.pricingTiers.adult < 0) {
+					errors.push({ field: 'pricingTiers.adult', message: 'Adult price cannot be negative' });
+				} else if (data.pricingTiers.adult > 0 && data.pricingTiers.adult < minimumPrice) {
+					errors.push({ field: 'pricingTiers.adult', message: `Minimum price for paid tours is ${currencySymbol}${minimumPrice}` });
 				}
 				if (data.pricingTiers.adult > VALIDATION_RULES.price.max) {
 					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });

@@ -1,4 +1,5 @@
 import { Client } from 'minio';
+import * as Minio from 'minio';
 import { env } from '$env/dynamic/private';
 
 // MinIO configuration
@@ -136,6 +137,28 @@ export async function listObjects(prefix: string): Promise<string[]> {
   } catch (error) {
     console.error(`❌ Failed to list objects with prefix ${prefix}:`, error);
     throw new Error(`Failed to list objects: ${error}`);
+  }
+}
+
+/**
+ * Copy an object within the same bucket
+ */
+export async function copyObject(sourceObject: string, targetObject: string): Promise<void> {
+  try {
+    const client = getMinioClient();
+    const copyConditions = new Minio.CopyConditions();
+    
+    await client.copyObject(
+      BUCKET_NAME,
+      targetObject,
+      `/${BUCKET_NAME}/${sourceObject}`,
+      copyConditions
+    );
+    
+    console.log(`✅ Copied ${sourceObject} to ${targetObject}`);
+  } catch (error) {
+    console.error(`❌ Failed to copy object from ${sourceObject} to ${targetObject}:`, error);
+    throw new Error(`Failed to copy object: ${error}`);
   }
 }
 

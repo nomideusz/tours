@@ -109,7 +109,10 @@
 	});
 	
 	// Create stable date string for query key and API call consistency
-	let dateString = $derived(currentDate.toISOString());
+	// Use local date to avoid timezone shifts
+	let dateString = $derived(
+		`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
+	);
 	
 	// Query for timeline data - make reactive to date and view changes
 	let timelineQuery = $derived(createQuery({

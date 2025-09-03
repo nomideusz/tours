@@ -14,8 +14,20 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		
 		// Get date range from query params
 		const view = url.searchParams.get('view') || 'week'; // day | week | month
-		const dateParam = url.searchParams.get('date') || new Date().toISOString();
-		const baseDate = new Date(dateParam);
+		const today = new Date();
+		const dateParam = url.searchParams.get('date') || 
+			`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+		
+		// Parse date as local date to avoid timezone shifts
+		let baseDate: Date;
+		if (dateParam.match(/^\d{4}-\d{2}-\d{2}$/)) {
+			// Parse YYYY-MM-DD as local date
+			const [year, month, day] = dateParam.split('-').map(Number);
+			baseDate = new Date(year, month - 1, day);
+		} else {
+			// Parse ISO string
+			baseDate = new Date(dateParam);
+		}
 		
 		// Calculate date range based on view
 		let startDate: Date;
