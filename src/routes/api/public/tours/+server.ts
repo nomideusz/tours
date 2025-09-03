@@ -201,7 +201,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		
 		const rawLocations = locationsResult
 			.map(r => r.location)
-			.filter(Boolean);
+			.filter((location): location is string => Boolean(location));
 			
 		// Group locations into manageable categories
 		const locations = getLocationGroups(rawLocations);
