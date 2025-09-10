@@ -389,7 +389,7 @@
 			case 'all':
 				return users.length;
 			case 'beta':
-				return users.filter((u: any) => u.betaTester).length;
+				return users.filter((u: any) => u.earlyAccessMember).length;
 			case 'plan':
 				return users.filter((u: any) => u.subscriptionPlan === announcementPlanFilter).length;
 			case 'verified':
@@ -1409,7 +1409,7 @@
 						disabled={isSendingAnnouncement}
 					>
 						<option value="all">All Users ({users.length})</option>
-						<option value="beta">Beta Testers ({users.filter((u: any) => u.betaTester).length})</option>
+						<option value="beta">Beta Testers ({users.filter((u: any) => u.earlyAccessMember).length})</option>
 						<option value="verified">Verified Users ({users.filter((u: any) => u.emailVerified).length})</option>
 						<option value="active">Active Users (Last 30 days)</option>
 						<option value="plan">By Subscription Plan</option>

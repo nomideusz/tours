@@ -1,16 +1,16 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { requireAuth, requireAdmin } from '$lib/server/auth.js';
-import { db } from '$lib/db/client.js';
-import { users } from '$lib/db/schema.js';
-import { eq, and, or, inArray } from 'drizzle-orm';
+import type { RequestHandler } from './$types.js';
+import { db } from '$lib/db/connection.js';
+import { users } from '$lib/db/schema/index.js';
+import { eq, and, inArray, gt, isNotNull } from 'drizzle-orm';
 import { sendBulkAnnouncement } from '$lib/email/sender.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
-    // Require admin authentication
-    const session = await requireAuth(locals);
-    await requireAdmin(locals);
+    // Check admin access
+    if (!locals.user || locals.user.role !== 'admin') {
+      return json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const data = await request.json();
     const { 
@@ -33,16 +33,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     // Build user query based on recipient type
-    let userQuery = db.select().from(users);
+    let recipients;
     
     switch (recipientType) {
       case 'all':
         // All users
+        recipients = await db.select().from(users);
         break;
         
       case 'beta':
-        // Beta testers only
-        userQuery = userQuery.where(eq(users.betaTester, true));
+        // Beta testers (stored as earlyAccessMember in database)
+        recipients = await db.select().from(users).where(eq(users.earlyAccessMember, true));
         break;
         
       case 'plan':
@@ -53,22 +54,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             error: 'Plan filter required' 
           }, { status: 400 });
         }
-        userQuery = userQuery.where(eq(users.subscriptionPlan, recipientFilter.plan));
+        recipients = await db.select().from(users).where(eq(users.subscriptionPlan, recipientFilter.plan));
         break;
         
       case 'verified':
         // Only verified users
-        userQuery = userQuery.where(eq(users.emailVerified, true));
+        recipients = await db.select().from(users).where(eq(users.emailVerified, true));
         break;
         
       case 'active':
         // Active users (logged in within last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        userQuery = userQuery.where(
+        recipients = await db.select().from(users).where(
           and(
-            users.lastLogin !== null,
-            users.lastLogin > thirtyDaysAgo
+            isNotNull(users.lastLogin),
+            gt(users.lastLogin, thirtyDaysAgo)
           )
         );
         break;
@@ -81,7 +82,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             error: 'User IDs required for custom recipients' 
           }, { status: 400 });
         }
-        userQuery = userQuery.where(inArray(users.id, recipientFilter.userIds));
+        recipients = await db.select().from(users).where(inArray(users.id, recipientFilter.userIds));
         break;
         
       default:
@@ -90,9 +91,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           error: 'Invalid recipient type' 
         }, { status: 400 });
     }
-
-    // Execute query to get recipients
-    const recipients = await userQuery;
     
     if (recipients.length === 0) {
       return json({ 
@@ -101,9 +99,28 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       }, { status: 400 });
     }
 
+    // Convert database results to User type (handle null vs undefined)
+    const typedRecipients = recipients.map(r => ({
+      ...r,
+      username: r.username || undefined,
+      businessName: r.businessName || undefined,
+      stripeAccountId: r.stripeAccountId || undefined,
+      avatar: r.avatar || undefined,
+      phone: r.phone || undefined,
+      website: r.website || undefined,
+      description: r.description || undefined,
+      location: r.location || undefined,
+      country: r.country || undefined,
+      mainQrCode: r.mainQrCode || undefined,
+      mainQrScans: r.mainQrScans || undefined,
+      lastLogin: r.lastLogin?.toISOString() || undefined,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString()
+    }));
+
     // Send emails
     const result = await sendBulkAnnouncement(
-      recipients,
+      typedRecipients as any,
       { subject, heading, message, ctaText, ctaUrl, footer }
     );
 
