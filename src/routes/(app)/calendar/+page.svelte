@@ -701,14 +701,7 @@
 				<PageHeader 
 					title="Calendar"
 					subtitle={showOnboarding ? "Complete setup to start accepting bookings" : "Your tour schedule at a glance"}
-				>
-					{#if !showOnboarding}
-						<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
-							<Plus class="h-4 w-4" />
-							Add Tour
-						</button>
-					{/if}
-				</PageHeader>
+				/>
 			</div>
 		</div>
 
