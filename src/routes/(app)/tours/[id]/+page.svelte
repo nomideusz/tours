@@ -51,6 +51,7 @@
 	import Banknote from 'lucide-svelte/icons/banknote';
 	import X from 'lucide-svelte/icons/x';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import Baby from 'lucide-svelte/icons/baby';
 	
 	// Get data from load function
 	let { data } = $props();
@@ -1081,18 +1082,24 @@
 						</div>
 						<div class="p-3 sm:p-4 space-y-4 sm:space-y-4">
 							<!-- Key facts - compact mobile layout -->
-							<div class="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-2">
-								<div class="p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
-									<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Price</p>
-									<p class="font-semibold text-sm sm:text-lg" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+							<div class="grid grid-cols-2 gap-3">
+								<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+									<p class="text-xs" style="color: var(--text-tertiary);">
+										{tour.enablePricingTiers && tour.pricingTiers?.child !== undefined ? 'Adult Price' : 'Price'}
+									</p>
+									<p class="font-semibold text-lg" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
+									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+										<div class="flex items-center justify-center gap-1 mt-1">
+											<Baby class="h-3 w-3" style="color: var(--text-tertiary);" />
+											<span class="text-xs font-medium" style="color: var(--text-secondary);">
+												{$globalCurrencyFormatter(tour.pricingTiers.child)}
+											</span>
+										</div>
+									{/if}
 								</div>
-								<div class="p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
-									<p class="text-[10px] sm:text-xs" style="color: var(--text-tertiary);">Duration</p>
-									<p class="font-semibold text-sm sm:text-lg" style="color: var(--text-primary);">{tour.duration}min</p>
-								</div>
-								<div class="p-2 sm:p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
-									<p class="text-[10px] sm:text-xs leading-tight" style="color: var(--text-tertiary);">Max Group</p>
-									<p class="font-semibold text-sm sm:text-lg" style="color: var(--text-primary);">{tour.capacity}</p>
+								<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
+									<p class="text-xs" style="color: var(--text-tertiary);">Duration</p>
+									<p class="font-semibold text-lg" style="color: var(--text-primary);">{tour.duration}min</p>
 								</div>
 							</div>
 							

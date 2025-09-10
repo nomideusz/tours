@@ -814,15 +814,9 @@
 									<MapPin class="h-3 w-3" />
 									{tour.location || 'Location not set'}
 								</div>
-								<div class="flex items-center gap-4 text-sm" style="color: var(--text-secondary);">
-									<div class="flex items-center gap-1">
-										<Clock class="h-3 w-3" />
-										{formatDuration(tour.duration)}
-									</div>
-									<div class="flex items-center gap-1">
-										<Users class="h-3 w-3" />
-										{tour.capacity} max
-									</div>
+								<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+									<Clock class="h-3 w-3" />
+									{formatDuration(tour.duration)}
 								</div>
 								<div class="min-h-[2.5rem] flex items-center">
 									<div class="flex items-baseline gap-2 flex-wrap">
