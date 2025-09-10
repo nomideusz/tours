@@ -492,17 +492,11 @@
 									{/if}
 									
 									<!-- Tour Info -->
-									<div class="grid grid-cols-2 gap-3 mb-4">
+									<div class="mb-4">
 										<!-- Duration -->
 										<div class="flex items-center gap-1.5 text-sm" style="color: var(--text-secondary);">
 											<Clock class="w-4 h-4" />
 											<span>{formatDuration(tour.duration)}</span>
-										</div>
-										
-										<!-- Capacity -->
-										<div class="flex items-center gap-1.5 text-sm" style="color: var(--text-secondary);">
-											<Users class="w-4 h-4" />
-											<span>Max {tour.capacity}</span>
 										</div>
 									</div>
 									

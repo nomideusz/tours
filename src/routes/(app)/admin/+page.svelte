@@ -42,6 +42,7 @@
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Image from 'lucide-svelte/icons/image';
 	import MessageSquare from 'lucide-svelte/icons/message-square';
+	import Send from 'lucide-svelte/icons/send';
 	
 	const queryClient = useQueryClient();
 	
@@ -140,6 +141,21 @@
 	let testPhoneNumber = $state('');
 	let testTemplate = $state('booking_confirmation');
 	let testParameters = $state(['Test User', 'Test Tour', 'Tomorrow at 2:00 PM', 'Main Square', '2', '$50', 'TEST123', 'Zaur']);
+	
+	// Announcement modal states
+	let showAnnouncementModal = $state(false);
+	let isSendingAnnouncement = $state(false);
+	let announcementError = $state<string | null>(null);
+	let announcementSuccess = $state<string | null>(null);
+	let announcementRecipientType = $state<'all' | 'beta' | 'plan' | 'verified' | 'active'>('beta');
+	let announcementPlanFilter = $state<'free' | 'starter_pro' | 'professional' | 'agency'>('free');
+	let announcementSubject = $state('');
+	let announcementHeading = $state('');
+	let announcementMessage = $state('');
+	let announcementCtaText = $state('');
+	let announcementCtaUrl = $state('');
+	let announcementFooter = $state('');
+	let announcementResults = $state<any[]>([]);
 	
 	// Filter users
 	let filteredUsers = $derived.by(() => {
@@ -364,6 +380,85 @@
 			// Set new field with default desc order
 			sortBy = fieldTyped;
 			sortOrder = 'desc';
+		}
+	}
+	
+	// Get recipient count for announcements
+	let announcementRecipientCount = $derived.by(() => {
+		switch (announcementRecipientType) {
+			case 'all':
+				return users.length;
+			case 'beta':
+				return users.filter((u: any) => u.betaTester).length;
+			case 'plan':
+				return users.filter((u: any) => u.subscriptionPlan === announcementPlanFilter).length;
+			case 'verified':
+				return users.filter((u: any) => u.emailVerified).length;
+			case 'active':
+				const thirtyDaysAgo = new Date();
+				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+				return users.filter((u: any) => u.lastLogin && new Date(u.lastLogin) > thirtyDaysAgo).length;
+			default:
+				return 0;
+		}
+	});
+	
+	// Send announcement
+	async function sendAnnouncement(event: SubmitEvent) {
+		event.preventDefault();
+		
+		if (!announcementSubject || !announcementHeading || !announcementMessage) {
+			announcementError = 'Please fill in all required fields';
+			return;
+		}
+		
+		isSendingAnnouncement = true;
+		announcementError = null;
+		announcementSuccess = null;
+		announcementResults = [];
+		
+		try {
+			const response = await fetch('/api/admin/send-announcement', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					subject: announcementSubject,
+					heading: announcementHeading,
+					message: announcementMessage,
+					ctaText: announcementCtaText || undefined,
+					ctaUrl: announcementCtaUrl || undefined,
+					footer: announcementFooter || undefined,
+					recipientType: announcementRecipientType,
+					recipientFilter: announcementRecipientType === 'plan' ? { plan: announcementPlanFilter } : undefined
+				})
+			});
+			
+			const result = await response.json();
+			
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to send announcement');
+			}
+			
+			announcementSuccess = `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients`;
+			announcementResults = result.details || [];
+			
+			// Clear form after success
+			setTimeout(() => {
+				showAnnouncementModal = false;
+				announcementSubject = '';
+				announcementHeading = '';
+				announcementMessage = '';
+				announcementCtaText = '';
+				announcementCtaUrl = '';
+				announcementFooter = '';
+				announcementSuccess = null;
+				announcementResults = [];
+			}, 5000);
+			
+		} catch (error) {
+			announcementError = error instanceof Error ? error.message : 'Failed to send announcement';
+		} finally {
+			isSendingAnnouncement = false;
 		}
 	}
 </script>
@@ -616,6 +711,32 @@
 						</div>
 						<p class="text-sm mb-3" style="color: var(--text-secondary);">Send a test WhatsApp message to verify integration</p>
 						<p class="text-xs text-primary group-hover:underline">Open Test Panel →</p>
+					</button>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Announcement Section -->
+		<div class="mb-6">
+			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
+				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Email Announcements</h2>
+					<p class="text-sm mt-1" style="color: var(--text-secondary);">Send email announcements to user groups</p>
+				</div>
+				<div class="p-4">
+					<button 
+						onclick={() => showAnnouncementModal = true}
+						class="group p-4 rounded-lg border transition-all hover:border-primary w-full max-w-md"
+						style="background: var(--bg-secondary); border-color: var(--border-primary);"
+					>
+						<div class="flex items-center gap-3 mb-3">
+							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
+								<Send class="w-5 h-5" style="color: #e8523e;" />
+							</div>
+							<h3 class="font-medium" style="color: var(--text-primary);">Send Announcement</h3>
+						</div>
+						<p class="text-sm mb-3" style="color: var(--text-secondary);">Send emails to Beta users, subscription tiers, or all users</p>
+						<p class="text-xs text-primary group-hover:underline">Compose Message →</p>
 					</button>
 				</div>
 			</div>
@@ -1252,6 +1373,232 @@
 							whatsAppTestSuccess = null;
 						}}
 						disabled={isTestingWhatsApp}
+						class="button-secondary"
+					>
+						Cancel
+					</button>
+				</div>
+			</form>
+		</div>
+	</Modal>
+	
+	<!-- Announcement Modal -->
+	<Modal 
+		isOpen={showAnnouncementModal}
+		onClose={() => {
+			showAnnouncementModal = false;
+			announcementError = null;
+			announcementSuccess = null;
+			announcementResults = [];
+		}}
+	>
+		<div class="p-6">
+			<h2 class="text-xl font-semibold mb-4" style="color: var(--text-primary);">
+				Send Email Announcement
+			</h2>
+			
+			<form onsubmit={sendAnnouncement} class="space-y-4">
+				<div>
+					<label for="recipient-type" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Recipient Group
+					</label>
+					<select
+						id="recipient-type"
+						bind:value={announcementRecipientType}
+						class="form-select w-full"
+						disabled={isSendingAnnouncement}
+					>
+						<option value="all">All Users ({users.length})</option>
+						<option value="beta">Beta Testers ({users.filter((u: any) => u.betaTester).length})</option>
+						<option value="verified">Verified Users ({users.filter((u: any) => u.emailVerified).length})</option>
+						<option value="active">Active Users (Last 30 days)</option>
+						<option value="plan">By Subscription Plan</option>
+					</select>
+				</div>
+				
+				{#if announcementRecipientType === 'plan'}
+					<div>
+						<label for="plan-filter" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Select Plan
+						</label>
+						<select
+							id="plan-filter"
+							bind:value={announcementPlanFilter}
+							class="form-select w-full"
+							disabled={isSendingAnnouncement}
+						>
+							<option value="free">Free ({users.filter((u: any) => u.subscriptionPlan === 'free').length})</option>
+							<option value="starter_pro">Starter Pro ({users.filter((u: any) => u.subscriptionPlan === 'starter_pro').length})</option>
+							<option value="professional">Professional ({users.filter((u: any) => u.subscriptionPlan === 'professional').length})</option>
+							<option value="agency">Agency ({users.filter((u: any) => u.subscriptionPlan === 'agency').length})</option>
+						</select>
+					</div>
+				{/if}
+				
+				<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<p class="text-sm font-medium" style="color: var(--text-primary);">
+						Recipients: {announcementRecipientCount} user{announcementRecipientCount === 1 ? '' : 's'}
+					</p>
+				</div>
+				
+				<div>
+					<label for="subject" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Email Subject <span style="color: var(--color-danger-600);">*</span>
+					</label>
+					<input
+						id="subject"
+						bind:value={announcementSubject}
+						type="text"
+						required
+						class="form-input w-full"
+						placeholder="e.g., Important Update for Beta Testers"
+						disabled={isSendingAnnouncement}
+					/>
+				</div>
+				
+				<div>
+					<label for="heading" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Email Heading <span style="color: var(--color-danger-600);">*</span>
+					</label>
+					<input
+						id="heading"
+						bind:value={announcementHeading}
+						type="text"
+						required
+						class="form-input w-full"
+						placeholder="e.g., New Features Coming Soon!"
+						disabled={isSendingAnnouncement}
+					/>
+				</div>
+				
+				<div>
+					<label for="message" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Message <span style="color: var(--color-danger-600);">*</span>
+					</label>
+					<textarea
+						id="message"
+						bind:value={announcementMessage}
+						required
+						rows="6"
+						class="form-textarea w-full"
+						placeholder="Your message content here...&#10;&#10;Use double line breaks for paragraphs."
+						disabled={isSendingAnnouncement}
+					></textarea>
+					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+						Use double line breaks to create paragraphs
+					</p>
+				</div>
+				
+				<div class="rounded-lg p-3" style="background: var(--bg-tertiary); border: 1px solid var(--border-primary);">
+					<p class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Optional Call-to-Action Button</p>
+					<div class="space-y-3">
+						<div>
+							<label for="cta-text" class="block text-xs font-medium mb-1" style="color: var(--text-tertiary);">
+								Button Text
+							</label>
+							<input
+								id="cta-text"
+								bind:value={announcementCtaText}
+								type="text"
+								class="form-input form-input--small w-full"
+								placeholder="e.g., View New Features"
+								disabled={isSendingAnnouncement}
+							/>
+						</div>
+						<div>
+							<label for="cta-url" class="block text-xs font-medium mb-1" style="color: var(--text-tertiary);">
+								Button URL
+							</label>
+							<input
+								id="cta-url"
+								bind:value={announcementCtaUrl}
+								type="url"
+								class="form-input form-input--small w-full"
+								placeholder="e.g., https://zaur.app/blog/new-features"
+								disabled={isSendingAnnouncement}
+							/>
+						</div>
+					</div>
+				</div>
+				
+				<div>
+					<label for="footer" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Footer Text (Optional)
+					</label>
+					<input
+						id="footer"
+						bind:value={announcementFooter}
+						type="text"
+						class="form-input w-full"
+						placeholder="e.g., Thank you for being a Beta tester!"
+						disabled={isSendingAnnouncement}
+					/>
+				</div>
+				
+				{#if announcementError}
+					<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
+						<p class="text-sm" style="color: var(--color-danger-700);">
+							<XCircle class="h-4 w-4 inline mr-1" />
+							{announcementError}
+						</p>
+					</div>
+				{/if}
+				
+				{#if announcementSuccess}
+					<div class="rounded-lg p-3" style="background: var(--color-success-100); border: 1px solid var(--color-success-200);">
+						<p class="text-sm" style="color: var(--color-success-700);">
+							<CheckCircle class="h-4 w-4 inline mr-1" />
+							{announcementSuccess}
+						</p>
+					</div>
+				{/if}
+				
+				{#if announcementResults.length > 0}
+					<div class="rounded-lg p-3 max-h-48 overflow-y-auto" style="background: var(--bg-tertiary); border: 1px solid var(--border-primary);">
+						<p class="text-sm font-medium mb-2" style="color: var(--text-primary);">Send Results:</p>
+						<div class="space-y-1 text-xs">
+							{#each announcementResults as result}
+								<div class="flex items-center gap-2">
+									{#if result.success}
+										<CheckCircle class="h-3 w-3 flex-shrink-0" style="color: var(--color-success-600);" />
+									{:else}
+										<XCircle class="h-3 w-3 flex-shrink-0" style="color: var(--color-danger-600);" />
+									{/if}
+									<span style="color: var(--text-secondary);">
+										{result.name || result.email}
+										{#if !result.success}
+											- {result.error}
+										{/if}
+									</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+				
+				<div class="flex gap-3 pt-4">
+					<button
+						type="submit"
+						disabled={isSendingAnnouncement || announcementRecipientCount === 0}
+						class="button-primary flex-1 button--gap"
+					>
+						{#if isSendingAnnouncement}
+							<Loader2 class="h-4 w-4 animate-spin" />
+							Sending...
+						{:else}
+							<Send class="h-4 w-4" />
+							Send to {announcementRecipientCount} User{announcementRecipientCount === 1 ? '' : 's'}
+						{/if}
+					</button>
+					<button
+						type="button"
+						onclick={() => {
+							showAnnouncementModal = false;
+							announcementError = null;
+							announcementSuccess = null;
+							announcementResults = [];
+						}}
+						disabled={isSendingAnnouncement}
 						class="button-secondary"
 					>
 						Cancel

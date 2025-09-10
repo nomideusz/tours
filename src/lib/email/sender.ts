@@ -8,6 +8,7 @@ import { bookingCancellationEmail } from './templates/booking-cancellation.js';
 import { qrTicketEmail } from './templates/qr-ticket.js';
 import { tourReminderEmail } from './templates/tour-reminder.js';
 import { guideBookingNotificationEmail } from './templates/guide-booking-notification.js';
+import { announcementEmail } from './templates/announcement.js';
 
 // Configuration
 const FROM_EMAIL = 'noreply@auth.zaur.app';
@@ -207,4 +208,86 @@ export async function sendTestEmail(to: string = 'nom@zaur.app'): Promise<EmailR
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }
+}
+
+// Bulk announcement email interface
+export interface BulkAnnouncementData {
+  subject: string;
+  heading: string;
+  message: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  footer?: string;
+}
+
+// Send announcement to a single user
+export async function sendAnnouncementEmail(
+  user: User,
+  announcement: BulkAnnouncementData
+): Promise<EmailResult> {
+  try {
+    const emailContent = announcementEmail({
+      recipient: user,
+      ...announcement
+    });
+
+    const resend = getResend();
+    const result = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [user.email],
+      subject: emailContent.subject,
+      html: emailContent.html
+    });
+
+    if (result.error) {
+      throw new Error(`Resend error: ${result.error.message}`);
+    }
+
+    return { 
+      success: true, 
+      messageId: result.data?.id 
+    };
+  } catch (error) {
+    console.error('Error sending announcement email:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+// Send announcement to multiple users
+export async function sendBulkAnnouncement(
+  users: User[],
+  announcement: BulkAnnouncementData,
+  onProgress?: (current: number, total: number) => void
+): Promise<{ sent: number; failed: number; results: Array<{ user: User; result: EmailResult }> }> {
+  const results: Array<{ user: User; result: EmailResult }> = [];
+  let sent = 0;
+  let failed = 0;
+
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const result = await sendAnnouncementEmail(user, announcement);
+    
+    results.push({ user, result });
+    
+    if (result.success) {
+      sent++;
+    } else {
+      failed++;
+    }
+    
+    // Call progress callback if provided
+    if (onProgress) {
+      onProgress(i + 1, users.length);
+    }
+    
+    // Add a small delay to avoid rate limiting
+    if (i < users.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  return { sent, failed, results };
 } 
