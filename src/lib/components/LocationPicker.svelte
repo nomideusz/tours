@@ -6,6 +6,7 @@
 	import X from 'lucide-svelte/icons/x';
 	import MapPickerModal from './MapPickerModal.svelte';
 	import { defaultMapService } from '$lib/utils/map-integration.js';
+	import { truncateLocation } from '$lib/utils/location.js';
 	
 	// Cleanup on component destroy
 	onDestroy(() => {
@@ -81,8 +82,9 @@
 			// Try to reverse geocode to get human-readable address
 			try {
 				const result = await defaultMapService.reverseGeocode(coordinates);
-				value = result.fullAddress;
-				onLocationSelect?.(result.fullAddress);
+				const truncatedAddress = truncateLocation(result.fullAddress);
+				value = truncatedAddress;
+				onLocationSelect?.(truncatedAddress);
 			} catch (reverseGeocodeError) {
 				console.warn('Reverse geocoding failed, using coordinates:', reverseGeocodeError);
 				// Fallback to coordinates if reverse geocoding fails
@@ -153,8 +155,9 @@
 	}
 	
 	function selectSuggestion(suggestion: any) {
-		value = suggestion.fullAddress || suggestion.name;
-		onLocationSelect?.(suggestion.fullAddress || suggestion.name);
+		const selectedLocation = truncateLocation(suggestion.fullAddress || suggestion.name);
+		value = selectedLocation;
+		onLocationSelect?.(selectedLocation);
 		showSuggestions = false;
 		locationSuggestions = [];
 	}
@@ -189,8 +192,9 @@
 	
 	// Handle location selection from map
 	function handleMapLocationSelect(location: string, coordinates: any) {
-		value = location;
-		onLocationSelect?.(location);
+		const truncatedLocation = truncateLocation(location);
+		value = truncatedLocation;
+		onLocationSelect?.(truncatedLocation);
 		showMapPicker = false;
 	}
 </script>

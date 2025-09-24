@@ -2,6 +2,7 @@ import type { Tour, TimeSlot } from './types.js';
 import { get } from 'svelte/store';
 import { userCurrency } from '$lib/stores/currency.js';
 import { getMinimumChargeAmount, getCurrencySymbol } from '$lib/utils/currency.js';
+import { sanitizeLocation } from '$lib/utils/location.js';
 
 export interface ValidationError {
 	field: string;
@@ -409,7 +410,7 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		capacity: Number(data.capacity) || 1,
 		status: (data.status as Tour['status']) || 'draft',
 		category: String(data.category || '').trim(),
-		location: String(data.location || '').trim(),
+		location: sanitizeLocation(String(data.location || '')),
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
 		cancellationPolicy: String(data.cancellationPolicy || '').trim(),

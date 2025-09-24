@@ -4,6 +4,7 @@
 	import Drawer from './Drawer.svelte';
 	import { defaultMapService } from '$lib/utils/map-integration.js';
 	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
+	import { truncateLocation } from '$lib/utils/location.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -162,7 +163,7 @@
 						shouldAddMarker = true;
 						markerText = results[0].fullAddress;
 						// Pre-select this location
-						selectedLocation = results[0].fullAddress;
+						selectedLocation = truncateLocation(results[0].fullAddress);
 						selectedCoordinates = results[0].coordinates;
 					}
 				} catch (error) {
@@ -209,7 +210,7 @@
 		// Try to get address for the coordinates
 		try {
 			const result = await defaultMapService.reverseGeocode(coordinates);
-			selectedLocation = result.fullAddress;
+			selectedLocation = truncateLocation(result.fullAddress);
 		} catch (error) {
 			console.warn('Reverse geocoding failed:', error);
 			selectedLocation = `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}`;
@@ -272,6 +273,7 @@
 		if (!map) return;
 		
 		const coordinates = result.coordinates;
+		const truncatedLocation = truncateLocation(result.fullAddress);
 		
 		// Center map on selected location
 		map.setView([coordinates.lat, coordinates.lng], 15);
@@ -280,9 +282,9 @@
 		addMarker(coordinates, result.fullAddress);
 		
 		// Update state
-		selectedLocation = result.fullAddress;
+		selectedLocation = truncatedLocation;
 		selectedCoordinates = coordinates;
-		searchInput = result.fullAddress;
+		searchInput = truncatedLocation;
 		searchResults = [];
 	}
 	

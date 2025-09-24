@@ -32,6 +32,7 @@
 	import LocationPicker from './LocationPicker.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Globe from 'lucide-svelte/icons/globe';
+	import { isValidLocationLength } from '$lib/utils/location.js';
 
 	interface Props {
 		formData: {
@@ -610,6 +611,17 @@
 								formData.location = location;
 							}}
 						/>
+						<!-- Show info if location is near the character limit -->
+						{#if formData.location && formData.location.length > 80}
+							<p class="text-xs mt-1" style="color: var(--text-secondary);">
+								Location: {formData.location.length}/100 characters
+								{#if formData.location.length >= 100}
+									<span style="color: var(--color-warning-600);">
+										(automatically shortened)
+									</span>
+								{/if}
+							</p>
+						{/if}
 						<!-- Hidden input for form submission -->
 						<input type="hidden" name="location" bind:value={formData.location} />
 					</div>
