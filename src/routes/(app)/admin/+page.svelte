@@ -43,6 +43,8 @@
 	import Image from 'lucide-svelte/icons/image';
 	import MessageSquare from 'lucide-svelte/icons/message-square';
 	import Send from 'lucide-svelte/icons/send';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
 	
 	const queryClient = useQueryClient();
 	
@@ -141,6 +143,13 @@
 	let testPhoneNumber = $state('');
 	let testTemplate = $state('booking_confirmation');
 	let testParameters = $state(['Test User', 'Test Tour', 'Tomorrow at 2:00 PM', 'Main Square', '2', '$50', 'TEST123', 'Zaur']);
+
+	// User details modal states
+	let showUserDetailsModal = $state(false);
+	let selectedUser = $state<any>(null);
+	let userDetails = $state<any>(null);
+	let isLoadingUserDetails = $state(false);
+	let userDetailsError = $state<string | null>(null);
 	
 	// Announcement modal states
 	let showAnnouncementModal = $state(false);
@@ -368,6 +377,59 @@
 	function canDeleteUser(user: any) {
 		// Don't allow deleting yourself or other admins
 		return user.role !== 'admin';
+	}
+
+	// Fetch user details
+	async function fetchUserDetails(user: any) {
+		selectedUser = user;
+		showUserDetailsModal = true;
+		isLoadingUserDetails = true;
+		userDetailsError = null;
+		userDetails = null;
+
+		try {
+			const response = await fetch(`/api/admin/users/${user.id}/details`);
+			if (!response.ok) {
+				throw new Error('Failed to fetch user details');
+			}
+			userDetails = await response.json();
+		} catch (error) {
+			userDetailsError = error instanceof Error ? error.message : 'Failed to load user details';
+		} finally {
+			isLoadingUserDetails = false;
+		}
+	}
+
+	// Get booking status badge class
+	function getBookingStatusBadge(status: string) {
+		switch (status) {
+			case 'confirmed':
+				return 'badge-success';
+			case 'pending':
+				return 'badge-warning';
+			case 'cancelled':
+			case 'no_show':
+				return 'badge-danger';
+			case 'completed':
+				return 'badge-info';
+			default:
+				return 'badge-default';
+		}
+	}
+
+	// Get payment status badge class
+	function getPaymentStatusBadge(status: string) {
+		switch (status) {
+			case 'paid':
+				return 'badge-success';
+			case 'pending':
+				return 'badge-warning';
+			case 'failed':
+			case 'refunded':
+				return 'badge-danger';
+			default:
+				return 'badge-default';
+		}
 	}
 	
 	// Handle sort from component
@@ -947,13 +1009,21 @@
 									</td>
 									<td class="px-4 py-4">
 										<div class="flex items-center gap-2">
+											<Tooltip text="View Details" position="top">
+												<button
+													onclick={() => fetchUserDetails(user)}
+													class="button-primary button--small button--icon"
+												>
+													<Eye class="h-4 w-4" />
+												</button>
+											</Tooltip>
 											<Tooltip text="View Profile" position="top">
 												<button
 													onclick={() => window.open(`/${user.username}`, '_blank')}
 													class="button-secondary button--small button--icon"
 													disabled={!user.username}
 												>
-													<Eye class="h-4 w-4" />
+													<ExternalLink class="h-4 w-4" />
 												</button>
 											</Tooltip>
 											{#if canDeleteUser(user)}
@@ -1003,11 +1073,17 @@
 								</div>
 								<div class="flex items-center gap-2 flex-shrink-0">
 									<button
+										onclick={() => fetchUserDetails(user)}
+										class="button-primary button--small button--icon"
+									>
+										<Eye class="h-4 w-4" />
+									</button>
+									<button
 										onclick={() => window.open(`/${user.username}`, '_blank')}
 										class="button-secondary button--small button--icon"
 										disabled={!user.username}
 									>
-										<Eye class="h-4 w-4" />
+										<ExternalLink class="h-4 w-4" />
 									</button>
 									{#if canDeleteUser(user)}
 										<button
@@ -1076,6 +1152,273 @@
 		{/if}
 	</div>
 	
+	<!-- User Details Modal -->
+	{#if showUserDetailsModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+			<div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="flex items-center justify-between p-6 border-b" style="border-color: var(--border-primary);">
+					<div>
+						<h3 class="text-xl font-semibold" style="color: var(--text-primary);">User Details</h3>
+						{#if selectedUser}
+							<p class="text-sm" style="color: var(--text-secondary);">{selectedUser.name} ({selectedUser.email})</p>
+						{/if}
+					</div>
+					<button
+						onclick={() => showUserDetailsModal = false}
+						class="button-secondary button--icon"
+					>
+						<X class="h-5 w-5" />
+					</button>
+				</div>
+
+				<div class="overflow-y-auto max-h-[calc(90vh-80px)]">
+					{#if isLoadingUserDetails}
+						<div class="flex items-center justify-center p-12">
+							<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
+							<span class="ml-3" style="color: var(--text-secondary);">Loading user details...</span>
+						</div>
+					{:else if userDetailsError}
+						<div class="p-6 text-center">
+							<AlertCircle class="h-12 w-12 mx-auto mb-4" style="color: var(--color-danger);" />
+							<p class="text-lg font-medium mb-2" style="color: var(--text-primary);">Failed to Load Details</p>
+							<p style="color: var(--text-secondary);">{userDetailsError}</p>
+							<button
+								onclick={() => fetchUserDetails(selectedUser)}
+								class="button-primary mt-4"
+							>
+								Try Again
+							</button>
+						</div>
+					{:else if userDetails}
+						<div class="p-6 space-y-8">
+							<!-- User Info Section -->
+							<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+								<!-- Basic Info -->
+								<div class="space-y-4">
+									<h4 class="text-lg font-semibold" style="color: var(--text-primary);">Basic Information</h4>
+									<div class="space-y-3">
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Name:</span>
+											<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.name}</span>
+										</div>
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Email:</span>
+											<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.email}</span>
+										</div>
+										{#if userDetails.user.username}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Username:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">@{userDetails.user.username}</span>
+											</div>
+										{/if}
+										{#if userDetails.user.businessName}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Business:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.businessName}</span>
+											</div>
+										{/if}
+										{#if userDetails.user.phone}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Phone:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.phone}</span>
+											</div>
+										{/if}
+										{#if userDetails.user.website}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Website:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.website}</span>
+											</div>
+										{/if}
+										{#if userDetails.user.location}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Location:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.location}</span>
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<!-- Account Info -->
+								<div class="space-y-4">
+									<h4 class="text-lg font-semibold" style="color: var(--text-primary);">Account Details</h4>
+									<div class="space-y-3">
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Role:</span>
+											<span class="col-span-2">
+												<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {userDetails.user.role === 'admin' ? 'badge-admin' : 'badge-default'}">
+													{#if userDetails.user.role === 'admin'}
+														<Shield class="h-3 w-3 mr-1" />
+													{/if}
+													{userDetails.user.role}
+												</span>
+											</span>
+										</div>
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Plan:</span>
+											<span class="col-span-2">
+												<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {getPlanBadgeClass(userDetails.user.subscriptionPlan)}">
+													{formatPlanName(userDetails.user.subscriptionPlan)}
+												</span>
+											</span>
+										</div>
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Currency:</span>
+											<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.currency}</span>
+										</div>
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Verified:</span>
+											<span class="col-span-2 text-sm" style="color: var(--text-primary);">{userDetails.user.emailVerified ? 'Yes' : 'No'}</span>
+										</div>
+										<div class="grid grid-cols-3 gap-2">
+											<span class="text-sm font-medium" style="color: var(--text-secondary);">Joined:</span>
+											<span class="col-span-2 text-sm" style="color: var(--text-primary);">{formatDate(userDetails.user.createdAt)}</span>
+										</div>
+										{#if userDetails.user.lastLogin}
+											<div class="grid grid-cols-3 gap-2">
+												<span class="text-sm font-medium" style="color: var(--text-secondary);">Last Login:</span>
+												<span class="col-span-2 text-sm" style="color: var(--text-primary);">{formatDate(userDetails.user.lastLogin)}</span>
+											</div>
+										{/if}
+									</div>
+								</div>
+							</div>
+
+							<!-- Stats Overview -->
+							<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+								<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<div class="flex items-center gap-3">
+										<div class="p-2 rounded-lg" style="background: var(--color-primary-light);">
+											<MapPin class="h-5 w-5" style="color: var(--color-primary);" />
+										</div>
+										<div>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{userDetails.stats.totalTours}</p>
+											<p class="text-xs" style="color: var(--text-secondary);">Total Tours</p>
+										</div>
+									</div>
+								</div>
+								<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<div class="flex items-center gap-3">
+										<div class="p-2 rounded-lg" style="background: var(--color-success-light);">
+											<Calendar class="h-5 w-5" style="color: var(--color-success);" />
+										</div>
+										<div>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{userDetails.stats.totalBookings}</p>
+											<p class="text-xs" style="color: var(--text-secondary);">Bookings</p>
+										</div>
+									</div>
+								</div>
+								<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<div class="flex items-center gap-3">
+										<div class="p-2 rounded-lg" style="background: var(--color-warning-light);">
+											<DollarSign class="h-5 w-5" style="color: var(--color-warning);" />
+										</div>
+										<div>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{formatCurrency(userDetails.stats.totalRevenue, { currency: userDetails.user.currency })}</p>
+											<p class="text-xs" style="color: var(--text-secondary);">Revenue</p>
+										</div>
+									</div>
+								</div>
+								<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+									<div class="flex items-center gap-3">
+										<div class="p-2 rounded-lg" style="background: var(--color-info-light);">
+											<QrCode class="h-5 w-5" style="color: var(--color-info);" />
+										</div>
+										<div>
+											<p class="text-2xl font-bold" style="color: var(--text-primary);">{userDetails.stats.totalQrScans}</p>
+											<p class="text-xs" style="color: var(--text-secondary);">QR Scans</p>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Tours Section -->
+							{#if userDetails.tours.length > 0}
+								<div>
+									<div class="flex items-center justify-between mb-4">
+										<h4 class="text-lg font-semibold" style="color: var(--text-primary);">Tours ({userDetails.tours.length})</h4>
+										<div class="flex items-center gap-2 text-sm">
+											<span class="px-2 py-1 rounded-full" style="background: var(--color-success-light); color: var(--color-success);">
+												Active: {userDetails.stats.activeTours}
+											</span>
+											<span class="px-2 py-1 rounded-full" style="background: var(--color-warning-light); color: var(--color-warning);">
+												Drafts: {userDetails.stats.draftTours}
+											</span>
+										</div>
+									</div>
+									<div class="space-y-3">
+										{#each userDetails.tours as tour}
+											<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+												<div class="flex items-start justify-between gap-4">
+													<div class="flex-1">
+														<div class="flex items-center gap-2 mb-2">
+															<h5 class="font-medium" style="color: var(--text-primary);">{tour.name}</h5>
+															<span class="px-2 py-1 rounded-full text-xs font-medium {tour.status === 'active' ? 'badge-success' : 'badge-warning'}">
+																{tour.status}
+															</span>
+														</div>
+														<p class="text-sm mb-2" style="color: var(--text-secondary);">{tour.description}</p>
+														<div class="flex items-center gap-4 text-xs" style="color: var(--text-tertiary);">
+															<span>Price: {formatCurrency(Number(tour.price), { currency: userDetails.user.currency })}</span>
+															<span>Duration: {tour.duration}min</span>
+															<span>Capacity: {tour.capacity}</span>
+															{#if tour.location}
+																<span>Location: {tour.location}</span>
+															{/if}
+														</div>
+													</div>
+													<div class="text-right">
+														<div class="space-y-1 text-xs">
+															<p><span style="color: var(--text-secondary);">Bookings:</span> <span class="font-medium" style="color: var(--text-primary);">{tour.bookingCount}</span></p>
+															<p><span style="color: var(--text-secondary);">Revenue:</span> <span class="font-medium" style="color: var(--text-primary);">{formatCurrency(tour.revenue, { currency: userDetails.user.currency })}</span></p>
+															<p><span style="color: var(--text-secondary);">QR Scans:</span> <span class="font-medium" style="color: var(--text-primary);">{tour.qrScans}</span></p>
+														</div>
+													</div>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+
+							<!-- Recent Customer Bookings -->
+							{#if userDetails.customerBookings.length > 0}
+								<div>
+									<h4 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Recent Bookings as Customer</h4>
+									<div class="space-y-3">
+										{#each userDetails.customerBookings as booking}
+											<div class="rounded-lg p-4" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+												<div class="flex items-start justify-between gap-4">
+													<div class="flex-1">
+														<h5 class="font-medium mb-1" style="color: var(--text-primary);">{booking.tourName}</h5>
+														<p class="text-sm mb-2" style="color: var(--text-secondary);">
+															{formatDate(booking.startTime)} • {booking.participants} participants
+														</p>
+														<div class="flex items-center gap-2">
+															<span class="px-2 py-1 rounded-full text-xs font-medium {getBookingStatusBadge(booking.status)}">
+																{booking.status}
+															</span>
+															<span class="px-2 py-1 rounded-full text-xs font-medium {getPaymentStatusBadge(booking.paymentStatus)}">
+																{booking.paymentStatus}
+															</span>
+														</div>
+													</div>
+													<div class="text-right">
+														<p class="font-medium" style="color: var(--text-primary);">{formatCurrency(Number(booking.totalAmount), { currency: userDetails.user.currency })}</p>
+														<p class="text-xs" style="color: var(--text-secondary);">#{booking.bookingReference}</p>
+													</div>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Delete User Modal -->
 	<ConfirmationModal
 		isOpen={deleteUserModal}
