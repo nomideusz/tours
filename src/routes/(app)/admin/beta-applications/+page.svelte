@@ -536,22 +536,97 @@
 								</button>
 							</div>
 						{:else if selectedApplication.status === 'accepted'}
-							<div class="flex flex-wrap gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
-								<button
-									onclick={() => createBetaAccount(selectedApplication)}
-									disabled={isCreatingAccount}
-									class="button-primary button--gap flex-1 sm:flex-none"
-								>
-									{#if isCreatingAccount}
-										<Loader2 class="h-4 w-4 animate-spin" />
+							<div class="space-y-3 pt-4 border-t" style="border-color: var(--border-primary);">
+								<!-- Primary Action: Create Beta Account -->
+								<div class="flex flex-wrap gap-3">
+									<button
+										onclick={() => createBetaAccount(selectedApplication)}
+										disabled={isCreatingAccount}
+										class="button-primary button--gap flex-1 sm:flex-none"
+									>
+										{#if isCreatingAccount}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											<Users class="h-4 w-4" />
+										{/if}
+										Create Beta Account
+									</button>
+									<p class="text-xs flex-1 text-center self-center" style="color: var(--text-tertiary);">
+										This will create a user account with BETA_APPRECIATION promo code applied
+									</p>
+								</div>
+								
+								<!-- Status Change Options -->
+								<div class="pt-2 border-t" style="border-color: var(--border-secondary);">
+									<p class="text-xs mb-2" style="color: var(--text-tertiary);">Change status:</p>
+									<div class="flex flex-wrap gap-2">
+										<button
+											onclick={() => updateApplicationStatus(selectedApplication.id, 'pending')}
+											disabled={isUpdating}
+											class="button-secondary button--gap text-xs px-3 py-1.5"
+										>
+											<Clock class="h-3 w-3" />
+											Back to Pending
+										</button>
+										<button
+											onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
+											disabled={isUpdating}
+											class="button-secondary button--gap text-xs px-3 py-1.5"
+										>
+											<UserX class="h-3 w-3" />
+											Waitlist
+										</button>
+										<button
+											onclick={() => updateApplicationStatus(selectedApplication.id, 'rejected')}
+											disabled={isUpdating}
+											class="button-danger button--gap text-xs px-3 py-1.5"
+										>
+											<XCircle class="h-3 w-3" />
+											Reject
+										</button>
+									</div>
+								</div>
+							</div>
+						{:else if selectedApplication.status === 'rejected' || selectedApplication.status === 'waitlisted'}
+							<div class="pt-4 border-t" style="border-color: var(--border-primary);">
+								<p class="text-xs mb-3" style="color: var(--text-tertiary);">Change status:</p>
+								<div class="flex flex-wrap gap-2">
+									<button
+										onclick={() => updateApplicationStatus(selectedApplication.id, 'pending')}
+										disabled={isUpdating}
+										class="button-secondary button--gap text-sm px-4 py-2"
+									>
+										<Clock class="h-4 w-4" />
+										Back to Pending
+									</button>
+									<button
+										onclick={() => updateApplicationStatus(selectedApplication.id, 'accepted')}
+										disabled={isUpdating}
+										class="button-primary button--gap text-sm px-4 py-2"
+									>
+										<CheckCircle class="h-4 w-4" />
+										Accept
+									</button>
+									{#if selectedApplication.status === 'rejected'}
+										<button
+											onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
+											disabled={isUpdating}
+											class="button-secondary button--gap text-sm px-4 py-2"
+										>
+											<UserX class="h-4 w-4" />
+											Waitlist
+										</button>
 									{:else}
-										<Users class="h-4 w-4" />
+										<button
+											onclick={() => updateApplicationStatus(selectedApplication.id, 'rejected')}
+											disabled={isUpdating}
+											class="button-danger button--gap text-sm px-4 py-2"
+										>
+											<XCircle class="h-4 w-4" />
+											Reject
+										</button>
 									{/if}
-									Create Beta Account
-								</button>
-								<p class="text-xs flex-1 text-center self-center" style="color: var(--text-tertiary);">
-									This will create a user account with BETA_APPRECIATION promo code applied
-								</p>
+								</div>
 							</div>
 						{/if}
 					</div>
