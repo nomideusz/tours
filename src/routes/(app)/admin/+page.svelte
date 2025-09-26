@@ -45,6 +45,7 @@
 	import Send from 'lucide-svelte/icons/send';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Code from 'lucide-svelte/icons/code';
 	
 	const queryClient = useQueryClient();
 	
@@ -566,6 +567,12 @@
 							variant: 'secondary'
 						},
 						{
+							label: 'Development',
+							icon: Code,
+							onclick: () => goto('/admin/development'),
+							variant: 'secondary'
+						},
+						{
 							label: 'Export',
 							icon: Download,
 							onclick: exportUsers,
@@ -615,6 +622,10 @@
 						<button onclick={() => goto('/admin/feedback')} class="button-secondary button--gap">
 							<MessageSquare class="h-4 w-4" />
 							Feedback
+						</button>
+						<button onclick={() => goto('/admin/development')} class="button-secondary button--gap">
+							<Code class="h-4 w-4" />
+							Development
 						</button>
 						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
 							<Mail class="h-4 w-4" />

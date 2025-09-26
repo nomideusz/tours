@@ -25,6 +25,10 @@
 	import Globe from 'lucide-svelte/icons/globe';
 	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import Code from 'lucide-svelte/icons/code';
+	import Plus from 'lucide-svelte/icons/plus';
+	import X from 'lucide-svelte/icons/x';
 
 	const queryClient = useQueryClient();
 
@@ -49,9 +53,30 @@
 	let adminNotes = $state('');
 	let newStatus = $state('');
 
+	// Convert to development item states
+	let showConvertModal = $state(false);
+	let isConverting = $state(false);
+	let convertError = $state<string | null>(null);
+	let convertForm = $state({
+		title: '',
+		priority: 'medium',
+		category: 'other',
+		effort: 'm',
+		assignedTo: '',
+		userImpact: 3,
+		businessValue: 3,
+		technicalNotes: '',
+		acceptanceCriteria: [''],
+		tags: [],
+		targetRelease: '',
+		estimatedHours: '',
+		targetDate: ''
+	});
+
 	// Query for feedback
+	// eslint-disable-next-line svelte/valid-compile
 	const feedbackQuery = createQuery({
-		queryKey: ['admin', 'feedback', selectedType, selectedStatus],
+		queryKey: ['admin', 'feedback', selectedType, selectedStatus] as const,
 		queryFn: async () => {
 			const params = new URLSearchParams();
 			if (selectedType !== 'all') params.append('type', selectedType);
@@ -67,7 +92,7 @@
 	});
 
 	// Derived states
-	let feedback = $derived($feedbackQuery.data || []);
+	let feedback: any[] = $derived($feedbackQuery.data || []);
 	let isLoading = $derived($feedbackQuery.isLoading);
 	let isError = $derived($feedbackQuery.isError);
 
@@ -92,19 +117,19 @@
 	let stats = $derived.by(() => {
 		const total = feedback.length;
 		const byType = {
-			bug: feedback.filter(f => f.type === 'bug').length,
-			feature: feedback.filter(f => f.type === 'feature').length,
-			general: feedback.filter(f => f.type === 'general').length,
-			praise: feedback.filter(f => f.type === 'praise').length
+			bug: feedback.filter((f: any) => f.type === 'bug').length,
+			feature: feedback.filter((f: any) => f.type === 'feature').length,
+			general: feedback.filter((f: any) => f.type === 'general').length,
+			praise: feedback.filter((f: any) => f.type === 'praise').length
 		};
 		const byStatus = {
-			new: feedback.filter(f => f.status === 'new').length,
-			acknowledged: feedback.filter(f => f.status === 'acknowledged').length,
-			in_progress: feedback.filter(f => f.status === 'in_progress').length,
-			resolved: feedback.filter(f => f.status === 'resolved').length,
-			wont_fix: feedback.filter(f => f.status === 'wont_fix').length
+			new: feedback.filter((f: any) => f.status === 'new').length,
+			acknowledged: feedback.filter((f: any) => f.status === 'acknowledged').length,
+			in_progress: feedback.filter((f: any) => f.status === 'in_progress').length,
+			resolved: feedback.filter((f: any) => f.status === 'resolved').length,
+			wont_fix: feedback.filter((f: any) => f.status === 'wont_fix').length
 		};
-		const criticalBugs = feedback.filter(f => f.type === 'bug' && f.urgency >= 4).length;
+		const criticalBugs = feedback.filter((f: any) => f.type === 'bug' && f.urgency >= 4).length;
 
 		return { total, byType, byStatus, criticalBugs };
 	});
@@ -181,6 +206,101 @@
 		if (urgency >= 3) return 'var(--color-warning-600)';
 		return 'var(--text-tertiary)';
 	}
+
+	// Convert feedback to development item
+	async function convertToDevelopmentItem(event: Event) {
+		event.preventDefault();
+		if (!selectedFeedback) return;
+
+		isConverting = true;
+		convertError = null;
+
+		try {
+			const response = await fetch('/api/admin/feedback/convert', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					feedbackId: selectedFeedback.id,
+					title: convertForm.title,
+					priority: convertForm.priority,
+					category: convertForm.category,
+					effort: convertForm.effort,
+					assignedTo: convertForm.assignedTo || null,
+					userImpact: convertForm.userImpact,
+					businessValue: convertForm.businessValue,
+					technicalNotes: convertForm.technicalNotes,
+					acceptanceCriteria: convertForm.acceptanceCriteria.filter(c => c.trim()),
+					tags: convertForm.tags,
+					targetRelease: convertForm.targetRelease || null,
+					estimatedHours: convertForm.estimatedHours ? parseFloat(convertForm.estimatedHours) : null,
+					targetDate: convertForm.targetDate || null
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to convert feedback');
+			}
+
+			// Close modals and refresh data
+			showConvertModal = false;
+			showFeedbackModal = false;
+			selectedFeedback = null;
+			resetConvertForm();
+
+			await queryClient.invalidateQueries({ queryKey: ['admin', 'feedback'] });
+
+		} catch (error) {
+			convertError = error instanceof Error ? error.message : 'Failed to convert feedback';
+		} finally {
+			isConverting = false;
+		}
+	}
+
+	// Reset convert form
+	function resetConvertForm() {
+		convertForm = {
+			title: '',
+			priority: 'medium',
+			category: 'other',
+			effort: 'm',
+			assignedTo: '',
+			userImpact: 3,
+			businessValue: 3,
+			technicalNotes: '',
+			acceptanceCriteria: [''],
+			tags: [],
+			targetRelease: '',
+			estimatedHours: '',
+			targetDate: ''
+		};
+	}
+
+	// Initialize convert form with feedback data
+	function initializeConvertForm(feedback: any) {
+		convertForm.title = `${feedback.type === 'bug' ? 'Fix: ' : feedback.type === 'feature' ? 'Feature: ' : ''}${feedback.description.substring(0, 100)}`;
+		convertForm.userImpact = Math.max(feedback.urgency || 3, 3);
+		convertForm.businessValue = feedback.urgency || 3;
+		
+		// Set category based on page URL or feedback content
+		if (feedback.page_url) {
+			if (feedback.page_url.includes('/tours')) convertForm.category = 'tours';
+			else if (feedback.page_url.includes('/book')) convertForm.category = 'bookings';
+			else if (feedback.page_url.includes('/payment')) convertForm.category = 'payments';
+			else if (feedback.page_url.includes('/dashboard')) convertForm.category = 'admin';
+		}
+	}
+
+	// Add acceptance criteria field
+	function addAcceptanceCriteria() {
+		convertForm.acceptanceCriteria = [...convertForm.acceptanceCriteria, ''];
+	}
+
+	// Remove acceptance criteria field
+	function removeAcceptanceCriteria(index: number) {
+		convertForm.acceptanceCriteria = convertForm.acceptanceCriteria.filter((_, i) => i !== index);
+	}
 </script>
 
 <svelte:head>
@@ -191,7 +311,6 @@
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
 		<PageHeader 
 			title="Beta Feedback"
-			description="Manage feedback from beta users"
 		/>
 
 		<!-- Stats Cards -->
@@ -374,7 +493,10 @@
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex items-center gap-3 mb-2">
-									<svelte:component this={getTypeIcon(item.type)} class="h-5 w-5" style="color: {getTypeColor(item.type)};" />
+									{#if item.type}
+										{@const IconComponent = getTypeIcon(item.type)}
+										<IconComponent class="h-5 w-5" style="color: {getTypeColor(item.type)};" />
+									{/if}
 									<h3 class="text-base font-semibold" style="color: var(--text-primary);">
 										{item.type.charAt(0).toUpperCase() + item.type.slice(1)}
 										{#if item.type === 'bug' && item.urgency}
@@ -424,7 +546,10 @@
 					<div class="flex items-start justify-between mb-6">
 						<div>
 							<h2 class="text-xl font-semibold flex items-center gap-2" style="color: var(--text-primary);">
-								<svelte:component this={getTypeIcon(selectedFeedback.type)} class="h-6 w-6" style="color: {getTypeColor(selectedFeedback.type)};" />
+								{#if selectedFeedback.type}
+									{@const IconComponent = getTypeIcon(selectedFeedback.type)}
+									<IconComponent class="h-6 w-6" style="color: {getTypeColor(selectedFeedback.type)};" />
+								{/if}
 								{selectedFeedback.type.charAt(0).toUpperCase() + selectedFeedback.type.slice(1)} Feedback
 							</h2>
 							<div class="flex items-center gap-2 mt-1">
@@ -529,30 +654,284 @@
 						{/if}
 
 						<!-- Action Buttons -->
+						<div class="flex flex-col gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
+							<div class="flex gap-3">
+								<button
+									onclick={() => updateFeedbackStatus(selectedFeedback.id, newStatus, adminNotes)}
+									disabled={isUpdating}
+									class="button-primary button--gap flex-1"
+								>
+									{#if isUpdating}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										<CheckCircle class="h-4 w-4" />
+									{/if}
+									Update Feedback
+								</button>
+								<button
+									onclick={() => {
+										showFeedbackModal = false;
+										selectedFeedback = null;
+									}}
+									class="button-secondary flex-1"
+								>
+									Cancel
+								</button>
+							</div>
+							
+							{#if selectedFeedback.type === 'bug' || selectedFeedback.type === 'feature'}
+								<div class="pt-2 border-t" style="border-color: var(--border-secondary);">
+									<button
+										onclick={() => {
+											initializeConvertForm(selectedFeedback);
+											showConvertModal = true;
+										}}
+										class="button-info button--gap w-full"
+									>
+										<Code class="h-4 w-4" />
+										<ArrowRight class="h-4 w-4" />
+										Convert to Development Item
+									</button>
+									<p class="text-xs text-center mt-1" style="color: var(--text-tertiary);">
+										Track this as a development task with priority and progress
+									</p>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Convert to Development Item Modal -->
+	{#if showConvertModal && selectedFeedback}
+		<div class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+			<div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="p-6">
+					<div class="flex items-center justify-between mb-6">
+						<div>
+							<h2 class="text-xl font-semibold flex items-center gap-2" style="color: var(--text-primary);">
+								<Code class="h-6 w-6" style="color: var(--color-info-600);" />
+								Convert to Development Item
+							</h2>
+							<p class="text-sm mt-1" style="color: var(--text-secondary);">
+								Transform this feedback into a trackable development task
+							</p>
+						</div>
+						<button
+							onclick={() => {
+								showConvertModal = false;
+								resetConvertForm();
+								convertError = null;
+							}}
+							class="button-secondary button--icon"
+						>
+							<X class="h-5 w-5" />
+						</button>
+					</div>
+
+					<!-- Original Feedback Context -->
+					<div class="mb-6 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<h3 class="text-sm font-medium mb-2" style="color: var(--text-secondary);">Original Feedback</h3>
+						<div class="flex items-start gap-3">
+							{#if selectedFeedback.type}
+								{@const IconComponent = getTypeIcon(selectedFeedback.type)}
+								<IconComponent class="h-5 w-5 mt-0.5" style="color: {getTypeColor(selectedFeedback.type)};" />
+							{/if}
+							<div class="flex-1">
+								<p class="text-sm mb-1" style="color: var(--text-primary);">{selectedFeedback.description}</p>
+								<div class="flex items-center gap-3 text-xs" style="color: var(--text-tertiary);">
+									<span>By: {selectedFeedback.user_name}</span>
+									<span>Urgency: {selectedFeedback.urgency}/5</span>
+									{#if selectedFeedback.page_url}
+										<span>Page: {selectedFeedback.page_url}</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<form onsubmit={convertToDevelopmentItem} class="space-y-4">
+						<!-- Title -->
+						<div>
+							<label class="form-label">Development Item Title *</label>
+							<input
+								type="text"
+								bind:value={convertForm.title}
+								placeholder="Clear, actionable title for the development task"
+								class="form-input w-full"
+								required
+							/>
+						</div>
+
+						<!-- Priority, Category, Effort -->
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<div>
+								<label for="convert-priority" class="form-label">Priority</label>
+								<select id="convert-priority" bind:value={convertForm.priority} class="form-select w-full">
+									<option value="critical">Critical</option>
+									<option value="high">High</option>
+									<option value="medium">Medium</option>
+									<option value="low">Low</option>
+									<option value="backlog">Backlog</option>
+								</select>
+							</div>
+							<div>
+								<label class="form-label">Category</label>
+								<select bind:value={convertForm.category} class="form-select w-full">
+									<option value="tours">Tours</option>
+									<option value="bookings">Bookings</option>
+									<option value="payments">Payments</option>
+									<option value="qr_codes">QR Codes</option>
+									<option value="notifications">Notifications</option>
+									<option value="analytics">Analytics</option>
+									<option value="ui_ux">UI/UX</option>
+									<option value="performance">Performance</option>
+									<option value="security">Security</option>
+									<option value="integrations">Integrations</option>
+									<option value="mobile">Mobile</option>
+									<option value="api">API</option>
+									<option value="admin">Admin</option>
+									<option value="other">Other</option>
+								</select>
+							</div>
+							<div>
+								<label class="form-label">Effort Estimate</label>
+								<select bind:value={convertForm.effort} class="form-select w-full">
+									<option value="xs">XS (1-2h)</option>
+									<option value="s">S (3-8h)</option>
+									<option value="m">M (1-2d)</option>
+									<option value="l">L (3-5d)</option>
+									<option value="xl">XL (1-2w)</option>
+									<option value="xxl">XXL (3w+)</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- User Impact, Business Value -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="form-label">User Impact (1-5)</label>
+								<input
+									type="number"
+									bind:value={convertForm.userImpact}
+									min="1"
+									max="5"
+									class="form-input w-full"
+								/>
+								<p class="text-xs mt-1" style="color: var(--text-tertiary);">How many users are affected?</p>
+							</div>
+							<div>
+								<label class="form-label">Business Value (1-5)</label>
+								<input
+									type="number"
+									bind:value={convertForm.businessValue}
+									min="1"
+									max="5"
+									class="form-input w-full"
+								/>
+								<p class="text-xs mt-1" style="color: var(--text-tertiary);">How important for business goals?</p>
+							</div>
+						</div>
+
+						<!-- Acceptance Criteria -->
+						<div>
+							<label class="form-label">Acceptance Criteria</label>
+							{#each convertForm.acceptanceCriteria as criteria, index}
+								<div class="flex gap-2 mb-2">
+									<input
+										type="text"
+										bind:value={convertForm.acceptanceCriteria[index]}
+										placeholder="Define what 'done' looks like"
+										class="form-input flex-1"
+									/>
+									{#if convertForm.acceptanceCriteria.length > 1}
+										<button
+											type="button"
+											onclick={() => removeAcceptanceCriteria(index)}
+											class="button-danger button--icon"
+										>
+											<X class="h-4 w-4" />
+										</button>
+									{/if}
+								</div>
+							{/each}
+							<button
+								type="button"
+								onclick={addAcceptanceCriteria}
+								class="button-secondary button--gap text-sm"
+							>
+								<Plus class="h-3 w-3" />
+								Add Criteria
+							</button>
+						</div>
+
+						<!-- Technical Notes -->
+						<div>
+							<label class="form-label">Technical Notes</label>
+							<textarea
+								bind:value={convertForm.technicalNotes}
+								placeholder="Implementation notes, technical considerations, potential challenges..."
+								class="form-textarea w-full"
+								rows="3"
+							></textarea>
+						</div>
+
+						<!-- Target Release & Date -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="form-label">Target Release</label>
+								<input
+									type="text"
+									bind:value={convertForm.targetRelease}
+									placeholder="v1.2.0"
+									class="form-input w-full"
+								/>
+							</div>
+							<div>
+								<label class="form-label">Target Date</label>
+								<input
+									type="date"
+									bind:value={convertForm.targetDate}
+									class="form-input w-full"
+								/>
+							</div>
+						</div>
+
+						{#if convertError}
+							<div class="rounded-lg p-3" style="background: var(--color-danger-100); border: 1px solid var(--color-danger-200);">
+								<p class="text-sm" style="color: var(--color-danger-700);">{convertError}</p>
+							</div>
+						{/if}
+
+						<!-- Actions -->
 						<div class="flex gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
 							<button
-								onclick={() => updateFeedbackStatus(selectedFeedback.id, newStatus, adminNotes)}
-								disabled={isUpdating}
+								type="submit"
+								disabled={isConverting || !convertForm.title}
 								class="button-primary button--gap flex-1"
 							>
-								{#if isUpdating}
+								{#if isConverting}
 									<Loader2 class="h-4 w-4 animate-spin" />
 								{:else}
-									<CheckCircle class="h-4 w-4" />
+									<Code class="h-4 w-4" />
+									<ArrowRight class="h-4 w-4" />
 								{/if}
-								Update Feedback
+								Convert to Development Item
 							</button>
 							<button
+								type="button"
 								onclick={() => {
-									showFeedbackModal = false;
-									selectedFeedback = null;
+									showConvertModal = false;
+									resetConvertForm();
 								}}
 								class="button-secondary flex-1"
 							>
 								Cancel
 							</button>
 						</div>
-					</div>
+					</form>
 				</div>
 			</div>
 		</div>
