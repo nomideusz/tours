@@ -124,10 +124,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		`);
 
 		return json({
-			items: items.rows,
-			stats: stats.rows[0],
-			categoryStats: categoryStats.rows,
-			recentActivity: recentActivity.rows
+			items: items || [],
+			stats: stats?.[0] || {},
+			categoryStats: categoryStats || [],
+			recentActivity: recentActivity || []
 		});
 
 	} catch (error) {
@@ -189,10 +189,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				technical_notes, acceptance_criteria, tags, target_release,
 				estimated_hours, target_date, feedback_id
 			) VALUES (
-				${itemId}, ${title}, ${description}, ${type}, ${priority}, ${category}, ${effort},
-				${assignedTo}, ${locals.user.id}, ${userImpact}, ${businessValue},
-				${technicalNotes}, ${JSON.stringify(acceptanceCriteria)}, ${JSON.stringify(tags)}, 
-				${targetRelease}, ${estimatedHours}, ${targetDate}, ${feedbackId}
+				${itemId}, ${title}, ${description}, ${type}, ${priority}, ${category}, ${effort || null},
+				${assignedTo || null}, ${locals.user.id}, ${userImpact}, ${businessValue},
+				${technicalNotes || null}, ${JSON.stringify(acceptanceCriteria)}, ${JSON.stringify(tags)}, 
+				${targetRelease || null}, ${estimatedHours || null}, ${targetDate || null}, ${feedbackId || null}
 			)
 		`);
 
@@ -293,13 +293,11 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 		}
 
 		// Execute update
-		const query = `
+		await db.execute(sql`
 			UPDATE development_items 
-			SET ${updateFields.join(', ')} 
-			WHERE id = $1
-		`;
-
-		await db.execute(sql.raw(query, [itemId, ...values]));
+			SET ${sql.raw(updateFields.join(', '))}
+			WHERE id = ${itemId}
+		`);
 
 		// Add update comment
 		const changeDescription = Object.keys(updates).join(', ');

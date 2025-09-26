@@ -138,12 +138,12 @@
 				throw new Error(result.error || 'Failed to create development item');
 			}
 
+			// Refresh data first
+			await queryClient.invalidateQueries({ queryKey: ['admin', 'development'], exact: false });
+
 			// Reset form and close modal
 			resetCreateForm();
 			showCreateModal = false;
-
-			// Refresh data
-			await queryClient.invalidateQueries({ queryKey: ['admin', 'development'] });
 
 		} catch (error) {
 			createError = error instanceof Error ? error.message : 'Failed to create development item';
