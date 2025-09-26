@@ -1107,21 +1107,30 @@
 							{#if tour.description}
 								<div>
 									{#if tour.description.length > 200 && !showFullDescription}
-										<p class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">
-											{tour.description.slice(0, 200)}...
+										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
+											{#each tour.description.slice(0, 200).split('\n').filter((line: string) => line.trim()) as paragraph}
+												<p>{paragraph}</p>
+											{/each}
+											<span>...</span>
 											<button onclick={() => showFullDescription = true} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
 												Show more
 											</button>
-										</p>
+										</div>
 									{:else if tour.description.length > 200 && showFullDescription}
-										<p class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">
-											{tour.description}
+										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
+											{#each tour.description.split('\n').filter((line: string) => line.trim()) as paragraph}
+												<p>{paragraph}</p>
+											{/each}
 											<button onclick={() => showFullDescription = false} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
 												Show less
 											</button>
-										</p>
+										</div>
 									{:else}
-										<p class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">{tour.description}</p>
+										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
+											{#each tour.description.split('\n').filter((line: string) => line.trim()) as paragraph}
+												<p>{paragraph}</p>
+											{/each}
+										</div>
 									{/if}
 								</div>
 							{/if}

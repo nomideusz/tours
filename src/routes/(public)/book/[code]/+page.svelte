@@ -257,7 +257,11 @@
 						<h1 class="text-2xl font-semibold mb-3" style="color: var(--text-primary);">{tour.name}</h1>
 						
 						{#if tour.description}
-							<p class="text-sm mb-4" style="color: var(--text-secondary);">{tour.description}</p>
+							<div class="text-sm mb-4 space-y-2" style="color: var(--text-secondary);">
+								{#each tour.description.split('\n').filter((line: string) => line.trim()) as paragraph}
+									<p>{paragraph}</p>
+								{/each}
+							</div>
 						{/if}
 						
 						<!-- Tour Info Badges -->
