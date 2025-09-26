@@ -4,13 +4,13 @@
 			date: 'August 2025',
 			title: 'Beta Applications Open',
 			description: 'Accepting 50 tour guides for early access',
-			status: 'active'
+			status: 'past'
 		},
 		{
 			date: 'September 2025',
 			title: 'Beta Testing Begins',
 			description: 'Core functionality testing with selected guides',
-			status: 'upcoming'
+			status: 'active'
 		},
 		{
 			date: 'November 2025',
@@ -53,11 +53,15 @@
 					<div class="flex-shrink-0 relative z-10">
 						<div 
 							class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-							style="background: {event.status === 'active' ? 'var(--color-primary)' : 'var(--bg-primary)'};
-									border: 2px solid {event.status === 'active' ? 'var(--color-primary)' : 'var(--border-primary)'};"
+							style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+									border: 2px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
 						>
 							{#if event.status === 'active'}
 								<div class="w-2 h-2 rounded-full" style="background: var(--color-primary);"></div>
+							{:else if event.status === 'past'}
+								<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
+									<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
+								</svg>
 							{/if}
 						</div>
 					</div>
@@ -118,11 +122,15 @@
 							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
 								<div 
 									class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-									style="background: {event.status === 'active' ? 'var(--color-primary)' : 'var(--bg-primary)'};
-											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : 'var(--border-primary)'};"
+									style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
 								>
 									{#if event.status === 'active'}
 										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-primary);"></div>
+									{:else if event.status === 'past'}
+										<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
+											<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
+										</svg>
 									{/if}
 								</div>
 							</div>
@@ -137,11 +145,15 @@
 							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
 								<div 
 									class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-									style="background: {event.status === 'active' ? 'var(--color-primary)' : 'var(--bg-primary)'};
-											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : 'var(--border-primary)'};"
+									style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
 								>
 									{#if event.status === 'active'}
 										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-primary);"></div>
+									{:else if event.status === 'past'}
+										<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
+											<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
+										</svg>
 									{/if}
 								</div>
 							</div>
