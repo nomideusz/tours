@@ -47,11 +47,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			WHERE fs.id = ${feedbackId}
 		`);
 
-		if (feedbackResult.rows.length === 0) {
+		if (!feedbackResult || feedbackResult.length === 0) {
 			return json({ error: 'Feedback not found' }, { status: 404 });
 		}
 
-		const feedback = feedbackResult.rows[0];
+		const feedback = feedbackResult[0];
 
 		// Map feedback type to development type
 		let devType = 'improvement';
