@@ -25,17 +25,17 @@
 	--color-secondary-800: #9c4221;
 	--color-secondary-900: #7b341e;
 
-	/* Accent Color Scale - Teal tones */
-	--color-accent-50: #f0fdfa;
-	--color-accent-100: #ccfbf1;
-	--color-accent-200: #99f6e4;
-	--color-accent-300: #5eead4;
-	--color-accent-400: #2dd4bf;
-	--color-accent-500: #4F9DA6;
-	--color-accent-600: #0d9488;
-	--color-accent-700: #0f766e;
-	--color-accent-800: #115e59;
-	--color-accent-900: #134e4a;
+	/* Accent Color Scale - Complementary blue-green tones */
+	--color-accent-50: #f0f9ff;
+	--color-accent-100: #e0f2fe;
+	--color-accent-200: #bae6fd;
+	--color-accent-300: #7dd3fc;
+	--color-accent-400: #38bdf8;
+	--color-accent-500: #0ea5e9;
+	--color-accent-600: #0284c7;
+	--color-accent-700: #0369a1;
+	--color-accent-800: #075985;
+	--color-accent-900: #0c4a6e;
 
 
 
@@ -145,8 +145,16 @@
 	--bg-secondary: var(--color-gray-50);
 	--bg-tertiary: var(--color-gray-100);
 	--bg-input: #ffffff;
+	--bg-accent: var(--color-accent-500);
+	--text-accent: var(--color-accent-600);
 	--border-primary: var(--color-gray-200);
 	--border-secondary: var(--color-gray-300);
+	--border-accent: var(--color-accent-600);
+	--border-success: var(--color-success-600);
+	--border-warning: var(--color-warning-600);
+	--border-error: var(--color-error-600);
+	--border-danger: var(--color-error-600);
+	--border-info: var(--color-info-600);
 
 	/* Common shortcut colors for easier use */
 	--primary: var(--color-primary-600);
@@ -358,16 +366,16 @@
 	--color-secondary-900: #feebc8;
 
 	/* Accent Color Scale - Dark mode adjustments */
-	--color-accent-50: #022c22;
-	--color-accent-100: #134e4a;
-	--color-accent-200: #115e59;
-	--color-accent-300: #0f766e;
-	--color-accent-400: #0d9488;
-	--color-accent-500: #4F9DA6;
-	--color-accent-600: #2dd4bf;
-	--color-accent-700: #5eead4;
-	--color-accent-800: #99f6e4;
-	--color-accent-900: #ccfbf1;
+	--color-accent-50: #0c1e2e;
+	--color-accent-100: #0c4a6e;
+	--color-accent-200: #075985;
+	--color-accent-300: #0369a1;
+	--color-accent-400: #0284c7;
+	--color-accent-500: #0ea5e9;
+	--color-accent-600: #38bdf8;
+	--color-accent-700: #7dd3fc;
+	--color-accent-800: #bae6fd;
+	--color-accent-900: #e0f2fe;
 
 
 
@@ -465,6 +473,7 @@
 	--text-primary: #f6f7f8;
 	--text-secondary: #d6d7d8;
 	--text-tertiary: #a6a7a9;
+	--text-accent: var(--color-accent-600);
 	--border-primary: #424547;
 	--border-secondary: #2a2d32;
 

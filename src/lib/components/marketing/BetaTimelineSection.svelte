@@ -38,26 +38,26 @@
 	<!-- Timeline Container -->
 	<div class="mx-auto">
 		<!-- Mobile Layout -->
-		<div class="sm:hidden">
+		<div class="sm:hidden relative">
 			{#each timelineEvents as event, index}
 				<div class="relative flex items-start group">
 					<!-- Vertical line segment -->
 					{#if index !== timelineEvents.length - 1}
 						<div 
-							class="absolute left-[11px] top-8 bottom-0 w-[2px]" 
+							class="absolute left-3 top-9 -bottom-3 w-[2px]" 
 							style="background: var(--border-primary);"
 						></div>
 					{/if}
 					
 					<!-- Dot -->
-					<div class="flex-shrink-0 relative z-10">
+					<div class="flex-shrink-0 relative z-10 w-6 h-6 mt-3">
 						<div 
 							class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-							style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
-									border: 2px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
+							style="background: {event.status === 'active' ? 'var(--color-accent-100)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+									border: 2px solid {event.status === 'active' ? 'var(--color-accent-700)' : event.status === 'past' ? 'var(--border-secondary)' : 'var(--border-primary)'};"
 						>
 							{#if event.status === 'active'}
-								<div class="w-2 h-2 rounded-full" style="background: var(--color-primary);"></div>
+								<div class="w-2 h-2 rounded-full animate-pulse" style="background: var(--color-accent-600);"></div>
 							{:else if event.status === 'past'}
 								<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
 									<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
@@ -71,7 +71,7 @@
 						<div class="p-3 -ml-3 rounded-lg transition-all duration-300 hover:bg-[var(--bg-secondary)] group-hover:translate-x-1">
 							<div 
 								class="text-sm font-semibold mb-1"
-								style="color: {event.status === 'active' ? 'var(--color-primary)' : 'var(--text-tertiary)'};"
+								style="color: {event.status === 'active' ? 'var(--text-accent)' : 'var(--text-tertiary)'};"
 							>
 								{event.date}
 							</div>
@@ -105,7 +105,7 @@
 								<div class="inline-block text-right w-full ml-auto p-4 rounded-lg transition-all duration-300 group-hover:-translate-x-2 hover:bg-[var(--bg-secondary)]">
 									<div 
 										class="text-sm font-semibold mb-1"
-										style="color: {event.status === 'active' ? 'var(--color-primary)' : 'var(--text-tertiary)'};"
+										style="color: {event.status === 'active' ? 'var(--text-accent)' : 'var(--text-tertiary)'};"
 									>
 										{event.date}
 									</div>
@@ -122,11 +122,11 @@
 							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
 								<div 
 									class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-									style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
-											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
+									style="background: {event.status === 'active' ? 'var(--color-accent-100)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+											border: 3px solid {event.status === 'active' ? 'var(--color-accent-700)' : event.status === 'past' ? 'var(--border-secondary)' : 'var(--border-primary)'};"
 								>
 									{#if event.status === 'active'}
-										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-primary);"></div>
+										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-accent-600);"></div>
 									{:else if event.status === 'past'}
 										<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
 											<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
@@ -145,11 +145,11 @@
 							<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
 								<div 
 									class="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-									style="background: {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
-											border: 3px solid {event.status === 'active' ? 'var(--color-primary)' : event.status === 'past' ? 'var(--text-tertiary)' : 'var(--border-primary)'};"
+									style="background: {event.status === 'active' ? 'var(--color-accent-100)' : event.status === 'past' ? 'var(--bg-secondary)' : 'var(--bg-primary)'};
+											border: 3px solid {event.status === 'active' ? 'var(--color-accent-700)' : event.status === 'past' ? 'var(--border-secondary)' : 'var(--border-primary)'};"
 								>
 									{#if event.status === 'active'}
-										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-primary);"></div>
+										<div class="w-3 h-3 rounded-full animate-pulse" style="background: var(--color-accent-600);"></div>
 									{:else if event.status === 'past'}
 										<svg class="w-3 h-3" viewBox="0 0 20 20" fill="none">
 											<path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill="var(--text-tertiary)"/>
@@ -163,7 +163,7 @@
 								<div class="inline-block w-full p-4 rounded-lg transition-all duration-300 group-hover:translate-x-2 hover:bg-[var(--bg-secondary)]">
 									<div 
 										class="text-sm font-semibold mb-1"
-										style="color: {event.status === 'active' ? 'var(--color-primary)' : 'var(--text-tertiary)'};"
+										style="color: {event.status === 'active' ? 'var(--text-accent)' : 'var(--text-tertiary)'};"
 									>
 										{event.date}
 									</div>
@@ -231,6 +231,6 @@
 	
 	/* Hover text color changes */
 	.group:hover .group-hover\:text-primary {
-		color: var(--color-primary) !important;
+		color: var(--text-accent) !important;
 	}
 </style>
