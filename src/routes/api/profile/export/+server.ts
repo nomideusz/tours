@@ -77,7 +77,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				duration: tour.duration,
 				capacity: tour.capacity,
 				status: tour.status,
-				category: tour.category,
+				categories: tour.categories || [],
 				location: tour.location,
 				includedItems: tour.includedItems,
 				requirements: tour.requirements,

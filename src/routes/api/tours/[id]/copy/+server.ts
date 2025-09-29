@@ -60,7 +60,7 @@ export const POST: RequestHandler = async ({ params, locals, fetch }) => {
 			duration: originalTour.duration,
 			price: originalTour.price,
 			capacity: originalTour.capacity,
-			category: originalTour.category,
+			categories: originalTour.categories || [],
 			includedItems: originalTour.includedItems,
 			requirements: originalTour.requirements,
 			cancellationPolicy: originalTour.cancellationPolicy,
