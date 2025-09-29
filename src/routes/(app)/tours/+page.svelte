@@ -828,7 +828,7 @@
 													color: var(--color-primary-700);
 												"
 											>
-												{category}
+												{category.charAt(0).toUpperCase() + category.slice(1)}
 											</span>
 										{/each}
 										{#if tour.categories.length > 3}

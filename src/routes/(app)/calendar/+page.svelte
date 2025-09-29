@@ -688,14 +688,7 @@
 		<div class="mb-6">
 			<MobilePageHeader
 				title="Calendar"
-				quickActions={!showOnboarding ? [
-					{
-						label: 'Add Tour',
-						icon: Plus,
-						onclick: () => goto('/tours/new'),
-						variant: 'primary'
-					}
-				] : []}
+				quickActions={[]}
 			/>
 			
 			<div class="hidden sm:block">
