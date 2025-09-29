@@ -64,12 +64,12 @@ const VALIDATION_RULES = {
 	duration: {
 		required: true,
 		min: 15,
-		max: 1440 // 24 hours
+		max: 2880 // 48 hours
 	},
 	capacity: {
 		required: true,
 		min: 1,
-		max: 100
+		max: 200
 	},
 	category: {
 		required: false,
@@ -112,7 +112,7 @@ const TIME_SLOT_VALIDATION_RULES = {
 	availableSpots: {
 		required: true,
 		min: 1,
-		max: 100
+		max: 200
 	},
 	recurringEnd: {
 		required: false
@@ -353,9 +353,9 @@ export function validateTimeSlotForm(data: Partial<TimeSlotFormData>, tourCapaci
 			errors.push({ field: 'endTime', message: 'Duration must be at least 15 minutes' });
 		}
 		
-		// Check maximum duration (24 hours)
-		if (durationMinutes > 1440) {
-			errors.push({ field: 'endTime', message: 'Duration cannot exceed 24 hours' });
+		// Check maximum duration (48 hours)
+		if (durationMinutes > 2880) {
+			errors.push({ field: 'endTime', message: 'Duration cannot exceed 48 hours' });
 		}
 	}
 

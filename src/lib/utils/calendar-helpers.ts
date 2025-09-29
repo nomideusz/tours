@@ -93,7 +93,7 @@ export function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[], l
 		return lastUsed;
 	}
 	
-	// Fallback to tour capacity, but ensure it's at least 10 for better UX
+	// Fallback to tour capacity
 	const tourCapacity = tour?.capacity || 10;
-	return tourCapacity <= 1 ? 10 : tourCapacity;
+	return tourCapacity;
 }

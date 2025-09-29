@@ -101,6 +101,7 @@
 	let timeSlotForm = $state({
 		startTime: '10:00',
 		endTime: '12:00',
+		endDate: '',
 		capacity: 10,
 		recurring: false,
 		recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
@@ -821,6 +822,7 @@
 					timeSlotForm = {
 						startTime: '10:00',
 						endTime: '12:00',
+						endDate: '',
 						capacity: 10,
 						recurring: false,
 						recurringType: 'weekly',
@@ -905,6 +907,7 @@
 							timeSlotForm = {
 								startTime: '10:00',
 								endTime: '12:00',
+								endDate: '',
 								capacity: defaultCapacity,
 								recurring: false,
 								recurringType: 'weekly',

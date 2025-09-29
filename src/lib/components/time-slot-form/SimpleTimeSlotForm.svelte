@@ -14,6 +14,7 @@
 	import DatePicker from '$lib/components/DatePicker.svelte';
 	import ConflictWarning from './components/ConflictWarning.svelte';
 	import DaySlotPreview from './components/DaySlotPreview.svelte';
+	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -58,6 +59,7 @@
 	let date = $state('');
 	let startTime = $state('');
 	let endTime = $state('');
+	let endDate = $state('');
 	let capacity = $state(0);
 	
 
@@ -81,6 +83,7 @@
 		date: '',
 		startTime: '',
 		endTime: '',
+		endDate: '',
 		capacity: 10,
 		availability: 'available' as const,
 		notes: '',
@@ -94,6 +97,7 @@
 		formData.date = date;
 		formData.startTime = startTime;
 		formData.endTime = endTime;
+		formData.endDate = endDate;
 		formData.capacity = capacity;
 		formData.recurring = recurring;
 		formData.recurringEnd = recurringEnd;
@@ -117,14 +121,28 @@
 	let tour = $derived(propTour || $tourQuery?.data?.tour);
 	let isLoading = $derived(propTour ? $scheduleQuery.isLoading : ($tourQuery?.isLoading || $scheduleQuery.isLoading));
 	
-	// Create slots map for calendar
+	// Create slots map for calendar (including multi-day spans)
 	let slotsMap = $derived.by(() => {
 		const map = new Map<string, number>();
 		const slots = $scheduleQuery.data?.timeSlots || [];
+		
 		slots.forEach((slot: any) => {
-			const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
-			map.set(slotDate, (map.get(slotDate) || 0) + 1);
+			const startDate = new Date(slot.startTime);
+			const endDate = new Date(slot.endTime);
+			
+			// Reset times to compare dates only
+			startDate.setHours(0, 0, 0, 0);
+			endDate.setHours(0, 0, 0, 0);
+			
+			// Add entry for each day the slot spans
+			const currentDate = new Date(startDate);
+			while (currentDate <= endDate) {
+				const dateStr = currentDate.toISOString().split('T')[0];
+				map.set(dateStr, (map.get(dateStr) || 0) + 1);
+				currentDate.setDate(currentDate.getDate() + 1);
+			}
 		});
+		
 		return map;
 	});
 	
@@ -152,7 +170,7 @@
 		const slots = $scheduleQuery.data?.timeSlots || [];
 		
 		// Check main slot
-		return startTime && endTime ? checkConflicts(date, startTime, endTime, slots) : [];
+		return startTime && endTime ? checkConflicts(date, startTime, endTime, slots, endDate) : [];
 	});
 	
 	// Check for recurring conflicts
@@ -166,6 +184,9 @@
 	let isValid = $derived.by(() => {
 		// Basic validation
 		if (!date || !startTime || !endTime || capacity <= 0 || duration <= 0) return false;
+		
+		// Multi-day validation
+		if (tour?.duration > 1440 && !endDate) return false;
 		
 		// Check recurring requirements
 		if (recurring && (!formData.recurringEnd || new Date(formData.recurringEnd) <= new Date(date))) return false;
@@ -184,10 +205,10 @@
 		if (tour && !isInitialized && !$scheduleQuery.isLoading) {
 			untrack(() => {
 				isInitialized = true;
-				// Use capacity from most recent time slot, or default to 10
+				// Use capacity from most recent time slot, or default to tour's capacity
 				const currentSlots = $scheduleQuery.data?.timeSlots || [];
 				const lastUsedCapacity = getLastUsedCapacity(currentSlots);
-				capacity = lastUsedCapacity || 10;
+				capacity = lastUsedCapacity || tour.capacity || 10;
 				
 				// Set smart date/time defaults
 				const today = new Date();
@@ -209,8 +230,9 @@
 				);
 				
 				// Always use the smart time (it will find a non-conflicting time)
-				startTime = smartTime.startTime;
+				startTime = smartTime.startTime || '10:00';
 				endTime = smartTime.endTime;
+				endDate = smartTime.endDate || '';
 				
 				// If suggested a new date, update it
 				if (smartTime.suggestedNewDate) {
@@ -227,8 +249,9 @@
 						currentSlots,
 						tour.duration
 					);
-					startTime = newDayTime.startTime;
+					startTime = newDayTime.startTime || '10:00';
 					endTime = newDayTime.endTime;
+					endDate = newDayTime.endDate || '';
 				}
 			});
 		}
@@ -269,18 +292,24 @@
 	$effect(() => {
 		if (date && tour && touchedFields.has('date') && !touchedFields.has('startTime')) {
 			untrack(() => {
+				// If no start time is set yet, default to 10:00
+				if (!startTime) {
+					startTime = '10:00';
+				}
+				
 				const currentSlots = $scheduleQuery.data?.timeSlots || [];
 				const smartTime = findNextAvailableTime(
 					date,
-					customDuration,
+					customDuration || tour.duration,
 					lastCreatedSlot?.date === date ? lastCreatedSlot.time : null,
 					lastCreatedSlot?.date || '',
 					currentSlots,
 					tour.duration
 				);
 				
-				startTime = smartTime.startTime;
+				startTime = smartTime.startTime || '10:00';
 				endTime = smartTime.endTime;
+				endDate = smartTime.endDate || '';
 				
 				// Show auto-suggestion hint if we found a conflict-free time
 				if (currentSlots.some((slot: any) => {
@@ -402,21 +431,27 @@
 			const mainStart = new Date(`${date}T${startTime}:00`);
 			let mainEnd: Date;
 			
-			// Check if slot spans midnight
-			const [startHour, startMinute] = startTime.split(':').map(Number);
-			const [endHour, endMinute] = endTime.split(':').map(Number);
-			const startMinutes = startHour * 60 + startMinute;
-			const endMinutes = endHour * 60 + endMinute;
-			
-			if (endMinutes <= startMinutes) {
-				// Slot spans midnight, end time is on the next day
-				const nextDay = new Date(date);
-				nextDay.setDate(nextDay.getDate() + 1);
-				const nextDayStr = nextDay.toISOString().split('T')[0];
-				mainEnd = new Date(`${nextDayStr}T${endTime}:00`);
+			// Handle multi-day slots
+			if (endDate && endDate !== date) {
+				// Multi-day slot
+				mainEnd = new Date(`${endDate}T${endTime}:00`);
 			} else {
-				// Same day slot
-				mainEnd = new Date(`${date}T${endTime}:00`);
+				// Same day or overnight slot
+				const [startHour, startMinute] = startTime.split(':').map(Number);
+				const [endHour, endMinute] = endTime.split(':').map(Number);
+				const startMinutes = startHour * 60 + startMinute;
+				const endMinutes = endHour * 60 + endMinute;
+				
+				if (endMinutes <= startMinutes) {
+					// Slot spans midnight, end time is on the next day
+					const nextDay = new Date(date);
+					nextDay.setDate(nextDay.getDate() + 1);
+					const nextDayStr = nextDay.toISOString().split('T')[0];
+					mainEnd = new Date(`${nextDayStr}T${endTime}:00`);
+				} else {
+					// Same day slot
+					mainEnd = new Date(`${date}T${endTime}:00`);
+				}
 			}
 			
 			const slotData = {
@@ -595,16 +630,32 @@
 					<div class="form-fields">
 						<!-- Time Selection -->
 						<div class="form-field time-field">
-							<TimeRange
-								bind:startTime
-								bind:endTime
-								label=""
-								defaultDuration={tour.duration}
-								resetManualFlag={resetTimeRangeFlag}
-								onEndTimeChange={(time) => {
-									handleFieldChange('endTime');
-								}}
-							/>
+							{#if tour.duration > 1440}
+								<!-- Multi-day tour: use MultiDayTimeRange -->
+								<MultiDayTimeRange
+									bind:startDate={date}
+									bind:startTime
+									bind:endDate
+									bind:endTime
+									label=""
+									tourDuration={tour.duration}
+									onStartTimeChange={() => handleFieldChange('startTime')}
+									onEndTimeChange={() => handleFieldChange('endTime')}
+									onEndDateChange={() => handleFieldChange('endDate')}
+								/>
+							{:else}
+								<!-- Single-day tour: use TimeRange -->
+								<TimeRange
+									bind:startTime
+									bind:endTime
+									label=""
+									defaultDuration={tour.duration}
+									resetManualFlag={resetTimeRangeFlag}
+									onEndTimeChange={(time) => {
+										handleFieldChange('endTime');
+									}}
+								/>
+							{/if}
 							{#if autoSuggestedTime}
 								<p class="auto-suggest-hint">
 									<CheckCircle class="w-4 h-4 inline" />

@@ -3,6 +3,7 @@
 
 	import DurationSlider from './DurationSlider.svelte';
 	import PriceSlider from './PriceSlider.svelte';
+	import CapacitySlider from './CapacitySlider.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
@@ -40,6 +41,7 @@
 			description: string;
 			price: number;
 			duration: number;
+			capacity: number;
 			status: 'active' | 'draft';
 			categories: string[];
 			location: string;
@@ -166,10 +168,11 @@
 			touchedFields.add('description');
 			touchedFields.add('price');
 			touchedFields.add('duration');
+			touchedFields.add('capacity');
 			
 			// Validate all fields using the same field-specific approach
 			const validation = validateTourForm(formData);
-			const requiredFields = ['name', 'description', 'price', 'duration'];
+			const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 			
 			// Clear all validation errors first
 			validationErrors = [];
@@ -199,10 +202,11 @@
 		touchedFields.add('description');
 		touchedFields.add('price');
 		touchedFields.add('duration');
+		touchedFields.add('capacity');
 		
 		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration'];
+		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
@@ -284,10 +288,11 @@
 		touchedFields.add('description');
 		touchedFields.add('price');
 		touchedFields.add('duration');
+		touchedFields.add('capacity');
 		
 		// Use the same field-specific validation approach
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration'];
+		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
@@ -866,7 +871,7 @@
 						bind:value={formData.duration}
 						label="Duration"
 						min={15}
-						max={480}
+						max={2880}
 						step={15}
 						required={true}
 						error={hasFieldError(allErrors, 'duration')}
@@ -883,6 +888,30 @@
 
 
 	</div>
+
+				<!-- Capacity field row -->
+				<div class="mt-6">
+					<CapacitySlider
+						bind:value={formData.capacity}
+						label="Default capacity"
+						min={1}
+						max={200}
+						step={1}
+						required={true}
+						error={hasFieldError(allErrors, 'capacity')}
+						onChange={() => validateField('capacity')}
+						defaultValue={10}
+						showMarkers={false}
+					/>
+					{#if getFieldError(allErrors, 'capacity')}
+						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
+					{/if}
+					<p class="text-xs mt-1 pt-2" style="color: var(--text-secondary);">
+						Maximum number of people per time slot. Can be adjusted for individual slots.
+					</p>
+					<!-- Hidden input for form submission -->
+					<input type="hidden" name="capacity" bind:value={formData.capacity} />
+				</div>
 
 				<!-- Advanced Pricing Section (Collapsible) - Desktop Only -->
 				<div class="mt-6 hidden md:block">

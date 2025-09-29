@@ -193,18 +193,25 @@
 		// Filter slots based on current view and date for tour-specific views
 		let filteredSlots = processedTimeSlots;
 		
-		if (tourId && (view === 'day' || view === 'week')) {
-			// For tour-specific day/week views, filter by current period
+		if (view === 'day' || view === 'week') {
+			// For day/week views, filter by current period (including multi-day tours)
 			filteredSlots = processedTimeSlots.filter((slot: TimeSlot) => {
-				const slotDate = new Date(slot.startTime);
-				
 				if (view === 'day') {
-					// Show only slots for the current day - use UTC date comparison to avoid timezone issues
-					const slotDateUTC = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
-					const currentDateUTC = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-					return slotDateUTC.getTime() === currentDateUTC.getTime();
+					// Show slots that overlap with the current day (including multi-day tours)
+					const slotStartDate = new Date(slot.startTime);
+					const slotEndDate = new Date(slot.endTime);
+					
+					// Create date-only versions for comparison
+					const currentDateStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+					const currentDateEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 23, 59, 59, 999);
+					
+					// Check if the slot overlaps with the current day
+					return slotStartDate <= currentDateEnd && slotEndDate >= currentDateStart;
 				} else if (view === 'week') {
-					// Show only slots for the current week
+					// Show slots that overlap with the current week (including multi-day tours)
+					const slotStartDate = new Date(slot.startTime);
+					const slotEndDate = new Date(slot.endTime);
+					
 					const weekStart = new Date(currentDate);
 					const dayOfWeek = weekStart.getDay();
 					const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Monday as start
@@ -215,7 +222,8 @@
 					weekEnd.setDate(weekEnd.getDate() + 6);
 					weekEnd.setHours(23, 59, 59, 999);
 					
-					return slotDate >= weekStart && slotDate <= weekEnd;
+					// Check if the slot overlaps with the week
+					return slotStartDate <= weekEnd && slotEndDate >= weekStart;
 				}
 				
 				return true;
@@ -223,15 +231,36 @@
 		}
 		
 		filteredSlots.forEach((slot: TimeSlot) => {
-			const date = new Date(slot.startTime);
-			// Use local date components to create consistent date key regardless of timezone
-			const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-			const dateKey = localDate.toDateString();
-			
-			if (!groups.has(dateKey)) {
-				groups.set(dateKey, []);
+			if (view === 'day') {
+				// In day view, only add to the current day's group
+				const dateKey = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()).toDateString();
+				
+				if (!groups.has(dateKey)) {
+					groups.set(dateKey, []);
+				}
+				groups.get(dateKey)!.push(slot);
+			} else {
+				// In week/month view, add to all days the slot spans
+				const startDate = new Date(slot.startTime);
+				const endDate = new Date(slot.endTime);
+				
+				// Reset times to start of day for proper day-by-day iteration
+				const iterDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+				const finalDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+				
+				// Add the slot to each day it spans
+				while (iterDate <= finalDate) {
+					const dateKey = iterDate.toDateString();
+					
+					if (!groups.has(dateKey)) {
+						groups.set(dateKey, []);
+					}
+					groups.get(dateKey)!.push(slot);
+					
+					// Move to next day
+					iterDate.setDate(iterDate.getDate() + 1);
+				}
 			}
-			groups.get(dateKey)!.push(slot);
 		});
 		
 		// Sort dates
@@ -383,11 +412,19 @@
 	function getDaySlots(date: Date): TimeSlot[] {
 		// Use processedTimeSlots to ensure utilizationRate is calculated
 		return processedTimeSlots.filter((slot: TimeSlot) => {
-			const slotDate = new Date(slot.startTime);
-			// Compare using local date components to avoid timezone issues
-			const slotDateLocal = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
-			const targetDateLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-			return slotDateLocal.getTime() === targetDateLocal.getTime();
+			const slotStart = new Date(slot.startTime);
+			const slotEnd = new Date(slot.endTime);
+			
+			// Create date-only versions for comparison
+			const targetDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+			const targetDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+			
+			// Check if the slot overlaps with this day at all
+			// This includes:
+			// 1. Slots that start on this day
+			// 2. Slots that end on this day
+			// 3. Slots that span across this day (multi-day slots)
+			return slotStart <= targetDateEnd && slotEnd >= targetDateStart;
 		});
 	}
 	
@@ -833,7 +870,7 @@
 				body: JSON.stringify({
 					startTime: startDateTime.toISOString(),
 					endTime: endDateTime.toISOString(),
-					capacity: 10, // Default capacity, user can edit it afterward
+					capacity: tour?.capacity || 10, // Use tour's default capacity
 					status: 'available'
 				})
 			});
@@ -1109,6 +1146,22 @@
 										<div class="slot-time">
 											<Clock class="h-4 w-4" />
 											<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+											{#if new Date(slot.startTime).toDateString() !== new Date(slot.endTime).toDateString()}
+												{@const slotStartDate = new Date(slot.startTime)}
+												{@const slotEndDate = new Date(slot.endTime)}
+												{@const currentDateStr = dateKey}
+												{@const currentDateObj = new Date(currentDateStr)}
+												{@const startDay = new Date(slotStartDate.getFullYear(), slotStartDate.getMonth(), slotStartDate.getDate())}
+												{@const endDay = new Date(slotEndDate.getFullYear(), slotEndDate.getMonth(), slotEndDate.getDate())}
+												{@const daysDiff = Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24))}
+												{@const totalDays = daysDiff + 1}
+												{@const currentDay = new Date(currentDateObj.getFullYear(), currentDateObj.getMonth(), currentDateObj.getDate())}
+												{@const currentDayDiff = Math.floor((currentDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24))}
+												{@const currentDayNum = currentDayDiff + 1}
+												<span class="multi-day-indicator">
+													Day {currentDayNum} of {totalDays}
+												</span>
+											{/if}
 										</div>
 										
 										<div class="slot-info">
@@ -1195,6 +1248,22 @@
 										<div class="slot-time">
 											<Clock class="h-4 w-4" />
 											<span>{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+											{#if new Date(slot.startTime).toDateString() !== new Date(slot.endTime).toDateString()}
+												{@const slotStartDate = new Date(slot.startTime)}
+												{@const slotEndDate = new Date(slot.endTime)}
+												{@const currentDateStr = dateKey}
+												{@const currentDateObj = new Date(currentDateStr)}
+												{@const startDay = new Date(slotStartDate.getFullYear(), slotStartDate.getMonth(), slotStartDate.getDate())}
+												{@const endDay = new Date(slotEndDate.getFullYear(), slotEndDate.getMonth(), slotEndDate.getDate())}
+												{@const daysDiff = Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24))}
+												{@const totalDays = daysDiff + 1}
+												{@const currentDay = new Date(currentDateObj.getFullYear(), currentDateObj.getMonth(), currentDateObj.getDate())}
+												{@const currentDayDiff = Math.floor((currentDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24))}
+												{@const currentDayNum = currentDayDiff + 1}
+												<span class="multi-day-indicator">
+													Day {currentDayNum} of {totalDays}
+												</span>
+											{/if}
 										</div>
 										
 										<div class="slot-info">
@@ -1515,6 +1584,9 @@
 											<span class="popover-time">
 												<Clock class="h-3 w-3" />
 												{formatSlotTimeRange(slot.startTime, slot.endTime)}
+												{#if new Date(slot.startTime).toDateString() !== new Date(slot.endTime).toDateString()}
+													<span class="multi-day-badge">Multi-day</span>
+												{/if}
 											</span>
 											<span class="popover-capacity">
 												<Users class="h-3 w-3" />

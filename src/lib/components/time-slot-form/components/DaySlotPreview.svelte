@@ -30,12 +30,21 @@
 	
 	let { date, slots, isVisible = true }: Props = $props();
 	
-	// Sort slots by start time
+	// Sort slots by start time, including multi-day slots that span this date
 	let sortedSlots = $derived(
 		slots
 			.filter(slot => {
-				const slotDate = new Date(slot.startTime).toISOString().split('T')[0];
-				return slotDate === date;
+				const slotStart = new Date(slot.startTime);
+				const slotEnd = new Date(slot.endTime);
+				const selectedDate = new Date(date + 'T00:00:00');
+				const selectedDateEnd = new Date(date + 'T23:59:59');
+				
+				// Check if the slot overlaps with the selected date
+				// This includes slots that:
+				// 1. Start on this date
+				// 2. End on this date  
+				// 3. Span across this date
+				return slotStart <= selectedDateEnd && slotEnd >= selectedDate;
 			})
 			.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
 	);
@@ -62,6 +71,27 @@
 		if (slot.availableSpots === 0) return 'slot-status--full';
 		return 'slot-status--partial';
 	}
+	
+	function isMultiDaySlot(slot: TimeSlot): boolean {
+		const startDate = new Date(slot.startTime).toISOString().split('T')[0];
+		const endDate = new Date(slot.endTime).toISOString().split('T')[0];
+		return startDate !== endDate;
+	}
+	
+	function getMultiDayInfo(slot: TimeSlot): string {
+		if (!isMultiDaySlot(slot)) return '';
+		
+		const slotStartDate = new Date(slot.startTime).toISOString().split('T')[0];
+		const slotEndDate = new Date(slot.endTime).toISOString().split('T')[0];
+		
+		if (date === slotStartDate) {
+			return `Starts today → ${new Date(slotEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+		} else if (date === slotEndDate) {
+			return `${new Date(slotStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → Ends today`;
+		} else {
+			return `${new Date(slotStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → ${new Date(slotEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+		}
+	}
 </script>
 
 {#if isVisible}
@@ -82,7 +112,17 @@
 							<div class="slot-time">
 								<Clock class="w-3.5 h-3.5" />
 								<span class="time-text">{formatSlotTimeRange(slot.startTime, slot.endTime)}</span>
+								{#if isMultiDaySlot(slot)}
+									<span class="multi-day-badge">Multi-day</span>
+								{/if}
 							</div>
+							
+							{#if isMultiDaySlot(slot)}
+								<div class="multi-day-info">
+									<Calendar class="w-3 h-3" />
+									<span>{getMultiDayInfo(slot)}</span>
+								</div>
+							{/if}
 							
 							<div class="slot-details">
 								<div class="detail-item">
@@ -241,10 +281,34 @@
 		font-family: var(--font-mono);
 	}
 	
+	.multi-day-badge {
+		padding: 0.125rem 0.375rem;
+		background: var(--color-primary-100);
+		color: var(--color-primary-700);
+		border-radius: var(--radius-sm);
+		font-size: 0.625rem;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+	}
+	
+	.multi-day-info {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: var(--text-xs);
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--radius-sm);
+		margin-top: 0.25rem;
+	}
+	
 	.slot-details {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		margin-top: 0.375rem;
 	}
 	
 	.detail-item {

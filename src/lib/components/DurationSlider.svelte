@@ -20,7 +20,7 @@
 		value = $bindable(),
 		label = 'Tour Duration',
 		min = 15,
-		max = 480, // 8 hours
+		max = 2880, // 48 hours
 		step = 15,
 		required = false,
 		disabled = false,
@@ -263,9 +263,15 @@
 		} else if (range <= 360) {
 			// Larger ranges (up to 6 hours): every 1.5 hours
 			markerValues = [60, 150, 240, 330].filter(duration => duration >= min && duration <= max);
+		} else if (range <= 720) {
+			// Large ranges (up to 12 hours): every 2-3 hours
+			markerValues = [120, 240, 360, 480, 600, 720].filter(duration => duration >= min && duration <= max);
+		} else if (range <= 1440) {
+			// Very large ranges (up to 24 hours): every 4-6 hours
+			markerValues = [240, 480, 720, 960, 1200, 1440].filter(duration => duration >= min && duration <= max);
 		} else {
-			// Very large ranges: every 2 hours
-			markerValues = [120, 240, 360, 480].filter(duration => duration >= min && duration <= max);
+			// Extreme ranges (up to 48 hours): every 6-12 hours
+			markerValues = [360, 720, 1080, 1440, 2160, 2880].filter(duration => duration >= min && duration <= max);
 		}
 		
 		// Ensure minimum spacing between markers (at least 15% of slider width)
@@ -293,10 +299,20 @@
 	
 	// Format duration for display
 	function formatDuration(minutes: number): { hours: number; mins: number; display: string } {
-		const hours = Math.floor(minutes / 60);
+		const days = Math.floor(minutes / 1440);
+		const hours = Math.floor((minutes % 1440) / 60);
 		const mins = minutes % 60;
 		
-		if (hours === 0) {
+		if (days > 0) {
+			// Show days for multi-day tours
+			if (hours === 0 && mins === 0) {
+				return { hours: days * 24, mins: 0, display: `${days}d` };
+			} else if (mins === 0) {
+				return { hours: days * 24 + hours, mins: 0, display: `${days}d ${hours}h` };
+			} else {
+				return { hours: days * 24 + hours, mins, display: `${days}d ${hours}h ${mins}min` };
+			}
+		} else if (hours === 0) {
 			return { hours: 0, mins, display: `${mins}min` };
 		} else if (mins === 0) {
 			return { hours, mins: 0, display: `${hours}h` };

@@ -15,9 +15,9 @@ export function findNextAvailableTime(
 	
 	if (!targetDate) {
 		const defaultStart = '10:00';
-		const start = new Date(`2000-01-01T${defaultStart}:00`);
-		const end = new Date(start.getTime() + durationMs);
-		return { startTime: defaultStart, endTime: end.toTimeString().slice(0, 5), suggestedNewDate: false };
+		const today = new Date().toISOString().split('T')[0];
+		const result = getEndTimeFromDuration(defaultStart, duration, today);
+		return { startTime: defaultStart, endTime: result.endTime, suggestedNewDate: false, endDate: result.endDate, daysSpan: result.daysSpan };
 	}
 	
 	// Check if it's today and we need to avoid past times
@@ -49,10 +49,14 @@ export function findNextAvailableTime(
 			
 			if (!hasConflict) {
 				const end = new Date(suggestedStart.getTime() + durationMs);
+				const endDateStr = end.toISOString().split('T')[0];
+				const daysSpan = endDateStr !== targetDate ? 1 : 0;
 				return { 
 					startTime: suggestedTimeStr, 
 					endTime: end.toTimeString().slice(0, 5),
-					suggestedNewDate: false
+					suggestedNewDate: false,
+					endDate: daysSpan > 0 ? endDateStr : undefined,
+					daysSpan
 				};
 			}
 		}
@@ -95,10 +99,13 @@ export function findNextAvailableTime(
 		
 		// If no slots on this day, use default start time
 		if (sameDaySlots.length === 0) {
+			const result = getEndTimeFromDuration(startTime, duration, searchDateStr);
 			return {
 				startTime,
-				endTime: getEndTimeFromDuration(startTime, duration),
-				suggestedNewDate
+				endTime: result.endTime,
+				suggestedNewDate,
+				endDate: result.endDate,
+				daysSpan: result.daysSpan
 			};
 		}
 		
@@ -119,10 +126,14 @@ export function findNextAvailableTime(
 			});
 			
 			if (!hasConflict) {
+				const candidateEndDate = candidateEnd.toISOString().split('T')[0];
+				const daysSpan = candidateEndDate !== searchDateStr ? 1 : 0;
 				return {
 					startTime: candidateStart.toTimeString().slice(0, 5),
 					endTime: candidateEnd.toTimeString().slice(0, 5),
-					suggestedNewDate
+					suggestedNewDate,
+					endDate: daysSpan > 0 ? candidateEndDate : undefined,
+					daysSpan
 				};
 			}
 			
@@ -134,11 +145,15 @@ export function findNextAvailableTime(
 	// Fallback: return a slot 14 days in the future
 	const futureDate = new Date(targetDate);
 	futureDate.setDate(futureDate.getDate() + 14);
+	const futureDateStr = futureDate.toISOString().split('T')[0];
+	const result = getEndTimeFromDuration('10:00', duration, futureDateStr);
 	
 	return {
 		startTime: '10:00',
-		endTime: getEndTimeFromDuration('10:00', duration),
-		suggestedNewDate: true
+		endTime: result.endTime,
+		suggestedNewDate: true,
+		endDate: result.endDate,
+		daysSpan: result.daysSpan
 	};
 }
 
@@ -146,30 +161,36 @@ export function checkConflicts(
 	date: string,
 	startTime: string,
 	endTime: string,
-	existingSlots: any[]
+	existingSlots: any[],
+	endDate?: string
 ): TimeSlotConflict[] {
 	if (!date || !startTime || !endTime) return [];
-	
-	const [startHour, startMinute] = startTime.split(':').map(Number);
-	const [endHour, endMinute] = endTime.split(':').map(Number);
-	
-	const startMinutes = startHour * 60 + startMinute;
-	const endMinutes = endHour * 60 + endMinute;
-	
-	// Check if the new slot spans midnight
-	const spansMidnight = endMinutes < startMinutes;
 	
 	const newStart = new Date(`${date}T${startTime}:00`);
 	let newEnd: Date;
 	
-	if (spansMidnight) {
-		// If slot spans midnight, end time is on the next day
-		const nextDay = new Date(date);
-		nextDay.setDate(nextDay.getDate() + 1);
-		const nextDayStr = nextDay.toISOString().split('T')[0];
-		newEnd = new Date(`${nextDayStr}T${endTime}:00`);
+	// Handle multi-day slots
+	if (endDate && endDate !== date) {
+		newEnd = new Date(`${endDate}T${endTime}:00`);
 	} else {
-		newEnd = new Date(`${date}T${endTime}:00`);
+		const [startHour, startMinute] = startTime.split(':').map(Number);
+		const [endHour, endMinute] = endTime.split(':').map(Number);
+		
+		const startMinutes = startHour * 60 + startMinute;
+		const endMinutes = endHour * 60 + endMinute;
+		
+		// Check if the new slot spans midnight
+		const spansMidnight = endMinutes < startMinutes;
+		
+		if (spansMidnight) {
+			// If slot spans midnight, end time is on the next day
+			const nextDay = new Date(date);
+			nextDay.setDate(nextDay.getDate() + 1);
+			const nextDayStr = nextDay.toISOString().split('T')[0];
+			newEnd = new Date(`${nextDayStr}T${endTime}:00`);
+		} else {
+			newEnd = new Date(`${date}T${endTime}:00`);
+		}
 	}
 	
 	return existingSlots.filter((slot: any) => {
@@ -197,7 +218,7 @@ export function checkRecurringConflicts(
 	
 	while (count < maxCount && (!endDate || currentDate <= endDate)) {
 		const dateStr = currentDate.toISOString().split('T')[0];
-		const conflicts = checkConflicts(dateStr, formData.startTime, formData.endTime, existingSlots);
+		const conflicts = checkConflicts(dateStr, formData.startTime, formData.endTime, existingSlots, formData.endDate);
 		
 		if (conflicts.length > 0) {
 			conflictCount++;
@@ -225,10 +246,27 @@ export function checkRecurringConflicts(
 	};
 }
 
-export function getEndTimeFromDuration(startTime: string, duration: number): string {
-	if (!startTime || !duration) return '';
+export function getEndTimeFromDuration(startTime: string, duration: number, startDate?: string): { endTime: string; endDate?: string; daysSpan: number } {
+	if (!startTime || !duration) return { endTime: '', daysSpan: 0 };
 	
-	const start = new Date(`2000-01-01T${startTime}:00`);
+	// Use provided date or a reference date
+	const baseDate = startDate || '2000-01-01';
+	const start = new Date(`${baseDate}T${startTime}:00`);
 	const end = new Date(start.getTime() + duration * 60000);
-	return end.toTimeString().slice(0, 5);
+	
+	// Calculate days spanned - count calendar days, not 24-hour periods
+	const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+	const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+	
+	// If the tour ends on a different calendar day, calculate the difference
+	let daysSpan = 0;
+	if (endDay.getTime() !== startDay.getTime()) {
+		daysSpan = Math.floor((endDay.getTime() - startDay.getTime()) / (24 * 60 * 60 * 1000));
+	}
+	
+	return {
+		endTime: end.toTimeString().slice(0, 5),
+		endDate: daysSpan >= 0 && endDay.getTime() !== startDay.getTime() ? end.toISOString().split('T')[0] : undefined,
+		daysSpan
+	};
 } 

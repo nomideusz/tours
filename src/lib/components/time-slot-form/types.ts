@@ -41,4 +41,6 @@ export interface SmartTime {
 	startTime: string;
 	endTime: string;
 	suggestedNewDate: boolean;
+	endDate?: string;
+	daysSpan?: number;
 } 

@@ -10,6 +10,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TimeRange from '$lib/components/TimeRange.svelte';
 	import NumberInput from '$lib/components/NumberInput.svelte';
+	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
 	
 	// Icons
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
@@ -55,6 +56,7 @@
 	let date = $state('');
 	let startTime = $state('');
 	let endTime = $state('');
+	let endDate = $state('');
 	let capacity = $state(0);
 	let status = $state<'available' | 'cancelled'>('available');
 	let notes = $state('');
@@ -90,12 +92,18 @@
 	// Populate form when slot loads
 	$effect(() => {
 		if (currentSlot) {
-			const startDate = new Date(currentSlot.startTime);
-			const endDate = new Date(currentSlot.endTime);
+			const startDateTime = new Date(currentSlot.startTime);
+			const endDateTime = new Date(currentSlot.endTime);
 			
-			date = startDate.toISOString().split('T')[0];
-			startTime = startDate.toTimeString().slice(0, 5);
-			endTime = endDate.toTimeString().slice(0, 5);
+			date = startDateTime.toISOString().split('T')[0];
+			startTime = startDateTime.toTimeString().slice(0, 5);
+			endTime = endDateTime.toTimeString().slice(0, 5);
+			
+			// Check if slot spans multiple days
+			const startDateStr = startDateTime.toISOString().split('T')[0];
+			const endDateStr = endDateTime.toISOString().split('T')[0];
+			endDate = endDateStr !== startDateStr ? endDateStr : '';
+			
 			capacity = currentSlot.capacity || tour?.capacity || 10;
 			status = currentSlot.status === 'cancelled' ? 'cancelled' : 'available';
 			notes = currentSlot.notes || '';
@@ -128,7 +136,8 @@
 		
 		try {
 			const start = new Date(`${date}T${startTime}:00`);
-			const end = new Date(`${date}T${endTime}:00`);
+			const actualEndDate = endDate || date;
+			const end = new Date(`${actualEndDate}T${endTime}:00`);
 			
 			const slotData = {
 				startTime: start.toISOString(),
@@ -223,41 +232,60 @@
 				</div>
 			{/if}
 
-			<!-- Date Field -->
-			<div>
-				<label for="date" class="block text-sm font-medium mb-2">
-					<Calendar class="w-4 h-4 inline mr-1" />
-					Date
-				</label>
-				<input
-					type="date"
-					id="date"
-					bind:value={date}
-					required
-					disabled={hasBookings}
-					class="input w-full {hasBookings ? 'opacity-50 cursor-not-allowed' : ''}"
-				/>
-				{#if hasBookings}
-					<p class="text-sm text-gray-500 mt-1">Date cannot be changed when bookings exist</p>
-				{/if}
-			</div>
+			{#if tour?.duration > 1440}
+				<!-- Multi-day tour: use MultiDayTimeRange -->
+				<div>
+					<MultiDayTimeRange
+						bind:startDate={date}
+						bind:startTime
+						bind:endDate
+						bind:endTime
+						label="Time Slot"
+						tourDuration={tour.duration}
+						disabled={hasBookings}
+					/>
+					{#if hasBookings}
+						<p class="text-sm text-gray-500 mt-1">Date and time cannot be changed when bookings exist</p>
+					{/if}
+				</div>
+			{:else}
+				<!-- Single-day tour: separate date and time fields -->
+				<!-- Date Field -->
+				<div>
+					<label for="date" class="block text-sm font-medium mb-2">
+						<Calendar class="w-4 h-4 inline mr-1" />
+						Date
+					</label>
+					<input
+						type="date"
+						id="date"
+						bind:value={date}
+						required
+						disabled={hasBookings}
+						class="input w-full {hasBookings ? 'opacity-50 cursor-not-allowed' : ''}"
+					/>
+					{#if hasBookings}
+						<p class="text-sm text-gray-500 mt-1">Date cannot be changed when bookings exist</p>
+					{/if}
+				</div>
 
-			<!-- Time Range -->
-			<div>
-				<label class="block text-sm font-medium mb-2">
-					<Clock class="w-4 h-4 inline mr-1" />
-					Time
-				</label>
-				<TimeRange
-					bind:startTime
-					bind:endTime
-					defaultDuration={tour?.duration}
-					disabled={hasBookings}
-				/>
-				{#if hasBookings}
-					<p class="text-sm text-gray-500 mt-1">Time cannot be changed when bookings exist</p>
-				{/if}
-			</div>
+				<!-- Time Range -->
+				<div>
+					<label class="block text-sm font-medium mb-2">
+						<Clock class="w-4 h-4 inline mr-1" />
+						Time
+					</label>
+					<TimeRange
+						bind:startTime
+						bind:endTime
+						defaultDuration={tour?.duration}
+						disabled={hasBookings}
+					/>
+					{#if hasBookings}
+						<p class="text-sm text-gray-500 mt-1">Time cannot be changed when bookings exist</p>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Capacity -->
 			<div>

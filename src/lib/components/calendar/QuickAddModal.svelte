@@ -35,6 +35,7 @@
 		timeSlotForm = $bindable({
 			startTime: '10:00',
 			endTime: '12:00',
+			endDate: '',
 			capacity: 10,
 			recurring: false,
 			recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
@@ -70,11 +71,31 @@
 		createFirstTour: void;
 	}>();
 
-	// Auto-calculate end time when start time changes
+	// Auto-calculate end time and date when start time changes
 	$effect(() => {
-		if (selectedTourData && timeSlotForm.startTime) {
-			const newEndTime = calculateEndTime(timeSlotForm.startTime, selectedTourData.duration);
-			timeSlotForm.endTime = newEndTime;
+		if (selectedTourData && timeSlotForm.startTime && date) {
+			const dateStr = formatDateForInput(date);
+			const duration = selectedTourData.duration || 120;
+			
+			// Calculate end time and check if it spans multiple days
+			const [hours, minutes] = timeSlotForm.startTime.split(':').map(Number);
+			const totalMinutes = hours * 60 + minutes + duration;
+			
+			const endHours = Math.floor(totalMinutes / 60);
+			const endMinutes = totalMinutes % 60;
+			
+			if (endHours >= 24) {
+				// Multi-day slot
+				const daysToAdd = Math.floor(endHours / 24);
+				const endDate = new Date(dateStr);
+				endDate.setDate(endDate.getDate() + daysToAdd);
+				timeSlotForm.endDate = formatDateForInput(endDate);
+				timeSlotForm.endTime = `${String(endHours % 24).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+			} else {
+				// Same day slot
+				timeSlotForm.endDate = '';
+				timeSlotForm.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+			}
 		}
 	});
 
@@ -115,7 +136,7 @@
 				}
 			} else {
 				// Check single slot conflict
-				const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots);
+				const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots, timeSlotForm.endDate);
 				
 				hasConflict = conflicts.length > 0;
 				if (hasConflict && conflicts[0]) {
@@ -161,9 +182,30 @@
 			timeSlotForm.capacity = getSmartCapacity(tour.id, tour, undefined, lastCreatedSlot);
 		}
 		
-		// Auto-calculate end time based on tour duration
-		if (tour.duration && timeSlotForm.startTime) {
-			timeSlotForm.endTime = calculateEndTime(timeSlotForm.startTime, tour.duration);
+		// Auto-calculate end time and date based on tour duration
+		if (tour.duration && timeSlotForm.startTime && date) {
+			const dateStr = formatDateForInput(date);
+			const duration = tour.duration || 120;
+			
+			// Calculate end time and check if it spans multiple days
+			const [hours, minutes] = timeSlotForm.startTime.split(':').map(Number);
+			const totalMinutes = hours * 60 + minutes + duration;
+			
+			const endHours = Math.floor(totalMinutes / 60);
+			const endMinutes = totalMinutes % 60;
+			
+			if (endHours >= 24) {
+				// Multi-day slot
+				const daysToAdd = Math.floor(endHours / 24);
+				const endDate = new Date(dateStr);
+				endDate.setDate(endDate.getDate() + daysToAdd);
+				timeSlotForm.endDate = formatDateForInput(endDate);
+				timeSlotForm.endTime = `${String(endHours % 24).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+			} else {
+				// Same day slot
+				timeSlotForm.endDate = '';
+				timeSlotForm.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+			}
 		}
 		
 		dispatch('tourSelected', { tour });
@@ -179,7 +221,16 @@
 		
 		const dateStr = formatDateForInput(date);
 		const startDateTime = new Date(`${dateStr}T${timeSlotForm.startTime}:00`);
-		const endDateTime = new Date(`${dateStr}T${timeSlotForm.endTime}:00`);
+		
+		// Handle multi-day tours
+		let endDateTime: Date;
+		if (timeSlotForm.endDate && timeSlotForm.endDate !== dateStr) {
+			// Multi-day slot
+			endDateTime = new Date(`${timeSlotForm.endDate}T${timeSlotForm.endTime}:00`);
+		} else {
+			// Same day slot
+			endDateTime = new Date(`${dateStr}T${timeSlotForm.endTime}:00`);
+		}
 		
 		const formData = {
 			startTime: startDateTime.toISOString(),
@@ -462,6 +513,15 @@
 										/>
 									</div>
 								</div>
+								
+								{#if timeSlotForm.endDate && date && timeSlotForm.endDate !== formatDateForInput(date)}
+									<div class="multi-day-info">
+										<Info class="w-4 h-4" />
+										<span>
+											This tour spans multiple days: {new Date(formatDateForInput(date)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → {new Date(timeSlotForm.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+										</span>
+									</div>
+								{/if}
 								
 								{#if hasConflict}
 									<div class="conflict-warning {timeSlotForm.recurring ? 'recurring-conflict' : ''}">
@@ -1158,6 +1218,22 @@
 		color: var(--text-tertiary);
 		font-weight: 500;
 		padding: 0 0.25rem;
+	}
+	
+	.multi-day-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: var(--color-primary-50);
+		color: var(--color-primary-700);
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		margin-top: 1rem;
+	}
+	
+	.multi-day-info :global(svg) {
+		flex-shrink: 0;
 	}
 
 	.form-group {

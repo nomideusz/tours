@@ -160,6 +160,7 @@
 		description: '',
 		price: 0,
 		duration: 60,
+		capacity: 10,
 		status: 'draft' as Tour['status'],
 		categories: [],
 		location: '',
@@ -360,6 +361,7 @@
 			description: tour.description || '',
 			price: tour.price || 0,
 			duration: tour.duration || 60,
+			capacity: tour.capacity || 10,
 			status: tour.status || 'draft',
 			categories: tour.categories || [],
 			location: tour.location || '',
@@ -593,6 +595,7 @@
 			formData.description !== tour.description ||
 			formData.price !== tour.price ||
 			formData.duration !== tour.duration ||
+			formData.capacity !== tour.capacity ||
 			formData.status !== tour.status ||
 			JSON.stringify(formData.categories) !== JSON.stringify(tour.categories || []) ||
 			formData.location !== tour.location ||

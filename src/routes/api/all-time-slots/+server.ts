@@ -90,7 +90,11 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		const tourMap = new Map(userTours.map(t => [t.id, t]));
 		const tourIds = userTours.map(t => t.id);
 
-		// Step 2: Get all time slots in date range for user's tours
+		// Step 2: Get all time slots that overlap with the date range for user's tours
+		// This includes slots that:
+		// - Start within the range
+		// - End within the range  
+		// - Span across the entire range (start before and end after)
 		const allTimeSlots = await db
 			.select({
 				id: timeSlots.id,
@@ -104,8 +108,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			.from(timeSlots)
 			.where(and(
 				inArray(timeSlots.tourId, tourIds),
-				gte(timeSlots.startTime, startDate),
-				lte(timeSlots.startTime, endDate)
+				// Check for overlap: slot.startTime <= endDate AND slot.endTime >= startDate
+				lte(timeSlots.startTime, endDate),
+				gte(timeSlots.endTime, startDate)
 			))
 			.orderBy(timeSlots.startTime);
 
