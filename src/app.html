@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		
@@ -49,10 +49,31 @@
 		<meta name="pinterest" content="nopin" />
 		<meta name="extension-control" content="no-inject" />
 		
-		<!-- Browser detection for Opera-specific styling -->
+		<!-- Theme detection and Opera browser detection -->
 		<script>
-			// Detect Opera browser and add class for CSS targeting
+			// Apply initial theme before page loads to prevent flash
 			(function() {
+				// Get theme from localStorage or use system preference
+				var storedTheme = localStorage.getItem('theme');
+				var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				
+				// Determine which theme to apply
+				var shouldUseDark = false;
+				if (storedTheme === 'dark') {
+					shouldUseDark = true;
+				} else if (storedTheme === 'light') {
+					shouldUseDark = false;
+				} else if (storedTheme === 'system' || !storedTheme) {
+					// Use system preference for 'system' or no stored preference
+					shouldUseDark = prefersDark;
+				}
+				
+				// Apply theme
+				if (shouldUseDark) {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+				
+				// Detect Opera browser and add class for CSS targeting
 				var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
 				if (isOpera) {
 					document.documentElement.classList.add('is-opera');
