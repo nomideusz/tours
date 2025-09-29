@@ -46,7 +46,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Category filter - check if category exists in the categories JSON array
 		if (category) {
-			conditions.push(sql`JSON_SEARCH(${tours.categories}, 'one', ${category}) IS NOT NULL`);
+			conditions.push(sql`${tours.categories}::jsonb ? ${category}`);
 		}
 
 		// Price range filters
@@ -182,7 +182,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			.from(tours)
 			.where(and(
 				eq(tours.status, 'active'),
-				sql`${tours.categories} IS NOT NULL AND JSON_LENGTH(${tours.categories}) > 0`
+				sql`${tours.categories} IS NOT NULL AND jsonb_array_length(${tours.categories}::jsonb) > 0`
 			));
 		
 		// Flatten all categories from all tours

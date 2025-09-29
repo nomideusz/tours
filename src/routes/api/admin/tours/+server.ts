@@ -49,7 +49,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		// Category filter - check if category exists in the categories JSON array
 		if (category) {
-			whereConditions.push(sql`JSON_SEARCH(${tours.categories}, 'one', ${category}) IS NOT NULL`);
+			whereConditions.push(sql`${tours.categories}::jsonb ? ${category}`);
 		}
 
 		const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
@@ -165,7 +165,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			// Get unique categories from JSON arrays
 			db.select({ categories: tours.categories })
 				.from(tours)
-				.where(sql`${tours.categories} IS NOT NULL AND JSON_LENGTH(${tours.categories}) > 0`),
+				.where(sql`${tours.categories} IS NOT NULL AND jsonb_array_length(${tours.categories}::jsonb) > 0`),
 			
 			// Get unique locations
 			db.select({ location: tours.location })
