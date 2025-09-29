@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 				duration: tours.duration,
 				capacity: tours.capacity,
 				status: tours.status,
-				category: tours.category,
+				categories: tours.categories,
 				location: tours.location,
 				images: tours.images,
 				publicListing: tours.publicListing,
@@ -56,91 +56,114 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 		// Get tour stats for each tour
 		const toursWithStats = await Promise.all(
 			userTours.map(async (tour) => {
-				// Get booking count for this tour
-				const bookingCountResult = await db
-					.select({ count: count() })
-					.from(bookings)
-					.where(eq(bookings.tourId, tour.id));
-				const bookingCount = bookingCountResult[0]?.count || 0;
+				try {
+					// Get booking count for this tour
+					const bookingCountResult = await db
+						.select({ count: count() })
+						.from(bookings)
+						.where(eq(bookings.tourId, tour.id));
+					const bookingCount = bookingCountResult[0]?.count || 0;
 
-				// Get revenue for this tour
-				const revenueResult = await db
-					.select({ total: sum(bookings.totalAmount) })
-					.from(bookings)
-					.where(
-						sql`${bookings.tourId} = ${tour.id} AND ${bookings.status} = 'confirmed'`
-					);
-				const revenue = Number(revenueResult[0]?.total || 0);
+					// Get revenue for this tour
+					const revenueResult = await db
+						.select({ total: sum(bookings.totalAmount) })
+						.from(bookings)
+						.where(
+							sql`${bookings.tourId} = ${tour.id} AND ${bookings.status} = 'confirmed'`
+						);
+					const revenue = Number(revenueResult[0]?.total || 0);
 
-				// Get upcoming time slots count
-				const upcomingTimeSlotsResult = await db
-					.select({ count: count() })
-					.from(timeSlots)
-					.where(
-						sql`${timeSlots.tourId} = ${tour.id} AND ${timeSlots.startTime} > NOW()`
-					);
-				const upcomingTimeSlots = upcomingTimeSlotsResult[0]?.count || 0;
+					// Get upcoming time slots count
+					const upcomingTimeSlotsResult = await db
+						.select({ count: count() })
+						.from(timeSlots)
+						.where(
+							sql`${timeSlots.tourId} = ${tour.id} AND ${timeSlots.startTime} > NOW()`
+						);
+					const upcomingTimeSlots = upcomingTimeSlotsResult[0]?.count || 0;
 
-				return {
-					...tour,
-					bookingCount,
-					revenue,
-					upcomingTimeSlots
-				};
+					return {
+						...tour,
+						bookingCount,
+						revenue,
+						upcomingTimeSlots
+					};
+				} catch (error) {
+					console.error(`Error fetching stats for tour ${tour.id}:`, error);
+					// Return tour with default stats if query fails
+					return {
+						...tour,
+						bookingCount: 0,
+						revenue: 0,
+						upcomingTimeSlots: 0
+					};
+				}
 			})
 		);
 
 		// Get bookings made by this user (as a customer)
-		const customerBookings = await db
-			.select({
-				id: bookings.id,
-				tourId: bookings.tourId,
-				customerName: bookings.customerName,
-				customerEmail: bookings.customerEmail,
-				participants: bookings.participants,
-				totalAmount: bookings.totalAmount,
-				status: bookings.status,
-				paymentStatus: bookings.paymentStatus,
-				bookingReference: bookings.bookingReference,
-				createdAt: bookings.createdAt,
-				// Tour details
-				tourName: tours.name,
-				tourLocation: tours.location,
-				// Time slot details
-				startTime: timeSlots.startTime,
-				endTime: timeSlots.endTime
-			})
-			.from(bookings)
-			.innerJoin(tours, eq(tours.id, bookings.tourId))
-			.innerJoin(timeSlots, eq(timeSlots.id, bookings.timeSlotId))
-			.where(eq(bookings.customerEmail, userData.email))
-			.orderBy(desc(bookings.createdAt))
-			.limit(10); // Limit to recent bookings
+		let customerBookings: any[] = [];
+		try {
+			customerBookings = await db
+				.select({
+					id: bookings.id,
+					tourId: bookings.tourId,
+					customerName: bookings.customerName,
+					customerEmail: bookings.customerEmail,
+					participants: bookings.participants,
+					totalAmount: bookings.totalAmount,
+					status: bookings.status,
+					paymentStatus: bookings.paymentStatus,
+					bookingReference: bookings.bookingReference,
+					createdAt: bookings.createdAt,
+					// Tour details
+					tourName: tours.name,
+					tourLocation: tours.location,
+					// Time slot details
+					startTime: timeSlots.startTime,
+					endTime: timeSlots.endTime
+				})
+				.from(bookings)
+				.innerJoin(tours, eq(tours.id, bookings.tourId))
+				.innerJoin(timeSlots, eq(timeSlots.id, bookings.timeSlotId))
+				.where(eq(bookings.customerEmail, userData.email))
+				.orderBy(desc(bookings.createdAt))
+				.limit(10); // Limit to recent bookings
+		} catch (error) {
+			console.error('Error fetching customer bookings:', error);
+			// Continue with empty array if this query fails
+		}
 
 		// Get payment history for tours they guide
-		const paymentHistory = await db
-			.select({
-				id: payments.id,
-				bookingId: payments.bookingId,
-				amount: payments.amount,
-				currency: payments.currency,
-				status: payments.status,
-				paymentType: payments.paymentType,
-				processingFee: payments.processingFee,
-				netAmount: payments.netAmount,
-				createdAt: payments.createdAt,
-				// Booking details
-				bookingReference: bookings.bookingReference,
-				customerName: bookings.customerName,
-				// Tour details
-				tourName: tours.name
-			})
-			.from(payments)
-			.innerJoin(bookings, eq(bookings.id, payments.bookingId))
-			.innerJoin(tours, eq(tours.id, bookings.tourId))
-			.where(eq(tours.userId, userId))
-			.orderBy(desc(payments.createdAt))
-			.limit(20); // Limit to recent payments
+		let paymentHistory: any[] = [];
+		try {
+			paymentHistory = await db
+				.select({
+					id: payments.id,
+					bookingId: payments.bookingId,
+					amount: payments.amount,
+					currency: payments.currency,
+					status: payments.status,
+					paymentType: payments.paymentType,
+					processingFee: payments.processingFee,
+					netAmount: payments.netAmount,
+					createdAt: payments.createdAt,
+					// Booking details
+					bookingReference: bookings.bookingReference,
+					customerName: bookings.customerName,
+					// Tour details
+					tourName: tours.name
+				})
+				.from(payments)
+				.innerJoin(bookings, eq(bookings.id, payments.bookingId))
+				.innerJoin(tours, eq(tours.id, bookings.tourId))
+				.where(eq(tours.userId, userId))
+				.orderBy(desc(payments.createdAt))
+				.limit(20); // Limit to recent payments
+		} catch (error) {
+			console.error('Error fetching payment history:', error);
+			// Continue with empty array if this query fails
+		}
 
 		// Calculate overall stats
 		const totalRevenue = toursWithStats.reduce((sum, tour) => sum + tour.revenue, 0);
