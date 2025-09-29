@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -47,12 +47,12 @@
 	});
 
 	// State from URL params
-	let searchQuery = $state($page.url.searchParams.get('search') || '');
-	let statusFilter = $state($page.url.searchParams.get('status') || 'all');
-	let locationFilter = $state($page.url.searchParams.get('location') || '');
-	let categoryFilter = $state($page.url.searchParams.get('category') || '');
-	let sortBy = $state($page.url.searchParams.get('sortBy') || 'newest');
-	let currentPage = $state(parseInt($page.url.searchParams.get('page') || '1'));
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
+	let statusFilter = $state(page.url.searchParams.get('status') || 'all');
+	let locationFilter = $state(page.url.searchParams.get('location') || '');
+	let categoryFilter = $state(page.url.searchParams.get('category') || '');
+	let sortBy = $state(page.url.searchParams.get('sortBy') || 'newest');
+	let currentPage = $state(parseInt(page.url.searchParams.get('page') || '1'));
 
 	// Local state
 	let showFilters = $state(false);
@@ -941,12 +941,12 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && tourToDelete}
 	<ConfirmationModal
+		isOpen={showDeleteModal}
 		title="Delete Tour"
 		message="Are you sure you want to delete '{tourToDelete.name}'? This action cannot be undone and will delete all associated bookings and time slots."
 		confirmText="Delete Tour"
 		cancelText="Cancel"
 		variant="danger"
-		loading={$deleteTourMutation.isPending}
 		onConfirm={confirmDeleteTour}
 		onCancel={() => { showDeleteModal = false; tourToDelete = null; }}
 	/>

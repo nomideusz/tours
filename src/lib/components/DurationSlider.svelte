@@ -46,12 +46,35 @@
 	const START_ANGLE = -135;
 	const END_ANGLE = 135;
 	
+	// Non-linear scaling for better UX - gives more space to common durations
+	function valueToPosition(minutes: number): number {
+		// Break the range into segments for better distribution
+		if (minutes <= 480) { // 0-8 hours: 70% of slider
+			return ((minutes - min) / (480 - min)) * 70;
+		} else if (minutes <= 1440) { // 8-24 hours: 20% of slider
+			return 70 + ((minutes - 480) / (1440 - 480)) * 20;
+		} else { // 24-48 hours: 10% of slider
+			return 90 + ((minutes - 1440) / (max - 1440)) * 10;
+		}
+	}
+	
+	function positionToValue(position: number): number {
+		// Reverse the non-linear scaling
+		if (position <= 70) { // 0-8 hours range
+			return min + (position / 70) * (480 - min);
+		} else if (position <= 90) { // 8-24 hours range
+			return 480 + ((position - 70) / 20) * (1440 - 480);
+		} else { // 24-48 hours range
+			return 1440 + ((position - 90) / 10) * (max - 1440);
+		}
+	}
+	
 	// Convert value to slider position (0-100) for linear slider
-	let sliderPosition = $derived(((value - min) / (max - min)) * 100);
+	let sliderPosition = $derived(valueToPosition(value));
 	
 	// Convert value to angle for circular slider
 	let currentAngle = $derived((() => {
-		const normalized = (value - min) / (max - min);
+		const normalized = valueToPosition(value) / 100;
 		return START_ANGLE + normalized * (END_ANGLE - START_ANGLE);
 	})());
 	
@@ -119,9 +142,10 @@
 			angle = END_ANGLE;
 		}
 		
-		// Convert angle to value
+		// Convert angle to value using non-linear scaling
 		const normalized = (angle - START_ANGLE) / (END_ANGLE - START_ANGLE);
-		const newValue = min + normalized * (max - min);
+		const position = normalized * 100;
+		const newValue = positionToValue(position);
 		
 		// Apply step
 		const stepped = Math.round(newValue / step) * step;
@@ -145,9 +169,9 @@
 		return percentage;
 	}
 	
-	// Update value from slider position
+	// Update value from slider position using non-linear scaling
 	function updateValueFromPosition(position: number) {
-		const rawValue = min + (position / 100) * (max - min);
+		const rawValue = positionToValue(position);
 		const steppedValue = Math.round(rawValue / step) * step;
 		const clampedValue = Math.max(min, Math.min(max, steppedValue));
 		
@@ -293,7 +317,7 @@
 		
 		return markerValues.map(val => ({
 			value: val,
-			position: ((val - min) / (max - min)) * 100
+			position: valueToPosition(val)
 		}));
 	});
 	

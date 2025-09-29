@@ -872,7 +872,7 @@
 						label="Duration"
 						min={15}
 						max={2880}
-						step={15}
+						step={5}
 						required={true}
 						error={hasFieldError(allErrors, 'duration')}
 						onChange={() => validateField('duration')}
