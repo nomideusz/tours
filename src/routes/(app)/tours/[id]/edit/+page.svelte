@@ -161,7 +161,7 @@
 		price: 0,
 		duration: 60,
 		status: 'draft' as Tour['status'],
-		category: '',
+		categories: [],
 		location: '',
 		includedItems: [''],
 		requirements: [''],
@@ -361,7 +361,7 @@
 			price: tour.price || 0,
 			duration: tour.duration || 60,
 			status: tour.status || 'draft',
-			category: tour.category || '',
+			categories: tour.categories || [],
 			location: tour.location || '',
 			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
 			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
@@ -594,7 +594,7 @@
 			formData.price !== tour.price ||
 			formData.duration !== tour.duration ||
 			formData.status !== tour.status ||
-			formData.category !== tour.category ||
+			JSON.stringify(formData.categories) !== JSON.stringify(tour.categories || []) ||
 			formData.location !== tour.location ||
 			formData.cancellationPolicy !== tour.cancellationPolicy ||
 			formData.enablePricingTiers !== tour.enablePricingTiers ||

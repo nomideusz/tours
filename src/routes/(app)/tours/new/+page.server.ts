@@ -293,7 +293,15 @@ export const actions: Actions = {
         duration: formData.get('duration'),
         capacity: formData.get('capacity'),
         status: formData.get('status'),
-        category: formData.get('category'),
+        categories: (() => {
+          const categoriesData = formData.get('categories') as string || '[]';
+          try {
+            return JSON.parse(categoriesData);
+          } catch (e) {
+            // Handle old comma-separated format or invalid JSON
+            return categoriesData.split(',').map(c => c.trim()).filter(Boolean);
+          }
+        })(),
         location: formData.get('location'),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
@@ -433,7 +441,7 @@ export const actions: Actions = {
           duration: parseInt(String(sanitizedData.duration)),
           capacity: parseInt(String(sanitizedData.capacity)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
-          category: sanitizedData.category as string || null,
+          categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
@@ -482,7 +490,7 @@ export const actions: Actions = {
           duration: parseInt(String(sanitizedData.duration)),
           capacity: parseInt(String(sanitizedData.capacity)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
-          category: sanitizedData.category as string || null,
+          categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,

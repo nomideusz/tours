@@ -47,9 +47,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			whereConditions.push(ilike(tours.location, `%${location}%`));
 		}
 
-		// Category filter
+		// Category filter - check if category exists in the categories JSON array
 		if (category) {
-			whereConditions.push(eq(tours.category, category));
+			whereConditions.push(sql`JSON_SEARCH(${tours.categories}, 'one', ${category}) IS NOT NULL`);
 		}
 
 		const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
@@ -86,7 +86,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				duration: tours.duration,
 				capacity: tours.capacity,
 				status: tours.status,
-				category: tours.category,
+				categories: tours.categories,
 				location: tours.location,
 				qrCode: tours.qrCode,
 				qrScans: tours.qrScans,
@@ -162,12 +162,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		// Get filter options
 		const [categoriesResult, locationsResult] = await Promise.all([
-			// Get unique categories
-			db.select({ category: tours.category })
+			// Get unique categories from JSON arrays
+			db.select({ categories: tours.categories })
 				.from(tours)
-				.where(sql`${tours.category} IS NOT NULL AND ${tours.category} != ''`)
-				.groupBy(tours.category)
-				.orderBy(tours.category),
+				.where(sql`${tours.categories} IS NOT NULL AND JSON_LENGTH(${tours.categories}) > 0`),
 			
 			// Get unique locations
 			db.select({ location: tours.location })
@@ -177,7 +175,13 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				.orderBy(tours.location)
 		]);
 
-		const categories = categoriesResult.map(r => r.category).filter(Boolean);
+		// Flatten all categories from all tours
+		const allCategories = categoriesResult
+			.flatMap(r => r.categories || [])
+			.filter(Boolean);
+		
+		// Get unique categories and sort them
+		const categories = Array.from(new Set(allCategories)).sort();
 		const locations = locationsResult.map(r => r.location).filter(Boolean);
 
 		return json({
@@ -189,7 +193,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 				duration: tour.duration,
 				capacity: tour.capacity,
 				status: tour.status,
-				category: tour.category,
+				categories: tour.categories || [],
 				location: tour.location,
 				qrCode: tour.qrCode,
 				qrScans: tour.qrScans || 0,

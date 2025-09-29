@@ -279,6 +279,23 @@
 								</span>
 							</div>
 						</div>
+
+						<!-- Categories -->
+						{#if tour.categories && tour.categories.length > 0}
+							<div class="flex flex-wrap gap-2 mb-4">
+								{#each tour.categories as category}
+									<span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border"
+										style="
+											background: var(--color-primary-50);
+											border-color: var(--color-primary-200);
+											color: var(--color-primary-700);
+										"
+									>
+										{category}
+									</span>
+								{/each}
+							</div>
+						{/if}
 						
 						<!-- Pricing Info -->
 						<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">

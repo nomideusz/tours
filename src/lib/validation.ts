@@ -21,7 +21,7 @@ export interface TourFormData {
 	duration: number;
 	capacity: number;
 	status: Tour['status'];
-	category: string;
+	categories: string[];
 	location: string;
 	includedItems: string[];
 	requirements: string[];
@@ -238,11 +238,26 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		errors.push({ field: 'status', message: 'Invalid tour status' });
 	}
 
-	// Validate category (optional) - allow custom categories
-	if (data.category && data.category.trim() !== '') {
-		const category = data.category.trim();
-		if (category.length > VALIDATION_RULES.category.maxLength!) {
-			errors.push({ field: 'category', message: `Category must be no more than ${VALIDATION_RULES.category.maxLength} characters` });
+	// Validate categories (optional) - allow custom categories
+	if (data.categories && Array.isArray(data.categories)) {
+		if (data.categories.length > 5) {
+			errors.push({ field: 'categories', message: 'Maximum 5 categories allowed' });
+		}
+		
+		for (const category of data.categories) {
+			if (typeof category !== 'string') {
+				errors.push({ field: 'categories', message: 'All categories must be text' });
+				break;
+			}
+			const trimmedCategory = category.trim();
+			if (trimmedCategory === '') {
+				errors.push({ field: 'categories', message: 'Categories cannot be empty' });
+				break;
+			}
+			if (trimmedCategory.length > VALIDATION_RULES.category.maxLength!) {
+				errors.push({ field: 'categories', message: `Each category must be no more than ${VALIDATION_RULES.category.maxLength} characters` });
+				break;
+			}
 		}
 	}
 
@@ -409,7 +424,7 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		duration: Number(data.duration) || 60,
 		capacity: Number(data.capacity) || 1,
 		status: (data.status as Tour['status']) || 'draft',
-		category: String(data.category || '').trim(),
+		categories: Array.isArray(data.categories) ? data.categories.map((cat: any) => String(cat).trim()).filter((cat: string) => cat !== '') : [],
 		location: sanitizeLocation(String(data.location || '')),
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],

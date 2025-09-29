@@ -266,6 +266,34 @@
 													</div>
 												{/if}
 											</div>
+
+											<!-- Categories -->
+											{#if tour.categories && tour.categories.length > 0}
+												<div class="flex flex-wrap gap-1 mb-3">
+													{#each tour.categories.slice(0, 3) as category}
+														<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
+															style="
+																background: var(--color-primary-50);
+																border-color: var(--color-primary-200);
+																color: var(--color-primary-700);
+															"
+														>
+															{category}
+														</span>
+													{/each}
+													{#if tour.categories.length > 3}
+														<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
+															style="
+																background: var(--bg-secondary);
+																border-color: var(--border-primary);
+																color: var(--text-tertiary);
+															"
+														>
+															+{tour.categories.length - 3}
+														</span>
+													{/if}
+												</div>
+											{/if}
 											
 											<!-- Pricing -->
 											<div class="p-2.5 rounded-lg mb-3" style="background: var(--bg-secondary);">

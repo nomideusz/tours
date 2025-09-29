@@ -44,9 +44,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Location filter will be handled after fetching tours
 		// to support location grouping
 
-		// Category filter
+		// Category filter - check if category exists in the categories JSON array
 		if (category) {
-			conditions.push(eq(tours.category, category));
+			conditions.push(sql`JSON_SEARCH(${tours.categories}, 'one', ${category}) IS NOT NULL`);
 		}
 
 		// Price range filters
@@ -92,7 +92,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				capacity: tours.capacity,
 				location: tours.location,
 				images: tours.images,
-				category: tours.category,
+				categories: tours.categories,
 				qrCode: tours.qrCode,
 				createdAt: tours.createdAt,
 				
@@ -163,7 +163,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			capacity: tour.capacity,
 			location: tour.location,
 			images: tour.images || [],
-			category: tour.category,
+			categories: tour.categories || [],
 			qrCode: tour.qrCode,
 			operator: {
 				id: tour.userId,
@@ -176,19 +176,22 @@ export const GET: RequestHandler = async ({ url }) => {
 			createdAt: tour.createdAt.toISOString()
 		}));
 
-		// Get unique categories for filters
+		// Get unique categories for filters - extract from JSON arrays
 		const categoriesResult = await db
-			.selectDistinct({ category: tours.category })
+			.select({ categories: tours.categories })
 			.from(tours)
 			.where(and(
 				eq(tours.status, 'active'),
-				sql`${tours.category} IS NOT NULL`
+				sql`${tours.categories} IS NOT NULL AND JSON_LENGTH(${tours.categories}) > 0`
 			));
 		
-		const categories = categoriesResult
-			.map(r => r.category)
-			.filter(Boolean)
-			.sort();
+		// Flatten all categories from all tours
+		const allCategories = categoriesResult
+			.flatMap(r => r.categories || [])
+			.filter(Boolean);
+		
+		// Get unique categories and sort them
+		const categories = Array.from(new Set(allCategories)).sort();
 
 		// Get unique locations for filters and group them
 		const locationsResult = await db

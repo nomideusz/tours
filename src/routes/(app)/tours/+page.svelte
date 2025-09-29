@@ -818,6 +818,32 @@
 									<Clock class="h-3 w-3" />
 									{formatDuration(tour.duration)}
 								</div>
+								{#if tour.categories && tour.categories.length > 0}
+									<div class="flex flex-wrap gap-1 mt-2">
+										{#each tour.categories.slice(0, 3) as category}
+											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
+												style="
+													background: var(--color-primary-50);
+													border-color: var(--color-primary-200);
+													color: var(--color-primary-700);
+												"
+											>
+												{category}
+											</span>
+										{/each}
+										{#if tour.categories.length > 3}
+											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
+												style="
+													background: var(--bg-secondary);
+													border-color: var(--border-primary);
+													color: var(--text-tertiary);
+												"
+											>
+												+{tour.categories.length - 3}
+											</span>
+										{/if}
+									</div>
+								{/if}
 								<div class="min-h-[2.5rem] flex items-center">
 									<div class="flex items-baseline gap-2 flex-wrap">
 										<span class="text-lg font-semibold" style="color: var(--color-primary-600);">

@@ -62,7 +62,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         price: parseFloat(tour.price),
         duration: tour.duration,
         status: tour.status,
-        category: tour.category,
+        categories: tour.categories || [],
         location: tour.location,
         includedItems: tour.includedItems,
         requirements: tour.requirements,
@@ -186,6 +186,7 @@ export const actions: Actions = {
       }
 
       // Prepare tour data
+      console.log('📝 Raw categories from form:', formData.get('categories'));
       const tourData = {
         name: formData.get('name'),
         description: formData.get('description'),
@@ -193,7 +194,15 @@ export const actions: Actions = {
         duration: formData.get('duration'),
         capacity: formData.get('capacity'),
         status: formData.get('status'),
-        category: formData.get('category'),
+        categories: (() => {
+          const categoriesData = formData.get('categories') as string || '[]';
+          try {
+            return JSON.parse(categoriesData);
+          } catch (e) {
+            // Handle old comma-separated format or invalid JSON
+            return categoriesData.split(',').map(c => c.trim()).filter(Boolean);
+          }
+        })(),
         location: formData.get('location'),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
@@ -204,6 +213,7 @@ export const actions: Actions = {
 
       // Sanitize the data
       const sanitizedData = sanitizeTourFormData(tourData);
+      console.log('📝 Processed categories:', sanitizedData.categories);
 
       // Check if trying to activate tour without completing onboarding
       if (sanitizedData.status === 'active') {
@@ -342,7 +352,7 @@ export const actions: Actions = {
           price: String(sanitizedData.price),
           duration: parseInt(String(sanitizedData.duration)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
-          category: sanitizedData.category as string || null,
+          categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,

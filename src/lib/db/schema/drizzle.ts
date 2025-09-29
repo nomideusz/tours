@@ -162,7 +162,7 @@ export const tours = pgTable('tours', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   images: json('images').$type<string[]>().default([]),
   status: tourStatusEnum('status').notNull().default('draft'),
-  category: varchar('category', { length: 100 }),
+  categories: json('categories').$type<string[]>().default([]),
   location: varchar('location', { length: 255 }),
   includedItems: json('included_items').$type<string[]>().default([]),
   requirements: json('requirements').$type<string[]>().default([]),

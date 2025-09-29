@@ -95,7 +95,7 @@
 		duration: (form as any)?.formData?.duration || 120, // in minutes - 2 hours is common for tours
 		capacity: (form as any)?.formData?.capacity || 10, // reasonable default group size
 		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
-		category: (form as any)?.formData?.category || '',
+		categories: (form as any)?.formData?.categories || [],
 		location: (form as any)?.formData?.location || '',
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],

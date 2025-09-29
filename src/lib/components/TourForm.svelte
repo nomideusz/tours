@@ -41,7 +41,7 @@
 			price: number;
 			duration: number;
 			status: 'active' | 'draft';
-			category: string;
+			categories: string[];
 			location: string;
 			includedItems: string[];
 			requirements: string[];
@@ -111,6 +111,10 @@
 	let showTourDetails = $state(false);
 	let showCancellationPolicy = $state(false);
 	let showImages = $state(false);
+	
+	// Custom category state
+	let showCustomCategoryInput = $state(false);
+	let customCategoryInput = $state('');
 	
 	// Get currency symbol for display
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
@@ -304,7 +308,30 @@
 		return validation.isValid;
 	}
 
-
+	// Custom category handling
+	function addCustomCategory() {
+		const trimmedCategory = customCategoryInput.trim();
+		if (!trimmedCategory) return;
+		
+		if (!formData.categories) formData.categories = [];
+		
+		// Check if category already exists (case-insensitive)
+		const existsAlready = formData.categories.some(
+			cat => cat.toLowerCase() === trimmedCategory.toLowerCase()
+		);
+		
+		if (existsAlready) return;
+		
+		// Check if we can add more categories
+		if (formData.categories.length >= 5) return;
+		
+		// Add the category
+		formData.categories = [...formData.categories, trimmedCategory];
+		
+		// Reset input state
+		customCategoryInput = '';
+		showCustomCategoryInput = false;
+	}
 
 	// Cancellation Policy Templates
 	let selectedPolicyTemplate = $state('');
@@ -527,10 +554,41 @@
 					</div>
 
 					<div>
-						<label for="category" class="form-label">
-							Category
+						<label for="categories" class="form-label">
+							Categories
+							<span class="text-xs" style="color: var(--text-tertiary); font-weight: normal;">
+								(Select up to 5 categories)
+							</span>
 						</label>
 						
+						<!-- Selected Categories Display -->
+						{#if formData.categories && formData.categories.length > 0}
+							<div class="mb-3 flex flex-wrap gap-1.5">
+								{#each formData.categories as selectedCategory, index}
+									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border"
+										style="
+											background: var(--color-primary-50);
+											border-color: var(--color-primary-300);
+											color: var(--color-primary-700);
+										"
+									>
+										{selectedCategory}
+										<button
+											type="button"
+											onclick={() => {
+												formData.categories = formData.categories.filter((_, i) => i !== index);
+											}}
+											class="hover:opacity-70 transition-opacity"
+											aria-label="Remove {selectedCategory}"
+										>
+											<X class="w-3 h-3" />
+										</button>
+									</span>
+								{/each}
+							</div>
+						{/if}
+						
+						<!-- Available Categories -->
 						<div class="flex flex-wrap gap-2">
 							{#each [
 								{ id: 'walking', name: 'Walking', icon: Users },
@@ -541,16 +599,24 @@
 								{ id: 'adventure', name: 'Adventure', icon: Mountain }
 							] as category}
 								{@const Icon = category.icon}
+								{@const isSelected = formData.categories?.includes(category.id) || false}
+								{@const canSelect = !isSelected && (formData.categories?.length || 0) < 5}
 								<button
 									type="button"
+									disabled={!canSelect && !isSelected}
 									onclick={() => { 
-										formData.category = formData.category === category.id ? '' : category.id; 
+										if (!formData.categories) formData.categories = [];
+										if (isSelected) {
+											formData.categories = formData.categories.filter(c => c !== category.id);
+										} else if (canSelect) {
+											formData.categories = [...formData.categories, category.id];
+										}
 									}}
-									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors"
+									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 									style="
-										background: {formData.category === category.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-										border-color: {formData.category === category.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-										color: {formData.category === category.id ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
+										background: {isSelected ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+										border-color: {isSelected ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+										color: {isSelected ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
 									"
 								>
 									<Icon class="w-3 h-3" />
@@ -561,18 +627,15 @@
 							<!-- Custom Category Option -->
 							<button
 								type="button"
+								disabled={!((formData.categories?.length || 0) < 5)}
 								onclick={() => { 
-									if (formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) {
-										formData.category = '';
-									} else {
-										formData.category = 'custom';
-									}
+									showCustomCategoryInput = !showCustomCategoryInput;
 								}}
-								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors"
+								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								style="
-									background: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-									border-color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-									color: {(formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(formData.category))) ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
+									background: {showCustomCategoryInput ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
+									border-color: {showCustomCategoryInput ? 'var(--color-primary-300)' : 'var(--border-primary)'};
+									color: {showCustomCategoryInput ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
 								"
 							>
 								<Edit class="w-3 h-3" />
@@ -580,23 +643,48 @@
 							</button>
 						</div>
 
-						{#if formData.category === 'custom' || (formData.category && !['walking', 'food', 'cultural', 'historical', 'art', 'adventure', ''].includes(formData.category))}
+						{#if showCustomCategoryInput}
 							<div class="mt-3">
 								<input
 									type="text"
 									placeholder="Enter your custom category..."
 									class="form-input"
-									value={formData.category === 'custom' ? '' : formData.category}
-									oninput={(e) => {
-										const target = e.target as HTMLInputElement;
-										formData.category = target.value || 'custom';
+									bind:value={customCategoryInput}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											addCustomCategory();
+										} else if (e.key === 'Escape') {
+											showCustomCategoryInput = false;
+											customCategoryInput = '';
+										}
 									}}
 								/>
+								<div class="flex gap-2 mt-2">
+									<button
+										type="button"
+										onclick={addCustomCategory}
+										disabled={!customCategoryInput.trim() || (formData.categories?.length || 0) >= 5}
+										class="button-primary button-small"
+									>
+										Add Category
+									</button>
+									<button
+										type="button"
+										onclick={() => {
+											showCustomCategoryInput = false;
+											customCategoryInput = '';
+										}}
+										class="button-secondary button-small"
+									>
+										Cancel
+									</button>
+								</div>
 							</div>
 						{/if}
 
 						<!-- Hidden input for form submission -->
-						<input type="hidden" name="category" bind:value={formData.category} />
+						<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
 					</div>
 
 					<div>
