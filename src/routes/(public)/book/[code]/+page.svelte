@@ -6,7 +6,7 @@
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
-	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
+	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { createPublicTourQuery, createTimeSlotAvailabilityQuery } from '$lib/queries/public-queries.js';
 	import { 
 		formatSlotDateTime,
@@ -291,7 +291,7 @@
 											color: var(--color-primary-700);
 										"
 									>
-										{category}
+										{formatCategoryName(category)}
 									</span>
 								{/each}
 							</div>

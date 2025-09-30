@@ -25,6 +25,14 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
+ * Capitalize the first letter of a category name
+ */
+export function formatCategoryName(category: string): string {
+	if (!category || typeof category !== 'string') return '';
+	return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+}
+
+/**
  * Get the display price for a tour, handling pricing tiers correctly
  */
 export function getTourDisplayPrice(tour: Tour): number {

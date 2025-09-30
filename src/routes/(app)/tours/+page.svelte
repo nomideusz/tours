@@ -6,6 +6,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { 
 		formatDuration,
+		formatCategoryName,
 		getImageUrl,
 		getTourDisplayPriceFormatted
 	} from '$lib/utils/tour-helpers-client.js';
@@ -746,8 +747,8 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each filteredTours as tour (tour.id)}
+		<div class="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{#each filteredTours as tour, i (tour.id)}
 				<div 
 					in:fade={{ duration: 200 }}
 					out:fade={{ duration: deletingTourIds.has(tour.id) ? 300 : 200 }}
@@ -775,7 +776,7 @@
 					</div>
 
 					<!-- Tour Image -->
-					<div class="h-48 relative" style="background: var(--bg-secondary);">
+					<div class="h-32 sm:h-48 relative" style="background: var(--bg-secondary);">
 						{#if tour.images && tour.images[0]}
 							<img 
 								src={getTourImageUrl(tour)} 
@@ -801,25 +802,32 @@
 					</div>
 					
 					<!-- Tour Info -->
-					<div class="p-4 sm:p-6 flex flex-col flex-grow">
+					<div class="p-3 sm:p-6 flex flex-col flex-grow">
 						<div class="flex-grow">
-							<h3 class="text-lg font-semibold mb-2 hover:underline flex items-center gap-2" style="color: var(--text-primary);">
+							<!-- Mobile heading -->
+							<h3 class="sm:hidden font-semibold mb-1 hover:underline line-clamp-2 flex items-center gap-2 text-sm" style="color: var(--text-primary);">
+								{tour.name}
+							</h3>
+							<!-- Desktop heading -->
+							<h3 class="hidden sm:flex font-semibold mb-2 hover:underline line-clamp-2 items-center gap-2 text-lg" style="color: var(--text-primary);">
 								<span class="tour-color-dot" style="background-color: {getTourCalendarColor(tour.id, tour.name)}"></span>
 								{tour.name}
 							</h3>
 							
 							<!-- Details -->
-							<div class="space-y-2 mb-4">
-								<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
-									<MapPin class="h-3 w-3" />
-									{tour.location || 'Location not set'}
+							<div class="space-y-1.5 sm:space-y-2 mb-2 sm:mb-4">
+								<!-- Mobile location -->
+								<div class="sm:hidden text-xs line-clamp-1" style="color: var(--text-secondary);">
+									<MapPin class="inline h-3 w-3 -mt-0.5" />
+									<span>{tour.location || 'Location not set'}</span>
 								</div>
-								<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
-									<Clock class="h-3 w-3" />
-									{formatDuration(tour.duration)}
+								<!-- Desktop location -->
+								<div class="hidden sm:flex items-center gap-2 line-clamp-1" style="color: var(--text-secondary);">
+									<MapPin class="h-4 w-4 flex-shrink-0" />
+									<span class="text-sm">{tour.location || 'Location not set'}</span>
 								</div>
 								{#if tour.categories && tour.categories.length > 0}
-									<div class="flex flex-wrap gap-1 mt-2">
+									<div class="hidden sm:flex flex-wrap gap-1 mt-1.5 sm:mt-2">
 										{#each tour.categories.slice(0, 3) as category}
 											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
 												style="
@@ -828,7 +836,7 @@
 													color: var(--color-primary-700);
 												"
 											>
-												{category.charAt(0).toUpperCase() + category.slice(1)}
+												{formatCategoryName(category)}
 											</span>
 										{/each}
 										{#if tour.categories.length > 3}
@@ -844,7 +852,29 @@
 										{/if}
 									</div>
 								{/if}
-								<div class="min-h-[2.5rem] flex items-center">
+								<!-- Mobile: compact inline format -->
+								<div class="sm:hidden flex items-center gap-1 flex-wrap text-sm">
+									<span class="font-semibold" style="color: var(--color-primary-600);">
+										{getTourDisplayPriceFormatted(tour)}
+									</span>
+									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+										<span class="text-xs" style="color: var(--text-secondary);">
+											/ <Baby class="inline h-3 w-3 -mt-0.5" /> {$globalCurrencyFormatter(tour.pricingTiers.child)}
+										</span>
+									{/if}
+									<span class="text-xs" style="color: var(--text-tertiary);">
+										<span class="mx-1">•</span>
+										<Clock class="inline h-3 w-3 -mt-0.5" />
+										{formatDuration(tour.duration)}
+									</span>
+								</div>
+								
+								<!-- Desktop: separate lines -->
+								<div class="hidden sm:block space-y-1">
+									<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+										<Clock class="h-4 w-4" />
+										{formatDuration(tour.duration)}
+									</div>
 									<div class="flex items-baseline gap-2 flex-wrap">
 										<span class="text-lg font-semibold" style="color: var(--color-primary-600);">
 											{getTourDisplayPriceFormatted(tour)}
@@ -860,8 +890,19 @@
 							</div>
 						</div>
 						
+						<!-- Mobile Stats - Compact inline format -->
+						<div class="sm:hidden text-xs mb-2" style="color: var(--text-tertiary);">
+							<span>{tour.qrScans || 0} views</span>
+							<span class="mx-1">•</span>
+							<span>{tour.qrConversions || 0} bookings</span>
+							{#if tour.hasFutureBookings}
+								<span class="mx-1">•</span>
+								<Calendar class="inline h-3 w-3 -mt-0.5" style="color: var(--color-warning-600);" />
+							{/if}
+						</div>
+						
 						<!-- Desktop Stats - Positioned just above actions -->
-						<div class="hidden sm:grid grid-cols-3 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="hidden sm:grid grid-cols-3 gap-1 text-center mb-3 sm:mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
 							<div>
 								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
 								<p class="text-xs" style="color: var(--text-tertiary);">Views</p>
@@ -884,30 +925,56 @@
 						</div>
 						
 						<!-- Actions - Always at bottom -->
-						<div class="flex gap-2 items-center mt-auto">
-							<div class="flex gap-2 flex-1">
+						<div class="flex gap-1.5 sm:gap-2 items-center mt-auto">
+							<div class="flex gap-1.5 sm:gap-2 flex-1">
+								<!-- Mobile layout -->
+								<div class="sm:hidden flex gap-1 flex-1">
+									{#if tour.status === 'draft'}
+										{#if canActivateTour(tour)}
+											<button 
+												onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
+												class="flex-1 button-primary button--small text-[11px]"
+											>
+												<CheckCircle class="h-3 w-3 -ml-1" />
+												<span>Activate</span>
+											</button>
+										{:else}
+											<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex-1 button-secondary button--small text-[11px]">
+												<Settings class="h-3 w-3 -ml-1" />
+												<span>Manage</span>
+											</button>
+										{/if}
+									{:else}
+										<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex-1 button-secondary button--small text-[11px]">
+											<Settings class="h-3 w-3 -ml-1" />
+											<span>Manage</span>
+										</button>
+									{/if}
+								</div>
+								
+								<!-- Desktop: Full buttons -->
 								<Tooltip text="Manage tour details & schedule" position="top">
-									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="button-secondary button--small button--gap">
-										<Settings class="h-4 w-4" />
-										<span class="hidden sm:inline">Manage</span>
+									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="hidden sm:flex button-secondary button--small button--gap text-xs sm:text-sm">
+										<Settings class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+										<span>Manage</span>
 									</button>
 								</Tooltip>
 								{#if tour.status === 'draft'}
 									{#if canActivateTour(tour)}
 										<button 
 											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-											class="button-primary button--small button--gap"
+											class="hidden sm:flex button-primary button--small button--gap text-xs sm:text-sm"
 										>
-											<CheckCircle class="h-4 w-4" />
+											<CheckCircle class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 											<span>Activate</span>
 										</button>
 									{:else}
 										<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
 											<button 
-												class="button-secondary button--small button--gap opacity-50 cursor-not-allowed"
+												class="hidden sm:flex button-secondary button--small button--gap opacity-50 cursor-not-allowed text-xs sm:text-sm"
 												disabled
 											>
-												<CheckCircle class="h-4 w-4" />
+												<CheckCircle class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 												<span>Activate</span>
 											</button>
 										</Tooltip>
@@ -928,13 +995,13 @@
 										}}
 										class="button-secondary button--small button--icon"
 									>
-										<MoreVertical class="h-4 w-4" />
+										<MoreVertical class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 									</button>
 								</Tooltip>
 								
 								{#if actionMenuOpen === tour.id}
 									<div 
-										class="absolute right-0 w-48 rounded-lg shadow-lg"
+										class="absolute w-44 sm:w-48 rounded-lg shadow-lg {(i % 2 === 0) ? 'left-0 sm:right-0 sm:left-auto' : 'right-0'}"
 										style="z-index: var(--z-dropdown); background: var(--bg-primary); border: 1px solid var(--border-primary); {dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'}"
 										onclick={(e) => e.stopPropagation()}
 										onkeydown={(e) => e.stopPropagation()}
@@ -1124,10 +1191,16 @@
 	
 	/* Calendar color strip at top of card */
 	.tour-color-strip {
-		height: 6px;
+		height: 4px;
 		position: relative;
 		overflow: hidden;
 		border-radius: 0.75rem 0.75rem 0 0; /* Round top corners only */
+	}
+	
+	@media (min-width: 640px) {
+		.tour-color-strip {
+			height: 6px;
+		}
 	}
 	
 	.tour-color-strip-inner {

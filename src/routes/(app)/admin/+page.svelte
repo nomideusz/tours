@@ -11,6 +11,7 @@
 	import TableSort from '$lib/components/TableSort.svelte';
 	import { formatDate, formatDateTime } from '$lib/utils/date-helpers.js';
 	import { globalCurrencyFormatter, formatCurrency } from '$lib/utils/currency.js';
+	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	import { createTableSort, sortData, createSortableFields } from '$lib/utils/table-sort.js';
 	
@@ -1370,7 +1371,7 @@
 														<p class="text-sm mb-2" style="color: var(--text-secondary);">{tour.description}</p>
 														<div class="flex items-center gap-4 text-xs" style="color: var(--text-tertiary);">
 															<span>Price: {formatCurrency(Number(tour.price), { currency: userDetails.user.currency })}</span>
-															<span>Duration: {tour.duration}min</span>
+															<span>Duration: {formatDuration(tour.duration)}</span>
 															<span>Capacity: {tour.capacity}</span>
 															{#if tour.location}
 																<span>Location: {tour.location}</span>

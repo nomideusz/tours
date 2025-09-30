@@ -3,6 +3,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { formatCurrency } from '$lib/utils/currency.js';
+	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -487,7 +488,7 @@
 													<h3 class="text-sm font-bold mb-1">{tour.name.substring(0, 35)}{tour.name.length > 35 ? '...' : ''}</h3>
 													<div class="flex justify-between text-xs opacity-80">
 														<span>{formatCurrency(tour.price, tour.currency)}</span>
-														<span>{tour.duration || 60} min</span>
+														<span>{formatDuration(tour.duration || 60)}</span>
 													</div>
 												</div>
 											{/each}

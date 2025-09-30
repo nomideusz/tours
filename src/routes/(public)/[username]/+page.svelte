@@ -3,7 +3,7 @@
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { createPublicProfileQuery } from '$lib/queries/public-queries.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
-	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
+	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { generateQRImageURL, generateBookingURL } from '$lib/utils/qr-generation.js';
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import User from 'lucide-svelte/icons/user';
@@ -278,7 +278,7 @@
 																color: var(--color-primary-700);
 															"
 														>
-															{category}
+															{formatCategoryName(category)}
 														</span>
 													{/each}
 													{#if tour.categories.length > 3}

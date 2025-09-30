@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
+	import { formatDuration, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	
@@ -840,19 +841,7 @@
 				onclick: () => showAddSlotsModal = true,
 				variant: 'primary'
 			}}
-			quickActions={[
-				{
-					icon: Edit,
-					label: 'Edit',
-					onclick: () => goto(`/tours/${tourId}/edit`)
-				},
-				{
-					icon: Copy,
-					label: 'Copy',
-					onclick: () => handleCopyTour(),
-					disabled: isCopyingTour
-				}
-			]}
+			quickActions={[]}
 			showBackButton={true}
 			onBackClick={handleSmartBack}
 			tourColor={tour ? getTourCalendarColor(tour.id, tour.name) : undefined}
@@ -1060,24 +1049,25 @@
 									<span>•</span>
 									<span>{getConversionRateText()} conversion</span>
 								</div>
-								<!-- Edit button - visible on both mobile and desktop -->
-								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
-									<Edit class="h-4 w-4" />
-									<span class="hidden sm:inline">Edit</span>
-									<span class="sm:hidden">Edit Tour</span>
-								</button>
-								<!-- Copy button - visible on both mobile and desktop -->
-								<button onclick={() => handleCopyTour()} class="button-secondary button--small button--gap" disabled={isCopyingTour}>
-									{#if isCopyingTour}
-										<RefreshCw class="h-4 w-4 animate-spin" />
-										<span class="hidden sm:inline">Copying...</span>
-										<span class="sm:hidden">Copy</span>
-									{:else}
-										<Copy class="h-4 w-4" />
-										<span class="hidden sm:inline">Copy</span>
-										<span class="sm:hidden">Copy</span>
-									{/if}
-								</button>
+								<!-- Edit and Copy buttons - visible on all screen sizes -->
+								<div class="flex items-center gap-3">
+									<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
+										<Edit class="h-4 w-4" />
+										<span class="hidden sm:inline">Edit</span>
+										<span class="sm:hidden">Edit</span>
+									</button>
+									<button onclick={() => handleCopyTour()} class="button-secondary button--small button--gap" disabled={isCopyingTour}>
+										{#if isCopyingTour}
+											<RefreshCw class="h-4 w-4 animate-spin" />
+											<span class="hidden sm:inline">Copying...</span>
+											<span class="sm:hidden">Copy</span>
+										{:else}
+											<Copy class="h-4 w-4" />
+											<span class="hidden sm:inline">Copy</span>
+											<span class="sm:hidden">Copy</span>
+										{/if}
+									</button>
+								</div>
 							</div>
 						</div>
 						<div class="p-3 sm:p-4 space-y-4 sm:space-y-4">
@@ -1099,7 +1089,7 @@
 								</div>
 								<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
 									<p class="text-xs" style="color: var(--text-tertiary);">Duration</p>
-									<p class="font-semibold text-lg" style="color: var(--text-primary);">{tour.duration}min</p>
+									<p class="font-semibold text-lg" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
 								</div>
 							</div>
 							
@@ -1146,7 +1136,7 @@
 												color: var(--color-primary-700);
 											"
 										>
-											{category}
+											{formatCategoryName(category)}
 										</span>
 									{/each}
 								</div>
