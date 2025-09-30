@@ -1585,7 +1585,7 @@
 						</div>
 						<div class="flex-1">
 							<h3 class="font-medium" style="color: var(--text-primary);">
-								{formData.status === 'active' ? 'Published' : 'Draft'}
+								{formData.status === 'active' ? 'Active' : 'Draft'}
 							</h3>
 							<p class="text-sm" style="color: var(--text-secondary);">
 								{formData.status === 'active' 
@@ -1655,7 +1655,7 @@
 								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
 								<div class="flex-1">
 									<p class="text-xs font-medium" style="color: var(--color-warning-700);">
-										Complete setup to publish
+										Complete setup to activate
 									</p>
 									<p class="text-xs mt-1" style="color: var(--color-warning-600);">
 										{onboardingMessage}
@@ -1670,14 +1670,14 @@
 						onclick={onPublish}
 						disabled={isSubmitting || !canActivate}
 						class="button-primary button--full-width button--gap"
-						title={!canActivate ? 'Complete required setup steps to publish' : ''}
+						title={!canActivate ? 'Complete required setup steps to activate' : ''}
 					>
 						{#if isSubmitting && formData.status === 'active'}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-							{isEdit ? 'Publishing...' : 'Publishing...'}
+							{isEdit ? 'Activating...' : 'Activating...'}
 						{:else}
 							<CheckCircle class="w-4 h-4" />
-							{isEdit ? 'Save & Publish' : 'Publish Tour'}
+							{isEdit ? 'Save & Activate' : 'Activate Tour'}
 						{/if}
 					</button>
 					
