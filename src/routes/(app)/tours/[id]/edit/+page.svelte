@@ -394,9 +394,7 @@
 		goto(`/tours/${tourId}`);
 	}
 
-	async function handleSave() {
-		if (isSubmitting) return;
-		
+	async function performSave() {
 		// Validate form before submission
 		const formValidation = validateForm();
 		if (formValidation.length > 0) {
@@ -466,6 +464,25 @@
 		} finally {
 			isSubmitting = false;
 		}
+	}
+
+	async function handleSave() {
+		if (isSubmitting) return;
+		await performSave();
+	}
+
+	async function handleSaveAsDraft() {
+		if (isSubmitting) return;
+		// Set status to draft before saving
+		formData.status = 'draft';
+		await performSave();
+	}
+
+	async function handlePublish() {
+		if (isSubmitting) return;
+		// Set status to active before saving
+		formData.status = 'active';
+		await performSave();
 	}
 
 	function getTourStatusInfo() {
@@ -852,10 +869,10 @@
 						bind:formData
 						bind:uploadedImages
 						{isSubmitting}
-						submitButtonText="Save Changes"
 						isEdit={true}
 						onCancel={handleCancel}
-						onSubmit={handleSave}
+						onSaveAsDraft={handleSaveAsDraft}
+						onPublish={handlePublish}
 						onImageUpload={handleImageUpload}
 						onImageRemove={removeImage}
 						{existingImages}

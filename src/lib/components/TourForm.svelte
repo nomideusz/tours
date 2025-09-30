@@ -62,6 +62,8 @@
 
 		onCancel: () => void;
 		onSubmit?: () => void;
+		onSaveAsDraft?: () => void;
+		onPublish?: () => void;
 		onImageUpload?: (event: Event) => void;
 		onImageRemove?: (index: number) => void;
 		existingImages?: string[];
@@ -90,6 +92,8 @@
 
 		onCancel,
 		onSubmit,
+		onSaveAsDraft,
+		onPublish,
 		onImageUpload,
 		onImageRemove,
 		existingImages = [],
@@ -568,8 +572,18 @@
 						
 						<!-- Selected Categories Display -->
 						{#if formData.categories && formData.categories.length > 0}
+							{@const categoryMap = [
+								{ id: 'walking', name: 'Walking', icon: Users },
+								{ id: 'food', name: 'Food', icon: Utensils },
+								{ id: 'cultural', name: 'Cultural', icon: Building },
+								{ id: 'historical', name: 'Historical', icon: BookOpen },
+								{ id: 'art', name: 'Art', icon: Palette },
+								{ id: 'adventure', name: 'Adventure', icon: Mountain }
+							]}
 							<div class="mb-3 flex flex-wrap gap-1.5">
 								{#each formData.categories as selectedCategory, index}
+									{@const categoryInfo = categoryMap.find(c => c.id === selectedCategory)}
+									{@const displayName = categoryInfo?.name || selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
 									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border"
 										style="
 											background: var(--color-primary-50);
@@ -577,14 +591,14 @@
 											color: var(--color-primary-700);
 										"
 									>
-										{selectedCategory}
+										{displayName}
 										<button
 											type="button"
 											onclick={() => {
 												formData.categories = formData.categories.filter((_, i) => i !== index);
 											}}
 											class="hover:opacity-70 transition-opacity"
-											aria-label="Remove {selectedCategory}"
+											aria-label="Remove {displayName}"
 										>
 											<X class="w-3 h-3" />
 										</button>
@@ -1552,86 +1566,36 @@
 			</div>
 		{/if}
 
-		<!-- Tour Status -->
-		{#if !hideStatusField}
+		<!-- Tour Status - Informational Only -->
+		{#if isEdit && !hideStatusField}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Tour Status</h3>
+					<h3 class="font-semibold" style="color: var(--text-primary);">Current Status</h3>
 				</div>
 				<div class="p-4">
-					<!-- Onboarding Restriction Notice -->
-					{#if !canActivate && (formData.status === 'active' || missingSteps.length > 0)}
-						<div class="mb-4 p-4 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-start gap-3">
-								<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
-								<div class="flex-1">
-									<p class="text-sm" style="color: var(--color-warning-700);">
-										{onboardingMessage}
-									</p>
-									{#if nextStep}
-										<p class="text-xs mt-1" style="color: var(--color-warning-600);">
-											{nextStep.action}
-										</p>
-									{/if}
-								</div>
-							</div>
+					<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
+							style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
+						>
+							{#if formData.status === 'active'}
+								<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
+							{:else}
+								<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
+							{/if}
 						</div>
-					{/if}
-
-					<div class="flex items-center justify-between p-4 rounded-lg" style="background: var(--bg-secondary);">
-						<div class="flex items-center gap-3 min-w-0 flex-1">
-							<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
-								style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
-							>
-								{#if formData.status === 'active'}
-									<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
-								{:else}
-									<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
-								{/if}
-							</div>
-							<div class="min-w-0 flex-1">
-								<h3 class="font-medium" style="color: var(--text-primary);">
-									{formData.status === 'active' ? 'Active' : 'Draft'}
-								</h3>
-								<p class="text-sm" style="color: var(--text-secondary);">
-									{#if !canActivate && formData.status === 'active'}
-										Complete setup to activate
-									{:else}
-										{formData.status === 'active' 
-											? 'Accepting bookings'
-											: 'Not visible to customers'}
-									{/if}
-								</p>
-							</div>
-						</div>
-						
-						<div class="flex items-center gap-3 flex-shrink-0">
-							<!-- Hidden input to send the actual status value -->
-							<input type="hidden" name="status" bind:value={formData.status} />
-							<label class="relative inline-flex items-center {canActivate ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}">
-								<input
-									type="checkbox"
-									checked={formData.status === 'active'}
-									disabled={!canActivate}
-									onchange={(e) => {
-										const target = e.target as HTMLInputElement;
-										if (canActivate || !target.checked) {
-											formData.status = target.checked ? 'active' : 'draft';
-										} else {
-											// Reset to draft if trying to activate without onboarding
-											target.checked = false;
-											formData.status = 'draft';
-										}
-									}}
-									class="sr-only peer"
-								/>
-								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all {!canActivate ? 'opacity-50' : ''}"></div>
-								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
-									{formData.status === 'active' ? 'Active' : 'Draft'}
-								</span>
-							</label>
+						<div class="flex-1">
+							<h3 class="font-medium" style="color: var(--text-primary);">
+								{formData.status === 'active' ? 'Published' : 'Draft'}
+							</h3>
+							<p class="text-sm" style="color: var(--text-secondary);">
+								{formData.status === 'active' 
+									? 'Tour is live and accepting bookings'
+									: 'Not visible to customers'}
+							</p>
 						</div>
 					</div>
+					<!-- Hidden input to send the actual status value -->
+					<input type="hidden" name="status" bind:value={formData.status} />
 				</div>
 			</div>
 		{/if}
@@ -1681,25 +1645,73 @@
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4">
 			<div class="space-y-3">
-				<button
-					type={onSubmit ? "button" : "submit"}
-					onclick={onSubmit || handleSubmit}
-					disabled={isSubmitting}
-					class="button-primary button--full-width button--gap"
-				>
-					{#if isSubmitting}
-						<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-						{formData.status === 'active' && isEdit ? 'Activating...' : 'Saving...'}
-					{:else}
-						{#if formData.status === 'active' && isEdit}
+				{#if onPublish && onSaveAsDraft}
+					<!-- Dual Action Buttons for Draft/Publish -->
+					
+					<!-- Onboarding Restriction Notice -->
+					{#if !canActivate && missingSteps.length > 0}
+						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+								<div class="flex-1">
+									<p class="text-xs font-medium" style="color: var(--color-warning-700);">
+										Complete setup to publish
+									</p>
+									<p class="text-xs mt-1" style="color: var(--color-warning-600);">
+										{onboardingMessage}
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+					
+					<button
+						type="button"
+						onclick={onPublish}
+						disabled={isSubmitting || !canActivate}
+						class="button-primary button--full-width button--gap"
+						title={!canActivate ? 'Complete required setup steps to publish' : ''}
+					>
+						{#if isSubmitting && formData.status === 'active'}
+							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+							{isEdit ? 'Publishing...' : 'Publishing...'}
+						{:else}
 							<CheckCircle class="w-4 h-4" />
-							Save & Activate Tour
+							{isEdit ? 'Save & Publish' : 'Publish Tour'}
+						{/if}
+					</button>
+					
+					<button
+						type="button"
+						onclick={onSaveAsDraft}
+						disabled={isSubmitting}
+						class="button-secondary button--full-width button--gap"
+					>
+						{#if isSubmitting && formData.status === 'draft'}
+							<div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+							Saving...
+						{:else}
+							<FileText class="w-4 h-4" />
+							{isEdit ? 'Save as Draft' : 'Save as Draft'}
+						{/if}
+					</button>
+				{:else}
+					<!-- Single Action Button (fallback for old usage) -->
+					<button
+						type={onSubmit ? "button" : "submit"}
+						onclick={onSubmit || handleSubmit}
+						disabled={isSubmitting}
+						class="button-primary button--full-width button--gap"
+					>
+						{#if isSubmitting}
+							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+							Saving...
 						{:else}
 							<Save class="w-4 h-4" />
 							{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
 						{/if}
-					{/if}
-				</button>
+					</button>
+				{/if}
 				
 				<button
 					type="button"

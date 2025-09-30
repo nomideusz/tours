@@ -292,17 +292,45 @@
 	function handleSaveAsDraft() {
 		if (isSubmitting) return;
 		
+		// Force immediate validation by directly calling validateTourForm
+		const validation = validateTourForm(formData);
+		if (!validation.isValid) {
+			// Trigger validation in TourForm component
+			triggerValidation = true;
+			return;
+		}
+		
 		// Set status to draft and submit
 		formData.status = 'draft';
-		handleSave();
+		isSubmitting = true;
+		
+		// Trigger form submission
+		const form = document.querySelector('form');
+		if (form) {
+			form.requestSubmit();
+		}
 	}
 
 	function handleSaveAndActivate() {
 		if (isSubmitting) return;
 		
+		// Force immediate validation by directly calling validateTourForm
+		const validation = validateTourForm(formData);
+		if (!validation.isValid) {
+			// Trigger validation in TourForm component
+			triggerValidation = true;
+			return;
+		}
+		
 		// Set status to active and submit
 		formData.status = 'active';
-		handleSave();
+		isSubmitting = true;
+		
+		// Trigger form submission
+		const form = document.querySelector('form');
+		if (form) {
+			form.requestSubmit();
+		}
 	}
 
 	// Calculate form completion for mobile header
@@ -530,22 +558,14 @@
 			{/if}
 
 			<form method="POST" enctype="multipart/form-data" novalidate onsubmit={(e) => {
-				// Force immediate validation by directly calling validateTourForm
-				const validation = validateTourForm(formData);
-				if (!validation.isValid) {
-					e.preventDefault();
-					// Trigger validation in TourForm component
-					triggerValidation = true;
-					return false;
-				}
-				
-				isSubmitting = true;
-			}} use:enhance={({ formData }) => {
+				// Prevent default form submission - we handle it via button clicks
+				e.preventDefault();
+			}} use:enhance={({ formData: formDataObj }) => {
 				// Manually append uploaded images to form data
 				console.log('📤 Enhancing form submission with', uploadedImages.length, 'images');
 				uploadedImages.forEach((file, index) => {
 					console.log(`📤 Adding image ${index + 1}:`, { name: file.name, size: file.size, type: file.type });
-					formData.append('images', file);
+					formDataObj.append('images', file);
 				});
 
 				// Add schedule data if enabled
@@ -557,8 +577,8 @@
 						customPattern,
 						manualSlots
 					};
-					formData.append('enableScheduling', 'true');
-					formData.append('scheduleData', JSON.stringify(scheduleData));
+					formDataObj.append('enableScheduling', 'true');
+					formDataObj.append('scheduleData', JSON.stringify(scheduleData));
 					console.log('📅 Adding schedule data:', scheduleData);
 				}
 				
@@ -600,15 +620,16 @@
 					bind:formData
 					bind:uploadedImages
 					{isSubmitting}
-					submitButtonText={submitButtonText}
 					isEdit={false}
 					onCancel={handleCancel}
+					onSaveAsDraft={handleSaveAsDraft}
+					onPublish={handleSaveAndActivate}
 					onImageUpload={handleImageUpload}
 					onImageRemove={removeImage}
 					{imageUploadErrors}
 					serverErrors={(form as any)?.validationErrors || []}
 					{triggerValidation}
-					hideStatusField={false}
+					hideStatusField={true}
 					{profile}
 					{hasConfirmedLocation}
 					{paymentStatus}
