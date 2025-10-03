@@ -70,7 +70,6 @@
 	// Calculate prices using unified function
 	let starterProPricing = $derived(calculatePlanPricing('starter_pro', isYearly ? 'yearly' : 'monthly', userPricingContext));
 	let proPricing = $derived(calculatePlanPricing('professional', isYearly ? 'yearly' : 'monthly', userPricingContext));
-	let agencyPricing = $derived(calculatePlanPricing('agency', isYearly ? 'yearly' : 'monthly', userPricingContext));
 	
 	let billingPeriod = $derived(isYearly ? '/month billed annually' : '/month');
 	
@@ -540,8 +539,8 @@
 				</div>
 			</div>
 			
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-				{#each PRICING_PLANS as plan}
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+				{#each PRICING_PLANS.filter(p => p.id !== 'agency') as plan}
 					{@const pricing = calculatePlanPricing(plan.id, isYearly ? 'yearly' : 'monthly', userPricingContext)}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
@@ -578,7 +577,7 @@
 						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
 							{#if !isFreePlan && pricing.savings > 0}
 								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
-									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage || 50}% OFF - Save €${formatPrice(pricing.savings)}`}
+									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage || 30}% OFF - Save €${formatPrice(pricing.savings)}`}
 								</span>
 							{:else if !isFreePlan && isYearly}
 								{@const planPricing = getPlanPricing(plan.id)}

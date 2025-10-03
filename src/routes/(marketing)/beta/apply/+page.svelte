@@ -1,481 +1,24 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
-	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	
 	// Icons
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import Loader from 'lucide-svelte/icons/loader';
-	import User from 'lucide-svelte/icons/user';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Send from 'lucide-svelte/icons/send';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	
-	// Umami tracking
-	import { trackEvent, trackFormProgress, trackFormAbandon, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
-	
-	// Form state
-	let isSubmitting = $state(false);
-	let error = $state('');
-	let success = $state(false);
-	
-	// Tracking state
-	let formStarted = $state(false);
-	let fieldsInteracted = $state(new Set<string>());
-	let formStartTime = $state<number>(0);
-	
-	// Simplified form data - removed unnecessary fields
-	let formData = $state({
-		// Basic info
-		name: '',
-		email: '',
-		businessName: '',
-		location: '', // City, Country format
-		
-		// Essential screening questions only
-		tourTypes: '',
-		tourVolume: '', // Simplified from frequency
-		biggestChallenge: '',
-		
-		// Optional
-		website: ''
-	});
-	
-	// Simplified tour volume options
-	const tourVolumeOptions = [
-		{ value: 'starting', label: 'Just starting out' },
-		{ value: 'part-time', label: 'Part-time (1-10 tours/week)' },
-		{ value: 'full-time', label: 'Full-time (10+ tours/week)' },
-		{ value: 'team', label: 'Team operation' }
-	];
-	
-	// Example countries for quick selection (not limiting - all countries accepted)
-	const exampleCountries = [
-		{ code: 'US', name: 'United States', flag: '🇺🇸' },
-		{ code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-		{ code: 'ES', name: 'Spain', flag: '🇪🇸' },
-		{ code: 'FR', name: 'France', flag: '🇫🇷' },
-		{ code: 'IT', name: 'Italy', flag: '🇮🇹' },
-		{ code: 'DE', name: 'Germany', flag: '🇩🇪' }
-	];
-	
-	// Common country name to code mappings
-	// Initialize tracking
-	onMount(() => {
-		// Track beta application page visit
-		trackEvent(UMAMI_EVENTS.BETA_APPLY_START, {
-			category: 'beta_funnel',
-			step: 'form',
-			page: 'beta_application'
-		});
-		
-		// Track form abandonment on page unload
-		const handleBeforeUnload = () => {
-			if (formStarted && !success) {
-				const completionPercentage = calculateFormCompletion();
-				const lastField = Array.from(fieldsInteracted).pop();
-				trackFormAbandon('beta_application', completionPercentage, lastField);
-			}
-		};
-		
-		window.addEventListener('beforeunload', handleBeforeUnload);
-		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-	});
-	
-	// Calculate form completion percentage
-	function calculateFormCompletion(): number {
-		const requiredFields = ['name', 'email', 'businessName', 'location', 'tourTypes', 'tourVolume', 'biggestChallenge'];
-		const completedFields = requiredFields.filter(field => {
-			const value = formData[field as keyof typeof formData];
-			return value && value.toString().trim() !== '';
-		});
-		return Math.round((completedFields.length / requiredFields.length) * 100);
-	}
-	
-	// Track field interactions
-	function trackFieldInteraction(fieldName: string) {
-		if (!formStarted) {
-			formStarted = true;
-			formStartTime = Date.now();
-			trackEvent(UMAMI_EVENTS.BETA_FORM_FIELD_FOCUS, {
-				category: 'form_interaction',
-				field_name: 'first_interaction',
-				form_name: 'beta_application'
-			});
-		}
-		
-		if (!fieldsInteracted.has(fieldName)) {
-			fieldsInteracted.add(fieldName);
-			const completionPercentage = calculateFormCompletion();
-			trackFormProgress('beta_application', fieldName, completionPercentage);
-		}
-	}
-
-	const countryMappings: Record<string, string> = {
-		// Common full names
-		'united states': 'US', 'usa': 'US', 'america': 'US', 'united states of america': 'US',
-		'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB',
-		'spain': 'ES', 'españa': 'ES',
-		'france': 'FR',
-		'italy': 'IT', 'italia': 'IT',
-		'germany': 'DE', 'deutschland': 'DE',
-		'portugal': 'PT',
-		'netherlands': 'NL', 'holland': 'NL',
-		'belgium': 'BE',
-		'switzerland': 'CH',
-		'austria': 'AT',
-		'poland': 'PL', 'polska': 'PL',
-		'czech republic': 'CZ', 'czechia': 'CZ',
-		'greece': 'GR',
-		'turkey': 'TR',
-		'mexico': 'MX', 'méxico': 'MX',
-		'canada': 'CA',
-		'brazil': 'BR', 'brasil': 'BR',
-		'argentina': 'AR',
-		'australia': 'AU',
-		'new zealand': 'NZ',
-		'japan': 'JP',
-		'china': 'CN',
-		'india': 'IN',
-		'thailand': 'TH',
-		'vietnam': 'VN',
-		'indonesia': 'ID',
-		'malaysia': 'MY',
-		'singapore': 'SG',
-		'south korea': 'KR', 'korea': 'KR',
-		'egypt': 'EG',
-		'morocco': 'MA',
-		'south africa': 'ZA',
-		'israel': 'IL',
-		'uae': 'AE', 'united arab emirates': 'AE', 'dubai': 'AE',
-		'norway': 'NO',
-		'sweden': 'SE',
-		'denmark': 'DK',
-		'finland': 'FI',
-		'ireland': 'IE',
-		'scotland': 'GB',
-		'wales': 'GB'
-	};
-	
-	// Helper function to get country code
-	function getCountryCode(input: string): string {
-		if (!input) return 'XX'; // Default fallback
-		
-		// If it's already a 2-letter code, return it
-		if (input.length === 2 && /^[A-Z]{2}$/i.test(input)) {
-			return input.toUpperCase();
-		}
-		
-		// Try to find in mappings
-		const normalized = input.toLowerCase().trim();
-		const code = countryMappings[normalized];
-		if (code) return code;
-		
-		// If not found, use first 2 letters as fallback
-		return input.substring(0, 2).toUpperCase();
-	}
-	
-	// Validation state
-	let touchedFields = $state<Set<string>>(new Set());
-	let validationErrors = $state<{ field: string; message: string }[]>([]);
-	
-	// Error element reference for scrolling
-	let errorElement = $state<HTMLElement>();
-	
-	// Scroll to error when it appears
-	$effect(() => {
-		if (error && errorElement && browser) {
-			setTimeout(() => {
-				errorElement?.scrollIntoView({ 
-					behavior: 'smooth', 
-					block: 'center' 
-				});
-			}, 100);
-		}
-	});
-	
-	// Location suggestion helper
-	function handleLocationInput(value: string) {
-		formData.location = value;
-		// Auto-format common inputs
-		if (value && !value.includes(',')) {
-			// Suggest adding country after city
-			// This is just a UX hint, not enforced
-		}
-	}
-	
-	// Field validation functions
-	function validateField(field: string, value: any): string | null {
-		switch (field) {
-			case 'name':
-				return !value || value.trim() === '' ? 'Your name is required' : null;
-			case 'email':
-				if (!value || value.trim() === '') return 'Email address is required';
-				
-				const email = value.trim().toLowerCase();
-				
-				// More comprehensive email validation
-				const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-				
-				if (!emailRegex.test(email)) {
-					return 'Please enter a valid email address';
-				}
-				
-				// Additional checks for common mistakes
-				if (email.includes('..')) {
-					return 'Email cannot contain consecutive dots';
-				}
-				
-				if (email.startsWith('.') || email.endsWith('.')) {
-					return 'Email cannot start or end with a dot';
-				}
-				
-				if (email.includes('@.') || email.includes('.@')) {
-					return 'Invalid email format around @ symbol';
-				}
-				
-				return null;
-			case 'location':
-				return !value || value.trim() === '' ? 'City and country are required' : null;
-			case 'tourTypes':
-				return !value || value.trim() === '' ? 'Please describe your tours' : null;
-			case 'tourVolume':
-				return !value || value.trim() === '' ? 'Please select your tour volume' : null;
-			case 'biggestChallenge':
-				return !value || value.trim() === '' ? 'Please share your main challenge' : null;
-			default:
-				return null;
-		}
-	}
-	
-	// Handle field blur for validation
-	function handleFieldBlur(field: string, value: any) {
-		// Create new Set for reactivity
-		touchedFields = new Set([...touchedFields, field]);
-		
-		const errorMessage = validateField(field, value);
-		validationErrors = validationErrors.filter(e => e.field !== field);
-		
-		if (errorMessage) {
-			validationErrors = [...validationErrors, { field, message: errorMessage }];
-		}
-	}
-	
-	// Get field error
-	function getFieldError(field: string): string | null {
-		if (!touchedFields.has(field)) return null;
-		return validationErrors.find(e => e.field === field)?.message || null;
-	}
-	
-	// Has field error
-	function hasFieldError(field: string): boolean {
-		return touchedFields.has(field) && validationErrors.some(e => e.field === field);
-	}
-	
-	// Form validation
-	function validateForm(): boolean {
-		const requiredFields = [
-			'name', 'email', 'location', 
-			'tourTypes', 'tourVolume', 'biggestChallenge'
-		];
-		
-		// Mark all fields as touched (create new Set for reactivity)
-		touchedFields = new Set([...touchedFields, ...requiredFields]);
-		
-		// Clear existing errors
-		validationErrors = [];
-		
-		// Validate all fields
-		let hasErrors = false;
-		requiredFields.forEach(field => {
-			const value = formData[field as keyof typeof formData];
-			const errorMessage = validateField(field, value);
-			if (errorMessage) {
-				validationErrors = [...validationErrors, { field, message: errorMessage }];
-				hasErrors = true;
-			}
-		});
-		
-		return !hasErrors;
-	}
-	
-	// Calculate form completion percentage
-	let formCompletion = $derived.by(() => {
-		const fields = [
-			formData.name,
-			formData.email,
-			formData.location,
-			formData.tourTypes,
-			formData.tourVolume,
-			formData.biggestChallenge
-		];
-		
-		const completed = fields.filter(field => field && field.toString().trim() !== '').length;
-		const total = fields.length;
-		const percentage = Math.round((completed / total) * 100);
-		
-		return {
-			completed,
-			total,
-			percentage,
-			isComplete: percentage === 100
-		};
-	});
-	
-	// Handle form submission
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		
-		// Track form submission attempt
-		const completionPercentage = calculateFormCompletion();
-		const formDuration = formStartTime ? Date.now() - formStartTime : 0;
-		
-		trackEvent(UMAMI_EVENTS.BETA_FORM_SUBMIT, {
-			category: 'beta_funnel',
-			form_name: 'beta_application',
-			completion_percentage: completionPercentage,
-			form_duration_seconds: Math.round(formDuration / 1000),
-			fields_interacted: fieldsInteracted.size
-		});
-		
-		// Clear any previous general error
-		error = '';
-		
-		if (!validateForm()) {
-			// Track validation errors
-			trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
-				category: 'form_errors',
-				form_name: 'beta_application',
-				error_type: 'validation',
-				error_fields: validationErrors.map(e => e.field).join(','),
-				completion_percentage: completionPercentage
-			});
-			
-			// Don't show generic error if we have specific field errors
-			if (validationErrors.length === 0) {
-				error = 'Please complete all required fields';
-			} else {
-				// Clear generic error, let field-specific errors show
-				error = '';
-				
-				// Scroll to first error field for better UX
-				setTimeout(() => {
-					const firstErrorField = validationErrors[0]?.field;
-					if (firstErrorField) {
-						const element = document.getElementById(firstErrorField);
-						if (element) {
-							element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-							element.focus();
-						}
-					}
-				}, 100);
-			}
-			return;
-		}
-		
-		error = '';
-		isSubmitting = true;
-		
-		try {
-			// Extract city and country from location
-			const locationParts = formData.location.split(',').map(p => p.trim()).filter(p => p);
-			let country = '';
-			let city = '';
-			
-			if (locationParts.length >= 2) {
-				// Format: "City, Country"
-				city = locationParts[0];
-				country = getCountryCode(locationParts[locationParts.length - 1]);
-			} else if (locationParts.length === 1) {
-				// Single value - could be either city or country
-				const value = locationParts[0];
-				city = value;
-				// For country, try to extract a 2-letter code or use first 2 letters
-				country = getCountryCode(value);
-			}
-			
-			const response = await fetch('/api/beta-applications', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					...formData,
-					city: city || formData.location,
-					country: country || 'XX', // Always use 2-letter code
-					// Set defaults for removed fields
-					phone: '',
-					yearsExperience: 0,
-					teamSize: 1,
-					tourFrequency: formData.tourVolume,
-					currentBookingMethod: 'Not specified',
-					betaContribution: 'Interested in testing and providing feedback',
-					interestedFeatures: ['qr_codes', 'payment_processing', 'calendar_management'],
-					availabilityForFeedback: true,
-					referralSource: 'Beta application form'
-				})
-			});
-			
-			const data = await response.json();
-			
-			if (response.ok) {
-				success = true;
-				
-				// Track successful form submission
-				trackEvent(UMAMI_EVENTS.BETA_FORM_SUCCESS, {
-					category: 'beta_funnel',
-					form_name: 'beta_application',
-					completion_percentage: 100,
-					form_duration_seconds: Math.round(formDuration / 1000),
-					tour_volume: formData.tourVolume,
-					location: formData.location
-				});
-				
-				// Show success message for a moment then redirect
-				setTimeout(() => {
-					goto('/beta/success');
-				}, 2000);
-			} else {
-				error = data.error || 'Failed to submit application. Please try again.';
-				
-				// Track submission error
-				trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
-					category: 'form_errors',
-					form_name: 'beta_application',
-					error_type: 'server_error',
-					error_message: data.error || 'Unknown server error',
-					completion_percentage: completionPercentage
-				});
-			}
-		} catch (err) {
-			error = 'Network error. Please check your connection and try again.';
-			
-			// Track network error
-			trackEvent(UMAMI_EVENTS.BETA_FORM_ERROR, {
-				category: 'form_errors',
-				form_name: 'beta_application',
-				error_type: 'network_error',
-				error_message: err instanceof Error ? err.message : 'Unknown network error',
-				completion_percentage: completionPercentage
-			});
-		} finally {
-			isSubmitting = false;
-		}
-	}
+	import Users from 'lucide-svelte/icons/users';
+	import Clock from 'lucide-svelte/icons/clock';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import Calendar from 'lucide-svelte/icons/calendar';
 </script>
 
 <svelte:head>
-	<title>Apply for Zaur Beta - Quick Application</title>
-	<meta name="description" content="Join the Zaur beta program in 2 minutes. We're selecting tour guides to test our QR booking platform." />
+	<title>Beta Applications Closed - Zaur</title>
+	<meta name="description" content="Beta applications for Zaur are now closed. We've selected 50 tour guides and are working closely with them to build the perfect booking platform." />
 </svelte:head>
 
 <PageContainer>
@@ -484,10 +27,10 @@
 		<div class="mb-6 sm:mb-8">
 			<!-- Mobile Header -->
 			<MobilePageHeader
-				title="Beta Application"
-				secondaryInfo={`${formCompletion.percentage}% complete`}
+				title="Beta Applications"
+				secondaryInfo="Closed"
 				primaryAction={{
-					label: 'Quick Form',
+					label: 'Closed',
 					icon: FlaskConical,
 					variant: 'secondary',
 					disabled: true,
@@ -498,348 +41,138 @@
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
 				<PageHeader 
-					title="Apply for Beta Program"
-					subtitle="2-minute application • 50 spots available"
+					title="Beta Applications Closed"
+					subtitle="Working with 50 selected beta testers"
 				>
 					<div class="flex items-center gap-4">
-						<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-							<FlaskConical class="h-4 w-4" />
-							Limited Beta
+						<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium" style="background: var(--color-success-100); color: var(--color-success-700);">
+							<CheckCircle class="h-4 w-4" />
+							Applications Closed
 						</div>
 					</div>
 				</PageHeader>
 			</div>
 		</div>
 
-		{#if error}
-			<div bind:this={errorElement} class="mb-6">
-				<ErrorAlert variant="error" title="Error" message={error} />
+		<!-- Main Content Card -->
+		<div class="rounded-xl p-6 sm:p-8 mb-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);" in:fade={{ duration: 300 }}>
+			<div class="text-center mb-8">
+				<div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6" style="background: var(--color-success-100); color: var(--color-success-600);">
+					<CheckCircle class="h-10 w-10" />
+				</div>
+				
+				<h2 class="text-2xl sm:text-3xl font-bold mb-4" style="color: var(--text-primary);">
+					Thank You for Your Interest!
+				</h2>
+				
+				<p class="text-lg mb-6" style="color: var(--text-secondary);">
+					We've received an amazing response and have selected 50 tour guides 
+					from around the world to participate in our beta program.
+				</p>
 			</div>
-		{/if}
 
-		{#if success}
-			<div class="mb-6 p-6 rounded-xl" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);" in:fade={{ duration: 200 }}>
-				<div class="flex items-start gap-3">
-					<CheckCircle class="h-6 w-6 flex-shrink-0 mt-0.5" style="color: var(--color-success-600);" />
-					<div>
-						<h3 class="text-lg font-semibold mb-2" style="color: var(--color-success-900);">Application Submitted!</h3>
-						<p style="color: var(--color-success-700);">Thank you! We'll review your application and contact you within 48 hours.</p>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<form onsubmit={handleSubmit} class="space-y-6 sm:space-y-8">
-			<!-- Contact Information -->
-			<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="flex items-center gap-3 mb-4 sm:mb-6">
-					<User class="h-5 w-5" style="color: var(--color-primary-600);" />
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Contact Information</h2>
+			<!-- Stats Grid -->
+			<div class="grid sm:grid-cols-3 gap-4 mb-8">
+				<div class="rounded-lg p-4 text-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<Users class="h-8 w-8 mx-auto mb-2" style="color: var(--color-primary-600);" />
+					<div class="text-2xl font-bold mb-1" style="color: var(--text-primary);">50</div>
+					<div class="text-sm" style="color: var(--text-secondary);">Beta Testers</div>
 				</div>
 				
-				<div class="grid sm:grid-cols-2 gap-4">
-					<div class="sm:col-span-2 lg:col-span-1">
-						<label for="name" class="form-label">
-							Your Name <span style="color: var(--color-error);">*</span>
-						</label>
-						<input
-							type="text"
-							id="name"
-							bind:value={formData.name}
-							onfocus={() => trackFieldInteraction('name')}
-							onblur={() => handleFieldBlur('name', formData.name)}
-							placeholder="John Smith"
-							class="form-input {hasFieldError('name') ? 'error' : ''}"
-							disabled={isSubmitting}
-							autocomplete="name"
-						/>
-						{#if getFieldError('name')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('name')}</p>
-						{/if}
-					</div>
-					
-					<div class="sm:col-span-2 lg:col-span-1">
-						<label for="email" class="form-label">
-							Email Address <span style="color: var(--color-error);">*</span>
-						</label>
-						<input
-							type="text"
-							id="email"
-							bind:value={formData.email}
-							onfocus={() => trackFieldInteraction('email')}
-							onblur={() => handleFieldBlur('email', formData.email)}
-							oninput={() => {
-								// Real-time validation for email
-								if (touchedFields.has('email')) {
-									handleFieldBlur('email', formData.email);
-								}
-							}}
-							placeholder="john@example.com"
-							class="form-input {hasFieldError('email') ? 'error' : ''}"
-							disabled={isSubmitting}
-							autocomplete="email"
-						/>
-						{#if getFieldError('email')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('email')}</p>
-						{/if}
-					</div>
-					
-					<div class="sm:col-span-2">
-						<label for="businessName" class="form-label">
-							Business Name <span class="text-sm" style="color: var(--text-tertiary);">(optional)</span>
-						</label>
-						<input
-							type="text"
-							id="businessName"
-							bind:value={formData.businessName}
-							onfocus={() => trackFieldInteraction('businessName')}
-							placeholder="Adventure Tours Co."
-							class="form-input"
-							disabled={isSubmitting}
-							autocomplete="organization"
-						/>
-					</div>
-					
-					<div class="sm:col-span-2">
-						<label for="location" class="form-label">
-							Your Location <span style="color: var(--color-error);">*</span>
-						</label>
-						<input
-							type="text"
-							id="location"
-							bind:value={formData.location}
-							onfocus={() => trackFieldInteraction('location')}
-							oninput={(e) => handleLocationInput((e.target as HTMLInputElement).value)}
-							onblur={() => handleFieldBlur('location', formData.location)}
-							placeholder="Barcelona, Spain or just Spain"
-							class="form-input {hasFieldError('location') ? 'error' : ''}"
-							disabled={isSubmitting}
-							autocomplete="address-level2"
-						/>
-						{#if getFieldError('location')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('location')}</p>
-						{/if}
-					</div>
-				</div>
-			</div>
-			
-			<!-- About Your Tours -->
-			<div class="rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="flex items-center gap-3 mb-4 sm:mb-6">
-					<MapPin class="h-5 w-5" style="color: var(--color-primary-600);" />
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">About Your Tours</h2>
+				<div class="rounded-lg p-4 text-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<Clock class="h-8 w-8 mx-auto mb-2" style="color: var(--color-primary-600);" />
+					<div class="text-2xl font-bold mb-1" style="color: var(--text-primary);">3 months</div>
+					<div class="text-sm" style="color: var(--text-secondary);">Beta Period</div>
 				</div>
 				
-				<div class="grid sm:grid-cols-2 gap-4">
-					<div class="sm:col-span-2">
-						<label for="tourTypes" class="form-label">
-							What tours do you offer? <span style="color: var(--color-error);">*</span>
-						</label>
-						<textarea
-							id="tourTypes"
-							bind:value={formData.tourTypes}
-							onfocus={() => trackFieldInteraction('tourTypes')}
-							onblur={() => handleFieldBlur('tourTypes', formData.tourTypes)}
-							placeholder="Walking tours, food experiences, adventure activities..."
-							rows="3"
-							class="form-input {hasFieldError('tourTypes') ? 'error' : ''}"
-							disabled={isSubmitting}
-						></textarea>
-						{#if getFieldError('tourTypes')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('tourTypes')}</p>
-						{/if}
-					</div>
-					
-					<div>
-						<label for="tourVolume" class="form-label">
-							Business Size <span style="color: var(--color-error);">*</span>
-						</label>
-						<select
-							id="tourVolume"
-							bind:value={formData.tourVolume}
-							onfocus={() => trackFieldInteraction('tourVolume')}
-							onblur={() => handleFieldBlur('tourVolume', formData.tourVolume)}
-							class="form-select {hasFieldError('tourVolume') ? 'error' : ''}"
-							disabled={isSubmitting}
-						>
-							<option value="">Select your tour volume...</option>
-							{#each tourVolumeOptions as option}
-								<option value={option.value}>{option.label}</option>
-							{/each}
-						</select>
-						{#if getFieldError('tourVolume')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('tourVolume')}</p>
-						{/if}
-					</div>
-					
-					<div>
-						<label for="website" class="form-label">
-							Website or Social Media <span class="text-sm" style="color: var(--text-tertiary);">(optional)</span>
-						</label>
-						<input
-							type="text"
-							id="website"
-							bind:value={formData.website}
-							onfocus={() => trackFieldInteraction('website')}
-							placeholder="www.example.com or @yourtours"
-							class="form-input"
-							disabled={isSubmitting}
-						/>
-					</div>
-					
-					<div class="sm:col-span-2">
-						<label for="biggestChallenge" class="form-label">
-							What's your biggest booking challenge? <span style="color: var(--color-error);">*</span>
-						</label>
-						<textarea
-							id="biggestChallenge"
-							bind:value={formData.biggestChallenge}
-							onfocus={() => trackFieldInteraction('biggestChallenge')}
-							onblur={() => handleFieldBlur('biggestChallenge', formData.biggestChallenge)}
-							placeholder="Last-minute cancellations, payment processing, managing availability..."
-							rows="3"
-							class="form-input {hasFieldError('biggestChallenge') ? 'error' : ''}"
-							disabled={isSubmitting}
-						></textarea>
-						{#if getFieldError('biggestChallenge')}
-							<p class="mt-1 text-sm" style="color: var(--color-error);">{getFieldError('biggestChallenge')}</p>
-						{/if}
-					</div>
+				<div class="rounded-lg p-4 text-center" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<Calendar class="h-8 w-8 mx-auto mb-2" style="color: var(--color-primary-600);" />
+					<div class="text-2xl font-bold mb-1" style="color: var(--text-primary);">Q1 2026</div>
+					<div class="text-sm" style="color: var(--text-secondary);">Public Launch</div>
 				</div>
 			</div>
-			
-			<!-- Beta Program Info -->
-			<div class="rounded-xl p-4 sm:p-6" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-				<h3 class="font-semibold mb-3" style="color: var(--color-primary-900);">What you'll get as a beta tester:</h3>
-				<ul class="space-y-2 text-sm" style="color: var(--color-primary-700);">
-					<li class="flex items-start gap-2">
-						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
-						<span>12 months free</span>
+
+			<!-- What's Next Section -->
+			<div class="rounded-xl p-6 mb-6" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+				<h3 class="text-lg font-semibold mb-4" style="color: var(--color-primary-900);">
+					What's happening now?
+				</h3>
+				<ul class="space-y-3">
+					<li class="flex items-start gap-3">
+						<CheckCircle class="h-5 w-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
+						<div>
+							<div class="font-medium mb-1" style="color: var(--color-primary-900);">Working with beta testers</div>
+							<p class="text-sm" style="color: var(--color-primary-700);">
+								Our 50 selected tour guides are actively using Zaur and providing valuable feedback to shape the platform.
+							</p>
+						</div>
 					</li>
-					<li class="flex items-start gap-2">
-						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
-						<span>30% lifetime discount after launch</span>
+					<li class="flex items-start gap-3">
+						<CheckCircle class="h-5 w-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
+						<div>
+							<div class="font-medium mb-1" style="color: var(--color-primary-900);">Refining features</div>
+							<p class="text-sm" style="color: var(--color-primary-700);">
+								Based on real-world usage, we're continuously improving the booking experience and adding requested features.
+							</p>
+						</div>
 					</li>
-					<li class="flex items-start gap-2">
-						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
-						<span>Direct influence on product features</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<CheckCircle class="h-4 w-4 mt-0.5 flex-shrink-0" />
-						<span>Priority support and onboarding</span>
+					<li class="flex items-start gap-3">
+						<CheckCircle class="h-5 w-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
+						<div>
+							<div class="font-medium mb-1" style="color: var(--color-primary-900);">Preparing for launch</div>
+							<p class="text-sm" style="color: var(--color-primary-700);">
+								We're working toward a public launch in early 2025 with a platform that's been battle-tested by real tour guides.
+							</p>
+						</div>
 					</li>
 				</ul>
 			</div>
-			
-			<!-- Submit Section -->
-			<div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-				<div class="text-center sm:text-left">
-					<p class="text-sm" style="color: var(--text-secondary);">
-						{formCompletion.completed}/{formCompletion.total} fields completed
-					</p>
-				</div>
+
+			<!-- CTA Section -->
+			<div class="text-center">
+				<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">
+					Want to be notified when we launch?
+				</h3>
+				<p class="mb-6" style="color: var(--text-secondary);">
+					Join our early access waitlist to be among the first tour guides to try Zaur when we launch in Q1 2026.
+				</p>
 				
-				<button 
-					type="submit" 
-					class="button-primary button--gap button--large w-full sm:w-auto"
-					disabled={isSubmitting || !formCompletion.isComplete}
-				>
-					{#if isSubmitting}
-						<Loader class="w-5 h-5 animate-spin" />
-						<span>Submitting...</span>
-					{:else}
-						<Send class="h-5 w-5" />
-						<span>Submit Application</span>
-					{/if}
-				</button>
+				<div class="flex flex-col sm:flex-row gap-4 justify-center">
+					<button 
+						class="button-primary button--large button--gap"
+						onclick={() => goto('/early-access')}
+					>
+						<span>Join Early Access Waitlist</span>
+						<ArrowRight class="h-5 w-5" />
+					</button>
+					
+					<button 
+						class="button-secondary button--large"
+						onclick={() => goto('/beta')}
+					>
+						Learn More About Beta
+					</button>
+				</div>
 			</div>
-		</form>
-		{/if}
+		</div>
+
+		<!-- Additional Info -->
+		<div class="text-center">
+			<p class="text-sm mb-2" style="color: var(--text-tertiary);">
+				Questions about the beta program?
+			</p>
+			<a href="mailto:beta@zaur.app" class="text-sm font-medium" style="color: var(--color-primary-600);">
+				Contact us at beta@zaur.app
+			</a>
+		</div>
 	</div>
 </PageContainer>
 
 <style lang="postcss">
-	/* Ensure form styles work correctly in this component */
-	:global(.form-input),
-	:global(.form-select),
-	:global(.form-textarea) {
-		width: 100%;
-		padding: 0.75rem 1rem;
-		border: 1px solid var(--border-primary);
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-xs);
-		font-size: var(--text-sm);
-		transition: all var(--transition-fast) ease;
-		background-color: var(--bg-input);
-		color: var(--text-primary);
-	}
-
-	:global(.form-select) {
-		padding-right: 2.5rem;
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.75rem center;
-		background-repeat: no-repeat;
-		background-size: 1.25em 1.25em;
-		appearance: none;
-		cursor: pointer;
-	}
-
-	:global(.form-input:focus),
-	:global(.form-select:focus),
-	:global(.form-textarea:focus) {
-		outline: none;
-		border-color: var(--color-primary-500);
-		box-shadow: var(--focus-shadow-primary);
-	}
-
-	:global(.form-input.error),
-	:global(.form-select.error),
-	:global(.form-textarea.error) {
-		border-color: var(--color-error);
-	}
-
-	:global(.form-input.error:focus),
-	:global(.form-select.error:focus),
-	:global(.form-textarea.error:focus) {
-		border-color: var(--color-error);
-		box-shadow: var(--focus-shadow-error);
-	}
-
-	:global(.form-label) {
-		display: block;
-		font-size: var(--text-sm);
-		font-weight: 500;
-		color: var(--text-primary);
-		margin-bottom: 0.375rem;
-	}
-
-	:global(.form-input:disabled),
-	:global(.form-select:disabled),
-	:global(.form-textarea:disabled) {
-		background-color: var(--bg-tertiary);
-		color: var(--text-tertiary);
-		cursor: not-allowed;
-		opacity: 0.6;
-	}
-
-	/* Dark mode select arrow */
-	:global([data-theme="dark"] .form-select) {
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23c9d1d9' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-	}
-
-	/* Ensure textarea resizing works */
-	:global(.form-textarea) {
-		resize: vertical;
-		min-height: 60px;
-		font-family: inherit;
-		line-height: 1.5;
-	}
-	
-	/* Mobile optimizations */
-	@media (max-width: 640px) {
-		:global(.form-input),
-		:global(.form-select),
-		:global(.form-textarea) {
-			font-size: 1rem; /* Prevent zoom on iOS */
-		}
+	/* Button styles */
+	:global(.button--gap) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 </style>

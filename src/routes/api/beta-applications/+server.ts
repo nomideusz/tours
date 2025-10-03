@@ -6,6 +6,13 @@ import { eq } from 'drizzle-orm';
 // import { sendAuthEmail } from '$lib/email.server.js'; // TODO: Uncomment when email templates are ready
 
 export const POST: RequestHandler = async ({ request }) => {
+	// Beta applications are now closed
+	return json({
+		success: false,
+		error: 'Beta applications are now closed. We have selected 50 tour guides and are working closely with them. Please join our early access waitlist to be notified when we launch publicly.'
+	}, { status: 403 });
+	
+	/* Keeping original code for reference - can be re-enabled if needed
 	try {
 		const data = await request.json();
 		
@@ -123,4 +130,5 @@ export const POST: RequestHandler = async ({ request }) => {
 			error: 'Failed to submit application. Please try again.' 
 		}, { status: 500 });
 	}
+	*/
 };

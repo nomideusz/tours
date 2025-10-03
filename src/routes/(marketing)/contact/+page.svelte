@@ -36,17 +36,17 @@
 			</div>
 		</div>
 
-		<!-- Beta -->
+		<!-- Early Access -->
 		<div class="professional-card mb-16 text-center">
 			<div class="max-w-2xl mx-auto">
-				<h2 class="text-2xl font-semibold text-primary mb-4">Join the Beta</h2>
+				<h2 class="text-2xl font-semibold text-primary mb-4">Join the Waitlist</h2>
 				<p class="text-lg text-secondary mb-6">
-					We're looking for tour guides to help us build something great.
+					Be among the first to know when Zaur launches publicly in Q1 2026.
 				</p>
 				<button onclick={() => {
-					window.location.href = '/beta/apply';
+					window.location.href = '/early-access';
 				}} class="button-secondary button--large">
-					Apply for Beta
+					Join Early Access Waitlist
 				</button>
 			</div>
 		</div>

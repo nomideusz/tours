@@ -2,43 +2,60 @@
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
-	import Rocket from 'lucide-svelte/icons/rocket';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
 	// Umami tracking
 	import { trackCTAClick } from '$lib/utils/umami-tracking.js';
 	
-	function handleApplyClick() {
-		trackCTAClick('final', 'Apply for Beta Access', '/beta/apply');
-		goto('/beta/apply');
+	function handleJoinWaitlist() {
+		trackCTAClick('final', 'Join Early Access Waitlist', '/early-access');
+		goto('/early-access');
+	}
+	
+	function handleLearnMore() {
+		trackCTAClick('final', 'Learn More About Beta', '/beta');
+		goto('/beta');
 	}
 </script>
 
-<!-- Final CTA - Simple and Focused -->
+<!-- Final CTA - Beta In Progress -->
 <section class="final-cta-section" in:fade={{ duration: 600 }}>
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<div class="text-center max-w-2xl mx-auto final-cta-content">
-			<BetaBadge text="Limited Beta Spots" icon={Rocket} variant="large" class="mb-6" />
+			<div class="beta-closed-badge mb-6">
+				<CheckCircle class="w-5 h-5" />
+				<span>Beta In Progress</span>
+			</div>
 			
 			<h2 class="cta-title mb-4">
-				Don't Miss Your Chance
+				Want Early Access?
 			</h2>
 			
 			<p class="cta-description mb-8">
-				Join 50 tour guides shaping the future of tour bookings. 
-				Applications close September 30, 2025.
+				Our beta program is underway with 50 tour guides. Join the waitlist to be 
+				among the first to access Zaur when we launch publicly in Q1 2026.
 			</p>
 			
-			<button 
-				class="button-primary button--large button--gap"
-				onclick={handleApplyClick}
-			>
-				Apply for Beta Access
-				<ArrowRight class="w-4 h-4" />
-			</button>
+			<div class="button-group">
+				<button 
+					class="button-primary button--large button--gap"
+					onclick={handleJoinWaitlist}
+				>
+					Join Early Access Waitlist
+					<ArrowRight class="w-4 h-4" />
+				</button>
+				
+				<button 
+					class="button-secondary button--large"
+					onclick={handleLearnMore}
+				>
+					Learn About Our Beta
+				</button>
+			</div>
 			
 			<p class="cta-reminder">
-				12 months free • 30% lifetime discount • Direct influence on features
+				Be the first to know when we launch • No commitment required
 			</p>
 		</div>
 	</div>
@@ -73,6 +90,28 @@
 			rgba(0, 0, 0, 0.02) 41px
 		);
 		pointer-events: none;
+	}
+	
+	/* Beta closed badge */
+	.beta-closed-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1.5rem;
+		background: var(--success-light);
+		color: var(--success);
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		border: 1px solid var(--success);
+	}
+	
+	/* Button group */
+	.button-group {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 	
 	.cta-title {
@@ -120,7 +159,12 @@
 			margin-bottom: 1.5rem;
 		}
 		
-		/* Full-width button on mobile */
+		/* Full-width buttons on mobile */
+		.button-group {
+			flex-direction: column;
+			width: 100%;
+		}
+		
 		.final-cta-content button {
 			width: 100%;
 			padding: 1rem;

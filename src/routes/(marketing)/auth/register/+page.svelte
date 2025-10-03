@@ -9,12 +9,12 @@
 	onMount(() => {
 		// Small delay to show the message briefly, then redirect
 		setTimeout(() => {
-			goto('/beta/apply');
+			goto('/early-access');
 		}, 2000);
 	});
 
-	function goToBetaApplication() {
-		goto('/beta/apply');
+	function goToWaitlist() {
+		goto('/early-access');
 	}
 
 	function goToLogin() {
@@ -50,10 +50,10 @@
 				
 				<div class="space-y-3">
 					<button
-						onclick={goToBetaApplication}
+						onclick={goToWaitlist}
 						class="w-full bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2"
 					>
-						<span>Apply for Beta Access</span>
+						<span>Join Early Access Waitlist</span>
 						<ArrowRight class="w-4 h-4" />
 					</button>
 					

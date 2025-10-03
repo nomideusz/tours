@@ -7,8 +7,8 @@
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
-	function handleCreateTour() {
-		goto('/beta/apply');
+	function handleJoinWaitlist() {
+		goto('/early-access');
 	}
 </script>
 
@@ -107,8 +107,8 @@
 			No complicated dashboards. No overwhelming features. Just the simplest way to turn QR codes into bookings.
 		</p>
 		<div class="cta-actions">
-			<button onclick={handleCreateTour} class="button-primary button--large button--gap">
-				Apply for Beta Access
+			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
+				Join Early Access Waitlist
 				<ArrowRight class="w-4 h-4" />
 			</button>
 		</div>

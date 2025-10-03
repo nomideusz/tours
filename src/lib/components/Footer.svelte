@@ -118,10 +118,10 @@
 					<li>
 						<button 
 							class="footer-link footer-button"
-							onclick={() => window.location.href = '/beta/apply'}
+							onclick={() => window.location.href = '/early-access'}
 						>
 							<FlaskConical class="w-4 h-4" />
-							<span>Apply for Beta</span>
+							<span>Join Waitlist</span>
 						</button>
 					</li>
 				</ul>

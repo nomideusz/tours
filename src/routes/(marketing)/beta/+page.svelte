@@ -44,34 +44,38 @@
 		"Representing diverse tour types and locations"
 	];
 	
-	// Beta timeline
+	// Beta timeline - Updated for closed applications
 	const timeline = [
 		{
-			phase: "Application",
-			date: "Now - January 15",
-			description: "Submit your application for beta access"
+			phase: "Applications",
+			date: "Closed",
+			description: "We received applications from tour guides around the world",
+			completed: true
 		},
 		{
-			phase: "Selection",
-			date: "January 16-20",
-			description: "We'll review applications and select 50 tour guides"
+			phase: "Selection Complete",
+			date: "50 Beta Testers",
+			description: "Selected 50 diverse tour guides from different locations",
+			completed: true
 		},
 		{
-			phase: "Beta Launch",
-			date: "January 21",
-			description: "Beta testers get full access and start shaping Zaur"
+			phase: "Beta Program",
+			date: "Now - December 2025",
+			description: "Working closely with beta testers to refine the platform",
+			completed: false
 		},
 		{
 			phase: "Public Launch",
-			date: "March 2025",
-			description: "Platform opens to everyone with your feedback integrated"
+			date: "Q1 2026",
+			description: "Platform opens to everyone with beta tester feedback integrated",
+			completed: false
 		}
 	];
 </script>
 
 <svelte:head>
-	<title>Join the Zaur Beta Program - Shape the Future of Tour Bookings</title>
-	<meta name="description" content="We're selecting 50 tour guides to test and shape Zaur before public launch. Get 12 months free, founding member benefits, and help build the perfect booking platform." />
+	<title>Zaur Beta Program - Now In Progress</title>
+	<meta name="description" content="Our beta program is underway with 50 selected tour guides actively testing and shaping Zaur. Join the early access waitlist to be notified when we launch publicly in Q1 2026." />
 </svelte:head>
 
 <div class="beta-page" in:fade={{ duration: 300 }}>
@@ -85,41 +89,45 @@
 				</div>
 				
 				<h1 class="hero-title">
-					Help Us Build the Perfect
-					<span class="text-primary">Booking Platform</span>
+					Beta Program
+					<span class="text-primary">In Progress</span>
 				</h1>
 				
 				<p class="hero-description">
-					We're selecting 50 tour guides from around the world to test Zaur before 
-					our public launch. Get 12 months free, shape features with your feedback, 
-					and become a founding member.
+					We've selected 50 tour guides from around the world who are actively testing 
+					and shaping Zaur. Applications are now closed as we work closely with our 
+					beta testers to build the perfect booking platform.
 				</p>
 				
 				<div class="hero-stats">
 					<div class="stat-item">
 						<Users class="w-5 h-5 text-primary" />
-						<span><strong>50</strong> spots available</span>
+						<span><strong>50</strong> beta testers selected</span>
 					</div>
 					<div class="stat-item">
 						<Globe class="w-5 h-5 text-primary" />
-						<span><strong>Global</strong> selection</span>
+						<span><strong>Global</strong> participation</span>
 					</div>
-					<div class="stat-item">
-						<Sparkles class="w-5 h-5 text-primary" />
-						<span><strong>Free</strong> during beta</span>
-					</div>
+				<div class="stat-item">
+					<Sparkles class="w-5 h-5 text-primary" />
+					<span><strong>Q1 2026</strong> public launch</span>
+				</div>
 				</div>
 				
 				<div class="hero-actions">
-					<button 
-						class="button-primary button--large"
-						onclick={() => goto('/beta/apply')}
-					>
-						Apply for Beta Access
-					</button>
+					<div class="closed-notice">
+						<CheckCircle class="w-5 h-5" />
+						<span>Beta applications are now closed</span>
+					</div>
 					<p class="action-note">
-						Applications close January 15, 2025
+						Join our waitlist to be notified when we launch publicly
 					</p>
+					<button 
+						class="button-secondary button--large"
+						onclick={() => goto('/early-access')}
+					>
+						Join Early Access Waitlist
+					</button>
 				</div>
 			</div>
 		</div>
@@ -186,9 +194,13 @@
 			
 			<div class="timeline-container">
 				{#each timeline as item, i}
-					<div class="timeline-item">
+					<div class="timeline-item" class:completed={item.completed}>
 						<div class="timeline-marker">
-							<div class="marker-dot"></div>
+							<div class="marker-dot">
+								{#if item.completed}
+									<CheckCircle class="w-3 h-3" style="color: white;" />
+								{/if}
+							</div>
 							{#if i < timeline.length - 1}
 								<div class="marker-line"></div>
 							{/if}
@@ -208,18 +220,19 @@
 	<section class="cta-section">
 		<div class="container">
 			<div class="cta-card">
-				<h2 class="cta-title">Ready to Shape the Future?</h2>
+				<h2 class="cta-title">Join the Waitlist</h2>
 				<p class="cta-description">
-					Join 50 tour guides in building the booking platform we all deserve
+					Want to be among the first to know when Zaur launches publicly? 
+					Join our early access waitlist and we'll notify you as soon as we're ready.
 				</p>
 				<button 
 					class="button-primary button--large"
-					onclick={() => goto('/beta/apply')}
+					onclick={() => goto('/early-access')}
 				>
-					Apply for Beta Access
+					Join Early Access Waitlist
 				</button>
 				<p class="cta-note">
-					We'll review applications and notify selected testers by January 20
+					Be the first to know when we launch in Q1 2026
 				</p>
 			</div>
 		</div>
@@ -304,8 +317,21 @@
 	
 	.action-note {
 		margin-top: 1rem;
+		margin-bottom: 1rem;
 		font-size: 0.875rem;
 		color: var(--text-tertiary);
+	}
+	
+	.closed-notice {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		background: var(--success-light);
+		color: var(--success);
+		border-radius: 0.5rem;
+		font-weight: 600;
+		margin-bottom: 1rem;
 	}
 	
 	/* Benefits Section */
@@ -394,7 +420,6 @@
 		list-style: none;
 		padding: 0;
 		margin-top: 2rem;
-		space-y: 1rem;
 	}
 	
 	.ideal-item {
@@ -451,10 +476,18 @@
 	.marker-dot {
 		width: 16px;
 		height: 16px;
-		background: var(--primary);
+		background: var(--border-color);
 		border-radius: 50%;
 		position: relative;
 		z-index: 2;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.3s ease;
+	}
+	
+	.timeline-item.completed .marker-dot {
+		background: var(--primary);
 	}
 	
 	.marker-line {
@@ -518,15 +551,6 @@
 		margin-top: 1rem;
 		font-size: 0.875rem;
 		color: var(--text-tertiary);
-	}
-	
-	.cta-note strong {
-		color: var(--primary);
-		font-family: monospace;
-		font-size: 1rem;
-		background: var(--bg-secondary);
-		padding: 0.125rem 0.5rem;
-		border-radius: 0.25rem;
 	}
 	
 	/* Mobile styles */

@@ -1,176 +1,302 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
+	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
-	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
-	import { t, language } from '$lib/i18n.js';
-
-	let email = $state('');
-	let isSubmitting = $state(false);
-	let submitted = $state(false);
-	let error = $state('');
-
-	async function handleSubmit(e: Event) {
-		e.preventDefault();
-		isSubmitting = true;
-		error = '';
-
-		try {
-			const response = await fetch('/api/early-access', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ email })
-			});
-
-			const data = await response.json();
-
-			if (response.ok && data.success) {
-				submitted = true;
-			} else {
-				error = data.error || 'Failed to submit request. Please try again.';
-			}
-		} catch (err) {
-			error = 'An error occurred. Please try again.';
-		} finally {
-			isSubmitting = false;
-		}
-	}
+	import Users from 'lucide-svelte/icons/users';
+	import Bell from 'lucide-svelte/icons/bell';
+	import Star from 'lucide-svelte/icons/star';
 </script>
 
 <svelte:head>
-	<title>Early Access - Zaur</title>
-	<meta name="description" content="Join the Zaur early access program and lock in special pricing forever." />
+	<title>Join Early Access - Zaur</title>
+	<meta name="description" content="Join the Zaur early access waitlist and be among the first to know when we launch publicly in Q1 2026." />
 </svelte:head>
 
-<div class="min-h-screen flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8" style="background: var(--background-primary);">
-	<div class="sm:mx-auto sm:w-full sm:max-w-lg">
-		{#if submitted}
-			<!-- Success State -->
-			<div class="text-center px-4">
-				<div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 alert-success">
-					<CheckCircle size={40} strokeWidth={1.5} />
+<div class="early-access-page" in:fade={{ duration: 300 }}>
+	<div class="container">
+		<!-- Hero Section -->
+		<section class="hero-section">
+			<div class="badge">
+				<Bell class="w-4 h-4" />
+				<span>Early Access Waitlist</span>
+			</div>
+			
+			<h1 class="title">
+				Be Among the First to Try
+				<span class="text-primary">Zaur</span>
+			</h1>
+			
+			<p class="description">
+				Our beta program is currently underway with 50 selected tour guides. 
+				Join the waitlist to be notified when we launch publicly in Q1 2026.
+			</p>
+		</section>
+		
+		<!-- Benefits Grid -->
+		<section class="benefits-section">
+			<div class="benefits-grid">
+				<div class="benefit-card">
+					<div class="benefit-icon">
+						<CheckCircle class="w-6 h-6" />
+					</div>
+					<h3 class="benefit-title">First Access</h3>
+					<p class="benefit-description">
+						Get priority access when we open to the public
+					</p>
 				</div>
-				<h1 class="text-3xl font-bold mb-4" style="color: var(--text-primary);">
-					You're on the List! 🎉
-				</h1>
-				<p class="text-lg mb-8" style="color: var(--text-secondary);">
-					We'll review your request and send you an early access code within 24 hours.
-				</p>
-				<div class="space-y-4">
-					<a href="/auth/login" class="button-primary inline-flex items-center gap-2">
-						Go to Login
-						<ArrowRight size={18} strokeWidth={2} />
-					</a>
-					<p class="text-sm" style="color: var(--text-tertiary);">
-						Already have a code? You can sign in right away.
+				
+				<div class="benefit-card">
+					<div class="benefit-icon">
+						<Star class="w-6 h-6" />
+					</div>
+					<h3 class="benefit-title">Launch Specials</h3>
+					<p class="benefit-description">
+						Exclusive offers and discounts for early members
+					</p>
+				</div>
+				
+				<div class="benefit-card">
+					<div class="benefit-icon">
+						<Users class="w-6 h-6" />
+					</div>
+					<h3 class="benefit-title">Early Community</h3>
+					<p class="benefit-description">
+						Join a community of innovative tour guides
 					</p>
 				</div>
 			</div>
-		{:else}
-			<!-- Form State -->
-			<div class="text-center mb-8 px-4">
-				<div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style="background: var(--color-primary-100); color: var(--color-primary-600);">
-					<Sparkles size={32} strokeWidth={1.5} />
-				</div>
-				<h1 class="text-3xl font-bold mb-3" style="color: var(--text-primary);">
-					Join Early Access
-				</h1>
-				<p class="text-lg" style="color: var(--text-secondary);">
-					Be among the first tour guides to use Zaur
-				</p>
-			</div>
-
-			<div class="card px-6 py-8 sm:px-10">
-				<form onsubmit={handleSubmit} class="space-y-6">
-					{#if error}
-						<div class="alert-error">
-							{error}
+		</section>
+		
+		<!-- Newsletter Signup -->
+		<section class="signup-section">
+			<NewsletterSignup 
+				variant="default"
+				title="Join the Waitlist"
+				description="Enter your email and we'll notify you as soon as Zaur is ready for you."
+				buttonText="Join Waitlist"
+				apiEndpoint="/api/early-access"
+			/>
+		</section>
+		
+		<!-- Info Section -->
+		<section class="info-section">
+			<div class="info-card">
+				<h3 class="info-title">What's Happening Now?</h3>
+				<div class="info-content">
+					<div class="info-item">
+						<CheckCircle class="w-5 h-5 text-primary" />
+						<div>
+							<strong>Beta Testing</strong>
+							<p>50 tour guides are actively using and shaping Zaur</p>
 						</div>
-					{/if}
-
-					<div>
-						<label for="email" class="form-label">
-							Work Email
-						</label>
-						<input
-							type="email"
-							id="email"
-							bind:value={email}
-							class="form-input"
-							placeholder="hello@yourtours.com"
-							required
-							disabled={isSubmitting}
-						/>
-						<p class="form-help">We'll send your early access code to this email</p>
 					</div>
-
-					<!-- Benefits Card -->
-					<div class="rounded-lg p-4 alert-warning">
-						<h3 class="font-semibold mb-2 flex items-center gap-2">
-							<Sparkles size={16} strokeWidth={2} />
-							Early Access Benefits
-						</h3>
-						<ul class="space-y-1.5 text-sm">
-							<li class="flex items-start gap-2">
-								<span class="mt-0.5">•</span>
-								<span>Lock in special pricing forever</span>
-							</li>
-							<li class="flex items-start gap-2">
-								<span class="mt-0.5">•</span>
-								<span>Direct access to founders</span>
-							</li>
-							<li class="flex items-start gap-2">
-								<span class="mt-0.5">•</span>
-								<span>Vote on new features</span>
-							</li>
-							<li class="flex items-start gap-2">
-								<span class="mt-0.5">•</span>
-								<span>Priority support</span>
-							</li>
-						</ul>
+					<div class="info-item">
+						<CheckCircle class="w-5 h-5 text-primary" />
+						<div>
+							<strong>Building Features</strong>
+							<p>We're continuously improving based on real-world feedback</p>
+						</div>
 					</div>
-
-					<button
-						type="submit"
-						class="button-primary w-full relative"
-						disabled={isSubmitting || !email}
-					>
-						{#if isSubmitting}
-							<span class="opacity-0">Request Early Access</span>
-							<span class="absolute inset-0 flex items-center justify-center">
-								<span class="loader"></span>
-							</span>
-						{:else}
-							Request Early Access
-						{/if}
-					</button>
-				</form>
-
-				<div class="mt-6 text-center">
-					<p class="text-sm" style="color: var(--text-tertiary);">
-						Already have a code? 
-						<a href="/auth/register" class="link">
-							Create your account
-						</a>
-					</p>
+					<div class="info-item">
+						<CheckCircle class="w-5 h-5 text-primary" />
+						<div>
+							<strong>Preparing Launch</strong>
+							<p>Getting ready for public launch in Q1 2026</p>
+						</div>
+					</div>
 				</div>
 			</div>
-		{/if}
+		</section>
 	</div>
 </div>
 
 <style>
-	.loader {
-		width: 20px;
-		height: 20px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-top-color: white;
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
+	.early-access-page {
+		min-height: 100vh;
+		padding: 2rem 0 4rem;
+		background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 	}
-
-	@keyframes spin {
-		to { transform: rotate(360deg); }
+	
+	.container {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 0 1.5rem;
 	}
-</style> 
+	
+	/* Hero Section */
+	.hero-section {
+		text-align: center;
+		margin-bottom: 3rem;
+		padding: 3rem 2rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1.25rem;
+		background: var(--primary-light);
+		color: var(--primary);
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		margin-bottom: 1.5rem;
+	}
+	
+	.title {
+		font-size: 2.5rem;
+		font-weight: 700;
+		line-height: 1.2;
+		margin-bottom: 1.5rem;
+		color: var(--text-primary);
+	}
+	
+	.description {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		max-width: 600px;
+		margin: 0 auto;
+	}
+	
+	/* Benefits Section */
+	.benefits-section {
+		margin-bottom: 3rem;
+	}
+	
+	.benefits-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.5rem;
+	}
+	
+	.benefit-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 1.5rem;
+		text-align: center;
+		transition: all 0.3s ease;
+	}
+	
+	.benefit-card:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+	}
+	
+	.benefit-icon {
+		display: inline-flex;
+		padding: 0.75rem;
+		background: var(--primary-light);
+		color: var(--primary);
+		border-radius: 0.75rem;
+		margin-bottom: 1rem;
+	}
+	
+	.benefit-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+		color: var(--text-primary);
+	}
+	
+	.benefit-description {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+	
+	/* Signup Section */
+	.signup-section {
+		margin-bottom: 3rem;
+	}
+	
+	/* Info Section */
+	.info-section {
+		margin-bottom: 2rem;
+	}
+	
+	.info-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-lg);
+		padding: 2rem;
+	}
+	
+	.info-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 1.5rem;
+		text-align: center;
+	}
+	
+	.info-content {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	
+	.info-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+	
+	.info-item strong {
+		display: block;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 0.25rem;
+	}
+	
+	.info-item p {
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.5;
+	}
+	
+	/* Mobile Responsive */
+	@media (max-width: 768px) {
+		.hero-section {
+			padding: 2rem 1.5rem;
+		}
+		
+		.title {
+			font-size: 2rem;
+		}
+		
+		.description {
+			font-size: 1rem;
+		}
+		
+		.benefits-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		
+		.info-card {
+			padding: 1.5rem;
+		}
+	}
+	
+	@media (max-width: 640px) {
+		.early-access-page {
+			padding: 1.5rem 0 3rem;
+		}
+		
+		.hero-section {
+			padding: 2rem 1.25rem;
+		}
+		
+		.title {
+			font-size: 1.75rem;
+		}
+	}
+</style>

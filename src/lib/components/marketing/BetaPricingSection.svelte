@@ -16,14 +16,9 @@
 		// Get base price from plan
 		const basePrice = plan.basePrice[interval];
 		
-		// Calculate beta member pricing (30% off base price)
-		const betaPrice = Math.round(basePrice * 0.7 * 100) / 100;
-		
 		return {
 			regular: basePrice,
-			beta: betaPrice,
-			period: billingPeriod,
-			savings: Math.round((basePrice - betaPrice) * 12) // Annual savings
+			period: billingPeriod
 		};
 	}
 	
@@ -34,8 +29,8 @@
 		return price.toFixed(2);
 	}
 	
-	function handleApplyNow() {
-		goto('/beta/apply');
+	function handleJoinWaitlist() {
+		goto('/early-access');
 	}
 </script>
 
@@ -71,7 +66,7 @@
 <!-- Simplified Pricing Cards -->
 <div class="pricing-container">
 	<div class="pricing-grid">
-		{#each PRICING_PLANS as plan}
+		{#each PRICING_PLANS.filter(p => p.id !== 'agency') as plan}
 			{@const pricing = getPlanPricing(plan, isYearly)}
 			{@const keyFeatures = plan.features.filter(f => f.included).slice(0, 4)}
 			<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}">
@@ -87,20 +82,18 @@
 				
 				<!-- Simple Pricing Display -->
 				<div class="pricing-display">
-					<div class="price-row">
-						<span class="price-label">Now:</span>
-						<span class="price-value price-value--free">FREE</span>
-					</div>
-					<div class="price-row">
-						<span class="price-label">Later:</span>
-						{#if plan.id !== 'free'}
-							<span class="price-value">€{formatPrice(pricing.beta)}<span class="price-period">/mo</span></span>
-						{:else}
-							<span class="price-value">FREE</span>
-						{/if}
-					</div>
 					{#if plan.id !== 'free'}
-						<div class="beta-benefit">Beta: 30% off forever</div>
+						<div class="price-main">
+							<span class="price-value">€{formatPrice(pricing.regular)}<span class="price-period">/mo</span></span>
+						</div>
+						{#if isYearly}
+							<div class="price-note">Billed annually</div>
+						{/if}
+					{:else}
+						<div class="price-main">
+							<span class="price-value">FREE</span>
+						</div>
+						<div class="price-note">Forever</div>
 					{/if}
 				</div>
 				
@@ -130,19 +123,19 @@
 <div class="cta-section">
 	<div class="cta-content">
 		<h3 class="cta-title">
-			Start Free. Stay Simple.
+			Simple Pricing. No Surprises.
 		</h3>
 		<p class="cta-description">
-			Join the beta program now. Lock in your 30% discount forever. No credit card required.
+			Join the waitlist to be notified when we launch publicly in Q1 2026.
 		</p>
 		<div class="cta-actions">
-			<button onclick={handleApplyNow} class="button-primary button--large button--gap">
-				Apply for Beta Access
+			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
+				Join Early Access Waitlist
 				<ArrowRight class="w-4 h-4" />
 			</button>
 		</div>
 		<p class="cta-note">
-			✨ Beta members get priority features, founder badge, and premium support
+			✨ Be the first to know when we're ready for you
 		</p>
 	</div>
 </div>
@@ -223,12 +216,22 @@
 		margin: 0 auto;
 	}
 	
-	/* Pricing Grid */
+	/* Pricing Grid - Centered for 3 plans */
 	.pricing-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		grid-template-columns: repeat(3, 1fr);
 		gap: 1.5rem;
 		margin-bottom: 3rem;
+		max-width: 900px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	@media (max-width: 1024px) {
+		.pricing-grid {
+			grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			max-width: none;
+		}
 	}
 	
 	/* Pricing Cards */
@@ -239,6 +242,8 @@
 		padding: 1.5rem;
 		position: relative;
 		transition: all 0.3s ease;
+		display: flex;
+		flex-direction: column;
 	}
 	
 	.pricing-card:hover {
@@ -290,31 +295,17 @@
 	/* Pricing Display */
 	.pricing-display {
 		margin-bottom: 1.5rem;
+		text-align: center;
 	}
 	
-	.price-row {
-		display: flex;
-		align-items: baseline;
-		gap: 0.75rem;
-		margin-bottom: 0.5rem;
-	}
-	
-	.price-label {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		min-width: 3rem;
+	.price-main {
+		margin-bottom: 0.25rem;
 	}
 	
 	.price-value {
-		font-size: 1.5rem;
+		font-size: 2rem;
 		font-weight: 700;
 		color: var(--text-primary);
-	}
-	
-	.price-value--free {
-		color: var(--primary);
 	}
 	
 	.price-period {
@@ -323,11 +314,9 @@
 		font-weight: 400;
 	}
 	
-	.beta-benefit {
-		margin-top: 0.5rem;
+	.price-note {
 		font-size: 0.75rem;
-		color: var(--primary);
-		font-weight: 500;
+		color: var(--text-tertiary);
 	}
 	
 	/* Feature List */
@@ -338,6 +327,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625rem;
+		flex-grow: 1;
 	}
 	
 	.feature-item {
@@ -359,6 +349,7 @@
 	.plan-footer {
 		padding-top: 1rem;
 		border-top: 1px solid var(--border-secondary);
+		margin-top: auto;
 	}
 	
 	.limit-text {
@@ -510,17 +501,11 @@
 		}
 	}
 	
-	/* Tablet and larger */
-	@media (min-width: 768px) {
+	/* Tablet - 2 column */
+	@media (min-width: 768px) and (max-width: 1023px) {
 		.pricing-grid {
 			grid-template-columns: repeat(2, 1fr);
-		}
-	}
-	
-	/* Desktop */
-	@media (min-width: 1024px) {
-		.pricing-grid {
-			grid-template-columns: repeat(4, 1fr);
+			max-width: 600px;
 		}
 	}
 </style>

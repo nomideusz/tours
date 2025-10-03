@@ -14,6 +14,7 @@
 		description?: string;
 		buttonText?: string;
 		class?: string;
+		apiEndpoint?: string;
 	}
 	
 	let { 
@@ -21,7 +22,8 @@
 		title = 'Stay Updated',
 		description = 'Get notified about our launch and receive exclusive updates for tour guides.',
 		buttonText = 'Subscribe',
-		class: className = ''
+		class: className = '',
+		apiEndpoint = '/api/newsletter/subscribe'
 	}: Props = $props();
 	
 	let email = $state('');
@@ -48,7 +50,7 @@
 		status = 'loading';
 		
 		try {
-			const response = await fetch('/api/newsletter/subscribe', {
+			const response = await fetch(apiEndpoint, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

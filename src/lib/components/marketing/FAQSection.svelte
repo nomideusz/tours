@@ -11,24 +11,28 @@
 	
 	const faqs = [
 		{
-			question: "What does being a beta member include?",
-			answer: "Beta members get 12 months free, 30% lifetime discount after that, direct input on feature development, and priority support. You'll help shape the future of tour booking."
+			question: "When will Zaur launch publicly?",
+			answer: "We're currently in beta testing with 50 selected tour guides. Based on their feedback, we're planning a public launch in Q1 2026. Join our waitlist to be among the first to know when we're ready!"
 		},
 		{
-			question: "How long does the beta program last?",
-			answer: "Our beta program runs until September 2025. Beta members get exclusive access to new features as we build them, plus early access to the full platform before public launch."
+			question: "What is Zaur and how does it work?",
+			answer: "Zaur is the simplest QR-based booking system for tour guides. Create your tour, get a QR code, share it anywhere (cards, flyers, t-shirts), and customers can scan to see availability and book instantly. You keep 100% of your revenue with no commission fees."
 		},
 		{
-			question: "What happens to my beta pricing after launch?",
-			answer: "Your 30% lifetime discount is permanently locked in. As a beta member, you'll pay 30% less than regular pricing forever, even as we add new features and expand the platform."
+			question: "How much does Zaur cost?",
+			answer: "We offer a free plan to get started, plus paid plans starting at €17/month for more features and bookings. No booking commissions ever – just simple, transparent monthly pricing."
 		},
 		{
-			question: "How does the application process work?",
-			answer: "We review all applications and select beta members based on experience, location diversity, and commitment to providing feedback. Successful applicants receive access within 2-3 business days."
+			question: "Can I join the beta program?",
+			answer: "Beta applications are now closed. We're working with 50 selected tour guides to refine the platform. Join our early access waitlist to be notified when we launch publicly in Q1 2026."
 		},
 		{
-			question: "Is there any commitment required?",
-			answer: "No contracts or long-term commitments. We simply ask that beta members provide feedback on features and help us improve the platform. Cancel anytime if it's not the right fit."
+			question: "What happens if I join the waitlist?",
+			answer: "You'll be among the first to know when Zaur launches. We'll send you an email with early access information, launch specials, and instructions to get started. No spam, just valuable updates."
+		},
+		{
+			question: "Do you support multiple languages and currencies?",
+			answer: "Yes! Zaur supports multiple currencies and we're continuously expanding language support. Our goal is to serve tour guides worldwide with localized experiences."
 		}
 	];
 	
@@ -57,12 +61,12 @@
 
 <!-- Simple Header -->
 <div class="section-header">
-	<BetaBadge text="Beta Program FAQ" icon={HelpCircle} variant="large" class="mb-6" />
+	<BetaBadge text="Frequently Asked Questions" icon={HelpCircle} variant="large" class="mb-6" />
 	<h2 class="section-title">
 		Got Questions?
 	</h2>
 	<p class="section-subtitle">
-		Everything you need to know about joining our beta program
+		Everything you need to know about Zaur and our upcoming launch
 	</p>
 </div>
 

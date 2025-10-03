@@ -21,6 +21,7 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
+	import BetaWelcomeModal from '$lib/components/BetaWelcomeModal.svelte';
 	import { themeStore } from '$lib/stores/theme.js';
 	import { onMount, onDestroy } from 'svelte';
 	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';
@@ -94,6 +95,9 @@
 	// Sidebar state (desktop only now)
 	let sidebarOpen = $state(false);
 	let isLoggingOut = $state(false);
+	
+	// Beta welcome modal state
+	let showBetaWelcome = $state(false);
 	
 	// Current pathname for navigation
 	let currentPath = $state(browser ? window.location.pathname : '/calendar');
@@ -342,6 +346,18 @@
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
 		
+		// Check if user is a beta tester and show welcome modal
+		// Beta testers have early_access_member flag set to true in database (camelCase in JS)
+		if (currentUserData && 'earlyAccessMember' in currentUserData && (currentUserData as any).earlyAccessMember) {
+			const hasSeenWelcome = localStorage.getItem('beta_welcome_seen');
+			if (!hasSeenWelcome) {
+				// Small delay for better UX after login
+				setTimeout(() => {
+					showBetaWelcome = true;
+				}, 800);
+			}
+		}
+		
 		// Clean up resources on page unload/refresh
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 			console.log('🧹 Page unloading - cleaning up resources...');
@@ -409,6 +425,13 @@
 		event.preventDefault();
 		mobileMenuOpen = !mobileMenuOpen;
 	}
+	
+	function handleCloseBetaWelcome() {
+		showBetaWelcome = false;
+		if (browser) {
+			localStorage.setItem('beta_welcome_seen', 'true');
+		}
+	}
 
 	// Close mobile menu when clicking outside
 	function handleClickOutside(event: MouseEvent) {
@@ -448,6 +471,11 @@
 <QueryClientProvider client={data.queryClient}>
 	<!-- Initialize notifications within QueryClient context -->
 	<NotificationInitializer />
+	
+	<!-- Beta Welcome Modal -->
+	{#if showBetaWelcome}
+		<BetaWelcomeModal on:close={handleCloseBetaWelcome} />
+	{/if}
 	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
 	<div class="min-h-screen flex flex-col overflow-x-hidden">

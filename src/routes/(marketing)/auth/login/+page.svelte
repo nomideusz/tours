@@ -338,8 +338,8 @@
 						Forgot password?
 					</a>
 					<div class="w-1 h-1 rounded-full bg-gray-400"></div>
-					<a href="/beta/apply" class="text-primary hover:opacity-80 font-medium">
-						Apply for beta access
+					<a href="/early-access" class="text-primary hover:opacity-80 font-medium">
+						Join waitlist
 					</a>
 				</div>
 			</div>

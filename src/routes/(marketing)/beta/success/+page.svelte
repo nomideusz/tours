@@ -24,10 +24,10 @@
 			</div>
 			
 			<!-- Success Message -->
-			<h1 class="success-title">Application Submitted!</h1>
+			<h1 class="success-title">Thank You for Your Interest!</h1>
 			<p class="success-description">
-				Thank you for applying to the Zaur beta program. We're excited to review your 
-				application and learn more about your tour business.
+				We appreciate your interest in the Zaur beta program. We've already selected 
+				our 50 beta testers and are working closely with them to build the perfect booking platform.
 			</p>
 			
 			<!-- What's Next -->
@@ -49,8 +49,8 @@
 						<Calendar class="w-5 h-5" />
 					</div>
 					<div class="step-content">
-						<h3>Notification by September 30</h3>
-						<p>Selected beta testers will receive an invitation email with instructions to set up their account and start using Zaur.</p>
+						<h3>Selection Complete</h3>
+						<p>All 50 beta testers have been selected and are actively working with the platform. Thank you for your interest!</p>
 					</div>
 				</div>
 				
@@ -69,10 +69,18 @@
 			<div class="cta-section">
 				<button 
 					class="button-primary button--large"
+					onclick={() => goto('/early-access')}
+				>
+					Join Early Access Waitlist
+					<ArrowRight class="w-5 h-5" />
+				</button>
+				
+				<button 
+					class="button-secondary button--large"
 					onclick={() => goto('/')}
+					style="margin-top: 1rem;"
 				>
 					Back to Home
-					<ArrowRight class="w-5 h-5" />
 				</button>
 				
 				<p class="cta-note">

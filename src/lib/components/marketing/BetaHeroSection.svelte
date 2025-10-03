@@ -12,55 +12,14 @@
 	
 	// Components
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	
 	// Umami tracking
 	import { trackCTAClick } from '$lib/utils/umami-tracking.js';
 	
-	// State for beta stats
-	let stats = $state({
-		acceptedApplications: 0,
-		spotsTotal: 50,
-		countries: 0,
-		loading: true
-	});
-
-	async function fetchStats() {
-		try {
-			const response = await fetch('/api/beta-stats');
-			if (response.ok) {
-				const data = await response.json();
-				if (data.success) {
-					stats = {
-						acceptedApplications: data.stats.acceptedApplications,
-						spotsTotal: data.stats.spotsTotal,
-						countries: data.stats.countriesRepresented,
-						loading: false
-					};
-				}
-			}
-		} catch (err) {
-			// Use fallback data if fetch fails
-			stats = {
-				acceptedApplications: 3,
-				spotsTotal: 50,
-				countries: 5,
-				loading: false
-			};
-		}
-	}
-
-	onMount(() => {
-		fetchStats();
-	});
-	
-	function handleApplyNow() {
-		trackCTAClick('hero', 'Apply for Beta Access', '/beta/apply');
-		goto('/beta/apply');
-	}
-	
-	function handleLearnMore() {
-		trackCTAClick('hero', 'Learn More', '/beta');
-		goto('/beta');
+	function handleJoinWaitlist() {
+		trackCTAClick('hero', 'Join Early Access Waitlist', '/early-access');
+		goto('/early-access');
 	}
 </script>
 
@@ -68,53 +27,54 @@
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<div class="text-center max-w-4xl mx-auto py-12 sm:py-20" in:fade={{ delay: 200 }}>
 			<!-- Beta Badge -->
-			<BetaBadge text="Beta Program Open" icon={FlaskConical} variant="large" class="mb-6" />
+			<div class="closed-badge mb-6">
+				<CheckCircle class="w-5 h-5" />
+				<span>Beta Program In Progress</span>
+			</div>
 			
 			<!-- Main Title -->
 			<h1 class="hero-title mb-6">
-				<span class="title-primary">Shape the Future of</span>
+				<span class="title-primary">Building the Future of</span>
 				<span class="title-secondary">Tour Bookings</span>
 			</h1>
 			
 			<!-- Subtitle -->
 			<p class="hero-subtitle text-lg max-w-2xl mx-auto mb-8">
-				We're building the simplest booking system with QR codes for tour guides. 
-				Join our beta program to get 12 months free and help shape the platform.
+				We're working with 50 selected tour guides from around the world to build 
+				the simplest QR-based booking system. Join our waitlist to be notified when we launch.
 			</p>
 			
 			<!-- Beta Stats -->
-			{#if !stats.loading}
-				<div class="card-grid card-grid--3">
-					<div class="card-item card-item--center">
-						<div>
-							<div class="stat-number">{stats.acceptedApplications}</div>
-							<div class="stat-label">Beta Members</div>
-						</div>
-					</div>
-					<div class="card-item card-item--center">
-						<div>
-							<div class="stat-number">{stats.spotsTotal - stats.acceptedApplications}</div>
-							<div class="stat-label">Spots Remaining</div>
-						</div>
+			<div class="card-grid card-grid--3">
+				<div class="card-item card-item--center">
+					<div>
+						<div class="stat-number">50</div>
+						<div class="stat-label">Beta Testers</div>
 					</div>
 				</div>
-			{/if}
+				<div class="card-item card-item--center">
+					<div>
+						<div class="stat-number">Q1 2026</div>
+						<div class="stat-label">Public Launch</div>
+					</div>
+				</div>
+			</div>
 			
 			<!-- CTA Buttons -->
 			<div class="hero-actions mt-8">
-				<button onclick={handleApplyNow} class="button-primary button--large button--gap">
-					Apply for Beta Access
+				<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
+					Join Early Access Waitlist
 					<ArrowRight class="w-4 h-4" />
 				</button>
 			</div>
 			
-			<!-- Beta Benefits Preview -->
+			<!-- Beta Status -->
 			<div class="benefits-preview">
-				<p class="benefits-label">Beta members get:</p>
+				<p class="benefits-label">What's happening now:</p>
 				<div class="benefits-list">
-					<span class="benefit-item">✓ 12 months free</span>
-					<span class="benefit-item">✓ 30% lifetime discount</span>
-					<span class="benefit-item">✓ Direct influence on features</span>
+					<span class="benefit-item">✓ 50 tour guides testing the platform</span>
+					<span class="benefit-item">✓ Continuous improvements based on feedback</span>
+					<span class="benefit-item">✓ Getting ready for public launch</span>
 				</div>
 			</div>
 		</div>
@@ -122,7 +82,19 @@
 </section>
 
 <style>
-	/* Badge styles now handled by BetaBadge component */
+	/* Closed badge */
+	.closed-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1.5rem;
+		background: var(--success-light);
+		color: var(--success);
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		border: 1px solid var(--success);
+	}
 	
 	/* Hero title */
 	.hero-title {

@@ -16,7 +16,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		if (!email) {
 			return json({ 
 				success: false, 
-				error: 'Email is required' 
+				message: 'Email is required' 
 			}, { status: 400 });
 		}
 		
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		if (!emailRegex.test(email)) {
 			return json({ 
 				success: false, 
-				error: 'Please enter a valid email address' 
+				message: 'Please enter a valid email address' 
 			}, { status: 400 });
 		}
 		
@@ -61,7 +61,16 @@ export const POST: RequestHandler = async ({ request, url }) => {
 				});
 				
 				console.log(`✅ Added ${email} to Resend audience (source: ${source})`);
-			} catch (resendError) {
+			} catch (resendError: any) {
+				// Check if email already exists in audience
+				if (resendError?.message?.includes('already exists') || resendError?.message?.includes('Contact already')) {
+					console.log(`ℹ️ ${email} already in audience`);
+					return json({ 
+						success: true, 
+						message: 'You\'re already on our waitlist! We\'ll notify you when we launch in Q1 2026.' 
+					});
+				}
+				
 				console.warn('Failed to add to Resend audience:', resendError);
 				// Don't fail the request if Resend fails
 			}
@@ -74,14 +83,14 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		
 		return json({ 
 			success: true, 
-			message: 'Thank you for your interest! We\'ll send you an access code soon.' 
+			message: 'You\'re on the waitlist! We\'ll notify you when we launch in Q1 2026.' 
 		});
 		
 	} catch (error) {
 		console.error('Early access error:', error);
 		return json({ 
 			success: false, 
-			error: 'An error occurred. Please try again later.' 
+			message: 'An error occurred. Please try again later.' 
 		}, { status: 500 });
 	}
 }; 

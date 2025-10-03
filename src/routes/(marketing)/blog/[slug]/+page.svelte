@@ -179,15 +179,14 @@
 				<div class="cta-box">
 					<div class="text-center">
 						<h3 class="text-2xl font-semibold text-primary mb-4">
-							Ready to Transform Your Tour Business?
+							Want to Stay Updated?
 						</h3>
 						<p class="text-lg text-secondary mb-6 max-w-2xl mx-auto">
-							Join thousands of tour guides using Zaur to streamline bookings 
-							and grow their business.
+							Join our waitlist to be among the first to know when we launch in Q1 2026.
 						</p>
-						<button onclick={() => window.location.href='/auth/register'} class="button-primary button--large button-gap">
+						<button onclick={() => window.location.href='/early-access'} class="button-primary button--large button-gap">
 							<BookOpen class="w-5 h-5" />
-							Start Free Trial
+							Join Early Access Waitlist
 						</button>
 					</div>
 				</div>

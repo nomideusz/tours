@@ -3,6 +3,67 @@ import type { PageServerLoad } from './$types.js';
 
 // In a real app, this would come from a database or CMS
 const blogPosts = {
+	'beta-program-update-october-2025': {
+		slug: 'beta-program-update-october-2025',
+		title: 'Beta Program Update: Working with 50 Tour Guides to Build Something Great',
+		excerpt: 'We\'ve closed beta applications and are now actively working with 50 selected tour guides from around the world. Here\'s what\'s happening and what\'s next.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-10-03'),
+		readTime: '4 min read',
+		category: 'Announcement',
+		content: `
+			<p>A quick update on where we are with the Zaur beta program – and what you can expect in the coming months.</p>
+
+			<h2>Beta Applications: Closed</h2>
+			<p>We've officially closed beta applications after receiving an incredible response from tour guides worldwide. Thank you to everyone who applied! The enthusiasm and diversity of applications made the selection process both challenging and exciting.</p>
+
+			<p>After careful review, we've selected <strong>50 tour guides</strong> from different countries, offering various tour types – from walking tours in European cities to adventure activities in Asia, food experiences in Latin America, and cultural tours across continents.</p>
+
+			<h2>What We're Doing Now</h2>
+			<p>Our beta testers are actively using Zaur for their real tours. Every day, we're:</p>
+			<ul>
+				<li><strong>Listening:</strong> Collecting feedback through our in-app widget, weekly surveys, and user interviews</li>
+				<li><strong>Improving:</strong> Fixing bugs, refining features, and optimizing the user experience based on actual usage</li>
+				<li><strong>Building:</strong> Developing new features that tour guides actually need and want</li>
+			</ul>
+
+			<p>This is the most valuable phase of our development. Real tour guides using Zaur for real bookings means we're learning what works, what doesn't, and what's missing. Every piece of feedback helps us build a better platform.</p>
+
+			<h2>What's Next?</h2>
+			<p><strong>Late October / Early November:</strong> We'll share another update on our progress, including:</p>
+			<ul>
+				<li>Key improvements we've made based on beta feedback</li>
+				<li>Feature releases and updates</li>
+				<li>Success stories from beta testers</li>
+				<li>A clearer timeline for public launch</li>
+			</ul>
+
+			<p><strong>Q1 2026:</strong> Public launch! We'll open Zaur to all tour guides with a platform that's been thoroughly tested and refined by real professionals in the field.</p>
+
+			<h2>Want to Stay Updated?</h2>
+			<p>While beta applications are closed, you can still be part of the journey:</p>
+
+			<div style="text-align: center; margin: 2rem 0;">
+				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Join Our Early Access Waitlist →</a>
+			</div>
+
+			<p>Join our waitlist to:</p>
+			<ul>
+				<li>Be among the first to know when we launch</li>
+				<li>Get exclusive launch offers and discounts</li>
+				<li>Access our platform as soon as it's ready</li>
+			</ul>
+
+			<h2>Thank You</h2>
+			<p>To our 50 beta testers: Thank you for your time, your honest feedback, and your willingness to help us build something better. You're not just testing a platform – you're shaping the future of tour bookings.</p>
+
+			<p>To everyone else: Thank you for your patience and interest. We're building Zaur the right way – slowly, carefully, and with real tour guides at the center of every decision. The wait will be worth it.</p>
+
+			<p>We'll see you in late October with our next update!</p>
+
+			<p><em>Questions or want to chat? Email us anytime at <a href="mailto:beta@zaur.app">beta@zaur.app</a></em></p>
+		`
+	},
 	'zaur-beta-program-launch': {
 		slug: 'zaur-beta-program-launch',
 		title: 'Zaur Beta Program is Now Open: Join 50 Tour Guides Shaping the Future',
@@ -75,15 +136,15 @@ const blogPosts = {
 			<p>We believe in earning your trust, not locking you in. There are no contracts, no commitments, and no credit card required during the beta phase. If Zaur isn't right for you, you can leave anytime with no questions asked. We're confident that once you experience the simplicity and power of Zaur, you'll never want to go back to traditional booking systems.</p>
 
 			<h2>Ready to Join?</h2>
-			<p>Applications are open now, but spaces are limited to ensure we can provide personalized support to each beta member. We'll review applications on a rolling basis and notify selected guides within 2-3 business days.</p>
+			<p><strong>Update:</strong> We've selected 50 beta testers and are actively working with them to refine the platform. Applications are now closed as we focus on building the best possible experience based on their feedback.</p>
 
-			<p>This is more than just a beta test – it's an opportunity to be part of something transformative. Join us in building the future of tour bookings, where technology serves tour guides, not the other way around.</p>
+			<p>This is more than just a beta test – it's an opportunity to be part of something transformative. While the beta program is closed, you can join our waitlist to be among the first to access Zaur when we launch publicly in Q1 2026.</p>
 
 			<div style="text-align: center; margin: 2rem 0;">
-				<a href="/beta/apply" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Apply for Beta Access Now →</a>
+				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Join Early Access Waitlist →</a>
 			</div>
 
-			<p><em>Questions about the beta program? Email us at beta@zaur.app or visit our FAQ section for more details.</em></p>
+			<p><em>Questions about our launch? Email us at beta@zaur.app or visit our FAQ section for more details.</em></p>
 		`
 	},
 	'sustainable-tourism-practices-2025': {

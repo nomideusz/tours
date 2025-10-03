@@ -3,6 +3,17 @@ import type { PageServerLoad } from './$types.js';
 // In a real app, these would come from a database or CMS
 const blogPosts = [
 	{
+		slug: 'beta-program-update-october-2025',
+		title: 'Beta Program Update: Working with 50 Tour Guides to Build Something Great',
+		excerpt: 'We\'ve closed beta applications and are now actively working with 50 selected tour guides from around the world. Here\'s what\'s happening and what\'s next.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-10-03'),
+		readTime: '4 min read',
+		category: 'Announcement',
+		featured: true,
+		image: '/blog/beta-launch-hero.svg'
+	},
+	{
 		slug: 'zaur-beta-program-launch',
 		title: 'Zaur Beta Program is Now Open: Join 50 Tour Guides Shaping the Future',
 		excerpt: 'We\'re excited to announce the official launch of our beta program! Be among the first 50 tour guides to experience the simplest QR-based booking system and help shape its development.',
@@ -10,8 +21,8 @@ const blogPosts = [
 		publishedAt: new Date('2025-08-07'),
 		readTime: '5 min read',
 		category: 'Announcement',
-		featured: true,
-		image: '/blog/beta-launch-hero.svg' // Custom beta launch graphic
+		featured: false,
+		image: '/blog/beta-launch-hero.svg'
 	},
 	{
 		slug: 'sustainable-tourism-practices-2025',

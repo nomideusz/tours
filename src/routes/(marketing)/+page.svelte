@@ -9,7 +9,7 @@
 	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
 	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
-	import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
+	// import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
 	import BetaTimelineSection from '$lib/components/marketing/BetaTimelineSection.svelte';
 	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 	
@@ -37,8 +37,7 @@
 			'how-it-works',
 			'pricing',
 			'faq',
-			'newsletter',
-			'final-cta'
+			'newsletter'
 		]);
 		
 		// Cleanup on unmount
@@ -129,20 +128,16 @@
 	</div>
 </section>
 
-<!-- Newsletter Signup -->
+<!-- Newsletter Signup / Final CTA -->
 <section id="newsletter" class="py-12 sm:py-16">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<NewsletterSignup 
-			title="Not Ready for Beta? Stay in the Loop!"
-			description="Get notified when we launch publicly and receive exclusive tips for tour guides. No spam, just valuable updates."
-			buttonText="Notify Me"
+			title="Join the Waitlist"
+			description="Get notified when we launch publicly in Q1 2026. Be among the first tour guides to try Zaur."
+			buttonText="Join Waitlist"
+			apiEndpoint="/api/newsletter/subscribe"
 		/>
 	</div>
-</section>
-
-<!-- Beta Final CTA -->
-<section id="final-cta">
-	<BetaFinalCtaSection />
 </section>
 
 <style>

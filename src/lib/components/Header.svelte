@@ -203,10 +203,10 @@
 						</a>
 						<button 
 							class="button-primary guest-cta-button"
-							onclick={() => window.location.href = '/beta/apply'}
+							onclick={() => window.location.href = '/early-access'}
 						>
-							<span class="guest-cta-text-mobile">Join Beta</span>
-							<span class="guest-cta-text-desktop">Apply for Beta</span>
+							<span class="guest-cta-text-mobile">Join Waitlist</span>
+							<span class="guest-cta-text-desktop">Join Early Access</span>
 						</button>
 					</div>
 				{/if}
