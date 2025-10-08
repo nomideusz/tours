@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import SimplifiedPricingSection from '$lib/components/pricing/SimplifiedPricingSection.svelte';
-	import FeaturePreview from '$lib/components/FeaturePreview.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	import type { PricingModel, ParticipantCategory, GroupDiscountTier, OptionalAddon } from '$lib/types.js';
 	// Currency
@@ -25,11 +24,6 @@
 		duration: 180,
 		capacity: 20
 	});
-	
-	// Handle feedback
-	function handleFeatureFeedback(feedback: any) {
-		console.log('Pricing demo feedback:', feedback);
-	}
 </script>
 
 <svelte:head>
@@ -41,17 +35,8 @@
 <div class="demo-container">
 	<div class="demo-header">
 		<h1>Test Pricing Setup</h1>
-		<p class="subtitle">Try setting up pricing for a tour and tell us what you think</p>
+		<p class="subtitle">Switch between Per Person and Private Tour pricing. Try all the features and use the feedback button to share your thoughts.</p>
 	</div>
-	
-	<!-- Feature Preview Component -->
-	<FeaturePreview
-		featureId="pricing-section"
-		featureName="Pricing Section"
-		version="v1"
-		description="Switch between Per Person and Private Tour pricing. Try all the features and let us know what works best for your tours."
-		onFeedback={handleFeatureFeedback}
-	/>
 	
 	<!-- Demo Form Container -->
 	<div class="demo-form">
@@ -103,14 +88,9 @@
 		</div>
 	</div>
 	
-	<!-- Quick Testing Guide -->
-	<div class="testing-tips">
-		<h3>What to try</h3>
-		<ul>
-			<li>Switch between "Per Person" and "Private Tour" pricing</li>
-			<li>Add categories, test group discounts, explore add-ons</li>
-			<li>Would this work for your tours? Tell us in the feedback above</li>
-		</ul>
+	<!-- Feedback Reminder -->
+	<div class="feedback-reminder">
+		<p>💬 Share your thoughts using the <strong>Feedback</strong> button in the bottom right corner</p>
 	</div>
 </div>
 </PageContainer>
@@ -152,34 +132,23 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 	}
 	
-	.testing-tips {
+	.feedback-reminder {
+		text-align: center;
+		padding: 1.5rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.75rem;
-		padding: 1.25rem;
+		margin-top: 2rem;
 	}
 	
-	.testing-tips h3 {
-		margin: 0 0 0.75rem 0;
-		font-size: 0.9375rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-	
-	.testing-tips ul {
+	.feedback-reminder p {
 		margin: 0;
-		padding-left: 1.25rem;
-	}
-	
-	.testing-tips li {
-		margin-bottom: 0.5rem;
-		font-size: 0.8125rem;
+		font-size: 0.9375rem;
 		color: var(--text-secondary);
-		line-height: 1.5;
 	}
 	
-	.testing-tips li:last-child {
-		margin-bottom: 0;
+	.feedback-reminder strong {
+		color: var(--color-primary-600);
 	}
 	
 	/* Mobile responsiveness */
@@ -193,10 +162,6 @@
 		}
 		
 		.form-container {
-			padding: 1rem;
-		}
-		
-		.testing-tips {
 			padding: 1rem;
 		}
 	}

@@ -41,6 +41,7 @@
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
+	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import X from 'lucide-svelte/icons/x';
 
 	// Type definitions
@@ -210,6 +211,19 @@
 					badge: null as number | null
 				}
 			]
+		},
+		{
+			name: 'Beta Testing',
+			items: [
+				{
+					name: 'Feature Demos',
+					href: '/demo',
+					icon: FlaskConical,
+					description: 'Test new features & give feedback',
+					showOnMobile: true,
+					badge: null as number | null
+				}
+			]
 		}
 	]);
 
@@ -285,6 +299,12 @@
 			href: '/subscription',
 			icon: CreditCard,
 			description: 'Manage your plan'
+		},
+		{
+			name: 'Feature Demos',
+			href: '/demo',
+			icon: FlaskConical,
+			description: 'Test new features'
 		},
 		...(userIsAdmin ? [{
 			name: 'Admin',
