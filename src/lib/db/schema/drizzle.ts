@@ -151,6 +151,13 @@ export const betaApplications = pgTable('beta_applications', {
 // Tour status enum
 export const tourStatusEnum = pgEnum('tour_status', ['active', 'draft']);
 
+// Pricing model enum
+export const pricingModelEnum = pgEnum('pricing_model', [
+	'per_person',
+	'participant_categories',
+	'group_tiers'
+]);
+
 // Tours table
 export const tours = pgTable('tours', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -168,12 +175,66 @@ export const tours = pgTable('tours', {
   requirements: json('requirements').$type<string[]>().default([]),
   cancellationPolicy: text('cancellation_policy'),
   
-  // Pricing tiers
+  // Pricing model and tiers
+  pricingModel: pricingModelEnum('pricing_model').default('per_person'),
   enablePricingTiers: boolean('enable_pricing_tiers').notNull().default(false),
   pricingTiers: json('pricing_tiers').$type<{
     adult: number;
     child?: number;
   }>(),
+  
+  // Flexible participant categories (NEW - more flexible than adult/child)
+  participantCategories: json('participant_categories').$type<{
+    categories: Array<{
+      id: string;
+      label: string;
+      price: number;
+      ageRange?: string;
+      description?: string;
+      sortOrder: number;
+      minAge?: number;
+      maxAge?: number;
+      countsTowardCapacity?: boolean;
+    }>;
+  }>(),
+  
+  // Private tour pricing (flat rate)
+  privateTour: json('private_tour').$type<{
+    flatPrice: number;
+  }>(),
+  
+  // Group discounts for participant categories (NEW)
+  groupDiscounts: json('group_discounts').$type<{
+    tiers: Array<{
+      id: string;
+      minParticipants: number;
+      maxParticipants: number;
+      discountType: 'percentage' | 'fixed';
+      discountValue: number;
+      label?: string;
+    }>;
+    enabled: boolean;
+  }>(),
+  
+  // Optional add-ons (NEW)
+  optionalAddons: json('optional_addons').$type<{
+    addons: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      price: number;
+      required: boolean;
+      icon?: string;
+    }>;
+  }>(),
+  
+  // Stripe fee payment option (NEW)
+  guidePaysStripeFee: boolean('guide_pays_stripe_fee').notNull().default(false),
+  
+  // Capacity settings (NEW)
+  minCapacity: integer('min_capacity').notNull().default(1),
+  maxCapacity: integer('max_capacity').notNull().default(20),
+  countInfantsTowardCapacity: boolean('count_infants_toward_capacity').notNull().default(false),
   
   // Simplified QR code approach
   qrCode: varchar('qr_code', { length: 100 }).unique(),
@@ -246,10 +307,34 @@ export const bookings = pgTable('bookings', {
   customerPhone: varchar('customer_phone', { length: 50 }),
   participants: integer('participants').notNull(),
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
-  // Pricing breakdown for tiers
+  // Pricing breakdown for tiers (legacy adult/child - kept for backward compatibility)
   participantBreakdown: json('participant_breakdown').$type<{
     adults: number;
     children?: number;
+  }>(),
+  // Flexible participant breakdown by category (NEW)
+  participantsByCategory: json('participants_by_category').$type<{
+    [categoryId: string]: number;
+  }>(),
+  // Selected add-ons (NEW)
+  selectedAddons: json('selected_addons').$type<Array<{
+    addonId: string;
+    name: string;
+    price: number;
+  }>>(),
+  // Price breakdown (NEW)
+  priceBreakdown: json('price_breakdown').$type<{
+    basePrice: number;
+    addonsTotal: number;
+    totalAmount: number;
+    categoryBreakdown?: {
+      [categoryId: string]: {
+        label: string;
+        count: number;
+        pricePerPerson: number;
+        subtotal: number;
+      };
+    };
   }>(),
   status: bookingStatusEnum('status').notNull().default('pending'),
   paymentId: varchar('payment_id', { length: 255 }),

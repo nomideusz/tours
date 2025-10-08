@@ -33,6 +33,48 @@ export interface User extends RecordModel {
   updatedAt: string;
 }
 
+// Pricing model types
+export type PricingModel = 'per_person' | 'participant_categories' | 'group_tiers';
+
+export interface GroupPricingTier {
+  minParticipants: number;
+  maxParticipants: number;
+  price: number;
+  label?: string;
+}
+
+export interface OptionalAddon {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  required: boolean;
+  icon?: string;
+}
+
+// Flexible participant category for age-based, role-based pricing
+export interface ParticipantCategory {
+  id: string;                // e.g., "adult", "senior", "student", "child"
+  label: string;             // e.g., "Adult", "Senior (65+)", "Student (with ID)"
+  price: number;             // Price for this category
+  ageRange?: string;         // e.g., "18-64", "65+", "3-12"
+  description?: string;      // e.g., "Valid student ID required"
+  sortOrder: number;         // Display order (0-based)
+  minAge?: number;           // Optional: minimum age for this category
+  maxAge?: number;           // Optional: maximum age for this category
+  countsTowardCapacity?: boolean; // Whether this category counts toward tour capacity (default: true)
+}
+
+// Group discount tier for participant categories
+export interface GroupDiscountTier {
+  id: string;                // Unique identifier
+  minParticipants: number;   // Minimum group size
+  maxParticipants: number;   // Maximum group size (or null for unlimited)
+  discountType: 'percentage' | 'fixed';  // Type of discount
+  discountValue: number;     // Either percentage (0-100) or fixed price per person
+  label?: string;            // e.g., "Small Group", "Large Group"
+}
+
 export interface Tour extends RecordModel {
   id: string;
   name: string;
@@ -48,12 +90,33 @@ export interface Tour extends RecordModel {
   includedItems?: string[];
   requirements?: string[];
   cancellationPolicy?: string;
-  // Pricing tiers
+  // Pricing model (NEW)
+  pricingModel?: PricingModel;
+  // Pricing tiers (existing adult/child - kept for backward compatibility)
   enablePricingTiers?: boolean;
   pricingTiers?: {
     adult: number;
     child?: number;
   };
+  // Flexible participant categories (NEW - more flexible than adult/child)
+  participantCategories?: {
+    categories: ParticipantCategory[];
+  };
+  // Private tour pricing (flat rate for exclusive bookings)
+  privateTour?: {
+    flatPrice: number;
+  };
+  // Group discounts for participant categories (NEW)
+  groupDiscounts?: {
+    tiers: GroupDiscountTier[];
+    enabled: boolean;
+  };
+  // Optional add-ons (NEW)
+  optionalAddons?: {
+    addons: OptionalAddon[];
+  };
+  // Stripe fee payment option
+  guidePaysStripeFee?: boolean;
   // QR code fields
   qrCode?: string;
   qrScans?: number;
@@ -95,10 +158,34 @@ export interface Booking extends RecordModel {
   customerPhone?: string;
   participants: number;
   totalAmount: string; // decimal fields return strings in Drizzle
-  // Pricing breakdown for tiers
+  // Pricing breakdown for tiers (legacy adult/child - kept for backward compatibility)
   participantBreakdown?: {
     adults: number;
     children?: number;
+  };
+  // Flexible participant breakdown by category (NEW)
+  participantsByCategory?: {
+    [categoryId: string]: number;  // e.g., { "adult": 2, "senior": 1, "child": 1 }
+  };
+  // Selected add-ons (NEW)
+  selectedAddons?: Array<{
+    addonId: string;
+    name: string;
+    price: number;
+  }>;
+  // Price breakdown (NEW)
+  priceBreakdown?: {
+    basePrice: number;
+    addonsTotal: number;
+    totalAmount: number;
+    categoryBreakdown?: {      // Detailed breakdown by category
+      [categoryId: string]: {
+        label: string;
+        count: number;
+        pricePerPerson: number;
+        subtotal: number;
+      };
+    };
   };
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   paymentId?: string; // Stripe payment intent ID
