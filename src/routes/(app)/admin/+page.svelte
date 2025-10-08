@@ -158,7 +158,7 @@
 	let isSendingAnnouncement = $state(false);
 	let announcementError = $state<string | null>(null);
 	let announcementSuccess = $state<string | null>(null);
-	let announcementRecipientType = $state<'all' | 'beta' | 'plan' | 'verified' | 'active'>('beta');
+	let announcementRecipientType = $state<'all' | 'beta' | 'plan' | 'verified' | 'active' | 'custom'>('beta');
 	let announcementPlanFilter = $state<'free' | 'starter_pro' | 'professional' | 'agency'>('free');
 	let announcementSubject = $state('');
 	let announcementHeading = $state('');
@@ -170,6 +170,8 @@
 	let showRecipientList = $state(false);
 	let recipientEmails = $state<string[]>([]);
 	let isLoadingRecipients = $state(false);
+	let selectedUserIds = $state<Set<string>>(new Set());
+	let userSearchQuery = $state('');
 	
 	// Filter users
 	let filteredUsers = $derived.by(() => {
@@ -450,6 +452,17 @@
 		}
 	}
 	
+	// Filter users for custom selection
+	let selectableUsers = $derived.by(() => {
+		if (!userSearchQuery) return users;
+		const query = userSearchQuery.toLowerCase();
+		return users.filter((u: any) => 
+			u.name?.toLowerCase().includes(query) ||
+			u.email.toLowerCase().includes(query) ||
+			u.businessName?.toLowerCase().includes(query)
+		);
+	});
+	
 	// Get recipient count for announcements
 	let announcementRecipientCount = $derived.by(() => {
 		switch (announcementRecipientType) {
@@ -465,6 +478,8 @@
 				const thirtyDaysAgo = new Date();
 				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 				return users.filter((u: any) => u.lastLogin && new Date(u.lastLogin) > thirtyDaysAgo).length;
+			case 'custom':
+				return selectedUserIds.size;
 			default:
 				return 0;
 		}
@@ -479,6 +494,27 @@
 		showRecipientList = false;
 		recipientEmails = [];
 	});
+	
+	// Toggle user selection
+	function toggleUserSelection(userId: string) {
+		const newSet = new Set(selectedUserIds);
+		if (newSet.has(userId)) {
+			newSet.delete(userId);
+		} else {
+			newSet.add(userId);
+		}
+		selectedUserIds = newSet;
+	}
+	
+	// Select all visible users
+	function selectAllUsers() {
+		selectedUserIds = new Set(selectableUsers.map((u: any) => u.id));
+	}
+	
+	// Deselect all users
+	function deselectAllUsers() {
+		selectedUserIds = new Set();
+	}
 	
 	// Preview recipients
 	async function previewRecipients() {
@@ -506,6 +542,9 @@
 					const thirtyDaysAgo = new Date();
 					thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 					filteredRecipients = users.filter((u: any) => u.lastLogin && new Date(u.lastLogin) > thirtyDaysAgo);
+					break;
+				case 'custom':
+					filteredRecipients = users.filter((u: any) => selectedUserIds.has(u.id));
 					break;
 				default:
 					filteredRecipients = [];
@@ -535,6 +574,14 @@
 		announcementResults = [];
 		
 		try {
+			// Build recipient filter based on type
+			let recipientFilter;
+			if (announcementRecipientType === 'plan') {
+				recipientFilter = { plan: announcementPlanFilter };
+			} else if (announcementRecipientType === 'custom') {
+				recipientFilter = { userIds: Array.from(selectedUserIds) };
+			}
+			
 			const response = await fetch('/api/admin/send-announcement', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -546,7 +593,7 @@
 					ctaUrl: announcementCtaUrl || undefined,
 					footer: announcementFooter || undefined,
 					recipientType: isTest ? 'test' : announcementRecipientType,
-					recipientFilter: announcementRecipientType === 'plan' ? { plan: announcementPlanFilter } : undefined
+					recipientFilter
 				})
 			});
 			
@@ -1804,6 +1851,8 @@
 			announcementResults = [];
 			showRecipientList = false;
 			recipientEmails = [];
+			selectedUserIds = new Set();
+			userSearchQuery = '';
 		}}
 	>
 		<div class="p-6">
@@ -1827,6 +1876,7 @@
 						<option value="verified">Verified Users ({users.filter((u: any) => u.emailVerified).length})</option>
 						<option value="active">Active Users (Last 30 days)</option>
 						<option value="plan">By Subscription Plan</option>
+						<option value="custom">Select Specific Users ({selectedUserIds.size} selected)</option>
 					</select>
 				</div>
 				
@@ -1846,6 +1896,90 @@
 							<option value="professional">Professional ({users.filter((u: any) => u.subscriptionPlan === 'professional').length})</option>
 							<option value="agency">Agency ({users.filter((u: any) => u.subscriptionPlan === 'agency').length})</option>
 						</select>
+					</div>
+				{/if}
+				
+				{#if announcementRecipientType === 'custom'}
+					<div class="rounded-lg p-4 space-y-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+						<div class="flex items-center justify-between">
+							<p class="text-sm font-medium" style="color: var(--text-primary);">
+								Select Recipients ({selectedUserIds.size} selected)
+							</p>
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={selectAllUsers}
+									disabled={isSendingAnnouncement}
+									class="text-xs button-secondary button--small"
+								>
+									Select All ({selectableUsers.length})
+								</button>
+								<button
+									type="button"
+									onclick={deselectAllUsers}
+									disabled={isSendingAnnouncement || selectedUserIds.size === 0}
+									class="text-xs button-secondary button--small"
+								>
+									Clear
+								</button>
+							</div>
+						</div>
+						
+						<!-- Search users -->
+						<div class="relative">
+							<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+							<input
+								type="text"
+								bind:value={userSearchQuery}
+								placeholder="Search users..."
+								class="form-input form-input--small pl-10 w-full"
+								disabled={isSendingAnnouncement}
+							/>
+						</div>
+						
+						<!-- User list -->
+						<div class="max-h-64 overflow-y-auto space-y-1 border-t pt-3" style="border-color: var(--border-primary);">
+							{#each selectableUsers as user}
+								<label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-[var(--bg-tertiary)] transition-colors">
+									<input
+										type="checkbox"
+										checked={selectedUserIds.has(user.id)}
+										onchange={() => toggleUserSelection(user.id)}
+										disabled={isSendingAnnouncement}
+										class="form-checkbox"
+									/>
+									<div class="flex-1 min-w-0">
+										<p class="text-sm font-medium truncate" style="color: var(--text-primary);">
+											{user.name}
+										</p>
+										<p class="text-xs truncate" style="color: var(--text-secondary);">
+											{user.email}
+										</p>
+										{#if user.businessName}
+											<p class="text-xs truncate" style="color: var(--text-tertiary);">
+												{user.businessName}
+											</p>
+										{/if}
+									</div>
+									<div class="flex items-center gap-2 text-xs flex-shrink-0">
+										<span class="px-2 py-1 rounded-full {getPlanBadgeClass(user.subscriptionPlan)}">
+											{formatPlanName(user.subscriptionPlan)}
+										</span>
+										{#if user.earlyAccessMember}
+											<span class="px-2 py-1 rounded-full" style="background: var(--color-info-100); color: var(--color-info-700);">
+												Beta
+											</span>
+										{/if}
+									</div>
+								</label>
+							{/each}
+							
+							{#if selectableUsers.length === 0}
+								<p class="text-sm text-center py-4" style="color: var(--text-secondary);">
+									No users found
+								</p>
+							{/if}
+						</div>
 					</div>
 				{/if}
 				
@@ -2045,6 +2179,8 @@
 								announcementResults = [];
 								showRecipientList = false;
 								recipientEmails = [];
+								selectedUserIds = new Set();
+								userSearchQuery = '';
 							}}
 							disabled={isSendingAnnouncement}
 							class="button-secondary"
