@@ -468,7 +468,7 @@
 	});
 	
 	// Send announcement
-	async function sendAnnouncement(event: SubmitEvent) {
+	async function sendAnnouncement(event: SubmitEvent, isTest = false) {
 		event.preventDefault();
 		
 		if (!announcementSubject || !announcementHeading || !announcementMessage) {
@@ -492,7 +492,7 @@
 					ctaText: announcementCtaText || undefined,
 					ctaUrl: announcementCtaUrl || undefined,
 					footer: announcementFooter || undefined,
-					recipientType: announcementRecipientType,
+					recipientType: isTest ? 'test' : announcementRecipientType,
 					recipientFilter: announcementRecipientType === 'plan' ? { plan: announcementPlanFilter } : undefined
 				})
 			});
@@ -503,21 +503,25 @@
 				throw new Error(result.error || 'Failed to send announcement');
 			}
 			
-			announcementSuccess = `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients`;
+			announcementSuccess = isTest 
+				? `Test email sent successfully to b.dymet@gmail.com`
+				: `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients`;
 			announcementResults = result.details || [];
 			
-			// Clear form after success
-			setTimeout(() => {
-				showAnnouncementModal = false;
-				announcementSubject = '';
-				announcementHeading = '';
-				announcementMessage = '';
-				announcementCtaText = '';
-				announcementCtaUrl = '';
-				announcementFooter = '';
-				announcementSuccess = null;
-				announcementResults = [];
-			}, 5000);
+			// Clear form after success (only for non-test sends)
+			if (!isTest) {
+				setTimeout(() => {
+					showAnnouncementModal = false;
+					announcementSubject = '';
+					announcementHeading = '';
+					announcementMessage = '';
+					announcementCtaText = '';
+					announcementCtaUrl = '';
+					announcementFooter = '';
+					announcementSuccess = null;
+					announcementResults = [];
+				}, 5000);
+			}
 			
 		} catch (error) {
 			announcementError = error instanceof Error ? error.message : 'Failed to send announcement';
@@ -1931,32 +1935,43 @@
 					</div>
 				{/if}
 				
-				<div class="flex gap-3 pt-4">
-					<button
-						type="submit"
-						disabled={isSendingAnnouncement || announcementRecipientCount === 0}
-						class="button-primary flex-1 button--gap"
-					>
-						{#if isSendingAnnouncement}
-							<Loader2 class="h-4 w-4 animate-spin" />
-							Sending...
-						{:else}
-							<Send class="h-4 w-4" />
-							Send to {announcementRecipientCount} User{announcementRecipientCount === 1 ? '' : 's'}
-						{/if}
-					</button>
+				<div class="space-y-3 pt-4">
+					<div class="flex gap-3">
+						<button
+							type="submit"
+							disabled={isSendingAnnouncement || announcementRecipientCount === 0}
+							class="button-primary flex-1 button--gap"
+						>
+							{#if isSendingAnnouncement}
+								<Loader2 class="h-4 w-4 animate-spin" />
+								Sending...
+							{:else}
+								<Send class="h-4 w-4" />
+								Send to {announcementRecipientCount} User{announcementRecipientCount === 1 ? '' : 's'}
+							{/if}
+						</button>
+						<button
+							type="button"
+							onclick={() => {
+								showAnnouncementModal = false;
+								announcementError = null;
+								announcementSuccess = null;
+								announcementResults = [];
+							}}
+							disabled={isSendingAnnouncement}
+							class="button-secondary"
+						>
+							Cancel
+						</button>
+					</div>
 					<button
 						type="button"
-						onclick={() => {
-							showAnnouncementModal = false;
-							announcementError = null;
-							announcementSuccess = null;
-							announcementResults = [];
-						}}
+						onclick={(e) => sendAnnouncement(e as any, true)}
 						disabled={isSendingAnnouncement}
-						class="button-secondary"
+						class="button-secondary w-full button--gap"
 					>
-						Cancel
+						<Mail class="h-4 w-4" />
+						Send Test Email to b.dymet@gmail.com
 					</button>
 				</div>
 			</form>

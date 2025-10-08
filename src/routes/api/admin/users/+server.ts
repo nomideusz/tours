@@ -48,29 +48,30 @@ export const GET: RequestHandler = async ({ locals }) => {
 					);
 				const totalRevenue = Number(revenueResult[0]?.total || 0);
 
-				return {
-					id: user.id,
-					email: user.email,
-					name: user.name,
-					username: user.username,
-					businessName: user.businessName,
-					role: user.role,
-					avatar: user.avatar,
-					phone: user.phone,
-					website: user.website,
-					description: user.description,
-					location: user.location,
-					country: user.country,
-					currency: user.currency,
-					emailVerified: user.emailVerified,
-					lastLogin: user.lastLogin,
-					createdAt: user.createdAt,
-					subscriptionPlan: user.subscriptionPlan || 'free',
-					stripeAccountId: user.stripeAccountId,
-					tourCount,
-					bookingCount,
-					totalRevenue
-				};
+			return {
+				id: user.id,
+				email: user.email,
+				name: user.name,
+				username: user.username,
+				businessName: user.businessName,
+				role: user.role,
+				avatar: user.avatar,
+				phone: user.phone,
+				website: user.website,
+				description: user.description,
+				location: user.location,
+				country: user.country,
+				currency: user.currency,
+				emailVerified: user.emailVerified,
+				earlyAccessMember: user.earlyAccessMember,
+				lastLogin: user.lastLogin,
+				createdAt: user.createdAt,
+				subscriptionPlan: user.subscriptionPlan || 'free',
+				stripeAccountId: user.stripeAccountId,
+				tourCount,
+				bookingCount,
+				totalRevenue
+			};
 			})
 		);
 

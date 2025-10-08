@@ -85,6 +85,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         recipients = await db.select().from(users).where(inArray(users.id, recipientFilter.userIds));
         break;
         
+      case 'test':
+        // Send test email to admin only
+        recipients = await db.select().from(users).where(eq(users.email, 'b.dymet@gmail.com'));
+        if (recipients.length === 0) {
+          // Fallback to current logged-in admin
+          recipients = await db.select().from(users).where(eq(users.id, locals.user.id));
+        }
+        break;
+        
       default:
         return json({ 
           success: false, 
