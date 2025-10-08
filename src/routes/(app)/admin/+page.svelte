@@ -167,6 +167,9 @@
 	let announcementCtaUrl = $state('');
 	let announcementFooter = $state('');
 	let announcementResults = $state<any[]>([]);
+	let showRecipientList = $state(false);
+	let recipientEmails = $state<string[]>([]);
+	let isLoadingRecipients = $state(false);
 	
 	// Filter users
 	let filteredUsers = $derived.by(() => {
@@ -466,6 +469,56 @@
 				return 0;
 		}
 	});
+	
+	// Reset recipient list when filter changes
+	$effect(() => {
+		// Watch for changes to recipient type or plan filter
+		announcementRecipientType;
+		announcementPlanFilter;
+		// Clear the preview when filters change
+		showRecipientList = false;
+		recipientEmails = [];
+	});
+	
+	// Preview recipients
+	async function previewRecipients() {
+		isLoadingRecipients = true;
+		announcementError = null;
+		
+		try {
+			// Get recipients based on current filter
+			let filteredRecipients;
+			
+			switch (announcementRecipientType) {
+				case 'all':
+					filteredRecipients = users;
+					break;
+				case 'beta':
+					filteredRecipients = users.filter((u: any) => u.earlyAccessMember);
+					break;
+				case 'plan':
+					filteredRecipients = users.filter((u: any) => u.subscriptionPlan === announcementPlanFilter);
+					break;
+				case 'verified':
+					filteredRecipients = users.filter((u: any) => u.emailVerified);
+					break;
+				case 'active':
+					const thirtyDaysAgo = new Date();
+					thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+					filteredRecipients = users.filter((u: any) => u.lastLogin && new Date(u.lastLogin) > thirtyDaysAgo);
+					break;
+				default:
+					filteredRecipients = [];
+			}
+			
+			recipientEmails = filteredRecipients.map((u: any) => u.email).sort();
+			showRecipientList = true;
+		} catch (error) {
+			announcementError = error instanceof Error ? error.message : 'Failed to load recipients';
+		} finally {
+			isLoadingRecipients = false;
+		}
+	}
 	
 	// Send announcement
 	async function sendAnnouncement(event: SubmitEvent, isTest = false) {
@@ -1749,6 +1802,8 @@
 			announcementError = null;
 			announcementSuccess = null;
 			announcementResults = [];
+			showRecipientList = false;
+			recipientEmails = [];
 		}}
 	>
 		<div class="p-6">
@@ -1794,10 +1849,41 @@
 					</div>
 				{/if}
 				
-				<div class="rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-					<p class="text-sm font-medium" style="color: var(--text-primary);">
-						Recipients: {announcementRecipientCount} user{announcementRecipientCount === 1 ? '' : 's'}
-					</p>
+				<div class="rounded-lg p-3 space-y-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+					<div class="flex items-center justify-between">
+						<p class="text-sm font-medium" style="color: var(--text-primary);">
+							Recipients: {announcementRecipientCount} user{announcementRecipientCount === 1 ? '' : 's'}
+						</p>
+						<button
+							type="button"
+							onclick={previewRecipients}
+							disabled={isLoadingRecipients || announcementRecipientCount === 0}
+							class="text-xs button-secondary button--small button--gap"
+						>
+							{#if isLoadingRecipients}
+								<Loader2 class="h-3 w-3 animate-spin" />
+								Loading...
+							{:else}
+								<Eye class="h-3 w-3" />
+								{showRecipientList ? 'Refresh List' : 'Preview Recipients'}
+							{/if}
+						</button>
+					</div>
+					
+					{#if showRecipientList && recipientEmails.length > 0}
+						<div class="border-t pt-3" style="border-color: var(--border-primary);">
+							<div class="max-h-48 overflow-y-auto space-y-1">
+								<p class="text-xs font-medium mb-2" style="color: var(--text-secondary);">
+									Email addresses ({recipientEmails.length}):
+								</p>
+								{#each recipientEmails as email}
+									<div class="text-xs px-2 py-1 rounded" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+										{email}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
 				
 				<div>
@@ -1957,6 +2043,8 @@
 								announcementError = null;
 								announcementSuccess = null;
 								announcementResults = [];
+								showRecipientList = false;
+								recipientEmails = [];
 							}}
 							disabled={isSendingAnnouncement}
 							class="button-secondary"
