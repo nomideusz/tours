@@ -56,7 +56,7 @@
 						</div>
 					</div>
 
-					<div class="text-secondary space-y-2 text-sm">
+					<div class="text-secondary space-y-2 text-center text-sm md:text-left">
 						<p>
 							I've been building for the web since 2000 and have experienced countless booking
 							systems as both developer and traveler.
@@ -87,7 +87,7 @@
 						</div>
 					</div>
 
-					<div class="text-secondary space-y-2 text-sm">
+					<div class="text-secondary space-y-2 text-center text-sm md:text-left">
 						<p>
 							I design interfaces that make complex things simple. My focus is on creating booking
 							flows and dashboards that work intuitively on any device.
@@ -118,7 +118,7 @@
 						</div>
 					</div>
 
-					<div class="text-secondary space-y-2 text-sm">
+					<div class="text-secondary space-y-2 text-center text-sm md:text-left">
 						<p>
 							I bring experience in project management, marketing, and research to ensure we build
 							features that tour guides actually need and use.
