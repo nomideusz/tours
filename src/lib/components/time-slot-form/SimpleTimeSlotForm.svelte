@@ -205,10 +205,10 @@
 		if (tour && !isInitialized && !$scheduleQuery.isLoading) {
 			untrack(() => {
 				isInitialized = true;
-				// Use capacity from most recent time slot, or default to tour's capacity
+				// Use capacity from most recent time slot, or default to tour's maxCapacity
 				const currentSlots = $scheduleQuery.data?.timeSlots || [];
 				const lastUsedCapacity = getLastUsedCapacity(currentSlots);
-				capacity = lastUsedCapacity || tour.capacity || 10;
+				capacity = lastUsedCapacity || (tour as any).maxCapacity || tour.capacity || 10;
 				
 				// Set smart date/time defaults
 				const today = new Date();
@@ -672,7 +672,7 @@
 								min={1}
 								max={200}
 								step={1}
-								defaultValue={tour?.capacity}
+								defaultValue={(tour as any)?.maxCapacity || tour?.capacity || 10}
 								onChange={(value) => {
 									capacity = value;
 									handleFieldChange('capacity');

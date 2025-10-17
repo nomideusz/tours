@@ -8,7 +8,6 @@
 		maxCapacity: number;
 		currencySymbol: string;
 		onUpdate: (flatPrice: number) => void;
-		onCapacityUpdate?: (min: number, max: number) => void;
 	}
 	
 	let {
@@ -16,18 +15,11 @@
 		minCapacity = $bindable(1),
 		maxCapacity = $bindable(20),
 		currencySymbol,
-		onUpdate,
-		onCapacityUpdate
+		onUpdate
 	}: Props = $props();
 	
 	function handlePriceChange() {
 		onUpdate(flatPrice);
-	}
-	
-	function handleCapacityChange() {
-		if (onCapacityUpdate) {
-			onCapacityUpdate(minCapacity, maxCapacity);
-		}
 	}
 </script>
 
@@ -54,6 +46,8 @@
 						<CurrencyInput
 							bind:value={flatPrice}
 							{currencySymbol}
+							min={0}
+							max={1000000}
 							step={5}
 							placeholder="0.00"
 							class="flat-price-input"
@@ -74,11 +68,13 @@
 							min="1"
 							max={maxCapacity}
 							bind:value={minCapacity}
-							oninput={() => {
+							onblur={(e) => {
+								const val = parseInt(e.currentTarget.value) || 1;
+								minCapacity = Math.max(1, Math.min(maxCapacity, val));
+								e.currentTarget.value = minCapacity.toString();
 								if (minCapacity > maxCapacity) {
 									maxCapacity = minCapacity;
 								}
-								handleCapacityChange();
 							}}
 							class="capacity-input"
 						/>
@@ -88,11 +84,13 @@
 							min={minCapacity}
 							max="200"
 							bind:value={maxCapacity}
-							oninput={() => {
+							onblur={(e) => {
+								const val = parseInt(e.currentTarget.value) || 1;
+								maxCapacity = Math.max(minCapacity, Math.min(200, val));
+								e.currentTarget.value = maxCapacity.toString();
 								if (maxCapacity < minCapacity) {
 									minCapacity = maxCapacity;
 								}
-								handleCapacityChange();
 							}}
 							class="capacity-input"
 						/>

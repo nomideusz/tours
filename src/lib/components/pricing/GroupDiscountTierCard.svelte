@@ -15,7 +15,7 @@
 	}
 	
 	let { 
-		tier = $bindable(), 
+		tier, 
 		index, 
 		currencySymbol,
 		basePrice = 0,
@@ -24,6 +24,20 @@
 		onRemove, 
 		onUpdate
 	}: Props = $props();
+	
+	// Refs to input elements for syncing
+	let minInput: HTMLInputElement | undefined = $state(undefined);
+	let maxInput: HTMLInputElement | undefined = $state(undefined);
+	
+	// Sync input values when tier changes (e.g., from cascade)
+	$effect(() => {
+		if (minInput && index === 0) {
+			minInput.value = tier.minParticipants.toString();
+		}
+		if (maxInput && !isLastTier) {
+			maxInput.value = tier.maxParticipants.toString();
+		}
+	});
 	
 	// Quick discount options
 	const discountOptions = [
@@ -59,17 +73,32 @@
 		discountOptions.find(opt => opt.value === currentDiscountPercent()) || null
 	);
 	
+	// Check if this is a surcharge (price higher than base)
+	let isSurcharge = $derived(() => {
+		if (basePrice === 0) return false;
+		return discountedPrice() > basePrice;
+	});
+	
+	// Check if range exceeds capacity
+	let exceedsCapacity = $derived(() => {
+		return tier.minParticipants > maxCapacity || tier.maxParticipants > maxCapacity;
+	});
+	
 	// Apply a discount percentage
 	function applyDiscount(percentage: number) {
-		tier.discountType = 'percentage';
-		tier.discountValue = percentage;
-		onUpdate(tier);
+		onUpdate({
+			...tier,
+			discountType: 'percentage',
+			discountValue: percentage
+		});
 	}
 	
 	// Handle custom percentage input
 	function handlePercentageInput(e: Event) {
-		const val = parseInt((e.target as HTMLInputElement).value);
-		if (!isNaN(val) && val >= 0 && val <= 100) {
+		let val = parseInt((e.target as HTMLInputElement).value);
+		if (!isNaN(val)) {
+			// Allow -100 to 99 (negative = surcharge, 99% max discount to keep min price)
+			val = Math.max(-100, Math.min(99, val));
 			applyDiscount(val);
 		}
 	}
@@ -77,29 +106,51 @@
 	// Handle price change - update to fixed price mode
 	function handlePriceChange(newPrice: number | null) {
 		if (newPrice !== null) {
-			tier.discountType = 'fixed';
-			tier.discountValue = newPrice;
-			onUpdate(tier);
+			// Allow prices higher than base (surcharge) or lower (discount)
+			// Just ensure it's not negative and not absurdly high
+			if (newPrice < 0) {
+				newPrice = 0;
+			} else if (basePrice > 0 && newPrice > basePrice * 3) {
+				// Cap at 3x base price for sanity
+				newPrice = basePrice * 3;
+			}
+			onUpdate({
+				...tier,
+				discountType: 'fixed',
+				discountValue: newPrice
+			});
 		}
 	}
 	
 	// Handlers for participant range
 	function handleMinChange(e: Event) {
-		const value = parseInt((e.target as HTMLInputElement).value);
-		if (!isNaN(value) && value >= 1) {
-			tier.minParticipants = value;
-			if (tier.maxParticipants < value) {
-				tier.maxParticipants = value;
-			}
-			onUpdate(tier);
+		let value = parseInt((e.target as HTMLInputElement).value);
+		if (!isNaN(value)) {
+			// Clamp to valid range: min 2 for first tier, max = maxCapacity
+			const minAllowed = index === 0 ? 2 : tier.minParticipants;
+			value = Math.max(minAllowed, Math.min(maxCapacity - 1, value));
+			const newMax = tier.maxParticipants < value ? value : tier.maxParticipants;
+			onUpdate({
+				...tier,
+				minParticipants: value,
+				maxParticipants: newMax
+			});
 		}
 	}
 	
 	function handleMaxChange(e: Event) {
-		const value = parseInt((e.target as HTMLInputElement).value);
-		if (!isNaN(value) && value >= tier.minParticipants && value <= maxCapacity) {
-			tier.maxParticipants = value;
-			onUpdate(tier);
+		let value = parseInt((e.target as HTMLInputElement).value);
+		if (!isNaN(value)) {
+			// Clamp to valid range: min = tier min, max = maxCapacity
+			value = Math.max(tier.minParticipants, Math.min(maxCapacity, value));
+			
+			// Force the input to show the clamped value immediately
+			(e.target as HTMLInputElement).value = value.toString();
+			
+			onUpdate({
+				...tier,
+				maxParticipants: value
+			});
 		}
 	}
 </script>
@@ -108,26 +159,51 @@
 	<!-- Header with range and remove -->
 	<div class="card-header">
 		<div class="tier-range">
-			<input
-				type="number"
-				min={index === 0 ? 2 : tier.minParticipants}
-				max={tier.maxParticipants}
-				value={tier.minParticipants}
-				onchange={handleMinChange}
-				class="range-input"
-				aria-label="Minimum participants"
-				disabled={index > 0}
-			/>
+			{#if index > 0}
+				<!-- Non-first tiers: show static min (auto-calculated) -->
+				<span class="range-value">{tier.minParticipants}</span>
+			{:else}
+				<!-- First tier: editable min -->
+				<input
+					bind:this={minInput}
+					type="number"
+					min={2}
+					max={maxCapacity - 1}
+					value={tier.minParticipants}
+					oninput={handleMinChange}
+					onchange={handleMinChange}
+					onblur={(e) => {
+						const val = parseInt(e.currentTarget.value) || 2;
+						const clamped = Math.max(2, Math.min(maxCapacity - 1, val));
+						e.currentTarget.value = clamped.toString();
+						if (clamped !== tier.minParticipants) {
+							handleMinChange({ target: e.currentTarget } as any);
+						}
+					}}
+					class="range-input"
+					aria-label="Minimum participants"
+				/>
+			{/if}
 			<span class="range-sep">-</span>
 			{#if isLastTier}
 				<span class="range-end">{maxCapacity}</span>
 			{:else}
 				<input
+					bind:this={maxInput}
 					type="number"
 					min={tier.minParticipants}
-					max={maxCapacity - 1}
+					max={maxCapacity}
 					value={tier.maxParticipants}
+					oninput={handleMaxChange}
 					onchange={handleMaxChange}
+					onblur={(e) => {
+						const val = parseInt(e.currentTarget.value) || tier.minParticipants;
+						const clamped = Math.max(tier.minParticipants, Math.min(maxCapacity, val));
+						e.currentTarget.value = clamped.toString();
+						if (clamped !== tier.maxParticipants) {
+							handleMaxChange({ target: e.currentTarget } as any);
+						}
+					}}
 					class="range-input"
 					aria-label="Maximum participants"
 				/>
@@ -159,20 +235,25 @@
 							class:active={currentDiscountOption?.value === option.value}
 							title="{option.label}"
 						>
-							-{option.value}%
+							{option.value}%
 						</button>
 					{/each}
 					<!-- Custom discount percentage -->
 					<div class="custom-discount">
 						<input
 							type="number"
-							min="0"
-							max="100"
+							min="-100"
+							max="99"
 							placeholder="%"
 							value={currentDiscountPercent()}
 							oninput={handlePercentageInput}
+							onblur={(e) => {
+								// Force update display to clamped value on blur
+								const val = Math.max(-100, Math.min(99, parseInt(e.currentTarget.value) || 0));
+								e.currentTarget.value = val.toString();
+							}}
 							class="discount-input"
-							title="Custom discount percentage"
+							title="Discount % (negative for surcharge)"
 						/>
 						<span class="percent-sign">%</span>
 					</div>
@@ -184,14 +265,30 @@
 				<CurrencyInput
 					value={discountedPrice()}
 					{currencySymbol}
+					min={0}
+					max={basePrice > 0 ? basePrice * 3 : 50000}
 					step={0.5}
 					placeholder="0.00"
 					class="price-input"
-					ariaLabel="Discounted price per person"
+					ariaLabel="Tier price per person"
 					onInput={handlePriceChange}
 				/>
 			</div>
 		</div>
+		
+		<!-- Info for surcharge -->
+		{#if isSurcharge()}
+			<div class="surcharge-info">
+				ℹ️ Surcharge: {((discountedPrice() - basePrice) / basePrice * 100).toFixed(0)}% more than base price
+			</div>
+		{/if}
+		
+		<!-- Warning if range exceeds capacity -->
+		{#if exceedsCapacity()}
+			<div class="capacity-warning">
+				⚠️ Range exceeds tour capacity (max {maxCapacity} people)
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -255,12 +352,14 @@
 		font-size: 0.875rem;
 	}
 	
+	.range-value,
 	.range-end {
 		width: 3.5rem;
 		font-size: 0.875rem;
 		font-weight: 600;
 		color: var(--text-primary);
 		text-align: center;
+		display: inline-block;
 	}
 	
 	.range-label {
@@ -351,7 +450,7 @@
 	}
 	
 	.discount-input {
-		width: 2.5rem;
+		width: 3.25rem;
 		padding: 0.125rem 0.25rem;
 		font-size: 0.75rem;
 		font-weight: 500;
@@ -395,6 +494,27 @@
 		font-weight: 600;
 		text-align: right;
 		padding: 0.375rem 0.5rem;
+	}
+	
+	.surcharge-info,
+	.capacity-warning {
+		margin-top: 0.5rem;
+		padding: 0.5rem;
+		font-size: 0.75rem;
+		border-radius: 0.375rem;
+		text-align: center;
+	}
+	
+	.surcharge-info {
+		color: var(--color-info-700);
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
+	}
+	
+	.capacity-warning {
+		color: var(--color-warning-700);
+		background: var(--color-warning-50);
+		border: 1px solid var(--color-warning-200);
 	}
 	
 	/* Mobile responsiveness */

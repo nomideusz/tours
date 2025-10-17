@@ -17,13 +17,11 @@ Simple, compact initial view with expandable advanced options
 	interface Props {
 		// Form data
 		pricingModel: PricingModel;
-		participantCategories?: { categories: ParticipantCategory[] };
-		privateTour?: { flatPrice: number };
+		participantCategories?: { categories: ParticipantCategory[]; minCapacity?: number; maxCapacity?: number; };
+		privateTour?: { flatPrice: number; minCapacity?: number; maxCapacity?: number; };
 		groupDiscounts?: { tiers: GroupDiscountTier[]; enabled: boolean };
 		optionalAddons?: { addons: OptionalAddon[] };
 		guidePaysStripeFee?: boolean;
-		minCapacity?: number;
-		maxCapacity?: number;
 		countInfantsTowardCapacity?: boolean;
 		
 		// Tour details (legacy)
@@ -37,12 +35,11 @@ Simple, compact initial view with expandable advanced options
 		// Callbacks
 		onModelChange: (model: PricingModel) => void;
 		onParticipantCategoriesUpdate: (categories: ParticipantCategory[]) => void;
-		onPrivateTourUpdate: (flatPrice: number) => void;
+		onPrivateTourUpdate?: (flatPrice: number) => void;
 		onGroupDiscountsUpdate: (tiers: GroupDiscountTier[], enabled: boolean) => void;
 		onAddonsUpdate: (addons: OptionalAddon[]) => void;
 		onPriceUpdate: (price: number) => void;
 		onStripeFeeUpdate: (guidePaysStripeFee: boolean) => void;
-		onCapacityUpdate: (minCapacity: number, maxCapacity: number) => void;
 		onValidate: (field: string) => void;
 		getFieldError: (errors: any[], field: string) => string | null;
 	}
@@ -54,8 +51,6 @@ Simple, compact initial view with expandable advanced options
 		groupDiscounts = $bindable(),
 		optionalAddons = $bindable(),
 		guidePaysStripeFee = $bindable(),
-		minCapacity = $bindable(1),
-		maxCapacity = $bindable(20),
 		countInfantsTowardCapacity = $bindable(false),
 		duration,
 		capacity,
@@ -68,7 +63,6 @@ Simple, compact initial view with expandable advanced options
 		onAddonsUpdate,
 		onPriceUpdate,
 		onStripeFeeUpdate,
-		onCapacityUpdate,
 		onValidate,
 		getFieldError
 	}: Props = $props();
@@ -87,12 +81,30 @@ Simple, compact initial view with expandable advanced options
 		}
 	});
 	
-	// Ensure privateTour is initialized
+	// Ensure participantCategories has capacity defaults
 	$effect(() => {
-		if (!privateTour) {
-			privateTour = { flatPrice: 0 };
+		if (participantCategories && participantCategories.minCapacity === undefined) {
+			participantCategories.minCapacity = 1;
+		}
+		if (participantCategories && participantCategories.maxCapacity === undefined) {
+			participantCategories.maxCapacity = 20;
 		}
 	});
+	
+	// Ensure privateTour is initialized with capacity defaults (for demo page)
+	$effect(() => {
+		if (!privateTour) {
+			privateTour = { flatPrice: 0, minCapacity: 4, maxCapacity: 12 };
+		} else {
+			if (privateTour.minCapacity === undefined) {
+				privateTour.minCapacity = 4;
+			}
+			if (privateTour.maxCapacity === undefined) {
+				privateTour.maxCapacity = 12;
+			}
+		}
+	});
+	
 	
 	// Currency
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
@@ -104,7 +116,7 @@ Simple, compact initial view with expandable advanced options
 				c.id === 'adult' || c.label.toLowerCase().includes('adult')
 			);
 			return adult?.price || 0;
-		} else if (pricingModel === 'group_tiers' && privateTour) {
+		} else if (privateTour) {
 			return privateTour.flatPrice || 0;
 		}
 		return 0;
@@ -126,46 +138,49 @@ Simple, compact initial view with expandable advanced options
 	<!-- Main Pricing Configuration -->
 	<div class="pricing-config">
 		{#if pricingModel === 'participant_categories' && participantCategories}
+			<!-- Per Person Pricing with Categories -->
 			<SimpleParticipantCategories
 				bind:categories={participantCategories.categories}
 				{currencySymbol}
-				bind:minCapacity
-				bind:maxCapacity
+				bind:minCapacity={participantCategories.minCapacity}
+				bind:maxCapacity={participantCategories.maxCapacity}
 				bind:countInfantsTowardCapacity
 				{allErrors}
 				onUpdate={(categories) => {
 					onParticipantCategoriesUpdate(categories);
 					pricingTouched = true;
 				}}
-				onCapacityUpdate={onCapacityUpdate}
 				onValidate={onValidate}
 				getFieldError={getFieldError}
 			/>
 			
-			{#if groupDiscounts && currentPrice > 0}
+			<!-- Group Discounts (only for per-person pricing) -->
+			{#if groupDiscounts && currentPrice > 0 && participantCategories}
 				<GroupDiscounts
 					bind:tiers={groupDiscounts.tiers}
 					bind:enabled={groupDiscounts.enabled}
 					{currencySymbol}
 					basePrice={currentPrice}
-					{maxCapacity}
+					maxCapacity={participantCategories.maxCapacity || 20}
 					onUpdate={(tiers, enabled) => {
 						onGroupDiscountsUpdate(tiers, enabled);
 						pricingTouched = true;
 					}}
 				/>
 			{/if}
-		{:else if pricingModel === 'group_tiers' && privateTour}
+		{:else if pricingModel === 'private_tour' && privateTour}
+			<!-- Private Tour Flat Rate -->
 			<PrivateTour
 				bind:flatPrice={privateTour.flatPrice}
-				bind:minCapacity
-				bind:maxCapacity
+				bind:minCapacity={privateTour.minCapacity!}
+				bind:maxCapacity={privateTour.maxCapacity!}
 				{currencySymbol}
 				onUpdate={(flatPrice) => {
-					onPrivateTourUpdate(flatPrice);
+					if (onPrivateTourUpdate) {
+						onPrivateTourUpdate(flatPrice);
+					}
 					pricingTouched = true;
 				}}
-				onCapacityUpdate={onCapacityUpdate}
 			/>
 		{/if}
 		
@@ -194,8 +209,8 @@ Simple, compact initial view with expandable advanced options
 		groupDiscounts={groupDiscounts}
 		addons={optionalAddons?.addons}
 		{currencySymbol}
-		{minCapacity}
-		{maxCapacity}
+		minCapacity={pricingModel === 'private_tour' ? (privateTour?.minCapacity || 4) : (participantCategories?.minCapacity || 1)}
+		maxCapacity={pricingModel === 'private_tour' ? (privateTour?.maxCapacity || 12) : (participantCategories?.maxCapacity || 20)}
 	/>
 </div>
 

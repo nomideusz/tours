@@ -839,4 +839,53 @@
 			font-size: 0.6875rem;
 		}
 	}
+
+	/* Extra small mobile (<450px) - prevent overflow */
+	@media (max-width: 450px) {
+		.booking-calendar {
+			margin: 0 -0.5rem;
+		}
+
+		.calendar-header {
+			padding: 0.5rem;
+		}
+
+		.calendar-section {
+			padding: 0.5rem;
+		}
+
+		.day-button {
+			min-height: 2rem;
+			font-size: 0.625rem;
+			padding: 0.25rem;
+		}
+
+		.day-header {
+			font-size: 0.625rem;
+			padding: 0.375rem 0;
+		}
+
+		.month-title {
+			font-size: 0.875rem;
+		}
+
+		.calendar-hint {
+			font-size: 0.75rem;
+		}
+
+		.today-button {
+			font-size: 0.6875rem;
+			padding: 0.25rem 0.5rem;
+		}
+
+		.nav-icon {
+			width: 1rem;
+			height: 1rem;
+		}
+
+		.slot-dot--multiple {
+			font-size: 0.5rem;
+			padding: 0.0625rem 0.125rem;
+		}
+	}
 </style>

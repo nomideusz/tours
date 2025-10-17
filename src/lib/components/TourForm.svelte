@@ -1,9 +1,30 @@
+<!--
+================================================================================
+TOUR FORM COMPONENT
+================================================================================
+
+Main form for creating and editing tours. Organized into clear sections:
+
+1. BASIC INFORMATION - Name, categories, location, description, duration
+2. PRICING - Pricing model, price, tiers, add-ons, capacity
+3. TOUR DETAILS - Included items & requirements (extracted component)
+4. CANCELLATION POLICY - Cancellation terms with templates
+5. TOUR STATUS - Active/Draft status (edit mode only)
+6. PUBLIC LISTING - Discovery toggle (active tours only)
+7. ACTION BUTTONS - Save, publish, cancel
+
+Key extracted components:
+- pricing/PricingModelSelector - Choose pricing model
+- pricing/ChildPricingSection - Adult/child pricing (ages 3-12)
+- pricing/GroupPricingTiers - Manage group pricing tiers
+- pricing/OptionalAddons - Manage optional add-ons
+- tour-form/TourDetailsSection - Included items & requirements
+
+================================================================================
+-->
+
 <script lang="ts">
 	import NumberInput from './NumberInput.svelte';
-
-	import DurationSlider from './DurationSlider.svelte';
-	import PriceSlider from './PriceSlider.svelte';
-	import CapacitySlider from './CapacitySlider.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
@@ -34,6 +55,13 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import Globe from 'lucide-svelte/icons/globe';
 	import { isValidLocationLength } from '$lib/utils/location.js';
+	
+	// Import new pricing components
+	import SimplifiedPricingSection from './pricing/SimplifiedPricingSection.svelte';
+	import type { PricingModel, GroupPricingTier, GroupDiscountTier, OptionalAddon, ParticipantCategory } from '$lib/types.js';
+	
+	// Import tour form section components
+	import TourDetailsSection from './tour-form/TourDetailsSection.svelte';
 
 	interface Props {
 		formData: {
@@ -42,18 +70,47 @@
 			price: number;
 			duration: number;
 			capacity: number;
+			minCapacity?: number;
+			maxCapacity?: number;
+			countInfantsTowardCapacity?: boolean;
 			status: 'active' | 'draft';
 			categories: string[];
 			location: string;
 			includedItems: string[];
 			requirements: string[];
 			cancellationPolicy: string;
+			// Pricing configuration
+			pricingModel?: PricingModel;
 			enablePricingTiers: boolean;
-					pricingTiers?: {
-			adult: number;
-			child?: number;
-		};
-		publicListing?: boolean;
+			pricingTiers?: {
+				adult: number;
+				child?: number;
+			};
+			participantCategories?: {
+				categories: ParticipantCategory[];
+				minCapacity?: number;
+				maxCapacity?: number;
+			};
+			privateTour?: {
+				flatPrice: number;
+				minCapacity?: number;
+				maxCapacity?: number;
+			};
+			groupPricingTiers?: {
+				tiers: GroupPricingTier[];
+				privateBooking?: boolean;
+				minCapacity?: number;
+				maxCapacity?: number;
+			};
+			groupDiscounts?: {
+				tiers: GroupDiscountTier[];
+				enabled: boolean;
+			};
+			optionalAddons?: {
+				addons: OptionalAddon[];
+			};
+			guidePaysStripeFee?: boolean;
+			publicListing?: boolean;
 		};
 		uploadedImages?: File[];
 		isSubmitting?: boolean;
@@ -107,6 +164,22 @@
 		hasConfirmedLocation = false,
 		paymentStatus = { isSetup: false, loading: false }
 	}: Props = $props();
+	
+	// Migrate old capacity values to nested structures if needed
+	const legacyMinCapacity = formData.minCapacity ?? 1;
+	const legacyMaxCapacity = formData.maxCapacity ?? (formData.capacity || 20);
+	
+	if (formData.countInfantsTowardCapacity === undefined) {
+		formData.countInfantsTowardCapacity = false;
+	}
+	
+	// Initialize group discounts if not set
+	if (!formData.groupDiscounts) {
+		formData.groupDiscounts = {
+			tiers: [],
+			enabled: false
+		};
+	}
 
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
@@ -131,6 +204,21 @@
 	// Get appropriate step value based on currency
 	let priceStep = $derived(minimumPrice >= 10 ? 1 : 0.5);
 	
+	// Pricing validation state
+	let pricingTouched = $state(false);
+	
+	// Get current tour price based on pricing model
+	let currentTourPrice = $derived(() => {
+		if (formData.pricingModel === 'participant_categories' && formData.participantCategories) {
+			// Get adult price as base
+			const adult = formData.participantCategories.categories.find(c => 
+				c.id === 'adult' || c.label.toLowerCase().includes('adult')
+			);
+			return adult?.price || 0;
+		}
+		return formData.price || 0;
+	});
+	
 	// Check if user can activate tours based on onboarding completion
 	let activationCheck = $derived(canActivateTours(profile, hasConfirmedLocation, paymentStatus, formData.price));
 	let canActivate = $derived(activationCheck.canActivate);
@@ -138,12 +226,123 @@
 	let onboardingMessage = $derived(getOnboardingMessage(missingSteps, formData.price === 0));
 	let nextStep = $derived(getNextOnboardingStep(missingSteps));
 
+	
+	// Serialize for form submission - use state + effect instead of $derived
+	let participantCategoriesJson = $state('{"categories":[]}');
+	let groupDiscountsJson = $state('{"tiers":[],"enabled":false}');
+	
+	// Update serialized values when data changes
+	$effect(() => {
+		const data = formData.participantCategories || { categories: [] };
+		participantCategoriesJson = JSON.stringify(data);
+	});
+	
+	$effect(() => {
+		const data = formData.groupDiscounts || { tiers: [], enabled: false };
+		groupDiscountsJson = JSON.stringify(data);
+	});
+	
+	// Initialize pricing model and data
+	$effect(() => {
+		// Set default pricing model if not set
+		if (!formData.pricingModel) {
+			formData.pricingModel = 'participant_categories';
+		}
+		
+		// Initialize guidePaysStripeFee if not set
+		if (formData.guidePaysStripeFee === undefined) {
+			formData.guidePaysStripeFee = false; // Default: customer pays fee
+		}
+		
+		// Save initial per-person price if it's participant categories model
+		if (formData.pricingModel === 'participant_categories' && 
+				formData.price > 0 && savedPerPersonPrice === 25) {
+			savedPerPersonPrice = formData.price;
+		}
+	});
+	
+	// Initialize pricing data based on model
+	$effect(() => {
+		// Initialize participant categories
+		if (formData.pricingModel === 'participant_categories' && !formData.participantCategories) {
+			// Check if we should migrate from old adult/child pricing tiers
+			if (formData.enablePricingTiers && formData.pricingTiers) {
+				const migratedCategories = [
+					{ 
+						id: 'adult', 
+						label: 'Adult (18-64)', 
+						price: formData.pricingTiers.adult || 25, 
+						minAge: 18,
+						maxAge: 64,
+						sortOrder: 0, 
+						countsTowardCapacity: true 
+					}
+				];
+				
+				// Only add child if it had a price set
+				if (formData.pricingTiers.child !== undefined && formData.pricingTiers.child !== null) {
+					migratedCategories.push({ 
+						id: 'child', 
+						label: 'Child (3-12)', 
+						price: formData.pricingTiers.child,
+						minAge: 3,
+						maxAge: 12,
+						sortOrder: 1, 
+						countsTowardCapacity: true 
+					});
+				}
+				
+				formData.participantCategories = {
+					categories: migratedCategories,
+					minCapacity: legacyMinCapacity,
+					maxCapacity: legacyMaxCapacity
+				};
+			} else {
+				// Create default adult category
+				const defaultPrice = savedPerPersonPrice || 25;
+				formData.participantCategories = {
+					categories: [
+						{
+							id: 'adult',
+							label: 'Adult (18-64)',
+							price: defaultPrice,
+							minAge: 18,
+							maxAge: 64,
+							sortOrder: 0,
+							countsTowardCapacity: true
+						}
+					],
+					minCapacity: legacyMinCapacity,
+					maxCapacity: legacyMaxCapacity
+				};
+			}
+		} else if (formData.pricingModel === 'participant_categories' && formData.participantCategories) {
+			// Migrate capacity to nested structure if not present
+			if (formData.participantCategories.minCapacity === undefined) {
+				formData.participantCategories.minCapacity = legacyMinCapacity;
+			}
+			if (formData.participantCategories.maxCapacity === undefined) {
+				formData.participantCategories.maxCapacity = legacyMaxCapacity;
+			}
+		}
+		
+		// Initialize private tour
+		if (formData.pricingModel === 'private_tour' && !formData.privateTour) {
+			formData.privateTour = {
+				flatPrice: savedPerPersonPrice * 6 || 300,
+				minCapacity: 4,
+				maxCapacity: 12
+			};
+		}
+		
+		// Initialize optional addons array if not present
+		if (!formData.optionalAddons) {
+			formData.optionalAddons = { addons: [] };
+		}
+	});
+	
 	// Auto-expand sections if they have content or errors
 	$effect(() => {
-		// Auto-expand child pricing if it's already enabled
-		if (formData.enablePricingTiers || showChildPrice) {
-			showAdvancedPricing = true;
-		}
 		
 		// Auto-expand tour details if there are items/requirements
 		if (formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())) {
@@ -173,21 +372,16 @@
 			touchedFields.add('price');
 			touchedFields.add('duration');
 			touchedFields.add('capacity');
+			touchedFields.add('groupPricingTiers');
 			
-			// Validate all fields using the same field-specific approach
+			// Validate all fields - use ALL validation errors, not just basic fields
 			const validation = validateTourForm(formData);
-			const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 			
 			// Clear all validation errors first
 			validationErrors = [];
 			
-			// Add errors for each field that has issues
-			requiredFields.forEach(fieldName => {
-				const fieldError = validation.errors.find(error => error.field === fieldName);
-				if (fieldError) {
-					validationErrors = [...validationErrors, fieldError];
-				}
-			});
+			// Add ALL validation errors (including pricing tiers, add-ons, etc.)
+			validationErrors = validation.errors;
 
 			// Scroll to first error on mobile if validation failed
 			if (!validation.isValid) {
@@ -207,21 +401,16 @@
 		touchedFields.add('price');
 		touchedFields.add('duration');
 		touchedFields.add('capacity');
+		touchedFields.add('groupPricingTiers');
 		
-		// Use the same field-specific validation approach
+		// Validate all fields - use ALL validation errors
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
 		
-		// Add errors for each field that has issues
-		requiredFields.forEach(fieldName => {
-			const fieldError = validation.errors.find(error => error.field === fieldName);
-			if (fieldError) {
-				validationErrors = [...validationErrors, fieldError];
-			}
-		});
+		// Add ALL validation errors (including pricing tiers, add-ons, etc.)
+		validationErrors = validation.errors;
 	}
 
 	// Debounced validation timeout
@@ -293,21 +482,16 @@
 		touchedFields.add('price');
 		touchedFields.add('duration');
 		touchedFields.add('capacity');
+		touchedFields.add('groupPricingTiers');
 		
-		// Use the same field-specific validation approach
+		// Validate all fields - use ALL validation errors
 		const validation = validateTourForm(formData);
-		const requiredFields = ['name', 'description', 'price', 'duration', 'capacity'];
 		
 		// Clear all validation errors first
 		validationErrors = [];
 		
-		// Add errors for each field that has issues
-		requiredFields.forEach(fieldName => {
-			const fieldError = validation.errors.find(error => error.field === fieldName);
-			if (fieldError) {
-				validationErrors = [...validationErrors, fieldError];
-			}
-		});
+		// Add ALL validation errors (including pricing tiers, add-ons, etc.)
+		validationErrors = validation.errors;
 
 		// Scroll to first error on mobile if validation failed
 		if (!validation.isValid) {
@@ -429,65 +613,9 @@
 		return isValid;
 	}
 
-	// Optional child pricing
-	let showChildPrice = $state(false);
-	let childPrice = $state(0);
+	// Store original per-person price for restoration when switching models
+	let savedPerPersonPrice = $state(formData.price || 25);
 
-	// Initialize child price visibility based on existing data
-	$effect(() => {
-		if (formData.enablePricingTiers && formData.pricingTiers?.child !== undefined) {
-			showChildPrice = true;
-			childPrice = formData.pricingTiers.child;
-		}
-	});
-
-	// Sync child pricing state with formData
-	$effect(() => {
-		// Update enablePricingTiers based on showChildPrice
-		formData.enablePricingTiers = showChildPrice;
-		
-		// Initialize pricingTiers if needed
-		if (showChildPrice) {
-			if (!formData.pricingTiers) {
-				formData.pricingTiers = {
-					adult: formData.price || 0,
-					child: childPrice
-				};
-			} else {
-				formData.pricingTiers.adult = formData.price || 0;
-				formData.pricingTiers.child = childPrice;
-			}
-		} else {
-			// Clear pricing tiers when disabled
-			formData.pricingTiers = undefined;
-		}
-	});
-
-	// Auto-adjust child price when adult price changes
-	$effect(() => {
-		if (showChildPrice) {
-			if (formData.price === 0) {
-				// If adult price is FREE, child price must also be FREE
-				childPrice = 0;
-			} else if (childPrice > formData.price) {
-				// Automatically reduce child price to match adult price if it exceeds
-				childPrice = formData.price;
-			}
-		}
-	});
-
-	// Set reasonable default for child price when enabling
-	function enableChildPricing() {
-		showChildPrice = true;
-		// If adult price is FREE, child price must also be FREE
-		if (formData.price === 0) {
-			childPrice = 0;
-		} else {
-			// Set default to 70% of adult price (reasonable discount)
-			const reasonableDefault = Math.round(formData.price * 0.7 * 2) / 2; // Round to nearest 0.5
-			childPrice = Math.max(0, reasonableDefault);
-		}
-	}
 
 
 </script>
@@ -529,9 +657,14 @@
 		</div>
 	{/if}
 
-	<!-- Main form content -->
+	<!-- ================================================================ -->
+	<!-- MAIN FORM CONTENT                                                -->
+	<!-- ================================================================ -->
 	<div class="lg:col-span-2 space-y-8">
-		<!-- Basic Information -->
+		
+		<!-- ============================================================ -->
+		<!-- BASIC INFORMATION SECTION (Name, Categories, Location, Description, Duration) -->
+		<!-- ============================================================ -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
@@ -547,19 +680,26 @@
 						<label for="name" class="form-label">
 							Tour Name *
 						</label>
-						<input
-							type="text"
-							id="name"
-							name="name"
-							bind:value={formData.name}
-							placeholder="e.g., Historic Walking Tour of Prague"
-							class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
-							oninput={() => validateFieldRealtime('name')}
-							onblur={() => validateField('name')}
-						/>
-						{#if getFieldError(allErrors, 'name')}
-							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'name')}</p>
-						{/if}
+					<input
+						type="text"
+						id="name"
+						name="name"
+						bind:value={formData.name}
+						placeholder="e.g., Historic Walking Tour of Prague"
+						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+						oninput={() => validateFieldRealtime('name')}
+						onblur={() => validateField('name')}
+					/>
+					{#if getFieldError(allErrors, 'name')}
+						<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<p class="text-sm" style="color: var(--color-error-900);">
+									{getFieldError(allErrors, 'name')}
+								</p>
+							</div>
+						</div>
+					{/if}
 					</div>
 
 					<div>
@@ -737,543 +877,219 @@
 						<label for="description" class="form-label">
 							Description *
 						</label>
-						<textarea
-							id="description"
-							name="description"
-							bind:value={formData.description}
-							rows="4"
-							placeholder="What will guests experience on this tour?"
-							class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
-							oninput={() => validateFieldRealtime('description')}
-							onblur={() => validateField('description')}
-						></textarea>
-						{#if getFieldError(allErrors, 'description')}
-							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'description')}</p>
+					<textarea
+						id="description"
+						name="description"
+						bind:value={formData.description}
+						rows="4"
+						placeholder="What will guests experience on this tour?"
+						class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+						oninput={() => validateFieldRealtime('description')}
+						onblur={() => validateField('description')}
+					></textarea>
+					{#if getFieldError(allErrors, 'description')}
+						<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<p class="text-sm" style="color: var(--color-error-900);">
+									{getFieldError(allErrors, 'description')}
+								</p>
+							</div>
+						</div>
+					{/if}
+					</div>
+					
+					<!-- Duration -->
+					<div class="md:col-span-1">
+						<label for="duration" class="form-label">
+							Duration *
+						</label>
+						<div class="flex items-center gap-2">
+							<input
+								type="number"
+								id="duration"
+								name="duration"
+								min="15"
+								max="2880"
+								step="5"
+								bind:value={formData.duration}
+								placeholder="120"
+								class="form-input {hasFieldError(allErrors, 'duration') ? 'error' : ''}"
+								style="text-align: right; font-weight: 500;"
+								oninput={() => validateFieldRealtime('duration')}
+								onblur={() => validateField('duration')}
+							/>
+							<span style="color: var(--text-secondary); font-size: 0.875rem;">minutes</span>
+						</div>
+						{#if getFieldError(allErrors, 'duration')}
+							<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+								<div class="flex items-start gap-2">
+									<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+									<p class="text-sm" style="color: var(--color-error-900);">
+										{getFieldError(allErrors, 'duration')}
+									</p>
+								</div>
+							</div>
 						{/if}
 					</div>
 				</div>
 			</div>
 		</div>
 
-
-
-		<!-- Pricing & Logistics -->
+		<!-- ============================================================ -->
+		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
+		<!-- ============================================================ -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Pricing & Logistics</h2>
-			</div>
 			<div class="p-4">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<div>
-						<PriceSlider
-							bind:value={formData.price}
-							label="Price"
-							min={0}
-							max={500}
-							inputMax={5000}
-							step={priceStep}
-							required={true}
-							error={hasFieldError(allErrors, 'price')}
-							onChange={() => validateField('price')}
-							currency={$userCurrency}
-							currencySymbol={currencySymbol}
-							defaultValue={25}
-							showMarkers={false}
-						/>
-						{#if getFieldError(allErrors, 'price')}
-							<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'price')}</p>
-						{/if}
-						{#if formData.price === 0}
-							<p class="text-xs mt-1 pt-2" style="color: var(--color-success-600);">
-								✨ This will be a free tour - no payment required
-							</p>
-						{:else if minimumPrice > 0.5}
-							<p class="text-xs mt-1 pt-2" style="color: var(--text-secondary);">
-								Minimum price for paid tours in {$userCurrency} is {currencySymbol}{minimumPrice % 1 === 0 ? minimumPrice.toFixed(0) : minimumPrice.toFixed(2)}
-							</p>
-						{/if}
-						<!-- Hidden input for form submission -->
-						<input type="hidden" name="price" bind:value={formData.price} />
-						
-						<!-- Mobile-only Child Price Option -->
-						<div class="md:hidden mt-4">
-							{#if !showChildPrice}
-								<button
-									type="button"
-									onclick={() => {
-										showChildPrice = true;
-										enableChildPricing();
-									}}
-									class="flex items-center justify-center w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80 gap-2"
-									style="
-										background: var(--bg-secondary);
-										border-color: var(--border-primary);
-										color: var(--text-primary);
-									"
-								>
-									<Plus class="w-4 h-4" />
-									<span class="font-medium">Add Child Price</span>
-								</button>
-							{:else}
-								<div class="space-y-3">
-									<div class="flex items-center justify-between">
-										<span class="text-sm font-medium" style="color: var(--text-primary);">Child Price</span>
-										<button
-											type="button"
-											onclick={() => { 
-												showChildPrice = false; 
-												childPrice = 0;
-												formData.enablePricingTiers = false;
-												formData.pricingTiers = undefined;
-											}}
-											class="button-secondary button--small button--icon"
-											aria-label="Remove child pricing"
-										>
-											<X class="w-3 h-3" />
-										</button>
-									</div>
-									<PriceSlider
-										bind:value={childPrice}
-										min={0}
-										max={formData.price || 100}
-										step={priceStep}
-										error={hasFieldError(allErrors, 'pricingTiers.child')}
-										onChange={() => validateField('pricingTiers.child')}
-										currency={$userCurrency}
-										currencySymbol={currencySymbol}
-										defaultValue={0}
-										showMarkers={false}
-										disabled={formData.price === 0}
-									/>
-									{#if getFieldError(allErrors, 'pricingTiers.child')}
-										<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
-									{/if}
-									<div class="p-2 rounded-lg text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
-										{#if formData.price === 0}
-											<div class="flex items-center gap-1">
-												<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-												<span class="font-medium" style="color: var(--color-success-700);">Free tour - children automatically free</span>
-											</div>
-										{:else if childPrice === 0}
-											<div class="flex items-center gap-1">
-												<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-												<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
-											</div>
-										{:else if formData.price > 0}
-											{@const discount = Math.floor(((formData.price - childPrice) / formData.price) * 100)}
-											{#if discount > 0}
-												<div class="flex items-center gap-1">
-													<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-													<span class="font-medium">{discount}% discount for children</span>
-												</div>
-											{:else}
-												<span class="font-medium">Same price for all ages</span>
-											{/if}
-										{:else}
-											<span>Set adult price first</span>
-										{/if}
-									</div>
-									<!-- Hidden input for form submission -->
-									<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
-								</div>
-							{/if}
-						</div>
-					</div>
-
-				<div>
-					<DurationSlider
-						bind:value={formData.duration}
-						label="Duration"
-						min={15}
-						max={2880}
-						step={5}
-						required={true}
-						error={hasFieldError(allErrors, 'duration')}
-						onChange={() => validateField('duration')}
-						defaultValue={120}
-						showMarkers={false}
-					/>
-					{#if getFieldError(allErrors, 'duration')}
-						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'duration')}</p>
-					{/if}
-					<!-- Hidden input for form submission -->
-					<input type="hidden" name="duration" bind:value={formData.duration} />
-				</div>
-
-
-	</div>
-
-				<!-- Capacity field row -->
-				<div class="mt-6">
-					<CapacitySlider
-						bind:value={formData.capacity}
-						label="Default capacity"
-						min={1}
-						max={200}
-						step={1}
-						required={true}
-						error={hasFieldError(allErrors, 'capacity')}
-						onChange={() => validateField('capacity')}
-						defaultValue={10}
-						showMarkers={false}
-					/>
-					{#if getFieldError(allErrors, 'capacity')}
-						<p class="form-error mobile-error-enhanced">{getFieldError(allErrors, 'capacity')}</p>
-					{/if}
-					<p class="text-xs mt-1 pt-2" style="color: var(--text-secondary);">
-						Maximum number of people per time slot. Can be adjusted for individual slots.
-					</p>
-					<!-- Hidden input for form submission -->
-					<input type="hidden" name="capacity" bind:value={formData.capacity} />
-				</div>
-
-				<!-- Advanced Pricing Section (Collapsible) - Desktop Only -->
-				<div class="mt-6 hidden md:block">
-					{#if !showChildPrice}
-						<button
-							type="button"
-							onclick={() => {
-								showChildPrice = true;
-								showAdvancedPricing = true;
-								enableChildPricing();
-							}}
-							class="flex items-center justify-center w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80 gap-2"
-							style="
-								background: var(--bg-secondary);
-								border-color: var(--border-primary);
-								color: var(--text-primary);
-							"
-						>
-							<Plus class="w-4 h-4" />
-							<span class="font-medium">Child Price</span>
-						</button>
-					{:else}
-						<button
-							type="button"
-							onclick={() => showAdvancedPricing = !showAdvancedPricing}
-							class="flex items-center justify-between w-full p-3 rounded-lg border transition-colors hover:bg-opacity-80"
-							style="
-								background: var(--bg-secondary);
-								border-color: var(--border-primary);
-								color: var(--text-primary);
-							"
-						>
-							<div class="flex items-center gap-2">
-								{#if showAdvancedPricing}
-									<ChevronDown class="w-4 h-4" />
-								{:else}
-									<ChevronRight class="w-4 h-4" />
-								{/if}
-								<span class="font-medium">Child Price</span>
-								<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-success-100); color: var(--color-success-700);">
-									Active
-								</span>
-							</div>
-						</button>
-					{/if}
-
-					{#if showAdvancedPricing && showChildPrice}
-						<div class="mt-4 space-y-4">
-							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-								<div class="flex items-center justify-between mb-3">
-									<h4 class="text-sm font-medium" style="color: var(--text-primary);">Ages 3-12</h4>
-									<button
-									type="button"
-									onclick={() => { 
-										showChildPrice = false; 
-										childPrice = 0;
-										formData.enablePricingTiers = false;
-										formData.pricingTiers = undefined;
-										showAdvancedPricing = false;
-									}}
-									class="button-secondary button--small button--icon"
-									aria-label="Remove child pricing"
-								>
-									<X class="w-3 h-3" />
-								</button>
-								</div>
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div>
-										<PriceSlider
-											bind:value={childPrice}
-											label=""
-											min={0}
-											max={formData.price || 100}
-											step={priceStep}
-											error={hasFieldError(allErrors, 'pricingTiers.child')}
-											onChange={() => validateField('pricingTiers.child')}
-											currency={$userCurrency}
-											currencySymbol={currencySymbol}
-											defaultValue={0}
-											showMarkers={false}
-											disabled={formData.price === 0}
-										/>
-										{#if getFieldError(allErrors, 'pricingTiers.child')}
-											<p class="form-error">{getFieldError(allErrors, 'pricingTiers.child')}</p>
-										{/if}
-										<!-- Hidden input for form submission -->
-										<input type="hidden" name="pricingTiers.child" bind:value={childPrice} />
-									</div>
-									<div class="flex items-end">
-										<div class="p-3 rounded-lg w-full" style="background: var(--bg-primary);">
-											<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Pricing Comparison</p>
-											<div class="text-sm" style="color: var(--text-primary);">
-												{#if formData.price === 0}
-													<div class="flex items-center gap-1">
-														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-														<span class="font-medium" style="color: var(--color-success-700);">Free tour - children automatically free</span>
-													</div>
-												{:else if childPrice === 0}
-													<div class="flex items-center gap-1">
-														<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-														<span class="font-medium" style="color: var(--color-success-700);">Children go free</span>
-													</div>
-												{:else if formData.price > 0}
-													{@const discount = Math.floor(((formData.price - childPrice) / formData.price) * 100)}
-													{#if discount > 0}
-														<div class="flex items-center gap-1">
-															<CheckCircle class="w-3 h-3" style="color: var(--color-success-600);" />
-															<span class="font-medium">{discount}% discount</span>
-														</div>
-													{:else}
-														<span class="font-medium">Same price for all</span>
-													{/if}
-												{:else}
-													<span style="color: var(--text-tertiary);">Set adult price first</span>
-												{/if}
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					{/if}
-				</div>
-
-				<!-- Hidden inputs for pricing tiers -->
-				<input type="hidden" name="enablePricingTiers" value={showChildPrice ? 'true' : 'false'} />
-				{#if showChildPrice}
-					<input type="hidden" name="pricingTiers.adult" value={formData.price} />
-				{/if}
-
-		</div>
-	</div>
-
-				<!-- Tour Details (Collapsible) -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<button
-				type="button"
-				onclick={() => showTourDetails = !showTourDetails}
-				class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showTourDetails ? 'border-b' : ''}"
-				style="{showTourDetails ? 'border-color: var(--border-primary);' : ''}"
-			>
-				<div class="flex items-center gap-2">
-					{#if showTourDetails}
-						<ChevronDown class="w-4 h-4" />
-					{:else}
-						<ChevronRight class="w-4 h-4" />
-					{/if}
-					<h2 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Tour Details</h2>
-					{#if formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())}
-						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-							{formData.includedItems.filter(item => item.trim()).length + formData.requirements.filter(req => req.trim()).length} items
-						</span>
-					{/if}
-				</div>
-				<span class="text-xs" style="color: var(--text-secondary);">
-					{showTourDetails ? 'Hide' : 'Show'} included items & requirements
-				</span>
-			</button>
-			
-			{#if showTourDetails}
-				<div class="p-4">
-					<!-- What's Included Section -->
-					<div class="mb-8">
-						<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">What's Included</h3>
-						
-						<!-- Suggested Items -->
-						<div class="mb-4">
-							<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add popular items:</p>
-							<div class="flex flex-wrap gap-2">
-								{#each ['Professional tour guide', 'Historical insights', 'Photo opportunities', 'Small group experience', 'Route map', 'Local recommendations'] as suggestion}
-									<button
-										type="button"
-										onclick={() => {
-											if (!formData.includedItems.includes(suggestion)) {
-												formData.includedItems = [...formData.includedItems.filter(item => item.trim()), suggestion];
-											}
-										}}
-										class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
-										style="border-color: var(--border-primary); color: var(--text-secondary);"
-										disabled={formData.includedItems.includes(suggestion)}
-									>
-										{suggestion}
-									</button>
-								{/each}
-							</div>
-						</div>
-
-						<!-- Selected Items as Tags -->
-						{#if formData.includedItems.filter(item => item.trim()).length > 0}
-							<div class="mb-4">
-								<p class="text-sm mb-2" style="color: var(--text-secondary);">Included items:</p>
-								<div class="flex flex-wrap gap-2">
-									{#each formData.includedItems.filter(item => item.trim()) as item, index (item)}
-										<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
-											{item}
-											<button
-												type="button"
-												onclick={() => {
-													formData.includedItems = formData.includedItems.filter(i => i !== item);
-												}}
-												class="ml-1 transition-colors"
-												style="color: var(--text-tertiary);"
-												aria-label="Remove {item}"
-											>
-												<X class="w-3 h-3" />
-											</button>
-										</span>
-									{/each}
-								</div>
-							</div>
-						{/if}
-
-						<!-- Custom Item Input -->
-						<div class="flex gap-2">
-							<input
-								type="text"
-								placeholder="Add custom item..."
-								class="form-input flex-1"
-								onkeydown={(e) => {
-									if (e.key === 'Enter') {
-										e.preventDefault();
-										const input = e.target as HTMLInputElement;
-										const value = input.value.trim();
-										if (value && !formData.includedItems.includes(value)) {
-											formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
-											input.value = '';
-										}
-									}
-								}}
-							/>
-							<button
-								type="button"
-								onclick={(e) => {
-									const button = e.target as HTMLButtonElement;
-									const input = button.parentElement?.querySelector('input') as HTMLInputElement;
-									const value = input?.value.trim();
-									if (value && !formData.includedItems.includes(value)) {
-										formData.includedItems = [...formData.includedItems.filter(item => item.trim()), value];
-										input.value = '';
-									}
-								}}
-								class="button-secondary button--small"
-							>
-								Add
-							</button>
-						</div>
-
-						<!-- Hidden inputs for form submission -->
-						{#each formData.includedItems.filter(item => item.trim()) as item}
-							<input type="hidden" name="includedItems" value={item} />
-						{/each}
-					</div>
-
-					<!-- Requirements Section -->
-					<div>
-						<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">Requirements</h3>
-						
-						<!-- Suggested Requirements -->
-						<div class="mb-4">
-							<p class="text-sm mb-2" style="color: var(--text-secondary);">Quick add common requirements:</p>
-							<div class="flex flex-wrap gap-2">
-								{#each ['Comfortable walking shoes', 'Basic fitness level', 'Weather-appropriate clothing', 'Minimum age 12+', 'No mobility issues', 'English speaking'] as suggestion}
-									<button
-										type="button"
-										onclick={() => {
-											if (!formData.requirements.includes(suggestion)) {
-												formData.requirements = [...formData.requirements.filter(req => req.trim()), suggestion];
-											}
-										}}
-										class="text-xs px-3 py-1.5 rounded-full border transition-colors hover:bg-gray-50"
-										style="border-color: var(--border-primary); color: var(--text-secondary);"
-										disabled={formData.requirements.includes(suggestion)}
-									>
-										{suggestion}
-									</button>
-								{/each}
-							</div>
-						</div>
-
-						<!-- Selected Requirements as Tags -->
-						{#if formData.requirements.filter(req => req.trim()).length > 0}
-							<div class="mb-4">
-								<p class="text-sm mb-2" style="color: var(--text-secondary);">Requirements:</p>
-								<div class="flex flex-wrap gap-2">
-									{#each formData.requirements.filter(req => req.trim()) as requirement, index (requirement)}
-										<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border" style="background: var(--bg-secondary); border-color: var(--border-primary); color: var(--text-primary);">
-											{requirement}
-											<button
-												type="button"
-												onclick={() => {
-													formData.requirements = formData.requirements.filter(r => r !== requirement);
-												}}
-												class="ml-1 transition-colors"
-												style="color: var(--text-tertiary);"
-												aria-label="Remove {requirement}"
-											>
-												<X class="w-3 h-3" />
-											</button>
-										</span>
-									{/each}
-								</div>
-							</div>
-						{/if}
-
-						<!-- Custom Requirement Input -->
-						<div class="flex gap-2">
-							<input
-								type="text"
-								placeholder="Add custom requirement..."
-								class="form-input flex-1"
-								onkeydown={(e) => {
-									if (e.key === 'Enter') {
-										e.preventDefault();
-										const input = e.target as HTMLInputElement;
-										const value = input.value.trim();
-										if (value && !formData.requirements.includes(value)) {
-											formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
-											input.value = '';
-										}
-									}
-								}}
-							/>
-							<button
-								type="button"
-								onclick={(e) => {
-									const button = e.target as HTMLButtonElement;
-									const input = button.parentElement?.querySelector('input') as HTMLInputElement;
-									const value = input?.value.trim();
-									if (value && !formData.requirements.includes(value)) {
-										formData.requirements = [...formData.requirements.filter(req => req.trim()), value];
-										input.value = '';
-									}
-								}}
-								class="button-secondary button--small"
-							>
-								Add
-							</button>
-						</div>
-
-						<!-- Hidden inputs for form submission -->
-						{#each formData.requirements.filter(req => req.trim()) as requirement}
-							<input type="hidden" name="requirements" value={requirement} />
-						{/each}
-					</div>
-				</div>
-			{/if}
+			<SimplifiedPricingSection
+				pricingModel={formData.pricingModel || 'participant_categories'}
+				bind:participantCategories={formData.participantCategories}
+				bind:privateTour={formData.privateTour}
+				bind:groupDiscounts={formData.groupDiscounts}
+				bind:optionalAddons={formData.optionalAddons}
+				bind:guidePaysStripeFee={formData.guidePaysStripeFee}
+				bind:countInfantsTowardCapacity={formData.countInfantsTowardCapacity}
+				duration={formData.duration}
+				capacity={formData.capacity}
+				bind:pricingTouched
+				{allErrors}
+			onModelChange={(model) => {
+				console.log('🔄 Pricing model changing from', formData.pricingModel, 'to', model);
+				formData.pricingModel = model;
+				
+				// Clear pricing data and initialize based on selected model
+				if (model === 'participant_categories') {
+					// Per-person pricing - initialize participant categories
+					if (!formData.participantCategories || formData.participantCategories.categories.length === 0) {
+						const defaultPrice = savedPerPersonPrice || 25;
+						formData.participantCategories = {
+							categories: [
+								{
+									id: 'adult',
+									label: 'Adult (18-64)',
+									price: defaultPrice,
+									minAge: 18,
+									maxAge: 64,
+									sortOrder: 0,
+									countsTowardCapacity: true
+								}
+							],
+							minCapacity: 1,
+							maxCapacity: 20
+						};
+					}
+					// Clear private tour data
+					formData.privateTour = undefined;
+					
+				} else if (model === 'private_tour') {
+					// Private tour - initialize flat rate
+					if (!formData.privateTour) {
+						formData.privateTour = {
+							flatPrice: savedPerPersonPrice * 6 || 300,
+							minCapacity: 4,
+							maxCapacity: 12
+						};
+					}
+					// Clear participant categories data
+					formData.participantCategories = undefined;
+					formData.groupDiscounts = undefined;
+				}
+				
+				// Clear legacy fields for both models
+				formData.groupPricingTiers = undefined;
+				formData.enablePricingTiers = false;
+				formData.pricingTiers = undefined;
+				formData.price = 0;
+				
+				// Initialize add-ons for all models
+				if (!formData.optionalAddons) {
+					formData.optionalAddons = { addons: [] };
+				}
+			}}
+			onParticipantCategoriesUpdate={(categories) => {
+				if (!formData.participantCategories) {
+					formData.participantCategories = { categories: [] };
+				}
+				formData.participantCategories.categories = categories;
+				validateField('participantCategories');
+			}}
+			onPrivateTourUpdate={(flatPrice) => {
+				if (!formData.privateTour) {
+					formData.privateTour = { flatPrice: 0 };
+				}
+				formData.privateTour.flatPrice = flatPrice;
+			}}
+			onGroupDiscountsUpdate={(tiers, enabled) => {
+						if (!formData.groupDiscounts) {
+							formData.groupDiscounts = { tiers: [], enabled: false };
+						}
+						formData.groupDiscounts.tiers = tiers;
+						formData.groupDiscounts.enabled = enabled;
+					}}
+					onAddonsUpdate={(addons) => {
+						if (!formData.optionalAddons) {
+							formData.optionalAddons = { addons: [] };
+						}
+						formData.optionalAddons.addons = addons;
+					}}
+					onStripeFeeUpdate={(guidePays) => {
+						formData.guidePaysStripeFee = guidePays;
+					}}
+					onPriceUpdate={(price) => {
+						// Update price based on current pricing model
+						if (formData.pricingModel === 'participant_categories' && formData.participantCategories) {
+							// Update adult price
+							const adultIndex = formData.participantCategories.categories.findIndex(c => 
+								c.id === 'adult' || c.label.toLowerCase().includes('adult')
+							);
+							if (adultIndex >= 0) {
+								formData.participantCategories.categories[adultIndex].price = price;
+							}
+						} else {
+							formData.price = price;
+						}
+					}}
+					onValidate={validateField}
+					{getFieldError}
+				/>
+				
+				<!-- Hidden inputs for form submission -->
+				<input type="hidden" name="pricingModel" value={formData.pricingModel || 'participant_categories'} />
+				<input type="hidden" name="price" value="0" />
+				<input type="hidden" name="participantCategories" value={participantCategoriesJson} />
+				<input type="hidden" name="privateTour" value={formData.privateTour ? JSON.stringify(formData.privateTour) : ''} />
+				<input type="hidden" name="groupDiscounts" value={groupDiscountsJson} />
+				<input type="hidden" name="optionalAddons" value={JSON.stringify(formData.optionalAddons || { addons: [] })} />
+				<input type="hidden" name="guidePaysStripeFee" value={formData.guidePaysStripeFee ? 'true' : 'false'} />
+				<input type="hidden" name="enablePricingTiers" value="false" />
+				<input type="hidden" name="duration" bind:value={formData.duration} />
+				<input type="hidden" name="capacity" bind:value={formData.capacity} />
+			<input type="hidden" name="minCapacity" value={
+				(formData.participantCategories?.minCapacity) || ((formData.privateTour as any)?.minCapacity) || 1
+			} />
+			<input type="hidden" name="maxCapacity" value={
+				(formData.participantCategories?.maxCapacity) || ((formData.privateTour as any)?.maxCapacity) || 20
+			} />
+				<input type="hidden" name="countInfantsTowardCapacity" value={formData.countInfantsTowardCapacity ? 'true' : 'false'} />
+			</div>
 		</div>
 
+		<!-- ============================================================ -->
+		<!-- TOUR DETAILS SECTION (Included Items & Requirements)        -->
+		<!-- ============================================================ -->
+		<TourDetailsSection
+			bind:includedItems={formData.includedItems}
+			bind:requirements={formData.requirements}
+			bind:isExpanded={showTourDetails}
+			onUpdate={(data) => {
+				formData.includedItems = data.includedItems;
+				formData.requirements = data.requirements;
+			}}
+		/>
+
+		<!-- ============================================================ -->
+		<!-- CANCELLATION POLICY SECTION                                 -->
+		<!-- ============================================================ -->
 		<!-- Cancellation Policy (Collapsible) -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<button
@@ -1566,7 +1382,9 @@
 			</div>
 		{/if}
 
-		<!-- Tour Status - Informational Only -->
+		<!-- ============================================================ -->
+		<!-- TOUR STATUS SECTION (Edit Mode Only)                        -->
+		<!-- ============================================================ -->
 		{#if isEdit && !hideStatusField}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4 border-b" style="border-color: var(--border-primary);">
@@ -1600,7 +1418,9 @@
 			</div>
 		{/if}
 
-		<!-- Public Listing Toggle (only show for active tours) -->
+		<!-- ============================================================ -->
+		<!-- PUBLIC LISTING SECTION (Active Tours Only)                  -->
+		<!-- ============================================================ -->
 		{#if formData.status === 'active'}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4">
@@ -1641,12 +1461,39 @@
 			</div>
 		{/if}
 
-		<!-- Action Buttons -->
+		<!-- ============================================================ -->
+		<!-- ACTION BUTTONS SECTION                                       -->
+		<!-- Save, Publish, Cancel buttons                                -->
+		<!-- ============================================================ -->
 		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="p-4">
 			<div class="space-y-3">
 				{#if onPublish && onSaveAsDraft}
 					<!-- Dual Action Buttons for Draft/Publish -->
+					
+					<!-- Validation Errors Notice -->
+					{#if allErrors.length > 0}
+						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<div class="flex-1">
+									<p class="text-xs font-medium" style="color: var(--color-error-900);">
+										Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'} to continue
+									</p>
+									<ul class="text-xs mt-1 space-y-0.5" style="color: var(--color-error-700);">
+										{#each allErrors.slice(0, 3) as error}
+											<li>• {error.message}</li>
+										{/each}
+										{#if allErrors.length > 3}
+											<li class="mt-1" style="color: var(--color-error-600);">
+												... and {allErrors.length - 3} more
+											</li>
+										{/if}
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
 					
 					<!-- Onboarding Restriction Notice -->
 					{#if !canActivate && missingSteps.length > 0}
@@ -1668,9 +1515,9 @@
 					<button
 						type="button"
 						onclick={onPublish}
-						disabled={isSubmitting || !canActivate}
+						disabled={isSubmitting || !canActivate || allErrors.length > 0}
 						class="button-primary button--full-width button--gap"
-						title={!canActivate ? 'Complete required setup steps to activate' : ''}
+						title={!canActivate ? 'Complete required setup steps to activate' : allErrors.length > 0 ? 'Fix validation errors to activate' : ''}
 					>
 						{#if isSubmitting && formData.status === 'active'}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1684,8 +1531,9 @@
 					<button
 						type="button"
 						onclick={onSaveAsDraft}
-						disabled={isSubmitting}
+						disabled={isSubmitting || allErrors.length > 0}
 						class="button-secondary button--full-width button--gap"
+						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
 					>
 						{#if isSubmitting && formData.status === 'draft'}
 							<div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -1697,11 +1545,37 @@
 					</button>
 				{:else}
 					<!-- Single Action Button (fallback for old usage) -->
+					
+					<!-- Validation Errors Notice -->
+					{#if allErrors.length > 0}
+						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<div class="flex-1">
+									<p class="text-xs font-medium" style="color: var(--color-error-900);">
+										Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'} to continue
+									</p>
+									<ul class="text-xs mt-1 space-y-0.5" style="color: var(--color-error-700);">
+										{#each allErrors.slice(0, 3) as error}
+											<li>• {error.message}</li>
+										{/each}
+										{#if allErrors.length > 3}
+											<li class="mt-1" style="color: var(--color-error-600);">
+												... and {allErrors.length - 3} more
+											</li>
+										{/if}
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
+					
 					<button
 						type={onSubmit ? "button" : "submit"}
 						onclick={onSubmit || handleSubmit}
-						disabled={isSubmitting}
+						disabled={isSubmitting || allErrors.length > 0}
 						class="button-primary button--full-width button--gap"
+						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
 					>
 						{#if isSubmitting}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1775,28 +1649,16 @@
 
 	/* Mobile-enhanced error styling */
 	@media (max-width: 768px) {
-		.mobile-error-enhanced {
-			font-size: 1rem;
-			font-weight: 500;
-			padding: 0.5rem 0.75rem;
-			border-radius: 0.5rem;
-			border-left: 4px solid var(--color-error-500);
-			background: var(--color-error-50);
-			color: var(--color-error-800);
-			margin-top: 0.75rem;
-			box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
-		}
-		
 		/* Make error fields more prominent on mobile */
 		.form-input.error,
-		.form-textarea.error,
+		.form-textarea.error {
+			border-width: 2px;
+		}
 		
 		/* Sticky error summary styling */
 		.sticky {
 			backdrop-filter: blur(8px);
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		}
-		
-
 	}
 </style>

@@ -6,6 +6,8 @@ import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
 import { canUserCreateBooking } from '$lib/stripe-subscriptions.server.js';
+import { calculateBookingPrice } from '$lib/utils/pricing-calculations.js';
+import type { Tour } from '$lib/types.js';
 
 export const load: PageServerLoad = async ({ params }) => {
 	return {
@@ -20,32 +22,57 @@ export const actions: Actions = {
 
 		// Extract form data
 		const timeSlotId = formData.get('timeSlotId') as string;
-		const totalParticipants = parseInt(formData.get('totalParticipants') as string);
+		const totalParticipantsStr = formData.get('totalParticipants') as string;
 		const participantBreakdownStr = formData.get('participantBreakdown') as string;
+		const participantsByCategoryStr = formData.get('participantsByCategory') as string;
 		const legacyParticipants = formData.get('participants') as string; // For backward compatibility
+		const selectedAddonIdsStr = formData.get('selectedAddonIds') as string;
 		const customerName = formData.get('customerName') as string;
 		const customerEmail = formData.get('customerEmail') as string;
 		const customerPhone = formData.get('customerPhone') as string;
 		const specialRequests = formData.get('specialRequests') as string;
 		
-		// Handle participant data (new pricing tiers vs legacy single pricing)
+		// Handle participant data
 		let participants: number;
 		let participantBreakdown: { adults: number; children: number } | null = null;
+		let participantsByCategory: Record<string, number> | null = null;
 		
-		if (totalParticipants && participantBreakdownStr) {
-			// New pricing tiers format
-			participants = totalParticipants;
+		// New participant categories format
+		if (participantsByCategoryStr) {
+			try {
+				participantsByCategory = JSON.parse(participantsByCategoryStr);
+				participants = parseInt(totalParticipantsStr) || 0;
+			} catch (e) {
+				console.error('Failed to parse participants by category:', e);
+				participants = parseInt(totalParticipantsStr) || 0;
+			}
+		}
+		// Legacy adult/child breakdown
+		else if (totalParticipantsStr && participantBreakdownStr) {
+			participants = parseInt(totalParticipantsStr);
 			try {
 				participantBreakdown = JSON.parse(participantBreakdownStr);
 			} catch (e) {
 				console.error('Failed to parse participant breakdown:', e);
 				participantBreakdown = null;
 			}
-		} else if (legacyParticipants) {
-			// Legacy single pricing format
+		}
+		// Legacy single number
+		else if (legacyParticipants) {
 			participants = parseInt(legacyParticipants);
-		} else {
+		}
+		else {
 			participants = 0;
+		}
+		
+		// Handle selected add-ons
+		let selectedAddonIds: string[] = [];
+		if (selectedAddonIdsStr) {
+			try {
+				selectedAddonIds = JSON.parse(selectedAddonIdsStr);
+			} catch (e) {
+				console.error('Failed to parse selected add-ons:', e);
+			}
 		}
 
 		// Validate required fields
@@ -139,24 +166,66 @@ export const actions: Actions = {
 				});
 			}
 
-			// Calculate total amount based on pricing model
-			let totalAmount: string;
+			// Calculate total amount using new pricing calculation utility
+			// Convert tour data to match Tour interface (Date -> string, null -> undefined)
+			const tourForCalculation: Tour = {
+				...tour,
+				images: tour.images ?? undefined,
+				categories: tour.categories ?? undefined,
+				location: tour.location ?? undefined,
+				includedItems: tour.includedItems ?? undefined,
+				requirements: tour.requirements ?? undefined,
+				cancellationPolicy: tour.cancellationPolicy ?? undefined,
+				qrCode: tour.qrCode ?? undefined,
+				pricingModel: tour.pricingModel ?? undefined,
+				pricingTiers: tour.pricingTiers ?? undefined,
+				participantCategories: tour.participantCategories ?? undefined,
+				privateTour: tour.privateTour ?? undefined,
+				groupPricingTiers: tour.groupPricingTiers ?? undefined,
+				groupDiscounts: tour.groupDiscounts ?? undefined,
+				optionalAddons: tour.optionalAddons ?? undefined,
+				createdAt: tour.createdAt.toISOString(),
+				updatedAt: tour.updatedAt.toISOString()
+			};
 			
-			if (tour.enablePricingTiers && tour.pricingTiers && participantBreakdown) {
-				// Pricing tiers calculation
-				const adultPrice = tour.pricingTiers.adult || 0;
-				const childPrice = tour.pricingTiers.child || 0;
-				const adultTotal = participantBreakdown.adults * adultPrice;
-				const childTotal = participantBreakdown.children * childPrice;
-				totalAmount = (adultTotal + childTotal).toFixed(2);
-				
-				console.log(`💰 Pricing tiers calculation: ${participantBreakdown.adults} adults × €${adultPrice} + ${participantBreakdown.children} children × €${childPrice} = €${totalAmount}`);
-			} else {
-				// Single pricing calculation
-				totalAmount = (parseFloat(tour.price) * participants).toFixed(2);
-				
-				console.log(`💰 Single pricing calculation: ${participants} participants × €${tour.price} = €${totalAmount}`);
+			const priceCalculation = calculateBookingPrice(
+				tourForCalculation,
+				participants,
+				selectedAddonIds,
+				participantBreakdown?.adults,
+				participantBreakdown?.children,
+				participantsByCategory || undefined
+			);
+			
+			// Check for calculation errors
+			if (priceCalculation.errors && priceCalculation.errors.length > 0) {
+				console.error('💥 Price calculation errors:', priceCalculation.errors);
+				return fail(400, {
+					error: priceCalculation.errors.join('. '),
+					customerName,
+					customerEmail,
+					customerPhone,
+					specialRequests
+				});
 			}
+			
+			const totalAmount = priceCalculation.totalAmount.toFixed(2);
+			
+			// Get selected add-ons details for storing in booking
+			const selectedAddons = tour.optionalAddons?.addons?.filter(addon =>
+				selectedAddonIds.includes(addon.id)
+			).map(addon => ({
+				addonId: addon.id,
+				name: addon.name,
+				price: addon.price
+			})) || [];
+			
+			console.log(`💰 Price calculation (${tour.pricingModel || 'per_person'}):`, {
+				basePrice: priceCalculation.basePrice,
+				addonsTotal: priceCalculation.addonsTotal,
+				totalAmount: priceCalculation.totalAmount,
+				selectedTier: priceCalculation.selectedTier?.label || 'N/A'
+			});
 
 			// Generate booking reference and ticket QR code
 			const bookingReference = `BK-${createId().slice(0, 8).toUpperCase()}`;
@@ -175,7 +244,15 @@ export const actions: Actions = {
 				customerPhone: customerPhone || null,
 				participants,
 				participantBreakdown: participantBreakdown,
+				participantsByCategory: participantsByCategory,
 				totalAmount,
+				selectedAddons: selectedAddons.length > 0 ? selectedAddons : null,
+				priceBreakdown: {
+					basePrice: priceCalculation.basePrice,
+					addonsTotal: priceCalculation.addonsTotal,
+					totalAmount: priceCalculation.totalAmount,
+					categoryBreakdown: priceCalculation.categoryBreakdown || undefined
+				},
 				status: 'pending',
 				paymentStatus: 'pending',
 				bookingReference,

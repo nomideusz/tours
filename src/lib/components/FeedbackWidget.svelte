@@ -85,6 +85,24 @@
 			default: return 'var(--text-primary)';
 		}
 	}
+	
+	// Listen for custom events to open feedback widget
+	$effect(() => {
+		if (browser) {
+			const handleOpenFeedback = (event: CustomEvent) => {
+				isOpen = true;
+				if (event.detail?.type) {
+					feedbackType = event.detail.type;
+				}
+			};
+			
+			window.addEventListener('open-feedback', handleOpenFeedback as EventListener);
+			
+			return () => {
+				window.removeEventListener('open-feedback', handleOpenFeedback as EventListener);
+			};
+		}
+	});
 </script>
 
 {#if browser && $currentUser}

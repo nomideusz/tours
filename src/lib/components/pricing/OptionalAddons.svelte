@@ -90,6 +90,8 @@
 								<CurrencyInput
 									bind:value={addon.price}
 									{currencySymbol}
+									min={0}
+									max={50000}
 									step={0.5}
 									placeholder="0.00"
 									class="addon-price-input"

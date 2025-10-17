@@ -13,9 +13,12 @@ import { canUserCreateTour } from '$lib/stripe-subscriptions.server.js';
 async function createScheduleSlots(tourId: string, scheduleData: any, userId: string) {
   if (!scheduleData.selectedPattern) return;
 
-  // Get tour capacity
-  const [tour] = await db.select({ capacity: tours.capacity }).from(tours).where(eq(tours.id, tourId)).limit(1);
-  const tourCapacity = tour?.capacity || 10;
+  // Get tour capacity (use maxCapacity for new system, fallback to capacity for legacy)
+  const [tour] = await db.select({ 
+    capacity: tours.capacity,
+    maxCapacity: tours.maxCapacity 
+  }).from(tours).where(eq(tours.id, tourId)).limit(1);
+  const tourCapacity = tour?.maxCapacity || tour?.capacity || 10;
 
   const slotsToCreate = [];
   const now = new Date();
@@ -257,7 +260,10 @@ export const actions: Actions = {
         }
       }
 
-      // Get pricing tiers
+      // Get pricing model and configuration
+      const pricingModel = (formData.get('pricingModel') as string) || 'per_person';
+      
+      // Get pricing tiers (adult/child)
       const enablePricingTiers = formData.get('enablePricingTiers') === 'on' || formData.get('enablePricingTiers') === 'true';
       let pricingTiers = null;
       
@@ -270,6 +276,71 @@ export const actions: Actions = {
           child: childPrice ? parseFloat(String(childPrice)) : 0
         };
       }
+      
+      // Get participant categories
+      let participantCategories = null;
+      const participantCategoriesRaw = formData.get('participantCategories');
+      if (participantCategoriesRaw && typeof participantCategoriesRaw === 'string' && participantCategoriesRaw !== 'null' && participantCategoriesRaw !== 'undefined' && participantCategoriesRaw !== '' && !participantCategoriesRaw.startsWith('[object')) {
+        try {
+          const parsed = JSON.parse(participantCategoriesRaw);
+          // Only set if it has categories array with items
+          if (parsed && parsed.categories && parsed.categories.length > 0) {
+            participantCategories = parsed;
+          }
+        } catch (e) {
+          console.warn('Failed to parse participant categories:', e);
+        }
+      }
+      
+      // Get private tour
+      let privateTour = null;
+      const privateTourRaw = formData.get('privateTour');
+      if (privateTourRaw && typeof privateTourRaw === 'string' && privateTourRaw !== 'null' && privateTourRaw !== 'undefined' && privateTourRaw !== '' && !privateTourRaw.startsWith('[object')) {
+        try {
+          privateTour = JSON.parse(privateTourRaw);
+        } catch (e) {
+          console.warn('Failed to parse private tour:', e);
+        }
+      }
+      
+      // Get group pricing tiers (legacy)
+      let groupPricingTiers = null;
+      const groupPricingTiersRaw = formData.get('groupPricingTiers');
+      if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null') {
+        try {
+          groupPricingTiers = JSON.parse(groupPricingTiersRaw);
+        } catch (e) {
+          console.warn('Failed to parse group pricing tiers:', e);
+        }
+      }
+      
+      // Get group discounts
+      let groupDiscounts = null;
+      const groupDiscountsRaw = formData.get('groupDiscounts');
+      if (groupDiscountsRaw && typeof groupDiscountsRaw === 'string' && groupDiscountsRaw !== 'null' && groupDiscountsRaw !== 'undefined' && groupDiscountsRaw !== '' && !groupDiscountsRaw.startsWith('[object')) {
+        try {
+          groupDiscounts = JSON.parse(groupDiscountsRaw);
+        } catch (e) {
+          console.warn('Failed to parse group discounts:', e);
+        }
+      }
+      
+      // Get optional add-ons
+      let optionalAddons = null;
+      const optionalAddonsRaw = formData.get('optionalAddons');
+      if (optionalAddonsRaw && typeof optionalAddonsRaw === 'string' && optionalAddonsRaw !== 'null') {
+        try {
+          optionalAddons = JSON.parse(optionalAddonsRaw);
+        } catch (e) {
+          console.warn('Failed to parse optional add-ons:', e);
+        }
+      }
+      
+      // Get Stripe fee payment option
+      const guidePaysStripeFee = formData.get('guidePaysStripeFee') === 'true' || formData.get('guidePaysStripeFee') === 'on';
+      
+      // Get infant capacity setting
+      const countInfantsTowardCapacity = formData.get('countInfantsTowardCapacity') === 'true' || formData.get('countInfantsTowardCapacity') === 'on';
 
       // Get schedule data
       let scheduleData = null;
@@ -306,8 +377,17 @@ export const actions: Actions = {
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: formData.get('cancellationPolicy'),
+        // Pricing configuration
+        pricingModel,
         enablePricingTiers,
-        pricingTiers
+        pricingTiers,
+        participantCategories,
+        privateTour,
+        groupPricingTiers,
+        groupDiscounts,
+        optionalAddons,
+        guidePaysStripeFee,
+        countInfantsTowardCapacity
       };
 
       // Sanitize the data
@@ -432,12 +512,27 @@ export const actions: Actions = {
         // Generate QR code for the tour
         const qrCode = generateTourQRCode(sanitizedData.name as string);
 
+        // Calculate base price from pricing model for backward compatibility
+        let basePrice = String(sanitizedData.price || '0');
+        if (pricingModel === 'private_tour' && privateTour?.flatPrice) {
+          basePrice = String(privateTour.flatPrice);
+        } else if (pricingModel === 'participant_categories' && participantCategories?.categories?.length) {
+          // Use the first (typically adult) category price
+          const sortedCategories = [...participantCategories.categories].sort((a, b) => a.sortOrder - b.sortOrder);
+          basePrice = String(sortedCategories[0]?.price || 0);
+        } else if (pricingModel === 'group_tiers' && groupPricingTiers?.tiers?.length) {
+          // Use minimum tier price
+          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: any) => t.price));
+          basePrice = String(minPrice);
+        }
+        console.log('💰 Calculated base price for new tour:', basePrice, 'from model:', pricingModel);
+
         // Create tour in PostgreSQL
         const newTour = {
           id: finalTourId,
           name: sanitizedData.name as string,
           description: sanitizedData.description as string,
-          price: String(sanitizedData.price),
+          price: basePrice,
           duration: parseInt(String(sanitizedData.duration)),
           capacity: parseInt(String(sanitizedData.capacity)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
@@ -446,8 +541,19 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          // Pricing configuration
+          pricingModel: (pricingModel as 'per_person' | 'group_tiers' | 'participant_categories' | 'private_tour') || 'participant_categories',
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
           pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
+          participantCategories: participantCategories || null,
+          privateTour: privateTour || null,
+          groupPricingTiers: groupPricingTiers || null,
+          groupDiscounts: groupDiscounts || null,
+          optionalAddons: optionalAddons || null,
+          guidePaysStripeFee: guidePaysStripeFee || false,
+          minCapacity: 1,
+          maxCapacity: parseInt(String(sanitizedData.capacity)),
+          countInfantsTowardCapacity: countInfantsTowardCapacity || false,
           userId: locals.user.id,
           images: processedImages,
           qrCode: qrCode,
@@ -482,11 +588,26 @@ export const actions: Actions = {
         // Generate QR code for the tour
         const qrCode = generateTourQRCode(sanitizedData.name as string);
         
+        // Calculate base price from pricing model for backward compatibility
+        let basePrice = String(sanitizedData.price || '0');
+        if (pricingModel === 'private_tour' && privateTour?.flatPrice) {
+          basePrice = String(privateTour.flatPrice);
+        } else if (pricingModel === 'participant_categories' && participantCategories?.categories?.length) {
+          // Use the first (typically adult) category price
+          const sortedCategories = [...participantCategories.categories].sort((a, b) => a.sortOrder - b.sortOrder);
+          basePrice = String(sortedCategories[0]?.price || 0);
+        } else if (pricingModel === 'group_tiers' && groupPricingTiers?.tiers?.length) {
+          // Use minimum tier price
+          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: any) => t.price));
+          basePrice = String(minPrice);
+        }
+        console.log('💰 Calculated base price for new tour (no images):', basePrice, 'from model:', pricingModel);
+        
         const newTour = {
           id: tourId,
           name: sanitizedData.name as string,
           description: sanitizedData.description as string,
-          price: String(sanitizedData.price),
+          price: basePrice,
           duration: parseInt(String(sanitizedData.duration)),
           capacity: parseInt(String(sanitizedData.capacity)),
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
@@ -495,8 +616,19 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          // Pricing configuration
+          pricingModel: (pricingModel as 'per_person' | 'group_tiers' | 'participant_categories' | 'private_tour') || 'participant_categories',
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
           pricingTiers: sanitizedData.pricingTiers as { adult: number; child?: number } || null,
+          participantCategories: participantCategories || null,
+          privateTour: privateTour || null,
+          groupPricingTiers: groupPricingTiers || null,
+          groupDiscounts: groupDiscounts || null,
+          optionalAddons: optionalAddons || null,
+          guidePaysStripeFee: guidePaysStripeFee || false,
+          minCapacity: 1,
+          maxCapacity: parseInt(String(sanitizedData.capacity)),
+          countInfantsTowardCapacity: countInfantsTowardCapacity || false,
           userId: locals.user.id,
           images: [],
           qrCode: qrCode,

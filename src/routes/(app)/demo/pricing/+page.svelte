@@ -12,14 +12,18 @@
 		participantCategories: { 
 			categories: [
 				{ id: 'adult', label: 'Adult', price: 50, sortOrder: 0 }
-			] as ParticipantCategory[] 
+			] as ParticipantCategory[],
+			minCapacity: 1,
+			maxCapacity: 20
 		},
-		privateTour: { flatPrice: 100 },
+		privateTour: { 
+			flatPrice: 100,
+			minCapacity: 4,
+			maxCapacity: 12
+		},
 		groupDiscounts: { tiers: [] as GroupDiscountTier[], enabled: false },
 		optionalAddons: { addons: [] as OptionalAddon[] },
 		guidePaysStripeFee: false,
-		minCapacity: 1,
-		maxCapacity: 20,
 		countInfantsTowardCapacity: false,
 		duration: 180,
 		capacity: 20
@@ -48,8 +52,6 @@
 				bind:groupDiscounts={formData.groupDiscounts}
 				bind:optionalAddons={formData.optionalAddons}
 				bind:guidePaysStripeFee={formData.guidePaysStripeFee}
-				bind:minCapacity={formData.minCapacity}
-				bind:maxCapacity={formData.maxCapacity}
 				bind:countInfantsTowardCapacity={formData.countInfantsTowardCapacity}
 				duration={formData.duration}
 				capacity={formData.capacity}
@@ -76,11 +78,6 @@
 				}}
 				onStripeFeeUpdate={(guidePays) => {
 					formData.guidePaysStripeFee = guidePays;
-				}}
-				onCapacityUpdate={(min, max) => {
-					formData.minCapacity = min;
-					formData.maxCapacity = max;
-					formData.capacity = max;
 				}}
 				onValidate={() => {}}
 				getFieldError={() => null}

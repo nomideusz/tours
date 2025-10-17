@@ -33,15 +33,39 @@ export function formatCategoryName(category: string): string {
 }
 
 /**
- * Get the display price for a tour, handling pricing tiers correctly
+ * Get the display price for a tour, handling all pricing models correctly
  */
 export function getTourDisplayPrice(tour: Tour): number {
-	// If pricing tiers are enabled, use adult price as the display price
+	// Private tour: use flat price
+	if (tour.pricingModel === 'private_tour' && tour.privateTour?.flatPrice) {
+		return tour.privateTour.flatPrice;
+	}
+	
+	// Participant categories: use the first (typically adult) category price
+	if (tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories?.length) {
+		// Find adult category first, or use the first category with lowest sortOrder
+		const categories = tour.participantCategories.categories;
+		const adultCategory = categories.find(c => c.id === 'adult' || c.label.toLowerCase().includes('adult'));
+		if (adultCategory) {
+			return adultCategory.price;
+		}
+		// Fallback to first category sorted by sortOrder
+		const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+		return sorted[0]?.price || 0;
+	}
+	
+	// Group tiers: return minimum tier price (legacy)
+	if (tour.pricingModel === 'group_tiers' && tour.groupPricingTiers?.tiers?.length) {
+		const minPrice = Math.min(...tour.groupPricingTiers.tiers.map(t => t.price));
+		return minPrice;
+	}
+	
+	// Adult/child pricing (legacy): use adult price as the display price
 	if (tour.enablePricingTiers && tour.pricingTiers?.adult) {
 		return parseFloat(tour.pricingTiers.adult.toString());
 	}
 	
-	// Otherwise use the regular price field
+	// Per person (legacy): use the regular price field
 	return parseFloat(tour.price.toString()) || 0;
 }
 
@@ -49,6 +73,54 @@ export function getTourDisplayPrice(tour: Tour): number {
  * Get formatted display price for a tour
  */
 export function getTourDisplayPriceFormatted(tour: Tour): string {
+	// Private tour: show flat rate with optional per-person estimate
+	if (tour.pricingModel === 'private_tour' && tour.privateTour?.flatPrice) {
+		const flatPrice = tour.privateTour.flatPrice;
+		if (flatPrice === 0) {
+			return 'Free';
+		}
+		// Just show the flat rate - per-person calculation is shown elsewhere
+		return `${formatCurrency(flatPrice)} per tour`;
+	}
+	
+	// Participant categories: show base price with indicator
+	if (tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories?.length) {
+		const categories = tour.participantCategories.categories;
+		
+		// Check if we have multiple unique prices
+		const uniquePrices = [...new Set(categories.map(c => c.price))].sort((a, b) => a - b);
+		
+		if (uniquePrices.length === 1) {
+			// All categories same price
+			const price = uniquePrices[0];
+			if (price === 0) {
+				return 'Free';
+			}
+			return `${formatCurrency(price)}/person`;
+		} else if (uniquePrices.length > 1) {
+			// Multiple prices - show range
+			const minPrice = uniquePrices[0];
+			const maxPrice = uniquePrices[uniquePrices.length - 1];
+			
+			if (minPrice === 0) {
+				return `Free - ${formatCurrency(maxPrice)}/person`;
+			}
+			return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}/person`;
+		}
+	}
+	
+	// Group tiers (legacy): show price range
+	if (tour.pricingModel === 'group_tiers' && tour.groupPricingTiers?.tiers?.length) {
+		const prices = tour.groupPricingTiers.tiers.map(t => t.price);
+		const minPrice = Math.min(...prices);
+		const maxPrice = Math.max(...prices);
+		
+		if (minPrice === maxPrice) {
+			return formatCurrency(minPrice);
+		}
+		return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
+	}
+	
 	const price = getTourDisplayPrice(tour);
 	// Show "Free" for zero-price tours
 	if (price === 0) {
@@ -61,6 +133,49 @@ export function getTourDisplayPriceFormatted(tour: Tour): string {
  * Get formatted display price for a tour with tour owner's currency
  */
 export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurrency?: string): string {
+	// Private tour: show flat rate
+	if (tour.pricingModel === 'private_tour' && tour.privateTour?.flatPrice) {
+		const flatPrice = tour.privateTour.flatPrice;
+		if (flatPrice === 0) {
+			return 'Free';
+		}
+		return `${formatTourOwnerCurrency(flatPrice, ownerCurrency)} per tour`;
+	}
+	
+	// Participant categories: show price range if multiple prices
+	if (tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories?.length) {
+		const categories = tour.participantCategories.categories;
+		const uniquePrices = [...new Set(categories.map(c => c.price))].sort((a, b) => a - b);
+		
+		if (uniquePrices.length === 1) {
+			const price = uniquePrices[0];
+			if (price === 0) {
+				return 'Free';
+			}
+			return `${formatTourOwnerCurrency(price, ownerCurrency)}/person`;
+		} else if (uniquePrices.length > 1) {
+			const minPrice = uniquePrices[0];
+			const maxPrice = uniquePrices[uniquePrices.length - 1];
+			
+			if (minPrice === 0) {
+				return `Free - ${formatTourOwnerCurrency(maxPrice, ownerCurrency)}/person`;
+			}
+			return `${formatTourOwnerCurrency(minPrice, ownerCurrency)} - ${formatTourOwnerCurrency(maxPrice, ownerCurrency)}/person`;
+		}
+	}
+	
+	// Group tiers (legacy): show price range with currency
+	if (tour.pricingModel === 'group_tiers' && tour.groupPricingTiers?.tiers?.length) {
+		const prices = tour.groupPricingTiers.tiers.map(t => t.price);
+		const minPrice = Math.min(...prices);
+		const maxPrice = Math.max(...prices);
+		
+		if (minPrice === maxPrice) {
+			return formatTourOwnerCurrency(minPrice, ownerCurrency);
+		}
+		return `${formatTourOwnerCurrency(minPrice, ownerCurrency)} - ${formatTourOwnerCurrency(maxPrice, ownerCurrency)}`;
+	}
+	
 	const price = getTourDisplayPrice(tour);
 	// Show "Free" for zero-price tours
 	if (price === 0) {

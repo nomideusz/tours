@@ -5,6 +5,7 @@
  */
 
 import type { Tour } from '$lib/types.js';
+import { getCategoryDisplayLabel } from './category-age-ranges.js';
 
 // Stripe Express fee structure by currency
 // Source: https://stripe.com/pricing
@@ -382,7 +383,8 @@ export function calculateBookingPrice(
 	totalParticipants: number,
 	selectedAddonIds: string[] = [],
 	adultCount?: number,
-	childCount?: number
+	childCount?: number,
+	participantsByCategory?: Record<string, number>
 ): BookingPriceResult {
 	const errors: string[] = [];
 	let basePrice = 0;
@@ -396,15 +398,33 @@ export function calculateBookingPrice(
 		// Calculate base price from participant categories
 		const categories = tour.participantCategories.categories || [];
 		
+		// If we have detailed participant counts by category (NEW)
+		if (participantsByCategory && Object.keys(participantsByCategory).length > 0) {
+			Object.entries(participantsByCategory).forEach(([catId, count]) => {
+				if (count > 0) {
+					const category = categories.find(c => c.id === catId);
+					if (category) {
+						basePrice += category.price * count;
+						categoryBreakdown[catId] = {
+							label: getCategoryDisplayLabel(category, categories),
+							count,
+							originalPrice: category.price,
+							discountedPrice: category.price,
+							subtotal: category.price * count
+						};
+					}
+				}
+			});
+		}
 		// If we have legacy adult/child counts, use them
-		if (adultCount !== undefined || childCount !== undefined) {
+		else if (adultCount !== undefined || childCount !== undefined) {
 			const adultCat = categories.find(c => c.id === 'adult' || c.label.toLowerCase().includes('adult'));
 			const childCat = categories.find(c => c.id === 'child' || c.label.toLowerCase().includes('child'));
 			
 			if (adultCat && adultCount) {
 				basePrice += adultCat.price * adultCount;
 				categoryBreakdown[adultCat.id] = {
-					label: adultCat.label,
+					label: getCategoryDisplayLabel(adultCat, categories),
 					count: adultCount,
 					originalPrice: adultCat.price,
 					discountedPrice: adultCat.price,
@@ -415,7 +435,7 @@ export function calculateBookingPrice(
 			if (childCat && childCount) {
 				basePrice += childCat.price * childCount;
 				categoryBreakdown[childCat.id] = {
-					label: childCat.label,
+					label: getCategoryDisplayLabel(childCat, categories),
 					count: childCount,
 					originalPrice: childCat.price,
 					discountedPrice: childCat.price,
@@ -428,7 +448,7 @@ export function calculateBookingPrice(
 			if (adultCat) {
 				basePrice = adultCat.price * totalParticipants;
 				categoryBreakdown[adultCat.id] = {
-					label: adultCat.label,
+					label: getCategoryDisplayLabel(adultCat, categories),
 					count: totalParticipants,
 					originalPrice: adultCat.price,
 					discountedPrice: adultCat.price,
@@ -487,7 +507,7 @@ export function calculateBookingPrice(
 		
 	} else if (tour.pricingModel === 'group_tiers' && tour.groupPricingTiers) {
 		// Group-based pricing (flat price for group size)
-		const tier = tour.groupPricingTiers.tiers.find(t => 
+		const tier = tour.groupPricingTiers.tiers.find((t: any) => 
 			totalParticipants >= t.minParticipants && 
 			totalParticipants <= t.maxParticipants
 		);

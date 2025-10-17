@@ -3,9 +3,10 @@
 	import { page } from '$app/state';
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
-	import { formatDuration, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
+	import { formatDuration, formatCategoryName, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
 	
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -23,6 +24,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TimeSlotOverlay from '$lib/components/time-slot-form/TimeSlotOverlay.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
+	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -53,6 +55,7 @@
 	import X from 'lucide-svelte/icons/x';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Baby from 'lucide-svelte/icons/baby';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	
 	// Get data from load function
 	let { data } = $props();
@@ -216,6 +219,7 @@
 	let showOnboardingModal = $state(false);
 	let onboardingModalMessage = $state('');
 	let preselectedDate = $state<string | undefined>(undefined);
+	let showPricingDetails = $state(false);
 	
 	// Check if we're on mobile for responsive modal/drawer
 	let isMobile = $state(false);
@@ -1075,10 +1079,22 @@
 							<div class="grid grid-cols-2 gap-3">
 								<div class="p-3 rounded-lg text-center" style="background: var(--bg-secondary);">
 									<p class="text-xs" style="color: var(--text-tertiary);">
-										{tour.enablePricingTiers && tour.pricingTiers?.child !== undefined ? 'Adult Price' : 'Price'}
+										{#if tour.pricingModel === 'private_tour'}
+											Flat Rate
+										{:else if tour.pricingModel === 'participant_categories'}
+											Base Price
+										{:else if tour.pricingModel === 'group_tiers'}
+											Tier Pricing
+										{:else if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+											Adult Price
+										{:else}
+											Price
+										{/if}
 									</p>
-									<p class="font-semibold text-lg" style="color: var(--text-primary);">{$globalCurrencyFormatter(tour.price)}</p>
-									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
+									<p class="font-semibold text-lg" style="color: var(--text-primary);">
+										{getTourDisplayPriceFormatted(tour)}
+									</p>
+									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined && tour.pricingModel === 'adult_child'}
 										<div class="flex items-center justify-center gap-1 mt-1">
 											<Baby class="h-3 w-3" style="color: var(--text-tertiary);" />
 											<span class="text-xs font-medium" style="color: var(--text-secondary);">
@@ -1092,6 +1108,55 @@
 									<p class="font-semibold text-lg" style="color: var(--text-primary);">{formatDuration(tour.duration)}</p>
 								</div>
 							</div>
+							
+							<!-- Detailed Pricing Breakdown (Accordion-style for new pricing models) -->
+							{#if (tour.pricingModel === 'participant_categories' || tour.pricingModel === 'private_tour') && profile?.currency}
+								<div class="pricing-accordion rounded-lg" style="border: 1px solid var(--border-primary); overflow: hidden;">
+									<!-- Accordion Header -->
+									<button
+										onclick={() => showPricingDetails = !showPricingDetails}
+										class="w-full flex items-center justify-between p-3 sm:p-4 text-left transition-colors"
+										style="background: var(--bg-secondary);"
+										onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+										onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+									>
+										<div class="flex items-center gap-2">
+											<ChevronDown 
+												class="h-4 w-4 transition-transform duration-200 {showPricingDetails ? 'rotate-180' : ''}" 
+												style="color: var(--text-secondary);" 
+											/>
+											<span class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
+												{#if tour.pricingModel === 'private_tour'}
+													Pricing Details
+												{:else}
+													Pricing & Discounts
+												{/if}
+											</span>
+										</div>
+										<span class="text-xs sm:text-sm" style="color: var(--text-tertiary);">
+											{showPricingDetails ? 'Hide' : 'Show'} details
+										</span>
+									</button>
+									
+									<!-- Accordion Content -->
+									{#if showPricingDetails}
+										<div class="accordion-content" transition:slide={{ duration: 200 }}>
+											<div class="p-3 sm:p-4 pt-0">
+												<UnifiedPricingSummary
+													pricingModel={tour.pricingModel}
+													categories={tour.participantCategories?.categories}
+													privateTourPrice={tour.privateTour?.flatPrice}
+													groupDiscounts={tour.groupDiscounts}
+													addons={tour.optionalAddons?.addons}
+													currencySymbol={profile.currency === 'USD' ? '$' : profile.currency === 'EUR' ? '€' : profile.currency === 'GBP' ? '£' : profile.currency}
+													minCapacity={tour.pricingModel === 'private_tour' ? (tour.privateTour?.minCapacity || tour.minCapacity || 1) : (tour.minCapacity || 1)}
+													maxCapacity={tour.pricingModel === 'private_tour' ? (tour.privateTour?.maxCapacity || tour.maxCapacity || tour.capacity) : (tour.maxCapacity || tour.capacity)}
+												/>
+											</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
 							
 							<!-- Description - mobile-optimized text -->
 							{#if tour.description}
@@ -1867,5 +1932,26 @@
 			padding: 0.25rem 0.75rem !important;
 			font-size: 0.75rem !important;
 		}
+	}
+	
+	/* Pricing Accordion styles */
+	.pricing-accordion {
+		transition: all 0.2s ease;
+	}
+	
+	.pricing-accordion:hover {
+		border-color: var(--border-secondary) !important;
+	}
+	
+	.accordion-content :global(.pricing-summary) {
+		margin-top: 0;
+		background: transparent;
+		border: none;
+		padding: 0;
+	}
+	
+	.accordion-content :global(.pricing-summary:hover) {
+		border-color: transparent;
+		box-shadow: none;
 	}
 </style> 

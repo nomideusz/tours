@@ -34,7 +34,7 @@ export interface User extends RecordModel {
 }
 
 // Pricing model types
-export type PricingModel = 'per_person' | 'participant_categories' | 'group_tiers';
+export type PricingModel = 'per_person' | 'participant_categories' | 'group_tiers' | 'private_tour';
 
 export interface GroupPricingTier {
   minParticipants: number;
@@ -82,6 +82,8 @@ export interface Tour extends RecordModel {
   price: string; // decimal fields return strings in Drizzle
   duration: number; // in minutes
   capacity: number;
+  minCapacity?: number;
+  maxCapacity?: number;
   userId: string; // relation to User
   images?: string[]; // file uploads
   status: 'active' | 'draft';
@@ -105,6 +107,15 @@ export interface Tour extends RecordModel {
   // Private tour pricing (flat rate for exclusive bookings)
   privateTour?: {
     flatPrice: number;
+    minCapacity?: number;
+    maxCapacity?: number;
+  };
+  // Legacy group pricing tiers (backward compatibility)
+  groupPricingTiers?: {
+    tiers: GroupPricingTier[];
+    privateBooking?: boolean;
+    minCapacity?: number;
+    maxCapacity?: number;
   };
   // Group discounts for participant categories (NEW)
   groupDiscounts?: {

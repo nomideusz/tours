@@ -5,6 +5,26 @@ import type { Booking } from '$lib/types.js';
  * Shows breakdown when pricing tiers are used, falls back to simple count
  */
 export function formatParticipantDisplay(booking: Booking | any): string {
+  // New system: participants_by_category
+  if (booking.participants_by_category || booking.participantsByCategory) {
+    const categories = booking.participants_by_category || booking.participantsByCategory;
+    const parts = [];
+    
+    for (const [categoryId, count] of Object.entries(categories)) {
+      const numCount = Number(count);
+      if (numCount > 0) {
+        // Format category label (capitalize first letter)
+        const label = categoryId.charAt(0).toUpperCase() + categoryId.slice(1);
+        parts.push(`${numCount} ${label.toLowerCase()}${numCount === 1 ? '' : 's'}`);
+      }
+    }
+    
+    if (parts.length > 0) {
+      return `${parts.join(' + ')} (${booking.participants} total)`;
+    }
+  }
+  
+  // Old system: participantBreakdown (adult/child)
   if (booking.participantBreakdown && typeof booking.participantBreakdown === 'object') {
     const breakdown = booking.participantBreakdown as { adults: number; children: number };
     const parts = [];
@@ -17,11 +37,9 @@ export function formatParticipantDisplay(booking: Booking | any): string {
       parts.push(`${breakdown.children} child${breakdown.children === 1 ? '' : 'ren'}`);
     }
     
-    if (parts.length === 0) {
-      return `${booking.participants} participant${booking.participants === 1 ? '' : 's'}`;
+    if (parts.length > 0) {
+      return `${parts.join(' + ')} (${booking.participants} total)`;
     }
-    
-    return `${parts.join(' + ')} (${booking.participants} total)`;
   }
   
   // Fallback to simple participant count
@@ -33,6 +51,26 @@ export function formatParticipantDisplay(booking: Booking | any): string {
  * Shows just the count with breakdown in parentheses if available
  */
 export function formatParticipantDisplayCompact(booking: Booking | any): string {
+  // New system: participants_by_category
+  if (booking.participants_by_category || booking.participantsByCategory) {
+    const categories = booking.participants_by_category || booking.participantsByCategory;
+    const parts = [];
+    
+    for (const [categoryId, count] of Object.entries(categories)) {
+      const numCount = Number(count);
+      if (numCount > 0) {
+        // Use first letter of category as abbreviation
+        const abbrev = categoryId.charAt(0).toUpperCase();
+        parts.push(`${numCount}${abbrev}`);
+      }
+    }
+    
+    if (parts.length > 0) {
+      return `${booking.participants} (${parts.join('+')})`;
+    }
+  }
+  
+  // Old system: participantBreakdown (adult/child)
   if (booking.participantBreakdown && typeof booking.participantBreakdown === 'object') {
     const breakdown = booking.participantBreakdown as { adults: number; children: number };
     const parts = [];
@@ -59,6 +97,26 @@ export function formatParticipantDisplayCompact(booking: Booking | any): string 
  * Shows full breakdown with labels
  */
 export function formatParticipantDisplayDetailed(booking: Booking | any): string {
+  // New system: participants_by_category
+  if (booking.participants_by_category || booking.participantsByCategory) {
+    const categories = booking.participants_by_category || booking.participantsByCategory;
+    const parts = [];
+    
+    for (const [categoryId, count] of Object.entries(categories)) {
+      const numCount = Number(count);
+      if (numCount > 0) {
+        // Format category label (capitalize first letter)
+        const label = categoryId.charAt(0).toUpperCase() + categoryId.slice(1);
+        parts.push(`${numCount} ${label.toLowerCase()}${numCount === 1 ? '' : 's'}`);
+      }
+    }
+    
+    if (parts.length > 0) {
+      return `${parts.join(' + ')} (${booking.participants} total participants)`;
+    }
+  }
+  
+  // Old system: participantBreakdown (adult/child)
   if (booking.participantBreakdown && typeof booking.participantBreakdown === 'object') {
     const breakdown = booking.participantBreakdown as { adults: number; children: number };
     const parts = [];

@@ -1,0 +1,1 @@
+ALTER TABLE "tours" ADD COLUMN "guide_pays_stripe_fee" boolean DEFAULT false NOT NULL;

@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { createPublicToursQuery } from '$lib/queries/public-queries.js';
 
-	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
+	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { generateBookingURL } from '$lib/utils/qr-generation.js';
 	
 	// Icons
@@ -377,7 +377,7 @@
 							>
 								<option value="">All Categories</option>
 								{#each filters.categories as category}
-									<option value={category}>{category}</option>
+									<option value={category}>{formatCategoryName(category)}</option>
 								{/each}
 							</select>
 						</div>
@@ -502,7 +502,7 @@
 														color: var(--color-primary-700);
 													"
 												>
-													{category}
+													{formatCategoryName(category)}
 												</span>
 											{/each}
 											{#if tour.categories.length > 3}
@@ -531,10 +531,62 @@
 									<!-- Price and Availability -->
 									<div class="flex items-end justify-between flex-grow">
 										<div>
-											<p class="text-2xl font-bold" style="color: var(--text-primary);">
-												{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-											</p>
-											<p class="text-sm" style="color: var(--text-secondary);">per person</p>
+											{#if tour.pricingModel === 'private_tour'}
+												<!-- Private Tour Pricing -->
+												<p class="text-2xl font-bold" style="color: var(--text-primary);">
+													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													flat rate
+												</p>
+											{:else if tour.pricingModel === 'participant_categories'}
+												<!-- Participant Categories Pricing -->
+												<p class="text-2xl font-bold" style="color: var(--text-primary);">
+													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													per person
+												</p>
+											{:else if tour.pricingModel === 'group_tiers'}
+												<!-- Group Tiers Pricing -->
+												<p class="text-2xl font-bold" style="color: var(--text-primary);">
+													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													group pricing
+												</p>
+											{:else if tour.pricingModel === 'adult_child' && tour.pricingTiers?.adult}
+												<!-- Adult/Child Pricing -->
+												<div class="flex items-baseline gap-2">
+													<div>
+														<p class="text-2xl font-bold" style="color: var(--text-primary);">
+															{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
+														</p>
+														<p class="text-xs" style="color: var(--text-secondary);">Adult</p>
+													</div>
+													{#if tour.pricingTiers.child !== undefined && tour.pricingTiers.child !== null}
+														<div class="ml-2">
+															<p class="text-lg font-semibold" style="color: var(--text-primary);">
+																{tour.pricingTiers.child === 0 ? 'Free' : new Intl.NumberFormat('en-US', { 
+																	style: 'currency', 
+																	currency: tour.operator.currency || 'EUR',
+																	minimumFractionDigits: 0,
+																	maximumFractionDigits: 2
+																}).format(Number(tour.pricingTiers.child))}
+															</p>
+															<p class="text-xs" style="color: var(--text-secondary);">Child (3-12)</p>
+														</div>
+													{/if}
+												</div>
+											{:else}
+												<!-- Standard Pricing (Per Person) -->
+												<p class="text-2xl font-bold" style="color: var(--text-primary);">
+													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													per person
+												</p>
+											{/if}
 										</div>
 										
 										{#if tour.availability.nextSlot}

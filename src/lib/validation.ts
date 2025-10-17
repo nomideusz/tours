@@ -26,10 +26,50 @@ export interface TourFormData {
 	includedItems: string[];
 	requirements: string[];
 	cancellationPolicy: string;
+	pricingModel?: 'per_person' | 'participant_categories' | 'group_tiers' | 'private_tour';
 	enablePricingTiers?: boolean;
 	pricingTiers?: {
 		adult: number;
 		child?: number;
+	};
+	participantCategories?: {
+		categories: Array<{
+			id: string;
+			label: string;
+			price: number;
+			ageRange?: string;
+			description?: string;
+			sortOrder: number;
+			minAge?: number;
+			maxAge?: number;
+			countsTowardCapacity?: boolean;
+		}>;
+		minCapacity?: number;
+		maxCapacity?: number;
+	};
+	privateTour?: {
+		flatPrice: number;
+		minCapacity?: number;
+		maxCapacity?: number;
+	};
+	groupPricingTiers?: {
+		tiers: Array<{
+			minParticipants: number;
+			maxParticipants: number;
+			price: number;
+			label?: string;
+		}>;
+		privateBooking?: boolean;
+	};
+	optionalAddons?: {
+		addons: Array<{
+			id: string;
+			name: string;
+			description?: string;
+			price: number;
+			required: boolean;
+			icon?: string;
+		}>;
 	};
 	publicListing?: string | boolean;
 }
@@ -156,8 +196,9 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		}
 	}
 
-	// Validate price (only if pricing tiers are disabled)
-	if (!data.enablePricingTiers) {
+	// Validate price (only for per_person pricing model)
+	const pricingModel = data.pricingModel || 'per_person';
+	if (pricingModel === 'per_person') {
 		if (data.price === undefined || data.price === null) {
 			errors.push({ field: 'price', message: 'Price is required' });
 		} else {
@@ -173,40 +214,86 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		}
 	}
 
-	// Validate pricing tiers (if enabled)
-	if (data.enablePricingTiers) {
-		if (!data.pricingTiers) {
-			errors.push({ field: 'pricingTiers', message: 'Pricing tiers are required when enabled' });
-		} else {
-			// Validate adult price
-			if (data.pricingTiers.adult === undefined || data.pricingTiers.adult === null) {
-				errors.push({ field: 'pricingTiers.adult', message: 'Adult price is required' });
-			} else {
-				// Allow 0 for free tours
-				if (data.pricingTiers.adult < 0) {
-					errors.push({ field: 'pricingTiers.adult', message: 'Adult price cannot be negative' });
-				} else if (data.pricingTiers.adult > 0 && data.pricingTiers.adult < minimumPrice) {
-					errors.push({ field: 'pricingTiers.adult', message: `Minimum price for paid tours is ${currencySymbol}${minimumPrice}` });
-				}
-				if (data.pricingTiers.adult > VALIDATION_RULES.price.max) {
-					errors.push({ field: 'pricingTiers.adult', message: `Adult price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
-				}
-			}
 
-			// Validate child price (optional, but if provided must be valid)
-			if (data.pricingTiers.child !== undefined && data.pricingTiers.child !== null) {
-				if (data.pricingTiers.child < 0) {
-					errors.push({ field: 'pricingTiers.child', message: 'Child price cannot be negative' });
+	// Validate participant categories (for participant_categories model)
+	if (pricingModel === 'participant_categories') {
+		if (!data.participantCategories || !data.participantCategories.categories || data.participantCategories.categories.length === 0) {
+			errors.push({ field: 'participantCategories', message: 'At least one participant category is required' });
+		} else {
+			// Validate each category
+			data.participantCategories.categories.forEach((category, index) => {
+				if (!category.label || category.label.trim().length === 0) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Category label is required' });
 				}
-				if (data.pricingTiers.child > VALIDATION_RULES.price.max) {
-					errors.push({ field: 'pricingTiers.child', message: `Child price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
+				if (category.label && category.label.length > 50) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Category label must be no more than 50 characters' });
 				}
-				// Add validation to ensure child price doesn't exceed adult price
-				if (data.pricingTiers.adult && data.pricingTiers.child > data.pricingTiers.adult) {
-					errors.push({ field: 'pricingTiers.child', message: 'Child price cannot be higher than adult price' });
+				if (category.price < 0) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Category price cannot be negative' });
 				}
+				if (category.price > VALIDATION_RULES.price.max) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: `Category price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
+				}
+				if (category.minAge !== undefined && category.minAge < 0) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Minimum age cannot be negative' });
+				}
+				if (category.maxAge !== undefined && category.maxAge < 0) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Maximum age cannot be negative' });
+				}
+				if (category.minAge !== undefined && category.maxAge !== undefined && category.minAge > category.maxAge) {
+					errors.push({ field: `participantCategories.categories.${index}`, message: 'Minimum age cannot be greater than maximum age' });
+				}
+			});
+			
+			// Check for duplicate category IDs
+			const categoryIds = data.participantCategories.categories.map(c => c.id);
+			const duplicateIds = categoryIds.filter((id, index) => categoryIds.indexOf(id) !== index);
+			if (duplicateIds.length > 0) {
+				errors.push({ field: 'participantCategories', message: 'Duplicate category IDs found' });
 			}
 		}
+	}
+
+	// Validate group pricing tiers (for group_tiers model)
+	if (pricingModel === 'group_tiers') {
+		if (!data.groupPricingTiers || !data.groupPricingTiers.tiers || data.groupPricingTiers.tiers.length === 0) {
+			errors.push({ field: 'groupPricingTiers', message: 'At least one pricing tier is required for group pricing' });
+		} else {
+			// Validate each tier
+			data.groupPricingTiers.tiers.forEach((tier, index) => {
+				if (tier.minParticipants < 1) {
+					errors.push({ field: `groupPricingTiers.tiers.${index}`, message: 'Minimum participants must be at least 1' });
+				}
+				if (tier.maxParticipants < tier.minParticipants) {
+					errors.push({ field: `groupPricingTiers.tiers.${index}`, message: 'Maximum participants must be greater than or equal to minimum' });
+				}
+				if (tier.price < 0) {
+					errors.push({ field: `groupPricingTiers.tiers.${index}`, message: 'Tier price cannot be negative' });
+				}
+				if (tier.price > VALIDATION_RULES.price.max) {
+					errors.push({ field: `groupPricingTiers.tiers.${index}`, message: `Tier price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
+				}
+				// Validate that tier max doesn't exceed capacity
+				if (data.capacity && tier.maxParticipants > data.capacity) {
+					errors.push({ field: `groupPricingTiers.tiers.${index}`, message: `Tier maximum (${tier.maxParticipants}) cannot exceed tour capacity (${data.capacity})` });
+				}
+			});
+		}
+	}
+
+	// Validate optional add-ons (available for all models)
+	if (data.optionalAddons?.addons && data.optionalAddons.addons.length > 0) {
+		data.optionalAddons.addons.forEach((addon, index) => {
+			if (!addon.name || addon.name.trim().length === 0) {
+				errors.push({ field: `optionalAddons.addons.${index}`, message: 'Add-on name is required' });
+			}
+			if (addon.price < 0) {
+				errors.push({ field: `optionalAddons.addons.${index}`, message: 'Add-on price cannot be negative' });
+			}
+			if (addon.price > VALIDATION_RULES.price.max) {
+				errors.push({ field: `optionalAddons.addons.${index}`, message: `Add-on price must be no more than ${currencySymbol}${VALIDATION_RULES.price.max}` });
+			}
+		});
 	}
 
 	// Validate duration

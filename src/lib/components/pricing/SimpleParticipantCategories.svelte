@@ -17,7 +17,6 @@ Designed to be more intuitive for tour guides
 		countInfantsTowardCapacity?: boolean;
 		allErrors?: any[];
 		onUpdate: (categories: ParticipantCategory[]) => void;
-		onCapacityUpdate?: (min: number, max: number) => void;
 		onValidate?: (field: string) => void;
 		getFieldError?: (errors: any[], field: string) => string | null;
 	}
@@ -30,7 +29,6 @@ Designed to be more intuitive for tour guides
 		countInfantsTowardCapacity = $bindable(false),
 		allErrors = [],
 		onUpdate,
-		onCapacityUpdate,
 		onValidate,
 		getFieldError
 	}: Props = $props();
@@ -68,6 +66,22 @@ Designed to be more intuitive for tour guides
 			price: Math.round(adult * 0.5 * 100) / 100,
 			minAge: 3,
 			maxAge: 12,
+			sortOrder: categories.length,
+			countsTowardCapacity: true
+		};
+		categories = [...categories, newCategory];
+		onUpdate(categories);
+	}
+	
+	// Add teenager category
+	function addTeenagerCategory() {
+		const adult = adultPrice() || 50;
+		const newCategory: ParticipantCategory = {
+			id: 'teenager',
+			label: 'Teenager (13-17)',
+			price: Math.round(adult * 0.7 * 100) / 100,
+			minAge: 13,
+			maxAge: 17,
 			sortOrder: categories.length,
 			countsTowardCapacity: true
 		};
@@ -124,6 +138,10 @@ Designed to be more intuitive for tour guides
 		categories.some(c => c.id === 'child' || c.label.toLowerCase().includes('child'))
 	);
 	
+	let hasTeenagerCategory = $derived(
+		categories.some(c => c.id === 'teenager' || c.label.toLowerCase().includes('teen'))
+	);
+	
 	let hasStudentCategory = $derived(
 		categories.some(c => c.id === 'student' || c.label.toLowerCase().includes('student'))
 	);
@@ -159,21 +177,6 @@ Designed to be more intuitive for tour guides
 		categories.every(c => c.label && c.label.trim() !== '' && c.price >= 0)
 	);
 	
-	// Compute intelligent adult age range label
-	let adultAgeLabel = $derived(() => {
-		if (hasSeniorCategory && hasChildCategory) {
-			// Both Child and Senior exist: Adult is in the middle (13-64)
-			return '(13-64)';
-		} else if (hasSeniorCategory && !hasChildCategory) {
-			// Only Senior exists: Adult is everyone under 65
-			return '(under 65)';
-		} else if (hasChildCategory && !hasSeniorCategory) {
-			// Only Child exists: Adult starts at 13 (after Child ends at 12)
-			return '(13+)';
-		}
-		// No Child or Senior: no age label needed
-		return '';
-	});
 </script>
 
 <div class="pricing-container">
@@ -194,12 +197,12 @@ Designed to be more intuitive for tour guides
 						min="1"
 						max={maxCapacity || 200}
 						bind:value={minCapacity}
-						oninput={() => {
+						onblur={(e) => {
+							const val = parseInt(e.currentTarget.value) || 1;
+							minCapacity = Math.max(1, Math.min(maxCapacity || 200, val));
+							e.currentTarget.value = minCapacity.toString();
 							if (minCapacity && maxCapacity && minCapacity > maxCapacity) {
 								maxCapacity = minCapacity;
-							}
-							if (onCapacityUpdate) {
-								onCapacityUpdate(minCapacity || 1, maxCapacity || 20);
 							}
 							if (onValidate) {
 								onValidate('capacity');
@@ -213,12 +216,12 @@ Designed to be more intuitive for tour guides
 						min={minCapacity || 1}
 						max="200"
 						bind:value={maxCapacity}
-						oninput={() => {
+						onblur={(e) => {
+							const val = parseInt(e.currentTarget.value) || 1;
+							maxCapacity = Math.max(minCapacity || 1, Math.min(200, val));
+							e.currentTarget.value = maxCapacity.toString();
 							if (minCapacity && maxCapacity && maxCapacity < minCapacity) {
 								minCapacity = maxCapacity;
-							}
-							if (onCapacityUpdate) {
-								onCapacityUpdate(minCapacity || 1, maxCapacity || 20);
 							}
 							if (onValidate) {
 								onValidate('capacity');
@@ -263,11 +266,11 @@ Designed to be more intuitive for tour guides
 			{#each categories as category, index (category.id)}
 				<SimpleCategoryCard
 					bind:category={categories[index]}
+					allCategories={categories}
 					{index}
 					{currencySymbol}
 					adultPrice={adultPrice()}
 					isAdultCategory={category.id === 'adult' || category.label.toLowerCase().includes('adult')}
-					adultAgeLabel={adultAgeLabel()}
 					onRemove={() => removeCategory(index)}
 					onUpdate={(updated: ParticipantCategory) => updateCategory(index, updated)}
 				/>
@@ -287,9 +290,19 @@ Designed to be more intuitive for tour guides
 							type="button"
 							onclick={addChildCategory}
 							class="quick-add-btn-compact"
-							title="Add Child category"
+							title="Add Child category (3-12)"
 						>
 							Child
+						</button>
+					{/if}
+					{#if !hasTeenagerCategory}
+						<button
+							type="button"
+							onclick={addTeenagerCategory}
+							class="quick-add-btn-compact"
+							title="Add Teenager category (13-17)"
+						>
+							Teenager
 						</button>
 					{/if}
 					{#if !hasStudentCategory}
@@ -307,7 +320,7 @@ Designed to be more intuitive for tour guides
 							type="button"
 							onclick={addSeniorCategory}
 							class="quick-add-btn-compact"
-							title="Add Senior category"
+							title="Add Senior category (65+)"
 						>
 							Senior
 						</button>

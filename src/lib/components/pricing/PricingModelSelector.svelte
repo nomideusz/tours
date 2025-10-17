@@ -25,12 +25,14 @@
 			value: 'participant_categories' as PricingModel,
 			icon: UserCog,
 			name: 'Per Person',
+			description: null,
 			badge: null
 		},
 		{
-			value: 'group_tiers' as PricingModel,
+			value: 'private_tour' as PricingModel,
 			icon: UsersRound,
 			name: 'Private Tour',
+			description: null,
 			badge: null
 		}
 	];
@@ -62,6 +64,9 @@
 							<span class="badge-recommended">Recommended</span>
 						{/if}
 					</div>
+					{#if model.description}
+						<div class="model-description">{model.description}</div>
+					{/if}
 				</div>
 			</button>
 		{/each}

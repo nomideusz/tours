@@ -90,11 +90,23 @@ export const GET: RequestHandler = async ({ url }) => {
 				price: tours.price,
 				duration: tours.duration,
 				capacity: tours.capacity,
+				minCapacity: tours.minCapacity,
+				maxCapacity: tours.maxCapacity,
 				location: tours.location,
 				images: tours.images,
 				categories: tours.categories,
 				qrCode: tours.qrCode,
 				createdAt: tours.createdAt,
+				// Pricing configuration (legacy and new)
+				pricingModel: tours.pricingModel,
+				enablePricingTiers: tours.enablePricingTiers,
+				pricingTiers: tours.pricingTiers,
+				groupPricingTiers: tours.groupPricingTiers,
+				optionalAddons: tours.optionalAddons,
+				// New complex pricing models
+				participantCategories: tours.participantCategories,
+				privateTour: tours.privateTour,
+				groupDiscounts: tours.groupDiscounts,
 				
 				// User fields for tour operator info
 				userId: tours.userId,
@@ -161,10 +173,22 @@ export const GET: RequestHandler = async ({ url }) => {
 			price: tour.price,
 			duration: tour.duration,
 			capacity: tour.capacity,
+			minCapacity: tour.minCapacity,
+			maxCapacity: tour.maxCapacity,
 			location: tour.location,
 			images: tour.images || [],
 			categories: tour.categories || [],
 			qrCode: tour.qrCode,
+			// Pricing configuration (legacy and new)
+			pricingModel: tour.pricingModel,
+			enablePricingTiers: tour.enablePricingTiers,
+			pricingTiers: tour.pricingTiers,
+			groupPricingTiers: tour.groupPricingTiers,
+			optionalAddons: tour.optionalAddons,
+			// New complex pricing models
+			participantCategories: tour.participantCategories,
+			privateTour: tour.privateTour,
+			groupDiscounts: tour.groupDiscounts,
 			operator: {
 				id: tour.userId,
 				name: tour.operatorName,

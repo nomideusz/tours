@@ -100,11 +100,15 @@
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || '',
+		// Pricing configuration
+		pricingModel: (form as any)?.formData?.pricingModel || 'participant_categories',
 		enablePricingTiers: (form as any)?.formData?.enablePricingTiers || false,
 		pricingTiers: (form as any)?.formData?.pricingTiers || {
 			adult: (form as any)?.formData?.price || 25, // default to same as price
 			child: 0 // will be set automatically when child pricing is enabled
-		}
+		},
+		groupPricingTiers: (form as any)?.formData?.groupPricingTiers || { tiers: [] },
+		optionalAddons: (form as any)?.formData?.optionalAddons || { addons: [] }
 	});
 
 	// Note: Location is not auto-populated - users can choose to use profile location via "Use my location" button
@@ -304,11 +308,13 @@
 		formData.status = 'draft';
 		isSubmitting = true;
 		
-		// Trigger form submission
-		const form = document.querySelector('form');
-		if (form) {
-			form.requestSubmit();
-		}
+		// Use $nextTick equivalent to ensure reactivity updates before submission
+		setTimeout(() => {
+			const form = document.querySelector('form');
+			if (form) {
+				form.requestSubmit();
+			}
+		}, 0);
 	}
 
 	function handleSaveAndActivate() {
@@ -326,11 +332,13 @@
 		formData.status = 'active';
 		isSubmitting = true;
 		
-		// Trigger form submission
-		const form = document.querySelector('form');
-		if (form) {
-			form.requestSubmit();
-		}
+		// Use $nextTick equivalent to ensure reactivity updates before submission
+		setTimeout(() => {
+			const form = document.querySelector('form');
+			if (form) {
+				form.requestSubmit();
+			}
+		}, 0);
 	}
 
 	// Calculate form completion for mobile header

@@ -155,7 +155,8 @@ export const tourStatusEnum = pgEnum('tour_status', ['active', 'draft']);
 export const pricingModelEnum = pgEnum('pricing_model', [
 	'per_person',
 	'participant_categories',
-	'group_tiers'
+	'group_tiers',
+	'private_tour'
 ]);
 
 // Tours table
@@ -201,6 +202,22 @@ export const tours = pgTable('tours', {
   // Private tour pricing (flat rate)
   privateTour: json('private_tour').$type<{
     flatPrice: number;
+    minCapacity?: number;
+    maxCapacity?: number;
+  }>(),
+  
+  // Legacy group pricing tiers (for backward compatibility)
+  groupPricingTiers: json('group_pricing_tiers').$type<{
+    tiers: Array<{
+      id: string;
+      minParticipants: number;
+      maxParticipants: number;
+      price: number;
+      label?: string;
+    }>;
+    privateBooking?: boolean;
+    minCapacity?: number;
+    maxCapacity?: number;
   }>(),
   
   // Group discounts for participant categories (NEW)

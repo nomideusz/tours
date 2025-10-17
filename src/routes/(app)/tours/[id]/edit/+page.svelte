@@ -167,11 +167,20 @@
 		includedItems: [''],
 		requirements: [''],
 		cancellationPolicy: '',
+		// Pricing configuration
+		pricingModel: 'participant_categories' as Tour['pricingModel'],
 		enablePricingTiers: false,
 		pricingTiers: {
 			adult: 0,
 			child: 0
 		},
+		participantCategories: undefined as any,
+		privateTour: undefined as any,
+		groupPricingTiers: { tiers: [] },
+		groupDiscounts: undefined as any,
+		optionalAddons: { addons: [] },
+		guidePaysStripeFee: false,
+		countInfantsTowardCapacity: false,
 		publicListing: true
 	});
 
@@ -368,11 +377,28 @@
 			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
 			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
 			cancellationPolicy: tour.cancellationPolicy || '',
+			// Pricing configuration
+			pricingModel: tour.pricingModel || 'participant_categories',
 			enablePricingTiers: tour.enablePricingTiers || false,
 			pricingTiers: tour.pricingTiers || {
 				adult: parseFloat(tour.price) || 0,
 				child: 0
 			},
+			participantCategories: tour.participantCategories ? {
+				...tour.participantCategories,
+				minCapacity: tour.minCapacity,
+				maxCapacity: tour.maxCapacity
+			} : undefined,
+			privateTour: tour.privateTour ? {
+				...tour.privateTour,
+				minCapacity: tour.minCapacity,
+				maxCapacity: tour.maxCapacity
+			} : undefined,
+			groupPricingTiers: tour.groupPricingTiers || { tiers: [] },
+			groupDiscounts: tour.groupDiscounts || undefined,
+			optionalAddons: tour.optionalAddons || { addons: [] },
+			guidePaysStripeFee: tour.guidePaysStripeFee || false,
+			countInfantsTowardCapacity: tour.countInfantsTowardCapacity || false,
 			publicListing: tour.publicListing || true
 		};
 
@@ -423,6 +449,12 @@
 						formDataToSubmit.append('pricingTiers.adult', String((value as any).adult));
 						formDataToSubmit.append('pricingTiers.child', String((value as any).child));
 					}
+				} else if (key === 'participantCategories' || key === 'privateTour' || key === 'groupDiscounts' || key === 'optionalAddons') {
+					// JSON.stringify objects for new pricing features
+					formDataToSubmit.append(key, JSON.stringify(value));
+				} else if (key === 'guidePaysStripeFee' || key === 'countInfantsTowardCapacity') {
+					// Boolean fields
+					formDataToSubmit.append(key, value ? 'true' : 'false');
 				} else {
 					formDataToSubmit.append(key, String(value));
 				}
@@ -430,6 +462,12 @@
 			
 			// Add enablePricingTiers separately
 			formDataToSubmit.append('enablePricingTiers', formData.enablePricingTiers ? 'true' : 'false');
+			
+			// Add capacity fields from participantCategories or privateTour or defaults
+			const minCap = (formData.participantCategories?.minCapacity) || ((formData.privateTour as any)?.minCapacity) || 1;
+			const maxCap = (formData.participantCategories?.maxCapacity) || ((formData.privateTour as any)?.maxCapacity) || formData.capacity;
+			formDataToSubmit.append('minCapacity', String(minCap));
+			formDataToSubmit.append('maxCapacity', String(maxCap));
 			
 			// Add images to remove
 			imagesToRemove.forEach(imageUrl => {

@@ -535,10 +535,10 @@
 								<div class="flex-1 min-w-0">
 									<p class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">Booking Date</p>
 									<p class="text-sm sm:text-base font-semibold" style="color: var(--text-primary);">
-										{safeFormatDate(booking.createdAt)}
+										{safeFormatDate(booking.created || booking.createdAt)}
 									</p>
 									<p class="text-xs sm:text-sm mt-0.5" style="color: var(--text-secondary);">
-										at {booking.createdAt ? new Date(booking.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+										at {(booking.created || booking.createdAt) ? new Date(booking.created || booking.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
 									</p>
 								</div>
 							</div>
@@ -939,7 +939,7 @@
 								<div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background: var(--text-tertiary);"></div>
 								<div class="flex-1">
 									<p class="text-sm font-medium" style="color: var(--text-primary);">Booking Created</p>
-									<p class="text-xs" style="color: var(--text-secondary);">{safeFormatDateTime(booking.createdAt)}</p>
+									<p class="text-xs" style="color: var(--text-secondary);">{safeFormatDateTime(booking.created || booking.createdAt)}</p>
 								</div>
 							</div>
 							

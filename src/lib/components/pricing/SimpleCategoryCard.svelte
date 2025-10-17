@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ParticipantCategory } from '$lib/types.js';
+	import { getCategoryDisplayLabel } from '$lib/utils/category-age-ranges.js';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import Users from 'lucide-svelte/icons/users';
 	import Baby from 'lucide-svelte/icons/baby';
@@ -8,27 +9,30 @@
 
 	interface Props {
 		category: ParticipantCategory;
+		allCategories: ParticipantCategory[];
 		index: number;
 		currencySymbol: string;
 		adultPrice?: number;
 		onRemove: () => void;
 		onUpdate: (updatedCategory: ParticipantCategory) => void;
 		isAdultCategory?: boolean;
-		adultAgeLabel?: string;
 		simplifiedMode?: boolean;
 	}
 
 	let { 
-		category = $bindable(), 
+		category = $bindable(),
+		allCategories,
 		index, 
 		currencySymbol, 
 		adultPrice, 
 		onRemove, 
 		onUpdate,
 		isAdultCategory = false,
-		adultAgeLabel = '',
 		simplifiedMode = true
 	}: Props = $props();
+	
+	// Get intelligent display label
+	let displayLabel = $derived(getCategoryDisplayLabel(category, allCategories));
 
 	// Icon mapping for known categories (Child is 3-12, not 3-17)
 	const categoryIcons: Record<string, any> = {
@@ -111,10 +115,8 @@
 				<Icon class="category-icon" />
 			{/key}
 			
-			{#if isAdultCategory}
-				<span class="adult-label">{adultAgeLabel ? 'Adult ' + adultAgeLabel : 'Base Price'}</span>
-			{:else if isChildCategory || isSeniorCategory}
-				<span class="category-label-fixed">{category.label}</span>
+			{#if isAdultCategory || isChildCategory || isSeniorCategory}
+				<span class="category-label-fixed">{displayLabel}</span>
 			{:else}
 				<input
 					type="text"
@@ -132,6 +134,8 @@
 				<CurrencyInput
 					bind:value={category.price}
 					{currencySymbol}
+					min={0}
+					max={100000}
 					step={0.5}
 					placeholder="0.00"
 					class="adult-price-input"
@@ -166,25 +170,32 @@
 								class:active={currentDiscountOption?.value === option.value}
 								title="{option.label}"
 							>
-								{option.value === 0 ? '100%' : option.value === 100 ? 'Free' : `-${option.value}%`}
+								{option.value === 0 ? '100%' : option.value === 100 ? 'Free' : `${option.value}%`}
 							</button>
 						{/each}
 						<!-- Custom discount percentage -->
 						<div class="custom-discount-input">
 							<input
 								type="number"
-								min="0"
+								min="-100"
 								max="100"
 								placeholder="%"
 								value={discountPercent}
 								oninput={(e) => {
-									const val = parseInt(e.currentTarget.value);
-									if (!isNaN(val) && val >= 0 && val <= 100) {
+									let val = parseInt(e.currentTarget.value);
+									if (!isNaN(val)) {
+										// Clamp between -100 to 100 (negative = surcharge)
+										val = Math.max(-100, Math.min(100, val));
 										applyDiscount(val);
 									}
 								}}
+								onblur={(e) => {
+									// Force update display to clamped value on blur
+									const val = Math.max(-100, Math.min(100, parseInt(e.currentTarget.value) || 0));
+									e.currentTarget.value = val.toString();
+								}}
 								class="discount-number-input"
-								title="Custom discount percentage"
+								title="Discount % (negative for surcharge)"
 							/>
 							<span class="percent-sign">%</span>
 						</div>
@@ -196,6 +207,8 @@
 					<CurrencyInput
 						bind:value={category.price}
 						{currencySymbol}
+						min={0}
+						max={adultPrice ? adultPrice * 2 : 50000}
 						step={0.5}
 						placeholder="0.00"
 						class="category-price-input"
@@ -396,7 +409,7 @@
 	}
 	
 	.discount-number-input {
-		width: 2.5rem;
+		width: 3.25rem;
 		padding: 0.125rem 0.25rem;
 		font-size: 0.75rem;
 		font-weight: 500;

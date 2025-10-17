@@ -861,6 +861,13 @@
 										<span class="text-xs" style="color: var(--text-secondary);">
 											/ <Baby class="inline h-3 w-3 -mt-0.5" /> {$globalCurrencyFormatter(tour.pricingTiers.child)}
 										</span>
+									{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories}
+										{@const childCategory = tour.participantCategories.categories.find(c => c.id === 'child' || c.label.toLowerCase().includes('child'))}
+										{#if childCategory}
+											<span class="text-xs" style="color: var(--text-secondary);">
+												/ <Baby class="inline h-3 w-3 -mt-0.5" /> {$globalCurrencyFormatter(childCategory.price)}
+											</span>
+										{/if}
 									{/if}
 									<span class="text-xs" style="color: var(--text-tertiary);">
 										<span class="mx-1">•</span>
@@ -884,6 +891,14 @@
 												<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
 												{$globalCurrencyFormatter(tour.pricingTiers.child)}
 											</span>
+										{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories}
+											{@const childCategory = tour.participantCategories.categories.find(c => c.id === 'child' || c.label.toLowerCase().includes('child'))}
+											{#if childCategory}
+												<span class="text-xs" style="color: var(--text-secondary);">
+													<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
+													{$globalCurrencyFormatter(childCategory.price)}
+												</span>
+											{/if}
 										{/if}
 									</div>
 								</div>

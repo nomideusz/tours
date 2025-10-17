@@ -101,6 +101,7 @@
 				
 				<!-- Close button -->
 				<button 
+					type="button"
 					onclick={handleClose}
 					class="modal-close-button flex-shrink-0 p-1 rounded-md transition-colors"
 					aria-label="Close"
@@ -112,12 +113,14 @@
 			<!-- Actions -->
 			<div class="flex flex-col-reverse sm:flex-row gap-3 px-6 pb-6">
 				<button 
+					type="button"
 					onclick={handleCancel}
 					class="button-secondary button--full-width sm:button--auto"
 				>
 					{cancelText}
 				</button>
 				<button 
+					type="button"
 					onclick={handleConfirm}
 					class="{variantStyles.confirmButton} button--full-width sm:button--auto"
 				>

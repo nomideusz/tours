@@ -29,6 +29,9 @@
 	
 	// Add a new discount tier with intelligent defaults
 	function addTier() {
+		// Don't allow adding if we can't add more
+		if (!canAddMore()) return;
+		
 		let minParticipants = 2; // Start with 2 for first tier
 		let maxParticipants = maxCapacity;
 		
@@ -36,9 +39,18 @@
 			// Split existing last tier's range
 			const lastTier = tiers[tiers.length - 1];
 			const range = lastTier.maxParticipants - lastTier.minParticipants + 1;
+			
+			// Don't split if there's not enough room (need at least 2 people)
+			if (range < 2) return;
+			
 			const splitPoint = lastTier.minParticipants + Math.floor(range / 2);
 			
-			// Update last tier to end at split point
+			// Validate split point creates valid ranges
+			if (splitPoint - 1 < lastTier.minParticipants || splitPoint > maxCapacity) {
+				return; // Invalid split
+			}
+			
+			// Update last tier to end at split point - 1
 			tiers[tiers.length - 1] = {
 				...lastTier,
 				maxParticipants: splitPoint - 1
@@ -47,6 +59,13 @@
 			// New tier starts at split point
 			minParticipants = splitPoint;
 			maxParticipants = maxCapacity;
+			
+			// Validate new tier has valid range
+			if (minParticipants > maxParticipants) {
+				// Revert the last tier change
+				tiers[tiers.length - 1] = lastTier;
+				return;
+			}
 		}
 		
 		// Calculate suggested discount based on tier position
@@ -97,15 +116,18 @@
 	
 	// Update a tier with strict validation
 	function updateTier(index: number, updatedTier: GroupDiscountTier) {
-		// Validate that min is not less than 2 for first tier, or previous tier's max + 1
+		// STRICT ENFORCEMENT: Tiers must be continuous and non-overlapping
+		
+		// First tier: min must be at least 2
 		if (index === 0) {
 			updatedTier.minParticipants = Math.max(2, updatedTier.minParticipants);
-		} else if (index > 0) {
+		} else {
+			// Non-first tiers: min MUST equal previous tier's max + 1 (NO GAPS, NO OVERLAPS)
 			const prevMax = tiers[index - 1].maxParticipants;
-			updatedTier.minParticipants = Math.max(prevMax + 1, updatedTier.minParticipants);
+			updatedTier.minParticipants = prevMax + 1;
 		}
 		
-		// Validate that max is at least min
+		// Max must be at least min
 		if (updatedTier.maxParticipants < updatedTier.minParticipants) {
 			updatedTier.maxParticipants = updatedTier.minParticipants;
 		}
@@ -115,43 +137,104 @@
 			updatedTier.maxParticipants = maxCapacity;
 		}
 		
-		// If not last tier, max can't exceed what leaves room for next tier
+		// If not last tier, ensure max leaves room for ALL subsequent tiers (at least 1 person each)
 		if (index < tiers.length - 1) {
-			const nextMin = tiers[index + 1].minParticipants;
-			if (updatedTier.maxParticipants >= nextMin) {
-				updatedTier.maxParticipants = nextMin - 1;
+			const tiersAfter = tiers.length - index - 1; // How many tiers come after this one
+			const maxPossible = maxCapacity - tiersAfter; // Leave at least 1 person for each tier after
+			if (updatedTier.maxParticipants > maxPossible) {
+				updatedTier.maxParticipants = maxPossible;
 			}
 		}
 		
+		// Apply the validated tier
 		tiers[index] = updatedTier;
 		
-		// Cascade changes: enforce continuous ranges for all subsequent tiers
+		// CASCADE: Enforce continuous ranges for ALL subsequent tiers
 		for (let i = index + 1; i < tiers.length; i++) {
-			// Next tier must start immediately after previous tier
-			tiers[i].minParticipants = tiers[i - 1].maxParticipants + 1;
+			// Calculate the new min (MUST start immediately after previous tier)
+			const newMin = tiers[i - 1].maxParticipants + 1;
 			
-			// Ensure max is valid
+			// Check if this tier has a valid range left
+			if (newMin > maxCapacity) {
+				// This tier has no valid range - remove it and all tiers after
+				tiers = tiers.slice(0, i);
+				break;
+			}
+			
+			// Validate and update max
+			let newMax = tiers[i].maxParticipants;
+			
 			if (i === tiers.length - 1) {
-				// Last tier always goes to maxCapacity
-				tiers[i].maxParticipants = maxCapacity;
+				// Last tier always ends at maxCapacity
+				newMax = maxCapacity;
 			} else {
-				// Ensure max is at least min
-				if (tiers[i].maxParticipants < tiers[i].minParticipants) {
-					tiers[i].maxParticipants = tiers[i].minParticipants;
+				// Ensure max is at least min and leaves room for remaining tiers
+				const tiersRemaining = tiers.length - i - 1;
+				const maxPossibleForThisTier = maxCapacity - tiersRemaining;
+				
+				if (newMax < newMin) {
+					newMax = newMin;
+				}
+				
+				// Don't let this tier consume all remaining space
+				if (newMax > maxPossibleForThisTier) {
+					newMax = maxPossibleForThisTier;
 				}
 			}
+			
+			// Create new tier object for proper reactivity
+			tiers[i] = {
+				...tiers[i],
+				minParticipants: newMin,
+				maxParticipants: newMax
+			};
 		}
 		
+		// Force reactivity update
+		tiers = [...tiers];
 		onUpdate(tiers, enabled);
 	}
+	
+	// Cleanup invalid tiers on mount and when tiers change
+	$effect(() => {
+		if (tiers.length === 0) return;
+		
+		let hasInvalidTiers = false;
+		const validTiers = tiers.filter(tier => {
+			// Remove tiers where min > max (invalid)
+			if (tier.minParticipants > tier.maxParticipants) {
+				hasInvalidTiers = true;
+				return false;
+			}
+			return true;
+		});
+		
+		if (hasInvalidTiers) {
+			tiers = validTiers;
+			onUpdate(tiers, enabled);
+		}
+	});
 	
 	// Check if can add more tiers (need at least 2-person range to split)
 	let canAddMore = $derived(() => {
 		if (tiers.length === 0) return true;
 		if (tiers.length >= 5) return false; // Max 5 tiers for simplicity
+		
+		// Check if there's room for another tier
+		// We need the last tier to be splittable (at least 2 people)
 		const lastTier = tiers[tiers.length - 1];
+		
+		// Check for invalid tier
+		if (lastTier.minParticipants > lastTier.maxParticipants) return false;
+		
+		// Last tier must end at maxCapacity
+		if (lastTier.maxParticipants !== maxCapacity) return false;
+		
+		// Calculate the range of the last tier
 		const range = lastTier.maxParticipants - lastTier.minParticipants + 1;
-		return range >= 2; // Need at least 2 people to split
+		
+		// Need at least 2 people to split (1 for existing tier, 1 for new tier)
+		return range >= 2;
 	});
 	
 </script>
@@ -162,7 +245,7 @@
 		<div class="tiers-list">
 			{#each tiers as tier, index (tier.id)}
 				<GroupDiscountTierCard
-					bind:tier={tiers[index]}
+					{tier}
 					{index}
 					{currencySymbol}
 					{basePrice}
@@ -188,7 +271,9 @@
 					enabled = true;
 					addTier();
 				}}
+				disabled={tiers.length > 0 && !canAddMore()}
 				class="quick-add-btn"
+				title={tiers.length > 0 && !canAddMore() ? 'No room to add more tiers' : 'Add another discount tier'}
 			>
 				<Plus class="w-4 h-4" />
 				<span>Add discount tier</span>
@@ -261,11 +346,18 @@
 		white-space: nowrap;
 	}
 	
-	.quick-add-btn:hover {
+	.quick-add-btn:hover:not(:disabled) {
 		background: var(--color-primary-50);
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
 		transform: translateY(-1px);
+	}
+	
+	.quick-add-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		color: var(--text-tertiary);
+		background: var(--bg-secondary);
 	}
 	
 	.tiers-list {

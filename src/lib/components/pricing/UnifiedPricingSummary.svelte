@@ -26,7 +26,7 @@
 	
 	// Get base price (adult price for per-person, or flat rate for private)
 	let basePrice = $derived(() => {
-		if (pricingModel === 'group_tiers') {
+		if (pricingModel === 'private_tour') {
 			return privateTourPrice || 0;
 		}
 		if (!categories || categories.length === 0) return 0;
@@ -37,12 +37,12 @@
 	// Check if we have anything to show
 	let hasContent = $derived(
 		(pricingModel === 'participant_categories' && categories.length > 0 && basePrice() > 0) ||
-		(pricingModel === 'group_tiers' && basePrice() > 0)
+		(pricingModel === 'private_tour' && basePrice() > 0)
 	);
 	
 	// Calculate example total for private tours
 	let privateTourExampleTotal = $derived(() => {
-		if (pricingModel !== 'group_tiers' || basePrice() === 0) return null;
+		if (pricingModel !== 'private_tour' || basePrice() === 0) return null;
 		const addonsTotal = addons.filter(a => a.required).reduce((sum, a) => sum + a.price, 0);
 		return basePrice() + addonsTotal;
 	});
@@ -55,7 +55,7 @@
 			<h3 class="summary-title">Pricing summary</h3>
 		</div>
 		
-		{#if pricingModel === 'group_tiers'}
+		{#if pricingModel === 'private_tour'}
 			<!-- Private Tour Summary -->
 			<div class="summary-section">
 				<h4 class="section-label">Tour price</h4>
@@ -67,9 +67,7 @@
 					{#if basePrice() > 0}
 						<div class="per-person-indicator">
 							<span class="pp-range">
-								{currencySymbol}{(basePrice() / maxCapacity).toFixed(2)}/pp ({maxCapacity} people)
-								– 
-								{currencySymbol}{(basePrice() / minCapacity).toFixed(2)}/pp ({minCapacity} {minCapacity === 1 ? 'person' : 'people'})
+								{minCapacity}-{maxCapacity} people • ~{currencySymbol}{(basePrice() / Math.ceil((maxCapacity + minCapacity) / 2)).toFixed(2)} per person
 							</span>
 						</div>
 					{/if}
@@ -85,7 +83,7 @@
 					</div>
 				</div>
 			{/if}
-		{:else}
+		{:else if pricingModel === 'participant_categories'}
 			<!-- Category Prices -->
 			{#if categories.length > 0}
 				<div class="summary-section">
@@ -97,6 +95,9 @@
 								<span class="item-price">{currencySymbol}{category.price.toFixed(2)}</span>
 							</div>
 						{/each}
+					</div>
+					<div class="capacity-info">
+						<span class="capacity-text">{minCapacity}-{maxCapacity} people per tour</span>
 					</div>
 				</div>
 			{/if}
@@ -326,6 +327,19 @@
 		font-size: 0.75rem;
 		color: var(--text-tertiary);
 		font-family: monospace;
+	}
+	
+	.capacity-info {
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid var(--border-primary);
+		text-align: center;
+	}
+	
+	.capacity-text {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+		font-weight: 500;
 	}
 	
 	.total-row {
