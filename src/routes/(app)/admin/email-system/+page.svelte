@@ -132,10 +132,17 @@
 		return users;
 	});
 	
+	// Derived: Valid selections (only users in current filtered list)
+	let validSelectedUserIds = $derived.by(() => {
+		if (selectedUserIds.size === 0) return new Set();
+		const filteredUserIds = new Set(filteredUsers.map((u: any) => u.id));
+		return new Set([...selectedUserIds].filter(id => filteredUserIds.has(id)));
+	});
+
 	let recipientCount = $derived.by(() => {
 		if (announcementTarget === 'specific') return specificEmail ? 1 : 0;
 		// For custom or when users are selected, show selected count
-		if (selectedUserIds.size > 0) return selectedUserIds.size;
+		if (validSelectedUserIds.size > 0) return validSelectedUserIds.size;
 		// Otherwise show filtered count
 		return filteredUsers.length;
 	});
@@ -146,27 +153,13 @@
 	// Track the current announcement target to detect changes
 	let previousTarget = $state<string>('');
 	
-	// Clear or filter selected users when target changes
+	// Clear selected users when target changes
 	$effect(() => {
 		if (previousTarget && previousTarget !== announcementTarget) {
 			// When target changes, clear all selections
 			selectedUserIds = new Set();
 		}
 		previousTarget = announcementTarget;
-	});
-
-	// Filter selected users to only include those in current filtered list
-	// This ensures the count is always accurate
-	$effect(() => {
-		const filteredUserIds = new Set(filteredUsers.map((u: any) => u.id));
-		const validSelections = new Set(
-			[...selectedUserIds].filter(id => filteredUserIds.has(id))
-		);
-		
-		// Only update if selections changed (avoid infinite loop)
-		if (validSelections.size !== selectedUserIds.size) {
-			selectedUserIds = validSelections;
-		}
 	});
 
 	async function testEmail() {
@@ -226,7 +219,7 @@
 			return;
 		}
 
-		if (announcementTarget === 'custom' && selectedUserIds.size === 0) {
+		if (announcementTarget === 'custom' && validSelectedUserIds.size === 0) {
 			results = [{ 
 				time: new Date().toLocaleTimeString(), 
 				action: 'Send Announcement', 
@@ -245,12 +238,12 @@
 			if (announcementTarget === 'specific') {
 				recipientType = 'custom';
 				recipientFilter = { emails: [specificEmail] };
-			} else if (selectedUserIds.size > 0) {
+			} else if (validSelectedUserIds.size > 0) {
 				// If users are manually selected, always use custom type
 				recipientType = 'custom';
-				recipientFilter = { userIds: Array.from(selectedUserIds) };
+				recipientFilter = { userIds: Array.from(validSelectedUserIds) };
 			} else if (announcementTarget === 'custom') {
-				recipientFilter = { userIds: Array.from(selectedUserIds) };
+				recipientFilter = { userIds: Array.from(validSelectedUserIds) };
 			} else if (announcementTarget === 'active' || announcementTarget === 'beta') {
 				recipientFilter = { type: announcementTarget };
 			}
@@ -675,15 +668,15 @@
 				<strong>
 					{#if announcementTarget === 'specific'}
 						This will send 1 email to: {specificEmail || '(enter email above)'}
-					{:else if selectedUserIds.size > 0}
-						This will send emails to {selectedUserIds.size} selected user{selectedUserIds.size === 1 ? '' : 's'}!
+					{:else if validSelectedUserIds.size > 0}
+						This will send emails to {validSelectedUserIds.size} selected user{validSelectedUserIds.size === 1 ? '' : 's'}!
 					{:else}
 						This will send emails to {filteredUsers.length} real user{filteredUsers.length === 1 ? '' : 's'}!
 					{/if}
 				</strong>
 				<p>
-					{#if selectedUserIds.size > 0}
-						You have manually selected {selectedUserIds.size} out of {filteredUsers.length} users.
+					{#if validSelectedUserIds.size > 0}
+						You have manually selected {validSelectedUserIds.size} out of {filteredUsers.length} users.
 					{:else if announcementTarget !== 'specific'}
 						All {filteredUsers.length} {announcementTarget} users will receive this email.
 					{:else}
