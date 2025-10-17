@@ -143,6 +143,17 @@
 	let unsentUsers = $derived(filteredUsers.filter((u: any) => !sentUserIds.has(u.id)));
 	let alreadySentCount = $derived(filteredUsers.filter((u: any) => sentUserIds.has(u.id)).length);
 
+	// Track the current announcement target to detect changes
+	let previousTarget = $state<string>('');
+	
+	// Clear selected users when target changes
+	$effect(() => {
+		if (previousTarget && previousTarget !== announcementTarget) {
+			selectedUserIds = new Set();
+		}
+		previousTarget = announcementTarget;
+	});
+
 	async function testEmail() {
 		isLoading = true;
 		try {
