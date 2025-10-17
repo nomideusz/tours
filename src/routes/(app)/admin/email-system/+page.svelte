@@ -146,12 +146,27 @@
 	// Track the current announcement target to detect changes
 	let previousTarget = $state<string>('');
 	
-	// Clear selected users when target changes
+	// Clear or filter selected users when target changes
 	$effect(() => {
 		if (previousTarget && previousTarget !== announcementTarget) {
+			// When target changes, clear all selections
 			selectedUserIds = new Set();
 		}
 		previousTarget = announcementTarget;
+	});
+
+	// Filter selected users to only include those in current filtered list
+	// This ensures the count is always accurate
+	$effect(() => {
+		const filteredUserIds = new Set(filteredUsers.map((u: any) => u.id));
+		const validSelections = new Set(
+			[...selectedUserIds].filter(id => filteredUserIds.has(id))
+		);
+		
+		// Only update if selections changed (avoid infinite loop)
+		if (validSelections.size !== selectedUserIds.size) {
+			selectedUserIds = validSelections;
+		}
 	});
 
 	async function testEmail() {
