@@ -222,9 +222,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		} else {
 			// Validate each category
 			data.participantCategories.categories.forEach((category, index) => {
-				if (!category.label || category.label.trim().length === 0) {
-					errors.push({ field: `participantCategories.categories.${index}`, message: 'Category label is required' });
-				}
+				// Label is optional, but if provided, validate length
 				if (category.label && category.label.length > 50) {
 					errors.push({ field: `participantCategories.categories.${index}`, message: 'Category label must be no more than 50 characters' });
 				}
