@@ -31,19 +31,10 @@
 		{
 			id: 'tour-display',
 			title: 'Tour Display',
-			description: 'Compare tour presentation layouts',
+			description: 'Compare different tour card layouts and presentation styles',
 			icon: Package,
 			href: '/demo/tour-display',
-			status: 'coming-soon',
-			feedbackCount: 0
-		},
-		{
-			id: 'group-management',
-			title: 'Group Management',
-			description: 'Test participant tracking features',
-			icon: Users,
-			href: '/demo/groups',
-			status: 'coming-soon',
+			status: 'active',
 			feedbackCount: 0
 		}
 	];
