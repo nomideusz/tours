@@ -87,11 +87,13 @@ export function getTourDisplayPriceFormatted(tour: Tour): string {
 	if (tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories?.length) {
 		const categories = tour.participantCategories.categories;
 		
-		// Check if we have multiple unique prices
-		const uniquePrices = [...new Set(categories.map(c => c.price))].sort((a, b) => a - b);
+		// Get prices excluding free categories (like infants) unless all are free
+		const allPrices = categories.map(c => c.price);
+		const paidPrices = allPrices.filter(p => p > 0);
+		const uniquePrices = [...new Set(paidPrices.length > 0 ? paidPrices : allPrices)].sort((a, b) => a - b);
 		
 		if (uniquePrices.length === 1) {
-			// All categories same price
+			// All paid categories same price
 			const price = uniquePrices[0];
 			if (price === 0) {
 				return 'Free';
@@ -101,10 +103,6 @@ export function getTourDisplayPriceFormatted(tour: Tour): string {
 			// Multiple prices - show range
 			const minPrice = uniquePrices[0];
 			const maxPrice = uniquePrices[uniquePrices.length - 1];
-			
-			if (minPrice === 0) {
-				return `Free - ${formatCurrency(maxPrice)}/person`;
-			}
 			return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}/person`;
 		}
 	}
@@ -145,7 +143,11 @@ export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurren
 	// Participant categories: show price range if multiple prices
 	if (tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories?.length) {
 		const categories = tour.participantCategories.categories;
-		const uniquePrices = [...new Set(categories.map(c => c.price))].sort((a, b) => a - b);
+		
+		// Get prices excluding free categories (like infants) unless all are free
+		const allPrices = categories.map(c => c.price);
+		const paidPrices = allPrices.filter(p => p > 0);
+		const uniquePrices = [...new Set(paidPrices.length > 0 ? paidPrices : allPrices)].sort((a, b) => a - b);
 		
 		if (uniquePrices.length === 1) {
 			const price = uniquePrices[0];
@@ -156,10 +158,6 @@ export function getTourDisplayPriceFormattedWithCurrency(tour: Tour, ownerCurren
 		} else if (uniquePrices.length > 1) {
 			const minPrice = uniquePrices[0];
 			const maxPrice = uniquePrices[uniquePrices.length - 1];
-			
-			if (minPrice === 0) {
-				return `Free - ${formatTourOwnerCurrency(maxPrice, ownerCurrency)}/person`;
-			}
 			return `${formatTourOwnerCurrency(minPrice, ownerCurrency)} - ${formatTourOwnerCurrency(maxPrice, ownerCurrency)}/person`;
 		}
 	}
