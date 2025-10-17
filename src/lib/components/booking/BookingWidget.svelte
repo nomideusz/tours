@@ -164,12 +164,14 @@
 				</div>
 			{/if}
 			
-			{#if !hasRealTimeSlots}
-				<div class="alert-warning rounded-lg p-4 text-center">
-					<Info class="w-6 h-6 mx-auto mb-2" style="color: var(--color-warning-600);" />
+		{#if !hasRealTimeSlots}
+			<div class="alert-warning rounded-lg p-4">
+				<div class="flex flex-col items-center text-center">
+					<Info class="w-6 h-6 mb-2" style="color: var(--color-warning-600);" />
 					<h3 class="font-semibold mb-1">No Available Slots</h3>
 					<p class="text-sm">Contact the guide for availability.</p>
 				</div>
+			</div>
 			{:else}
 				<form method="POST" action="?/book" use:enhance={() => {
 					isSubmitting = true;
