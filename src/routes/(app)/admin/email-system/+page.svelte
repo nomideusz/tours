@@ -29,7 +29,10 @@
 	let announcementCTA = $state('');
 	let announcementCTAUrl = $state('');
 	let announcementFooter = $state('');
-	let announcementTarget = $state<'all' | 'active' | 'beta'>('all');
+	let announcementTarget = $state<'all' | 'active' | 'beta' | 'specific' | 'custom'>('specific');
+	let specificEmail = $state('');
+	let selectedUserIds = $state<Set<string>>(new Set());
+	let showAdvancedOptions = $state(false);
 	
 	// WhatsApp test state
 	let whatsappPhone = $state('');
@@ -46,6 +49,38 @@
 	}));
 
 	let recentBookings = $derived($bookingsQuery.data || []);
+
+	// Fetch all users for recipient selection
+	let usersQuery = $derived(createQuery({
+		queryKey: ['admin-users-list'],
+		queryFn: async () => {
+			const response = await fetch('/api/admin/users');
+			if (!response.ok) throw new Error('Failed to fetch users');
+			return response.json();
+		}
+	}));
+
+	let allUsers = $derived($usersQuery.data || []);
+	
+	// Filter users based on target
+	let filteredUsers = $derived.by(() => {
+		if (announcementTarget === 'specific') return [];
+		if (announcementTarget === 'custom') return allUsers;
+		if (announcementTarget === 'all') return allUsers;
+		if (announcementTarget === 'active') {
+			return allUsers.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0);
+		}
+		if (announcementTarget === 'beta') {
+			return allUsers.filter((u: any) => u.earlyAccessMember);
+		}
+		return [];
+	});
+	
+	let recipientCount = $derived.by(() => {
+		if (announcementTarget === 'specific') return specificEmail ? 1 : 0;
+		if (announcementTarget === 'custom') return selectedUserIds.size;
+		return filteredUsers.length;
+	});
 
 	async function testEmail() {
 		isLoading = true;
@@ -94,8 +129,41 @@
 			return;
 		}
 
+		if (announcementTarget === 'specific' && !specificEmail) {
+			results = [{ 
+				time: new Date().toLocaleTimeString(), 
+				action: 'Send Announcement', 
+				status: 'error', 
+				message: 'Please enter a specific email address' 
+			}, ...results];
+			return;
+		}
+
+		if (announcementTarget === 'custom' && selectedUserIds.size === 0) {
+			results = [{ 
+				time: new Date().toLocaleTimeString(), 
+				action: 'Send Announcement', 
+				status: 'error', 
+				message: 'Please select at least one recipient' 
+			}, ...results];
+			return;
+		}
+
 		isLoading = true;
 		try {
+			// Build recipient filter
+			let recipientType = announcementTarget;
+			let recipientFilter;
+
+			if (announcementTarget === 'specific') {
+				recipientType = 'custom';
+				recipientFilter = { emails: [specificEmail] };
+			} else if (announcementTarget === 'custom') {
+				recipientFilter = { userIds: Array.from(selectedUserIds) };
+			} else if (announcementTarget === 'active' || announcementTarget === 'beta') {
+				recipientFilter = { type: announcementTarget };
+			}
+
 			const response = await fetch('/api/admin/send-announcement', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -106,7 +174,8 @@
 					ctaText: announcementCTA || undefined,
 					ctaUrl: announcementCTAUrl || undefined,
 					footer: announcementFooter || undefined,
-					target: announcementTarget
+					recipientType,
+					recipientFilter
 				})
 			});
 
@@ -117,7 +186,7 @@
 					time: new Date().toLocaleTimeString(), 
 					action: 'Send Announcement', 
 					status: 'success', 
-					message: `Sent to ${result.sentCount} users` 
+					message: `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients` 
 				}, ...results];
 				
 				// Clear form
@@ -298,14 +367,118 @@
 					<h2>Send Announcement</h2>
 				</div>
 
+			<div class="form-group">
+				<label for="target">Send To *</label>
+				<select id="target" bind:value={announcementTarget}>
+					<option value="specific">Specific Email Address</option>
+					<option value="beta">Beta Testers ({allUsers.filter((u: any) => u.earlyAccessMember).length})</option>
+					<option value="active">Active Users ({allUsers.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0).length})</option>
+					<option value="all">All Users ({allUsers.length})</option>
+					<option value="custom">Custom Selection</option>
+				</select>
+				<p class="help-text">
+					{#if announcementTarget === 'specific'}
+						Send to a single email address (useful for testing)
+					{:else if announcementTarget === 'beta'}
+						Send to all beta testers / early access members
+					{:else if announcementTarget === 'active'}
+						Send to users who have created tours or made bookings
+					{:else if announcementTarget === 'all'}
+						Send to all registered users
+					{:else if announcementTarget === 'custom'}
+						Manually select recipients from the list below
+					{/if}
+				</p>
+			</div>
+
+			{#if announcementTarget === 'specific'}
 				<div class="form-group">
-					<label for="target">Send To</label>
-					<select id="target" bind:value={announcementTarget}>
-						<option value="all">All Users</option>
-						<option value="active">Active Users Only</option>
-						<option value="beta">Beta Users Only</option>
-					</select>
+					<label for="specific-email">Recipient Email *</label>
+					<input 
+						type="email" 
+						id="specific-email" 
+						bind:value={specificEmail}
+						placeholder="e.g., b.dymet@gmail.com"
+					/>
+					<p class="help-text">Enter the email address to send to</p>
 				</div>
+			{/if}
+
+			{#if announcementTarget !== 'specific' && filteredUsers.length > 0}
+				<div class="recipients-preview">
+					<div class="recipients-header">
+						<Users class="w-4 h-4" />
+						<span>
+							{#if announcementTarget === 'custom'}
+								Select Recipients ({selectedUserIds.size} selected)
+							{:else}
+								Recipients Preview ({filteredUsers.length} total)
+							{/if}
+						</span>
+						{#if announcementTarget === 'custom'}
+							<button 
+								class="btn-link"
+								onclick={() => {
+									if (selectedUserIds.size === filteredUsers.length) {
+										selectedUserIds = new Set();
+									} else {
+										selectedUserIds = new Set(filteredUsers.map((u: any) => u.id));
+									}
+								}}
+							>
+								{selectedUserIds.size === filteredUsers.length ? 'Deselect All' : 'Select All'}
+							</button>
+						{/if}
+					</div>
+					<div class="recipients-list">
+						{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 5) as user}
+							<div class="recipient-item">
+								{#if announcementTarget === 'custom'}
+									<input 
+										type="checkbox" 
+										checked={selectedUserIds.has(user.id)}
+										onchange={(e) => {
+											const checked = (e.target as HTMLInputElement).checked;
+											if (checked) {
+												selectedUserIds.add(user.id);
+											} else {
+												selectedUserIds.delete(user.id);
+											}
+											selectedUserIds = selectedUserIds; // Trigger reactivity
+										}}
+									/>
+								{/if}
+								<div class="recipient-info">
+									<strong>{user.name}</strong>
+									<span class="email">{user.email}</span>
+									{#if user.earlyAccessMember}
+										<span class="badge beta">Beta</span>
+									{/if}
+									{#if user.tourCount > 0}
+										<span class="badge">{user.tourCount} tours</span>
+									{/if}
+								</div>
+							</div>
+						{/each}
+						{#if !showAdvancedOptions && filteredUsers.length > 5}
+							<button 
+								class="btn-link show-more"
+								onclick={() => showAdvancedOptions = true}
+							>
+								Show all {filteredUsers.length} recipients
+							</button>
+						{/if}
+						{#if showAdvancedOptions && filteredUsers.length > 5}
+							<button 
+								class="btn-link show-more"
+								onclick={() => showAdvancedOptions = false}
+							>
+								Show less
+							</button>
+						{/if}
+					</div>
+				</div>
+			{/if}
 
 				<div class="form-group">
 					<label for="subject">Email Subject *</label>
@@ -383,13 +556,19 @@
 					Send Announcement
 				</button>
 
-				<div class="warning-box">
-					<AlertCircle class="w-5 h-5 text-warning" />
-					<div>
-						<strong>This will send emails to real users!</strong>
-						<p>Make sure to review your message carefully before sending.</p>
-					</div>
+			<div class="warning-box">
+				<AlertCircle class="w-5 h-5 text-warning" />
+				<div>
+					<strong>
+						{#if announcementTarget === 'specific'}
+							This will send 1 email to: {specificEmail || '(enter email above)'}
+						{:else}
+							This will send emails to {recipientCount} real user{recipientCount === 1 ? '' : 's'}!
+						{/if}
+					</strong>
+					<p>Make sure to review your message carefully before sending.</p>
 				</div>
+			</div>
 			</div>
 		</div>
 	{/if}
@@ -692,6 +871,112 @@
 		margin: 0;
 		font-size: 0.875rem;
 		color: var(--text-secondary);
+	}
+
+	.recipients-preview {
+		margin-bottom: 1.5rem;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+
+	.recipients-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1rem;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-primary);
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+	}
+
+	.recipients-list {
+		max-height: 400px;
+		overflow-y: auto;
+	}
+
+	.recipient-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid var(--border-primary);
+		transition: background 0.15s ease;
+	}
+
+	.recipient-item:last-child {
+		border-bottom: none;
+	}
+
+	.recipient-item:hover {
+		background: var(--bg-secondary);
+	}
+
+	.recipient-item input[type="checkbox"] {
+		width: auto;
+		margin: 0;
+	}
+
+	.recipient-info {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		flex: 1;
+	}
+
+	.recipient-info strong {
+		font-size: 0.875rem;
+		color: var(--text-primary);
+	}
+
+	.recipient-info .email {
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+
+	.badge {
+		padding: 0.125rem 0.5rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.25rem;
+		font-size: 0.7rem;
+		color: var(--text-secondary);
+	}
+
+	.badge.beta {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+		font-weight: 500;
+	}
+
+	.btn-link {
+		padding: 0;
+		background: none;
+		border: none;
+		color: var(--color-primary-600);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		text-decoration: none;
+		transition: color 0.15s ease;
+		margin-left: auto;
+	}
+
+	.btn-link:hover {
+		color: var(--color-primary-700);
+		text-decoration: underline;
+	}
+
+	.show-more {
+		display: block;
+		width: 100%;
+		padding: 0.75rem;
+		text-align: center;
+		border-top: 1px solid var(--border-primary);
 	}
 
 	.activity-log {

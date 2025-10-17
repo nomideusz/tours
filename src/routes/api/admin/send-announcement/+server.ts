@@ -36,6 +36,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     let recipients;
     
     switch (recipientType) {
+      case 'specific':
+        // Single email address (handled by 'custom' case with emails array)
+        if (recipientFilter?.emails && recipientFilter.emails.length > 0) {
+          recipients = await db.select().from(users).where(inArray(users.email, recipientFilter.emails));
+        } else {
+          return json({ 
+            success: false, 
+            error: 'Specific email address required' 
+          }, { status: 400 });
+        }
+        break;
+        
       case 'all':
         // All users
         recipients = await db.select().from(users);
