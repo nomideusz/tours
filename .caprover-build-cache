@@ -1,0 +1,26 @@
+# CapRover Build Cache Configuration
+# This file helps CapRover understand caching strategy
+
+# Enable build cache in CapRover:
+# 1. Go to CapRover Dashboard
+# 2. Select your app (zaur)
+# 3. Go to "Deployment" tab
+# 4. Enable "Use Build Cache" option
+# 5. This will cache Docker layers between builds
+
+# Expected speed improvements:
+# - First build: ~3-5 minutes (full build)
+# - Subsequent builds (code changes only): ~30-60 seconds
+# - Dependency changes: ~2-3 minutes
+
+# What gets cached:
+# ✓ node_modules (if package.json unchanged)
+# ✓ pnpm store
+# ✓ Base images
+# ✓ System dependencies
+
+# What gets rebuilt:
+# ✗ Your source code (src/)
+# ✗ Build output (build/)
+# ✗ Only changed files
+

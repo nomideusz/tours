@@ -4,16 +4,16 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm globally (cached)
 RUN npm install -g pnpm
 
-# Copy package files
+# Copy package files FIRST (better layer caching)
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
+# Install dependencies (this layer is cached if package files don't change)
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
+# Copy source code AFTER dependencies (so we don't invalidate cache on code changes)
 COPY . .
 
 # Build the application
