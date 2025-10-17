@@ -178,6 +178,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       sent: result.sent,
       failed: result.failed,
       details: result.results.map(r => ({
+        userId: r.user.id,
         email: r.user.email,
         name: r.user.name,
         success: r.result.success,

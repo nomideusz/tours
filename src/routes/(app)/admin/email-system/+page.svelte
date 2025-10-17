@@ -8,6 +8,7 @@
 	import Users from 'lucide-svelte/icons/users';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import XCircle from 'lucide-svelte/icons/x-circle';
+	import X from 'lucide-svelte/icons/x';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Eye from 'lucide-svelte/icons/eye';
@@ -33,6 +34,8 @@
 	let specificEmail = $state('');
 	let selectedUserIds = $state<Set<string>>(new Set());
 	let showAdvancedOptions = $state(false);
+	let showSentDetailsModal = $state(false);
+	let lastSendResults = $state<any>(null);
 	
 	// WhatsApp test state
 	let whatsappPhone = $state('');
@@ -181,6 +184,10 @@
 			if (announcementTarget === 'specific') {
 				recipientType = 'custom';
 				recipientFilter = { emails: [specificEmail] };
+			} else if (selectedUserIds.size > 0) {
+				// If users are manually selected, always use custom type
+				recipientType = 'custom';
+				recipientFilter = { userIds: Array.from(selectedUserIds) };
 			} else if (announcementTarget === 'custom') {
 				recipientFilter = { userIds: Array.from(selectedUserIds) };
 			} else if (announcementTarget === 'active' || announcementTarget === 'beta') {
@@ -205,12 +212,22 @@
 			const result = await response.json();
 
 			if (response.ok) {
+				// Store results for viewing
+				lastSendResults = {
+					subject: announcementSubject,
+					timestamp: new Date().toISOString(),
+					...result
+				};
+
 				results = [{ 
 					time: new Date().toLocaleTimeString(), 
 					action: 'Send Announcement', 
 					status: 'success', 
 					message: `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients` 
 				}, ...results];
+				
+				// Show details modal
+				showSentDetailsModal = true;
 				
 				// Clear form
 				announcementSubject = '';
@@ -694,6 +711,91 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Sent Details Modal -->
+	{#if showSentDetailsModal && lastSendResults}
+		<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showSentDetailsModal = false} onkeydown={(e) => e.key === 'Escape' && (showSentDetailsModal = false)}>
+			<div class="modal-content" role="document" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+				<div class="modal-header">
+					<h2>📧 Announcement Sent Successfully</h2>
+					<button class="modal-close" onclick={() => showSentDetailsModal = false}>
+						<X class="w-5 h-5" />
+					</button>
+				</div>
+				
+				<div class="modal-body">
+					<div class="summary-stats">
+						<div class="stat-card success">
+							<CheckCircle class="w-6 h-6" />
+							<div>
+								<div class="stat-value">{lastSendResults.sent}</div>
+								<div class="stat-label">Successfully Sent</div>
+							</div>
+						</div>
+						{#if lastSendResults.failed > 0}
+							<div class="stat-card error">
+								<XCircle class="w-6 h-6" />
+								<div>
+									<div class="stat-value">{lastSendResults.failed}</div>
+									<div class="stat-label">Failed</div>
+								</div>
+							</div>
+						{/if}
+						<div class="stat-card">
+							<Users class="w-6 h-6" />
+							<div>
+								<div class="stat-value">{lastSendResults.totalRecipients}</div>
+								<div class="stat-label">Total Recipients</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="details-section">
+						<h3>📋 Detailed Results</h3>
+						<div class="recipients-table">
+							<div class="table-header">
+								<span>Status</span>
+								<span>Name</span>
+								<span>Email</span>
+							</div>
+							{#each lastSendResults.details as detail}
+								<div class="table-row {detail.success ? 'success' : 'error'}">
+									<span class="status-col">
+										{#if detail.success}
+											<CheckCircle class="w-4 h-4 text-success" />
+										{:else}
+											<XCircle class="w-4 h-4 text-danger" />
+										{/if}
+									</span>
+									<span class="name-col">{detail.name}</span>
+									<span class="email-col">{detail.email}</span>
+								</div>
+								{#if !detail.success && detail.error}
+									<div class="error-detail">
+										⚠️ {detail.error}
+									</div>
+								{/if}
+							{/each}
+						</div>
+					</div>
+
+					<div class="info-box" style="margin-top: 1.5rem;">
+						<AlertCircle class="w-5 h-5 text-info" />
+						<div>
+							<strong>Subject:</strong> {lastSendResults.subject}<br>
+							<strong>Sent at:</strong> {new Date(lastSendResults.timestamp).toLocaleString()}
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button class="btn-secondary" onclick={() => showSentDetailsModal = false}>
+						Close
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 </PageContainer>
 
@@ -1028,6 +1130,194 @@
 		padding: 0.75rem;
 		text-align: center;
 		border-top: 1px solid var(--border-primary);
+	}
+
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1rem;
+	}
+
+	.modal-content {
+		background: var(--bg-primary);
+		border-radius: 1rem;
+		max-width: 800px;
+		width: 100%;
+		max-height: 90vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+	}
+
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.5rem;
+		border-bottom: 1px solid var(--border-primary);
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.modal-close {
+		padding: 0.5rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--text-secondary);
+		border-radius: 0.5rem;
+		transition: all 0.15s ease;
+	}
+
+	.modal-close:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+	}
+
+	.modal-body {
+		padding: 1.5rem;
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	.modal-footer {
+		padding: 1rem 1.5rem;
+		border-top: 1px solid var(--border-primary);
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
+	}
+
+	.summary-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	.stat-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+	}
+
+	.stat-card.success {
+		background: #d4edda;
+		border-color: #28a745;
+		color: #155724;
+	}
+
+	.stat-card.error {
+		background: #f8d7da;
+		border-color: #dc3545;
+		color: #721c24;
+	}
+
+	.stat-value {
+		font-size: 1.5rem;
+		font-weight: 700;
+	}
+
+	.stat-label {
+		font-size: 0.75rem;
+		opacity: 0.8;
+	}
+
+	.details-section {
+		margin-top: 1.5rem;
+	}
+
+	.details-section h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.recipients-table {
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+
+	.table-header {
+		display: grid;
+		grid-template-columns: 60px 1fr 2fr;
+		gap: 1rem;
+		padding: 0.75rem 1rem;
+		background: var(--bg-secondary);
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--text-secondary);
+	}
+
+	.table-row {
+		display: grid;
+		grid-template-columns: 60px 1fr 2fr;
+		gap: 1rem;
+		padding: 0.75rem 1rem;
+		border-top: 1px solid var(--border-primary);
+		font-size: 0.875rem;
+		align-items: center;
+	}
+
+	.table-row.success {
+		background: rgba(212, 237, 218, 0.2);
+	}
+
+	.table-row.error {
+		background: rgba(248, 215, 218, 0.2);
+	}
+
+	.status-col {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.error-detail {
+		padding: 0.5rem 1rem;
+		background: rgba(248, 215, 218, 0.5);
+		border-top: 1px solid var(--border-primary);
+		font-size: 0.75rem;
+		color: #721c24;
+	}
+
+	.btn-secondary {
+		padding: 0.5rem 1rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.btn-secondary:hover {
+		background: var(--bg-primary);
+		border-color: var(--color-primary-400);
 	}
 
 	.activity-log {
