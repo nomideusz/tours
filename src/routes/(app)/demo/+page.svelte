@@ -22,10 +22,10 @@
 		{
 			id: 'booking-flow',
 			title: 'Booking Flow',
-			description: 'Experience different booking interfaces',
+			description: 'Experience different booking interfaces with various pricing models',
 			icon: Calendar,
 			href: '/demo/booking',
-			status: 'coming-soon',
+			status: 'active',
 			feedbackCount: 0
 		},
 		{
