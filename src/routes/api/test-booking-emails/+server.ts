@@ -10,8 +10,9 @@ import { guideBookingNotificationEmail } from '$lib/email/templates/guide-bookin
 import { tourReminderEmail } from '$lib/email/templates/tour-reminder.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// Check if user is admin
-	if (!locals.user || !locals.user.isAdmin) {
+	// Check if user is admin (check both isAdmin field and admin role)
+	const isAdmin = locals.user?.isAdmin === true || locals.user?.role === 'admin';
+	if (!locals.user || !isAdmin) {
 		throw error(403, 'Unauthorized - Admin only');
 	}
 
