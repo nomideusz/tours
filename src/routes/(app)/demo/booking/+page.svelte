@@ -1,14 +1,45 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { createQuery } from '@tanstack/svelte-query';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Users from 'lucide-svelte/icons/users';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Package from 'lucide-svelte/icons/package';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 
-	// Demo tour examples representing different pricing models
-	const demoTours = [
+	// Fetch real tours from the database
+	let toursQuery = $derived(createQuery({
+		queryKey: ['demo-tours'],
+		queryFn: async () => {
+			const response = await fetch('/api/public/tours');
+			if (!response.ok) throw new Error('Failed to fetch tours');
+			const data = await response.json();
+			return data.tours || [];
+		}
+	}));
+
+	let allTours = $derived($toursQuery.data || []);
+	let isLoading = $derived($toursQuery.isLoading);
+
+	// Filter tours by pricing model for demo purposes
+	let demoTours = $derived.by(() => {
+		if (!allTours.length) return [];
+		
+		const participantCategoryTour = allTours.find((t: any) => t.pricingModel === 'participant_categories');
+		const groupTierTour = allTours.find((t: any) => t.pricingModel === 'group_tiers');
+		const perPersonTour = allTours.find((t: any) => t.pricingModel === 'per_person');
+		
+		return [
+			participantCategoryTour,
+			groupTierTour,
+			perPersonTour
+		].filter(Boolean);
+	});
+
+	// Fallback demo tour examples if no real tours exist
+	const fallbackDemoTours = [
 		{
 			id: 'participant-categories',
 			name: 'Walking Food Tour',
@@ -130,8 +161,26 @@
 		<h2>Demo Tours</h2>
 		<p class="section-description">Click on any tour to experience the booking flow</p>
 		
-		<div class="tour-grid">
-			{#each demoTours as tour}
+		{#if isLoading}
+			<div class="loading-state">
+				<Loader2 class="w-8 h-8 animate-spin text-primary" />
+				<p>Loading demo tours...</p>
+			</div>
+		{:else if demoTours.length === 0}
+			<div class="empty-state">
+				<p>No tours available for demo. Please create some tours first with different pricing models:</p>
+				<ul>
+					<li>Tours with participant categories (Adult/Child/Infant)</li>
+					<li>Tours with group tier pricing</li>
+					<li>Tours with simple per-person pricing</li>
+				</ul>
+				<button class="create-tour-button" onclick={() => goto('/tours/new')}>
+					Create Your First Tour
+				</button>
+			</div>
+		{:else}
+			<div class="tour-grid">
+				{#each demoTours as tour}
 				<a 
 					href="/book/{tour.qrCode}" 
 					class="tour-card"
@@ -183,8 +232,9 @@
 						Try Booking Flow →
 					</button>
 				</a>
-			{/each}
-		</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	<div class="tips-section">
@@ -427,6 +477,61 @@
 		margin-bottom: 0.5rem;
 		color: var(--text-secondary);
 		line-height: 1.6;
+	}
+
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		padding: 3rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		color: var(--text-secondary);
+	}
+
+	.empty-state {
+		padding: 2rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		text-align: center;
+	}
+
+	.empty-state p {
+		margin: 0 0 1rem 0;
+		color: var(--text-secondary);
+	}
+
+	.empty-state ul {
+		text-align: left;
+		max-width: 400px;
+		margin: 1rem auto;
+		padding-left: 1.5rem;
+	}
+
+	.empty-state li {
+		margin-bottom: 0.5rem;
+		color: var(--text-secondary);
+	}
+
+	.create-tour-button {
+		margin-top: 1.5rem;
+		padding: 0.75rem 1.5rem;
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.create-tour-button:hover {
+		background: var(--color-primary-700);
 	}
 
 	/* Mobile responsiveness */
