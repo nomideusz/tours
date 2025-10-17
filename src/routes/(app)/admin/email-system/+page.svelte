@@ -13,9 +13,12 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Megaphone from 'lucide-svelte/icons/megaphone';
+	import History from 'lucide-svelte/icons/history';
+	import FileText from 'lucide-svelte/icons/file-text';
+	import Clock from 'lucide-svelte/icons/clock';
 
 	// State
-	let activeTab = $state<'test' | 'announcement' | 'whatsapp'>('test');
+	let activeTab = $state<'test' | 'announcement' | 'whatsapp' | 'history'>('test');
 	let isLoading = $state(false);
 	let results = $state<Array<{ time: string; action: string; status: 'success' | 'error'; message: string }>>([]);
 
@@ -36,6 +39,10 @@
 	let showAdvancedOptions = $state(false);
 	let showSentDetailsModal = $state(false);
 	let lastSendResults = $state<any>(null);
+	
+	// History state
+	let selectedHistorySubject = $state('');
+	let historyUserIds = $state<Set<string>>(new Set());
 	
 	// WhatsApp test state
 	let whatsappPhone = $state('');
@@ -79,6 +86,34 @@
 
 	let sentAnnouncements = $derived($sentAnnouncementsQuery.data || []);
 	let sentUserIds = $derived(new Set(sentAnnouncements.map((a: any) => a.userId)));
+	
+	// Fetch announcement history (all subjects)
+	let historyQuery = $derived(createQuery({
+		queryKey: ['announcement-history'],
+		queryFn: async () => {
+			const response = await fetch('/api/admin/announcement-history');
+			if (!response.ok) return [];
+			return response.json();
+		}
+	}));
+
+	let announcementHistory = $derived($historyQuery.data || []);
+	
+	// Get sent users for selected history subject
+	let historySentUserIds = $derived.by(() => {
+		if (!selectedHistorySubject) return new Set();
+		return new Set(
+			sentAnnouncements
+				.filter((a: any) => a.subject === selectedHistorySubject)
+				.map((a: any) => a.userId)
+		);
+	});
+	
+	// Get users who didn't receive the selected announcement
+	let historyUnsentUsers = $derived.by(() => {
+		if (!selectedHistorySubject) return [];
+		return allUsers.filter((u: any) => !historySentUserIds.has(u.id));
+	});
 	
 	// Filter users based on target
 	let filteredUsers = $derived.by(() => {
@@ -339,6 +374,13 @@
 		>
 			<MessageSquare class="w-4 h-4" />
 			Test WhatsApp
+		</button>
+		<button 
+			class="tab {activeTab === 'history' ? 'active' : ''}"
+			onclick={() => activeTab = 'history'}
+		>
+			<History class="w-4 h-4" />
+			Email History
 		</button>
 	</div>
 
@@ -610,7 +652,7 @@
 					{:else if selectedUserIds.size > 0}
 						This will send emails to {selectedUserIds.size} selected user{selectedUserIds.size === 1 ? '' : 's'}!
 					{:else}
-						This will send emails to {recipientCount} real user{recipientCount === 1 ? '' : 's'}!
+						This will send emails to {filteredUsers.length} real user{filteredUsers.length === 1 ? '' : 's'}!
 					{/if}
 				</strong>
 				<p>
