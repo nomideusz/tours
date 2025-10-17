@@ -165,12 +165,10 @@
 			{/if}
 			
 		{#if !hasRealTimeSlots}
-			<div class="alert-warning rounded-lg p-4">
-				<div class="flex flex-col items-center text-center">
-					<Info class="w-6 h-6 mb-2" style="color: var(--color-warning-600);" />
-					<h3 class="font-semibold mb-1">No Available Slots</h3>
-					<p class="text-sm">Contact the guide for availability.</p>
-				</div>
+			<div class="no-slots-banner">
+				<Info class="icon" />
+				<h3 class="title">No Available Slots</h3>
+				<p class="description">Contact the guide for availability.</p>
 			</div>
 			{:else}
 				<form method="POST" action="?/book" use:enhance={() => {
@@ -563,6 +561,40 @@
 		.booking-widget h3 {
 			font-size: 0.875rem;
 		}
+	}
+
+	/* No Available Slots Banner */
+	.no-slots-banner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 2rem 1.5rem;
+		background: var(--color-warning-50, #fffbeb);
+		border: 1px solid var(--color-warning-200, #fde68a);
+		border-radius: 0.5rem;
+		gap: 0.5rem;
+	}
+
+	.no-slots-banner :global(.icon) {
+		width: 2rem;
+		height: 2rem;
+		color: var(--color-warning-600, #d97706);
+		flex-shrink: 0;
+	}
+
+	.no-slots-banner .title {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary, #1f2937);
+	}
+
+	.no-slots-banner .description {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--text-secondary, #6b7280);
 	}
 </style>
 
