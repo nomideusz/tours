@@ -62,25 +62,48 @@
 
 	let allUsers = $derived($usersQuery.data || []);
 	
+	// Fetch sent announcements for the current subject
+	let sentAnnouncementsQuery = $derived(createQuery({
+		queryKey: ['sent-announcements', announcementSubject],
+		queryFn: async () => {
+			if (!announcementSubject) return [];
+			const response = await fetch(`/api/admin/announcements-sent?subject=${encodeURIComponent(announcementSubject)}`);
+			if (!response.ok) return [];
+			return response.json();
+		},
+		enabled: !!announcementSubject
+	}));
+
+	let sentAnnouncements = $derived($sentAnnouncementsQuery.data || []);
+	let sentUserIds = $derived(new Set(sentAnnouncements.map((a: any) => a.userId)));
+	
 	// Filter users based on target
 	let filteredUsers = $derived.by(() => {
 		if (announcementTarget === 'specific') return [];
-		if (announcementTarget === 'custom') return allUsers;
-		if (announcementTarget === 'all') return allUsers;
+		
+		let users = allUsers;
+		
+		// Apply target filter
 		if (announcementTarget === 'active') {
-			return allUsers.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0);
+			users = users.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0);
+		} else if (announcementTarget === 'beta') {
+			users = users.filter((u: any) => u.earlyAccessMember);
 		}
-		if (announcementTarget === 'beta') {
-			return allUsers.filter((u: any) => u.earlyAccessMember);
-		}
-		return [];
+		// 'all' and 'custom' show all users
+		
+		return users;
 	});
 	
 	let recipientCount = $derived.by(() => {
 		if (announcementTarget === 'specific') return specificEmail ? 1 : 0;
-		if (announcementTarget === 'custom') return selectedUserIds.size;
+		// For custom or when users are selected, show selected count
+		if (selectedUserIds.size > 0) return selectedUserIds.size;
+		// Otherwise show filtered count
 		return filteredUsers.length;
 	});
+	
+	let unsentUsers = $derived(filteredUsers.filter((u: any) => !sentUserIds.has(u.id)));
+	let alreadySentCount = $derived(filteredUsers.filter((u: any) => sentUserIds.has(u.id)).length);
 
 	async function testEmail() {
 		isLoading = true;
@@ -409,45 +432,47 @@
 					<div class="recipients-header">
 						<Users class="w-4 h-4" />
 						<span>
-							{#if announcementTarget === 'custom'}
-								Select Recipients ({selectedUserIds.size} selected)
+							{#if selectedUserIds.size > 0}
+								{selectedUserIds.size} selected
 							{:else}
-								Recipients Preview ({filteredUsers.length} total)
+								{filteredUsers.length} recipients
+							{/if}
+							{#if alreadySentCount > 0}
+								<span class="sent-badge">({alreadySentCount} already sent)</span>
 							{/if}
 						</span>
-						{#if announcementTarget === 'custom'}
-							<button 
-								class="btn-link"
-								onclick={() => {
-									if (selectedUserIds.size === filteredUsers.length) {
-										selectedUserIds = new Set();
-									} else {
-										selectedUserIds = new Set(filteredUsers.map((u: any) => u.id));
-									}
-								}}
-							>
-								{selectedUserIds.size === filteredUsers.length ? 'Deselect All' : 'Select All'}
-							</button>
-						{/if}
+						<button 
+							class="btn-link"
+							onclick={() => {
+								// Select only unsent users
+								if (selectedUserIds.size > 0) {
+									selectedUserIds = new Set();
+								} else {
+									selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
+								}
+							}}
+						>
+							{selectedUserIds.size > 0 ? 'Deselect All' : 'Select All Unsent'}
+						</button>
 					</div>
 					<div class="recipients-list">
-						{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 5) as user}
-							<div class="recipient-item">
-								{#if announcementTarget === 'custom'}
-									<input 
-										type="checkbox" 
-										checked={selectedUserIds.has(user.id)}
-										onchange={(e) => {
-											const checked = (e.target as HTMLInputElement).checked;
-											if (checked) {
-												selectedUserIds.add(user.id);
-											} else {
-												selectedUserIds.delete(user.id);
-											}
-											selectedUserIds = selectedUserIds; // Trigger reactivity
-										}}
-									/>
-								{/if}
+						{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 10) as user}
+							{@const isSent = sentUserIds.has(user.id)}
+							<div class="recipient-item {isSent ? 'already-sent' : ''}">
+								<input 
+									type="checkbox" 
+									checked={selectedUserIds.has(user.id)}
+									disabled={isSent}
+									onchange={(e) => {
+										const checked = (e.target as HTMLInputElement).checked;
+										if (checked) {
+											selectedUserIds.add(user.id);
+										} else {
+											selectedUserIds.delete(user.id);
+										}
+										selectedUserIds = selectedUserIds; // Trigger reactivity
+									}}
+								/>
 								<div class="recipient-info">
 									<strong>{user.name}</strong>
 									<span class="email">{user.email}</span>
@@ -457,10 +482,13 @@
 									{#if user.tourCount > 0}
 										<span class="badge">{user.tourCount} tours</span>
 									{/if}
+									{#if isSent}
+										<span class="badge sent">✓ Sent</span>
+									{/if}
 								</div>
 							</div>
 						{/each}
-						{#if !showAdvancedOptions && filteredUsers.length > 5}
+						{#if !showAdvancedOptions && filteredUsers.length > 10}
 							<button 
 								class="btn-link show-more"
 								onclick={() => showAdvancedOptions = true}
@@ -468,7 +496,7 @@
 								Show all {filteredUsers.length} recipients
 							</button>
 						{/if}
-						{#if showAdvancedOptions && filteredUsers.length > 5}
+						{#if showAdvancedOptions && filteredUsers.length > 10}
 							<button 
 								class="btn-link show-more"
 								onclick={() => showAdvancedOptions = false}
@@ -951,6 +979,29 @@
 		border-color: var(--color-primary-400);
 		color: var(--color-primary-700);
 		font-weight: 500;
+	}
+
+	.badge.sent {
+		background: #d4edda;
+		border-color: #28a745;
+		color: #155724;
+		font-weight: 500;
+	}
+
+	.sent-badge {
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
+		font-weight: normal;
+		margin-left: 0.5rem;
+	}
+
+	.recipient-item.already-sent {
+		opacity: 0.6;
+		background: var(--bg-secondary);
+	}
+
+	.recipient-item.already-sent input[type="checkbox"] {
+		cursor: not-allowed;
 	}
 
 	.btn-link {

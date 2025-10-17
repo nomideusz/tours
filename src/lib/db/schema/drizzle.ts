@@ -477,4 +477,17 @@ export const promoCodes = pgTable('promo_codes', {
   // Metadata
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// Announcement tracking table
+export const announcementsSent = pgTable('announcements_sent', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  subject: text('subject').notNull(),
+  heading: text('heading').notNull(),
+  sentBy: text('sent_by').notNull().references(() => users.id), // Admin who sent it
+  sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  messageId: text('message_id'), // Resend message ID
+  status: varchar('status', { length: 20 }).notNull().default('sent'), // sent, failed, bounced
+  error: text('error')
 }); 

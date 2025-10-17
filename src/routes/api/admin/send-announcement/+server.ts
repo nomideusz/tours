@@ -1,9 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { users } from '$lib/db/schema/index.js';
+import { users, announcementsSent } from '$lib/db/schema/index.js';
 import { eq, and, inArray, gt, isNotNull } from 'drizzle-orm';
 import { sendBulkAnnouncement } from '$lib/email/sender.js';
+import { createId } from '@paralleldrive/cuid2';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
@@ -139,11 +140,37 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       updatedAt: r.updatedAt.toISOString()
     }));
 
-    // Send emails
+    // Send emails with rate limiting (Resend limit: 10 emails/second for free tier)
     const result = await sendBulkAnnouncement(
       typedRecipients as any,
-      { subject, heading, message, ctaText, ctaUrl, footer }
+      { subject, heading, message, ctaText, ctaUrl, footer },
+      (current, total) => {
+        console.log(`Sending announcement: ${current}/${total}`);
+      }
     );
+
+    // Track sent announcements in database
+    const sentRecords = result.results
+      .filter(r => r.result.success)
+      .map(r => ({
+        id: createId(),
+        userId: r.user.id,
+        subject,
+        heading,
+        sentBy: locals.user!.id,
+        messageId: r.result.messageId || null,
+        status: 'sent' as const,
+        error: null
+      }));
+
+    if (sentRecords.length > 0) {
+      try {
+        await db.insert(announcementsSent).values(sentRecords);
+      } catch (dbError) {
+        console.error('Error tracking sent announcements:', dbError);
+        // Don't fail the request if tracking fails
+      }
+    }
 
     return json({
       success: true,

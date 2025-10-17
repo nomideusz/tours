@@ -283,9 +283,10 @@ export async function sendBulkAnnouncement(
       onProgress(i + 1, users.length);
     }
     
-    // Add a small delay to avoid rate limiting
+    // Add delay to avoid rate limiting (Resend: 10/sec free, 50/sec paid)
+    // Using 150ms = ~6.6 emails/second to be safe
     if (i < users.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
   }
 
