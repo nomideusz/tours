@@ -601,19 +601,29 @@
 					Send Announcement
 				</button>
 
-			<div class="warning-box">
-				<AlertCircle class="w-5 h-5 text-warning" />
-				<div>
-					<strong>
-						{#if announcementTarget === 'specific'}
-							This will send 1 email to: {specificEmail || '(enter email above)'}
-						{:else}
-							This will send emails to {recipientCount} real user{recipientCount === 1 ? '' : 's'}!
-						{/if}
-					</strong>
-					<p>Make sure to review your message carefully before sending.</p>
-				</div>
+		<div class="warning-box">
+			<AlertCircle class="w-5 h-5 text-warning" />
+			<div>
+				<strong>
+					{#if announcementTarget === 'specific'}
+						This will send 1 email to: {specificEmail || '(enter email above)'}
+					{:else if selectedUserIds.size > 0}
+						This will send emails to {selectedUserIds.size} selected user{selectedUserIds.size === 1 ? '' : 's'}!
+					{:else}
+						This will send emails to {recipientCount} real user{recipientCount === 1 ? '' : 's'}!
+					{/if}
+				</strong>
+				<p>
+					{#if selectedUserIds.size > 0}
+						You have manually selected {selectedUserIds.size} out of {filteredUsers.length} users.
+					{:else if announcementTarget !== 'specific'}
+						All {filteredUsers.length} {announcementTarget} users will receive this email.
+					{:else}
+						Make sure to review your message carefully before sending.
+					{/if}
+				</p>
 			</div>
+		</div>
 			</div>
 		</div>
 	{/if}
