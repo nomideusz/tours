@@ -716,26 +716,6 @@
 					subtitle="Manage users and monitor platform activity"
 				>
 					<div class="flex flex-wrap items-center gap-3">
-						<button onclick={() => goto('/admin/tours')} class="button-secondary button--gap">
-							<MapPin class="h-4 w-4" />
-							Tours
-						</button>
-						<button onclick={() => goto('/admin/beta-applications')} class="button-secondary button--gap">
-							<Users class="h-4 w-4" />
-							Beta Applications
-						</button>
-						<button onclick={() => goto('/admin/feedback')} class="button-secondary button--gap">
-							<MessageSquare class="h-4 w-4" />
-							Feedback
-						</button>
-						<button onclick={() => goto('/admin/development')} class="button-secondary button--gap">
-							<Code class="h-4 w-4" />
-							Development
-						</button>
-						<button onclick={() => goto('/admin/email-dashboard')} class="button-secondary button--gap">
-							<Mail class="h-4 w-4" />
-							Email
-						</button>
 						<button onclick={exportUsers} class="button-primary button--gap">
 							<Download class="h-4 w-4" />
 							Export Users
@@ -743,6 +723,73 @@
 					</div>
 				</PageHeader>
 			</div>
+		</div>
+		
+		<!-- Quick Navigation Cards -->
+		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+			<button onclick={() => goto('/admin/tours')} class="nav-card">
+				<MapPin class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Tours</h3>
+					<p>Manage all tours</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/email-system')} class="nav-card">
+				<Mail class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Email System</h3>
+					<p>Test & send emails</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/beta-applications')} class="nav-card">
+				<Users class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Beta Apps</h3>
+					<p>Manage applications</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/feedback')} class="nav-card">
+				<MessageSquare class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Feedback</h3>
+					<p>User feedback</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/development')} class="nav-card">
+				<Code class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Development</h3>
+					<p>Dev tools</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/email-dashboard')} class="nav-card">
+				<Activity class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Email Analytics</h3>
+					<p>Email metrics</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/flyers')} class="nav-card">
+				<FileText class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Flyers</h3>
+					<p>Marketing materials</p>
+				</div>
+			</button>
+			
+			<button onclick={() => goto('/admin/social-graphics')} class="nav-card">
+				<Image class="w-6 h-6 text-primary" />
+				<div>
+					<h3>Social Graphics</h3>
+					<p>Social media</p>
+				</div>
+			</button>
 		</div>
 		
 		<!-- Stats Cards -->
@@ -2238,5 +2285,52 @@
 		background: var(--bg-tertiary);
 		color: var(--text-secondary);
 		border: 1px solid var(--border-primary);
+	}
+	
+	/* Navigation Cards */
+	.nav-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1.5rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-primary);
+		border-radius: 0.75rem;
+		text-align: left;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.nav-card:hover {
+		border-color: var(--color-primary-400);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+	
+	.nav-card h3 {
+		margin: 0;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.nav-card p {
+		margin: 0.125rem 0 0 0;
+		font-size: 0.75rem;
+		color: var(--text-secondary);
+	}
+	
+	@media (max-width: 640px) {
+		.nav-card {
+			padding: 1rem;
+		}
+		
+		.nav-card h3 {
+			font-size: 0.75rem;
+		}
+		
+		.nav-card p {
+			font-size: 0.625rem;
+		}
 	}
 </style> 
