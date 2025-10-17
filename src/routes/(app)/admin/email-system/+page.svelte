@@ -81,7 +81,8 @@
 			if (!response.ok) return [];
 			return response.json();
 		},
-		enabled: !!announcementSubject
+		enabled: !!announcementSubject,
+		refetchInterval: 30000 // Refresh every 30 seconds to catch recent sends
 	}));
 
 	let sentAnnouncements = $derived($sentAnnouncementsQuery.data || []);
@@ -532,6 +533,17 @@
 						>
 							{selectedUserIds.size > 0 ? 'Deselect All' : 'Select All Unsent'}
 						</button>
+						{#if alreadySentCount > 0 && unsentUsers.length > 0}
+							<button 
+								class="btn-link"
+								onclick={() => {
+									// Select users who didn't receive the announcement
+									selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
+								}}
+							>
+								Select {unsentUsers.length} who didn't receive it
+							</button>
+						{/if}
 					</div>
 					<div class="recipients-list">
 						{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 10) as user}
@@ -544,11 +556,10 @@
 									onchange={(e) => {
 										const checked = (e.target as HTMLInputElement).checked;
 										if (checked) {
-											selectedUserIds.add(user.id);
+											selectedUserIds = new Set([...selectedUserIds, user.id]);
 										} else {
-											selectedUserIds.delete(user.id);
+											selectedUserIds = new Set([...selectedUserIds].filter(id => id !== user.id));
 										}
-										selectedUserIds = selectedUserIds; // Trigger reactivity
 									}}
 								/>
 								<div class="recipient-info">
@@ -1091,6 +1102,7 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-primary);
+		flex-wrap: wrap;
 	}
 
 	.recipients-list {
