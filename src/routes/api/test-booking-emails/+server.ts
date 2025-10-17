@@ -3,10 +3,11 @@ import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { sendEmail } from '$lib/email/sender.js';
-import { bookingConfirmationTemplate } from '$lib/email/templates/booking-confirmation.js';
-import { guideBookingNotificationTemplate } from '$lib/email/templates/guide-booking-notification.js';
-import { tourReminderTemplate } from '$lib/email/templates/tour-reminder.js';
+import { Resend } from 'resend';
+import { env } from '$env/dynamic/private';
+import { bookingConfirmationEmail } from '$lib/email/templates/booking-confirmation.js';
+import { guideBookingNotificationEmail } from '$lib/email/templates/guide-booking-notification.js';
+import { tourReminderEmail } from '$lib/email/templates/tour-reminder.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// Check if user is admin
@@ -44,16 +45,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			throw error(404, 'No booking found for testing');
 		}
 
-		// Get tour and time slot
-		const [tourData, timeSlotData, userData] = await Promise.all([
-			db.select().from(tours).where(eq(tours.id, testBooking.tourId)).limit(1),
+		// Get tour first
+		const tourData = await db.select().from(tours).where(eq(tours.id, testBooking.tourId)).limit(1);
+		const tour = tourData[0];
+		
+		if (!tour) {
+			throw error(404, 'Tour not found');
+		}
+
+		// Get time slot and user
+		const [timeSlotData, userData] = await Promise.all([
 			testBooking.timeSlotId
 				? db.select().from(timeSlots).where(eq(timeSlots.id, testBooking.timeSlotId)).limit(1)
 				: Promise.resolve([null]),
-			db.select().from(users).where(eq(users.id, tourData[0]?.userId || '')).limit(1)
+			db.select().from(users).where(eq(users.id, tour.userId)).limit(1)
 		]);
 
-		const tour = tourData[0];
 		const timeSlot = timeSlotData[0];
 		const tourOwner = userData[0];
 
@@ -63,11 +70,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		let emailSent = false;
 		let emailType = '';
+		
+		const resend = new Resend(env.RESEND_API_KEY);
 
 		switch (action) {
 			case 'customer-confirmation':
 				{
-					const template = bookingConfirmationTemplate({
+					const template = bookingConfirmationEmail({
 						booking: testBooking as any,
 						tour: tour as any,
 						timeSlot: {
@@ -78,8 +87,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						tourOwnerCurrency: tourOwner.currency || 'EUR'
 					});
 
-					await sendEmail({
-						to: locals.user.email, // Send to admin for testing
+					await resend.emails.send({
+						from: 'Zaur <noreply@auth.zaur.app>',
+						to: [locals.user.email],
 						subject: template.subject,
 						html: template.html
 					});
@@ -91,7 +101,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 			case 'guide-notification':
 				{
-					const template = guideBookingNotificationTemplate({
+					const template = guideBookingNotificationEmail({
 						booking: testBooking as any,
 						tour: tour as any,
 						timeSlot: {
@@ -102,8 +112,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						guideCurrency: tourOwner.currency || 'EUR'
 					});
 
-					await sendEmail({
-						to: locals.user.email, // Send to admin for testing
+					await resend.emails.send({
+						from: 'Zaur <noreply@auth.zaur.app>',
+						to: [locals.user.email],
 						subject: template.subject,
 						html: template.html
 					});
@@ -115,7 +126,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 			case 'tour-reminder':
 				{
-					const template = tourReminderTemplate({
+					const template = tourReminderEmail({
 						booking: testBooking as any,
 						tour: tour as any,
 						timeSlot: {
@@ -125,8 +136,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						tourOwnerCurrency: tourOwner.currency || 'EUR'
 					});
 
-					await sendEmail({
-						to: locals.user.email, // Send to admin for testing
+					await resend.emails.send({
+						from: 'Zaur <noreply@auth.zaur.app>',
+						to: [locals.user.email],
 						subject: template.subject,
 						html: template.html
 					});
