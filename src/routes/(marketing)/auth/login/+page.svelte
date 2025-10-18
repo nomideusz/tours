@@ -12,6 +12,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Eye from 'lucide-svelte/icons/eye';
 	import EyeOff from 'lucide-svelte/icons/eye-off';
+	import { trackAuthEvent } from '$lib/utils/umami-tracking.js';
 
 	// Define the type for our form data
 	type LoginForm = {
@@ -199,6 +200,15 @@
 
 						return async ({ result, update }) => {
 							console.log('🔄 Login form result:', result.type, result);
+							
+							// Track login attempt result
+							if (result.type === 'redirect') {
+								// Successful login
+								trackAuthEvent('login', 'email', true);
+							} else if (result.type === 'failure') {
+								// Failed login
+								trackAuthEvent('login', 'email', false);
+							}
 							
 							// Always call update first to let SvelteKit handle the result
 							await update({ reset: false });

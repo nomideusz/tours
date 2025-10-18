@@ -49,6 +49,46 @@ export const UMAMI_EVENTS = {
 	// Drop-off points
 	FORM_ABANDON: 'form_abandon',
 	PAGE_EXIT: 'page_exit',
+	
+	// App events - Authentication
+	LOGIN: 'login',
+	LOGOUT: 'logout',
+	REGISTRATION: 'registration',
+	
+	// App events - Tour Management
+	TOUR_CREATE: 'tour_create',
+	TOUR_UPDATE: 'tour_update',
+	TOUR_DELETE: 'tour_delete',
+	TOUR_STATUS_CHANGE: 'tour_status_change',
+	TOUR_DUPLICATE: 'tour_duplicate',
+	TIMESLOT_CREATE: 'timeslot_create',
+	TIMESLOT_UPDATE: 'timeslot_update',
+	TIMESLOT_DELETE: 'timeslot_delete',
+	
+	// App events - Bookings
+	BOOKING_VIEW: 'booking_view',
+	BOOKING_STATUS_UPDATE: 'booking_status_update',
+	BOOKING_CHECK_IN: 'booking_check_in',
+	BOOKING_EXPORT: 'booking_export',
+	
+	// App events - Dashboard
+	DASHBOARD_VIEW: 'dashboard_view',
+	QR_CODE_COPY: 'qr_code_copy',
+	QR_CODE_DOWNLOAD: 'qr_code_download',
+	
+	// App events - Profile & Settings
+	PROFILE_UPDATE: 'profile_update',
+	PAYMENT_SETUP_START: 'payment_setup_start',
+	PAYMENT_SETUP_COMPLETE: 'payment_setup_complete',
+	SUBSCRIPTION_CHANGE: 'subscription_change',
+	
+	// App events - Marketing Materials
+	MARKETING_GENERATE: 'marketing_generate',
+	MARKETING_DOWNLOAD: 'marketing_download',
+	
+	// App events - Analytics
+	ANALYTICS_VIEW: 'analytics_view',
+	ANALYTICS_EXPORT: 'analytics_export',
 } as const;
 
 /**
@@ -306,6 +346,173 @@ export function trackFormAbandon(
 		completion_percentage: Math.round(completionPercentage),
 		last_field: lastField,
 		page: window.location.pathname
+	});
+}
+
+/**
+ * Track app authentication events
+ */
+export function trackAuthEvent(
+	action: 'login' | 'logout' | 'registration',
+	method?: string,
+	success: boolean = true
+): void {
+	const eventMap = {
+		login: UMAMI_EVENTS.LOGIN,
+		logout: UMAMI_EVENTS.LOGOUT,
+		registration: UMAMI_EVENTS.REGISTRATION
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'authentication',
+		method,
+		success,
+		user_type: 'tour_guide'
+	});
+}
+
+/**
+ * Track tour management events
+ */
+export function trackTourEvent(
+	action: 'create' | 'update' | 'delete' | 'status_change' | 'duplicate',
+	tourId?: string,
+	metadata?: Record<string, any>
+): void {
+	const eventMap = {
+		create: UMAMI_EVENTS.TOUR_CREATE,
+		update: UMAMI_EVENTS.TOUR_UPDATE,
+		delete: UMAMI_EVENTS.TOUR_DELETE,
+		status_change: UMAMI_EVENTS.TOUR_STATUS_CHANGE,
+		duplicate: UMAMI_EVENTS.TOUR_DUPLICATE
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'tour_management',
+		tour_id: tourId,
+		...metadata
+	});
+}
+
+/**
+ * Track time slot events
+ */
+export function trackTimeSlotEvent(
+	action: 'create' | 'update' | 'delete',
+	tourId?: string,
+	slotCount?: number
+): void {
+	const eventMap = {
+		create: UMAMI_EVENTS.TIMESLOT_CREATE,
+		update: UMAMI_EVENTS.TIMESLOT_UPDATE,
+		delete: UMAMI_EVENTS.TIMESLOT_DELETE
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'time_slot_management',
+		tour_id: tourId,
+		slot_count: slotCount
+	});
+}
+
+/**
+ * Track booking events
+ */
+export function trackBookingEvent(
+	action: 'view' | 'status_update' | 'check_in' | 'export',
+	bookingId?: string,
+	metadata?: Record<string, any>
+): void {
+	const eventMap = {
+		view: UMAMI_EVENTS.BOOKING_VIEW,
+		status_update: UMAMI_EVENTS.BOOKING_STATUS_UPDATE,
+		check_in: UMAMI_EVENTS.BOOKING_CHECK_IN,
+		export: UMAMI_EVENTS.BOOKING_EXPORT
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'booking_management',
+		booking_id: bookingId,
+		...metadata
+	});
+}
+
+/**
+ * Track dashboard interactions
+ */
+export function trackDashboardEvent(
+	action: 'view' | 'qr_copy' | 'qr_download',
+	metadata?: Record<string, any>
+): void {
+	const eventMap = {
+		view: UMAMI_EVENTS.DASHBOARD_VIEW,
+		qr_copy: UMAMI_EVENTS.QR_CODE_COPY,
+		qr_download: UMAMI_EVENTS.QR_CODE_DOWNLOAD
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'dashboard',
+		...metadata
+	});
+}
+
+/**
+ * Track profile and settings events
+ */
+export function trackProfileEvent(
+	action: 'update' | 'payment_start' | 'payment_complete' | 'subscription_change',
+	metadata?: Record<string, any>
+): void {
+	const eventMap = {
+		update: UMAMI_EVENTS.PROFILE_UPDATE,
+		payment_start: UMAMI_EVENTS.PAYMENT_SETUP_START,
+		payment_complete: UMAMI_EVENTS.PAYMENT_SETUP_COMPLETE,
+		subscription_change: UMAMI_EVENTS.SUBSCRIPTION_CHANGE
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'profile_settings',
+		...metadata
+	});
+}
+
+/**
+ * Track marketing material events
+ */
+export function trackMarketingEvent(
+	action: 'generate' | 'download',
+	materialType: string,
+	tourId?: string
+): void {
+	const eventMap = {
+		generate: UMAMI_EVENTS.MARKETING_GENERATE,
+		download: UMAMI_EVENTS.MARKETING_DOWNLOAD
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'marketing_materials',
+		material_type: materialType,
+		tour_id: tourId
+	});
+}
+
+/**
+ * Track analytics events
+ */
+export function trackAnalyticsEvent(
+	action: 'view' | 'export',
+	reportType?: string,
+	dateRange?: string
+): void {
+	const eventMap = {
+		view: UMAMI_EVENTS.ANALYTICS_VIEW,
+		export: UMAMI_EVENTS.ANALYTICS_EXPORT
+	};
+	
+	trackEvent(eventMap[action], {
+		category: 'analytics',
+		report_type: reportType,
+		date_range: dateRange
 	});
 }
 

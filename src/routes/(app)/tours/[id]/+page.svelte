@@ -16,6 +16,9 @@
 	// Onboarding utilities
 	import { canActivateTours, getOnboardingMessage, getNextOnboardingStep } from '$lib/utils/onboarding.js';
 	
+	// Umami tracking
+	import { trackDashboardEvent, trackTourEvent } from '$lib/utils/umami-tracking.js';
+	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
@@ -325,6 +328,14 @@
 		try {
 			await navigator.clipboard.writeText(bookingUrl);
 			qrCopied = true;
+			
+			// Track QR code copy event
+			trackDashboardEvent('qr_copy', {
+				tour_id: tourId,
+				tour_name: tour?.name,
+				page: 'tour_details'
+			});
+			
 			const timeoutId = setTimeout(() => {
 				qrCopied = false;
 			}, 2000);

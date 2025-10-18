@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { onMount } from 'svelte';
+	import { trackAuthEvent } from '$lib/utils/umami-tracking.js';
 	
 	let isLoggingOut = $state(true);
 	
@@ -36,6 +37,9 @@
 			method="POST" 
 			class="hidden"
 			use:enhance={() => {
+				// Track logout event
+				trackAuthEvent('logout', 'manual', true);
+				
 				return async ({ result }) => {
 					if (result.type === 'redirect') {
 						goto(result.location);

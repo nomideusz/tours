@@ -21,6 +21,9 @@
 	// Onboarding utilities
 	import { canActivateTours } from '$lib/utils/onboarding.js';
 	
+	// Umami tracking
+	import { trackTourEvent } from '$lib/utils/umami-tracking.js';
+	
 	// Icons
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
@@ -594,6 +597,13 @@
 					isSubmitting = false;
 					triggerValidation = false;
 					if (result.type === 'redirect') {
+						// Track tour creation
+						trackTourEvent('create', undefined, {
+							status: formData.status,
+							has_schedule: enableScheduling,
+							pricing_model: formData.pricingModel
+						});
+						
 						// Give server a moment to fully complete the transaction
 						await new Promise(resolve => setTimeout(resolve, 100));
 						

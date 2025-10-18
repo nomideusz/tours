@@ -14,6 +14,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { trackDashboardEvent } from '$lib/utils/umami-tracking.js';
 
 	// TanStack Query for API-only data fetching
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -407,6 +408,12 @@
 	
 	// Initialize
 	onMount(async () => {
+		// Track dashboard view
+		trackDashboardEvent('view', {
+			page: 'calendar',
+			has_tours: tours.length > 0
+		});
+		
 		// Check if returning from Stripe setup
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('setup') === 'complete') {

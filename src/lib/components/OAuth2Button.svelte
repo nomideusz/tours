@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { authenticateWithOAuth2, oauth2ProviderInfo, type OAuth2Provider } from '$lib/oauth2.js';
 	import Loader from 'lucide-svelte/icons/loader';
+	import { trackAuthEvent } from '$lib/utils/umami-tracking.js';
 
 	// Props
 	let { 
@@ -29,6 +30,8 @@
 		
 		isLoading = true;
 		try {
+			// Track OAuth login attempt
+			trackAuthEvent('login', provider, true);
 			await authenticateWithOAuth2(provider, redirectTo);
 		} finally {
 			isLoading = false;

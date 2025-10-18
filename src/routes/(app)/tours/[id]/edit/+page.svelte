@@ -31,6 +31,9 @@
 	
 	// Onboarding utilities
 	import { canActivateTours } from '$lib/utils/onboarding.js';
+	
+	// Umami tracking
+	import { trackTourEvent } from '$lib/utils/umami-tracking.js';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	
@@ -483,6 +486,13 @@
 			const result = await $updateTourMutation.mutateAsync(formDataToSubmit);
 			
 			console.log('✅ Tour updated successfully via mutation:', result);
+			
+			// Track tour update event
+			trackTourEvent('update', tourId, {
+				tour_name: tour?.name,
+				status: formData.status,
+				pricing_model: formData.pricingModel
+			});
 			
 			// Clear uploaded images and removed images since they're now saved
 			uploadedImages = [];

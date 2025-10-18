@@ -5,6 +5,8 @@
 	import type { PageData } from './$types.js';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
+	import { trackAnalyticsEvent } from '$lib/utils/umami-tracking.js';
+	import { onMount } from 'svelte';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -40,7 +42,15 @@
 	// Click handler for time range changes
 	function handleTimeRangeChange(range: typeof timeRange) {
 		timeRange = range;
+		
+		// Track analytics time range change
+		trackAnalyticsEvent('view', activeTab, range);
 	}
+	
+	// Track analytics page view on mount
+	onMount(() => {
+		trackAnalyticsEvent('view', activeTab, timeRange);
+	});
 
 	// Fetch analytics data
 	const analyticsQuery = createQuery({
