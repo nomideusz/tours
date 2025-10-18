@@ -56,12 +56,18 @@
 	let priceCalculation = $derived(() => {
 		// For private tour with flat rate
 		if (isPrivateTour && tour.privateTour) {
+			const addonsTotal = selectedAddonIds.length > 0 && tour.optionalAddons?.addons
+				? tour.optionalAddons.addons
+					.filter((addon: any) => selectedAddonIds.includes(addon.id))
+					.reduce((sum: number, addon: any) => sum + addon.price, 0)
+				: 0;
+			
 			return {
 				basePrice: tour.privateTour.flatPrice,
 				discountedBase: tour.privateTour.flatPrice,
-				addonsTotal: 0,
+				addonsTotal,
 				groupDiscount: 0,
-				totalAmount: tour.privateTour.flatPrice,
+				totalAmount: tour.privateTour.flatPrice + addonsTotal,
 				categoryBreakdown: null,
 				selectedTier: null,
 				errors: []

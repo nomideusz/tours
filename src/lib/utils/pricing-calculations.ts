@@ -394,7 +394,12 @@ export function calculateBookingPrice(
 	let selectedTier: any = null;
 	
 	// Handle different pricing models
-	if (tour.pricingModel === 'participant_categories' && tour.participantCategories) {
+	if (tour.pricingModel === 'private_tour' && tour.privateTour) {
+		// Private tour flat rate pricing
+		basePrice = tour.privateTour.flatPrice || 0;
+		discountedBase = basePrice;
+		// No group discounts for private tours
+	} else if (tour.pricingModel === 'participant_categories' && tour.participantCategories) {
 		// Calculate base price from participant categories
 		const categories = tour.participantCategories.categories || [];
 		
@@ -535,8 +540,8 @@ export function calculateBookingPrice(
 	if (tour.optionalAddons?.addons && selectedAddonIds.length > 0) {
 		tour.optionalAddons.addons.forEach(addon => {
 			if (selectedAddonIds.includes(addon.id)) {
-				// Add-ons are per-person
-				addonsTotal += addon.price * totalParticipants;
+				// Add-ons are per-booking (flat rate)
+				addonsTotal += addon.price;
 			}
 		});
 	}

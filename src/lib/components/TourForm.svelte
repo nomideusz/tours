@@ -413,42 +413,12 @@ Key extracted components:
 		validationErrors = validation.errors;
 	}
 
-	// Debounced validation timeout
-	let validationTimeout: NodeJS.Timeout | null = null;
+	// Removed real-time validation to improve UX
+	// Validation now only happens on blur and form submission
 
-	// Real-time field validation (on input with debouncing)
-	function validateFieldRealtime(fieldName: string) {
-		touchedFields.add(fieldName);
-		
-		// Clear existing timeout
-		if (validationTimeout) {
-			clearTimeout(validationTimeout);
-		}
-		
-		// Debounce validation to avoid excessive calls while typing
-		validationTimeout = setTimeout(() => {
-			// Re-validate the specific field and update errors
-			const validation = validateTourForm(formData);
-			
-			// Remove any existing errors for this field
-			validationErrors = validationErrors.filter(error => error.field !== fieldName);
-			
-			// Add new error if field is invalid
-			const fieldError = validation.errors.find(error => error.field === fieldName);
-			if (fieldError) {
-				validationErrors = [...validationErrors, fieldError];
-			}
-		}, 500); // 500ms delay for typing
-	}
-
-	// Trigger validation for specific field on blur (immediate)
+	// Trigger validation for specific field on blur
 	function validateField(fieldName: string) {
 		touchedFields.add(fieldName);
-		
-		// Clear any pending debounced validation
-		if (validationTimeout) {
-			clearTimeout(validationTimeout);
-		}
 		
 		// Immediate validation on blur
 		const validation = validateTourForm(formData);
@@ -470,12 +440,6 @@ Key extracted components:
 	}
 
 	export function validate() {
-		// Clear any pending debounced validation to ensure immediate validation
-		if (validationTimeout) {
-			clearTimeout(validationTimeout);
-			validationTimeout = null;
-		}
-		
 		// Mark all required fields as touched
 		touchedFields.add('name');
 		touchedFields.add('description');
@@ -687,7 +651,6 @@ Key extracted components:
 						bind:value={formData.name}
 						placeholder="e.g., Historic Walking Tour of Prague"
 						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
-						oninput={() => validateFieldRealtime('name')}
 						onblur={() => validateField('name')}
 					/>
 					{#if getFieldError(allErrors, 'name')}
@@ -884,7 +847,6 @@ Key extracted components:
 						rows="4"
 						placeholder="What will guests experience on this tour?"
 						class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
-						oninput={() => validateFieldRealtime('description')}
 						onblur={() => validateField('description')}
 					></textarea>
 					{#if getFieldError(allErrors, 'description')}
@@ -916,7 +878,6 @@ Key extracted components:
 								placeholder="120"
 								class="form-input {hasFieldError(allErrors, 'duration') ? 'error' : ''}"
 								style="text-align: right; font-weight: 500;"
-								oninput={() => validateFieldRealtime('duration')}
 								onblur={() => validateField('duration')}
 							/>
 							<span style="color: var(--text-secondary); font-size: 0.875rem;">minutes</span>
