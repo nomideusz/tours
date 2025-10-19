@@ -44,12 +44,11 @@
 	import Search from 'lucide-svelte/icons/search';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import X from 'lucide-svelte/icons/x';
-	import MoreVertical from 'lucide-svelte/icons/more-vertical';
-	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
-	import CircleDot from 'lucide-svelte/icons/circle-dot';
-	import Baby from 'lucide-svelte/icons/baby';
-	import CheckCircle from 'lucide-svelte/icons/check-circle';
-	import Copy from 'lucide-svelte/icons/copy';
+import MoreVertical from 'lucide-svelte/icons/more-vertical';
+import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+import CircleDot from 'lucide-svelte/icons/circle-dot';
+import CheckCircle from 'lucide-svelte/icons/check-circle';
+import Copy from 'lucide-svelte/icons/copy';
 
 	const queryClient = useQueryClient();
 	
@@ -233,7 +232,8 @@
 		const button = event.currentTarget as HTMLElement;
 		const rect = button.getBoundingClientRect();
 		const spaceBelow = window.innerHeight - rect.bottom;
-		const dropdownHeight = 250; // Approximate height of dropdown menu
+		// Mobile dropdowns are taller due to more padding (px-4 py-3)
+		const dropdownHeight = window.innerWidth < 640 ? 400 : 250;
 		
 		return spaceBelow < dropdownHeight;
 	}
@@ -747,7 +747,259 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<!-- Mobile: Full-width horizontal cards -->
+		<div class="sm:hidden space-y-3">
+			{#each filteredTours as tour (tour.id)}
+				<div 
+					in:fade={{ duration: 200 }}
+					out:fade={{ duration: deletingTourIds.has(tour.id) ? 300 : 200 }}
+					class="rounded-xl transition-all tour-card-mobile cursor-pointer {recentlyUpdated === tour.id ? 'recently-updated' : ''} {deletingTourIds.has(tour.id) ? 'deleting' : ''}"
+					style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
+					onclick={(e) => {
+						// Don't navigate if clicking on buttons
+						if (!(e.target as HTMLElement).closest('button, a')) {
+							goto(`/tours/${tour.id}`);
+						}
+					}}
+					role="button"
+					tabindex="0"
+					onkeydown={(e) => {
+						if (e.key === 'Enter' && !(e.target as HTMLElement).closest('button, a')) {
+							goto(`/tours/${tour.id}`);
+						}
+					}}
+				>
+					<!-- Calendar Color Strip -->
+					<div class="tour-color-strip-mobile" style="background-color: {getTourCalendarColor(tour.id, tour.name)}"></div>
+
+					<div class="flex gap-3 p-3">
+						<!-- Tour Image - Left side -->
+						<div class="w-24 h-24 flex-shrink-0 rounded-lg relative tour-image-container" style="background: var(--bg-secondary); overflow: hidden;">
+							{#if tour.images && tour.images[0]}
+								<img 
+									src={getTourImageUrl(tour)} 
+									alt={tour.name}
+									class="w-full h-full object-cover"
+									loading="lazy"
+								/>
+							{:else}
+								<div class="w-full h-full flex items-center justify-center">
+									<MapPin class="h-8 w-8" style="color: var(--text-tertiary);" />
+								</div>
+							{/if}
+							
+							<!-- Status Badge on image -->
+							<div class="absolute bottom-1 left-1">
+								<span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full border transition-all duration-300 {recentlyUpdated === tour.id ? 'scale-110' : ''} {tour.status === 'active' ? 'status-confirmed' : 'status-default'}">
+									<CircleDot class="h-2.5 w-2.5" />
+									{tour.status === 'active' ? 'Active' : 'Draft'}
+								</span>
+							</div>
+						</div>
+
+						<!-- Tour Info - Right side -->
+						<div class="flex-1 min-w-0 flex flex-col">
+							<!-- Tour Name -->
+							<h3 class="font-semibold text-base mb-1 line-clamp-1" style="color: var(--text-primary);">
+								{tour.name}
+							</h3>
+							
+							<!-- Location -->
+							<div class="text-xs mb-2 line-clamp-1" style="color: var(--text-secondary);">
+								<MapPin class="inline h-3 w-3 -mt-0.5" />
+								<span>{tour.location || 'Location not set'}</span>
+							</div>
+							
+							<!-- Price & Duration -->
+							<div class="flex items-center gap-2 mb-2 flex-wrap">
+								<span class="font-semibold text-sm" style="color: var(--color-primary-600);">
+									{getTourDisplayPriceFormatted(tour)}
+								</span>
+								<span class="text-xs" style="color: var(--text-tertiary);">
+									•
+								</span>
+								<span class="text-xs" style="color: var(--text-tertiary);">
+									<Clock class="inline h-3 w-3 -mt-0.5" />
+									{formatDuration(tour.duration)}
+								</span>
+							</div>
+							
+							<!-- Stats -->
+							<div class="text-xs mb-2" style="color: var(--text-tertiary);">
+								<Eye class="inline h-3 w-3 -mt-0.5" />
+								<span>{tour.qrScans || 0}</span>
+								<span class="mx-1.5">•</span>
+								<Users class="inline h-3 w-3 -mt-0.5" />
+								<span>{tour.qrConversions || 0}</span>
+								{#if tour.hasFutureBookings}
+									<span class="mx-1.5">•</span>
+									<Calendar class="inline h-3 w-3 -mt-0.5" style="color: var(--color-warning-600);" />
+								{/if}
+							</div>
+							
+							<!-- Actions -->
+							<div class="flex gap-2 mt-auto">
+								{#if tour.status === 'draft'}
+									{#if canActivateTour(tour)}
+										<button 
+											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
+											class="flex-1 button-primary button--small text-xs py-2"
+										>
+											<CheckCircle class="h-3.5 w-3.5" />
+											<span>Activate</span>
+										</button>
+									{:else}
+										<button 
+											onclick={(e) => { e.stopPropagation(); }}
+											class="flex-1 button-secondary button--small text-xs py-2 opacity-50 cursor-not-allowed"
+											disabled
+										>
+											<AlertTriangle class="h-3.5 w-3.5" />
+											<span>Setup Required</span>
+										</button>
+									{/if}
+								{:else}
+									<button 
+										onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/edit`); }}
+										class="flex-1 button-secondary button--small text-xs py-2"
+									>
+										<Edit class="h-3.5 w-3.5" />
+										<span>Edit</span>
+									</button>
+								{/if}
+								
+								<!-- More Actions Dropdown -->
+								<div class="relative dropdown-container">
+									<button
+										onclick={(e) => { 
+											e.stopPropagation(); 
+											if (actionMenuOpen !== tour.id) {
+												dropdownOpenUpwards[tour.id] = checkDropdownPosition(e);
+											}
+											actionMenuOpen = actionMenuOpen === tour.id ? null : tour.id; 
+										}}
+										class="button-secondary button--small button--icon py-2 px-3"
+										style="position: relative; z-index: 1;"
+									>
+										<MoreVertical class="h-4 w-4" />
+									</button>
+									
+									{#if actionMenuOpen === tour.id}
+										<div 
+											class="absolute right-0 w-52 rounded-lg shadow-xl mobile-dropdown-menu"
+											style="{dropdownOpenUpwards[tour.id] ? 'bottom: 100%; margin-bottom: 0.5rem;' : 'top: 100%; margin-top: 0.5rem;'} background: var(--bg-primary); border: 1px solid var(--border-primary); z-index: 10;"
+											onclick={(e) => e.stopPropagation()}
+											onkeydown={(e) => e.stopPropagation()}
+											role="menu"
+											tabindex="0"
+										>
+											<button
+												onclick={() => { actionMenuOpen = null; goto(`/tours/${tour.id}`); }}
+												class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors rounded-t-lg"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+											>
+												<Settings class="h-4 w-4" />
+												<span>Manage Tour</span>
+											</button>
+											{#if tour.status === 'draft' && canActivateTour(tour)}
+												<!-- Show Edit option when Activate button is on card -->
+												<button
+													onclick={() => { actionMenuOpen = null; goto(`/tours/${tour.id}/edit`); }}
+													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors"
+													style="color: var(--text-primary); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												>
+													<Edit class="h-4 w-4" />
+													<span>Edit Tour</span>
+												</button>
+											{/if}
+											<button
+												onclick={() => { actionMenuOpen = null; goto(`/bookings?tour=${tour.id}`); }}
+												class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+											>
+												<Calendar class="h-4 w-4" />
+												<span>View Bookings</span>
+											</button>
+											{#if tour.qrCode}
+												<button
+													onclick={() => { actionMenuOpen = null; window.open(`/book/${tour.qrCode}`, '_blank'); }}
+													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors"
+													style="color: var(--text-primary); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												>
+													<ExternalLink class="h-4 w-4" />
+													<span>Preview Page</span>
+												</button>
+											{/if}
+											<button
+												onclick={() => { actionMenuOpen = null; copyTour(tour.id); }}
+												class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors"
+												style="color: var(--text-primary); background: transparent;"
+												onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												disabled={copyingTourId === tour.id}
+											>
+												{#if copyingTourId === tour.id}
+													<div class="animate-spin h-4 w-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
+													<span>Copying...</span>
+												{:else}
+													<Copy class="h-4 w-4" />
+													<span>Duplicate Tour</span>
+												{/if}
+											</button>
+											{#if tour.status === 'active'}
+												<button
+													onclick={() => { actionMenuOpen = null; updateTourStatus(tour.id, 'draft'); }}
+													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors"
+													style="color: var(--text-primary); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												>
+													<CircleDot class="h-4 w-4" />
+													<span>Set to Draft</span>
+												</button>
+											{/if}
+											<hr style="border-color: var(--border-primary);" />
+											{#if tour.hasFutureBookings}
+												<button
+													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 cursor-not-allowed opacity-50 rounded-b-lg"
+													style="color: var(--text-tertiary); background: transparent;"
+													disabled
+												>
+													<Calendar class="h-4 w-4" />
+													<span>Has Upcoming Bookings</span>
+												</button>
+											{:else}
+												<button
+													onclick={() => { actionMenuOpen = null; tourToDelete = tour; showDeleteModal = true; }}
+													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors rounded-b-lg"
+													style="color: var(--color-error); background: transparent;"
+													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'}
+													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+												>
+													<Trash2 class="h-4 w-4" />
+													<span>Delete Tour</span>
+												</button>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Desktop: Grid layout -->
+		<div class="hidden sm:grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each filteredTours as tour, i (tour.id)}
 				<div 
 					in:fade={{ duration: 200 }}
@@ -776,7 +1028,7 @@
 					</div>
 
 					<!-- Tour Image -->
-					<div class="h-32 sm:h-48 relative" style="background: var(--bg-secondary);">
+					<div class="h-48 relative" style="background: var(--bg-secondary);">
 						{#if tour.images && tour.images[0]}
 							<img 
 								src={getTourImageUrl(tour)} 
@@ -797,37 +1049,24 @@
 								{tour.status === 'active' ? 'Active' : 'Draft'}
 							</span>
 						</div>
-						
-
 					</div>
 					
 					<!-- Tour Info -->
-					<div class="p-3 sm:p-6 flex flex-col flex-grow">
+					<div class="p-6 flex flex-col flex-grow">
 						<div class="flex-grow">
-							<!-- Mobile heading -->
-							<h3 class="sm:hidden font-semibold mb-1 hover:underline line-clamp-2 flex items-center gap-2 text-sm" style="color: var(--text-primary);">
-								{tour.name}
-							</h3>
-							<!-- Desktop heading -->
-							<h3 class="hidden sm:flex font-semibold mb-2 hover:underline line-clamp-2 items-center gap-2 text-lg" style="color: var(--text-primary);">
+							<h3 class="flex font-semibold mb-2 hover:underline line-clamp-2 items-center gap-2 text-lg" style="color: var(--text-primary);">
 								<span class="tour-color-dot" style="background-color: {getTourCalendarColor(tour.id, tour.name)}"></span>
 								{tour.name}
 							</h3>
 							
 							<!-- Details -->
-							<div class="space-y-1.5 sm:space-y-2 mb-2 sm:mb-4">
-								<!-- Mobile location -->
-								<div class="sm:hidden text-xs line-clamp-1" style="color: var(--text-secondary);">
-									<MapPin class="inline h-3 w-3 -mt-0.5" />
-									<span>{tour.location || 'Location not set'}</span>
-								</div>
-								<!-- Desktop location -->
-								<div class="hidden sm:flex items-center gap-2 line-clamp-1" style="color: var(--text-secondary);">
+							<div class="space-y-2 mb-4">
+								<div class="flex items-center gap-2 line-clamp-1" style="color: var(--text-secondary);">
 									<MapPin class="h-4 w-4 flex-shrink-0" />
 									<span class="text-sm">{tour.location || 'Location not set'}</span>
 								</div>
 								{#if tour.categories && tour.categories.length > 0}
-									<div class="hidden sm:flex flex-wrap gap-1 mt-1.5 sm:mt-2">
+									<div class="flex flex-wrap gap-1 mt-2">
 										{#each tour.categories.slice(0, 3) as category}
 											<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
 												style="
@@ -852,32 +1091,8 @@
 										{/if}
 									</div>
 								{/if}
-								<!-- Mobile: compact inline format -->
-								<div class="sm:hidden flex items-center gap-1 flex-wrap text-sm">
-									<span class="font-semibold" style="color: var(--color-primary-600);">
-										{getTourDisplayPriceFormatted(tour)}
-									</span>
-									{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
-										<span class="text-xs" style="color: var(--text-secondary);">
-											/ <Baby class="inline h-3 w-3 -mt-0.5" /> {$globalCurrencyFormatter(tour.pricingTiers.child)}
-										</span>
-									{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories}
-										{@const childCategory = tour.participantCategories.categories.find(c => c.id === 'child' || c.label.toLowerCase().includes('child'))}
-										{#if childCategory}
-											<span class="text-xs" style="color: var(--text-secondary);">
-												/ <Baby class="inline h-3 w-3 -mt-0.5" /> {$globalCurrencyFormatter(childCategory.price)}
-											</span>
-										{/if}
-									{/if}
-									<span class="text-xs" style="color: var(--text-tertiary);">
-										<span class="mx-1">•</span>
-										<Clock class="inline h-3 w-3 -mt-0.5" />
-										{formatDuration(tour.duration)}
-									</span>
-								</div>
 								
-								<!-- Desktop: separate lines -->
-								<div class="hidden sm:block space-y-1">
+								<div class="space-y-1">
 									<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
 										<Clock class="h-4 w-4" />
 										{formatDuration(tour.duration)}
@@ -886,38 +1101,13 @@
 										<span class="text-lg font-semibold" style="color: var(--color-primary-600);">
 											{getTourDisplayPriceFormatted(tour)}
 										</span>
-										{#if tour.enablePricingTiers && tour.pricingTiers?.child !== undefined}
-											<span class="text-xs" style="color: var(--text-secondary);">
-												<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
-												{$globalCurrencyFormatter(tour.pricingTiers.child)}
-											</span>
-										{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories?.categories}
-											{@const childCategory = tour.participantCategories.categories.find(c => c.id === 'child' || c.label.toLowerCase().includes('child'))}
-											{#if childCategory}
-												<span class="text-xs" style="color: var(--text-secondary);">
-													<Baby class="inline h-3 w-3 -mt-0.5 mr-0.5" />
-													{$globalCurrencyFormatter(childCategory.price)}
-												</span>
-											{/if}
-										{/if}
 									</div>
 								</div>
 							</div>
 						</div>
 						
-						<!-- Mobile Stats - Compact inline format -->
-						<div class="sm:hidden text-xs mb-2" style="color: var(--text-tertiary);">
-							<span>{tour.qrScans || 0} views</span>
-							<span class="mx-1">•</span>
-							<span>{tour.qrConversions || 0} bookings</span>
-							{#if tour.hasFutureBookings}
-								<span class="mx-1">•</span>
-								<Calendar class="inline h-3 w-3 -mt-0.5" style="color: var(--color-warning-600);" />
-							{/if}
-						</div>
-						
-						<!-- Desktop Stats - Positioned just above actions -->
-						<div class="hidden sm:grid grid-cols-3 gap-1 text-center mb-3 sm:mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
+						<!-- Desktop Stats -->
+						<div class="grid grid-cols-3 gap-1 text-center mb-4 p-2 rounded-lg" style="background: var(--bg-secondary);">
 							<div>
 								<p class="text-xs font-medium" style="color: var(--text-primary);">{tour.qrScans || 0}</p>
 								<p class="text-xs" style="color: var(--text-tertiary);">Views</p>
@@ -939,57 +1129,37 @@
 							</div>
 						</div>
 						
-						<!-- Actions - Always at bottom -->
-						<div class="flex gap-1.5 sm:gap-2 items-center mt-auto">
-							<div class="flex gap-1.5 sm:gap-2 flex-1">
-								<!-- Mobile layout -->
-								<div class="sm:hidden flex gap-1 flex-1">
-									{#if tour.status === 'draft'}
-										{#if canActivateTour(tour)}
-											<button 
-												onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-												class="flex-1 button-primary button--small text-[11px]"
-											>
-												<CheckCircle class="h-3 w-3 -ml-1" />
-												<span>Activate</span>
-											</button>
-										{:else}
-											<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex-1 button-secondary button--small text-[11px]">
-												<Settings class="h-3 w-3 -ml-1" />
-												<span>Manage</span>
-											</button>
-										{/if}
-									{:else}
-										<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex-1 button-secondary button--small text-[11px]">
-											<Settings class="h-3 w-3 -ml-1" />
-											<span>Manage</span>
-										</button>
-									{/if}
-								</div>
-								
-								<!-- Desktop: Full buttons -->
+						<!-- Actions -->
+						<div class="flex gap-2 items-center mt-auto">
+							<div class="flex gap-2 flex-1">
 								<Tooltip text="Manage tour details & schedule" position="top">
-									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="hidden sm:flex button-secondary button--small button--gap text-xs sm:text-sm">
-										<Settings class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex button-secondary button--small button--gap text-xs sm:text-sm">
+										<Settings class="h-4 w-4" />
 										<span>Manage</span>
+									</button>
+								</Tooltip>
+								<Tooltip text="Edit tour information" position="top">
+									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/edit`); }} class="flex button-secondary button--small button--gap text-xs sm:text-sm">
+										<Edit class="h-4 w-4" />
+										<span>Edit</span>
 									</button>
 								</Tooltip>
 								{#if tour.status === 'draft'}
 									{#if canActivateTour(tour)}
 										<button 
 											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-											class="hidden sm:flex button-primary button--small button--gap text-xs sm:text-sm"
+											class="flex button-primary button--small button--gap text-xs sm:text-sm"
 										>
-											<CheckCircle class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+											<CheckCircle class="h-4 w-4" />
 											<span>Activate</span>
 										</button>
 									{:else}
 										<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
 											<button 
-												class="hidden sm:flex button-secondary button--small button--gap opacity-50 cursor-not-allowed text-xs sm:text-sm"
+												class="flex button-secondary button--small button--gap opacity-50 cursor-not-allowed text-xs sm:text-sm"
 												disabled
 											>
-												<CheckCircle class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+												<CheckCircle class="h-4 w-4" />
 												<span>Activate</span>
 											</button>
 										</Tooltip>
@@ -1010,7 +1180,7 @@
 										}}
 										class="button-secondary button--small button--icon"
 									>
-										<MoreVertical class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+										<MoreVertical class="h-4 w-4" />
 									</button>
 								</Tooltip>
 								
@@ -1024,19 +1194,8 @@
 										tabindex="0"
 									>
 										<button
-											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; goto(`/tours/${tour.id}/edit`); }}
-											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-t-lg"
-											style="color: var(--text-primary); background: transparent;"
-											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-										>
-											<Edit class="h-4 w-4" />
-											<span class="sm:hidden">Edit</span>
-											<span class="hidden sm:inline">Edit Tour</span>
-										</button>
-										<button
 											onclick={() => { actionMenuOpen = null; dropdownOpenUpwards = {}; copyTour(tour.id); }}
-											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+											class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors rounded-t-lg"
 											style="color: var(--text-primary); background: transparent;"
 											onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
 											onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -1044,11 +1203,10 @@
 										>
 											{#if copyingTourId === tour.id}
 												<div class="animate-spin h-4 w-4 rounded-full border-2" style="border-color: var(--border-secondary); border-top-color: var(--text-secondary);"></div>
-												<span>Copying...</span>
+												<span>Duplicating...</span>
 											{:else}
 												<Copy class="h-4 w-4" />
-												<span class="sm:hidden">Copy</span>
-												<span class="hidden sm:inline">Copy Tour</span>
+												<span>Duplicate Tour</span>
 											{/if}
 										</button>
 										<button
@@ -1088,39 +1246,8 @@
 												onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 											>
 												<CircleDot class="h-4 w-4" />
-												<span class="sm:hidden">Draft</span>
-												<span class="hidden sm:inline">Set to Draft</span>
+												<span>Set to Draft</span>
 											</button>
-										{:else}
-											{#if !canActivateTour(tour)}
-												<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
-													<button
-														class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 opacity-50 cursor-not-allowed"
-														style="color: var(--text-tertiary); background: transparent;"
-														disabled
-													>
-														<CheckCircle class="h-4 w-4" />
-														<span class="sm:hidden">Activate</span>
-														<span class="hidden sm:inline">Activate Tour</span>
-													</button>
-												</Tooltip>
-											{:else}
-												<button
-													onclick={() => {
-														actionMenuOpen = null;
-														dropdownOpenUpwards = {};
-														updateTourStatus(tour.id, 'active');
-													}}
-													class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
-													style="color: var(--text-primary); background: transparent;"
-													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-												>
-													<CheckCircle class="h-4 w-4" />
-													<span class="sm:hidden">Activate</span>
-													<span class="hidden sm:inline">Activate Tour</span>
-												</button>
-											{/if}
 										{/if}
 										<hr style="border-color: var(--border-primary);" />
 										{#if tour.hasFutureBookings}
@@ -1197,6 +1324,7 @@
 {/if}
 
 <style>
+	/* Desktop tour cards */
 	.tour-card {
 		/* Don't use overflow-hidden so dropdown can extend outside */
 		position: relative;
@@ -1204,18 +1332,29 @@
 		/* Remove overflow: hidden to allow dropdown to show */
 	}
 	
-	/* Calendar color strip at top of card */
+	/* Mobile tour cards - horizontal layout */
+	.tour-card-mobile {
+		position: relative;
+		transition: opacity 0.3s ease-out;
+		/* Don't use overflow-hidden so dropdown can extend outside */
+	}
+	
+	/* Calendar color strip at top of card (desktop) */
 	.tour-color-strip {
-		height: 4px;
+		height: 6px;
 		position: relative;
 		overflow: hidden;
 		border-radius: 0.75rem 0.75rem 0 0; /* Round top corners only */
 	}
 	
-	@media (min-width: 640px) {
-		.tour-color-strip {
-			height: 6px;
-		}
+	/* Calendar color strip for mobile (left side) */
+	.tour-color-strip-mobile {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		border-radius: 0.75rem 0 0 0.75rem;
 	}
 	
 	.tour-color-strip-inner {
@@ -1249,11 +1388,26 @@
 		overflow: hidden;
 	}
 	
-
-	
 	/* Ensure dropdown has proper contrast in dark mode */
 	:global(.dark) .dropdown-container button {
 		color: var(--text-primary) !important;
+	}
+	
+	/* Mobile dropdown menu - ensure it appears above other cards and button */
+	.mobile-dropdown-menu {
+		z-index: 9999 !important;
+		position: absolute;
+	}
+	
+	/* Ensure dropdown container creates proper stacking context */
+	.dropdown-container {
+		position: relative;
+		z-index: 1;
+	}
+	
+	/* When dropdown is open, increase container z-index */
+	.dropdown-container:has(.mobile-dropdown-menu) {
+		z-index: 1000;
 	}
 	
 	/* Subtle feedback animation when tour is updated */
