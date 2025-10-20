@@ -62,6 +62,7 @@ Key extracted components:
 	
 	// Import tour form section components
 	import TourDetailsSection from './tour-form/TourDetailsSection.svelte';
+	import DurationInput from './DurationInput.svelte';
 
 	interface Props {
 		formData: {
@@ -654,7 +655,7 @@ Key extracted components:
 						onblur={() => validateField('name')}
 					/>
 					{#if getFieldError(allErrors, 'name')}
-						<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+						<div class="mt-3 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
 							<div class="flex items-start gap-2">
 								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
 								<p class="text-sm" style="color: var(--color-error-900);">
@@ -866,22 +867,11 @@ Key extracted components:
 						<label for="duration" class="form-label">
 							Duration *
 						</label>
-						<div class="flex items-center gap-2">
-							<input
-								type="number"
-								id="duration"
-								name="duration"
-								min="15"
-								max="2880"
-								step="5"
-								bind:value={formData.duration}
-								placeholder="120"
-								class="form-input {hasFieldError(allErrors, 'duration') ? 'error' : ''}"
-								style="text-align: right; font-weight: 500;"
-								onblur={() => validateField('duration')}
-							/>
-							<span style="color: var(--text-secondary); font-size: 0.875rem;">minutes</span>
-						</div>
+						<DurationInput
+							bind:value={formData.duration}
+							error={hasFieldError(allErrors, 'duration')}
+							onblur={() => validateField('duration')}
+						/>
 						{#if getFieldError(allErrors, 'duration')}
 							<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
 								<div class="flex items-start gap-2">

@@ -16,6 +16,7 @@
 		closeOnEscape?: boolean;
 		class?: string;
 		children?: any;
+		titleSlot?: any;
 	}
 
 	let {
@@ -27,7 +28,8 @@
 		closeOnClickOutside = true,
 		closeOnEscape = true,
 		class: className = '',
-		children
+		children,
+		titleSlot
 	}: Props = $props();
 
 	let drawerElement = $state.raw<HTMLDivElement>();
@@ -230,36 +232,38 @@
 						<div class="w-12 h-1.5 rounded-full transition-colors" style="background: var(--text-tertiary);"></div>
 					</div>
 					
-					<!-- Header -->
-					{#if title || showCloseButton}
-						<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
-							<div class="flex-1 min-w-0 pr-4">
-								{#if title}
-									<h2 id="drawer-title" class="text-lg font-semibold leading-tight" style="color: var(--text-primary);">
-										{title}
-									</h2>
-								{/if}
-								{#if subtitle}
-									<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
-										{subtitle}
-									</p>
-								{/if}
-							</div>
-							
-							{#if showCloseButton}
-								<button 
-									onclick={handleClose}
-									class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
-									style="color: var(--text-tertiary);"
-									onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-									onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-									aria-label="Close"
-								>
-									<X class="h-5 w-5" />
-								</button>
+				<!-- Header -->
+				{#if title || titleSlot || showCloseButton}
+					<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
+						<div class="flex-1 min-w-0 pr-4">
+							{#if titleSlot}
+								{@render titleSlot?.()}
+							{:else if title}
+								<h2 id="drawer-title" class="text-lg font-semibold leading-tight" style="color: var(--text-primary);">
+									{title}
+								</h2>
+							{/if}
+							{#if subtitle}
+								<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
+									{subtitle}
+								</p>
 							{/if}
 						</div>
-					{/if}
+						
+						{#if showCloseButton}
+							<button 
+								onclick={handleClose}
+								class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
+								style="color: var(--text-tertiary);"
+								onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+								onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+								aria-label="Close"
+							>
+								<X class="h-5 w-5" />
+							</button>
+						{/if}
+					</div>
+				{/if}
 					
 					<!-- Content -->
 					<div class="flex-1 overflow-y-auto overscroll-contain min-h-0" style="touch-action: pan-y;">
@@ -288,36 +292,38 @@
 				aria-labelledby={title ? 'drawer-title' : undefined}
 				tabindex="-1"
 			>
-				<!-- Header -->
-				{#if title || showCloseButton}
-					<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
-						<div class="flex-1 min-w-0 pr-4">
-							{#if title}
-								<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold leading-tight" style="color: var(--text-primary);">
-									{title}
-								</h2>
-							{/if}
-							{#if subtitle}
-								<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
-									{subtitle}
-								</p>
-							{/if}
-						</div>
-						
-						{#if showCloseButton}
-							<button 
-								onclick={handleClose}
-								class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
-								style="color: var(--text-tertiary);"
-								onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
-								onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-								aria-label="Close"
-							>
-								<X class="h-5 w-5" />
-							</button>
+			<!-- Header -->
+			{#if title || titleSlot || showCloseButton}
+				<div class="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b" style="border-color: var(--border-primary);">
+					<div class="flex-1 min-w-0 pr-4">
+						{#if titleSlot}
+							{@render titleSlot?.()}
+						{:else if title}
+							<h2 id="drawer-title" class="text-lg sm:text-xl font-semibold leading-tight" style="color: var(--text-primary);">
+								{title}
+							</h2>
+						{/if}
+						{#if subtitle}
+							<p class="text-sm mt-1 leading-relaxed" style="color: var(--text-secondary);">
+								{subtitle}
+							</p>
 						{/if}
 					</div>
-				{/if}
+					
+					{#if showCloseButton}
+						<button 
+							onclick={handleClose}
+							class="flex-shrink-0 p-2 -mt-1 -mr-1 rounded-lg transition-colors"
+							style="color: var(--text-tertiary);"
+							onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+							onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+							aria-label="Close"
+						>
+							<X class="h-5 w-5" />
+						</button>
+					{/if}
+				</div>
+			{/if}
 				
 				<!-- Content -->
 				<div class="flex-1 overflow-y-auto overscroll-contain">

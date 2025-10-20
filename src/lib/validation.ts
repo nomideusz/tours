@@ -104,7 +104,7 @@ const VALIDATION_RULES = {
 	duration: {
 		required: true,
 		min: 15,
-		max: 2880 // 48 hours
+		max: 43200 // 30 days (30 * 24 * 60 minutes)
 	},
 	capacity: {
 		required: true,
@@ -302,7 +302,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 			errors.push({ field: 'duration', message: `Duration must be at least ${VALIDATION_RULES.duration.min} minutes` });
 		}
 		if (data.duration > VALIDATION_RULES.duration.max) {
-			errors.push({ field: 'duration', message: `Duration must be no more than ${VALIDATION_RULES.duration.max} minutes` });
+			errors.push({ field: 'duration', message: `Duration cannot exceed 30 days (${VALIDATION_RULES.duration.max} minutes)` });
 		}
 	}
 
@@ -438,9 +438,9 @@ export function validateTimeSlotForm(data: Partial<TimeSlotFormData>, tourCapaci
 			errors.push({ field: 'endTime', message: 'Duration must be at least 15 minutes' });
 		}
 		
-		// Check maximum duration (48 hours)
-		if (durationMinutes > 2880) {
-			errors.push({ field: 'endTime', message: 'Duration cannot exceed 48 hours' });
+		// Check maximum duration (30 days)
+		if (durationMinutes > 43200) {
+			errors.push({ field: 'endTime', message: 'Duration cannot exceed 30 days' });
 		}
 	}
 

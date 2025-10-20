@@ -4,26 +4,38 @@
 	import Calendar from 'lucide-svelte/icons/calendar';
 
 	interface Props {
-		slotsMap?: Map<string, number>; // date string (YYYY-MM-DD) -> slot count
+		slotsMap?: Map<string, number>; // date string (YYYY-MM-DD) -> slot count (existing slots)
+		previewDates?: Set<string>; // date strings for preview/to-be-added slots
 		selectedDate?: string | null;
 		onDateClick?: (date: string) => void;
 		minDate?: string | null; // minimum selectable date (YYYY-MM-DD)
 		showSlots?: boolean; // whether to show slot indicators
 		size?: 'mini' | 'medium' | 'large';
 		class?: string;
+		initialMonth?: string | null; // initial month to display (YYYY-MM-DD format)
 	}
 
 	let { 
 		slotsMap = new Map(),
+		previewDates = new Set(),
 		selectedDate = null,
 		onDateClick,
 		minDate = null,
 		showSlots = true,
 		size = 'mini',
-		class: className = ''
+		class: className = '',
+		initialMonth = null
 	}: Props = $props();
 
-	let currentMonth = $state(new Date());
+	// Initialize currentMonth from initialMonth or today
+	let currentMonth = $state(
+		initialMonth 
+			? (() => {
+				const [year, month] = initialMonth.split('-').map(Number);
+				return new Date(year, month - 1, 1);
+			})()
+			: new Date()
+	);
 	
 	// Helper functions
 	function getDaysInMonth(date: Date): number {
@@ -89,6 +101,11 @@
 
 	function hasSlots(day: number): boolean {
 		return getSlotCount(day) > 0;
+	}
+
+	function isPreviewDate(day: number): boolean {
+		const dateStr = formatDateString(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+		return previewDates.has(dateStr);
 	}
 
 	function handleDateClick(day: number) {
@@ -203,7 +220,8 @@
 			{#if day}
 				{@const slotCount = getSlotCount(day)}
 				{@const hasSlot = hasSlots(day)}
-				{@const isDisabled = showSlots ? (isPast(day) && !hasSlot) : isPast(day)}
+				{@const isPreview = isPreviewDate(day)}
+				{@const isDisabled = showSlots ? (isPast(day) && !hasSlot && !isPreview) : isPast(day)}
 				<button
 					type="button"
 					onclick={() => handleDateClick(day)}
@@ -211,16 +229,17 @@
 					class="day-button"
 					class:day-button--today={isToday(day)}
 					class:day-button--selected={isSelected(day)}
-					class:day-button--has-slots={showSlots && hasSlot}
+					class:day-button--has-slots={showSlots && hasSlot && !isPreview}
+					class:day-button--preview={showSlots && isPreview}
 					class:day-button--past={isPast(day)}
 					class:day-button--disabled={isDisabled}
-					title="{showSlots && hasSlot ? `${slotCount} slot${slotCount === 1 ? '' : 's'}${isPast(day) ? ' (past)' : ''}` : isPast(day) ? 'Past date' : isToday(day) ? 'Today' : 'Select date'}"
+					title="{isPreview ? 'Preview - to be added' : showSlots && hasSlot ? `${slotCount} slot${slotCount === 1 ? '' : 's'}${isPast(day) ? ' (past)' : ''}` : isPast(day) ? 'Past date' : isToday(day) ? 'Today' : 'Select date'}"
 				>
 					{day}
-					{#if showSlots && hasSlot}
-						<div class="slot-indicators" class:slot-indicators--past={isPast(day)}>
-							{#if slotCount === 1}
-								<span class="slot-dot"></span>
+					{#if showSlots && (hasSlot || isPreview)}
+						<div class="slot-indicators" class:slot-indicators--past={isPast(day)} class:slot-indicators--preview={isPreview}>
+							{#if slotCount === 1 || isPreview}
+								<span class="slot-dot" class:slot-dot--preview={isPreview}></span>
 							{:else if slotCount === 2}
 								<span class="slot-dot"></span>
 								<span class="slot-dot"></span>
@@ -243,12 +262,14 @@
 		<div class="calendar-legend">
 			<div class="legend-item">
 				<span class="legend-dot legend-dot--upcoming"></span>
-				<span class="legend-label">Upcoming</span>
+				<span class="legend-label">Existing</span>
 			</div>
-			<div class="legend-item">
-				<span class="legend-dot legend-dot--past"></span>
-				<span class="legend-label">Past</span>
-		</div>
+			{#if previewDates.size > 0}
+				<div class="legend-item">
+					<span class="legend-dot legend-dot--preview"></span>
+					<span class="legend-label">Preview</span>
+				</div>
+			{/if}
 			<div class="legend-item">
 				<span class="legend-today">T</span>
 				<span class="legend-label">Today</span>
@@ -544,6 +565,13 @@
 		color: var(--text-tertiary);
 	}
 
+	/* Preview slots styling */
+	.day-button--preview:not(.day-button--past) {
+		background: var(--color-warning-50);
+		color: var(--color-warning-900);
+		font-weight: 500;
+	}
+
 	.day-button--disabled {
 		cursor: not-allowed;
 		opacity: 0.4;
@@ -604,6 +632,21 @@
 		background: var(--text-tertiary);
 	}
 
+	/* Preview slot indicator */
+	.slot-dot--preview {
+		background: var(--color-warning-500);
+		animation: pulse-warning 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	}
+
+	@keyframes pulse-warning {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
 	/* Legend */
 	.calendar-legend {
 		display: flex;
@@ -647,6 +690,10 @@
 
 	.legend-dot--upcoming {
 		background: var(--color-primary-500);
+	}
+
+	.legend-dot--preview {
+		background: var(--color-warning-500);
 	}
 
 	.legend-dot--past {

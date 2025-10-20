@@ -25,9 +25,9 @@
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import TimeSlotOverlay from '$lib/components/time-slot-form/TimeSlotOverlay.svelte';
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';
+	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -211,7 +211,6 @@
 	let currentCalendarDate = $state(new Date());
 	let showAllImages = $state(false);
 	let showFullDescription = $state(false);
-	let showAddSlotsModal = $state(false);
 	let mobileTab = $state<'overview' | 'schedule'>('overview');
 	let lightboxOpen = $state(false);
 	let lightboxImage = $state<string>('');
@@ -221,8 +220,11 @@
 	let hasInitialSchedule = $state(false);
 	let showOnboardingModal = $state(false);
 	let onboardingModalMessage = $state('');
-	let preselectedDate = $state<string | undefined>(undefined);
 	let showPricingDetails = $state(false);
+	
+	// Add slots drawer state
+	let showAddSlotsDrawer = $state(false);
+	let addSlotsInitialDate = $state<string | undefined>(undefined);
 	
 	// Check if we're on mobile for responsive modal/drawer
 	let isMobile = $state(false);
@@ -739,9 +741,9 @@
 									<Calendar class="h-4 w-4" />
 									View Schedule
 								</button>
-								<button onclick={() => showAddSlotsModal = true} class="button-secondary button--gap">
-									<Plus class="h-4 w-4" />
-									Add More Slots
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-secondary button--gap">
+								<Plus class="h-4 w-4" />
+								Add More Slots
 								</button>
 								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
 									<X class="h-4 w-4" />
@@ -752,10 +754,10 @@
 							<p class="mb-4" style="color: var(--color-primary-700);">
 								Your tour is now live! To start accepting bookings, you'll need to add some time slots when your tour will be available.
 							</p>
-							<div class="flex flex-col sm:flex-row gap-3">
-								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
-									<Plus class="h-4 w-4" />
-									Add Time Slots Now
+						<div class="flex flex-col sm:flex-row gap-3">
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+								<Plus class="h-4 w-4" />
+								Add Time Slots Now
 								</button>
 								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
 									<X class="h-4 w-4" />
@@ -805,10 +807,10 @@
 							<p class="mb-4" style="color: var(--color-primary-700);">
 								Your tour has been created as a draft. Add some time slots to start accepting bookings, then activate your tour when you're ready.
 							</p>
-							<div class="flex flex-col sm:flex-row gap-3">
-								<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
-									<Plus class="h-4 w-4" />
-									Add Time Slots
+						<div class="flex flex-col sm:flex-row gap-3">
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+								<Plus class="h-4 w-4" />
+								Add Time Slots
 								</button>
 								<button 
 									onclick={activateTour} 
@@ -851,10 +853,10 @@
 			} : null}
 			secondaryInfo={tour && stats ? `${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)}` : ''}
 			primaryAction={{
-				label: 'Add Time Slots',
-				icon: Plus,
-				onclick: () => showAddSlotsModal = true,
-				variant: 'primary'
+			label: 'Add Time Slots',
+			icon: Plus,
+			onclick: () => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; },
+			variant: 'primary'
 			}}
 			quickActions={[]}
 			showBackButton={true}
@@ -900,7 +902,7 @@
 							Copy Tour
 						{/if}
 					</button>
-					<button onclick={() => showAddSlotsModal = true} class="button-primary button--gap">
+					<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
 						<Plus class="h-4 w-4" />
 						Add Time Slots
 					</button>
@@ -1410,11 +1412,12 @@
 								onSlotClick={handleSlotClick}
 								onViewChange={handleViewChange}
 								tour={tour}
-								onQuickAdd={(date) => {
-									// Store the selected date and open advanced modal
-									preselectedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-									showAddSlotsModal = true;
-								}}
+							onQuickAdd={(date) => {
+								// Open add slots drawer with selected date
+								const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+								addSlotsInitialDate = dateStr;
+								showAddSlotsDrawer = true;
+							}}
 							/>
 						</div>
 					</section>
@@ -1627,32 +1630,20 @@
 
 </PageContainer>
 
-<!-- Add Time Slots Overlay (responsive) -->
-<TimeSlotOverlay
-	bind:isOpen={showAddSlotsModal}
-	{tourId}
-	tourName={tour?.name}
-	{preselectedDate}
-	onClose={() => {
-		showAddSlotsModal = false;
-		preselectedDate = undefined; // Clear the preselected date
-	}}
-	onSuccess={() => {
-		showAddSlotsModal = false;
-		preselectedDate = undefined; // Clear the preselected date
-		// Force immediate refetch of TourTimeline data with aggressive settings
-		queryClient.invalidateQueries({ 
-			queryKey: queryKeys.tourSchedule(tourId),
-			exact: true,
-			refetchType: 'all'
+<!-- Add Slots Drawer -->
+<AddSlotsDrawer
+	bind:isOpen={showAddSlotsDrawer}
+	tourId={tourId}
+	initialDate={addSlotsInitialDate}
+	onClose={() => showAddSlotsDrawer = false}
+	onSuccess={async () => {
+		// Invalidate queries to refresh data
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.tourSchedule(tourId)
 		});
-		// Show success message
-		showAddSlotsSuccess = true;
-		// Close welcome prompt if it was open (newly created tour)
-		showWelcomePrompt = false;
-		setTimeout(() => {
-			showAddSlotsSuccess = false;
-		}, 3000);
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.tourDetails(tourId)
+		});
 	}}
 />
 

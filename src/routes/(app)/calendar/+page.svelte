@@ -7,7 +7,6 @@
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
-	import QuickAddModal from '$lib/components/calendar/QuickAddModal.svelte';
 	import LocationModal from '$lib/components/calendar/LocationModal.svelte';
 	import ToursLegend from '$lib/components/calendar/ToursLegend.svelte';
 	import OnboardingSection from '$lib/components/calendar/OnboardingSection.svelte';
@@ -40,6 +39,7 @@
 	
 	// Components
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import AddSlotsFlow from '$lib/components/AddSlotsFlow.svelte';
 	import { getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
 	import { formatDateForInput, getSmartCapacity, getLastUsedCapacity, calculateTotalRecurringSlots, getRecurringEndDate } from '$lib/utils/calendar-helpers.js';
 	import { checkConflicts, checkRecurringConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';
@@ -84,30 +84,6 @@
 	let timelineCurrentDate = $state(new Date());
 	let highlightedTourId = $state('');
 	
-	// Quick Add Modal state
-	let showQuickAddModal = $state(false);
-	let quickAddDate = $state<Date | null>(null);
-	let quickAddStep = $state<'select-tour' | 'configure-slot'>('select-tour');
-	let selectedTourForSlot = $state<string>('');
-	let isAddingSlot = $state(false);
-	let lastCreatedSlot = $state<{time: string, date: string, capacity: number, tourId: string} | null>(null);
-	let selectedTourSlots = $state<any[]>([]);
-	let hasConflict = $state(false);
-	let conflictMessage = $state<string>('');
-	let recurringConflictCount = $state(0);
-	let totalRecurringSlots = $state(0);
-	let selectedTourData = $state<any>(null);
-	
-	// Time Slot Form state
-	let timeSlotForm = $state({
-		startTime: '10:00',
-		endTime: '12:00',
-		endDate: '',
-		capacity: 10,
-		recurring: false,
-		recurringType: 'weekly' as 'daily' | 'weekly' | 'monthly',
-		recurringCount: 4
-	});
 
 	// Loading and error states
 	let isLoading = $derived($dashboardStatsQuery.isLoading);
@@ -137,6 +113,10 @@
 	let countrySearchTerm = $state('');
 	let resendingEmail = $state(false);
 	let resendEmailSuccess = $state(false);
+	
+	// Add slots flow
+	let showAddSlotsFlow = $state(false);
+	let selectedDateForSlots = $state<string | undefined>(undefined);
 	let isSettingUpPayment = $state(false);
 	let paymentStatus = $state<{ isSetup: boolean; loading: boolean }>({
 		isSetup: false,
@@ -216,144 +196,7 @@
 	
 
 	
-	// Check for conflicts when time or recurring settings change
-	$effect(() => {
-		// Trigger on any form changes including recurring settings
-		const triggerCheck = {
-			date: quickAddDate,
-			startTime: timeSlotForm.startTime,
-			endTime: timeSlotForm.endTime,
-			recurring: timeSlotForm.recurring,
-			recurringType: timeSlotForm.recurringType,
-			recurringCount: timeSlotForm.recurringCount,
-			tourId: selectedTourForSlot,
-			slotsCount: selectedTourSlots.length
-		};
-		
-		if (quickAddDate && timeSlotForm.startTime && timeSlotForm.endTime && selectedTourForSlot) {
-			const dateStr = formatDateForInput(quickAddDate);
-			
-			// Only skip conflict checking if we haven't selected a tour yet
-			// Empty array is valid (tour might have no slots)
-			if (!selectedTourForSlot) {
-				hasConflict = false;
-				conflictMessage = '';
-				recurringConflictCount = 0;
-				totalRecurringSlots = 0;
-				return;
-			}
-			
-
-			
-			if (timeSlotForm.recurring) {
-				// Check recurring conflicts
-				const formData = {
-					date: dateStr,
-					startTime: timeSlotForm.startTime,
-					endTime: timeSlotForm.endTime,
-					recurring: true,
-					recurringType: timeSlotForm.recurringType,
-					recurringEnd: getRecurringEndDate(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount),
-					recurringCount: timeSlotForm.recurringCount
-				};
-				
-				// Debug: Log what we're checking
-				console.log('=== RECURRING CONFLICT CHECK ===');
-				console.log('Form data:', formData);
-				console.log('Existing slots count:', selectedTourSlots.length);
-				if (selectedTourSlots.length > 0) {
-					console.log('First slot example:', selectedTourSlots[0]);
-					console.log('Slot dates:', selectedTourSlots.map(s => ({
-						start: new Date(s.startTime).toISOString(),
-						end: new Date(s.endTime).toISOString()
-					})));
-				}
-				
-				// Debug: Check each date manually
-				let debugConflictCount = 0;
-				let currentDebugDate = new Date(formData.date);
-				for (let i = 0; i < formData.recurringCount; i++) {
-					const checkDateStr = currentDebugDate.toISOString().split('T')[0];
-					const dayConflicts = checkConflicts(checkDateStr, formData.startTime, formData.endTime, selectedTourSlots);
-					if (dayConflicts.length > 0) {
-						debugConflictCount++;
-						console.log(`Day ${i + 1} (${checkDateStr}): CONFLICT FOUND`, dayConflicts);
-					} else {
-						console.log(`Day ${i + 1} (${checkDateStr}): No conflict`);
-					}
-					
-					// Move to next date
-					if (formData.recurringType === 'daily') {
-						currentDebugDate.setDate(currentDebugDate.getDate() + 1);
-					} else if (formData.recurringType === 'weekly') {
-						currentDebugDate.setDate(currentDebugDate.getDate() + 7);
-					} else if (formData.recurringType === 'monthly') {
-						currentDebugDate.setMonth(currentDebugDate.getMonth() + 1);
-					}
-				}
-				console.log('Manual debug conflict count:', debugConflictCount);
-				
-				const recurringResult = checkRecurringConflicts(formData, selectedTourSlots);
-				console.log('Function conflict result:', recurringResult);
-				
-				recurringConflictCount = recurringResult.conflictCount;
-				totalRecurringSlots = calculateTotalRecurringSlots(dateStr, timeSlotForm.recurringType, timeSlotForm.recurringCount);
-				console.log(`Found ${recurringConflictCount} conflicts out of ${totalRecurringSlots} slots`);
-				console.log('=== END CONFLICT CHECK ===');
-				
-				hasConflict = recurringResult.hasConflicts;
-				if (hasConflict) {
-					conflictMessage = `${recurringConflictCount} of ${totalRecurringSlots} recurring slots conflict with existing time slots`;
-		} else {
-					conflictMessage = '';
-				}
-			} else {
-				// Check single slot conflict
-				const conflicts = checkConflicts(dateStr, timeSlotForm.startTime, timeSlotForm.endTime, selectedTourSlots);
-				
-				hasConflict = conflicts.length > 0;
-				if (hasConflict && conflicts[0]) {
-					const conflictSlot = conflicts[0];
-					const conflictStart = new Date(conflictSlot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-					const conflictEnd = new Date(conflictSlot.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-					conflictMessage = `Conflicts with existing slot: ${conflictStart} - ${conflictEnd}`;
-				} else {
-					conflictMessage = '';
-				}
-				
-				recurringConflictCount = 0;
-				totalRecurringSlots = 0;
-			}
-		} else {
-			hasConflict = false;
-			conflictMessage = '';
-			recurringConflictCount = 0;
-			totalRecurringSlots = 0;
-		}
-	});
-	
-
-	
-	// Helper function to calculate end time based on start time and duration
-	function calculateEndTime(startTime: string, duration: number): string {
-		if (!startTime || !duration) return startTime;
-		
-		const [hours, minutes] = startTime.split(':').map(Number);
-		const totalMinutes = hours * 60 + minutes + duration;
-		
-		const endHours = Math.floor(totalMinutes / 60) % 24;
-		const endMinutes = totalMinutes % 60;
-		
-		return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
-	}
-	
-	// Auto-calculate end time when start time changes
-	$effect(() => {
-		if (selectedTourData && timeSlotForm.startTime) {
-			const newEndTime = calculateEndTime(timeSlotForm.startTime, selectedTourData.duration);
-			timeSlotForm.endTime = newEndTime;
-		}
-	});
+	// Note: Conflict checking is now handled inside UnifiedTimeSlotForm
 	
 
 
@@ -756,89 +599,6 @@
 		/>
 		{/if}
 	
-	<!-- Quick Add Modal Component -->
-	<QuickAddModal
-		bind:show={showQuickAddModal}
-		bind:date={quickAddDate}
-		bind:step={quickAddStep}
-		bind:selectedTourId={selectedTourForSlot}
-		bind:selectedTourData={selectedTourData}
-		bind:selectedTourSlots={selectedTourSlots}
-		bind:timeSlotForm={timeSlotForm}
-		bind:isAddingSlot={isAddingSlot}
-		bind:lastCreatedSlot={lastCreatedSlot}
-		bind:hasConflict={hasConflict}
-		bind:conflictMessage={conflictMessage}
-		bind:recurringConflictCount={recurringConflictCount}
-		bind:totalRecurringSlots={totalRecurringSlots}
-		{tours}
-		on:close={() => {
-			showQuickAddModal = false;
-			quickAddStep = 'select-tour';
-			selectedTourForSlot = '';
-			selectedTourData = null;
-		}}
-		on:createFirstTour={() => goto('/tours/new')}
-		on:submit={async (e) => {
-			const { tourId, formData } = e.detail;
-			isAddingSlot = true;
-			
-			try {
-				const response = await fetch(`/api/tours/${tourId}/schedule`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(formData)
-				});
-				
-				if (response.ok) {
-					// Remember the last created slot info for smart suggestions
-					lastCreatedSlot = {
-						time: formData.startTime,
-						date: formatDateForInput(quickAddDate!),
-						capacity: formData.capacity,
-						tourId: tourId
-					};
-					
-					// Invalidate timeline queries to refresh the calendar
-					await queryClient.invalidateQueries({
-						queryKey: ['allTimeSlots']
-					});
-					
-					// Also invalidate specific tour schedule if we have a tour ID
-					if (tourId) {
-						await queryClient.invalidateQueries({
-							queryKey: ['tourSchedule', tourId]
-						});
-					}
-					
-					// Clear the cached slots for this tour to force refetch next time
-					selectedTourSlots = [];
-					
-					// Close modal and reset form
-					showQuickAddModal = false;
-					quickAddStep = 'select-tour';
-					selectedTourForSlot = '';
-					selectedTourData = null;
-					timeSlotForm = {
-						startTime: '10:00',
-						endTime: '12:00',
-						endDate: '',
-						capacity: 10,
-						recurring: false,
-						recurringType: 'weekly',
-						recurringCount: 4
-					};
-				} else {
-					const error = await response.json();
-					console.error('Failed to add time slot:', error);
-				}
-			} catch (error) {
-				console.error('Error adding time slot:', error);
-			} finally {
-				isAddingSlot = false;
-			}
-		}}
-	/>
 
 		<!-- Calendar - Main Focus -->
 		{#if !isNewUser || !showOnboarding}
@@ -889,32 +649,12 @@
 						onViewChange={(newView) => {
 							timelineView = newView;
 						}}
-						onQuickAdd={(date) => {
-							// Open Quick Add modal for the clicked date
-							quickAddDate = date;
-							quickAddStep = 'select-tour';
-							selectedTourForSlot = '';
-							selectedTourData = null;
-							selectedTourSlots = [];
-							hasConflict = false;
-							conflictMessage = '';
-							recurringConflictCount = 0;
-							totalRecurringSlots = 0;
-							
-							// Use smart defaults for capacity (keep last used or default to 10)
-							const defaultCapacity = lastCreatedSlot?.capacity || 10;
-							
-							timeSlotForm = {
-								startTime: '10:00',
-								endTime: '12:00',
-								endDate: '',
-								capacity: defaultCapacity,
-								recurring: false,
-								recurringType: 'weekly',
-								recurringCount: 4
-							};
-							showQuickAddModal = true;
-						}}
+			onQuickAdd={(date) => {
+				// Open add slots flow with selected date
+				const dateStr = formatDateForInput(date);
+				selectedDateForSlots = dateStr;
+				showAddSlotsFlow = true;
+			}}
 					/>
 				{/if}
 				</div>
@@ -964,5 +704,18 @@ Your payment account will use ${stripeCurrency} as the currency.
 		}}
 	/>
 {/if}
+
+<!-- Add Slots Flow (2-step: tour selection → slot creation) -->
+<AddSlotsFlow
+	bind:isOpen={showAddSlotsFlow}
+	initialDate={selectedDateForSlots}
+	onClose={() => showAddSlotsFlow = false}
+	onSuccess={async () => {
+		// Invalidate queries to refresh calendar data
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.allTimeSlots(timelineView, timelineCurrentDate.toISOString().split('T')[0])
+		});
+	}}
+/>
 
 </div>
