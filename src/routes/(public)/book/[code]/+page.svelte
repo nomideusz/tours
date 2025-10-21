@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import type { PageData } from './$types.js';
 	import type { TimeSlot } from '$lib/types.js';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
@@ -22,7 +23,11 @@
 	import TourHeroSection from '$lib/components/booking/TourHeroSection.svelte';
 	import TourDetailsTabs from '$lib/components/booking/TourDetailsTabs.svelte';
 	import BookingWidget from '$lib/components/booking/BookingWidget.svelte';
+	import TourDateWeather from '$lib/components/booking/TourDateWeather.svelte';
+	import TourLocationMap from '$lib/components/booking/TourLocationMap.svelte';
 	import { calculateBookingPrice, STRIPE_FEES } from '$lib/utils/pricing-calculations.js';
+	import { getMapService } from '$lib/utils/map-integration.js';
+	import { env } from '$env/dynamic/public';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -38,6 +43,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import X from 'lucide-svelte/icons/x';
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	
 	let { data, form }: { data: PageData; form: any } = $props();
 	
@@ -255,6 +261,50 @@
 			isPrivateTour = true;
 		}
 	});
+	
+	// Weather state for tour location
+	let tourCoordinates = $state<{ lat: number; lng: number } | null>(null);
+	let isGeocodingLocation = $state(false);
+	let geocodingAttempted = $state<string | null>(null);
+	
+	// Geocode tour location for weather
+	$effect(() => {
+		if (tour?.location && 
+		    !tourCoordinates && 
+		    !isGeocodingLocation && 
+		    geocodingAttempted !== tour.location && 
+		    browser && 
+		    env.PUBLIC_GOOGLE_MAPS_API_KEY) {
+			
+			isGeocodingLocation = true;
+			geocodingAttempted = tour.location;
+			
+			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
+			mapService.searchLocations(tour.location)
+				.then((results) => {
+					if (results.length > 0) {
+						tourCoordinates = results[0].coordinates;
+						console.log('📍 Geocoded tour location for weather:', tour.location, '→', tourCoordinates);
+					}
+				})
+				.catch((error) => {
+					console.warn('Failed to geocode tour location:', error);
+				})
+				.finally(() => {
+					isGeocodingLocation = false;
+				});
+		}
+	});
+	
+	// Get tour date/time from selected slot
+	let tourDateTime = $derived.by(() => {
+		if (!selectedTimeSlot) return null;
+		return new Date(selectedTimeSlot.startTime);
+	});
+	
+	// Collapsible sections
+	let showWeather = $state(true);
+	let showMap = $state(false);
 </script>
 
 <svelte:head>
@@ -284,6 +334,75 @@
 				
 				<!-- Tour Details -->
 				<TourDetailsTabs {tour} />
+				
+				<!-- Location & Weather Section (when date selected) -->
+				{#if selectedTimeSlot && tourCoordinates}
+					<div class="mt-6 space-y-4">
+						<!-- Map (Collapsible) -->
+						<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+							<button
+								type="button"
+								onclick={() => showMap = !showMap}
+								class="w-full p-4 flex items-center justify-between hover:bg-opacity-80 transition-colors"
+							>
+								<div class="flex items-center gap-2">
+									{#if showMap}
+										<ChevronDown class="w-4 h-4" style="color: var(--text-secondary);" />
+									{:else}
+										<ChevronRight class="w-4 h-4" style="color: var(--text-secondary);" />
+									{/if}
+									<MapPin class="w-4 h-4" style="color: var(--text-secondary);" />
+									<h3 class="font-semibold" style="color: var(--text-primary);">Tour Location</h3>
+								</div>
+								<span class="text-xs" style="color: var(--text-tertiary);">
+									{showMap ? 'Hide' : 'Show'} map
+								</span>
+							</button>
+							{#if showMap}
+								<div class="pb-4 px-4">
+									<TourLocationMap
+										coordinates={tourCoordinates}
+										locationName={tour.location || 'Tour Location'}
+										googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+									/>
+								</div>
+							{/if}
+						</div>
+						
+						<!-- Weather (Collapsible) -->
+						{#if tourDateTime}
+							<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+								<button
+									type="button"
+									onclick={() => showWeather = !showWeather}
+									class="w-full p-4 flex items-center justify-between hover:bg-opacity-80 transition-colors"
+								>
+									<div class="flex items-center gap-2">
+										{#if showWeather}
+											<ChevronDown class="w-4 h-4" style="color: var(--text-secondary);" />
+										{:else}
+											<ChevronRight class="w-4 h-4" style="color: var(--text-secondary);" />
+										{/if}
+										<span class="text-xl">🌤️</span>
+										<h3 class="font-semibold" style="color: var(--text-primary);">Weather Forecast</h3>
+									</div>
+									<span class="text-xs" style="color: var(--text-tertiary);">
+										{showWeather ? 'Hide' : 'Show'} forecast
+									</span>
+								</button>
+								{#if showWeather}
+									<div class="pb-4 px-4">
+										<TourDateWeather
+											coordinates={tourCoordinates}
+											tourDateTime={tourDateTime}
+											locationName={tour.location}
+										/>
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/if}
 				
 				<!-- Booking Widget (Full Width) -->
 				<div class="mt-8">

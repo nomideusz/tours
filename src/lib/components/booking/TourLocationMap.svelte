@@ -1,0 +1,142 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
+	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
+	
+	// Icons
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Navigation from 'lucide-svelte/icons/navigation';
+	
+	interface Props {
+		coordinates: LocationCoordinates;
+		locationName: string;
+		googleMapsApiKey: string;
+	}
+	
+	let {
+		coordinates,
+		locationName,
+		googleMapsApiKey
+	}: Props = $props();
+	
+	let mapContainer: HTMLElement;
+	let map = $state<google.maps.Map | null>(null);
+	let marker = $state<google.maps.Marker | null>(null);
+	let isLoaded = $state(false);
+	
+	// Load Google Maps
+	async function loadMap() {
+		if (!browser || !googleMapsApiKey || !mapContainer) return;
+		
+		// Check if Google Maps is loaded
+		if (!window.google?.maps) {
+			const script = document.createElement('script');
+			script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}`;
+			script.async = true;
+			
+			await new Promise<void>((resolve) => {
+				script.onload = () => {
+					setTimeout(resolve, 100);
+				};
+				document.head.appendChild(script);
+			});
+		}
+		
+		if (!window.google?.maps) return;
+		
+		// Create map
+		map = new google.maps.Map(mapContainer, {
+			center: coordinates,
+			zoom: 15,
+			mapTypeControl: false,
+			streetViewControl: false,
+			fullscreenControl: false,
+			zoomControl: true
+		});
+		
+		// Add marker
+		marker = new google.maps.Marker({
+			position: coordinates,
+			map: map,
+			title: locationName
+		});
+		
+		isLoaded = true;
+	}
+	
+	onMount(() => {
+		loadMap();
+	});
+	
+	onDestroy(() => {
+		if (marker) {
+			marker.setMap(null);
+		}
+	});
+	
+	// Get directions URL
+	function getDirectionsUrl(): string {
+		return `https://www.google.com/maps/dir/?api=1&destination=${coordinates.lat},${coordinates.lng}`;
+	}
+</script>
+
+<div>
+		<!-- Location Address -->
+		<div class="mb-4 p-3 rounded-lg flex items-start gap-2" style="background: var(--bg-secondary);">
+			<MapPin class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
+			<p class="text-sm" style="color: var(--text-primary);">
+				{locationName}
+			</p>
+		</div>
+		
+		<!-- Map Container -->
+		{#if googleMapsApiKey}
+			<div 
+				bind:this={mapContainer}
+				class="w-full rounded-lg overflow-hidden"
+				style="height: 300px; background: var(--bg-secondary);"
+			>
+				{#if !isLoaded}
+					<div class="w-full h-full flex items-center justify-center">
+						<div class="text-center">
+							<div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-2" style="color: var(--text-secondary);"></div>
+							<p class="text-xs" style="color: var(--text-secondary);">Loading map...</p>
+						</div>
+					</div>
+				{/if}
+			</div>
+			
+		{:else}
+			<!-- No API key -->
+			<div class="text-center p-6 rounded-lg" style="background: var(--bg-secondary);">
+				<MapPin class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+				<p class="text-sm" style="color: var(--text-secondary);">Map unavailable</p>
+			</div>
+		{/if}
+		
+		<!-- Get Directions Button -->
+		<div class="mt-3">
+			<a 
+				href={getDirectionsUrl()}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="button-primary button--full-width button--gap"
+			>
+				<Navigation class="w-4 h-4" />
+				Get Directions
+			</a>
+		</div>
+</div>
+
+<style>
+	.animate-spin {
+		animation: spin 1s linear infinite;
+	}
+	
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+</style>
+

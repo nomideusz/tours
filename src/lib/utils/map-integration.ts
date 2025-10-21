@@ -36,52 +36,50 @@ export abstract class MapService {
 // Google Maps implementation
 export class GoogleMapsService extends MapService {
 	async searchLocations(query: string): Promise<LocationSearchResult[]> {
-		if (!this.config.apiKey) {
-			throw new Error('Google Maps API key is required');
-		}
-		
-		const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${this.config.apiKey}`;
+		// Use server-side proxy endpoint to avoid CORS and API key restrictions
+		const url = `/api/maps/geocode?query=${encodeURIComponent(query)}`;
 		
 		try {
 			const response = await fetch(url);
 			const data = await response.json();
 			
-			if (data.status !== 'OK') {
-				console.error('Google Maps API error:', data.status);
+			if (!response.ok) {
+				console.error('Geocoding API error:', data.error);
+				return [];
+			}
+			
+			if (!data.results || data.results.length === 0) {
 				return [];
 			}
 			
 			return data.results.map((result: any) => ({
-				name: result.name || result.formatted_address,
-				fullAddress: result.formatted_address,
-				coordinates: {
-					lat: result.geometry.location.lat,
-					lng: result.geometry.location.lng
-				},
-				type: this.getLocationType(result.types)
+				name: result.name,
+				fullAddress: result.fullAddress,
+				coordinates: result.coordinates,
+				type: this.getLocationType(result.types || [])
 			}));
 		} catch (error) {
-			console.error('Google Maps search error:', error);
+			console.error('Geocoding error:', error);
 			return [];
 		}
 	}
 	
 	async reverseGeocode(coordinates: LocationCoordinates): Promise<LocationSearchResult> {
-		const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates.lat},${coordinates.lng}&key=${this.config.apiKey}`;
+		// Use server-side proxy endpoint
+		const url = `/api/maps/reverse-geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`;
 		
 		const response = await fetch(url);
 		const data = await response.json();
 		
-		if (data.status !== 'OK' || !data.results.length) {
+		if (!response.ok) {
 			throw new Error('Unable to reverse geocode location');
 		}
 		
-		const result = data.results[0];
 		return {
-			name: result.address_components[0]?.long_name || result.formatted_address,
-			fullAddress: result.formatted_address,
-			coordinates,
-			type: this.getLocationType(result.types)
+			name: data.name,
+			fullAddress: data.fullAddress,
+			coordinates: data.coordinates,
+			type: this.getLocationType(data.types || [])
 		};
 	}
 	
@@ -276,13 +274,13 @@ export function parseCoordinates(coordinateString: string): LocationCoordinates 
 
 // Environment configuration - browser-safe defaults
 export const MAP_CONFIG = {
-	// These would be set via SvelteKit public environment variables if needed
-	// For now using safe defaults that work without API keys
+	// These should be set via SvelteKit public environment variables
+	// Add to .env: PUBLIC_GOOGLE_MAPS_API_KEY=your_key_here
 	GOOGLE_MAPS_API_KEY: '',
 	MAPBOX_ACCESS_TOKEN: '',
 	
-	// OpenStreetMap doesn't require an API key
-	DEFAULT_PROVIDER: 'openstreetmap' as const,
+	// Google Maps is now the default provider (requires API key)
+	DEFAULT_PROVIDER: 'google' as const,
 	
 	// Default map settings
 	DEFAULT_ZOOM: 15,
@@ -292,10 +290,32 @@ export const MAP_CONFIG = {
 	RATE_LIMIT_DELAY: 100 // milliseconds between requests
 };
 
-// Default map service instance (uses OpenStreetMap as it's free)
-export const defaultMapService = createMapService('openstreetmap', {
-	apiKey: '' // OpenStreetMap doesn't need an API key
-});
+/**
+ * Create default map service based on environment configuration
+ * Falls back to OpenStreetMap if Google Maps API key is not available
+ */
+export function createDefaultMapService(googleApiKey?: string): MapService {
+	if (googleApiKey) {
+		return createMapService('google', { apiKey: googleApiKey });
+	}
+	
+	// Fallback to OpenStreetMap if no API key provided
+	console.warn('Google Maps API key not found, using OpenStreetMap as fallback');
+	return createMapService('openstreetmap', { apiKey: '' });
+}
+
+// Default map service instance - uses Google Maps via server proxies
+export const defaultMapService = createMapService('google', { apiKey: '' });
+
+/**
+ * Get map service - always uses Google Maps via server proxy
+ * API key is handled server-side for security
+ */
+export function getMapService(apiKey?: string): MapService {
+	// Always use Google Maps now (calls server endpoints)
+	// API key parameter is ignored but kept for backward compatibility
+	return createMapService('google', { apiKey: '' });
+}
 
 // Popular tourist locations for suggestions
 export const POPULAR_TOUR_LOCATIONS = [

@@ -4,9 +4,10 @@
 	import Navigation from 'lucide-svelte/icons/navigation';
 	import Search from 'lucide-svelte/icons/search';
 	import X from 'lucide-svelte/icons/x';
-	import MapPickerModal from './MapPickerModal.svelte';
-	import { defaultMapService } from '$lib/utils/map-integration.js';
+	import GoogleMapPickerModal from './GoogleMapPickerModal.svelte';
+	import { getMapService } from '$lib/utils/map-integration.js';
 	import { truncateLocation } from '$lib/utils/location.js';
+	import { env } from '$env/dynamic/public';
 	
 	// Cleanup on component destroy
 	onDestroy(() => {
@@ -81,7 +82,8 @@
 			
 			// Try to reverse geocode to get human-readable address
 			try {
-				const result = await defaultMapService.reverseGeocode(coordinates);
+				const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
+				const result = await mapService.reverseGeocode(coordinates);
 				const truncatedAddress = truncateLocation(result.fullAddress);
 				value = truncatedAddress;
 				onLocationSelect?.(truncatedAddress);
@@ -110,7 +112,8 @@
 		isSearching = true;
 		try {
 			// Get real location results from map service
-			const realResults = await defaultMapService.searchLocations(query);
+			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
+			const realResults = await mapService.searchLocations(query);
 			
 			// Filter popular locations that match query
 			const popularMatches = popularLocations
@@ -206,7 +209,7 @@
 	
 	<div class="relative">
 		<div class="relative">
-			<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+			<MapPin class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 z-10" style="color: var(--text-tertiary); pointer-events: none;" />
 			<input
 				id="location-input"
 				type="text"
@@ -224,21 +227,21 @@
 					}
 				}}
 				placeholder={placeholder}
-				class="form-input pl-10 pr-12"
+				class="form-input pl-10 pr-12 relative z-0"
 				autocomplete="off"
 			/>
 			{#if value && value.trim()}
 				<button
 					type="button"
 					onclick={clearLocation}
-					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-0.5 rounded hover:bg-opacity-20 transition-colors"
+					class="absolute right-3 top-1/2 transform -translate-y-1/2 p-0.5 rounded hover:bg-opacity-20 transition-colors z-10"
 					style="color: var(--text-tertiary); background: transparent;"
 					aria-label="Clear location"
 				>
 					<X class="h-4 w-4" />
 				</button>
 			{:else}
-				<Search class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style="color: var(--text-tertiary);" />
+				<Search class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 z-10" style="color: var(--text-tertiary); pointer-events: none;" />
 			{/if}
 		</div>
 		
@@ -336,10 +339,11 @@
 	</div>
 </div>
 
-<!-- Map Picker Modal -->
-<MapPickerModal
+<!-- Google Map Picker Modal -->
+<GoogleMapPickerModal
 	bind:isOpen={showMapPicker}
 	initialLocation={value}
+	googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
 	onLocationSelect={handleMapLocationSelect}
 	onClose={() => { showMapPicker = false; }}
 />

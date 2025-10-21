@@ -28,12 +28,16 @@
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';
 	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
+	import WeatherWidget from '$lib/components/weather/WeatherWidget.svelte';
+	import { getMapService } from '$lib/utils/map-integration.js';
+	import { env } from '$env/dynamic/public';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Euro from 'lucide-svelte/icons/euro';
 	import Users from 'lucide-svelte/icons/users';
 	import Clock from 'lucide-svelte/icons/clock';
+	import Cloud from 'lucide-svelte/icons/cloud';
 
 	import Edit from 'lucide-svelte/icons/edit';
 	import QrCode from 'lucide-svelte/icons/qr-code';
@@ -78,6 +82,11 @@
 	let isTogglingStatus = $state(false);
 	let showDeactivateModal = $state(false);
 	let pendingStatusChange: 'active' | 'draft' | null = $state(null);
+	
+	// Weather state
+	let tourCoordinates = $state<{ lat: number; lng: number } | null>(null);
+	let isGeocodingLocation = $state(false);
+	let geocodingAttempted = $state<string | null>(null); // Track which location we've attempted
 	
 	// Generate color for tour based on tour ID/name (same algorithm as tours page)
 	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
@@ -401,6 +410,9 @@
 				status: 'active' 
 			});
 			
+			// Force refetch to update UI immediately
+			await $tourDetailsQuery.refetch();
+			
 			// Close welcome prompt after successful activation
 			showWelcomePrompt = false;
 			
@@ -464,7 +476,10 @@
 				status: newStatus
 			});
 			
-			// Track event (mutation handles optimistic updates and cache invalidation)
+			// Force refetch to update UI immediately
+			await $tourDetailsQuery.refetch();
+			
+			// Track event
 			if (browser) {
 				trackTourEvent('status_change', tour.name);
 			}
@@ -754,6 +769,38 @@
 			console.log('✅ Tour details loaded for tourId:', tourId, 'Data:', $tourDetailsQuery.data);
 		}
 	});
+	
+	// Geocode tour location for weather (prevent infinite loop)
+	$effect(() => {
+		if (tour?.location && 
+		    !tourCoordinates && 
+		    !isGeocodingLocation && 
+		    geocodingAttempted !== tour.location && 
+		    browser && 
+		    env.PUBLIC_GOOGLE_MAPS_API_KEY) {
+			
+			isGeocodingLocation = true;
+			geocodingAttempted = tour.location; // Mark as attempted to prevent infinite loop
+			
+			// Try to geocode the location using Google Maps
+			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
+			mapService.searchLocations(tour.location)
+				.then((results) => {
+					if (results.length > 0) {
+						tourCoordinates = results[0].coordinates;
+						console.log('📍 Geocoded tour location:', tour.location, '→', tourCoordinates);
+					} else {
+						console.warn('No geocoding results for:', tour.location);
+					}
+				})
+				.catch((error) => {
+					console.warn('Failed to geocode tour location:', error);
+				})
+				.finally(() => {
+					isGeocodingLocation = false;
+				});
+		}
+	});
 </script>
 
 <svelte:head>
@@ -970,8 +1017,8 @@
 						<span class="capitalize font-medium">{tour.status}</span>
 					</button>
 					
-					<!-- Public Discovery Indicator -->
-					{#if tour.publicListing}
+					<!-- Public Discovery Indicator (only for active tours) -->
+					{#if tour.publicListing && tour.status === 'active'}
 						<Tooltip text="Listed on Public Discovery">
 							<div class="public-discovery-badge">
 								<Eye class="h-4 w-4" />
@@ -1644,6 +1691,87 @@
 						<div class="text-xs text-center" style="color: var(--text-tertiary);">
 							<p class="truncate">{bookingUrl}</p>
 						</div>
+					</div>
+				</div>
+				
+				<!-- Weather Widget -->
+				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="p-4 border-b" style="border-color: var(--border-primary);">
+						<h3 class="font-semibold" style="color: var(--text-primary);">Weather</h3>
+					</div>
+					<div class="p-4">
+						{#if env.PUBLIC_GOOGLE_MAPS_API_KEY || env.PUBLIC_OPENWEATHER_API_KEY}
+							{#if tourCoordinates}
+								<!-- Weather widget ready (tries Google Weather, falls back to OpenWeatherMap) -->
+								<WeatherWidget
+									coordinates={tourCoordinates}
+									locationName={tour.location || 'Tour Location'}
+									showDetails={true}
+									compact={false}
+								/>
+							{:else if tour.location && isGeocodingLocation}
+								<!-- Location is being geocoded -->
+								<div class="text-center p-4">
+									<div class="flex items-center justify-center">
+										<div class="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" style="color: var(--text-secondary);"></div>
+										<span class="text-sm" style="color: var(--text-secondary);">Loading weather...</span>
+									</div>
+								</div>
+							{:else if tour.location}
+								<!-- Has location but couldn't geocode -->
+								<div class="text-center p-4 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+									<Cloud class="w-8 h-8 mx-auto mb-2" style="color: var(--color-warning-600);" />
+									<p class="text-sm font-medium mb-1" style="color: var(--color-warning-900);">Location Not Found</p>
+									<p class="text-xs" style="color: var(--color-warning-700);">
+										Unable to geocode "{tour.location}". Try using the map picker to set coordinates.
+									</p>
+								</div>
+							{:else}
+								<!-- No location set -->
+								<div class="text-center p-4 rounded-lg" style="background: var(--bg-secondary);">
+									<Cloud class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+									<p class="text-sm" style="color: var(--text-secondary);">No location set</p>
+									<p class="text-xs mt-1" style="color: var(--text-tertiary);">Add a location to see weather</p>
+								</div>
+							{/if}
+						{:else}
+							<!-- API keys not configured -->
+							<div class="text-center p-4 rounded-lg" style="background: var(--color-info-50); border: 1px solid var(--color-info-200);">
+								<Cloud class="w-8 h-8 mx-auto mb-2" style="color: var(--color-info-600);" />
+								<p class="text-sm font-medium mb-1" style="color: var(--color-info-900);">Setup Required</p>
+								<p class="text-xs mb-2" style="color: var(--color-info-700);">
+									Add these environment variables:
+								</p>
+								<div class="text-left max-w-xs mx-auto space-y-2">
+									<div>
+										<p class="text-xs font-mono px-2 py-1 rounded" style="background: var(--bg-primary); color: {env.PUBLIC_GOOGLE_MAPS_API_KEY ? 'var(--color-success-600)' : 'var(--color-warning-600)'};">
+											{env.PUBLIC_GOOGLE_MAPS_API_KEY ? '✓ Primary' : '○ Optional'} PUBLIC_GOOGLE_MAPS_API_KEY
+										</p>
+										{#if env.PUBLIC_GOOGLE_MAPS_API_KEY}
+											<p class="text-[10px] mt-0.5 px-2" style="color: var(--color-success-600);">
+												Google Weather (10-day forecast) + Geocoding
+											</p>
+										{/if}
+									</div>
+									<div>
+										<p class="text-xs font-mono px-2 py-1 rounded" style="background: var(--bg-primary); color: {env.PUBLIC_OPENWEATHER_API_KEY ? 'var(--color-success-600)' : 'var(--color-warning-600)'};">
+											{env.PUBLIC_OPENWEATHER_API_KEY ? '✓ Backup' : '○ Optional'} PUBLIC_OPENWEATHER_API_KEY
+										</p>
+										{#if env.PUBLIC_OPENWEATHER_API_KEY}
+											<p class="text-[10px] mt-0.5 px-2" style="color: var(--color-info-600);">
+												Fallback weather (5-day forecast)
+											</p>
+										{/if}
+									</div>
+								</div>
+								<p class="text-[10px] mt-3" style="color: var(--color-info-700);">
+									💡 At least one weather API key required
+								</p>
+								<p class="text-xs mt-3" style="color: var(--color-info-600);">
+									See QUICK_START_GUIDE.md for setup instructions
+								</p>
+							</div>
+						{/if}
 					</div>
 				</div>
 				
