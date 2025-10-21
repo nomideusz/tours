@@ -52,7 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
       tourUserId: tours.userId,
       tourImages: tours.images,
       tourStatus: tours.status,
-      tourCategory: tours.category,
+      tourCategories: tours.categories,
       tourLocation: tours.location,
       tourIncludedItems: tours.includedItems,
       tourRequirements: tours.requirements,
