@@ -66,6 +66,12 @@ export async function sendBookingEmail(
       switch (emailType) {
         case 'confirmation':
           console.log(`   Generating confirmation email template...`);
+          console.log(`   Data keys:`, Object.keys(data));
+          console.log(`   Booking keys:`, Object.keys(data.booking));
+          console.log(`   Tour keys:`, Object.keys(data.tour));
+          console.log(`   TimeSlot keys:`, Object.keys(data.timeSlot));
+          console.log(`   TourOwner:`, data.tourOwner ? Object.keys(data.tourOwner) : 'undefined');
+          
           emailContent = bookingConfirmationEmail({
             ...data,
             tourOwnerCurrency: data.tourOwnerCurrency

@@ -12,15 +12,38 @@ export interface BookingConfirmationData {
 }
 
 export function bookingConfirmationTemplate(data: BookingConfirmationData): string {
-  const { booking, tour, timeSlot, tourOwnerCurrency = 'EUR' } = data;
-  const startTime = new Date(timeSlot.startTime);
-  const ticketCode = booking.ticketQRCode;
-  
-  // Generate QR code URL if ticket code exists
-  const hasQRCode = ticketCode ? true : false;
-  const checkInURL = hasQRCode ? generateCheckInURL(ticketCode!) : '';
-  const qrCodeUrl = hasQRCode ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkInURL)}` : '';
-  const displayRef = hasQRCode ? getDisplayReference(ticketCode!) : booking.bookingReference;
+  try {
+    console.log('📧 bookingConfirmationTemplate: Starting');
+    
+    // Safely destructure with validation
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid data: data is null or not an object');
+    }
+    
+    const { booking, tour, timeSlot, tourOwnerCurrency = 'EUR' } = data;
+    
+    if (!booking || typeof booking !== 'object') {
+      throw new Error('Invalid data: booking is null or not an object');
+    }
+    
+    if (!tour || typeof tour !== 'object') {
+      throw new Error('Invalid data: tour is null or not an object');
+    }
+    
+    if (!timeSlot || typeof timeSlot !== 'object') {
+      throw new Error('Invalid data: timeSlot is null or not an object');
+    }
+    
+    console.log('   Data validated successfully');
+    
+    const startTime = new Date(timeSlot.startTime);
+    const ticketCode = booking.ticketQRCode;
+    
+    // Generate QR code URL if ticket code exists
+    const hasQRCode = ticketCode ? true : false;
+    const checkInURL = hasQRCode ? generateCheckInURL(ticketCode!) : '';
+    const qrCodeUrl = hasQRCode ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkInURL)}` : '';
+    const displayRef = hasQRCode ? getDisplayReference(ticketCode!) : (booking.bookingReference || 'N/A');
   
   const content = `
     ${header()}
@@ -134,15 +157,32 @@ export function bookingConfirmationTemplate(data: BookingConfirmationData): stri
     ${footer()}
   `;
   
-  return baseTemplate({
-    content,
-    preheader: `Your booking for ${tour.name} is confirmed! ${hasQRCode ? 'QR ticket included.' : ''} Reference: ${booking.bookingReference}`
-  });
+    return baseTemplate({
+      content,
+      preheader: `Your booking for ${tour.name} is confirmed! ${hasQRCode ? 'QR ticket included.' : ''} Reference: ${booking.bookingReference}`
+    });
+  } catch (error) {
+    console.error('❌ Error in bookingConfirmationTemplate:', error);
+    throw error;
+  }
 }
 
 export function bookingConfirmationEmail(data: BookingConfirmationData) {
-  return {
-    subject: `🎉 Booking Confirmed + ${data.booking.ticketQRCode ? '🎫 QR Ticket' : 'Details'} - ${data.tour.name}`,
-    html: bookingConfirmationTemplate(data)
-  };
+  try {
+    console.log('📧 bookingConfirmationEmail: Generating email');
+    console.log('   Tour name:', data?.tour?.name);
+    console.log('   Booking ref:', data?.booking?.bookingReference);
+    console.log('   Has tourOwnerCurrency:', !!data?.tourOwnerCurrency);
+    
+    const html = bookingConfirmationTemplate(data);
+    
+    return {
+      subject: `✅ Booking Confirmed - ${data.tour.name}`,
+      html
+    };
+  } catch (error) {
+    console.error('❌ Error in bookingConfirmationEmail:', error);
+    console.error('   Data received:', data);
+    throw error;
+  }
 } 

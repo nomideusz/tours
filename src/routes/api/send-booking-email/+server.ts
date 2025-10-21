@@ -178,10 +178,10 @@ export const POST: RequestHandler = async ({ request }) => {
     console.log(`   Customer: ${booking.customerEmail}`);
     console.log(`   Tour: ${tour.name}`);
     console.log(`   Participants: ${booking.participants}`);
-    console.log(`   Has participantBreakdown: ${!!booking.participantBreakdown}`);
-    console.log(`   Has includedItems: ${!!tour.includedItems}`);
-    console.log(`   Has requirements: ${!!tour.requirements}`);
-    console.log(`   Has cancellationPolicy: ${!!tour.cancellationPolicy}`);
+    console.log(`   Booking object:`, JSON.stringify(booking, null, 2));
+    console.log(`   Tour object:`, JSON.stringify(tour, null, 2));
+    console.log(`   TimeSlot object:`, JSON.stringify(timeSlot, null, 2));
+    console.log(`   TourOwner object:`, JSON.stringify(tourOwner, null, 2));
 
     // Send the email
     const emailResult = await sendBookingEmail(emailType as BookingEmailType, {

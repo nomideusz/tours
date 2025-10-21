@@ -142,4 +142,110 @@ export async function createDirectPaymentIntent(
     });
     throw error;
   }
-} 
+}
+
+/**
+ * Create a refund on a connected account (direct charge refund)
+ * Important: With direct charges, the refund comes from the connected account's balance
+ */
+export async function createDirectRefund(
+  paymentIntentId: string,
+  connectedAccountId: string,
+  amount?: number, // Optional: partial refund amount in cents
+  reason: 'duplicate' | 'fraudulent' | 'requested_by_customer' = 'requested_by_customer',
+  metadata: Record<string, string> = {}
+): Promise<Stripe.Refund> {
+  const stripe = getStripe();
+  
+  console.log('Creating refund on connected account:', {
+    paymentIntentId,
+    connectedAccountId,
+    amount: amount ? `${amount} cents (partial)` : 'Full refund',
+    reason
+  });
+  
+  try {
+    const refundParams: Stripe.RefundCreateParams = {
+      payment_intent: paymentIntentId,
+      reason,
+      metadata: {
+        ...metadata,
+        refundedAt: new Date().toISOString()
+      }
+    };
+    
+    // Add amount for partial refunds
+    if (amount) {
+      refundParams.amount = amount;
+    }
+    
+    // Create refund on the connected account
+    const refund = await stripe.refunds.create(refundParams, {
+      stripeAccount: connectedAccountId
+    });
+    
+    console.log('✅ Refund created successfully:', refund.id, 'Status:', refund.status);
+    return refund;
+  } catch (error) {
+    console.error('❌ Failed to create refund on connected account:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      paymentIntentId,
+      connectedAccountId,
+      amount
+    });
+    throw error;
+  }
+}
+
+/**
+ * Check if a connected account has sufficient balance for refund
+ * This helps prevent failed refunds
+ */
+export async function checkRefundAvailability(
+  connectedAccountId: string,
+  refundAmount: number
+): Promise<{ canRefund: boolean; availableBalance: number; reason?: string }> {
+  const stripe = getStripe();
+  
+  try {
+    const balance = await stripe.balance.retrieve({
+      stripeAccount: connectedAccountId
+    });
+    
+    // Check available balance (pending + available)
+    const totalAvailable = balance.available.reduce((sum, b) => sum + b.amount, 0);
+    const totalPending = balance.pending.reduce((sum, b) => sum + b.amount, 0);
+    const totalBalance = totalAvailable + totalPending;
+    
+    console.log('Balance check for refund:', {
+      connectedAccountId,
+      refundAmount,
+      available: totalAvailable,
+      pending: totalPending,
+      total: totalBalance,
+      canRefund: totalBalance >= refundAmount
+    });
+    
+    if (totalBalance < refundAmount) {
+      return {
+        canRefund: false,
+        availableBalance: totalBalance,
+        reason: 'Insufficient balance in tour guide account'
+      };
+    }
+    
+    return {
+      canRefund: true,
+      availableBalance: totalBalance
+    };
+  } catch (error) {
+    console.error('Failed to check refund availability:', error);
+    // If we can't check, allow the refund attempt (it will fail if insufficient)
+    return {
+      canRefund: true,
+      availableBalance: 0,
+      reason: 'Could not verify balance'
+    };
+  }
+}
+ 
