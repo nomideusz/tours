@@ -17,8 +17,8 @@
 		highlightedTourId?: string;
 	} = $props();
 
-	// Mobile collapse state
-	let isCollapsed = $state(true); // Start collapsed on mobile to save space
+	// Collapse state
+	let isCollapsed = $state(true); // Start collapsed by default to save space
 
 	// Generate color for tour based on tour ID/name (same algorithm as TourTimeline)
 	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
@@ -84,10 +84,10 @@
 					<span class="hidden sm:inline">Tour Calendar Legend</span>
 					<span class="sm:hidden">Tours ({tours.length})</span>
 				</h2>
-				<!-- Mobile collapse toggle -->
+				<!-- Collapse toggle -->
 				<button 
 					onclick={() => isCollapsed = !isCollapsed}
-					class="collapse-toggle sm:hidden"
+					class="collapse-toggle"
 					aria-label="{isCollapsed ? 'Show' : 'Hide'} tours"
 				>
 					{#if isCollapsed}
@@ -99,11 +99,11 @@
 			</div>
 			<button onclick={() => goto('/tours/new')} class="button-primary button--small button--gap">
 				<Plus class="h-4 w-4" />
-				<span class="hidden sm:inline">Add Tour</span>
+				<span class="hidden sm:inline">Create Tour</span>
 			</button>
 		</div>
 		
-		<div class="tours-legend-table {isCollapsed ? 'collapsed-mobile' : ''}">
+		<div class="tours-legend-table {isCollapsed ? 'collapsed' : ''}">
 			<div class="table-wrapper">
 				<table class="tours-table">
 				<thead>
@@ -237,6 +237,11 @@
 		border: 1px solid var(--border-primary);
 		border-radius: 0.75rem;
 		overflow: hidden;
+	}
+	
+	/* Collapsed state */
+	.tours-legend-table.collapsed {
+		display: none;
 	}
 	
 	.table-wrapper {
@@ -477,10 +482,6 @@
 			font-size: 1rem;
 		}
 		
-		/* Collapsed state on mobile */
-		.tours-legend-table.collapsed-mobile {
-			display: none;
-		}
 		
 		.tours-table th,
 		.tours-table td {

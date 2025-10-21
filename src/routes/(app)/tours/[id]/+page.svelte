@@ -1412,12 +1412,12 @@
 								onSlotClick={handleSlotClick}
 								onViewChange={handleViewChange}
 								tour={tour}
-							onQuickAdd={(date) => {
-								// Open add slots drawer with selected date
-								const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-								addSlotsInitialDate = dateStr;
-								showAddSlotsDrawer = true;
-							}}
+								onQuickAdd={(date) => {
+									// Open add slots drawer with selected date
+									const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+									addSlotsInitialDate = dateStr;
+									showAddSlotsDrawer = true;
+								}}
 							/>
 						</div>
 					</section>

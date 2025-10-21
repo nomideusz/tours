@@ -140,8 +140,9 @@
 	.duration-input {
 		text-align: center;
 		font-weight: 500;
-		font-size: 1.125rem;
-		padding: 0.625rem 0.5rem;
+		font-size: 0.875rem;
+		padding: 0.75rem 0.5rem;
+		min-height: 2.75rem;
 	}
 	
 	.duration-label {
@@ -158,7 +159,7 @@
 		font-weight: 600;
 		color: var(--text-secondary);
 		/* Align to center of input field (not including label) */
-		margin-top: 0.625rem;
+		margin-top: 0.75rem;
 		line-height: 1;
 	}
 	
@@ -173,6 +174,19 @@
 	.duration-input[type=number] {
 		-moz-appearance: textfield;
 		appearance: textfield;
+	}
+	
+	/* Mobile adjustments */
+	@media (max-width: 768px) {
+		.duration-input {
+			font-size: 1rem;
+			padding: 1rem 0.5rem;
+			min-height: 3rem;
+		}
+		
+		.duration-separator {
+			margin-top: 1rem;
+		}
 	}
 </style>
 

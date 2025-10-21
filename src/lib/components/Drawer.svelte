@@ -178,6 +178,8 @@
 	
 	.mobile-drawer-panel {
 		animation: slideUp 0.2s ease-out;
+		/* Ensure drawer stays below iOS notch and header */
+		padding-top: env(safe-area-inset-top, 0);
 	}
 	
 	@keyframes fadeIn {
@@ -188,6 +190,13 @@
 	@keyframes slideUp {
 		from { transform: translateY(100%); }
 		to { transform: translateY(0); }
+	}
+	
+	/* iOS-specific adjustments */
+	@supports (-webkit-touch-callout: none) {
+		.mobile-drawer-panel {
+			max-height: calc(85vh - env(safe-area-inset-top, 0)) !important;
+		}
 	}
 </style>
 
@@ -214,9 +223,9 @@
 			aria-modal="true"
 			aria-labelledby={title ? 'drawer-title' : undefined}
 			tabindex="-1"
-			style="z-index: 60; max-height: 90vh; padding-bottom: env(safe-area-inset-bottom, 0);"
+			style="z-index: 60; max-height: 85vh; padding-bottom: env(safe-area-inset-bottom, 0);"
 		>
-				<div class="rounded-t-xl shadow-lg overflow-hidden" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: 90vh; display: flex; flex-direction: column;">
+				<div class="rounded-t-xl shadow-lg overflow-hidden" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: 85vh; display: flex; flex-direction: column;">
 					<!-- Mobile drag handle -->
 					<div 
 						class="flex justify-center py-3 px-6 flex-shrink-0" 

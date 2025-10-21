@@ -672,7 +672,7 @@
 	.calendar-day {
 		background: var(--bg-primary);
 		padding: 0.5rem;
-		min-height: 80px;
+		min-height: 120px; /* Increased for more tours */
 		width: 100%;
 		box-sizing: border-box;
 		position: relative;
@@ -680,6 +680,8 @@
 		user-select: none;
 		border-right: 1px solid var(--border-primary);
 		border-bottom: 1px solid var(--border-primary);
+		display: flex;
+		flex-direction: column;
 	}
 	
 	/* Remove right border from last column */
@@ -708,7 +710,9 @@
 	}
 	
 	.calendar-day.today {
-		background: var(--color-primary-50);
+		background: var(--color-primary-50) !important;
+		border: 2px solid var(--color-primary-400);
+		padding: calc(0.5rem - 2px);
 	}
 	
 	.calendar-day.has-slots:not(.past-day) {
@@ -716,7 +720,7 @@
 	}
 	
 	.calendar-day.has-slots:not(.past-day):hover {
-		background: var(--bg-secondary);
+		filter: brightness(0.97);
 		transform: scale(1.02);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		z-index: 10;
@@ -724,17 +728,30 @@
 		cursor: pointer;
 	}
 	
+	/* Highlight calendar days when a slot is hovered */
+	.calendar-day.slot-highlighted {
+		outline: 2px solid var(--color-primary-400);
+		outline-offset: -2px;
+		z-index: 15;
+		position: relative;
+		box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2);
+	}
+	
 	.day-number {
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-primary);
+		margin-bottom: 0.25rem;
+		flex-shrink: 0;
 	}
 	
 	.day-slots {
 		display: flex;
-		align-items: center;
+		flex-direction: column;
+		align-items: stretch;
 		gap: 0.25rem;
-		margin-top: 0.25rem;
+		flex: 1;
+		overflow: hidden;
 	}
 	
 	.slot-indicator {
@@ -821,13 +838,16 @@
 		position: fixed;
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
-		border-radius: 8px;
+		border-radius: 6px;
 		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 		z-index: 1000;
-		min-width: 280px;
-		max-width: 320px;
+		min-width: 240px;
+		max-width: 280px;
 		pointer-events: auto;
 		animation: popoverFadeIn 0.2s ease;
+		/* Add padding around popover for easier mouse targeting */
+		padding: 8px;
+		margin: -8px;
 	}
 	
 	/* Popover arrow */
@@ -928,7 +948,7 @@
 	}
 	
 	.popover-header {
-		padding: 0.75rem 1rem;
+		padding: 0.375rem 0.5rem;
 		border-bottom: 1px solid var(--border-primary);
 		font-weight: 600;
 		color: var(--text-primary);
@@ -936,108 +956,98 @@
 		border-radius: 8px 8px 0 0;
 		position: relative;
 		z-index: 1;
+		font-size: 0.75rem;
 	}
 	
 	.popover-content {
-		padding: 0.5rem;
-		max-height: 300px;
+		padding: 0.25rem;
+		max-height: 240px;
 		overflow-y: auto;
 	}
 	
+	/* Popover slots match calendar cell design */
 	.popover-slot {
-		padding: 0.75rem;
-		border-radius: 6px;
-		margin-bottom: 0.5rem;
-		background: var(--bg-secondary);
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 3px;
+		border-radius: 2px;
+		margin-bottom: 2px;
+		background: color-mix(in srgb, var(--slot-color) 15%, transparent);
 		position: relative;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		overflow: hidden;
+		min-height: 18px;
 	}
 	
 	.popover-slot:last-child {
 		margin-bottom: 0;
 	}
 	
-	.popover-slot-header {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
+	.popover-slot:hover,
+	.popover-slot.slot-hovered {
+		background: color-mix(in srgb, var(--slot-color) 25%, transparent);
+		transform: translateX(1px);
 	}
 	
-	.popover-tour-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
+	.popover-slot.slot-hovered {
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		border-left-width: 4px;
+	}
+	
+	.popover-time {
+		font-family: var(--font-mono, monospace);
+		font-weight: 600;
+		color: var(--text-primary);
 		flex-shrink: 0;
+		white-space: nowrap;
+		font-size: 11px;
 	}
 	
 	.popover-tour-name {
 		font-weight: 500;
 		color: var(--text-primary);
-		font-size: 0.875rem;
-		line-height: 1.2;
-	}
-	
-	.popover-slot-info {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-	}
-	
-	.popover-time,
-	.popover-capacity {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-	
-	.popover-time svg,
-	.popover-capacity svg {
-		opacity: 0.6;
-	}
-	
-	.multi-day-badge {
-		display: inline-flex;
-		align-items: center;
-		padding: 0 0.375rem;
-		background: var(--color-primary-100);
-		color: var(--color-primary-700);
-		border-radius: 0.25rem;
-		font-size: 0.625rem;
-		font-weight: 600;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
-		margin-left: 0.25rem;
+		font-size: 10px;
+		opacity: 0.9;
 	}
 	
-	.popover-full,
-	.popover-cancelled {
-		position: absolute;
-		top: 0.5rem;
-		right: 0.5rem;
-		font-size: 0.625rem;
+	.popover-capacity {
+		font-size: 9px;
 		font-weight: 600;
-		padding: 0.125rem 0.375rem;
-		border-radius: 4px;
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.3);
+		padding: 2px 4px;
+		border-radius: 2px;
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 	
-	.popover-full {
+	.popover-status {
+		font-size: 8px;
+		font-weight: 600;
+		padding: 1px 3px;
+		border-radius: 2px;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	
+	.popover-status.full {
 		background: var(--color-danger-100);
 		color: var(--color-danger-700);
 	}
 	
-	.popover-cancelled {
-		background: var(--color-warning-100);
-		color: var(--color-warning-700);
+	.popover-status.cancelled {
+		background: var(--color-error-100);
+		color: var(--color-error-700);
 	}
 	
-	/* Improved calendar day styles */
-	.calendar-day.today:not(.past-day) {
-		background: var(--color-primary-50);
-		border: 2px solid var(--color-primary-500);
-		padding: calc(0.5rem - 2px);
-	}
-	
+	/* Improved calendar day styles - moved above */
 	.calendar-day.today:not(.past-day) .day-number {
 		color: var(--color-primary-700);
 		font-weight: 700;
@@ -1360,6 +1370,9 @@
 			bottom: 0.125rem;
 			left: 50%;
 			transform: translateX(-50%);
+			flex-direction: row;
+			align-items: center;
+			gap: 0;
 		}
 		
 		.tour-dots {
@@ -1367,6 +1380,7 @@
 			gap: 0.125rem;
 			align-items: center;
 			justify-content: center;
+			flex-direction: row;
 		}
 		
 		.tour-dot {
@@ -1385,8 +1399,8 @@
 		
 		/* Today indicator optimized for mobile */
 		.calendar-day.today:not(.past-day) {
-			background: var(--color-primary-50);
-			border: 1px solid var(--color-primary-400);
+			background: var(--color-primary-50) !important;
+			border: 1px solid var(--color-primary-400) !important;
 			padding: calc(0.1875rem - 1px);
 		}
 		
@@ -1427,14 +1441,6 @@
 			margin: 0 10px;
 		}
 		
-		.popover-header {
-			padding: 0.5rem 0.75rem;
-			font-size: 0.875rem;
-		}
-		
-		.popover-slot {
-			padding: 0.5rem;
-		}
 		
 		/* Mobile-specific padding adjustments */
 		.timeline-list {
@@ -1471,6 +1477,15 @@
 		
 		.tour-dot {
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+		}
+		
+		.popover-slot:hover,
+		.popover-slot.slot-hovered {
+			background: color-mix(in srgb, var(--slot-color) 30%, transparent);
+		}
+		
+		.popover-capacity {
+			background: rgba(0, 0, 0, 0.3);
 		}
 	}
 	

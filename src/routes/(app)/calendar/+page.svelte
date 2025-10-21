@@ -627,7 +627,13 @@
 						bind:view={timelineView}
 						bind:currentDate={timelineCurrentDate}
 						onSlotClick={(slot) => {
-							// When a single slot is clicked, switch to day view to show details
+							// If already in day view, navigate to tour details
+							if (timelineView === 'day') {
+								goto(`/tours/${slot.tourId}`);
+								return;
+							}
+							
+							// When a single slot is clicked from month/week view, switch to day view
 							// Extract the date from the slot's startTime (which should be in ISO format)
 							const slotDate = new Date(slot.startTime);
 							// Set the date to the beginning of the day to avoid time zone issues

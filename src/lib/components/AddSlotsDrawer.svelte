@@ -81,6 +81,7 @@
 	// State
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
+	let formContainerRef = $state<HTMLFormElement>();
 	
 	// UI state
 	let showCapacitySettings = $state(false);
@@ -301,10 +302,20 @@
 			} else {
 				const errorData = await response.json();
 				error = errorData.error || 'Failed to create time slots';
+				
+				// Scroll to top to show error on mobile
+				if (formContainerRef) {
+					formContainerRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				}
 			}
 		} catch (err) {
 			console.error('Error creating time slots:', err);
 			error = 'Failed to create time slots. Please try again.';
+			
+			// Scroll to top to show error on mobile
+			if (formContainerRef) {
+				formContainerRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
 		} finally {
 			isSubmitting = false;
 		}
@@ -342,7 +353,7 @@
 			<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
 		</div>
 	{:else if tour}
-		<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+		<form bind:this={formContainerRef} onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
 			{#if error}
 				<div class="error-banner">
 					<p>{error}</p>
@@ -373,28 +384,29 @@
 										<!-- Start Time -->
 										<div>
 											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">Start Time</div>
-											<button
-												type="button"
-												onclick={() => timeInputRef?.showPicker?.()}
-												class="time-picker-button"
-											>
-												<Clock class="h-5 w-5" style="color: var(--text-primary);" />
-												<span class="time-display">{startTime}</span>
-											</button>
-											<input
-												bind:this={timeInputRef}
-												type="time"
-												bind:value={startTime}
-												class="hidden-time-input"
-											/>
+											<div class="input-wrapper">
+												<Clock class="h-5 w-5 input-icon" style="color: var(--text-primary);" />
+												<input
+													bind:this={timeInputRef}
+													type="time"
+													bind:value={startTime}
+													class="time-picker-input"
+													required
+												/>
+											</div>
 										</div>
 										
 										<!-- End Time (Read-only) -->
 										<div>
 											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">End Time</div>
-											<div class="time-picker-button time-picker-readonly">
-												<Clock class="h-5 w-5" style="color: var(--text-tertiary);" />
-												<span class="time-display">{endTimeCalculation.endTime}</span>
+											<div class="input-wrapper">
+												<Clock class="h-5 w-5 input-icon" style="color: var(--text-primary);" />
+												<input
+													type="text"
+													value={endTimeCalculation.endTime}
+													readonly
+													class="time-picker-input time-picker-readonly"
+												/>
 											</div>
 											{#if endTimeCalculation.endDate !== selectedDate}
 												<div class="text-xs mt-1" style="color: var(--text-secondary);">
@@ -576,32 +588,18 @@
 										<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
 											Repeat Until
 										</div>
-										<button
-											type="button"
-											onclick={() => dateInputRef?.showPicker?.()}
-											class="date-picker-button"
-										>
-											<Calendar class="h-4 w-4" style="color: var(--text-primary);" />
-											<span class="date-display">
-												{#if recurringEndDate}
-													{(() => {
-														const [y, m, d] = recurringEndDate.split('-').map(Number);
-														return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-													})()}
-												{:else}
-													Select date
-												{/if}
-											</span>
-										</button>
-										<input
-											bind:this={dateInputRef}
-											id="recurring-end-date"
-											type="date"
-											bind:value={recurringEndDate}
-											min={selectedDate}
-											class="hidden-time-input"
-											required
-										/>
+										<div class="input-wrapper">
+											<Calendar class="h-4 w-4 input-icon" style="color: var(--text-primary);" />
+											<input
+												bind:this={dateInputRef}
+												id="recurring-end-date"
+												type="date"
+												bind:value={recurringEndDate}
+												min={selectedDate}
+												class="date-picker-input"
+												required
+											/>
+										</div>
 									</div>
 								</div>
 								
@@ -770,11 +768,23 @@
 		border: 1px solid var(--color-danger-200);
 		border-radius: 0.5rem;
 		color: var(--color-danger-600);
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		margin: -1rem -1rem 1rem -1rem;
 	}
 
 	.error-banner p {
 		margin: 0;
 		font-size: 0.875rem;
+	}
+	
+	/* Mobile error banner positioning */
+	@media (max-width: 768px) {
+		.error-banner {
+			margin: 0 0 1rem 0;
+			border-radius: 0.5rem;
+		}
 	}
 
 	/* Overlap Warning */
@@ -804,7 +814,7 @@
 
 	/* Recurring Type Buttons */
 	.recurring-type-btn {
-		padding: 0.5rem 0.75rem;
+		padding: 0.75rem 0.75rem;
 		font-size: 0.875rem;
 		font-weight: 500;
 		border: 2px solid var(--border-primary);
@@ -814,6 +824,10 @@
 		cursor: pointer;
 		transition: all 0.15s;
 		text-align: center;
+		min-height: 2.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.recurring-type-btn:hover {
@@ -827,30 +841,6 @@
 	}
 
 	/* Date Picker Button (compact, matches recurring buttons) */
-	.date-picker-button {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 0.75rem;
-		border: 2px solid var(--border-primary);
-		border-radius: 0.5rem;
-		background: var(--bg-primary);
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.date-picker-button:hover {
-		border-color: var(--color-primary-300);
-		background: var(--color-primary-50);
-	}
-
-	.date-display {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-
 	/* Compact Number Controls */
 	.adjust-btn-compact {
 		width: 2rem;
@@ -878,48 +868,109 @@
 	}
 
 
-	/* Time Picker Button */
-	.time-picker-button {
+	/* Readonly input styling */
+	.time-picker-input.time-picker-readonly {
+		cursor: default;
+		background: var(--bg-secondary);
+		opacity: 0.9;
+		font-weight: 600;
+	}
+
+	.time-picker-input.time-picker-readonly:hover {
+		border-color: var(--border-primary);
+		background: var(--bg-secondary);
+	}
+	
+	.time-picker-input.time-picker-readonly:focus {
+		box-shadow: none;
+		border-color: var(--border-primary);
+	}
+
+	/* Input wrapper with icon */
+	.input-wrapper {
+		position: relative;
 		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem;
+	}
+	
+	.input-wrapper :global(.input-icon) {
+		position: absolute;
+		left: 0.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none;
+		z-index: 1;
+	}
+	
+	/* Time and date picker inputs styled as buttons */
+	.time-picker-input,
+	.date-picker-input {
+		width: 100%;
+		display: block;
+		padding: 0.75rem 1rem 0.75rem 3rem;
 		border: 2px solid var(--border-primary);
 		border-radius: 0.5rem;
 		background: var(--bg-primary);
 		cursor: pointer;
 		transition: all 0.15s;
+		font-family: var(--font-mono, monospace);
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		/* Keep native functionality, don't use appearance: none */
+		position: relative;
+		z-index: 0;
 	}
-
-	.time-picker-button:hover {
+	
+	.time-picker-input:hover,
+	.date-picker-input:hover {
 		border-color: var(--color-primary-300);
 		background: var(--color-primary-50);
 	}
-
-	.time-picker-readonly {
-		cursor: default;
-		background: var(--bg-secondary);
-		opacity: 0.8;
+	
+	.time-picker-input:focus,
+	.date-picker-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100);
 	}
-
-	.time-picker-readonly:hover {
-		border-color: var(--border-primary);
-		background: var(--bg-secondary);
-	}
-
-	.time-display {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-
-	.hidden-time-input {
+	
+	/* Hide browser's default calendar and clock picker icons but keep them functional */
+	.time-picker-input::-webkit-calendar-picker-indicator,
+	.date-picker-input::-webkit-calendar-picker-indicator {
 		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
 		opacity: 0;
-		pointer-events: none;
-		width: 0;
-		height: 0;
+		cursor: pointer;
+		z-index: 2;
+	}
+	
+	/* For Firefox */
+	.time-picker-input::-moz-calendar-picker-indicator,
+	.date-picker-input::-moz-calendar-picker-indicator {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		cursor: pointer;
+	}
+	
+	/* Mobile-specific improvements */
+	@media (max-width: 768px) {
+		.time-picker-input,
+		.date-picker-input {
+			font-size: 1rem;
+			padding: 1rem 1rem 1rem 3rem;
+			min-height: 3rem;
+		}
+		
+		.input-wrapper :global(.input-icon) {
+			left: 1rem;
+		}
 	}
 
 	/* Schedule Preview */
@@ -976,16 +1027,17 @@
 			padding: 1rem;
 		}
 
-		.time-display {
-			font-size: 1.125rem;
-		}
-
 		.capacity-toggle {
 			padding: 0.75rem;
 		}
 
 		.capacity-controls {
 			padding: 0.75rem;
+		}
+		
+		.recurring-type-btn {
+			padding: 1rem 0.75rem;
+			min-height: 3rem;
 		}
 	}
 

@@ -671,6 +671,7 @@
 	
 	// State for calendar hover
 	let hoveredDay: number | null = $state(null);
+	let hoveredSlotId: string | null = $state(null);
 	let popoverPosition = $state({ x: 0, y: 0 });
 	let popoverTimeout: ReturnType<typeof setTimeout> | null = null;
 	let popoverAlignment = $state<'left' | 'center' | 'right'>('center');
@@ -687,8 +688,8 @@
 		const rect = (event.target as HTMLElement).getBoundingClientRect();
 		const viewportWidth = window.innerWidth;
 		const viewportHeight = window.innerHeight;
-		const popoverWidth = 320; // max-width of popover
-		const popoverEstimatedHeight = 400; // estimated max height
+		const popoverWidth = 280; // max-width of popover
+		const popoverEstimatedHeight = 250; // estimated max height (compact design)
 		
 		// Calculate horizontal position and alignment
 		let x = rect.left + rect.width / 2;
@@ -726,10 +727,10 @@
 	
 	// Helper to hide popover with delay
 	function hidePopover() {
-		// Add a small delay before hiding to allow mouse to move to popover
+		// Add a longer delay to allow mouse to move to popover
 		popoverTimeout = setTimeout(() => {
 			hoveredDay = null;
-		}, 100);
+		}, 300);
 	}
 	
 	// Clear timeout on unmount
@@ -754,6 +755,12 @@
 		// Don't allow quick add if not in tour-specific view
 		if (!tourId) {
 			console.log('Quick add only available in tour-specific view');
+			return;
+		}
+		
+		// If onQuickAdd callback is provided, use that instead of inline form
+		if (onQuickAdd) {
+			onQuickAdd(date);
 			return;
 		}
 		
@@ -907,6 +914,110 @@
 		if (onQuickAdd) {
 			onQuickAdd(date);
 		}
+	}
+	
+	// Multi-day tour helpers
+	function isMultiDaySlot(slot: TimeSlot): boolean {
+		const startDate = new Date(slot.startTime);
+		const endDate = new Date(slot.endTime);
+		const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+		const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+		return endDay.getTime() > startDay.getTime();
+	}
+	
+	function getSlotDaySpan(slot: TimeSlot, currentDayDate: Date): { span: number; isFirstDay: boolean; totalDays: number } {
+		const startDate = new Date(slot.startTime);
+		const endDate = new Date(slot.endTime);
+		const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+		const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+		const currentDay = new Date(currentDayDate.getFullYear(), currentDayDate.getMonth(), currentDayDate.getDate());
+		
+		const totalDays = Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+		const isFirstDay = currentDay.getTime() === startDay.getTime();
+		
+		if (!isFirstDay) {
+			return { span: 0, isFirstDay: false, totalDays };
+		}
+		
+		// Calculate how many days we can span in this week (don't span across week boundaries)
+		const dayOfWeek = currentDayDate.getDay();
+		const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday-based (0 = Monday)
+		const daysUntilWeekEnd = 7 - mondayOffset;
+		const span = Math.min(totalDays, daysUntilWeekEnd);
+		
+		return { span, isFirstDay: true, totalDays };
+	}
+	
+	function filterSlotsForDay(slots: TimeSlot[], dayDate: Date): { singleDay: TimeSlot[]; multiDayFirst: TimeSlot[] } {
+		const singleDay: TimeSlot[] = [];
+		const multiDayFirst: TimeSlot[] = [];
+		
+		for (const slot of slots) {
+			if (isMultiDaySlot(slot)) {
+				const { isFirstDay } = getSlotDaySpan(slot, dayDate);
+				if (isFirstDay) {
+					multiDayFirst.push(slot);
+				}
+				// Skip multi-day slots that aren't on their first day
+			} else {
+				singleDay.push(slot);
+			}
+		}
+		
+		return { singleDay, multiDayFirst };
+	}
+	
+	// Calculate lane assignments for multi-day slots to prevent overlaps
+	function calculateMultiDayLanes(allSlots: TimeSlot[]): Map<string, number> {
+		const slotLanes = new Map<string, number>();
+		const lanes: Array<{ endDate: Date }> = [];
+		
+		// Sort slots by start date
+		const multiDaySlots = allSlots.filter(isMultiDaySlot).sort((a, b) => 
+			new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+		);
+		
+		for (const slot of multiDaySlots) {
+			const startDate = new Date(slot.startTime);
+			const endDate = new Date(slot.endTime);
+			
+			// Find the first available lane
+			let assignedLane = -1;
+			for (let i = 0; i < lanes.length; i++) {
+				if (lanes[i].endDate < startDate) {
+					// This lane is free
+					assignedLane = i;
+					lanes[i] = { endDate };
+					break;
+				}
+			}
+			
+			// If no free lane, create a new one
+			if (assignedLane === -1) {
+				assignedLane = lanes.length;
+				lanes.push({ endDate });
+			}
+			
+			slotLanes.set(slot.id, assignedLane);
+		}
+		
+		return slotLanes;
+	}
+	
+	// Get dominant tour color for a day (for background)
+	function getDayBackgroundColor(slots: TimeSlot[]): string | null {
+		if (slots.length === 0) return null;
+		
+		// Use the first slot's color
+		const slot = slots[0];
+		const color = tourId ? getSlotColor(slot) : getTourColor(slot.tourId, slot.tourName);
+		return color;
+	}
+	
+	// Check if a day contains a specific slot
+	function dayContainsSlot(dayDate: Date, slotId: string): boolean {
+		const daySlots = getDaySlots(dayDate);
+		return daySlots.some(slot => slot.id === slotId);
 	}
 </script>
 
@@ -1385,10 +1496,12 @@
 					{#each Array(42) as _, i}
 						{@const dayDate = getCalendarDay(i)}
 						{@const daySlots = dayDate ? getDaySlots(dayDate) : []}
+						{@const filteredSlots = dayDate ? filterSlotsForDay(daySlots, dayDate) : { singleDay: [], multiDayFirst: [] }}
 						{@const isToday = dayDate?.toDateString() === new Date().toDateString()}
 						{@const isCurrentMonth = dayDate?.getMonth() === currentDate.getMonth()}
 						{@const isPast = dayDate ? isPastDate(new Date(dayDate)) : false}
 						{@const isWeekend = dayDate ? (dayDate.getDay() === 0 || dayDate.getDay() === 6) : false}
+						{@const dayBgColor = dayDate && daySlots.length > 0 ? getDayBackgroundColor(daySlots) : null}
 						
 						<div 
 							class="calendar-day"
@@ -1398,6 +1511,8 @@
 							class:past-day={isPast}
 							class:weekend={isWeekend}
 							class:quick-add-active={showQuickAdd === dayDate?.toDateString()}
+							class:slot-highlighted={hoveredSlotId && dayDate && dayContainsSlot(dayDate, hoveredSlotId)}
+							style={dayBgColor ? `background: ${dayBgColor}12;` : ''}
 							onclick={daySlots.length > 0 && !isPast ? () => dayDate && handleDayClick(dayDate, daySlots) : 
 									(daySlots.length === 0 && !isPast && (tourId || onQuickAdd) ? () => dayDate && handleDayClick(dayDate, daySlots) : undefined)}
 							onkeydown={(e) => {
@@ -1409,8 +1524,8 @@
 								}
 							}}
 							onmouseenter={(e) => {
-								// Only show popover on desktop (not mobile)
-								if (dayDate && daySlots.length > 0 && window.innerWidth >= 640) {
+								// Only show popover on desktop when there are more than 4 slots
+								if (dayDate && daySlots.length > 4 && window.innerWidth >= 640) {
 									showPopover(i, e);
 								}
 							}}
@@ -1500,7 +1615,39 @@
 										</div>
 									</form>
 								{:else if daySlots.length > 0}
-									<div class="day-slots">
+									<!-- Desktop: Time labels with tour names and capacity -->
+									<div class="day-slots desktop-time-labels">
+										{#each daySlots.slice(0, 4) as slot}
+											{@const slotColor = tourId ? getSlotColor(slot) : getTourColor(slot.tourId, slot.tourName)}
+											<div 
+												class="slot-time-label"
+												class:slot-hovered={hoveredSlotId === slot.id}
+												style="--slot-color: {slotColor}; border-left: 3px solid {slotColor};"
+												onmouseenter={() => hoveredSlotId = slot.id}
+												onmouseleave={() => hoveredSlotId = null}
+												role="button"
+												tabindex="-1"
+											>
+												<span class="slot-time-text">
+													{new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+												</span>
+												{#if !tourId}
+													<span class="slot-tour-name">
+														{slot.tourName}
+													</span>
+												{/if}
+												<span class="slot-capacity-text">
+													{slot.bookedSpots}/{slot.capacity}
+												</span>
+											</div>
+										{/each}
+										{#if daySlots.length > 4}
+											<div class="more-slots-label">+{daySlots.length - 4} more</div>
+										{/if}
+									</div>
+									
+									<!-- Mobile: Simple dots (show ALL slots including multi-day) -->
+									<div class="day-slots mobile-dots">
 										{#if tourId}
 											<!-- Single tour - show colored dots based on bookings and utilization -->
 											<div class="tour-dots">
@@ -1529,11 +1676,51 @@
 											</div>
 										{/if}
 									</div>
-								{:else if tourId && !isPast}
-									<!-- Empty day with quick add hint -->
-									<div class="empty-day-hint">
+									
+									<!-- Add button for desktop (only if onQuickAdd or tourId exists) -->
+									{#if (tourId || onQuickAdd) && !isPast}
+										<button
+											class="add-slot-button"
+											onclick={(e) => {
+												e.stopPropagation();
+												if (dayDate) {
+													if (tourId) {
+														startQuickAdd(dayDate);
+													} else if (onQuickAdd) {
+														onQuickAdd(dayDate);
+													}
+												}
+											}}
+											aria-label="Add time slot"
+											title="Add time slot"
+										>
+											<Plus class="h-3 w-3" />
+										</button>
+									{/if}
+								{:else if (tourId || onQuickAdd) && !isPast}
+									<!-- Empty day hint for mobile only -->
+									<div class="empty-day-hint mobile-only">
 										<Plus class="h-3 w-3" style="color: var(--text-tertiary);" />
 									</div>
+									
+									<!-- Add button for desktop on empty days -->
+									<button
+										class="add-slot-button empty-day"
+										onclick={(e) => {
+											e.stopPropagation();
+											if (dayDate) {
+												if (tourId) {
+													startQuickAdd(dayDate);
+												} else if (onQuickAdd) {
+													onQuickAdd(dayDate);
+												}
+											}
+										}}
+										aria-label="Add time slot"
+										title="Add time slot"
+									>
+										<Plus class="h-3 w-3" />
+									</button>
 								{/if}
 							{/if}
 						</div>
@@ -1572,31 +1759,38 @@
 							</div>
 							<div class="popover-content">
 								{#each daySlots as slot}
-									<div class="popover-slot">
-										<div class="popover-slot-header">
-											<div 
-												class="popover-tour-dot"
-												style="background-color: {tourId ? getSlotColor(slot) : getTourColor(slot.tourId, slot.tourName)}"
-											></div>
-											<span class="popover-tour-name">{slot.tourName}</span>
-										</div>
-										<div class="popover-slot-info">
-											<span class="popover-time">
-												<Clock class="h-3 w-3" />
-												{formatSlotTimeRange(slot.startTime, slot.endTime)}
-												{#if new Date(slot.startTime).toDateString() !== new Date(slot.endTime).toDateString()}
-													<span class="multi-day-badge">Multi-day</span>
-												{/if}
+									{@const slotColor = tourId ? getSlotColor(slot) : getTourColor(slot.tourId, slot.tourName)}
+									<div 
+										class="popover-slot"
+										class:slot-hovered={hoveredSlotId === slot.id}
+										style="--slot-color: {slotColor}; border-left: 3px solid {slotColor};"
+										onclick={() => handleSlotClick(slot)}
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												handleSlotClick(slot);
+											}
+										}}
+										onmouseenter={() => hoveredSlotId = slot.id}
+										onmouseleave={() => hoveredSlotId = null}
+										role="button"
+										tabindex="0"
+									>
+										<span class="popover-time">
+											{new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+										</span>
+										{#if !tourId}
+											<span class="popover-tour-name">
+												{slot.tourName}
 											</span>
-											<span class="popover-capacity">
-												<Users class="h-3 w-3" />
-												{slot.bookedSpots}/{slot.capacity}
-											</span>
-										</div>
+										{/if}
+										<span class="popover-capacity">
+											{slot.bookedSpots}/{slot.capacity}
+										</span>
 										{#if slot.isFull}
-											<span class="popover-full">FULL</span>
+											<span class="popover-status full">Full</span>
 										{:else if slot.status === 'cancelled'}
-											<span class="popover-cancelled">CANCELLED</span>
+											<span class="popover-status cancelled">X</span>
 										{/if}
 									</div>
 								{/each}
@@ -2124,26 +2318,6 @@
 		color: white;
 		font-weight: 600;
 	}
-	
-	/* Dark mode */
-	[data-theme="dark"] .mobile-view-toggle {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-	}
-	
-	[data-theme="dark"] .mobile-view-btn {
-		color: var(--text-secondary);
-	}
-	
-	[data-theme="dark"] .mobile-view-btn:hover {
-		background: var(--bg-quaternary);
-		color: var(--text-primary);
-	}
-	
-	[data-theme="dark"] .mobile-view-btn.active {
-		background: var(--color-primary-600);
-		color: white;
-	}
 
 	/* Dark mode specific fixes */
 	[data-theme="dark"] .time-input {
@@ -2162,10 +2336,172 @@
 		background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>') !important;
 	}
 	
+	/* Desktop Time Labels - Hybrid Approach */
+	.desktop-time-labels {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		align-items: stretch;
+		width: calc(100% + 0.5rem);
+		margin-left: -0.5rem;
+		padding: 0;
+	}
+	
+	.mobile-dots {
+		display: none; /* Hidden on desktop */
+	}
+	
+	.mobile-only {
+		display: none;
+	}
+	
+	.slot-time-label {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 3px;
+		border-radius: 2px;
+		font-size: 11px;
+		line-height: 1.2;
+		transition: all 0.15s ease;
+		overflow: hidden;
+		min-height: 18px;
+		background: color-mix(in srgb, var(--slot-color) 15%, transparent);
+	}
+	
+	.slot-time-label:hover,
+	.slot-time-label.slot-hovered {
+		background: color-mix(in srgb, var(--slot-color) 25%, transparent);
+		transform: translateX(1px);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+	
+	.slot-time-label.slot-hovered {
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+		border-left-width: 4px;
+		z-index: 5;
+	}
+	
+	.slot-time-text {
+		font-family: var(--font-mono, monospace);
+		font-weight: 600;
+		color: var(--text-primary);
+		flex-shrink: 0;
+		white-space: nowrap;
+		font-size: 11px;
+	}
+	
+	.slot-tour-name {
+		font-weight: 500;
+		color: var(--text-primary);
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 10px;
+		opacity: 0.9;
+	}
+	
+	.slot-capacity-text {
+		font-size: 9px;
+		font-weight: 600;
+		color: var(--text-primary);
+		background: rgba(255, 255, 255, 0.3);
+		padding: 2px 4px;
+		border-radius: 2px;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+	
+	.more-slots-label {
+		font-size: 9px;
+		font-weight: 600;
+		color: var(--text-tertiary);
+		text-align: center;
+		padding: 3px;
+		background: var(--bg-secondary);
+		border-radius: 3px;
+		margin-top: 1px;
+	}
+	
+	/* Add Slot Button */
+	.add-slot-button {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 18px;
+		height: 18px;
+		display: none; /* Hidden by default, shown on hover */
+		align-items: center;
+		justify-content: center;
+		background: var(--color-primary-500);
+		color: white;
+		border: 1px solid var(--color-primary-600);
+		border-radius: 3px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		opacity: 0;
+		z-index: 10;
+		padding: 0;
+	}
+	
+	.add-slot-button:hover {
+		background: var(--color-primary-600);
+		transform: scale(1.1);
+		box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+	}
+	
+	.add-slot-button:active {
+		transform: scale(0.95);
+	}
+	
+	/* Show add button on calendar day hover (desktop only) */
+	.calendar-day:hover .add-slot-button {
+		display: flex;
+		opacity: 1;
+	}
+	
+	/* For empty days, make the button more prominent */
+	.add-slot-button.empty-day {
+		width: 24px;
+		height: 24px;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		opacity: 0;
+	}
+	
+	.calendar-day:hover .add-slot-button.empty-day {
+		opacity: 0.7;
+		transform: translate(-50%, -50%) scale(1);
+	}
+	
+	.calendar-day:hover .add-slot-button.empty-day:hover {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.1);
+	}
+	
+	/* Hide add button on mobile */
+	@media (max-width: 639px) {
+		.add-slot-button {
+			display: none !important;
+		}
+	}
+	
 	/* Hide popover on mobile devices */
 	@media (max-width: 639px) {
 		.day-popover {
 			display: none !important;
+		}
+		
+		/* Show mobile dots, hide desktop time labels */
+		.desktop-time-labels {
+			display: none !important;
+		}
+		
+		.mobile-dots {
+			display: block !important;
 		}
 	}
 	
@@ -2183,5 +2519,43 @@
 		color: var(--color-error-300) !important;
 		background: var(--color-error-900) !important;
 		border-color: var(--color-error-600) !important;
+	}
+	
+	/* Dark mode adjustments for time labels */
+	[data-theme="dark"] .slot-time-label:hover,
+	[data-theme="dark"] .slot-time-label.slot-hovered {
+		background: color-mix(in srgb, var(--slot-color) 30%, transparent);
+	}
+	
+	[data-theme="dark"] .slot-capacity-text {
+		background: rgba(0, 0, 0, 0.3);
+	}
+	
+	/* Dark mode adjustments for popover (in global styles) */
+	:global([data-theme="dark"]) .popover-slot:hover,
+	:global([data-theme="dark"]) .popover-slot.slot-hovered {
+		background: color-mix(in srgb, var(--slot-color) 30%, transparent);
+	}
+	
+	:global([data-theme="dark"]) .popover-capacity {
+		background: rgba(0, 0, 0, 0.3);
+	}
+	
+	/* Calendar grid */
+	.calendar-grid {
+		display: grid;
+		grid-template-columns: repeat(7, 1fr);
+		gap: 0;
+		width: 100%;
+		overflow: hidden;
+		background: var(--bg-primary);
+	}
+	
+	
+	/* Mobile styles */
+	@media (max-width: 639px) {
+		.mobile-only {
+			display: block !important;
+		}
 	}
 </style> 
