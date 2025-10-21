@@ -74,6 +74,11 @@
 	let isCopyingTour = $state(false);
 	let copyError = $state<string | null>(null);
 	
+	// Status toggle state
+	let isTogglingStatus = $state(false);
+	let showDeactivateModal = $state(false);
+	let pendingStatusChange: 'active' | 'draft' | null = $state(null);
+	
 	// Generate color for tour based on tour ID/name (same algorithm as tours page)
 	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
 		if (!tourId || !tourName) {
@@ -415,6 +420,74 @@
 		showOnboardingModal = false;
 			// Redirect to calendar for onboarding
 	goto('/calendar');
+	}
+	
+	// Toggle tour status (active/draft)
+	async function toggleTourStatus() {
+		if (!tour || isTogglingStatus) return;
+		
+		const newStatus = tour.status === 'active' ? 'draft' : 'active';
+		
+		// If activating, check onboarding
+		if (newStatus === 'active') {
+			const activationCheck = canActivateTours(profile, hasConfirmedLocation, paymentStatus, tour.price);
+			if (!activationCheck.canActivate) {
+				const onboardingMessage = getOnboardingMessage(activationCheck.missingSteps, tour.price === 0);
+				const nextStep = getNextOnboardingStep(activationCheck.missingSteps);
+				
+				onboardingModalMessage = `${onboardingMessage}\n\n${nextStep ? `Next: ${nextStep.action}` : ''}`;
+				showOnboardingModal = true;
+				return;
+			}
+		}
+		
+		// If deactivating an active tour with bookings, show confirmation modal
+		if (newStatus === 'draft' && tour.status === 'active' && stats && stats.totalBookings > 0) {
+			pendingStatusChange = newStatus;
+			showDeactivateModal = true;
+			return;
+		}
+		
+		// No confirmation needed, proceed directly
+		await performStatusChange(newStatus);
+	}
+	
+	// Perform the actual status change
+	async function performStatusChange(newStatus: 'active' | 'draft') {
+		if (!tour) return;
+		
+		isTogglingStatus = true;
+		
+		try {
+			await $updateStatusMutation.mutateAsync({ 
+				tourId: tour.id, 
+				status: newStatus
+			});
+			
+			// Track event (mutation handles optimistic updates and cache invalidation)
+			if (browser) {
+				trackTourEvent('status_change', tour.name);
+			}
+		} catch (error) {
+			console.error('Failed to toggle tour status:', error);
+			alert('Failed to update tour status. Please try again.');
+		} finally {
+			isTogglingStatus = false;
+			pendingStatusChange = null;
+		}
+	}
+	
+	// Handle deactivation confirmation
+	function handleDeactivateConfirm() {
+		if (pendingStatusChange) {
+			performStatusChange(pendingStatusChange);
+		}
+		showDeactivateModal = false;
+	}
+	
+	function handleDeactivateCancel() {
+		showDeactivateModal = false;
+		pendingStatusChange = null;
 	}
 	
 	// Copy tour function
@@ -845,12 +918,12 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title={tour?.name || 'Loading...'}
-			statusButton={tour ? {
-				label: tour.status === 'active' ? 'Active' : 'Draft',
-				onclick: undefined,
-				disabled: false,
-				className: tour.status === 'active' ? 'status-confirmed' : 'status-pending'
-			} : null}
+		statusButton={tour ? {
+			label: tour.status === 'active' ? 'Active' : 'Draft',
+			onclick: toggleTourStatus,
+			disabled: isTogglingStatus,
+			className: tour.status === 'active' ? 'status-confirmed' : 'status-pending'
+		} : null}
 			secondaryInfo={tour && stats ? `${stats.totalBookings || 0} bookings • ${$globalCurrencyFormatter(stats.totalRevenue || 0)}` : ''}
 			primaryAction={{
 			label: 'Add Time Slots',
@@ -878,35 +951,53 @@
 					{ label: tour?.name || 'Tour' }
 				]}
 			>
-				<div class="flex items-center gap-3">
-					{#if tour}
-						<div class="tour-status-badge tour-status-badge--{tour.status}">
-							{#if tour.status === 'active'}
-								<CheckCircle class="h-5 w-5" />
-							{:else}
-								<FileText class="h-5 w-5" />
-							{/if}
-							<span class="capitalize font-medium">{tour.status}</span>
-						</div>
-					{/if}
-					<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
-						<Edit class="h-4 w-4" />
-						Edit Tour
-					</button>
-					<button onclick={() => handleCopyTour()} class="button-secondary button--gap" disabled={isCopyingTour}>
-						{#if isCopyingTour}
-							<RefreshCw class="h-4 w-4 animate-spin" />
-							Copying...
+			<div class="flex items-center gap-3">
+				{#if tour}
+					<!-- Tour Status Toggle Button -->
+					<button 
+						onclick={toggleTourStatus} 
+						class="tour-status-badge tour-status-badge--{tour.status} tour-status-badge--interactive"
+						disabled={isTogglingStatus}
+						title="Click to {tour.status === 'active' ? 'deactivate' : 'activate'} tour"
+					>
+						{#if isTogglingStatus}
+							<RefreshCw class="h-5 w-5 animate-spin" />
+						{:else if tour.status === 'active'}
+							<CheckCircle class="h-5 w-5" />
 						{:else}
-							<Copy class="h-4 w-4" />
-							Copy Tour
+							<FileText class="h-5 w-5" />
 						{/if}
+						<span class="capitalize font-medium">{tour.status}</span>
 					</button>
-					<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
-						<Plus class="h-4 w-4" />
-						Add Time Slots
-					</button>
-				</div>
+					
+					<!-- Public Discovery Indicator -->
+					{#if tour.publicListing}
+						<Tooltip text="Listed on Public Discovery">
+							<div class="public-discovery-badge">
+								<Eye class="h-4 w-4" />
+								<span class="text-xs font-medium">Public Discovery</span>
+							</div>
+						</Tooltip>
+					{/if}
+				{/if}
+				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+					<Edit class="h-4 w-4" />
+					Edit Tour
+				</button>
+				<button onclick={() => handleCopyTour()} class="button-secondary button--gap" disabled={isCopyingTour}>
+					{#if isCopyingTour}
+						<RefreshCw class="h-4 w-4 animate-spin" />
+						Copying...
+					{:else}
+						<Copy class="h-4 w-4" />
+						Copy Tour
+					{/if}
+				</button>
+				<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+					<Plus class="h-4 w-4" />
+					Add Time Slots
+				</button>
+			</div>
 			</PageHeader>
 		</div>
 	</div>
@@ -1647,6 +1738,22 @@
 	}}
 />
 
+<!-- Deactivate Tour Confirmation Modal -->
+<ConfirmationModal
+	bind:isOpen={showDeactivateModal}
+	title="Deactivate Tour?"
+	message={tour && stats 
+		? `This tour has ${stats.totalBookings} booking${stats.totalBookings !== 1 ? 's' : ''}. Setting it to draft will hide it from public view but won't cancel existing bookings.`
+		: 'Setting this tour to draft will hide it from public view.'}
+	confirmText="Set to Draft"
+	cancelText="Keep Active"
+	variant="warning"
+	icon={AlertCircle}
+	onConfirm={handleDeactivateConfirm}
+	onCancel={handleDeactivateCancel}
+	onClose={handleDeactivateCancel}
+/>
+
 <!-- Image Lightbox -->
 {#if lightboxOpen}
 	<div 
@@ -1928,11 +2035,56 @@
 		gap: 0.5rem !important;
 	}
 	
+	/* Interactive status badge */
+	.tour-status-badge--interactive {
+		cursor: pointer;
+		transition: all 0.2s ease;
+		border: 2px solid transparent;
+	}
+	
+	.tour-status-badge--interactive:hover:not(:disabled) {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+	
+	.tour-status-badge--interactive:active:not(:disabled) {
+		transform: translateY(0);
+	}
+	
+	.tour-status-badge--interactive:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	
+	/* Public Discovery Badge */
+	.public-discovery-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: var(--color-primary-50);
+		border: 2px solid var(--color-primary-200);
+		border-radius: 0.5rem;
+		color: var(--color-primary-700);
+		font-weight: 500;
+		white-space: nowrap;
+	}
+	
 	/* Ensure mobile badges still work properly */
 	@media (max-width: 640px) {
 		.tour-status-badge {
 			padding: 0.25rem 0.75rem !important;
 			font-size: 0.75rem !important;
+		}
+		
+		.public-discovery-badge {
+			padding: 0.375rem 0.75rem;
+			font-size: 0.75rem;
+		}
+		
+		.public-discovery-badge :global(svg) {
+			width: 0.875rem;
+			height: 0.875rem;
 		}
 	}
 	

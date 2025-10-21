@@ -86,19 +86,30 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const data = bookingData[0];
 
+    // Validate critical data
+    if (!data.bookingCustomerEmail || !data.tourName) {
+      console.error('Missing critical booking data:', { 
+        hasEmail: !!data.bookingCustomerEmail, 
+        hasTourName: !!data.tourName,
+        bookingId 
+      });
+      return json({ error: 'Invalid booking data' }, { status: 400 });
+    }
+
     // Format data to match the expected interface
     const booking = {
       id: data.bookingId,
       tourId: data.bookingTourId,
       timeSlotId: data.bookingTimeSlotId,
-      customerName: data.bookingCustomerName,
+      customerName: data.bookingCustomerName || 'Customer',
       customerEmail: data.bookingCustomerEmail,
       customerPhone: data.bookingCustomerPhone || undefined,
-      participants: data.bookingParticipants,
-      totalAmount: data.bookingTotalAmount,
+      participants: data.bookingParticipants || 1,
+      totalAmount: data.bookingTotalAmount || '0',
+      participantBreakdown: data.bookingParticipantBreakdown || undefined,
       status: data.bookingStatus,
       paymentStatus: data.bookingPaymentStatus,
-      bookingReference: data.bookingBookingReference,
+      bookingReference: data.bookingBookingReference || 'N/A',
       specialRequests: data.bookingSpecialRequests || undefined,
       ticketQRCode: data.bookingTicketQRCode || undefined,
       attendanceStatus: data.bookingAttendanceStatus || undefined,
@@ -110,13 +121,16 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const tour = {
       id: data.tourId,
-      name: data.tourName,
-      description: data.tourDescription,
-      price: data.tourPrice,
-      duration: data.tourDuration,
-      capacity: data.tourCapacity,
+      name: data.tourName || 'Tour',
+      description: data.tourDescription || '',
+      price: data.tourPrice || '0',
+      duration: data.tourDuration || 120,
+      capacity: data.tourCapacity || 10,
       status: data.tourStatus,
       location: data.tourLocation || undefined,
+      includedItems: data.tourIncludedItems || undefined,
+      requirements: data.tourRequirements || undefined,
+      cancellationPolicy: data.tourCancellationPolicy || undefined,
       userId: '', // Not needed for email functionality
       createdAt: new Date().toISOString(), // Not needed for email functionality
       updatedAt: new Date().toISOString(), // Not needed for email functionality
@@ -127,8 +141,8 @@ export const POST: RequestHandler = async ({ request }) => {
       tourId: data.timeSlotTourId,
       startTime: data.timeSlotStartTime?.toISOString() || new Date().toISOString(),
       endTime: data.timeSlotEndTime?.toISOString() || new Date().toISOString(),
-      availableSpots: data.timeSlotAvailableSpots,
-      bookedSpots: data.timeSlotBookedSpots,
+      availableSpots: data.timeSlotAvailableSpots || 10,
+      bookedSpots: data.timeSlotBookedSpots || 0,
       status: data.timeSlotStatus,
       isRecurring: false,
       recurringPattern: null,
@@ -159,6 +173,16 @@ export const POST: RequestHandler = async ({ request }) => {
       updatedAt: new Date().toISOString()
     } as User : undefined;
 
+    // Log the data we're about to send
+    console.log(`📧 Preparing to send ${emailType} email for booking ${bookingId}`);
+    console.log(`   Customer: ${booking.customerEmail}`);
+    console.log(`   Tour: ${tour.name}`);
+    console.log(`   Participants: ${booking.participants}`);
+    console.log(`   Has participantBreakdown: ${!!booking.participantBreakdown}`);
+    console.log(`   Has includedItems: ${!!tour.includedItems}`);
+    console.log(`   Has requirements: ${!!tour.requirements}`);
+    console.log(`   Has cancellationPolicy: ${!!tour.cancellationPolicy}`);
+
     // Send the email
     const emailResult = await sendBookingEmail(emailType as BookingEmailType, {
       booking,
@@ -172,6 +196,7 @@ export const POST: RequestHandler = async ({ request }) => {
     });
 
     if (!emailResult.success) {
+      console.error(`❌ Email sending failed for ${bookingId}:`, emailResult.error);
       throw new Error(emailResult.error || 'Failed to send email');
     }
 
@@ -185,7 +210,11 @@ export const POST: RequestHandler = async ({ request }) => {
     });
 
   } catch (error) {
-    console.error('Error in send-booking-email API:', error);
+    console.error('❌ Error in send-booking-email API:', error);
+    console.error('   Error type:', error?.constructor?.name);
+    console.error('   Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('   Error stack:', error instanceof Error ? error.stack : 'No stack');
+    
     return json({
       error: 'Failed to send email',
       details: error instanceof Error ? error.message : 'Unknown error'

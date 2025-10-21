@@ -418,75 +418,93 @@ export function updateTourStatusMutation() {
 			
 			return response.json();
 		},
-		onMutate: async ({ tourId, status }) => {
-			console.log('🔄 Status mutation: Starting optimistic update for tour:', tourId, 'to status:', status);
-			
-			// Cancel outgoing refetches for tours list and stats
-			await queryClient.cancelQueries({ queryKey: queryKeys.userTours });
-			await queryClient.cancelQueries({ queryKey: queryKeys.toursStats });
-			
-			// Snapshot previous values
-			const previousTours = queryClient.getQueryData(queryKeys.userTours);
-			const previousStats = queryClient.getQueryData(queryKeys.toursStats);
-			
-			// Get current tour for stats calculation
-			const currentTour = (previousTours as Tour[] | undefined)?.find(t => t.id === tourId);
-			const oldStatus = currentTour?.status;
-			
-			// Optimistically update tours list only (not tour details)
-			queryClient.setQueryData(queryKeys.userTours, (old: Tour[] | undefined) => {
+	onMutate: async ({ tourId, status }) => {
+		console.log('🔄 Status mutation: Starting optimistic update for tour:', tourId, 'to status:', status);
+		
+		// Cancel outgoing refetches for tours list, stats, and tour details
+		await queryClient.cancelQueries({ queryKey: queryKeys.userTours });
+		await queryClient.cancelQueries({ queryKey: queryKeys.toursStats });
+		await queryClient.cancelQueries({ queryKey: queryKeys.tourDetails(tourId) });
+		
+		// Snapshot previous values
+		const previousTours = queryClient.getQueryData(queryKeys.userTours);
+		const previousStats = queryClient.getQueryData(queryKeys.toursStats);
+		const previousTourDetails = queryClient.getQueryData(queryKeys.tourDetails(tourId));
+		
+		// Get current tour for stats calculation
+		const currentTour = (previousTours as Tour[] | undefined)?.find(t => t.id === tourId);
+		const oldStatus = currentTour?.status;
+		
+		// Optimistically update tours list
+		queryClient.setQueryData(queryKeys.userTours, (old: Tour[] | undefined) => {
+			if (!old) return old;
+			const updated = old.map(tour => 
+				tour.id === tourId ? { ...tour, status } : tour
+			);
+			console.log('🔄 Status mutation: Updated tours list optimistically');
+			return updated;
+		});
+		
+		// Optimistically update tour details immediately
+		queryClient.setQueryData(queryKeys.tourDetails(tourId), (old: any) => {
+			if (!old?.tour) return old;
+			const updated = {
+				...old,
+				tour: {
+					...old.tour,
+					status
+				}
+			};
+			console.log('🔄 Status mutation: Updated tour details optimistically to status:', status);
+			return updated;
+		});
+		
+		// Optimistically update stats if status actually changed
+		if (oldStatus && oldStatus !== status) {
+			queryClient.setQueryData(queryKeys.toursStats, (old: any) => {
 				if (!old) return old;
-				const updated = old.map(tour => 
-					tour.id === tourId ? { ...tour, status } : tour
-				);
-				console.log('🔄 Status mutation: Updated tours list optimistically');
-				return updated;
+				let activeDelta = 0;
+				let draftDelta = 0;
+				
+				if (oldStatus === 'active' && status === 'draft') {
+					activeDelta = -1;
+					draftDelta = 1;
+				} else if (oldStatus === 'draft' && status === 'active') {
+					activeDelta = 1;
+					draftDelta = -1;
+				}
+				
+				const newStats = {
+					...old,
+					activeTours: Math.max(0, (old.activeTours || 0) + activeDelta),
+					draftTours: Math.max(0, (old.draftTours || 0) + draftDelta)
+				};
+				console.log('🔄 Status mutation: Updated stats optimistically with deltas:', { activeDelta, draftDelta });
+				return newStats;
 			});
-			
-			// Optimistically update stats if status actually changed
-			if (oldStatus && oldStatus !== status) {
-				queryClient.setQueryData(queryKeys.toursStats, (old: any) => {
-					if (!old) return old;
-					let activeDelta = 0;
-					let draftDelta = 0;
-					
-					if (oldStatus === 'active' && status === 'draft') {
-						activeDelta = -1;
-						draftDelta = 1;
-					} else if (oldStatus === 'draft' && status === 'active') {
-						activeDelta = 1;
-						draftDelta = -1;
-					}
-					
-					const newStats = {
-						...old,
-						activeTours: Math.max(0, (old.activeTours || 0) + activeDelta),
-						draftTours: Math.max(0, (old.draftTours || 0) + draftDelta)
-					};
-					console.log('🔄 Status mutation: Updated stats optimistically with deltas:', { activeDelta, draftDelta });
-					return newStats;
-				});
-			}
-			
-
-			
-			return { previousTours, previousStats, tourId, status, oldStatus };
-		},
-		onError: (err, variables, context) => {
-			console.error('🔄 Status mutation: Failed to update tour status', variables.tourId, err);
-			
-			// Rollback tours list and stats
-			if (context?.previousTours) {
-				queryClient.setQueryData(queryKeys.userTours, context.previousTours);
-				console.log('🔄 Status mutation: Rolled back tours list');
-			}
-			if (context?.previousStats) {
-				queryClient.setQueryData(queryKeys.toursStats, context.previousStats);
-				console.log('🔄 Status mutation: Rolled back stats');
-			}
-			
-
-		},
+		}
+		
+		// Return context for error rollback
+		return { previousTours, previousStats, previousTourDetails, tourId, status, oldStatus };
+	},
+	onError: (err, variables, context) => {
+		console.error('🔄 Status mutation: Failed to update tour status', variables.tourId, err);
+		
+		// Rollback tours list, stats, and tour details
+		if (context?.previousTours) {
+			queryClient.setQueryData(queryKeys.userTours, context.previousTours);
+			console.log('🔄 Status mutation: Rolled back tours list');
+		}
+		if (context?.previousStats) {
+			queryClient.setQueryData(queryKeys.toursStats, context.previousStats);
+			console.log('🔄 Status mutation: Rolled back stats');
+		}
+		if (context?.previousTourDetails) {
+			queryClient.setQueryData(queryKeys.tourDetails(variables.tourId), context.previousTourDetails);
+			console.log('🔄 Status mutation: Rolled back tour details');
+		}
+		
+	},
 		onSuccess: async (data, variables) => {
 			console.log('🔄 Status mutation: Server confirmed status change');
 			

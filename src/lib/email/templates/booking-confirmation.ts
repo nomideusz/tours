@@ -82,12 +82,12 @@ export function bookingConfirmationTemplate(data: BookingConfirmationData): stri
         </div>
       ` : ''}
       
-      ${tour.includedItems && tour.includedItems.length > 0 ? `
+      ${tour.includedItems && Array.isArray(tour.includedItems) && tour.includedItems.length > 0 ? `
         <h3>✅ What's Included</h3>
         ${list(tour.includedItems.map(item => ({ text: item, icon: '✓' })))}
       ` : ''}
       
-      ${tour.requirements && tour.requirements.length > 0 ? `
+      ${tour.requirements && Array.isArray(tour.requirements) && tour.requirements.length > 0 ? `
         <h3>📋 Requirements</h3>
         ${list(tour.requirements.map(req => ({ text: req })))}
       ` : ''}
@@ -106,7 +106,7 @@ export function bookingConfirmationTemplate(data: BookingConfirmationData): stri
         variant: 'default'
       }) : ''}
       
-      ${tour.cancellationPolicy ? `
+      ${tour.cancellationPolicy && typeof tour.cancellationPolicy === 'string' && tour.cancellationPolicy.trim() ? `
         <h3>🛡️ Cancellation Policy</h3>
         <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
           ${tour.cancellationPolicy.split('\n').map(line => `<p style="margin: 5px 0;">${line}</p>`).join('')}

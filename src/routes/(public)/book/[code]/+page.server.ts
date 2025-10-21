@@ -8,6 +8,7 @@ import { generateTicketQRCode } from '$lib/ticket-qr.js';
 import { canUserCreateBooking } from '$lib/stripe-subscriptions.server.js';
 import { calculateBookingPrice } from '$lib/utils/pricing-calculations.js';
 import type { Tour } from '$lib/types.js';
+import { dev } from '$app/environment';
 
 export const load: PageServerLoad = async ({ params }) => {
 	return {
@@ -274,7 +275,22 @@ export const actions: Actions = {
 
 			console.log(`✅ Creating booking for ${customerName} - ${tour.name} (${participants} participants)`);
 
+			// Transform categoryBreakdown to match database schema if it exists
+			const categoryBreakdownForDb: Record<string, { label: string; count: number; pricePerPerson: number; subtotal: number }> | undefined = 
+				priceCalculation.categoryBreakdown
+					? Object.entries(priceCalculation.categoryBreakdown).reduce((acc, [key, value]) => {
+							acc[key] = {
+								label: value.label,
+								count: value.count,
+								pricePerPerson: value.discountedPrice || value.originalPrice,
+								subtotal: value.subtotal
+							};
+							return acc;
+						}, {} as Record<string, { label: string; count: number; pricePerPerson: number; subtotal: number }>)
+					: undefined;
+
 			// Create booking with all-in pricing (regulatory compliance)
+			// Note: Database schema only stores basePrice, addonsTotal, totalAmount, categoryBreakdown
 			const bookingResult = await db.insert(bookings).values({
 				tourId: tour.id,
 				timeSlotId: timeSlot.id,
@@ -291,12 +307,8 @@ export const actions: Actions = {
 				priceBreakdown: {
 					basePrice: priceCalculation.basePrice,
 					addonsTotal: priceCalculation.addonsTotal,
-					subtotal: priceCalculation.subtotal,
-					stripeFee: priceCalculation.stripeFee,
 					totalAmount: priceCalculation.totalAmount,
-					guideReceives: priceCalculation.guideReceives,
-					guidePaysStripeFee: priceCalculation.guidePaysStripeFee,
-					categoryBreakdown: priceCalculation.categoryBreakdown || undefined
+					categoryBreakdown: categoryBreakdownForDb
 				},
 				status: 'pending',
 				paymentStatus: 'pending',
@@ -337,11 +349,52 @@ export const actions: Actions = {
 					})
 					.where(eq(bookings.id, booking.id));
 				
-				console.log(`🎉 Free tour booking confirmed - redirecting to success page`);
+				console.log(`🎉 Free tour booking confirmed - sending emails`);
 				
-				// TODO: Send notification for free tour booking
-				// Notification will be sent via webhook when payment is confirmed
-				// For free tours, we might want to send notification immediately
+				// Send confirmation email to customer for free bookings
+				try {
+					// Use absolute URL for production, relative for dev
+					const baseUrl = dev ? 'http://localhost:5173' : 'https://zaur.app';
+					const emailResponse = await fetch(`${baseUrl}/api/send-booking-email`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							bookingId: booking.id,
+							emailType: 'confirmation'
+						})
+					});
+					
+					if (emailResponse.ok) {
+						console.log(`✅ Free booking: Customer confirmation email sent for ${booking.id}`);
+					} else {
+						const errorText = await emailResponse.text();
+						console.error(`❌ Free booking: Failed to send customer confirmation email (${emailResponse.status}):`, errorText);
+					}
+				} catch (emailError) {
+					console.error('❌ Free booking: Error sending customer email:', emailError);
+					// Don't fail the booking if email fails
+				}
+				
+				// Send notification email to tour guide for free bookings
+				try {
+					// Use absolute URL for production, relative for dev
+					const baseUrl = dev ? 'http://localhost:5173' : 'https://zaur.app';
+					const guideEmailResponse = await fetch(`${baseUrl}/api/send-guide-booking-email`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ bookingId: booking.id })
+					});
+					
+					if (guideEmailResponse.ok) {
+						console.log(`✅ Free booking: Guide notification email sent for ${booking.id}`);
+					} else {
+						const errorText = await guideEmailResponse.text();
+						console.warn(`⚠️ Free booking: Failed to send guide notification email (${guideEmailResponse.status}):`, errorText);
+					}
+				} catch (emailError) {
+					console.warn('⚠️ Free booking: Error sending guide email:', emailError);
+					// Don't fail the booking if email fails
+				}
 				
 				// Redirect directly to success page for free tours
 				redirect(303, `/book/${qrCode}/success?booking=${booking.id}`);

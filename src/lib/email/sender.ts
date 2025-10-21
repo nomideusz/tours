@@ -55,65 +55,90 @@ export async function sendBookingEmail(
   data: BookingEmailData
 ): Promise<EmailResult> {
   try {
+    console.log(`📨 sendBookingEmail: Starting ${emailType} email generation`);
+    console.log(`   Booking ID: ${data.booking.id}`);
+    console.log(`   Customer: ${data.booking.customerEmail}`);
+    console.log(`   Tour: ${data.tour.name}`);
+    
     let emailContent: { subject: string; html: string };
 
-    switch (emailType) {
-      case 'confirmation':
-        emailContent = bookingConfirmationEmail({
-          ...data,
-          tourOwnerCurrency: data.tourOwnerCurrency
-        });
-        break;
-        
-      case 'payment':
-        // Payment emails can reuse confirmation template with slight modifications
-        emailContent = {
-          subject: `💳 Payment Received - ${data.tour.name}`,
-          html: bookingConfirmationEmail({
+    try {
+      switch (emailType) {
+        case 'confirmation':
+          console.log(`   Generating confirmation email template...`);
+          emailContent = bookingConfirmationEmail({
             ...data,
             tourOwnerCurrency: data.tourOwnerCurrency
-          }).html.replace(
-            'Booking Confirmed!',
-            'Payment Received!'
-          ).replace(
-            'Your booking for',
-            'We\'ve received your payment for'
-          )
-        };
-        break;
-        
-      case 'reminder':
-        emailContent = tourReminderEmail({
-          ...data,
-          tourOwnerCurrency: data.tourOwnerCurrency
-        });
-        break;
-        
-      case 'qr-ticket':
-        emailContent = qrTicketEmail({
-          ...data,
-          tourOwnerCurrency: data.tourOwnerCurrency
-        });
-        break;
-        
-      case 'cancelled':
-        // Use the new cancellation template
-        emailContent = bookingCancellationEmail({
-          booking: data.booking,
-          tour: data.tour,
-          timeSlot: data.timeSlot,
-          tourOwner: data.tourOwner,
-          tourOwnerCurrency: data.tourOwnerCurrency,
-          cancellationReason: data.cancellationReason,
-          customMessage: data.customMessage,
-          isBulkCancellation: data.isBulkCancellation
-        });
-        break;
-        
-      default:
-        throw new Error(`Invalid email type: ${emailType}`);
+          });
+          break;
+          
+        case 'payment':
+          console.log(`   Generating payment email template...`);
+          // Payment emails can reuse confirmation template with slight modifications
+          emailContent = {
+            subject: `💳 Payment Received - ${data.tour.name}`,
+            html: bookingConfirmationEmail({
+              ...data,
+              tourOwnerCurrency: data.tourOwnerCurrency
+            }).html.replace(
+              'Booking Confirmed!',
+              'Payment Received!'
+            ).replace(
+              'Your booking for',
+              'We\'ve received your payment for'
+            )
+          };
+          break;
+          
+        case 'reminder':
+          console.log(`   Generating reminder email template...`);
+          emailContent = tourReminderEmail({
+            ...data,
+            tourOwnerCurrency: data.tourOwnerCurrency
+          });
+          break;
+          
+        case 'qr-ticket':
+          console.log(`   Generating QR ticket email template...`);
+          emailContent = qrTicketEmail({
+            ...data,
+            tourOwnerCurrency: data.tourOwnerCurrency
+          });
+          break;
+          
+        case 'cancelled':
+          console.log(`   Generating cancellation email template...`);
+          // Use the new cancellation template
+          emailContent = bookingCancellationEmail({
+            booking: data.booking,
+            tour: data.tour,
+            timeSlot: data.timeSlot,
+            tourOwner: data.tourOwner,
+            tourOwnerCurrency: data.tourOwnerCurrency,
+            cancellationReason: data.cancellationReason,
+            customMessage: data.customMessage,
+            isBulkCancellation: data.isBulkCancellation
+          });
+          break;
+          
+        default:
+          throw new Error(`Invalid email type: ${emailType}`);
+      }
+      
+      console.log(`   ✅ Template generated successfully`);
+    } catch (templateError) {
+      console.error(`❌ Template generation error for ${emailType}:`, templateError);
+      console.error(`   Data being used:`, {
+        bookingId: data.booking.id,
+        tourName: data.tour.name,
+        hasIncludedItems: !!data.tour.includedItems,
+        hasRequirements: !!data.tour.requirements,
+        hasCancellationPolicy: !!data.tour.cancellationPolicy
+      });
+      throw templateError;
     }
 
+    console.log(`   Sending email via Resend...`);
     const resend = getResend();
     const result = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
@@ -123,15 +148,19 @@ export async function sendBookingEmail(
     });
 
     if (result.error) {
+      console.error(`❌ Resend API error:`, result.error);
       throw new Error(`Resend error: ${result.error.message}`);
     }
+
+    console.log(`   ✅ Email sent successfully via Resend`);
 
     return { 
       success: true, 
       messageId: result.data?.id 
     };
   } catch (error) {
-    console.error(`Error sending ${emailType} email:`, error);
+    console.error(`❌ Error sending ${emailType} email:`, error);
+    console.error(`   Error stack:`, error instanceof Error ? error.stack : 'No stack');
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
