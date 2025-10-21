@@ -11,6 +11,7 @@ Simple, compact initial view with expandable advanced options
 	import PrivateTour from './PrivateTour.svelte';
 	import GroupDiscounts from './GroupDiscounts.svelte';
 	import OptionalAddons from './OptionalAddons.svelte';
+	import StripeFeeSelector from './StripeFeeSelector.svelte';
 	import UnifiedPricingSummary from './UnifiedPricingSummary.svelte';
 	import '$lib/styles/pricing.css';
 	
@@ -156,17 +157,19 @@ Simple, compact initial view with expandable advanced options
 			
 			<!-- Group Discounts (only for per-person pricing) -->
 			{#if groupDiscounts && currentPrice > 0 && participantCategories}
-				<GroupDiscounts
-					bind:tiers={groupDiscounts.tiers}
-					bind:enabled={groupDiscounts.enabled}
-					{currencySymbol}
-					basePrice={currentPrice}
-					maxCapacity={participantCategories.maxCapacity || 20}
-					onUpdate={(tiers, enabled) => {
-						onGroupDiscountsUpdate(tiers, enabled);
-						pricingTouched = true;
-					}}
-				/>
+				<div class="section-spacing">
+					<GroupDiscounts
+						bind:tiers={groupDiscounts.tiers}
+						bind:enabled={groupDiscounts.enabled}
+						{currencySymbol}
+						basePrice={currentPrice}
+						maxCapacity={participantCategories.maxCapacity || 20}
+						onUpdate={(tiers, enabled) => {
+							onGroupDiscountsUpdate(tiers, enabled);
+							pricingTouched = true;
+						}}
+					/>
+				</div>
 			{/if}
 		{:else if pricingModel === 'private_tour' && privateTour}
 			<!-- Private Tour Flat Rate -->
@@ -186,11 +189,29 @@ Simple, compact initial view with expandable advanced options
 		
 		<!-- Add-ons (show for both pricing models) -->
 		{#if optionalAddons}
-			<OptionalAddons
-				bind:addons={optionalAddons.addons}
-				{currencySymbol}
-				onUpdate={onAddonsUpdate}
-			/>
+			<div class="section-spacing">
+				<OptionalAddons
+					bind:addons={optionalAddons.addons}
+					{currencySymbol}
+					onUpdate={onAddonsUpdate}
+				/>
+			</div>
+		{/if}
+		
+		<!-- Stripe Fee Selector (Regulatory Compliance: FTC, California SB 478, UK, EU) -->
+		{#if currentPrice > 0}
+			<div class="section-spacing">
+				<StripeFeeSelector
+					bind:guidePaysStripeFee
+					basePrice={currentPrice}
+					currency={$userCurrency}
+					{currencySymbol}
+					onUpdate={(pays) => {
+						onStripeFeeUpdate(pays);
+						pricingTouched = true;
+					}}
+				/>
+			</div>
 		{/if}
 		
 		<!-- Field Errors -->
@@ -209,6 +230,8 @@ Simple, compact initial view with expandable advanced options
 		groupDiscounts={groupDiscounts}
 		addons={optionalAddons?.addons}
 		{currencySymbol}
+		{guidePaysStripeFee}
+		currency={$userCurrency}
 		minCapacity={pricingModel === 'private_tour' ? (privateTour?.minCapacity || 4) : (participantCategories?.minCapacity || 1)}
 		maxCapacity={pricingModel === 'private_tour' ? (privateTour?.maxCapacity || 12) : (participantCategories?.maxCapacity || 20)}
 	/>
@@ -235,6 +258,10 @@ Simple, compact initial view with expandable advanced options
 	
 	.pricing-config {
 		padding: 0.5rem 0;
+	}
+	
+	.section-spacing {
+		margin-top: 1.25rem;
 	}
 	
 	.error-message {

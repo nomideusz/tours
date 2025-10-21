@@ -237,43 +237,11 @@ export function updateTourWithFormDataMutation(tourId: string) {
 		onMutate: async (formData) => {
 			console.log('🔄 Tour update mutation: Starting optimistic update');
 			
-			// Get current tour data for optimistic update
+			// Get current tour data for backup (for rollback on error)
 			const currentTour = queryClient.getQueryData(queryKeys.tourDetails(tourId)) as any;
 			
-			// Try to extract form data for optimistic update
-			const tourName = formData.get('name');
-			const tourPrice = formData.get('price');
-			const tourStatus = formData.get('status');
-			
-			// Optimistically update tour details if we have the data
-			if (currentTour && tourName) {
-				queryClient.setQueryData(queryKeys.tourDetails(tourId), (old: any) => {
-					if (!old?.tour) return old;
-					return {
-						...old,
-						tour: {
-							...old.tour,
-							name: tourName,
-							price: tourPrice ? parseFloat(tourPrice.toString()) : old.tour.price,
-							status: tourStatus || old.tour.status,
-							updatedAt: new Date().toISOString()
-						}
-					};
-				});
-			}
-			
-			// Also update tours list if status changed
-			if (tourStatus && currentTour?.tour?.status !== tourStatus) {
-				queryClient.setQueryData(queryKeys.userTours, (old: any) => {
-					if (!Array.isArray(old)) return old;
-					return old.map((tour: any) => 
-						tour.id === tourId 
-							? { ...tour, status: tourStatus, name: tourName || tour.name }
-							: tour
-					);
-				});
-			}
-			
+			// Don't do optimistic updates - they can cause field loss
+			// Just return context for potential rollback
 			return { currentTour };
 		},
 		onError: (error, variables, context) => {

@@ -230,11 +230,13 @@ export const actions: Actions = {
       // Get group pricing tiers (legacy)
       let groupPricingTiers = null;
       const groupPricingTiersRaw = formData.get('groupPricingTiers');
-      if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null') {
+      if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null' && groupPricingTiersRaw !== '[object Object]') {
         try {
           groupPricingTiers = JSON.parse(groupPricingTiersRaw);
         } catch (e) {
           console.warn('Failed to parse group pricing tiers:', e);
+          // If parsing fails, just leave it as null (won't update this field)
+          groupPricingTiers = null;
         }
       }
       
@@ -265,6 +267,10 @@ export const actions: Actions = {
       
       // Get infant capacity setting
       const countInfantsTowardCapacity = formData.get('countInfantsTowardCapacity') === 'true' || formData.get('countInfantsTowardCapacity') === 'on';
+      
+      // Get public listing setting
+      const publicListing = formData.get('publicListing') === 'true';
+      console.log('📝 Public listing from form:', formData.get('publicListing'), '→', publicListing);
 
       // Prepare tour data
       console.log('📝 Raw categories from form:', formData.get('categories'));
@@ -298,7 +304,8 @@ export const actions: Actions = {
         groupDiscounts,
         optionalAddons,
         guidePaysStripeFee,
-        countInfantsTowardCapacity
+        countInfantsTowardCapacity,
+        publicListing
       };
 
       // Sanitize the data
@@ -476,7 +483,7 @@ export const actions: Actions = {
           minCapacity: parseInt(String(formData.get('minCapacity'))) || 1,
           maxCapacity: parseInt(String(formData.get('maxCapacity'))) || parseInt(String(sanitizedData.capacity)),
           countInfantsTowardCapacity: countInfantsTowardCapacity || false,
-          publicListing: sanitizedData.publicListing === 'false' ? false : true, // Default to true
+          publicListing: publicListing, // Already extracted as boolean above
           images: finalImages,
           updatedAt: new Date()
         })

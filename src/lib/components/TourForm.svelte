@@ -9,9 +9,15 @@ Main form for creating and editing tours. Organized into clear sections:
 2. PRICING - Pricing model, price, tiers, add-ons, capacity
 3. TOUR DETAILS - Included items & requirements (extracted component)
 4. CANCELLATION POLICY - Cancellation terms with templates
-5. TOUR STATUS - Active/Draft status (edit mode only)
-6. PUBLIC LISTING - Discovery toggle (active tours only)
-7. ACTION BUTTONS - Save, publish, cancel
+5. DANGER ZONE - Delete tour (edit mode only, shown in main content)
+6. TOUR STATUS - Active/Draft status (edit mode only, shown in sidebar)
+7. PUBLIC LISTING - Discovery toggle (edit mode only, shown in sidebar)
+8. ACTION BUTTONS - Save, publish, cancel (shown in sidebar)
+
+Smart button behavior:
+- When editing active tours: "Save Changes" (keeps tour active)
+- When editing draft tours: "Save & Activate" (activates tour)
+- "Save as Draft" always available (saves/deactivates tour)
 
 Key extracted components:
 - pricing/PricingModelSelector - Choose pricing model
@@ -52,8 +58,10 @@ Key extracted components:
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
+	import Tooltip from './Tooltip.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Globe from 'lucide-svelte/icons/globe';
+	import Calendar from 'lucide-svelte/icons/calendar';
 	import { isValidLocationLength } from '$lib/utils/location.js';
 	
 	// Import new pricing components
@@ -139,6 +147,11 @@ Key extracted components:
 		profile?: any;
 		hasConfirmedLocation?: boolean;
 		paymentStatus?: { isSetup: boolean; loading: boolean };
+		// Delete functionality for edit mode
+		onDelete?: () => void;
+		hasFutureBookings?: boolean;
+		isDeleting?: boolean;
+		tourId?: string;
 	}
 
 	let {
@@ -163,7 +176,11 @@ Key extracted components:
 		hideStatusField = false,
 		profile = null,
 		hasConfirmedLocation = false,
-		paymentStatus = { isSetup: false, loading: false }
+		paymentStatus = { isSetup: false, loading: false },
+		onDelete = undefined,
+		hasFutureBookings = false,
+		isDeleting = false,
+		tourId = undefined
 	}: Props = $props();
 	
 	// Migrate old capacity values to nested structures if needed
@@ -185,6 +202,9 @@ Key extracted components:
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
 	let touchedFields = $state<Set<string>>(new Set());
+	
+	// Track initial status to determine button text in edit mode
+	let initialStatus = $state(formData.status);
 	
 	// Collapsible sections state
 	let showAdvancedPricing = $state(false);
@@ -241,6 +261,16 @@ Key extracted components:
 	$effect(() => {
 		const data = formData.groupDiscounts || { tiers: [], enabled: false };
 		groupDiscountsJson = JSON.stringify(data);
+	});
+	
+	// Track initial status only once when real tour data is loaded (not default values)
+	// We detect "real" data by checking if tour has a name (empty name = default/uninitialized form)
+	let hasInitializedStatus = $state(false);
+	$effect(() => {
+		if (isEdit && formData.name && !hasInitializedStatus) {
+			initialStatus = formData.status;
+			hasInitializedStatus = true;
+		}
 	});
 	
 	// Initialize pricing model and data
@@ -1143,6 +1173,71 @@ Key extracted components:
 				</div>
 			{/if}
 		</div>
+
+		<!-- ============================================================ -->
+		<!-- DANGER ZONE SECTION (Edit Mode Only)                        -->
+		<!-- ============================================================ -->
+		{#if isEdit && onDelete}
+			<div class="rounded-xl" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+				<div class="p-4 border-b" style="border-color: var(--color-danger-200);">
+					<h3 class="font-semibold" style="color: var(--color-danger-900);">Danger Zone</h3>
+				</div>
+				<div class="p-4">
+					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+						<div class="flex-1">
+							<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
+							{#if hasFutureBookings}
+								<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+									Cannot delete tour with upcoming bookings. Cancel all future bookings first, then deletion will be available.
+								</p>
+								<p class="text-sm mt-2" style="color: var(--color-primary-600);">
+									<a 
+										href="/bookings?tour={tourId}"
+										class="text-sm underline hover:no-underline"
+										style="color: var(--color-primary-600);"
+									>
+										View bookings →
+									</a>
+								</p>
+							{:else}
+								<p class="text-sm mt-1" style="color: var(--color-danger-700);">
+									This will permanently delete the tour and all data, including historical bookings. This action cannot be undone.
+								</p>
+							{/if}
+						</div>
+						<div class="flex-shrink-0">
+							{#if hasFutureBookings}
+								<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
+									<button 
+										type="button" 
+										class="button-secondary button--small w-full sm:w-auto cursor-not-allowed opacity-50" 
+										disabled
+									>
+										<Calendar class="w-4 h-4 mr-2" />
+										Has Upcoming Bookings
+									</button>
+								</Tooltip>
+							{:else}
+								<button 
+									type="button" 
+									onclick={onDelete} 
+									class="button-danger button--small w-full sm:w-auto" 
+									disabled={isDeleting}
+									title="Delete this tour permanently"
+								>
+									{#if isDeleting}
+										<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
+										Deleting...
+									{:else}
+										Delete Tour
+									{/if}
+								</button>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Sidebar -->
@@ -1370,9 +1465,9 @@ Key extracted components:
 		{/if}
 
 		<!-- ============================================================ -->
-		<!-- PUBLIC LISTING SECTION (Active Tours Only)                  -->
+		<!-- PUBLIC LISTING SECTION (Edit Mode Only)                     -->
 		<!-- ============================================================ -->
-		{#if formData.status === 'active'}
+		{#if isEdit}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 				<div class="p-4">
 					<div class="flex items-center justify-between gap-4">
@@ -1382,28 +1477,30 @@ Key extracted components:
 								<h3 class="font-semibold" style="color: var(--text-primary);">Public Discovery</h3>
 							</div>
 							<p class="text-sm" style="color: var(--text-secondary);">
-								{formData.publicListing !== false 
-									? 'Tour is visible in public listings'
-									: 'Tour is only accessible via QR code or direct link'}
+								{#if formData.status === 'draft'}
+									{formData.publicListing 
+										? 'When activated, tour will be visible in public listings'
+										: 'When activated, tour will only be accessible via QR code or direct link'}
+								{:else}
+									{formData.publicListing 
+										? 'Tour is visible in public listings'
+										: 'Tour is only accessible via QR code or direct link'}
+								{/if}
 							</p>
 						</div>
 						
 						<div class="flex items-center gap-3 flex-shrink-0">
 							<!-- Hidden input to send the actual publicListing value -->
-							<input type="hidden" name="publicListing" value={formData.publicListing !== false ? 'true' : 'false'} />
+							<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
 							<label class="relative inline-flex items-center cursor-pointer">
 								<input
 									type="checkbox"
-									checked={formData.publicListing !== false}
-									onchange={(e) => {
-										const target = e.target as HTMLInputElement;
-										formData.publicListing = target.checked;
-									}}
+									bind:checked={formData.publicListing}
 									class="sr-only peer"
 								/>
 								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
 								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
-									{formData.publicListing !== false ? 'Listed' : 'Unlisted'}
+									{formData.publicListing ? 'Listed' : 'Unlisted'}
 								</span>
 							</label>
 						</div>
@@ -1472,10 +1569,15 @@ Key extracted components:
 					>
 						{#if isSubmitting && formData.status === 'active'}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-							{isEdit ? 'Activating...' : 'Activating...'}
+							Saving...
 						{:else}
-							<CheckCircle class="w-4 h-4" />
-							{isEdit ? 'Save & Activate' : 'Activate Tour'}
+							{#if isEdit && initialStatus === 'active'}
+								<Save class="w-4 h-4" />
+								Save Changes
+							{:else}
+								<CheckCircle class="w-4 h-4" />
+								{isEdit ? 'Save & Activate' : 'Activate Tour'}
+							{/if}
 						{/if}
 					</button>
 					

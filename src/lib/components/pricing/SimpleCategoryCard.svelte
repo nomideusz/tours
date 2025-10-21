@@ -115,7 +115,7 @@
 				<Icon class="category-icon" />
 			{/key}
 			
-			{#if isAdultCategory || isChildCategory || isSeniorCategory}
+			{#if isAdultCategory || isChildCategory || isSeniorCategory || isInfantCategory}
 				<span class="category-label-fixed">{displayLabel}</span>
 			{:else}
 				<input
@@ -219,20 +219,6 @@
 			</div>
 		</div>
 		
-		<!-- Special setting for infants: capacity option -->
-		{#if isInfantCategory}
-			<div class="infant-capacity-option">
-				<label class="capacity-checkbox">
-					<input
-						type="checkbox"
-						bind:checked={category.countsTowardCapacity}
-						onchange={handleUpdate}
-					/>
-					<span class="checkbox-label">Counts toward tour capacity</span>
-				</label>
-				<div class="capacity-hint">Most infants don't take a seat</div>
-			</div>
-		{/if}
 
 	{/if}
 </div>
@@ -274,12 +260,6 @@
 		gap: 0.5rem;
 		flex: 1;
 		min-width: 0;
-	}
-	
-	.adult-label {
-		font-size: 0.9375rem;
-		font-weight: 600;
-		color: var(--text-primary);
 	}
 	
 	.category-label-fixed {
@@ -455,43 +435,6 @@
 		padding: 0.375rem 0.5rem;
 	}
 	
-	/* Infant capacity option */
-	.infant-capacity-option {
-		margin-top: 0.75rem;
-		padding: 0.75rem;
-		background: var(--bg-tertiary);
-		border-radius: 0.5rem;
-		border: 1px solid var(--border-primary);
-	}
-	
-	.capacity-checkbox {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		cursor: pointer;
-	}
-	
-	.capacity-checkbox input[type="checkbox"] {
-		width: 1rem;
-		height: 1rem;
-		cursor: pointer;
-		accent-color: var(--color-primary-600);
-	}
-	
-	.checkbox-label {
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
-	}
-	
-	.capacity-hint {
-		margin-top: 0.375rem;
-		margin-left: 1.5rem;
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-		font-style: italic;
-	}
-
 	/* Mobile responsiveness */
 	@media (max-width: 640px) {
 		.category-card.adult-card .card-header {

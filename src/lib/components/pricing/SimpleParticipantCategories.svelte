@@ -57,6 +57,21 @@ Designed to be more intuitive for tour guides
 		onUpdate(categories);
 	}
 	
+	// Add infant category
+	function addInfantCategory() {
+		const newCategory: ParticipantCategory = {
+			id: 'infant',
+			label: 'Infant (0-2)',
+			price: 0, // Infants typically free
+			minAge: 0,
+			maxAge: 2,
+			sortOrder: categories.length,
+			countsTowardCapacity: countInfantsTowardCapacity // Respect the tour setting
+		};
+		categories = [...categories, newCategory];
+		onUpdate(categories);
+	}
+	
 	// Add child category
 	function addChildCategory() {
 		const adult = adultPrice() || 50;
@@ -134,6 +149,10 @@ Designed to be more intuitive for tour guides
 	}
 	
 	// Check if categories exist
+	let hasInfantCategory = $derived(
+		categories.some(c => c.id === 'infant' || c.label.toLowerCase().includes('infant') || c.label.toLowerCase().includes('baby'))
+	);
+	
 	let hasChildCategory = $derived(
 		categories.some(c => c.id === 'child' || c.label.toLowerCase().includes('child'))
 	);
@@ -150,6 +169,43 @@ Designed to be more intuitive for tour guides
 		categories.some(c => c.id === 'senior' || c.label.toLowerCase().includes('senior'))
 	);
 	
+	// Automatically add/remove infant category when checkbox changes
+	$effect(() => {
+		const infantIndex = categories.findIndex(c => 
+			c.id === 'infant' || c.label.toLowerCase().includes('infant') || c.label.toLowerCase().includes('baby')
+		);
+		
+		if (countInfantsTowardCapacity && infantIndex === -1) {
+			// Checkbox is checked but no infant category exists - add it automatically
+			console.log('🍼 Auto-adding infant category (checkbox enabled)');
+			const newCategory: ParticipantCategory = {
+				id: 'infant',
+				label: 'Infant (0-2)',
+				price: 0,
+				minAge: 0,
+				maxAge: 2,
+				sortOrder: categories.length,
+				countsTowardCapacity: true
+			};
+			categories = [...categories, newCategory];
+			onUpdate(categories);
+		} else if (!countInfantsTowardCapacity && infantIndex !== -1) {
+			// Checkbox is unchecked and infant category exists - remove it
+			console.log('🍼 Auto-removing infant category (checkbox disabled)');
+			categories = categories.filter((_, i) => i !== infantIndex);
+			// Reindex sort orders
+			categories = categories.map((cat, i) => ({ ...cat, sortOrder: i }));
+			onUpdate(categories);
+		} else if (infantIndex !== -1 && categories[infantIndex].countsTowardCapacity !== countInfantsTowardCapacity) {
+			// Update countsTowardCapacity if infant exists
+			categories[infantIndex] = {
+				...categories[infantIndex],
+				countsTowardCapacity: countInfantsTowardCapacity
+			};
+			onUpdate(categories);
+		}
+	});
+	
 	function removeCategory(index: number) {
 		const removedCategory = categories[index];
 		
@@ -158,6 +214,14 @@ Designed to be more intuitive for tour guides
 			(removedCategory && (removedCategory.id === 'adult' || 
 			removedCategory.label.toLowerCase().includes('adult')))) {
 			return;
+		}
+		
+		// If removing infant category, uncheck the checkbox
+		if (removedCategory && 
+			(removedCategory.id === 'infant' || 
+			removedCategory.label.toLowerCase().includes('infant') || 
+			removedCategory.label.toLowerCase().includes('baby'))) {
+			countInfantsTowardCapacity = false;
 		}
 		
 		categories = categories.filter((_, i) => i !== index);
@@ -565,6 +629,7 @@ Designed to be more intuitive for tour guides
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		flex-wrap: wrap;
 		cursor: pointer;
 		font-size: 0.875rem;
 		color: var(--text-secondary);
@@ -576,6 +641,7 @@ Designed to be more intuitive for tour guides
 		cursor: pointer;
 		accent-color: var(--color-primary-600);
 	}
+	
 	
 	.capacity-error {
 		flex-basis: 100%;

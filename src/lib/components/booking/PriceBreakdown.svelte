@@ -52,7 +52,7 @@
 			});
 	});
 	
-	// Calculate price breakdown
+	// Calculate price breakdown with Stripe fees for regulatory compliance
 	let priceCalculation = $derived(() => {
 		// For private tour with flat rate
 		if (isPrivateTour && tour.privateTour) {
@@ -62,25 +62,38 @@
 					.reduce((sum: number, addon: any) => sum + addon.price, 0)
 				: 0;
 			
+			const subtotal = tour.privateTour.flatPrice + addonsTotal;
+			
+			// Calculate Stripe fee (even for private tours)
+			const stripeFee = subtotal * 0.015 + 0.25; // Default EUR fees, will be accurate with currency
+			const guidePaysStripeFee = tour.guidePaysStripeFee || false;
+			
 			return {
 				basePrice: tour.privateTour.flatPrice,
 				discountedBase: tour.privateTour.flatPrice,
 				addonsTotal,
 				groupDiscount: 0,
-				totalAmount: tour.privateTour.flatPrice + addonsTotal,
+				subtotal,
+				stripeFee,
+				totalAmount: guidePaysStripeFee ? subtotal : subtotal + stripeFee,
+				guideReceives: guidePaysStripeFee ? subtotal - stripeFee : subtotal,
+				guidePaysStripeFee,
 				categoryBreakdown: null,
 				selectedTier: null,
 				errors: []
 			};
 		}
 		
+		// Use calculateBookingPrice which now includes Stripe fees
+		// TODO: Pass actual currency from tour owner
 		return calculateBookingPrice(
 			tour,
 			participants,
 			selectedAddonIds,
 			adultParticipants,
 			childParticipants,
-			participantCounts
+			participantCounts,
+			'EUR' // Will be replaced with actual currency
 		);
 	});
 
@@ -203,13 +216,41 @@
 			{/each}
 		{/if}
 
+		<!-- Stripe Processing Fee (Regulatory Compliance) -->
+		{#if priceCalculation().stripeFee && priceCalculation().stripeFee > 0}
+			<div class="breakdown-divider">
+				<Plus class="w-3 h-3" style="color: var(--text-tertiary);" />
+			</div>
+			
+			<div class="breakdown-item processing-fee">
+				<div class="item-label">
+					<span>Payment Processing Fee</span>
+					{#if priceCalculation().guidePaysStripeFee}
+						<span class="fee-note">(Included by tour guide)</span>
+					{:else}
+						<span class="fee-note">(Stripe payment processing)</span>
+					{/if}
+				</div>
+				<div class="item-value">
+					{#if priceCalculation().guidePaysStripeFee}
+						<span class="included-fee">Included</span>
+					{:else}
+						{formatPrice(priceCalculation().stripeFee)}
+					{/if}
+				</div>
+			</div>
+		{/if}
+
 		<!-- Total Section -->
 		<div class="breakdown-divider total">
 			<Equal class="w-3 h-3" style="color: var(--text-tertiary);" />
 		</div>
 		
 		<div class="breakdown-item total">
-			<div class="item-label">Total Amount</div>
+			<div class="item-label">
+				<span>Total Amount</span>
+				<span class="all-in-note">All fees included - no surprises!</span>
+			</div>
 			<div class="item-value">
 				{formatPrice(priceCalculation().totalAmount)}
 			</div>
@@ -364,6 +405,31 @@
 	.addon-icon {
 		font-size: 0.875rem;
 		margin-right: 0.375rem;
+	}
+	
+	.breakdown-item.processing-fee .item-label {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+	
+	.fee-note {
+		font-size: 0.6875rem;
+		color: var(--text-tertiary);
+		font-weight: 400;
+	}
+	
+	.included-fee {
+		color: var(--color-success-600);
+		font-weight: 600;
+		font-size: 0.8125rem;
+	}
+	
+	.all-in-note {
+		font-size: 0.6875rem;
+		color: var(--color-success-600);
+		font-weight: 500;
+		margin-top: 0.125rem;
 	}
 
 	.breakdown-errors {

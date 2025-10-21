@@ -82,6 +82,35 @@
 		customerEmail.trim().length > 0 && 
 		customerEmail.includes('@')
 	);
+	
+	// Ensure infant category is available if countInfantsTowardCapacity is enabled
+	let categoriesForBooking = $derived(() => {
+		if (!tour.participantCategories?.categories) return [];
+		
+		const categories = [...tour.participantCategories.categories];
+		
+		// Check if infant category exists
+		const hasInfant = categories.some(c => 
+			c.id === 'infant' || c.label.toLowerCase().includes('infant') || c.label.toLowerCase().includes('baby')
+		);
+		
+		// If countInfantsTowardCapacity is explicitly true (checked) and no infant category exists, add one
+		// Note: We check === true to ensure it was explicitly enabled, not just undefined
+		if (tour.countInfantsTowardCapacity === true && !hasInfant) {
+			console.log('🍼 Auto-adding infant category to booking page (countInfantsTowardCapacity is enabled)');
+			categories.push({
+				id: 'infant',
+				label: 'Infant (0-2)',
+				price: 0,
+				minAge: 0,
+				maxAge: 2,
+				sortOrder: categories.length,
+				countsTowardCapacity: true
+			});
+		}
+		
+		return categories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+	});
 </script>
 
 <div class="booking-widget rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -286,9 +315,9 @@
 										</select>
 									</div>
 								{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories}
-									<!-- Participant Categories -->
+									<!-- Participant Categories (with auto-added infant if needed) -->
 									<ParticipantCategorySelector
-										categories={tour.participantCategories.categories || []}
+										categories={categoriesForBooking()}
 										bind:participantCounts
 										availableSpots={(selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0)}
 										currencySymbol={tourOwner?.currency === 'PLN' ? 'zł' : tourOwner?.currency === 'EUR' ? '€' : '$'}

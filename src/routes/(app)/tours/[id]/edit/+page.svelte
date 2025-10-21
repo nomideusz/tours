@@ -7,7 +7,6 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	import type { Tour } from '$lib/types.js';
 	import type { PageData, ActionData } from './$types.js';
@@ -20,10 +19,6 @@
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
-	import Eye from 'lucide-svelte/icons/eye';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Users from 'lucide-svelte/icons/users';
-	import Calendar from 'lucide-svelte/icons/calendar';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -400,9 +395,9 @@
 			groupPricingTiers: tour.groupPricingTiers || { tiers: [] },
 			groupDiscounts: tour.groupDiscounts || undefined,
 			optionalAddons: tour.optionalAddons || { addons: [] },
-			guidePaysStripeFee: tour.guidePaysStripeFee || false,
-			countInfantsTowardCapacity: tour.countInfantsTowardCapacity || false,
-			publicListing: tour.publicListing || true
+			guidePaysStripeFee: tour.guidePaysStripeFee ?? false,
+			countInfantsTowardCapacity: tour.countInfantsTowardCapacity ?? false,
+			publicListing: tour.publicListing ?? true
 		};
 
 		// Initialize existing images
@@ -932,71 +927,13 @@
 						{profile}
 						{hasConfirmedLocation}
 						{paymentStatus}
+						onDelete={handleDeleteTour}
+						{hasFutureBookings}
+						{isDeleting}
+						{tourId}
 					/>
 				</div>
 			{/if}
-		</div>
-
-		<!-- Danger Zone -->
-		<div class="mt-8 rounded-xl" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-			<div class="p-4 border-b" style="border-color: var(--color-danger-200);">
-				<h3 class="font-semibold" style="color: var(--color-danger-900);">Danger Zone</h3>
-			</div>
-			<div class="p-4">
-				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div class="flex-1">
-						<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
-						{#if hasFutureBookings}
-							<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-								Cannot delete tour with upcoming bookings. Cancel all future bookings first, then deletion will be available.
-							</p>
-							<p class="text-sm mt-2" style="color: var(--color-primary-600);">
-								<button 
-									type="button" 
-									onclick={() => goto(`/bookings?tour=${tourId}`)}
-									class="text-sm underline hover:no-underline"
-									style="color: var(--color-primary-600);"
-								>
-									View bookings →
-								</button>
-							</p>
-						{:else}
-							<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-								This will permanently delete the tour and all data, including historical bookings. This action cannot be undone.
-							</p>
-						{/if}
-					</div>
-					<div class="flex-shrink-0">
-						{#if hasFutureBookings}
-							<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
-								<button 
-									type="button" 
-									class="button-secondary button--small w-full sm:w-auto cursor-not-allowed opacity-50" 
-									disabled
-								>
-									<Calendar class="w-4 h-4 mr-2" />
-									Has Upcoming Bookings
-								</button>
-							</Tooltip>
-						{:else}
-							<button 
-								type="button" 
-								onclick={handleDeleteTour} 
-								class="button-danger button--small w-full sm:w-auto" 
-								disabled={isDeleting}
-								title="Delete this tour permanently"
-							>
-								{#if isDeleting}
-									<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
-									Deleting...
-								{:else}
-									Delete Tour
-								{/if}
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
 		</div>
 	{/if}
 </div>

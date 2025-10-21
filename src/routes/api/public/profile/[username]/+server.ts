@@ -34,12 +34,13 @@ export const GET: RequestHandler = async ({ params }) => {
 				qrCode: tours.qrCode,
 				createdAt: tours.createdAt
 			})
-			.from(tours)
-			.where(and(
-				eq(tours.userId, profileUser.id),
-				eq(tours.status, 'active')
-			))
-			.orderBy(desc(tours.createdAt));
+		.from(tours)
+		.where(and(
+			eq(tours.userId, profileUser.id),
+			eq(tours.status, 'active'),
+			eq(tours.publicListing, true)
+		))
+		.orderBy(desc(tours.createdAt));
 		
 		// Get available time slots for the next 30 days for all tours
 		const futureDate = new Date();
@@ -57,12 +58,13 @@ export const GET: RequestHandler = async ({ params }) => {
 			})
 			.from(timeSlots)
 			.innerJoin(tours, eq(timeSlots.tourId, tours.id))
-			.where(and(
-				eq(tours.userId, profileUser.id),
-				eq(tours.status, 'active'),
-				gte(timeSlots.startTime, now),
-				eq(timeSlots.status, 'available')
-			))
+		.where(and(
+			eq(tours.userId, profileUser.id),
+			eq(tours.status, 'active'),
+			eq(tours.publicListing, true),
+			gte(timeSlots.startTime, now),
+			eq(timeSlots.status, 'available')
+		))
 			.orderBy(timeSlots.startTime)
 			.limit(50);
 		

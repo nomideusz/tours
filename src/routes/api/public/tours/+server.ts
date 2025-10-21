@@ -24,11 +24,9 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Build where conditions
 		const conditions: any[] = [
-			eq(tours.status, 'active')
+			eq(tours.status, 'active'),
+			eq(tours.publicListing, true)
 		];
-		
-		// TODO: Add back when TypeScript issue is resolved
-		// eq(tours.publicListing, true),
 
 		// Search filter (searches in name, description, location)
 		if (search) {
@@ -107,6 +105,8 @@ export const GET: RequestHandler = async ({ url }) => {
 				participantCategories: tours.participantCategories,
 				privateTour: tours.privateTour,
 				groupDiscounts: tours.groupDiscounts,
+				guidePaysStripeFee: tours.guidePaysStripeFee,
+				countInfantsTowardCapacity: tours.countInfantsTowardCapacity,
 				
 				// User fields for tour operator info
 				userId: tours.userId,
@@ -206,6 +206,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			.from(tours)
 			.where(and(
 				eq(tours.status, 'active'),
+				eq(tours.publicListing, true),
 				sql`${tours.categories} IS NOT NULL AND jsonb_array_length(${tours.categories}::jsonb) > 0`
 			));
 		
@@ -223,6 +224,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			.from(tours)
 			.where(and(
 				eq(tours.status, 'active'),
+				eq(tours.publicListing, true),
 				sql`${tours.location} IS NOT NULL`
 			));
 		

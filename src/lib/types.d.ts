@@ -126,8 +126,10 @@ export interface Tour extends RecordModel {
   optionalAddons?: {
     addons: OptionalAddon[];
   };
-  // Stripe fee payment option
+  // Stripe fee payment option (NEW)
   guidePaysStripeFee?: boolean;
+  // Capacity settings (NEW)
+  countInfantsTowardCapacity?: boolean;
   // QR code fields
   qrCode?: string;
   qrScans?: number;

@@ -100,10 +100,6 @@
 
 <div class="participant-selector">
 	<div class="selector-header">
-		<div class="flex items-center gap-2">
-			<Users class="w-4 h-4" style="color: var(--color-primary-600);" />
-			<span class="form-label">Select Participants</span>
-		</div>
 		<span class="spots-indicator" class:warning={totalParticipants() >= availableSpots * 0.8}>
 			{totalParticipants()} / {availableSpots} spots
 		</span>
@@ -191,9 +187,10 @@
 	
 	.selector-header {
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-end;
 		align-items: center;
 		gap: 1rem;
+		margin-bottom: 0.5rem;
 	}
 	
 	.spots-indicator {

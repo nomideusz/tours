@@ -353,13 +353,21 @@ export function validatePricingTiers(tiers: GroupPricingTier[]): { errors: strin
 /**
  * Calculate booking price with participant categories, group discounts, and add-ons
  * Option A: Apply group discount to all category prices
+ * 
+ * REGULATORY COMPLIANCE (FTC, California SB 478, UK, EU):
+ * - totalAmount includes ALL fees (Stripe fees if customer pays)
+ * - All-in pricing is displayed prominently to customers
  */
 export interface BookingPriceResult {
 	basePrice: number;           // Total before discounts and add-ons
 	groupDiscount: number;       // Amount saved from group discount
 	discountedBase: number;      // Base price after group discount
 	addonsTotal: number;         // Total cost of add-ons
-	totalAmount: number;         // Final amount to charge
+	subtotal: number;            // Base + addons (before Stripe fees)
+	stripeFee: number;           // Stripe processing fee
+	totalAmount: number;         // Final all-in amount customer pays (includes Stripe fee if applicable)
+	guideReceives: number;       // Amount tour guide receives
+	guidePaysStripeFee: boolean; // Whether guide absorbs the Stripe fee
 	errors: string[];
 	categoryBreakdown?: {        // Detailed breakdown per category
 		[categoryId: string]: {
@@ -384,7 +392,8 @@ export function calculateBookingPrice(
 	selectedAddonIds: string[] = [],
 	adultCount?: number,
 	childCount?: number,
-	participantsByCategory?: Record<string, number>
+	participantsByCategory?: Record<string, number>,
+	currency: string = 'EUR' // User's currency for Stripe fee calculation
 ): BookingPriceResult {
 	const errors: string[] = [];
 	let basePrice = 0;
@@ -546,15 +555,40 @@ export function calculateBookingPrice(
 		});
 	}
 	
-	// Final total
-	const totalAmount = discountedBase + addonsTotal;
+	// Subtotal before Stripe fees
+	const subtotal = discountedBase + addonsTotal;
+	
+	// Calculate Stripe processing fee for regulatory compliance
+	const guidePaysStripeFee = tour.guidePaysStripeFee || false;
+	const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
+	
+	// Stripe fee calculation: percentage + fixed amount
+	const stripeFee = subtotal * (fees.percentage / 100) + fees.fixed;
+	
+	// Final amounts based on who pays the fee
+	let totalAmount: number;  // What customer pays (ALL-IN PRICE for compliance)
+	let guideReceives: number; // What guide receives
+	
+	if (guidePaysStripeFee) {
+		// Guide pays: customer pays subtotal, guide receives less
+		totalAmount = subtotal;
+		guideReceives = subtotal - stripeFee;
+	} else {
+		// Customer pays (RECOMMENDED): customer pays subtotal + fee, guide receives subtotal
+		totalAmount = subtotal + stripeFee;
+		guideReceives = subtotal;
+	}
 	
 	return {
 		basePrice,
 		groupDiscount,
 		discountedBase,
 		addonsTotal,
+		subtotal,
+		stripeFee,
 		totalAmount,
+		guideReceives,
+		guidePaysStripeFee,
 		errors,
 		categoryBreakdown: Object.keys(categoryBreakdown).length > 0 ? categoryBreakdown : undefined,
 		selectedTier

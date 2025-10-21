@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { bookings, tours, timeSlots } from '$lib/db/schema/index.js';
+import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { generateTicketQRCode } from '$lib/ticket-qr.js';
@@ -153,10 +153,27 @@ export const actions: Actions = {
 				});
 			}
 
-			// Check availability
+			// Calculate participants that count toward capacity
+			// This respects the countsTowardCapacity setting on each category (e.g., infants)
+			let participantsThatCount = participants; // Default to total
+			
+			if (participantsByCategory && tour.participantCategories?.categories) {
+				participantsThatCount = Object.entries(participantsByCategory).reduce((sum, [catId, count]) => {
+					const category = tour.participantCategories?.categories?.find(c => c.id === catId);
+					// Only count if category has countsTowardCapacity !== false
+					if (category && category.countsTowardCapacity !== false) {
+						return sum + count;
+					}
+					return sum;
+				}, 0);
+				
+				console.log(`👥 Capacity check: ${participantsThatCount} count toward capacity (${participants} total participants)`);
+			}
+
+			// Check availability using participants that count toward capacity
 			const availableSpots = timeSlot.availableSpots - (timeSlot.bookedSpots || 0);
 			
-			if (availableSpots < participants) {
+			if (availableSpots < participantsThatCount) {
 				return fail(400, {
 					error: `Only ${availableSpots} spots available`,
 					customerName,
@@ -166,6 +183,13 @@ export const actions: Actions = {
 				});
 			}
 
+			// Get tour owner's currency for Stripe fee calculation (regulatory compliance)
+			const tourOwnerData = await db.select({ currency: users.currency })
+				.from(users)
+				.where(eq(users.id, tour.userId))
+				.limit(1);
+			const currency = tourOwnerData[0]?.currency || 'EUR';
+			
 			// Calculate total amount using new pricing calculation utility
 			// Convert tour data to match Tour interface (Date -> string, null -> undefined)
 			const tourForCalculation: Tour = {
@@ -188,13 +212,15 @@ export const actions: Actions = {
 				updatedAt: tour.updatedAt.toISOString()
 			};
 			
+			// Calculate with Stripe fees for regulatory compliance (FTC, California SB 478, UK, EU)
 			const priceCalculation = calculateBookingPrice(
 				tourForCalculation,
 				participants,
 				selectedAddonIds,
 				participantBreakdown?.adults,
 				participantBreakdown?.children,
-				participantsByCategory || undefined
+				participantsByCategory || undefined,
+				currency
 			);
 			
 			// Check for calculation errors
@@ -220,10 +246,13 @@ export const actions: Actions = {
 				price: addon.price
 			})) || [];
 			
-			console.log(`💰 Price calculation (${tour.pricingModel || 'per_person'}):`, {
+			console.log(`💰 Price calculation (${tour.pricingModel || 'per_person'}) with Stripe fees:`, {
 				basePrice: priceCalculation.basePrice,
 				addonsTotal: priceCalculation.addonsTotal,
+				stripeFee: priceCalculation.stripeFee,
 				totalAmount: priceCalculation.totalAmount,
+				guideReceives: priceCalculation.guideReceives,
+				guidePaysStripeFee: priceCalculation.guidePaysStripeFee,
 				selectedTier: priceCalculation.selectedTier?.label || 'N/A'
 			});
 
@@ -233,7 +262,7 @@ export const actions: Actions = {
 
 			console.log(`✅ Creating booking for ${customerName} - ${tour.name} (${participants} participants)`);
 
-			// Create booking
+			// Create booking with all-in pricing (regulatory compliance)
 			const bookingResult = await db.insert(bookings).values({
 				tourId: tour.id,
 				timeSlotId: timeSlot.id,
@@ -245,12 +274,16 @@ export const actions: Actions = {
 				participants,
 				participantBreakdown: participantBreakdown,
 				participantsByCategory: participantsByCategory,
-				totalAmount,
+				totalAmount,  // This is now the all-in price including Stripe fees
 				selectedAddons: selectedAddons.length > 0 ? selectedAddons : null,
 				priceBreakdown: {
 					basePrice: priceCalculation.basePrice,
 					addonsTotal: priceCalculation.addonsTotal,
+					subtotal: priceCalculation.subtotal,
+					stripeFee: priceCalculation.stripeFee,
 					totalAmount: priceCalculation.totalAmount,
+					guideReceives: priceCalculation.guideReceives,
+					guidePaysStripeFee: priceCalculation.guidePaysStripeFee,
 					categoryBreakdown: priceCalculation.categoryBreakdown || undefined
 				},
 				status: 'pending',
@@ -262,10 +295,10 @@ export const actions: Actions = {
 
 			booking = bookingResult[0];
 
-			// Update time slot booked spots
+			// Update time slot booked spots (only count participants that count toward capacity)
 			await db.update(timeSlots)
 				.set({
-					bookedSpots: (timeSlot.bookedSpots || 0) + participants,
+					bookedSpots: (timeSlot.bookedSpots || 0) + participantsThatCount,
 					updatedAt: new Date()
 				})
 				.where(eq(timeSlots.id, timeSlotId));
