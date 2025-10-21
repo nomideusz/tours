@@ -2,11 +2,13 @@
 	import { auth } from '$lib/stores/auth.js';
 	import { isAuthenticated, currentUser } from '$lib/stores/auth.js';
 	import { themeStore } from '$lib/stores/theme.js';
+	import { consentStore } from '$lib/stores/consent.js';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import CookieBanner from '$lib/components/CookieBanner.svelte';
 
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
@@ -31,6 +33,15 @@
 	// Use auth stores for reactive auth state
 	let userIsAuthenticated = $derived($isAuthenticated);
 	let currentUserData = $derived($currentUser);
+	
+	// Cookie consent state
+	let consent = $state<'pending' | 'accepted' | 'rejected'>('pending');
+	$effect(() => {
+		const unsubscribe = consentStore.subscribe(value => {
+			consent = value;
+		});
+		return () => unsubscribe();
+	});
 	
 	// Device fingerprint exclusion for Umami
 	function shouldExcludeFromAnalytics(): boolean {
@@ -156,8 +167,8 @@
 	}
 	</script>`}
 	
-	<!-- Umami Analytics - Production Only, Exclude Specific Users -->
-	{#if !import.meta.env.DEV && !shouldExclude}
+	<!-- Umami Analytics - Production Only, With User Consent -->
+	{#if !import.meta.env.DEV && !shouldExclude && consent === 'accepted'}
 		<script defer src="https://umami.zaur.app/script.js" data-website-id="92ff6091-acae-433b-813b-561a4f524314"></script>
 	{/if}
 </svelte:head>
@@ -183,6 +194,9 @@
 	<div class="floating-theme-toggle">
 		<ThemeToggle tooltipPosition="top" />
 	</div>
+
+	<!-- Cookie Consent Banner -->
+	<CookieBanner />
 
 	<Footer />
 </div>
