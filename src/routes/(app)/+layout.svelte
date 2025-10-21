@@ -897,7 +897,7 @@
 		transition: all var(--transition-base) ease;
 		padding: 0.625rem 0.75rem;
 		border-radius: var(--radius-md);
-		border: 1px solid transparent;
+		border: 1.5px solid transparent;
 		position: relative;
 		min-width: 0;
 		font-weight: 500;
@@ -913,7 +913,7 @@
 	.nav-link--active {
 		background: var(--color-primary-50);
 		color: var(--primary);
-		border: 1px solid var(--color-primary-200);
+		border: 1.5px solid var(--color-primary-200);
 		font-weight: 600;
 	}
 
@@ -1008,7 +1008,7 @@
 		gap: 0.75rem;
 		padding: 0.75rem;
 		border-radius: var(--radius-md);
-		border: 1px solid var(--border-primary);
+		border: 1.5px solid var(--border-primary);
 		text-decoration: none;
 		color: var(--text-secondary);
 		transition: all var(--transition-base) ease;

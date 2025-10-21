@@ -17,9 +17,9 @@
 <header class="app-header {className}">
 	<div class="app-header-container">
 		<div class="app-header-content">
-			<!-- Logo and branding -->
-			<div class="app-header-brand">
-				<Logo showIcon={true} showIconBackground={false} href="/calendar" size="xl" textSize="large" iconSrc="/favicon.png" />
+		<!-- Logo and branding -->
+		<div class="app-header-brand">
+			<Logo href="/calendar" size="xl" variant="bold" />
 		</div>
 
 			<!-- Right Side Actions -->
@@ -35,22 +35,22 @@
 </header> 
 
 <style>
-	/* App Header - matches marketing style */
+	/* App Header - refined and professional */
 	.app-header {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		z-index: var(--z-70);
-		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
-		border-bottom: 1px solid var(--border-primary);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		box-shadow: var(--shadow-sm);
-		transition: all var(--transition-base) ease;
+		background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
+		border-bottom: 1.5px solid var(--border-primary);
+		backdrop-filter: blur(16px) saturate(180%);
+		-webkit-backdrop-filter: blur(16px) saturate(180%);
+		box-shadow: var(--shadow-md);
+		transition: all var(--transition-base);
 	}
 
-	/* Very subtle texture overlay - matches marketing header */
+	/* Subtle refined overlay */
 	.app-header::before {
 		content: '';
 		position: absolute;
@@ -58,12 +58,10 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.01) 40px,
-			rgba(0, 0, 0, 0.01) 41px
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			rgba(0, 0, 0, 0.01) 100%
 		);
 		pointer-events: none;
 	}
@@ -110,12 +108,10 @@
 
 	/* Dark Mode Support */
 	[data-theme="dark"] .app-header::before {
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(255, 255, 255, 0.02) 40px,
-			rgba(255, 255, 255, 0.02) 41px
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			rgba(255, 255, 255, 0.01) 100%
 		);
 	}
 

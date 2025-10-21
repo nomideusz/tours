@@ -181,50 +181,50 @@
 	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 	--font-mono: 'SF Mono', ui-monospace, Monaco, 'Cascadia Mono', 'Roboto Mono', 'Courier New', monospace;
 
-	/* Font Sizes - Increased for better Chrome rendering */
+	/* Font Sizes - Refined scale for character */
 	--text-xs: 0.8125rem;
-	/* 13px instead of 12px */
+	/* 13px - tight for labels */
 	--text-sm: 0.9375rem;
-	/* 15px instead of 14px */
-	--text-base: 1.0625rem;
-	/* 17px instead of 16px */
+	/* 15px - body secondary */
+	--text-base: 1rem;
+	/* 16px - primary body text */
 	--text-lg: 1.1875rem;
-	/* 19px instead of 18px */
+	/* 19px - emphasized text */
 	--text-xl: 1.375rem;
-	/* 22px instead of 20px */
-	--text-2xl: 1.625rem;
-	/* 26px instead of 24px */
-	--text-3xl: 2rem;
-	/* 32px instead of 30px */
-	--text-4xl: 2.375rem;
-	/* 38px instead of 36px */
-	--text-5xl: 3.125rem;
-	/* 50px instead of 48px */
+	/* 22px - small headings */
+	--text-2xl: 1.75rem;
+	/* 28px - medium headings */
+	--text-3xl: 2.25rem;
+	/* 36px - large headings */
+	--text-4xl: 3rem;
+	/* 48px - hero headings */
+	--text-5xl: 3.75rem;
+	/* 60px - display */
 
 	/* Line Heights */
 	--leading-tight: 1.25;
 	--leading-normal: 1.5;
 	--leading-relaxed: 1.75;
 
-	/* Line heights for each text size */
+	/* Line heights for each text size - refined for readability */
 	--text-xs--line-height: 1.125rem;
-	/* 18px */
+	/* 18px - tight */
 	--text-sm--line-height: 1.375rem;
 	/* 22px */
-	--text-base--line-height: 1.625rem;
-	/* 26px */
+	--text-base--line-height: 1.5rem;
+	/* 24px - comfortable reading */
 	--text-lg--line-height: 1.75rem;
 	/* 28px */
-	--text-xl--line-height: 2rem;
-	/* 32px */
+	--text-xl--line-height: 1.875rem;
+	/* 30px */
 	--text-2xl--line-height: 2.25rem;
 	/* 36px */
-	--text-3xl--line-height: 2.5rem;
-	/* 40px */
-	--text-4xl--line-height: 2.75rem;
+	--text-3xl--line-height: 2.75rem;
 	/* 44px */
-	--text-5xl--line-height: 3.5rem;
-	/* 56px */
+	--text-4xl--line-height: 3.5rem;
+	/* 56px - generous */
+	--text-5xl--line-height: 4rem;
+	/* 64px */
 
 	/* Spacing Scale */
 	--space-0: 0;
@@ -241,26 +241,43 @@
 	--space-20: 5rem;
 	--space-24: 6rem;
 
-	/* Border Radius */
+	/* Border Radius - subtle variation for character */
 	--radius-none: 0;
-	--radius-sm: 0.125rem;
-	--radius-default: 0.375rem;
-	--radius-md: 0.5rem;
-	--radius-lg: 0.75rem;
-	--radius-xl: 1rem;
+	--radius-sm: 0.25rem;
+	/* 4px - slightly rounder for friendliness */
+	--radius-default: 0.5rem;
+	/* 8px */
+	--radius-md: 0.625rem;
+	/* 10px - sweet spot */
+	--radius-lg: 0.875rem;
+	/* 14px - distinctive */
+	--radius-xl: 1.125rem;
+	/* 18px - cards */
 	--radius-full: 9999px;
 
-	/* Shadows - More subtle */
-	--shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-	--shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
-	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+	/* Shadows - refined layers for depth and character */
+	--shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+	--shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+	--shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	--shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+	--shadow-xl: 0 16px 32px -8px rgba(0, 0, 0, 0.12), 0 8px 12px -4px rgba(0, 0, 0, 0.06);
+	
+	/* Colored shadows for interactive elements */
+	--shadow-primary: 0 4px 12px -2px rgba(250, 107, 93, 0.2);
+	--shadow-success: 0 4px 12px -2px rgba(34, 197, 94, 0.2);
+	--shadow-warning: 0 4px 12px -2px rgba(245, 158, 11, 0.2);
+	--shadow-danger: 0 4px 12px -2px rgba(244, 63, 94, 0.2);
 
-	/* Transitions */
-	--transition-fast: 150ms;
-	--transition-base: 200ms;
-	--transition-slow: 300ms;
+	/* Transitions - refined easing for character */
+	--transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+	--transition-bounce: 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+	
+	/* Easing functions */
+	--ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
 	/* Z-index Scale */
 	--z-0: 0;
@@ -509,12 +526,18 @@
 	--bg-pattern-grid: linear-gradient(rgba(66, 69, 71, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(66, 69, 71, 0.3) 1px, transparent 1px);
 	--bg-pattern-size: 20px 20px;
 
-	/* Adjust shadows for dark mode */
-	--shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-	--shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
-	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+	/* Adjust shadows for dark mode - deeper, richer depth */
+	--shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+	--shadow-sm: 0 2px 6px 0 rgba(0, 0, 0, 0.5), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+	--shadow-md: 0 4px 10px -2px rgba(0, 0, 0, 0.6), 0 2px 6px -1px rgba(0, 0, 0, 0.4);
+	--shadow-lg: 0 8px 20px -4px rgba(0, 0, 0, 0.7), 0 4px 8px -2px rgba(0, 0, 0, 0.5);
+	--shadow-xl: 0 16px 40px -8px rgba(0, 0, 0, 0.8), 0 8px 16px -4px rgba(0, 0, 0, 0.6);
+	
+	/* Colored shadows for dark mode */
+	--shadow-primary: 0 4px 12px -2px rgba(255, 107, 93, 0.3);
+	--shadow-success: 0 4px 12px -2px rgba(34, 197, 94, 0.3);
+	--shadow-warning: 0 4px 12px -2px rgba(251, 191, 36, 0.3);
+	--shadow-danger: 0 4px 12px -2px rgba(244, 63, 94, 0.3);
 
 	/* Focus shadows for dark mode */
 	--focus-shadow-primary: 0 0 0 3px rgba(255, 89, 89, 0.3);

@@ -3,28 +3,30 @@
 
 /* Base Card */
 .card {
-	background: var(--bg-secondary);
-	border: 1px solid var(--border-primary);
-	border-radius: 1rem;
+	background: var(--bg-primary);
+	border: 1.5px solid var(--border-primary);
+	border-radius: var(--radius-xl);
 	padding: 1.5rem;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	box-shadow: var(--shadow-sm);
 	position: relative;
 	overflow: hidden;
-	transition: all 0.3s ease;
+	transition: all var(--transition-base);
 }
 
 .card:hover {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	border-color: var(--border-secondary);
+	box-shadow: var(--shadow-md);
+	transform: translateY(-2px);
 }
 
-/* Card with gradient background (like compact-onboarding) */
+/* Card with gradient background */
 .card--gradient {
-	background: linear-gradient(135deg, var(--color-primary-25) 0%, var(--color-primary-75) 100%);
-	border: 1px solid var(--color-primary-200);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+	background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--bg-primary) 100%);
+	border: 1.5px solid var(--color-primary-200);
+	box-shadow: var(--shadow-md);
 }
 
-/* Subtle pattern overlay for gradient cards */
+/* Subtle texture overlay for gradient cards */
 .card--gradient::before {
 	content: '';
 	position: absolute;
@@ -32,8 +34,9 @@
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-	            radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+	background: 
+		radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+		radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
 	pointer-events: none;
 }
 
@@ -85,14 +88,15 @@
 	border: none;
 }
 
-/* Card with enhanced shadow */
+/* Card with enhanced shadow - for important content */
 .card--elevated {
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--shadow-lg);
+	border-width: 1px;
 }
 
 .card--elevated:hover {
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-	transform: translateY(-2px);
+	box-shadow: var(--shadow-xl);
+	transform: translateY(-4px);
 }
 
 /* ===== CARD STRUCTURE ===== */
@@ -134,35 +138,41 @@
 /* ===== CARD TITLES AND TEXT ===== */
 
 .card-title {
-	font-size: 1.25rem;
+	font-size: var(--text-xl);
 	font-weight: 700;
+	letter-spacing: -0.02em;
 	color: var(--text-primary);
 	margin-bottom: 0.5rem;
 	line-height: 1.3;
 }
 
 .card-title--large {
-	font-size: 1.5rem;
+	font-size: var(--text-2xl);
+	letter-spacing: -0.03em;
 }
 
 .card-title--small {
-	font-size: 1rem;
+	font-size: var(--text-lg);
 	font-weight: 600;
+	letter-spacing: -0.01em;
 }
 
 .card-description {
 	color: var(--text-secondary);
-	font-size: 0.875rem;
-	line-height: 1.5;
+	font-size: 0.9375rem;
+	line-height: 1.6;
+	letter-spacing: -0.01em;
 	margin: 0;
 }
 
 .card-description--large {
-	font-size: 1rem;
+	font-size: var(--text-base);
+	line-height: 1.6;
 }
 
 .card-description--small {
-	font-size: 0.75rem;
+	font-size: var(--text-sm);
+	line-height: 1.5;
 }
 
 /* ===== CARD ITEMS (nested cards like compact-step) ===== */

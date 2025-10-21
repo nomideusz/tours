@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './lib/styles/fonts.css';
 @import './lib/styles/variables.css';
+@import './lib/styles/professional-touches.css';
 @import './lib/styles/auth.css';
 @import './lib/styles/buttons.css';
 @import './lib/styles/forms.css';

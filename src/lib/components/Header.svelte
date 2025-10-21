@@ -121,20 +121,16 @@
 <header class="site-header">
 	<div class="site-header-container">
 		<div class="site-header-content">
-			<!-- Logo and branding -->
-			<div class="site-header-brand">
-				<Logo 
-					variant="modern" 
-					href={isAuthenticated ? '/?view=home' : '/'} 
-					showIcon={true} 
-					showIconBackground={false} 
-					iconSrc="/favicon.png" 
-					size="xl" 
-					textSize="large" 
-				/>
-				<!-- Beta Badge -->
-				<BetaBadge text="Beta" icon={FlaskConical} variant="small" class="header-beta-badge" />
-			</div>
+		<!-- Logo and branding -->
+		<div class="site-header-brand">
+			<Logo 
+				variant="modern" 
+				href={isAuthenticated ? '/?view=home' : '/'} 
+				size="xl"
+			/>
+			<!-- Beta Badge -->
+			<BetaBadge text="Beta" icon={FlaskConical} variant="small" class="header-beta-badge" />
+		</div>
 
 			<!-- Desktop Navigation -->
 			<nav class="nav-desktop">
@@ -303,22 +299,22 @@
 {/if}
 
 <style>
-	/* Site Header */
+	/* Site Header - refined and professional */
 	.site-header {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		z-index: var(--z-70);
-		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
-		border-bottom: 1px solid var(--border-primary);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		box-shadow: var(--shadow-sm);
-		transition: all var(--transition-base) ease;
+		background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
+		border-bottom: 1.5px solid var(--border-primary);
+		backdrop-filter: blur(16px) saturate(180%);
+		-webkit-backdrop-filter: blur(16px) saturate(180%);
+		box-shadow: var(--shadow-md);
+		transition: all var(--transition-base);
 	}
 
-	/* Very subtle texture overlay - matches HeroSection */
+	/* Subtle refined overlay */
 	.site-header::before {
 		content: '';
 		position: absolute;
@@ -326,12 +322,10 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.01) 40px,
-			rgba(0, 0, 0, 0.01) 41px
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			rgba(0, 0, 0, 0.01) 100%
 		);
 		pointer-events: none;
 	}
@@ -367,7 +361,7 @@
 	.site-header-brand {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 1rem;
 		height: 100%;
 	}
 
@@ -398,38 +392,30 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-weight: 600;
-		font-size: 0.875rem;
+		font-weight: 500;
+		font-size: 0.9375rem;
+		letter-spacing: -0.01em;
 		color: var(--text-secondary);
-		text-decoration: none;
-		transition: all var(--transition-base) ease;
-		padding: 0.5rem 0.75rem;
+		text-decoration: none !important;
+		transition: all var(--transition-base);
+		padding: 0.625rem 1rem;
 		border-radius: var(--radius-md);
+		border: 1.5px solid transparent;
 		position: relative;
-		overflow: hidden;
-	}
-
-	/* Subtle accent on hover */
-	.nav-link::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--primary);
-		transform: scaleX(0);
-		transition: transform var(--transition-base) ease;
-	}
-
-	.nav-link:hover::before {
-		transform: scaleX(1);
 	}
 
 	.nav-link:hover {
 		color: var(--text-primary);
 		background: var(--bg-secondary);
+		border-color: var(--border-primary);
 		transform: translateY(-1px);
+		box-shadow: var(--shadow-xs);
+	}
+
+	/* Remove underline */
+	.nav-link::after,
+	.nav-link::before {
+		display: none !important;
 	}
 
 	/* Header Actions */
