@@ -75,20 +75,11 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 			return json({ error: 'Capacity must be between 1 and 100' }, { status: 400 });
 		}
 
-		// Check for conflicts with other slots (excluding current slot)
-		const conflictingSlots = await db
-			.select({ id: timeSlots.id })
-			.from(timeSlots)
-			.where(and(
-				eq(timeSlots.tourId, tourId),
-				ne(timeSlots.id, slotId),
-				lte(timeSlots.startTime, slotEnd),
-				gte(timeSlots.endTime, slotStart)
-			));
-
-		if (conflictingSlots.length > 0) {
-			return json({ error: 'Time slot conflicts with existing slots' }, { status: 409 });
-		}
+		// Note: We allow overlapping time slots for the same tour
+		// This supports scenarios like:
+		// - Multiple guides leading the same tour
+		// - Different capacity tiers at the same time
+		// - Offering the same time slot with different options
 
 		// Map status to correct enum values
 		const slotStatus: 'available' | 'cancelled' = status === 'cancelled' ? 'cancelled' : 'available';

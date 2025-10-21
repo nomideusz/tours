@@ -194,8 +194,8 @@
 		// Check if recurring conflicts exist
 		if (recurring && (recurringConflictInfo?.conflictCount || 0) > 0) return false;
 		
-		// Check if there are any conflicts
-		if (conflicts.length > 0) return false;
+		// Note: We allow overlapping time slots - conflicts are shown as warnings but don't block creation
+		// This supports multiple guides, different capacity tiers, or offering same time with different options
 		
 		return true;
 	});

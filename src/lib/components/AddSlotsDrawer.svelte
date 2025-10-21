@@ -81,6 +81,8 @@
 	// State
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
+	let showSuccess = $state(false);
+	let successMessage = $state<string>('');
 	let formContainerRef = $state<HTMLFormElement>();
 	
 	// UI state
@@ -288,6 +290,16 @@
 			});
 			
 			if (response.ok) {
+				const data = await response.json();
+				const slotsCreated = data.slotsCreated || 1;
+				
+				// Show success message
+				successMessage = recurring 
+					? `Successfully created ${slotsCreated} recurring time slot${slotsCreated !== 1 ? 's' : ''}!`
+					: `Time slot${slotsCreated !== 1 ? 's' : ''} created successfully!`;
+				showSuccess = true;
+				error = null;
+				
 				// Invalidate schedule
 				await queryClient.invalidateQueries({
 					queryKey: queryKeys.tourSchedule(tourId)
@@ -296,9 +308,12 @@
 				// Call success callback
 				onSuccess?.();
 				
-				// Close drawer
-				isOpen = false;
-				onClose();
+				// Close drawer after showing success briefly
+				setTimeout(() => {
+					showSuccess = false;
+					isOpen = false;
+					onClose();
+				}, 1500);
 			} else {
 				const errorData = await response.json();
 				error = errorData.error || 'Failed to create time slots';
@@ -354,6 +369,13 @@
 		</div>
 	{:else if tour}
 		<form bind:this={formContainerRef} onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+			{#if showSuccess}
+				<div class="success-banner">
+					<CheckCircle class="h-5 w-5" />
+					<p>{successMessage}</p>
+				</div>
+			{/if}
+			
 			{#if error}
 				<div class="error-banner">
 					<p>{error}</p>
@@ -762,6 +784,33 @@
 </Drawer>
 
 <style>
+	.success-banner {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		padding: 1rem;
+		background: var(--color-success-50);
+		border: 1px solid var(--color-success-200);
+		border-radius: 0.5rem;
+		color: var(--color-success-700);
+		font-weight: 500;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		margin: -1rem -1rem 1rem -1rem;
+		animation: slideIn 0.3s ease;
+	}
+	
+	.success-banner :global(svg) {
+		flex-shrink: 0;
+		color: var(--color-success-600);
+	}
+	
+	.success-banner p {
+		margin: 0;
+		font-size: 0.875rem;
+	}
+	
 	.error-banner {
 		padding: 1rem;
 		background: var(--color-danger-50);
@@ -779,11 +828,23 @@
 		font-size: 0.875rem;
 	}
 	
-	/* Mobile error banner positioning */
+	/* Mobile banner positioning */
 	@media (max-width: 768px) {
+		.success-banner,
 		.error-banner {
 			margin: 0 0 1rem 0;
 			border-radius: 0.5rem;
+		}
+	}
+	
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
 		}
 	}
 
@@ -905,6 +966,7 @@
 	.time-picker-input,
 	.date-picker-input {
 		width: 100%;
+		max-width: 100%; /* Prevent overflow on mobile */
 		display: block;
 		padding: 0.75rem 1rem 0.75rem 3rem;
 		border: 2px solid var(--border-primary);
@@ -919,6 +981,8 @@
 		/* Keep native functionality, don't use appearance: none */
 		position: relative;
 		z-index: 0;
+		box-sizing: border-box; /* Include padding in width calculation */
+		overflow: hidden; /* Prevent content from expanding input */
 	}
 	
 	.time-picker-input:hover,
@@ -947,6 +1011,15 @@
 		z-index: 2;
 	}
 	
+	/* Prevent iOS from expanding inputs beyond container */
+	.time-picker-input::-webkit-datetime-edit,
+	.date-picker-input::-webkit-datetime-edit {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	
 	/* For Firefox */
 	.time-picker-input::-moz-calendar-picker-indicator,
 	.date-picker-input::-moz-calendar-picker-indicator {
@@ -966,10 +1039,29 @@
 			font-size: 1rem;
 			padding: 1rem 1rem 1rem 3rem;
 			min-height: 3rem;
+			max-width: 100%; /* Enforce width constraint on mobile */
+			overflow: hidden; /* Prevent iOS picker expansion */
+		}
+		
+		.input-wrapper {
+			max-width: 100%; /* Constrain wrapper */
+			overflow: hidden; /* Prevent wrapper expansion */
 		}
 		
 		.input-wrapper :global(.input-icon) {
 			left: 1rem;
+		}
+		
+		/* Fix grid columns on mobile to ensure equal width */
+		.grid.grid-cols-2 {
+			display: grid;
+			grid-template-columns: 1fr 1fr; /* Enforce equal columns */
+			gap: 0.75rem;
+		}
+		
+		.grid.grid-cols-2 > * {
+			min-width: 0; /* Allow grid items to shrink below content size */
+			max-width: 100%; /* Prevent overflow */
 		}
 	}
 
