@@ -136,22 +136,62 @@ export const GET: RequestHandler = async ({ url }) => {
 		const now = new Date();
 		
 		// Get next available slot for each tour
+		// Note: For private tours, we need to filter slots with bookedSpots = 0
+		// For regular tours, we filter slots where availableSpots > bookedSpots
 		let availabilityData: any[] = [];
 		if (tourIds.length > 0) {
-			availabilityData = await db
-				.select({
-					tourId: timeSlots.tourId,
-					nextSlot: sql<string>`min(${timeSlots.startTime})`.as('nextSlot'),
-					availableSlots: sql<number>`count(*)`.as('availableSlots')
-				})
-				.from(timeSlots)
-				.where(and(
-					inArray(timeSlots.tourId, tourIds),
-					eq(timeSlots.status, 'available'),
-					gte(timeSlots.startTime, now),
-					sql`${timeSlots.availableSpots} > ${timeSlots.bookedSpots}`
-				))
-				.groupBy(timeSlots.tourId);
+			// Get all tours to check pricing models
+			const tourPricingModels = new Map(
+				publicTours.map(t => [t.id, t.pricingModel])
+			);
+			
+			// Get availability for regular tours (not private)
+			const regularTourIds = publicTours
+				.filter(t => t.pricingModel !== 'private_tour')
+				.map(t => t.id);
+			
+			// Get availability for private tours
+			const privateTourIds = publicTours
+				.filter(t => t.pricingModel === 'private_tour')
+				.map(t => t.id);
+			
+			// Query for regular tours (availableSpots > bookedSpots)
+			if (regularTourIds.length > 0) {
+				const regularData = await db
+					.select({
+						tourId: timeSlots.tourId,
+						nextSlot: sql<string>`min(${timeSlots.startTime})`.as('nextSlot'),
+						availableSlots: sql<number>`count(*)`.as('availableSlots')
+					})
+					.from(timeSlots)
+					.where(and(
+						inArray(timeSlots.tourId, regularTourIds),
+						eq(timeSlots.status, 'available'),
+						gte(timeSlots.startTime, now),
+						sql`${timeSlots.availableSpots} > ${timeSlots.bookedSpots}`
+					))
+					.groupBy(timeSlots.tourId);
+				availabilityData.push(...regularData);
+			}
+			
+			// Query for private tours (bookedSpots = 0, meaning no bookings yet)
+			if (privateTourIds.length > 0) {
+				const privateData = await db
+					.select({
+						tourId: timeSlots.tourId,
+						nextSlot: sql<string>`min(${timeSlots.startTime})`.as('nextSlot'),
+						availableSlots: sql<number>`count(*)`.as('availableSlots')
+					})
+					.from(timeSlots)
+					.where(and(
+						inArray(timeSlots.tourId, privateTourIds),
+						eq(timeSlots.status, 'available'),
+						gte(timeSlots.startTime, now),
+						sql`${timeSlots.bookedSpots} = 0` // Private tours: only show unbooked slots
+					))
+					.groupBy(timeSlots.tourId);
+				availabilityData.push(...privateData);
+			}
 		}
 
 		// Create availability map

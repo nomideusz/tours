@@ -47,46 +47,58 @@ export const GET: RequestHandler = async ({ params }) => {
 		futureDate.setDate(futureDate.getDate() + 30);
 		const now = new Date();
 		
-		const availableTimeSlots = await db
-			.select({
-				id: timeSlots.id,
-				tourId: timeSlots.tourId,
-				startTime: timeSlots.startTime,
-				endTime: timeSlots.endTime,
-				availableSpots: timeSlots.availableSpots,
-				bookedSpots: timeSlots.bookedSpots
-			})
-			.from(timeSlots)
-			.innerJoin(tours, eq(timeSlots.tourId, tours.id))
-		.where(and(
-			eq(tours.userId, profileUser.id),
-			eq(tours.status, 'active'),
-			eq(tours.publicListing, true),
-			gte(timeSlots.startTime, now),
-			eq(timeSlots.status, 'available')
-		))
-			.orderBy(timeSlots.startTime)
-			.limit(50);
+	const availableTimeSlots = await db
+		.select({
+			id: timeSlots.id,
+			tourId: timeSlots.tourId,
+			tourPricingModel: tours.pricingModel,
+			startTime: timeSlots.startTime,
+			endTime: timeSlots.endTime,
+			availableSpots: timeSlots.availableSpots,
+			bookedSpots: timeSlots.bookedSpots
+		})
+		.from(timeSlots)
+		.innerJoin(tours, eq(timeSlots.tourId, tours.id))
+	.where(and(
+		eq(tours.userId, profileUser.id),
+		eq(tours.status, 'active'),
+		eq(tours.publicListing, true),
+		gte(timeSlots.startTime, now),
+		eq(timeSlots.status, 'available')
+	))
+		.orderBy(timeSlots.startTime)
+		.limit(50);
+	
+	// Group time slots by tour and filter available ones
+	// For private tours: only show slots with no bookings (exclusive)
+	// For regular tours: show slots with available capacity
+	const tourTimeSlots = availableTimeSlots.reduce((acc, slot) => {
+		if (!acc[slot.tourId]) {
+			acc[slot.tourId] = [];
+		}
 		
-		// Group time slots by tour and filter available ones
-		const tourTimeSlots = availableTimeSlots.reduce((acc, slot) => {
-			if (!acc[slot.tourId]) {
-				acc[slot.tourId] = [];
-			}
-			
-			// Only include slots that have available spots
-			if ((slot.availableSpots || 0) > (slot.bookedSpots || 0)) {
-				acc[slot.tourId].push({
-					id: slot.id,
-					startTime: slot.startTime.toISOString(),
-					endTime: slot.endTime.toISOString(),
-					availableSpots: slot.availableSpots,
-					bookedSpots: slot.bookedSpots || 0
-				});
-			}
-			
-			return acc;
-		}, {} as Record<string, any[]>);
+		const isPrivateTour = slot.tourPricingModel === 'private_tour';
+		const bookedSpots = slot.bookedSpots || 0;
+		const availableSpots = slot.availableSpots || 0;
+		
+		// Private tours: only show if no bookings yet (exclusive)
+		// Regular tours: show if capacity available
+		const isAvailable = isPrivateTour 
+			? bookedSpots === 0 
+			: availableSpots > bookedSpots;
+		
+		if (isAvailable) {
+			acc[slot.tourId].push({
+				id: slot.id,
+				startTime: slot.startTime.toISOString(),
+				endTime: slot.endTime.toISOString(),
+				availableSpots: slot.availableSpots,
+				bookedSpots: slot.bookedSpots || 0
+			});
+		}
+		
+		return acc;
+	}, {} as Record<string, any[]>);
 		
 		// Return customer-focused profile data
 		return json({

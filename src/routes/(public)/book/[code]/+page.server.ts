@@ -153,6 +153,18 @@ export const actions: Actions = {
 				});
 			}
 
+			// Private tour check: If this is a private tour and ANY booking exists, it's unavailable
+			const isPrivateTour = tour.pricingModel === 'private_tour';
+			if (isPrivateTour && (timeSlot.bookedSpots || 0) > 0) {
+				return fail(400, {
+					error: 'This private tour time slot is no longer available',
+					customerName,
+					customerEmail,
+					customerPhone,
+					specialRequests
+				});
+			}
+
 			// Calculate participants that count toward capacity
 			// This respects the countsTowardCapacity setting on each category (e.g., infants)
 			let participantsThatCount = participants; // Default to total

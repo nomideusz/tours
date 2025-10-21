@@ -105,9 +105,23 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			))
 			.orderBy(timeSlots.startTime);
 		
-		// Filter only available slots (not overbooked)
+		// Filter only available slots
+		// For private tours: exclude slots with any bookings (private = exclusive)
+		// For regular tours: exclude overbooked slots
+		const isPrivateTour = tour.pricingModel === 'private_tour';
 		const availableSlots = timeSlotData
-			.filter(slot => (slot.availableSpots || 0) > (slot.bookedSpots || 0))
+			.filter(slot => {
+				const bookedSpots = slot.bookedSpots || 0;
+				const availableSpots = slot.availableSpots || 0;
+				
+				// Private tours: unavailable if ANY booking exists (exclusive)
+				if (isPrivateTour) {
+					return bookedSpots === 0;
+				}
+				
+				// Regular tours: unavailable if overbooked
+				return availableSpots > bookedSpots;
+			})
 			.map(slot => ({
 				id: slot.id,
 				startTime: slot.startTime.toISOString(),
