@@ -158,6 +158,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				groupPricingTiers: tour.groupPricingTiers,
 				groupDiscounts: tour.groupDiscounts,
 				optionalAddons: tour.optionalAddons,
+				guidePaysStripeFee: tour.guidePaysStripeFee,
+				countInfantsTowardCapacity: tour.countInfantsTowardCapacity,
 				qrCode: tour.qrCode,
 				scans: tour.qrScans || 0,
 				conversions: tour.qrConversions || 0,
