@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Tour, GroupPricingTier, OptionalAddon } from '$lib/types.js';
-	import { calculateBookingPrice } from '$lib/utils/pricing-calculations.js';
+	import { calculateBookingPrice, STRIPE_FEES } from '$lib/utils/pricing-calculations.js';
 	import { getCategoryDisplayLabel } from '$lib/utils/category-age-ranges.js';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Plus from 'lucide-svelte/icons/plus';
@@ -16,6 +16,7 @@
 		selectedTier?: GroupPricingTier | null;
 		selectedAddonIds: string[];
 		currencySymbol: string;
+		currency?: string;
 		isPrivateTour?: boolean;
 	}
 
@@ -28,6 +29,7 @@
 		selectedTier,
 		selectedAddonIds = [],
 		currencySymbol,
+		currency = 'EUR',
 		isPrivateTour = false
 	}: Props = $props();
 
@@ -64,8 +66,9 @@
 			
 			const subtotal = tour.privateTour.flatPrice + addonsTotal;
 			
-			// Calculate Stripe fee (even for private tours)
-			const stripeFee = subtotal * 0.015 + 0.25; // Default EUR fees, will be accurate with currency
+			// Calculate Stripe fee using actual currency
+			const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
+			const stripeFee = subtotal * (fees.percentage / 100) + fees.fixed;
 			const guidePaysStripeFee = tour.guidePaysStripeFee || false;
 			
 			return {
@@ -84,8 +87,7 @@
 			};
 		}
 		
-		// Use calculateBookingPrice which now includes Stripe fees
-		// TODO: Pass actual currency from tour owner
+		// Use calculateBookingPrice with actual currency from tour owner
 		return calculateBookingPrice(
 			tour,
 			participants,
@@ -93,7 +95,7 @@
 			adultParticipants,
 			childParticipants,
 			participantCounts,
-			'EUR' // Will be replaced with actual currency
+			currency
 		);
 	});
 

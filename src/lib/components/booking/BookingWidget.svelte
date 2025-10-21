@@ -411,6 +411,7 @@
 								{selectedAddonIds}
 								isPrivateTour={tour.pricingModel === 'private_tour' && isPrivateTour}
 								currencySymbol={tourOwner?.currency === 'PLN' ? 'zł' : tourOwner?.currency === 'EUR' ? '€' : '$'}
+								currency={tourOwner?.currency || 'EUR'}
 							/>
 						</div>
 					{/if}

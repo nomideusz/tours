@@ -22,7 +22,7 @@
 	import TourHeroSection from '$lib/components/booking/TourHeroSection.svelte';
 	import TourDetailsTabs from '$lib/components/booking/TourDetailsTabs.svelte';
 	import BookingWidget from '$lib/components/booking/BookingWidget.svelte';
-	import { calculateBookingPrice } from '$lib/utils/pricing-calculations.js';
+	import { calculateBookingPrice, STRIPE_FEES } from '$lib/utils/pricing-calculations.js';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
@@ -162,12 +162,24 @@
 					.reduce((sum: number, addon: any) => sum + addon.price, 0)
 				: 0;
 			
+			const subtotal = tour.privateTour.flatPrice + addonsTotal;
+			
+			// Calculate Stripe fee using actual currency
+			const currency = tourOwner?.currency || 'EUR';
+			const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
+			const stripeFee = subtotal * (fees.percentage / 100) + fees.fixed;
+			const guidePaysStripeFee = tour.guidePaysStripeFee || false;
+			
 			return {
 				basePrice: tour.privateTour.flatPrice,
 				discountedBase: tour.privateTour.flatPrice,
 				addonsTotal,
 				groupDiscount: 0,
-				totalAmount: tour.privateTour.flatPrice + addonsTotal,
+				subtotal,
+				stripeFee,
+				totalAmount: guidePaysStripeFee ? subtotal : subtotal + stripeFee,
+				guideReceives: guidePaysStripeFee ? subtotal - stripeFee : subtotal,
+				guidePaysStripeFee,
 				categoryBreakdown: null,
 				selectedTier: null,
 				errors: []
@@ -180,7 +192,8 @@
 			selectedAddonIds,
 			adultParticipants,
 			childParticipants,
-			participantCounts
+			participantCounts,
+			tourOwner?.currency || 'EUR'
 		);
 	});
 	
