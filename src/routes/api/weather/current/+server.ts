@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { createWeatherService, type LocationCoordinates } from '$lib/utils/weather-integration.js';
-import { OPENWEATHER_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const lat = url.searchParams.get('lat');
@@ -11,7 +11,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json({ error: 'Latitude and longitude are required' }, { status: 400 });
 	}
 	
-	if (!OPENWEATHER_API_KEY) {
+	const apiKey = env.OPENWEATHER_API_KEY || env.PUBLIC_OPENWEATHER_API_KEY;
+	
+	if (!apiKey) {
 		return json({ error: 'Weather API not configured' }, { status: 503 });
 	}
 	
@@ -21,7 +23,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			lng: parseFloat(lng)
 		};
 		
-		const weatherService = createWeatherService(OPENWEATHER_API_KEY);
+		const weatherService = createWeatherService('openweather', apiKey);
 		const weather = await weatherService.getCurrentWeather(coordinates);
 		
 		if (!weather) {
@@ -29,7 +31,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 		
 		// Get suitability assessment
-		const suitability = weatherService.isWeatherSuitableForTours(weather);
+		const suitability = weather ? weatherService.isWeatherSuitableForTours(weather) : null;
 		
 		return json({
 			weather,
