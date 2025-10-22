@@ -317,7 +317,9 @@
 				<TourHeroSection 
 					{tour} 
 					tourGuide={tourOwner}
-					imageUrl={imageUrl || undefined} 
+					imageUrl={imageUrl || undefined}
+					{tourCoordinates}
+					googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
 				/>
 				
 				<!-- Tour Details -->

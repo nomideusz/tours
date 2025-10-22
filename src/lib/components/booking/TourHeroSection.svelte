@@ -2,7 +2,10 @@
 	import type { Tour } from '$lib/types.js';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import User from 'lucide-svelte/icons/user';
+	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
+	import TourLocationMap from './TourLocationMap.svelte';
 	
 	interface TourGuide {
 		username?: string;
@@ -13,9 +16,19 @@
 		tour: Tour;
 		tourGuide?: TourGuide | null;
 		imageUrl?: string;
+		tourCoordinates?: { lat: number; lng: number } | null;
+		googleMapsApiKey?: string;
 	}
 	
-	let { tour, tourGuide, imageUrl }: Props = $props();
+	let { 
+		tour, 
+		tourGuide, 
+		imageUrl,
+		tourCoordinates = null,
+		googleMapsApiKey = ''
+	}: Props = $props();
+	
+	let showMap = $state(false);
 </script>
 
 <!-- Hero Image -->
@@ -50,9 +63,33 @@
 	
 	<!-- Quick Info Bar -->
 	{#if tour.location}
-		<div class="flex items-center gap-2 mb-4 text-sm">
-			<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
-			<span style="color: var(--text-secondary);">{tour.location}</span>
+		<div class="mb-4">
+			<button
+				type="button"
+				onclick={() => showMap = !showMap}
+				class="flex items-center gap-2 text-sm hover:underline"
+			>
+				<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
+				<span style="color: var(--text-secondary);">{tour.location}</span>
+				{#if tourCoordinates && googleMapsApiKey}
+					{#if showMap}
+						<ChevronDown class="w-3 h-3" style="color: var(--text-tertiary);" />
+					{:else}
+						<ChevronRight class="w-3 h-3" style="color: var(--text-tertiary);" />
+					{/if}
+				{/if}
+			</button>
+			
+			<!-- Compact Map (Collapsible) -->
+			{#if showMap && tourCoordinates && googleMapsApiKey}
+				<div class="mt-3">
+					<TourLocationMap
+						coordinates={tourCoordinates}
+						locationName={tour.location}
+						googleMapsApiKey={googleMapsApiKey}
+					/>
+				</div>
+			{/if}
 		</div>
 	{/if}
 	

@@ -247,36 +247,38 @@
 								{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
 							</h3>
 							{#if selectedTimeSlot}
-								<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<div class="flex items-center gap-3">
-										<div class="text-sm">
-											<div style="color: var(--text-primary);">
-												{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
-													weekday: 'short', 
-													month: 'short', 
-													day: 'numeric' 
-												})}
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex items-start justify-between">
+										<div class="text-sm flex-1">
+											<div class="flex items-center gap-2 flex-wrap">
+												<span style="color: var(--text-primary);">
+													{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
+														weekday: 'short', 
+														month: 'short', 
+														day: 'numeric' 
+													})}
+												</span>
+												<!-- Compact Weather Display (inline after date) -->
+												{#if tourCoordinates}
+													<CompactWeatherDisplay
+														coordinates={tourCoordinates}
+														tourDateTime={new Date(selectedTimeSlot.startTime)}
+													/>
+												{/if}
 											</div>
-											<div style="color: var(--text-secondary);">
+											<div class="mt-0.5" style="color: var(--text-secondary);">
 												{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
 											</div>
 										</div>
-										<!-- Compact Weather Display (inline, prevents layout shift) -->
-										{#if tourCoordinates}
-											<CompactWeatherDisplay
-												coordinates={tourCoordinates}
-												tourDateTime={new Date(selectedTimeSlot.startTime)}
-											/>
-										{/if}
+										<button 
+											type="button"
+											onclick={() => onSlotSelect(null)}
+											class="text-sm underline flex-shrink-0 ml-3"
+											style="color: var(--color-primary-600);"
+										>
+											Change
+										</button>
 									</div>
-									<button 
-										type="button"
-										onclick={() => onSlotSelect(null)}
-										class="text-sm underline flex-shrink-0"
-										style="color: var(--color-primary-600);"
-									>
-										Change
-									</button>
 								</div>
 							{:else}
 								<BookingCalendar 
