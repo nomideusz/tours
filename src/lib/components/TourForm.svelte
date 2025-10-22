@@ -595,8 +595,19 @@ Key extracted components:
 	// Store for optional custom notes (separate from auto-generated rules)
 	let customPolicyNotes = $state('');
 	
+	// Validate and constrain custom policy hours
+	function validateCustomHours(hours: number): number {
+		// Constrain to reasonable bounds
+		if (hours < 1) return 1;
+		if (hours > 168) return 168; // Max 7 days (1 week)
+		return Math.floor(hours); // Ensure integer
+	}
+	
 	// Update policy ID when custom hours change
 	function updateCustomPolicyId() {
+		// Validate hours before using
+		customPolicyHours = validateCustomHours(customPolicyHours);
+		
 		formData.cancellationPolicyId = `custom_${customPolicyHours}`;
 		
 		// Generate policy text from the hours value (auto-generated, not editable)
@@ -627,14 +638,9 @@ Key extracted components:
 		}
 	});
 
-	// Track if initialization has run to prevent loops
-	let policyInitialized = $state(false);
-	
 	// Initialize policy template selection based on existing policy
+	// Watch cancellationPolicyId to update when tour data loads
 	$effect(() => {
-		// Only run once when formData is loaded
-		if (policyInitialized) return;
-		
 		// Check if it's a custom policy (format: "custom_24")
 		if (formData.cancellationPolicyId?.startsWith('custom_')) {
 			const hours = parseInt(formData.cancellationPolicyId.split('_')[1]);
@@ -644,59 +650,30 @@ Key extracted components:
 				customPolicyHours = hours;
 				
 				// Extract custom notes if they exist in the policy text
-				if (formData.cancellationPolicy.includes('Additional Information:')) {
+				if (formData.cancellationPolicy?.includes('Additional Information:')) {
 					const parts = formData.cancellationPolicy.split('Additional Information:');
 					if (parts[1]) {
 						customPolicyNotes = parts[1].trim();
 					}
 				}
-				
-				policyInitialized = true;
 				return;
 			}
 		}
 		
 		// If we have a predefined policyId, use that
-		if (formData.cancellationPolicyId && formData.cancellationPolicyId !== 'custom') {
+		if (formData.cancellationPolicyId && !formData.cancellationPolicyId.startsWith('custom_')) {
 			const matchingTemplate = policyTemplates.find(t => t.id === formData.cancellationPolicyId);
 			if (matchingTemplate) {
 				selectedPolicyTemplate = formData.cancellationPolicyId;
 				showCustomPolicy = false;
-				policyInitialized = true;
 				return;
 			}
 		}
 		
-		// Otherwise, try to match by text (backward compatibility)
-		if (formData.cancellationPolicy && !selectedPolicyTemplate && !showCustomPolicy) {
-			// Check if current policy matches any template
-			const matchingTemplate = policyTemplates.find(t => t.policy === formData.cancellationPolicy);
-			if (matchingTemplate) {
-				selectedPolicyTemplate = matchingTemplate.id;
-				formData.cancellationPolicyId = matchingTemplate.id;
-				showCustomPolicy = false;
-				policyInitialized = true;
-			} else if (formData.cancellationPolicy.trim()) {
-				// Unknown custom policy - default to custom with 24h
-				selectedPolicyTemplate = '';
-				showCustomPolicy = true;
-				customPolicyHours = 24;
-				updateCustomPolicyId();
-				policyInitialized = true;
-			}
-			return;
-		}
-		
-		// Set default if no policy set
-		if (!formData.cancellationPolicyId && !formData.cancellationPolicy) {
-			formData.cancellationPolicyId = 'flexible';
+		// Set default if no policy set (new tour)
+		if (!formData.cancellationPolicyId) {
 			selectedPolicyTemplate = 'flexible';
 			showCustomPolicy = false;
-			const defaultTemplate = policyTemplates.find(t => t.id === 'flexible');
-			if (defaultTemplate) {
-				formData.cancellationPolicy = defaultTemplate.policy;
-			}
-			policyInitialized = true;
 		}
 	});
 
@@ -1319,11 +1296,15 @@ Key extracted components:
 												step="1"
 												class="form-input"
 												style="max-width: 100px;"
+												onblur={() => { customPolicyHours = validateCustomHours(customPolicyHours); }}
 											/>
 											<span class="text-sm" style="color: var(--text-secondary);">hours before tour</span>
 										</div>
 										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-											Common: 2h (very flexible), 24h (standard), 48h (moderate), 168h (7 days, strict)
+											Range: 1-168 hours (1 hour to 7 days)
+										</p>
+										<p class="text-xs mt-0.5" style="color: var(--text-tertiary);">
+											Common: 2h, 12h, 24h, 48h, 72h, 168h
 										</p>
 									</div>
 									
