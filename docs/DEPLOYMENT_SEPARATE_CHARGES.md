@@ -82,8 +82,9 @@ git push origin master
    - ✅ `payment_intent.payment_failed`
    - ✅ `payment_intent.canceled`
    - ✅ `charge.refunded` (new - for refund notifications)
-   - ✅ `transfer.created` (new - for transfer tracking)
-   - ✅ `transfer.failed` (new - for transfer failures)
+   - ✅ `transfer.created` (optional - for transfer tracking)
+   - ✅ `transfer.updated` (optional - for status updates)
+   - ✅ `transfer.reversed` (optional - for reversal notifications)
 
 6. Copy the webhook signing secret → Update `STRIPE_WEBHOOK_SECRET` in env
 

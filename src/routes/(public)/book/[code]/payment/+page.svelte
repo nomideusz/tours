@@ -173,59 +173,34 @@
 				}
 				
 				const paymentResponse = await response.json();
-				const { clientSecret: paymentClientSecret, connectedAccountId, paymentType } = paymentResponse;
+				const { clientSecret: paymentClientSecret } = paymentResponse;
 				
 				// Save clientSecret for later use
 				clientSecret = paymentClientSecret;
 				
-				// Initialize Stripe Elements based on payment type
+				console.log('Initializing Stripe Elements for platform payment (Separate Charges + Transfers)');
+				console.log('Amount:', data.booking.totalAmount, 'Currency:', data.tourOwner.currency);
+				
+				// Initialize Stripe Elements with platform account
+				// With Separate Charges, all payments go through platform account
 				const elementsOptions: any = {
 					clientSecret: paymentClientSecret,
 					appearance: getStripeAppearance()
 				};
 				
-				if (paymentType === 'platform_collected') {
-					// Platform collection - use main platform Stripe account
-					console.log('Initializing platform payment collection for cross-border tour guide');
-					elements = stripe.elements(elementsOptions);
-					
-					// Show informational message about platform collection
-					if (paymentResponse.message) {
-						console.log('Payment info:', paymentResponse.message);
-					}
-				} else if (connectedAccountId) {
-					// Direct payment - use connected account
-					console.log('Initializing payment for direct charge to tour guide account:', connectedAccountId);
-					// Create a new Stripe instance for the connected account
-					const connectedStripe = await loadStripe(stripePublicKey, {
-						stripeAccount: connectedAccountId
-					});
-					
-					if (!connectedStripe) {
-						throw new Error('Failed to initialize connected account payment');
-					}
-					
-					// Use the connected account Stripe instance
-					stripe = connectedStripe;
-					elements = stripe.elements(elementsOptions);
-				} else {
-					// Fallback to platform account
-					console.warn('No connected account ID - using platform account');
-					elements = stripe.elements(elementsOptions);
-				}
+				elements = stripe.elements(elementsOptions);
 				
 				// Create payment element with all payment methods enabled
-				paymentElement = (elements as any).create('payment', {
-					layout: 'accordion', // Use accordion to show all payment methods clearly
-					// All payment methods will be shown based on what's enabled for the connected account
+				paymentElement = elements.create('payment', {
+					layout: 'accordion',
 					fields: {
 						billingDetails: {
-							address: 'auto' // Simplified address collection mode
+							address: 'auto'
 						}
 					}
 				});
 				
-				// Mount the card payment element
+				// Mount the payment element
 				mounted = true;
 				isInitializing = false;
 				await new Promise(resolve => setTimeout(resolve, 0)); // Wait for DOM update
@@ -233,9 +208,9 @@
 				const container = document.getElementById('payment-element');
 				if (container) {
 					paymentElement.mount(container);
-					console.log('Payment element mounted successfully');
-					console.log('Connected account ID:', connectedAccountId);
-					console.log('Currency:', data.tourOwner.currency);
+					console.log('✅ Payment element mounted successfully');
+				} else {
+					throw new Error('Payment element container not found');
 				}
 			} catch (err) {
 				console.error('Payment initialization error:', err);
