@@ -247,8 +247,8 @@
 								{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
 							</h3>
 							{#if selectedTimeSlot}
-								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<div class="flex items-center justify-between mb-2">
+								<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex items-center gap-3">
 										<div class="text-sm">
 											<div style="color: var(--text-primary);">
 												{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
@@ -261,22 +261,22 @@
 												{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
 											</div>
 										</div>
-										<button 
-											type="button"
-											onclick={() => onSlotSelect(null)}
-											class="text-sm underline"
-											style="color: var(--color-primary-600);"
-										>
-											Change
-										</button>
+										<!-- Compact Weather Display (inline, prevents layout shift) -->
+										{#if tourCoordinates}
+											<CompactWeatherDisplay
+												coordinates={tourCoordinates}
+												tourDateTime={new Date(selectedTimeSlot.startTime)}
+											/>
+										{/if}
 									</div>
-									<!-- Compact Weather Display -->
-									{#if tourCoordinates}
-										<CompactWeatherDisplay
-											coordinates={tourCoordinates}
-											tourDateTime={new Date(selectedTimeSlot.startTime)}
-										/>
-									{/if}
+									<button 
+										type="button"
+										onclick={() => onSlotSelect(null)}
+										class="text-sm underline flex-shrink-0"
+										style="color: var(--color-primary-600);"
+									>
+										Change
+									</button>
 								</div>
 							{:else}
 								<BookingCalendar 
