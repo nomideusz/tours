@@ -35,7 +35,7 @@ export const GET: RequestHandler = async ({ request }) => {
         bookingId: bookings.id,
         bookingAmount: bookings.totalAmount,
         bookingReference: bookings.bookingReference,
-        bookingStatus: bookings.status,
+        status: bookings.status, // Fixed: was bookingStatus, needs to be status for isReadyForTransfer
         paymentStatus: bookings.paymentStatus,
         paymentId: bookings.paymentId,
         transferScheduledFor: bookings.transferScheduledFor,
@@ -68,7 +68,7 @@ export const GET: RequestHandler = async ({ request }) => {
       console.log('🔍 Sample booking details:');
       pendingTransfers.slice(0, 3).forEach((booking, idx) => {
         console.log(`  [${idx + 1}] ${booking.bookingReference}:`);
-        console.log(`      Status: ${booking.bookingStatus}, Payment: ${booking.paymentStatus}`);
+        console.log(`      Status: ${booking.status}, Payment: ${booking.paymentStatus}`);
         console.log(`      TransferID: ${booking.transferId}, Scheduled: ${booking.transferScheduledFor}`);
         console.log(`      Guide: ${booking.guideName}, StripeID: ${booking.guideStripeAccountId}`);
         console.log(`      PaymentID: ${booking.paymentId}`);
@@ -112,7 +112,7 @@ export const GET: RequestHandler = async ({ request }) => {
         console.log(`   🔍 isReadyForTransfer check: ${readyCheck}`);
         if (!readyCheck) {
           console.warn(`   ⚠️ Booking ${booking.bookingReference} not ready for transfer (status check failed)`);
-          console.warn(`      - Status: ${booking.bookingStatus}, Payment: ${booking.paymentStatus}`);
+          console.warn(`      - Status: ${booking.status}, Payment: ${booking.paymentStatus}`);
           console.warn(`      - TransferID: ${booking.transferId}, Scheduled: ${booking.transferScheduledFor}`);
           continue;
         }
