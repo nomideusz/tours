@@ -855,27 +855,26 @@
 					<div class="p-4 sm:p-6 space-y-3">
 						<!-- Status Update Form -->
 						<div class="space-y-3">
+							<label for="quick-status-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+								Quick Status Change
+							</label>
 							<select 
+								id="quick-status-select"
 								name="status" 
 								value={booking.status}
 								onchange={async (e) => {
 									const target = e.target as HTMLSelectElement;
-									if (target.value === 'cancelled') {
-										newStatus = target.value;
-										showStatusModal = true;
-									} else {
-										// For non-cancellation status changes, update directly
-										newStatus = target.value;
-										
-										// Wait for DOM to update before submitting
-										await tick();
-										
-										// Submit form programmatically
-										const form = document.getElementById('status-update-form') as HTMLFormElement;
-										if (form) {
-											console.log('Submitting form with status:', newStatus);
-											form.requestSubmit();
-										}
+									// Direct status change (no modal needed)
+									newStatus = target.value;
+									
+									// Wait for DOM to update before submitting
+									await tick();
+									
+									// Submit form programmatically
+									const form = document.getElementById('status-update-form') as HTMLFormElement;
+									if (form) {
+										console.log('Submitting form with status:', newStatus);
+										form.requestSubmit();
 									}
 								}}
 								class="form-select form-select--small w-full"
@@ -883,9 +882,13 @@
 							>
 								<option value="pending">Pending</option>
 								<option value="confirmed">Confirmed</option>
-								<option value="cancelled">Cancelled</option>
 								<option value="completed">Completed</option>
+								<option value="no_show">No Show</option>
 							</select>
+							
+							<p class="text-xs" style="color: var(--text-tertiary);">
+								To cancel with refund, use the Cancel Booking section below
+							</p>
 							
 							<!-- Hidden form for non-cancellation status updates -->
 							<form id="status-update-form" method="POST" action="?/updateStatus" class="hidden"
@@ -1106,10 +1109,11 @@
 					<input type="hidden" name="id" value={booking.id} />
 					
 					<div>
-						<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
-							New Status
+						<label for="modal-status-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+							Update Status
 						</label>
 						<select 
+							id="modal-status-select"
 							name="status" 
 							bind:value={newStatus}
 							class="form-select w-full"
@@ -1117,62 +1121,14 @@
 						>
 							<option value="pending">Pending</option>
 							<option value="confirmed">Confirmed</option>
-							<option value="cancelled">Cancelled</option>
 							<option value="completed">Completed</option>
+							<option value="no_show">No Show</option>
 						</select>
+						
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							To cancel this booking with refund calculation, use the "Cancel Booking" section below.
+						</p>
 					</div>
-					
-					{#if newStatus === 'cancelled'}
-						<div class="rounded-lg p-4" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-start gap-3">
-								<AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
-								<div class="flex-1">
-									<p class="font-medium" style="color: var(--color-warning-900);">
-										Cancelling this booking will:
-									</p>
-									<ul class="mt-2 space-y-1 text-sm" style="color: var(--color-warning-700);">
-										<li>• Send a cancellation email to the customer</li>
-										<li>• Process a full refund automatically</li>
-										<li>• Free up the spot for other customers</li>
-									</ul>
-								</div>
-							</div>
-						</div>
-						
-						<div>
-							<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
-								Cancellation Reason
-							</label>
-							<select 
-								name="cancellationReason" 
-								bind:value={cancellationReason}
-								class="form-select w-full"
-								style="cursor: pointer;"
-							>
-								<option value="weather">Weather Conditions</option>
-								<option value="illness">Guide Illness</option>
-								<option value="emergency">Emergency</option>
-								<option value="low_enrollment">Low Enrollment</option>
-								<option value="other">Other</option>
-							</select>
-						</div>
-						
-						<div>
-							<label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
-								Custom Message (Optional)
-							</label>
-							<textarea
-								name="customMessage"
-								bind:value={customMessage}
-								rows={3}
-								placeholder="Add a personal message to the customer..."
-								class="form-textarea w-full resize-none"
-							></textarea>
-							<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-								This message will be included in the cancellation email
-							</p>
-						</div>
-					{/if}
 					
 					{#if error}
 						<div class="rounded-lg p-3" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">

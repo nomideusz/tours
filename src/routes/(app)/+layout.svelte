@@ -256,10 +256,10 @@
 				badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
 			},
 			{
-				name: 'Transfers',
-				href: '/transfers',
-				icon: DollarSign,
-				active: currentPath === '/transfers'
+				name: 'Scanner',
+				href: '/checkin-scanner',
+				icon: QrCode,
+				active: currentPath === '/checkin-scanner'
 			},
 			{
 				name: 'Tours',
@@ -284,6 +284,12 @@
 			href: '/profile',
 			icon: User,
 			description: 'Edit your profile'
+		},
+		{
+			name: 'Transfers',
+			href: '/transfers',
+			icon: DollarSign,
+			description: 'Payment transfers'
 		},
 		{
 			name: 'Marketing',
