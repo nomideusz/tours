@@ -19,9 +19,12 @@ export function calculateTransferTime(
   const now = new Date();
   
   // Non-refundable policy = transfer immediately (no refund risk)
+  // Add 2-minute buffer to ensure database write completes and cron can pick it up
   if (policyId === 'nonRefundable') {
-    console.log('💸 Non-refundable policy - scheduling immediate transfer');
-    return now;
+    console.log('💸 Non-refundable policy - scheduling immediate transfer (2min delay)');
+    const immediateTransfer = new Date(now);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
+    return immediateTransfer;
   }
   
   // Parse custom policies (format: "custom_24" for 24 hours)
@@ -42,9 +45,12 @@ export function calculateTransferTime(
   const transferTime = new Date(startTime);
   transferTime.setHours(transferTime.getHours() - maxRefundHours - 1);
   
-  // Don't transfer in the past - if calculation puts us in past, transfer now
+  // Don't transfer in the past - if calculation puts us in past, transfer soon
+  // Add 2-minute buffer to ensure database write completes and cron can pick it up
   if (transferTime < now) {
-    return now;
+    const immediateTransfer = new Date(now);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
+    return immediateTransfer;
   }
   
   return transferTime;
@@ -77,10 +83,12 @@ export function getOptimalTransferTime(
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
   const completionTime = calculateTourCompletionTime(startTime, tourDuration);
   
-  // Tour already completed - transfer immediately
+  // Tour already completed - transfer immediately (with 2min buffer)
   if (now >= completionTime && bookingStatus === 'completed') {
+    const immediateTransfer = new Date(now);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
     return {
-      transferTime: now,
+      transferTime: immediateTransfer,
       reason: 'Tour completed',
       immediate: true
     };
