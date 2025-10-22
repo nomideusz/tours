@@ -377,6 +377,7 @@ export const actions: Actions = {
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: formData.get('cancellationPolicy'),
+        cancellationPolicyId: formData.get('cancellationPolicyId') || 'flexible',
         // Pricing configuration
         pricingModel,
         enablePricingTiers,
@@ -541,6 +542,7 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          cancellationPolicyId: (sanitizedData.cancellationPolicyId as string) || 'flexible',
           // Pricing configuration
           pricingModel: (pricingModel as 'per_person' | 'group_tiers' | 'participant_categories' | 'private_tour') || 'participant_categories',
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),
@@ -616,6 +618,7 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          cancellationPolicyId: (sanitizedData.cancellationPolicyId as string) || 'flexible',
           // Pricing configuration
           pricingModel: (pricingModel as 'per_person' | 'group_tiers' | 'participant_categories' | 'private_tour') || 'participant_categories',
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),

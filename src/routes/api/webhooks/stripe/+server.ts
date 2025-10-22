@@ -8,6 +8,7 @@ import { bookings, payments, tours, timeSlots, users } from '$lib/db/schema/inde
 import { eq } from 'drizzle-orm';
 import { broadcastBookingNotification } from '$lib/notifications/server.js';
 import { updateUserSubscription, incrementBookingUsage } from '$lib/stripe-subscriptions.server.js';
+import { calculateTransferTime } from '$lib/payment-transfers.js';
 
 export const POST: RequestHandler = async ({ request }) => {
   const body = await request.text();
@@ -118,8 +119,41 @@ export const POST: RequestHandler = async ({ request }) => {
           
           console.log(`Webhook: Booking confirmed successfully: ${bookingId} - Status: confirmed, Payment: paid, Ticket: ${ticketQRCode}`);
 
-          // No need to transfer payment - with direct charges, the payment already went to the tour guide!
-          // This is the beauty of the no-commission model - simpler and cleaner
+          // Schedule transfer to tour guide after cancellation window
+          // With Separate Charges, payment is held on platform until safe to transfer
+          try {
+            // Get tour and time slot info for transfer scheduling
+            const transferData = await db
+              .select({
+                tourCancellationPolicyId: tours.cancellationPolicyId,
+                tourDuration: tours.duration,
+                timeSlotStartTime: timeSlots.startTime
+              })
+              .from(bookings)
+              .innerJoin(tours, eq(bookings.tourId, tours.id))
+              .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+              .where(eq(bookings.id, bookingId))
+              .limit(1);
+            
+            if (transferData.length > 0) {
+              const data = transferData[0];
+              const transferScheduledFor = calculateTransferTime(
+                data.timeSlotStartTime,
+                data.tourCancellationPolicyId || 'flexible'
+              );
+              
+              // Update booking with transfer schedule
+              await db.update(bookings).set({
+                transferScheduledFor,
+                transferStatus: 'pending'
+              }).where(eq(bookings.id, bookingId));
+              
+              console.log(`Webhook: Transfer scheduled for ${transferScheduledFor.toISOString()} (policy: ${data.tourCancellationPolicyId})`);
+            }
+          } catch (transferError) {
+            console.error('Webhook: Failed to schedule transfer:', transferError);
+            // Don't fail the webhook if transfer scheduling fails
+          }
 
           // Send emails via SvelteKit email service with rate limit handling
           try {

@@ -175,6 +175,7 @@ export const tours = pgTable('tours', {
   includedItems: json('included_items').$type<string[]>().default([]),
   requirements: json('requirements').$type<string[]>().default([]),
   cancellationPolicy: text('cancellation_policy'),
+  cancellationPolicyId: varchar('cancellation_policy_id', { length: 50 }).default('flexible'),
   
   // Pricing model and tiers
   pricingModel: pricingModelEnum('pricing_model').default('per_person'),
@@ -363,6 +364,23 @@ export const bookings = pgTable('bookings', {
   attendanceStatus: attendanceStatusEnum('attendance_status').default('not_arrived'),
   checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
   checkedInBy: text('checked_in_by').references(() => users.id),
+  
+  // Refund tracking (NEW)
+  refundId: varchar('refund_id', { length: 255 }),
+  refundAmount: decimal('refund_amount', { precision: 10, scale: 2 }),
+  refundStatus: varchar('refund_status', { length: 50 }),
+  refundPercentage: integer('refund_percentage'),
+  cancelledBy: varchar('cancelled_by', { length: 20 }),
+  cancellationReason: varchar('cancellation_reason', { length: 100 }),
+  refundProcessedAt: timestamp('refund_processed_at', { withTimezone: true }),
+  refundNotes: text('refund_notes'),
+  
+  // Transfer tracking (NEW - for delayed payouts)
+  transferId: varchar('transfer_id', { length: 255 }),
+  transferStatus: varchar('transfer_status', { length: 50 }),
+  transferScheduledFor: timestamp('transfer_scheduled_for', { withTimezone: true }),
+  transferProcessedAt: timestamp('transfer_processed_at', { withTimezone: true }),
+  transferNotes: text('transfer_notes'),
   
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

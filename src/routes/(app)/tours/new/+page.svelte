@@ -103,6 +103,7 @@
 		includedItems: (form as any)?.formData?.includedItems || [''],
 		requirements: (form as any)?.formData?.requirements || [''],
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || '',
+		cancellationPolicyId: (form as any)?.formData?.cancellationPolicyId || 'flexible',
 		// Pricing configuration
 		pricingModel: (form as any)?.formData?.pricingModel || 'participant_categories',
 		enablePricingTiers: (form as any)?.formData?.enablePricingTiers || false,

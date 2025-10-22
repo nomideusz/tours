@@ -165,6 +165,7 @@
 		includedItems: [''],
 		requirements: [''],
 		cancellationPolicy: '',
+		cancellationPolicyId: 'flexible',
 		// Pricing configuration
 		pricingModel: 'participant_categories' as Tour['pricingModel'],
 		enablePricingTiers: false,
@@ -375,6 +376,7 @@
 			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
 			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
 			cancellationPolicy: tour.cancellationPolicy || '',
+			cancellationPolicyId: tour.cancellationPolicyId || 'flexible',
 			// Pricing configuration
 			pricingModel: tour.pricingModel || 'participant_categories',
 			enablePricingTiers: tour.enablePricingTiers || false,

@@ -91,7 +91,8 @@ export interface Tour extends RecordModel {
   location?: string;
   includedItems?: string[];
   requirements?: string[];
-  cancellationPolicy?: string;
+  cancellationPolicy?: string; // Legacy free-text policy (kept for backward compatibility)
+  cancellationPolicyId?: string; // NEW: Structured policy ID (flexible, moderate, strict, veryFlexible, nonRefundable)
   // Pricing model (NEW)
   pricingModel?: PricingModel;
   // Pricing tiers (existing adult/child - kept for backward compatibility)

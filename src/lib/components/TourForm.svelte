@@ -88,6 +88,7 @@ Key extracted components:
 			includedItems: string[];
 			requirements: string[];
 			cancellationPolicy: string;
+			cancellationPolicyId?: string;
 			// Pricing configuration
 			pricingModel?: PricingModel;
 			enablePricingTiers: boolean;
@@ -521,31 +522,53 @@ Key extracted components:
 		showCustomCategoryInput = false;
 	}
 
-	// Cancellation Policy Templates
-	let selectedPolicyTemplate = $state('');
+	// Cancellation Policy Templates (using new structured policies)
+	import { CANCELLATION_POLICIES, getCancellationPolicyText } from '$lib/utils/cancellation-policies.js';
+	
+	let selectedPolicyTemplate = $state('flexible'); // Default to flexible
 	let showCustomPolicy = $state(false);
 	
+	// Convert our structured policies to template format for the UI
 	const policyTemplates = [
 		{
+			id: 'veryFlexible',
+			name: 'Very Flexible',
+			description: '100% refund up to 2 hours before',
+			policy: getCancellationPolicyText('veryFlexible'),
+			color: 'success',
+			recommended: false
+		},
+		{
 			id: 'flexible',
-			name: 'Flexible',
-			description: 'Free cancellation up to 24 hours',
-			policy: 'Free cancellation up to 24 hours before the tour starts. Full refund guaranteed. For cancellations within 24 hours, 50% refund will be provided.',
-			color: 'success'
+			name: 'Flexible ⭐',
+			description: '100% refund up to 24 hours before',
+			policy: getCancellationPolicyText('flexible'),
+			color: 'success',
+			recommended: true
 		},
 		{
 			id: 'moderate',
 			name: 'Moderate', 
-			description: 'Free cancellation up to 48 hours',
-			policy: 'Free cancellation up to 48 hours before the tour starts. For cancellations between 48-24 hours: 50% refund. For cancellations within 24 hours: no refund.',
-			color: 'warning'
+			description: '100% refund up to 48 hours before',
+			policy: getCancellationPolicyText('moderate'),
+			color: 'warning',
+			recommended: false
 		},
 		{
 			id: 'strict',
 			name: 'Strict',
-			description: 'Free cancellation up to 7 days',
-			policy: 'Free cancellation up to 7 days before the tour starts. For cancellations between 7-3 days: 50% refund. For cancellations within 3 days: no refund.',
-			color: 'error'
+			description: '100% refund up to 7 days before',
+			policy: getCancellationPolicyText('strict'),
+			color: 'warning',
+			recommended: false
+		},
+		{
+			id: 'nonRefundable',
+			name: 'Non-Refundable',
+			description: 'No refunds allowed',
+			policy: getCancellationPolicyText('nonRefundable'),
+			color: 'error',
+			recommended: false
 		}
 	];
 
@@ -553,6 +576,8 @@ Key extracted components:
 		const template = policyTemplates.find(t => t.id === templateId);
 		if (template) {
 			selectedPolicyTemplate = templateId;
+			// Store both the ID (for structured queries) and text (for backward compatibility)
+			formData.cancellationPolicyId = templateId;
 			formData.cancellationPolicy = template.policy;
 			showCustomPolicy = false;
 		}
@@ -560,19 +585,42 @@ Key extracted components:
 
 	function enableCustomPolicy() {
 		selectedPolicyTemplate = '';
+		formData.cancellationPolicyId = 'custom';
 		showCustomPolicy = true;
 		// Keep existing policy text if any
 	}
 
 	// Initialize policy template selection based on existing policy
 	$effect(() => {
+		// If we have a policyId, use that
+		if (formData.cancellationPolicyId && formData.cancellationPolicyId !== 'custom') {
+			const matchingTemplate = policyTemplates.find(t => t.id === formData.cancellationPolicyId);
+			if (matchingTemplate) {
+				selectedPolicyTemplate = formData.cancellationPolicyId;
+				return;
+			}
+		}
+		
+		// Otherwise, try to match by text (backward compatibility)
 		if (formData.cancellationPolicy && !selectedPolicyTemplate && !showCustomPolicy) {
 			// Check if current policy matches any template
 			const matchingTemplate = policyTemplates.find(t => t.policy === formData.cancellationPolicy);
 			if (matchingTemplate) {
 				selectedPolicyTemplate = matchingTemplate.id;
+				formData.cancellationPolicyId = matchingTemplate.id;
 			} else if (formData.cancellationPolicy.trim()) {
 				showCustomPolicy = true;
+				formData.cancellationPolicyId = 'custom';
+			}
+		}
+		
+		// Set default if no policy set
+		if (!formData.cancellationPolicyId && !formData.cancellationPolicy) {
+			formData.cancellationPolicyId = 'flexible';
+			selectedPolicyTemplate = 'flexible';
+			const defaultTemplate = policyTemplates.find(t => t.id === 'flexible');
+			if (defaultTemplate) {
+				formData.cancellationPolicy = defaultTemplate.policy;
 			}
 		}
 	});
@@ -1156,6 +1204,25 @@ Key extracted components:
 						</label>
 							</div>
 							
+					{#if selectedPolicyTemplate && !showCustomPolicy}
+						<!-- Show selected policy details -->
+						<div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+							<h4 class="text-sm font-semibold mb-2" style="color: var(--text-primary);">Policy Details</h4>
+							<div class="text-xs space-y-1" style="color: var(--text-secondary); white-space: pre-line;">
+								{policyTemplates.find(t => t.id === selectedPolicyTemplate)?.policy || ''}
+							</div>
+							
+							{#if selectedPolicyTemplate !== 'nonRefundable'}
+								<div class="mt-3 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+									<p class="text-xs" style="color: var(--color-warning-800);">
+										<strong>⚠️ Important:</strong> With direct payments, refunds come from your Stripe account balance. 
+										Keep sufficient funds available to process customer refunds.
+									</p>
+								</div>
+							{/if}
+						</div>
+					{/if}
+					
 					{#if showCustomPolicy}
 						<div class="mt-4">
 							<textarea
@@ -1165,11 +1232,15 @@ Key extracted components:
 								placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
 								class="form-textarea"
 							></textarea>
+							<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+								💡 Tip: Clear policies build customer trust and reduce disputes
+							</p>
 						</div>
 					{/if}
 
-					<!-- Hidden input for form submission -->
+					<!-- Hidden inputs for form submission -->
 					<input type="hidden" name="cancellationPolicy" bind:value={formData.cancellationPolicy} />
+					<input type="hidden" name="cancellationPolicyId" bind:value={formData.cancellationPolicyId} />
 				</div>
 			{/if}
 		</div>

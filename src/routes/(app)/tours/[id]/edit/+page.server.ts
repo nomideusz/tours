@@ -294,6 +294,7 @@ export const actions: Actions = {
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: formData.get('cancellationPolicy'),
+        cancellationPolicyId: formData.get('cancellationPolicyId') || 'flexible',
         // Pricing configuration
         pricingModel,
         enablePricingTiers,

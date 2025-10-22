@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { createDirectPaymentIntent } from '$lib/stripe.server.js';
+import { getStripe, formatAmountForStripe } from '$lib/stripe.server.js';
 import { db } from '$lib/db/connection.js';
 import { bookings, payments, tours, users } from '$lib/db/schema/index.js';
 import { eq } from 'drizzle-orm';
@@ -107,21 +107,36 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
-    // Create payment intent DIRECTLY on the tour guide's Stripe account
-    // No platform fee since this is a no-commission model
-    const paymentIntent = await createDirectPaymentIntent(
-      requestAmount, 
+    // Create payment intent with Separate Charges + Transfers
+    // Payment goes to platform account first, then transferred to guide after cancellation window
+    // This ensures refunds are always available
+    const stripeInstance = getStripe();
+    
+    console.log('Creating payment with transfer_data (Separate Charges):', {
+      amount: requestAmount,
       currency,
-      connectedAccountId, // We already checked this is not null
-      {
+      destination: connectedAccountId
+    });
+    
+    const paymentIntent = await stripeInstance.paymentIntents.create({
+      amount: formatAmountForStripe(requestAmount, currency),
+      currency: currency.toLowerCase(),
+      transfer_data: {
+        destination: connectedAccountId, // Where funds will be transferred eventually
+      },
+      metadata: {
         bookingId: booking.id,
         bookingReference: booking.bookingReference,
         tourId: booking.tourId,
         customerEmail: booking.customerEmail,
         customerName: booking.customerName,
+      },
+      automatic_payment_methods: {
+        enabled: true,
       }
-      // No platform fee parameter - tour guides keep 100%
-    );
+      // NOTE: No stripeAccount parameter - payment goes to PLATFORM account
+      // Funds will be transferred to guide's account after cancellation window
+    });
 
     // Create payment record in database
     const paymentResult = await db.insert(payments).values({

@@ -25,12 +25,7 @@
 					<Logo 
 						variant="modern" 
 						size="xl" 
-						textSize="large"
 						href="/" 
-						showIcon={false}
-						showIconBackground={false}
-						showText={true}
-						iconSrc="/favicon.png"
 						class="justify-start p-0"
 					/>
 				</div>

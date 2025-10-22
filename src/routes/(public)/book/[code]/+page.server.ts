@@ -9,6 +9,7 @@ import { canUserCreateBooking } from '$lib/stripe-subscriptions.server.js';
 import { calculateBookingPrice } from '$lib/utils/pricing-calculations.js';
 import type { Tour } from '$lib/types.js';
 import { dev } from '$app/environment';
+import { calculateTransferTime } from '$lib/payment-transfers.js';
 
 export const load: PageServerLoad = async ({ params }) => {
 	return {
@@ -213,6 +214,7 @@ export const actions: Actions = {
 				includedItems: tour.includedItems ?? undefined,
 				requirements: tour.requirements ?? undefined,
 				cancellationPolicy: tour.cancellationPolicy ?? undefined,
+				cancellationPolicyId: tour.cancellationPolicyId ? tour.cancellationPolicyId : undefined,
 				qrCode: tour.qrCode ?? undefined,
 				pricingModel: tour.pricingModel ?? undefined,
 				pricingTiers: tour.pricingTiers ?? undefined,
@@ -318,6 +320,25 @@ export const actions: Actions = {
 			}).returning();
 
 			booking = bookingResult[0];
+
+			// Schedule transfer to tour guide after cancellation window
+			// This ensures refunds are always available before guide receives payment
+			try {
+				const transferScheduledFor = calculateTransferTime(
+					timeSlot.startTime,
+					tour.cancellationPolicyId || 'flexible'
+				);
+				
+				await db.update(bookings).set({
+					transferScheduledFor,
+					transferStatus: 'pending'
+				}).where(eq(bookings.id, booking.id));
+				
+				console.log(`💸 Transfer scheduled for ${transferScheduledFor.toISOString()} (policy: ${tour.cancellationPolicyId || 'flexible'})`);
+			} catch (transferError) {
+				console.error('Failed to schedule transfer:', transferError);
+				// Don't fail booking creation if transfer scheduling fails
+			}
 
 			// Update time slot booked spots (only count participants that count toward capacity)
 			await db.update(timeSlots)

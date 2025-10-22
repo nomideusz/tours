@@ -750,4 +750,47 @@ export function deleteTimeSlotMutation(tourId: string) {
 			await invalidate.invalidateScheduleQueries(tourId, tour?.tour?.qrCode);
 		}
 	});
+}
+
+/**
+ * Cancel booking mutation (with automatic refund processing)
+ */
+export function cancelBookingMutation() {
+	const queryClient = useQueryClient();
+	
+	return createMutation({
+		mutationFn: async ({ 
+			bookingId, 
+			reason, 
+			customMessage 
+		}: { 
+			bookingId: string; 
+			reason?: string; 
+			customMessage?: string;
+		}) => {
+			const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ reason, customMessage })
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to cancel booking');
+			}
+			
+			return response.json();
+		},
+		onSuccess: async (data, variables) => {
+			console.log('✅ Booking cancelled successfully:', variables.bookingId);
+			
+			// Invalidate all booking-related queries
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['booking', variables.bookingId] }),
+				queryClient.invalidateQueries({ queryKey: ['recentBookings'] }),
+				queryClient.invalidateQueries({ queryKey: ['tour-bookings'] }),
+				queryClient.invalidateQueries({ queryKey: ['dashboardStats'] })
+			]);
+		}
+	});
 } 
