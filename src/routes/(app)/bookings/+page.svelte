@@ -272,18 +272,32 @@
 	}
 	
 	// Get more user-friendly payment status label
-	function getPaymentStatusLabel(status: string): string {
+	function getPaymentStatusLabel(status: string, booking?: any): string {
+		// If payment is pending, show "Awaiting Payment"
+		if (status === 'pending') {
+			return 'Awaiting Payment';
+		}
+		
+		// If paid, check transfer status to show more detail
+		if (status === 'paid' && booking) {
+			if (booking.transferId) {
+				return 'Transferred';
+			} else if (booking.transferScheduledFor) {
+				return 'Paid';
+			}
+			return 'Paid';
+		}
+		
+		// Other statuses
 		switch (status) {
 			case 'paid':
 				return 'Paid';
-			case 'pending':
-				return 'Unpaid';
-			case 'failed':
-				return 'Failed';
 			case 'refunded':
 				return 'Refunded';
+			case 'failed':
+				return 'Failed';
 			default:
-				return 'Unpaid';
+				return 'Awaiting Payment';
 		}
 	}
 	
@@ -428,7 +442,7 @@
 					<select bind:value={selectedPaymentStatus} class="form-select w-full">
 						<option value="all">All Payments</option>
 						<option value="paid">Paid ({stats.paid})</option>
-						<option value="pending">Unpaid ({stats.unpaid})</option>
+						<option value="pending">Awaiting Payment ({stats.unpaid})</option>
 						<option value="refunded">Refunded</option>
 					</select>
 				</div>
@@ -521,17 +535,30 @@
 								</div>
 							</div>
 							
-							<!-- Status badges with better spacing -->
-							<div class="flex items-center gap-2 mb-3">
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
-									<BookingIcon class="h-3 w-3" />
-									<span class="capitalize font-medium">{booking.status}</span>
-								</span>
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-									<PaymentIcon class="h-3 w-3" />
-									<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
-								</span>
-							</div>
+							<!-- Single combined status badge -->
+							{#if booking}
+								{@const paymentStatus = booking.paymentStatus || 'pending'}
+								{@const combinedLabel = 
+									booking.status === 'cancelled' ? 'Cancelled' :
+									paymentStatus === 'pending' ? 'Awaiting Payment' :
+									booking.transferId ? 'Confirmed • Transferred' :
+									booking.status === 'confirmed' ? 'Confirmed • Paid' :
+									booking.status === 'completed' ? 'Completed' :
+									booking.status
+								}
+								{@const badgeColor = 
+									booking.status === 'cancelled' ? getStatusColor('cancelled') :
+									paymentStatus === 'pending' ? getPaymentStatusColor('pending') :
+									getStatusColor(booking.status)
+								}
+								
+								<div class="mb-3">
+									<span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-full border {badgeColor}">
+										<BookingIcon class="h-3 w-3" />
+										<span class="font-medium">{combinedLabel}</span>
+									</span>
+								</div>
+							{/if}
 							
 							<!-- Tour details with better formatting -->
 							<div class="grid grid-cols-2 gap-3 text-sm">
@@ -617,17 +644,28 @@
 									</p>
 								</div>
 								
-								<!-- Status Badges -->
-									<div class="flex items-center gap-2">
-									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
-											<BookingIcon class="h-3.5 w-3.5" />
-											<span class="capitalize font-medium">{booking.status}</span>
-										</span>
-									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {getPaymentStatusColor(booking.paymentStatus || 'pending')}">
-											<PaymentIcon class="h-3.5 w-3.5" />
-											<span class="font-medium">{getPaymentStatusLabel(booking.paymentStatus || 'pending')}</span>
-										</span>
-									</div>
+								<!-- Single Combined Status Badge -->
+								{#if booking}
+									{@const paymentStatus = booking.paymentStatus || 'pending'}
+									{@const combinedLabel = 
+										booking.status === 'cancelled' ? 'Cancelled' :
+										paymentStatus === 'pending' ? 'Awaiting Payment' :
+										booking.transferId ? 'Confirmed • Transferred' :
+										booking.status === 'confirmed' ? 'Confirmed • Paid' :
+										booking.status === 'completed' ? 'Completed' :
+										booking.status
+									}
+									{@const badgeColor = 
+										booking.status === 'cancelled' ? getStatusColor('cancelled') :
+										paymentStatus === 'pending' ? getPaymentStatusColor('pending') :
+										getStatusColor(booking.status)
+									}
+									
+									<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {badgeColor}">
+										<BookingIcon class="h-3.5 w-3.5" />
+										<span class="font-medium">{combinedLabel}</span>
+									</span>
+								{/if}
 									
 								<!-- View Button -->
 									<button

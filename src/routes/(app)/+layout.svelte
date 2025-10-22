@@ -42,6 +42,7 @@
 	import MoreVertical from 'lucide-svelte/icons/more-vertical';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
+	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import X from 'lucide-svelte/icons/x';
 
 	// Type definitions
@@ -137,7 +138,7 @@
 			name: 'Main',
 			items: [
 				{
-									name: 'Calendar',
+				name: 'Calendar',
 				href: '/calendar',
 				icon: Home,
 				description: 'Tour schedule & bookings',
@@ -157,22 +158,30 @@
 					showOnMobile: true,
 					badge: null as number | null
 				},
-				{
-					name: 'Bookings',
-					href: '/bookings',
-					icon: Calendar,
-					description: 'View all bookings',
-					showOnMobile: true,
-					badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
-				},
-				{
-					name: 'Check-in Scanner',
-					href: '/checkin-scanner',
-					icon: QrCode,
-					description: 'Scan QR tickets',
-					showOnMobile: true,
-					badge: null as number | null
-				}
+			{
+				name: 'Bookings',
+				href: '/bookings',
+				icon: Calendar,
+				description: 'View all bookings',
+				showOnMobile: true,
+				badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
+			},
+			{
+				name: 'Transfers',
+				href: '/transfers',
+				icon: DollarSign,
+				description: 'Payment transfers',
+				showOnMobile: false,
+				badge: null as number | null
+			},
+			{
+				name: 'Check-in Scanner',
+				href: '/checkin-scanner',
+				icon: QrCode,
+				description: 'Scan QR tickets',
+				showOnMobile: true,
+				badge: null as number | null
+			}
 			]
 		},
 		{
@@ -234,29 +243,29 @@
 		
 		return [
 			{
-							name: 'Calendar',
-			href: '/calendar',
-			icon: Home,
-			active: currentPath === '/calendar'
+				name: 'Home',
+				href: '/calendar',
+				icon: Home,
+				active: currentPath === '/calendar'
 			},
 			{
 				name: 'Bookings',
 				href: '/bookings',
 				icon: Calendar,
-				active: currentPath === '/bookings' && !isTourBookings, // Don't highlight when viewing tour-specific bookings
+				active: currentPath === '/bookings' && !isTourBookings,
 				badge: $unreadBookingCount > 0 ? $unreadBookingCount : null
 			},
 			{
-				name: 'Scanner',
-				href: '/checkin-scanner',
-				icon: QrCode,
-				active: currentPath === '/checkin-scanner'
+				name: 'Transfers',
+				href: '/transfers',
+				icon: DollarSign,
+				active: currentPath === '/transfers'
 			},
 			{
 				name: 'Tours',
 				href: '/tours',
 				icon: MapPin,
-				active: currentPath.startsWith('/tours') || isTourBookings // Highlight when viewing tour-specific bookings
+				active: currentPath.startsWith('/tours') || isTourBookings
 			},
 			{
 				name: 'More',
@@ -519,23 +528,20 @@
 									</h3>
 									<div class="nav-section-items">
 										{#each section.items as item}
-											{@const shouldShow = item.showOnMobile !== false}
-											{#if shouldShow}
-												<a
-													href={item.href}
-													class="nav-link {item.current ? 'nav-link--active' : ''}"
-												>
-													<div class="nav-link-content">
-														<item.icon class="nav-link-icon" />
-														<span class="nav-link-text">{item.name}</span>
-													</div>
-													{#if item.badge}
-														<span class="nav-badge">
-															{item.badge}
-														</span>
-													{/if}
-												</a>
-											{/if}
+											<a
+												href={item.href}
+												class="nav-link {item.current ? 'nav-link--active' : ''}"
+											>
+												<div class="nav-link-content">
+													<item.icon class="nav-link-icon" />
+													<span class="nav-link-text">{item.name}</span>
+												</div>
+												{#if item.badge}
+													<span class="nav-badge">
+														{item.badge}
+													</span>
+												{/if}
+											</a>
 										{/each}
 									</div>
 								</div>
@@ -623,28 +629,28 @@
 						<button
 							id="mobile-menu-trigger"
 							onclick={toggleMobileMenu}
-							class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0 relative"
-							style="color: var(--text-tertiary);"
+							class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-0.5 font-medium transition-colors min-w-0 relative"
+							style="color: var(--text-tertiary); font-size: 10px;"
 						>
 							<div class="relative">
 								<item.icon 
-									class="h-6 w-6 mb-1 flex-shrink-0" 
+									class="h-5 w-5 mb-0.5 flex-shrink-0" 
 									style="color: var(--text-tertiary);"
 								/>
 							</div>
-							<span class="truncate text-center w-full">{item.name}</span>
+							<span class="truncate text-center w-full max-w-full px-0.5">{item.name}</span>
 						</button>
 					{:else}
 						<a
 							href={item.href}
-							class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors min-w-0 relative"
+							class="nav-link flex-1 flex flex-col items-center justify-center py-2 px-0.5 font-medium transition-colors min-w-0 relative"
 							style="{item.active 
 								? 'color: var(--color-primary-600);' 
-								: 'color: var(--text-tertiary);'} text-decoration: none;"
+								: 'color: var(--text-tertiary);'} text-decoration: none; font-size: 10px;"
 						>
 							<div class="relative">
 								<item.icon 
-									class="h-6 w-6 mb-1 flex-shrink-0" 
+									class="h-5 w-5 mb-0.5 flex-shrink-0" 
 									style={item.active 
 										? 'color: var(--color-primary-600);' 
 										: 'color: var(--text-tertiary);'}
@@ -655,7 +661,7 @@
 									</span>
 								{/if}
 							</div>
-							<span class="truncate text-center w-full">{item.name}</span>
+							<span class="truncate text-center w-full max-w-full px-0.5">{item.name}</span>
 						</a>
 					{/if}
 				{/each}

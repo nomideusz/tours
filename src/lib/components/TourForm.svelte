@@ -566,7 +566,7 @@ Key extracted components:
 		{
 			id: 'nonRefundable',
 			name: 'Non-Refundable',
-			description: 'No refunds allowed',
+			description: 'No refunds • Immediate payout',
 			policy: getCancellationPolicyText('nonRefundable'),
 			color: 'error',
 			recommended: false
@@ -1264,11 +1264,18 @@ Key extracted components:
 								{policyTemplates.find(t => t.id === selectedPolicyTemplate)?.policy || ''}
 							</div>
 							
-							{#if selectedPolicyTemplate !== 'nonRefundable'}
+							{#if selectedPolicyTemplate === 'nonRefundable'}
+								<!-- Non-refundable: Show immediate payout benefit -->
+								<div class="mt-3 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
+									<p class="text-xs" style="color: var(--color-success-800);">
+										<strong>💰 Benefit:</strong> Funds transfer to your account <strong>immediately</strong> after payment (no holding period).
+									</p>
+								</div>
+							{:else}
+								<!-- Refundable policies: Show refund responsibility warning -->
 								<div class="mt-3 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 									<p class="text-xs" style="color: var(--color-warning-800);">
-										<strong>⚠️ Important:</strong> With direct payments, refunds come from your Stripe account balance. 
-										Keep sufficient funds available to process customer refunds.
+										<strong>⚠️ Important:</strong> Funds are held on the platform until the cancellation window passes, then automatically transferred to your account. This ensures refunds are always available.
 									</p>
 								</div>
 							{/if}
@@ -1337,10 +1344,14 @@ Key extracted components:
 								</div>
 							</div>
 							
+							<div class="p-3 rounded-lg" style="background: var(--color-info-50); border: 1px solid var(--color-info-200);">
+								<p class="text-xs" style="color: var(--color-info-800);">
+									<strong>💸 Payment Schedule:</strong> Funds will be held on the platform for <strong>{customPolicyHours + 1} hours</strong> after booking, then automatically transferred to your account {customPolicyHours + 1} hours before the tour starts.
+								</p>
+							</div>
 							<div class="p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 								<p class="text-xs" style="color: var(--color-warning-800);">
-									<strong>⚠️ Remember:</strong> Refunds come from your Stripe account balance. 
-									More flexible policies = happier customers but ensure you can process refunds.
+									<strong>⚠️ Remember:</strong> More flexible policies = happier customers and higher bookings, but funds are held longer to ensure refunds are always available.
 								</p>
 							</div>
 						</div>

@@ -18,6 +18,9 @@
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import TransferStatusCard from '$lib/components/booking/TransferStatusCard.svelte';
+	import RefundPreviewCard from '$lib/components/booking/RefundPreviewCard.svelte';
+	import RefundInfoCard from '$lib/components/booking/RefundInfoCard.svelte';
 	
 	// Icons
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -235,6 +238,35 @@
 				return AlertTriangle;
 		}
 	}
+	
+	// Combined status badge for header
+	let combinedStatusBadge = $derived(() => {
+		if (!booking) return { label: 'Loading...', color: 'payment-pending' };
+		
+		const paymentStatus = payment?.status || booking.paymentStatus || 'pending';
+		
+		if (booking.status === 'cancelled') {
+			return { label: 'Cancelled', color: getStatusColor('cancelled') };
+		}
+		
+		if (paymentStatus === 'pending') {
+			return { label: 'Awaiting Payment', color: getPaymentStatusColor('pending') };
+		}
+		
+		if (booking.transferId) {
+			return { label: 'Confirmed • Transferred', color: getStatusColor('confirmed') };
+		}
+		
+		if (booking.status === 'confirmed') {
+			return { label: 'Confirmed • Paid', color: getStatusColor('confirmed') };
+		}
+		
+		if (booking.status === 'completed') {
+			return { label: 'Completed', color: getStatusColor('completed') };
+		}
+		
+		return { label: booking.status, color: getStatusColor(booking.status) };
+	});
 	
 	// Get booking status icon
 	function getBookingStatusIcon(status: string): any {
@@ -457,15 +489,9 @@
 								</p>
 							</div>
 							<div class="flex items-center gap-2 flex-wrap">
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs rounded-full border {getStatusColor(booking.status)}">
+								<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border {combinedStatusBadge().color}">
 									<BookingIcon class="h-3.5 w-3.5" />
-									<span class="capitalize font-medium">{booking.status}</span>
-								</span>
-								<span class="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs rounded-full border {getPaymentStatusColor(payment?.status || booking.paymentStatus || 'pending')}">
-									<PaymentIcon class="h-3.5 w-3.5" />
-									<span class="font-medium">
-										{payment?.status ? payment.status.charAt(0).toUpperCase() + payment.status.slice(1) : 'Pending'}
-									</span>
+									<span class="font-medium">{combinedStatusBadge().label}</span>
 								</span>
 							</div>
 						</div>
@@ -583,6 +609,29 @@
 					</div>
 				</div>
 
+				<!-- Transfer Status (for tour guides) -->
+				<TransferStatusCard
+					{booking}
+					currency={data.user?.currency === 'PLN' ? 'zł' : data.user?.currency === 'EUR' ? '€' : data.user?.currency === 'GBP' ? '£' : '$'}
+				/>
+				
+				<!-- Refund Preview & Cancel (for active bookings) -->
+				{#if booking.status !== 'cancelled' && booking.status !== 'completed'}
+					<RefundPreviewCard
+						{bookingId}
+						onSuccess={() => {
+							// Refresh booking data after cancellation
+							$bookingQuery.refetch();
+						}}
+					/>
+				{/if}
+				
+				<!-- Refund Information (for cancelled bookings) -->
+				<RefundInfoCard
+					{booking}
+					currency={data.user?.currency === 'PLN' ? 'zł' : data.user?.currency === 'EUR' ? '€' : data.user?.currency === 'GBP' ? '£' : '$'}
+				/>
+				
 				<!-- Customer Information Card -->
 				<div class="rounded-xl overflow-hidden" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 					<div class="px-4 py-3 sm:px-6 sm:py-4" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">

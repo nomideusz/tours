@@ -96,6 +96,21 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 				ticketQRCode: booking.ticketQRCode,
 				attendanceStatus: booking.attendanceStatus,
 				checkedInAt: booking.checkedInAt?.toISOString(),
+				// Refund tracking (NEW)
+				refundId: booking.refundId,
+				refundAmount: booking.refundAmount,
+				refundStatus: booking.refundStatus,
+				refundPercentage: booking.refundPercentage,
+				cancelledBy: booking.cancelledBy,
+				cancellationReason: booking.cancellationReason,
+				refundProcessedAt: booking.refundProcessedAt?.toISOString(),
+				refundNotes: booking.refundNotes,
+				// Transfer tracking (NEW)
+				transferId: booking.transferId,
+				transferStatus: booking.transferStatus,
+				transferScheduledFor: booking.transferScheduledFor?.toISOString(),
+				transferProcessedAt: booking.transferProcessedAt?.toISOString(),
+				transferNotes: booking.transferNotes,
 				created: booking.createdAt?.toISOString() || new Date().toISOString(),
 				updated: booking.updatedAt?.toISOString() || new Date().toISOString(),
 				expand: {
@@ -107,7 +122,9 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 						price: tour.price,
 						duration: tour.duration,
 						enablePricingTiers: tour.enablePricingTiers,
-						pricingTiers: tour.pricingTiers
+						pricingTiers: tour.pricingTiers,
+						cancellationPolicy: tour.cancellationPolicy,
+						cancellationPolicyId: tour.cancellationPolicyId
 					},
 					timeSlot
 				}
