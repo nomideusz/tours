@@ -10,6 +10,7 @@
 	import ParticipantCategorySelector from '$lib/components/booking/ParticipantCategorySelector.svelte';
 	import AddonSelector from '$lib/components/booking/AddonSelector.svelte';
 	import PriceBreakdown from '$lib/components/booking/PriceBreakdown.svelte';
+	import CompactWeatherDisplay from '$lib/components/booking/CompactWeatherDisplay.svelte';
 	import Check from 'lucide-svelte/icons/check';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
@@ -71,7 +72,8 @@
 		showSuccess = $bindable(),
 		onSlotSelect,
 		totalParticipants,
-		priceCalculation
+		priceCalculation,
+		tourCoordinates = null
 	}: Props = $props();
 	
 	let isSubmitting = $state(false);
@@ -245,27 +247,36 @@
 								{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
 							</h3>
 							{#if selectedTimeSlot}
-								<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<div class="text-sm">
-										<div style="color: var(--text-primary);">
-											{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
-												weekday: 'short', 
-												month: 'short', 
-												day: 'numeric' 
-											})}
+								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
+									<div class="flex items-center justify-between mb-2">
+										<div class="text-sm">
+											<div style="color: var(--text-primary);">
+												{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
+													weekday: 'short', 
+													month: 'short', 
+													day: 'numeric' 
+												})}
+											</div>
+											<div style="color: var(--text-secondary);">
+												{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
+											</div>
 										</div>
-										<div style="color: var(--text-secondary);">
-											{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
-										</div>
+										<button 
+											type="button"
+											onclick={() => onSlotSelect(null)}
+											class="text-sm underline"
+											style="color: var(--color-primary-600);"
+										>
+											Change
+										</button>
 									</div>
-									<button 
-										type="button"
-										onclick={() => onSlotSelect(null)}
-										class="text-sm underline"
-										style="color: var(--color-primary-600);"
-									>
-										Change
-									</button>
+									<!-- Compact Weather Display -->
+									{#if tourCoordinates}
+										<CompactWeatherDisplay
+											coordinates={tourCoordinates}
+											tourDateTime={new Date(selectedTimeSlot.startTime)}
+										/>
+									{/if}
 								</div>
 							{:else}
 								<BookingCalendar 

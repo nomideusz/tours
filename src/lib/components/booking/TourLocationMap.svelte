@@ -117,15 +117,14 @@
 		
 		<!-- Get Directions Button -->
 		<div class="mt-3">
-			<a 
-				href={getDirectionsUrl()}
-				target="_blank"
-				rel="noopener noreferrer"
+			<button 
+				onclick={() => window.open(getDirectionsUrl(), '_blank')}
+				type="button"
 				class="button-primary button--full-width button--gap"
 			>
 				<Navigation class="w-4 h-4" />
 				Get Directions
-			</a>
+			</button>
 		</div>
 </div>
 
