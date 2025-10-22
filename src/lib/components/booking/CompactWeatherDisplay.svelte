@@ -89,7 +89,7 @@
 </script>
 
 {#if !loading && weatherForecast && isWithinForecastRange}
-	<div class="inline-flex items-center gap-2 px-2 py-1 rounded text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
+	<div class="inline-flex items-center gap-2 px-2 py-0 rounded text-xs" style="background: var(--bg-secondary); color: var(--text-secondary);">
 		<span>{getWeatherEmoji(weatherForecast.conditions[0].id)}</span>
 		<span>{Math.round(weatherForecast.temperature)}°C</span>
 		{#if weatherForecast.pop > 0.3}
