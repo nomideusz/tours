@@ -19,11 +19,11 @@ export function calculateTransferTime(
   const now = new Date();
   
   // Non-refundable policy = transfer immediately (no refund risk)
-  // Add 2-minute buffer to ensure database write completes and cron can pick it up
+  // Add 5-minute buffer to ensure database write completes and cron can pick it up
   if (policyId === 'nonRefundable') {
-    console.log('💸 Non-refundable policy - scheduling immediate transfer (2min delay)');
+    console.log('💸 Non-refundable policy - scheduling immediate transfer (5min delay)');
     const immediateTransfer = new Date(now);
-    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
     return immediateTransfer;
   }
   
@@ -46,10 +46,10 @@ export function calculateTransferTime(
   transferTime.setHours(transferTime.getHours() - maxRefundHours - 1);
   
   // Don't transfer in the past - if calculation puts us in past, transfer soon
-  // Add 2-minute buffer to ensure database write completes and cron can pick it up
+  // Add 5-minute buffer to ensure database write completes and cron can pick it up
   if (transferTime < now) {
     const immediateTransfer = new Date(now);
-    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
     return immediateTransfer;
   }
   
@@ -83,10 +83,10 @@ export function getOptimalTransferTime(
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
   const completionTime = calculateTourCompletionTime(startTime, tourDuration);
   
-  // Tour already completed - transfer immediately (with 2min buffer)
+  // Tour already completed - transfer immediately (with 5min buffer)
   if (now >= completionTime && bookingStatus === 'completed') {
     const immediateTransfer = new Date(now);
-    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 2);
+    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
     return {
       transferTime: immediateTransfer,
       reason: 'Tour completed',

@@ -63,6 +63,18 @@ export const GET: RequestHandler = async ({ request }) => {
     
     console.log(`📊 Found ${pendingTransfers.length} bookings ready for transfer`);
     
+    // Debug: Log first few bookings to diagnose issues
+    if (pendingTransfers.length > 0) {
+      console.log('🔍 Sample booking details:');
+      pendingTransfers.slice(0, 3).forEach((booking, idx) => {
+        console.log(`  [${idx + 1}] ${booking.bookingReference}:`);
+        console.log(`      Status: ${booking.bookingStatus}, Payment: ${booking.paymentStatus}`);
+        console.log(`      TransferID: ${booking.transferId}, Scheduled: ${booking.transferScheduledFor}`);
+        console.log(`      Guide: ${booking.guideName}, StripeID: ${booking.guideStripeAccountId}`);
+        console.log(`      PaymentID: ${booking.paymentId}`);
+      });
+    }
+    
     if (pendingTransfers.length === 0) {
       return json({ 
         success: true, 
@@ -77,19 +89,31 @@ export const GET: RequestHandler = async ({ request }) => {
     
     for (const booking of pendingTransfers) {
       try {
+        console.log(`\n🔄 Checking booking ${booking.bookingReference}...`);
+        
         // Validate guide has Stripe account
         if (!booking.guideStripeAccountId) {
-          throw new Error(`Guide ${booking.guideName} has no Stripe account`);
+          const error = `Guide ${booking.guideName} has no Stripe account`;
+          console.error(`   ❌ ${error}`);
+          throw new Error(error);
         }
+        console.log(`   ✅ Guide has Stripe account: ${booking.guideStripeAccountId}`);
         
         // Validate payment ID exists
         if (!booking.paymentId) {
-          throw new Error('No payment ID found for booking');
+          const error = 'No payment ID found for booking';
+          console.error(`   ❌ ${error}`);
+          throw new Error(error);
         }
+        console.log(`   ✅ Payment ID exists: ${booking.paymentId}`);
         
         // Final validation
-        if (!isReadyForTransfer(booking)) {
-          console.warn(`⚠️ Booking ${booking.bookingReference} not ready for transfer (status check failed)`);
+        const readyCheck = isReadyForTransfer(booking);
+        console.log(`   🔍 isReadyForTransfer check: ${readyCheck}`);
+        if (!readyCheck) {
+          console.warn(`   ⚠️ Booking ${booking.bookingReference} not ready for transfer (status check failed)`);
+          console.warn(`      - Status: ${booking.bookingStatus}, Payment: ${booking.paymentStatus}`);
+          console.warn(`      - TransferID: ${booking.transferId}, Scheduled: ${booking.transferScheduledFor}`);
           continue;
         }
         
