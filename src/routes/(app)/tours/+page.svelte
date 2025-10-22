@@ -966,7 +966,7 @@ import Copy from 'lucide-svelte/icons/copy';
 													<span>Set to Draft</span>
 												</button>
 											{/if}
-											<hr class="my-0" style="border-color: var(--border-primary);" />
+											<hr style="border-color: var(--border-primary); margin: 0;" />
 											{#if tour.hasFutureBookings}
 												<button
 													class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 cursor-not-allowed opacity-50 rounded-b-lg"
@@ -1249,7 +1249,7 @@ import Copy from 'lucide-svelte/icons/copy';
 												<span>Set to Draft</span>
 											</button>
 										{/if}
-										<hr class="my-0" style="border-color: var(--border-primary);" />
+										<hr style="border-color: var(--border-primary); margin: 0;" />
 										{#if tour.hasFutureBookings}
 											<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
 												<button
