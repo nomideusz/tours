@@ -966,10 +966,10 @@ import Copy from 'lucide-svelte/icons/copy';
 													<span>Set to Draft</span>
 												</button>
 											{/if}
-											<hr style="border-color: var(--border-primary);" />
+											<hr class="my-0" style="border-color: var(--border-primary);" />
 											{#if tour.hasFutureBookings}
 												<button
-													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 cursor-not-allowed opacity-50 rounded-b-lg"
+													class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 cursor-not-allowed opacity-50 rounded-b-lg"
 													style="color: var(--text-tertiary); background: transparent;"
 													disabled
 												>
@@ -979,7 +979,7 @@ import Copy from 'lucide-svelte/icons/copy';
 											{:else}
 												<button
 													onclick={() => { actionMenuOpen = null; tourToDelete = tour; showDeleteModal = true; }}
-													class="w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors rounded-b-lg"
+													class="w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors rounded-b-lg"
 													style="color: var(--color-error); background: transparent;"
 													onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'}
 													onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -1249,7 +1249,7 @@ import Copy from 'lucide-svelte/icons/copy';
 												<span>Set to Draft</span>
 											</button>
 										{/if}
-										<hr style="border-color: var(--border-primary);" />
+										<hr class="my-0" style="border-color: var(--border-primary);" />
 										{#if tour.hasFutureBookings}
 											<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
 												<button
@@ -1393,21 +1393,21 @@ import Copy from 'lucide-svelte/icons/copy';
 		color: var(--text-primary) !important;
 	}
 	
-	/* Mobile dropdown menu - ensure it appears above other cards and button */
-	.mobile-dropdown-menu {
-		z-index: 9999 !important;
-		position: absolute;
-	}
-	
-	/* Ensure dropdown container creates proper stacking context */
+	/* Dropdown menu - ensure it appears above other cards */
 	.dropdown-container {
 		position: relative;
-		z-index: 1;
 	}
 	
-	/* When dropdown is open, increase container z-index */
-	.dropdown-container:has(.mobile-dropdown-menu) {
-		z-index: 1000;
+	/* When dropdown is open, increase the entire card z-index */
+	.tour-card:has(.dropdown-container > div),
+	.tour-card-mobile:has(.dropdown-container > div) {
+		z-index: 100;
+		position: relative;
+	}
+	
+	/* Dropdown menu itself */
+	.dropdown-container > div {
+		z-index: 101;
 	}
 	
 	/* Subtle feedback animation when tour is updated */

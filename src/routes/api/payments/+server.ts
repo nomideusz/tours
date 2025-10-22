@@ -107,35 +107,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: 'Amount mismatch' }, { status: 400 });
     }
 
-    // Create payment intent with Separate Charges + Transfers
-    // Payment goes to platform account first, then transferred to guide after cancellation window
-    // This ensures refunds are always available
+    // Create payment intent on platform account (Separate Charges model)
+    // Payment goes to platform account and stays there until cron job creates transfer
+    // This ensures refunds are always available during cancellation window
     const stripeInstance = getStripe();
     
-    console.log('Creating payment with transfer_data (Separate Charges):', {
+    console.log('Creating payment on platform account (will transfer via cron later):', {
       amount: requestAmount,
       currency,
-      destination: connectedAccountId
+      futureDestination: connectedAccountId
     });
     
     const paymentIntent = await stripeInstance.paymentIntents.create({
       amount: formatAmountForStripe(requestAmount, currency),
       currency: currency.toLowerCase(),
-      transfer_data: {
-        destination: connectedAccountId, // Where funds will be transferred eventually
-      },
       metadata: {
         bookingId: booking.id,
         bookingReference: booking.bookingReference,
         tourId: booking.tourId,
         customerEmail: booking.customerEmail,
         customerName: booking.customerName,
+        guideAccountId: connectedAccountId, // Store for later transfer
       },
       automatic_payment_methods: {
         enabled: true,
       }
-      // NOTE: No stripeAccount parameter - payment goes to PLATFORM account
-      // Funds will be transferred to guide's account after cancellation window
+      // NOTE: No transfer_data - we create transfers manually via cron
+      // NOTE: No stripeAccount - payment stays on PLATFORM account
     });
 
     // Create payment record in database
