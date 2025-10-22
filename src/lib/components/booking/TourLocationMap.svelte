@@ -82,14 +82,6 @@
 </script>
 
 <div>
-		<!-- Location Address -->
-		<div class="mb-4 p-3 rounded-lg flex items-start gap-2" style="background: var(--bg-secondary);">
-			<MapPin class="w-4 h-4 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
-			<p class="text-sm" style="color: var(--text-primary);">
-				{locationName}
-			</p>
-		</div>
-		
 		<!-- Map Container -->
 		{#if googleMapsApiKey}
 			<div 
