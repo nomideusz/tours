@@ -144,7 +144,45 @@ export function calculateRefund(
   policyId: string = 'flexible',
   cancelledBy: 'customer' | 'guide' = 'customer'
 ): RefundCalculation {
-  const policy = CANCELLATION_POLICIES[policyId] || CANCELLATION_POLICIES.flexible;
+  // Parse custom policies (format: "custom_24" for 24 hours)
+  let policy = CANCELLATION_POLICIES[policyId];
+  
+  if (!policy && policyId.startsWith('custom_')) {
+    // Extract hours from custom policy ID
+    const hours = parseInt(policyId.split('_')[1]);
+    if (!isNaN(hours) && hours > 0) {
+      // Create dynamic policy from hours
+      const halfHours = Math.floor(hours / 2);
+      policy = {
+        id: policyId,
+        name: `Custom (${hours}h)`,
+        description: `Custom ${hours}-hour cancellation window`,
+        rules: [
+          {
+            hoursBeforeTour: hours,
+            refundPercentage: 100,
+            description: `100% refund if cancelled ${hours}+ hours before tour`
+          },
+          {
+            hoursBeforeTour: halfHours,
+            refundPercentage: 50,
+            description: `50% refund if cancelled ${halfHours}-${hours} hours before tour`
+          },
+          {
+            hoursBeforeTour: 0,
+            refundPercentage: 0,
+            description: `No refund if cancelled less than ${halfHours} hours before tour`
+          }
+        ]
+      };
+    } else {
+      // Invalid custom policy, use flexible
+      policy = CANCELLATION_POLICIES.flexible;
+    }
+  } else if (!policy) {
+    // Unknown policy, use flexible
+    policy = CANCELLATION_POLICIES.flexible;
+  }
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
   const now = new Date();
   
@@ -206,6 +244,19 @@ export function calculateRefund(
  * Get human-readable cancellation policy text
  */
 export function getCancellationPolicyText(policyId: string = 'flexible'): string {
+  // Handle custom policies (format: "custom_24" for 24 hours)
+  if (policyId.startsWith('custom_')) {
+    const hours = parseInt(policyId.split('_')[1]);
+    if (!isNaN(hours) && hours > 0) {
+      const halfHours = Math.floor(hours / 2);
+      return `Custom Policy (${hours}-hour window)\n` +
+        `• 100% refund if cancelled ${hours}+ hours before tour\n` +
+        `• 50% refund if cancelled ${halfHours}-${hours} hours before tour\n` +
+        `• No refund if cancelled less than ${halfHours} hours before tour\n\n` +
+        `Note: Tour guide cancellations always receive 100% refund regardless of timing.`;
+    }
+  }
+  
   const policy = CANCELLATION_POLICIES[policyId] || CANCELLATION_POLICIES.flexible;
   
   const rulesText = policy.rules
@@ -233,6 +284,13 @@ export function getCancellationPolicyText(policyId: string = 'flexible'): string
  * Get policy display name for UI
  */
 export function getPolicyDisplayName(policyId: string = 'flexible'): string {
+  if (policyId.startsWith('custom_')) {
+    const hours = parseInt(policyId.split('_')[1]);
+    if (!isNaN(hours) && hours > 0) {
+      return `Custom (${hours}h window)`;
+    }
+    return 'Custom';
+  }
   const policy = CANCELLATION_POLICIES[policyId];
   return policy ? policy.name : 'Flexible';
 }

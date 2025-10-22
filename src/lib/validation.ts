@@ -26,6 +26,7 @@ export interface TourFormData {
 	includedItems: string[];
 	requirements: string[];
 	cancellationPolicy: string;
+	cancellationPolicyId?: string;
 	pricingModel?: 'per_person' | 'participant_categories' | 'group_tiers' | 'private_tour';
 	enablePricingTiers?: boolean;
 	pricingTiers?: {
@@ -514,6 +515,7 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
 		cancellationPolicy: String(data.cancellationPolicy || '').trim(),
+		cancellationPolicyId: data.cancellationPolicyId ? String(data.cancellationPolicyId).trim() : undefined,
 		enablePricingTiers: Boolean(data.enablePricingTiers),
 		pricingTiers: data.pricingTiers ? {
 			adult: Number(data.pricingTiers.adult) || 0,

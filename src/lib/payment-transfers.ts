@@ -16,10 +16,19 @@ export function calculateTransferTime(
   policyId: string = 'flexible'
 ): Date {
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
-  const policy = CANCELLATION_POLICIES[policyId] || CANCELLATION_POLICIES.flexible;
   
-  // Get the longest refund window from policy (the first rule in sorted order)
-  const maxRefundHours = Math.max(...policy.rules.map(r => r.hoursBeforeTour));
+  // Parse custom policies (format: "custom_24" for 24 hours)
+  let maxRefundHours = 24; // Default to 24 hours (flexible)
+  
+  if (policyId.startsWith('custom_')) {
+    const hours = parseInt(policyId.split('_')[1]);
+    if (!isNaN(hours) && hours > 0) {
+      maxRefundHours = hours;
+    }
+  } else if (CANCELLATION_POLICIES[policyId]) {
+    const policy = CANCELLATION_POLICIES[policyId];
+    maxRefundHours = Math.max(...policy.rules.map(r => r.hoursBeforeTour));
+  }
   
   // Transfer funds AFTER the maximum refund window has passed
   // Add 1 hour buffer for safety
@@ -122,18 +131,19 @@ export async function createTransferToGuide(
 /**
  * Create transfer reversal (for refunds on transferred payments)
  * Used when guide has already been paid but refund is needed
+ * Note: Transfer reversals are rarely needed since we transfer AFTER cancellation window
  */
 export async function createTransferReversal(
   transferId: string,
   amount?: number, // Optional: partial reversal
   metadata: Record<string, string> = {}
-): Promise<Stripe.TransferReversal> {
+): Promise<any> {
   const stripe = getStripe();
   
   console.log('↩️ Creating transfer reversal:', { transferId, amount });
   
   try {
-    const reversalParams: Stripe.TransferReversalCreateParams = {
+    const reversalParams: any = {
       metadata: {
         ...metadata,
         reversedAt: new Date().toISOString()
@@ -145,7 +155,8 @@ export async function createTransferReversal(
       reversalParams.amount = amount;
     }
     
-    const reversal = await stripe.transferReversals.create(
+    // Using any type since Stripe typing for reversals varies
+    const reversal = await (stripe as any).transfers.createReversal(
       transferId,
       reversalParams
     );

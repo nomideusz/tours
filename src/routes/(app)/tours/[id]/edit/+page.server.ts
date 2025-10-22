@@ -271,6 +271,12 @@ export const actions: Actions = {
       // Get public listing setting
       const publicListing = formData.get('publicListing') === 'true';
       console.log('📝 Public listing from form:', formData.get('publicListing'), '→', publicListing);
+      
+      // Debug cancellation policy
+      console.log('📝 Cancellation policy from form:', {
+        policyId: formData.get('cancellationPolicyId'),
+        policyText: formData.get('cancellationPolicy')?.substring(0, 50)
+      });
 
       // Prepare tour data
       console.log('📝 Raw categories from form:', formData.get('categories'));
@@ -455,6 +461,7 @@ export const actions: Actions = {
         basePrice = String(minPrice);
       }
       console.log('💰 Calculated base price for backward compatibility:', basePrice, 'from model:', pricingModel);
+      console.log('📝 Final cancellationPolicyId before update:', sanitizedData.cancellationPolicyId);
 
       // Update tour in database
       const updatedTour = await db
@@ -471,6 +478,7 @@ export const actions: Actions = {
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
+          cancellationPolicyId: (sanitizedData.cancellationPolicyId as string) || 'flexible',
           // Pricing configuration
           pricingModel: (pricingModel as 'per_person' | 'group_tiers' | 'participant_categories' | 'private_tour') || 'participant_categories',
           enablePricingTiers: Boolean(sanitizedData.enablePricingTiers),

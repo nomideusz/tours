@@ -27,9 +27,9 @@ export function useNotifications() {
   let instanceCleanedUp = false;
   
   const maxReconnectAttempts = 5; // Reduced from 10 to prevent spam
-  const heartbeatTimeout = 60000; // 60 seconds
-  const healthCheckInterval_ms = 30000; // 30 seconds - reduced frequency
-  const pollingInterval_ms = 60000; // 60 seconds fallback polling - reduced frequency
+  const heartbeatTimeout = 45000; // 45 seconds (3x 15s heartbeat interval)
+  const healthCheckInterval_ms = 20000; // 20 seconds - check health more frequently
+  const pollingInterval_ms = 60000; // 60 seconds fallback polling
   const queryClient = useQueryClient();
 
   // Track this instance
@@ -206,19 +206,17 @@ export function useNotifications() {
       };
 
       eventSource.onerror = (error) => {
-        // Reduce noise in development - only log first few failures
-        if (reconnectAttempts < 3) {
-          console.log(`❌ Instance ${instanceId}: SSE connection error:`, error);
-          console.log('❌ SSE readyState:', eventSource?.readyState);
-          console.log('❌ SSE url:', eventSource?.url);
+        // Reduce noise - only log first failure and connection state
+        if (reconnectAttempts === 0) {
+          console.warn(`⚠️ Instance ${instanceId}: SSE connection error (readyState: ${eventSource?.readyState})`);
         }
         
         isConnecting = false;
         notificationActions.setConnected(false);
         
         if (eventSource?.readyState === EventSource.CLOSED) {
-          if (reconnectAttempts < 3) {
-            console.log('❌ EventSource closed unexpectedly');
+          if (reconnectAttempts === 0) {
+            console.warn('⚠️ SSE connection closed, starting fallback polling and attempting reconnection...');
           }
           
           // Start polling as fallback
@@ -246,10 +244,14 @@ export function useNotifications() {
     console.log(`🏥 Instance ${instanceId}: Starting health check interval...`);
     healthCheckInterval = setInterval(() => {
       const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-      console.log('🔍 Health check - readyState:', eventSource?.readyState, 'timeSinceLastHeartbeat:', timeSinceLastHeartbeat);
+      
+      // Only log if there's a potential issue (more than 30s since last heartbeat)
+      if (timeSinceLastHeartbeat > 30000) {
+        console.log(`🔍 Health check - readyState: ${eventSource?.readyState}, timeSinceLastHeartbeat: ${timeSinceLastHeartbeat}ms`);
+      }
       
       if (timeSinceLastHeartbeat > heartbeatTimeout) {
-        console.log('⚠️ No heartbeat for 60 seconds, forcing reconnect...');
+        console.warn(`⚠️ No heartbeat for ${heartbeatTimeout}ms, forcing reconnect...`);
         
         // Start polling as fallback
         startPolling();
@@ -461,29 +463,60 @@ export function useNotifications() {
   }
 
   // Optional notification sound (only plays if user has enabled it)
-  function playNotificationSound() {
+  async function playNotificationSound() {
     if (!browser) return;
     
     try {
-      // Create a simple, pleasant notification sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🔊 Attempting to play notification sound...');
+      
+      // Create or reuse AudioContext
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('⚠️ AudioContext not supported in this browser');
+        return;
+      }
+      
+      const audioContext = new AudioContextClass();
+      
+      // Resume AudioContext if it's suspended (required by browser autoplay policies)
+      if (audioContext.state === 'suspended') {
+        console.log('🔊 AudioContext suspended, attempting to resume...');
+        await audioContext.resume();
+      }
+      
+      if (audioContext.state !== 'running') {
+        console.warn('⚠️ AudioContext not running, state:', audioContext.state);
+        return;
+      }
+      
+      console.log('🔊 AudioContext ready, creating sound...');
+      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      // Pleasant two-tone chime
+      // Pleasant two-tone chime (C5 -> E5)
       oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
       oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
       
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      // Set volume (lower for gentle sound)
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.stop(audioContext.currentTime + 0.4);
+      
+      console.log('✅ Notification sound played successfully');
+      
+      // Clean up after sound finishes
+      setTimeout(() => {
+        audioContext.close();
+      }, 500);
+      
     } catch (error) {
-      console.warn('Could not play notification sound:', error);
+      console.warn('⚠️ Could not play notification sound:', error);
     }
   }
 

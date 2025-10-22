@@ -54,6 +54,47 @@
 	const whatsappFeatureEnabled = isFeatureEnabled('WHATSAPP_NOTIFICATIONS');
 	const hasWhatsAppAccess = user?.subscriptionPlan && hasFeatureAccess('WHATSAPP_NOTIFICATIONS', user.subscriptionPlan);
 	const showWhatsAppOption = whatsappFeatureEnabled && hasWhatsAppAccess;
+	
+	// Test notification sound
+	async function testNotificationSound() {
+		try {
+			console.log('🔊 Testing notification sound...');
+			
+			const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+			if (!AudioContextClass) {
+				alert('Audio not supported in your browser');
+				return;
+			}
+			
+			const audioContext = new AudioContextClass();
+			
+			if (audioContext.state === 'suspended') {
+				await audioContext.resume();
+			}
+			
+			const oscillator = audioContext.createOscillator();
+			const gainNode = audioContext.createGain();
+			
+			oscillator.connect(gainNode);
+			gainNode.connect(audioContext.destination);
+			
+			oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+			oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+			
+			gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+			gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+			
+			oscillator.start(audioContext.currentTime);
+			oscillator.stop(audioContext.currentTime + 0.4);
+			
+			setTimeout(() => audioContext.close(), 500);
+			
+			console.log('✅ Test sound played');
+		} catch (error) {
+			console.error('❌ Test sound failed:', error);
+			alert('Could not play sound. Check console for details.');
+		}
+	}
 </script>
 
 <div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
@@ -85,6 +126,17 @@
 					<p class="text-sm" style="color: var(--text-secondary);">
 						Play a gentle chime when you receive new booking notifications
 					</p>
+					{#if $preferences.notificationSound}
+						<button
+							type="button"
+							onclick={testNotificationSound}
+							class="button--small button--gap mt-2"
+							style="font-size: 0.75rem; padding: 0.25rem 0.75rem;"
+						>
+							<Volume2 class="h-3 w-3" style="display: inline;" />
+							Test Notification Sound
+						</button>
+					{/if}
 				</div>
 				<div class="flex items-center">
 					<Tooltip text="Toggle notification sounds">

@@ -527,6 +527,7 @@ Key extracted components:
 	
 	let selectedPolicyTemplate = $state('flexible'); // Default to flexible
 	let showCustomPolicy = $state(false);
+	let customPolicyHours = $state(24); // Default 24 hours for custom policy
 	
 	// Convert our structured policies to template format for the UI
 	const policyTemplates = [
@@ -585,18 +586,83 @@ Key extracted components:
 
 	function enableCustomPolicy() {
 		selectedPolicyTemplate = '';
-		formData.cancellationPolicyId = 'custom';
 		showCustomPolicy = true;
-		// Keep existing policy text if any
+		
+		// Set cancellationPolicyId to the hours value (e.g., "custom_24" for 24 hours)
+		updateCustomPolicyId();
 	}
+	
+	// Store for optional custom notes (separate from auto-generated rules)
+	let customPolicyNotes = $state('');
+	
+	// Update policy ID when custom hours change
+	function updateCustomPolicyId() {
+		formData.cancellationPolicyId = `custom_${customPolicyHours}`;
+		
+		// Generate policy text from the hours value (auto-generated, not editable)
+		const halfHours = Math.floor(customPolicyHours / 2);
+		let policyText = `• 100% refund if cancelled ${customPolicyHours}+ hours before tour\n` +
+			`• 50% refund if cancelled ${halfHours}-${customPolicyHours} hours before tour\n` +
+			`• No refund if cancelled less than ${halfHours} hours before tour`;
+		
+		// Add custom notes if provided
+		if (customPolicyNotes.trim()) {
+			policyText += `\n\nAdditional Information:\n${customPolicyNotes.trim()}`;
+		}
+		
+		formData.cancellationPolicy = policyText;
+	}
+	
+	// Watch for changes to custom hours or notes
+	$effect(() => {
+		if (showCustomPolicy && customPolicyHours) {
+			updateCustomPolicyId();
+		}
+	});
+	
+	// Watch for changes to custom notes
+	$effect(() => {
+		if (showCustomPolicy) {
+			updateCustomPolicyId();
+		}
+	});
 
+	// Track if initialization has run to prevent loops
+	let policyInitialized = $state(false);
+	
 	// Initialize policy template selection based on existing policy
 	$effect(() => {
-		// If we have a policyId, use that
+		// Only run once when formData is loaded
+		if (policyInitialized) return;
+		
+		// Check if it's a custom policy (format: "custom_24")
+		if (formData.cancellationPolicyId?.startsWith('custom_')) {
+			const hours = parseInt(formData.cancellationPolicyId.split('_')[1]);
+			if (!isNaN(hours) && hours > 0) {
+				selectedPolicyTemplate = ''; // Clear any template selection
+				showCustomPolicy = true;
+				customPolicyHours = hours;
+				
+				// Extract custom notes if they exist in the policy text
+				if (formData.cancellationPolicy.includes('Additional Information:')) {
+					const parts = formData.cancellationPolicy.split('Additional Information:');
+					if (parts[1]) {
+						customPolicyNotes = parts[1].trim();
+					}
+				}
+				
+				policyInitialized = true;
+				return;
+			}
+		}
+		
+		// If we have a predefined policyId, use that
 		if (formData.cancellationPolicyId && formData.cancellationPolicyId !== 'custom') {
 			const matchingTemplate = policyTemplates.find(t => t.id === formData.cancellationPolicyId);
 			if (matchingTemplate) {
 				selectedPolicyTemplate = formData.cancellationPolicyId;
+				showCustomPolicy = false;
+				policyInitialized = true;
 				return;
 			}
 		}
@@ -608,20 +674,29 @@ Key extracted components:
 			if (matchingTemplate) {
 				selectedPolicyTemplate = matchingTemplate.id;
 				formData.cancellationPolicyId = matchingTemplate.id;
+				showCustomPolicy = false;
+				policyInitialized = true;
 			} else if (formData.cancellationPolicy.trim()) {
+				// Unknown custom policy - default to custom with 24h
+				selectedPolicyTemplate = '';
 				showCustomPolicy = true;
-				formData.cancellationPolicyId = 'custom';
+				customPolicyHours = 24;
+				updateCustomPolicyId();
+				policyInitialized = true;
 			}
+			return;
 		}
 		
 		// Set default if no policy set
 		if (!formData.cancellationPolicyId && !formData.cancellationPolicy) {
 			formData.cancellationPolicyId = 'flexible';
 			selectedPolicyTemplate = 'flexible';
+			showCustomPolicy = false;
 			const defaultTemplate = policyTemplates.find(t => t.id === 'flexible');
 			if (defaultTemplate) {
 				formData.cancellationPolicy = defaultTemplate.policy;
 			}
+			policyInitialized = true;
 		}
 	});
 
@@ -1224,17 +1299,69 @@ Key extracted components:
 					{/if}
 					
 					{#if showCustomPolicy}
-						<div class="mt-4">
-							<textarea
-								name="cancellationPolicy"
-								bind:value={formData.cancellationPolicy}
-								rows="4"
-								placeholder="Write your custom cancellation policy here. Be clear about refund terms, time limits, and any special conditions..."
-								class="form-textarea"
-							></textarea>
-							<p class="text-xs mt-2" style="color: var(--text-tertiary);">
-								💡 Tip: Clear policies build customer trust and reduce disputes
-							</p>
+						<div class="mt-4 space-y-4">
+							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
+								<h4 class="text-sm font-semibold mb-3" style="color: var(--text-primary);">Custom Refund Rules</h4>
+								
+								<div class="space-y-3">
+									<!-- Full Refund Window -->
+									<div>
+										<label for="customPolicyHours" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+											Full Refund Window (100%)
+										</label>
+										<div class="flex items-center gap-2">
+											<input
+												id="customPolicyHours"
+												type="number"
+												bind:value={customPolicyHours}
+												min="1"
+												max="168"
+												step="1"
+												class="form-input"
+												style="max-width: 100px;"
+											/>
+											<span class="text-sm" style="color: var(--text-secondary);">hours before tour</span>
+										</div>
+										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+											Common: 2h (very flexible), 24h (standard), 48h (moderate), 168h (7 days, strict)
+										</p>
+									</div>
+									
+									<!-- Preview -->
+									<div class="p-3 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
+										<p class="text-xs font-medium mb-1" style="color: var(--color-primary-900);">Your Policy:</p>
+										<p class="text-xs" style="color: var(--color-primary-800);">
+											• 100% refund if cancelled {customPolicyHours}+ hours before tour<br/>
+											• 50% refund if cancelled {Math.floor(customPolicyHours / 2)}-{customPolicyHours} hours before<br/>
+											• No refund if cancelled less than {Math.floor(customPolicyHours / 2)} hours before
+										</p>
+									</div>
+									
+									<!-- Optional custom notes -->
+									<div>
+										<label for="customPolicyNotes" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+											Additional Notes (Optional)
+										</label>
+										<textarea
+											id="customPolicyNotes"
+											bind:value={customPolicyNotes}
+											rows="2"
+											placeholder="e.g., 'Contact us for special circumstances' or 'Emergency cancellations always considered'"
+											class="form-textarea text-sm"
+										></textarea>
+										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+											Extra information for customers - doesn't affect automatic refund calculations
+										</p>
+									</div>
+								</div>
+							</div>
+							
+							<div class="p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+								<p class="text-xs" style="color: var(--color-warning-800);">
+									<strong>⚠️ Remember:</strong> Refunds come from your Stripe account balance. 
+									More flexible policies = happier customers but ensure you can process refunds.
+								</p>
+							</div>
 						</div>
 					{/if}
 

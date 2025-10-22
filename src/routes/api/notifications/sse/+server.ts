@@ -1,14 +1,28 @@
 import { type RequestHandler } from '@sveltejs/kit';
 import { connections } from '$lib/notifications/server.js';
 
+// Handle CORS preflight
+export const OPTIONS: RequestHandler = async () => {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Cookie',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
+};
+
 export const GET: RequestHandler = async ({ locals, url }) => {
   // Check authentication
   if (!locals.user) {
+    console.warn('⚠️ SSE connection rejected: No authenticated user');
     return new Response('Unauthorized', { status: 401 });
   }
 
   const userId = locals.user.id;
-  console.log(`🔍 SSE connection established for user: "${userId}" (type: ${typeof userId})`);
+  const userEmail = locals.user.email;
+  console.log(`🔍 SSE connection established for user: "${userId}" (${userEmail})`);
   
   // Create SSE stream
   const stream = new ReadableStream({
@@ -53,7 +67,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
         userId
       });
 
-      // Set up heartbeat to keep connection alive
+      // Set up heartbeat to keep connection alive through proxies
+      // Use more frequent heartbeats (15s) to prevent proxy timeouts
       const heartbeat = setInterval(() => {
         // Check if connection still exists before sending heartbeat
         if (!connections.has(userId)) {
@@ -62,7 +77,18 @@ export const GET: RequestHandler = async ({ locals, url }) => {
           return;
         }
         
+        if (isControllerClosed) {
+          console.log(`SSE controller closed for user ${userId}, clearing heartbeat`);
+          clearInterval(heartbeat);
+          connections.delete(userId);
+          return;
+        }
+        
         try {
+          // Send both a comment (for proxy keep-alive) and a heartbeat message
+          const comment = `: heartbeat ${Date.now()}\n\n`;
+          controller.enqueue(encoder.encode(comment));
+          
           sendMessage({
             type: 'heartbeat',
             timestamp: new Date().toISOString()
@@ -71,8 +97,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
           console.log(`SSE heartbeat failed for user ${userId}:`, error);
           clearInterval(heartbeat);
           connections.delete(userId);
+          isControllerClosed = true;
         }
-      }, 30000); // Every 30 seconds
+      }, 15000); // Every 15 seconds for better proxy compatibility
 
       // Clean up on close
       const cleanup = () => {
@@ -95,8 +122,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', // Critical: Prevent nginx from buffering SSE
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Cache-Control'
     }

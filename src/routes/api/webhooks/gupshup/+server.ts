@@ -164,8 +164,26 @@ async function handleMessageEvent(payload: GupshupWebhookPayload) {
 			break;
 		case 'failed':
 			const errorMessage = errorDetails?.reason || errorDetails?.message || 'Unknown error';
-			statusMessage = `WhatsApp delivery failed: ${errorMessage}`;
-			notificationType = 'error';
+			const errorCode = errorDetails?.code;
+			
+			// Error 470 is WhatsApp's 24-hour messaging window policy - not a technical error
+			if (errorCode === 470) {
+				statusMessage = `WhatsApp delivery skipped: Customer outside 24-hour messaging window`;
+				notificationType = 'info'; // Not an error, just a policy limitation
+				console.log(`ℹ️ WhatsApp message not sent (24-hour window):`, {
+					messageId,
+					recipient,
+					note: 'Customer needs to message first or be within 24h of last interaction'
+				});
+			} else {
+				statusMessage = `WhatsApp delivery failed: ${errorMessage}`;
+				notificationType = 'error';
+				console.error(`⚠️ WhatsApp message failed:`, {
+					messageId,
+					recipient,
+					errorDetails
+				});
+			}
 			break;
 		case 'deleted':
 			statusMessage = 'WhatsApp message was deleted';
@@ -179,14 +197,14 @@ async function handleMessageEvent(payload: GupshupWebhookPayload) {
 	// TODO: Update message status in database if you're tracking messages
 	// await updateMessageStatus(messageId, status);
 	
-	// Log significant events
-	if (status === 'failed' || status === 'deleted') {
-		console.error(`⚠️ WhatsApp message ${status}:`, {
+	// Only log actual errors, not policy-based restrictions
+	if (status === 'deleted') {
+		console.warn(`⚠️ WhatsApp message deleted:`, {
 			messageId,
-			recipient,
-			errorDetails
+			recipient
 		});
 	}
+	// Error 470 is already logged above with proper context
 }
 
 /**

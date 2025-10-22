@@ -8,7 +8,7 @@ export interface UserPreferences {
 }
 
 const defaultPreferences: UserPreferences = {
-  notificationSound: false, // Off by default for non-invasive experience
+  notificationSound: true, // Enabled by default - gentle chime for new bookings
   compactView: false,
   theme: 'system'
 };
