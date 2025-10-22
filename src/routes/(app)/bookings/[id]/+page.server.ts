@@ -21,9 +21,9 @@ export const actions: Actions = {
 				return fail(400, { error: 'Booking ID is required' });
 			}
 
-			if (!status || !['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
-				return fail(400, { error: 'Invalid status' });
-			}
+		if (!status || !['pending', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(status)) {
+			return fail(400, { error: 'Invalid status' });
+		}
 
 			// Verify that the booking belongs to the current user
 			const bookingData = await db.select({
@@ -46,13 +46,13 @@ export const actions: Actions = {
 
 			const oldStatus = bookingData[0].status;
 
-			// Update the booking status
-			await db.update(bookings)
-				.set({ 
-					status: status as 'pending' | 'confirmed' | 'completed' | 'cancelled',
-					updatedAt: new Date()
-				})
-				.where(eq(bookings.id, bookingId));
+		// Update the booking status
+		await db.update(bookings)
+			.set({ 
+				status: status as 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show',
+				updatedAt: new Date()
+			})
+			.where(eq(bookings.id, bookingId));
 
 			// If status changed to cancelled, trigger cancellation email
 			if (oldStatus !== 'cancelled' && status === 'cancelled') {
