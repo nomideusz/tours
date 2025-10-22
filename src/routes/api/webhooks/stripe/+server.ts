@@ -143,9 +143,11 @@ export const POST: RequestHandler = async ({ request }) => {
               );
               
               // Update booking with transfer schedule
+              // SAFE MIGRATION: Write to BOTH old and new columns
               await db.update(bookings).set({
                 transferScheduledFor,
-                transferStatus: 'pending'
+                transferStatus: 'pending',
+                transferStatusNew: 'pending'
               }).where(eq(bookings.id, bookingId));
               
               console.log(`Webhook: Transfer scheduled for ${transferScheduledFor.toISOString()} (policy: ${data.tourCancellationPolicyId})`);

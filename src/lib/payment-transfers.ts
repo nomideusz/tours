@@ -9,7 +9,8 @@ import type Stripe from 'stripe';
 
 /**
  * Calculate when funds should be transferred to guide
- * Funds are held until the cancellation window passes
+ * SIMPLE APPROACH: Hold funds until tour actually starts
+ * This eliminates refund risk - guides can't cancel after getting paid
  */
 export function calculateTransferTime(
   tourStartTime: Date | string,
@@ -18,41 +19,23 @@ export function calculateTransferTime(
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
   const now = new Date();
   
-  // Non-refundable policy = transfer immediately (no refund risk)
-  // Add 5-minute buffer to ensure database write completes and cron can pick it up
-  if (policyId === 'nonRefundable') {
-    console.log('💸 Non-refundable policy - scheduling immediate transfer (5min delay)');
-    const immediateTransfer = new Date(now);
-    immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
-    return immediateTransfer;
-  }
-  
-  // Parse custom policies (format: "custom_24" for 24 hours)
-  let maxRefundHours = 24; // Default to 24 hours (flexible)
-  
-  if (policyId.startsWith('custom_')) {
-    const hours = parseInt(policyId.split('_')[1]);
-    if (!isNaN(hours) && hours > 0) {
-      maxRefundHours = hours;
-    }
-  } else if (CANCELLATION_POLICIES[policyId]) {
-    const policy = CANCELLATION_POLICIES[policyId];
-    maxRefundHours = Math.max(...policy.rules.map(r => r.hoursBeforeTour));
-  }
-  
-  // Transfer funds AFTER the maximum refund window has passed
-  // Add 1 hour buffer for safety
+  // Transfer funds AFTER tour starts
+  // This way, guide can't cancel and keep the money
+  // Customer is always protected until service is delivered
   const transferTime = new Date(startTime);
-  transferTime.setHours(transferTime.getHours() - maxRefundHours - 1);
   
-  // Don't transfer in the past - if calculation puts us in past, transfer soon
-  // Add 5-minute buffer to ensure database write completes and cron can pick it up
+  // Wait 1 hour after tour starts before transferring
+  // This ensures tour actually began
+  transferTime.setHours(transferTime.getHours() + 1);
+  
+  // If tour already started, transfer soon (5min buffer for cron)
   if (transferTime < now) {
     const immediateTransfer = new Date(now);
     immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
     return immediateTransfer;
   }
   
+  console.log(`💰 Transfer scheduled for 1 hour after tour starts: ${transferTime.toISOString()}`);
   return transferTime;
 }
 
@@ -71,7 +54,7 @@ export function calculateTourCompletionTime(
 
 /**
  * Determine optimal transfer time
- * Transfers immediately if tour completed, otherwise waits for cancellation window
+ * Simple approach: Always wait until tour starts + 1 hour
  */
 export function getOptimalTransferTime(
   tourStartTime: Date | string,
@@ -89,17 +72,17 @@ export function getOptimalTransferTime(
     immediateTransfer.setMinutes(immediateTransfer.getMinutes() + 5);
     return {
       transferTime: immediateTransfer,
-      reason: 'Tour completed',
+      reason: 'Tour completed - service delivered',
       immediate: true
     };
   }
   
-  // Tour in progress or upcoming - wait for cancellation window
-  const cancelWindowTime = calculateTransferTime(startTime, policyId);
+  // Tour hasn't started yet - use standard calculation (1 hour after start)
+  const transferTime = calculateTransferTime(startTime, policyId);
   
   return {
-    transferTime: cancelWindowTime,
-    reason: `Waiting for ${policyId} policy cancellation window`,
+    transferTime,
+    reason: 'Waiting for tour to start',
     immediate: false
   };
 }

@@ -4,11 +4,18 @@ import { config } from 'dotenv';
 // Load environment variables
 config();
 
+// Check if DATABASE_URL is available (production style)
+const databaseUrl = process.env.DATABASE_URL;
+
 export default defineConfig({
   schema: './src/lib/db/schema/drizzle.ts',
   out: './drizzle/migrations',
   dialect: 'postgresql',
-  dbCredentials: {
+  dbCredentials: databaseUrl ? {
+    // Use connection string if available
+    url: databaseUrl,
+  } : {
+    // Use individual credentials for local
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432'),
     user: process.env.DATABASE_USER || 'zaur_dev',

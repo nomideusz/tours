@@ -4,6 +4,7 @@ import { bookings, tours, timeSlots, users } from '$lib/db/schema/index.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { calculateRefund, canCancelBooking } from '$lib/utils/cancellation-policies.js';
 import { createDirectRefund, checkRefundAvailability, formatAmountForStripe } from '$lib/stripe.server.js';
+import { processSmartRefund } from '$lib/utils/refund-handler.js';
 
 export const POST: RequestHandler = async ({ params, request, locals }) => {
   try {
@@ -30,6 +31,9 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         bookingCustomerEmail: bookings.customerEmail,
         bookingParticipants: bookings.participants,
         bookingReference: bookings.bookingReference,
+        // Transfer tracking fields
+        bookingTransferId: bookings.transferId,
+        bookingTransferStatus: bookings.transferStatus,
         
         // Tour fields
         tourId: tours.id,
@@ -95,8 +99,8 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
       hoursUntilTour: refundCalc.timeUntilTour.toFixed(1)
     });
 
-    let stripeRefundId: string | null = null;
-    let refundStatus: 'succeeded' | 'failed' | 'not_needed' = 'not_needed';
+    let stripeRefundId: string | null | undefined = null;
+    let refundStatus: 'succeeded' | 'failed' | 'not_required' = 'not_required';
 
     // Process refund if needed
     if (refundCalc.isRefundable && refundCalc.refundAmount > 0 && booking.bookingPaymentStatus === 'paid') {
@@ -132,16 +136,19 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         
         // Don't fail the cancellation, but mark refund as failed
         // Guide will need to process manually
+        // Mark booking as cancelled with refund failed (insufficient balance)
+        // SAFE MIGRATION: Write to BOTH old and new columns
         await db.update(bookings).set({
           status: 'cancelled',
           cancelledBy,
           cancellationReason: reason || 'other',
           refundStatus: 'failed',
+          refundStatusNew: 'failed',
           refundAmount: refundCalc.refundAmount.toFixed(2),
           refundPercentage: refundCalc.refundPercentage,
           updatedAt: new Date()
         }).where(eq(bookings.id, bookingId));
-
+        
         return json({
           success: false,
           error: 'Insufficient balance in tour guide account for automatic refund',
@@ -155,38 +162,54 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
         }, { status: 400 });
       }
 
-      // Process Stripe refund
+      // Process Stripe refund using smart handler
+      // This handles both pre-transfer and post-transfer scenarios
       try {
-        console.log(`   💳 Creating Stripe refund...`);
+        console.log(`   💳 Processing smart refund...`);
+        console.log(`   📊 Transfer status: transferId=${booking.bookingTransferId}, status=${booking.bookingTransferStatus}`);
         
-        const stripeRefund = await createDirectRefund(
-          booking.bookingPaymentId,
-          booking.guideStripeAccountId,
-          refundCalc.refundPercentage === 100 ? undefined : refundAmountCents,
-          'requested_by_customer',
-          {
+        const refundResult = await processSmartRefund({
+          paymentIntentId: booking.bookingPaymentId,
+          connectedAccountId: booking.guideStripeAccountId,
+          amount: refundCalc.refundAmount,
+          currency,
+          reason: 'requested_by_customer',
+          metadata: {
             bookingId,
             bookingReference: booking.bookingReference,
             reason: reason || 'customer_request',
             cancelledBy,
             refundPercentage: refundCalc.refundPercentage.toString()
-          }
-        );
+          },
+          // Transfer info for smart refund decision
+          transferId: booking.bookingTransferId,
+          transferStatus: booking.bookingTransferStatus
+        });
 
-        stripeRefundId = stripeRefund.id;
-        refundStatus = stripeRefund.status === 'succeeded' ? 'succeeded' : 'failed';
+        if (!refundResult.success) {
+          throw new Error(refundResult.error || 'Refund failed');
+        }
 
-        console.log(`   ✅ Stripe refund created: ${stripeRefundId}, status: ${refundStatus}`);
+        stripeRefundId = refundResult.refundId;
+        refundStatus = 'succeeded';
+
+        console.log(`   ✅ Smart refund successful: ${refundResult.method}`);
+        console.log(`      RefundID: ${stripeRefundId}`);
+        if (refundResult.transferReversalId) {
+          console.log(`      Transfer reversed: ${refundResult.transferReversalId}`);
+        }
       } catch (refundError) {
-        console.error(`   ❌ Stripe refund failed:`, refundError);
+        console.error(`   ❌ Smart refund failed:`, refundError);
         refundStatus = 'failed';
         
         // Still cancel the booking, but mark refund as failed
+        // SAFE MIGRATION: Write to BOTH old and new columns
         await db.update(bookings).set({
           status: 'cancelled',
           cancelledBy,
           cancellationReason: reason || 'other',
           refundStatus: 'failed',
+          refundStatusNew: 'failed',
           refundAmount: refundCalc.refundAmount.toFixed(2),
           refundPercentage: refundCalc.refundPercentage,
           updatedAt: new Date()
@@ -213,15 +236,23 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
       updatedAt: new Date()
     };
 
+    // Only add refundId if it exists
     if (stripeRefundId) {
       updateData.refundId = stripeRefundId;
     }
 
+    // Set refund status
+    // SAFE MIGRATION: Write to BOTH old and new columns
     if (refundCalc.refundAmount > 0) {
       updateData.refundAmount = refundCalc.refundAmount.toFixed(2);
       updateData.refundPercentage = refundCalc.refundPercentage;
       updateData.refundStatus = refundStatus;
+      updateData.refundStatusNew = refundStatus;
       updateData.refundProcessedAt = new Date();
+    } else {
+      // No refund needed
+      updateData.refundStatus = null;
+      updateData.refundStatusNew = 'not_required';
     }
 
     await db.update(bookings)

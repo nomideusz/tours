@@ -1,5 +1,6 @@
 import { type RequestHandler } from '@sveltejs/kit';
 import { connections } from '$lib/notifications/server.js';
+import { recordSSEConnection, recordSSEDisconnection, recordSSEError, recordSSEHeartbeat } from '$lib/notifications/sse-monitor.js';
 
 // Handle CORS preflight
 export const OPTIONS: RequestHandler = async () => {
@@ -45,9 +46,15 @@ export const GET: RequestHandler = async ({ locals, url }) => {
           controller.enqueue(encoder.encode(message));
           console.log(`✅ SSE message enqueued successfully for user ${userId}`);
         } catch (error) {
+          recordSSEError(userId, error as Error);
           if (error instanceof Error && (error as any).code === 'ERR_INVALID_STATE') {
             console.log(`SSE controller closed for user ${userId}, marking as closed`);
             isControllerClosed = true;
+            // Clean up heartbeat immediately
+            if (heartbeat) {
+              clearInterval(heartbeat);
+              heartbeat = null;
+            }
           } else {
             console.error(`Failed to send SSE message to user ${userId}:`, error);
           }
@@ -57,6 +64,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
       // Store connection for this user (store the sendMessage function)
       connections.set(userId, sendMessage);
+      recordSSEConnection(userId);
       console.log(`🔍 SSE connection stored for user: "${userId}"`);
       console.log(`🔍 Total active connections:`, connections.size);
 
@@ -69,21 +77,32 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
       // Set up heartbeat to keep connection alive through proxies
       // Use more frequent heartbeats (15s) to prevent proxy timeouts
-      const heartbeat = setInterval(() => {
-        // Check if connection still exists before sending heartbeat
-        if (!connections.has(userId)) {
-          console.log(`SSE connection no longer exists for user ${userId}, clearing heartbeat`);
-          clearInterval(heartbeat);
-          return;
-        }
+      let heartbeat: NodeJS.Timeout | null = null;
+      
+      const startHeartbeat = () => {
+        if (heartbeat) return; // Already running
         
-        if (isControllerClosed) {
-          console.log(`SSE controller closed for user ${userId}, clearing heartbeat`);
-          clearInterval(heartbeat);
-          connections.delete(userId);
-          return;
-        }
-        
+        heartbeat = setInterval(() => {
+          // Check if connection still exists before sending heartbeat
+          if (!connections.has(userId)) {
+            console.log(`SSE connection no longer exists for user ${userId}, clearing heartbeat`);
+            if (heartbeat) {
+              clearInterval(heartbeat);
+              heartbeat = null;
+            }
+            return;
+          }
+          
+          if (isControllerClosed) {
+            console.log(`SSE controller closed for user ${userId}, clearing heartbeat`);
+            if (heartbeat) {
+              clearInterval(heartbeat);
+              heartbeat = null;
+            }
+            connections.delete(userId);
+            return;
+          }
+          
         try {
           // Send both a comment (for proxy keep-alive) and a heartbeat message
           const comment = `: heartbeat ${Date.now()}\n\n`;
@@ -93,19 +112,32 @@ export const GET: RequestHandler = async ({ locals, url }) => {
             type: 'heartbeat',
             timestamp: new Date().toISOString()
           });
+          
+          recordSSEHeartbeat(userId);
         } catch (error) {
           console.log(`SSE heartbeat failed for user ${userId}:`, error);
-          clearInterval(heartbeat);
+          recordSSEError(userId, error as Error);
+          if (heartbeat) {
+            clearInterval(heartbeat);
+            heartbeat = null;
+          }
           connections.delete(userId);
           isControllerClosed = true;
         }
-      }, 15000); // Every 15 seconds for better proxy compatibility
+        }, 15000); // Every 15 seconds for better proxy compatibility
+      };
+      
+      startHeartbeat();
 
       // Clean up on close
       const cleanup = () => {
         isControllerClosed = true;
-        clearInterval(heartbeat);
+        if (heartbeat) {
+          clearInterval(heartbeat);
+          heartbeat = null;
+        }
         connections.delete(userId);
+        recordSSEDisconnection(userId, 'cleanup');
         console.log(`SSE connection closed for user ${userId}`);
       };
 
@@ -115,6 +147,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
     cancel() {
       connections.delete(userId);
+      recordSSEDisconnection(userId, 'cancel');
       console.log(`SSE connection cancelled for user ${userId}`);
     }
   });

@@ -311,6 +311,15 @@ export const bookingSourceEnum = pgEnum('booking_source', [
   'main_qr', 'tour_qr', 'direct', 'referral', 'social', 'other'
 ]);
 
+// NEW: Standardized status enums (Phase 1 migration)
+export const refundStatusEnumNew = pgEnum('refund_status_enum', [
+  'not_required', 'pending', 'succeeded', 'failed'
+]);
+
+export const transferStatusEnumNew = pgEnum('transfer_status_enum', [
+  'pending', 'completed', 'failed', 'reversed'
+]);
+
 // Bookings table
 export const bookings = pgTable('bookings', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -365,22 +374,26 @@ export const bookings = pgTable('bookings', {
   checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
   checkedInBy: text('checked_in_by').references(() => users.id),
   
-  // Refund tracking (NEW)
+  // Refund tracking
   refundId: varchar('refund_id', { length: 255 }),
   refundAmount: decimal('refund_amount', { precision: 10, scale: 2 }),
-  refundStatus: varchar('refund_status', { length: 50 }),
+  refundStatus: varchar('refund_status', { length: 50 }), // OLD: Will be replaced by refundStatusNew
   refundPercentage: integer('refund_percentage'),
   cancelledBy: varchar('cancelled_by', { length: 20 }),
   cancellationReason: varchar('cancellation_reason', { length: 100 }),
   refundProcessedAt: timestamp('refund_processed_at', { withTimezone: true }),
   refundNotes: text('refund_notes'),
   
-  // Transfer tracking (NEW - for delayed payouts)
+  // Transfer tracking (for delayed payouts)
   transferId: varchar('transfer_id', { length: 255 }),
-  transferStatus: varchar('transfer_status', { length: 50 }),
+  transferStatus: varchar('transfer_status', { length: 50 }), // OLD: Will be replaced by transferStatusNew
   transferScheduledFor: timestamp('transfer_scheduled_for', { withTimezone: true }),
   transferProcessedAt: timestamp('transfer_processed_at', { withTimezone: true }),
   transferNotes: text('transfer_notes'),
+  
+  // NEW: Standardized enum statuses (Phase 1 migration - parallel to old VARCHAR columns)
+  refundStatusNew: refundStatusEnumNew('refund_status_new').default('not_required'),
+  transferStatusNew: transferStatusEnumNew('transfer_status_new').default('pending'),
   
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()

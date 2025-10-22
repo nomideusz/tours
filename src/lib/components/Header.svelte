@@ -28,6 +28,41 @@
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
 
+	// Handle body scroll lock when mobile menu is open
+	$effect(() => {
+		if (mobileMenuOpen) {
+			// Lock body scroll
+			document.body.style.overflow = 'hidden';
+			document.body.style.position = 'fixed';
+			document.body.style.width = '100%';
+		} else {
+			// Restore body scroll
+			document.body.style.overflow = '';
+			document.body.style.position = '';
+			document.body.style.width = '';
+		}
+	});
+
+	// Cleanup on component destroy
+	onMount(() => {
+		// Handle escape key to close mobile menu
+		function handleEscapeKey(event: KeyboardEvent) {
+			if (event.key === 'Escape' && mobileMenuOpen) {
+				mobileMenuOpen = false;
+			}
+		}
+
+		document.addEventListener('keydown', handleEscapeKey);
+
+		return () => {
+			// Clean up event listener and restore body scroll
+			document.removeEventListener('keydown', handleEscapeKey);
+			document.body.style.overflow = '';
+			document.body.style.position = '';
+			document.body.style.width = '';
+		};
+	});
+
 	// Logout loading state
 	let isLoggingOut = $state(false);
 
@@ -305,7 +340,7 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: var(--z-70);
+		z-index: 100;
 		background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
 		border-bottom: 1.5px solid var(--border-primary);
 		backdrop-filter: blur(16px) saturate(180%);
@@ -616,6 +651,16 @@
 		z-index: 98;
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
+		animation: fadeIn 0.2s ease-out;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 
 	.mobile-menu {
@@ -629,6 +674,18 @@
 		border-top: 1px solid var(--border-primary);
 		box-shadow: var(--shadow-lg);
 		overflow-y: auto;
+		transform: translateY(0);
+		transition: transform var(--transition-base) ease;
+		animation: slideIn 0.3s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			transform: translateY(-100%);
+		}
+		to {
+			transform: translateY(0);
+		}
 	}
 
 	.mobile-menu-content {

@@ -138,9 +138,11 @@ export const GET: RequestHandler = async ({ request }) => {
         );
         
         // Update booking with transfer info
+        // SAFE MIGRATION: Write to BOTH old (VARCHAR) and new (enum) columns
         await db.update(bookings).set({
           transferId: transfer.id,
           transferStatus: 'completed',
+          transferStatusNew: 'completed',
           transferProcessedAt: new Date(),
           transferNotes: `Transferred ${booking.guideCurrency}${booking.bookingAmount} to ${booking.guideName}`
         }).where(eq(bookings.id, booking.bookingId));
@@ -158,8 +160,10 @@ export const GET: RequestHandler = async ({ request }) => {
         console.error(`   ❌ Transfer failed for ${booking.bookingReference}:`, error);
         
         // Mark as failed in database
+        // SAFE MIGRATION: Write to BOTH old and new columns
         await db.update(bookings).set({
           transferStatus: 'failed',
+          transferStatusNew: 'failed',
           transferNotes: `Transfer failed: ${errorMessage}`
         }).where(eq(bookings.id, booking.bookingId));
       }

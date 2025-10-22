@@ -329,9 +329,11 @@ export const actions: Actions = {
 					tour.cancellationPolicyId || 'flexible'
 				);
 				
+				// SAFE MIGRATION: Write to BOTH old and new columns
 				await db.update(bookings).set({
 					transferScheduledFor,
-					transferStatus: 'pending'
+					transferStatus: 'pending',
+					transferStatusNew: 'pending'
 				}).where(eq(bookings.id, booking.id));
 				
 				console.log(`💸 Transfer scheduled for ${transferScheduledFor.toISOString()} (policy: ${tour.cancellationPolicyId || 'flexible'})`);

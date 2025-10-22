@@ -104,6 +104,16 @@ export const POST: RequestHandler = async ({ request, url }) => {
                 },
                 // Add business type (most tour guides are individuals/sole proprietors)
                 business_type: 'individual',
+                // Set weekly payouts for better refund protection
+                // Money stays in Stripe balance longer, allowing transfer reversals
+                settings: {
+                    payouts: {
+                        schedule: {
+                            interval: 'weekly', // Pay every week instead of daily
+                            weekly_anchor: 'friday' // Friday payouts
+                        }
+                    }
+                },
             };
             
             // Create individual object if we have any personal data
