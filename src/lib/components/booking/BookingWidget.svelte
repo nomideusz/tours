@@ -49,6 +49,7 @@
 		onSlotSelect: (slot: TimeSlot | null) => void;
 		totalParticipants: () => number;
 		priceCalculation: () => BookingPriceResult | any;
+		tourCoordinates?: { lat: number; lng: number } | null;
 	}
 	
 	let { 
