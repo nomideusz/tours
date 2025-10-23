@@ -477,13 +477,28 @@
 		if (browser && mobileMenuOpen) {
 			document.addEventListener('click', handleClickOutside);
 			
-			// Prevent body scroll when menu is open
-			const originalOverflow = document.body.style.overflow;
-			document.body.style.overflow = 'hidden';
+			// Prevent body scroll when menu is open (mobile-friendly approach)
+			const scrollY = window.scrollY;
+			const body = document.body;
+			const originalPosition = body.style.position;
+			const originalTop = body.style.top;
+			const originalWidth = body.style.width;
+			const originalOverflow = body.style.overflow;
+			
+			body.style.position = 'fixed';
+			body.style.top = `-${scrollY}px`;
+			body.style.width = '100%';
+			body.style.overflow = 'hidden';
 			
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
-				document.body.style.overflow = originalOverflow;
+				
+				// Restore scroll position
+				body.style.position = originalPosition;
+				body.style.top = originalTop;
+				body.style.width = originalWidth;
+				body.style.overflow = originalOverflow;
+				window.scrollTo(0, scrollY);
 			};
 		}
 	});
@@ -610,7 +625,7 @@
 			<!-- Main content -->
 			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-72">
 				<!-- Page content with bottom padding on mobile for bottom nav -->
-				<main class="relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none pb-20 lg:pb-0 app-texture-overlay pt-6 lg:pt-0">
+				<main class="main-content relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none app-texture-overlay pt-6 lg:pt-0">
 					{@render children()}
 				</main>
 				
@@ -628,7 +643,7 @@
 		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
-		<div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary); padding-bottom: env(safe-area-inset-bottom, 0);">
+		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
 					{#if item.isMenu}
@@ -793,12 +808,51 @@
 		height: env(safe-area-inset-bottom, 0);
 	}
 	
+	/* Main content padding for bottom navigation */
+	.main-content {
+		padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+	}
+	
+	@media (min-width: 1024px) {
+		.main-content {
+			padding-bottom: 0;
+		}
+	}
+	
+	/* Mobile Bottom Navigation - iOS Safari safe positioning */
+	.mobile-bottom-nav {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 40;
+		padding-bottom: env(safe-area-inset-bottom, 0);
+		/* Prevent any gaps on iOS Safari */
+		transform: translateZ(0);
+		-webkit-transform: translateZ(0);
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+		/* Additional iOS Safari fixes */
+		will-change: transform;
+		-webkit-perspective: 1000;
+		perspective: 1000;
+	}
+	
+	/* Ensure the nav stays at the bottom even when iOS Safari UI changes */
+	@supports (padding-bottom: env(safe-area-inset-bottom)) {
+		.mobile-bottom-nav {
+			padding-bottom: env(safe-area-inset-bottom, 0);
+		}
+	}
+	
 	/* Mobile menu animation */
 	.mobile-menu-backdrop {
 		animation: fadeIn 0.2s ease-out;
+		position: fixed;
 		overflow: hidden;
 		touch-action: none;
 		overscroll-behavior: none;
+		-webkit-overflow-scrolling: auto;
 	}
 	
 	.mobile-menu-panel {
@@ -1038,6 +1092,25 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+	
+	/* Mobile bottom nav badge */
+	.nav-badge-mobile {
+		background: var(--color-danger-600);
+		color: white;
+		font-size: 0.625rem;
+		font-weight: 600;
+		padding: 0.125rem 0.375rem;
+		border-radius: var(--radius-full);
+		min-width: 1.125rem;
+		height: 1.125rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		position: absolute;
+		top: -4px;
+		right: -4px;
 	}
 
 	/* User Section */
