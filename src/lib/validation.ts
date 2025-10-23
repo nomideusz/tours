@@ -177,7 +177,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 	} else {
 		const name = data.name.trim();
 		if (name.length < VALIDATION_RULES.name.minLength) {
-			errors.push({ field: 'name', message: `Tour name must be at least ${VALIDATION_RULES.name.minLength} characters` });
+			errors.push({ field: 'name', message: `Minimum ${VALIDATION_RULES.name.minLength} characters` });
 		}
 		if (name.length > VALIDATION_RULES.name.maxLength) {
 			errors.push({ field: 'name', message: `Tour name must be no more than ${VALIDATION_RULES.name.maxLength} characters` });
@@ -190,7 +190,7 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 	} else {
 		const description = data.description.trim();
 		if (description.length < VALIDATION_RULES.description.minLength) {
-			errors.push({ field: 'description', message: `Description must be at least ${VALIDATION_RULES.description.minLength} characters` });
+			errors.push({ field: 'description', message: `Minimum ${VALIDATION_RULES.description.minLength} characters` });
 		}
 		if (description.length > VALIDATION_RULES.description.maxLength) {
 			errors.push({ field: 'description', message: `Description must be no more than ${VALIDATION_RULES.description.maxLength} characters` });

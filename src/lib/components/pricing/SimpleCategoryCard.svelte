@@ -242,6 +242,12 @@
 		border-color: var(--color-primary-200);
 	}
 
+	/* Dark mode - softer adult card colors */
+	:root[data-theme='dark'] .category-card.adult-card {
+		background: rgba(99, 102, 241, 0.08);
+		border-color: rgba(99, 102, 241, 0.25);
+	}
+
 	.card-header {
 		display: flex;
 		justify-content: space-between;

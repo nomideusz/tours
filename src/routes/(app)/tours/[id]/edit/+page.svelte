@@ -793,10 +793,10 @@
 	<title>Edit {tour?.name || 'Tour'} - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<!-- Mobile Loading Header -->
-		<div class="mb-6 sm:mb-8">
+		<div class="mb-3 sm:mb-8">
 			<MobilePageHeader
 				title="Edit Tour"
 				secondaryInfo="Loading..."
@@ -821,7 +821,7 @@
 		</div>
 	{:else}
 		<!-- Mobile-First Header -->
-		<div class="mb-6 sm:mb-8">
+		<div class="mb-3 sm:mb-8">
 			<!-- Mobile Compact Header -->
 			<MobilePageHeader
 				title="Edit {tour?.name || 'Tour'}"

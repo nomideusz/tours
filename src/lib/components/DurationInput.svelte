@@ -5,9 +5,10 @@
 		value: number; // Total minutes
 		error?: boolean;
 		onblur?: () => void;
+		oninput?: () => void;
 	}
 	
-	let { value = $bindable(0), error = false, onblur }: Props = $props();
+	let { value = $bindable(0), error = false, onblur, oninput }: Props = $props();
 	
 	// Internal state for the inputs
 	let days = $state(0);
@@ -43,6 +44,7 @@
 		const val = parseInt(input.value) || 0;
 		days = Math.max(0, Math.min(30, val)); // Max 30 days
 		updateTotal();
+		if (oninput) oninput();
 	}
 	
 	function handleHoursChange(e: Event) {
@@ -50,6 +52,7 @@
 		const val = parseInt(input.value) || 0;
 		hours = Math.max(0, Math.min(23, val)); // Max 23 hours
 		updateTotal();
+		if (oninput) oninput();
 	}
 	
 	function handleMinutesChange(e: Event) {
@@ -57,6 +60,7 @@
 		const val = parseInt(input.value) || 0;
 		minutes = Math.max(0, Math.min(59, val)); // Max 59 minutes
 		updateTotal();
+		if (oninput) oninput();
 	}
 </script>
 
@@ -174,6 +178,28 @@
 	.duration-input[type=number] {
 		-moz-appearance: textfield;
 		appearance: textfield;
+	}
+	
+	/* Focus styles - prevent layout shifts */
+	.duration-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 1px var(--color-primary-200);
+		transform: none;
+	}
+	
+	.duration-input.error:focus {
+		border-color: var(--color-error-500);
+		box-shadow: 0 0 0 1px var(--color-error-200);
+	}
+	
+	/* Dark mode focus styles */
+	:root[data-theme='dark'] .duration-input:focus {
+		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+	}
+	
+	:root[data-theme='dark'] .duration-input.error:focus {
+		box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.2);
 	}
 	
 	/* Mobile adjustments */

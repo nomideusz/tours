@@ -200,9 +200,55 @@ Key extracted components:
 		};
 	}
 
+	// Initialize pricing data immediately to prevent "missing section" issue
+	if (!formData.pricingModel) {
+		formData.pricingModel = 'participant_categories';
+	}
+
+	// Initialize participant categories if model is per-person but data is missing or empty
+	if (formData.pricingModel === 'participant_categories' && 
+	    (!formData.participantCategories || !formData.participantCategories.categories || formData.participantCategories.categories.length === 0)) {
+		const defaultPrice = 25;
+		formData.participantCategories = {
+			categories: [
+				{
+					id: 'adult',
+					label: 'Adult (18-64)',
+					price: defaultPrice,
+					minAge: 18,
+					maxAge: 64,
+					sortOrder: 0,
+					countsTowardCapacity: true
+				}
+			],
+			minCapacity: 1,
+			maxCapacity: 20
+		};
+	}
+
+	// Initialize private tour if model is private but data is missing
+	if (formData.pricingModel === 'private_tour' && !formData.privateTour) {
+		formData.privateTour = {
+			flatPrice: 300,
+			minCapacity: 4,
+			maxCapacity: 12
+		};
+	}
+
+	// Initialize optional addons if not set
+	if (!formData.optionalAddons) {
+		formData.optionalAddons = { addons: [] };
+	}
+
+	// Initialize guidePaysStripeFee if not set (prevents binding to undefined)
+	if (formData.guidePaysStripeFee === undefined) {
+		formData.guidePaysStripeFee = false;
+	}
+
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
 	let touchedFields = $state<Set<string>>(new Set());
+	let currentlyTypingFields = $state<Set<string>>(new Set());
 	
 	// Track initial status to determine button text in edit mode
 	let initialStatus = $state(formData.status);
@@ -293,10 +339,15 @@ Key extracted components:
 		}
 	});
 	
-	// Initialize pricing data based on model
+	// Initialize pricing data based on model (runs reactively)
 	$effect(() => {
-		// Initialize participant categories
-		if (formData.pricingModel === 'participant_categories' && !formData.participantCategories) {
+		// Initialize participant categories if missing or empty
+		const needsParticipantInit = formData.pricingModel === 'participant_categories' && 
+		    (!formData.participantCategories || 
+		     !formData.participantCategories.categories || 
+		     formData.participantCategories.categories.length === 0);
+		
+		if (needsParticipantInit) {
 			// Check if we should migrate from old adult/child pricing tiers
 			if (formData.enablePricingTiers && formData.pricingTiers) {
 				const migratedCategories = [
@@ -348,7 +399,7 @@ Key extracted components:
 					maxCapacity: legacyMaxCapacity
 				};
 			}
-		} else if (formData.pricingModel === 'participant_categories' && formData.participantCategories) {
+		} else if (formData.pricingModel === 'participant_categories' && formData.participantCategories && formData.participantCategories.categories && formData.participantCategories.categories.length > 0) {
 			// Migrate capacity to nested structure if not present
 			if (formData.participantCategories.minCapacity === undefined) {
 				formData.participantCategories.minCapacity = legacyMinCapacity;
@@ -373,22 +424,33 @@ Key extracted components:
 		}
 	});
 	
-	// Auto-expand sections if they have content or errors
+	// Smart Progressive Reveal - Auto-expand sections based on user progress
 	$effect(() => {
+		// Auto-expand images when first image is uploaded
+		if ((uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)) {
+			showImages = true;
+		}
 		
-		// Auto-expand tour details if there are items/requirements
+		// Auto-expand cancellation policy when pricing is configured
+		const hasPricing = (formData.participantCategories?.categories?.length && formData.participantCategories.categories[0].price > 0) || 
+		                    (formData.privateTour?.flatPrice && formData.privateTour.flatPrice > 0);
+		if (hasPricing && !showCancellationPolicy) {
+			showCancellationPolicy = true;
+		}
+		
+		// Auto-expand tour details when description is substantial (suggests user is engaged)
+		if (formData.description && formData.description.length > 200 && !showTourDetails) {
+			showTourDetails = true;
+		}
+		
+		// Auto-expand tour details if there are items/requirements already
 		if (formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())) {
 			showTourDetails = true;
 		}
 		
-		// Auto-expand cancellation policy if there's content
+		// Auto-expand cancellation policy if there's content already
 		if (formData.cancellationPolicy?.trim()) {
 			showCancellationPolicy = true;
-		}
-		
-		// Auto-expand images if there are uploaded images or existing images
-		if ((uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)) {
-			showImages = true;
 		}
 	});
 
@@ -448,8 +510,23 @@ Key extracted components:
 	// Removed real-time validation to improve UX
 	// Validation now only happens on blur and form submission
 
+	// Track when user starts typing to hide errors temporarily
+	function handleFieldInput(fieldName: string) {
+		currentlyTypingFields.add(fieldName);
+		currentlyTypingFields = currentlyTypingFields; // trigger reactivity
+		
+		// For specific fields, clear errors while typing
+		if (fieldName === 'name' || fieldName === 'description') {
+			validationErrors = validationErrors.filter(error => error.field !== fieldName);
+		}
+	}
+
 	// Trigger validation for specific field on blur
 	function validateField(fieldName: string) {
+		// Remove from currently typing when field loses focus
+		currentlyTypingFields.delete(fieldName);
+		currentlyTypingFields = currentlyTypingFields; // trigger reactivity
+		
 		touchedFields.add(fieldName);
 		
 		// Immediate validation on blur
@@ -463,6 +540,15 @@ Key extracted components:
 		if (fieldError) {
 			validationErrors = [...validationErrors, fieldError];
 		}
+	}
+
+	// Helper to check if error should be shown
+	function shouldShowError(fieldName: string): boolean {
+		// For name and description, never show errors while typing
+		if ((fieldName === 'name' || fieldName === 'description') && currentlyTypingFields.has(fieldName)) {
+			return false;
+		}
+		return touchedFields.has(fieldName);
 	}
 
 	// Export validation state for parent component
@@ -497,19 +583,30 @@ Key extracted components:
 		return validation.isValid;
 	}
 
-	// Custom category handling
+	// Custom category handling with validation
 	function addCustomCategory() {
 		const trimmedCategory = customCategoryInput.trim();
 		if (!trimmedCategory) return;
 		
 		if (!formData.categories) formData.categories = [];
 		
+		// Validate category length
+		if (trimmedCategory.length < 2) {
+			return;
+		}
+		
+		if (trimmedCategory.length > 20) {
+			return;
+		}
+		
 		// Check if category already exists (case-insensitive)
 		const existsAlready = formData.categories.some(
 			cat => cat.toLowerCase() === trimmedCategory.toLowerCase()
 		);
 		
-		if (existsAlready) return;
+		if (existsAlready) {
+			return;
+		}
 		
 		// Check if we can add more categories
 		if (formData.categories.length >= 5) return;
@@ -519,8 +616,41 @@ Key extracted components:
 		
 		// Reset input state
 		customCategoryInput = '';
-		showCustomCategoryInput = false;
+		showSingleCharWarning = false;
 	}
+	
+	// Real-time validation for custom category input
+	function validateCustomCategory(inputValue: string) {
+		if (!inputValue.trim()) return 'valid';
+		
+		const trimmed = inputValue.trim();
+		
+		// Check length
+		if (trimmed.length < 2) return 'too-short';
+		if (trimmed.length > 20) return 'too-long';
+		
+		// Check for duplicates
+		if (formData.categories?.some(cat => cat.toLowerCase() === trimmed.toLowerCase())) {
+			return 'duplicate';
+		}
+		
+		return 'valid';
+	}
+	
+	// Helper to check if validation error should be shown
+	function shouldShowCategoryError(inputValue: string): boolean {
+		// Don't show error when user is typing the first character
+		const length = inputValue.trim().length;
+		if (length === 0 || length === 1) return false;
+		// Show error for 2+ characters (too short still an issue) or too long/duplicate
+		return true;
+	}
+	
+	// Derived validation state for the input
+	let customCategoryValidation = $derived(validateCustomCategory(customCategoryInput));
+	
+	// Track if user tried to submit with only 1 character
+	let showSingleCharWarning = $state(false);
 
 	// Cancellation Policy Templates (using new structured policies)
 	import { CANCELLATION_POLICIES, getCancellationPolicyText } from '$lib/utils/cancellation-policies.js';
@@ -715,39 +845,15 @@ Key extracted components:
 
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-	<!-- Mobile Error Summary - Only show on mobile when errors exist -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+	<!-- Mobile Error Summary - Only show when errors exist -->
 	{#if allErrors.length > 0}
-		<div class="lg:hidden mb-4 rounded-xl p-4 sticky top-4 z-10" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-			<div class="flex items-start gap-3">
-				<div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style="background: var(--color-error-100);">
-					<AlertCircle class="w-3 h-3" style="color: var(--color-error-600);" />
-				</div>
-				<div class="flex-1 min-w-0">
-					<p class="font-medium text-sm" style="color: var(--color-error-900);">
-						Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'}:
-					</p>
-					<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
-						{#each allErrors as error}
-							<li class="flex items-start gap-2">
-								<span class="text-xs mt-0.5">•</span>
-								<button 
-									type="button"
-									onclick={() => {
-										const field = document.getElementById(error.field);
-										if (field) {
-											field.focus();
-											field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-										}
-									}}
-									class="text-left underline hover:no-underline"
-								>
-									{error.message}
-								</button>
-							</li>
-						{/each}
-					</ul>
-				</div>
+		<div class="lg:hidden mobile-error-summary">
+			<div class="mb-3 rounded-lg p-3 border flex items-center gap-2.5" style="background: var(--bg-secondary); border-color: var(--color-error-300);">
+				<AlertCircle class="w-4 h-4 flex-shrink-0" style="color: var(--color-error-500);" />
+				<p class="text-sm font-medium" style="color: var(--color-error-700);">
+					{allErrors.length} field{allErrors.length === 1 ? '' : 's'} need{allErrors.length === 1 ? 's' : ''} attention
+				</p>
 			</div>
 		</div>
 	{/if}
@@ -764,258 +870,482 @@ Key extracted components:
 			<div class="p-4 border-b" style="border-color: var(--border-primary);">
 				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
 			</div>
-			<div class="p-4">
+			<div class="p-4 lg:p-6 space-y-3 lg:space-y-4">
 				<!-- Hidden status field for form submission (when not showing visible toggle) -->
 				{#if !isEdit || hideStatusField}
 					<input type="hidden" name="status" bind:value={formData.status} />
 				{/if}
 				
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<div class="md:col-span-2">
-						<label for="name" class="form-label">
-							Tour Name *
+				<!-- First Row: Tour Name (full width on mobile, 2/3 on desktop) and Duration (1/3 on desktop) -->
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
+					<!-- Tour Name -->
+					<div class="lg:col-span-2">
+						<label for="name" class="form-label flex items-center gap-2">
+							<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>Tour Name *</span>
 						</label>
-					<input
-						type="text"
-						id="name"
-						name="name"
-						bind:value={formData.name}
-						placeholder="e.g., Historic Walking Tour of Prague"
-						class="form-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
-						onblur={() => validateField('name')}
-					/>
-					{#if getFieldError(allErrors, 'name')}
-						<div class="mt-3 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<p class="text-sm" style="color: var(--color-error-900);">
-									{getFieldError(allErrors, 'name')}
-								</p>
-							</div>
+						<div class="form-field-wrapper">
+							<input
+								type="text"
+								id="name"
+								name="name"
+								bind:value={formData.name}
+								placeholder="e.g., Historic Walking Tour of Prague"
+								class="form-input form-input--no-transform {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+								oninput={() => handleFieldInput('name')}
+								onblur={() => validateField('name')}
+								maxlength="100"
+							/>
+					<div class="form-field-footer">
+						{#if getFieldError(allErrors, 'name') && shouldShowError('name')}
+							<span class="form-error-message">{getFieldError(allErrors, 'name')}</span>
+						{:else}
+							<span class="form-field-spacer"></span>
+						{/if}
+						<span class="text-xs form-field-counter" style="color: {hasFieldError(allErrors, 'name') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.name && formData.name.length > 0 ? 1 : 0};">
+							{formData.name?.length || 0}/100
+						</span>
+					</div>
 						</div>
-					{/if}
 					</div>
 
+					<!-- Duration -->
 					<div>
-						<label for="categories" class="form-label">
-							Categories
-							<span class="text-xs" style="color: var(--text-tertiary); font-weight: normal;">
-								(Select up to 5 categories)
-							</span>
+						<label for="duration" class="form-label flex items-center gap-2">
+							<Calendar class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>Duration *</span>
+						</label>
+						<div class="form-field-wrapper">
+							<DurationInput
+								bind:value={formData.duration}
+								error={hasFieldError(allErrors, 'duration')}
+								oninput={() => handleFieldInput('duration')}
+								onblur={() => validateField('duration')}
+							/>
+					<div class="form-field-footer">
+						{#if getFieldError(allErrors, 'duration') && shouldShowError('duration')}
+							<span class="form-error-message">{getFieldError(allErrors, 'duration')}</span>
+						{:else}
+							<span class="form-field-spacer"></span>
+						{/if}
+					</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Second Row: Meeting Point and Categories side by side on desktop -->
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+					<!-- Meeting Point -->
+					<div>
+						<label class="form-label flex items-center gap-2">
+							<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>Meeting Point</span>
+						</label>
+						<div class="form-field-wrapper">
+							<div class="location-picker-wrapper">
+								<LocationPicker
+									bind:value={formData.location}
+									placeholder="Where does the tour start?"
+									profileLocation={profile?.location}
+									enableGeolocation={true}
+									enableMapsIntegration={true}
+									label=""
+									onLocationSelect={(location) => {
+										formData.location = location;
+									}}
+								/>
+							</div>
+							<div class="form-field-footer">
+								<span class="form-field-spacer"></span>
+								<span class="text-xs form-field-counter" style="color: var(--text-tertiary); opacity: {formData.location && formData.location.length > 50 ? 1 : 0};">
+									{formData.location?.length || 0}/100
+									{#if formData.location && formData.location.length >= 100}
+										<span style="color: var(--color-warning-600);"> (truncated)</span>
+									{/if}
+								</span>
+							</div>
+						</div>
+						<input type="hidden" name="location" bind:value={formData.location} />
+					</div>
+
+					<!-- Categories - Redesigned -->
+					<div class="space-y-2">
+						<label for="categories" class="form-label flex items-center gap-2">
+							<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>Categories</span>
+							{#if formData.categories && formData.categories.length > 0}
+								<span class="text-xs px-2 py-0.5 rounded-full" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+									{formData.categories.length}/5
+								</span>
+							{/if}
 						</label>
 						
-						<!-- Selected Categories Display -->
-						{#if formData.categories && formData.categories.length > 0}
-							{@const categoryMap = [
-								{ id: 'walking', name: 'Walking', icon: Users },
-								{ id: 'food', name: 'Food', icon: Utensils },
-								{ id: 'cultural', name: 'Cultural', icon: Building },
-								{ id: 'historical', name: 'Historical', icon: BookOpen },
-								{ id: 'art', name: 'Art', icon: Palette },
-								{ id: 'adventure', name: 'Adventure', icon: Mountain }
-							]}
-							<div class="mb-3 flex flex-wrap gap-1.5">
-								{#each formData.categories as selectedCategory, index}
-									{@const categoryInfo = categoryMap.find(c => c.id === selectedCategory)}
-									{@const displayName = categoryInfo?.name || selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
-									<span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border"
-										style="
-											background: var(--color-primary-50);
-											border-color: var(--color-primary-300);
-											color: var(--color-primary-700);
-										"
+						<!-- Categories Container -->
+						<div class="categories-container">
+							<!-- Preset Categories Grid -->
+							<div class="categories-grid">
+								{#each [
+									{ id: 'walking', name: 'Walking', icon: Users },
+									{ id: 'food', name: 'Food', icon: Utensils },
+									{ id: 'cultural', name: 'Cultural', icon: Building },
+									{ id: 'historical', name: 'Historical', icon: BookOpen },
+									{ id: 'art', name: 'Art', icon: Palette },
+									{ id: 'adventure', name: 'Adventure', icon: Mountain }
+								] as category}
+									{@const Icon = category.icon}
+									{@const isSelected = formData.categories?.includes(category.id) || false}
+									{@const canSelect = !isSelected && (formData.categories?.length || 0) < 5}
+									<button
+										type="button"
+										disabled={!canSelect && !isSelected}
+										onclick={() => { 
+											if (!formData.categories) formData.categories = [];
+											if (isSelected) {
+												formData.categories = formData.categories.filter(c => c !== category.id);
+											} else if (canSelect) {
+												formData.categories = [...formData.categories, category.id];
+											}
+										}}
+										class="category-button"
+										class:selected={isSelected}
+										class:disabled={!canSelect && !isSelected}
 									>
-										{displayName}
-										<button
-											type="button"
-											onclick={() => {
-												formData.categories = formData.categories.filter((_, i) => i !== index);
-											}}
-											class="hover:opacity-70 transition-opacity"
-											aria-label="Remove {displayName}"
-										>
-											<X class="w-3 h-3" />
-										</button>
-									</span>
+										<Icon class="w-3.5 h-3.5" />
+										<span>{category.name}</span>
+									</button>
 								{/each}
 							</div>
-						{/if}
-						
-						<!-- Available Categories -->
-						<div class="flex flex-wrap gap-2">
-							{#each [
-								{ id: 'walking', name: 'Walking', icon: Users },
-								{ id: 'food', name: 'Food', icon: Utensils },
-								{ id: 'cultural', name: 'Cultural', icon: Building },
-								{ id: 'historical', name: 'Historical', icon: BookOpen },
-								{ id: 'art', name: 'Art', icon: Palette },
-								{ id: 'adventure', name: 'Adventure', icon: Mountain }
-							] as category}
-								{@const Icon = category.icon}
-								{@const isSelected = formData.categories?.includes(category.id) || false}
-								{@const canSelect = !isSelected && (formData.categories?.length || 0) < 5}
-								<button
-									type="button"
-									disabled={!canSelect && !isSelected}
-									onclick={() => { 
-										if (!formData.categories) formData.categories = [];
-										if (isSelected) {
-											formData.categories = formData.categories.filter(c => c !== category.id);
-										} else if (canSelect) {
-											formData.categories = [...formData.categories, category.id];
-										}
-									}}
-									class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-									style="
-										background: {isSelected ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-										border-color: {isSelected ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-										color: {isSelected ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
-									"
-								>
-									<Icon class="w-3 h-3" />
-									<span>{category.name}</span>
-								</button>
-							{/each}
 							
-							<!-- Custom Category Option -->
-							<button
-								type="button"
-								disabled={!((formData.categories?.length || 0) < 5)}
-								onclick={() => { 
-									showCustomCategoryInput = !showCustomCategoryInput;
-								}}
-								class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-								style="
-									background: {showCustomCategoryInput ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-									border-color: {showCustomCategoryInput ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-									color: {showCustomCategoryInput ? 'var(--color-primary-700)' : 'var(--text-secondary)'};
-								"
-							>
-								<Edit class="w-3 h-3" />
-								<span>Custom</span>
-							</button>
-						</div>
-
-						{#if showCustomCategoryInput}
-							<div class="mt-3">
+							<!-- Custom Categories Section -->
+							{#if formData.categories && formData.categories.some(cat => !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(cat))}
+								<div class="custom-categories-section">
+									<div class="flex flex-wrap gap-1.5 sm:gap-2">
+										{#each formData.categories.filter(cat => !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(cat)) as customCategory}
+											<span class="custom-category-tag">
+												<Globe class="w-3 h-3 sm:w-3 sm:h-3 flex-shrink-0 mobile-icon" />
+												<span class="truncate">{customCategory}</span>
+												<button
+													type="button"
+													onclick={() => {
+														formData.categories = formData.categories.filter(c => c !== customCategory);
+													}}
+													class="custom-category-remove"
+													aria-label="Remove {customCategory}"
+												>
+													<X class="w-2.5 h-2.5 mobile-icon" />
+												</button>
+											</span>
+										{/each}
+									</div>
+								</div>
+							{/if}
+							
+							<!-- Custom Category Input - Always visible container -->
+							<div class="custom-category-input-wrapper" style="opacity: {(formData.categories?.length || 0) < 5 ? 1 : 0.5}; pointer-events: {(formData.categories?.length || 0) < 5 ? 'auto' : 'none'};">
+								<div class="custom-category-input-container">
 								<input
 									type="text"
-									placeholder="Enter your custom category..."
-									class="form-input"
+									class="custom-category-input form-input--no-transform"
+									class:error={customCategoryInput && (customCategoryValidation === 'too-long' || customCategoryValidation === 'duplicate')}
+									class:warning={showSingleCharWarning}
 									bind:value={customCategoryInput}
+									placeholder={(formData.categories?.length || 0) < 5 ? "Add custom category..." : "Category limit reached"}
+									disabled={(formData.categories?.length || 0) >= 5}
+									oninput={() => {
+										// Clear warning when user continues typing
+										if (showSingleCharWarning && customCategoryInput.trim().length !== 1) {
+											showSingleCharWarning = false;
+										}
+									}}
 									onkeydown={(e) => {
 										if (e.key === 'Enter') {
 											e.preventDefault();
-											addCustomCategory();
+											// Show warning if only 1 character
+											if (customCategoryInput.trim().length === 1) {
+												showSingleCharWarning = true;
+											} else if (customCategoryValidation === 'valid') {
+												addCustomCategory();
+												showSingleCharWarning = false;
+											}
 										} else if (e.key === 'Escape') {
-											showCustomCategoryInput = false;
 											customCategoryInput = '';
+											showSingleCharWarning = false;
 										}
 									}}
+									autocomplete="off"
+									spellcheck="false"
+									maxlength="20"
 								/>
-								<div class="flex gap-2 mt-2">
-									<button
-										type="button"
-										onclick={addCustomCategory}
-										disabled={!customCategoryInput.trim() || (formData.categories?.length || 0) >= 5}
-										class="button-primary button-small"
-									>
-										Add Category
-									</button>
-									<button
-										type="button"
-										onclick={() => {
-											showCustomCategoryInput = false;
-											customCategoryInput = '';
-										}}
-										class="button-secondary button-small"
-									>
-										Cancel
-									</button>
+									<div class="custom-category-actions">
+										<span class="text-xs" style="color: {showSingleCharWarning ? 'var(--color-error-600)' : 'var(--text-tertiary)'}; opacity: {customCategoryInput ? 1 : 0};">
+											{customCategoryInput.length}/20
+										</span>
+										<button
+											type="button"
+											onclick={addCustomCategory}
+											class="custom-category-add"
+											style="opacity: {customCategoryInput && customCategoryValidation === 'valid' ? 1 : 0}; pointer-events: {customCategoryInput && customCategoryValidation === 'valid' ? 'auto' : 'none'};"
+											aria-label="Add category"
+											disabled={!customCategoryInput || customCategoryValidation !== 'valid'}
+										>
+											<Plus class="w-3.5 h-3.5 mobile-icon" />
+										</button>
+									</div>
+								</div>
+								
+								<!-- Validation message container - fixed height to prevent jumps -->
+								<div class="custom-category-validation" style="height: 1.25rem; margin-top: 0.125rem; display: flex; align-items: flex-start;">
+									{#if customCategoryInput.trim().length > 0}
+										{@const showError = customCategoryValidation !== 'valid' && shouldShowCategoryError(customCategoryInput)}
+										<p class="text-xs mobile-validation-text" style="color: var(--color-error-600); opacity: {showError ? 1 : 0}; transition: opacity 0.15s ease;">
+											{#if customCategoryValidation === 'too-short' && showError}
+												Minimum 2 characters
+											{:else if customCategoryValidation === 'too-long'}
+												Maximum 20 characters
+											{:else if customCategoryValidation === 'duplicate'}
+												Category already exists
+											{:else}
+												&nbsp;
+											{/if}
+										</p>
+									{/if}
 								</div>
 							</div>
-						{/if}
+							
+							<!-- Field-level validation -->
+							{#if getFieldError(allErrors, 'categories') && shouldShowError('categories')}
+								<div class="flex items-start gap-2 text-sm mt-2" style="color: var(--color-error-600);">
+									<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" />
+									<span>{getFieldError(allErrors, 'categories')}</span>
+								</div>
+							{/if}
+						</div>
 
 						<!-- Hidden input for form submission -->
 						<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
 					</div>
+				</div>
 
-					<div>
-						<LocationPicker
-							bind:value={formData.location}
-							label="Meeting Point"
-							placeholder="Where does the tour start?"
-							profileLocation={profile?.location}
-							enableGeolocation={true}
-							enableMapsIntegration={true}
-							onLocationSelect={(location) => {
-								formData.location = location;
-							}}
-						/>
-						<!-- Show info if location is near the character limit -->
-						{#if formData.location && formData.location.length > 80}
-							<p class="text-xs mt-1" style="color: var(--text-secondary);">
-								Location: {formData.location.length}/100 characters
-								{#if formData.location.length >= 100}
-									<span style="color: var(--color-warning-600);">
-										(automatically shortened)
-									</span>
-								{/if}
-							</p>
-						{/if}
-						<!-- Hidden input for form submission -->
-						<input type="hidden" name="location" bind:value={formData.location} />
-					</div>
-
-					<div class="md:col-span-2">
-						<label for="description" class="form-label">
-							Description *
-						</label>
-					<textarea
-						id="description"
-						name="description"
-						bind:value={formData.description}
-						rows="4"
-						placeholder="What will guests experience on this tour?"
-						class="form-textarea {hasFieldError(allErrors, 'description') ? 'error' : ''}"
-						onblur={() => validateField('description')}
-					></textarea>
-					{#if getFieldError(allErrors, 'description')}
-						<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<p class="text-sm" style="color: var(--color-error-900);">
-									{getFieldError(allErrors, 'description')}
-								</p>
-							</div>
-						</div>
+				<!-- Description Field - Full Width -->
+				<div>
+					<label for="description" class="form-label flex items-center gap-2">
+						<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
+						<span>Description *</span>
+					</label>
+					<div class="form-field-wrapper">
+						<textarea
+							id="description"
+							name="description"
+							bind:value={formData.description}
+							rows="4"
+							placeholder="What will guests experience on this tour? Describe the highlights, unique features, and what makes it special."
+							class="form-textarea form-input--no-transform {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+							oninput={() => handleFieldInput('description')}
+							onblur={() => validateField('description')}
+							maxlength="1000"
+						></textarea>
+				<div class="form-field-footer">
+					{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
+						<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
+					{:else}
+						<span class="form-field-spacer"></span>
 					{/if}
-					</div>
-					
-					<!-- Duration -->
-					<div class="md:col-span-1">
-						<label for="duration" class="form-label">
-							Duration *
-						</label>
-						<DurationInput
-							bind:value={formData.duration}
-							error={hasFieldError(allErrors, 'duration')}
-							onblur={() => validateField('duration')}
-						/>
-						{#if getFieldError(allErrors, 'duration')}
-							<div class="mt-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-								<div class="flex items-start gap-2">
-									<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-									<p class="text-sm" style="color: var(--color-error-900);">
-										{getFieldError(allErrors, 'duration')}
-									</p>
-								</div>
-							</div>
-						{/if}
+					<span class="text-xs form-field-counter" style="color: {hasFieldError(allErrors, 'description') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.description && formData.description.length > 0 ? 1 : 0};">
+						{formData.description?.length || 0}/1000
+					</span>
+				</div>
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<!-- ============================================================ -->
+		<!-- TOUR IMAGES SECTION (Moved from sidebar)                    -->
+		<!-- ============================================================ -->
+		{#if onImageUpload && onImageRemove}
+			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<button
+					type="button"
+					onclick={() => showImages = !showImages}
+					class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showImages ? 'border-b' : ''}"
+					style="{showImages ? 'border-color: var(--border-primary);' : ''}"
+				>
+					<div class="flex items-center gap-2">
+						{#if showImages}
+							<ChevronDown class="w-4 h-4" />
+						{:else}
+							<ChevronRight class="w-4 h-4" />
+						{/if}
+						<h2 class="font-semibold" style="color: var(--text-primary);">Tour Images</h2>
+						{#if (uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)}
+							{@const totalImages = (uploadedImages?.length || 0) + (existingImages?.length || 0)}
+							<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+								{totalImages} image{totalImages === 1 ? '' : 's'}
+							</span>
+						{/if}
+					</div>
+					<span class="text-xs" style="color: var(--text-secondary);">
+						{showImages ? 'Hide' : 'Show'} image gallery
+					</span>
+				</button>
+				
+				{#if showImages}
+					<div class="p-5">
+					
+					<!-- Existing Images (for edit mode) -->
+					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
+						<div class="mb-6">
+							<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Current Images</h4>
+							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+								{#each existingImages as imageName, index (imageName)}
+									<div class="relative group aspect-square">
+										<img 
+											src={getExistingImageUrl(imageName)} 
+											alt="Tour image {index + 1}"
+											class="w-full h-full object-cover rounded-lg"
+											style="border: 1px solid var(--border-primary);"
+											loading="lazy"
+										/>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onExistingImageRemove) {
+													onExistingImageRemove(imageName);
+												}
+											}}
+											ontouchend={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onExistingImageRemove) {
+													onExistingImageRemove(imageName);
+												}
+											}}
+											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											style="
+												background: var(--color-error-500);
+												color: white;
+												touch-action: manipulation;
+												-webkit-tap-highlight-color: transparent;
+											"
+											aria-label="Remove image"
+										>
+											<X class="w-3 h-3" />
+										</button>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					
+					<!-- Image Upload Area -->
+					<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+						style="border-color: var(--border-secondary); background: var(--bg-secondary);"
+					>
+						<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
+						<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
+						<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
+						
+						<!-- Mobile-optimized file input -->
+						<input
+							type="file"
+							multiple
+							accept="image/jpeg,image/jpg,image/png,image/webp"
+							class="hidden"
+							id="images-upload"
+							name="images"
+							onchange={onImageUpload}
+						/>
+						
+						<!-- Unified upload button - works on all devices -->
+						<label
+							for="images-upload"
+							class="button-secondary cursor-pointer inline-flex items-center gap-2"
+							style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
+						>
+							<Camera class="w-4 h-4 sm:hidden" />
+							<Upload class="w-4 h-4 hidden sm:block" />
+							<span class="sm:hidden">Take Photo / Add Photos</span>
+							<span class="hidden sm:inline">Choose Files</span>
+						</label>
+
+						<!-- Mobile instruction -->
+						<div class="sm:hidden mt-3">
+							<p class="text-xs" style="color: var(--text-tertiary);">Tap to take a photo with camera or select from gallery</p>
+						</div>
+					</div>
+
+					<!-- Image Upload Errors - Show on all screen sizes -->
+					{#if imageUploadErrors && imageUploadErrors.length > 0}
+						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
+							<div class="flex items-start gap-2">
+								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<div class="flex-1">
+									<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
+									<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
+										{#each imageUploadErrors as error}
+											<li>• {error}</li>
+										{/each}
+									</ul>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					<!-- Image Previews -->
+					{#if uploadedImages && uploadedImages.length > 0}
+						<div class="mt-6">
+							<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
+							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+								{#each uploadedImages as image, index (index)}
+									<div class="relative group aspect-square">
+										<img 
+											src={getImagePreview(image)} 
+											alt="Tour preview {index + 1}"
+											class="w-full h-full object-cover rounded-lg"
+											style="border: 1px solid var(--border-primary);"
+											loading="lazy"
+										/>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onImageRemove) {
+													onImageRemove(index);
+												}
+											}}
+											ontouchend={(e) => {
+												e.preventDefault();
+												e.stopPropagation();
+												if (onImageRemove) {
+													onImageRemove(index);
+												}
+											}}
+											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											style="
+												background: var(--color-error-500);
+												color: white;
+												touch-action: manipulation;
+												-webkit-tap-highlight-color: transparent;
+											"
+											aria-label="Remove image"
+										>
+											<X class="w-3 h-3" />
+										</button>
+										<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+											{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		<!-- ============================================================ -->
 		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
@@ -1156,19 +1486,6 @@ Key extracted components:
 		</div>
 
 		<!-- ============================================================ -->
-		<!-- TOUR DETAILS SECTION (Included Items & Requirements)        -->
-		<!-- ============================================================ -->
-		<TourDetailsSection
-			bind:includedItems={formData.includedItems}
-			bind:requirements={formData.requirements}
-			bind:isExpanded={showTourDetails}
-			onUpdate={(data) => {
-				formData.includedItems = data.includedItems;
-				formData.requirements = data.requirements;
-			}}
-		/>
-
-		<!-- ============================================================ -->
 		<!-- CANCELLATION POLICY SECTION                                 -->
 		<!-- ============================================================ -->
 		<!-- Cancellation Policy (Collapsible) -->
@@ -1185,7 +1502,7 @@ Key extracted components:
 					{:else}
 						<ChevronRight class="w-4 h-4" />
 					{/if}
-					<h2 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Cancellation Policy</h2>
+					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
 					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
 						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
 							{selectedPolicyTemplate || 'Custom'} policy set
@@ -1198,7 +1515,7 @@ Key extracted components:
 			</button>
 			
 			{#if showCancellationPolicy}
-				<div class="p-4">
+				<div class="p-5">
 					<div class="space-y-3">
 						<!-- Template Options -->
 						{#each policyTemplates as template}
@@ -1365,12 +1682,25 @@ Key extracted components:
 		</div>
 
 		<!-- ============================================================ -->
+		<!-- TOUR DETAILS SECTION (Included Items & Requirements)        -->
+		<!-- ============================================================ -->
+		<TourDetailsSection
+			bind:includedItems={formData.includedItems}
+			bind:requirements={formData.requirements}
+			bind:isExpanded={showTourDetails}
+			onUpdate={(data) => {
+				formData.includedItems = data.includedItems;
+				formData.requirements = data.requirements;
+			}}
+		/>
+
+		<!-- ============================================================ -->
 		<!-- DANGER ZONE SECTION (Edit Mode Only)                        -->
 		<!-- ============================================================ -->
 		{#if isEdit && onDelete}
-			<div class="rounded-xl" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-				<div class="p-4 border-b" style="border-color: var(--color-danger-200);">
-					<h3 class="font-semibold" style="color: var(--color-danger-900);">Danger Zone</h3>
+			<div class="rounded-xl danger-zone-container">
+				<div class="p-4 border-b danger-zone-header">
+					<h3 class="font-semibold danger-zone-title">Danger Zone</h3>
 				</div>
 				<div class="p-4">
 					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1432,191 +1762,6 @@ Key extracted components:
 
 	<!-- Sidebar -->
 	<div class="space-y-6">
-		<!-- Tour Images -->
-		{#if onImageUpload && onImageRemove}
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<button
-					type="button"
-					onclick={() => showImages = !showImages}
-					class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showImages ? 'border-b' : ''}"
-					style="{showImages ? 'border-color: var(--border-primary);' : ''}"
-				>
-					<div class="flex items-center gap-2">
-						{#if showImages}
-							<ChevronDown class="w-4 h-4" />
-						{:else}
-							<ChevronRight class="w-4 h-4" />
-						{/if}
-						<h3 class="font-semibold text-base sm:text-lg" style="color: var(--text-primary);">Tour Images</h3>
-						{#if (uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)}
-							{@const totalImages = (uploadedImages?.length || 0) + (existingImages?.length || 0)}
-							<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-								{totalImages} image{totalImages === 1 ? '' : 's'}
-							</span>
-						{/if}
-					</div>
-					<span class="text-xs" style="color: var(--text-secondary);">
-						{showImages ? 'Hide' : 'Show'} image gallery
-					</span>
-				</button>
-				
-				{#if showImages}
-					<div class="p-4">
-					
-					<!-- Existing Images (for edit mode) -->
-					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
-						<div class="mb-6">
-							<h4 class="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
-							<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-								{#each existingImages as imageName, index (imageName)}
-									<div class="relative group aspect-square">
-										<img 
-											src={getExistingImageUrl(imageName)} 
-											alt="Tour image {index + 1}"
-											class="w-full h-full object-cover rounded-lg border border-gray-200"
-											loading="lazy"
-										/>
-										<button
-											type="button"
-											onclick={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onExistingImageRemove) {
-													onExistingImageRemove(imageName);
-												}
-											}}
-											ontouchend={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onExistingImageRemove) {
-													onExistingImageRemove(imageName);
-												}
-											}}
-											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-											style="
-												background: var(--color-error-500);
-												color: white;
-												touch-action: manipulation;
-												-webkit-tap-highlight-color: transparent;
-											"
-											aria-label="Remove image"
-										>
-											<X class="w-3 h-3" />
-										</button>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-					
-					<!-- Image Upload Area -->
-					<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
-						style="border-color: var(--border-secondary); background: var(--bg-secondary);"
-					>
-						<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-						<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-						<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
-						
-						<!-- Mobile-optimized file input -->
-						<input
-							type="file"
-							multiple
-							accept="image/jpeg,image/jpg,image/png,image/webp"
-							class="hidden"
-							id="images-upload"
-							name="images"
-							onchange={onImageUpload}
-						/>
-						
-						<!-- Unified upload button - works on all devices -->
-						<label
-							for="images-upload"
-							class="button-secondary cursor-pointer inline-flex items-center gap-2"
-							style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
-						>
-							<Camera class="w-4 h-4 sm:hidden" />
-							<Upload class="w-4 h-4 hidden sm:block" />
-							<span class="sm:hidden">Take Photo / Add Photos</span>
-							<span class="hidden sm:inline">Choose Files</span>
-						</label>
-
-						<!-- Mobile instruction -->
-						<div class="sm:hidden mt-3">
-							<p class="text-xs" style="color: var(--text-tertiary);">Tap to take a photo with camera or select from gallery</p>
-						</div>
-					</div>
-
-					<!-- Image Upload Errors - Show on all screen sizes -->
-					{#if imageUploadErrors && imageUploadErrors.length > 0}
-						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<div class="flex-1">
-									<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
-									<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
-										{#each imageUploadErrors as error}
-											<li>• {error}</li>
-										{/each}
-									</ul>
-								</div>
-							</div>
-						</div>
-					{/if}
-
-
-
-					<!-- Image Previews -->
-					{#if uploadedImages && uploadedImages.length > 0}
-						<div class="mt-6">
-							<h4 class="text-sm font-medium text-gray-700 mb-3">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
-							<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-								{#each uploadedImages as image, index (index)}
-									<div class="relative group aspect-square">
-										<img 
-											src={getImagePreview(image)} 
-											alt="Tour preview {index + 1}"
-											class="w-full h-full object-cover rounded-lg border border-gray-200"
-											loading="lazy"
-										/>
-										<button
-											type="button"
-											onclick={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onImageRemove) {
-													onImageRemove(index);
-												}
-											}}
-											ontouchend={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onImageRemove) {
-													onImageRemove(index);
-												}
-											}}
-											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-											style="
-												background: var(--color-error-500);
-												color: white;
-												touch-action: manipulation;
-												-webkit-tap-highlight-color: transparent;
-											"
-											aria-label="Remove image"
-										>
-											<X class="w-3 h-3" />
-										</button>
-										<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
-											{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
-										</div>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-					</div>
-				{/if}
-			</div>
-		{/if}
 
 		<!-- ============================================================ -->
 		<!-- TOUR STATUS SECTION (Edit Mode Only)                        -->
@@ -1842,17 +1987,544 @@ Key extracted components:
 		</div>
 	</div>
 </div>
-
-
 </div>
 
 <style>
+	/* Form Field Wrapper - Consistent spacing for inputs with counters/errors */
+	.form-field-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+	
+	/* Form Field Footer - Consistent height for error/counter row */
+	.form-field-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		min-height: 1.25rem; /* Reserve space to prevent layout jumps */
+		gap: 0.5rem;
+	}
+	
+	/* Form Field Spacer - Takes up space when no error is shown */
+	.form-field-spacer {
+		flex: 1;
+		display: block;
+	}
+	
+	/* Elegant error message styling */
+	.form-error-message {
+		flex: 1;
+		font-size: 0.6875rem;
+		color: var(--color-error-600);
+		line-height: 1.2;
+		font-weight: 500;
+		opacity: 0.9;
+		animation: fadeIn 0.2s ease;
+	}
+	
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-2px);
+		}
+		to {
+			opacity: 0.9;
+			transform: translateY(0);
+		}
+	}
+	
+	/* Form Field Counter - Always present but hidden when empty */
+	.form-field-counter {
+		flex-shrink: 0;
+		transition: opacity 0.15s ease;
+		white-space: nowrap;
+	}
+	
+	/* Override default form-input focus styles to prevent layout shifts */
+	:global(.form-input.form-input--no-transform) {
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+	
+	:global(.form-input.form-input--no-transform:focus) {
+		transform: none !important;
+		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
+		border-color: var(--color-primary-500) !important;
+		outline: none !important;
+	}
+	
+	:global(.form-input.form-input--no-transform.error) {
+		color: var(--color-error-700);
+	}
+	
+	:global(.form-textarea.form-input--no-transform:focus) {
+		transform: none !important;
+		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
+		border-color: var(--color-primary-500) !important;
+		outline: none !important;
+	}
+	
+	:global(.form-textarea.form-input--no-transform.error) {
+		color: var(--color-error-700);
+	}
+	
+	/* Location Picker Wrapper - Hide nested label */
+	.location-picker-wrapper {
+		width: 100%;
+	}
+	
+	.location-picker-wrapper :global(.form-label) {
+		display: none;
+	}
+	
+	/* Location Input - Truncate long text */
+	.location-picker-wrapper :global(.form-input) {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		padding-right: 3rem; /* Space for icons */
+	}
+	
+	/* Ensure focus styles work properly for location picker */
+	.location-picker-wrapper :global(.form-input:focus) {
+		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
+		transform: none !important;
+	}
+	
+	/* Categories Container */
+	.categories-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	
+	/* Categories Grid */
+	.categories-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.5rem;
+	}
+	
+	@media (max-width: 640px) {
+		.categories-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	
+	/* Category Button */
+	.category-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border-radius: 0.5rem;
+		border: 1px solid var(--border-primary);
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+		transition: all 0.15s ease;
+		cursor: pointer;
+		min-height: 2.25rem;
+	}
+	
+	.category-button:hover:not(.disabled) {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+		transform: translateY(-1px);
+	}
+	
+	.category-button.selected {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+		font-weight: 600;
+	}
+	
+	.category-button.selected:hover {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-500);
+	}
+	
+	.category-button.disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	
+	@media (max-width: 640px) {
+		.category-button {
+			min-height: unset !important;
+			padding: 0.375rem 0.625rem !important;
+		}
+	}
+	
+	/* Custom Categories Section */
+	.custom-categories-section {
+		padding-top: 0.5rem;
+		border-top: 1px solid var(--border-primary);
+	}
+	
+	@media (max-width: 640px) {
+		.custom-categories-section {
+			padding-top: 0.375rem !important;
+		}
+	}
+	
+	/* Custom Category Tag */
+	.custom-category-tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.25rem 0.5rem;
+		background: var(--color-primary-50);
+		color: var(--color-primary-700);
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1;
+		max-width: 150px;
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-tag {
+			padding: 0.125rem 0.375rem !important;
+			font-size: 0.6875rem !important;
+			gap: 0.125rem !important;
+			line-height: 1.1 !important;
+			height: auto !important;
+			min-height: unset !important;
+		}
+		
+		.custom-category-tag :global(svg),
+		.custom-category-tag :global(.mobile-icon) {
+			width: 0.75rem !important;
+			height: 0.75rem !important;
+		}
+		
+		.custom-category-tag button {
+			min-height: unset !important;
+		}
+	}
+	
+	/* Custom Category Remove Button */
+	.custom-category-remove {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1rem;
+		height: 1rem;
+		margin-left: 0.25rem;
+		border-radius: 50%;
+		transition: all 0.15s ease;
+		cursor: pointer;
+	}
+	
+	.custom-category-remove:hover {
+		background: var(--color-primary-200);
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-remove {
+			width: 0.875rem !important;
+			height: 0.875rem !important;
+			margin-left: 0.125rem !important;
+			min-height: unset !important;
+		}
+		
+		.custom-category-remove :global(svg) {
+			width: 0.5rem !important;
+			height: 0.5rem !important;
+		}
+	}
+	
+	/* Custom Category Input Wrapper */
+	.custom-category-input-wrapper {
+		margin-top: 0.25rem;
+	}
+	
+	/* Custom Category Input Container */
+	.custom-category-input-container {
+		position: relative;
+		display: flex;
+		align-items: center;
+		min-height: 2.25rem;
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-input-container {
+			min-height: 1.875rem !important;
+		}
+	}
+	
+	/* Custom Category Input */
+	.custom-category-input {
+		flex: 1;
+		padding: 0.375rem 0.75rem;
+		padding-right: 4.5rem;
+		font-size: 0.875rem;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		transition: all 0.15s ease;
+		min-height: 2.25rem;
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-input {
+			padding: 0.25rem 0.5rem !important;
+			padding-right: 3.25rem !important;
+			font-size: 0.8125rem !important;
+			min-height: 1.875rem !important;
+		}
+	}
+	
+	.custom-category-input::placeholder {
+		color: var(--text-tertiary);
+	}
+	
+	.custom-category-input.form-input--no-transform:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 1px var(--color-primary-200);
+		transform: none;
+	}
+	
+	.custom-category-input.error,
+	.custom-category-input.warning {
+		border-color: var(--color-error-500);
+	}
+	
+	.custom-category-input.error:focus,
+	.custom-category-input.warning:focus {
+		box-shadow: 0 0 0 1px var(--color-error-200);
+	}
+	
+	.custom-category-input.warning {
+		animation: shake 0.3s ease;
+		color: var(--color-error-600);
+	}
+	
+	@keyframes shake {
+		0%, 100% { transform: translateX(0); }
+		25% { transform: translateX(-4px); }
+		75% { transform: translateX(4px); }
+	}
+	
+	.custom-category-input.warning::placeholder {
+		color: var(--color-error-400);
+	}
+	
+	.custom-category-input:disabled {
+		background: var(--bg-tertiary);
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+	
+	/* Custom Category Actions */
+	.custom-category-actions {
+		position: absolute;
+		right: 0.375rem;
+		top: 50%;
+		transform: translateY(-50%);
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-actions {
+			right: 0.25rem !important;
+			gap: 0.25rem !important;
+		}
+		
+		.custom-category-actions .text-xs {
+			font-size: 0.6875rem !important;
+		}
+	}
+	
+	/* Custom Category Add Button */
+	.custom-category-add {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 0.375rem;
+		background: var(--color-primary-500);
+		color: white;
+		transition: all 0.15s ease;
+		cursor: pointer;
+		border: none;
+	}
+	
+	@media (max-width: 640px) {
+		.custom-category-add {
+			width: 1.25rem !important;
+			height: 1.25rem !important;
+			border-radius: 0.25rem !important;
+			min-width: 1.25rem !important;
+			min-height: unset !important;
+			max-height: 1.25rem !important;
+			flex-shrink: 0 !important;
+		}
+		
+		.custom-category-add :global(svg),
+		.custom-category-add :global(.mobile-icon) {
+			width: 0.75rem !important;
+			height: 0.75rem !important;
+		}
+		
+		/* Global mobile icon size */
+		:global(.mobile-icon) {
+			width: 0.75rem !important;
+			height: 0.75rem !important;
+		}
+		
+		/* Mobile validation text */
+		.mobile-validation-text {
+			font-size: 0.6875rem !important;
+			line-height: 1.1 !important;
+		}
+	}
+	
+	.custom-category-add:hover:not(:disabled) {
+		background: var(--color-primary-600);
+		transform: scale(1.05);
+	}
+	
+	.custom-category-add:disabled {
+		cursor: not-allowed;
+	}
+	
+	/* Dark mode adjustments */
+	:root[data-theme='dark'] .category-button {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+	}
+	
+	:root[data-theme='dark'] .category-button:hover:not(.disabled) {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+	
+	:root[data-theme='dark'] .category-button.selected {
+		background: rgba(99, 102, 241, 0.15);
+		border-color: rgba(99, 102, 241, 0.4);
+		color: #a5b4fc;
+	}
+	
+	:root[data-theme='dark'] .custom-category-tag {
+		background: rgba(99, 102, 241, 0.15);
+		color: #a5b4fc;
+	}
+	
+	:root[data-theme='dark'] .custom-category-input {
+		background: var(--bg-input);
+		border-color: var(--border-primary);
+	}
+	
+	:root[data-theme='dark'] .custom-category-input.form-input--no-transform:focus {
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+		transform: none;
+	}
+	
+	/* Dark mode for form field elements */
+	:root[data-theme='dark'] .form-input--no-transform:focus {
+		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
+	}
+	
+	:root[data-theme='dark'] .form-textarea.form-input--no-transform:focus {
+		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
+	}
+	
+	
+	/* Smooth transitions for form sections */
+	.rounded-xl {
+		transition: all 0.2s ease-in-out;
+	}
 
+	.rounded-xl:hover {
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	}
+
+	/* Smooth expand/collapse animations */
+	div[class*="p-5"],
+	div[class*="p-4"] {
+		animation: slideDown 0.2s ease-out;
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Danger Zone Styling */
+	.danger-zone-container {
+		background: var(--color-danger-50);
+		border: 1px solid var(--color-danger-200);
+	}
+
+	.danger-zone-header {
+		border-color: var(--color-danger-200);
+	}
+
+	.danger-zone-title {
+		color: var(--color-danger-900);
+	}
+
+	/* Danger Zone Dark Mode - Softer colors */
+	:root[data-theme='dark'] .danger-zone-container {
+		background: rgba(220, 38, 38, 0.08);
+		border-color: rgba(220, 38, 38, 0.25);
+	}
+
+	:root[data-theme='dark'] .danger-zone-header {
+		border-color: rgba(220, 38, 38, 0.2);
+	}
+
+	:root[data-theme='dark'] .danger-zone-title {
+		color: #fca5a5;
+	}
+
+	/* Success/Warning/Info boxes dark mode */
+	:root[data-theme='dark'] div[style*="--color-success-50"] {
+		background: rgba(34, 197, 94, 0.08) !important;
+		border-color: rgba(34, 197, 94, 0.25) !important;
+	}
+
+	:root[data-theme='dark'] div[style*="--color-warning-50"] {
+		background: rgba(245, 158, 11, 0.08) !important;
+		border-color: rgba(245, 158, 11, 0.25) !important;
+	}
+
+	:root[data-theme='dark'] div[style*="--color-info-50"] {
+		background: rgba(59, 130, 246, 0.08) !important;
+		border-color: rgba(59, 130, 246, 0.25) !important;
+	}
+
+	:root[data-theme='dark'] div[style*="--color-error-50"] {
+		background: rgba(220, 38, 38, 0.08) !important;
+		border-color: rgba(220, 38, 38, 0.25) !important;
+	}
+
+	:root[data-theme='dark'] p[style*="--color-danger"] {
+		color: #fca5a5 !important;
+	}
+	
 	/* Ensure proper aspect ratio for mobile image previews */
 	.aspect-square {
 		aspect-ratio: 1 / 1;
 	}
-
+	
 	/* Fallback for browsers that don't support aspect-ratio */
 	@supports not (aspect-ratio: 1 / 1) {
 		.aspect-square::before {
@@ -1870,7 +2542,7 @@ Key extracted components:
 		}
 	}
 
-	/* Mobile file input enhancement */
+	/* Mobile Enhancements - Better touch targets */
 	@media (max-width: 640px) {
 		#images-upload {
 			/* Ensure file input is accessible on mobile */
@@ -1886,6 +2558,27 @@ Key extracted components:
 			align-items: center;
 			justify-content: center;
 		}
+
+		/* Increase touch targets for all buttons */
+		button[type="button"]:not(.tag-remove):not(.remove-btn) {
+			min-height: 44px;
+		}
+
+		/* Category buttons - better touch targets */
+		.grid.grid-cols-2 button {
+			min-height: 48px;
+			padding: 0.75rem;
+		}
+
+		/* Larger spacing between form sections */
+		.space-y-8 > * + * {
+			margin-top: 2rem;
+		}
+
+		/* Reduce padding on form sections to save space */
+		.p-5 {
+			padding: 1rem;
+		}
 	}
 
 
@@ -1898,10 +2591,9 @@ Key extracted components:
 			border-width: 2px;
 		}
 		
-		/* Sticky error summary styling */
-		.sticky {
-			backdrop-filter: blur(8px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		/* Smaller error messages on mobile */
+		.form-error-message {
+			font-size: 0.625rem;
 		}
 	}
 </style>

@@ -227,7 +227,7 @@
 					}
 				}}
 				placeholder={placeholder}
-				class="form-input pl-10 pr-12 relative z-0"
+				class="form-input form-input--no-transform pl-10 pr-12 relative z-0"
 				autocomplete="off"
 			/>
 			{#if value && value.trim()}
@@ -280,21 +280,17 @@
 	</div>
 	
 	<!-- Quick action buttons -->
-	<div class="flex flex-wrap gap-2">
+	<div class="flex flex-wrap gap-1.5 overflow-x-auto pb-1" style="max-width: 100%; -webkit-overflow-scrolling: touch;">
 		<!-- Use profile location -->
 		{#if profileLocation && value !== profileLocation}
 			<button
 				type="button"
 				onclick={useProfileLocation}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80"
-				style="
-					background: var(--color-primary-50);
-					border-color: var(--color-primary-200);
-					color: var(--color-primary-700);
-				"
+				class="location-action-button location-action-button--profile"
+				title="Use my location: {profileLocation}"
 			>
-				<MapPin class="w-3 h-3" />
-				Use my location: {profileLocation}
+				<MapPin class="w-3 h-3 flex-shrink-0" />
+				<span class="truncate">Use my location</span>
 			</button>
 		{/if}
 		
@@ -304,12 +300,8 @@
 				type="button"
 				onclick={getCurrentLocation}
 				disabled={isGeolocating}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80 disabled:opacity-50"
-				style="
-					background: var(--color-success-50);
-					border-color: var(--color-success-200);
-					color: var(--color-success-700);
-				"
+				class="location-action-button"
+				class:disabled={isGeolocating}
 			>
 				{#if isGeolocating}
 					<div class="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full"></div>
@@ -325,12 +317,7 @@
 			<button
 				type="button"
 				onclick={openMapPicker}
-				class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors hover:bg-opacity-80"
-				style="
-					background: var(--color-info-50);
-					border-color: var(--color-info-200);
-					color: var(--color-info-700);
-				"
+				class="location-action-button"
 			>
 				<MapPin class="w-3 h-3" />
 				Pick on map
@@ -349,6 +336,70 @@
 />
 
 <style>
+	.location-action-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.375rem 0.625rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		border-radius: 0.375rem;
+		border: 1px solid var(--border-primary);
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+		transition: all 0.15s ease;
+		cursor: pointer;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+	
+	.location-action-button--profile {
+		max-width: calc(100vw - 4rem);
+	}
+	
+	.location-action-button--profile span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	
+	@media (max-width: 640px) {
+		.location-action-button {
+			font-size: 0.6875rem !important;
+			padding: 0.25rem 0.5rem !important;
+			gap: 0.1875rem !important;
+		}
+		
+		.location-action-button--profile {
+			max-width: 140px;
+		}
+	}
+	
+	.location-action-button:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+		transform: translateY(-1px);
+	}
+	
+	.location-action-button.disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	.location-action-button.disabled:hover {
+		transform: none;
+	}
+	
+	
+	:root[data-theme='dark'] .location-action-button {
+		background: var(--bg-secondary);
+		border-color: var(--border-primary);
+	}
+	
+	:root[data-theme='dark'] .location-action-button:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+	
 	.animate-spin {
 		animation: spin 1s linear infinite;
 	}
@@ -356,9 +407,5 @@
 	@keyframes spin {
 		from { transform: rotate(0deg); }
 		to { transform: rotate(360deg); }
-	}
-	
-	.animate-spin {
-		animation: spin 1s linear infinite;
 	}
 </style> 
