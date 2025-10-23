@@ -277,14 +277,8 @@
 		];
 	});
 
-	// All navigation items for mobile menu
+	// All navigation items for mobile menu (Profile moved to user section)
 	const mobileMenuItems = $derived([
-		{
-			name: 'Profile',
-			href: '/profile',
-			icon: User,
-			description: 'Edit your profile'
-		},
 		{
 			name: 'Transfers',
 			href: '/transfers',
@@ -482,8 +476,14 @@
 	$effect(() => {
 		if (browser && mobileMenuOpen) {
 			document.addEventListener('click', handleClickOutside);
+			
+			// Prevent body scroll when menu is open
+			const originalOverflow = document.body.style.overflow;
+			document.body.style.overflow = 'hidden';
+			
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
+				document.body.style.overflow = originalOverflow;
 			};
 		}
 	});
@@ -686,7 +686,7 @@
 					id="mobile-menu"
 					onclick={(e) => e.stopPropagation()}
 				>
-					<div class="rounded-t-xl shadow-lg" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
+					<div class="rounded-t-xl shadow-lg mobile-menu-container" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
 						<!-- Menu Header -->
 						<div class="flex items-center justify-between px-4 py-3 border-b" style="border-color: var(--border-primary);">
 							<h3 class="text-base font-semibold" style="color: var(--text-primary);">Menu</h3>
@@ -702,7 +702,7 @@
 						</div>
 						
 						<!-- Menu Items -->
-						<div class="py-2">
+						<div class="mobile-menu-items">
 							{#each mobileMenuItems as item}
 								<a
 									href={item.href}
@@ -722,28 +722,34 @@
 							<!-- User Info -->
 							{#if currentUserData}
 								<div class="border-t mt-2 pt-2" style="border-color: var(--border-primary);">
-									<div class="px-4 py-3">
-										<div class="flex items-center gap-3">
-											<div class="flex-shrink-0">
-												{#if currentUserData.avatar && !avatarLoadError}
-													<img 
-														src={currentUserData.avatar} 
-														alt={currentUserData.name || 'User'} 
-														class="h-10 w-10 rounded-full object-cover"
-														onerror={() => avatarLoadError = true}
-													/>
-												{:else}
-													<div class="h-10 w-10 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-														<User class="h-5 w-5" />
-													</div>
-												{/if}
-											</div>
-											<div class="flex-1 min-w-0">
-												<p class="text-sm font-medium truncate" style="color: var(--text-primary);">{currentUserData.name || 'User'}</p>
-												<p class="text-xs truncate" style="color: var(--text-tertiary);">{currentUserData.email}</p>
-											</div>
+									<!-- Profile Link with User Info -->
+									<a
+										href="/profile"
+										class="flex items-center gap-3 px-4 py-3 transition-colors"
+										style="color: var(--text-secondary); text-decoration: none;"
+										onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+										onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+									>
+										<div class="flex-shrink-0">
+											{#if currentUserData.avatar && !avatarLoadError}
+												<img 
+													src={currentUserData.avatar} 
+													alt={currentUserData.name || 'User'} 
+													class="h-10 w-10 rounded-full object-cover"
+													onerror={() => avatarLoadError = true}
+												/>
+											{:else}
+												<div class="h-10 w-10 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+													<User class="h-5 w-5" />
+												</div>
+											{/if}
 										</div>
-									</div>
+										<div class="flex-1 min-w-0">
+											<p class="text-sm font-medium truncate" style="color: var(--text-primary);">{currentUserData.name || 'User'}</p>
+											<p class="text-xs truncate" style="color: var(--text-tertiary);">{currentUserData.email}</p>
+										</div>
+										<Settings class="h-5 w-5 flex-shrink-0" style="color: var(--text-tertiary);" />
+									</a>
 									
 									<!-- Sign Out -->
 									<button
@@ -790,10 +796,15 @@
 	/* Mobile menu animation */
 	.mobile-menu-backdrop {
 		animation: fadeIn 0.2s ease-out;
+		overflow: hidden;
+		touch-action: none;
+		overscroll-behavior: none;
 	}
 	
 	.mobile-menu-panel {
 		animation: slideUp 0.2s ease-out;
+		touch-action: pan-y;
+		overscroll-behavior: contain;
 	}
 	
 	@keyframes fadeIn {
@@ -804,6 +815,35 @@
 	@keyframes slideUp {
 		from { transform: translateY(100%); }
 		to { transform: translateY(0); }
+	}
+	
+	/* Mobile menu container - limit height and enable scrolling */
+	.mobile-menu-container {
+		display: flex;
+		flex-direction: column;
+		max-height: 80vh;
+		overflow: hidden;
+	}
+	
+	.mobile-menu-items {
+		overflow-y: auto;
+		overflow-x: hidden;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
+	}
+	
+	/* Scrollbar styling for mobile menu */
+	.mobile-menu-items::-webkit-scrollbar {
+		width: 4px;
+	}
+	
+	.mobile-menu-items::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	
+	.mobile-menu-items::-webkit-scrollbar-thumb {
+		background: var(--border-primary);
+		border-radius: 2px;
 	}
 	
 	/* Remove underlines from all navigation links */
