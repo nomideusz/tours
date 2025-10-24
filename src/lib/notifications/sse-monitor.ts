@@ -95,9 +95,9 @@ class SSEConnectionMonitor {
 
     return {
       totalActive: this.stats.activeConnections,
-      staleConnections: staleConnections.length,
+      staleConnectionsCount: staleConnections.length,
       errorRate: this.stats.totalConnections > 0 ? this.stats.errorCount / this.stats.totalConnections : 0,
-      staleConnections: staleConnections.map(conn => ({
+      staleConnectionDetails: staleConnections.map(conn => ({
         userId: conn.userId,
         connectedAt: conn.connectedAt,
         lastHeartbeat: conn.lastHeartbeat,

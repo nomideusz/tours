@@ -42,10 +42,10 @@ function generateRecommendations(stats: any, health: any) {
     });
   }
   
-  if (health.staleConnections > 0) {
+  if (health.staleConnectionsCount > 0) {
     recommendations.push({
       type: 'warning',
-      message: `${health.staleConnections} stale connections detected. These may need cleanup.`
+      message: `${health.staleConnectionsCount} stale connections detected. These may need cleanup.`
     });
   }
   

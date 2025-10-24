@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Clock from 'lucide-svelte/icons/clock';
-	import { browser } from '$app/environment';
 	
 	let {
 		value = $bindable(''),
@@ -32,16 +31,6 @@
 	
 	let timeInputRef = $state<HTMLInputElement | undefined>(undefined);
 	
-	// Detect if showPicker is supported (not in Firefox)
-	// Start with null to indicate we haven't checked yet
-	let supportsShowPicker = $state<boolean | null>(null);
-	
-	$effect(() => {
-		if (browser && timeInputRef && supportsShowPicker === null) {
-			supportsShowPicker = typeof timeInputRef.showPicker === 'function';
-		}
-	});
-	
 	// Format time for display
 	function formatTimeDisplay(timeStr: string): string {
 		if (!timeStr) return placeholder;
@@ -57,14 +46,19 @@
 		onchange?.(value);
 	}
 	
-	function openPicker() {
-		if (!timeInputRef || !supportsShowPicker) return;
+	// Try to open picker programmatically for better desktop experience
+	function handleClick() {
+		if (!timeInputRef) return;
 		
-		try {
-			timeInputRef.showPicker();
-		} catch (e) {
-			console.error('Failed to open picker:', e);
+		// Try showPicker() for desktop browsers
+		if (typeof timeInputRef.showPicker === 'function') {
+			try {
+				timeInputRef.showPicker();
+			} catch (e) {
+				// Fallback to default behavior
+			}
 		}
+		// For iOS and browsers without showPicker, the native click will work
 	}
 </script>
 
@@ -78,54 +72,32 @@
 		</label>
 	{/if}
 	
-	<div class="picker-wrapper">
-		<!-- Button for browsers with showPicker support - only show if confirmed -->
-		{#if supportsShowPicker === true}
-			<button
-				type="button"
-				onclick={openPicker}
-				class="time-picker-button {error ? 'error' : ''}"
-				disabled={disabled}
-			>
-				<Clock class="h-4 w-4" style="color: var(--text-primary);" />
-				<span class="time-display" style="color: {value ? 'var(--text-primary)' : 'var(--text-secondary)'};">
-					{formatTimeDisplay(value)}
-				</span>
-			</button>
-			
-			<input
-				bind:this={timeInputRef}
-				{id}
-				type="time"
-				bind:value={value}
-				{min}
-				{max}
-				{step}
-				{required}
-				{disabled}
-				class="hidden-time-input"
-				onchange={handleChange}
-			/>
-		{:else}
-			<!-- Native input for Firefox and during detection -->
-			<div class="native-input-wrapper">
-				<Clock class="input-icon" style="color: var(--text-primary);" />
-				<input
-					bind:this={timeInputRef}
-					{id}
-					type="time"
-					bind:value={value}
-					{min}
-					{max}
-					{step}
-					{required}
-					{disabled}
-					class="native-input {error ? 'error' : ''}"
-					onchange={handleChange}
-				/>
-			</div>
-		{/if}
-	</div>
+	<!-- Use label wrapper for iOS compatibility -->
+	<label class="picker-label-wrapper">
+		<!-- Visual button layer -->
+		<div class="time-picker-button {error ? 'error' : ''} {disabled ? 'disabled' : ''}">
+			<Clock class="h-4 w-4" style="color: var(--text-primary);" />
+			<span class="time-display" style="color: {value ? 'var(--text-primary)' : 'var(--text-secondary)'};">
+				{formatTimeDisplay(value)}
+			</span>
+		</div>
+		
+		<!-- Actual input - overlays the button -->
+		<input
+			bind:this={timeInputRef}
+			{id}
+			type="time"
+			bind:value={value}
+			{min}
+			{max}
+			{step}
+			{required}
+			{disabled}
+			class="overlay-input"
+			onclick={handleClick}
+			onchange={handleChange}
+		/>
+	</label>
 </div>
 
 <style>
@@ -133,12 +105,13 @@
 		width: 100%;
 	}
 	
-	.picker-wrapper {
+	.picker-label-wrapper {
 		position: relative;
+		display: block;
 		width: 100%;
+		cursor: pointer;
 	}
 	
-	/* Button style for browsers with showPicker support */
 	.time-picker-button {
 		display: flex;
 		align-items: center;
@@ -148,24 +121,15 @@
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.5rem;
-		cursor: pointer;
 		transition: all 0.2s ease;
 		font-size: 0.875rem;
 		text-align: left;
+		pointer-events: none;
+		position: relative;
+		z-index: 0;
 	}
 	
-	.time-picker-button:hover:not(:disabled) {
-		border-color: var(--color-primary-300);
-		background: var(--bg-secondary);
-	}
-	
-	.time-picker-button:focus {
-		outline: none;
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 3px var(--color-primary-100);
-	}
-	
-	.time-picker-button:disabled {
+	.time-picker-button.disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
@@ -181,65 +145,36 @@
 		text-overflow: ellipsis;
 	}
 	
-	.hidden-time-input {
+	/* Overlay input - covers the entire button */
+	.overlay-input {
 		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border-width: 0;
-		opacity: 0;
-	}
-	
-	/* Native input style for Firefox */
-	.native-input-wrapper {
-		position: relative;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		width: 100%;
-	}
-	
-	.input-icon {
-		position: absolute;
-		left: 1rem;
-		top: 50%;
-		transform: translateY(-50%);
-		pointer-events: none;
+		height: 100%;
+		opacity: 0;
+		cursor: pointer;
 		z-index: 1;
 	}
 	
-	.native-input {
-		width: 100%;
-		padding: 0.625rem 1rem 0.625rem 3rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		font-size: 0.875rem;
-		color: var(--text-primary);
-		font-family: inherit;
-	}
-	
-	.native-input:hover:not(:disabled) {
+	/* Hover effect via input */
+	.picker-label-wrapper:has(.overlay-input:not(:disabled):hover) .time-picker-button:not(.disabled) {
 		border-color: var(--color-primary-300);
 		background: var(--bg-secondary);
 	}
 	
-	.native-input:focus {
+	/* Focus effect via input */
+	.picker-label-wrapper:has(.overlay-input:focus) .time-picker-button {
 		outline: none;
 		border-color: var(--color-primary-500);
 		box-shadow: 0 0 0 3px var(--color-primary-100);
 	}
 	
-	.native-input:disabled {
-		opacity: 0.5;
+	/* Disabled state */
+	.picker-label-wrapper:has(.overlay-input:disabled) {
 		cursor: not-allowed;
-	}
-	
-	.native-input.error {
-		border-color: var(--color-error);
 	}
 </style>
 
