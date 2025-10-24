@@ -17,6 +17,7 @@
 		transition: all var(--transition-base);
 		background-color: var(--bg-input);
 		color: var(--text-primary);
+		position: relative;
 	}
 
 	.form-input:focus {
@@ -67,12 +68,50 @@
 	/* Hide number input spinners */
 	.form-input[type="number"] {
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 
 	.form-input[type="number"]::-webkit-outer-spin-button,
 	.form-input[type="number"]::-webkit-inner-spin-button {
 		-webkit-appearance: none;
 		margin: 0;
+	}
+
+	/* Date input styling - hide native icons when custom icons are used */
+	.form-input[type="date"],
+	.form-input[type="datetime-local"],
+	.form-input[type="time"] {
+		position: relative;
+	}
+
+	/* Hide native calendar/clock icons in WebKit browsers but keep them clickable */
+	.form-input[type="date"]::-webkit-calendar-picker-indicator,
+	.form-input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+	.form-input[type="time"]::-webkit-calendar-picker-indicator {
+		opacity: 0;
+		position: absolute;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		cursor: pointer;
+	}
+
+	/* Firefox: hide native calendar/clock icons */
+	.form-input[type="date"],
+	.form-input[type="datetime-local"] {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+
+	.form-input[type="date"]::-moz-calendar-picker-indicator,
+	.form-input[type="datetime-local"]::-moz-calendar-picker-indicator,
+	.form-input[type="time"]::-moz-calendar-picker-indicator {
+		opacity: 0;
+		position: absolute;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		cursor: pointer;
 	}
 
 	.form-label {

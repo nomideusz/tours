@@ -753,6 +753,17 @@ a svg.lucide {
 	stroke: currentColor;
 }
 
+/* Only apply inline-block to non-absolutely positioned icons in buttons/links */
+button .lucide-icon:not([class*="absolute"]),
+button .lucide:not([class*="absolute"]),
+button svg.lucide:not([class*="absolute"]),
+a .lucide-icon:not([class*="absolute"]),
+a .lucide:not([class*="absolute"]),
+a svg.lucide:not([class*="absolute"]) {
+	display: inline-block;
+	vertical-align: middle;
+}
+
 /* Fix lucide icons that might have poor contrast */
 .text-gray-400 .lucide-icon,
 .text-gray-400 .lucide,
@@ -1151,6 +1162,111 @@ svg[class*="w-"][class*="h-"] {
 	/* These are likely icon components */
 	stroke: currentColor;
 	fill: none;
+	flex-shrink: 0;
+}
+
+/* Only apply inline-block to non-absolutely positioned icons */
+svg[class*="w-"][class*="h-"]:not([class*="absolute"]) {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/* Absolutely positioned icons need special handling */
+/* Override any display settings to ensure proper positioning */
+svg[class*="absolute"],
+svg.absolute {
+	display: block !important; /* Must be block for absolute positioning to work correctly */
+	pointer-events: none; /* Allow clicks to pass through to inputs */
+	z-index: 10; /* Stay above the input */
+	position: absolute !important; /* Ensure position is actually absolute */
+}
+
+/* But allow pointer events on clickable elements (like links) */
+a svg[class*="absolute"],
+button svg[class*="absolute"] {
+	pointer-events: auto;
+}
+
+/* The parent link/button should handle pointer events */
+a[class*="absolute"],
+button[class*="absolute"] {
+	z-index: 10;
+	pointer-events: auto;
+}
+
+a[class*="absolute"] svg,
+button[class*="absolute"] svg {
+	pointer-events: auto;
+	display: block !important;
+}
+
+/* SVGs inside absolutely positioned parents should also be block */
+[class*="absolute"] > svg {
+	display: block !important;
+}
+
+/* Handle any SVG nested inside absolute positioned elements */
+[class*="absolute"] svg {
+	display: block !important;
+}
+
+/* Specifically target the relative wrapper pattern used in forms */
+.relative svg[class*="absolute"] {
+	display: block !important;
+	position: absolute !important;
+}
+
+/* Links with absolute positioning containing icons */
+a.absolute svg,
+a[class*="absolute"] svg {
+	display: block !important;
+	pointer-events: auto !important;
+}
+
+/* Ensure parent relative containers don't interfere */
+.relative {
+	position: relative;
+}
+
+/* Icons inside relative containers with absolute positioning */
+.relative > svg[class*="absolute"],
+.relative > a[class*="absolute"],
+.relative > button[class*="absolute"] {
+	position: absolute !important;
+	z-index: 10;
+}
+
+/* Ensure the external link icon in website field stays visible and clickable */
+.relative > a[class*="absolute"] svg {
+	display: block !important;
+	pointer-events: auto !important;
+	position: static !important; /* SVG should be static inside the absolute link */
+}
+
+/* Make sure transform utilities work on absolutely positioned elements */
+svg[class*="absolute"][class*="transform"],
+a[class*="absolute"][class*="transform"],
+button[class*="absolute"][class*="transform"] {
+	transform-origin: center;
+	backface-visibility: hidden; /* Improve rendering */
+}
+
+/* High specificity rule to ensure icons in form fields work */
+/* Icons can be siblings before OR after the input */
+.relative > svg[class*="absolute"],
+.relative > input ~ svg[class*="absolute"],
+.relative > input ~ a[class*="absolute"],
+.relative > input ~ button[class*="absolute"] {
+	position: absolute !important;
+	display: block !important;
+	z-index: 10;
+}
+
+/* The external link (after input) */
+.relative > a[class*="absolute"] {
+	position: absolute !important;
+	display: block !important;
+	z-index: 10;
 }
 
 /* COMMENTED OUT - Too aggressive

@@ -3,8 +3,9 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 	import Drawer from '$lib/components/Drawer.svelte';
-	import DurationInput from '$lib/components/DurationInput.svelte';
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
+	import NativeDatePicker from '$lib/components/NativeDatePicker.svelte';
+	import NativeTimePicker from '$lib/components/NativeTimePicker.svelte';
 	import { slide } from 'svelte/transition';
 	
 	// Icons
@@ -59,17 +60,18 @@
 	// Form state - with smart defaults
 	let selectedDate = $state('');
 	let startTime = $state('10:00');
+	let endTime = $state('12:00'); // Now editable instead of calculated
+	let additionalDays = $state(0); // For multi-day tours beyond 24 hours
 	
 	// Track tour ID to detect when tour changes
 	let lastTourId = $state<string | null>(null);
 	
 	// Track if user has manually changed values
-	let userChangedDuration = $state(false);
+	let userChangedEndTime = $state(false);
 	let userChangedCapacity = $state(false);
 	let userChangedMinCapacity = $state(false);
 	
 	// Initialize with derived values from tour, or defaults
-	let duration = $state(120);
 	let capacity = $state(10);
 	let minCapacity = $state(1);
 	
@@ -87,10 +89,6 @@
 	
 	// UI state
 	let showCapacitySettings = $state(false);
-	
-	// Hidden time input ref for triggering browser picker
-	let timeInputRef = $state<HTMLInputElement | null>(null);
-	let dateInputRef = $state<HTMLInputElement | null>(null);
 
 	// Initialize date when drawer opens
 	$effect(() => {
@@ -98,40 +96,61 @@
 			selectedDate = initialDate || new Date().toISOString().split('T')[0];
 			// Reset form state
 			error = null;
-			userChangedDuration = false;
+			userChangedEndTime = false;
 			userChangedCapacity = false;
 			userChangedMinCapacity = false;
 			recurring = false;
 			recurringEndDate = '';
 			showCapacitySettings = false;
+			additionalDays = 0;
 		}
 	});
 
-	// Calculate end time based on start time and duration
-	let endTimeCalculation = $derived.by(() => {
-		const [hours, minutes] = startTime.split(':').map(Number);
-		const totalMinutes = hours * 60 + minutes + duration;
+	// Calculate duration in minutes based on start and end time + additional days
+	let calculatedDuration = $derived.by(() => {
+		const [startHours, startMinutes] = startTime.split(':').map(Number);
+		const [endHours, endMinutes] = endTime.split(':').map(Number);
 		
-		const endHours = Math.floor(totalMinutes / 60);
-		const endMinutes = totalMinutes % 60;
+		const startTotalMinutes = startHours * 60 + startMinutes;
+		const endTotalMinutes = endHours * 60 + endMinutes;
 		
-		let endDate = '';
-		let endTime = '';
-		
-		if (endHours >= 24) {
-			// Multi-day slot
-			const daysToAdd = Math.floor(endHours / 24);
-			const endDateObj = new Date(selectedDate);
-			endDateObj.setDate(endDateObj.getDate() + daysToAdd);
-			endDate = endDateObj.toISOString().split('T')[0];
-			endTime = `${String(endHours % 24).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+		// Calculate base duration for the time difference
+		let baseDuration = 0;
+		if (endTotalMinutes <= startTotalMinutes && additionalDays === 0) {
+			// End time is before start time, assume next day
+			baseDuration = (24 * 60 - startTotalMinutes) + endTotalMinutes;
 		} else {
-			// Same day
-			endDate = selectedDate;
-			endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+			// Normal same-day duration
+			baseDuration = endTotalMinutes - startTotalMinutes;
 		}
 		
-		return { endDate, endTime };
+		// Add additional days (24 hours per day)
+		return baseDuration + (additionalDays * 24 * 60);
+	});
+	
+	// Calculate end date for multi-day tours
+	let endDateCalculation = $derived.by(() => {
+		const [startHours, startMinutes] = startTime.split(':').map(Number);
+		const [endHours, endMinutes] = endTime.split(':').map(Number);
+		
+		const startTotalMinutes = startHours * 60 + startMinutes;
+		const endTotalMinutes = endHours * 60 + endMinutes;
+		
+		// Calculate how many days to add
+		let daysToAdd = additionalDays;
+		if (endTotalMinutes <= startTotalMinutes && additionalDays === 0) {
+			// End time is before start time, it's next day
+			daysToAdd = 1;
+		}
+		
+		if (daysToAdd > 0) {
+			const endDateObj = new Date(selectedDate);
+			endDateObj.setDate(endDateObj.getDate() + daysToAdd);
+			return endDateObj.toISOString().split('T')[0];
+		}
+		
+		// Same day
+		return selectedDate;
 	});
 
 	// Calculate existing slots map (for blue dots)
@@ -162,10 +181,10 @@
 		const set = new Set<string>();
 		
 		// Add preview range (for multi-day tours)
-		if (selectedDate && endTimeCalculation.endDate) {
+		if (selectedDate && endDateCalculation) {
 			// Parse date strings directly to avoid timezone issues
 			const [startYear, startMonth, startDay] = selectedDate.split('-').map(Number);
-			const [endYear, endMonth, endDay] = endTimeCalculation.endDate.split('-').map(Number);
+			const [endYear, endMonth, endDay] = endDateCalculation.split('-').map(Number);
 			
 			const start = new Date(startYear, startMonth - 1, startDay);
 			const end = new Date(endYear, endMonth - 1, endDay);
@@ -202,7 +221,7 @@
 
 	// Calculate preview of slots
 	let slotsPreview = $derived.by(() => {
-		if (!recurring) return [{ date: selectedDate, startTime, endTime: endTimeCalculation.endTime }];
+		if (!recurring) return [{ date: selectedDate, startTime, endTime }];
 		
 		const slots = [];
 		const start = new Date(selectedDate);
@@ -213,7 +232,7 @@
 			slots.push({
 				date: current.toISOString().split('T')[0],
 				startTime,
-				endTime: endTimeCalculation.endTime
+				endTime
 			});
 			
 			switch (recurringType) {
@@ -238,7 +257,7 @@
 		
 		slotsPreview.forEach(preview => {
 			const previewStart = new Date(`${preview.date}T${preview.startTime}:00`);
-			const previewEnd = new Date(`${endTimeCalculation.endDate}T${preview.endTime}:00`);
+			const previewEnd = new Date(`${endDateCalculation}T${preview.endTime}:00`);
 			
 			existingSlots.forEach((slot: any) => {
 				const slotStart = new Date(slot.startTime);
@@ -269,11 +288,36 @@
 		error = null;
 		
 		try {
-			const { endDate, endTime } = endTimeCalculation;
+			// Create dates in local timezone and format with timezone offset
+			const [startYear, startMonth, startDay] = selectedDate.split('-').map(Number);
+			const [startHour, startMinute] = startTime.split(':').map(Number);
+			const startDate = new Date(startYear, startMonth - 1, startDay, startHour, startMinute, 0);
+			
+			const [endYear, endMonth, endDay] = endDateCalculation.split('-').map(Number);
+			const [endHour, endMinute] = endTime.split(':').map(Number);
+			const endDate = new Date(endYear, endMonth - 1, endDay, endHour, endMinute, 0);
+			
+			// Format dates preserving local timezone (ISO 8601 with timezone offset)
+			const formatWithTimezone = (date: Date) => {
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				const hours = String(date.getHours()).padStart(2, '0');
+				const minutes = String(date.getMinutes()).padStart(2, '0');
+				const seconds = String(date.getSeconds()).padStart(2, '0');
+				
+				// Get timezone offset in format +HH:MM or -HH:MM
+				const offsetMinutes = date.getTimezoneOffset();
+				const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+				const offsetHours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');
+				const offsetMins = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');
+				
+				return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${offsetHours}:${offsetMins}`;
+			};
 			
 			const payload = {
-				startTime: `${selectedDate}T${startTime}:00`,
-				endTime: `${endDate}T${endTime}:00`,
+				startTime: formatWithTimezone(startDate),
+				endTime: formatWithTimezone(endDate),
 				capacity,
 				minCapacity,
 				status: 'available',
@@ -340,8 +384,21 @@
 	$effect(() => {
 		if (tour && tour.id !== lastTourId) {
 			// Only update if user hasn't manually changed
-			if (!userChangedDuration) {
-				duration = tour.duration || 120;
+			if (!userChangedEndTime) {
+				// Set end time and additional days based on tour duration
+				const tourDuration = tour.duration || 120;
+				const [startHours, startMinutes] = startTime.split(':').map(Number);
+				const totalMinutes = startHours * 60 + startMinutes + tourDuration;
+				
+				// Calculate additional days for multi-day tours
+				const totalHours = Math.floor(totalMinutes / 60);
+				additionalDays = Math.floor(totalHours / 24);
+				
+				// Calculate end time within the final day
+				const endHours = totalHours % 24;
+				const endMinutes = totalMinutes % 60;
+				
+				endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 			}
 			if (!userChangedCapacity) {
 				capacity = tour.maxCapacity || tour.capacity || 10;
@@ -354,6 +411,45 @@
 			lastTourId = tour.id;
 		}
 	});
+	
+	// Function to reset end time to tour's default duration
+	function resetToDefaultDuration() {
+		if (!tour) return;
+		
+		const tourDuration = tour.duration || 120;
+		const [startHours, startMinutes] = startTime.split(':').map(Number);
+		const totalMinutes = startHours * 60 + startMinutes + tourDuration;
+		
+		// Calculate additional days for multi-day tours
+		const totalHours = Math.floor(totalMinutes / 60);
+		additionalDays = Math.floor(totalHours / 24);
+		
+		// Calculate end time within the final day
+		const endHours = totalHours % 24;
+		const endMinutes = totalMinutes % 60;
+		
+		endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+		userChangedEndTime = false;
+	}
+	
+	// Format duration with days when applicable
+	function formatDurationWithDays(minutes: number): string {
+		const days = Math.floor(minutes / 1440);
+		const hours = Math.floor((minutes % 1440) / 60);
+		const mins = minutes % 60;
+		
+		if (days > 0) {
+			if (hours === 0 && mins === 0) {
+				return `${days} ${days === 1 ? 'day' : 'days'}`;
+			} else if (mins === 0) {
+				return `${days}d ${hours}h`;
+			} else {
+				return `${days}d ${hours}h ${mins}m`;
+			}
+		}
+		
+		return formatDuration(minutes);
+	}
 </script>
 
 <Drawer
@@ -405,36 +501,26 @@
 									<div class="grid grid-cols-2 gap-3">
 										<!-- Start Time -->
 										<div>
-											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">Start Time</div>
-											<div class="input-wrapper">
-												<Clock class="h-5 w-5 input-icon" style="color: var(--text-primary);" />
-												<input
-													bind:this={timeInputRef}
-													type="time"
-													bind:value={startTime}
-													class="time-picker-input"
-													required
-												/>
-											</div>
+											<NativeTimePicker
+												bind:value={startTime}
+												label="Start Time"
+												required
+											/>
 										</div>
 										
-										<!-- End Time (Read-only) -->
+										<!-- End Time (Now Editable) -->
 										<div>
-											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">End Time</div>
-											<div class="input-wrapper">
-												<Clock class="h-5 w-5 input-icon" style="color: var(--text-primary);" />
-												<input
-													type="text"
-													value={endTimeCalculation.endTime}
-													readonly
-													class="time-picker-input time-picker-readonly"
-												/>
-											</div>
-											{#if endTimeCalculation.endDate !== selectedDate}
+											<NativeTimePicker
+												bind:value={endTime}
+												label="End Time"
+												onchange={() => userChangedEndTime = true}
+												required
+											/>
+											{#if endDateCalculation !== selectedDate}
 												<div class="text-xs mt-1" style="color: var(--text-secondary);">
 													{(() => {
 														const [startY, startM, startD] = selectedDate.split('-').map(Number);
-														const [endY, endM, endD] = endTimeCalculation.endDate.split('-').map(Number);
+														const [endY, endM, endD] = endDateCalculation.split('-').map(Number);
 														const startDate = new Date(startY, startM - 1, startD);
 														const endDate = new Date(endY, endM - 1, endD);
 														const daysDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -450,30 +536,62 @@
 										</div>
 									</div>
 
-									<!-- Duration -->
+									<!-- Duration & Additional Days - Inline -->
 									<div>
 										<div class="flex items-center justify-between mb-1.5">
-											<div class="text-xs font-medium" style="color: var(--text-secondary);">Duration</div>
-											{#if tour && duration !== tour.duration}
+											<div class="text-xs font-medium" style="color: var(--text-secondary);">
+												Duration {#if additionalDays > 0 || calculatedDuration >= 1440}<span style="color: var(--text-tertiary);">& Days</span>{/if}
+											</div>
+											{#if tour && calculatedDuration !== tour.duration}
 												<button
 													type="button"
-													onclick={() => { duration = tour.duration; userChangedDuration = false; }}
+													onclick={resetToDefaultDuration}
 													class="text-xs underline"
 													style="color: var(--color-primary-600);"
 												>
-													Reset
+													Reset to {formatDurationWithDays(tour.duration)}
 												</button>
 											{/if}
 										</div>
-										<DurationInput
-											bind:value={duration}
-											error={false}
-											onblur={() => {
-												if (tour && duration !== tour.duration) {
-													userChangedDuration = true;
-												}
-											}}
-										/>
+										
+										<div class="duration-multiday-grid">
+											<!-- Duration Display -->
+											<div class="duration-display-compact">
+												<Clock class="h-4 w-4 flex-shrink-0" style="color: var(--text-tertiary);" />
+												<span class="text-base font-semibold whitespace-nowrap" style="color: var(--text-primary);">
+													{formatDurationWithDays(calculatedDuration)}
+												</span>
+											</div>
+											
+											<!-- Additional Days Control (if needed) -->
+											{#if additionalDays > 0 || calculatedDuration >= 1440}
+												<div class="multiday-controls">
+													<button 
+														type="button" 
+														onclick={() => { additionalDays = Math.max(0, additionalDays - 1); userChangedEndTime = true; }} 
+														class="multiday-btn"
+														disabled={additionalDays <= 0}
+													>
+														<Minus class="h-4 w-4" />
+													</button>
+													<div class="multiday-value">
+														<span class="font-semibold" style="color: var(--text-primary);">
+															{additionalDays}
+														</span>
+														<span class="text-xs ml-1" style="color: var(--text-tertiary);">
+															{additionalDays === 1 ? 'day' : 'days'}
+														</span>
+													</div>
+													<button 
+														type="button" 
+														onclick={() => { additionalDays = Math.min(30, additionalDays + 1); userChangedEndTime = true; }} 
+														class="multiday-btn"
+													>
+														<Plus class="h-4 w-4" />
+													</button>
+												</div>
+											{/if}
+										</div>
 									</div>
 
 									<!-- Schedule Preview -->
@@ -502,11 +620,11 @@
 											<div class="preview-row">
 												<Clock class="h-4 w-4" style="color: var(--text-tertiary);" />
 												<div class="text-sm" style="color: var(--text-primary);">
-													{startTime} - {endTimeCalculation.endTime}
-													{#if endTimeCalculation.endDate !== selectedDate}
+													{startTime} - {endTime}
+													{#if endDateCalculation !== selectedDate}
 														<div class="text-xs" style="color: var(--text-secondary);">
 															Ends {(() => {
-																const [y, m, d] = endTimeCalculation.endDate.split('-').map(Number);
+																const [y, m, d] = endDateCalculation.split('-').map(Number);
 																return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 															})()}
 															• Multi-day tour
@@ -607,21 +725,13 @@
 
 									<!-- End Date -->
 									<div>
-										<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
-											Repeat Until
-										</div>
-										<div class="input-wrapper">
-											<Calendar class="h-4 w-4 input-icon" style="color: var(--text-primary);" />
-											<input
-												bind:this={dateInputRef}
-												id="recurring-end-date"
-												type="date"
-												bind:value={recurringEndDate}
-												min={selectedDate}
-												class="date-picker-input"
-												required
-											/>
-										</div>
+										<NativeDatePicker
+											bind:value={recurringEndDate}
+											label="Repeat Until"
+											min={selectedDate}
+											placeholder="Select end date"
+											required={true}
+										/>
 									</div>
 								</div>
 								
@@ -670,11 +780,11 @@
 										<label for="slot-min-capacity" class="text-xs font-medium mb-1.5 block" style="color: var(--text-secondary);">
 											Minimum Required <span style="color: var(--text-tertiary);">(optional)</span>
 										</label>
-										<div class="flex items-center gap-2">
+										<div class="capacity-input-group">
 											<button 
 												type="button" 
 												onclick={() => { minCapacity = Math.max(1, minCapacity - 1); userChangedMinCapacity = true; }} 
-												class="adjust-btn-compact"
+												class="capacity-btn"
 												disabled={minCapacity <= 1}
 											>
 												<Minus class="h-4 w-4" />
@@ -686,12 +796,12 @@
 												oninput={() => userChangedMinCapacity = true}
 												min="1"
 												max={capacity}
-												class="form-input text-center font-semibold flex-1"
+												class="capacity-number-input text-center font-semibold"
 											/>
 											<button 
 												type="button" 
 												onclick={() => { minCapacity = Math.min(capacity, minCapacity + 1); userChangedMinCapacity = true; }} 
-												class="adjust-btn-compact"
+												class="capacity-btn"
 												disabled={minCapacity >= capacity}
 											>
 												<Plus class="h-4 w-4" />
@@ -704,11 +814,11 @@
 										<label for="slot-capacity" class="text-xs font-medium mb-1.5 block" style="color: var(--text-secondary);">
 											Available Spots
 										</label>
-										<div class="flex items-center gap-2">
+										<div class="capacity-input-group">
 											<button 
 												type="button" 
 												onclick={() => { capacity = Math.max(1, capacity - 1); userChangedCapacity = true; }} 
-												class="adjust-btn-compact"
+												class="capacity-btn"
 											>
 												<Minus class="h-4 w-4" />
 											</button>
@@ -719,12 +829,12 @@
 												oninput={() => userChangedCapacity = true}
 												min="1"
 												max={tour?.maxCapacity || 100}
-												class="form-input text-center font-semibold flex-1"
+												class="capacity-number-input text-center font-semibold"
 											/>
 											<button 
 												type="button" 
 												onclick={() => { capacity = Math.min(tour?.maxCapacity || 100, capacity + 1); userChangedCapacity = true; }} 
-												class="adjust-btn-compact"
+												class="capacity-btn"
 											>
 												<Plus class="h-4 w-4" />
 											</button>
@@ -901,167 +1011,23 @@
 		color: white;
 	}
 
-	/* Date Picker Button (compact, matches recurring buttons) */
-	/* Compact Number Controls */
-	.adjust-btn-compact {
-		width: 2rem;
-		height: 2rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--border-primary);
-		border-radius: 0.375rem;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		cursor: pointer;
-		transition: all 0.15s;
-		flex-shrink: 0;
-	}
-
-	.adjust-btn-compact:hover:not(:disabled) {
-		border-color: var(--color-primary-500);
-		background: var(--color-primary-50);
-	}
-
-	.adjust-btn-compact:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-
-	/* Readonly input styling */
-	.time-picker-input.time-picker-readonly {
-		cursor: default;
-		background: var(--bg-secondary);
-		opacity: 0.9;
-		font-weight: 600;
-	}
-
-	.time-picker-input.time-picker-readonly:hover {
-		border-color: var(--border-primary);
-		background: var(--bg-secondary);
-	}
-	
-	.time-picker-input.time-picker-readonly:focus {
-		box-shadow: none;
-		border-color: var(--border-primary);
-	}
-
-	/* Input wrapper with icon */
-	.input-wrapper {
-		position: relative;
-		width: 100%;
-	}
-	
-	.input-wrapper :global(.input-icon) {
-		position: absolute;
-		left: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
-		pointer-events: none;
-		z-index: 1;
-	}
-	
-	/* Time and date picker inputs styled as buttons */
-	.time-picker-input,
-	.date-picker-input {
-		width: 100%;
-		max-width: 100%; /* Prevent overflow on mobile */
-		display: block;
-		padding: 0.75rem 1rem 0.75rem 3rem;
-		border: 2px solid var(--border-primary);
-		border-radius: 0.5rem;
-		background: var(--bg-primary);
-		cursor: pointer;
-		transition: all 0.15s;
-		font-family: var(--font-mono, monospace);
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--text-primary);
-		/* Keep native functionality, don't use appearance: none */
-		position: relative;
-		z-index: 0;
-		box-sizing: border-box; /* Include padding in width calculation */
-		overflow: hidden; /* Prevent content from expanding input */
-	}
-	
-	.time-picker-input:hover,
-	.date-picker-input:hover {
-		border-color: var(--color-primary-300);
-		background: var(--color-primary-50);
-	}
-	
-	.time-picker-input:focus,
-	.date-picker-input:focus {
-		outline: none;
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 3px var(--color-primary-100);
-	}
-	
-	/* Hide browser's default calendar and clock picker icons but keep them functional */
-	.time-picker-input::-webkit-calendar-picker-indicator,
-	.date-picker-input::-webkit-calendar-picker-indicator {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		opacity: 0;
-		cursor: pointer;
-		z-index: 2;
-	}
-	
-	/* Prevent iOS from expanding inputs beyond container */
-	.time-picker-input::-webkit-datetime-edit,
-	.date-picker-input::-webkit-datetime-edit {
-		max-width: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	
-	/* For Firefox */
-	.time-picker-input::-moz-calendar-picker-indicator,
-	.date-picker-input::-moz-calendar-picker-indicator {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		opacity: 0;
-		cursor: pointer;
-	}
-	
 	/* Mobile-specific improvements */
 	@media (max-width: 768px) {
-		.time-picker-input,
-		.date-picker-input {
-			font-size: 1rem;
-			padding: 1rem 1rem 1rem 3rem;
-			min-height: 3rem;
-			max-width: 100%; /* Enforce width constraint on mobile */
-			overflow: hidden; /* Prevent iOS picker expansion */
-		}
-		
-		.input-wrapper {
-			max-width: 100%; /* Constrain wrapper */
-			overflow: hidden; /* Prevent wrapper expansion */
-		}
-		
-		.input-wrapper :global(.input-icon) {
-			left: 1rem;
+		.multiday-btn {
+			height: 3rem;
+			width: 3rem;
 		}
 		
 		/* Fix grid columns on mobile to ensure equal width */
 		.grid.grid-cols-2 {
 			display: grid;
-			grid-template-columns: 1fr 1fr; /* Enforce equal columns */
+			grid-template-columns: 1fr 1fr;
 			gap: 0.75rem;
 		}
 		
 		.grid.grid-cols-2 > * {
-			min-width: 0; /* Allow grid items to shrink below content size */
-			max-width: 100%; /* Prevent overflow */
+			min-width: 0;
+			max-width: 100%;
 		}
 	}
 
@@ -1112,6 +1078,83 @@
 		border-radius: 0.5rem;
 		border: 1px solid var(--border-primary);
 	}
+	
+	/* Capacity Input Group - Matches duration/days style */
+	.capacity-input-group {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+		height: 2.75rem;
+	}
+	
+	.capacity-number-input {
+		width: 100%;
+		max-width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.75rem;
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		cursor: text;
+		transition: all 0.15s;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		box-sizing: border-box;
+		height: 2.75rem;
+		flex: 1;
+		min-width: 0;
+	}
+	
+	.capacity-number-input:hover {
+		border-color: var(--color-primary-300);
+		background: var(--color-primary-50);
+	}
+	
+	.capacity-number-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100);
+	}
+	
+	/* Hide number input spinners */
+	.capacity-number-input::-webkit-inner-spin-button,
+	.capacity-number-input::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	
+	.capacity-number-input[type="number"] {
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+	
+	.capacity-btn {
+		height: 2.75rem;
+		width: 2.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all 0.15s;
+		flex-shrink: 0;
+	}
+	
+	.capacity-btn:hover:not(:disabled) {
+		border-color: var(--color-primary-300);
+		background: var(--color-primary-50);
+	}
+	
+	.capacity-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
 
 	/* Mobile */
 	@media (max-width: 768px) {
@@ -1131,12 +1174,143 @@
 			padding: 1rem 0.75rem;
 			min-height: 3rem;
 		}
+		
+		.capacity-input-group {
+			gap: 0.375rem;
+			height: 3rem;
+		}
+		
+		.capacity-number-input {
+			padding: 0.625rem 0.875rem;
+			height: 3rem;
+			font-size: 1rem;
+		}
+		
+		.capacity-btn {
+			height: 3rem;
+			width: 3rem;
+		}
 	}
 
 	/* Desktop: Reduce modal width for better UX */
 	@media (min-width: 768px) {
 		:global(.add-slots-drawer) {
 			max-width: 56rem !important; /* 896px (4xl) instead of 6xl */
+		}
+	}
+	
+	/* Duration & Multi-Day Grid Container */
+	.duration-multiday-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+		align-items: stretch;
+	}
+	
+	/* Duration Display - Compact */
+	.duration-display-compact {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		height: 2.75rem;
+		min-width: 0;
+		overflow: hidden;
+	}
+	
+	.duration-display-compact span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	
+	.multiday-controls {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+		height: 2.75rem;
+	}
+	
+	.multiday-value {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		height: 2.75rem;
+		flex: 1;
+		min-width: 6rem;
+		max-width: 6rem;
+		overflow: hidden;
+	}
+	
+	.multiday-value span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	
+	.multiday-btn {
+		height: 2.75rem;
+		width: 2.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid var(--border-primary);
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		cursor: pointer;
+		transition: all 0.15s;
+		flex-shrink: 0;
+	}
+	
+	.multiday-btn:hover:not(:disabled) {
+		border-color: var(--color-primary-300);
+		background: var(--color-primary-50);
+	}
+	
+	.multiday-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	
+	@media (max-width: 768px) {
+		.duration-display-compact {
+			padding: 0.625rem 0.875rem;
+			height: 3rem;
+		}
+		
+		.multiday-controls {
+			gap: 0.375rem;
+			height: 3rem;
+		}
+		
+		.multiday-value {
+			padding: 0.625rem 0.875rem;
+			height: 3rem;
+			min-width: 7rem;
+			max-width: 7rem;
+		}
+	}
+	
+	/* Stack vertically on very narrow screens (iPhone SE, etc.) */
+	@media (max-width: 400px) {
+		.duration-multiday-grid {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
+		
+		.multiday-value {
+			min-width: 0;
+			max-width: none;
+			flex: 1;
 		}
 	}
 </style>

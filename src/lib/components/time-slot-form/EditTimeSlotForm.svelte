@@ -11,6 +11,7 @@
 	import TimeRange from '$lib/components/TimeRange.svelte';
 	import NumberInput from '$lib/components/NumberInput.svelte';
 	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
+	import DatePicker from '$lib/components/DatePicker.svelte';
 	
 	// Icons
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
@@ -252,17 +253,12 @@
 				<!-- Single-day tour: separate date and time fields -->
 				<!-- Date Field -->
 				<div>
-					<label for="date" class="block text-sm font-medium mb-2">
-						<Calendar class="w-4 h-4 inline mr-1" />
-						Date
-					</label>
-					<input
-						type="date"
-						id="date"
+					<DatePicker
 						bind:value={date}
-						required
+						label="Date"
+						placeholder="Select date"
 						disabled={hasBookings}
-						class="input w-full {hasBookings ? 'opacity-50 cursor-not-allowed' : ''}"
+						required={true}
 					/>
 					{#if hasBookings}
 						<p class="text-sm text-gray-500 mt-1">Date cannot be changed when bookings exist</p>

@@ -12,7 +12,7 @@
 		minDate = '',
 		label = '',
 		required = false,
-		onchange
+		onchange = undefined
 	} = $props();
 
 	// Generate unique ID for this DatePicker instance

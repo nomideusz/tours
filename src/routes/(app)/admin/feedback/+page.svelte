@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import PageHeader from '$lib/components/PageHeader.svelte';
+	import DatePicker from '$lib/components/DatePicker.svelte';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	
@@ -890,11 +891,10 @@
 								/>
 							</div>
 							<div>
-								<label class="form-label">Target Date</label>
-								<input
-									type="date"
+								<DatePicker
 									bind:value={convertForm.targetDate}
-									class="form-input w-full"
+									label="Target Date"
+									placeholder="Select target date"
 								/>
 							</div>
 						</div>

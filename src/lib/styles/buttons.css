@@ -461,6 +461,19 @@
 		border-radius: 0.25rem;
 	}
 
+	/* Button with icon and text - proper gap between them */
+	.button--gap,
+	.button-primary.button--gap,
+	.button-secondary.button--gap,
+	.button-danger.button--gap,
+	.button-success.button--gap,
+	.button-ghost.button--gap,
+	.button-text.button--gap {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
 	/* Loading state */
 	.button--loading {
 		color: transparent;
@@ -507,6 +520,24 @@
 		height: 1rem;
 		stroke-width: 2;
 		flex-shrink: 0;
+	}
+	
+	/* Only apply inline-block to non-absolutely positioned button icons */
+	.button svg:not([class*="absolute"]),
+	.button-primary svg:not([class*="absolute"]),
+	.button--primary svg:not([class*="absolute"]),
+	.button-secondary svg:not([class*="absolute"]),
+	.button--secondary svg:not([class*="absolute"]),
+	.button-success svg:not([class*="absolute"]),
+	.button--success svg:not([class*="absolute"]),
+	.button-danger svg:not([class*="absolute"]),
+	.button--danger svg:not([class*="absolute"]),
+	.button-ghost svg:not([class*="absolute"]),
+	.button--ghost svg:not([class*="absolute"]),
+	.button-text svg:not([class*="absolute"]),
+	.button--text svg:not([class*="absolute"]) {
+		display: inline-block;
+		vertical-align: middle;
 	}
 
 	/* Size-specific icon sizing */
