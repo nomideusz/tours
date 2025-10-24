@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
-	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
+	import { formatDuration, getImageUrl } from '$lib/utils/tour-helpers-client.js';
 	import Drawer from '$lib/components/Drawer.svelte';
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
 	import NativeDatePicker from '$lib/components/NativeDatePicker.svelte';
@@ -18,10 +18,15 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Info from 'lucide-svelte/icons/info';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Search from 'lucide-svelte/icons/search';
+	import ArrowRight from 'lucide-svelte/icons/arrow-right';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
+	import CircleDot from 'lucide-svelte/icons/circle-dot';
 
 	interface Props {
 		isOpen: boolean;
-		tourId: string;
+		tourId?: string; // Optional - if not provided, show tour selection
 		initialDate?: string;
 		onClose: () => void;
 		onSuccess?: () => void;
@@ -29,7 +34,7 @@
 
 	let {
 		isOpen = $bindable(false),
-		tourId,
+		tourId: initialTourId,
 		initialDate,
 		onClose,
 		onSuccess
@@ -37,22 +42,64 @@
 
 	const queryClient = useQueryClient();
 
+	// Step management - only show tour selection if no tourId provided
+	let currentStep = $state<1 | 2>(1);
+	let selectedTourId = $state<string>('');
+	let searchQuery = $state('');
+	
+	// Determine active tourId (either from props or user selection)
+	const activeTourId = $derived(initialTourId || selectedTourId);
+	const needsTourSelection = $derived(!initialTourId);
+	const showTourSelection = $derived(needsTourSelection && currentStep === 1);
+
+	// Fetch all user tours for selection
+	const toursQuery = $derived(createQuery({
+		queryKey: queryKeys.userTours,
+		queryFn: queryFunctions.fetchUserTours,
+		staleTime: 5 * 60 * 1000,
+		enabled: isOpen && needsTourSelection
+	}));
+
+	const tours = $derived(($toursQuery.data as any[]) || []);
+
+	// Filter tours for selection
+	let filteredTours = $derived.by(() => {
+		let filtered = tours.filter(tour => {
+			if (searchQuery) {
+				const query = searchQuery.toLowerCase();
+				return (
+					tour.name.toLowerCase().includes(query) ||
+					tour.location?.toLowerCase().includes(query)
+				);
+			}
+			return true;
+		});
+		
+		filtered.sort((a, b) => {
+			if (a.status === 'active' && b.status !== 'active') return -1;
+			if (a.status !== 'active' && b.status === 'active') return 1;
+			return a.name.localeCompare(b.name);
+		});
+		
+		return filtered;
+	});
+
 	// Fetch tour data - use $derived to make queries reactive to props
 	const tourQuery = $derived(createQuery({
-		queryKey: queryKeys.tourDetails(tourId),
-		queryFn: () => queryFunctions.fetchTourDetails(tourId),
+		queryKey: activeTourId ? queryKeys.tourDetails(activeTourId) : ['tourDetails', 'none'],
+		queryFn: () => queryFunctions.fetchTourDetails(activeTourId),
 		staleTime: 5 * 60 * 1000,
-		enabled: isOpen && !!tourId
+		enabled: isOpen && !!activeTourId && (!needsTourSelection || currentStep === 2)
 	}));
 
 	const tour = $derived($tourQuery.data?.tour || null);
 
 	// Fetch existing schedule to check for conflicts
 	const scheduleQuery = $derived(createQuery({
-		queryKey: queryKeys.tourSchedule(tourId),
-		queryFn: () => queryFunctions.fetchTourSchedule(tourId),
+		queryKey: activeTourId ? queryKeys.tourSchedule(activeTourId) : ['tourSchedule', 'none'],
+		queryFn: () => queryFunctions.fetchTourSchedule(activeTourId),
 		staleTime: 30 * 1000,
-		enabled: isOpen && !!tourId
+		enabled: isOpen && !!activeTourId && (!needsTourSelection || currentStep === 2)
 	}));
 
 	const existingSlots = $derived($scheduleQuery.data?.timeSlots || []);
@@ -103,6 +150,10 @@
 			recurringEndDate = '';
 			showCapacitySettings = false;
 			additionalDays = 0;
+			// Reset selection state
+			currentStep = needsTourSelection ? 1 : 2;
+			selectedTourId = initialTourId || '';
+			searchQuery = '';
 		}
 	});
 
@@ -280,6 +331,69 @@
 		};
 	});
 
+	// Generate consistent color for tour based on ID and name
+	function getTourCalendarColor(tourId: string | undefined, tourName: string | undefined): string {
+		if (!tourId || !tourName) {
+			return '#3B82F6';
+		}
+		
+		let hash = 0;
+		const str = tourId + tourName;
+		for (let i = 0; i < str.length; i++) {
+			hash = ((hash << 5) - hash) + str.charCodeAt(i);
+			hash = hash & hash;
+		}
+		
+		const hue = Math.abs(hash) % 360;
+		const saturation = 65 + (Math.abs(hash >> 8) % 20);
+		const lightness = 45 + (Math.abs(hash >> 16) % 15);
+		
+		const h = hue / 360;
+		const s = saturation / 100;
+		const l = lightness / 100;
+		
+		let r, g, b;
+		if (s === 0) {
+			r = g = b = l;
+		} else {
+			const hue2rgb = (p: number, q: number, t: number) => {
+				if (t < 0) t += 1;
+				if (t > 1) t -= 1;
+				if (t < 1/6) return p + (q - p) * 6 * t;
+				if (t < 1/2) return q;
+				if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+				return p;
+			};
+			const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			const p = 2 * l - q;
+			r = hue2rgb(p, q, h + 1/3);
+			g = hue2rgb(p, q, h);
+			b = hue2rgb(p, q, h - 1/3);
+		}
+		
+		const toHex = (x: number) => {
+			const hex = Math.round(x * 255).toString(16);
+			return hex.length === 1 ? '0' + hex : hex;
+		};
+		
+		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	}
+
+	// Handle tour selection
+	function selectTour(tourId: string) {
+		selectedTourId = tourId;
+		currentStep = 2;
+	}
+
+	// Handle back to tour selection
+	function goBackToTourSelection() {
+		currentStep = 1;
+		error = null;
+	}
+
+	// Tour color for header styling
+	const tourColor = $derived(tour ? getTourCalendarColor(tour.id, tour.name) : null);
+
 	// Submit handler
 	async function handleSubmit() {
 		if (!tour) return;
@@ -327,7 +441,7 @@
 				recurringEnd: recurring ? recurringEndDate : undefined
 			};
 			
-			const response = await fetch(`/api/tours/${tourId}/schedule`, {
+			const response = await fetch(`/api/tours/${activeTourId}/schedule`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -346,7 +460,7 @@
 				
 				// Invalidate schedule
 				await queryClient.invalidateQueries({
-					queryKey: queryKeys.tourSchedule(tourId)
+					queryKey: queryKeys.tourSchedule(activeTourId)
 				});
 				
 				// Call success callback
@@ -454,16 +568,121 @@
 
 <Drawer
 	bind:isOpen
-	title="Add Time Slots"
-	subtitle={tour?.name || ''}
 	onClose={onClose}
 	class="add-slots-drawer"
 >
-	{#if $tourQuery.isLoading}
-		<div class="flex items-center justify-center py-12">
-			<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
+	{#snippet titleSlot()}
+		{#if showTourSelection}
+			<h2 class="drawer-custom-title">Select Tour</h2>
+		{:else if tour}
+			<div class="drawer-title-with-dot">
+				{#if tourColor}
+					<div class="drawer-title-dot" style="background-color: {tourColor};"></div>
+				{/if}
+				<h2 class="drawer-custom-title">{tour.name}</h2>
+				{#if needsTourSelection}
+					<button 
+						type="button"
+						onclick={goBackToTourSelection}
+						class="drawer-change-btn"
+					>
+						<ArrowLeft class="h-3.5 w-3.5" />
+						Change
+					</button>
+				{/if}
+			</div>
+		{:else}
+			<h2 class="drawer-custom-title">Add Time Slots</h2>
+		{/if}
+	{/snippet}
+
+	<!-- Step 1: Tour Selection (only if no tourId provided) -->
+	{#if showTourSelection}
+		<div class="booking-step active">
+			<div class="step-number">1</div>
+			<div class="ml-4">
+				<h3 class="font-medium mb-3" style="color: var(--text-primary);">Select Tour</h3>
+				<!-- Search -->
+				<div class="mb-4">
+					<div class="relative">
+						<Search class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5" style="color: var(--text-tertiary);" />
+						<input
+							type="search"
+							bind:value={searchQuery}
+							placeholder="Search tours..."
+							class="form-input pl-12 pr-4 py-3 w-full"
+							style="font-size: 1rem;"
+						/>
+					</div>
+				</div>
+
+				{#if $toursQuery.isLoading}
+					<div class="flex items-center justify-center py-12">
+						<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
+					</div>
+				{:else if filteredTours.length === 0}
+					<div class="text-center py-12">
+						<p class="text-lg" style="color: var(--text-secondary);">
+							{searchQuery ? 'No tours found matching your search' : 'No tours available'}
+						</p>
+					</div>
+				{:else}
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+						{#each filteredTours as tourItem (tourItem.id)}
+							{@const tourItemColor = getTourCalendarColor(tourItem.id, tourItem.name)}
+							<button
+								onclick={() => selectTour(tourItem.id)}
+								class="tour-card"
+								type="button"
+							>
+								<div class="tour-color-bar" style="background-color: {tourItemColor};"></div>
+								<div class="tour-image-wrapper">
+									{#if tourItem.images && tourItem.images[0]}
+										<img 
+											src={getImageUrl(tourItem, tourItem.images[0])} 
+											alt={tourItem.name} 
+											class="tour-image"
+											loading="lazy"
+										/>
+									{:else}
+										<div class="tour-image-placeholder">
+											<MapPin class="h-10 w-10" style="color: var(--text-tertiary);" />
+										</div>
+									{/if}
+									<span class="status-badge {tourItem.status === 'active' ? 'active' : 'draft'}">
+										<CircleDot class="h-3.5 w-3.5" />
+										{tourItem.status === 'active' ? 'Active' : 'Draft'}
+									</span>
+								</div>
+								
+								<div class="tour-info">
+									<h3 class="tour-name">{tourItem.name}</h3>
+									<div class="tour-meta">
+										<div class="meta-item">
+											<MapPin class="h-4 w-4" />
+											<span>{tourItem.location || 'Location not set'}</span>
+										</div>
+										<div class="meta-item">
+											<Clock class="h-4 w-4" />
+											<span>{formatDuration(tourItem.duration)}</span>
+										</div>
+									</div>
+								</div>
+								
+								<ArrowRight class="h-6 w-6 flex-shrink-0" style="color: var(--text-tertiary);" />
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
-	{:else if tour}
+	{:else}
+		<!-- Step 2: Configure Time Slots -->
+		{#if $tourQuery.isLoading}
+			<div class="flex items-center justify-center py-12">
+				<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
+			</div>
+		{:else if tour}
 		<form bind:this={formContainerRef} onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
 			{#if showSuccess}
 				<div class="success-banner">
@@ -886,10 +1105,11 @@
 				</button>
 			</div>
 		</form>
-	{:else}
-		<div class="text-center py-12">
-			<p style="color: var(--text-secondary);">Tour not found</p>
-		</div>
+		{:else}
+			<div class="text-center py-12">
+				<p style="color: var(--text-secondary);">Tour not found</p>
+			</div>
+		{/if}
 	{/if}
 </Drawer>
 
@@ -1311,6 +1531,242 @@
 			min-width: 0;
 			max-width: none;
 			flex: 1;
+		}
+	}
+
+	/* Tour Selection Styles */
+	.booking-step {
+		padding: 1.5rem;
+		border-radius: 0.75rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--color-primary-500);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		margin-bottom: 1rem;
+		position: relative;
+		transition: all 0.2s ease;
+	}
+	
+	.step-number {
+		position: absolute;
+		top: 1.5rem;
+		left: -0.75rem;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		background: var(--color-primary-600);
+		color: white;
+		border: 2px solid var(--color-primary-600);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+		font-size: 0.875rem;
+		z-index: 10;
+	}
+
+	.drawer-custom-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0;
+		line-height: 1.4;
+	}
+
+	.drawer-title-with-dot {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		width: 100%;
+	}
+
+	.drawer-title-dot {
+		width: 0.75rem;
+		height: 0.75rem;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.drawer-change-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		flex-shrink: 0;
+		margin-left: auto;
+	}
+
+	.drawer-change-btn:hover {
+		color: var(--color-primary-600);
+		border-color: var(--color-primary-300);
+		background: var(--color-primary-50);
+	}
+
+	.tour-card {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		padding-left: 0.75rem;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-primary);
+		border-radius: 0.75rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+		width: 100%;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.tour-card:hover {
+		border-color: var(--color-primary-300);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.tour-color-bar {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		border-radius: 0.75rem 0 0 0.75rem;
+	}
+
+	.tour-image-wrapper {
+		position: relative;
+		width: 4.5rem;
+		height: 4.5rem;
+		flex-shrink: 0;
+		border-radius: 0.5rem;
+		overflow: hidden;
+		background: var(--bg-secondary);
+	}
+
+	.tour-image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.tour-image-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-secondary);
+	}
+
+	.status-badge {
+		position: absolute;
+		bottom: 0.25rem;
+		left: 0.25rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.125rem 0.5rem;
+		font-size: 0.625rem;
+		font-weight: 600;
+		border-radius: 9999px;
+	}
+
+	.status-badge.active {
+		background: var(--color-success-100);
+		color: var(--color-success-700);
+		border: 1px solid var(--color-success-200);
+	}
+
+	.status-badge.draft {
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+		border: 1px solid var(--border-primary);
+	}
+
+	.tour-info {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.tour-name {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 0.5rem 0;
+		line-height: 1.25;
+	}
+
+	.tour-meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.meta-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+	}
+
+	.meta-item :global(svg) {
+		flex-shrink: 0;
+	}
+
+	/* Mobile tour selection styles */
+	@media (max-width: 768px) {
+		.booking-step {
+			padding: 1rem;
+			margin-bottom: 0.75rem;
+		}
+
+		.step-number {
+			left: -0.5rem;
+			width: 1.75rem;
+			height: 1.75rem;
+			font-size: 0.75rem;
+			top: 1rem;
+		}
+
+		.drawer-custom-title {
+			font-size: 1rem;
+		}
+
+		.drawer-title-dot {
+			width: 0.625rem;
+			height: 0.625rem;
+		}
+
+		.drawer-change-btn {
+			padding: 0.25rem 0.5rem;
+			font-size: 0.6875rem;
+		}
+
+		.tour-card {
+			padding: 0.75rem;
+			padding-left: 0.5rem;
+		}
+
+		.tour-image-wrapper {
+			width: 3.5rem;
+			height: 3.5rem;
+		}
+
+		.tour-name {
+			font-size: 0.875rem;
+		}
+
+		.meta-item {
+			font-size: 0.75rem;
 		}
 	}
 </style>
