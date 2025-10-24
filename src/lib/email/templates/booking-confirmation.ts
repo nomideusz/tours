@@ -137,9 +137,8 @@ export function bookingConfirmationTemplate(data: BookingConfirmationData): stri
       ` : `
         <h3>🛡️ Cancellation Policy</h3>
         ${list([
-          { text: 'Free cancellation up to 24 hours before the tour' },
-          { text: '50% refund for cancellations within 24 hours' },
-          { text: 'No refund for no-shows or cancellations after tour start time' },
+          { text: 'Full refund if cancelled 24+ hours before the tour' },
+          { text: 'No refund if cancelled less than 24 hours before tour' },
           { text: 'Contact your tour guide directly for any changes' }
         ])}
       `}

@@ -76,6 +76,7 @@
 				value={days}
 				oninput={handleDaysChange}
 				onblur={onblur}
+				onfocus={(e) => e.currentTarget.select()}
 				placeholder="0"
 				class="form-input duration-input {error ? 'error' : ''}"
 			/>
@@ -95,6 +96,7 @@
 				value={hours}
 				oninput={handleHoursChange}
 				onblur={onblur}
+				onfocus={(e) => e.currentTarget.select()}
 				placeholder="0"
 				class="form-input duration-input {error ? 'error' : ''}"
 			/>
@@ -114,6 +116,7 @@
 				value={minutes}
 				oninput={handleMinutesChange}
 				onblur={onblur}
+				onfocus={(e) => e.currentTarget.select()}
 				placeholder="0"
 				class="form-input duration-input {error ? 'error' : ''}"
 			/>
@@ -132,6 +135,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
+		max-width: 100%;
 	}
 	
 	.duration-field {
@@ -167,17 +171,19 @@
 		line-height: 1;
 	}
 	
-	/* Remove spinner arrows from number inputs */
-	.duration-input::-webkit-outer-spin-button,
-	.duration-input::-webkit-inner-spin-button {
-		-webkit-appearance: none;
-		appearance: none;
-		margin: 0;
+	/* Show spinner arrows for number inputs - override global forms.css */
+	.form-input.duration-input[type="number"] {
+		-moz-appearance: auto !important;
+		appearance: auto !important;
 	}
 	
-	.duration-input[type=number] {
-		-moz-appearance: textfield;
-		appearance: textfield;
+	.form-input.duration-input::-webkit-outer-spin-button,
+	.form-input.duration-input::-webkit-inner-spin-button {
+		-webkit-appearance: auto !important;
+		appearance: auto !important;
+		opacity: 1 !important;
+		margin: 0 !important;
+		display: block !important;
 	}
 	
 	/* Focus styles - prevent layout shifts */
@@ -204,14 +210,35 @@
 	
 	/* Mobile adjustments */
 	@media (max-width: 768px) {
+		.duration-input-container {
+			display: flex;
+			justify-content: stretch;
+			width: 100%;
+		}
+		
+		.duration-inputs {
+			gap: 0.375rem;
+			width: 100%;
+			max-width: 100%;
+		}
+		
+		.duration-field {
+			flex: 1;
+		}
+		
 		.duration-input {
-			font-size: 1rem;
-			padding: 1rem 0.5rem;
-			min-height: 3rem;
+			font-size: 0.875rem;
+			padding: 0.625rem 0.25rem;
+			min-height: 2.5rem;
 		}
 		
 		.duration-separator {
-			margin-top: 1rem;
+			margin-top: 0.625rem;
+			font-size: 1.25rem;
+		}
+		
+		.duration-label {
+			font-size: 0.625rem;
 		}
 	}
 </style>

@@ -40,14 +40,9 @@ export const CANCELLATION_POLICIES: Record<string, CancellationPolicyConfig> = {
         description: 'Full refund if cancelled 24+ hours before tour'
       },
       {
-        hoursBeforeTour: 12,
-        refundPercentage: 50,
-        description: '50% refund if cancelled 12-24 hours before tour'
-      },
-      {
         hoursBeforeTour: 0,
         refundPercentage: 0,
-        description: 'No refund if cancelled less than 12 hours before tour'
+        description: 'No refund if cancelled less than 24 hours before tour'
       }
     ]
   },
@@ -63,14 +58,9 @@ export const CANCELLATION_POLICIES: Record<string, CancellationPolicyConfig> = {
         description: 'Full refund if cancelled 48+ hours before tour'
       },
       {
-        hoursBeforeTour: 24,
-        refundPercentage: 50,
-        description: '50% refund if cancelled 24-48 hours before tour'
-      },
-      {
         hoursBeforeTour: 0,
         refundPercentage: 0,
-        description: 'No refund if cancelled less than 24 hours before tour'
+        description: 'No refund if cancelled less than 48 hours before tour'
       }
     ]
   },
@@ -86,19 +76,9 @@ export const CANCELLATION_POLICIES: Record<string, CancellationPolicyConfig> = {
         description: 'Full refund if cancelled 7+ days before tour'
       },
       {
-        hoursBeforeTour: 72, // 3 days
-        refundPercentage: 50,
-        description: '50% refund if cancelled 3-7 days before tour'
-      },
-      {
-        hoursBeforeTour: 24,
-        refundPercentage: 25,
-        description: '25% refund if cancelled 1-3 days before tour'
-      },
-      {
         hoursBeforeTour: 0,
         refundPercentage: 0,
-        description: 'No refund if cancelled less than 24 hours before tour'
+        description: 'No refund if cancelled less than 7 days before tour'
       }
     ]
   },
@@ -151,8 +131,7 @@ export function calculateRefund(
     // Extract hours from custom policy ID
     const hours = parseInt(policyId.split('_')[1]);
     if (!isNaN(hours) && hours > 0) {
-      // Create dynamic policy from hours
-      const halfHours = Math.floor(hours / 2);
+      // Create dynamic policy from hours (binary: full refund or no refund)
       policy = {
         id: policyId,
         name: `Custom (${hours}h)`,
@@ -161,17 +140,12 @@ export function calculateRefund(
           {
             hoursBeforeTour: hours,
             refundPercentage: 100,
-            description: `100% refund if cancelled ${hours}+ hours before tour`
-          },
-          {
-            hoursBeforeTour: halfHours,
-            refundPercentage: 50,
-            description: `50% refund if cancelled ${halfHours}-${hours} hours before tour`
+            description: `Full refund if cancelled ${hours}+ hours before tour`
           },
           {
             hoursBeforeTour: 0,
             refundPercentage: 0,
-            description: `No refund if cancelled less than ${halfHours} hours before tour`
+            description: `No refund if cancelled less than ${hours} hours before tour`
           }
         ]
       };
@@ -248,11 +222,9 @@ export function getCancellationPolicyText(policyId: string = 'flexible'): string
   if (policyId.startsWith('custom_')) {
     const hours = parseInt(policyId.split('_')[1]);
     if (!isNaN(hours) && hours > 0) {
-      const halfHours = Math.floor(hours / 2);
       return `Custom Policy (${hours}-hour window)\n` +
-        `• 100% refund if cancelled ${hours}+ hours before tour\n` +
-        `• 50% refund if cancelled ${halfHours}-${hours} hours before tour\n` +
-        `• No refund if cancelled less than ${halfHours} hours before tour\n\n` +
+        `• Full refund if cancelled ${hours}+ hours before tour\n` +
+        `• No refund if cancelled less than ${hours} hours before tour\n\n` +
         `Note: Tour guide cancellations always receive 100% refund regardless of timing.`;
     }
   }

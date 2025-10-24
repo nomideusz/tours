@@ -261,6 +261,7 @@ Designed to be more intuitive for tour guides
 						min="1"
 						max={maxCapacity || 200}
 						bind:value={minCapacity}
+						onfocus={(e) => e.currentTarget.select()}
 						onblur={(e) => {
 							const val = parseInt(e.currentTarget.value) || 1;
 							minCapacity = Math.max(1, Math.min(maxCapacity || 200, val));
@@ -280,6 +281,7 @@ Designed to be more intuitive for tour guides
 						min={minCapacity || 1}
 						max="200"
 						bind:value={maxCapacity}
+						onfocus={(e) => e.currentTarget.select()}
 						onblur={(e) => {
 							const val = parseInt(e.currentTarget.value) || 1;
 							maxCapacity = Math.max(minCapacity || 1, Math.min(200, val));
@@ -348,47 +350,49 @@ Designed to be more intuitive for tour guides
 					<UserPlus class="add-icon" />
 					<span class="add-label">Additional categories</span>
 				</div>
-				<div class="quick-add-buttons-inline">
-					{#if !hasChildCategory}
-						<button
-							type="button"
-							onclick={addChildCategory}
-							class="quick-add-btn-compact"
-							title="Add Child category (3-12)"
-						>
-							Child
-						</button>
-					{/if}
-					{#if !hasTeenagerCategory}
-						<button
-							type="button"
-							onclick={addTeenagerCategory}
-							class="quick-add-btn-compact"
-							title="Add Teenager category (13-17)"
-						>
-							Teenager
-						</button>
-					{/if}
-					{#if !hasStudentCategory}
-						<button
-							type="button"
-							onclick={addStudentCategory}
-							class="quick-add-btn-compact"
-							title="Add Student category"
-						>
-							Student
-						</button>
-					{/if}
-					{#if !hasSeniorCategory}
-						<button
-							type="button"
-							onclick={addSeniorCategory}
-							class="quick-add-btn-compact"
-							title="Add Senior category (65+)"
-						>
-							Senior
-						</button>
-					{/if}
+				<div class="quick-add-buttons-wrapper">
+					<div class="quick-add-buttons-inline">
+						{#if !hasChildCategory}
+							<button
+								type="button"
+								onclick={addChildCategory}
+								class="quick-add-btn-compact"
+								title="Add Child category (3-12)"
+							>
+								Child
+							</button>
+						{/if}
+						{#if !hasTeenagerCategory}
+							<button
+								type="button"
+								onclick={addTeenagerCategory}
+								class="quick-add-btn-compact"
+								title="Add Teenager category (13-17)"
+							>
+								Teenager
+							</button>
+						{/if}
+						{#if !hasStudentCategory}
+							<button
+								type="button"
+								onclick={addStudentCategory}
+								class="quick-add-btn-compact"
+								title="Add Student category"
+							>
+								Student
+							</button>
+						{/if}
+						{#if !hasSeniorCategory}
+							<button
+								type="button"
+								onclick={addSeniorCategory}
+								class="quick-add-btn-compact"
+								title="Add Senior category (65+)"
+							>
+								Senior
+							</button>
+						{/if}
+					</div>
 					<button
 						type="button"
 						onclick={addCustomCategory}
@@ -504,12 +508,19 @@ Designed to be more intuitive for tour guides
 		color: var(--text-primary);
 	}
 	
-	.quick-add-buttons-inline {
+	.quick-add-buttons-wrapper {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		flex-wrap: wrap;
 		justify-content: flex-end;
+	}
+	
+	.quick-add-buttons-inline {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
 	
 	.quick-add-btn-compact {
@@ -654,7 +665,7 @@ Designed to be more intuitive for tour guides
 	}
 	
 	/* Mobile responsiveness */
-	@media (max-width: 640px) {
+	@media (max-width: 768px) {
 		.empty-state {
 			padding: 1.5rem 1rem;
 		}
@@ -664,25 +675,46 @@ Designed to be more intuitive for tour guides
 		}
 		
 		.quick-add-header {
-			flex-wrap: wrap;
-			gap: 0.5rem;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
 		}
 		
 		.header-with-icon {
-			flex-basis: 100%;
+			justify-content: center;
+		}
+		
+		.quick-add-buttons-wrapper {
+			flex-direction: column;
+			width: 100%;
+			align-items: stretch;
+			gap: 0.5rem;
 		}
 		
 		.quick-add-buttons-inline {
 			width: 100%;
-			justify-content: flex-start;
+			justify-content: center;
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.375rem;
 		}
 		
 		.quick-add-btn-compact {
-			flex: 1;
-			min-width: fit-content;
-			padding: 0.375rem 0.5rem;
+			padding: 0.5rem 0.5rem;
 			font-size: 0.75rem;
 		}
 		
+		.custom-btn {
+			width: 100%;
+		}
+		
+		/* Center capacity elements */
+		.capacity-header {
+			justify-content: center;
+		}
+		
+		.capacity-controls {
+			justify-content: center;
+		}
 	}
 </style>

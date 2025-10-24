@@ -2422,7 +2422,7 @@
 		padding: 3px;
 		background: var(--bg-secondary);
 		border-radius: 3px;
-		margin-top: 1px;
+		margin: 1px 0 0 3px;
 	}
 	
 	/* Add Slot Button */

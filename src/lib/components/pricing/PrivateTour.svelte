@@ -68,6 +68,7 @@
 							min="1"
 							max={maxCapacity}
 							bind:value={minCapacity}
+							onfocus={(e) => e.currentTarget.select()}
 							onblur={(e) => {
 								const val = parseInt(e.currentTarget.value) || 1;
 								minCapacity = Math.max(1, Math.min(maxCapacity, val));
@@ -84,6 +85,7 @@
 							min={minCapacity}
 							max="200"
 							bind:value={maxCapacity}
+							onfocus={(e) => e.currentTarget.select()}
 							onblur={(e) => {
 								const val = parseInt(e.currentTarget.value) || 1;
 								maxCapacity = Math.max(minCapacity, Math.min(200, val));
@@ -295,8 +297,13 @@
 		.pricing-row,
 		.capacity-row {
 			flex-direction: column;
-			align-items: stretch;
+			align-items: center;
 			gap: 0.75rem;
+		}
+		
+		.price-label,
+		.capacity-label {
+			text-align: center;
 		}
 		
 		.price-input-wrapper {
@@ -310,8 +317,9 @@
 		
 		.breakdown-values {
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: center;
 			gap: 0.25rem;
+			text-align: center;
 		}
 		
 		.breakdown-divider {

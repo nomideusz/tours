@@ -105,7 +105,7 @@
 		</label>
 	{/if}
 
-	<div class="time-picker-container rounded-lg p-3" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); {disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
+	<div class="time-picker-container rounded-lg p-3" style="background: var(--bg-secondary); border: 2px solid var(--border-primary); {disabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
 		<div class="flex items-center justify-center gap-3">
 			<!-- Hours -->
 			<div class="flex flex-col items-center">

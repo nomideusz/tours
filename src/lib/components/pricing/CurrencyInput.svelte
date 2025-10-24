@@ -38,10 +38,14 @@
 		return val.toFixed(2);
 	}
 	
-	// Handle focus - show raw number
-	function handleFocus() {
+	// Handle focus - show raw number and select all
+	function handleFocus(e: FocusEvent) {
 		isFocused = true;
 		inputValue = value?.toString() || '';
+		// Select all text for easy replacement
+		setTimeout(() => {
+			(e.target as HTMLInputElement)?.select();
+		}, 0);
 	}
 	
 	// Handle blur - format and validate

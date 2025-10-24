@@ -520,11 +520,14 @@
 	/* Mobile responsiveness */
 	@media (max-width: 640px) {
 		.card-header {
-			flex-wrap: wrap;
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
 		}
 		
 		.tier-range {
-			flex-basis: 100%;
+			flex: 1;
+			justify-content: flex-start;
 		}
 		
 		.price-row {
@@ -535,7 +538,7 @@
 		
 		.discount-buttons {
 			width: 100%;
-			justify-content: flex-start;
+			justify-content: center;
 		}
 		
 		.price-input-wrapper {
@@ -545,6 +548,21 @@
 		.discount-btn {
 			flex: 1;
 			min-width: fit-content;
+		}
+		
+		.custom-discount {
+			flex: 0 0 auto;
+			justify-content: center;
+		}
+		
+		.discount-input {
+			width: 4rem;
+			text-align: center;
+		}
+		
+		.discount-buttons {
+			justify-content: center;
+			gap: 0.5rem;
 		}
 	}
 </style>

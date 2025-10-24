@@ -6,7 +6,9 @@
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
 	import NativeDatePicker from '$lib/components/NativeDatePicker.svelte';
 	import NativeTimePicker from '$lib/components/NativeTimePicker.svelte';
+	import TimePicker from '$lib/components/TimePicker.svelte';
 	import { slide } from 'svelte/transition';
+	import { browser } from '$app/environment';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -41,6 +43,9 @@
 	}: Props = $props();
 
 	const queryClient = useQueryClient();
+
+	// Firefox detection - use TimePicker for Firefox, NativeTimePicker for others
+	const isFirefox = $derived(browser && navigator.userAgent.toLowerCase().includes('firefox'));
 
 	// Step management - only show tour selection if no tourId provided
 	let currentStep = $state<1 | 2>(1);
@@ -195,9 +200,14 @@
 		}
 		
 		if (daysToAdd > 0) {
-			const endDateObj = new Date(selectedDate);
+			// Create date in local time to avoid timezone shift
+			const [year, month, day] = selectedDate.split('-').map(Number);
+			const endDateObj = new Date(year, month - 1, day);
 			endDateObj.setDate(endDateObj.getDate() + daysToAdd);
-			return endDateObj.toISOString().split('T')[0];
+			const y = endDateObj.getFullYear();
+			const m = String(endDateObj.getMonth() + 1).padStart(2, '0');
+			const d = String(endDateObj.getDate()).padStart(2, '0');
+			return `${y}-${m}-${d}`;
 		}
 		
 		// Same day
@@ -264,9 +274,14 @@
 	// Set default recurring end date (4 weeks from selected date)
 	$effect(() => {
 		if (recurring && !recurringEndDate) {
-			const start = new Date(selectedDate);
+			// Create date in local time to avoid timezone shift
+			const [year, month, day] = selectedDate.split('-').map(Number);
+			const start = new Date(year, month - 1, day);
 			start.setDate(start.getDate() + 28); // Default 4 weeks
-			recurringEndDate = start.toISOString().split('T')[0];
+			const y = start.getFullYear();
+			const m = String(start.getMonth() + 1).padStart(2, '0');
+			const d = String(start.getDate()).padStart(2, '0');
+			recurringEndDate = `${y}-${m}-${d}`;
 		}
 	});
 
@@ -275,13 +290,20 @@
 		if (!recurring) return [{ date: selectedDate, startTime, endTime }];
 		
 		const slots = [];
-		const start = new Date(selectedDate);
-		const end = new Date(recurringEndDate);
+		// Create dates in local time to avoid timezone shift
+		const [startYear, startMonth, startDay] = selectedDate.split('-').map(Number);
+		const [endYear, endMonth, endDay] = recurringEndDate.split('-').map(Number);
+		const start = new Date(startYear, startMonth - 1, startDay);
+		const end = new Date(endYear, endMonth - 1, endDay);
 		const current = new Date(start);
 		
 		while (current <= end) {
+			// Format date in local time
+			const y = current.getFullYear();
+			const m = String(current.getMonth() + 1).padStart(2, '0');
+			const d = String(current.getDate()).padStart(2, '0');
 			slots.push({
-				date: current.toISOString().split('T')[0],
+				date: `${y}-${m}-${d}`,
 				startTime,
 				endTime
 			});
@@ -300,35 +322,6 @@
 		}
 		
 		return slots;
-	});
-
-	// Check for conflicts with existing slots (soft warning, doesn't block)
-	let conflictInfo = $derived.by(() => {
-		const conflicts: any[] = [];
-		
-		slotsPreview.forEach(preview => {
-			const previewStart = new Date(`${preview.date}T${preview.startTime}:00`);
-			const previewEnd = new Date(`${endDateCalculation}T${preview.endTime}:00`);
-			
-			existingSlots.forEach((slot: any) => {
-				const slotStart = new Date(slot.startTime);
-				const slotEnd = new Date(slot.endTime);
-				
-				// Check for overlap
-				if (previewStart < slotEnd && previewEnd > slotStart) {
-					conflicts.push({
-						date: preview.date,
-						existingSlot: slot
-					});
-				}
-			});
-		});
-		
-		return {
-			hasConflicts: conflicts.length > 0,
-			conflictCount: conflicts.length,
-			totalSlots: slotsPreview.length
-		};
 	});
 
 	// Generate consistent color for tour based on ID and name
@@ -465,13 +458,6 @@
 				
 				// Call success callback
 				onSuccess?.();
-				
-				// Close drawer after showing success briefly
-				setTimeout(() => {
-					showSuccess = false;
-					isOpen = false;
-					onClose();
-				}, 1500);
 			} else {
 				const errorData = await response.json();
 				error = errorData.error || 'Failed to create time slots';
@@ -492,6 +478,30 @@
 		} finally {
 			isSubmitting = false;
 		}
+	}
+
+	// Function to reset form after success
+	function resetFormForNewSlots() {
+		showSuccess = false;
+		successMessage = '';
+		error = null;
+		selectedDate = initialDate || new Date().toISOString().split('T')[0];
+		startTime = '10:00';
+		endTime = '12:00';
+		additionalDays = 0;
+		recurring = false;
+		recurringType = 'weekly';
+		recurringEndDate = '';
+		userChangedEndTime = false;
+		userChangedCapacity = false;
+		userChangedMinCapacity = false;
+	}
+
+	// Function to handle closing the drawer
+	function handleClose() {
+		resetFormForNewSlots();
+		isOpen = false;
+		onClose();
 	}
 
 	// Initialize values when tour loads (only once per tour)
@@ -545,6 +555,25 @@
 		endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 		userChangedEndTime = false;
 	}
+
+	// Auto-calculate end time when start time changes (unless user manually changed end time)
+	$effect(() => {
+		if (tour && !userChangedEndTime && startTime) {
+			const tourDuration = tour.duration || 120;
+			const [startHours, startMinutes] = startTime.split(':').map(Number);
+			const totalMinutes = startHours * 60 + startMinutes + tourDuration;
+			
+			// Calculate additional days for multi-day tours
+			const totalHours = Math.floor(totalMinutes / 60);
+			additionalDays = Math.floor(totalHours / 24);
+			
+			// Calculate end time within the final day
+			const endHours = totalHours % 24;
+			const endMinutes = totalMinutes % 60;
+			
+			endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+		}
+	});
 	
 	// Format duration with days when applicable
 	function formatDurationWithDays(minutes: number): string {
@@ -683,14 +712,34 @@
 				<Loader2 class="h-8 w-8 animate-spin" style="color: var(--text-tertiary);" />
 			</div>
 		{:else if tour}
-		<form bind:this={formContainerRef} onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
-			{#if showSuccess}
-				<div class="success-banner">
-					<CheckCircle class="h-5 w-5" />
-					<p>{successMessage}</p>
+		{#if showSuccess}
+			<!-- Success State -->
+			<div class="success-screen">
+				<div class="success-icon">
+					<CheckCircle class="h-16 w-16" style="color: var(--color-success-600);" />
 				</div>
-			{/if}
-			
+				<h3 class="success-title">{successMessage}</h3>
+				<p class="success-description">Your time slots have been added to the calendar and are now available for booking.</p>
+				
+				<div class="success-actions">
+					<button
+						type="button"
+						onclick={resetFormForNewSlots}
+						class="button-secondary flex-1"
+					>
+						Add More Slots
+					</button>
+					<button
+						type="button"
+						onclick={handleClose}
+						class="button-primary flex-1"
+					>
+						Done
+					</button>
+				</div>
+			</div>
+		{:else}
+		<form bind:this={formContainerRef} onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
 			{#if error}
 				<div class="error-banner">
 					<p>{error}</p>
@@ -720,21 +769,43 @@
 									<div class="grid grid-cols-2 gap-3">
 										<!-- Start Time -->
 										<div>
-											<NativeTimePicker
-												bind:value={startTime}
-												label="Start Time"
-												required
-											/>
+											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+												Start Time
+												<span style="color: var(--color-error);" class="ml-1">*</span>
+											</div>
+											{#if isFirefox}
+												<TimePicker
+													bind:value={startTime}
+													onchange={() => {}}
+													required
+												/>
+											{:else}
+												<NativeTimePicker
+													bind:value={startTime}
+													required
+												/>
+											{/if}
 										</div>
 										
 										<!-- End Time (Now Editable) -->
 										<div>
-											<NativeTimePicker
-												bind:value={endTime}
-												label="End Time"
-												onchange={() => userChangedEndTime = true}
-												required
-											/>
+											<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+												End Time
+												<span style="color: var(--color-error);" class="ml-1">*</span>
+											</div>
+											{#if isFirefox}
+												<TimePicker
+													bind:value={endTime}
+													onchange={() => userChangedEndTime = true}
+													required
+												/>
+											{:else}
+												<NativeTimePicker
+													bind:value={endTime}
+													onchange={() => userChangedEndTime = true}
+													required
+												/>
+											{/if}
 											{#if endDateCalculation !== selectedDate}
 												<div class="text-xs mt-1" style="color: var(--text-secondary);">
 													{(() => {
@@ -944,9 +1015,12 @@
 
 									<!-- End Date -->
 									<div>
+										<div class="text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
+											Repeat Until
+											<span style="color: var(--color-error);" class="ml-1">*</span>
+										</div>
 										<NativeDatePicker
 											bind:value={recurringEndDate}
-											label="Repeat Until"
 											min={selectedDate}
 											placeholder="Select end date"
 											required={true}
@@ -1013,6 +1087,7 @@
 												type="number"
 												bind:value={minCapacity}
 												oninput={() => userChangedMinCapacity = true}
+												onfocus={(e) => e.currentTarget.select()}
 												min="1"
 												max={capacity}
 												class="capacity-number-input text-center font-semibold"
@@ -1046,6 +1121,7 @@
 												type="number"
 												bind:value={capacity}
 												oninput={() => userChangedCapacity = true}
+												onfocus={(e) => e.currentTarget.select()}
 												min="1"
 												max={tour?.maxCapacity || 100}
 												class="capacity-number-input text-center font-semibold"
@@ -1066,26 +1142,11 @@
 				</div>
 			</div>
 
-			<!-- Overlap Warning -->
-			{#if conflictInfo.hasConflicts}
-				<div class="overlap-warning">
-					<Info class="h-4 w-4 flex-shrink-0" />
-					<div class="flex-1">
-						<div class="font-medium text-sm" style="color: var(--color-warning-900);">
-							{conflictInfo.conflictCount} slot{conflictInfo.conflictCount !== 1 ? 's' : ''} overlap{conflictInfo.conflictCount === 1 ? 's' : ''} with existing time slots
-						</div>
-						<div class="text-xs mt-0.5" style="color: var(--color-warning-700);">
-							This is allowed if you're running multiple groups simultaneously
-						</div>
-					</div>
-				</div>
-			{/if}
-
 			<!-- Submit Buttons -->
 			<div class="flex flex-col sm:flex-row gap-3 pt-2">
 				<button
 					type="button"
-					onclick={() => { isOpen = false; onClose(); }}
+					onclick={handleClose}
 					class="button-secondary flex-1"
 				>
 					Cancel
@@ -1105,6 +1166,7 @@
 				</button>
 			</div>
 		</form>
+		{/if}
 		{:else}
 			<div class="text-center py-12">
 				<p style="color: var(--text-secondary);">Tour not found</p>
@@ -1114,31 +1176,52 @@
 </Drawer>
 
 <style>
-	.success-banner {
+	/* Success Screen */
+	.success-screen {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 0.625rem;
-		padding: 1rem;
-		background: var(--color-success-50);
-		border: 1px solid var(--color-success-200);
-		border-radius: 0.5rem;
-		color: var(--color-success-700);
-		font-weight: 500;
-		position: sticky;
-		top: 0;
-		z-index: 10;
-		margin: -1rem -1rem 1rem -1rem;
+		justify-content: center;
+		padding: 3rem 1.5rem;
+		text-align: center;
 		animation: slideIn 0.3s ease;
 	}
 	
-	.success-banner :global(svg) {
-		flex-shrink: 0;
-		color: var(--color-success-600);
+	.success-icon {
+		margin-bottom: 1.5rem;
+		animation: scaleIn 0.4s ease-out;
 	}
 	
-	.success-banner p {
-		margin: 0;
-		font-size: 0.875rem;
+	.success-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 0.75rem 0;
+	}
+	
+	.success-description {
+		font-size: 0.9375rem;
+		color: var(--text-secondary);
+		margin: 0 0 2rem 0;
+		max-width: 28rem;
+	}
+	
+	.success-actions {
+		display: flex;
+		gap: 0.75rem;
+		width: 100%;
+		max-width: 24rem;
+	}
+	
+	@keyframes scaleIn {
+		from {
+			opacity: 0;
+			transform: scale(0.8);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 	
 	.error-banner {
@@ -1160,10 +1243,17 @@
 	
 	/* Mobile banner positioning */
 	@media (max-width: 768px) {
-		.success-banner,
 		.error-banner {
 			margin: 0 0 1rem 0;
 			border-radius: 0.5rem;
+		}
+		
+		.success-screen {
+			padding: 2rem 1rem;
+		}
+		
+		.success-actions {
+			flex-direction: column;
 		}
 	}
 	
@@ -1176,17 +1266,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-
-	/* Overlap Warning */
-	.overlap-warning {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.75rem;
-		padding: 1rem;
-		background: var(--color-warning-50);
-		border: 1px solid var(--color-warning-200);
-		border-radius: 0.5rem;
 	}
 
 	/* Form Section */
@@ -1205,17 +1284,17 @@
 
 	/* Recurring Type Buttons */
 	.recurring-type-btn {
-		padding: 0.75rem 0.75rem;
+		padding: 0.5rem 0.75rem;
 		font-size: 0.875rem;
 		font-weight: 500;
 		border: 2px solid var(--border-primary);
 		border-radius: 0.5rem;
-		background: var(--bg-primary);
+		background: var(--bg-secondary);
 		color: var(--text-primary);
 		cursor: pointer;
 		transition: all 0.15s;
 		text-align: center;
-		min-height: 2.75rem;
+		height: 2.75rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -1391,8 +1470,8 @@
 		}
 		
 		.recurring-type-btn {
-			padding: 1rem 0.75rem;
-			min-height: 3rem;
+			padding: 0.625rem 0.75rem;
+			height: 3rem;
 		}
 		
 		.capacity-input-group {

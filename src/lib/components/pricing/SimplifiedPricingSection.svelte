@@ -256,6 +256,24 @@ Simple, compact initial view with expandable advanced options
 		color: var(--text-primary);
 	}
 	
+	@media (max-width: 640px) {
+		.section-header {
+			text-align: center;
+			border-bottom: none;
+			padding-bottom: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+		
+		/* Center pricing model selector */
+		:global(.pricing-model-selector) {
+			justify-content: center;
+		}
+		
+		:global(.model-options) {
+			justify-content: center;
+		}
+	}
+	
 	.pricing-config {
 		padding: 0.5rem 0;
 	}

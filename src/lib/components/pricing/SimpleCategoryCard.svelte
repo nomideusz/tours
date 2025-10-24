@@ -465,7 +465,8 @@
 
 		.discount-buttons-left {
 			width: 100%;
-			justify-content: flex-start;
+			justify-content: center;
+			gap: 0.5rem;
 		}
 
 		.price-input-right {
@@ -475,6 +476,16 @@
 		.discount-btn-small {
 			flex: 1;
 			min-width: fit-content;
+		}
+		
+		.discount-number-input {
+			width: 4rem;
+			text-align: center;
+		}
+		
+		.custom-discount-input {
+			flex: 0 0 auto;
+			justify-content: center;
 		}
 	}
 </style>

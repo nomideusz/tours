@@ -280,8 +280,8 @@
 	</div>
 	
 	<!-- Quick action buttons -->
-	<div class="flex flex-wrap gap-1.5 overflow-x-auto pb-1" style="max-width: 100%; -webkit-overflow-scrolling: touch;">
-		<!-- Use profile location -->
+	<div class="location-actions-container">
+		<!-- Use profile location (full width) -->
 		{#if profileLocation && value !== profileLocation}
 			<button
 				type="button"
@@ -290,39 +290,42 @@
 				title="Use my location: {profileLocation}"
 			>
 				<MapPin class="w-3 h-3 flex-shrink-0" />
-				<span class="truncate">Use my location</span>
+				<span class="truncate">{profileLocation}</span>
 			</button>
 		{/if}
 		
-		<!-- Current location -->
-		{#if enableGeolocation}
-			<button
-				type="button"
-				onclick={getCurrentLocation}
-				disabled={isGeolocating}
-				class="location-action-button"
-				class:disabled={isGeolocating}
-			>
-				{#if isGeolocating}
-					<div class="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full"></div>
-				{:else}
-					<Navigation class="w-3 h-3" />
-				{/if}
-				{isGeolocating ? 'Getting location...' : 'Use current location'}
-			</button>
-		{/if}
-		
-		<!-- Map picker (future feature) -->
-		{#if enableMapsIntegration}
-			<button
-				type="button"
-				onclick={openMapPicker}
-				class="location-action-button"
-			>
-				<MapPin class="w-3 h-3" />
-				Pick on map
-			</button>
-		{/if}
+		<!-- Other buttons row (stretched equally) -->
+		<div class="location-actions-secondary">
+			<!-- Current location -->
+			{#if enableGeolocation}
+				<button
+					type="button"
+					onclick={getCurrentLocation}
+					disabled={isGeolocating}
+					class="location-action-button"
+					class:disabled={isGeolocating}
+				>
+					{#if isGeolocating}
+						<div class="animate-spin w-3 h-3 border border-current border-t-transparent rounded-full"></div>
+					{:else}
+						<Navigation class="w-3 h-3" />
+					{/if}
+					{isGeolocating ? 'Getting location...' : 'Use current location'}
+				</button>
+			{/if}
+			
+			<!-- Map picker (future feature) -->
+			{#if enableMapsIntegration}
+				<button
+					type="button"
+					onclick={openMapPicker}
+					class="location-action-button"
+				>
+					<Search class="w-3 h-3" />
+					Pick on map
+				</button>
+			{/if}
+		</div>
 	</div>
 </div>
 
@@ -336,9 +339,22 @@
 />
 
 <style>
+	.location-actions-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	
+	.location-actions-secondary {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	
 	.location-action-button {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: 0.25rem;
 		padding: 0.375rem 0.625rem;
 		font-size: 0.75rem;
@@ -350,27 +366,56 @@
 		transition: all 0.15s ease;
 		cursor: pointer;
 		white-space: nowrap;
-		flex-shrink: 0;
+		flex: 1;
 	}
 	
 	.location-action-button--profile {
-		max-width: calc(100vw - 4rem);
+		width: 100%;
+		max-width: 100%;
+		overflow: hidden;
 	}
 	
 	.location-action-button--profile span {
 		overflow: hidden;
 		text-overflow: ellipsis;
+		max-width: 100%;
+		display: block;
 	}
 	
-	@media (max-width: 640px) {
-		.location-action-button {
-			font-size: 0.6875rem !important;
-			padding: 0.25rem 0.5rem !important;
-			gap: 0.1875rem !important;
+	/* Desktop: Stacked full-width layout */
+	@media (min-width: 641px) {
+		.location-actions-container {
+			flex-direction: column;
+		}
+		
+		.location-actions-secondary {
+			width: 100%;
 		}
 		
 		.location-action-button--profile {
-			max-width: 140px;
+			width: 100%;
+			max-width: 100%;
+		}
+	}
+	
+	/* Mobile: Stacked full-width buttons */
+	@media (max-width: 640px) {
+		.location-actions-container {
+			align-items: stretch;
+		}
+		
+		.location-actions-secondary {
+			width: 100%;
+			justify-content: center;
+		}
+		
+		.location-action-button {
+			font-size: 0.75rem;
+			padding: 0.5rem 0.75rem;
+		}
+		
+		.location-action-button--profile {
+			width: 100%;
 		}
 	}
 	

@@ -718,8 +718,13 @@ Your payment account will use ${stripeCurrency} as the currency.
 	onClose={() => showAddSlotsFlow = false}
 	onSuccess={async () => {
 		// Invalidate queries to refresh calendar data
+		// Format date in local time to avoid timezone shift
+		const year = timelineCurrentDate.getFullYear();
+		const month = String(timelineCurrentDate.getMonth() + 1).padStart(2, '0');
+		const day = String(timelineCurrentDate.getDate()).padStart(2, '0');
+		const dateStr = `${year}-${month}-${day}`;
 		await queryClient.invalidateQueries({
-			queryKey: queryKeys.allTimeSlots(timelineView, timelineCurrentDate.toISOString().split('T')[0])
+			queryKey: queryKeys.allTimeSlots(timelineView, dateStr)
 		});
 	}}
 />

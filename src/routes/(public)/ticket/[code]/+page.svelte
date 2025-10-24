@@ -447,9 +447,8 @@
 								{/if}
 							{/each}
 						{:else}
-							<p>• Free cancellation up to 24 hours before the tour</p>
-							<p>• 50% refund for cancellations within 24 hours</p>
-							<p>• No refund for no-shows or cancellations after tour start time</p>
+							<p>• Full refund if cancelled 24+ hours before the tour</p>
+							<p>• No refund if cancelled less than 24 hours before tour</p>
 							<p>• Contact your tour guide directly for any changes or cancellations</p>
 						{/if}
 					</div>

@@ -50,31 +50,53 @@ export const POST: RequestHandler = async ({ params, locals, fetch }) => {
 			console.log(`📸 Copied ${copiedImages.length} images for new tour ${newTourId}`);
 		}
 
-		// Create a copy of the tour with some modifications
-		const newTour = {
-			id: newTourId,
-			userId: locals.user.id,
-			name: `${originalTour.name} (Copy)`,
-			description: originalTour.description,
-			location: originalTour.location,
-			duration: originalTour.duration,
-			price: originalTour.price,
-			capacity: originalTour.capacity,
-			categories: originalTour.categories || [],
-			includedItems: originalTour.includedItems,
-			requirements: originalTour.requirements,
-			cancellationPolicy: originalTour.cancellationPolicy,
-			enablePricingTiers: originalTour.enablePricingTiers,
-			pricingTiers: originalTour.pricingTiers,
-			images: copiedImages, // Use the copied images instead of original
-			qrCode: newQrCode,
-			qrScans: 0,
-			qrConversions: 0,
-			status: 'draft' as const, // Always create copies as drafts
-			publicListing: originalTour.publicListing,
-			createdAt: new Date(),
-			updatedAt: new Date()
-		};
+	// Create a copy of the tour with some modifications
+	const newTour = {
+		id: newTourId,
+		userId: locals.user.id,
+		name: `${originalTour.name} (Copy)`,
+		description: originalTour.description,
+		location: originalTour.location,
+		duration: originalTour.duration,
+		price: originalTour.price,
+		capacity: originalTour.capacity,
+		categories: originalTour.categories || [],
+		includedItems: originalTour.includedItems,
+		requirements: originalTour.requirements,
+		
+		// Cancellation policy
+		cancellationPolicy: originalTour.cancellationPolicy,
+		cancellationPolicyId: originalTour.cancellationPolicyId,
+		
+		// Pricing configuration
+		pricingModel: originalTour.pricingModel,
+		enablePricingTiers: originalTour.enablePricingTiers,
+		pricingTiers: originalTour.pricingTiers,
+		participantCategories: originalTour.participantCategories,
+		privateTour: originalTour.privateTour,
+		groupPricingTiers: originalTour.groupPricingTiers,
+		groupDiscounts: originalTour.groupDiscounts,
+		optionalAddons: originalTour.optionalAddons,
+		guidePaysStripeFee: originalTour.guidePaysStripeFee,
+		
+		// Capacity settings
+		minCapacity: originalTour.minCapacity,
+		maxCapacity: originalTour.maxCapacity,
+		countInfantsTowardCapacity: originalTour.countInfantsTowardCapacity,
+		
+		// Images and QR
+		images: copiedImages, // Use the copied images instead of original
+		qrCode: newQrCode,
+		qrScans: 0,
+		qrConversions: 0,
+		
+		// Status and visibility
+		status: 'draft' as const, // Always create copies as drafts
+		publicListing: originalTour.publicListing,
+		
+		createdAt: new Date(),
+		updatedAt: new Date()
+	};
 
 		// Insert the new tour
 		const [copiedTour] = await db
@@ -82,7 +104,7 @@ export const POST: RequestHandler = async ({ params, locals, fetch }) => {
 			.values(newTour)
 			.returning();
 
-		console.log(`Tour ${tourId} copied to ${copiedTour.id} by user ${locals.user.id}`);
+		console.log(`✅ Tour ${tourId} copied to ${copiedTour.id} by user ${locals.user.id} (includes pricing, cancellation, capacity settings, and all configurations)`);
 
 		return json({
 			id: copiedTour.id,

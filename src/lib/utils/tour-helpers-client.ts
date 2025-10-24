@@ -14,10 +14,23 @@ import { formatCurrency, formatTourOwnerCurrency } from '$lib/utils/currency.js'
 
 /**
  * Format duration in minutes to human-readable format
+ * Shows days for durations 24+ hours
  */
 export function formatDuration(minutes: number): string {
-	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(minutes / 1440);
+	const hours = Math.floor((minutes % 1440) / 60);
 	const mins = minutes % 60;
+	
+	if (days > 0) {
+		if (hours === 0 && mins === 0) {
+			return `${days} ${days === 1 ? 'day' : 'days'}`;
+		} else if (mins === 0) {
+			return `${days}d ${hours}h`;
+		} else {
+			return `${days}d ${hours}h ${mins}m`;
+		}
+	}
+	
 	if (hours > 0) {
 		return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 	}

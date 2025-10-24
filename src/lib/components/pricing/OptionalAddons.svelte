@@ -18,11 +18,12 @@
 		{ name: 'Transport', price: 20 },
 		{ name: 'Lunch', price: 15 },
 		{ name: 'Photos', price: 25 },
-		{ name: 'Entry Fees', price: 10 },
-		{ name: 'Custom', price: 0 }
+		{ name: 'Entry Fees', price: 10 }
 	];
+	
+	const customTemplate = { name: 'Custom', price: 0 };
 
-	function addFromTemplate(template: typeof templates[0]) {
+	function addFromTemplate(template: { name: string; price: number }) {
 		const newAddon: OptionalAddon = {
 			id: createId(),
 			name: template.name === 'Custom' ? '' : template.name,
@@ -113,18 +114,27 @@
 				<ShoppingBag class="add-icon" />
 				<span class="add-label">Add extra items</span>
 			</div>
-			<div class="quick-add-buttons">
-				{#each templates as template}
-					<button
-						type="button"
-						onclick={() => addFromTemplate(template)}
-						class="quick-add-btn"
-						class:custom-btn={template.name === 'Custom'}
-						title="Add {template.name}"
-					>
-						{template.name}
-					</button>
-				{/each}
+			<div class="quick-add-buttons-wrapper">
+				<div class="quick-add-buttons">
+					{#each templates as template}
+						<button
+							type="button"
+							onclick={() => addFromTemplate(template)}
+							class="quick-add-btn"
+							title="Add {template.name}"
+						>
+							{template.name}
+						</button>
+					{/each}
+				</div>
+				<button
+					type="button"
+					onclick={() => addFromTemplate(customTemplate)}
+					class="quick-add-btn custom-btn"
+					title="Add custom item"
+				>
+					Custom
+				</button>
 			</div>
 		</div>
 	</div>
@@ -322,12 +332,19 @@
 		color: var(--text-primary);
 	}
 	
-	.quick-add-buttons {
+	.quick-add-buttons-wrapper {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		flex-wrap: wrap;
 		justify-content: flex-end;
+	}
+	
+	.quick-add-buttons {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
 	
 	.quick-add-btn {
@@ -372,23 +389,52 @@
 			justify-content: center;
 		}
 		
-		.quick-add-buttons {
-			justify-content: center;
+		.quick-add-buttons-wrapper {
+			flex-direction: column;
+			width: 100%;
+			align-items: stretch;
+			gap: 0.5rem;
 		}
-	}
-	
-	@media (max-width: 640px) {
+		
+		.quick-add-buttons {
+			width: 100%;
+			justify-content: center;
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.375rem;
+		}
+		
+		.quick-add-btn {
+			padding: 0.5rem 0.5rem;
+			font-size: 0.75rem;
+		}
+		
+		.custom-btn {
+			width: 100%;
+		}
+		
 		.card-header {
-			flex-wrap: wrap;
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
 		}
 		
 		.header-left {
-			flex-basis: 100%;
+			flex: 1;
+			justify-content: flex-start;
+		}
+		
+		.addon-name-input {
+			text-align: left;
+		}
+		
+		.addon-name-input::placeholder {
+			text-align: left;
 		}
 		
 		.price-row {
 			flex-direction: column;
-			align-items: stretch;
+			align-items: center;
 			gap: 0.5rem;
 		}
 		
@@ -396,13 +442,8 @@
 			width: 100%;
 		}
 		
-		.quick-add-buttons {
-			gap: 0.375rem;
-		}
-		
-		.quick-add-btn {
-			padding: 0.375rem 0.625rem;
-			font-size: 0.75rem;
+		.required-checkbox {
+			justify-content: center;
 		}
 	}
 </style>

@@ -117,9 +117,9 @@
 		align-items: center;
 		gap: 0.75rem;
 		width: 100%;
-		padding: 0.625rem 1rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		padding: 0.5rem 0.75rem;
+		background: var(--bg-secondary);
+		border: 2px solid var(--border-primary);
 		border-radius: 0.5rem;
 		transition: all 0.2s ease;
 		font-size: 0.875rem;
@@ -127,6 +127,7 @@
 		pointer-events: none;
 		position: relative;
 		z-index: 0;
+		height: 2.75rem;
 	}
 	
 	.time-picker-button.disabled {
@@ -162,7 +163,6 @@
 	/* Hover effect via input */
 	.picker-label-wrapper:has(.overlay-input:not(:disabled):hover) .time-picker-button:not(.disabled) {
 		border-color: var(--color-primary-300);
-		background: var(--bg-secondary);
 	}
 	
 	/* Focus effect via input */

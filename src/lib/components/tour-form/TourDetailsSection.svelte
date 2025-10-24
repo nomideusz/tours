@@ -62,14 +62,14 @@
 	}
 </script>
 
-<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 	<button
 		type="button"
 		onclick={() => {
 			isExpanded = !isExpanded;
 			onToggle?.();
 		}}
-		class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {isExpanded ? 'border-b' : ''}"
+		class="flex items-center justify-between w-full px-4 py-4 sm:p-4 transition-colors hover:bg-opacity-80 {isExpanded ? 'border-b' : ''}"
 		style="{isExpanded ? 'border-color: var(--border-primary);' : ''}"
 	>
 		<div class="flex items-center gap-2">
@@ -85,13 +85,10 @@
 				</span>
 			{/if}
 		</div>
-		<span class="text-xs" style="color: var(--text-secondary);">
-			{isExpanded ? 'Hide' : 'Show'} included items & requirements
-		</span>
 	</button>
 	
 	{#if isExpanded}
-		<div class="p-4">
+		<div class="px-4 py-3 sm:p-4">
 			<!-- What's Included Section -->
 			<div class="mb-8">
 				<h3 class="font-medium text-sm mb-3" style="color: var(--text-primary);">What's Included</h3>
@@ -266,3 +263,31 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	@media (max-width: 640px) {
+		.form-section-card {
+			border: none !important;
+			background: transparent !important;
+		}
+		
+		/* Mobile: Center section title */
+		.form-section-card button {
+			justify-content: center !important;
+			text-align: center;
+		}
+		
+		.form-section-card button > div {
+			justify-content: center !important;
+		}
+		
+		/* Mobile: Add divider after section */
+		.form-section-card::after {
+			content: '';
+			display: block;
+			height: 1px;
+			background: linear-gradient(to right, transparent, var(--border-primary), transparent);
+			margin: 0.5rem 0;
+		}
+	}
+</style>

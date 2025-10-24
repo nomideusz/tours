@@ -5,7 +5,6 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 
@@ -36,6 +35,7 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	
 	// Date and Time Components
 	import DatePicker from '$lib/components/DatePicker.svelte';
@@ -504,13 +504,25 @@
 	<title>Create New Tour - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
+<div class="max-w-screen-2xl mx-auto px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
 	<!-- Mobile-First Header -->
-	<div class="mb-3 sm:mb-8">
-		<!-- Mobile Compact Header -->
-		<MobilePageHeader
-			title="New Tour"
-		/>
+	<div class="mb-3 sm:mb-8 px-4 sm:px-0">
+		<!-- Mobile Compact Header with inline title -->
+		<div class="sm:hidden new-tour-mobile-header mb-3">
+			<div class="flex items-center justify-between">
+				<div class="py-1.5 px-4 rounded-lg" style="background: var(--color-primary-50);">
+					<h1 class="text-base font-bold" style="color: var(--color-primary-700);">New Tour</h1>
+				</div>
+				<button
+					onclick={() => goto('/tours')}
+					class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1.5 px-3 rounded-lg active:scale-95"
+					style="color: var(--color-primary-600); background: var(--color-primary-50);"
+				>
+					Back
+					<ArrowLeft class="h-4 w-4" />
+				</button>
+			</div>
+		</div>
 
 		<!-- Desktop Header -->
 		<div class="hidden sm:block">
@@ -525,7 +537,7 @@
 	</div>
 
 	{#if error}
-		<div bind:this={errorElement} class="mb-6">
+		<div bind:this={errorElement} class="mb-6 px-4 sm:px-0">
 			{#if (form as any)?.showUpgradeButton}
 				<div class="alert-warning rounded-xl p-4">
 					<div class="flex gap-3">
@@ -554,7 +566,7 @@
 
 			<!-- Image Upload Errors -->
 			{#if imageUploadErrors.length > 0}
-				<div class="alert-error mb-6 rounded-xl p-4">
+				<div class="alert-error mb-6 rounded-xl p-4 mx-4 sm:mx-0">
 					<div class="flex gap-3">
 						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
 						<div class="flex-1">

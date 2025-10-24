@@ -200,7 +200,7 @@
 						</div>
 						<div class="processing-row highlighted">
 							<span class="processing-label"><strong>You receive</strong></span>
-							<span class="processing-value success"><strong>{currencySymbol}{stripeFeeExample()?.guideReceives.toFixed(2)}</strong></span>
+							<span class="processing-value success">{currencySymbol}{stripeFeeExample()?.guideReceives.toFixed(2)}</span>
 						</div>
 						<div class="fee-note">
 							<Info class="note-icon" />
@@ -213,7 +213,7 @@
 						</div>
 						<div class="processing-row highlighted">
 							<span class="processing-label"><strong>You receive</strong></span>
-							<span class="processing-value success"><strong>{currencySymbol}{basePrice().toFixed(2)}</strong></span>
+							<span class="processing-value success">{currencySymbol}{basePrice().toFixed(2)}</span>
 						</div>
 						<div class="fee-note recommended">
 							<Info class="note-icon" />
@@ -495,7 +495,8 @@
 	
 	.processing-row.highlighted {
 		background: var(--bg-primary);
-		padding: 0.625rem;
+		padding: 0.625rem 0.625rem;
+		margin: 0 -0.625rem;
 		border-radius: 0.375rem;
 		border: 1px solid var(--border-secondary);
 	}
@@ -509,6 +510,7 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 		color: var(--text-primary);
+		font-family: monospace;
 	}
 	
 	.processing-value.primary {

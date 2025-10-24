@@ -257,7 +257,6 @@ Key extracted components:
 	let showAdvancedPricing = $state(false);
 	let showTourDetails = $state(false);
 	let showCancellationPolicy = $state(false);
-	let showImages = $state(false);
 	
 	// Custom category state
 	let showCustomCategoryInput = $state(false);
@@ -426,18 +425,6 @@ Key extracted components:
 	
 	// Smart Progressive Reveal - Auto-expand sections based on user progress
 	$effect(() => {
-		// Auto-expand images when first image is uploaded
-		if ((uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)) {
-			showImages = true;
-		}
-		
-		// Auto-expand cancellation policy when pricing is configured
-		const hasPricing = (formData.participantCategories?.categories?.length && formData.participantCategories.categories[0].price > 0) || 
-		                    (formData.privateTour?.flatPrice && formData.privateTour.flatPrice > 0);
-		if (hasPricing && !showCancellationPolicy) {
-			showCancellationPolicy = true;
-		}
-		
 		// Auto-expand tour details when description is substantial (suggests user is engaged)
 		if (formData.description && formData.description.length > 200 && !showTourDetails) {
 			showTourDetails = true;
@@ -446,11 +433,6 @@ Key extracted components:
 		// Auto-expand tour details if there are items/requirements already
 		if (formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())) {
 			showTourDetails = true;
-		}
-		
-		// Auto-expand cancellation policy if there's content already
-		if (formData.cancellationPolicy?.trim()) {
-			showCancellationPolicy = true;
 		}
 	});
 
@@ -740,11 +722,9 @@ Key extracted components:
 		
 		formData.cancellationPolicyId = `custom_${customPolicyHours}`;
 		
-		// Generate policy text from the hours value (auto-generated, not editable)
-		const halfHours = Math.floor(customPolicyHours / 2);
-		let policyText = `• 100% refund if cancelled ${customPolicyHours}+ hours before tour\n` +
-			`• 50% refund if cancelled ${halfHours}-${customPolicyHours} hours before tour\n` +
-			`• No refund if cancelled less than ${halfHours} hours before tour`;
+		// Generate policy text from the hours value (binary: full refund or no refund)
+		let policyText = `• Full refund if cancelled ${customPolicyHours}+ hours before tour\n` +
+			`• No refund if cancelled less than ${customPolicyHours} hours before tour`;
 		
 		// Add custom notes if provided
 		if (customPolicyNotes.trim()) {
@@ -801,9 +781,11 @@ Key extracted components:
 		}
 		
 		// Set default if no policy set (new tour)
-		if (!formData.cancellationPolicyId) {
+		if (!formData.cancellationPolicyId && !formData.cancellationPolicy) {
 			selectedPolicyTemplate = 'flexible';
 			showCustomPolicy = false;
+			// Initialize the form data with the default flexible policy
+			selectPolicyTemplate('flexible');
 		}
 	});
 
@@ -846,41 +828,26 @@ Key extracted components:
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-	<!-- Mobile Error Summary - Only show when errors exist -->
-	{#if allErrors.length > 0}
-		<div class="lg:hidden mobile-error-summary">
-			<div class="mb-3 rounded-lg p-3 border flex items-center gap-2.5" style="background: var(--bg-secondary); border-color: var(--color-error-300);">
-				<AlertCircle class="w-4 h-4 flex-shrink-0" style="color: var(--color-error-500);" />
-				<p class="text-sm font-medium" style="color: var(--color-error-700);">
-					{allErrors.length} field{allErrors.length === 1 ? '' : 's'} need{allErrors.length === 1 ? 's' : ''} attention
-				</p>
-			</div>
-		</div>
-	{/if}
-
 	<!-- ================================================================ -->
 	<!-- MAIN FORM CONTENT                                                -->
 	<!-- ================================================================ -->
-	<div class="lg:col-span-2 space-y-8">
+	<div class="lg:col-span-2 space-y-2 sm:space-y-8">
 		
 		<!-- ============================================================ -->
 		<!-- BASIC INFORMATION SECTION (Name, Categories, Location, Description, Duration) -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4 border-b" style="border-color: var(--border-primary);">
-				<h2 class="font-semibold" style="color: var(--text-primary);">Basic Information</h2>
-			</div>
-			<div class="p-4 lg:p-6 space-y-3 lg:space-y-4">
+		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-4 py-2.5 sm:p-4 lg:p-6 space-y-1.5 sm:space-y-3 lg:space-y-4">
 				<!-- Hidden status field for form submission (when not showing visible toggle) -->
 				{#if !isEdit || hideStatusField}
 					<input type="hidden" name="status" bind:value={formData.status} />
 				{/if}
 				
 				<!-- First Row: Tour Name (full width on mobile, 2/3 on desktop) and Duration (1/3 on desktop) -->
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-1.5 sm:gap-4 lg:gap-5">
 					<!-- Tour Name -->
 					<div class="lg:col-span-2">
-						<label for="name" class="form-label flex items-center gap-2">
+						<label for="name" class="form-label flex items-center gap-2 hidden sm:flex">
 							<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
 							<span>Tour Name *</span>
 						</label>
@@ -890,8 +857,8 @@ Key extracted components:
 								id="name"
 								name="name"
 								bind:value={formData.name}
-								placeholder="e.g., Historic Walking Tour of Prague"
-								class="form-input form-input--no-transform {hasFieldError(allErrors, 'name') ? 'error' : ''}"
+								placeholder="Tour Name *"
+								class="form-input form-input--no-transform tour-name-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
 								oninput={() => handleFieldInput('name')}
 								onblur={() => validateField('name')}
 								maxlength="100"
@@ -902,7 +869,7 @@ Key extracted components:
 						{:else}
 							<span class="form-field-spacer"></span>
 						{/if}
-						<span class="text-xs form-field-counter" style="color: {hasFieldError(allErrors, 'name') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.name && formData.name.length > 0 ? 1 : 0};">
+						<span class="text-xs form-field-counter hidden sm:inline" style="color: {hasFieldError(allErrors, 'name') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.name && formData.name.length > 0 ? 1 : 0};">
 							{formData.name?.length || 0}/100
 						</span>
 					</div>
@@ -911,7 +878,7 @@ Key extracted components:
 
 					<!-- Duration -->
 					<div>
-						<label for="duration" class="form-label flex items-center gap-2">
+						<label for="duration" class="form-label flex items-center gap-2 hidden sm:flex">
 							<Calendar class="w-4 h-4" style="color: var(--text-tertiary);" />
 							<span>Duration *</span>
 						</label>
@@ -934,10 +901,10 @@ Key extracted components:
 				</div>
 
 				<!-- Second Row: Meeting Point and Categories side by side on desktop -->
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-1.5 sm:gap-4 lg:gap-6">
 					<!-- Meeting Point -->
 					<div>
-						<label class="form-label flex items-center gap-2">
+						<label class="form-label flex items-center gap-2 hidden sm:flex">
 							<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
 							<span>Meeting Point</span>
 						</label>
@@ -945,7 +912,7 @@ Key extracted components:
 							<div class="location-picker-wrapper">
 								<LocationPicker
 									bind:value={formData.location}
-									placeholder="Where does the tour start?"
+									placeholder="Meeting Point"
 									profileLocation={profile?.location}
 									enableGeolocation={true}
 									enableMapsIntegration={true}
@@ -969,8 +936,8 @@ Key extracted components:
 					</div>
 
 					<!-- Categories - Redesigned -->
-					<div class="space-y-2">
-						<label for="categories" class="form-label flex items-center gap-2">
+					<div class="space-y-0 sm:space-y-2">
+						<label for="categories" class="form-label flex items-center gap-2 hidden sm:flex">
 							<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
 							<span>Categories</span>
 							{#if formData.categories && formData.categories.length > 0}
@@ -1128,7 +1095,7 @@ Key extracted components:
 
 				<!-- Description Field - Full Width -->
 				<div>
-					<label for="description" class="form-label flex items-center gap-2">
+					<label for="description" class="form-label flex items-center gap-2 hidden sm:flex">
 						<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
 						<span>Description *</span>
 					</label>
@@ -1138,7 +1105,7 @@ Key extracted components:
 							name="description"
 							bind:value={formData.description}
 							rows="4"
-							placeholder="What will guests experience on this tour? Describe the highlights, unique features, and what makes it special."
+							placeholder="Description *"
 							class="form-textarea form-input--no-transform {hasFieldError(allErrors, 'description') ? 'error' : ''}"
 							oninput={() => handleFieldInput('description')}
 							onblur={() => validateField('description')}
@@ -1150,7 +1117,7 @@ Key extracted components:
 					{:else}
 						<span class="form-field-spacer"></span>
 					{/if}
-					<span class="text-xs form-field-counter" style="color: {hasFieldError(allErrors, 'description') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.description && formData.description.length > 0 ? 1 : 0};">
+					<span class="text-xs form-field-counter hidden sm:inline" style="color: {hasFieldError(allErrors, 'description') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.description && formData.description.length > 0 ? 1 : 0};">
 						{formData.description?.length || 0}/1000
 					</span>
 				</div>
@@ -1163,39 +1130,13 @@ Key extracted components:
 		<!-- TOUR IMAGES SECTION (Moved from sidebar)                    -->
 		<!-- ============================================================ -->
 		{#if onImageUpload && onImageRemove}
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<button
-					type="button"
-					onclick={() => showImages = !showImages}
-					class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showImages ? 'border-b' : ''}"
-					style="{showImages ? 'border-color: var(--border-primary);' : ''}"
-				>
-					<div class="flex items-center gap-2">
-						{#if showImages}
-							<ChevronDown class="w-4 h-4" />
-						{:else}
-							<ChevronRight class="w-4 h-4" />
-						{/if}
-						<h2 class="font-semibold" style="color: var(--text-primary);">Tour Images</h2>
-						{#if (uploadedImages && uploadedImages.length > 0) || (existingImages && existingImages.length > 0)}
-							{@const totalImages = (uploadedImages?.length || 0) + (existingImages?.length || 0)}
-							<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-								{totalImages} image{totalImages === 1 ? '' : 's'}
-							</span>
-						{/if}
-					</div>
-					<span class="text-xs" style="color: var(--text-secondary);">
-						{showImages ? 'Hide' : 'Show'} image gallery
-					</span>
-				</button>
-				
-				{#if showImages}
-					<div class="p-5">
+			<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+				<div class="px-4 py-3 sm:p-5">
 					
 					<!-- Existing Images (for edit mode) -->
 					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
-						<div class="mb-6">
-							<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">Current Images</h4>
+						<div class="mb-4 sm:mb-6">
+							<h4 class="text-sm font-medium mb-3 hidden sm:block" style="color: var(--text-primary);">Current Images</h4>
 							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
 								{#each existingImages as imageName, index (imageName)}
 									<div class="relative group aspect-square">
@@ -1240,12 +1181,10 @@ Key extracted components:
 					{/if}
 					
 					<!-- Image Upload Area -->
-					<div class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+					<div class="border-2 border-dashed rounded-lg p-3 sm:p-6 text-center transition-colors"
 						style="border-color: var(--border-secondary); background: var(--bg-secondary);"
 					>
-						<Upload class="w-8 h-8 mx-auto mb-2" style="color: var(--text-tertiary);" />
-						<p class="text-sm mb-2" style="color: var(--text-primary);">{isEdit ? 'Add more images' : 'Upload tour images'}</p>
-						<p class="text-xs mb-4" style="color: var(--text-secondary);">JPEG, PNG, WebP up to 5MB each (max 6 images)</p>
+						<p class="text-xs mb-3 hidden sm:block" style="color: var(--text-secondary);">JPEG, PNG, WebP • Max 6 images</p>
 						
 						<!-- Mobile-optimized file input -->
 						<input
@@ -1266,14 +1205,8 @@ Key extracted components:
 						>
 							<Camera class="w-4 h-4 sm:hidden" />
 							<Upload class="w-4 h-4 hidden sm:block" />
-							<span class="sm:hidden">Take Photo / Add Photos</span>
-							<span class="hidden sm:inline">Choose Files</span>
+							Add Photos
 						</label>
-
-						<!-- Mobile instruction -->
-						<div class="sm:hidden mt-3">
-							<p class="text-xs" style="color: var(--text-tertiary);">Tap to take a photo with camera or select from gallery</p>
-						</div>
 					</div>
 
 					<!-- Image Upload Errors - Show on all screen sizes -->
@@ -1295,8 +1228,8 @@ Key extracted components:
 
 					<!-- Image Previews -->
 					{#if uploadedImages && uploadedImages.length > 0}
-						<div class="mt-6">
-							<h4 class="text-sm font-medium mb-3" style="color: var(--text-primary);">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
+						<div class="mt-4 sm:mt-6">
+							<h4 class="text-sm font-medium mb-3 hidden sm:block" style="color: var(--text-primary);">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
 							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
 								{#each uploadedImages as image, index (index)}
 									<div class="relative group aspect-square">
@@ -1342,16 +1275,15 @@ Key extracted components:
 							</div>
 						</div>
 					{/if}
-					</div>
-				{/if}
+				</div>
 			</div>
 		{/if}
 
 		<!-- ============================================================ -->
 		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4">
+		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-4 py-4 sm:p-4">
 			<SimplifiedPricingSection
 				pricingModel={formData.pricingModel || 'participant_categories'}
 				bind:participantCategories={formData.participantCategories}
@@ -1489,11 +1421,11 @@ Key extracted components:
 		<!-- CANCELLATION POLICY SECTION                                 -->
 		<!-- ============================================================ -->
 		<!-- Cancellation Policy (Collapsible) -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<button
 				type="button"
 				onclick={() => showCancellationPolicy = !showCancellationPolicy}
-				class="flex items-center justify-between w-full p-4 transition-colors hover:bg-opacity-80 {showCancellationPolicy ? 'border-b' : ''}"
+				class="flex items-center justify-between w-full px-4 py-4 sm:p-4 transition-colors hover:bg-opacity-80 {showCancellationPolicy ? 'border-b' : ''}"
 				style="{showCancellationPolicy ? 'border-color: var(--border-primary);' : ''}"
 			>
 				<div class="flex items-center gap-2">
@@ -1505,17 +1437,19 @@ Key extracted components:
 					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
 					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
 						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-							{selectedPolicyTemplate || 'Custom'} policy set
+							{selectedPolicyTemplate === 'veryFlexible' ? 'Very Flexible' : 
+							 selectedPolicyTemplate === 'flexible' ? 'Flexible' :
+							 selectedPolicyTemplate === 'moderate' ? 'Moderate' :
+							 selectedPolicyTemplate === 'strict' ? 'Strict' :
+							 selectedPolicyTemplate === 'nonRefundable' ? 'Non-Refundable' :
+							 'Custom'}
 						</span>
 					{/if}
 				</div>
-				<span class="text-xs" style="color: var(--text-secondary);">
-					{showCancellationPolicy ? 'Hide' : 'Show'} cancellation terms
-				</span>
 			</button>
 			
 			{#if showCancellationPolicy}
-				<div class="p-5">
+				<div class="px-4 py-3 sm:p-5">
 					<div class="space-y-3">
 						<!-- Template Options -->
 						{#each policyTemplates as template}
@@ -1573,32 +1507,6 @@ Key extracted components:
 						</label>
 							</div>
 							
-					{#if selectedPolicyTemplate && !showCustomPolicy}
-						<!-- Show selected policy details -->
-						<div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-							<h4 class="text-sm font-semibold mb-2" style="color: var(--text-primary);">Policy Details</h4>
-							<div class="text-xs space-y-1" style="color: var(--text-secondary); white-space: pre-line;">
-								{policyTemplates.find(t => t.id === selectedPolicyTemplate)?.policy || ''}
-							</div>
-							
-							{#if selectedPolicyTemplate === 'nonRefundable'}
-								<!-- Non-refundable: Show immediate payout benefit -->
-								<div class="mt-3 p-3 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
-									<p class="text-xs" style="color: var(--color-success-800);">
-										<strong>💰 Benefit:</strong> Funds transfer to your account <strong>immediately</strong> after payment (no holding period).
-									</p>
-								</div>
-							{:else}
-								<!-- Refundable policies: Show refund responsibility warning -->
-								<div class="mt-3 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-									<p class="text-xs" style="color: var(--color-warning-800);">
-										<strong>⚠️ Important:</strong> Funds are held on the platform until the cancellation window passes, then automatically transferred to your account. This ensures refunds are always available.
-									</p>
-								</div>
-							{/if}
-						</div>
-					{/if}
-					
 					{#if showCustomPolicy}
 						<div class="mt-4 space-y-4">
 							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
@@ -1620,6 +1528,7 @@ Key extracted components:
 												step="1"
 												class="form-input"
 												style="max-width: 100px;"
+												onfocus={(e) => e.currentTarget.select()}
 												onblur={() => { customPolicyHours = validateCustomHours(customPolicyHours); }}
 											/>
 											<span class="text-sm" style="color: var(--text-secondary);">hours before tour</span>
@@ -1636,9 +1545,8 @@ Key extracted components:
 									<div class="p-3 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
 										<p class="text-xs font-medium mb-1" style="color: var(--color-primary-900);">Your Policy:</p>
 										<p class="text-xs" style="color: var(--color-primary-800);">
-											• 100% refund if cancelled {customPolicyHours}+ hours before tour<br/>
-											• 50% refund if cancelled {Math.floor(customPolicyHours / 2)}-{customPolicyHours} hours before<br/>
-											• No refund if cancelled less than {Math.floor(customPolicyHours / 2)} hours before
+											• Full refund if cancelled {customPolicyHours}+ hours before tour<br/>
+											• No refund if cancelled less than {customPolicyHours} hours before
 										</p>
 									</div>
 									
@@ -1699,10 +1607,10 @@ Key extracted components:
 		<!-- ============================================================ -->
 		{#if isEdit && onDelete}
 			<div class="rounded-xl danger-zone-container">
-				<div class="p-4 border-b danger-zone-header">
+				<div class="px-4 py-4 sm:p-4 border-b danger-zone-header">
 					<h3 class="font-semibold danger-zone-title">Danger Zone</h3>
 				</div>
-				<div class="p-4">
+				<div class="px-4 py-4 sm:p-4">
 					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 						<div class="flex-1">
 							<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
@@ -1768,10 +1676,10 @@ Key extracted components:
 		<!-- ============================================================ -->
 		{#if isEdit && !hideStatusField}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
+				<div class="px-4 py-4 sm:p-4 border-b" style="border-color: var(--border-primary);">
 					<h3 class="font-semibold" style="color: var(--text-primary);">Current Status</h3>
 				</div>
-				<div class="p-4">
+				<div class="px-4 py-4 sm:p-4">
 					<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--bg-secondary);">
 						<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
 							style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
@@ -1804,7 +1712,7 @@ Key extracted components:
 		<!-- ============================================================ -->
 		{#if isEdit}
 			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="p-4">
+				<div class="px-4 py-4 sm:p-4">
 					<div class="flex items-center justify-between gap-4">
 						<div class="flex-1">
 							<div class="flex items-center gap-2 mb-1">
@@ -1848,35 +1756,11 @@ Key extracted components:
 		<!-- ACTION BUTTONS SECTION                                       -->
 		<!-- Save, Publish, Cancel buttons                                -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="p-4">
+		<div class="rounded-xl action-buttons-section" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="px-4 py-4 sm:p-4">
 			<div class="space-y-3">
 				{#if onPublish && onSaveAsDraft}
 					<!-- Dual Action Buttons for Draft/Publish -->
-					
-					<!-- Validation Errors Notice -->
-					{#if allErrors.length > 0}
-						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<div class="flex-1">
-									<p class="text-xs font-medium" style="color: var(--color-error-900);">
-										Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'} to continue
-									</p>
-									<ul class="text-xs mt-1 space-y-0.5" style="color: var(--color-error-700);">
-										{#each allErrors.slice(0, 3) as error}
-											<li>• {error.message}</li>
-										{/each}
-										{#if allErrors.length > 3}
-											<li class="mt-1" style="color: var(--color-error-600);">
-												... and {allErrors.length - 3} more
-											</li>
-										{/if}
-									</ul>
-								</div>
-							</div>
-						</div>
-					{/if}
 					
 					<!-- Onboarding Restriction Notice -->
 					{#if !canActivate && missingSteps.length > 0}
@@ -1933,30 +1817,6 @@ Key extracted components:
 					</button>
 				{:else}
 					<!-- Single Action Button (fallback for old usage) -->
-					
-					<!-- Validation Errors Notice -->
-					{#if allErrors.length > 0}
-						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<div class="flex-1">
-									<p class="text-xs font-medium" style="color: var(--color-error-900);">
-										Please fix {allErrors.length} error{allErrors.length === 1 ? '' : 's'} to continue
-									</p>
-									<ul class="text-xs mt-1 space-y-0.5" style="color: var(--color-error-700);">
-										{#each allErrors.slice(0, 3) as error}
-											<li>• {error.message}</li>
-										{/each}
-										{#if allErrors.length > 3}
-											<li class="mt-1" style="color: var(--color-error-600);">
-												... and {allErrors.length - 3} more
-											</li>
-										{/if}
-									</ul>
-								</div>
-							</div>
-						</div>
-					{/if}
 					
 					<button
 						type={onSubmit ? "button" : "submit"}
@@ -2273,10 +2133,14 @@ Key extracted components:
 	
 	@media (max-width: 640px) {
 		.custom-category-input {
-			padding: 0.25rem 0.5rem !important;
-			padding-right: 3.25rem !important;
+			padding: 0.25rem 3.25rem !important;
 			font-size: 0.8125rem !important;
 			min-height: 1.875rem !important;
+			text-align: center;
+		}
+		
+		.custom-category-input::placeholder {
+			text-align: center;
 		}
 	}
 	
@@ -2570,15 +2434,6 @@ Key extracted components:
 			padding: 0.75rem;
 		}
 
-		/* Larger spacing between form sections */
-		.space-y-8 > * + * {
-			margin-top: 2rem;
-		}
-
-		/* Reduce padding on form sections to save space */
-		.p-5 {
-			padding: 1rem;
-		}
 	}
 
 
@@ -2594,6 +2449,103 @@ Key extracted components:
 		/* Smaller error messages on mobile */
 		.form-error-message {
 			font-size: 0.625rem;
+		}
+		
+		/* Mobile: Centered highlighted tour name */
+		.tour-name-input {
+			text-align: center;
+			font-weight: 600;
+			font-size: 1rem;
+			background: var(--color-primary-50);
+			border-color: var(--color-primary-200);
+			color: var(--color-primary-900);
+		}
+		
+		.tour-name-input:focus {
+			background: var(--bg-primary);
+			border-color: var(--color-primary-500);
+			color: var(--text-primary);
+		}
+		
+		.tour-name-input::placeholder {
+			text-align: center;
+			font-weight: 500;
+			font-size: 0.875rem;
+			color: var(--color-primary-400);
+		}
+		
+		/* Mobile: Centered placeholders for all inputs */
+		.form-textarea::placeholder,
+		.form-input::placeholder {
+			text-align: center;
+			font-size: 0.875rem;
+			color: var(--text-tertiary);
+		}
+		
+		/* Mobile: Center textarea text */
+		.form-textarea {
+			text-align: center;
+		}
+		
+		/* Mobile: Remove section borders for cleaner look */
+		.form-section-card,
+		.action-buttons-section {
+			border: none !important;
+			box-shadow: none !important;
+			background: transparent !important;
+		}
+		
+		/* Mobile: Center section titles */
+		.form-section-card button {
+			justify-content: center !important;
+			text-align: center;
+		}
+		
+		.form-section-card button > div {
+			justify-content: center !important;
+		}
+		
+		/* Mobile: Add visual dividers between sections */
+		.form-section-card::after {
+			content: '';
+			display: block;
+			height: 1px;
+			background: linear-gradient(to right, transparent, var(--border-primary), transparent);
+			margin: 0.5rem 0;
+		}
+	}
+	
+	/* Desktop: Normal tour name appearance */
+	@media (min-width: 640px) {
+		.tour-name-input {
+			text-align: left;
+			font-weight: 500;
+			background: var(--bg-primary);
+			border-color: var(--border-secondary);
+			color: var(--text-primary);
+		}
+		
+		.tour-name-input::placeholder {
+			text-align: left;
+			font-weight: 400;
+			font-size: 0.875rem;
+		}
+		
+		/* Desktop: Left-aligned placeholders */
+		.form-textarea::placeholder,
+		.form-input::placeholder {
+			text-align: left;
+		}
+		
+		/* Desktop: Left-aligned textarea */
+		.form-textarea {
+			text-align: left;
+		}
+		
+		/* Desktop: Remove border from action buttons section too */
+		.action-buttons-section {
+			border: none !important;
+			background: transparent !important;
 		}
 	}
 </style>
