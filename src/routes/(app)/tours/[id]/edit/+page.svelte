@@ -5,7 +5,6 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 
 	import type { Tour } from '$lib/types.js';
@@ -19,6 +18,7 @@
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	
 	// TanStack Query
 	import { createQuery } from '@tanstack/svelte-query';
@@ -793,16 +793,15 @@
 	<title>Edit {tour?.name || 'Tour'} - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
+<div class="max-w-screen-2xl mx-auto px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<!-- Mobile Loading Header -->
-		<div class="mb-3 sm:mb-8">
-			<MobilePageHeader
-				title="Edit Tour"
-				secondaryInfo="Loading..."
-				quickActions={[]}
-				infoItems={[]}
-			/>
+		<div class="mb-3 sm:mb-8 px-4 sm:px-0">
+			<div class="sm:hidden">
+				<div class="py-1.5 px-4 rounded-lg inline-block" style="background: var(--color-primary-50);">
+					<h1 class="text-base font-bold" style="color: var(--color-primary-700);">Edit Tour</h1>
+				</div>
+			</div>
 			
 			<!-- Desktop Loading Header -->
 			<div class="hidden sm:block">
@@ -813,7 +812,7 @@
 			</div>
 		</div>
 		
-		<div class="rounded-xl p-8" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+		<div class="rounded-xl p-8 mx-4 sm:mx-0" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 			<div class="flex flex-col items-center justify-center py-12">
 				<div class="form-spinner mb-4"></div>
 				<p class="text-center" style="color: var(--text-secondary);">Loading tour details...</p>
@@ -821,33 +820,28 @@
 		</div>
 	{:else}
 		<!-- Mobile-First Header -->
-		<div class="mb-3 sm:mb-8">
-			<!-- Mobile Compact Header -->
-			<MobilePageHeader
-				title="Edit {tour?.name || 'Tour'}"
-				secondaryInfo="{getTourStatusInfo().label} • €{tour?.price || 0}"
-				quickActions={[
-					{
-						label: 'Save',
-						icon: Save,
-						onclick: handleSave,
-						variant: 'primary'
-					},
-					{
-						label: 'Cancel',
-						icon: X,
-						onclick: handleCancel,
-						variant: 'secondary'
-					},
-					...(tour?.status === 'active' ? [{
-						label: 'Preview',
-						icon: ExternalLink,
-						onclick: () => window.open(`/book/${tour?.qrCode}`, '_blank'),
-						variant: 'secondary' as const,
-						size: 'icon' as const
-					}] : [])
-				]}
-			/>
+		<div class="mb-3 sm:mb-8 px-4 sm:px-0">
+			<!-- Mobile Compact Header with inline title -->
+			<div class="sm:hidden mb-3">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2">
+						<div class="py-1.5 px-4 rounded-lg" style="background: var(--color-primary-50);">
+							<h1 class="text-base font-bold" style="color: var(--color-primary-700);">Edit Tour</h1>
+						</div>
+						<span class="text-xs px-2 py-1 rounded-md font-medium" style="background: {getTourStatusInfo().color}; color: {getTourStatusInfo().textColor};">
+							{getTourStatusInfo().label}
+						</span>
+					</div>
+					<button
+						onclick={() => goto(`/tours/${tourId}`)}
+						class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1.5 px-3 rounded-lg active:scale-95"
+						style="color: var(--color-primary-600); background: var(--color-primary-50);"
+					>
+						Back
+						<ArrowLeft class="h-4 w-4" />
+					</button>
+				</div>
+			</div>
 
 			<!-- Desktop Header -->
 			<div class="hidden sm:block">
@@ -875,68 +869,72 @@
 		</div>
 
 		{#if error}
-			<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-light); border: 1px solid var(--color-danger-200);">
+			<div class="mb-6 rounded-xl p-4 mx-4 sm:mx-0" style="background: var(--color-danger-light); border: 1px solid var(--color-danger-200);">
 				<div class="flex gap-3">
 					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-danger-600);" />
 					<div>
 						<p class="font-medium" style="color: var(--color-danger-900);">Error</p>
 						<p class="text-sm mt-1" style="color: var(--color-danger-700);">{error}</p>
-
 					</div>
 				</div>
 			</div>
 		{/if}
 
-
-
-		<!-- Tour Form -->
-		<div class="mt-6">
-			{#if isLoading}
-				<div class="p-8 text-center">
-					<div class="w-8 h-8 mx-auto mb-2 rounded-full animate-spin" style="border: 2px solid var(--border-secondary); border-top-color: var(--color-primary-600);"></div>
-					<p class="text-sm" style="color: var(--text-secondary);">Loading tour details...</p>
-				</div>
-			{:else if !tour}
-				<div class="mb-6 rounded-xl p-4" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
-					<div class="flex items-center justify-between">
-						<div>
-							<p class="font-medium" style="color: var(--color-danger-900);">Tour not found</p>
-							<p class="text-sm mt-1" style="color: var(--color-danger-700);">The tour you're looking for doesn't exist or you don't have permission to edit it.</p>
-						</div>
-						<button onclick={() => goto('/tours')} class="button-secondary button--small">
-							Back to Tours
-						</button>
+		<!-- Image Upload Errors -->
+		{#if imageUploadErrors.length > 0}
+			<div class="alert-error mb-6 rounded-xl p-4 mx-4 sm:mx-0">
+				<div class="flex gap-3">
+					<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
+					<div class="flex-1">
+						<p class="font-medium">Image Upload Issues</p>
+						<ul class="text-sm mt-2 space-y-1">
+							{#each imageUploadErrors as error}
+								<li>• {error}</li>
+							{/each}
+						</ul>
 					</div>
 				</div>
-			{:else}
-				<div>
-					<TourForm
-						bind:formData
-						bind:uploadedImages
-						{isSubmitting}
-						isEdit={true}
-						onCancel={handleCancel}
-						onSaveAsDraft={handleSaveAsDraft}
-						onPublish={handlePublish}
-						onImageUpload={handleImageUpload}
-						onImageRemove={removeImage}
-						{existingImages}
-						onExistingImageRemove={removeExistingImage}
-						{imageUploadErrors}
-						serverErrors={[]}
-						{triggerValidation}
-						getExistingImageUrl={getExistingImageUrl}
-						{profile}
-						{hasConfirmedLocation}
-						{paymentStatus}
-						onDelete={handleDeleteTour}
-						{hasFutureBookings}
-						{isDeleting}
-						{tourId}
-					/>
+			</div>
+		{/if}
+
+		{#if !tour}
+			<div class="mb-6 rounded-xl p-4 mx-4 sm:mx-0" style="background: var(--color-danger-50); border: 1px solid var(--color-danger-200);">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="font-medium" style="color: var(--color-danger-900);">Tour not found</p>
+						<p class="text-sm mt-1" style="color: var(--color-danger-700);">The tour you're looking for doesn't exist or you don't have permission to edit it.</p>
+					</div>
+					<button onclick={() => goto('/tours')} class="button-secondary button--small">
+						Back to Tours
+					</button>
 				</div>
-			{/if}
-		</div>
+			</div>
+		{:else}
+			<TourForm
+				bind:formData
+				bind:uploadedImages
+				{isSubmitting}
+				isEdit={true}
+				onCancel={handleCancel}
+				onSaveAsDraft={handleSaveAsDraft}
+				onPublish={handlePublish}
+				onImageUpload={handleImageUpload}
+				onImageRemove={removeImage}
+				{existingImages}
+				onExistingImageRemove={removeExistingImage}
+				{imageUploadErrors}
+				serverErrors={[]}
+				{triggerValidation}
+				getExistingImageUrl={getExistingImageUrl}
+				{profile}
+				{hasConfirmedLocation}
+				{paymentStatus}
+				onDelete={handleDeleteTour}
+				{hasFutureBookings}
+				{isDeleting}
+				{tourId}
+			/>
+		{/if}
 	{/if}
 </div>
 

@@ -7,7 +7,7 @@ Main form for creating and editing tours. Organized into clear sections:
 
 1. BASIC INFORMATION - Name, categories, location, description, duration
 2. PRICING - Pricing model, price, tiers, add-ons, capacity
-3. TOUR DETAILS - Included items & requirements (extracted component)
+3. INCLUSIONS & REQUIREMENTS - Included items & requirements (extracted component)
 4. CANCELLATION POLICY - Cancellation terms with templates
 5. DANGER ZONE - Delete tour (edit mode only, shown in main content)
 6. TOUR STATUS - Active/Draft status (edit mode only, shown in sidebar)
@@ -24,7 +24,7 @@ Key extracted components:
 - pricing/ChildPricingSection - Adult/child pricing (ages 3-12)
 - pricing/GroupPricingTiers - Manage group pricing tiers
 - pricing/OptionalAddons - Manage optional add-ons
-- tour-form/TourDetailsSection - Included items & requirements
+- tour-form/TourDetailsSection - Inclusions & requirements
 
 ================================================================================
 -->
@@ -1590,7 +1590,7 @@ Key extracted components:
 		</div>
 
 		<!-- ============================================================ -->
-		<!-- TOUR DETAILS SECTION (Included Items & Requirements)        -->
+		<!-- INCLUSIONS & REQUIREMENTS SECTION                           -->
 		<!-- ============================================================ -->
 		<TourDetailsSection
 			bind:includedItems={formData.includedItems}
@@ -1606,7 +1606,63 @@ Key extracted components:
 		<!-- DANGER ZONE SECTION (Edit Mode Only)                        -->
 		<!-- ============================================================ -->
 		{#if isEdit && onDelete}
-			<div class="rounded-xl danger-zone-container">
+			<!-- Mobile: Compact Danger Zone -->
+			<div class="sm:hidden px-4">
+				<div class="p-3 rounded-lg danger-zone-container-mobile">
+					<div class="flex items-center justify-between gap-3">
+						<div class="flex-1">
+							<p class="text-sm font-semibold" style="color: var(--color-danger-900);">Delete Tour</p>
+							<p class="text-xs mt-0.5" style="color: var(--color-danger-700);">
+								{#if hasFutureBookings}
+									Has upcoming bookings
+								{:else}
+									Permanent action
+								{/if}
+							</p>
+						</div>
+						<div>
+							{#if hasFutureBookings}
+								<button 
+									type="button" 
+									class="text-xs px-3 py-2 rounded-lg font-medium cursor-not-allowed opacity-50" 
+									style="background: var(--bg-secondary); color: var(--text-secondary);"
+									disabled
+								>
+									Locked
+								</button>
+							{:else}
+								<button 
+									type="button" 
+									onclick={onDelete} 
+									class="text-xs px-3 py-2 rounded-lg font-medium" 
+									style="background: var(--color-danger-600); color: white;"
+									disabled={isDeleting}
+								>
+									{#if isDeleting}
+										Deleting...
+									{:else}
+										Delete
+									{/if}
+								</button>
+							{/if}
+						</div>
+					</div>
+					{#if hasFutureBookings}
+						<div class="mt-2 pt-2 border-t" style="border-color: var(--color-danger-200);">
+							<a 
+								href="/bookings?tour={tourId}"
+								class="text-xs font-medium underline"
+								style="color: var(--color-primary-600);"
+							>
+								View bookings →
+							</a>
+						</div>
+					{/if}
+				</div>
+			</div>
+			
+			<!-- Desktop: Full Danger Zone -->
+			<div class="hidden sm:block rounded-xl danger-zone-container">
 				<div class="px-4 py-4 sm:p-4 border-b danger-zone-header">
 					<h3 class="font-semibold danger-zone-title">Danger Zone</h3>
 				</div>
@@ -1672,68 +1728,47 @@ Key extracted components:
 	<div class="space-y-6">
 
 		<!-- ============================================================ -->
-		<!-- TOUR STATUS SECTION (Edit Mode Only)                        -->
-		<!-- ============================================================ -->
-		{#if isEdit && !hideStatusField}
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="px-4 py-4 sm:p-4 border-b" style="border-color: var(--border-primary);">
-					<h3 class="font-semibold" style="color: var(--text-primary);">Current Status</h3>
-				</div>
-				<div class="px-4 py-4 sm:p-4">
-					<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--bg-secondary);">
-						<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
-							style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
-						>
-							{#if formData.status === 'active'}
-								<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
-							{:else}
-								<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
-							{/if}
-						</div>
-						<div class="flex-1">
-							<h3 class="font-medium" style="color: var(--text-primary);">
-								{formData.status === 'active' ? 'Active' : 'Draft'}
-							</h3>
-							<p class="text-sm" style="color: var(--text-secondary);">
-								{formData.status === 'active' 
-									? 'Tour is live and accepting bookings'
-									: 'Not visible to customers'}
-							</p>
-						</div>
-					</div>
-					<!-- Hidden input to send the actual status value -->
-					<input type="hidden" name="status" bind:value={formData.status} />
-				</div>
-			</div>
-		{/if}
-
-		<!-- ============================================================ -->
-		<!-- PUBLIC LISTING SECTION (Edit Mode Only)                     -->
+		<!-- COMBINED STATUS & VISIBILITY SECTION (Edit Mode Only)       -->
 		<!-- ============================================================ -->
 		{#if isEdit}
-			<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="px-4 py-4 sm:p-4">
-					<div class="flex items-center justify-between gap-4">
-						<div class="flex-1">
-							<div class="flex items-center gap-2 mb-1">
-								<Globe class="h-5 w-5" style="color: var(--text-accent);" />
-								<h3 class="font-semibold" style="color: var(--text-primary);">Public Discovery</h3>
-							</div>
-							<p class="text-sm" style="color: var(--text-secondary);">
-								{#if formData.status === 'draft'}
-									{formData.publicListing 
-										? 'When activated, tour will be visible in public listings'
-										: 'When activated, tour will only be accessible via QR code or direct link'}
+			<!-- Mobile: Combined compact view -->
+			<div class="sm:hidden px-4">
+				<div class="space-y-3">
+					<!-- Status display -->
+					{#if !hideStatusField}
+						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+							<div class="flex items-center gap-2">
+								{#if formData.status === 'active'}
+									<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
 								{:else}
-									{formData.publicListing 
-										? 'Tour is visible in public listings'
-										: 'Tour is only accessible via QR code or direct link'}
+									<FileText class="w-4 h-4" style="color: var(--color-warning-600);" />
 								{/if}
-							</p>
+								<div>
+									<p class="text-sm font-semibold" style="color: var(--text-primary);">
+										{formData.status === 'active' ? 'Active' : 'Draft'}
+									</p>
+									<p class="text-xs" style="color: var(--text-secondary);">
+										{formData.status === 'active' ? 'Live & accepting bookings' : 'Not visible to customers'}
+									</p>
+								</div>
+							</div>
+							<!-- Hidden input -->
+							<input type="hidden" name="status" bind:value={formData.status} />
 						</div>
-						
-						<div class="flex items-center gap-3 flex-shrink-0">
-							<!-- Hidden input to send the actual publicListing value -->
+					{/if}
+					
+					<!-- Public Discovery toggle -->
+					<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+						<div class="flex items-center gap-2">
+							<Globe class="w-4 h-4" style="color: var(--text-accent);" />
+							<div>
+								<p class="text-sm font-semibold" style="color: var(--text-primary);">Public Listing</p>
+								<p class="text-xs" style="color: var(--text-secondary);">
+									{formData.publicListing ? 'Visible in discovery' : 'QR/direct link only'}
+								</p>
+							</div>
+						</div>
+						<div>
 							<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
 							<label class="relative inline-flex items-center cursor-pointer">
 								<input
@@ -1742,10 +1777,85 @@ Key extracted components:
 									class="sr-only peer"
 								/>
 								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-								<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
-									{formData.publicListing ? 'Listed' : 'Unlisted'}
-								</span>
 							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Desktop: Separate cards -->
+			<div class="hidden sm:block space-y-6">
+				<!-- Current Status -->
+				{#if !hideStatusField}
+					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="px-4 py-4 sm:p-4 border-b" style="border-color: var(--border-primary);">
+							<h3 class="font-semibold" style="color: var(--text-primary);">Current Status</h3>
+						</div>
+						<div class="px-4 py-4 sm:p-4">
+							<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--bg-secondary);">
+								<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
+									style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
+								>
+									{#if formData.status === 'active'}
+										<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
+									{:else}
+										<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
+									{/if}
+								</div>
+								<div class="flex-1">
+									<h3 class="font-medium" style="color: var(--text-primary);">
+										{formData.status === 'active' ? 'Active' : 'Draft'}
+									</h3>
+									<p class="text-sm" style="color: var(--text-secondary);">
+										{formData.status === 'active' 
+											? 'Tour is live and accepting bookings'
+											: 'Not visible to customers'}
+									</p>
+								</div>
+							</div>
+							<!-- Hidden input to send the actual status value -->
+							<input type="hidden" name="status" bind:value={formData.status} />
+						</div>
+					</div>
+				{/if}
+
+				<!-- Public Discovery -->
+				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+					<div class="px-4 py-4 sm:p-4">
+						<div class="flex items-center justify-between gap-4">
+							<div class="flex-1">
+								<div class="flex items-center gap-2 mb-1">
+									<Globe class="h-5 w-5" style="color: var(--text-accent);" />
+									<h3 class="font-semibold" style="color: var(--text-primary);">Public Discovery</h3>
+								</div>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									{#if formData.status === 'draft'}
+										{formData.publicListing 
+											? 'When activated, tour will be visible in public listings'
+											: 'When activated, tour will only be accessible via QR code or direct link'}
+									{:else}
+										{formData.publicListing 
+											? 'Tour is visible in public listings'
+											: 'Tour is only accessible via QR code or direct link'}
+									{/if}
+								</p>
+							</div>
+							
+							<div class="flex items-center gap-3 flex-shrink-0">
+								<!-- Hidden input to send the actual publicListing value -->
+								<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
+								<label class="relative inline-flex items-center cursor-pointer">
+									<input
+										type="checkbox"
+										bind:checked={formData.publicListing}
+										class="sr-only peer"
+									/>
+									<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+									<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
+										{formData.publicListing ? 'Listed' : 'Unlisted'}
+									</span>
+								</label>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -2344,6 +2454,12 @@ Key extracted components:
 	.danger-zone-title {
 		color: var(--color-danger-900);
 	}
+	
+	/* Mobile Danger Zone */
+	.danger-zone-container-mobile {
+		background: var(--color-danger-50);
+		border: 1px solid var(--color-danger-200);
+	}
 
 	/* Danger Zone Dark Mode - Softer colors */
 	:root[data-theme='dark'] .danger-zone-container {
@@ -2357,6 +2473,11 @@ Key extracted components:
 
 	:root[data-theme='dark'] .danger-zone-title {
 		color: #fca5a5;
+	}
+	
+	:root[data-theme='dark'] .danger-zone-container-mobile {
+		background: rgba(220, 38, 38, 0.08);
+		border-color: rgba(220, 38, 38, 0.25);
 	}
 
 	/* Success/Warning/Info boxes dark mode */
