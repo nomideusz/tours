@@ -16,12 +16,12 @@
 	// Umami tracking
 	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
 	
-	// Fetch demo tours from the API
+	// Fetch featured tours (demo tour + Beta 1 tours)
 	let toursQuery = $derived(createQuery({
-		queryKey: ['demo-tours-marketing'],
+		queryKey: ['featured-tours-marketing'],
 		queryFn: async () => {
-			const response = await fetch('/api/public/tours?limit=6');
-			if (!response.ok) throw new Error('Failed to fetch tours');
+			const response = await fetch('/api/public/featured-tours');
+			if (!response.ok) throw new Error('Failed to fetch featured tours');
 			const data = await response.json();
 			return data;
 		},
@@ -30,25 +30,15 @@
 	
 	let allTours = $derived($toursQuery.data?.tours || []);
 	let isLoading = $derived($toursQuery.isLoading);
+	let meta = $derived($toursQuery.data?.meta || {});
 	
-	// Filter for demo tours with different pricing models
-	let demoTours = $derived.by(() => {
+	// Display all featured tours (demo tour is always first if available)
+	let featuredTours = $derived.by(() => {
 		if (!allTours.length) return [];
 		
-		// Try to get one of each pricing model for variety
-		const participantCategoryTour = allTours.find((t: any) => t.pricingModel === 'participant_categories');
-		const groupTierTour = allTours.find((t: any) => t.pricingModel === 'group_tiers');
-		const perPersonTour = allTours.find((t: any) => t.pricingModel === 'per_person');
-		
-		// Return up to 3 diverse tours, or fall back to first 3 if we don't have variety
-		const diverseTours = [participantCategoryTour, groupTierTour, perPersonTour].filter(Boolean);
-		
-		if (diverseTours.length >= 2) {
-			return diverseTours.slice(0, 3);
-		}
-		
-		// Fallback to first 3 tours
-		return allTours.slice(0, 3);
+		// Show all featured tours (max 6: 1 demo + 5 Beta 1)
+		// The API already returns them in the right order
+		return allTours;
 	});
 	
 	// Format duration - handles days, hours, minutes
@@ -139,7 +129,7 @@
 					Try the Booking Experience
 				</h2>
 				<p class="section-subtitle">
-					See how your customers will discover and book your tours. Click any tour to experience the complete booking flow.
+					See how your customers will discover and book your tours. Click any tour to experience the complete booking flow. {#if meta.beta1ToursCount > 0}Featuring real tours from our Beta 1 community.{/if}
 				</p>
 			</div>
 			
@@ -149,17 +139,17 @@
 					<Loader2 class="w-8 h-8 animate-spin" />
 					<p>Loading demo tours...</p>
 				</div>
-			{:else if demoTours.length === 0}
+			{:else if featuredTours.length === 0}
 				<!-- Empty State -->
 				<div class="empty-state" in:fade>
 					<Calendar class="w-12 h-12 mb-4 opacity-40" />
-					<p>No demo tours available at the moment.</p>
+					<p>No featured tours available at the moment.</p>
 					<p class="text-sm">Check back soon to see live examples!</p>
 				</div>
 			{:else}
 				<!-- Tour Cards Grid -->
 				<div class="tours-grid">
-					{#each demoTours as tour, i (tour.id)}
+					{#each featuredTours as tour, i (tour.id)}
 						<a 
 							href="/book/{tour.qrCode}" 
 							target="_blank"
@@ -229,7 +219,11 @@
 			<!-- Bottom CTA -->
 			<div class="bottom-cta" in:fade={{ delay: 500 }}>
 				<p class="cta-text">
-					These are real booking pages powered by Zaur. Your customers get the same seamless experience.
+					{#if meta.beta1ToursCount > 0}
+						These are real booking pages from our Beta 1 community, powered by Zaur. Your customers get the same seamless experience.
+					{:else}
+						These are real booking pages powered by Zaur. Your customers get the same seamless experience.
+					{/if}
 				</p>
 			</div>
 		{/if}
