@@ -69,8 +69,9 @@ export const GET: RequestHandler = async () => {
 			)
 			.limit(1) : [];
 		
-		// STEP 2: Get Beta 1 tours with quality criteria
-		const beta1Tours = await db
+		// STEP 2: Get high-quality tours for featuring
+		// Priority: Beta 1 tours, then any tour with Beta 2 discount, then any quality tour
+		const qualityTours = await db
 			.select({
 				// Tour fields
 				id: tours.id,
@@ -105,7 +106,9 @@ export const GET: RequestHandler = async () => {
 				operatorUsername: users.username,
 				operatorCurrency: users.currency,
 				operatorAvatar: users.avatar,
-				betaGroup: users.betaGroup
+				betaGroup: users.betaGroup,
+				subscriptionDiscountPercentage: users.subscriptionDiscountPercentage,
+				isLifetimeDiscount: users.isLifetimeDiscount
 			})
 			.from(tours)
 			.leftJoin(users, eq(tours.userId, users.id))
@@ -113,21 +116,24 @@ export const GET: RequestHandler = async () => {
 				and(
 					eq(tours.status, 'active'),
 					eq(tours.publicListing, true),
-					eq(users.betaGroup, 'beta_1'),
 					// Must have at least one image
-					sql`jsonb_array_length(${tours.images}::jsonb) > 0`
+					sql`jsonb_array_length(${tours.images}::jsonb) > 0`,
+					// Exclude the demo tour (we already have it)
+					DEMO_TOUR_ID ? sql`${tours.id} != ${DEMO_TOUR_ID}` : sql`true`
 				)
 			)
 			.orderBy(
+				// Prioritize Beta 1 users (30% lifetime discount)
+				desc(sql`CASE WHEN ${users.betaGroup} = 'beta_1' OR (${users.subscriptionDiscountPercentage} = 30 AND ${users.isLifetimeDiscount} = true) THEN 1 ELSE 0 END`),
 				desc(tours.qrConversions), // Most popular first
 				desc(tours.createdAt) // Then newest
 			)
 			.limit(10); // Get more to filter for time slots
 		
-		// STEP 3: Filter Beta 1 tours to only include those with upcoming time slots
-		const beta1ToursWithSlots = [];
+		// STEP 3: Filter quality tours to only include those with upcoming time slots
+		const toursWithSlots = [];
 		
-		for (const tour of beta1Tours) {
+		for (const tour of qualityTours) {
 			// Check if tour has any upcoming time slots
 			const upcomingSlots = await db
 				.select({ id: timeSlots.id })
@@ -142,26 +148,26 @@ export const GET: RequestHandler = async () => {
 				.limit(1);
 			
 			if (upcomingSlots.length > 0) {
-				beta1ToursWithSlots.push(tour);
+				toursWithSlots.push(tour);
 			}
 			
-			// Stop once we have 5 Beta 1 tours with time slots
-			if (beta1ToursWithSlots.length >= 5) {
+			// Stop once we have 5 tours with time slots
+			if (toursWithSlots.length >= 5) {
 				break;
 			}
 		}
 		
-		// STEP 4: Combine demo tour + Beta 1 tours
+		// STEP 4: Combine demo tour + featured tours
 		const featuredTours = [
 			...(demoTour.length > 0 ? demoTour : []),
-			...beta1ToursWithSlots
+			...toursWithSlots
 		];
 		
-		// If we don't have enough Beta 1 tours, check if demo tour has slots
-		if (featuredTours.length === 0 && demoTour.length > 0) {
-			// Just include the demo tour anyway
-			featuredTours.push(...demoTour);
-		}
+		// Count Beta 1 tours specifically
+		const beta1Count = toursWithSlots.filter(t => 
+			t.betaGroup === 'beta_1' || 
+			(t.subscriptionDiscountPercentage === 30 && t.isLifetimeDiscount === true)
+		).length;
 		
 		// STEP 5: Format response
 		return json({
@@ -203,7 +209,7 @@ export const GET: RequestHandler = async () => {
 			count: featuredTours.length,
 			meta: {
 				demoTourIncluded: demoTour.length > 0,
-				beta1ToursCount: beta1ToursWithSlots.length
+				beta1ToursCount: beta1Count
 			}
 		});
 		
