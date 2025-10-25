@@ -7,6 +7,8 @@
 	import type { TimeSlot } from '$lib/types.js';
 	import { formatSlotTimeRange, getSlotAvailabilityText, isSlotFull } from '$lib/utils/time-slot-client.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
+	import { slide } from 'svelte/transition';
+	import { onDestroy } from 'svelte';
 
 	interface Props {
 		timeSlots: TimeSlot[];
@@ -29,6 +31,18 @@
 	let currentMonth = $state(new Date());
 	let hoveredDate = $state<string | null>(null);
 	let selectedDate = $state<string | null>(null);
+	let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+	let clearHoverTimeout: ReturnType<typeof setTimeout> | null = null;
+	
+	// Clean up timeouts on component destroy
+	onDestroy(() => {
+		if (hoverTimeout) {
+			clearTimeout(hoverTimeout);
+		}
+		if (clearHoverTimeout) {
+			clearTimeout(clearHoverTimeout);
+		}
+	});
 	
 	// Process time slots by date
 	let slotsByDate = $derived.by(() => {
@@ -116,10 +130,35 @@
 		// Don't handle hover on touch devices to avoid conflicts
 		if ('ontouchstart' in window) return;
 		
+		// Clear any existing hover show timeout
+		if (hoverTimeout) {
+			clearTimeout(hoverTimeout);
+			hoverTimeout = null;
+		}
+		
 		if (day === null) {
-			hoveredDate = null;
+			// Don't clear hover immediately - add delay to keep slots visible
+			// Clear any existing clear timeout
+			if (clearHoverTimeout) {
+				clearTimeout(clearHoverTimeout);
+			}
+			// Only clear hover if not selected and after a delay
+			if (!selectedDate) {
+				clearHoverTimeout = setTimeout(() => {
+					hoveredDate = null;
+				}, 300); // 300ms delay before hiding
+			}
 		} else {
-			hoveredDate = formatDateString(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+			// Cancel any pending clear
+			if (clearHoverTimeout) {
+				clearTimeout(clearHoverTimeout);
+				clearHoverTimeout = null;
+			}
+			// Show slots for hovered date with small delay to prevent flashing
+			const targetDate = formatDateString(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+			hoverTimeout = setTimeout(() => {
+				hoveredDate = targetDate;
+			}, 150); // 150ms delay before showing
 		}
 	}
 
@@ -167,6 +206,7 @@
 	// Get slots for active date (selected or hovered), but only if the date is in current month view
 	let activeDate = $derived.by(() => {
 		// Only show slots if the selected/hovered date is in the current month
+		// Keep selectedDate visible even when hovering other dates
 		const candidateDate = selectedDate || hoveredDate;
 		if (!candidateDate) return null;
 		
@@ -251,6 +291,7 @@
 					</div>
 				</div>
 			{/if}
+		
 			<!-- Day headers -->
 			<div class="day-headers">
 				{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
@@ -308,9 +349,9 @@
 			</div>
 		</div>
 
-		<!-- Time slots for active date (selected or hovered) -->
+		<!-- Time slots section -->
 		{#if activeSlots.length > 0}
-			<div class="slots-section">
+			<div class="slots-section" transition:slide={{ duration: 200 }}>
 				<div class="slots-header">
 					<div class="slots-header-main">
 						<div class="slots-header-icon">
@@ -353,19 +394,19 @@
 					{/each}
 				</div>
 			</div>
-		{:else if activeDate}
-			<div class="slots-section">
-				<div class="slots-header">
-					<div class="slots-header-main">
-						<div class="slots-header-icon">
-							<Clock class="w-4 h-4" />
-						</div>
-						<div class="slots-header-content">
-							<h4 class="slots-header-title">No Available Times</h4>
-							<p class="slots-header-date">{new Date(activeDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+			{:else if activeDate}
+				<div class="slots-section">
+					<div class="slots-header">
+						<div class="slots-header-main">
+							<div class="slots-header-icon">
+								<Clock class="w-4 h-4" />
+							</div>
+							<div class="slots-header-content">
+								<h4 class="slots-header-title">No Available Times</h4>
+								<p class="slots-header-date">{new Date(activeDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+							</div>
 						</div>
 					</div>
-				</div>
 				<p class="no-slots-message">No time slots available for this date.</p>
 			</div>
 		{/if}
@@ -468,7 +509,13 @@
 		gap: 0;
 	}
 
-	@media (min-width: 768px) {
+	/* Keep single column layout in booking widget to prevent overflow */
+	.booking-calendar.in-widget .calendar-content {
+		grid-template-columns: 1fr !important;
+	}
+
+	/* Two-column layout only for standalone calendar on wide screens */
+	@media (min-width: 1200px) {
 		.calendar-content {
 			grid-template-columns: 1fr 1fr;
 		}
@@ -554,13 +601,13 @@
 	.day-button--has-slots:hover {
 		background: var(--color-primary-50);
 		color: var(--color-primary-700);
-		transform: scale(1.02);
+		box-shadow: 0 0 0 2px var(--color-primary-200) inset;
 	}
 
 	.day-button--hovered {
 		background: var(--color-primary-100) !important;
 		color: var(--color-primary-800) !important;
-		transform: scale(1.02);
+		box-shadow: 0 0 0 2px var(--color-primary-200) inset;
 		z-index: 1;
 	}
 
@@ -570,7 +617,6 @@
 		font-weight: 600;
 		z-index: 2;
 		box-shadow: inset 0 0 0 2px var(--color-primary-700);
-		transform: scale(1.02);
 	}
 
 	.day-button--selected:hover {
@@ -623,17 +669,31 @@
 	/* Slots section */
 	.slots-section {
 		padding: 1rem;
-		border-left: 1px solid var(--border-primary);
+		border-top: 1px solid var(--border-primary);
 		background: var(--bg-secondary);
-		max-height: 400px;
+		max-height: 300px;
 		overflow-y: auto;
 		min-width: 0;
+		animation: fadeIn 0.2s ease-out;
+	}
+	
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
-	@media (max-width: 767px) {
-		.slots-section {
-			border-left: none;
-			border-top: 1px solid var(--border-primary);
+	/* Side-by-side layout only on very wide screens */
+	@media (min-width: 1200px) {
+		.booking-calendar:not(.in-widget) .slots-section {
+			border-top: none;
+			border-left: 1px solid var(--border-primary);
+			max-height: 400px;
 		}
 	}
 
@@ -733,7 +793,7 @@
 		.slot-button:hover {
 			background: var(--bg-tertiary);
 			border-color: var(--border-secondary);
-			transform: translateY(-1px);
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 		}
 	}
 

@@ -2,21 +2,21 @@
 	const timelineEvents = [
 		{
 			date: 'August 2025',
-			title: 'Beta Applications Open',
-			description: 'Accepting 50 tour guides for early access',
+			title: 'Beta 1 Launch',
+			description: '50 tour guides selected for initial testing (1 year free + 30% lifetime discount)',
 			status: 'past'
 		},
 		{
-			date: 'September 2025',
-			title: 'Beta Testing Begins',
-			description: 'Core functionality testing with selected guides',
-			status: 'active'
+			date: 'Sept-Oct 2025',
+			title: 'Beta 1 Testing Phase',
+			description: 'Core functionality testing, feedback collection, and platform improvements',
+			status: 'past'
 		},
 		{
 			date: 'November 2025',
-			title: 'Expanded Beta',
-			description: 'Opening registration to more users & enhanced features',
-			status: 'upcoming'
+			title: 'Beta 2 Now Open',
+			description: 'Final 100 spots available (6 months free + 20% lifetime discount)',
+			status: 'active'
 		},
 		{
 			date: 'March 2026',

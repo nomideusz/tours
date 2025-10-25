@@ -301,7 +301,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="booking-page">
+	<div class="booking-container">
 		{#if isLoading}
 			<LoadingState />
 		{:else if showError && !tour}
@@ -312,47 +313,174 @@
 		{:else if showNotFound && !tour}
 			<TourNotFound />
 		{:else if tour}
-			<!-- Main Content Container -->
-			<div class="max-w-4xl mx-auto">
-				<TourHeroSection 
-					{tour} 
-					tourGuide={tourOwner}
-					imageUrl={imageUrl || undefined}
-					{tourCoordinates}
-					googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
-				/>
-				
-				<!-- Tour Details -->
-				<TourDetailsTabs {tour} />
-				
-				<!-- Booking Widget (Full Width, includes inline weather) -->
-				<div class="mt-8">
-					<BookingWidget
-						{tour}
-						{tourOwner}
-						{allTimeSlots}
-						{hasRealTimeSlots}
-						{form}
-						bind:selectedTimeSlot
-						bind:participants
-						bind:adultParticipants
-						bind:childParticipants
-						bind:participantCounts
-						bind:isPrivateTour
-						bind:selectedAddonIds
-						bind:customerName
-						bind:customerEmail
-						bind:customerPhone
-						bind:specialRequests
-						bind:error
-						bind:showSuccess
-						onSlotSelect={handleSlotSelect}
-						{totalParticipants}
-						{priceCalculation}
+			<!-- Two-Column Layout with Better Proportions -->
+			<div class="booking-layout">
+				<!-- Left Column: Photos & Details -->
+				<div class="tour-content">
+					<TourHeroSection 
+						{tour} 
+						tourGuide={tourOwner}
+						imageUrl={imageUrl || undefined}
 						{tourCoordinates}
+						googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
 					/>
+					
+					<!-- Tour Details with Improved Spacing -->
+					<div class="tour-details-section">
+						<TourDetailsTabs {tour} />
+					</div>
+				</div>
+				
+				<!-- Right Column: Wider Booking Widget -->
+				<div class="booking-column">
+					<div class="booking-widget-sticky">
+						<BookingWidget
+							{tour}
+							{tourOwner}
+							{allTimeSlots}
+							{hasRealTimeSlots}
+							{form}
+							bind:selectedTimeSlot
+							bind:participants
+							bind:adultParticipants
+							bind:childParticipants
+							bind:participantCounts
+							bind:isPrivateTour
+							bind:selectedAddonIds
+							bind:customerName
+							bind:customerEmail
+							bind:customerPhone
+							bind:specialRequests
+							bind:error
+							bind:showSuccess
+							onSlotSelect={handleSlotSelect}
+							{totalParticipants}
+							{priceCalculation}
+							{tourCoordinates}
+						/>
+					</div>
 				</div>
 			</div>
 		{/if}
+	</div>
 </div>
+
+<style>
+	.booking-page {
+		min-height: 100vh;
+		background: var(--bg-primary);
+	}
+	
+	.booking-container {
+		max-width: 1536px;
+		margin: 0 auto;
+		padding: 2rem 1.5rem;
+	}
+	
+	@media (min-width: 640px) {
+		.booking-container {
+			padding: 2rem 2rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.booking-container {
+			padding: 3rem 3rem 3rem 3rem;
+		}
+	}
+	
+	.booking-layout {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+	}
+	
+	/* Wider booking widget with better proportions - 3:2 ratio */
+	@media (min-width: 1280px) {
+		.booking-layout {
+			grid-template-columns: 3fr 2fr;
+			gap: 3rem;
+			align-items: start;
+		}
+		
+		.booking-column {
+			max-width: 600px; /* Much wider than before (was 500px) */
+		}
+	}
+	
+	/* Extra large screens - even more balanced */
+	@media (min-width: 1536px) {
+		.booking-layout {
+			grid-template-columns: 5fr 3fr;
+			gap: 4rem;
+		}
+		
+		.booking-column {
+			max-width: 700px;
+		}
+	}
+	
+	.tour-content {
+		min-width: 0;
+	}
+	
+	.tour-details-section {
+		margin-top: 3rem;
+	}
+	
+	@media (min-width: 768px) {
+		.tour-details-section {
+			margin-top: 4rem;
+		}
+	}
+	
+	.booking-column {
+		min-width: 0;
+		width: 100%;
+	}
+	
+	/* Sticky booking widget on desktop - NO SCROLLBAR */
+	@media (min-width: 1280px) {
+		.booking-widget-sticky {
+			position: sticky;
+			top: 2rem;
+		}
+	}
+	
+	/* Mobile-first approach: booking widget comes after content */
+	@media (max-width: 1279px) {
+		.booking-layout {
+			display: flex;
+			flex-direction: column;
+		}
+		
+		.tour-content {
+			order: 1;
+		}
+		
+		.booking-column {
+			order: 2;
+			margin-top: 2rem;
+		}
+	}
+	
+	/* Mobile experience improvements */
+	@media (max-width: 640px) {
+		.booking-container {
+			padding: 1.5rem 1rem;
+		}
+		
+		.booking-layout {
+			gap: 1.5rem;
+		}
+		
+		.booking-column {
+			margin-top: 1.5rem;
+		}
+		
+		.tour-details-section {
+			margin-top: 2rem;
+		}
+	}
+</style>
 

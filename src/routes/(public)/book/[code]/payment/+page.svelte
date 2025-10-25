@@ -315,9 +315,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="min-h-screen" style="background: var(--bg-secondary);">
-	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-		<div class="max-w-4xl mx-auto">
+<div class="payment-page">
+	<div class="payment-container">
+		<div class="content-wrapper">
 			<!-- Back button -->
 			<a
 				href="/book/{(data.qrCode as any).code}"
@@ -524,4 +524,218 @@
 			</div>
 		</div>
 	</div>
-</div> 
+</div>
+
+<style>
+	.payment-page {
+		min-height: 100vh;
+		background: var(--bg-primary);
+	}
+	
+	.payment-container {
+		max-width: 1400px;
+		margin: 0 auto;
+		padding: 2rem 1rem;
+	}
+	
+	@media (min-width: 640px) {
+		.payment-container {
+			padding: 2rem 2rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.payment-container {
+			padding: 3rem 3rem;
+		}
+	}
+	
+	.content-wrapper {
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+	
+	/* Grid layout */
+	:global(.payment-page .grid) {
+		display: grid;
+		gap: 2rem;
+		grid-template-columns: 1fr;
+	}
+	
+	@media (min-width: 1024px) {
+		:global(.payment-page .grid) {
+			grid-template-columns: repeat(3, 1fr);
+			gap: 3rem;
+		}
+		
+		:global(.payment-page .lg\\:col-span-1) {
+			grid-column: span 1;
+		}
+		
+		:global(.payment-page .lg\\:col-span-2) {
+			grid-column: span 2;
+		}
+	}
+	
+	/* Card styling */
+	:global(.payment-page .rounded-xl) {
+		background: var(--bg-primary);
+		border-radius: 1.25rem;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+		border: 1px solid var(--border-primary);
+		overflow: hidden;
+	}
+	
+	/* Icon wrapper */
+	:global(.icon-wrapper-primary) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-primary-100);
+		border-radius: 0.75rem;
+		flex-shrink: 0;
+	}
+	
+	:global(.dark .icon-wrapper-primary) {
+		background: var(--color-primary-900);
+	}
+	
+	:global(.icon-wrapper-primary svg) {
+		color: var(--color-primary-600);
+	}
+	
+	/* Alerts */
+	:global(.alert-success) {
+		display: flex;
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: 0.75rem;
+		background: var(--color-success-50);
+		border: 1px solid var(--color-success-200);
+		color: var(--color-success-800);
+	}
+	
+	:global(.alert-error) {
+		display: flex;
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: 0.75rem;
+		background: var(--color-danger-50);
+		border: 1px solid var(--color-danger-200);
+		color: var(--color-danger-800);
+	}
+	
+	:global(.info-box) {
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+	}
+	
+	/* Icon colors */
+	:global(.icon-primary) {
+		color: var(--color-primary-600);
+	}
+	
+	:global(.icon-success) {
+		color: var(--color-success-600);
+	}
+	
+	:global(.icon-danger) {
+		color: var(--color-danger-600);
+	}
+	
+	/* Button enhancements */
+	:global(.button--large) {
+		padding: 1rem 2rem;
+		font-size: 1rem;
+		font-weight: 600;
+		border-radius: 0.75rem;
+		min-height: 3.5rem;
+	}
+	
+	:global(.button--gap) {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	/* Sticky summary on desktop */
+	@media (min-width: 1024px) {
+		:global(.payment-page .lg\\:sticky) {
+			position: sticky;
+			top: 2rem;
+		}
+	}
+	
+	/* Spacing improvements */
+	:global(.payment-page .space-y-4 > * + *) {
+		margin-top: 1rem;
+	}
+	
+	:global(.payment-page .space-y-1 > * + *) {
+		margin-top: 0.25rem;
+	}
+	
+	/* Mobile responsiveness */
+	@media (max-width: 640px) {
+		.payment-container {
+			padding: 1.5rem 1rem;
+		}
+		
+		:global(.payment-page .rounded-xl) {
+			border-radius: 1rem;
+		}
+		
+		:global(.payment-page .p-4) {
+			padding: 1rem !important;
+		}
+		
+		:global(.payment-page .sm\\:p-6) {
+			padding: 1.25rem !important;
+		}
+		
+		:global(.button--large) {
+			padding: 0.875rem 1.5rem;
+			font-size: 0.9375rem;
+			min-height: 3rem;
+		}
+	}
+	
+	/* Improve spacing between sections */
+	:global(.payment-page .border-b) {
+		border-bottom: 1px solid var(--border-primary);
+		margin-bottom: 0;
+	}
+	
+	:global(.payment-page .border-t) {
+		border-top: 1px solid var(--border-primary);
+	}
+	
+	/* Payment element container */
+	:global(#payment-element) {
+		margin: 0;
+	}
+	
+	/* Loading spinner animation */
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	
+	:global(.animate-spin) {
+		animation: spin 1s linear infinite;
+	}
+	
+	/* Pointer events control */
+	:global(.pointer-events-none) {
+		pointer-events: none;
+	}
+	
+	/* Opacity */
+	:global(.opacity-50) {
+		opacity: 0.5;
+	}
+</style> 

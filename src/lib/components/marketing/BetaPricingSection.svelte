@@ -36,12 +36,15 @@
 
 <!-- Simple Header -->
 <div class="section-header">
-	<BetaBadge text="Free During Beta" icon={Sparkles} variant="large" class="mb-6" />
+	<BetaBadge text="Beta 2 - Limited Spots" icon={Sparkles} variant="large" class="mb-6" />
 	<h2 class="section-title">
-		Simple, Transparent Pricing
+		Beta 2 Final Spots
 	</h2>
 	<p class="section-subtitle">
-		No booking commissions, ever. Just pick a plan and grow your business.
+		6 months free + 20% off forever. Limited to 100 guides only.
+	</p>
+	<p class="beta-2-urgency">
+		<strong>Last chance before public launch.</strong> After Beta 2 closes, everyone pays full price.
 	</p>
 </div>
 
@@ -66,7 +69,7 @@
 <!-- Simplified Pricing Cards -->
 <div class="pricing-container">
 	<div class="pricing-grid">
-		{#each PRICING_PLANS.filter(p => p.id !== 'agency') as plan}
+		{#each PRICING_PLANS.filter(p => p.id !== 'agency' && p.id !== 'free') as plan}
 			{@const pricing = getPlanPricing(plan, isYearly)}
 			{@const keyFeatures = plan.features.filter(f => f.included).slice(0, 4)}
 			<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}">
@@ -80,21 +83,17 @@
 					<p class="plan-description">{plan.description}</p>
 				</div>
 				
-				<!-- Simple Pricing Display -->
+				<!-- Beta 2 Pricing Display -->
 				<div class="pricing-display">
-					{#if plan.id !== 'free'}
-						<div class="price-main">
-							<span class="price-value">€{formatPrice(pricing.regular)}<span class="price-period">/mo</span></span>
-						</div>
-						{#if isYearly}
-							<div class="price-note">Billed annually</div>
-						{/if}
-					{:else}
-						<div class="price-main">
-							<span class="price-value">FREE</span>
-						</div>
-						<div class="price-note">Forever</div>
-					{/if}
+					<div class="price-strikethrough">
+						<span>€{formatPrice(pricing.regular)}</span>
+					</div>
+					<div class="price-main">
+						<span class="price-value">€{formatPrice(Math.round(pricing.regular * 0.8 * 100) / 100)}<span class="price-period">/mo</span></span>
+					</div>
+					<div class="price-note beta-2-badge">
+						6 months FREE + 20% off forever
+					</div>
 				</div>
 				
 				<!-- Key Features - Simplified -->
@@ -119,23 +118,23 @@
 	</div>
 </div>
 
-<!-- Simple CTA -->
+<!-- Beta 2 CTA -->
 <div class="cta-section">
 	<div class="cta-content">
 		<h3 class="cta-title">
-			Simple Pricing. No Surprises.
+			Limited Spots Available
 		</h3>
 		<p class="cta-description">
-			Join the waitlist to be notified when we launch publicly in Q1 2026.
+			<strong>Only 100 spots remaining</strong> for Beta 2. Lock in 20% lifetime discount before public launch.
 		</p>
 		<div class="cta-actions">
 			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
-				Join Early Access Waitlist
+				Claim Your Beta 2 Spot
 				<ArrowRight class="w-4 h-4" />
 			</button>
 		</div>
 		<p class="cta-note">
-			✨ Be the first to know when we're ready for you
+			✓ No credit card required  ✓ Cancel anytime during trial  ✓ Full access to all features
 		</p>
 	</div>
 </div>
@@ -163,6 +162,17 @@
 		color: var(--text-secondary);
 		max-width: 42rem;
 		margin: 0 auto;
+	}
+	
+	.beta-2-urgency {
+		font-size: 0.9375rem;
+		color: var(--text-primary);
+		margin-top: 1rem;
+		padding: 0.75rem 1.5rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		display: inline-block;
 	}
 	
 	/* Pricing Toggle */
@@ -216,13 +226,13 @@
 		margin: 0 auto;
 	}
 	
-	/* Pricing Grid - Centered for 3 plans */
+	/* Pricing Grid - Centered for 2 plans (Beta 2: no Free tier) */
 	.pricing-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(2, 1fr);
 		gap: 1.5rem;
 		margin-bottom: 3rem;
-		max-width: 900px;
+		max-width: 700px;
 		margin-left: auto;
 		margin-right: auto;
 	}
@@ -298,8 +308,18 @@
 		text-align: center;
 	}
 	
-	.price-main {
+	.price-strikethrough {
 		margin-bottom: 0.25rem;
+	}
+	
+	.price-strikethrough span {
+		font-size: 1rem;
+		color: var(--text-tertiary);
+		text-decoration: line-through;
+	}
+	
+	.price-main {
+		margin-bottom: 0.5rem;
 	}
 	
 	.price-value {
@@ -317,6 +337,17 @@
 	.price-note {
 		font-size: 0.75rem;
 		color: var(--text-tertiary);
+	}
+	
+	.beta-2-badge {
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--primary);
+		background: var(--bg-secondary);
+		padding: 0.375rem 0.75rem;
+		border-radius: var(--radius-full);
+		display: inline-block;
+		margin-top: 0.25rem;
 	}
 	
 	/* Feature List */

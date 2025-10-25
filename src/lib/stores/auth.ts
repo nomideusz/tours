@@ -36,6 +36,7 @@ export interface AuthUser {
 	subscriptionFreeUntil?: string;
 	isLifetimeDiscount?: boolean;
 	earlyAccessMember?: boolean;
+	betaGroup?: string | null; // 'beta_1', 'beta_2', 'early_access', or null
 	deletedAt?: Date | null;
 }
 

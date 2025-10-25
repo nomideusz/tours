@@ -3,15 +3,14 @@
 	import { goto } from '$app/navigation';
 	import { createPublicToursQuery } from '$lib/queries/public-queries.js';
 
-	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
-	import { generateBookingURL } from '$lib/utils/qr-generation.js';
+	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
+	import Pagination from '$lib/components/ui/Pagination.svelte';
+	import TourCard from '$lib/components/TourCard.svelte';
 	
 	// Icons
 	import Search from 'lucide-svelte/icons/search';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Calendar from 'lucide-svelte/icons/calendar';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Users from 'lucide-svelte/icons/users';
 	import Filter from 'lucide-svelte/icons/filter';
 	import X from 'lucide-svelte/icons/x';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
@@ -27,8 +26,13 @@
 	
 	// Local state
 	let showFilters = $state(false);
-	let searchInput = $state(searchQuery);
+	let searchInput = $state('');
 	let searchTimeout: NodeJS.Timeout | null = null;
+	
+	// Sync searchInput with searchQuery from URL
+	$effect(() => {
+		searchInput = searchQuery;
+	});
 	
 	// Build query params
 	let queryParams = $derived({
@@ -37,7 +41,7 @@
 		category: selectedCategory,
 		sortBy,
 		page: currentPage,
-		limit: 12
+		limit: 12 // Auto-fill grid, 3-4 per row on wide screens
 	});
 	
 	// TanStack Query
@@ -170,31 +174,6 @@
 		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 	
-	// Format duration
-	function formatDuration(minutes: number) {
-		const hours = Math.floor(minutes / 60);
-		const mins = minutes % 60;
-		return hours > 0 ? `${hours}h ${mins > 0 ? ` ${mins}m` : ''}` : `${mins}m`;
-	}
-	
-	// Format next slot date
-	function formatNextSlot(dateString: string | null) {
-		if (!dateString) return null;
-		
-		const date = new Date(dateString);
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		
-		if (date.toDateString() === today.toDateString()) return 'Today';
-		if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-		
-		return date.toLocaleDateString('en-US', { 
-			month: 'short', 
-			day: 'numeric' 
-		});
-	}
-	
 	// Active filters count
 	let activeFiltersCount = $derived.by(() => {
 		let count = 0;
@@ -205,8 +184,14 @@
 		return count;
 	});
 	
-	// Track avatar load errors
-	let avatarErrors = $state(new Set());
+	// Watch for filter changes and update URL
+	$effect(() => {
+		// Use sortBy, selectedLocation, selectedCategory in this effect
+		// so it runs when they change
+		if (sortBy || selectedLocation || selectedCategory) {
+			updateUrl();
+		}
+	});
 </script>
 
 
@@ -215,214 +200,148 @@
 	<meta name="description" content="Discover amazing tours and experiences. Browse and book directly with local tour operators." />
 </svelte:head>
 
-<div class="min-h-screen" style="background: var(--bg-secondary);">
+<div class="subtle-retro-section min-h-screen">
 	<!-- Hero Section -->
-	<div class="relative py-12 sm:py-16" style="background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);">
+	<div class="explore-hero">
 		<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
-			<div class="text-center mb-8">
-				<h1 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--text-primary);">
+			<div class="text-center">
+				<h1 class="explore-title">
 					Discover Amazing Tours
 				</h1>
-				<p class="text-lg" style="color: var(--text-secondary);">
-					Book directly with local tour operators. No booking fees, ever.
+				<p class="explore-subtitle">
+					Book directly with local tour operators. Zero commission, ever.
 				</p>
-			</div>
-			
-			<!-- Search Bar -->
-			<div class="max-w-2xl mx-auto">
-				<div class="flex items-center gap-3 rounded-xl px-4 py-3 shadow-sm search-container">
-					<Search class="h-5 w-5 flex-shrink-0 search-icon" />
-					<input
-						type="search"
-						value={searchInput}
-						oninput={(e) => handleSearchInput(e.currentTarget.value)}
-						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-						placeholder="Search tours, destinations, or activities..."
-						class="flex-1 bg-transparent border-0 outline-0 search-no-cancel text-base"
-					/>
-					{#if searchInput}
-						<button
-							type="button"
-							onclick={clearSearch}
-							class="p-1.5 rounded-md transition-colors flex-shrink-0 clear-button"
-							aria-label="Clear search"
-						>
-							<X class="h-4 w-4" />
-						</button>
-					{/if}
-					<button
-						type="button"
-						onclick={handleSearch}
-						class="button-primary button--small"
-					>
-						Search
-					</button>
-				</div>
 			</div>
 		</div>
 	</div>
 	
 	<!-- Main Content -->
 	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-		<div class="flex flex-col lg:flex-row gap-8">
-			<!-- Filters Sidebar -->
-			<aside class="lg:w-64 flex-shrink-0">
-				<!-- Mobile Filter Toggle -->
-				<button
-					onclick={() => showFilters = !showFilters}
-					class="lg:hidden button-secondary button--gap w-full mb-4"
-				>
-					<Filter class="h-4 w-4" />
-					Filters
-					{#if activeFiltersCount > 0}
-						<span class="ml-auto px-2 py-0.5 text-xs rounded-full" style="background: var(--bg-accent); color: var(--text-on-accent);">
-							{activeFiltersCount}
-						</span>
-					{/if}
-				</button>
-				
-				<!-- Filters Container -->
-				<div class="space-y-6 {showFilters ? 'block' : 'hidden'} lg:block">
-					<!-- Active Filters -->
-					{#if activeFiltersCount > 0}
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium" style="color: var(--text-primary);">Active Filters</span>
-							<button
-								onclick={clearFilters}
-								class="text-sm cursor-pointer hover:underline transition-all" style="color: var(--text-accent);"
-							>
-								Clear all
-							</button>
-						</div>
-						
-						<!-- Active Filter Tags -->
-						<div class="flex flex-wrap gap-2">
-							{#if selectedLocation}
-								<div class="flex items-center gap-1 px-3 py-1 rounded-full text-sm" style="background: var(--bg-secondary); color: var(--text-primary);">
-									<span>Location: {selectedLocation}</span>
-									<button onclick={clearLocation} class="cursor-pointer p-0.5 hover:bg-opacity-50 rounded-sm transition-colors" aria-label="Clear location filter">
-										<X class="h-3 w-3" style="color: var(--text-secondary);" />
-									</button>
-								</div>
-							{/if}
-							{#if selectedCategory}
-								<div class="flex items-center gap-1 px-3 py-1 rounded-full text-sm" style="background: var(--bg-secondary); color: var(--text-primary);">
-									<span>Category: {selectedCategory}</span>
-									<button onclick={clearCategory} class="cursor-pointer p-0.5 hover:bg-opacity-50 rounded-sm transition-colors" aria-label="Clear category filter">
-										<X class="h-3 w-3" style="color: var(--text-secondary);" />
-									</button>
-								</div>
-							{/if}
-							{#if sortBy !== 'popular'}
-								<div class="flex items-center gap-1 px-3 py-1 rounded-full text-sm" style="background: var(--bg-secondary); color: var(--text-primary);">
-									<span>Sort: {sortBy === 'newest' ? 'Newest First' : sortBy === 'oldest' ? 'Oldest First' : sortBy === 'priceAsc' ? 'Price: Low to High' : 'Price: High to Low'}</span>
-									<button onclick={clearSort} class="cursor-pointer p-0.5 hover:bg-opacity-50 rounded-sm transition-colors" aria-label="Clear sort filter">
-										<X class="h-3 w-3" style="color: var(--text-secondary);" />
-									</button>
-								</div>
-							{/if}
-						</div>
-					{/if}
-					
-					<!-- Sort By -->
-					<div>
-						<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
-							Sort By
-						</label>
-						<select
-							value={sortBy}
-							onchange={(e) => handleSortChange(e.currentTarget.value)}
-							class="form-select w-full cursor-pointer"
+		<!-- Filters Bar -->
+		<div class="filters-bar">
+			<!-- Filter Chips -->
+			<div class="filters-container">
+				<!-- Search -->
+				<div class="search-filter">
+					<Search class="w-4 h-4 filter-icon" />
+					<input
+						type="search"
+						value={searchInput}
+						oninput={(e) => handleSearchInput(e.currentTarget.value)}
+						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
+						placeholder="Search tours..."
+						class="search-input search-no-cancel"
+					/>
+					{#if searchInput}
+						<button
+							type="button"
+							onclick={clearSearch}
+							class="clear-search-btn"
+							aria-label="Clear search"
 						>
-							<option value="popular">Most Popular</option>
-							<option value="newest">Newest First</option>
-							<option value="oldest">Oldest First</option>
-							<option value="priceAsc">Price: Low to High</option>
-							<option value="priceDesc">Price: High to Low</option>
-						</select>
-					</div>
-					
-					<!-- Location Filter -->
-					{#if filters.locations.length > 0}
-						<div>
-							<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
-								Location
-							</label>
-							<select
-								value={selectedLocation}
-								onchange={(e) => handleLocationChange(e.currentTarget.value)}
-								class="form-select w-full cursor-pointer"
-							>
-								<option value="">All Locations</option>
-								{#each filters.locations as location}
-									<option value={location}>{location}</option>
-								{/each}
-							</select>
-							<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-								Locations are grouped by city/region for easier browsing
-							</p>
-						</div>
+							<X class="h-3.5 w-3.5" />
+						</button>
 					{/if}
-					
-					<!-- Category Filter -->
-					{#if filters.categories.length > 0}
-						<div>
-							<label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
-								Category
-							</label>
-							<select
-								value={selectedCategory}
-								onchange={(e) => handleCategoryChange(e.currentTarget.value)}
-								class="form-select w-full cursor-pointer"
-							>
-								<option value="">All Categories</option>
-								{#each filters.categories as category}
-									<option value={category}>{formatCategoryName(category)}</option>
-								{/each}
-							</select>
-						</div>
-					{/if}
-				</div>
-			</aside>
-			
-			<!-- Tours Grid -->
-			<div class="flex-1">
-				<!-- Results Header -->
-				<div class="flex items-center justify-between mb-6">
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">
-						{#if isLoading}
-							Loading tours...
-						{:else}
-							{pagination.total} tour{pagination.total === 1 ? '' : 's'} found
-						{/if}
-					</h2>
 				</div>
 				
-				<!-- Loading State -->
+			<!-- Sort By -->
+			<CustomSelect
+				bind:value={sortBy}
+				options={[
+					{ value: 'popular', label: 'Most Popular' },
+					{ value: 'newest', label: 'Newest First' },
+					{ value: 'oldest', label: 'Oldest First' },
+					{ value: 'priceAsc', label: 'Price: Low to High' },
+					{ value: 'priceDesc', label: 'Price: High to Low' }
+				]}
+				icon={ChevronDown}
+				onchange={handleSortChange}
+			/>
+			
+			<!-- Location Filter -->
+			{#if filters.locations.length > 0}
+				<CustomSelect
+					bind:value={selectedLocation}
+					options={[
+						{ value: '', label: 'All Locations' },
+						...filters.locations.map((loc: string) => ({ value: loc, label: loc }))
+					]}
+					icon={MapPin}
+					placeholder="All Locations"
+					onchange={handleLocationChange}
+				/>
+			{/if}
+			
+			<!-- Category Filter -->
+			{#if filters.categories.length > 0}
+				<CustomSelect
+					bind:value={selectedCategory}
+					options={[
+						{ value: '', label: 'All Categories' },
+						...filters.categories.map((cat: string) => ({ value: cat, label: formatCategoryName(cat) }))
+					]}
+					icon={Filter}
+					placeholder="All Categories"
+					onchange={handleCategoryChange}
+				/>
+			{/if}
+			</div>
+			
+			<!-- Active Filters & Clear -->
+			{#if activeFiltersCount > 0}
+				<button
+					onclick={clearFilters}
+					class="clear-filters-btn"
+				>
+					<X class="w-4 h-4" />
+					Clear filters ({activeFiltersCount})
+				</button>
+			{/if}
+		</div>
+		
+		<!-- Tours Grid -->
+		<div class="tours-section">
+			<!-- Results Count -->
+			<div class="results-count">
 				{#if isLoading}
-					<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+					<Loader2 class="w-4 h-4 animate-spin" />
+					<span>Loading tours...</span>
+				{:else}
+					<span>{pagination.total} tour{pagination.total === 1 ? '' : 's'} found</span>
+				{/if}
+			</div>
+			
+			<!-- Loading State -->
+			{#if isLoading}
+					<div class="tours-grid">
 						{#each Array(6) as _}
-							<div class="rounded-xl animate-pulse" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-								<div class="aspect-[16/10]" style="background: var(--bg-secondary);"></div>
-								<div class="p-4 space-y-3">
-									<div class="h-5 rounded" style="background: var(--bg-secondary);"></div>
-									<div class="h-4 rounded w-3/4" style="background: var(--bg-secondary);"></div>
-									<div class="h-4 rounded w-1/2" style="background: var(--bg-secondary);"></div>
+							<div class="tour-card-modern animate-pulse">
+								<div class="tour-card-image-wrapper">
+									<div class="tour-card-placeholder" style="background: var(--bg-secondary);"></div>
+								</div>
+								<div class="tour-card-content">
+									<div class="h-8 rounded w-2/3" style="background: var(--bg-secondary);"></div>
+									<div class="h-5 rounded w-full" style="background: var(--bg-secondary);"></div>
+									<div class="h-5 rounded w-3/4" style="background: var(--bg-secondary);"></div>
+									<div class="flex gap-2 mt-2">
+										<div class="h-6 rounded-full w-20" style="background: var(--bg-secondary);"></div>
+										<div class="h-6 rounded-full w-20" style="background: var(--bg-secondary);"></div>
+									</div>
 								</div>
 							</div>
 						{/each}
-					</div>
-				
-				<!-- Error State -->
-				{:else if isError}
+				</div>
+			
+			<!-- Error State -->
+			{:else if isError}
 					<div class="rounded-xl p-8 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<AlertCircle class="h-12 w-12 mx-auto mb-4" style="color: var(--text-error);" />
 						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Failed to load tours</h3>
 						<p style="color: var(--text-secondary);">Please try again later.</p>
-					</div>
-				
-				<!-- Empty State -->
-				{:else if tours.length === 0}
+				</div>
+			
+			<!-- Empty State -->
+			{:else if tours.length === 0}
 					<div class="rounded-xl p-12 text-center" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 						<MapPin class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
 						<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No tours found</h3>
@@ -436,280 +355,219 @@
 						{/if}
 					</div>
 				
-				<!-- Tours Grid -->
-				{:else}
-					<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-						{#each tours as tour}
-							<div 
-								class="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"
-								style="background: var(--bg-primary); border: 1px solid var(--border-primary);"
-								onclick={() => {
-									console.log('Tour clicked:', tour.name, 'QR Code:', tour.qrCode);
-									if (tour.qrCode) {
-										goto(`/book/${tour.qrCode}`);
-									} else {
-										console.error('No QR code for tour:', tour.name);
-									}
-								}}
-								onkeydown={(e) => {
-									if (e.key === 'Enter' && tour.qrCode) {
-										goto(`/book/${tour.qrCode}`);
-									}
-								}}
-								role="button"
-								tabindex="0"
-								aria-label="View tour: {tour.name}"
-							>
-								<!-- Tour Image -->
-								{#if tour.images && tour.images.length > 0}
-									<div class="aspect-[16/10] overflow-hidden" style="background: var(--bg-secondary);">
-										<img 
-											src="/api/images/{tour.id}/{tour.images[0]}?size=medium"
-											alt={tour.name}
-											class="w-full h-full object-cover transition-transform group-hover:scale-105"
-											loading="lazy"
-										/>
-									</div>
-								{:else}
-									<div class="aspect-[16/10] flex items-center justify-center" style="background: var(--bg-tertiary);">
-										<MapPin class="w-12 h-12" style="color: var(--text-tertiary);" />
-									</div>
-								{/if}
-								
-								<!-- Main Content -->
-								<div class="p-4 flex-grow flex flex-col">
-									<!-- Tour Name -->
-									<h3 class="font-semibold text-lg mb-2 line-clamp-1" style="color: var(--text-primary);">
-										{tour.name}
-									</h3>
-									
-									<!-- Location -->
-									{#if tour.location}
-										<div class="flex items-center gap-1.5 mb-3 text-sm" style="color: var(--text-secondary);">
-											<MapPin class="w-4 h-4 flex-shrink-0" />
-											<span class="line-clamp-1">{tour.location}</span>
-										</div>
-									{/if}
-
-									<!-- Categories -->
-									{#if tour.categories && tour.categories.length > 0}
-										<div class="flex flex-wrap gap-1 mb-3">
-											{#each tour.categories.slice(0, 3) as category}
-												<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
-													style="
-														background: var(--color-primary-50);
-														border-color: var(--color-primary-200);
-														color: var(--color-primary-700);
-													"
-												>
-													{formatCategoryName(category)}
-												</span>
-											{/each}
-											{#if tour.categories.length > 3}
-												<span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border"
-													style="
-														background: var(--bg-secondary);
-														border-color: var(--border-primary);
-														color: var(--text-tertiary);
-													"
-												>
-													+{tour.categories.length - 3}
-												</span>
-											{/if}
-										</div>
-									{/if}
-									
-									<!-- Tour Info -->
-									<div class="mb-4">
-										<!-- Duration -->
-										<div class="flex items-center gap-1.5 text-sm" style="color: var(--text-secondary);">
-											<Clock class="w-4 h-4" />
-											<span>{formatDuration(tour.duration)}</span>
-										</div>
-									</div>
-									
-									<!-- Price and Availability -->
-									<div class="flex items-end justify-between flex-grow">
-										<div>
-											{#if tour.pricingModel === 'private_tour'}
-												<!-- Private Tour Pricing -->
-												<p class="text-2xl font-bold" style="color: var(--text-primary);">
-													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-												</p>
-												<p class="text-sm" style="color: var(--text-secondary);">
-													flat rate
-												</p>
-											{:else if tour.pricingModel === 'participant_categories'}
-												<!-- Participant Categories Pricing -->
-												<p class="text-2xl font-bold" style="color: var(--text-primary);">
-													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-												</p>
-												<p class="text-sm" style="color: var(--text-secondary);">
-													per person
-												</p>
-											{:else if tour.pricingModel === 'group_tiers'}
-												<!-- Group Tiers Pricing -->
-												<p class="text-2xl font-bold" style="color: var(--text-primary);">
-													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-												</p>
-												<p class="text-sm" style="color: var(--text-secondary);">
-													group pricing
-												</p>
-											{:else if tour.pricingModel === 'adult_child' && tour.pricingTiers?.adult}
-												<!-- Adult/Child Pricing -->
-												<div class="flex items-baseline gap-2">
-													<div>
-														<p class="text-2xl font-bold" style="color: var(--text-primary);">
-															{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-														</p>
-														<p class="text-xs" style="color: var(--text-secondary);">Adult</p>
-													</div>
-													{#if tour.pricingTiers.child !== undefined && tour.pricingTiers.child !== null}
-														<div class="ml-2">
-															<p class="text-lg font-semibold" style="color: var(--text-primary);">
-																{tour.pricingTiers.child === 0 ? 'Free' : new Intl.NumberFormat('en-US', { 
-																	style: 'currency', 
-																	currency: tour.operator.currency || 'EUR',
-																	minimumFractionDigits: 0,
-																	maximumFractionDigits: 2
-																}).format(Number(tour.pricingTiers.child))}
-															</p>
-															<p class="text-xs" style="color: var(--text-secondary);">Child (3-12)</p>
-														</div>
-													{/if}
-												</div>
-											{:else}
-												<!-- Standard Pricing (Per Person) -->
-												<p class="text-2xl font-bold" style="color: var(--text-primary);">
-													{getTourDisplayPriceFormattedWithCurrency(tour, tour.operator.currency)}
-												</p>
-												<p class="text-sm" style="color: var(--text-secondary);">
-													per person
-												</p>
-											{/if}
-										</div>
-										
-										{#if tour.availability.nextSlot}
-											<div class="text-right">
-												<p class="text-sm font-medium" style="color: var(--text-success);">
-													Next: {formatNextSlot(tour.availability.nextSlot)}
-												</p>
-												<p class="text-xs" style="color: var(--text-secondary);">
-													{tour.availability.availableSlots} time slot{tour.availability.availableSlots === 1 ? '' : 's'}
-												</p>
-											</div>
-										{:else}
-											<div class="text-right">
-												<div class="px-3 py-2 rounded-lg text-center" style="background: var(--bg-tertiary); border: 1px solid var(--border-secondary);">
-													<p class="text-sm font-medium" style="color: var(--text-tertiary);">
-														No time slots available
-													</p>
-													<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-														Check back later
-													</p>
-												</div>
-											</div>
-										{/if}
-									</div>
-								</div>
-								
-								<!-- Operator Info - Always at bottom -->
-								<div class="px-4 pb-4">
-									<div class="pt-4 flex items-center gap-2" style="border-top: 1px solid var(--border-primary);">
-										{#if tour.operator.avatar && tour.operator.avatar.trim()}
-											<img 
-												src={tour.operator.avatar.startsWith('/api/') ? tour.operator.avatar : `/api/avatars/${tour.operator.id}/${tour.operator.avatar}`}
-												alt={tour.operator.name || tour.operator.username || 'Tour operator'}
-												class="w-6 h-6 rounded-full"
-												onerror={(e) => {
-													console.log('Avatar failed to load:', tour.operator.avatar, 'for', tour.operator.name);
-													(e.currentTarget as HTMLImageElement).style.display = 'none';
-													const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-													if (fallback) fallback.style.display = 'flex';
-												}}
-											/>
-											<div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium" 
-												style="background: var(--bg-secondary); color: var(--text-secondary); display: none;">
-												{(tour.operator.name || tour.operator.username || 'Tour Operator').charAt(0).toUpperCase()}
-											</div>
-										{:else}
-											<div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium" 
-												style="background: var(--bg-secondary); color: var(--text-secondary);">
-												{(tour.operator.name || tour.operator.username || 'Tour Operator').charAt(0).toUpperCase()}
-											</div>
-										{/if}
-										{#if tour.operator.name && tour.operator.name.trim()}
-											<span class="text-sm line-clamp-1" style="color: var(--text-secondary);">
-												by {tour.operator.name}
-											</span>
-										{:else if tour.operator.username && tour.operator.username.trim()}
-											<span class="text-sm line-clamp-1" style="color: var(--text-secondary);">
-												by @{tour.operator.username}
-											</span>
-										{:else}
-											<span class="text-sm line-clamp-1" style="color: var(--text-secondary);">
-												Tour Operator
-											</span>
-										{/if}
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-					
-					<!-- Pagination -->
-					{#if pagination.totalPages > 1}
-						<div class="mt-8 flex items-center justify-center gap-2">
-							<!-- Previous -->
-							<button
-								onclick={() => goToPage(currentPage - 1)}
-								disabled={currentPage === 1}
-								class="button-secondary button--small"
-								class:opacity-50={currentPage === 1}
-								class:cursor-not-allowed={currentPage === 1}
-								class:cursor-pointer={currentPage > 1}
-							>
-								Previous
-							</button>
-							
-							<!-- Page Numbers -->
-							<div class="flex items-center gap-1">
-								{#each Array(Math.min(5, pagination.totalPages)) as _, i}
-									{@const pageNum = currentPage <= 3 ? i + 1 : currentPage + i - 2}
-									{#if pageNum > 0 && pageNum <= pagination.totalPages}
-										<button
-											onclick={() => goToPage(pageNum)}
-											class="w-10 h-10 rounded-lg text-sm font-medium transition-colors cursor-pointer
-												{pageNum === currentPage ? 'button-primary' : 'button-secondary'}"
-										>
-											{pageNum}
-										</button>
-									{/if}
-								{/each}
-							</div>
-							
-							<!-- Next -->
-							<button
-								onclick={() => goToPage(currentPage + 1)}
-								disabled={currentPage === pagination.totalPages}
-								class="button-secondary button--small"
-								class:opacity-50={currentPage === pagination.totalPages}
-								class:cursor-not-allowed={currentPage === pagination.totalPages}
-								class:cursor-pointer={currentPage < pagination.totalPages}
-							>
-								Next
-							</button>
-						</div>
-					{/if}
-				{/if}
-			</div>
+			<!-- Tours Grid -->
+			{:else}
+				<div class="tours-grid">
+					{#each tours as tour}
+						<TourCard {tour} />
+					{/each}
+				</div>
+				
+				<!-- Pagination -->
+				<Pagination
+					currentPage={currentPage}
+					totalPages={pagination.totalPages}
+					onPageChange={goToPage}
+				/>
+			{/if}
 		</div>
 	</div>
 </div> 
 
 
 <style>
-	/* Hide browser's default search input clear button */
+	/* Subtle Retro Section */
+	.subtle-retro-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.subtle-retro-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 40px,
+			rgba(0, 0, 0, 0.02) 40px,
+			rgba(0, 0, 0, 0.02) 41px
+		);
+		pointer-events: none;
+		z-index: 0;
+	}
+	
+	/* Filters Bar */
+	.filters-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1rem 1.5rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 1rem;
+		margin-bottom: 2rem;
+		flex-wrap: wrap;
+	}
+	
+	.filters-container {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		flex: 1;
+	}
+	
+	/* Search Filter */
+	.search-filter {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.625rem 1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		transition: all 0.2s ease;
+		flex: 1;
+		min-width: 200px;
+		max-width: 400px;
+		min-height: 2.5rem;
+	}
+	
+	.search-filter:focus-within {
+		border-color: var(--color-primary-400);
+		box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+	}
+	
+	.search-input {
+		flex: 1;
+		background: transparent;
+		border: none;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+		outline: none;
+		min-width: 0;
+	}
+	
+	.search-input::placeholder {
+		color: var(--text-tertiary);
+	}
+	
+	.clear-search-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		padding: 0;
+		background: transparent;
+		border: none;
+		color: var(--text-tertiary);
+		cursor: pointer;
+		border-radius: 0.25rem;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+	
+	.clear-search-btn:hover {
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+	}
+	
+	.clear-filters-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.625rem 1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		color: var(--text-secondary);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+	
+	.clear-filters-btn:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--color-primary-300);
+		color: var(--text-primary);
+	}
+	
+	/* Tours Section */
+	.tours-section {
+		position: relative;
+		z-index: 1;
+	}
+	
+	.results-count {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		margin-bottom: 1.5rem;
+	}
+	
+	/* Tours Grid - Fixed 3 columns */
+	.tours-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 2rem;
+		position: relative;
+		z-index: 1;
+	}
+	
+	@media (max-width: 1200px) {
+		.tours-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	
+	@media (max-width: 768px) {
+		.tours-grid {
+			grid-template-columns: 1fr;
+		}
+		
+		.filters-bar {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		
+		.filters-container {
+			width: 100%;
+			flex-direction: column;
+		}
+		
+		.search-filter {
+			width: 100%;
+			max-width: none;
+		}
+		
+		.filters-container :global(.custom-select) {
+			width: 100%;
+		}
+		
+		.clear-filters-btn {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+	
+	/* Search input styling */
 	.search-no-cancel::-webkit-search-cancel-button {
 		-webkit-appearance: none;
 		appearance: none;
@@ -723,101 +581,44 @@
 	.search-no-cancel::-ms-clear {
 		display: none;
 	}
-
-	/* Search container styling */
-	.search-container {
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		transition: all var(--transition-base) ease;
+	
+	/* Hero Section */
+	.explore-hero {
+		position: relative;
+		padding: 4rem 0 3rem;
+		z-index: 1;
 	}
-
-	.search-container:focus-within {
-		border-color: var(--primary);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
-	}
-
-	/* Search button now uses standard button-primary class from buttons.css */
-
-	/* Clear button styling */
-	.clear-button {
-		color: var(--text-tertiary);
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all var(--transition-base) ease;
-	}
-
-	.clear-button:hover {
-		background: var(--bg-tertiary);
-		color: var(--text-secondary);
-	}
-
-	/* Input styling */
-	.search-container input {
-		background: transparent;
+	
+	.explore-title {
+		font-size: 3.5rem;
+		font-weight: 800;
 		color: var(--text-primary);
+		margin-bottom: 1rem;
+		letter-spacing: -0.02em;
+		line-height: 1.1;
 	}
-
-	.search-container input::placeholder {
-		color: var(--text-tertiary);
-		opacity: 0.8;
-	}
-
-	.search-container input:focus {
-		outline: none;
-	}
-
-	/* Icon styling */
-	.search-container .search-icon {
+	
+	.explore-subtitle {
+		font-size: 1.375rem;
 		color: var(--text-secondary);
-		transition: color var(--transition-base) ease;
+		max-width: 48rem;
+		margin: 0 auto;
+		line-height: 1.5;
 	}
-
-	.search-container:focus-within .search-icon {
-		color: var(--primary);
+	
+	/* Mobile Responsive */
+	@media (max-width: 768px) {
+		.explore-hero {
+			padding: 3rem 0 2.5rem;
+		}
+		
+		.explore-title {
+			font-size: 2.25rem;
+		}
+		
+		.explore-subtitle {
+			font-size: 1.125rem;
+		}
 	}
-
-	/* Dark Mode Specific Overrides */
-	[data-theme="dark"] .search-container {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 
-		           inset 0 1px 0 rgba(255, 255, 255, 0.05);
-	}
-
-	[data-theme="dark"] .search-container:focus-within {
-		border-color: var(--primary);
-		background: var(--bg-primary);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), 
-		           0 2px 8px rgba(0, 0, 0, 0.4),
-		           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-	}
-
-	[data-theme="dark"] .search-container input {
-		color: var(--text-primary);
-	}
-
-	[data-theme="dark"] .search-container input::placeholder {
-		color: var(--text-tertiary);
-		opacity: 0.9;
-	}
-
-	/* Search button dark mode handled automatically by button-primary class */
-
-	[data-theme="dark"] .clear-button {
-		color: var(--text-tertiary);
-	}
-
-	[data-theme="dark"] .clear-button:hover {
-		background: rgba(255, 255, 255, 0.1);
-		color: var(--text-primary);
-	}
-
-	[data-theme="dark"] .search-container .search-icon {
-		color: var(--text-secondary);
-	}
-
-	[data-theme="dark"] .search-container:focus-within .search-icon {
-		color: var(--primary);
-	}
+	
 </style>

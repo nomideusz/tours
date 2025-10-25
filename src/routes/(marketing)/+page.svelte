@@ -1,12 +1,15 @@
 <script lang="ts">
 	// import HeroSection from '$lib/components/marketing/HeroSection.svelte';
 	import BetaHeroSection from '$lib/components/marketing/BetaHeroSection.svelte';
+	import CalculatorSection from '$lib/components/marketing/CalculatorSection.svelte';
+	import BookingDemoSection from '$lib/components/marketing/BookingDemoSection.svelte';
 	// import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
 	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
-	import FAQSection from '$lib/components/marketing/FAQSection.svelte';
+	import BetaPricingComparison from '$lib/components/marketing/BetaPricingComparison.svelte';
+	import Beta2FAQSection from '$lib/components/marketing/Beta2FAQSection.svelte';
 	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
 	// import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
@@ -23,7 +26,7 @@
 		trackEvent(UMAMI_EVENTS.PAGE_VIEW, {
 			category: 'marketing',
 			page: 'homepage',
-			page_type: 'beta_marketing'
+			page_type: 'beta2_marketing'
 		});
 		
 		// Initialize scroll tracking for engagement
@@ -32,10 +35,13 @@
 		// Initialize section visibility tracking
 		const cleanupSections = initSectionTracking([
 			'hero',
+			'calculator',
+			'booking-demo',
 			'platform-showcase', 
 			'timeline',
 			'how-it-works',
 			'pricing',
+			'pricing-comparison',
 			'faq',
 			'newsletter'
 		]);
@@ -50,13 +56,13 @@
 
 <svelte:head>
 	<!-- Override title for homepage specifically -->
-	<title>Zaur Beta - Help Shape the Future of Tour Bookings</title>
-	<meta name="title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
-	<meta name="description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get 12 months free, provide feedback, and receive 30% lifetime discount." />
+	<title>Zaur Beta 2 - Final Spots Before Public Launch</title>
+	<meta name="title" content="Zaur Beta 2 - Final Spots Before Public Launch" />
+	<meta name="description" content="Join Zaur Beta 2 - Last 100 spots available. Get 6 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
 	
 	<!-- Additional SEO signals for homepage -->
-	<meta property="og:title" content="Zaur Beta - Help Shape the Future of Tour Bookings" />
-	<meta property="og:description" content="Join the Zaur beta program. We're selecting 50 tour guides to test our QR booking platform. Get 12 months free, provide feedback, and receive 30% lifetime discount." />
+	<meta property="og:title" content="Zaur Beta 2 - Final Spots Before Public Launch" />
+	<meta property="og:description" content="Join Zaur Beta 2 - Last 100 spots available. Get 6 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	
@@ -100,6 +106,16 @@
 	<BetaHeroSection />
 </section>
 
+<!-- Calculator Section -->
+<section id="calculator">
+	<CalculatorSection />
+</section>
+
+<!-- Booking Demo Section -->
+<section id="booking-demo" class="subtle-retro-section py-20">
+		<BookingDemoSection />
+</section>
+
 <!-- Timeline Section -->
 <section id="timeline" class="timeline-section">
 	<div class="mx-auto px-6 sm:px-8 lg:px-12" style="max-width: 50rem;">
@@ -121,10 +137,17 @@
 	</div>
 </section>
 
+<!-- Beta Pricing Comparison -->
+<section id="pricing-comparison" class="py-20">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
+		<BetaPricingComparison />
+	</div>
+</section>
+
 <!-- FAQ with subtle texture -->
 <section id="faq" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<FAQSection />
+		<Beta2FAQSection />
 	</div>
 </section>
 
@@ -132,9 +155,9 @@
 <section id="newsletter" class="py-12 sm:py-16">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<NewsletterSignup 
-			title="Join the Waitlist"
-			description="Get notified when we launch publicly in Q1 2026. Be among the first tour guides to try Zaur."
-			buttonText="Join Waitlist"
+			title="Miss Beta 2? Join the Waitlist"
+			description="Get notified when we launch publicly in March 2026. Be among the first to try Zaur at public launch."
+			buttonText="Join Public Launch Waitlist"
 			apiEndpoint="/api/newsletter/subscribe"
 		/>
 	</div>

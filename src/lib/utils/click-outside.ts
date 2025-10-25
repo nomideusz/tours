@@ -1,10 +1,11 @@
 /**
- * Svelte action to handle clicks outside an element
+ * Svelte action to detect clicks outside of an element
+ * Usage: <div use:clickOutside={handleClickOutside}>...</div>
  */
-export function clickOutside(node: HTMLElement, callback: (event: MouseEvent) => void) {
+export function clickOutside(node: HTMLElement, callback: () => void) {
 	const handleClick = (event: MouseEvent) => {
 		if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
-			callback(event);
+			callback();
 		}
 	};
 
@@ -15,4 +16,4 @@ export function clickOutside(node: HTMLElement, callback: (event: MouseEvent) =>
 			document.removeEventListener('click', handleClick, true);
 		}
 	};
-} 
+}

@@ -86,8 +86,7 @@
 		{#if googleMapsApiKey}
 			<div 
 				bind:this={mapContainer}
-				class="w-full rounded-lg overflow-hidden"
-				style="height: 300px; background: var(--bg-secondary);"
+				class="map-container"
 			>
 				{#if !isLoaded}
 					<div class="w-full h-full flex items-center justify-center">
@@ -121,6 +120,26 @@
 </div>
 
 <style>
+	.map-container {
+		width: 100%;
+		height: 350px;
+		background: var(--bg-secondary);
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+	
+	@media (min-width: 768px) {
+		.map-container {
+			height: 400px;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.map-container {
+			height: 450px;
+		}
+	}
+	
 	.animate-spin {
 		animation: spin 1s linear infinite;
 	}

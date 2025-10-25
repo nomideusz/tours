@@ -5,7 +5,7 @@ import { db } from '$lib/db/connection.js';
 import { tours, timeSlots } from '$lib/db/schema/index.js';
 import { eq, desc, and, gte } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
 	const { username } = params;
 	
 	if (!username) {
@@ -20,7 +20,20 @@ export const GET: RequestHandler = async ({ params }) => {
 			return json({ error: 'User not found' }, { status: 404 });
 		}
 		
-		// Get user's active tours
+		// Check if the requesting user is viewing their own profile
+		const isOwnProfile = locals.user?.id === profileUser.id;
+		
+		// Build query conditions based on viewer
+		const whereConditions = [eq(tours.userId, profileUser.id)];
+		
+		if (!isOwnProfile) {
+			// Public visitors only see active, public tours
+			whereConditions.push(eq(tours.status, 'active'));
+			whereConditions.push(eq(tours.publicListing, true));
+		}
+		// If viewing own profile, show all tours (no status/publicListing filter)
+		
+		// Get user's tours
 		const userTours = await db
 			.select({
 				id: tours.id,
@@ -32,14 +45,14 @@ export const GET: RequestHandler = async ({ params }) => {
 				capacity: tours.capacity,
 				images: tours.images,
 				qrCode: tours.qrCode,
+				status: tours.status,
+				publicListing: tours.publicListing,
+				categories: tours.categories,
+				pricingModel: tours.pricingModel,
 				createdAt: tours.createdAt
 			})
 		.from(tours)
-		.where(and(
-			eq(tours.userId, profileUser.id),
-			eq(tours.status, 'active'),
-			eq(tours.publicListing, true)
-		))
+		.where(and(...whereConditions))
 		.orderBy(desc(tours.createdAt));
 		
 		// Get available time slots for the next 30 days for all tours
@@ -47,6 +60,19 @@ export const GET: RequestHandler = async ({ params }) => {
 		futureDate.setDate(futureDate.getDate() + 30);
 		const now = new Date();
 		
+	// Build time slots query conditions
+	const timeSlotsWhereConditions = [
+		eq(tours.userId, profileUser.id),
+		gte(timeSlots.startTime, now),
+		eq(timeSlots.status, 'available')
+	];
+	
+	if (!isOwnProfile) {
+		// Public visitors only see time slots for active, public tours
+		timeSlotsWhereConditions.push(eq(tours.status, 'active'));
+		timeSlotsWhereConditions.push(eq(tours.publicListing, true));
+	}
+	
 	const availableTimeSlots = await db
 		.select({
 			id: timeSlots.id,
@@ -59,13 +85,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		})
 		.from(timeSlots)
 		.innerJoin(tours, eq(timeSlots.tourId, tours.id))
-	.where(and(
-		eq(tours.userId, profileUser.id),
-		eq(tours.status, 'active'),
-		eq(tours.publicListing, true),
-		gte(timeSlots.startTime, now),
-		eq(timeSlots.status, 'available')
-	))
+		.where(and(...timeSlotsWhereConditions))
 		.orderBy(timeSlots.startTime)
 		.limit(50);
 	
@@ -113,12 +133,13 @@ export const GET: RequestHandler = async ({ params }) => {
 				website: profileUser.website,
 				currency: profileUser.currency
 			},
-			tours: userTours.map(tour => ({
-				...tour,
-				images: tour.images || [],
-				timeSlots: tourTimeSlots[tour.id] || [],
-				createdAt: tour.createdAt.toISOString()
-			})),
+		tours: userTours.map(tour => ({
+			...tour,
+			images: tour.images || [],
+			categories: tour.categories || [],
+			timeSlots: tourTimeSlots[tour.id] || [],
+			createdAt: tour.createdAt.toISOString()
+		})),
 			totalTours: userTours.length
 		});
 		

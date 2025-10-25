@@ -58,6 +58,7 @@ export const users = pgTable('users', {
   subscriptionFreeUntil: timestamp('subscription_free_until', { withTimezone: true }),
   isLifetimeDiscount: boolean('is_lifetime_discount').notNull().default(false),
   earlyAccessMember: boolean('early_access_member').notNull().default(false),
+  betaGroup: varchar('beta_group', { length: 20 }), // 'beta_1', 'beta_2', 'early_access', or null
   
   // Usage tracking for plan limits
   monthlyBookingsUsed: integer('monthly_bookings_used').notNull().default(0),

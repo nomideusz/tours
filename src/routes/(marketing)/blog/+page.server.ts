@@ -3,6 +3,17 @@ import type { PageServerLoad } from './$types.js';
 // In a real app, these would come from a database or CMS
 const blogPosts = [
 	{
+		slug: 'beta-2-final-spots',
+		title: 'Beta 2 Now Open: Final 100 Spots Before Public Launch',
+		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 6 months free + permanent savings before we launch publicly in March 2026.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-10-30'),
+		readTime: '5 min read',
+		category: 'Announcement',
+		featured: true,
+		image: '/blog/beta-launch-hero.svg'
+	},
+	{
 		slug: 'beta-program-update-october-2025',
 		title: 'Beta Program Update: Working with 50 Tour Guides to Build Something Great',
 		excerpt: 'We\'ve closed beta applications and are now actively working with 50 selected tour guides from around the world. Here\'s what\'s happening and what\'s next.',
@@ -10,7 +21,7 @@ const blogPosts = [
 		publishedAt: new Date('2025-10-03'),
 		readTime: '4 min read',
 		category: 'Announcement',
-		featured: true,
+		featured: false,
 		image: '/blog/beta-launch-hero.svg'
 	},
 	{

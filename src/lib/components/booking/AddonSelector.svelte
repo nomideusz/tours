@@ -269,9 +269,14 @@
 
 	.addon-icon-emoji {
 		font-size: 1rem;
-		margin-right: 0.375rem;
+		display: inline-flex;
+		align-items: center;
+		line-height: 1;
+		vertical-align: middle;
+		flex-shrink: 0;
+		padding-bottom: 3px;
 	}
-
+	
 	.addon-name {
 		font-weight: 600;
 		font-size: 0.875rem;
@@ -279,6 +284,7 @@
 		margin-bottom: 0.125rem;
 		display: flex;
 		align-items: center;
+		gap: 0.25rem;
 	}
 
 	.addon-description {

@@ -310,6 +310,12 @@
 		padding: 0.375rem 0;
 	}
 	
+	.breakdown-item.addon .item-label {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	
 	.breakdown-item.private {
 		padding: 0.75rem 0;
 		border-bottom: 1px solid var(--border-primary);
@@ -406,7 +412,12 @@
 
 	.addon-icon {
 		font-size: 0.875rem;
-		margin-right: 0.375rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 0;
+		flex-shrink: 0;
+		padding-bottom: 3px;
 	}
 	
 	.breakdown-item.processing-fee .item-label {

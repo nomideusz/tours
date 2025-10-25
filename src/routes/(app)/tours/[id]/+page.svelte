@@ -973,7 +973,7 @@
 					</button>
 					
 					<!-- Public Discovery Indicator (only for active tours) -->
-					{#if tour.publicListing && tour.status === 'active'}
+					{#if (tour.publicListing || tour.public_listing) && tour.status === 'active'}
 						<Tooltip text="Listed on Public Discovery">
 							<div class="public-discovery-badge">
 								<Eye class="h-4 w-4" />

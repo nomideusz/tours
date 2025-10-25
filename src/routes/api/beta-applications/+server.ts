@@ -2,18 +2,29 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
 import { betaApplications } from '$lib/db/schema/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 // import { sendAuthEmail } from '$lib/email.server.js'; // TODO: Uncomment when email templates are ready
 
 export const POST: RequestHandler = async ({ request }) => {
-	// Beta applications are now closed
-	return json({
-		success: false,
-		error: 'Beta applications are now closed. We have selected 50 tour guides and are working closely with them. Please join our early access waitlist to be notified when we launch publicly.'
-	}, { status: 403 });
-	
-	/* Keeping original code for reference - can be re-enabled if needed
+	// Beta 2 is now open - check spot limit
 	try {
+		// Check current Beta 2 count
+		const beta2CountResult = await db
+			.select({ count: count() })
+			.from(betaApplications)
+			.where(eq(betaApplications.status, 'accepted'));
+		
+		const beta2Count = beta2CountResult[0]?.count || 0;
+		
+		// Limit Beta 2 to 100 spots
+		if (beta2Count >= 100) {
+			return json({
+				success: false,
+				error: 'Beta 2 is now full. We have reached our limit of 100 tour guides. Please join our early access waitlist to be notified when we launch publicly in November 2025.'
+			}, { status: 403 });
+		}
+		
+		// Continue with application...
 		const data = await request.json();
 		
 		// Ensure interestedFeatures is an array for PostgreSQL array type
@@ -119,7 +130,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		
 		return json({
 			success: true,
-			message: 'Application submitted successfully',
+			message: 'Application submitted successfully! Welcome to Beta 2. You will receive your access details within 24 hours.',
 			applicationId: application.id
 		});
 		
@@ -130,5 +141,4 @@ export const POST: RequestHandler = async ({ request }) => {
 			error: 'Failed to submit application. Please try again.' 
 		}, { status: 500 });
 	}
-	*/
 };

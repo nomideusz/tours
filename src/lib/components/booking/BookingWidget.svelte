@@ -16,6 +16,7 @@
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Info from 'lucide-svelte/icons/info';
+	import { slide } from 'svelte/transition';
 	
 	interface TourOwnerWithCurrency {
 		username?: string;
@@ -116,10 +117,10 @@
 	});
 </script>
 
-<div class="booking-widget rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-	<!-- Pricing Header -->
-	<div class="p-6 border-b" style="border-color: var(--border-primary);">
-		<h2 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">Book This Tour</h2>
+<div class="booking-widget">
+	<!-- Enhanced Pricing Header -->
+	<div class="widget-header">
+		<h2 class="widget-title">Book This Experience</h2>
 		
 		<!-- Price Display -->
 		<div class="space-y-3">
@@ -174,7 +175,7 @@
 		</div>
 	</div>
 	
-	<div class="p-6">
+	<div class="widget-body">
 		{#if showSuccess}
 			<!-- Success Message -->
 			<div class="rounded-lg p-4 text-center" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
@@ -203,7 +204,7 @@
 				<p class="description">Contact the guide for availability.</p>
 			</div>
 			{:else}
-				<form method="POST" action="?/book" use:enhance={() => {
+				<form id={`booking-form-${tour.id}`} method="POST" action="?/book" use:enhance={() => {
 					isSubmitting = true;
 					return async ({ result, update }) => {
 						isSubmitting = false;
@@ -243,7 +244,7 @@
 					<!-- Step 1: Date & Time Selection -->
 					<div class="booking-step" class:active={!selectedTimeSlot} class:completed={selectedTimeSlot}>
 						<div class="step-number">{selectedTimeSlot ? '✓' : '1'}</div>
-						<div class="ml-4">
+						<div>
 							<h3 class="font-medium mb-2" style="color: var(--text-primary);">
 								{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
 							</h3>
@@ -288,6 +289,7 @@
 									onSlotSelect={onSlotSelect}
 									tour={tour}
 									tourOwner={tourOwner}
+									class="in-widget"
 								/>
 							{/if}
 						</div>
@@ -295,9 +297,9 @@
 					
 					<!-- Step 2: Participants -->
 					{#if selectedTimeSlot}
-						<div class="booking-step" class:active={selectedTimeSlot && totalParticipants() === 0} class:completed={totalParticipants() > 0}>
+						<div class="booking-step" class:active={selectedTimeSlot && totalParticipants() === 0} class:completed={totalParticipants() > 0} transition:slide={{ duration: 200 }}>
 							<div class="step-number">{totalParticipants() > 0 ? '✓' : '2'}</div>
-							<div class="ml-4">
+							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
 									{totalParticipants() > 0 ? 'Selected Participants' : 'Select Participants'}
 								</h3>
@@ -399,9 +401,9 @@
 					
 					<!-- Step 3: Add-ons (if available) -->
 					{#if totalParticipants() > 0 && tour.optionalAddons?.addons && tour.optionalAddons.addons.length > 0}
-						<div class="booking-step" class:completed={selectedAddonIds.length > 0}>
+						<div class="booking-step" class:completed={selectedAddonIds.length > 0} transition:slide={{ duration: 200 }}>
 							<div class="step-number">{selectedAddonIds.length > 0 ? '✓' : '3'}</div>
-							<div class="ml-4">
+							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
 									Optional Add-ons
 								</h3>
@@ -522,17 +524,79 @@
 			{/if}
 		{/if}
 	</div>
+	
+	<!-- Mobile sticky booking footer (shown only when booking form is ready) -->
+	{#if selectedTimeSlot && totalParticipants() > 0 && !showSuccess}
+		{@const displayPrice = priceCalculation().totalAmount}
+		<div class="mobile-sticky-footer">
+			<div class="mobile-price-summary">
+				<div class="mobile-price-label">Total</div>
+				<div class="mobile-price-amount">
+					{displayPrice === 0 ? 'Free' : formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+				</div>
+			</div>
+			<button
+				type="submit"
+				form={`booking-form-${tour.id}`}
+				disabled={isSubmitting || !isContactInfoValid}
+				class="mobile-book-button"
+			>
+				{#if isSubmitting}
+					<Loader2 class="w-4 h-4 animate-spin" />
+				{:else}
+					Book Now
+				{/if}
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>
+	/* Enhanced Widget Design */
+	.booking-widget {
+		background: var(--bg-primary);
+		border-radius: 1.25rem;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+		overflow: hidden;
+		border: 1px solid var(--border-primary);
+		transition: all 0.3s ease;
+		position: relative;
+	}
+	
+	.booking-widget:hover {
+		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+	}
+	
+	.widget-header {
+		padding: 2rem;
+		background: linear-gradient(to bottom, var(--bg-secondary), var(--bg-primary));
+		border-bottom: 1px solid var(--border-primary);
+		border-radius: 1.25rem 1.25rem 0 0;
+		overflow: hidden;
+	}
+	
+	.widget-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 1.5rem;
+		text-align: center;
+	}
+	
+	.widget-body {
+		padding: 1.5rem;
+		overflow: visible;
+	}
+	
 	/* Booking flow steps */
 	.booking-step {
-		padding: 1.5rem;
+		padding: 1.5rem 1.5rem 1.5rem 2.5rem;
 		border-radius: 0.75rem;
 		background: var(--bg-secondary);
 		margin-bottom: 1rem;
 		position: relative;
 		transition: all 0.2s ease;
+		overflow: visible;
 	}
 	
 	.booking-step.completed {
@@ -549,7 +613,7 @@
 	.step-number {
 		position: absolute;
 		top: 1.5rem;
-		left: -0.75rem;
+		left: -1rem;
 		width: 2rem;
 		height: 2rem;
 		border-radius: 50%;
@@ -561,6 +625,8 @@
 		font-weight: 600;
 		font-size: 0.875rem;
 		color: var(--text-secondary);
+		z-index: 2;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 	
 	.booking-step.active .step-number {
@@ -576,34 +642,54 @@
 	}
 
 	/* Mobile optimizations */
-	@media (max-width: 450px) {
+	@media (max-width: 640px) {
 		.booking-widget {
-			margin: 0 -0.5rem;
-			border-radius: 0.5rem;
+			border-radius: 0;
+			box-shadow: none;
+			border: none;
+			border-top: 1px solid var(--border-primary);
+			margin: 0 -1rem;
+		}
+
+		.widget-header {
+			padding: 1.5rem 1rem;
+			background: var(--bg-primary);
+			position: sticky;
+			top: 0;
+			z-index: 10;
+			border-bottom: 2px solid var(--border-primary);
+		}
+		
+		.widget-title {
+			font-size: 1.125rem;
+			margin-bottom: 1rem;
+		}
+		
+		.widget-body {
+			padding: 1rem;
 		}
 
 		.booking-step {
-			padding: 1rem;
+			padding: 1rem 1rem 1rem 2rem;
 			margin-bottom: 0.75rem;
+			border-radius: 0.5rem;
 		}
 
 		.step-number {
-			left: -0.5rem;
-			width: 1.75rem;
-			height: 1.75rem;
+			left: -0.75rem;
+			width: 1.5rem;
+			height: 1.5rem;
 			font-size: 0.75rem;
 		}
-
-		.booking-widget .p-6 {
-			padding: 1rem !important;
+		
+		/* Price display in header */
+		.widget-header .space-y-3 {
+			gap: 0.5rem;
 		}
-
-		.booking-widget h2 {
-			font-size: 1rem;
-		}
-
-		.booking-widget h3 {
-			font-size: 0.875rem;
+		
+		/* Make form inputs more mobile-friendly */
+		.form-input, .form-select {
+			font-size: 16px; /* Prevent zoom on iOS */
 		}
 	}
 
@@ -639,6 +725,79 @@
 		margin: 0;
 		font-size: 0.875rem;
 		color: var(--text-secondary, #6b7280);
+	}
+	
+	/* Mobile sticky footer */
+	.mobile-sticky-footer {
+		display: none;
+	}
+	
+	@media (max-width: 640px) {
+		.mobile-sticky-footer {
+			display: flex;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 100;
+			background: var(--bg-primary);
+			border-top: 1px solid var(--border-primary);
+			padding: 1rem;
+			gap: 1rem;
+			align-items: center;
+			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+		}
+		
+		.mobile-price-summary {
+			flex: 1;
+		}
+		
+		.mobile-price-label {
+			font-size: 0.75rem;
+			color: var(--text-tertiary);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+		
+		.mobile-price-amount {
+			font-size: 1.25rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+		
+		.mobile-book-button {
+			padding: 0.875rem 2rem;
+			background: var(--color-primary-600);
+			color: white;
+			border: none;
+			border-radius: 2rem;
+			font-weight: 600;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+		
+		.mobile-book-button:disabled {
+			background: var(--color-gray-300);
+			cursor: not-allowed;
+		}
+		
+		.mobile-book-button:not(:disabled):active {
+			transform: scale(0.98);
+		}
+		
+		/* Hide desktop submit button on mobile when sticky footer is shown */
+		.booking-widget:has(.mobile-sticky-footer) .button-primary.w-full {
+			display: none;
+		}
+		
+		/* Add padding to account for sticky footer */
+		.booking-widget {
+			padding-bottom: 5rem;
+		}
 	}
 </style>
 
