@@ -306,8 +306,8 @@
 								
 								{#if tour.pricingModel === 'private_tour' && tour.privateTour}
 									<!-- Private Tour -->
-									{@const minCap = tour.privateTour?.minCapacity || tour.minCapacity || 4}
-									{@const maxCap = tour.privateTour?.maxCapacity || tour.maxCapacity || 12}
+									{@const minCap = tour.minCapacity || tour.privateTour?.minCapacity || 1}
+									{@const maxCap = tour.maxCapacity || tour.privateTour?.maxCapacity || 20}
 									<div class="space-y-3">
 										<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
 											<div class="text-sm font-medium mb-1" style="color: var(--text-primary);">

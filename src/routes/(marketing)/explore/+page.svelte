@@ -14,6 +14,7 @@
 	import Filter from 'lucide-svelte/icons/filter';
 	import X from 'lucide-svelte/icons/x';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ArrowUpDown from 'lucide-svelte/icons/arrow-up-down';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
@@ -254,7 +255,7 @@
 					{ value: 'priceAsc', label: 'Price: Low to High' },
 					{ value: 'priceDesc', label: 'Price: High to Low' }
 				]}
-				icon={ChevronDown}
+				icon={ArrowUpDown}
 				onchange={handleSortChange}
 			/>
 			
@@ -278,7 +279,10 @@
 					bind:value={selectedCategory}
 					options={[
 						{ value: '', label: 'All Categories' },
-						...filters.categories.map((cat: string) => ({ value: cat, label: formatCategoryName(cat) }))
+						...filters.categories.map((cat: string) => ({ 
+							value: cat.toLowerCase(), // Store lowercase for API
+							label: formatCategoryName(cat) // Display capitalized
+						}))
 					]}
 					icon={Filter}
 					placeholder="All Categories"
