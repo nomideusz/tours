@@ -9,7 +9,7 @@ Zaur uses a tiered subscription model with the following plans:
 - 1 tour type
 - Basic features
 
-### Solo Guide - €16/month (€13/month annually)
+### Essential - €25/month (€20.83/month annually)
 - 60 bookings/month  
 - 5 tour types
 - Remove Zaur branding
@@ -17,7 +17,7 @@ Zaur uses a tiered subscription model with the following plans:
 - Basic analytics
 - QR code customization
 
-### Professional - €35/month (€29/month annually)
+### Premium - €49/month (€40.83/month annually)
 - Unlimited bookings
 - Unlimited tour types
 - Advanced analytics
@@ -25,8 +25,8 @@ Zaur uses a tiered subscription model with the following plans:
 - Calendar sync
 - Priority support
 
-### Agency - €89/month (€74/month annually)
-- Everything in Professional
+### Agency - €89/month (€74/month annually, 2 months free)
+- Everything in Premium
 - Up to 10 tour guides
 - Team management
 - White-label options
@@ -38,8 +38,8 @@ Zaur uses a tiered subscription model with the following plans:
 
 1. Go to Stripe Dashboard > Products
 2. Create three products:
-   - **Solo Guide** 
-   - **Professional**
+   - **Essential** 
+   - **Premium**
    - **Agency**
 
 ### 2. Create Prices for Each Product
@@ -48,9 +48,9 @@ For each product, create two prices:
 - Monthly recurring price
 - Yearly recurring price (with discount)
 
-Example for Solo Guide:
-- Monthly: €16.00/month
-- Yearly: €156.00/year (shown as €13/month)
+Example for Essential:
+- Monthly: €25.00/month
+- Yearly: €250.00/year (shown as €20.83/month, 2 months free)
 
 ### 3. Configure Environment Variables
 

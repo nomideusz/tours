@@ -24,20 +24,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 const PRODUCTS = [
   {
     id: 'starter_pro',
-    name: 'Starter Pro',
-    description: 'Great for getting started with 15 bookings/month and 3 tour types',
+    name: 'Essential',
+    description: 'Perfect for independent guides with 60 bookings/month and 5 tour types',
     prices: [
-      { amount: 1200, interval: 'month' }, // €12/month
-      { amount: 1000, interval: 'year' },  // €10/month billed annually (€120/year)
+      { amount: 2500, interval: 'month' }, // €25/month
+      { amount: 25000, interval: 'year' },  // €20.83/month billed annually (€250/year, 2 months free)
     ]
   },
   {
     id: 'professional',
-    name: 'Professional',
+    name: 'Premium',
     description: 'Everything you need to grow with unlimited bookings and advanced features',
     prices: [
-      { amount: 2900, interval: 'month' }, // €29/month
-      { amount: 2400, interval: 'year' },  // €24/month billed annually (€288/year)
+      { amount: 4900, interval: 'month' }, // €49/month
+      { amount: 49000, interval: 'year' },  // €40.83/month billed annually (€490/year, 2 months free)
     ]
   },
   {

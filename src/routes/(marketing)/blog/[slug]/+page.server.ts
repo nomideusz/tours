@@ -3,6 +3,139 @@ import type { PageServerLoad } from './$types.js';
 
 // In a real app, this would come from a database or CMS
 const blogPosts = {
+	'beta-2-final-spots': {
+		slug: 'beta-2-final-spots',
+		title: 'Beta 2 Now Open: Final 100 Spots Before Public Launch',
+		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 6 months free + permanent savings before we launch publicly in March 2026.',
+		author: 'Zaur Team',
+		publishedAt: new Date('2025-10-30'),
+		readTime: '5 min read',
+		category: 'Announcement',
+		content: `
+			<p>Today, we're opening <strong>Beta 2</strong> – your final opportunity to lock in a lifetime discount before Zaur launches publicly in March 2026.</p>
+
+			<h2>What is Beta 2?</h2>
+			<p>Beta 2 is the last beta cohort before our public launch. We're accepting exactly <strong>100 tour guides</strong> who will receive:</p>
+			<ul>
+				<li><strong>6 months completely free</strong> – Full platform access, no credit card required</li>
+				<li><strong>20% lifetime discount</strong> – €20/month (Essential) or €39.20/month (Premium) forever</li>
+				<li><strong>Zero commission</strong> – Keep 100% of your tour revenue</li>
+				<li><strong>Full feature access</strong> – Everything Beta 1 members are using</li>
+			</ul>
+
+			<h2>Why Beta 2 Matters</h2>
+			<p>This is your <strong>last chance</strong> to get a lifetime discount. Here's what happens after Beta 2 closes:</p>
+
+			<div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 0.5rem; margin: 1.5rem 0; border-left: 4px solid var(--primary);">
+				<p style="margin: 0; font-weight: 600;">After Beta 2 fills up (100 spots):</p>
+				<ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem;">
+					<li>Essential: €25/month (no discount)</li>
+					<li>Premium: €49/month (no discount)</li>
+					<li>No free trial period</li>
+					<li>Beta program closed forever</li>
+				</ul>
+			</div>
+
+			<h2>Beta 1 vs Beta 2: What's Different?</h2>
+			<p>Our Beta 1 members (50 guides) received an even better deal as our earliest believers:</p>
+			<ul>
+				<li><strong>Beta 1:</strong> 1 year free + 30% lifetime discount (€17.50 or €34.30/month)</li>
+				<li><strong>Beta 2:</strong> 6 months free + 20% lifetime discount (€20 or €39.20/month)</li>
+			</ul>
+			<p>Beta 2 is still an incredible deal – you'll save <strong>€420-€764 over 5 years</strong> compared to public launch pricing.</p>
+
+			<h2>What You Get</h2>
+			<p>Beta 2 members get full access to Zaur's complete feature set:</p>
+
+			<h3>Essential Plan (€20/month after trial)</h3>
+			<ul>
+				<li>60 bookings/month</li>
+				<li>5 tour types</li>
+				<li>Remove Zaur branding</li>
+				<li>Priority discovery ranking</li>
+				<li>Basic analytics</li>
+				<li>QR code customization</li>
+				<li>Email support</li>
+			</ul>
+
+			<h3>Premium Plan (€39.20/month after trial)</h3>
+			<ul>
+				<li>Unlimited bookings</li>
+				<li>Unlimited tour types</li>
+				<li>Featured discovery listings</li>
+				<li>"Verified Operator" badge</li>
+				<li>Advanced analytics & insights</li>
+				<li>WhatsApp notifications</li>
+				<li>Weather integration</li>
+				<li>Cancellation management</li>
+				<li>Customer database export</li>
+				<li>Priority support (24h response)</li>
+			</ul>
+
+			<h2>No Risk, All Reward</h2>
+			<p>We're making this as easy as possible:</p>
+			<ul>
+				<li>✓ <strong>No credit card required</strong> for the 6-month trial</li>
+				<li>✓ <strong>Cancel anytime</strong> with no obligations</li>
+				<li>✓ <strong>Full access</strong> to all features from day one</li>
+				<li>✓ <strong>20% discount applies forever</strong> if you continue</li>
+			</ul>
+
+			<h2>What Beta 1 Taught Us</h2>
+			<p>Over the past two months working with our Beta 1 guides, we've made significant improvements:</p>
+			<ul>
+				<li>Enhanced mobile experience for guides managing tours on the go</li>
+				<li>Improved payment processing with better error handling</li>
+				<li>Added WhatsApp notifications for instant booking alerts</li>
+				<li>Integrated weather forecasting for better tour planning</li>
+				<li>Streamlined cancellation and refund management</li>
+			</ul>
+
+			<p>Beta 2 members will benefit from all these refinements while helping us polish the platform for public launch.</p>
+
+			<h2>The Timeline</h2>
+			<ul>
+				<li><strong>Now:</strong> Beta 2 applications open (100 spots)</li>
+				<li><strong>November 2025 - March 2026:</strong> Beta 2 testing phase</li>
+				<li><strong>March 2026:</strong> Public launch at full price</li>
+			</ul>
+
+			<h2>How to Apply</h2>
+			<p>We're looking for tour guides who:</p>
+			<ul>
+				<li>Run tours regularly (weekly or more)</li>
+				<li>Want to grow their business with modern tools</li>
+				<li>Are willing to provide honest feedback</li>
+				<li>See the value in commission-free booking systems</li>
+			</ul>
+
+			<div style="text-align: center; margin: 3rem 0;">
+				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1.25rem 2.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.125rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">Claim Your Beta 2 Spot →</a>
+				<p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-tertiary);">
+					<span id="spots-remaining">Loading...</span> spots remaining
+				</p>
+			</div>
+
+			<script>
+				// Fetch and display remaining spots
+				fetch('/api/beta-2-count')
+					.then(r => r.json())
+					.then(data => {
+						document.getElementById('spots-remaining').textContent = data.remaining + '/100';
+					})
+					.catch(() => {
+						document.getElementById('spots-remaining').textContent = '100';
+					});
+			</script>
+
+			<h2>Questions?</h2>
+			<p>Check out our <a href="/#faq">FAQ section</a> or email us at <a href="mailto:beta@zaur.app">beta@zaur.app</a>. We're here to help!</p>
+
+			<hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-primary);" />
+
+			<p><em>This is your last chance to be part of the beta program. After these 100 spots are filled, everyone pays full price. Don't miss out – claim your spot today!</em></p>
+		`
+	},
 	'beta-program-update-october-2025': {
 		slug: 'beta-program-update-october-2025',
 		title: 'Beta Program Update: Working with 50 Tour Guides to Build Something Great',

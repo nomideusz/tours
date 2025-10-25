@@ -11,28 +11,44 @@
 	
 	const faqs = [
 		{
-			question: "When will Zaur launch publicly?",
-			answer: "We're currently in beta testing with 50 selected tour guides. Based on their feedback, we're planning a public launch in Q1 2026. Join our waitlist to be among the first to know when we're ready!"
+			question: "What is Beta 2 and how is it different from Beta 1?",
+			answer: "Beta 2 is the final beta cohort before our public launch in March 2026. While Beta 1 users (50 guides) received 1 year free + 30% lifetime discount, Beta 2 offers 100 guides 6 months free + 20% lifetime discount. This is your last chance to lock in a lifetime discount before we launch publicly at full price."
 		},
 		{
-			question: "What is Zaur and how does it work?",
-			answer: "Zaur is the simplest QR-based booking system for tour guides. Create your tour, get a QR code, share it anywhere (cards, flyers, t-shirts), and customers can scan to see availability and book instantly. You keep 100% of your revenue with no commission fees."
+			question: "What do I get with Beta 2?",
+			answer: "Beta 2 members get 6 months completely free (no credit card required), then just €20/month for Essential or €39.20/month for Premium - a 20% lifetime discount that never expires. You'll have full access to all features, keep 100% of your booking revenue with zero commission, and help shape the platform's final development."
 		},
 		{
-			question: "How much does Zaur cost?",
-			answer: "We offer a free plan to get started, plus paid plans starting at €17/month for more features and bookings. No booking commissions ever – just simple, transparent monthly pricing."
+			question: "How many spots are available?",
+			answer: "We're accepting exactly 100 tour guides for Beta 2. Once these spots are filled, the program closes forever. The counter at the top of the page shows real-time availability. After Beta 2 closes, everyone will pay full price when we launch in March 2026."
 		},
 		{
-			question: "Can I join the beta program?",
-			answer: "Beta applications are now closed. We're working with 50 selected tour guides to refine the platform. Join our early access waitlist to be notified when we launch publicly in Q1 2026."
+			question: "Do I need a credit card to join Beta 2?",
+			answer: "No! Beta 2 is completely free for 6 months with no credit card required. After your free trial ends, you can choose to continue at your discounted rate (€20 or €39.20/month) or cancel anytime with no obligations."
 		},
 		{
-			question: "What happens if I join the waitlist?",
-			answer: "You'll be among the first to know when Zaur launches. We'll send you an email with early access information, launch specials, and instructions to get started. No spam, just valuable updates."
+			question: "When does Beta 2 start and when does it end?",
+			answer: "Beta 2 is open now (November 2025) and runs until March 2026 when we launch publicly. Your 6-month free trial starts when you join, and your 20% lifetime discount applies to all payments after the trial ends - forever."
 		},
 		{
-			question: "Do you support multiple languages and currencies?",
-			answer: "Yes! Zaur supports multiple currencies and we're continuously expanding language support. Our goal is to serve tour guides worldwide with localized experiences."
+			question: "What happens after the 6-month trial?",
+			answer: "After your free trial, you'll automatically continue at your discounted rate: €20/month (Essential) or €39.20/month (Premium) - which is 20% less than public pricing. This discount is permanent and applies to all future payments. You can cancel anytime if you decide it's not for you."
+		},
+		{
+			question: "Can I upgrade or downgrade my plan later?",
+			answer: "Yes! You can switch between Essential and Premium plans anytime. Your 20% lifetime discount applies to whichever plan you choose. The discount is tied to your account, not a specific plan."
+		},
+		{
+			question: "What if Beta 2 fills up before I join?",
+			answer: "If all 100 spots are taken, you can join our public launch waitlist. You'll be notified when we launch in March 2026, but you'll pay full price (€25/month for Essential, €49/month for Premium) with no lifetime discount. Beta 2 is your last chance to lock in 20% off forever."
+		},
+		{
+			question: "Is there any commission on bookings?",
+			answer: "Never! Zaur charges zero commission on bookings. You keep 100% of your tour revenue. We only charge a simple monthly subscription fee - that's it. This is true for all plans, including Beta 2."
+		},
+		{
+			question: "What features are included?",
+			answer: "Beta 2 members get full access to all features: QR code booking pages, real-time availability management, instant payment processing, customer management, analytics dashboard, email notifications, WhatsApp notifications (Premium plan), weather integration, cancellation management, and more. See the pricing comparison on this page for complete details."
 		}
 	];
 	
@@ -66,7 +82,7 @@
 		Got Questions?
 	</h2>
 	<p class="section-subtitle">
-		Everything you need to know about Zaur and our upcoming launch
+		Everything you need to know about Beta 2 and Zaur
 	</p>
 </div>
 
@@ -122,8 +138,9 @@
 	
 	/* FAQ Container */
 	.faq-container {
-		max-width: 48rem;
+		max-width: 56rem;
 		margin: 0 auto;
+		width: 100%;
 	}
 	
 	/* FAQ List */
@@ -131,6 +148,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		width: 100%;
+		align-items: stretch;
 	}
 	
 	/* FAQ Item */
@@ -139,7 +158,11 @@
 		border: 1px solid var(--border-primary);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
-		transition: all 0.3s ease;
+		transition: box-shadow 0.3s ease;
+		width: 100%;
+		box-sizing: border-box;
+		flex-shrink: 0;
+		align-self: stretch;
 	}
 	
 	.faq-item:hover {
@@ -149,16 +172,18 @@
 	/* FAQ Question Button */
 	.faq-question {
 		width: 100%;
-		padding: 1.25rem 1.5rem;
+		padding: 1.5rem 2rem;
 		background: transparent;
 		border: none;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		gap: 1.5rem;
 		text-align: left;
 		transition: all 0.2s ease;
+		box-sizing: border-box;
+		min-width: 0;
 	}
 	
 	.faq-question:hover {
@@ -167,10 +192,12 @@
 	
 	.faq-question-text {
 		flex: 1;
-		font-size: 1rem;
+		font-size: 1.0625rem;
 		font-weight: 600;
 		color: var(--text-primary);
-		line-height: 1.4;
+		line-height: 1.5;
+		min-width: 0;
+		word-wrap: break-word;
 	}
 	
 	/* FAQ Icon */
@@ -198,14 +225,19 @@
 	
 	/* FAQ Answer */
 	.faq-answer {
-		padding: 0 1.5rem 1.25rem 1.5rem;
+		padding: 0 2rem 1.5rem 2rem;
+		width: 100%;
+		box-sizing: border-box;
 	}
 	
 	.faq-answer p {
 		margin: 0;
-		font-size: 0.9375rem;
+		font-size: 1rem;
 		color: var(--text-secondary);
-		line-height: 1.6;
+		line-height: 1.7;
+		max-width: 100%;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
 	}
 	
 	/* Mobile responsive - Mobile First! */
@@ -232,12 +264,12 @@
 		}
 		
 		.faq-question {
-			padding: 1rem 1.25rem;
-			gap: 0.75rem;
+			padding: 1.25rem 1.5rem;
+			gap: 1rem;
 		}
 		
 		.faq-question-text {
-			font-size: 0.9375rem;
+			font-size: 1rem;
 		}
 		
 		.faq-icon {
@@ -251,12 +283,12 @@
 		}
 		
 		.faq-answer {
-			padding: 0 1.25rem 1rem 1.25rem;
+			padding: 0 1.5rem 1.25rem 1.5rem;
 		}
 		
 		.faq-answer p {
-			font-size: 0.875rem;
-			line-height: 1.5;
+			font-size: 0.9375rem;
+			line-height: 1.6;
 		}
 	}
 	
@@ -267,19 +299,19 @@
 		}
 		
 		.faq-question {
-			padding: 0.875rem 1rem;
+			padding: 1rem 1.25rem;
 		}
 		
 		.faq-question-text {
-			font-size: 0.875rem;
+			font-size: 0.9375rem;
 		}
 		
 		.faq-answer {
-			padding: 0 1rem 0.875rem 1rem;
+			padding: 0 1.25rem 1rem 1.25rem;
 		}
 		
 		.faq-answer p {
-			font-size: 0.8125rem;
+			font-size: 0.875rem;
 		}
 	}
 </style> 

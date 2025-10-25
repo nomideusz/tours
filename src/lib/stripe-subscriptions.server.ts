@@ -5,6 +5,23 @@ import { users } from './db/schema/index.js';
 import { eq, count } from 'drizzle-orm';
 
 // Subscription plan configurations
+// 
+// Beta Pricing Tiers:
+// - Beta 1 (50 users): 1 year free + 30% off forever
+//   Essential: €25 → €17.50/month after trial
+//   Premium: €49 → €34.30/month after trial
+//
+// - Beta 2 (100 users): 6 months free + 20% off forever  
+//   Essential: €25 → €20/month after trial
+//   Premium: €49 → €39.20/month after trial
+//
+// - Public Launch (March 2026): Full price
+//   Essential: €25/month
+//   Premium: €49/month
+//
+// Discounts are applied via promo codes (BETA2_GUIDE, BETA2_PRO, BETA2)
+// and managed through user.subscriptionDiscountPercentage + user.subscriptionFreeUntil
+
 export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
@@ -16,7 +33,7 @@ export const SUBSCRIPTION_PLANS = {
   },
   starter_pro: {
     id: 'starter_pro',
-    name: 'Solo Guide',
+    name: 'Essential',
     monthlyBookingLimit: 60,
     tourLimit: 5,
     features: [
@@ -35,11 +52,11 @@ export const SUBSCRIPTION_PLANS = {
   },
   professional: {
     id: 'professional',
-    name: 'Professional',
+    name: 'Premium',
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
     features: [
-      'Everything in Solo Guide',
+      'Everything in Essential',
       'Unlimited bookings',
       'Unlimited tour types',
       'Advanced analytics & insights',
@@ -63,7 +80,7 @@ export const SUBSCRIPTION_PLANS = {
     monthlyBookingLimit: null, // Unlimited
     tourLimit: null, // Unlimited
     features: [
-      'Everything in Professional',
+      'Everything in Premium',
       'Up to 10 tour guides',
       'Team management dashboard',
       'Revenue sharing tools',

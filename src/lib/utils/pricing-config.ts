@@ -43,11 +43,11 @@ export const PRICING_PLANS: PricingPlan[] = [
 	},
 	{
 		id: 'starter_pro',
-		name: 'Solo Guide',
+		name: 'Essential',
 		description: 'Perfect for independent guides',
 		monthlyBookingLimit: 60,
 		tourLimit: 5,
-		basePrice: { monthly: 20, yearly: 17 },
+		basePrice: { monthly: 25, yearly: 20.83 },
 		popular: true,
 		features: [
 			{ text: '60 bookings/month', included: true },
@@ -65,11 +65,11 @@ export const PRICING_PLANS: PricingPlan[] = [
 	},
 	{
 		id: 'professional',
-		name: 'Professional',
+		name: 'Premium',
 		description: 'Scale your tour business',
 		monthlyBookingLimit: null,
 		tourLimit: null,
-		basePrice: { monthly: 45, yearly: 37 },
+		basePrice: { monthly: 49, yearly: 40.83 },
 		features: [
 			{ text: 'Unlimited bookings', included: true },
 			{ text: 'Unlimited tour types', included: true },
@@ -116,8 +116,22 @@ export const PRICING_PLANS: PricingPlan[] = [
 	}
 ];
 
-// Early access discount (50% off)
-export const EARLY_ACCESS_DISCOUNT = 0.5;
+// Beta discount constants
+export const EARLY_ACCESS_DISCOUNT = 0.5; // 50% off (legacy - not currently used)
+export const BETA_1_DISCOUNT = 0.30; // 30% lifetime discount for Beta 1 users
+export const BETA_2_DISCOUNT = 0.20; // 20% lifetime discount for Beta 2 users
+
+// Beta 2 pricing (20% off full prices)
+export const BETA_2_PRICES = {
+	starter_pro: {
+		monthly: 20, // €25 - 20% = €20
+		yearly: 20
+	},
+	professional: {
+		monthly: 39.2, // €49 - 20% = €39.20
+		yearly: 39.2
+	}
+};
 
 // User context for pricing calculations
 export interface UserPricingContext {
@@ -235,4 +249,23 @@ export function isFeatureImplemented(featureText: string): boolean {
 	return IMPLEMENTED_FEATURES.some(f => 
 		featureText.toLowerCase().includes(f.toLowerCase())
 	);
+}
+
+// Helper to check if user is Beta 2 member
+export function isBeta2User(userContext?: UserPricingContext): boolean {
+	return userContext?.subscriptionDiscountPercentage === 20 && 
+	       userContext?.isLifetimeDiscount === true;
+}
+
+// Helper to check if user is Beta 1 or Early Access member
+export function isBeta1User(userContext?: UserPricingContext): boolean {
+	return userContext?.subscriptionDiscountPercentage === 30 && 
+	       userContext?.isLifetimeDiscount === true;
+}
+
+// Get user's beta cohort identifier
+export function getUserBetaCohort(userContext?: UserPricingContext): 'beta_1' | 'beta_2' | null {
+	if (isBeta1User(userContext)) return 'beta_1';
+	if (isBeta2User(userContext)) return 'beta_2';
+	return null;
 } 

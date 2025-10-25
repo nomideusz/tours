@@ -146,8 +146,8 @@
 							<p class="section-text mb-4">We offer several subscription tiers:</p>
 							<ul class="billing-list">
 								<li><strong>Free Starter:</strong> €0/month - 3 bookings/month, 1 tour type</li>
-								<li><strong>Solo Guide:</strong> €20/month (€17/month annually) - 60 bookings/month, 5 tour types</li>
-								<li><strong>Professional:</strong> €45/month (€37/month annually) - Unlimited bookings and tours</li>
+								<li><strong>Essential:</strong> €25/month (€20.83/month annually) - 60 bookings/month, 5 tour types</li>
+								<li><strong>Premium:</strong> €49/month (€40.83/month annually) - Unlimited bookings and tours</li>
 								<li><strong>Agency:</strong> €115/month (€95/month annually) - Team management features</li>
 							</ul>
 						</div>
