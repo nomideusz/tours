@@ -13,6 +13,8 @@
 	import Rocket from 'lucide-svelte/icons/rocket';
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
+	import Calculator from 'lucide-svelte/icons/calculator';
+	import Smartphone from 'lucide-svelte/icons/smartphone';
 </script>
 
 <!-- Professional Footer -->
@@ -46,42 +48,54 @@
 				</div>
 			</div>
 
-			<!-- Links Grid -->
-			<div class="footer-section">
-				<h3 class="footer-heading">Product</h3>
-				<ul class="footer-links">
-					<li>
-						<a href="/#how-it-works" class="footer-link">
-							<MapPin class="w-4 h-4" />
-							<span>How it Works</span>
-						</a>
-					</li>
-					<li>
-						<a href="/#timeline" class="footer-link">
-							<Calendar class="w-4 h-4" />
-							<span>Roadmap</span>
-						</a>
-					</li>
-					<li>
-						<a href="/#pricing" class="footer-link">
-							<DollarSign class="w-4 h-4" />
-							<span>Pricing</span>
-						</a>
-					</li>
-					<li>
-						<a href="/#faq" class="footer-link">
-							<HelpCircle class="w-4 h-4" />
-							<span>FAQ</span>
-						</a>
-					</li>
-					<li>
-						<a href="/blog" class="footer-link">
-							<BookOpen class="w-4 h-4" />
-							<span>Blog</span>
-						</a>
-					</li>
-				</ul>
-			</div>
+		<!-- Links Grid -->
+		<div class="footer-section">
+			<h3 class="footer-heading">Product</h3>
+			<ul class="footer-links">
+				<li>
+					<a href="/#calculator" class="footer-link">
+						<Calculator class="w-4 h-4" />
+						<span>Calculator</span>
+					</a>
+				</li>
+				<li>
+					<a href="/#booking-demo" class="footer-link">
+						<Smartphone class="w-4 h-4" />
+						<span>Demo</span>
+					</a>
+				</li>
+				<li>
+					<a href="/#how-it-works" class="footer-link">
+						<MapPin class="w-4 h-4" />
+						<span>How it Works</span>
+					</a>
+				</li>
+				<li>
+					<a href="/#pricing" class="footer-link">
+						<DollarSign class="w-4 h-4" />
+						<span>Pricing</span>
+					</a>
+				</li>
+				<li>
+					<a href="/#timeline" class="footer-link">
+						<Calendar class="w-4 h-4" />
+						<span>Roadmap</span>
+					</a>
+				</li>
+				<li>
+					<a href="/#faq" class="footer-link">
+						<HelpCircle class="w-4 h-4" />
+						<span>FAQ</span>
+					</a>
+				</li>
+				<li>
+					<a href="/blog" class="footer-link">
+						<BookOpen class="w-4 h-4" />
+						<span>Blog</span>
+					</a>
+				</li>
+			</ul>
+		</div>
 
 			<div class="footer-section">
 				<h3 class="footer-heading">Company</h3>

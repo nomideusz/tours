@@ -37,10 +37,9 @@
 			'hero',
 			'calculator',
 			'booking-demo',
-			'platform-showcase', 
-			'timeline',
 			'how-it-works',
 			'pricing',
+			'timeline',
 			'faq',
 			'newsletter'
 		]);
@@ -115,13 +114,6 @@
 		<BookingDemoSection />
 </section>
 
-<!-- Timeline Section -->
-<section id="timeline" class="timeline-section">
-	<div class="mx-auto px-6 sm:px-8 lg:px-12" style="max-width: 50rem;">
-		<BetaTimelineSection />
-	</div>
-</section>
-
 <!-- How it works with subtle texture -->
 <section id="how-it-works" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
@@ -133,6 +125,13 @@
 <section id="pricing" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<BetaPricingSection />
+	</div>
+</section>
+
+<!-- Timeline Section -->
+<section id="timeline" class="timeline-section">
+	<div class="mx-auto px-6 sm:px-8 lg:px-12" style="max-width: 50rem;">
+		<BetaTimelineSection />
 	</div>
 </section>
 

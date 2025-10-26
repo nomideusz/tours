@@ -11,6 +11,8 @@
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import Search from 'lucide-svelte/icons/search';
+	import Calculator from 'lucide-svelte/icons/calculator';
+	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
@@ -92,34 +94,43 @@
 
 	// Handle navigation links with smooth scrolling
 	function handleNavClick(event: MouseEvent, href: string) {
-		// Close mobile menu if open
-		mobileMenuOpen = false;
+		event.preventDefault();
+		event.stopPropagation();
 		
-		// Check if it's an anchor link (starts with # or /#)
-		if (href.startsWith('#') || href.startsWith('/#')) {
-			event.preventDefault();
+		// Check if it's an anchor link (contains #)
+		if (href.includes('#')) {
+			// Extract the hash part (everything after #)
+			const hashIndex = href.indexOf('#');
+			const targetId = href.substring(hashIndex + 1);
 			
-			// Handle both #section and /#section formats
-			const targetId = href.startsWith('/#') ? href.substring(2) : href.substring(1);
+			// Try to scroll to the element first
 			const target = document.getElementById(targetId);
-			
 			if (target) {
-				// If we're not on the main page, navigate there first
-				if (window.location.pathname !== '/') {
-					// Fix URL construction - href already includes the /# part
-					window.location.href = href.startsWith('/#') ? href : '/' + href;
-					return;
-				}
+				// Close mobile menu if open and wait for body scroll to be restored
+				mobileMenuOpen = false;
 				
-				// We're on the main page, smooth scroll
-				target.scrollIntoView({
-					behavior: 'smooth',
-					block: 'start'
-				});
-			} else if (window.location.pathname !== '/') {
-				// Target doesn't exist and we're not on main page, navigate to main page
-				window.location.href = href.startsWith('/#') ? href : '/' + href;
+				// Wait for the body scroll lock to be removed before scrolling
+				setTimeout(() => {
+					// Element exists on current page, scroll with offset for fixed header
+					// Header height is 5rem (80px) on mobile, use 90px offset for clean look
+					const headerOffset = 80;
+					const elementPosition = target.getBoundingClientRect().top;
+					const offsetPosition = elementPosition + window.scrollY - headerOffset;
+					
+					window.scrollTo({
+						top: offsetPosition,
+						behavior: 'smooth'
+					});
+				}, 100);
+			} else {
+				// Element doesn't exist, navigate to the page
+				mobileMenuOpen = false;
+				window.location.href = href;
 			}
+		} else {
+			// Not an anchor link, just navigate
+			mobileMenuOpen = false;
+			window.location.href = href;
 		}
 	}
 
@@ -167,33 +178,25 @@
 			<BetaBadge text="Beta" icon={FlaskConical} variant="small" class="header-beta-badge" />
 		</div>
 
-			<!-- Desktop Navigation -->
-			<nav class="nav-desktop">
-				<a href="/explore" class="nav-link">
-					<Search class="w-4 h-4" />
-					<span>Explore Tours</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="nav-link">
-					<MapPin class="w-4 h-4" />
-					<span>How it Works</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#timeline' : '/#timeline'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#timeline' : '/#timeline')} class="nav-link">
-					<Calendar class="w-4 h-4" />
-					<span>Roadmap</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
-					<DollarSign class="w-4 h-4" />
-					<span>Pricing</span>
-				</a>
-				<a href="/blog" class="nav-link">
-					<BookOpen class="w-4 h-4" />
-					<span>Blog</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="nav-link">
-					<HelpCircle class="w-4 h-4" />
-					<span>FAQ</span>
-				</a>
-			</nav>
+		<!-- Desktop Navigation -->
+		<nav class="nav-desktop">
+			<a href="/explore" class="nav-link">
+				<Search class="w-4 h-4" />
+				<span>Explore Tours</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="nav-link">
+				<MapPin class="w-4 h-4" />
+				<span>How it Works</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="nav-link">
+				<DollarSign class="w-4 h-4" />
+				<span>Pricing</span>
+			</a>
+			<a href="/blog" class="nav-link">
+				<BookOpen class="w-4 h-4" />
+				<span>Blog</span>
+			</a>
+		</nav>
 
 			<!-- Right Side Actions -->
 			<div class="header-actions">
@@ -278,33 +281,41 @@
 {#if mobileMenuOpen}
 	<div class="mobile-menu">
 		<div class="mobile-menu-content">
-			<!-- Navigation Links -->
-			<div class="mobile-nav">
-				<a href="/explore" onclick={handleMobileLinkClick} class="mobile-nav-link">
-					<Search class="w-4 h-4" />
-					<span>Explore Tours</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="mobile-nav-link">
-					<MapPin class="w-4 h-4" />
-					<span>How it Works</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#timeline' : '/#timeline'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#timeline' : '/#timeline')} class="mobile-nav-link">
-					<Calendar class="w-4 h-4" />
-					<span>Roadmap</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
-					<DollarSign class="w-4 h-4" />
-					<span>Pricing</span>
-				</a>
-				<a href="/blog" onclick={handleMobileLinkClick} class="mobile-nav-link">
-					<BookOpen class="w-4 h-4" />
-					<span>Blog</span>
-				</a>
-				<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="mobile-nav-link">
-					<HelpCircle class="w-4 h-4" />
-					<span>FAQ</span>
-				</a>
-			</div>
+		<!-- Navigation Links -->
+		<div class="mobile-nav">
+			<a href="/explore" onclick={handleMobileLinkClick} class="mobile-nav-link">
+				<Search class="w-4 h-4" />
+				<span>Explore Tours</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#calculator' : '/#calculator'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#calculator' : '/#calculator')} class="mobile-nav-link">
+				<Calculator class="w-4 h-4" />
+				<span>Calculator</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#booking-demo' : '/#booking-demo'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#booking-demo' : '/#booking-demo')} class="mobile-nav-link">
+				<Smartphone class="w-4 h-4" />
+				<span>Demo</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#how-it-works' : '/#how-it-works')} class="mobile-nav-link">
+				<MapPin class="w-4 h-4" />
+				<span>How it Works</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#pricing' : '/#pricing'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#pricing' : '/#pricing')} class="mobile-nav-link">
+				<DollarSign class="w-4 h-4" />
+				<span>Pricing</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#timeline' : '/#timeline'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#timeline' : '/#timeline')} class="mobile-nav-link">
+				<Calendar class="w-4 h-4" />
+				<span>Roadmap</span>
+			</a>
+			<a href={isAuthenticated ? '/?view=home#faq' : '/#faq'} onclick={(e) => handleNavClick(e, isAuthenticated ? '/?view=home#faq' : '/#faq')} class="mobile-nav-link">
+				<HelpCircle class="w-4 h-4" />
+				<span>FAQ</span>
+			</a>
+			<a href="/blog" onclick={handleMobileLinkClick} class="mobile-nav-link">
+				<BookOpen class="w-4 h-4" />
+				<span>Blog</span>
+			</a>
+		</div>
 
 			<!-- Mobile Auth Section - Only show for authenticated users -->
 			{#if isMounted.current && isAuthenticated}
@@ -741,6 +752,13 @@
 		border-color: var(--border-secondary);
 	}
 
+	/* Ensure clicks on mobile nav links pass through from child elements */
+	.mobile-nav-link > *,
+	.mobile-nav-link svg,
+	.mobile-nav-link span {
+		pointer-events: none;
+	}
+
 	/* Mobile Auth */
 	.mobile-auth {
 		border-top: 1px solid var(--border-primary);
@@ -771,6 +789,13 @@
 	.mobile-dashboard-link:hover {
 		background: var(--bg-tertiary);
 		border-color: var(--border-secondary);
+	}
+
+	/* Ensure clicks on mobile dashboard link pass through from child elements */
+	.mobile-dashboard-link > *,
+	.mobile-dashboard-link svg,
+	.mobile-dashboard-link span {
+		pointer-events: none;
 	}
 
 	.mobile-user-info {
@@ -807,7 +832,12 @@
 		cursor: not-allowed;
 	}
 
-
+	/* Ensure clicks on mobile logout button pass through from child elements */
+	.mobile-logout-button > *,
+	.mobile-logout-button svg,
+	.mobile-logout-button span {
+		pointer-events: none;
+	}
 
 	/* Dark Mode Support */
 	/* Header background now uses theme-aware CSS variables automatically */

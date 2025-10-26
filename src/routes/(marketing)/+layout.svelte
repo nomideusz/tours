@@ -116,29 +116,41 @@
 	<title>{seo.title}</title>
 	<meta name="title" content={seo.title} />
 	<meta name="description" content={seo.description} />
-	<meta name="keywords" content={seo.keywords} />
+	{#if seo.keywords}
+		<meta name="keywords" content={seo.keywords} />
+	{/if}
 	<meta name="author" content="Zaur" />
 	<meta name="robots" content="index, follow" />
 	<meta name="language" content="English" />
 	
 	<!-- Canonical URL -->
-	<link rel="canonical" href={seo.canonical} />
+	{#if seo.canonical}
+		<link rel="canonical" href={seo.canonical} />
+	{/if}
 	
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content={seo.openGraph?.type || 'website'} />
-	<meta property="og:url" content={seo.openGraph?.url || seo.canonical} />
+	{#if seo.openGraph?.url || seo.canonical}
+		<meta property="og:url" content={seo.openGraph?.url || seo.canonical} />
+	{/if}
 	<meta property="og:title" content={seo.openGraph?.title || seo.title} />
 	<meta property="og:description" content={seo.openGraph?.description || seo.description} />
-	<meta property="og:image" content={seo.openGraph?.image} />
+	{#if seo.openGraph?.image}
+		<meta property="og:image" content={seo.openGraph.image} />
+	{/if}
 	<meta property="og:site_name" content={seo.openGraph?.site_name || 'Zaur'} />
 	<meta property="og:locale" content="en_US" />
 	
 	<!-- Twitter -->
 	<meta property="twitter:card" content={seo.twitter?.card || 'summary_large_image'} />
-	<meta property="twitter:url" content={seo.openGraph?.url || seo.canonical} />
+	{#if seo.openGraph?.url || seo.canonical}
+		<meta property="twitter:url" content={seo.openGraph?.url || seo.canonical} />
+	{/if}
 	<meta property="twitter:title" content={seo.twitter?.title || seo.title} />
 	<meta property="twitter:description" content={seo.twitter?.description || seo.description} />
-	<meta property="twitter:image" content={seo.twitter?.image || seo.openGraph?.image} />
+	{#if seo.twitter?.image || seo.openGraph?.image}
+		<meta property="twitter:image" content={seo.twitter?.image || seo.openGraph?.image} />
+	{/if}
 	
 	<!-- Additional SEO -->
 	<meta name="theme-color" content="#2480ec" />
