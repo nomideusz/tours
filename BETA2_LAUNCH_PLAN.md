@@ -7,7 +7,7 @@
 **Key Differentiators:**
 - Beta 1 (50 users): 1 year free + 30% off forever
 - Early Access (5 users): Same as Beta 1 (reward for earliest belief)
-- **Beta 2 (100 users): 6 months free + 20% off forever** ⬅️ NEW
+- **Beta 2 (100 users): 4 months free + 20% off forever** ⬅️ NEW
 - Public Launch (Nov 2025): 14-30 day trial + full price
 
 ---
@@ -17,7 +17,7 @@
 ### Essential
 - **Public Price:** €25/month
 - **Beta 2 Price:** €20/month (20% off forever)
-- **Trial Period:** 6 months free
+- **Trial Period:** 4 months free
 - **5-Year Savings:** ~€420
 
 **Features:**
@@ -33,8 +33,8 @@
 
 ### Premium
 - **Public Price:** €49/month
-- **Beta 2 Price:** €39.20/month (20% off forever)
-- **Trial Period:** 6 months free
+- **Beta 2 Price:** €39/month (20% off forever)
+- **Trial Period:** 4 months free
 - **5-Year Savings:** ~€764
 
 **Features:**
@@ -367,7 +367,7 @@ Essential
 €20/month (save €5/month forever)
 
 Premium
-€39.20/month (save €9.80/month forever)
+€39/month (save €9.80/month forever)
 
 [Claim Your Spot →]
 ```
@@ -379,7 +379,7 @@ Premium
 | Free Trial          | 12 months   | 6 months    | 30 days       |
 | Lifetime Discount   | 30% off     | 20% off     | None          |
 | Essential Price     | €17.50/mo   | €20/mo      | €25/mo        |
-| Premium Price       | €34.30/mo   | €39.20/mo   | €49/mo        |
+| Premium Price       | €34.30/mo   | €39/mo   | €49/mo        |
 | 5-Year Savings      | ~€750-1293  | ~€420-764   | €0            |
 ```
 

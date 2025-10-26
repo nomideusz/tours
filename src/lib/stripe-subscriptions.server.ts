@@ -6,21 +6,23 @@ import { eq, count } from 'drizzle-orm';
 
 // Subscription plan configurations
 // 
-// Beta Pricing Tiers:
-// - Beta 1 (50 users): 1 year free + 30% off forever
-//   Essential: €25 → €17.50/month after trial
-//   Premium: €49 → €34.30/month after trial
+// Beta Pricing Cohorts (Three-Tier System):
+// - Beta 1: 1 year free trial + 30% lifetime discount
+//   Essential: €11.20/month (was €16 base), €109.20/year
+//   Premium: €24.50/month (was €35 base), €310.80/year
 //
-// - Beta 2 (100 users): 6 months free + 20% off forever  
-//   Essential: €25 → €20/month after trial
-//   Premium: €49 → €39.20/month after trial
+// - Beta 2: 4 months free trial + 20% lifetime discount  
+//   Essential: €20/month (€25 base - 20%), €200/year
+//   Premium: €39/month (€49 base - 20%), €390/year
 //
-// - Public Launch (March 2026): Full price
-//   Essential: €25/month
-//   Premium: €49/month
+// - Public Launch: Full price with 14-day trial
+//   Essential: €25/month, €250/year
+//   Premium: €49/month, €490/year
 //
-// Discounts are applied via promo codes (BETA2_GUIDE, BETA2_PRO, BETA2)
-// and managed through user.subscriptionDiscountPercentage + user.subscriptionFreeUntil
+// Discounts are now BUILT INTO Stripe price IDs (not coupons)
+// Trial periods are handled via subscription_data.trial_period_days
+
+export type BetaCohort = 'beta_1' | 'beta_2' | 'public';
 
 export const SUBSCRIPTION_PLANS = {
   free: {
@@ -46,8 +48,18 @@ export const SUBSCRIPTION_PLANS = {
       'Email support'
     ],
     stripePriceId: {
-      monthly: process.env.STRIPE_STARTER_PRO_MONTHLY_PRICE_ID,
-      yearly: process.env.STRIPE_STARTER_PRO_YEARLY_PRICE_ID,
+      beta_1: {
+        monthly: process.env.STRIPE_ESSENTIAL_BETA1_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_ESSENTIAL_BETA1_YEARLY_PRICE_ID,
+      },
+      beta_2: {
+        monthly: process.env.STRIPE_ESSENTIAL_BETA2_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_ESSENTIAL_BETA2_YEARLY_PRICE_ID,
+      },
+      public: {
+        monthly: process.env.STRIPE_ESSENTIAL_PUBLIC_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_ESSENTIAL_PUBLIC_YEARLY_PRICE_ID,
+      },
     },
   },
   professional: {
@@ -70,8 +82,18 @@ export const SUBSCRIPTION_PLANS = {
       'Priority support (24h response)'
     ],
     stripePriceId: {
-      monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
-      yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
+      beta_1: {
+        monthly: process.env.STRIPE_PREMIUM_BETA1_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_PREMIUM_BETA1_YEARLY_PRICE_ID,
+      },
+      beta_2: {
+        monthly: process.env.STRIPE_PREMIUM_BETA2_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_PREMIUM_BETA2_YEARLY_PRICE_ID,
+      },
+      public: {
+        monthly: process.env.STRIPE_PREMIUM_PUBLIC_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_PREMIUM_PUBLIC_YEARLY_PRICE_ID,
+      },
     },
   },
   agency: {
@@ -91,10 +113,8 @@ export const SUBSCRIPTION_PLANS = {
       'Dedicated account manager',
       'Multi-location management'
     ],
-    stripePriceId: {
-      monthly: process.env.STRIPE_AGENCY_MONTHLY_PRICE_ID,
-      yearly: process.env.STRIPE_AGENCY_YEARLY_PRICE_ID,
-    },
+    // Agency plan hidden from public but kept for legacy/special access
+    stripePriceId: null,
   },
 } as const;
 
@@ -104,6 +124,27 @@ export type BillingInterval = 'monthly' | 'yearly';
 // Get plan configuration
 export function getPlanConfig(planId: SubscriptionPlan) {
   return SUBSCRIPTION_PLANS[planId];
+}
+
+// Get the appropriate price ID for a user's cohort
+export function getPriceIdForUser(
+  planId: SubscriptionPlan,
+  interval: BillingInterval,
+  betaCohort: BetaCohort | null
+): string | undefined {
+  const plan = SUBSCRIPTION_PLANS[planId];
+  
+  // Free plan and Agency plan don't have price IDs
+  if (!plan.stripePriceId || planId === 'free' || planId === 'agency') {
+    return undefined;
+  }
+  
+  // Default to public cohort if not specified
+  const cohort = betaCohort || 'public';
+  
+  // Get the price ID from the nested structure
+  const priceIds = plan.stripePriceId[cohort];
+  return priceIds?.[interval];
 }
 
 // Check if user can create more bookings
@@ -200,32 +241,47 @@ export async function createSubscriptionCheckout(
   if (planId === 'free') {
     throw new Error('Cannot create checkout for free plan');
   }
-
-  const stripe = getStripe();
-  const plan = getPlanConfig(planId);
-  const priceId = plan.stripePriceId?.[billingInterval];
-
-  if (!priceId) {
-    throw new Error(`Price ID not configured for ${planId} ${billingInterval}`);
+  
+  if (planId === 'agency') {
+    throw new Error('Agency plan is not available for self-service checkout');
   }
 
-  // Get or create customer
+  const stripe = getStripe();
+  
+  // Get user and determine their cohort
   const userRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (userRecords.length === 0) {
     throw new Error('User not found');
   }
 
   const user = userRecords[0];
-  let customerId = user.stripeCustomerId;
+  const betaCohort = user.betaGroup || 'public';
+  
+  // Get the appropriate price ID for this user's cohort
+  const priceId = getPriceIdForUser(planId, billingInterval, betaCohort);
 
+  if (!priceId) {
+    throw new Error(`Price ID not configured for ${planId} ${billingInterval} (cohort: ${betaCohort})`);
+  }
+
+  // Get or create Stripe customer
+  let customerId = user.stripeCustomerId;
   if (!customerId) {
     customerId = await createStripeCustomer(userId, user.email, user.name);
   }
   
-  // Check for promo benefits
-  const now = new Date();
-  const hasFreeTrial = user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > now;
-  const hasDiscount = user.subscriptionDiscountPercentage && user.subscriptionDiscountPercentage > 0;
+  // Determine trial period based on cohort
+  // Beta 1: 365 days (1 year free)
+  // Beta 2: 120 days (4 months free)  
+  // Public: 14 days (built into Stripe price, but we set it here for consistency)
+  let trialPeriodDays = 0;
+  if (betaCohort === 'beta_1') {
+    trialPeriodDays = 365;
+  } else if (betaCohort === 'beta_2') {
+    trialPeriodDays = 120;
+  } else if (betaCohort === 'public') {
+    trialPeriodDays = 14;
+  }
   
   // Prepare checkout session parameters
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -244,102 +300,23 @@ export async function createSubscriptionCheckout(
       userId,
       planId,
       billingInterval,
-      promoCode: user.promoCodeUsed || '',
+      betaCohort,
     },
-  };
-  
-  // Apply promo benefits
-  if (hasFreeTrial && user.subscriptionFreeUntil) {
-    // Calculate free trial days
-    const trialEndDate = new Date(user.subscriptionFreeUntil);
-    const trialDays = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (trialDays > 0) {
-      // Stripe requires minimum 2 days for trial
-      sessionParams.subscription_data = {
-        trial_period_days: Math.max(2, trialDays),
-        metadata: {
-          promoType: hasDiscount ? 'free_trial_with_discount' : 'free_trial',
-          promoCode: user.promoCodeUsed || '',
-          discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
-          isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
-        }
-      };
-    }
-  }
-  
-  // Apply discount coupon (can be combined with free trial)
-  if (hasDiscount) {
-    // Create or find a coupon for the discount percentage
-    const couponId = `PROMO_${user.subscriptionDiscountPercentage}PCT${user.isLifetimeDiscount ? '_FOREVER' : ''}`;
-    
-    try {
-      // Try to retrieve existing coupon
-      await stripe.coupons.retrieve(couponId);
-    } catch (error) {
-      // Create coupon if it doesn't exist
-      const couponData: any = {
-        id: couponId,
-        percent_off: user.subscriptionDiscountPercentage,
-        duration: user.isLifetimeDiscount ? 'forever' : 'repeating',
-        name: `${user.subscriptionDiscountPercentage}% ${user.isLifetimeDiscount ? 'Lifetime' : ''} Discount`,
-        metadata: {
-          type: 'promo_code_discount',
-          promoCode: user.promoCodeUsed || ''
-        }
-      };
-      
-      // Only add duration_in_months for repeating coupons
-      if (!user.isLifetimeDiscount) {
-        couponData.duration_in_months = 12; // Default to 12 months if not lifetime
+    subscription_data: {
+      trial_period_days: trialPeriodDays,
+      metadata: {
+        userId,
+        planId,
+        billingInterval,
+        betaCohort,
+        trialDays: trialPeriodDays.toString(),
       }
-      
-      await stripe.coupons.create(couponData);
     }
-    
-    sessionParams.discounts = [{
-      coupon: couponId
-    }];
-    
-    if (!sessionParams.subscription_data) {
-      sessionParams.subscription_data = {};
-    }
-    if (!sessionParams.subscription_data.metadata) {
-      sessionParams.subscription_data.metadata = {};
-    }
-    // Merge discount metadata (don't override existing metadata from trial)
-    sessionParams.subscription_data.metadata = {
-      ...sessionParams.subscription_data.metadata,
-      promoType: hasFreeTrial ? 'free_trial_with_discount' : (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount'),
-      promoCode: user.promoCodeUsed || '',
-      discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
-      isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false'
-    };
-  }
-  
-  // Add basic metadata even if no promo code is used
-  if (!sessionParams.subscription_data) {
-    sessionParams.subscription_data = {};
-  }
-  if (!sessionParams.subscription_data.metadata) {
-    sessionParams.subscription_data.metadata = {};
-  }
-  
-  // Ensure all metadata fields are present
-  sessionParams.subscription_data.metadata = {
-    userId,
-    planId,
-    billingInterval,
-    promoCode: user.promoCodeUsed || '',
-    promoType: hasFreeTrial && hasDiscount ? 'free_trial_with_discount' : 
-               hasFreeTrial ? 'free_trial' : 
-               hasDiscount ? (user.isLifetimeDiscount ? 'lifetime_discount' : 'percentage_discount') : 'none',
-    discountPercentage: user.subscriptionDiscountPercentage?.toString() || '0',
-    isLifetimeDiscount: user.isLifetimeDiscount ? 'true' : 'false',
-    ...sessionParams.subscription_data.metadata
   };
 
   const session = await stripe.checkout.sessions.create(sessionParams);
+  
+  console.log(`Created subscription checkout for user ${userId}: plan=${planId}, cohort=${betaCohort}, trial=${trialPeriodDays}d`);
 
   return session;
 }
@@ -389,16 +366,32 @@ export async function updateUserSubscription(
 
   const user = userRecords[0];
   
-  // Determine plan from subscription
+  // Extract cohort from subscription metadata
+  const betaCohort = subscription.metadata.betaCohort as BetaCohort | undefined;
+  
+  // Determine plan from subscription by checking price ID against all cohorts
   let planId: SubscriptionPlan = 'free';
   const priceId = subscription.items.data[0]?.price.id;
   
   for (const [key, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
-    if (plan.stripePriceId?.monthly === priceId || plan.stripePriceId?.yearly === priceId) {
-      planId = key as SubscriptionPlan;
-      break;
+    if (key === 'free' || key === 'agency') continue;
+    
+    const planConfig = plan as typeof SUBSCRIPTION_PLANS.starter_pro | typeof SUBSCRIPTION_PLANS.professional;
+    if (!planConfig.stripePriceId) continue;
+    
+    // Check all cohorts for matching price ID
+    for (const cohort of ['beta_1', 'beta_2', 'public'] as BetaCohort[]) {
+      const cohortPrices = planConfig.stripePriceId[cohort];
+      if (cohortPrices?.monthly === priceId || cohortPrices?.yearly === priceId) {
+        planId = key as SubscriptionPlan;
+        break;
+      }
     }
+    
+    if (planId !== 'free') break;
   }
+
+  console.log(`Updating subscription for user ${user.id}: plan=${planId}, cohort=${betaCohort || user.betaGroup || 'unknown'}, status=${subscription.status}`);
 
   await db.update(users)
     .set({

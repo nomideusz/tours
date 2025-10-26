@@ -9,17 +9,17 @@ Everything is ready for Beta 2 launch! Here's the complete overview:
 ## 📊 Final Pricing Structure
 
 ### Beta 2 Offer (100 Spots)
-- **Free Trial:** 6 months (no credit card)
+- **Free Trial:** 4 months (no credit card)
 - **Lifetime Discount:** 20% off forever
 - **Essential:** €20/month (save €5/month)
-- **Premium:** €39.20/month (save €9.80/month)
-- **5-Year Savings:** €420 (Essential) or €764 (Premium)
+- **Premium:** €39/month (save €10/month)
+- **5-Year Savings:** €320 (Essential) or €664 (Premium)
 
 ### Comparison
 | Tier | Free Trial | Discount | Essential Price | Premium Price |
 |------|-----------|----------|------------|-----------|
 | Beta 1 (50) | 12 months | 30% forever | €17.50/mo | €34.30/mo |
-| **Beta 2 (100)** | **6 months** | **20% forever** | **€20/mo** | **€39.20/mo** |
+| **Beta 2 (100)** | **4 months** | **20% forever** | **€20/mo** | **€39/mo** |
 | Public (March 2026) | None | None | €25/mo | €49/mo |
 
 ---
@@ -94,7 +94,7 @@ Everything is ready for Beta 2 launch! Here's the complete overview:
 Lock In
 20% Off Forever
 
-Join 100 tour guides getting 6 months free + lifetime discount
+Join 100 tour guides getting 4 months free + lifetime discount
 
 [Live Counter: 100/100 Spots Remaining]
 [Progress Bar]
@@ -111,8 +111,8 @@ Join 100 tour guides getting 6 months free + lifetime discount
 
 **3. Pricing Section**
 - Only 2 plans shown (Free Starter hidden)
-- Strikethrough pricing: ~~€25~~ €20 / ~~€49~~ €39.20
-- "6 months FREE + 20% off forever" badges
+- Strikethrough pricing: ~~€25~~ €20 / ~~€49~~ €39
+- "4 months FREE + 20% off forever" badges
 
 **4. Comparison Table**
 - 3-column comparison (Beta 1 / Beta 2 / Public)
@@ -172,7 +172,7 @@ Join 100 tour guides getting 6 months free + lifetime discount
 **Step 1: Deploy to Production**
 ```bash
 git add .
-git commit -m "feat: Beta 2 launch - 6 months free + 20% lifetime discount"
+git commit -m "feat: Beta 2 launch - 4 months free + 20% lifetime discount"
 git push origin master
 ```
 
@@ -210,7 +210,7 @@ node scripts/create-beta2-promo-codes.js
 - Feature usage patterns
 - Support ticket volume
 
-### Long-Term (6 Months)
+### Long-Term (4 Months)
 - Trial completion rate
 - Conversion to paid (after trial ends)
 - Beta 2 vs Beta 1 engagement comparison
@@ -226,7 +226,7 @@ node scripts/create-beta2-promo-codes.js
 
 Last 100 spots before public launch!
 
-✅ 6 months FREE
+✅ 4 months FREE
 ✅ 20% off FOREVER
 ✅ €16/mo (Solo) or €36/mo (Professional)
 ✅ Zero commission on bookings
@@ -247,7 +247,7 @@ Hi [Name],
 This is it – your final opportunity to lock in a lifetime discount before Zaur launches publicly in March 2026.
 
 🎉 BETA 2 OFFER (100 SPOTS ONLY):
-• 6 months completely free
+• 4 months completely free
 • 20% off forever after trial
 • €16/month (Solo) or €36/month (Professional)
 • Keep 100% of your tour revenue

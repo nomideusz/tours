@@ -22,7 +22,7 @@
 	
 	let loading = $state(false);
 	let error = $state<string | null>(null);
-	let isYearly = $state(true);
+	let isYearly = $state(false);
 	let showCancelModal = $state(false);
 	
 	// Convert shared pricing config to subscription format
@@ -46,7 +46,15 @@
 	
 	// Get plan pricing safely
 	function getPlanPricing(planId: string) {
-		return PRICING_PLANS.find(plan => plan.id === planId)?.basePrice;
+		const plan = PRICING_PLANS.find(plan => plan.id === planId);
+		if (!plan) return null;
+		
+		// Return pricing structure
+		// Note: yearly is the ANNUAL TOTAL (€250, €490), not monthly equivalent
+		return {
+			monthly: plan.basePrice.monthly,
+			yearly: plan.basePrice.yearly
+		};
 	}
 	
 	// Check if user has promo benefits
@@ -61,6 +69,7 @@
 	
 	// Get user context for pricing calculations
 	let userPricingContext = $derived<UserPricingContext | undefined>(user ? {
+		betaGroup: user.betaGroup,
 		subscriptionFreeUntil: user.subscriptionFreeUntil,
 		subscriptionDiscountPercentage: user.subscriptionDiscountPercentage,
 		isLifetimeDiscount: user.isLifetimeDiscount,
@@ -534,13 +543,13 @@
 						style="{isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 						onclick={() => isYearly = true}
 					>
-						Annual <span class="hidden sm:inline">(Save 20%)</span><span class="sm:hidden">-20%</span>
+						Annual <span class="hidden sm:inline">(2 months free)</span><span class="sm:hidden">🎁</span>
 					</button>
 				</div>
 			</div>
 			
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-				{#each PRICING_PLANS.filter(p => p.id !== 'agency') as plan}
+				{#each PRICING_PLANS.filter(p => !p.hidden) as plan}
 					{@const pricing = calculatePlanPricing(plan.id, isYearly ? 'yearly' : 'monthly', userPricingContext)}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
@@ -558,36 +567,34 @@
 						<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">{plan.name}</h3>
 						
 						<div class="mb-1">
-							{#if !isFreePlan && pricing.savings > 0}
-								<!-- User has promo discount applied -->
+							{#if !isFreePlan && pricing.discountPercentage && pricing.discountPercentage > 0}
+								<!-- User has beta cohort discount (Beta 1 or Beta 2) -->
 								<div class="text-center">
 									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{formatPrice(pricing.original)}</span>
 									<span class="text-xl sm:text-2xl font-bold block" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
-									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isYearly ? ' billed annually' : ''}</span>
+									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
 								</div>
 							{:else}
-								<!-- Regular pricing -->
+								<!-- Regular pricing (no cohort discount) -->
 								<div class="text-center">
 									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
-									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/month{isFreePlan ? '' : isYearly ? ' billed annually' : ''}</span>
+									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isFreePlan ? 'month' : isYearly ? 'year' : 'month'}</span>
 								</div>
 							{/if}
 						</div>
 						
 						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
-							{#if !isFreePlan && pricing.savings > 0}
+							{#if !isFreePlan && pricing.discountPercentage && pricing.discountPercentage > 0}
+								<!-- User has beta discount (Beta 1 or Beta 2) -->
 								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
-									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage || 30}% OFF - Save €${formatPrice(pricing.savings)}`}
+									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage}% OFF forever`}
 								</span>
 							{:else if !isFreePlan && isYearly}
-								{@const planPricing = getPlanPricing(plan.id)}
-								{@const yearlySavings = planPricing ? (planPricing.monthly * 12) - (planPricing.yearly * 12) : 0}
+								<!-- Annual billing: 2 months free -->
+								{@const monthlyPricing = calculatePlanPricing(plan.id, 'monthly', userPricingContext)}
+								{@const monthlySavings = monthlyPricing.final * 2}
 								<span class="text-xs font-medium" style="color: var(--color-success-600);">
-									Save €{yearlySavings}/year with annual billing
-								</span>
-							{:else if !isFreePlan}
-								<span class="text-xs" style="color: var(--text-tertiary);">
-									Regular pricing
+									2 months free • Save €{formatPrice(monthlySavings)}
 								</span>
 							{/if}
 						</div>

@@ -103,7 +103,34 @@ export async function applyPromoCodeToUser(
   promoCode: typeof promoCodes.$inferSelect
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user already has a beta cohort assigned
+    const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (existingUser.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    // Prevent changing cohort once set (protect existing users)
+    if (existingUser[0].betaGroup) {
+      console.warn(`User ${userId} already has betaGroup: ${existingUser[0].betaGroup}. Skipping promo code application.`);
+      return { success: false, error: 'User already has a pricing cohort assigned' };
+    }
+    
     const benefits = calculatePromoCodeBenefits(promoCode);
+    
+    // Determine beta cohort based on promo code
+    let betaGroup: 'beta_1' | 'beta_2' | null = null;
+    
+    // Beta 1: Promo codes like BETA_APPRECIATION, EARLY_ACCESS (30% lifetime discount)
+    if (promoCode.code === 'BETA_APPRECIATION' || 
+        promoCode.type === 'early_access' || 
+        (benefits.discountPercentage === 30 && benefits.isLifetime)) {
+      betaGroup = 'beta_1';
+    }
+    // Beta 2: Promo codes like BETA2, BETA2_GUIDE (20% lifetime discount)
+    else if (promoCode.code.startsWith('BETA2') || 
+             (benefits.discountPercentage === 20 && benefits.isLifetime)) {
+      betaGroup = 'beta_2';
+    }
     
     // Determine if user should be upgraded to a higher plan
     let subscriptionPlan: 'professional' | undefined;
@@ -112,7 +139,7 @@ export async function applyPromoCodeToUser(
       subscriptionPlan = 'professional';
     }
     
-    // Update user with promo code benefits
+    // Update user with promo code benefits and cohort
     await db
       .update(users)
       .set({
@@ -121,6 +148,7 @@ export async function applyPromoCodeToUser(
         subscriptionFreeUntil: benefits.freeUntilDate,
         isLifetimeDiscount: benefits.isLifetime,
         earlyAccessMember: promoCode.type === 'early_access',
+        betaGroup: betaGroup, // Assign cohort
         ...(subscriptionPlan && { 
           subscriptionPlan,
           subscriptionStatus: 'active' 
@@ -137,6 +165,8 @@ export async function applyPromoCodeToUser(
         updatedAt: new Date()
       })
       .where(eq(promoCodes.id, promoCode.id));
+
+    console.log(`Applied promo code ${promoCode.code} to user ${userId}, assigned cohort: ${betaGroup || 'none'}`);
 
     return { success: true };
   } catch (error) {

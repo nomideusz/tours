@@ -16,6 +16,7 @@ export interface PricingPlan {
 	};
 	features: PricingFeature[];
 	popular?: boolean;
+	hidden?: boolean; // Hide from public pricing pages
 	ctaText: string;
 	ctaLink: string;
 }
@@ -47,7 +48,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 		description: 'Perfect for independent guides',
 		monthlyBookingLimit: 60,
 		tourLimit: 5,
-		basePrice: { monthly: 25, yearly: 20.83 },
+		basePrice: { monthly: 25, yearly: 250 },
 		popular: true,
 		features: [
 			{ text: '60 bookings/month', included: true },
@@ -69,7 +70,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 		description: 'Scale your tour business',
 		monthlyBookingLimit: null,
 		tourLimit: null,
-		basePrice: { monthly: 49, yearly: 40.83 },
+		basePrice: { monthly: 49, yearly: 490 },
 		features: [
 			{ text: 'Unlimited bookings', included: true },
 			{ text: 'Unlimited tour types', included: true },
@@ -95,7 +96,8 @@ export const PRICING_PLANS: PricingPlan[] = [
 		description: 'For tour companies',
 		monthlyBookingLimit: null,
 		tourLimit: null,
-		basePrice: { monthly: 115, yearly: 95 },
+		basePrice: { monthly: 115, yearly: 1150 },
+		hidden: true, // Hidden from public pricing, available via special access only
 		features: [
 			{ text: 'Everything in Professional', included: true },
 			{ text: 'Branded operator pages', included: true },
@@ -121,20 +123,33 @@ export const EARLY_ACCESS_DISCOUNT = 0.5; // 50% off (legacy - not currently use
 export const BETA_1_DISCOUNT = 0.30; // 30% lifetime discount for Beta 1 users
 export const BETA_2_DISCOUNT = 0.20; // 20% lifetime discount for Beta 2 users
 
-// Beta 2 pricing (20% off full prices)
+// Beta 1 pricing (exact prices from Stripe, matches original script)
+export const BETA_1_PRICES = {
+	starter_pro: {
+		monthly: 11.20, // From original base €16 - 30%
+		yearly: 109.20 // Annual with 2 free months built in
+	},
+	professional: {
+		monthly: 24.50, // From original base €35 - 30%
+		yearly: 310.80 // Annual with 2 free months built in (was €245/year + extra discount)
+	}
+};
+
+// Beta 2 pricing (20% off, rounded to clean numbers matching Stripe)
 export const BETA_2_PRICES = {
 	starter_pro: {
 		monthly: 20, // €25 - 20% = €20
-		yearly: 20
+		yearly: 200 // €250 - 20% = €200
 	},
 	professional: {
-		monthly: 39.2, // €49 - 20% = €39.20
-		yearly: 39.2
+		monthly: 39, // €49 - 20% ≈ €39 (rounded from €39.20)
+		yearly: 390 // €490 - 20% ≈ €390 (rounded from €392)
 	}
 };
 
 // User context for pricing calculations
 export interface UserPricingContext {
+	betaGroup?: 'beta_1' | 'beta_2' | 'public' | null;
 	subscriptionFreeUntil?: string | null;
 	subscriptionDiscountPercentage?: number | null;
 	isLifetimeDiscount?: boolean | null;
@@ -164,54 +179,46 @@ export function calculatePlanPricing(
 ): PricingResult {
 	const plan = PRICING_PLANS.find(p => p.id === planId);
 	
-	if (!plan || planId === 'free') {
+	if (!plan || planId === 'free' || planId === 'agency') {
 		return { original: 0, final: 0, savings: 0 };
 	}
 	
+	// Get the base price (yearly is annual total, monthly is per month)
 	const originalPrice = plan.basePrice[interval];
 	
-	// If no user context, use early access pricing (for marketing page)
-	if (!userContext) {
-		const finalPrice = calculateEarlyAccessPrice(originalPrice);
+	// Determine user's cohort
+	const cohort = userContext?.betaGroup || 'public';
+	
+	// Calculate based on cohort using exact prices (not percentages, to avoid rounding issues)
+	if (cohort === 'beta_1') {
+		// Beta 1: Use exact prices from BETA_1_PRICES constant
+		const finalPrice = BETA_1_PRICES[planId]?.[interval] || originalPrice;
+		const discount = originalPrice - finalPrice;
 		return {
 			original: originalPrice,
 			final: finalPrice,
-			savings: originalPrice - finalPrice
-		};
-	}
-	
-	// Check if user is in free period (from promo code)
-	const isInFreePeriod = userContext.subscriptionFreeUntil && 
-		new Date(userContext.subscriptionFreeUntil) > new Date();
-		
-	if (isInFreePeriod) {
-		return {
-			original: originalPrice,
-			final: 0,
-			savings: originalPrice,
-			isInFreePeriod: true
-		};
-	}
-	
-	// Apply promo code discount if user has one
-	const discountPercentage = userContext.subscriptionDiscountPercentage || 0;
-	if (discountPercentage > 0) {
-		const discount = Math.round((originalPrice * discountPercentage) / 100 * 100) / 100;
-		return {
-			original: originalPrice,
-			final: Math.round((originalPrice - discount) * 100) / 100,
 			savings: discount,
-			discountPercentage,
-			isLifetimeDiscount: userContext.isLifetimeDiscount || false
+			discountPercentage: 30,
+			isLifetimeDiscount: true
+		};
+	} else if (cohort === 'beta_2') {
+		// Beta 2: Use exact prices from BETA_2_PRICES constant
+		const finalPrice = BETA_2_PRICES[planId]?.[interval] || originalPrice;
+		const discount = originalPrice - finalPrice;
+		return {
+			original: originalPrice,
+			final: finalPrice,
+			savings: discount,
+			discountPercentage: 20,
+			isLifetimeDiscount: true
 		};
 	}
 	
-	// No user-specific discounts - use early access pricing
-	const finalPrice = calculateEarlyAccessPrice(originalPrice);
+	// Public cohort: full price, no discount
 	return {
 		original: originalPrice,
-		final: finalPrice,
-		savings: originalPrice - finalPrice
+		final: originalPrice,
+		savings: 0
 	};
 }
 

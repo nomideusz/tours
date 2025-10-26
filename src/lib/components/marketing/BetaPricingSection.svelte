@@ -3,10 +3,10 @@
 	import Check from 'lucide-svelte/icons/check';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
-	import { PRICING_PLANS, type PricingPlan } from '$lib/utils/pricing-config.js';
+	import { PRICING_PLANS, type PricingPlan, BETA_2_PRICES } from '$lib/utils/pricing-config.js';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
-	let isYearly = $state(true);
+	let isYearly = $state(false);
 	
 	// Calculate pricing for display
 	function getPlanPricing(plan: PricingPlan, yearly: boolean) {
@@ -16,8 +16,12 @@
 		// Get base price from plan
 		const basePrice = plan.basePrice[interval];
 		
+		// Get Beta 2 discounted price (exact values, not calculated)
+		const beta2Price = BETA_2_PRICES[plan.id as 'starter_pro' | 'professional']?.[interval] || basePrice * 0.8;
+		
 		return {
 			regular: basePrice,
+			discounted: beta2Price,
 			period: billingPeriod
 		};
 	}
@@ -36,15 +40,11 @@
 
 <!-- Simple Header -->
 <div class="section-header">
-	<BetaBadge text="Beta 2 - Limited Spots" icon={Sparkles} variant="large" class="mb-6" />
 	<h2 class="section-title">
-		Beta 2 Final Spots
+		Beta 2 Pricing
 	</h2>
 	<p class="section-subtitle">
-		6 months free + 20% off forever. Limited to 100 guides only.
-	</p>
-	<p class="beta-2-urgency">
-		<strong>Last chance before public launch.</strong> After Beta 2 closes, everyone pays full price.
+		4 months free trial + 20% off forever. Last 100 spots before public launch.
 	</p>
 </div>
 
@@ -61,7 +61,7 @@
 			class="toggle-button {isYearly ? 'active' : ''}"
 			onclick={() => isYearly = true}
 		>
-			Annual <span class="save-badge">Save 20%</span>
+			Annual
 		</button>
 	</div>
 </div>
@@ -89,10 +89,10 @@
 						<span>€{formatPrice(pricing.regular)}</span>
 					</div>
 					<div class="price-main">
-						<span class="price-value">€{formatPrice(Math.round(pricing.regular * 0.8 * 100) / 100)}<span class="price-period">/mo</span></span>
+						<span class="price-value">€{formatPrice(pricing.discounted)}<span class="price-period">/{isYearly ? 'yr' : 'mo'}</span></span>
 					</div>
 					<div class="price-note beta-2-badge">
-						6 months FREE + 20% off forever
+						4 months FREE trial + 20% OFF forever
 					</div>
 				</div>
 				
@@ -121,12 +121,6 @@
 <!-- Beta 2 CTA -->
 <div class="cta-section">
 	<div class="cta-content">
-		<h3 class="cta-title">
-			Limited Spots Available
-		</h3>
-		<p class="cta-description">
-			<strong>Only 100 spots remaining</strong> for Beta 2. Lock in 20% lifetime discount before public launch.
-		</p>
 		<div class="cta-actions">
 			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
 				Claim Your Beta 2 Spot
@@ -134,7 +128,7 @@
 			</button>
 		</div>
 		<p class="cta-note">
-			✓ No credit card required  ✓ Cancel anytime during trial  ✓ Full access to all features
+			No credit card required • Cancel anytime • Full access to all features
 		</p>
 	</div>
 </div>

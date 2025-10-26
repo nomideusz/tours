@@ -15,7 +15,7 @@
 		{
 			date: 'November 2025',
 			title: 'Beta 2 Now Open',
-			description: 'Final 100 spots available (6 months free + 20% lifetime discount)',
+			description: 'Final 100 spots available (4 months free + 20% lifetime discount)',
 			status: 'active'
 		},
 		{

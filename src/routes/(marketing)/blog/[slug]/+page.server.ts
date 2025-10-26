@@ -6,7 +6,7 @@ const blogPosts = {
 	'beta-2-final-spots': {
 		slug: 'beta-2-final-spots',
 		title: 'Beta 2 Now Open: Final 100 Spots Before Public Launch',
-		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 6 months free + permanent savings before we launch publicly in March 2026.',
+		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 4 months free + permanent savings before we launch publicly in March 2026.',
 		author: 'Zaur Team',
 		publishedAt: new Date('2025-10-30'),
 		readTime: '5 min read',
@@ -17,8 +17,8 @@ const blogPosts = {
 			<h2>What is Beta 2?</h2>
 			<p>Beta 2 is the last beta cohort before our public launch. We're accepting exactly <strong>100 tour guides</strong> who will receive:</p>
 			<ul>
-				<li><strong>6 months completely free</strong> – Full platform access, no credit card required</li>
-				<li><strong>20% lifetime discount</strong> – €20/month (Essential) or €39.20/month (Premium) forever</li>
+				<li><strong>4 months completely free</strong> – Full platform access, no credit card required</li>
+				<li><strong>20% lifetime discount</strong> – €20/month (Essential) or €39/month (Premium) forever</li>
 				<li><strong>Zero commission</strong> – Keep 100% of your tour revenue</li>
 				<li><strong>Full feature access</strong> – Everything Beta 1 members are using</li>
 			</ul>
@@ -40,9 +40,9 @@ const blogPosts = {
 			<p>Our Beta 1 members (50 guides) received an even better deal as our earliest believers:</p>
 			<ul>
 				<li><strong>Beta 1:</strong> 1 year free + 30% lifetime discount (€17.50 or €34.30/month)</li>
-				<li><strong>Beta 2:</strong> 6 months free + 20% lifetime discount (€20 or €39.20/month)</li>
+				<li><strong>Beta 2:</strong> 4 months free + 20% lifetime discount (€20 or €39/month)</li>
 			</ul>
-			<p>Beta 2 is still an incredible deal – you'll save <strong>€420-€764 over 5 years</strong> compared to public launch pricing.</p>
+			<p>Beta 2 is still an incredible deal – you'll save <strong>€320-€664 over 5 years</strong> compared to public launch pricing.</p>
 
 			<h2>What You Get</h2>
 			<p>Beta 2 members get full access to Zaur's complete feature set:</p>
@@ -58,7 +58,7 @@ const blogPosts = {
 				<li>Email support</li>
 			</ul>
 
-			<h3>Premium Plan (€39.20/month after trial)</h3>
+			<h3>Premium Plan (€39/month after trial)</h3>
 			<ul>
 				<li>Unlimited bookings</li>
 				<li>Unlimited tour types</li>

@@ -19,6 +19,9 @@ export const promoCodeTypeEnum = pgEnum('promo_code_type', ['early_access', 'lif
 // Beta application status enum
 export const betaApplicationStatusEnum = pgEnum('beta_application_status', ['pending', 'accepted', 'rejected', 'waitlisted']);
 
+// Beta cohort enum (for pricing tiers)
+export const betaCohortEnum = pgEnum('beta_cohort', ['beta_1', 'beta_2', 'public']);
+
 // Users table
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
@@ -58,7 +61,7 @@ export const users = pgTable('users', {
   subscriptionFreeUntil: timestamp('subscription_free_until', { withTimezone: true }),
   isLifetimeDiscount: boolean('is_lifetime_discount').notNull().default(false),
   earlyAccessMember: boolean('early_access_member').notNull().default(false),
-  betaGroup: varchar('beta_group', { length: 20 }), // 'beta_1', 'beta_2', 'early_access', or null
+  betaGroup: betaCohortEnum('beta_group'), // 'beta_1', 'beta_2', 'public', or null
   
   // Usage tracking for plan limits
   monthlyBookingsUsed: integer('monthly_bookings_used').notNull().default(0),

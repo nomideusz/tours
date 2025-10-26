@@ -12,7 +12,7 @@
 	const faqs = [
 		{
 			question: "What do I get with Beta 2?",
-			answer: "6 months completely free, then just €20/month (Essential) or €39.20/month (Premium) - a 20% lifetime discount that never expires. Full access to all features, zero commission on bookings, and you keep 100% of your tour revenue."
+			answer: "4 months completely free, then just €20/month (Essential) or €39/month (Premium) - a 20% lifetime discount that never expires. Full access to all features, zero commission on bookings, and you keep 100% of your tour revenue."
 		},
 		{
 			question: "How many spots are available?",
@@ -20,11 +20,11 @@
 		},
 		{
 			question: "Do I need a credit card?",
-			answer: "No! Beta 2 is completely free for 6 months with no credit card required. Cancel anytime with no obligations."
+			answer: "No! Beta 2 is completely free for 4 months with no credit card required. Cancel anytime with no obligations."
 		},
 		{
-			question: "What happens after the 6-month trial?",
-			answer: "You'll continue at your discounted rate (€20 or €39.20/month) - 20% less than public pricing. This discount is permanent and applies forever. Cancel anytime if it's not for you."
+			question: "What happens after the 4-month trial?",
+			answer: "You'll continue at your discounted rate (€20 or €39/month) - 20% less than public pricing. This discount is permanent and applies forever. Cancel anytime if it's not for you."
 		},
 		{
 			question: "What if Beta 2 fills up?",

@@ -5,7 +5,7 @@ const blogPosts = [
 	{
 		slug: 'beta-2-final-spots',
 		title: 'Beta 2 Now Open: Final 100 Spots Before Public Launch',
-		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 6 months free + permanent savings before we launch publicly in March 2026.',
+		excerpt: 'Last chance to lock in 20% lifetime discount. Join 100 tour guides getting 4 months free + permanent savings before we launch publicly in March 2026.',
 		author: 'Zaur Team',
 		publishedAt: new Date('2025-10-30'),
 		readTime: '5 min read',

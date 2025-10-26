@@ -30,9 +30,9 @@ All Beta 2 implementation tasks have been completed successfully!
 - `scripts/create-beta2-promo-codes.js` - Script to create Beta 2 promo codes
 
 **Promo Codes Created:**
-1. **BETA2_GUIDE** - Essential: 6 months free + 20% lifetime discount (max 60 uses)
-2. **BETA2_PRO** - Premium: 6 months free + 20% lifetime discount (max 60 uses)
-3. **BETA2** - General (any plan): 6 months free + 20% lifetime discount (max 120 uses)
+1. **BETA2_GUIDE** - Essential: 4 months free + 20% lifetime discount (max 60 uses)
+2. **BETA2_PRO** - Premium: 4 months free + 20% lifetime discount (max 60 uses)
+3. **BETA2** - General (any plan): 4 months free + 20% lifetime discount (max 120 uses)
 
 **Database Status:** ✅ **Created in local database**
 
@@ -49,7 +49,7 @@ All Beta 2 implementation tasks have been completed successfully!
   - `BETA_2_DISCOUNT = 0.20` (20% lifetime)
 - Added `BETA_2_PRICES` object:
   - Essential: €20/month (€25 - 20%)
-  - Premium: €39.20/month (€49 - 20%)
+  - Premium: €39/month (€49 - 20%)
 - Added helper functions:
   - `isBeta2User()`
   - `isBeta1User()`
@@ -64,10 +64,10 @@ All Beta 2 implementation tasks have been completed successfully!
 
 **Changes:**
 - Updated header: "Beta 2 Final Spots"
-- Added urgency messaging: "6 months free + 20% off forever. Limited to 100 guides only."
+- Added urgency messaging: "4 months free + 20% off forever. Limited to 100 guides only."
 - Hidden Free Starter tier completely (filter: `p.id !== 'free'`)
-- Shows strikethrough pricing (€25 → €20, €49 → €39.20)
-- Added "6 months FREE + 20% off forever" badge
+- Shows strikethrough pricing (€25 → €20, €49 → €39)
+- Added "4 months FREE + 20% off forever" badge
 - Updated CTA button: "Claim Your Beta 2 Spot"
 - Changed grid from 3 columns to 2 columns (no Free tier)
 
@@ -119,17 +119,17 @@ All Beta 2 implementation tasks have been completed successfully!
 
 ### Beta 2 Pricing (20% off forever)
 - **Essential:** €20/month (save €5/month forever)
-- **Premium:** €39.20/month (save €9.80/month forever)
-- **Free Trial:** 6 months
+- **Premium:** €39/month (save €10/month forever)
+- **Free Trial:** 4 months
 - **Total 5-Year Savings:** €420 (Essential) or €764 (Premium)
 
 ### Comparison with Beta 1
 | Feature | Beta 1 | Beta 2 | Public Launch |
 |---------|--------|--------|---------------|
-| Free Trial | 12 months | 6 months | 14-30 days |
+| Free Trial | 12 months | 4 months | 14-30 days |
 | Lifetime Discount | 30% | 20% | None |
 | Essential Price | €17.50/mo | €20/mo | €25/mo |
-| Premium Price | €34.30/mo | €39.20/mo | €49/mo |
+| Premium Price | €34.30/mo | €39/mo | €49/mo |
 | 5-Year Savings | €750-€1293 | €420-€764 | €0 |
 
 ---
@@ -185,7 +185,7 @@ node scripts/create-beta2-promo-codes.js
 ```bash
 # Commit and push all changes
 git add .
-git commit -m "feat: Beta 2 launch - 6 months free + 20% lifetime discount"
+git commit -m "feat: Beta 2 launch - 4 months free + 20% lifetime discount"
 git push origin master
 ```
 
@@ -254,12 +254,12 @@ When a user applies a Beta 2 promo code:
 2. **System Updates User Record:**
    - `promoCodeUsed = 'BETA2'`
    - `subscriptionDiscountPercentage = 20`
-   - `subscriptionFreeUntil = new Date(+6 months)`
+   - `subscriptionFreeUntil = new Date(+4 months)`
    - `isLifetimeDiscount = true`
    - `betaGroup = 'beta_2'` (should be set manually by admin)
 3. **Stripe Checkout:**
-   - Creates 6-month trial period
-   - Applies 20% coupon forever
+   - Creates 4-month trial period (120 days)
+   - Applies 20% discount via dedicated price ID
 4. **After Trial:**
    - User pays discounted price (€16 or €36)
    - Discount applies to all future payments
@@ -351,7 +351,7 @@ Status: Open / Nearly Full / Closed
 
 ### For Beta 2 Participants
 
-**Trial Period:** 6 months free, no credit card required
+**Trial Period:** 4 months free, no credit card required
 **Discount:** 20% off forever after trial
 **Cancellation:** Cancel anytime during or after trial
 **Support:** Email support included

@@ -12,11 +12,11 @@
 	const faqs = [
 		{
 			question: "What is Beta 2 and how is it different from Beta 1?",
-			answer: "Beta 2 is the final beta cohort before our public launch in March 2026. While Beta 1 users (50 guides) received 1 year free + 30% lifetime discount, Beta 2 offers 100 guides 6 months free + 20% lifetime discount. This is your last chance to lock in a lifetime discount before we launch publicly at full price."
+			answer: "Beta 2 is the final beta cohort before our public launch in March 2026. While Beta 1 users (50 guides) received 1 year free + 30% lifetime discount, Beta 2 offers 100 guides 4 months free + 20% lifetime discount. This is your last chance to lock in a lifetime discount before we launch publicly at full price."
 		},
 		{
 			question: "What do I get with Beta 2?",
-			answer: "Beta 2 members get 6 months completely free (no credit card required), then just €20/month for Essential or €39.20/month for Premium - a 20% lifetime discount that never expires. You'll have full access to all features, keep 100% of your booking revenue with zero commission, and help shape the platform's final development."
+			answer: "Beta 2 members get 4 months completely free (no credit card required), then just €20/month for Essential or €39/month for Premium - a 20% lifetime discount that never expires. You'll have full access to all features, keep 100% of your booking revenue with zero commission, and help shape the platform's final development."
 		},
 		{
 			question: "How many spots are available?",
@@ -24,15 +24,15 @@
 		},
 		{
 			question: "Do I need a credit card to join Beta 2?",
-			answer: "No! Beta 2 is completely free for 6 months with no credit card required. After your free trial ends, you can choose to continue at your discounted rate (€20 or €39.20/month) or cancel anytime with no obligations."
+			answer: "No! Beta 2 is completely free for 4 months with no credit card required. After your free trial ends, you can choose to continue at your discounted rate (€20 or €39/month) or cancel anytime with no obligations."
 		},
 		{
 			question: "When does Beta 2 start and when does it end?",
-			answer: "Beta 2 is open now (November 2025) and runs until March 2026 when we launch publicly. Your 6-month free trial starts when you join, and your 20% lifetime discount applies to all payments after the trial ends - forever."
+			answer: "Beta 2 is open now (November 2025) and runs until March 2026 when we launch publicly. Your 4-month free trial starts when you join, and your 20% lifetime discount applies to all payments after the trial ends - forever."
 		},
 		{
-			question: "What happens after the 6-month trial?",
-			answer: "After your free trial, you'll automatically continue at your discounted rate: €20/month (Essential) or €39.20/month (Premium) - which is 20% less than public pricing. This discount is permanent and applies to all future payments. You can cancel anytime if you decide it's not for you."
+			question: "What happens after the 4-month trial?",
+			answer: "After your free trial, you'll automatically continue at your discounted rate: €20/month (Essential) or €39/month (Premium) - which is 20% less than public pricing. This discount is permanent and applies to all future payments. You can cancel anytime if you decide it's not for you."
 		},
 		{
 			question: "Can I upgrade or downgrade my plan later?",

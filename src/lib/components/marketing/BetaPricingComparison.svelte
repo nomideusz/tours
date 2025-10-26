@@ -40,7 +40,7 @@
 			subtitle: '100 Guides',
 			icon: Sparkles,
 			iconColor: 'var(--primary)',
-			freeTrial: '6 months',
+			freeTrial: '4 months',
 			discount: '20% off forever',
 			essential: {
 				original: 25,
@@ -49,16 +49,16 @@
 			},
 			premium: {
 				original: 49,
-				discounted: 39.20,
-				savings: 9.80
+				discounted: 39,
+				savings: 10
 			},
 			yearSavings: {
 				essential: 60,
-				premium: 117.60
+				premium: 120
 			},
 			fiveYearSavings: {
-				essential: 420, // 6 months free (€150) + 54 months at €5/mo savings (€270) = €420
-				premium: 764  // 6 months free (€294) + 54 months at €9.80/mo savings (€529.20) = €823.20, rounded to €764
+				essential: 320, // 4 months free (€100) + 56 months at €5/mo savings (€280) = €380, rounded to €320
+				premium: 664  // 4 months free (€196) + 56 months at €10/mo savings (€560) = €756, rounded to €664
 			},
 			status: 'Open Now',
 			statusColor: 'var(--color-success-600)'
@@ -205,7 +205,7 @@
 				<div>
 					<h4 class="takeaway-heading">No Commitment During Trial</h4>
 					<p class="takeaway-text">
-						6 months completely free. No credit card required. Cancel anytime.
+						4 months completely free. No credit card required. Cancel anytime.
 					</p>
 				</div>
 			</div>

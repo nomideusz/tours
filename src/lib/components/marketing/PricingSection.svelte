@@ -6,7 +6,7 @@
 	import Crown from 'lucide-svelte/icons/crown';
 	import { PRICING_PLANS, calculatePlanPricing, type PricingPlan } from '$lib/utils/pricing-config.js';
 	
-	let isYearly = $state(true);
+	let isYearly = $state(false);
 	
 	// Calculate pricing with early access discount using unified function
 	function getPlanPricing(plan: PricingPlan, yearly: boolean) {
@@ -77,13 +77,13 @@
 			class="button-toggle {isYearly ? 'active' : ''}"
 			onclick={() => isYearly = true}
 		>
-			Annual (Save 20%)
+			Annual (2 months free)
 		</button>
 	</div>
 </div>
 
 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-	{#each PRICING_PLANS as plan}
+	{#each PRICING_PLANS.filter(p => !p.hidden) as plan}
 		{@const pricing = getPlanPricing(plan, isYearly)}
 		<div class="pricing-card {plan.popular ? 'pricing-card--popular' : ''}" 
 			 role="button"

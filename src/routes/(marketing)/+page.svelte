@@ -8,7 +8,7 @@
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
-	import BetaPricingComparison from '$lib/components/marketing/BetaPricingComparison.svelte';
+	// import BetaPricingComparison from '$lib/components/marketing/BetaPricingComparison.svelte';
 	import Beta2FAQSection from '$lib/components/marketing/Beta2FAQSection.svelte';
 	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
 	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
@@ -41,7 +41,6 @@
 			'timeline',
 			'how-it-works',
 			'pricing',
-			'pricing-comparison',
 			'faq',
 			'newsletter'
 		]);
@@ -58,11 +57,11 @@
 	<!-- Override title for homepage specifically -->
 	<title>Zaur Beta 2 - Final Spots Before Public Launch</title>
 	<meta name="title" content="Zaur Beta 2 - Final Spots Before Public Launch" />
-	<meta name="description" content="Join Zaur Beta 2 - Last 100 spots available. Get 6 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
+	<meta name="description" content="Join Zaur Beta 2 - Last 100 spots available. Get 4 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
 	
 	<!-- Additional SEO signals for homepage -->
 	<meta property="og:title" content="Zaur Beta 2 - Final Spots Before Public Launch" />
-	<meta property="og:description" content="Join Zaur Beta 2 - Last 100 spots available. Get 6 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
+	<meta property="og:description" content="Join Zaur Beta 2 - Last 100 spots available. Get 4 months free + 20% lifetime discount on our QR booking platform. Limited time offer before March 2026 launch." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://zaur.app/" />
 	
@@ -134,13 +133,6 @@
 <section id="pricing" class="subtle-retro-section py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<BetaPricingSection />
-	</div>
-</section>
-
-<!-- Beta Pricing Comparison -->
-<section id="pricing-comparison" class="py-20">
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<BetaPricingComparison />
 	</div>
 </section>
 
