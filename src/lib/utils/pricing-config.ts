@@ -22,26 +22,8 @@ export interface PricingPlan {
 }
 
 export const PRICING_PLANS: PricingPlan[] = [
-	{
-		id: 'free',
-		name: 'Free Starter',
-		description: 'Perfect for trying out Zaur',
-		monthlyBookingLimit: 3,
-		tourLimit: 1,
-		basePrice: { monthly: 0, yearly: 0 },
-		features: [
-			{ text: '3 bookings/month', included: true },
-			{ text: '1 tour type', included: true },
-			{ text: 'Basic QR codes', included: true },
-			{ text: 'Email notifications', included: true },
-			{ text: 'Tour discovery listing', included: true },
-			{ text: 'Zaur branding visible', included: false },
-			{ text: 'No SMS notifications', included: false },
-			{ text: 'No analytics', included: false }
-		],
-		ctaText: 'Start Free',
-		ctaLink: '/auth/register'
-	},
+	// Note: Free plan removed from public display (abandoned)
+	// Free and Agency plans kept in type definitions for backward compatibility with existing DB records
 	{
 		id: 'starter_pro',
 		name: 'Essential',
@@ -89,33 +71,8 @@ export const PRICING_PLANS: PricingPlan[] = [
 		],
 		ctaText: 'Get Early Access',
 		ctaLink: '/auth/register'
-	},
-	{
-		id: 'agency',
-		name: 'Agency',
-		description: 'For tour companies',
-		monthlyBookingLimit: null,
-		tourLimit: null,
-		basePrice: { monthly: 115, yearly: 1150 },
-		hidden: true, // Hidden from public pricing, available via special access only
-		features: [
-			{ text: 'Everything in Professional', included: true },
-			{ text: 'Branded operator pages', included: true },
-			{ text: 'Multi-location discovery promotion', included: true },
-			{ text: 'SMS notifications', included: true, comingSoon: true },
-			{ text: 'Up to 10 tour guides', included: true, comingSoon: true },
-			{ text: 'Team management dashboard', included: true, comingSoon: true },
-			{ text: 'Revenue sharing tools', included: true, comingSoon: true },
-			{ text: 'White-label options', included: true, comingSoon: true },
-			{ text: 'Custom domain (agency.zaur.app)', included: true, comingSoon: true },
-			{ text: 'Advanced reporting (ROI, conversion rates)', included: true, comingSoon: true },
-			{ text: 'API access', included: true, comingSoon: true },
-			{ text: 'Dedicated account manager', included: true },
-			{ text: 'Multi-location management', included: true, comingSoon: true }
-		],
-		ctaText: 'Contact Sales',
-		ctaLink: '/contact'
 	}
+	// Note: Agency plan also removed from public display (abandoned)
 ];
 
 // Beta discount constants

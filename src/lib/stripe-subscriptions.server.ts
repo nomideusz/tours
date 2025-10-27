@@ -211,6 +211,8 @@ export async function incrementBookingUsage(userId: string): Promise<void> {
 export async function createStripeCustomer(userId: string, email: string, name: string): Promise<string> {
   const stripe = getStripe();
   
+  console.log(`Creating Stripe customer for user ${userId}, email: ${email}, name: ${name}`);
+  
   const customer = await stripe.customers.create({
     email,
     name,
@@ -219,13 +221,17 @@ export async function createStripeCustomer(userId: string, email: string, name: 
     },
   });
 
+  console.log(`Stripe customer created:`, { id: customer.id, email: customer.email });
+  
   // Update user with customer ID
-  await db.update(users)
+  const updateResult = await db.update(users)
     .set({
       stripeCustomerId: customer.id,
       updatedAt: new Date()
     })
     .where(eq(users.id, userId));
+
+  console.log(`Database updated for user ${userId} with customer ID: ${customer.id}`);
 
   return customer.id;
 }
@@ -257,30 +263,77 @@ export async function createSubscriptionCheckout(
   const user = userRecords[0];
   const betaCohort = user.betaGroup || 'public';
   
+  console.log(`User data:`, { 
+    id: user.id, 
+    email: user.email, 
+    stripeCustomerId: user.stripeCustomerId,
+    stripeCustomerIdType: typeof user.stripeCustomerId 
+  });
+  
   // Get the appropriate price ID for this user's cohort
   const priceId = getPriceIdForUser(planId, billingInterval, betaCohort);
 
-  if (!priceId) {
-    throw new Error(`Price ID not configured for ${planId} ${billingInterval} (cohort: ${betaCohort})`);
-  }
+  console.log(`Price lookup: plan=${planId}, interval=${billingInterval}, cohort=${betaCohort}, priceId=${priceId}`);
 
-  // Get or create Stripe customer
-  let customerId = user.stripeCustomerId;
-  if (!customerId) {
-    customerId = await createStripeCustomer(userId, user.email, user.name);
+  if (!priceId) {
+    throw new Error(`Price ID not configured for ${planId} ${billingInterval} (cohort: ${betaCohort}). Check your environment variables.`);
   }
   
-  // Determine trial period based on cohort
-  // Beta 1: 365 days (1 year free)
-  // Beta 2: 120 days (4 months free)  
-  // Public: 14 days (built into Stripe price, but we set it here for consistency)
+
+  // Get or create Stripe customer - ensure it's a string or null
+  // Check for corrupted '[object Object]' value in database
+  let customerId: string | null = user.stripeCustomerId && 
+    user.stripeCustomerId !== '[object Object]' && 
+    user.stripeCustomerId !== 'undefined' && 
+    user.stripeCustomerId !== 'null' 
+      ? String(user.stripeCustomerId) 
+      : null;
+  
+  if (!customerId) {
+    console.log(`Creating new Stripe customer for user ${userId} (existing value was: ${user.stripeCustomerId})`);
+    customerId = await createStripeCustomer(userId, user.email, user.name);
+    console.log(`Created Stripe customer: ${customerId}`);
+    
+    // Re-fetch user to ensure we have the updated stripeCustomerId
+    const updatedUserRecords = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (updatedUserRecords.length > 0 && updatedUserRecords[0].stripeCustomerId) {
+      customerId = updatedUserRecords[0].stripeCustomerId;
+    }
+  }
+  
+  // Ensure customerId is a string (not an object)
+  if (typeof customerId !== 'string' || !customerId) {
+    console.error(`Invalid customer ID for user ${userId}:`, { 
+      customerId, 
+      type: typeof customerId,
+      userRecord: { id: user.id, email: user.email, stripeCustomerId: user.stripeCustomerId }
+    });
+    throw new Error(`Invalid customer ID for user ${userId}. Type: ${typeof customerId}, Value: ${JSON.stringify(customerId)}`);
+  }
+  
+  console.log(`Using Stripe customer ID: ${customerId} for user ${userId}`);
+  
+  // Check if user already has an active subscription (upgrading vs new subscription)
+  const hasActiveSubscription = user.subscriptionId && 
+    user.subscriptionStatus === 'active' && 
+    user.subscriptionPlan !== 'free';
+  
+  // Determine trial period based on cohort and subscription status
+  // Beta 1: 365 days (1 year free) - only for NEW subscribers
+  // Beta 2: 120 days (4 months free) - only for NEW subscribers
+  // Public: 14 days - only for NEW subscribers
+  // Upgrades: NO trial, immediate billing with proration
   let trialPeriodDays = 0;
-  if (betaCohort === 'beta_1') {
-    trialPeriodDays = 365;
-  } else if (betaCohort === 'beta_2') {
-    trialPeriodDays = 120;
-  } else if (betaCohort === 'public') {
-    trialPeriodDays = 14;
+  
+  // Only apply trials to NEW subscribers (not upgrades)
+  if (!hasActiveSubscription) {
+    if (betaCohort === 'beta_1') {
+      trialPeriodDays = 365;
+    } else if (betaCohort === 'beta_2') {
+      trialPeriodDays = 120;
+    } else if (betaCohort === 'public') {
+      trialPeriodDays = 14;
+    }
   }
   
   // Prepare checkout session parameters
@@ -301,22 +354,32 @@ export async function createSubscriptionCheckout(
       planId,
       billingInterval,
       betaCohort,
+      isUpgrade: hasActiveSubscription ? 'true' : 'false',
     },
     subscription_data: {
-      trial_period_days: trialPeriodDays,
+      ...(trialPeriodDays > 0 ? { trial_period_days: trialPeriodDays } : {}),
       metadata: {
         userId,
         planId,
         billingInterval,
         betaCohort,
         trialDays: trialPeriodDays.toString(),
+        isUpgrade: hasActiveSubscription ? 'true' : 'false',
       }
     }
   };
 
+  // For upgrades from existing subscription, handle proration
+  if (hasActiveSubscription) {
+    sessionParams.subscription_data = {
+      ...sessionParams.subscription_data,
+      proration_behavior: 'create_prorations',
+    };
+  }
+
   const session = await stripe.checkout.sessions.create(sessionParams);
   
-  console.log(`Created subscription checkout for user ${userId}: plan=${planId}, cohort=${betaCohort}, trial=${trialPeriodDays}d`);
+  console.log(`Created subscription checkout for user ${userId}: plan=${planId}, cohort=${betaCohort}, trial=${trialPeriodDays}d, isUpgrade=${hasActiveSubscription}`);
 
   return session;
 }
@@ -334,7 +397,14 @@ export async function createCustomerPortalSession(
   }
 
   const user = userRecords[0];
-  let customerId = user.stripeCustomerId;
+  
+  // Check for corrupted '[object Object]' value in database
+  let customerId: string | null = user.stripeCustomerId && 
+    user.stripeCustomerId !== '[object Object]' && 
+    user.stripeCustomerId !== 'undefined' && 
+    user.stripeCustomerId !== 'null' 
+      ? user.stripeCustomerId 
+      : null;
 
   // Create customer if they don't have one (e.g., PARTNER users with 100% discount)
   if (!customerId) {

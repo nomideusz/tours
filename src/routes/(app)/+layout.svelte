@@ -794,7 +794,7 @@
 						</div>
 						
 						<!-- Safe area padding for devices with home indicator -->
-						<div class="h-safe-area-inset-bottom"></div>
+						<div class="h-safe-area-inset-bottom" style="background: var(--bg-primary);"></div>
 					</div>
 				</div>
 			</div>
@@ -921,7 +921,8 @@
 	.mobile-menu-container {
 		display: flex;
 		flex-direction: column;
-		max-height: 80vh;
+		/* Reduce height to account for bottom navigation and make scrolling obvious */
+		max-height: calc(70vh - 3.5rem - env(safe-area-inset-bottom, 0));
 		overflow: hidden;
 	}
 	
@@ -930,6 +931,16 @@
 		overflow-x: hidden;
 		-webkit-overflow-scrolling: touch;
 		overscroll-behavior: contain;
+		/* Add padding at bottom to ensure last items are visible */
+		padding-bottom: 1rem;
+	}
+	
+	/* iOS specific adjustments for mobile menu */
+	@supports (-webkit-touch-callout: none) {
+		.mobile-menu-container {
+			/* Further reduce on iOS to ensure Sign Out button is more visible */
+			max-height: calc(60vh - env(safe-area-inset-bottom, 0));
+		}
 	}
 	
 	/* Scrollbar styling for mobile menu */

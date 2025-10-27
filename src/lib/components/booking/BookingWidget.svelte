@@ -1040,9 +1040,14 @@
 		
 		/* Add padding to account for sticky footer */
 		.booking-widget {
-			padding-bottom: 1rem; /* Reduced - container already has 8rem bottom padding */
+			padding-bottom: 1rem;
 			/* iOS Safari scroll fix */
 			-webkit-overflow-scrolling: touch;
+		}
+		
+		/* Add extra padding when sticky footer is shown to prevent content overlap */
+		.booking-widget:has(.mobile-sticky-footer) {
+			padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0));
 		}
 	}
 </style>

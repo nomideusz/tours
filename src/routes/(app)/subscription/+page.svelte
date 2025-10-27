@@ -11,6 +11,7 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Crown from 'lucide-svelte/icons/crown';
 	import Gift from 'lucide-svelte/icons/gift';
+	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import type { PageData } from './$types.js';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -114,6 +115,22 @@
 	// Check if user has any promo benefits
 	let hasActivePromoCode = $derived(user?.promoCodeUsed && (isInFreePeriod || discountPercentage > 0));
 	
+	// Define plan hierarchy for upgrade logic
+	// free = Free Starter (0)
+	// starter_pro = Essential (1)
+	// professional = Premium (2)
+	const PLAN_HIERARCHY: Record<string, number> = {
+		'free': 0,
+		'starter_pro': 1,  // Essential
+		'professional': 2   // Premium
+	};
+	
+	function isUpgrade(targetPlan: string): boolean {
+		const currentRank = PLAN_HIERARCHY[currentPlan] || 0;
+		const targetRank = PLAN_HIERARCHY[targetPlan] || 0;
+		return targetRank > currentRank;
+	}
+	
 	// Refresh data on mount to ensure we have the latest subscription info
 	onMount(async () => {
 		// Invalidate all data to force a fresh load
@@ -143,12 +160,16 @@
 				throw new Error(data.error || 'Failed to create checkout session');
 			}
 			
+			// Validate URL before redirecting
+			if (!data.url) {
+				throw new Error('No checkout URL received from server');
+			}
+			
 			// Redirect to Stripe Checkout
 			window.location.href = data.url;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
-		} finally {
-			loading = false;
+			loading = false; // Reset loading state on error
 		}
 	}
 	
@@ -171,12 +192,16 @@
 				throw new Error(data.error || 'Failed to create portal session');
 			}
 			
+			// Validate URL before redirecting
+			if (!data.url) {
+				throw new Error('No portal URL received from server');
+			}
+			
 			// Redirect to Stripe Customer Portal
 			window.location.href = data.url;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
-		} finally {
-			loading = false;
+			loading = false; // Reset loading state on error
 		}
 	}
 	
@@ -191,6 +216,7 @@
 		
 		loading = true;
 		error = null;
+		showCancelModal = false; // Close modal before processing
 		
 		try {
 			const response = await fetch('/api/subscriptions/cancel', {
@@ -210,10 +236,10 @@
 			
 			// Refresh page to show updated status
 			await invalidateAll();
+			loading = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
-		} finally {
-			loading = false;
+			loading = false; // Reset loading state on error
 		}
 	}
 	
@@ -241,10 +267,10 @@
 			
 			// Refresh page to show updated status
 			await invalidateAll();
+			loading = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
-		} finally {
-			loading = false;
+			loading = false; // Reset loading state on error
 		}
 	}
 	
@@ -305,7 +331,7 @@
 		<!-- Mobile Header -->
 		<MobilePageHeader
 			title="Subscription"
-			secondaryInfo={SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
+			secondaryInfo={SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
 			quickActions={[
 				...(currentPlan !== 'free' && !cancelAtPeriodEnd ? [{
 					label: 'Billing',
@@ -319,7 +345,7 @@
 				{
 					icon: Crown,
 					label: 'Plan',
-					value: SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free'
+					value: SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial'
 				},
 				{
 					icon: Calendar,
@@ -437,7 +463,7 @@
 				</div>
 				<div class="space-y-1">
 					<p class="text-base sm:text-lg font-bold" style="color: var(--text-primary);">
-						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Free Starter'}
+						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
 					</p>
 					{#if subscriptionStatus && subscriptionStatus !== 'active'}
 						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-warning-600);">
@@ -464,7 +490,12 @@
 							disabled={loading}
 							class="button-success"
 						>
-							Reactivate
+							{#if loading}
+								<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+								Processing...
+							{:else}
+								Reactivate
+							{/if}
 						</button>
 					{:else}
 						<button
@@ -472,8 +503,13 @@
 							disabled={loading}
 							class="button-secondary"
 						>
-							<CreditCard class="w-4 h-4 inline mr-2" />
-							Manage Billing
+							{#if loading}
+								<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+								Loading...
+							{:else}
+								<CreditCard class="w-4 h-4 inline mr-2" />
+								Manage Billing
+							{/if}
 						</button>
 						<button
 							onclick={cancelSubscription}
@@ -523,11 +559,13 @@
 		{/if}
 	</div>
 
-	<!-- Upgrade Options -->
-	{#if currentPlan !== 'agency'}
+	<!-- Available Plans / Upgrade Options -->
+	{#if currentPlan !== 'professional'}
 		<div class="mb-6 sm:mb-8">
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-				<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">Upgrade Your Plan</h2>
+				<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
+					{currentPlan === 'starter_pro' ? 'Upgrade Your Plan' : 'Available Plans'}
+				</h2>
 				
 				<!-- Toggle -->
 				<div class="p-0.5 sm:p-1 rounded-lg inline-flex self-start sm:self-auto" style="background: var(--bg-secondary);">
@@ -548,14 +586,14 @@
 				</div>
 			</div>
 			
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-				{#each PRICING_PLANS.filter(p => !p.hidden) as plan}
+			<!-- Note: Only 2 plans now (Essential and Premium) -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
+				{#each PRICING_PLANS as plan}
 					{@const pricing = calculatePlanPricing(plan.id, isYearly ? 'yearly' : 'monthly', userPricingContext)}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
-					{@const isFreePlan = plan.id === 'free'}
 					
-					<div class="relative rounded-lg p-4 sm:p-6 flex flex-col h-full {isPopular ? 'border-2 shadow-lg' : 'border'} {isFreePlan ? 'opacity-75' : ''}" 
+					<div class="relative rounded-lg p-4 sm:p-6 flex flex-col h-full {isPopular ? 'border-2 shadow-lg' : 'border'}" 
 						 style="background: var(--bg-primary); border-color: {isPopular ? 'var(--color-primary-500)' : 'var(--border-primary)'};{!isPopular ? ' border: 1px solid var(--border-primary);' : ''}">
 					
 						{#if isPopular}
@@ -567,7 +605,7 @@
 						<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">{plan.name}</h3>
 						
 						<div class="mb-1">
-							{#if !isFreePlan && pricing.discountPercentage && pricing.discountPercentage > 0}
+							{#if pricing.discountPercentage && pricing.discountPercentage > 0}
 								<!-- User has beta cohort discount (Beta 1 or Beta 2) -->
 								<div class="text-center">
 									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{formatPrice(pricing.original)}</span>
@@ -578,18 +616,18 @@
 								<!-- Regular pricing (no cohort discount) -->
 								<div class="text-center">
 									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
-									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isFreePlan ? 'month' : isYearly ? 'year' : 'month'}</span>
+									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
 								</div>
 							{/if}
 						</div>
 						
 						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
-							{#if !isFreePlan && pricing.discountPercentage && pricing.discountPercentage > 0}
+							{#if pricing.discountPercentage && pricing.discountPercentage > 0}
 								<!-- User has beta discount (Beta 1 or Beta 2) -->
 								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
 									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage}% OFF forever`}
 								</span>
-							{:else if !isFreePlan && isYearly}
+							{:else if isYearly}
 								<!-- Annual billing: 2 months free -->
 								{@const monthlyPricing = calculatePlanPricing(plan.id, 'monthly', userPricingContext)}
 								{@const monthlySavings = monthlyPricing.final * 2}
@@ -613,23 +651,28 @@
 							>
 								Current Plan
 							</button>
-						{:else if isFreePlan}
-							<!-- Free plan - no action needed in upgrade section -->
-						{:else if plan.id === 'agency'}
+						{:else if !isUpgrade(plan.id)}
+							<!-- Don't show downgrade buttons or abandoned plans -->
 							<button
-								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
-								disabled={loading}
-								class="button-primary button--full-width"
+								disabled
+								class="w-full py-2 rounded-md font-medium cursor-not-allowed"
+								style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
 							>
-								{loading ? 'Processing...' : `Upgrade to ${plan.name}`}
+								Contact Support
 							</button>
 						{:else}
+							<!-- Show upgrade button for Essential and Premium -->
 							<button
 								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
 								disabled={loading}
 								class="button-primary button--full-width"
 							>
-								{loading ? 'Processing...' : `Upgrade to ${plan.name}`}
+								{#if loading}
+									<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+									Processing...
+								{:else}
+									Upgrade to {plan.name}
+								{/if}
 							</button>
 						{/if}
 					</div>
