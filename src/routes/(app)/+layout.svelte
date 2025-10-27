@@ -116,6 +116,12 @@
 	
 	// Avatar loading state
 	let avatarLoadError = $state(false);
+	
+	// Auto-hide navigation on scroll
+	let navHidden = $state(false);
+	let lastScrollY = $state(0);
+	let scrollDirection = $state<'up' | 'down'>('up');
+	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
@@ -386,9 +392,46 @@
 		}
 	}
 
+	// Handle scroll events for auto-hide navigation
+	function handleScroll() {
+		if (!browser || $isKeyboardVisible) return; // Don't hide when keyboard is visible
+		
+		const currentScrollY = window.scrollY;
+		const scrollDelta = currentScrollY - lastScrollY;
+		
+		// Ignore small scroll movements
+		if (Math.abs(scrollDelta) < 5) return;
+		
+		// Determine scroll direction
+		if (currentScrollY > lastScrollY && currentScrollY > 80) {
+			// Scrolling down & past header height
+			scrollDirection = 'down';
+			navHidden = true;
+		} else if (currentScrollY < lastScrollY || currentScrollY < 80) {
+			// Scrolling up or near top
+			scrollDirection = 'up';
+			navHidden = false;
+		}
+		
+		lastScrollY = currentScrollY;
+		
+		// Clear any existing timeout
+		if (scrollTimeout) clearTimeout(scrollTimeout);
+		
+		// Show navigation after scrolling stops
+		scrollTimeout = setTimeout(() => {
+			navHidden = false;
+		}, 1500);
+	}
+	
 	// Theme communication with embedded widgets
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
+		
+		// Set up scroll listener for auto-hide navigation
+		if (browser) {
+			window.addEventListener('scroll', handleScroll, { passive: true });
+		}
 		
 		// Check if user is a beta tester and show welcome modal
 		// Beta testers have early_access_member flag set to true in database (camelCase in JS)
@@ -460,6 +503,8 @@
 
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
+			window.removeEventListener('scroll', handleScroll);
+			if (scrollTimeout) clearTimeout(scrollTimeout);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
 		};
@@ -547,10 +592,11 @@
 		<!-- App Header -->
 		<AppHeader 
 			user={currentUserData}
+			hidden={navHidden}
 		/>
 
 		<!-- Main content area with sidebar -->
-		<div class="flex flex-1 min-w-0 pt-16 overflow-x-hidden"> <!-- Standard padding for AppHeader -->
+		<div class="flex flex-1 min-w-0 pt-16 md:pt-20 overflow-x-hidden"> <!-- Smaller padding on mobile -->
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
 				<div class="professional-sidebar">
@@ -652,13 +698,16 @@
 		</div>
 
 		<!-- Feedback Widget for Beta Users -->
-		<FeedbackWidget />
+		<FeedbackWidget navHidden={navHidden} />
 
 		<!-- PWA Install Prompt -->
-		<InstallPWAPrompt />
+		<InstallPWAPrompt navHidden={navHidden} />
 
 		<!-- Mobile Bottom Navigation -->
-		<div class="mobile-bottom-nav lg:hidden border-t" class:keyboard-hidden={$isKeyboardVisible} style="border-color: var(--border-primary);">
+		<div class="mobile-bottom-nav lg:hidden border-t" 
+			class:keyboard-hidden={$isKeyboardVisible} 
+			class:nav-hidden={navHidden}
+			style="border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
 					{#if item.isMenu}
@@ -902,6 +951,13 @@
 		transform: translate3d(0, 100%, 0);
 		-webkit-transform: translate3d(0, 100%, 0);
 		opacity: 0;
+		pointer-events: none;
+	}
+	
+	/* Hide bottom nav when scrolling down */
+	.mobile-bottom-nav.nav-hidden {
+		transform: translate3d(0, 100%, 0);
+		-webkit-transform: translate3d(0, 100%, 0);
 		pointer-events: none;
 	}
 	

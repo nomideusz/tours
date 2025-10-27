@@ -4,6 +4,12 @@
 	import Share from 'lucide-svelte/icons/share';
 	import Plus from 'lucide-svelte/icons/plus';
 	
+	interface Props {
+		navHidden?: boolean;
+	}
+	
+	let { navHidden = false }: Props = $props();
+	
 	let showIOSPrompt = $state(false);
 	let showAndroidPrompt = $state(false);
 	let deferredPrompt: any = null;
@@ -64,7 +70,7 @@
 </script>
 
 {#if showIOSPrompt}
-	<div class="fixed bottom-4 left-4 right-4 z-50 animate-slide-up sm:left-auto sm:right-6 sm:max-w-sm">
+	<div class="pwa-prompt fixed left-4 right-4 z-50 animate-slide-up sm:left-auto sm:right-6 sm:max-w-sm transition-all duration-300 lg:bottom-4" class:nav-hidden={navHidden} style="bottom: calc(4.5rem + env(safe-area-inset-bottom, 0))">
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
 			<div class="flex items-start justify-between mb-3">
 				<h3 class="font-semibold text-gray-900 dark:text-white">
@@ -107,7 +113,7 @@
 {/if}
 
 {#if showAndroidPrompt}
-	<div class="fixed bottom-4 left-4 right-4 z-50 animate-slide-up sm:left-auto sm:right-6 sm:max-w-sm">
+	<div class="pwa-prompt fixed left-4 right-4 z-50 animate-slide-up sm:left-auto sm:right-6 sm:max-w-sm transition-all duration-300 lg:bottom-4" class:nav-hidden={navHidden} style="bottom: calc(4.5rem + env(safe-area-inset-bottom, 0))">
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
 			<div class="flex items-start justify-between mb-3">
 				<h3 class="font-semibold text-gray-900 dark:text-white">
@@ -158,5 +164,10 @@
 	
 	.animate-slide-up {
 		animation: slide-up 0.3s ease-out;
+	}
+	
+	/* When nav is hidden, move to bottom */
+	.pwa-prompt.nav-hidden {
+		bottom: 1rem !important;
 	}
 </style> 

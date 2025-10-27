@@ -276,7 +276,7 @@
 					
 					<!-- Content -->
 					<div class="flex-1 overflow-y-auto overscroll-contain min-h-0" style="touch-action: pan-y;">
-						<div class="px-6 py-6">
+						<div class="px-6 py-6" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));">
 							{@render children?.()}
 						</div>
 					</div>

@@ -10,6 +10,12 @@
 	import Heart from 'lucide-svelte/icons/heart';
 	import { currentUser } from '$lib/stores/auth.js';
 
+	interface Props {
+		navHidden?: boolean;
+	}
+	
+	let { navHidden = false }: Props = $props();
+	
 	let isOpen = $state(false);
 	let feedbackType = $state<'bug' | 'feature' | 'general' | 'praise'>('general');
 	let description = $state('');
@@ -111,6 +117,7 @@
 		<button
 			onclick={() => isOpen = true}
 			class="feedback-button"
+			class:nav-hidden={navHidden}
 			aria-label="Send feedback"
 		>
 			<MessageSquare class="h-5 w-5" />
@@ -120,7 +127,7 @@
 
 	<!-- Feedback Form -->
 	{#if isOpen}
-		<div class="feedback-panel">
+		<div class="feedback-panel" class:nav-hidden={navHidden}>
 			<div class="feedback-header">
 				<h3 class="feedback-title">Send Feedback</h3>
 				<button
@@ -292,6 +299,17 @@
 		.feedback-panel {
 			bottom: 24px;
 		}
+	}
+	
+	/* When nav is hidden, move to bottom */
+	.feedback-button.nav-hidden {
+		bottom: 24px;
+		transition: bottom 0.3s ease;
+	}
+	
+	.feedback-panel.nav-hidden {
+		bottom: 104px; /* Keep panel above button */
+		transition: bottom 0.3s ease;
 	}
 
 	.feedback-button:hover {

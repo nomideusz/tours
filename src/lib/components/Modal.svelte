@@ -151,7 +151,7 @@
 			{/if}
 			
 			<!-- Content -->
-			<div class="overflow-y-auto max-h-[calc(100vh-16rem)] p-6">
+			<div class="overflow-y-auto max-h-[calc(100vh-16rem)] p-6 lg:pb-6" style="padding-bottom: calc(1.5rem + 4rem + env(safe-area-inset-bottom, 0));">
 				{@render children?.()}
 			</div>
 		</div>

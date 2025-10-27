@@ -6,15 +6,17 @@
 	
 	let { 
 		user, 
-		class: className = ""
+		class: className = "",
+		hidden = false
 	} = $props<{
 		user: any;
 		class?: string;
+		hidden?: boolean;
 	}>();
 </script>
 
 <!-- Professional App Header -->
-<header class="app-header {className}">
+<header class="app-header {className}" class:header-hidden={hidden}>
 	<div class="app-header-container">
 		<div class="app-header-content">
 		<!-- Logo and branding -->
@@ -113,6 +115,23 @@
 			transparent 0%,
 			rgba(255, 255, 255, 0.01) 100%
 		);
+	}
+	
+	/* Hide header when scrolling down */
+	.app-header.header-hidden {
+		transform: translateY(-100%);
+		box-shadow: none;
+	}
+	
+	/* Mobile optimizations */
+	@media (max-width: 768px) {
+		.app-header-content {
+			height: 4rem; /* Smaller on mobile */
+		}
+		
+		.header-actions {
+			gap: 0.75rem;
+		}
 	}
 
 	/* Responsive adjustments */
