@@ -123,6 +123,20 @@
 		mobileMenuOpen = false;
 		if (browser) {
 			currentPath = window.location.pathname;
+			
+			// Scroll to top on navigation (mobile fix)
+			// Use both window and the main content element
+			window.scrollTo(0, 0);
+			
+			// Also scroll the main content element to top
+			const mainContent = document.querySelector('.main-content');
+			if (mainContent) {
+				mainContent.scrollTop = 0;
+			}
+			
+			// For iOS Safari - also scroll document.body
+			document.body.scrollTop = 0;
+			document.documentElement.scrollTop = 0;
 		}
 	});
 
@@ -811,7 +825,8 @@
 	
 	/* Main content padding for bottom navigation */
 	.main-content {
-		padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+		/* Increased padding to prevent bottom nav from cutting content */
+		padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0));
 		/* Ensure content doesn't get stuck behind nav */
 		min-height: 100vh;
 		/* iOS Safari scroll fix */
@@ -825,8 +840,8 @@
 		/* iOS specific main content adjustments */
 		@supports (-webkit-touch-callout: none) {
 			.main-content {
-			/* Add padding to ensure content stays above iOS UI */
-			padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0) + 1rem);
+			/* Add extra padding to ensure content stays above iOS UI and bottom nav */
+			padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0) + 1.5rem);
 				/* Keep overflow-y for scrolling */
 				position: relative;
 			}
