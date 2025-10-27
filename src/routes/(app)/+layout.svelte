@@ -122,6 +122,7 @@
 	let lastScrollY = $state(0);
 	let scrollDirection = $state<'up' | 'down'>('up');
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isMobileDevice = $state(false);
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
@@ -393,10 +394,22 @@
 	}
 
 	// Handle scroll events for auto-hide navigation
-	function handleScroll() {
-		if (!browser || $isKeyboardVisible) return; // Don't hide when keyboard is visible
+	function handleScroll(event?: Event) {
+		if (!browser || $isKeyboardVisible || !isMobileDevice) return; // Only on mobile
 		
-		const currentScrollY = window.scrollY;
+		
+		// For iOS, we need to check the actual scrolling element
+		// Try main content first (iOS often scrolls this), then fallback to standard elements
+		const mainContent = document.querySelector('.main-content') as HTMLElement;
+		let currentScrollY = 0;
+		
+		// Check if main content is the scrolling container (common on iOS)
+		if (mainContent && (mainContent.scrollHeight > mainContent.clientHeight)) {
+			currentScrollY = mainContent.scrollTop;
+		} else {
+			const scrollElement = document.scrollingElement || document.documentElement || document.body;
+			currentScrollY = scrollElement.scrollTop || window.pageYOffset || 0;
+		}
 		const scrollDelta = currentScrollY - lastScrollY;
 		
 		// Ignore small scroll movements
@@ -428,9 +441,32 @@
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
 		
+		// Check if mobile device
+		isMobileDevice = window.innerWidth < 768;
+		
+		
+		// Listen for resize to update mobile state
+		const handleResize = () => {
+			isMobileDevice = window.innerWidth < 768;
+			// Reset nav state on resize
+			if (!isMobileDevice) {
+				navHidden = false;
+			}
+		};
+		window.addEventListener('resize', handleResize);
+		
 		// Set up scroll listener for auto-hide navigation
 		if (browser) {
+			// Listen on multiple elements for iOS compatibility
 			window.addEventListener('scroll', handleScroll, { passive: true });
+			document.addEventListener('scroll', handleScroll, { passive: true });
+			document.body.addEventListener('scroll', handleScroll, { passive: true });
+			
+			// Also listen on the main content element for iOS
+			const mainContent = document.querySelector('.main-content');
+			if (mainContent) {
+				mainContent.addEventListener('scroll', handleScroll, { passive: true });
+			}
 		}
 		
 		// Check if user is a beta tester and show welcome modal
@@ -503,7 +539,14 @@
 
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
+			window.removeEventListener('resize', handleResize);
 			window.removeEventListener('scroll', handleScroll);
+			document.removeEventListener('scroll', handleScroll);
+			document.body.removeEventListener('scroll', handleScroll);
+			const mainContent = document.querySelector('.main-content');
+			if (mainContent) {
+				mainContent.removeEventListener('scroll', handleScroll);
+			}
 			if (scrollTimeout) clearTimeout(scrollTimeout);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
