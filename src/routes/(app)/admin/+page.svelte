@@ -991,6 +991,11 @@
 												{/if}
 												{formatPlanName(user.subscriptionPlan)}
 											</span>
+											{#if user.betaGroup}
+												<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style="background: {user.betaGroup === 'beta_1' ? 'var(--color-primary-100)' : 'var(--color-info-100)'}; color: {user.betaGroup === 'beta_1' ? 'var(--color-primary-700)' : 'var(--color-info-700)'};">
+													{user.betaGroup === 'beta_1' ? 'Beta 1 (30%)' : 'Beta 2 (20%)'}
+												</span>
+											{/if}
 										</div>
 									</td>
 									<td class="px-4 py-4">
@@ -1145,6 +1150,11 @@
 								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {getPlanBadgeClass(user.subscriptionPlan)}">
 									{formatPlanName(user.subscriptionPlan)}
 								</span>
+								{#if user.betaGroup}
+									<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style="background: {user.betaGroup === 'beta_1' ? 'var(--color-primary-100)' : 'var(--color-info-100)'}; color: {user.betaGroup === 'beta_1' ? 'var(--color-primary-700)' : 'var(--color-info-700)'};">
+										{user.betaGroup === 'beta_1' ? 'Beta 1' : 'Beta 2'}
+									</span>
+								{/if}
 								{#if user.emailVerified}
 									<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" style="background: var(--color-success-100); color: var(--color-success-700);">
 										<CheckCircle class="h-3 w-3" />

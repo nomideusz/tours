@@ -8,14 +8,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(303, '/dashboard');
 	}
 	
-	// During beta program, redirect registration to early access waitlist
-	console.log('Registration disabled during beta program, redirecting to early access');
-	throw redirect(303, '/early-access');
+	// During beta program, redirect registration to beta-2 application
+	console.log('Registration disabled during beta program, redirecting to beta-2 application');
+	throw redirect(303, '/beta-2/apply');
 };
 
 export const actions: Actions = {
 	default: async ({ locals, request, cookies, url }) => {
-		// During beta program, registration is disabled - redirect to early access
-		throw redirect(303, '/early-access');
+		// During beta program, registration is disabled - redirect to beta-2 application
+		throw redirect(303, '/beta-2/apply');
 	}
 }; 

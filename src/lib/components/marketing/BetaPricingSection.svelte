@@ -34,7 +34,7 @@
 	}
 	
 	function handleJoinWaitlist() {
-		goto('/early-access');
+		goto('/beta-2/apply');
 	}
 </script>
 

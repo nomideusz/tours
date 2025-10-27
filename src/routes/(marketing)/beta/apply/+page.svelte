@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	
 	// Components
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -14,11 +15,16 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Calendar from 'lucide-svelte/icons/calendar';
+
+	// Redirect to Beta 2 application
+	onMount(() => {
+		goto('/beta-2/apply');
+	});
 </script>
 
 <svelte:head>
-	<title>Beta Applications Closed - Zaur</title>
-	<meta name="description" content="Beta applications for Zaur are now closed. We've selected 50 tour guides and are working closely with them to build the perfect booking platform." />
+	<title>Beta 2 Applications Open - Zaur</title>
+	<meta name="description" content="Join Zaur Beta 2 - 100 spots available with 4 months free + 20% lifetime discount." />
 </svelte:head>
 
 <PageContainer>
@@ -131,20 +137,20 @@
 			<!-- CTA Section -->
 			<div class="text-center">
 				<h3 class="text-lg font-semibold mb-3" style="color: var(--text-primary);">
-					Want to be notified when we launch?
-				</h3>
-				<p class="mb-6" style="color: var(--text-secondary);">
-					Join our early access waitlist to be among the first tour guides to try Zaur when we launch in Q1 2026.
-				</p>
-				
-				<div class="flex flex-col sm:flex-row gap-4 justify-center">
-					<button 
-						class="button-primary button--large button--gap"
-						onclick={() => goto('/early-access')}
-					>
-						<span>Join Early Access Waitlist</span>
-						<ArrowRight class="h-5 w-5" />
-					</button>
+				Ready to join Beta 2?
+			</h3>
+			<p class="mb-6" style="color: var(--text-secondary);">
+				Beta 1 applications are closed. Apply for Beta 2 now to lock in your 20% lifetime discount!
+			</p>
+			
+			<div class="flex flex-col sm:flex-row gap-4 justify-center">
+				<button 
+					class="button-primary button--large button--gap"
+					onclick={() => goto('/beta-2/apply')}
+				>
+					<span>Apply for Beta 2</span>
+					<ArrowRight class="h-5 w-5" />
+				</button>
 					
 					<button 
 						class="button-secondary button--large"

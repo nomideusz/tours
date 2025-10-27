@@ -146,6 +146,9 @@ export const betaApplications = pgTable('beta_applications', {
   reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
   reviewedBy: text('reviewed_by'),
   
+  // Beta cohort tracking
+  betaGroup: varchar('beta_group', { length: 20 }).default('beta_2'), // 'beta_1', 'beta_2', or null
+  
   // Metadata
   referralSource: varchar('referral_source', { length: 100 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

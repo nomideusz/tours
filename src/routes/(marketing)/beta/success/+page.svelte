@@ -65,15 +65,15 @@
 				</div>
 			</div>
 			
-			<!-- CTA -->
-			<div class="cta-section">
-				<button 
-					class="button-primary button--large"
-					onclick={() => goto('/early-access')}
-				>
-					Join Early Access Waitlist
-					<ArrowRight class="w-5 h-5" />
-				</button>
+		<!-- CTA -->
+		<div class="cta-section">
+			<button 
+				class="button-primary button--large"
+				onclick={() => goto('/beta-2/apply')}
+			>
+				Apply for Beta 2
+				<ArrowRight class="w-5 h-5" />
+			</button>
 				
 				<button 
 					class="button-secondary button--large"

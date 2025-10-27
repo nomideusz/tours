@@ -64,6 +64,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				currency: user.currency,
 				emailVerified: user.emailVerified,
 				earlyAccessMember: user.earlyAccessMember,
+				betaGroup: user.betaGroup,
 				lastLogin: user.lastLogin,
 				createdAt: user.createdAt,
 				subscriptionPlan: user.subscriptionPlan || 'free',

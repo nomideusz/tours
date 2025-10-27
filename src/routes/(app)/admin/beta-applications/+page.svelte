@@ -54,6 +54,7 @@
 	// Filter and search states
 	let searchQuery = $state('');
 	let selectedStatus = $state<'all' | 'pending' | 'accepted' | 'rejected' | 'waitlisted'>('all');
+	let selectedBetaGroup = $state<'all' | 'beta_1' | 'beta_2'>('all');
 	let showFilters = $state(false);
 
 	// Modal states
@@ -66,6 +67,8 @@
 	let isCreatingAccount = $state(false);
 	let createAccountError = $state<string | null>(null);
 	let createAccountSuccess = $state<string | null>(null);
+	let selectedBetaGroupForAccount = $state<'beta_1' | 'beta_2'>('beta_2'); // Default to beta_2 for new applications
+	let autoCreateAccountOnAccept = $state(true); // Default to true for convenience
 
 	// Filter applications
 	let filteredApplications = $derived.by(() => {
@@ -85,6 +88,11 @@
 		// Filter by status
 		if (selectedStatus !== 'all') {
 			result = result.filter(app => app.status === selectedStatus);
+		}
+
+		// Filter by beta group
+		if (selectedBetaGroup !== 'all') {
+			result = result.filter(app => app.betaGroup === selectedBetaGroup);
 		}
 
 		return result;
@@ -127,12 +135,20 @@
 				throw new Error(result.error || 'Failed to update application');
 			}
 
+			// If accepting and auto-create is enabled, create account automatically
+			if (status === 'accepted' && autoCreateAccountOnAccept && selectedApplication) {
+				console.log('Auto-creating account for accepted application...');
+				await createBetaAccount(selectedApplication);
+			}
+
 			// Refresh applications list
 			await queryClient.invalidateQueries({ queryKey: ['admin', 'beta-applications'] });
 
-			// Close modal
-			showApplicationModal = false;
-			selectedApplication = null;
+			// Close modal (only if not auto-creating, as createBetaAccount will show results)
+			if (!(status === 'accepted' && autoCreateAccountOnAccept)) {
+				showApplicationModal = false;
+				selectedApplication = null;
+			}
 
 		} catch (error) {
 			updateError = error instanceof Error ? error.message : 'Failed to update application';
@@ -152,6 +168,9 @@
 			const randomDigits = Math.floor(1000 + Math.random() * 9000);
 			const tempPassword = `BetaZaur2025!${randomDigits}`;
 
+			// Use the application's beta group, or the selected one if not set
+			const betaGroup = application.betaGroup || selectedBetaGroupForAccount;
+
 			const response = await fetch('/api/admin/beta-applications/create-account', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -163,7 +182,8 @@
 					businessName: application.businessName,
 					phone: application.phone,
 					location: application.location,
-					country: application.country
+					country: application.country,
+					betaGroup: betaGroup
 				})
 			});
 
@@ -173,7 +193,10 @@
 				throw new Error(result.error || 'Failed to create beta account');
 			}
 
-			createAccountSuccess = `Beta account created successfully! Temporary password: ${tempPassword}`;
+			const benefits = betaGroup === 'beta_1' 
+				? '12 months free + 30% lifetime discount' 
+				: '4 months free + 20% lifetime discount';
+			createAccountSuccess = `${betaGroup.toUpperCase()} account created successfully! Temporary password: ${tempPassword}. Benefits: ${benefits}`;
 
 			// Refresh applications list to show updated status
 			await queryClient.invalidateQueries({ queryKey: ['admin', 'beta-applications'] });
@@ -274,6 +297,13 @@
 					<option value="waitlisted">Waitlisted</option>
 					<option value="rejected">Rejected</option>
 				</select>
+
+				<!-- Beta Group Filter -->
+				<select bind:value={selectedBetaGroup} class="form-select">
+					<option value="all">All Beta Groups</option>
+					<option value="beta_2">Beta 2 (20% off)</option>
+					<option value="beta_1">Beta 1 (30% off)</option>
+				</select>
 			</div>
 		</div>
 
@@ -307,7 +337,7 @@
 						 }}>
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
-								<div class="flex items-center gap-3 mb-2">
+								<div class="flex items-center gap-3 mb-2 flex-wrap">
 									<h3 class="text-lg font-semibold" style="color: var(--text-primary);">
 										{application.name}
 									</h3>
@@ -315,6 +345,11 @@
 										<svelte:component this={getStatusIcon(application.status)} class="h-3 w-3" />
 										{application.status.charAt(0).toUpperCase() + application.status.slice(1)}
 									</div>
+									{#if application.betaGroup}
+										<div class="px-2 py-1 rounded text-xs font-medium" style="background: {application.betaGroup === 'beta_1' ? 'var(--color-primary-100)' : 'var(--color-info-100)'}; color: {application.betaGroup === 'beta_1' ? 'var(--color-primary-700)' : 'var(--color-info-700)'};">
+											{application.betaGroup === 'beta_1' ? 'Beta 1 (30% off)' : 'Beta 2 (20% off)'}
+										</div>
+									{/if}
 								</div>
 								
 								<div class="flex flex-wrap items-center gap-4 text-sm" style="color: var(--text-secondary);">
@@ -505,18 +540,53 @@
 
 						<!-- Action Buttons -->
 						{#if selectedApplication.status === 'pending'}
-							<div class="flex flex-wrap gap-3 pt-4 border-t" style="border-color: var(--border-primary);">
+							<!-- Auto-create Account Option -->
+							<div class="pt-4 pb-2 border-t" style="border-color: var(--border-primary);">
+								<label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors">
+									<input
+										type="checkbox"
+										bind:checked={autoCreateAccountOnAccept}
+										class="form-checkbox mt-1"
+									/>
+									<div class="flex-1">
+										<p class="text-sm font-medium" style="color: var(--text-primary);">
+											Automatically create account when accepting
+										</p>
+										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+											When enabled, a {selectedBetaGroupForAccount === 'beta_1' ? 'Beta 1' : 'Beta 2'} account will be created automatically with a random password and welcome email sent to the applicant.
+										</p>
+									</div>
+								</label>
+								
+								{#if autoCreateAccountOnAccept}
+									<div class="mt-3 ml-8">
+										<label for="auto-beta-group" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">
+											Beta Group for Auto-created Account
+										</label>
+										<select 
+											id="auto-beta-group"
+											bind:value={selectedBetaGroupForAccount} 
+											class="form-select form-select--small w-full max-w-md"
+										>
+											<option value="beta_2">Beta 2 - 4 months free + 20% lifetime discount</option>
+											<option value="beta_1">Beta 1 - 12 months free + 30% lifetime discount</option>
+										</select>
+									</div>
+								{/if}
+							</div>
+
+							<div class="flex flex-wrap gap-3 pt-3">
 								<button
 									onclick={() => updateApplicationStatus(selectedApplication.id, 'accepted')}
-									disabled={isUpdating}
+									disabled={isUpdating || isCreatingAccount}
 									class="button-primary button--gap flex-1 sm:flex-none"
 								>
-									{#if isUpdating}
+									{#if isUpdating || isCreatingAccount}
 										<Loader2 class="h-4 w-4 animate-spin" />
 									{:else}
 										<CheckCircle class="h-4 w-4" />
 									{/if}
-									Accept
+									{autoCreateAccountOnAccept ? 'Accept & Create Account' : 'Accept'}
 								</button>
 								<button
 									onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
@@ -537,6 +607,27 @@
 							</div>
 						{:else if selectedApplication.status === 'accepted'}
 							<div class="space-y-3 pt-4 border-t" style="border-color: var(--border-primary);">
+								<!-- Beta Group Selection -->
+								<div>
+									<label for="beta-group-select" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+										Beta Group Assignment
+									</label>
+									<select 
+										id="beta-group-select" 
+										bind:value={selectedBetaGroupForAccount} 
+										class="form-select w-full"
+										disabled={isCreatingAccount}
+									>
+										<option value="beta_2">Beta 2 - 4 months free + 20% lifetime discount</option>
+										<option value="beta_1">Beta 1 - 12 months free + 30% lifetime discount</option>
+									</select>
+									{#if selectedApplication.betaGroup}
+										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+											Application submitted for: {selectedApplication.betaGroup === 'beta_1' ? 'Beta 1' : 'Beta 2'}
+										</p>
+									{/if}
+								</div>
+
 								<!-- Primary Action: Create Beta Account -->
 								<div class="flex flex-wrap gap-3">
 									<button
@@ -549,10 +640,10 @@
 										{:else}
 											<Users class="h-4 w-4" />
 										{/if}
-										Create Beta Account
+										Create {selectedBetaGroupForAccount === 'beta_1' ? 'Beta 1' : 'Beta 2'} Account
 									</button>
 									<p class="text-xs flex-1 text-center self-center" style="color: var(--text-tertiary);">
-										This will create a user account with BETA_APPRECIATION promo code applied
+										Creates account with {selectedBetaGroupForAccount === 'beta_1' ? '30%' : '20%'} lifetime discount
 									</p>
 								</div>
 								

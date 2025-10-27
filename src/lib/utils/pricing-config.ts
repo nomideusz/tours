@@ -143,8 +143,21 @@ export function calculatePlanPricing(
 	// Get the base price (yearly is annual total, monthly is per month)
 	const originalPrice = plan.basePrice[interval];
 	
-	// Determine user's cohort
-	const cohort = userContext?.betaGroup || 'public';
+	// Check if user is in free period
+	const isInFreePeriod = !!(userContext?.subscriptionFreeUntil && 
+		new Date(userContext.subscriptionFreeUntil) > new Date());
+	
+	// Determine user's cohort - check both betaGroup and discount percentage fields
+	let cohort = userContext?.betaGroup || 'public';
+	
+	// Fallback: If betaGroup not set, determine from discount percentage
+	if (cohort === 'public' && userContext?.subscriptionDiscountPercentage) {
+		if (userContext.subscriptionDiscountPercentage === 30 && userContext.isLifetimeDiscount) {
+			cohort = 'beta_1';
+		} else if (userContext.subscriptionDiscountPercentage === 20 && userContext.isLifetimeDiscount) {
+			cohort = 'beta_2';
+		}
+	}
 	
 	// Calculate based on cohort using exact prices (not percentages, to avoid rounding issues)
 	if (cohort === 'beta_1') {
@@ -156,7 +169,8 @@ export function calculatePlanPricing(
 			final: finalPrice,
 			savings: discount,
 			discountPercentage: 30,
-			isLifetimeDiscount: true
+			isLifetimeDiscount: true,
+			isInFreePeriod
 		};
 	} else if (cohort === 'beta_2') {
 		// Beta 2: Use exact prices from BETA_2_PRICES constant
@@ -167,7 +181,23 @@ export function calculatePlanPricing(
 			final: finalPrice,
 			savings: discount,
 			discountPercentage: 20,
-			isLifetimeDiscount: true
+			isLifetimeDiscount: true,
+			isInFreePeriod
+		};
+	}
+	
+	// Check for other custom discount percentages (promo codes, etc.)
+	if (userContext?.subscriptionDiscountPercentage && userContext.subscriptionDiscountPercentage > 0) {
+		const discountDecimal = userContext.subscriptionDiscountPercentage / 100;
+		const finalPrice = Math.round(originalPrice * (1 - discountDecimal) * 100) / 100;
+		const discount = originalPrice - finalPrice;
+		return {
+			original: originalPrice,
+			final: finalPrice,
+			savings: discount,
+			discountPercentage: userContext.subscriptionDiscountPercentage,
+			isLifetimeDiscount: userContext.isLifetimeDiscount || false,
+			isInFreePeriod
 		};
 	}
 	
@@ -175,7 +205,8 @@ export function calculatePlanPricing(
 	return {
 		original: originalPrice,
 		final: originalPrice,
-		savings: 0
+		savings: 0,
+		isInFreePeriod
 	};
 }
 

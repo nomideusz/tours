@@ -9,6 +9,7 @@ import { qrTicketEmail } from './templates/qr-ticket.js';
 import { tourReminderEmail } from './templates/tour-reminder.js';
 import { guideBookingNotificationEmail } from './templates/guide-booking-notification.js';
 import { announcementEmail } from './templates/announcement.js';
+import { betaAccountCreatedEmail, type BetaAccountEmailData } from './templates/beta-account-created.js';
 
 // Configuration
 const FROM_EMAIL = 'noreply@auth.zaur.app';
@@ -326,4 +327,42 @@ export async function sendBulkAnnouncement(
   }
 
   return { sent, failed, results };
+}
+
+// Send beta account creation email
+export async function sendBetaAccountEmail(
+  data: BetaAccountEmailData
+): Promise<EmailResult> {
+  try {
+    console.log(`📧 Sending beta account email to ${data.email}...`);
+    
+    const emailContent = betaAccountCreatedEmail(data);
+
+    const resend = getResend();
+    const result = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [data.email],
+      subject: emailContent.subject,
+      html: emailContent.html
+    });
+
+    if (result.error) {
+      console.error(`❌ Resend API error:`, result.error);
+      throw new Error(`Resend error: ${result.error.message}`);
+    }
+
+    console.log(`   ✅ Beta account email sent successfully to ${data.email}`);
+
+    return { 
+      success: true, 
+      messageId: result.data?.id 
+    };
+  } catch (error) {
+    console.error(`❌ Error sending beta account email:`, error);
+    console.error(`   Error stack:`, error instanceof Error ? error.stack : 'No stack');
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
 } 

@@ -235,13 +235,13 @@
 						<a href="/auth/login" class="login-link">
 							{t('auth.login', $language)}
 						</a>
-						<button 
-							class="button-primary guest-cta-button"
-							onclick={() => window.location.href = '/early-access'}
-						>
-							<span class="guest-cta-text-mobile">Join Waitlist</span>
-							<span class="guest-cta-text-desktop">Join Early Access</span>
-						</button>
+				<button 
+					class="button-primary guest-cta-button"
+					onclick={() => window.location.href = '/beta-2/apply'}
+				>
+					<span class="guest-cta-text-mobile">Join Beta 2</span>
+					<span class="guest-cta-text-desktop">Apply for Beta 2</span>
+				</button>
 					</div>
 				{/if}
 

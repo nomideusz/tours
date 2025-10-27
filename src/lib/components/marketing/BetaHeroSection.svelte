@@ -35,8 +35,8 @@
 	});
 	
 	function handleJoinBeta2() {
-		trackCTAClick('hero', 'Lock In Your 20% Discount', '/early-access');
-		goto('/early-access');
+		trackCTAClick('hero', 'Lock In Your 20% Discount', '/beta-2/apply');
+		goto('/beta-2/apply');
 	}
 </script>
 

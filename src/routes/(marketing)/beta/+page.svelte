@@ -116,19 +116,19 @@
 				
 				<div class="hero-actions">
 					<div class="closed-notice">
-						<CheckCircle class="w-5 h-5" />
-						<span>Beta applications are now closed</span>
-					</div>
-					<p class="action-note">
-						Join our waitlist to be notified when we launch publicly
-					</p>
-					<button 
-						class="button-secondary button--large"
-						onclick={() => goto('/early-access')}
-					>
-						Join Early Access Waitlist
-					</button>
+					<CheckCircle class="w-5 h-5" />
+					<span>Beta 1 completed - Beta 2 now open!</span>
 				</div>
+				<p class="action-note">
+					Apply now to lock in your 20% lifetime discount
+				</p>
+				<button 
+					class="button-secondary button--large"
+					onclick={() => goto('/beta-2/apply')}
+				>
+					Apply for Beta 2
+				</button>
+			</div>
 			</div>
 		</div>
 	</section>
@@ -220,20 +220,20 @@
 	<section class="cta-section">
 		<div class="container">
 			<div class="cta-card">
-				<h2 class="cta-title">Join the Waitlist</h2>
-				<p class="cta-description">
-					Want to be among the first to know when Zaur launches publicly? 
-					Join our early access waitlist and we'll notify you as soon as we're ready.
-				</p>
-				<button 
-					class="button-primary button--large"
-					onclick={() => goto('/early-access')}
-				>
-					Join Early Access Waitlist
-				</button>
-				<p class="cta-note">
-					Be the first to know when we launch in Q1 2026
-				</p>
+			<h2 class="cta-title">Join Beta 2</h2>
+			<p class="cta-description">
+				Beta 1 was a success with 50 tour guides! We're now opening Beta 2 with 100 spots. 
+				Apply now to lock in your 20% lifetime discount and 4 months free trial.
+			</p>
+			<button 
+				class="button-primary button--large"
+				onclick={() => goto('/beta-2/apply')}
+			>
+				Apply for Beta 2
+			</button>
+			<p class="cta-note">
+				Limited spots - Apply before we launch publicly in Q1 2026
+			</p>
 			</div>
 		</div>
 	</section>

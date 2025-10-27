@@ -204,9 +204,9 @@
 				
 				<!-- CTA -->
 				<div class="calculator-cta">
-					<button onclick={() => window.location.href = '/early-access'} class="button-primary button--large button--full">
-						Lock In €20/Month Forever →
-					</button>
+			<button onclick={() => window.location.href = '/beta-2/apply'} class="button-primary button--large button--full">
+				Lock In €20/Month Forever →
+			</button>
 					<p class="cta-note">
 						Beta 2 discount ends March 2026 – Then it's €25/month
 					</p>

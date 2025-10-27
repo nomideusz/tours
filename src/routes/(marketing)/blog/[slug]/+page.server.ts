@@ -109,12 +109,12 @@ const blogPosts = {
 				<li>See the value in commission-free booking systems</li>
 			</ul>
 
-			<div style="text-align: center; margin: 3rem 0;">
-				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1.25rem 2.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.125rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">Claim Your Beta 2 Spot →</a>
-				<p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-tertiary);">
-					<span id="spots-remaining">Loading...</span> spots remaining
-				</p>
-			</div>
+		<div style="text-align: center; margin: 3rem 0;">
+			<a href="/beta-2/apply" style="display: inline-block; background: var(--primary); color: white; padding: 1.25rem 2.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 1.125rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">Claim Your Beta 2 Spot →</a>
+			<p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-tertiary);">
+				<span id="spots-remaining">Loading...</span> spots remaining
+			</p>
+		</div>
 
 			<script>
 				// Fetch and display remaining spots
@@ -173,12 +173,12 @@ const blogPosts = {
 
 			<p><strong>Q1 2026:</strong> Public launch! We'll open Zaur to all tour guides with a platform that's been thoroughly tested and refined by real professionals in the field.</p>
 
-			<h2>Want to Stay Updated?</h2>
-			<p>While beta applications are closed, you can still be part of the journey:</p>
+		<h2>Want to Join Beta 2?</h2>
+		<p>We're now accepting Beta 2 applications with exclusive lifetime discounts:</p>
 
-			<div style="text-align: center; margin: 2rem 0;">
-				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Join Our Early Access Waitlist →</a>
-			</div>
+		<div style="text-align: center; margin: 2rem 0;">
+			<a href="/beta-2/apply" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Apply for Beta 2 →</a>
+		</div>
 
 			<p>Join our waitlist to:</p>
 			<ul>
@@ -268,14 +268,14 @@ const blogPosts = {
 			<h2>No Strings Attached</h2>
 			<p>We believe in earning your trust, not locking you in. There are no contracts, no commitments, and no credit card required during the beta phase. If Zaur isn't right for you, you can leave anytime with no questions asked. We're confident that once you experience the simplicity and power of Zaur, you'll never want to go back to traditional booking systems.</p>
 
-			<h2>Ready to Join?</h2>
-			<p><strong>Update:</strong> We've selected 50 beta testers and are actively working with them to refine the platform. Applications are now closed as we focus on building the best possible experience based on their feedback.</p>
+		<h2>Ready to Join?</h2>
+		<p><strong>Update:</strong> Beta 1 has concluded with 50 testers. We're now opening Beta 2 with 100 spots and exclusive lifetime discounts!</p>
 
-			<p>This is more than just a beta test – it's an opportunity to be part of something transformative. While the beta program is closed, you can join our waitlist to be among the first to access Zaur when we launch publicly in Q1 2026.</p>
+		<p>This is more than just a beta test – it's an opportunity to be part of something transformative. Apply for Beta 2 to lock in your 20% lifetime discount and 4 months free trial before we launch publicly in Q1 2026.</p>
 
-			<div style="text-align: center; margin: 2rem 0;">
-				<a href="/early-access" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Join Early Access Waitlist →</a>
-			</div>
+		<div style="text-align: center; margin: 2rem 0;">
+			<a href="/beta-2/apply" style="display: inline-block; background: var(--primary); color: white; padding: 1rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600;">Apply for Beta 2 →</a>
+		</div>
 
 			<p><em>Questions about our launch? Email us at beta@zaur.app or visit our FAQ section for more details.</em></p>
 		`

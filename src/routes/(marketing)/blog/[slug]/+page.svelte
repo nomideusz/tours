@@ -178,16 +178,16 @@
 			<div class="mt-16">
 				<div class="cta-box">
 					<div class="text-center">
-						<h3 class="text-2xl font-semibold text-primary mb-4">
-							Want to Stay Updated?
-						</h3>
-						<p class="text-lg text-secondary mb-6 max-w-2xl mx-auto">
-							Join our waitlist to be among the first to know when we launch in Q1 2026.
-						</p>
-						<button onclick={() => window.location.href='/early-access'} class="button-primary button--large button-gap">
-							<BookOpen class="w-5 h-5" />
-							Join Early Access Waitlist
-						</button>
+				<h3 class="text-2xl font-semibold text-primary mb-4">
+					Ready to Join Beta 2?
+				</h3>
+				<p class="text-lg text-secondary mb-6 max-w-2xl mx-auto">
+					Apply now to lock in your 20% lifetime discount before we launch in Q1 2026.
+				</p>
+				<button onclick={() => window.location.href='/beta-2/apply'} class="button-primary button--large button-gap">
+					<BookOpen class="w-5 h-5" />
+					Apply for Beta 2
+				</button>
 					</div>
 				</div>
 			</div>

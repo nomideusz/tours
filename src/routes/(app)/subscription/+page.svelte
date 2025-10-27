@@ -12,6 +12,8 @@
 	import Crown from 'lucide-svelte/icons/crown';
 	import Gift from 'lucide-svelte/icons/gift';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import Activity from 'lucide-svelte/icons/activity';
 	import type { PageData } from './$types.js';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -309,408 +311,459 @@
 
 {#snippet featureItem(feature: import('$lib/utils/pricing-config.js').PricingFeature, colorClass: string = '')}
 	{@const isImplemented = isFeatureImplemented(feature.text)}
-	<li class="flex items-start gap-1.5 sm:gap-2">
+	<li class="flex items-start gap-2">
 		{#if feature.included}
-			<Check class="w-3.5 h-3.5 sm:w-4 sm:h-4 {colorClass} mt-0.5 flex-shrink-0" strokeWidth={2} />
-			<span class="text-xs sm:text-sm flex-1" style="color: var(--text-primary);">
+			<Check class="w-4 h-4 {colorClass} mt-0.5 flex-shrink-0" />
+			<span class="text-sm flex-1" style="color: var(--text-secondary);">
 				{feature.text}
 				{#if feature.comingSoon && !isImplemented}
-					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-1 sm:ml-2" 
-						style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); font-size: 0.65rem;">
-						Soon
+					<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-2" 
+						style="background: var(--bg-secondary); color: var(--text-tertiary); font-size: 0.65rem;">
+						Coming Soon
 					</span>
 				{/if}
 			</span>
 		{:else}
-			<X class="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-danger mt-0.5 flex-shrink-0" strokeWidth={2} />
-			<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">{feature.text}</span>
+			<X class="w-4 h-4 icon-danger mt-0.5 flex-shrink-0" />
+			<span class="text-sm" style="color: var(--text-tertiary);">{feature.text}</span>
 		{/if}
 	</li>
 {/snippet}
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-8">
-	<!-- Header -->
-	<div class="mb-6 sm:mb-8">
-		<!-- Mobile Header -->
-		<MobilePageHeader
-			title="Subscription"
-			secondaryInfo={SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
-			quickActions={[
-				...(currentPlan !== 'free' && !cancelAtPeriodEnd ? [{
-					label: 'Billing',
-					icon: CreditCard,
-					onclick: manageSubscription,
-					variant: 'secondary' as const,
-					disabled: loading
-				}] : [])
-			]}
-			infoItems={[
-				{
-					icon: Crown,
-					label: 'Plan',
-					value: SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial'
-				},
-				{
-					icon: Calendar,
-					label: 'Bookings',
-					value: `${user?.monthlyBookingsUsed || 0}/${SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit || '∞'}`
-				},
-				{
-					icon: Gift,
-					label: 'Tours',
-					value: `${data.usage?.tours?.used || 0}/${data.usage?.tours?.limit !== null ? data.usage.tours.limit : '∞'}`
-				},
-				{
-					icon: CreditCard,
-					label: cancelAtPeriodEnd ? 'Cancels' : 'Renews',
-					value: currentPeriodEnd && currentPlan !== 'free' ? new Date(currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'
-				}
-			]}
-		/>
-		
-		<!-- Desktop Header -->
-		<div class="hidden sm:block">
-			<PageHeader 
-				title="Subscription Management"
-				subtitle="Manage your Zaur subscription and billing"
+<div class="min-h-screen" style="background: var(--bg-primary);">
+	<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+		<!-- Header -->
+		<div class="mb-8 sm:mb-12">
+			<!-- Mobile Header -->
+			<MobilePageHeader
+				title="Subscription"
+				secondaryInfo={SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
+				quickActions={[
+					...(currentPlan !== 'free' && !cancelAtPeriodEnd ? [{
+						label: 'Billing',
+						icon: CreditCard,
+						onclick: manageSubscription,
+						variant: 'secondary' as const,
+						disabled: loading
+					}] : [])
+				]}
+				infoItems={[
+					{
+						icon: Crown,
+						label: 'Plan',
+						value: SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial'
+					},
+					{
+						icon: Calendar,
+						label: 'Bookings',
+						value: `${user?.monthlyBookingsUsed || 0}/${SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit || '∞'}`
+					},
+					{
+						icon: Gift,
+						label: 'Tours',
+						value: `${data.usage?.tours?.used || 0}/${data.usage?.tours?.limit !== null ? data.usage.tours.limit : '∞'}`
+					},
+					{
+						icon: CreditCard,
+						label: cancelAtPeriodEnd ? 'Cancels' : 'Renews',
+						value: currentPeriodEnd && currentPlan !== 'free' ? new Date(currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'
+					}
+				]}
 			/>
-		</div>
-	</div>
-
-	{#if error}
-		<div class="rounded-lg p-3 sm:p-4 mb-4 border alert-error">
-			<div class="flex items-start gap-2 sm:gap-3">
-				<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
-				<div class="flex-1">
-					<h3 class="font-semibold mb-0.5">Something went wrong</h3>
-					<p>{error}</p>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Early Access Notice -->
-	<div class="alert-info mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg">
-		<div class="flex items-start gap-2 sm:gap-3">
-			<AlertCircle class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
-			<div class="flex-1">
-				<h3 class="font-semibold mb-0.5 sm:mb-1">Early Access - Limited Time Features</h3>
-				<p>
-					Zaur is in early access. Join now and shape the future of tour management! 
-					Some features are being actively developed and will be rolled out progressively.
-					Check our social media for special promo codes with exclusive discounts.
+			
+			<!-- Desktop Header -->
+			<div class="hidden sm:block text-center">
+				<h1 class="text-3xl lg:text-4xl font-semibold mb-2" style="color: var(--text-primary);">
+					Subscription Management
+				</h1>
+				<p class="text-base" style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+					Manage your subscription and billing
 				</p>
 			</div>
 		</div>
-	</div>
 
-	<!-- Trial Period Info (for users in trial without promo code) -->
-	{#if isInFreePeriod && !hasActivePromoCode && user?.subscriptionFreeUntil && subscriptionStatus === 'trialing'}
-		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-info">
-			<div class="flex items-start gap-2 sm:gap-3">
-				<Calendar class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
-				<div class="flex-1">
-					<h3 class="alert-heading">Trial Period Active</h3>
-					<p class="alert-body">
-						You're currently in a free trial period.
-					</p>
-					<p class="alert-body text-xs mt-1 opacity-90">
-						Trial ends on {formatDate(user.subscriptionFreeUntil)} • After that, you'll be charged automatically
-					</p>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Promo Code Benefits -->
-	{#if hasActivePromoCode}
-		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-success">
-			<div class="flex items-start gap-2 sm:gap-3">
-				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
-				<div class="flex-1">
-					<h3 class="alert-heading">Promo Code Benefits Active!</h3>
-					<p class="alert-body">
-						{getPromoBenefitText()}
-						{#if user?.promoCodeUsed}
-							<span class="font-medium"> • Code: {user.promoCodeUsed}</span>
-						{/if}
-					</p>
-					{#if isInFreePeriod && user?.subscriptionFreeUntil}
-						<p class="alert-body text-xs mt-1 opacity-90">
-							Free period ends on {formatDate(user.subscriptionFreeUntil)}
-							{#if discountPercentage > 0 && isLifetimeDiscount}
-								• After that, {discountPercentage}% lifetime discount applies to all payments
-							{/if}
-						</p>
-					{:else if discountPercentage > 0 && isLifetimeDiscount}
-						<p class="alert-body text-xs mt-1 opacity-90">
-							This discount applies to all future payments
-						</p>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{:else if currentPlan === 'free'}
-		<!-- Promo Code Input for users without codes -->
-		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
-			<div class="flex items-start gap-2 sm:gap-3">
-				<Gift class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" style="color: var(--color-primary-600);" />
-				<div class="flex-1">
-					<h3 class="font-semibold mb-0.5 sm:mb-1" style="color: var(--text-primary);">Have a Promo Code?</h3>
-					<p class="text-sm mb-3" style="color: var(--text-secondary);">
-						Promo codes can provide free months, lifetime discounts, and more!
-					</p>
-					
-					<PromoCodeInput 
-						class="mb-3"
-						on:applied={handlePromoCodeApplied}
-						on:error={handlePromoCodeError}
-					/>
-					
-					<p class="text-xs" style="color: var(--text-tertiary);">
-						Follow us on social media for exclusive discount codes and special offers.
-					</p>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<div class="mb-6 sm:mb-8 rounded-xl p-4 sm:p-6" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-		<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-2 mb-2">
-					<Crown class="w-4 h-4 sm:w-5 sm:h-5" style="color: var(--color-primary-600);" />
-					<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">Current Plan</h2>
-				</div>
-				<div class="space-y-1">
-					<p class="text-base sm:text-lg font-bold" style="color: var(--text-primary);">
-						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
-					</p>
-					{#if subscriptionStatus === 'trialing' && isInFreePeriod && user?.subscriptionFreeUntil}
-						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-info-600);">
-							Trial Period • Ends {formatDate(user.subscriptionFreeUntil)}
-						</p>
-					{:else if subscriptionStatus && subscriptionStatus !== 'active'}
-						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-warning-600);">
-							Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
-						</p>
-					{/if}
-					{#if cancelAtPeriodEnd && currentPeriodEnd}
-						<p class="text-xs sm:text-sm" style="color: var(--color-warning-600);">
-							Cancels on {formatDate(currentPeriodEnd)}
-						</p>
-					{:else if currentPeriodEnd && currentPlan !== 'free' && subscriptionStatus !== 'trialing'}
-						<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">
-							Renews on {formatDate(currentPeriodEnd)}
-						</p>
-					{/if}
-				</div>
-			</div>
-			
-			<div class="flex gap-2 flex-wrap">
-				{#if currentPlan !== 'free'}
-					{#if cancelAtPeriodEnd}
-						<button
-							onclick={reactivateSubscription}
-							disabled={loading}
-							class="button-success"
-						>
-							{#if loading}
-								<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
-								Processing...
-							{:else}
-								Reactivate
-							{/if}
-						</button>
-					{:else}
-						<button
-							onclick={manageSubscription}
-							disabled={loading}
-							class="button-secondary"
-						>
-							{#if loading}
-								<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
-								Loading...
-							{:else}
-								<CreditCard class="w-4 h-4 inline mr-2" />
-								Manage Billing
-							{/if}
-						</button>
-						<button
-							onclick={cancelSubscription}
-							disabled={loading}
-							class="button-secondary button--danger-text"
-						>
-							Cancel Subscription
-						</button>
-					{/if}
-				{/if}
-			</div>
-		</div>
-		
-		{#if user}
-			<div class="mt-4 pt-4 border-t" style="border-color: var(--border-primary);">
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
-					<div>
-						<p style="color: var(--text-secondary);">Monthly Bookings</p>
-						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
-							{user.monthlyBookingsUsed || 0}
-							{#if SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
-								/ {SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
-							{:else}
-								/ Unlimited
-							{/if}
-						</p>
+		{#if error}
+			<div class="rounded-lg p-4 sm:p-5 mb-6 border" style="background: var(--bg-secondary); border-color: var(--color-error-500);">
+				<div class="flex items-start gap-3">
+					<AlertCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-error-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1 text-sm" style="color: var(--text-primary);">Error</h3>
+						<p class="text-sm" style="color: var(--text-secondary);">{error}</p>
 					</div>
-					<div>
-						<p style="color: var(--text-secondary);">Tours Created</p>
-						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
-							{data.usage?.tours?.used || 0}
-							{#if data.usage?.tours?.limit !== null}
-								/ {data.usage.tours.limit}
-							{:else}
-								/ Unlimited
-							{/if}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Early Access Notice -->
+		<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+			<div class="flex items-start gap-3">
+				<AlertCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
+				<div class="flex-1">
+					<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Early Access</h3>
+					<p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
+						Zaur is in early access. Some features are being actively developed and will be rolled out progressively.
+						Check our social media for special promo codes with exclusive discounts.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Trial Period Info (for users in trial without promo code) -->
+		{#if isInFreePeriod && !hasActivePromoCode && user?.subscriptionFreeUntil && subscriptionStatus === 'trialing'}
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+				<div class="flex items-start gap-3">
+					<Calendar class="w-5 h-5 flex-shrink-0" style="color: var(--color-info-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Trial Period Active</h3>
+						<p class="text-sm mb-2" style="color: var(--text-secondary);">
+							You're currently in a free trial period.
 						</p>
-					</div>
-					<div>
-						<p style="color: var(--text-secondary);">Next Reset</p>
-						<p class="font-medium text-sm sm:text-base" style="color: var(--text-primary);">
-							{user.monthlyBookingsResetAt ? formatDate(user.monthlyBookingsResetAt) : 'Next month'}
+						<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">
+							Trial ends on {formatDate(user.subscriptionFreeUntil)} • After that, you'll be charged automatically
 						</p>
 					</div>
 				</div>
 			</div>
 		{/if}
-	</div>
 
-	<!-- Available Plans / Upgrade Options -->
-	<div class="mb-6 sm:mb-8">
-		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-			<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
-				{#if currentPlan === 'professional'}
-					Our Plans
-				{:else if currentPlan === 'starter_pro'}
-					Upgrade Your Plan
-				{:else}
-					Available Plans
-				{/if}
-			</h2>
+		<!-- Promo Code Benefits -->
+		{#if hasActivePromoCode}
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--color-success-500);">
+				<div class="flex items-start gap-3">
+					<Gift class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Promo Code Benefits Active</h3>
+						<p class="text-sm mb-2" style="color: var(--text-secondary);">
+							{getPromoBenefitText()}
+							{#if user?.promoCodeUsed}
+								<span class="font-medium ml-1"> Code: {user.promoCodeUsed}</span>
+							{/if}
+						</p>
+						{#if isInFreePeriod && user?.subscriptionFreeUntil}
+							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">
+								Free period ends on {formatDate(user.subscriptionFreeUntil)}
+								{#if discountPercentage > 0 && isLifetimeDiscount}
+									• After that, {discountPercentage}% lifetime discount applies to all payments
+								{/if}
+							</p>
+						{:else if discountPercentage > 0 && isLifetimeDiscount}
+							<p class="text-xs sm:text-sm" style="color: var(--text-tertiary);">
+								This discount applies to all future payments
+							</p>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{:else if currentPlan === 'free'}
+			<!-- Promo Code Input for users without codes -->
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+				<div class="flex items-start gap-3">
+					<Gift class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Have a Promo Code?</h3>
+						<p class="text-sm mb-4" style="color: var(--text-secondary);">
+							Promo codes can provide free months, lifetime discounts, and more.
+						</p>
+						
+						<PromoCodeInput 
+							class="mb-3"
+							on:applied={handlePromoCodeApplied}
+							on:error={handlePromoCodeError}
+						/>
+						
+						<p class="text-xs" style="color: var(--text-tertiary);">
+							Follow us on social media for exclusive discount codes and special offers.
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Current Plan Card -->
+		<div class="mb-8 sm:mb-12 rounded-lg p-5 sm:p-6 border" style="background: var(--bg-primary); border-color: var(--border-primary);">
+			<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
+				<div class="flex-1">
+					<div class="flex items-center gap-3 mb-3">
+						<Crown class="w-5 h-5" style="color: var(--color-primary-600);" />
+						<div>
+							<h2 class="text-xs sm:text-sm font-medium mb-0.5" style="color: var(--text-secondary);">Current Plan</h2>
+							<p class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
+								{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
+							</p>
+						</div>
+					</div>
+					<div class="text-xs sm:text-sm" style="color: var(--text-secondary);">
+						{#if subscriptionStatus === 'trialing' && isInFreePeriod && user?.subscriptionFreeUntil}
+							<span>Trial Period • Ends {formatDate(user.subscriptionFreeUntil)}</span>
+						{:else if subscriptionStatus && subscriptionStatus !== 'active'}
+							<span>Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}</span>
+						{/if}
+						{#if cancelAtPeriodEnd && currentPeriodEnd}
+							<span>Cancels on {formatDate(currentPeriodEnd)}</span>
+						{:else if currentPeriodEnd && currentPlan !== 'free' && subscriptionStatus !== 'trialing'}
+							<span>Renews on {formatDate(currentPeriodEnd)}</span>
+						{/if}
+					</div>
+				</div>
 				
-				<!-- Toggle -->
-				<div class="p-0.5 sm:p-1 rounded-lg inline-flex self-start sm:self-auto" style="background: var(--bg-secondary);">
+				<div class="flex flex-col sm:flex-row gap-2">
+					{#if currentPlan !== 'free'}
+						{#if cancelAtPeriodEnd}
+							<button
+								onclick={reactivateSubscription}
+								disabled={loading}
+								class="button-success"
+							>
+								{#if loading}
+									<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+									Processing...
+								{:else}
+									Reactivate
+								{/if}
+							</button>
+						{:else}
+							<button
+								onclick={manageSubscription}
+								disabled={loading}
+								class="button-secondary"
+							>
+								{#if loading}
+									<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+									Loading...
+								{:else}
+									<CreditCard class="w-4 h-4 inline mr-2" />
+									Manage Billing
+								{/if}
+							</button>
+							<button
+								onclick={cancelSubscription}
+								disabled={loading}
+								class="button-secondary button--danger-text"
+							>
+								Cancel
+							</button>
+						{/if}
+					{/if}
+				</div>
+			</div>
+			
+			{#if user}
+				<div class="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t" style="border-color: var(--border-primary);">
+					<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+						<div>
+							<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Monthly Bookings</p>
+							<p class="text-lg font-semibold" style="color: var(--text-primary);">
+								{user.monthlyBookingsUsed || 0}
+								<span class="text-sm font-normal" style="color: var(--text-secondary);">
+									{#if SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
+										/ {SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.monthlyBookingLimit}
+									{:else}
+										/ Unlimited
+									{/if}
+								</span>
+							</p>
+						</div>
+						<div>
+							<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Tours Created</p>
+							<p class="text-lg font-semibold" style="color: var(--text-primary);">
+								{data.usage?.tours?.used || 0}
+								<span class="text-sm font-normal" style="color: var(--text-secondary);">
+									{#if data.usage?.tours?.limit !== null}
+										/ {data.usage.tours.limit}
+									{:else}
+										/ Unlimited
+									{/if}
+								</span>
+							</p>
+						</div>
+						<div>
+							<p class="text-xs font-medium mb-1" style="color: var(--text-secondary);">Next Reset</p>
+							<p class="text-sm font-medium" style="color: var(--text-primary);">
+								{user.monthlyBookingsResetAt ? formatDate(user.monthlyBookingsResetAt) : 'Next month'}
+							</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Personal Discount Banner (if applicable) -->
+		{#if hasPromoDiscount && !isInFreePeriod && discountPercentage > 0}
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--color-primary-500);">
+				<div class="text-center">
+					<h3 class="text-base sm:text-lg font-semibold mb-1" style="color: var(--text-primary);">
+						Your Discount: {discountPercentage}% OFF
+					</h3>
+					<p class="text-sm" style="color: var(--text-secondary);">
+						{#if isLifetimeDiscount}
+							This lifetime discount is applied to all prices below
+						{:else}
+							This discount is applied to the prices below
+						{/if}
+					</p>
+					{#if user?.promoCodeUsed}
+						<p class="text-xs mt-2" style="color: var(--text-tertiary);">
+							Promo code: {user.promoCodeUsed}
+						</p>
+					{/if}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Available Plans / Upgrade Options -->
+		<div class="mb-8 sm:mb-10">
+			<div class="text-center mb-6 sm:mb-8">
+				<h2 class="text-xl sm:text-2xl font-semibold mb-2" style="color: var(--text-primary);">
+					{#if currentPlan === 'professional'}
+						Available Plans
+					{:else if currentPlan === 'starter_pro'}
+						Upgrade Options
+					{:else}
+						Choose a Plan
+					{/if}
+				</h2>
+				<p class="text-sm mb-5" style="color: var(--text-secondary); max-width: 500px; margin-left: auto; margin-right: auto;">
+					{#if hasPromoDiscount && discountPercentage > 0}
+						Your {discountPercentage}% {isLifetimeDiscount ? 'lifetime' : ''} discount is applied to all prices
+					{:else}
+						Select the plan that fits your business needs
+					{/if}
+				</p>
+				
+				<!-- Billing Toggle -->
+				<div class="inline-flex p-1 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
 					<button 
-						class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer {!isYearly ? 'shadow-sm' : ''}"
+						class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-md text-sm font-medium transition-all duration-200 {!isYearly ? 'shadow-sm' : ''}"
 						style="{!isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 						onclick={() => isYearly = false}
 					>
 						Monthly
 					</button>
 					<button 
-						class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer {isYearly ? 'shadow-sm' : ''}"
+						class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-md text-sm font-medium transition-all duration-200 {isYearly ? 'shadow-sm' : ''}"
 						style="{isYearly ? 'background: var(--bg-primary); color: var(--text-primary);' : 'background: transparent; color: var(--text-secondary);'}"
 						onclick={() => isYearly = true}
 					>
-						Annual <span class="hidden sm:inline">(2 months free)</span><span class="sm:hidden">🎁</span>
+						Annual
 					</button>
 				</div>
 			</div>
 			
-			<!-- Note: Only 2 plans now (Essential and Premium) -->
+			<!-- Pricing Cards Grid -->
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
 				{#each PRICING_PLANS as plan}
 					{@const pricing = calculatePlanPricing(plan.id, isYearly ? 'yearly' : 'monthly', userPricingContext)}
 					{@const isPopular = plan.popular}
 					{@const isCurrent = currentPlan === plan.id}
 					
-					<div class="relative rounded-lg p-4 sm:p-6 flex flex-col h-full {isPopular ? 'border-2 shadow-lg' : 'border'}" 
-						 style="background: var(--bg-primary); border-color: {isPopular ? 'var(--color-primary-500)' : 'var(--border-primary)'};{!isPopular ? ' border: 1px solid var(--border-primary);' : ''}">
+					<div class="relative rounded-lg p-5 sm:p-6 flex flex-col h-full transition-all duration-200 {isPopular ? 'border-2' : 'border'}" 
+						 style="background: var(--bg-primary); border-color: {isPopular ? 'var(--color-primary-500)' : 'var(--border-primary)'};">
 					
 						{#if isPopular}
 							<div class="absolute -top-2.5 left-1/2 transform -translate-x-1/2">
-								<span class="px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium" style="background: var(--color-primary-600); color: white;">Most Popular</span>
+								<span class="px-3 py-1 rounded-full text-xs font-semibold" style="background: var(--primary); color: white;">
+									Most Popular
+								</span>
 							</div>
 						{/if}
 						
-						<h3 class="text-lg sm:text-xl font-semibold mb-2" style="color: var(--text-primary);">{plan.name}</h3>
+						{#if isCurrent}
+							<div class="absolute -top-2.5 right-4">
+								<span class="px-3 py-1 rounded-full text-xs font-semibold" style="background: var(--color-success-600); color: white;">
+									Current
+								</span>
+							</div>
+						{/if}
 						
-						<div class="mb-1">
+						<div class="mb-4 pb-4 border-b" style="border-color: var(--border-secondary);">
+							<h3 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">{plan.name}</h3>
+							<p class="text-sm mt-1" style="color: var(--text-secondary);">{plan.description}</p>
+						</div>
+						
+						<div class="mb-4 text-center">
 							{#if pricing.discountPercentage && pricing.discountPercentage > 0}
-								<!-- User has beta cohort discount (Beta 1 or Beta 2) -->
-								<div class="text-center">
+								<!-- User has discount applied -->
+								<div class="mb-1">
 									<span class="text-sm line-through" style="color: var(--text-tertiary);">€{formatPrice(pricing.original)}</span>
-									<span class="text-xl sm:text-2xl font-bold block" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
-									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
+								</div>
+								<div class="mb-1">
+									<span class="text-3xl sm:text-4xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
+									<span class="text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
+								</div>
+								<div class="text-xs font-medium px-2 py-1 rounded inline-block" style="background: var(--bg-secondary); color: var(--primary);">
+									Save €{formatPrice(pricing.savings)} with {pricing.discountPercentage}% discount
 								</div>
 							{:else}
-								<!-- Regular pricing (no cohort discount) -->
-								<div class="text-center">
-									<span class="text-xl sm:text-2xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
-									<span class="text-xs sm:text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
+								<!-- Regular pricing (no discount) -->
+								<div class="mb-1">
+									<span class="text-3xl sm:text-4xl font-bold" style="color: var(--text-primary);">€{formatPrice(pricing.final)}</span>
+									<span class="text-sm" style="color: var(--text-secondary);">/{isYearly ? 'year' : 'month'}</span>
 								</div>
 							{/if}
 						</div>
 						
-						<div class="mb-3 sm:mb-4 h-4 sm:h-5 text-center">
-							{#if pricing.discountPercentage && pricing.discountPercentage > 0}
-								<!-- User has beta discount (Beta 1 or Beta 2) -->
-								<span class="text-xs font-medium px-2 py-0.5 rounded" style="background: var(--color-success-100); color: var(--color-success-700);">
-									{pricing.isInFreePeriod ? 'FREE during trial' : `${pricing.discountPercentage}% OFF forever`}
-								</span>
+						<div class="mb-4 min-h-[28px] flex items-center justify-center text-xs" style="color: var(--text-tertiary);">
+							{#if pricing.discountPercentage && pricing.discountPercentage > 0 && pricing.isInFreePeriod}
+								<span>Free during trial, then discounted price applies</span>
+							{:else if pricing.discountPercentage && pricing.discountPercentage > 0 && pricing.isLifetimeDiscount}
+								<span>Lifetime discount applied</span>
+							{:else if pricing.discountPercentage && pricing.discountPercentage > 0}
+								<span>Special discount applied</span>
 							{:else if isYearly}
-								<!-- Annual billing: 2 months free -->
 								{@const monthlyPricing = calculatePlanPricing(plan.id, 'monthly', userPricingContext)}
 								{@const monthlySavings = monthlyPricing.final * 2}
-								<span class="text-xs font-medium" style="color: var(--color-success-600);">
-									2 months free • Save €{formatPrice(monthlySavings)}
-								</span>
+								<span>Save €{formatPrice(monthlySavings)} with annual billing</span>
 							{/if}
 						</div>
 						
-						<ul class="space-y-1.5 sm:space-y-2 mb-4 sm:mb-6 flex-grow">
-							{#each plan.features as feature}
+						<ul class="space-y-2 mb-6 flex-grow">
+							{#each plan.features.slice(0, 6) as feature}
 								{@render featureItem(feature, isPopular ? 'icon-primary' : 'icon-secondary')}
 							{/each}
 						</ul>
 						
-						{#if isCurrent}
-							<button
-								disabled
-								class="w-full py-2 rounded-md font-medium cursor-not-allowed"
-								style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
-							>
-								Current Plan
-							</button>
-						{:else if !isUpgrade(plan.id)}
-							<!-- Don't show downgrade buttons or abandoned plans -->
-							<button
-								disabled
-								class="w-full py-2 rounded-md font-medium cursor-not-allowed"
-								style="background: var(--bg-tertiary); color: var(--text-tertiary); opacity: 0.6;"
-							>
-								Contact Support
-							</button>
-						{:else}
-							<!-- Show upgrade button for Essential and Premium -->
-							{@const isThisPlanLoading = loadingPlanId === plan.id}
-							<button
-								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
-								disabled={loading}
-								class="button-primary button--full-width"
-							>
-								{#if isThisPlanLoading}
-									<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
-									Processing...
-								{:else}
-									Upgrade to {plan.name}
-								{/if}
-							</button>
-						{/if}
+						<div class="pt-4 border-t" style="border-color: var(--border-secondary);">
+							<p class="text-xs text-center mb-3" style="color: var(--text-tertiary);">
+								{plan.tourLimit === null ? 'Unlimited' : plan.tourLimit} tours • 
+								{plan.monthlyBookingLimit === null ? 'Unlimited' : plan.monthlyBookingLimit} bookings/month
+							</p>
+							
+							{#if isCurrent}
+								<button
+									disabled
+									class="button-secondary button--full-width cursor-not-allowed opacity-60"
+								>
+									Current Plan
+								</button>
+							{:else if !isUpgrade(plan.id)}
+								<button
+									disabled
+									class="button-secondary button--full-width cursor-not-allowed opacity-50"
+								>
+									Contact Support
+								</button>
+							{:else}
+								{@const isThisPlanLoading = loadingPlanId === plan.id}
+								<button
+									onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
+									disabled={loading}
+									class="{isPopular ? 'button-primary' : 'button-secondary'} button--full-width"
+								>
+									{#if isThisPlanLoading}
+										<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
+										Processing...
+									{:else}
+										Upgrade to {plan.name}
+									{/if}
+								</button>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			</div>
 		</div>
 	</div>
+</div>
 
 <!-- Cancel Subscription Modal -->
 <ConfirmationModal

@@ -5,16 +5,16 @@
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Users from 'lucide-svelte/icons/users';
 	
-	// Redirect immediately to beta application
+	// Redirect immediately to beta-2 application
 	onMount(() => {
 		// Small delay to show the message briefly, then redirect
 		setTimeout(() => {
-			goto('/early-access');
+			goto('/beta-2/apply');
 		}, 2000);
 	});
 
 	function goToWaitlist() {
-		goto('/early-access');
+		goto('/beta-2/apply');
 	}
 
 	function goToLogin() {
@@ -49,13 +49,13 @@
 				</div>
 				
 				<div class="space-y-3">
-					<button
-						onclick={goToWaitlist}
-						class="w-full bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2"
-					>
-						<span>Join Early Access Waitlist</span>
-						<ArrowRight class="w-4 h-4" />
-					</button>
+				<button
+					onclick={goToWaitlist}
+					class="w-full bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center gap-2"
+				>
+					<span>Apply for Beta 2</span>
+					<ArrowRight class="w-4 h-4" />
+				</button>
 					
 					<button
 						onclick={goToLogin}

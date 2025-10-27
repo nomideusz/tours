@@ -8,7 +8,7 @@
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 	
 	function handleJoinWaitlist() {
-		goto('/early-access');
+		goto('/beta-2/apply');
 	}
 </script>
 
@@ -108,7 +108,7 @@
 		</p>
 		<div class="cta-actions">
 			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
-				Join Early Access Waitlist
+				Apply for Beta 2
 				<ArrowRight class="w-4 h-4" />
 			</button>
 		</div>

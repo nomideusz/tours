@@ -124,15 +124,15 @@
 							<span>Help Center</span>
 						</a>
 					</li>
-					<li>
-						<button 
-							class="footer-link footer-button"
-							onclick={() => window.location.href = '/early-access'}
-						>
-							<FlaskConical class="w-4 h-4" />
-							<span>Join Waitlist</span>
-						</button>
-					</li>
+				<li>
+					<button 
+						class="footer-link footer-button"
+						onclick={() => window.location.href = '/beta-2/apply'}
+					>
+						<FlaskConical class="w-4 h-4" />
+						<span>Apply for Beta 2</span>
+					</button>
+				</li>
 				</ul>
 			</div>
 		</div>

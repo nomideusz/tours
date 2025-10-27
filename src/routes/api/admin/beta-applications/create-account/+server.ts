@@ -7,6 +7,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { hash } from '@node-rs/argon2';
 import { generateUniqueUsername } from '$lib/utils/username.js';
 import { applyPromoCodeToUser } from '$lib/utils/promo-codes.js';
+import { sendBetaAccountEmail } from '$lib/email/sender.js';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	// Check admin access
@@ -23,7 +24,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			businessName,
 			phone,
 			location,
-			country
+			country,
+			betaGroup
 		} = await request.json();
 
 		// Validation
@@ -90,6 +92,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			parallelism: 1
 		});
 
+		// Determine beta group (default to beta_2 if not specified)
+		const finalBetaGroup = betaGroup || application[0].betaGroup || 'beta_2';
+
 		// Create user
 		const newUserId = createId();
 		await db.insert(users).values({
@@ -100,6 +105,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			hashedPassword,
 			role: 'user',
 			emailVerified: true, // Admin-created accounts are pre-verified
+			betaGroup: finalBetaGroup as 'beta_1' | 'beta_2',
 			businessName: businessName || null,
 			phone: phone || null,
 			location: location || null,
@@ -107,31 +113,44 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			currency: 'EUR' // Default currency
 		});
 
-		// Apply BETA_APPRECIATION promo code
+		// Determine benefits text based on beta group (for email)
+		const benefitsText = finalBetaGroup === 'beta_1' 
+			? '12 months free + 30% lifetime discount'
+			: '4 months free + 20% lifetime discount';
+
+		// Apply appropriate promo code based on beta group
 		let promoMessage = '';
 		try {
-			// Get the BETA_APPRECIATION promo code
-			const betaPromoCode = await db
+			// Determine which promo code to apply
+			const promoCodeToApply = finalBetaGroup === 'beta_1' ? 'BETA_APPRECIATION' : 'BETA2';
+
+			// Get the promo code from database
+			const promoCode = await db
 				.select()
 				.from(promoCodes)
-				.where(eq(promoCodes.code, 'BETA_APPRECIATION'))
+				.where(eq(promoCodes.code, promoCodeToApply))
 				.limit(1);
 
-			if (betaPromoCode.length > 0) {
-				const result = await applyPromoCodeToUser(newUserId, betaPromoCode[0]);
+			if (promoCode.length > 0) {
+				const result = await applyPromoCodeToUser(newUserId, promoCode[0]);
 				if (result.success) {
-					promoMessage = ' Beta benefits applied: 12 months free + 30% lifetime discount.';
+					promoMessage = ` ${finalBetaGroup.toUpperCase()} benefits applied: ${benefitsText}.`;
 				} else {
-					console.error('Failed to apply beta promo code:', result.error);
-					promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+					console.error('Failed to apply promo code:', result.error);
+					// Check if user already has promo code - this is OK for manual testing
+					if (result.error?.includes('already has a pricing cohort')) {
+						promoMessage = ` (Note: User already has pricing benefits assigned)`;
+					} else {
+						promoMessage = ` (Note: ${finalBetaGroup.toUpperCase()} promo code could not be applied - ${result.error})`;
+					}
 				}
 			} else {
-				console.error('BETA_APPRECIATION promo code not found in database');
-				promoMessage = ' (Note: Beta promo code not found - please apply manually)';
+				console.error(`${promoCodeToApply} promo code not found in database`);
+				promoMessage = ` (Note: ${finalBetaGroup.toUpperCase()} promo code not found - please apply manually)`;
 			}
 		} catch (error) {
-			console.error('Error applying beta promo code:', error);
-			promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+			console.error('Error applying promo code:', error);
+			promoMessage = ` (Note: ${finalBetaGroup.toUpperCase()} promo code could not be applied automatically)`;
 		}
 
 		// Update application to mark that account was created
@@ -144,10 +163,34 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			})
 			.where(eq(betaApplications.id, applicationId));
 
+		// Send welcome email with credentials
+		let emailMessage = '';
+		try {
+			const emailResult = await sendBetaAccountEmail({
+				name,
+				email: email.toLowerCase(),
+				temporaryPassword: password,
+				betaGroup: finalBetaGroup as 'beta_1' | 'beta_2',
+				benefits: benefitsText,
+				loginUrl: 'https://zaur.app/auth/login'
+			});
+
+			if (emailResult.success) {
+				emailMessage = ' Welcome email sent.';
+				console.log(`✅ Beta account welcome email sent to ${email}`);
+			} else {
+				emailMessage = ' (Note: Welcome email could not be sent - please send credentials manually)';
+				console.error(`❌ Failed to send welcome email to ${email}:`, emailResult.error);
+			}
+		} catch (emailError) {
+			emailMessage = ' (Note: Welcome email could not be sent - please send credentials manually)';
+			console.error('Error sending welcome email:', emailError);
+		}
+
 		// Return success without sensitive data
 		return json({ 
 			success: true,
-			message: `Beta account created successfully for ${email}.${promoMessage}`,
+			message: `Beta account created successfully for ${email}.${promoMessage}${emailMessage}`,
 			user: {
 				id: newUserId,
 				email: email.toLowerCase(),
@@ -155,7 +198,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				username,
 				role: 'user',
 				emailVerified: true,
-				isBetaTester: true
+				betaGroup: finalBetaGroup
 			}
 		});
 

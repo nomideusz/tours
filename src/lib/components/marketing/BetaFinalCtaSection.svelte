@@ -9,8 +9,8 @@
 	import { trackCTAClick } from '$lib/utils/umami-tracking.js';
 	
 	function handleJoinWaitlist() {
-		trackCTAClick('final', 'Join Early Access Waitlist', '/early-access');
-		goto('/early-access');
+		trackCTAClick('final', 'Apply for Beta 2', '/beta-2/apply');
+		goto('/beta-2/apply');
 	}
 	
 	function handleLearnMore() {
@@ -29,12 +29,12 @@
 			</div>
 			
 			<h2 class="cta-title mb-4">
-				Want Early Access?
+				Ready to Join Beta 2?
 			</h2>
 			
 			<p class="cta-description mb-8">
-				Our beta program is underway with 50 tour guides. Join the waitlist to be 
-				among the first to access Zaur when we launch publicly in Q1 2026.
+				Apply now to lock in your 20% lifetime discount and 4 months free trial. 
+				Limited spots available before we launch publicly in Q1 2026.
 			</p>
 			
 			<div class="button-group">
@@ -42,7 +42,7 @@
 					class="button-primary button--large button--gap"
 					onclick={handleJoinWaitlist}
 				>
-					Join Early Access Waitlist
+					Apply for Beta 2
 					<ArrowRight class="w-4 h-4" />
 				</button>
 				
