@@ -353,4 +353,32 @@ body:has(video) #detach-button-host {
 	}
 }
 
+/* iOS Safari - Ensure solid backgrounds to prevent transparency issues */
+html {
+	background: var(--bg-primary, #ffffff);
+}
+
+body {
+	background: var(--bg-primary, #ffffff);
+	/* Prevent rubber band scrolling showing through */
+	position: relative;
+}
+
+/* iOS specific - prevent content from showing through transparent UI */
+@supports (-webkit-touch-callout: none) {
+	html {
+		/* Extend background beyond viewport */
+		background-attachment: fixed;
+		min-height: 100vh;
+		min-height: -webkit-fill-available;
+	}
+	
+	body {
+		min-height: 100vh;
+		min-height: -webkit-fill-available;
+		/* Prevent overscroll */
+		overscroll-behavior: none;
+	}
+}
+
  
