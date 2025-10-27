@@ -20,6 +20,7 @@
 	import { tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import { themeStore } from '$lib/stores/theme.js';
+	import { isKeyboardVisible } from '$lib/stores/keyboard.js';
 	
 	// Get current theme for conditional styling
 	let currentTheme = $state<string>('light');
@@ -668,7 +669,7 @@
 	<!-- Mobile sticky booking footer (shown only when booking form is ready) -->
 	{#if selectedTimeSlot && totalParticipants() > 0 && !showSuccess}
 		{@const displayPrice = priceCalculation().totalAmount}
-		<div class="mobile-sticky-footer">
+		<div class="mobile-sticky-footer" class:keyboard-hidden={$isKeyboardVisible}>
 			<div class="mobile-footer-content">
 				<div class="mobile-price-summary">
 					<div class="mobile-price-label">Total</div>
@@ -906,6 +907,15 @@
 			-webkit-backdrop-filter: blur(10px);
 			border-top: 1px solid var(--border-primary);
 			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+			/* Smooth transitions for keyboard hiding */
+			transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+		}
+		
+		/* Hide sticky footer when mobile keyboard is visible */
+		.mobile-sticky-footer.keyboard-hidden {
+			transform: translateY(100%);
+			opacity: 0;
+			pointer-events: none;
 		}
 		
 		.mobile-footer-content {

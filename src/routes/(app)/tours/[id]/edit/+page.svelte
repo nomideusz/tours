@@ -391,8 +391,9 @@
 			} : undefined,
 			privateTour: tour.privateTour ? {
 				...tour.privateTour,
-				minCapacity: tour.minCapacity,
-				maxCapacity: tour.maxCapacity
+				// Use privateTour-specific capacity, or fall back to tour-level capacity
+				minCapacity: tour.privateTour.minCapacity ?? tour.minCapacity,
+				maxCapacity: tour.privateTour.maxCapacity ?? tour.maxCapacity
 			} : undefined,
 			groupPricingTiers: tour.groupPricingTiers || { tiers: [] },
 			groupDiscounts: tour.groupDiscounts || undefined,

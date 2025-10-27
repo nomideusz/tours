@@ -25,6 +25,7 @@
 	import { themeStore } from '$lib/stores/theme.js';
 	import { onMount, onDestroy } from 'svelte';
 	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';
+	import { isKeyboardVisible } from '$lib/stores/keyboard.js';
 
 	// Icons
 	import Home from 'lucide-svelte/icons/home';
@@ -643,7 +644,7 @@
 		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
-		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" style="background: var(--bg-primary); border-color: var(--border-primary);">
+		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" class:keyboard-hidden={$isKeyboardVisible} style="background: var(--bg-primary); border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
 					{#if item.isMenu}
@@ -836,6 +837,15 @@
 		will-change: transform;
 		-webkit-perspective: 1000;
 		perspective: 1000;
+		/* Smooth transitions */
+		transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+	}
+	
+	/* Hide bottom nav when mobile keyboard is visible */
+	.mobile-bottom-nav.keyboard-hidden {
+		transform: translateY(100%);
+		opacity: 0;
+		pointer-events: none;
 	}
 	
 	/* Ensure the nav stays at the bottom even when iOS Safari UI changes */
