@@ -48,44 +48,8 @@ if (browser) {
 			const keyboardOpen = (heightDiff > KEYBOARD_THRESHOLD || viewportOffset > 50) && 
 								(isInputFocused || lastKnownKeyboardState);
 			
-			// If keyboard state changed from open to closed
-			if (lastKnownKeyboardState && !keyboardOpen && !isInputFocused) {
-				// iOS Safari fix: Force reset after keyboard closes
-				if (isIOS) {
-					// Immediate hide
-					isKeyboardVisible.set(false);
-					
-					// Force viewport reset
-					if (window.visualViewport) {
-						// Scroll to top temporarily to reset viewport
-						const currentScroll = window.scrollY;
-						window.scrollTo(0, 0);
-						setTimeout(() => {
-							window.scrollTo(0, currentScroll);
-						}, 10);
-					}
-					
-					// Force layout recalculation
-					resetTimeout = setTimeout(() => {
-						// Trigger resize event to force Safari to recalculate
-						window.dispatchEvent(new Event('resize'));
-						
-						// Additional reset attempt
-						if (window.visualViewport && window.visualViewport.height < window.innerHeight) {
-							// Force another check if viewport is still wrong
-							isKeyboardVisible.set(false);
-							document.body.style.position = 'fixed';
-							document.body.style.width = '100%';
-							setTimeout(() => {
-								document.body.style.position = '';
-								document.body.style.width = '';
-							}, 100);
-						}
-					}, 350);
-				}
-			} else {
-				isKeyboardVisible.set(keyboardOpen);
-			}
+			// Update keyboard visibility state
+			isKeyboardVisible.set(keyboardOpen);
 			
 			lastKnownKeyboardState = keyboardOpen;
 			return;
@@ -100,6 +64,11 @@ if (browser) {
 		lastKnownKeyboardState = keyboardOpen;
 	};
 	
+	// Store original body styles
+	let originalBodyPosition = '';
+	let originalBodyTop = '';
+	let originalBodyOverflow = '';
+	
 	// Track input focus state
 	const handleFocusIn = (e: FocusEvent) => {
 		const target = e.target as HTMLElement;
@@ -110,6 +79,24 @@ if (browser) {
 			target.isContentEditable
 		)) {
 			isInputFocused = true;
+			
+			// Apply iOS-specific body fix when keyboard opens
+			if (isIOS) {
+				// Store current scroll position
+				const scrollY = window.scrollY;
+				originalBodyPosition = document.body.style.position;
+				originalBodyTop = document.body.style.top;
+				
+				// Fix body position to prevent viewport expansion
+				document.body.style.position = 'fixed';
+				document.body.style.top = `-${scrollY}px`;
+				document.body.style.width = '100%';
+			} else {
+				// For other browsers, just prevent scrolling
+				originalBodyOverflow = document.body.style.overflow;
+				document.body.style.overflow = 'hidden';
+			}
+			
 			// Small delay to let keyboard animation start
 			setTimeout(checkKeyboard, 100);
 		}
@@ -117,6 +104,24 @@ if (browser) {
 	
 	const handleFocusOut = () => {
 		isInputFocused = false;
+		
+		// Restore body styles when keyboard closes
+		if (isIOS) {
+			// Get the scroll position from the fixed top value
+			const scrollY = parseInt(document.body.style.top || '0') * -1;
+			
+			// Restore original position
+			document.body.style.position = originalBodyPosition;
+			document.body.style.top = originalBodyTop;
+			document.body.style.width = '';
+			
+			// Restore scroll position
+			window.scrollTo(0, scrollY);
+		} else {
+			// Restore overflow for other browsers
+			document.body.style.overflow = originalBodyOverflow;
+		}
+		
 		// Longer delay for iOS to ensure keyboard is fully closed
 		setTimeout(checkKeyboard, isIOS ? 350 : 100);
 		
@@ -156,36 +161,22 @@ if (browser) {
 		}, 100);
 	});
 	
-	// iOS Safari: Periodic check to ensure proper state
-	if (isIOS) {
-		let checkInterval = setInterval(() => {
-			// If no input is focused but keyboard was detected as open
-			if (!isInputFocused && lastKnownKeyboardState) {
-				checkKeyboard();
-			}
-			
-			// Also check if visual viewport is in incorrect state
-			if (!isInputFocused && window.visualViewport) {
-				const viewportHeight = window.visualViewport.height;
-				const windowHeight = window.innerHeight;
-				
-				// If there's still a significant difference without input focus
-				if (Math.abs(windowHeight - viewportHeight) > 50) {
-					isKeyboardVisible.set(false);
-					lastKnownKeyboardState = false;
-					// Force viewport reset
-					window.scrollTo(0, window.scrollY + 1);
-					setTimeout(() => {
-						window.scrollTo(0, window.scrollY - 1);
-					}, 50);
-				}
-			}
-		}, 500);
-		
-		// Clean up interval on page unload
-		window.addEventListener('beforeunload', () => {
-			clearInterval(checkInterval);
-		});
-	}
+	// Cleanup function to restore body styles if needed
+	const cleanup = () => {
+		if (isIOS && document.body.style.position === 'fixed') {
+			const scrollY = parseInt(document.body.style.top || '0') * -1;
+			document.body.style.position = '';
+			document.body.style.top = '';
+			document.body.style.width = '';
+			window.scrollTo(0, scrollY);
+		} else if (originalBodyOverflow) {
+			document.body.style.overflow = originalBodyOverflow;
+		}
+		isKeyboardVisible.set(false);
+		lastKnownKeyboardState = false;
+	};
+	
+	// Clean up on page unload
+	window.addEventListener('beforeunload', cleanup);
 }
 

@@ -818,6 +818,8 @@
 		-webkit-overflow-scrolling: touch;
 		/* Ensure content has solid background */
 		background: var(--bg-primary);
+		/* Allow main content to scroll properly */
+		height: 100%;
 	}
 	
 		/* iOS specific main content adjustments */
@@ -870,6 +872,7 @@
 				/* Ensure bottom is always at viewport bottom */
 				bottom: 0 !important;
 				/* Prevent iOS bounce effect from affecting position */
+				transform: translate3d(0, 0, 0);
 				-webkit-transform: translate3d(0, 0, 0);
 				/* Force opaque background for iOS - use explicit colors */
 				background-color: var(--bg-primary) !important;
