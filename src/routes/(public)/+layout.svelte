@@ -30,7 +30,7 @@
 	});
 	
 	// Auto-hide navigation on scroll
-	let navHidden = false;
+	let navHidden = $state(false);
 	let lastScrollY = 0;
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 	
@@ -116,7 +116,7 @@
 		window.addEventListener('resize', handleResize);
 		
 		return () => {
-			cleanup();
+			if (cleanup) cleanup();
 			if (browser) {
 				document.removeEventListener('touchstart', handleTouchStart);
 				document.removeEventListener('touchmove', handleTouchMove);
@@ -134,7 +134,7 @@
 	<div class="min-h-screen flex flex-col subtle-retro-section">
 		<PublicHeader hidden={navHidden} />
 		
-		<main class="flex-1 pt-14 sm:pt-16 relative z-10">
+		<main class="flex-1 pt-14 sm:pt-20 relative z-10">
 			{@render children()}
 		</main>
 		

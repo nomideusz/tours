@@ -100,8 +100,10 @@
 <style>
 	/* Public Header - matches marketing style */
 	.public-header {
-		position: sticky;
+		position: fixed;
 		top: 0;
+		left: 0;
+		right: 0;
 		z-index: var(--z-70);
 		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
 		border-bottom: 1px solid var(--border-primary);
