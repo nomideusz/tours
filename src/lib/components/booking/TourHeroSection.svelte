@@ -150,7 +150,7 @@
 		<span class="meta-item">
 			<Users class="w-4 h-4" />
 			{#if tour.pricingModel === 'private_tour' && tour.privateTour}
-				{tour.privateTour.minCapacity || 4}-{tour.privateTour.maxCapacity || 12}
+				{tour.privateTour.minCapacity ?? tour.minCapacity ?? 4}-{tour.privateTour.maxCapacity ?? tour.maxCapacity ?? 12}
 			{:else}
 				Up to {tour.maxCapacity || tour.capacity || 20}
 			{/if}
