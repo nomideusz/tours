@@ -135,6 +135,10 @@
 		if (browser) {
 			currentPath = window.location.pathname;
 			
+			// Reset touch state for iOS
+			touchAccumulator = 0;
+			lastTouchY = 0;
+			
 			// Scroll to top on navigation (mobile fix)
 			// Use both window and the main content element
 			window.scrollTo(0, 0);
@@ -410,12 +414,16 @@
 		if (Math.abs(scrollDelta) < 5) return;
 		
 		// Determine scroll direction
-		if (currentScrollY > lastScrollY && currentScrollY > 80) {
-			// Scrolling down & past header height
+		if (currentScrollY > lastScrollY) {
+			// Scrolling down
 			scrollDirection = 'down';
 			navHidden = true;
-		} else if (currentScrollY < lastScrollY || currentScrollY < 80) {
-			// Scrolling up or near top
+			// Also close mobile menu if open
+			if (mobileMenuOpen) {
+				mobileMenuOpen = false;
+			}
+		} else if (currentScrollY < lastScrollY) {
+			// Scrolling up
 			scrollDirection = 'up';
 			navHidden = false;
 		}
@@ -453,19 +461,16 @@
 		
 		// Check if we've moved enough to trigger
 		if (Math.abs(touchAccumulator) > 20) {
-			// Check scroll position
-			const scrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-			
-			console.log('📱 iOS touch:', { touchAccumulator, scrollY, navHidden });
-			
-			if (touchAccumulator > 0 && scrollY > 80) {
-				// Scrolling down past threshold - hide nav
+			if (touchAccumulator > 0) {
+				// Scrolling down - hide nav
 				navHidden = true;
-				console.log('📱 iOS: Hiding nav');
+				// Also close mobile menu if open
+				if (mobileMenuOpen) {
+					mobileMenuOpen = false;
+				}
 			} else if (touchAccumulator < 0) {
 				// Scrolling up - show nav
 				navHidden = false;
-				console.log('📱 iOS: Showing nav');
 			}
 			
 			// Reset accumulator
@@ -500,9 +505,13 @@
 		window.addEventListener('resize', handleResize);
 		
 		
-		// Set up scroll listeners as fallback for non-iOS
-		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-		if (browser && !isIOS) {
+		// Set up listeners for mobile navigation auto-hide
+		if (browser && isMobileDevice) {
+			// Touch events work best on all mobile devices
+			document.addEventListener('touchstart', handleTouchStart, { passive: true });
+			document.addEventListener('touchmove', handleTouchMove, { passive: true });
+			
+			// Also add scroll listeners as fallback
 			window.addEventListener('scroll', handleScroll, { passive: true });
 			document.addEventListener('scroll', handleScroll, { passive: true });
 			document.body.addEventListener('scroll', handleScroll, { passive: true });
@@ -511,19 +520,6 @@
 			if (mainContent) {
 				mainContent.addEventListener('scroll', handleScroll, { passive: true });
 			}
-		}
-		
-		// Add touch events for scroll direction detection on iOS
-		if (browser && isIOS && isMobileDevice) {
-			console.log('📱 iOS: Adding touch event listeners for nav auto-hide');
-			document.addEventListener('touchstart', handleTouchStart, { passive: true });
-			document.addEventListener('touchmove', handleTouchMove, { passive: true });
-			
-			// Test if we can get scroll position on iOS
-			setTimeout(() => {
-				const testScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-				console.log('📱 iOS: Initial scroll position test:', testScrollY);
-			}, 500);
 		}
 		
 		// Check if user is a beta tester and show welcome modal
