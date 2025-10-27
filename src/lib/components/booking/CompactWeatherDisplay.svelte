@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { env } from '$env/dynamic/public';
 	import { 
@@ -66,10 +65,8 @@
 		}
 	}
 	
-	onMount(() => {
-		fetchWeather();
-	});
-	
+	// Use $effect instead of onMount to reactively fetch when tourDateTime changes
+	// This prevents duplicate API calls by consolidating into a single reactive fetch
 	$effect(() => {
 		if (tourDateTime) {
 			fetchWeather();

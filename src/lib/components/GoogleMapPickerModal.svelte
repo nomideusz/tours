@@ -55,9 +55,9 @@
 			return true;
 		}
 		
-		// Load Google Maps script
+		// Load Google Maps script with loading=async to prevent performance warning
 		const script = document.createElement('script');
-		script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`;
+		script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&loading=async`;
 		script.async = true;
 		script.defer = true;
 		
@@ -217,8 +217,9 @@
 			currentMarker.setMap(null);
 		}
 		
-		// Create new marker using standard Marker (AdvancedMarkerElement requires more setup)
-		// We'll keep using the standard marker as it's still supported and simpler
+		// Note: Using standard Marker API which is still fully supported by Google
+		// AdvancedMarkerElement is recommended but requires additional setup with marker library
+		// Standard Marker will continue to receive bug fixes and work indefinitely
 		currentMarker = new google.maps.Marker({
 			position: coordinates,
 			map: map,

@@ -32,7 +32,7 @@
 		// Check if Google Maps is loaded
 		if (!window.google?.maps) {
 			const script = document.createElement('script');
-			script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}`;
+			script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&loading=async`;
 			script.async = true;
 			
 			await new Promise<void>((resolve) => {
@@ -56,6 +56,9 @@
 		});
 		
 		// Add marker
+		// Note: Using standard Marker API which is still fully supported by Google
+		// AdvancedMarkerElement is recommended but requires additional setup with marker library
+		// Standard Marker will continue to receive bug fixes and work indefinitely
 		marker = new google.maps.Marker({
 			position: coordinates,
 			map: map,
