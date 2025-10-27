@@ -27,7 +27,7 @@
 	let alertClass = $derived(getAlertClass(variant));
 </script>
 
-<div class="alert {alertClass}">
+<div class="alert {alertClass}" class:dismissible>
 	<div class="alert-content">
 		<AlertCircle class="alert-icon" style="color: var(--color-error-600);" />
 		<div class="alert-text">
@@ -36,25 +36,30 @@
 			{/if}
 			<p class="alert-message">{message}</p>
 		</div>
-		{#if dismissible && onDismiss}
-			<button
-				onclick={onDismiss}
-				class="alert-dismiss"
-				aria-label="Dismiss"
-			>
-				<X class="w-4 h-4" />
-			</button>
-		{/if}
 	</div>
+	{#if dismissible && onDismiss}
+		<button
+			onclick={onDismiss}
+			class="alert-dismiss"
+			aria-label="Dismiss"
+		>
+			<X class="w-4 h-4" />
+		</button>
+	{/if}
 </div>
 
 <style>
 	.alert {
+		position: relative;
 		border-radius: var(--radius-lg);
 		border-width: 1px;
 		border-style: solid;
 		padding: 1rem;
 		transition: all var(--transition-fast) ease;
+	}
+	
+	.alert.dismissible {
+		padding-right: 2.5rem;
 	}
 	
 	.alert-content {
@@ -87,8 +92,11 @@
 	}
 	
 	.alert-dismiss {
+		position: absolute;
+		top: 0.75rem;
+		right: 0.75rem;
 		flex-shrink: 0;
-		padding: 0.25rem;
+		padding: 0.375rem;
 		border-radius: var(--radius-md);
 		transition: all var(--transition-fast) ease;
 		cursor: pointer;
@@ -97,13 +105,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		opacity: 0.6;
 	}
 	
 	.alert-dismiss:hover {
-		background-color: rgba(0, 0, 0, 0.05);
+		background-color: rgba(0, 0, 0, 0.1);
+		opacity: 1;
 	}
 	
 	[data-theme="dark"] .alert-dismiss:hover {
-		background-color: rgba(255, 255, 255, 0.05);
+		background-color: rgba(255, 255, 255, 0.1);
 	}
 </style> 

@@ -94,7 +94,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const name = formData.get('name')?.toString()?.trim();
 		const password = formData.get('password')?.toString();
 		const role = formData.get('role')?.toString() || 'user';
-		const isBetaTester = formData.get('betaTester') === 'on';
+		const betaGroup = formData.get('betaGroup')?.toString() || '';
 
 		// Validation
 		if (!email || !name || !password) {
@@ -121,6 +121,13 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		if (!['user', 'admin'].includes(role)) {
 			return json({ 
 				error: 'Role must be either user or admin' 
+			}, { status: 400 });
+		}
+
+		// Validate beta group
+		if (betaGroup && !['beta_1', 'beta_2'].includes(betaGroup)) {
+			return json({ 
+				error: 'Beta group must be either beta_1 or beta_2' 
 			}, { status: 400 });
 		}
 
@@ -158,36 +165,43 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			hashedPassword,
 			role: role as 'user' | 'admin',
 			emailVerified: true, // Admin-created accounts are pre-verified
+			betaGroup: (betaGroup || null) as 'beta_1' | 'beta_2' | null, // Set beta group if provided
 			country: null, // User will set during onboarding
 			currency: 'EUR' // Default currency
 		});
 
-		// Apply BETA_APPRECIATION promo code if this is a beta tester
+		// Apply promo code based on beta group
 		let promoMessage = '';
-		if (isBetaTester) {
+		if (betaGroup) {
 			try {
-				// Get the BETA_APPRECIATION promo code
-				const betaPromoCode = await db
+				// Determine which promo code to apply
+				const promoCodeToApply = betaGroup === 'beta_1' ? 'BETA_APPRECIATION' : 'BETA2';
+				const benefitsText = betaGroup === 'beta_1' 
+					? '12 months free + 30% lifetime discount'
+					: '4 months free + 20% lifetime discount';
+
+				// Get the promo code from database
+				const promoCode = await db
 					.select()
 					.from(promoCodes)
-					.where(eq(promoCodes.code, 'BETA_APPRECIATION'))
+					.where(eq(promoCodes.code, promoCodeToApply))
 					.limit(1);
 
-				if (betaPromoCode.length > 0) {
-					const result = await applyPromoCodeToUser(newUserId, betaPromoCode[0]);
+				if (promoCode.length > 0) {
+					const result = await applyPromoCodeToUser(newUserId, promoCode[0]);
 					if (result.success) {
-						promoMessage = ' Beta benefits applied: 12 months free + 30% lifetime discount.';
+						promoMessage = ` ${betaGroup.toUpperCase()} benefits applied: ${benefitsText}.`;
 					} else {
-						console.error('Failed to apply beta promo code:', result.error);
-						promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+						console.error('Failed to apply promo code:', result.error);
+						promoMessage = ` (Note: ${betaGroup.toUpperCase()} promo code could not be applied automatically)`;
 					}
 				} else {
-					console.error('BETA_APPRECIATION promo code not found in database');
-					promoMessage = ' (Note: Beta promo code not found - please apply manually)';
+					console.error(`${promoCodeToApply} promo code not found in database`);
+					promoMessage = ` (Note: ${betaGroup.toUpperCase()} promo code not found - please apply manually)`;
 				}
 			} catch (error) {
-				console.error('Error applying beta promo code:', error);
-				promoMessage = ' (Note: Beta promo code could not be applied automatically)';
+				console.error('Error applying promo code:', error);
+				promoMessage = ` (Note: ${betaGroup.toUpperCase()} promo code could not be applied automatically)`;
 			}
 		}
 
@@ -202,7 +216,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				username,
 				role,
 				emailVerified: true,
-				isBetaTester
+				betaGroup: betaGroup || null
 			}
 		});
 

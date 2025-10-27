@@ -373,8 +373,12 @@ export async function createSubscriptionCheckout(
   // Modern way: Set trial using payment_method_collection and trial_settings
   // This is compatible with Checkout (the old trial_period_days is deprecated)
   if (trialPeriodDays > 0 && !hasActiveSubscription) {
-    // Calculate trial end date
-    const trialEnd = Math.floor(Date.now() / 1000) + (trialPeriodDays * 24 * 60 * 60);
+    // Calculate trial end date - set to end of the Nth day (23:59:59) to ensure full days
+    const now = new Date();
+    const trialEndDate = new Date(now);
+    trialEndDate.setDate(now.getDate() + trialPeriodDays);
+    trialEndDate.setHours(23, 59, 59, 999);
+    const trialEnd = Math.floor(trialEndDate.getTime() / 1000);
     
     sessionParams.subscription_data = {
       ...sessionParams.subscription_data,

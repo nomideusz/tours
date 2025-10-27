@@ -840,133 +840,6 @@
 			/>
 		</div>
 		
-		<!-- Marketing Tools Section -->
-		<div class="mb-6">
-			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Marketing Tools</h2>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Generate promotional materials for the platform</p>
-				</div>
-				<div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-					<!-- Stickers -->
-					<button 
-						onclick={() => goto('/admin/stickers')} 
-						class="group p-4 rounded-lg border transition-all hover:border-primary"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
-								<QrCode class="w-5 h-5" style="color: #e8523e;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Promotional Stickers</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">Generate QR code stickers for marketing campaigns</p>
-						<p class="text-xs text-primary group-hover:underline">Generate PDF →</p>
-					</button>
-					
-					<!-- Business Cards -->
-					<button 
-						onclick={() => goto('/admin/business-cards')} 
-						class="group p-4 rounded-lg border transition-all hover:border-primary"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
-								<CreditCard class="w-5 h-5" style="color: #e8523e;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Business Cards</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">Professional cards with platform branding</p>
-						<p class="text-xs text-primary group-hover:underline">Create Templates →</p>
-					</button>
-					
-					<!-- Flyers -->
-					<button 
-						onclick={() => goto('/admin/flyers')} 
-						class="group p-4 rounded-lg border transition-all hover:border-primary"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(79, 157, 166, 0.1);">
-								<FileText class="w-5 h-5" style="color: #0d9488;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Promotional Flyers</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">A4 flyers for events and partner locations</p>
-						<p class="text-xs text-primary group-hover:underline">Design Flyers →</p>
-					</button>
-					
-					<!-- Social Graphics -->
-					<button 
-						onclick={() => goto('/admin/social-graphics')} 
-						class="group p-4 rounded-lg border transition-all hover:border-primary"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(139, 92, 246, 0.1);">
-								<Image class="w-5 h-5" style="color: #7c3aed;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Social Media Graphics</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">Eye-catching graphics for social platforms</p>
-						<p class="text-xs text-primary group-hover:underline">Create Graphics →</p>
-					</button>
-				</div>
-			</div>
-		</div>
-		
-		<!-- WhatsApp Testing Section -->
-		<div class="mb-6">
-			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">WhatsApp Testing</h2>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Test WhatsApp message delivery in production</p>
-				</div>
-				<div class="p-4">
-					<button 
-						onclick={() => showWhatsAppTestModal = true}
-						class="group p-4 rounded-lg border transition-all hover:border-primary w-full max-w-md"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(34, 197, 94, 0.1);">
-								<MessageSquare class="w-5 h-5" style="color: #16a34a;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Send Test Message</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">Send a test WhatsApp message to verify integration</p>
-						<p class="text-xs text-primary group-hover:underline">Open Test Panel →</p>
-					</button>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Announcement Section -->
-		<div class="mb-6">
-			<div class="rounded-xl border" style="background: var(--bg-primary); border-color: var(--border-primary);">
-				<div class="p-4 border-b" style="border-color: var(--border-primary);">
-					<h2 class="text-lg font-semibold" style="color: var(--text-primary);">Email Announcements</h2>
-					<p class="text-sm mt-1" style="color: var(--text-secondary);">Send email announcements to user groups</p>
-				</div>
-				<div class="p-4">
-					<button 
-						onclick={() => showAnnouncementModal = true}
-						class="group p-4 rounded-lg border transition-all hover:border-primary w-full max-w-md"
-						style="background: var(--bg-secondary); border-color: var(--border-primary);"
-					>
-						<div class="flex items-center gap-3 mb-3">
-							<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(250, 107, 93, 0.1);">
-								<Send class="w-5 h-5" style="color: #e8523e;" />
-							</div>
-							<h3 class="font-medium" style="color: var(--text-primary);">Send Announcement</h3>
-						</div>
-						<p class="text-sm mb-3" style="color: var(--text-secondary);">Send emails to Beta users, subscription tiers, or all users</p>
-						<p class="text-xs text-primary group-hover:underline">Compose Message →</p>
-					</button>
-				</div>
-			</div>
-		</div>
-		
 		<!-- Search and Filters -->
 		<div class="mb-6 space-y-4">
 			<div class="flex flex-col sm:flex-row gap-3">
@@ -1680,22 +1553,23 @@
 					</select>
 				</div>
 				
-				<div class="flex items-start gap-3">
-					<input
-						id="beta-tester"
-						name="betaTester"
-						type="checkbox"
-						class="form-checkbox mt-1"
+				<div>
+					<label for="beta-group" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">
+						Beta Group
+					</label>
+					<select
+						id="beta-group"
+						name="betaGroup"
+						class="form-select w-full"
 						disabled={isCreatingUser}
-					/>
-					<div class="flex-1">
-						<label for="beta-tester" class="block text-sm font-medium" style="color: var(--text-secondary);">
-							Beta Tester Account
-						</label>
-						<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-							Automatically applies BETA_APPRECIATION promo code (12 months free + 30% lifetime discount)
-						</p>
-					</div>
+					>
+						<option value="">None (Regular User)</option>
+						<option value="beta_1">Beta 1 - 12 months free + 30% lifetime discount</option>
+						<option value="beta_2">Beta 2 - 4 months free + 20% lifetime discount</option>
+					</select>
+					<p class="text-xs mt-1" style="color: var(--text-tertiary);">
+						Select beta group to automatically apply the appropriate promo code benefits
+					</p>
 				</div>
 				
 				{#if createUserError}

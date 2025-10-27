@@ -404,6 +404,24 @@
 		</div>
 	</div>
 
+	<!-- Trial Period Info (for users in trial without promo code) -->
+	{#if isInFreePeriod && !hasActivePromoCode && user?.subscriptionFreeUntil && subscriptionStatus === 'trialing'}
+		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-info">
+			<div class="flex items-start gap-2 sm:gap-3">
+				<Calendar class="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" />
+				<div class="flex-1">
+					<h3 class="alert-heading">Trial Period Active</h3>
+					<p class="alert-body">
+						You're currently in a free trial period.
+					</p>
+					<p class="alert-body text-xs mt-1 opacity-90">
+						Trial ends on {formatDate(user.subscriptionFreeUntil)} • After that, you'll be charged automatically
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Promo Code Benefits -->
 	{#if hasActivePromoCode}
 		<div class="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border alert-success">
@@ -468,7 +486,11 @@
 					<p class="text-base sm:text-lg font-bold" style="color: var(--text-primary);">
 						{SUBSCRIPTION_PLANS[currentPlan as SubscriptionPlan]?.name || 'Trial Period'}
 					</p>
-					{#if subscriptionStatus && subscriptionStatus !== 'active'}
+					{#if subscriptionStatus === 'trialing' && isInFreePeriod && user?.subscriptionFreeUntil}
+						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-info-600);">
+							Trial Period • Ends {formatDate(user.subscriptionFreeUntil)}
+						</p>
+					{:else if subscriptionStatus && subscriptionStatus !== 'active'}
 						<p class="text-xs sm:text-sm font-medium" style="color: var(--color-warning-600);">
 							Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
 						</p>
@@ -477,7 +499,7 @@
 						<p class="text-xs sm:text-sm" style="color: var(--color-warning-600);">
 							Cancels on {formatDate(currentPeriodEnd)}
 						</p>
-					{:else if currentPeriodEnd && currentPlan !== 'free'}
+					{:else if currentPeriodEnd && currentPlan !== 'free' && subscriptionStatus !== 'trialing'}
 						<p class="text-xs sm:text-sm" style="color: var(--text-secondary);">
 							Renews on {formatDate(currentPeriodEnd)}
 						</p>
@@ -563,12 +585,17 @@
 	</div>
 
 	<!-- Available Plans / Upgrade Options -->
-	{#if currentPlan !== 'professional'}
-		<div class="mb-6 sm:mb-8">
-			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-				<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
-					{currentPlan === 'starter_pro' ? 'Upgrade Your Plan' : 'Available Plans'}
-				</h2>
+	<div class="mb-6 sm:mb-8">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+			<h2 class="text-lg sm:text-xl font-semibold" style="color: var(--text-primary);">
+				{#if currentPlan === 'professional'}
+					Our Plans
+				{:else if currentPlan === 'starter_pro'}
+					Upgrade Your Plan
+				{:else}
+					Available Plans
+				{/if}
+			</h2>
 				
 				<!-- Toggle -->
 				<div class="p-0.5 sm:p-1 rounded-lg inline-flex self-start sm:self-auto" style="background: var(--bg-secondary);">
@@ -683,8 +710,7 @@
 				{/each}
 			</div>
 		</div>
-	{/if}
-</div>
+	</div>
 
 <!-- Cancel Subscription Modal -->
 <ConfirmationModal

@@ -89,8 +89,8 @@
 		</div>
 	{:else if variant === 'detailed'}
 		<!-- Detailed variant for profile/subscription pages -->
-		<div class="{colorScheme.className} rounded-lg p-3 sm:p-4">
-			<div class="flex items-start gap-2.5 sm:gap-3">
+		<div class="{colorScheme.className} rounded-lg p-3 sm:p-4 relative">
+			<div class="flex items-start gap-2.5 sm:gap-3 pr-8">
 				<div class="alert-icon-wrapper p-1.5 sm:p-2 rounded-lg flex-shrink-0">
 					{#if discountPercentage === 100}
 						<Crown class="h-5 w-5 sm:h-6 sm:w-6" />
@@ -126,20 +126,20 @@
 						</p>
 					{/if}
 				</div>
-				{#if showDismiss}
-					<button 
-						onclick={onDismiss}
-						class="p-1 -mr-1 -mt-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex-shrink-0"
-						aria-label="Dismiss">
-						<X class="h-4 w-4 opacity-60" />
-					</button>
-				{/if}
 			</div>
+			{#if showDismiss}
+				<button 
+					onclick={onDismiss}
+					class="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+					aria-label="Dismiss">
+					<X class="h-4 w-4 sm:h-4.5 sm:w-4.5 opacity-60 hover:opacity-100 transition-opacity" />
+				</button>
+			{/if}
 		</div>
 	{:else}
 		<!-- Default variant for dashboard/general use -->
-		<div class="{colorScheme.className} rounded-lg p-2.5 sm:p-3">
-			<div class="flex items-center gap-2 sm:gap-3">
+		<div class="{colorScheme.className} rounded-lg p-2.5 sm:p-3 relative">
+			<div class="flex items-center gap-2 sm:gap-3 pr-7">
 				<span class="alert-icon-wrapper">
 					{#if discountPercentage === 100}
 						<Crown class="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
@@ -162,15 +162,15 @@
 						{/if}
 					</p>
 				</div>
-				{#if showDismiss}
-					<button 
-						onclick={onDismiss}
-						class="p-1 -mr-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex-shrink-0"
-						aria-label="Dismiss">
-						<X class="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60" />
-					</button>
-				{/if}
 			</div>
+			{#if showDismiss}
+				<button 
+					onclick={onDismiss}
+					class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+					aria-label="Dismiss">
+					<X class="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 hover:opacity-100 transition-opacity" />
+				</button>
+			{/if}
 		</div>
 	{/if}
 {/if} 
