@@ -357,7 +357,6 @@ export async function createSubscriptionCheckout(
       isUpgrade: hasActiveSubscription ? 'true' : 'false',
     },
     subscription_data: {
-      ...(trialPeriodDays > 0 ? { trial_period_days: trialPeriodDays } : {}),
       metadata: {
         userId,
         planId,
@@ -365,16 +364,32 @@ export async function createSubscriptionCheckout(
         betaCohort,
         trialDays: trialPeriodDays.toString(),
         isUpgrade: hasActiveSubscription ? 'true' : 'false',
-      }
+      },
+      // For upgrades from existing subscription, handle proration
+      ...(hasActiveSubscription ? { proration_behavior: 'create_prorations' as const } : {}),
     }
   };
-
-  // For upgrades from existing subscription, handle proration
-  if (hasActiveSubscription) {
+  
+  // Modern way: Set trial using payment_method_collection and trial_settings
+  // This is compatible with Checkout (the old trial_period_days is deprecated)
+  if (trialPeriodDays > 0 && !hasActiveSubscription) {
+    // Calculate trial end date
+    const trialEnd = Math.floor(Date.now() / 1000) + (trialPeriodDays * 24 * 60 * 60);
+    
     sessionParams.subscription_data = {
       ...sessionParams.subscription_data,
-      proration_behavior: 'create_prorations',
+      trial_end: trialEnd,
+      trial_settings: {
+        end_behavior: {
+          missing_payment_method: 'cancel' as const,
+        },
+      },
     };
+    
+    // Allow customers to start trial without entering payment method for beta users
+    if (betaCohort === 'beta_1' || betaCohort === 'beta_2') {
+      sessionParams.payment_method_collection = 'if_required' as const;
+    }
   }
 
   const session = await stripe.checkout.sessions.create(sessionParams);
