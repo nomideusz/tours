@@ -32,11 +32,11 @@
 					/>
 				</div>
 				<p class="footer-description">
-					Currently in Beta: Building the simplest booking system for independent tour guides. Join 50 selected guides shaping the future of tour booking.
+					Beta 2 Now Open: Building the simplest booking system for independent tour guides. Last 100 spots to lock in 20% lifetime discount before March 2026 launch.
 				</p>
 				<!-- Trust Badges -->
 				<div class="trust-badges">
-					<BetaBadge text="Beta Program" icon={FlaskConical} variant="small" class="footer-beta-badge" />
+					<BetaBadge text="Beta 2 Active" icon={FlaskConical} variant="small" class="footer-beta-badge" />
 					<div class="trust-badge">
 						<CreditCard class="w-4 h-4" />
 						<span>Stripe Secured</span>

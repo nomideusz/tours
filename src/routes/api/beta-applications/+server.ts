@@ -1,18 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { betaApplications } from '$lib/db/schema/index.js';
+import { betaApplications, users } from '$lib/db/schema/index.js';
 import { eq, count } from 'drizzle-orm';
 // import { sendAuthEmail } from '$lib/email.server.js'; // TODO: Uncomment when email templates are ready
 
 export const POST: RequestHandler = async ({ request }) => {
 	// Beta 2 is now open - check spot limit
 	try {
-		// Check current Beta 2 count
+		// Check current Beta 2 count from users table
 		const beta2CountResult = await db
 			.select({ count: count() })
-			.from(betaApplications)
-			.where(eq(betaApplications.status, 'accepted'));
+			.from(users)
+			.where(eq(users.betaGroup, 'beta_2'));
 		
 		const beta2Count = beta2CountResult[0]?.count || 0;
 		

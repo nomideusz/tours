@@ -1,24 +1,24 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { db } from '$lib/db/connection.js';
-import { betaApplications } from '$lib/db/schema/index.js';
+import { users } from '$lib/db/schema/index.js';
 import { eq, count } from 'drizzle-orm';
 
 export const GET: RequestHandler = async () => {
 	try {
-		// Count accepted Beta 2 applications
-		const acceptedCountResult = await db
+		// Count users with beta_group = 'beta_2'
+		const beta2CountResult = await db
 			.select({ count: count() })
-			.from(betaApplications)
-			.where(eq(betaApplications.status, 'accepted'));
+			.from(users)
+			.where(eq(users.betaGroup, 'beta_2'));
 		
-		const acceptedCount = acceptedCountResult[0]?.count || 0;
+		const beta2Count = beta2CountResult[0]?.count || 0;
 		const totalSpots = 100;
-		const spotsRemaining = Math.max(0, totalSpots - acceptedCount);
+		const spotsRemaining = Math.max(0, totalSpots - beta2Count);
 
 		return json({
 			totalSpots,
-			acceptedCount,
+			acceptedCount: beta2Count,
 			spotsRemaining,
 			isFull: spotsRemaining === 0
 		});
