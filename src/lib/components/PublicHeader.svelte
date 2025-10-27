@@ -105,11 +105,11 @@
 		left: 0;
 		right: 0;
 		z-index: var(--z-70);
-		background: color-mix(in srgb, var(--bg-primary) 95%, transparent);
+		background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7);
 		border-bottom: 1px solid var(--border-primary);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		box-shadow: var(--shadow-sm);
+		backdrop-filter: blur(20px) saturate(180%);
+		-webkit-backdrop-filter: blur(20px) saturate(180%);
+		box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 		transition: all var(--transition-base) ease;
 	}
 

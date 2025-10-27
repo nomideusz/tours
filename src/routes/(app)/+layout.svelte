@@ -1009,8 +1009,11 @@
 		left: 0;
 		right: 0;
 		z-index: 40;
-		/* Solid background to prevent transparency issues */
-		background: var(--bg-primary);
+		/* Glassmorphism background */
+		background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7);
+		backdrop-filter: blur(20px) saturate(180%);
+		-webkit-backdrop-filter: blur(20px) saturate(180%);
+		box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1);
 		/* iOS Safari viewport fixes */
 		transform: translate3d(0, 0, 0);
 		-webkit-transform: translate3d(0, 0, 0);
@@ -1066,9 +1069,10 @@
 		}
 		
 		.mobile-bottom-nav:not(.nav-hidden) {
-			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85) !important;
-			backdrop-filter: blur(12px) !important;
-			-webkit-backdrop-filter: blur(12px) !important;
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7) !important;
+			backdrop-filter: blur(20px) saturate(180%) !important;
+			-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+			box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1) !important;
 		}
 	}
 	

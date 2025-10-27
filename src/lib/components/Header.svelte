@@ -20,9 +20,10 @@
 	interface HeaderProps {
 		isAuthenticated: boolean;
 		currentUser: any;
+		hidden?: boolean;
 	}
 
-	let { isAuthenticated, currentUser }: HeaderProps = $props();
+	let { isAuthenticated, currentUser, hidden = false }: HeaderProps = $props();
 
 	// Use IsMounted from Runed
 	const isMounted = new IsMounted();
@@ -164,7 +165,7 @@
 </script>
 
 <!-- Professional Header -->
-<header class="site-header">
+<header class="site-header" class:header-hidden={hidden}>
 	<div class="site-header-container">
 		<div class="site-header-content">
 		<!-- Logo and branding -->
@@ -352,14 +353,34 @@
 		left: 0;
 		right: 0;
 		z-index: 100;
-		background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
+		background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7);
 		border-bottom: 1.5px solid var(--border-primary);
-		backdrop-filter: blur(16px) saturate(180%);
-		-webkit-backdrop-filter: blur(16px) saturate(180%);
-		box-shadow: var(--shadow-md);
+		backdrop-filter: blur(20px) saturate(180%);
+		-webkit-backdrop-filter: blur(20px) saturate(180%);
+		box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 		transition: all var(--transition-base);
 	}
 
+	/* Hide header when scrolling down - mobile only */
+	@media (max-width: 639px) {
+		.site-header.header-hidden {
+			transform: translateY(-100%);
+			box-shadow: none;
+		}
+		
+		/* Enhanced glassmorphism when re-appearing after scroll */
+		.site-header {
+			transition: transform 0.3s ease-out, background 0.3s ease-out;
+		}
+		
+		.site-header:not(.header-hidden) {
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7) !important;
+			backdrop-filter: blur(20px) saturate(180%) !important;
+			-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+			box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+		}
+	}
+	
 	/* Subtle refined overlay */
 	.site-header::before {
 		content: '';

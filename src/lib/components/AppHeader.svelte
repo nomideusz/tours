@@ -44,10 +44,10 @@
 		left: 0;
 		right: 0;
 		z-index: var(--z-70);
-		background: color-mix(in srgb, var(--bg-primary) 98%, transparent);
+		background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7);
 		border-bottom: 1.5px solid var(--border-primary);
-		backdrop-filter: blur(16px) saturate(180%);
-		-webkit-backdrop-filter: blur(16px) saturate(180%);
+		backdrop-filter: blur(20px) saturate(180%);
+		-webkit-backdrop-filter: blur(20px) saturate(180%);
 		box-shadow: var(--shadow-md);
 		transition: all var(--transition-base);
 	}
@@ -130,9 +130,10 @@
 		}
 		
 		.app-header:not(.header-hidden) {
-			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85) !important;
-			backdrop-filter: blur(12px) !important;
-			-webkit-backdrop-filter: blur(12px) !important;
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7) !important;
+			backdrop-filter: blur(20px) saturate(180%) !important;
+			-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+			box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
 		}
 	}
 	
