@@ -3,18 +3,22 @@
    Used across (marketing), (app), and (public) routes
    ============================================ */
 
-/* Subtle retro gradient background */
+/* Subtle retro gradient background - enhanced for glassmorphism */
 .subtle-retro-section {
-	background: linear-gradient(
+	/* Solid color base for better glass effect */
+	background: var(--bg-primary);
+	/* Add subtle gradient as additional layer */
+	background-image: linear-gradient(
 		180deg,
-		var(--bg-primary) 0%,
-		var(--bg-secondary) 100%
+		rgba(var(--bg-primary-rgb), 1) 0%,
+		rgba(var(--bg-primary-rgb), 0.95) 50%,
+		rgba(var(--bg-secondary-rgb, 249, 249, 249), 0.98) 100%
 	);
 	position: relative;
 	overflow: hidden;
 }
 
-/* Very subtle texture overlay */
+/* Very subtle texture overlay - reduced opacity for glassmorphism */
 .subtle-retro-section::before {
 	content: '';
 	position: absolute;
@@ -26,11 +30,12 @@
 		0deg,
 		transparent,
 		transparent 40px,
-		rgba(0, 0, 0, 0.02) 40px,
-		rgba(0, 0, 0, 0.02) 41px
+		rgba(0, 0, 0, 0.01) 40px,
+		rgba(0, 0, 0, 0.01) 41px
 	);
 	pointer-events: none;
 	z-index: 1;
+	opacity: 0.5; /* Further reduce texture visibility */
 }
 
 /* Ensure content is above the texture */
@@ -158,6 +163,72 @@
 	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
+/* Subtle retro section - Glassmorphism variant */
+.subtle-retro-section.glass-variant {
+	/* Override the default gradient with a more glass-friendly version */
+	background: var(--bg-primary);
+	background-image: 
+		radial-gradient(ellipse at 20% 20%, rgba(var(--color-primary-500-rgb, 250, 107, 93), 0.08) 0%, transparent 40%),
+		radial-gradient(ellipse at 80% 80%, rgba(var(--color-accent-500-rgb, 14, 165, 233), 0.06) 0%, transparent 40%),
+		linear-gradient(180deg, 
+			rgba(var(--bg-primary-rgb), 1) 0%, 
+			rgba(var(--bg-primary-rgb), 0.98) 70%, 
+			rgba(var(--bg-secondary-rgb), 1) 100%
+		);
+}
+
+/* Remove texture overlay for glass variant */
+.subtle-retro-section.glass-variant::before {
+	display: none;
+}
+
+/* Glassmorphism-optimized background */
+.glass-optimized-bg {
+	position: relative;
+	/* Create visual depth with multiple gradients */
+	background: 
+		radial-gradient(ellipse at top left, rgba(var(--color-primary-500-rgb, 250, 107, 93), 0.1) 0%, transparent 50%),
+		radial-gradient(ellipse at top right, rgba(var(--color-accent-500-rgb, 14, 165, 233), 0.08) 0%, transparent 50%),
+		radial-gradient(ellipse at bottom left, rgba(var(--color-secondary-500-rgb, 255, 173, 90), 0.06) 0%, transparent 50%),
+		radial-gradient(ellipse at bottom right, rgba(var(--color-success-500-rgb, 34, 197, 94), 0.05) 0%, transparent 50%),
+		linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+/* Add subtle animated shapes for more glass effect variation */
+.glass-optimized-bg::before,
+.glass-optimized-bg::after {
+	content: '';
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(60px);
+	opacity: 0.15;
+	pointer-events: none;
+	animation: float 20s infinite ease-in-out;
+}
+
+.glass-optimized-bg::before {
+	width: 300px;
+	height: 300px;
+	background: var(--color-primary-500);
+	top: 10%;
+	left: 10%;
+}
+
+.glass-optimized-bg::after {
+	width: 400px;
+	height: 400px;
+	background: var(--color-accent-500);
+	bottom: 10%;
+	right: 10%;
+	animation-delay: -10s;
+}
+
+@keyframes float {
+	0%, 100% { transform: translate(0, 0) scale(1); }
+	33% { transform: translate(30px, -30px) scale(1.1); }
+	66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
 /* Dark mode adjustments */
 [data-theme="dark"] .subtle-retro-section::before,
 [data-theme="dark"] .app-texture-overlay::before {
@@ -165,9 +236,10 @@
 		0deg,
 		transparent,
 		transparent 40px,
-		rgba(255, 255, 255, 0.02) 40px,
-		rgba(255, 255, 255, 0.02) 41px
+		rgba(255, 255, 255, 0.01) 40px,
+		rgba(255, 255, 255, 0.01) 41px
 	);
+	opacity: 0.3; /* Even more subtle in dark mode */
 }
 
 [data-theme="dark"] .modern-card,

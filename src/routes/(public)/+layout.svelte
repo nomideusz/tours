@@ -22,12 +22,7 @@
 	});
 	
 	// Mobile detection
-	let isMobileDevice = false;
-	$effect(() => {
-		if (browser) {
-			isMobileDevice = window.innerWidth <= 639;
-		}
-	});
+	let isMobileDevice = $state(false);
 	
 	// Auto-hide navigation on scroll
 	let navHidden = $state(false);
@@ -102,8 +97,11 @@
 	onMount(() => {
 		const cleanup = themeStore.init();
 		
-		// Add scroll listeners for mobile
-		if (browser && isMobileDevice) {
+		// Initialize mobile state
+		isMobileDevice = window.innerWidth <= 639;
+		
+		// Add scroll listeners - always add them, we check isMobileDevice in handlers
+		if (browser) {
 			document.addEventListener('touchstart', handleTouchStart, { passive: true });
 			document.addEventListener('touchmove', handleTouchMove, { passive: true });
 			window.addEventListener('scroll', handleScroll, { passive: true });
@@ -131,7 +129,7 @@
 <!-- TanStack Query Provider for Public -->
 <QueryClientProvider client={data.queryClient}>
 	<!-- Public Layout: Minimal header + main + footer -->
-	<div class="min-h-screen flex flex-col subtle-retro-section">
+	<div class="min-h-screen flex flex-col subtle-retro-section glass-variant">
 		<PublicHeader hidden={navHidden} />
 		
 		<main class="flex-1 pt-14 sm:pt-20 relative z-10">

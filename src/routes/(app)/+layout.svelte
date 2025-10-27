@@ -490,13 +490,13 @@
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
 		
-		// Check if mobile device
-		isMobileDevice = window.innerWidth < 768;
+		// Check if mobile device (consistent with other layouts)
+		isMobileDevice = window.innerWidth <= 639;
 		
 		
 		// Listen for resize to update mobile state
 		const handleResize = () => {
-			isMobileDevice = window.innerWidth < 768;
+			isMobileDevice = window.innerWidth <= 639;
 			// Reset nav state on resize
 			if (!isMobileDevice) {
 				navHidden = false;
@@ -506,7 +506,8 @@
 		
 		
 		// Set up listeners for mobile navigation auto-hide
-		if (browser && isMobileDevice) {
+		// Always add listeners - we check isMobileDevice inside the handlers
+		if (browser) {
 			// Touch events work best on all mobile devices
 			document.addEventListener('touchstart', handleTouchStart, { passive: true });
 			document.addEventListener('touchmove', handleTouchMove, { passive: true });
@@ -686,7 +687,7 @@
 	{/if}
 	
 	<!-- App Layout: Header + Sidebar + Main + Footer -->
-	<div class="min-h-screen flex flex-col overflow-x-hidden" style="background: var(--bg-primary);">
+	<div class="min-h-screen flex flex-col overflow-x-hidden glass-enhanced-bg">
 		<!-- App Header -->
 		<AppHeader 
 			user={currentUserData}
@@ -1060,6 +1061,15 @@
 		transform: translate3d(0, 100%, 0);
 		-webkit-transform: translate3d(0, 100%, 0);
 		pointer-events: none;
+	}
+	
+	/* Glass-enhanced background for better glassmorphism */
+	.glass-enhanced-bg {
+		background: var(--bg-primary);
+		background-image: 
+			radial-gradient(ellipse at 10% 10%, rgba(var(--color-primary-500-rgb, 250, 107, 93), 0.05) 0%, transparent 50%),
+			radial-gradient(ellipse at 90% 90%, rgba(var(--color-accent-500-rgb, 14, 165, 233), 0.04) 0%, transparent 50%),
+			linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
 	}
 	
 	/* Enhanced glassmorphism for mobile nav when re-appearing */

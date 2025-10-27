@@ -32,11 +32,6 @@
 	
 	// Mobile detection
 	let isMobileDevice = $state(false);
-	$effect(() => {
-		if (browser) {
-			isMobileDevice = window.innerWidth <= 639;
-		}
-	});
 	
 	// Auto-hide navigation on scroll
 	let navHidden = $state(false);
@@ -167,8 +162,11 @@
 	onMount(() => {
 		themeCleanup = themeStore.init();
 		
-		// Add scroll listeners for mobile
-		if (browser && isMobileDevice) {
+		// Initialize mobile state
+		isMobileDevice = window.innerWidth <= 639;
+		
+		// Add scroll listeners - always add them, we check isMobileDevice in handlers
+		if (browser) {
 			document.addEventListener('touchstart', handleTouchStart, { passive: true });
 			document.addEventListener('touchmove', handleTouchMove, { passive: true });
 			window.addEventListener('scroll', handleScroll, { passive: true });
@@ -283,7 +281,7 @@
 </svelte:head>
 
 <!-- Clean Marketing Layout -->
-<div class="min-h-screen flex flex-col subtle-retro-section">
+<div class="min-h-screen flex flex-col subtle-retro-section glass-variant">
 	<Header 
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
