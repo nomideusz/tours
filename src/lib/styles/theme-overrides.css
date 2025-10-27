@@ -329,4 +329,28 @@ body:has(video) #detach-button-host {
 	font-size: 0.6875rem !important; /* 11px instead of 13px */
 }
 
+/* iOS Safari zoom prevention - Global rule for all inputs */
+@media (hover: none) and (pointer: coarse) {
+	input[type="text"],
+	input[type="email"],
+	input[type="password"],
+	input[type="number"],
+	input[type="tel"],
+	input[type="url"],
+	input[type="search"],
+	input[type="date"],
+	input[type="datetime-local"],
+	input[type="time"],
+	select,
+	textarea {
+		font-size: 16px !important;
+		-webkit-text-size-adjust: 100%;
+	}
+	
+	/* Also ensure Tailwind text-sm class doesn't override on mobile */
+	.text-sm {
+		font-size: 16px !important;
+	}
+}
+
  

@@ -644,7 +644,7 @@
 		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
-		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" class:keyboard-hidden={$isKeyboardVisible} style="background: var(--bg-primary); border-color: var(--border-primary);">
+		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" class:keyboard-hidden={$isKeyboardVisible} style="background: var(--bg-primary); border-color: var(--border-primary); -webkit-backface-visibility: hidden;">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
 					{#if item.isMenu}
@@ -812,11 +812,24 @@
 	/* Main content padding for bottom navigation */
 	.main-content {
 		padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+		/* Ensure content doesn't get stuck behind nav */
+		min-height: 100vh;
+		/* iOS Safari scroll fix */
+		-webkit-overflow-scrolling: touch;
+	}
+	
+	/* iOS specific main content adjustments */
+	@supports (-webkit-touch-callout: none) {
+		.main-content {
+			/* Fixed padding to match nav height */
+			padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0) + 1rem);
+		}
 	}
 	
 	@media (min-width: 1024px) {
 		.main-content {
 			padding-bottom: 0;
+			min-height: auto;
 		}
 	}
 	
@@ -828,22 +841,35 @@
 		right: 0;
 		z-index: 40;
 		padding-bottom: env(safe-area-inset-bottom, 0);
-		/* Prevent any gaps on iOS Safari */
-		transform: translateZ(0);
-		-webkit-transform: translateZ(0);
+		/* iOS Safari viewport fixes */
+		transform: translate3d(0, 0, 0);
+		-webkit-transform: translate3d(0, 0, 0);
 		backface-visibility: hidden;
 		-webkit-backface-visibility: hidden;
-		/* Additional iOS Safari fixes */
+		/* Force GPU acceleration */
 		will-change: transform;
-		-webkit-perspective: 1000;
-		perspective: 1000;
+		/* Ensure nav is always on top of content */
+		contain: layout style;
 		/* Smooth transitions */
-		transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out;
+	}
+	
+	/* iOS Safari specific fixes */
+	@supports (-webkit-touch-callout: none) {
+		.mobile-bottom-nav {
+			/* Use fixed height to prevent resize issues */
+			height: calc(3.5rem + env(safe-area-inset-bottom, 0));
+			/* Ensure bottom is always at viewport bottom */
+			bottom: 0 !important;
+			/* Prevent iOS bounce effect from affecting position */
+			-webkit-transform: translate3d(0, 0, 0);
+		}
 	}
 	
 	/* Hide bottom nav when mobile keyboard is visible */
 	.mobile-bottom-nav.keyboard-hidden {
-		transform: translateY(100%);
+		transform: translate3d(0, 100%, 0);
+		-webkit-transform: translate3d(0, 100%, 0);
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -852,6 +878,8 @@
 	@supports (padding-bottom: env(safe-area-inset-bottom)) {
 		.mobile-bottom-nav {
 			padding-bottom: env(safe-area-inset-bottom, 0);
+			/* iOS 15+ viewport-fit */
+			padding-bottom: max(env(safe-area-inset-bottom, 0), 0px);
 		}
 	}
 	

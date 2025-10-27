@@ -91,6 +91,15 @@
 	}
 </script>
 
+<style>
+	/* iOS Safari zoom prevention */
+	@media (hover: none) and (pointer: coarse) {
+		.ios-input-fix {
+			font-size: 16px !important;
+		}
+	}
+</style>
+
 <div class="min-h-[calc(100vh-5rem)] sm:min-h-[calc(100vh-8.5rem)] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 	<div class="w-full max-w-lg relative z-10">
 		<!-- Header -->
@@ -245,7 +254,7 @@
 							id="email"
 							name="email"
 							bind:value={email}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+							class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ios-input-fix {emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 							placeholder={t('loginPage.emailPlaceholder', $language)}
 							disabled={isLoggingIn || manualLoading}
 							onblur={() => {
@@ -270,7 +279,7 @@
 								id="password"
 								name="password"
 								bind:value={password}
-								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
+								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ios-input-fix {passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}"
 								placeholder={t('loginPage.passwordPlaceholder', $language)}
 								disabled={isLoggingIn || manualLoading}
 								onblur={() => {

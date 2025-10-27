@@ -18,6 +18,8 @@
 		background-color: var(--bg-input);
 		color: var(--text-primary);
 		position: relative;
+		/* Prevent iOS zoom on focus */
+		-webkit-text-size-adjust: 100%;
 	}
 
 	.form-input:focus {
@@ -63,6 +65,30 @@
 	.form-input--large {
 		padding: 1rem 2rem;
 		font-size: var(--text-base);
+	}
+	
+	/* iOS Safari zoom prevention - ensure 16px minimum on touch devices */
+	@media (hover: none) and (pointer: coarse) {
+		.form-input,
+		.form-input--small {
+			font-size: 16px; /* Must be 16px, not rem, for iOS */
+		}
+		
+		/* Ensure all text inputs are at least 16px */
+		input[type="text"],
+		input[type="email"],
+		input[type="password"],
+		input[type="number"],
+		input[type="tel"],
+		input[type="url"],
+		input[type="search"],
+		input[type="date"],
+		input[type="datetime-local"],
+		input[type="time"],
+		select,
+		textarea {
+			font-size: 16px !important; /* Important to override any inline styles */
+		}
 	}
 
 	/* Hide number input spinners */

@@ -669,7 +669,7 @@
 	<!-- Mobile sticky booking footer (shown only when booking form is ready) -->
 	{#if selectedTimeSlot && totalParticipants() > 0 && !showSuccess}
 		{@const displayPrice = priceCalculation().totalAmount}
-		<div class="mobile-sticky-footer" class:keyboard-hidden={$isKeyboardVisible}>
+		<div class="mobile-sticky-footer" class:keyboard-hidden={$isKeyboardVisible} style="-webkit-backface-visibility: hidden;">
 			<div class="mobile-footer-content">
 				<div class="mobile-price-summary">
 					<div class="mobile-price-label">Total</div>
@@ -907,13 +907,34 @@
 			-webkit-backdrop-filter: blur(10px);
 			border-top: 1px solid var(--border-primary);
 			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+			/* iOS Safari viewport fixes */
+			transform: translate3d(0, 0, 0);
+			-webkit-transform: translate3d(0, 0, 0);
+			backface-visibility: hidden;
+			-webkit-backface-visibility: hidden;
+			/* Force GPU acceleration */
+			will-change: transform;
+			/* Ensure footer is always on top */
+			contain: layout style;
 			/* Smooth transitions for keyboard hiding */
-			transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+			transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out;
+		}
+		
+		/* iOS Safari specific fixes */
+		@supports (-webkit-touch-callout: none) {
+			.mobile-sticky-footer {
+				/* Ensure bottom is always at viewport bottom */
+				bottom: 0 !important;
+				/* Prevent iOS bounce effect from affecting position */
+				transform: translate3d(0, 0, 0);
+				-webkit-transform: translate3d(0, 0, 0);
+			}
 		}
 		
 		/* Hide sticky footer when mobile keyboard is visible */
 		.mobile-sticky-footer.keyboard-hidden {
-			transform: translateY(100%);
+			transform: translate3d(0, 100%, 0);
+			-webkit-transform: translate3d(0, 100%, 0);
 			opacity: 0;
 			pointer-events: none;
 		}
@@ -1020,6 +1041,8 @@
 		/* Add padding to account for sticky footer */
 		.booking-widget {
 			padding-bottom: 1rem; /* Reduced - container already has 8rem bottom padding */
+			/* iOS Safari scroll fix */
+			-webkit-overflow-scrolling: touch;
 		}
 	}
 </style>

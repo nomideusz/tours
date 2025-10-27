@@ -74,6 +74,31 @@
 	}
 
 	/* Mobile-specific positioning for password toggle buttons */
+	
+	/* iOS Safari zoom prevention for auth forms */
+	@media (hover: none) and (pointer: coarse) {
+		/* Ensure all auth form inputs are at least 16px */
+		.auth-form input[type="text"],
+		.auth-form input[type="email"],
+		.auth-form input[type="password"],
+		.auth-form input[type="tel"],
+		.auth-form input[type="number"],
+		.auth-form select,
+		.auth-form textarea {
+			font-size: 16px !important;
+		}
+		
+		/* Also target inputs without .auth-form wrapper */
+		form input[type="text"],
+		form input[type="email"],
+		form input[type="password"],
+		form input[type="tel"],
+		form input[type="number"],
+		form select,
+		form textarea {
+			font-size: 16px !important;
+		}
+	}
 	@media (max-width: 640px) {
 		.password-toggle-btn {
 			position: absolute !important;
