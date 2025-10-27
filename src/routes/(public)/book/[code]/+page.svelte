@@ -301,7 +301,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 </svelte:head>
 
-<div class="booking-page">
+<div class="booking-page" class:has-sticky-footer={selectedTimeSlot && totalParticipants() > 0 && !showSuccess}>
 	<div class="booking-container">
 		{#if isLoading}
 			<LoadingState />
@@ -325,8 +325,8 @@
 						googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
 					/>
 					
-					<!-- Tour Details with Improved Spacing -->
-					<div class="tour-details-section">
+					<!-- Tour Details - Desktop Only (hidden on mobile) -->
+					<div class="tour-details-section tour-details-desktop">
 						<TourDetailsTabs {tour} />
 					</div>
 				</div>
@@ -361,6 +361,11 @@
 					</div>
 				</div>
 			</div>
+			
+			<!-- Tour Details - Mobile Only (below booking widget) -->
+			<div class="tour-details-mobile">
+				<TourDetailsTabs {tour} />
+			</div>
 		{/if}
 	</div>
 </div>
@@ -374,25 +379,51 @@
 	.booking-container {
 		max-width: 1536px;
 		margin: 0 auto;
-		padding: 2rem 1.5rem;
+		padding: 0.75rem 1rem 1.5rem 1rem; /* Normal padding when no sticky footer */
+	}
+	
+	/* Add extra bottom padding only when sticky footer is present */
+	.booking-page.has-sticky-footer .booking-container {
+		padding-bottom: 6rem; /* Space for sticky footer */
 	}
 	
 	@media (min-width: 640px) {
 		.booking-container {
-			padding: 2rem 2rem;
+			padding: 1.5rem 2rem 2rem 2rem;
+		}
+		
+		/* No sticky footer on tablet+, so no extra padding needed */
+		.booking-page.has-sticky-footer .booking-container {
+			padding-bottom: 2rem;
 		}
 	}
 	
 	@media (min-width: 1024px) {
 		.booking-container {
-			padding: 3rem 3rem 3rem 3rem;
+			padding: 2rem 3rem 1.5rem 3rem;
+		}
+		
+		.booking-page.has-sticky-footer .booking-container {
+			padding-bottom: 1.5rem;
 		}
 	}
 	
 	.booking-layout {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 2rem;
+		gap: 1rem; /* Reduced gap on mobile */
+	}
+	
+	@media (min-width: 640px) {
+		.booking-layout {
+			gap: 1.5rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.booking-layout {
+			gap: 2rem;
+		}
 	}
 	
 	/* Wider booking widget with better proportions - 3:2 ratio */
@@ -434,6 +465,26 @@
 		}
 	}
 	
+	/* Show/hide tour details based on screen size */
+	.tour-details-desktop {
+		display: none;
+	}
+	
+	.tour-details-mobile {
+		display: block;
+		margin-top: 2rem;
+	}
+	
+	@media (min-width: 1280px) {
+		.tour-details-desktop {
+			display: block;
+		}
+		
+		.tour-details-mobile {
+			display: none;
+		}
+	}
+	
 	.booking-column {
 		min-width: 0;
 		width: 100%;
@@ -447,7 +498,7 @@
 		}
 	}
 	
-	/* Mobile-first approach: booking widget comes after content */
+	/* Mobile-first approach: booking widget comes right after hero */
 	@media (max-width: 1279px) {
 		.booking-layout {
 			display: flex;
@@ -460,26 +511,44 @@
 		
 		.booking-column {
 			order: 2;
-			margin-top: 2rem;
+			margin-top: 1.5rem;
+			margin-bottom: 0; /* No bottom margin, details come after */
+		}
+		
+		/* Mobile details come after booking widget */
+		.tour-details-mobile {
+			order: 3;
 		}
 	}
 	
 	/* Mobile experience improvements */
 	@media (max-width: 640px) {
 		.booking-container {
-			padding: 1.5rem 1rem;
+			padding: 0.5rem 1rem 2rem 1rem; /* Normal padding when footer is visible */
+		}
+		
+		/* When sticky footer is visible (footer is hidden), add more bottom space */
+		.booking-page.has-sticky-footer .booking-container {
+			padding-bottom: 6rem; /* Space for sticky footer (footer is hidden) */
 		}
 		
 		.booking-layout {
-			gap: 1.5rem;
+			gap: 1rem;
 		}
 		
 		.booking-column {
-			margin-top: 1.5rem;
+			margin-top: 1rem;
 		}
 		
 		.tour-details-section {
+			margin-top: 1.5rem;
+		}
+		
+		/* Mobile details come after booking */
+		.tour-details-mobile {
 			margin-top: 2rem;
+			margin-bottom: 0; /* Remove extra bottom margin */
+			padding-bottom: 0; /* Remove extra bottom padding */
 		}
 	}
 </style>

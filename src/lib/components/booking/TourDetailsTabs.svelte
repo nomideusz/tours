@@ -3,10 +3,6 @@
 	import Check from 'lucide-svelte/icons/check';
 	import Info from 'lucide-svelte/icons/info';
 	import Shield from 'lucide-svelte/icons/shield';
-	import Clock from 'lucide-svelte/icons/clock';
-	import Users from 'lucide-svelte/icons/users';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import Calendar from 'lucide-svelte/icons/calendar';
 	import Markdown from '$lib/components/ui/Markdown.svelte';
 	
 	interface Props {
@@ -25,37 +21,8 @@
 		</section>
 	{/if}
 	
-	<!-- Tour Info Cards -->
-	<section class="info-cards">
-		<div class="info-card">
-			<Clock class="info-icon" />
-			<div class="info-content">
-				<span class="info-label">Duration</span>
-				<span class="info-value">
-					{#if tour.duration}
-						{Math.floor(tour.duration / 60)}h {tour.duration % 60 > 0 ? `${tour.duration % 60}m` : ''}
-					{:else}
-						Duration TBD
-					{/if}
-				</span>
-			</div>
-		</div>
-		
-		<div class="info-card">
-			<Users class="info-icon" />
-			<div class="info-content">
-				<span class="info-label">Group Size</span>
-				<span class="info-value">
-					{#if tour.pricingModel === 'private_tour'}
-						{tour.privateTour?.minCapacity || tour.minCapacity || 4}-{tour.privateTour?.maxCapacity || tour.maxCapacity || 12} people
-					{:else}
-						Up to {tour.maxCapacity || tour.capacity || 20} people
-					{/if}
-				</span>
-			</div>
-		</div>
-		
-	</section>
+	<!-- Tour Info Cards - Hidden, now shown as badges in hero -->
+	<!-- Kept in code for potential future use or desktop-only display -->
 	
 	<!-- What's Included & Requirements -->
 	<section class="highlights-section">
@@ -117,6 +84,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+		margin-bottom: 0; /* Remove extra margin after last section */
 	}
 	
 	.section-title {
@@ -136,59 +104,10 @@
 		line-height: 1.75;
 	}
 	
-	/* Info Cards */
-	.info-cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-	}
-	
-	.info-card {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 1.25rem;
-		background: var(--bg-secondary);
-		border-radius: 0.75rem;
-		border: 1px solid var(--border-primary);
-	}
-	
-	:global(.info-icon) {
-		width: 2.5rem;
-		height: 2.5rem;
-		color: var(--color-primary-600);
-		background: var(--color-primary-100);
-		padding: 0.5rem;
-		border-radius: 0.5rem;
-		flex-shrink: 0;
-	}
-	
-	:global(.dark .info-icon) {
-		background: var(--color-primary-900);
-	}
-	
-	.info-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-	
-	.info-label {
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--text-tertiary);
-	}
-	
-	.info-value {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
-	
 	/* Highlights Section */
 	.highlights-section {
 		padding: 1.5rem 0;
+		margin-bottom: 0; /* Remove extra margin */
 	}
 	
 	.highlights-grid {
@@ -254,6 +173,13 @@
 		background: var(--bg-secondary);
 		border-radius: 1rem;
 		border: 1px solid var(--border-primary);
+		margin-bottom: 0; /* Remove extra margin */
+	}
+	
+	@media (max-width: 640px) {
+		.policy-section {
+			padding: 1.25rem;
+		}
 	}
 	
 	.policy-header {
@@ -261,7 +187,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 1rem;
-		color: var(--color-primary-600);
+		color: var(--color-info-600);
 	}
 	
 	.policy-header h3 {
@@ -279,6 +205,7 @@
 	@media (max-width: 640px) {
 		.tour-details {
 			gap: 1rem;
+			margin-bottom: 0;
 		}
 		
 		.section-title {
@@ -291,16 +218,7 @@
 		}
 		
 		.highlights-section {
-			padding: 1rem 0;
-		}
-		
-		.info-cards {
-			grid-template-columns: 1fr;
-			gap: 0.75rem;
-		}
-		
-		.info-card {
-			padding: 1rem;
+			padding: 0.5rem 0;
 		}
 		
 		.highlights-grid {

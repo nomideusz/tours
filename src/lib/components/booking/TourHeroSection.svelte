@@ -5,6 +5,8 @@
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Users from 'lucide-svelte/icons/users';
 	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import TourLocationMap from './TourLocationMap.svelte';
 	
@@ -56,7 +58,7 @@
 
 <!-- Hero Image Gallery -->
 {#if currentImage || imageUrl}
-	<div class="hero-gallery mb-6">
+	<div class="hero-gallery hero-gallery-spacing">
 		<!-- Main Image -->
 		<div class="main-image-container">
 			<img 
@@ -115,70 +117,76 @@
 	</div>
 {/if}
 
-<!-- Tour Guide Info -->
-{#if tourGuide?.username}
-	<div class="guide-info-wrapper">
-		<a 
-			href="/{tourGuide.username}" 
-			class="guide-badge no-underline"
-		>
-			<div class="guide-avatar">
-				<User class="w-4 h-4" />
-			</div>
-			<div class="guide-details">
-				<span class="guide-label">Hosted by</span>
-				<span class="guide-name">{tourGuide.name || tourGuide.username}</span>
-			</div>
-		</a>
+<!-- Compact Tour Header -->
+<div class="tour-header-compact">
+	<!-- Guide Badge + Title Row (Mobile Compact) -->
+	<div class="header-top">
+		{#if tourGuide?.username}
+			<a 
+				href="/{tourGuide.username}" 
+				class="guide-badge-compact no-underline"
+			>
+				<User class="w-3 h-3" />
+				<span>{tourGuide.name || tourGuide.username}</span>
+			</a>
+		{/if}
 	</div>
-{/if}
-
-<!-- Tour Header -->
-<div class="mb-6">
-	<h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);">{tour.name}</h1>
 	
-	<!-- Quick Info Bar -->
-	{#if tour.location}
-		<div class="mb-4">
+	<h1 class="tour-title">{tour.name}</h1>
+	
+	<!-- Compact Meta Row: Duration + Group + Location -->
+	<div class="meta-row">
+		{#if tour.duration}
+			<span class="meta-item">
+				<Clock class="w-4 h-4" />
+				{Math.floor(tour.duration / 60)}h {tour.duration % 60 > 0 ? `${tour.duration % 60}m` : ''}
+			</span>
+		{/if}
+		
+		<span class="meta-item">
+			<Users class="w-4 h-4" />
+			{#if tour.pricingModel === 'private_tour'}
+				{tour.privateTour?.minCapacity || tour.minCapacity || 4}-{tour.privateTour?.maxCapacity || tour.maxCapacity || 12}
+			{:else}
+				Up to {tour.maxCapacity || tour.capacity || 20}
+			{/if}
+		</span>
+		
+		{#if tour.location}
 			<button
 				type="button"
 				onclick={() => showMap = !showMap}
-				class="flex items-center gap-2 text-sm hover:underline"
+				class="meta-item meta-item-link"
 			>
-				<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
-				<span style="color: var(--text-secondary);">{tour.location}</span>
+				<MapPin class="w-4 h-4" />
+				<span>{tour.location}</span>
 				{#if tourCoordinates && googleMapsApiKey}
 					{#if showMap}
-						<ChevronDown class="w-3 h-3" style="color: var(--text-tertiary);" />
+						<ChevronDown class="w-3 h-3" />
 					{:else}
-						<ChevronRight class="w-3 h-3" style="color: var(--text-tertiary);" />
+						<ChevronRight class="w-3 h-3" />
 					{/if}
 				{/if}
 			</button>
-			
-			<!-- Compact Map (Collapsible) -->
-			{#if showMap && tourCoordinates && googleMapsApiKey}
-				<div class="mt-3">
-					<TourLocationMap
-						coordinates={tourCoordinates}
-						locationName={tour.location}
-						googleMapsApiKey={googleMapsApiKey}
-					/>
-				</div>
-			{/if}
+		{/if}
+	</div>
+	
+	<!-- Compact Map (Collapsible) -->
+	{#if showMap && tourCoordinates && googleMapsApiKey && tour.location}
+		<div class="map-container">
+			<TourLocationMap
+				coordinates={tourCoordinates}
+				locationName={tour.location}
+				googleMapsApiKey={googleMapsApiKey}
+			/>
 		</div>
 	{/if}
 	
-	<!-- Categories -->
+	<!-- Compact Categories -->
 	{#if tour.categories && tour.categories.length > 0}
-		<div class="flex flex-wrap gap-2">
+		<div class="categories-compact">
 			{#each tour.categories as category}
-				<span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full"
-					style="
-						background: var(--bg-secondary);
-						color: var(--text-secondary);
-					"
-				>
+				<span class="category-tag">
 					{formatCategoryName(category)}
 				</span>
 			{/each}
@@ -187,8 +195,130 @@
 </div>
 
 <style>
+	/* Compact Tour Header - Space Efficient */
+	.tour-header-compact {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	
+	@media (min-width: 640px) {
+		.tour-header-compact {
+			gap: 0.75rem;
+			margin-bottom: 1.5rem;
+		}
+	}
+	
+	.header-top {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.guide-badge-compact {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.25rem 0.625rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-full);
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		transition: all var(--transition-base);
+	}
+	
+	.guide-badge-compact:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+	}
+	
+	.tour-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		line-height: 1.2;
+		color: var(--text-primary);
+		margin: 0;
+	}
+	
+	@media (min-width: 640px) {
+		.tour-title {
+			font-size: 2rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		.tour-title {
+			font-size: 2.25rem;
+		}
+	}
+	
+	/* Compact Meta Row - Horizontal on Desktop, Wraps on Mobile */
+	.meta-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	
+	.meta-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		white-space: nowrap;
+	}
+	
+	.meta-item-link {
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		transition: color var(--transition-base);
+	}
+	
+	.meta-item-link:hover {
+		color: var(--text-primary);
+		text-decoration: underline;
+	}
+	
+	.map-container {
+		margin-top: 0.75rem;
+	}
+	
+	/* Compact Categories */
+	.categories-compact {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	
+	.category-tag {
+		display: inline-flex;
+		padding: 0.25rem 0.625rem;
+		font-size: 0.6875rem;
+		font-weight: 500;
+		background: var(--bg-secondary);
+		color: var(--text-secondary);
+		border-radius: var(--radius-full);
+	}
+	
 	.hero-gallery {
 		position: relative;
+	}
+	
+	.hero-gallery-spacing {
+		margin-bottom: 0.75rem;
+	}
+	
+	@media (min-width: 640px) {
+		.hero-gallery-spacing {
+			margin-bottom: 1.5rem;
+		}
 	}
 	
 	.main-image-container {
@@ -310,14 +440,14 @@
 	}
 	
 	.thumbnail.active {
-		box-shadow: 0 0 0 3px var(--color-primary-600);
+		box-shadow: 0 0 0 3px var(--color-accent-600);
 	}
 	
 	.thumbnail.active::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: var(--color-primary-600);
+		background: var(--color-accent-600);
 		opacity: 0.2;
 		pointer-events: none;
 	}
@@ -328,60 +458,6 @@
 		object-fit: cover;
 	}
 	
-	.guide-info-wrapper {
-		margin-bottom: 1.5rem;
-	}
-	
-	.guide-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.5rem 1rem;
-		border-radius: 2rem;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		text-decoration: none !important;
-		transition: all 0.2s ease;
-	}
-	
-	.guide-badge:hover {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		text-decoration: none !important;
-	}
-	
-	.guide-avatar {
-		width: 2.5rem;
-		height: 2.5rem;
-		border-radius: 50%;
-		background: var(--bg-tertiary);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--text-tertiary);
-	}
-	
-	.guide-details {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.125rem;
-	}
-	
-	.guide-label {
-		font-size: 0.75rem;
-		color: var(--text-tertiary);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-	
-	.guide-name {
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--text-primary);
-	}
 	
 	/* Mobile adjustments */
 	@media (max-width: 640px) {
@@ -424,27 +500,6 @@
 			border-radius: 0.375rem;
 		}
 		
-		.guide-info-wrapper {
-			margin: 1rem 0;
-		}
-		
-		.guide-badge {
-			padding: 0.375rem 0.75rem;
-			gap: 0.5rem;
-		}
-		
-		.guide-avatar {
-			width: 2rem;
-			height: 2rem;
-		}
-		
-		.guide-label {
-			font-size: 0.625rem;
-		}
-		
-		.guide-name {
-			font-size: 0.75rem;
-		}
 	}
 </style>
 

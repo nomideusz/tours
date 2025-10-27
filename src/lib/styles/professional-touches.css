@@ -1,10 +1,18 @@
 /* Professional Touches - Subtle refinements that add character */
 
 /* Better focus rings - more refined and visible */
-*:focus-visible {
-	outline: 2px solid var(--primary);
+/* Exclude form inputs as they have their own focus styles */
+*:focus-visible:not(input):not(textarea):not(select) {
+	outline: 2px solid var(--color-accent-600);
 	outline-offset: 3px;
 	border-radius: var(--radius-sm);
+}
+
+/* Form elements should not have outline (handled by border in forms.css) */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+	outline: none;
 }
 
 /* Smooth scroll behavior */
@@ -44,15 +52,15 @@ h4, h5, h6 {
 	transform: translateY(-1px);
 }
 
-/* Better link styling - exclude navigation and sidebar links */
-a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not([role="navigation"] *) {
+/* Better link styling - exclude navigation, sidebar, and footer links */
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *) {
 	position: relative;
 	text-decoration: none;
 	color: var(--primary);
 	transition: color var(--transition-fast);
 }
 
-a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not([role="navigation"] *)::after {
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *)::after {
 	content: '';
 	position: absolute;
 	bottom: -2px;
@@ -64,7 +72,7 @@ a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-lin
 	transition: opacity var(--transition-fast);
 }
 
-a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not([role="navigation"] *):hover::after {
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *):hover::after {
 	opacity: 0.8;
 }
 

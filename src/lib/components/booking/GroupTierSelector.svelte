@@ -115,13 +115,13 @@
 	}
 
 	.tier-selector-card:hover:not(.disabled) {
-		border-color: var(--color-primary-500);
+		border-color: var(--color-accent-500);
 		background: var(--bg-secondary);
 	}
 
 	.tier-selector-card.selected {
-		border-color: var(--color-primary-600);
-		background: var(--color-primary-50);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-50);
 	}
 
 	.tier-selector-card.disabled {
@@ -143,8 +143,8 @@
 	}
 
 	.tier-icon.selected {
-		background: var(--color-primary-100);
-		color: var(--color-primary-700);
+		background: var(--color-accent-100);
+		color: var(--color-accent-700);
 	}
 
 	.tier-name {
@@ -162,11 +162,11 @@
 	.tier-price {
 		font-weight: 700;
 		font-size: 1.125rem;
-		color: var(--color-primary-700);
+		color: var(--text-primary);
 		white-space: nowrap;
 	}
 
 	.tier-selector-card.selected .tier-price {
-		color: var(--color-primary-800);
+		color: var(--color-accent-800);
 	}
 </style>

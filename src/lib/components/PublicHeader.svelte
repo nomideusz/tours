@@ -303,7 +303,7 @@
 		}
 
 		.public-header-content {
-			height: 4rem;
+			height: 3.5rem; /* Reduced from 4rem for compact mobile header */
 		}
 
 		.header-actions {

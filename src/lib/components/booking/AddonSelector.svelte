@@ -170,11 +170,9 @@
 
 		<!-- Info box -->
 		{#if optionalAddons.length > 0}
-			<div class="info-box">
-				<Info class="w-4 h-4 flex-shrink-0" style="color: var(--color-primary-600);" />
-				<div class="text-xs" style="color: var(--text-secondary);">
-					<p>Choose additional services to enhance your experience</p>
-				</div>
+			<div class="alert-info">
+				<Info class="w-4 h-4 flex-shrink-0" />
+				<p>Choose additional services to enhance your experience</p>
 			</div>
 		{/if}
 	{/if}
@@ -230,13 +228,13 @@
 	}
 
 	.addon-card.optional:hover {
-		border-color: var(--color-primary-500);
+		border-color: var(--color-accent-500);
 		background: var(--bg-secondary);
 	}
 
 	.addon-card.optional.selected {
-		border-color: var(--color-primary-600);
-		background: var(--color-primary-50);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-50);
 	}
 
 	.addon-card.required {
@@ -259,7 +257,7 @@
 	}
 
 	.addon-checkbox.selected {
-		color: var(--color-primary-700);
+		color: var(--color-accent-700);
 	}
 
 	.addon-checkbox.locked {
@@ -302,7 +300,7 @@
 	}
 
 	.addon-card.optional.selected .addon-price {
-		color: var(--color-primary-700);
+		color: var(--color-accent-700);
 	}
 
 	.addon-price.required {
@@ -329,8 +327,8 @@
 		gap: 0.625rem;
 		padding: 0.75rem;
 		border-radius: 0.5rem;
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
 		margin-top: 1rem;
 	}
 

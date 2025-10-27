@@ -393,7 +393,7 @@
 	.breakdown-item.total .item-value {
 		font-weight: 800;
 		font-size: 1.25rem;
-		color: var(--color-primary-700);
+		color: var(--text-primary);
 	}
 
 	.breakdown-divider {

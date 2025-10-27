@@ -73,7 +73,7 @@
 	</button>
 	
 	<div class="info-box">
-		<Info class="w-4 h-4 flex-shrink-0" style="color: var(--color-primary-600);" />
+		<Info class="w-4 h-4 flex-shrink-0" style="color: var(--color-info-600);" />
 		<div class="text-xs" style="color: var(--text-secondary);">
 			<strong>Private Tour Benefits:</strong> Personalized attention, flexible pace, 
 			customize the experience to your group's interests and needs.
@@ -100,15 +100,15 @@
 	}
 	
 	.private-tour-card:hover {
-		border-color: var(--color-primary-500);
+		border-color: var(--color-accent-500);
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 	}
 	
 	.private-tour-card.selected {
-		border-color: var(--color-primary-600);
-		background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
-		box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+		border-color: var(--color-accent-600);
+		background: linear-gradient(135deg, var(--color-accent-50) 0%, var(--color-accent-100) 100%);
+		box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
 	}
 	
 	.card-header {
@@ -135,7 +135,7 @@
 	}
 	
 	.icon-badge.selected {
-		background: var(--color-primary-600);
+		background: var(--color-accent-600);
 		color: white;
 	}
 	
@@ -158,7 +158,7 @@
 	.flat-price {
 		font-weight: 800;
 		font-size: 1.5rem;
-		color: var(--color-primary-700);
+		color: var(--text-primary);
 		line-height: 1;
 		margin-bottom: 0.25rem;
 	}
@@ -197,8 +197,8 @@
 		gap: 0.625rem;
 		padding: 0.75rem;
 		border-radius: 0.5rem;
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
 	}
 	
 	/* Mobile responsiveness */

@@ -165,11 +165,9 @@
 	</div>
 	
 	{#if !hasParticipants}
-		<div class="info-box warning">
-			<Info class="w-4 h-4 flex-shrink-0" style="color: var(--color-warning-600);" />
-			<span class="text-xs" style="color: var(--text-secondary);">
-				Please select at least one participant to continue
-			</span>
+		<div class="alert-info">
+			<Info class="w-4 h-4 flex-shrink-0" />
+			<p>Please select at least one participant to continue</p>
 		</div>
 	{/if}
 	
@@ -232,8 +230,8 @@
 	}
 	
 	.category-card.selected {
-		border-color: var(--color-primary-500);
-		background: var(--color-primary-50);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-50);
 	}
 	
 	.category-header {
@@ -276,7 +274,7 @@
 	.category-price {
 		font-weight: 700;
 		font-size: 1rem;
-		color: var(--color-primary-700);
+		color: var(--text-primary);
 		white-space: nowrap;
 	}
 	
@@ -314,9 +312,9 @@
 	}
 	
 	.counter-btn:hover:not(:disabled) {
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-500);
-		color: var(--color-primary-700);
+		background: var(--color-accent-100);
+		border-color: var(--color-accent-500);
+		color: var(--color-accent-700);
 		transform: scale(1.05);
 	}
 	
@@ -343,8 +341,8 @@
 		gap: 0.625rem;
 		padding: 0.75rem;
 		border-radius: 0.5rem;
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
+		background: var(--color-info-50);
+		border: 1px solid var(--color-info-200);
 	}
 	
 	.info-box.warning {

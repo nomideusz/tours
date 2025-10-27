@@ -17,6 +17,20 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Info from 'lucide-svelte/icons/info';
 	import { slide } from 'svelte/transition';
+	import { tick } from 'svelte';
+	import { browser } from '$app/environment';
+	import { themeStore } from '$lib/stores/theme.js';
+	
+	// Get current theme for conditional styling
+	let currentTheme = $state<string>('light');
+	$effect(() => {
+		if (browser) {
+			const unsubscribe = themeStore.subscribe((theme) => {
+				currentTheme = theme;
+			});
+			return () => unsubscribe();
+		}
+	});
 	
 	interface TourOwnerWithCurrency {
 		username?: string;
@@ -86,6 +100,106 @@
 		customerEmail.trim().length > 0 && 
 		customerEmail.includes('@')
 	);
+	
+	// Track if user is actively changing time slot (to prevent auto-scroll)
+	let isChangingTimeSlot = $state(false);
+	
+	// Track which steps have been shown (once shown, keep them visible)
+	let hasShownStep2 = $state(false);
+	let hasShownStep3 = $state(false);
+	
+	// Update tracking when steps should appear
+	$effect(() => {
+		if (selectedTimeSlot || totalParticipants() > 0) {
+			hasShownStep2 = true;
+		}
+		const addons = tour.optionalAddons?.addons;
+		if (totalParticipants() > 0 && addons && addons.length > 0) {
+			hasShownStep3 = true;
+		}
+	});
+	
+	// Smooth scroll to next step when it becomes active (mobile only)
+	let previousStepState = $state<{slot: boolean, participants: boolean}>({
+		slot: false,
+		participants: false
+	});
+	
+	$effect(() => {
+		if (!browser || window.innerWidth > 640) return;
+		
+		const hasSlot = !!selectedTimeSlot;
+		const hasParticipants = totalParticipants() > 0;
+		
+		// When time slot is selected, scroll to participants step (but not if user is just changing)
+		if (hasSlot && !previousStepState.slot && !isChangingTimeSlot) {
+			// Wait for DOM to update AND transitions to complete
+			tick().then(() => {
+				// Longer wait for both the calendar collapse and step 2 to appear
+				setTimeout(() => {
+					const step2 = document.querySelector('.booking-step[data-step="2"]') as HTMLElement;
+					if (step2) {
+						const yOffset = -120; // More space above for comfortable viewing
+						const y = step2.getBoundingClientRect().top + window.scrollY + yOffset;
+						
+						// Slower, more deliberate scroll using scrollTo with custom timing
+						const startY = window.scrollY;
+						const distance = y - startY;
+						const duration = 800; // Slower: 800ms instead of browser default ~500ms
+						let start: number | null = null;
+						
+						function scrollStep(timestamp: number) {
+							if (!start) start = timestamp;
+							const progress = Math.min((timestamp - start) / duration, 1);
+							// Ease-out-cubic for smoother deceleration
+							const easing = 1 - Math.pow(1 - progress, 3);
+							window.scrollTo(0, startY + distance * easing);
+							
+							if (progress < 1) {
+								requestAnimationFrame(scrollStep);
+							}
+						}
+						
+						requestAnimationFrame(scrollStep);
+					}
+				}, 500); // Wait for slide transitions (300ms) + buffer
+			});
+		}
+		
+		// When participants are selected, scroll to contact info
+		if (hasParticipants && !previousStepState.participants && hasSlot) {
+			tick().then(() => {
+				setTimeout(() => {
+					const contactSection = document.querySelector('.contact-info-section') as HTMLElement;
+					if (contactSection) {
+						const yOffset = -100;
+						const y = contactSection.getBoundingClientRect().top + window.scrollY + yOffset;
+						
+						// Slower scroll for contact section too
+						const startY = window.scrollY;
+						const distance = y - startY;
+						const duration = 700;
+						let start: number | null = null;
+						
+						function scrollStep(timestamp: number) {
+							if (!start) start = timestamp;
+							const progress = Math.min((timestamp - start) / duration, 1);
+							const easing = 1 - Math.pow(1 - progress, 3);
+							window.scrollTo(0, startY + distance * easing);
+							
+							if (progress < 1) {
+								requestAnimationFrame(scrollStep);
+							}
+						}
+						
+						requestAnimationFrame(scrollStep);
+					}
+				}, 200);
+			});
+		}
+		
+		previousStepState = { slot: hasSlot, participants: hasParticipants };
+	});
 	
 	// Ensure infant category is available if countInfantsTowardCapacity is enabled
 	let categoriesForBooking = $derived(() => {
@@ -241,48 +355,56 @@
 						{/if}
 					{/if}
 					
-					<!-- Step 1: Date & Time Selection -->
-					<div class="booking-step" class:active={!selectedTimeSlot} class:completed={selectedTimeSlot}>
-						<div class="step-number">{selectedTimeSlot ? '✓' : '1'}</div>
-						<div>
-							<h3 class="font-medium mb-2" style="color: var(--text-primary);">
-								{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
-							</h3>
-							{#if selectedTimeSlot}
-								<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
-									<div class="flex items-start justify-between">
-										<div class="text-sm flex-1">
-											<div class="flex items-center gap-2 flex-wrap">
-												<span style="color: var(--text-primary);">
-													{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
-														weekday: 'short', 
-														month: 'short', 
-														day: 'numeric' 
-													})}
-												</span>
-												<!-- Compact Weather Display (inline after date) -->
-												{#if tourCoordinates}
-													<CompactWeatherDisplay
-														coordinates={tourCoordinates}
-														tourDateTime={new Date(selectedTimeSlot.startTime)}
-													/>
-												{/if}
-											</div>
-											<div class="mt-0.5" style="color: var(--text-secondary);">
-												{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
-											</div>
+				<!-- Step 1: Date & Time Selection -->
+				<div class="booking-step" class:active={!selectedTimeSlot} class:completed={selectedTimeSlot} data-step="1">
+					<div class="step-number">{selectedTimeSlot ? '✓' : '1'}</div>
+					<div>
+						<h3 class="font-medium mb-2" style="color: var(--text-primary);">
+							{selectedTimeSlot ? 'Selected Date & Time' : 'Select Date & Time'}
+						</h3>
+						{#if selectedTimeSlot}
+							<div class="p-3 rounded-lg" style="background: var(--bg-secondary);" transition:slide={{ duration: 300 }}>
+								<div class="flex items-start justify-between">
+									<div class="text-sm flex-1">
+										<div class="flex items-center gap-2 flex-wrap">
+											<span style="color: var(--text-primary);">
+												{new Date(selectedTimeSlot.startTime).toLocaleDateString('en-US', { 
+													weekday: 'short', 
+													month: 'short', 
+													day: 'numeric' 
+												})}
+											</span>
+											<!-- Compact Weather Display (inline after date) -->
+											{#if tourCoordinates}
+												<CompactWeatherDisplay
+													coordinates={tourCoordinates}
+													tourDateTime={new Date(selectedTimeSlot.startTime)}
+												/>
+											{/if}
 										</div>
-										<button 
-											type="button"
-											onclick={() => onSlotSelect(null)}
-											class="text-sm underline flex-shrink-0 ml-3"
-											style="color: var(--color-primary-600);"
-										>
-											Change
-										</button>
+										<div class="mt-0.5" style="color: var(--text-secondary);">
+											{formatSlotTimeRange(selectedTimeSlot.startTime, selectedTimeSlot.endTime)}
+										</div>
 									</div>
+					<button 
+						type="button"
+						onclick={() => {
+							isChangingTimeSlot = true;
+							onSlotSelect(null);
+							// Reset the flag after transitions complete
+							setTimeout(() => {
+								isChangingTimeSlot = false;
+							}, 400);
+						}}
+						class="button-text flex-shrink-0 ml-3"
+						style="color: var(--color-accent-600);"
+					>
+						Change
+					</button>
 								</div>
-							{:else}
+							</div>
+						{:else}
+							<div transition:slide={{ duration: 300 }}>
 								<BookingCalendar 
 									timeSlots={allTimeSlots || []}
 									selectedSlot={selectedTimeSlot}
@@ -291,14 +413,16 @@
 									tourOwner={tourOwner}
 									class="in-widget"
 								/>
-							{/if}
-						</div>
+							</div>
+						{/if}
 					</div>
+				</div>
 					
-					<!-- Step 2: Participants -->
-					{#if selectedTimeSlot}
-						<div class="booking-step" class:active={selectedTimeSlot && totalParticipants() === 0} class:completed={totalParticipants() > 0} transition:slide={{ duration: 200 }}>
-							<div class="step-number">{totalParticipants() > 0 ? '✓' : '2'}</div>
+			<!-- Step 2: Participants -->
+			<!-- Once shown, keep visible permanently -->
+			{#if hasShownStep2}
+				<div class="booking-step" class:active={selectedTimeSlot && totalParticipants() === 0} class:completed={selectedTimeSlot && totalParticipants() > 0} data-step="2">
+					<div class="step-number">{totalParticipants() > 0 ? '✓' : '2'}</div>
 							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
 									{totalParticipants() > 0 ? 'Selected Participants' : 'Select Participants'}
@@ -399,10 +523,11 @@
 						</div>
 					{/if}
 					
-					<!-- Step 3: Add-ons (if available) -->
-					{#if totalParticipants() > 0 && tour.optionalAddons?.addons && tour.optionalAddons.addons.length > 0}
-						<div class="booking-step" class:completed={selectedAddonIds.length > 0} transition:slide={{ duration: 200 }}>
-							<div class="step-number">{selectedAddonIds.length > 0 ? '✓' : '3'}</div>
+			<!-- Step 3: Add-ons (if available) -->
+			<!-- Once shown, keep visible permanently -->
+			{#if hasShownStep3 && tour.optionalAddons?.addons && tour.optionalAddons.addons.length > 0}
+				<div class="booking-step" class:completed={selectedTimeSlot && totalParticipants() > 0 && selectedAddonIds.length > 0} data-step="3">
+					<div class="step-number">{selectedAddonIds.length > 0 ? '✓' : '3'}</div>
 							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
 									Optional Add-ons
@@ -434,11 +559,11 @@
 					
 					<!-- Customer Information -->
 					{#if selectedTimeSlot && totalParticipants() > 0}
-						<div class="space-y-3 pt-4 border-t" style="border-color: var(--border-primary);">
-							<h3 class="text-sm font-medium" style="color: var(--text-primary);">
-								Contact Information
-								<span class="text-xs font-normal" style="color: var(--text-tertiary);">*Required</span>
-							</h3>
+					<div class="space-y-3 pt-4 border-t contact-info-section" style="border-color: var(--border-primary);">
+						<h3 class="text-sm font-medium" style="color: var(--text-primary);">
+							Contact Information
+							<span class="text-xs font-normal" style="color: var(--text-tertiary);">*Required</span>
+						</h3>
 							
 							<div>
 								<label for="customerName" class="block text-xs font-medium mb-1" style="color: var(--text-secondary);">
@@ -529,24 +654,30 @@
 	{#if selectedTimeSlot && totalParticipants() > 0 && !showSuccess}
 		{@const displayPrice = priceCalculation().totalAmount}
 		<div class="mobile-sticky-footer">
-			<div class="mobile-price-summary">
-				<div class="mobile-price-label">Total</div>
-				<div class="mobile-price-amount">
-					{displayPrice === 0 ? 'Free' : formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+			<div class="mobile-footer-content">
+				<div class="mobile-price-summary">
+					<div class="mobile-price-label">Total</div>
+					<div class="mobile-price-amount">
+						{displayPrice === 0 ? 'Free' : formatTourOwnerCurrency(displayPrice, tourOwner?.currency)}
+					</div>
 				</div>
+				<button
+					type="submit"
+					form={`booking-form-${tour.id}`}
+					disabled={isSubmitting || !isContactInfoValid}
+					class="mobile-book-button"
+					class:dark-mode={currentTheme === 'dark'}
+				>
+					{#if isSubmitting}
+						<Loader2 class="w-4 h-4 animate-spin" />
+					{:else}
+						Book Now
+					{/if}
+				</button>
 			</div>
-			<button
-				type="submit"
-				form={`booking-form-${tour.id}`}
-				disabled={isSubmitting || !isContactInfoValid}
-				class="mobile-book-button"
-			>
-				{#if isSubmitting}
-					<Loader2 class="w-4 h-4 animate-spin" />
-				{:else}
-					Book Now
-				{/if}
-			</button>
+			<div class="mobile-footer-branding">
+				<a href="/" class="powered-by-link">Powered by Zaur</a>
+			</div>
 		</div>
 	{/if}
 </div>
@@ -563,8 +694,11 @@
 		position: relative;
 	}
 	
-	.booking-widget:hover {
-		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+	/* Only apply hover shadow on desktop (pointer devices) */
+	@media (hover: hover) and (pointer: fine) {
+		.booking-widget:hover {
+			box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
+		}
 	}
 	
 	.widget-header {
@@ -595,8 +729,9 @@
 		background: var(--bg-secondary);
 		margin-bottom: 1rem;
 		position: relative;
-		transition: all 0.2s ease;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		overflow: visible;
+		will-change: transform, opacity;
 	}
 	
 	.booking-step.completed {
@@ -604,10 +739,20 @@
 		border: 1px solid var(--color-success-200);
 	}
 	
+	:global([data-theme="dark"]) .booking-step.completed {
+		background: var(--color-success-100);
+		border-color: var(--color-success-200);
+	}
+	
 	.booking-step.active {
 		background: var(--bg-primary);
-		border: 2px solid var(--color-primary-500);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		border: 2px solid var(--color-accent-500);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global([data-theme="dark"]) .booking-step.active {
+		border-color: var(--color-accent-600);
+		background: var(--bg-secondary);
 	}
 	
 	.step-number {
@@ -630,9 +775,9 @@
 	}
 	
 	.booking-step.active .step-number {
-		background: var(--color-primary-600);
+		background: var(--color-accent-600);
 		color: white;
-		border-color: var(--color-primary-600);
+		border-color: var(--color-accent-600);
 	}
 	
 	.booking-step.completed .step-number {
@@ -735,17 +880,51 @@
 	@media (max-width: 640px) {
 		.mobile-sticky-footer {
 			display: flex;
+			flex-direction: column;
 			position: fixed;
 			bottom: 0;
 			left: 0;
 			right: 0;
-			z-index: 100;
+			z-index: 9999;
 			background: var(--bg-primary);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
 			border-top: 1px solid var(--border-primary);
+			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+		}
+		
+		.mobile-footer-content {
+			display: flex;
 			padding: 1rem;
 			gap: 1rem;
 			align-items: center;
-			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+		}
+		
+		.mobile-footer-branding {
+			padding: 0.5rem 1rem;
+			border-top: 1px solid var(--border-primary);
+			text-align: center;
+			background: var(--bg-secondary);
+		}
+		
+		.powered-by-link {
+			display: inline-block;
+			font-size: 0.625rem;
+			color: var(--text-tertiary);
+			text-decoration: none !important;
+			opacity: 0.7;
+			transition: opacity var(--transition-base) ease;
+		}
+		
+		/* Remove any global link underline styles */
+		.powered-by-link::after {
+			display: none !important;
+		}
+		
+		.powered-by-link:hover {
+			opacity: 1;
+			color: var(--text-secondary);
+			text-decoration: none !important;
 		}
 		
 		.mobile-price-summary {
@@ -780,14 +959,33 @@
 			gap: 0.5rem;
 		}
 		
+		.mobile-book-button.dark-mode {
+			background: var(--color-primary-500);
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+		}
+		
 		.mobile-book-button:disabled {
-			background: var(--color-gray-300);
+			background: var(--color-gray-300) !important;
+			color: var(--text-tertiary) !important;
 			cursor: not-allowed;
+			box-shadow: none !important;
+		}
+		
+		.mobile-book-button.dark-mode:disabled {
+			background: var(--color-gray-600) !important;
+			color: var(--color-gray-400) !important;
 		}
 		
 		.mobile-book-button:not(:disabled):active {
 			transform: scale(0.98);
 		}
+		
+		.mobile-book-button.dark-mode:not(:disabled):active {
+			background: var(--color-primary-400);
+		}
+	}
+	
+	@media (max-width: 640px) {
 		
 		/* Hide desktop submit button on mobile when sticky footer is shown */
 		.booking-widget:has(.mobile-sticky-footer) .button-primary.w-full {
@@ -796,7 +994,7 @@
 		
 		/* Add padding to account for sticky footer */
 		.booking-widget {
-			padding-bottom: 5rem;
+			padding-bottom: 1rem; /* Reduced - container already has 8rem bottom padding */
 		}
 	}
 </style>

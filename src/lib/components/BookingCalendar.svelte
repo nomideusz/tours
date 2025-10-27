@@ -274,19 +274,19 @@
 	<div class="calendar-content">
 		<!-- Calendar -->
 		<div class="calendar-section">
-			{#if selectedDate && selectedSlot && !activeDate}
-				<div class="selection-indicator rounded-lg p-3 mb-4" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-					<div class="flex items-center gap-2">
-						<div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: var(--color-primary-100);">
-							<Calendar class="w-3 h-3" style="color: var(--color-primary-600);" />
-						</div>
-						<div class="flex-1 min-w-0">
-							<p class="text-xs font-medium" style="color: var(--color-primary-800);">
-								You have selected: {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-							</p>
-							<p class="text-xs" style="color: var(--color-primary-600);">
-								{formatSlotTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
-							</p>
+		{#if selectedDate && selectedSlot && !activeDate}
+			<div class="selection-indicator rounded-lg p-3 mb-4" style="background: var(--color-accent-50); border: 1px solid var(--color-accent-200);">
+				<div class="flex items-center gap-2">
+					<div class="w-6 h-6 rounded-full flex items-center justify-center" style="background: var(--color-accent-100);">
+						<Calendar class="w-3 h-3" style="color: var(--color-accent-600);" />
+					</div>
+					<div class="flex-1 min-w-0">
+						<p class="text-xs font-medium" style="color: var(--color-accent-800);">
+							You have selected: {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+						</p>
+						<p class="text-xs" style="color: var(--color-accent-600);">
+							{formatSlotTimeRange(selectedSlot.startTime, selectedSlot.endTime)}
+						</p>
 						</div>
 					</div>
 				</div>
@@ -349,10 +349,10 @@
 			</div>
 		</div>
 
-		<!-- Time slots section -->
-		{#if activeSlots.length > 0}
-			<div class="slots-section" transition:slide={{ duration: 200 }}>
-				<div class="slots-header">
+	<!-- Time slots section -->
+	{#if activeSlots.length > 0}
+		<div class="slots-section" transition:slide={{ duration: 300 }}>
+			<div class="slots-header">
 					<div class="slots-header-main">
 						<div class="slots-header-icon">
 							<Clock class="w-4 h-4" />
@@ -482,7 +482,7 @@
 	.today-button {
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: var(--color-primary-600);
+		color: var(--color-accent-600);
 		background: transparent;
 		border: none;
 		padding: 0.375rem 0.75rem;
@@ -492,7 +492,7 @@
 	}
 
 	.today-button:hover {
-		background: var(--color-primary-50);
+		background: var(--color-accent-50);
 	}
 
 	.calendar-hint {
@@ -583,13 +583,13 @@
 	}
 
 	.day-button--today {
-		background: var(--color-primary-100);
-		color: var(--color-primary-800);
+		background: var(--color-accent-100);
+		color: var(--color-accent-800);
 		font-weight: 600;
 	}
 
 	.day-button--today:hover {
-		background: var(--color-primary-200);
+		background: var(--color-accent-200);
 	}
 
 	.day-button--has-slots {
@@ -599,29 +599,29 @@
 	}
 
 	.day-button--has-slots:hover {
-		background: var(--color-primary-50);
-		color: var(--color-primary-700);
-		box-shadow: 0 0 0 2px var(--color-primary-200) inset;
+		background: var(--color-accent-50);
+		color: var(--color-accent-700);
+		box-shadow: 0 0 0 2px var(--color-accent-200) inset;
 	}
 
 	.day-button--hovered {
-		background: var(--color-primary-100) !important;
-		color: var(--color-primary-800) !important;
-		box-shadow: 0 0 0 2px var(--color-primary-200) inset;
+		background: var(--color-accent-100) !important;
+		color: var(--color-accent-800) !important;
+		box-shadow: 0 0 0 2px var(--color-accent-200) inset;
 		z-index: 1;
 	}
 
 	.day-button--selected {
-		background: var(--color-primary-600) !important;
+		background: var(--color-accent-600) !important;
 		color: white !important;
 		font-weight: 600;
 		z-index: 2;
-		box-shadow: inset 0 0 0 2px var(--color-primary-700);
+		box-shadow: inset 0 0 0 2px var(--color-accent-700);
 	}
 
 	.day-button--selected:hover {
-		background: var(--color-primary-700) !important;
-		box-shadow: inset 0 0 0 2px var(--color-primary-800);
+		background: var(--color-accent-700) !important;
+		box-shadow: inset 0 0 0 2px var(--color-accent-800);
 	}
 
 	.day-button--disabled {
@@ -651,14 +651,14 @@
 		width: 0.25rem;
 		height: 0.25rem;
 		border-radius: 50%;
-		background: var(--color-primary-500);
+		background: var(--color-accent-500);
 	}
 
 	.slot-dot--multiple {
 		width: auto;
 		height: auto;
 		border-radius: 0.25rem;
-		background: var(--color-primary-600);
+		background: var(--color-accent-600);
 		color: white;
 		font-size: 0.625rem;
 		font-weight: 600;
@@ -672,9 +672,10 @@
 		border-top: 1px solid var(--border-primary);
 		background: var(--bg-secondary);
 		max-height: 300px;
+		min-height: 200px; /* Prevent jarring height jumps */
 		overflow-y: auto;
 		min-width: 0;
-		animation: fadeIn 0.2s ease-out;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 	
 	@keyframes fadeIn {
@@ -720,14 +721,14 @@
 		width: 2rem;
 		height: 2rem;
 		border-radius: 0.375rem;
-		background: var(--color-primary-50);
-		color: var(--color-primary-600);
+		background: var(--color-accent-50);
+		color: var(--color-accent-600);
 		flex-shrink: 0;
 	}
 
 	:global([data-theme="dark"]) .slots-header-icon {
-		background: var(--color-primary-900);
-		color: var(--color-primary-400);
+		background: var(--color-accent-900);
+		color: var(--color-accent-400);
 	}
 
 	.slots-header-content {
@@ -756,11 +757,11 @@
 	.selected-indicator {
 		font-size: 0.6875rem;
 		font-weight: 500;
-		color: var(--color-primary-600);
-		background: var(--color-primary-100);
+		color: var(--color-accent-600);
+		background: var(--color-accent-100);
 		padding: 0.25rem 0.5rem;
 		border-radius: 0.25rem;
-		border: 1px solid var(--color-primary-300);
+		border: 1px solid var(--color-accent-300);
 		align-self: flex-start;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -798,9 +799,9 @@
 	}
 
 	.slot-button--selected {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-300);
-		color: var(--color-primary-800);
+		background: var(--color-accent-50);
+		border-color: var(--color-accent-300);
+		color: var(--color-accent-800);
 	}
 
 	.slot-time {
