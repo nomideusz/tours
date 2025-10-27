@@ -478,16 +478,32 @@ export async function updateUserSubscription(
 
   console.log(`Updating subscription for user ${user.id}: plan=${planId}, cohort=${betaCohort || user.betaGroup || 'unknown'}, status=${subscription.status}`);
 
+  // Check if subscription has a trial period
+  const trialEnd = subscription.trial_end;
+  const isTrialing = subscription.status === 'trialing' && trialEnd && trialEnd > Math.floor(Date.now() / 1000);
+  
+  // Prepare update data
+  const updateData: any = {
+    subscriptionPlan: planId,
+    subscriptionStatus: subscription.status as any,
+    subscriptionId: subscription.id,
+    subscriptionCurrentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+    subscriptionCurrentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+    subscriptionCancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+    updatedAt: new Date()
+  };
+  
+  // If in trial, set subscription_free_until to match Stripe's trial_end
+  if (isTrialing && trialEnd) {
+    updateData.subscriptionFreeUntil = new Date(trialEnd * 1000);
+    console.log(`User ${user.id} is in trial until ${new Date(trialEnd * 1000).toISOString()}`);
+  } else if (subscription.status === 'active' && !isTrialing) {
+    // If subscription is now active (trial ended or no trial), clear subscription_free_until
+    updateData.subscriptionFreeUntil = null;
+  }
+
   await db.update(users)
-    .set({
-      subscriptionPlan: planId,
-      subscriptionStatus: subscription.status as any,
-      subscriptionId: subscription.id,
-      subscriptionCurrentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      subscriptionCurrentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      subscriptionCancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
-      updatedAt: new Date()
-    })
+    .set(updateData)
     .where(eq(users.id, user.id));
 }
 
