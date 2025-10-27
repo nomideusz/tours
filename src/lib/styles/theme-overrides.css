@@ -356,16 +356,19 @@ body:has(video) #detach-button-host {
 /* iOS Safari - Ensure solid backgrounds to prevent transparency issues */
 html {
 	background: var(--bg-primary, #ffffff);
-	/* Remove overflow: hidden to allow page scrolling */
-	overflow-x: hidden; /* Only prevent horizontal scroll */
-	min-height: 100%;
+	/* Fix viewport issues as per Stack Overflow solution */
+	overflow: hidden;
+	height: 100%;
 }
 
 body {
 	background: var(--bg-primary, #ffffff);
-	/* Allow normal scrolling */
+	/* Prevent rubber band scrolling showing through */
 	position: relative;
-	overflow-x: hidden; /* Only prevent horizontal scroll */
+	/* Fix viewport issues as per Stack Overflow solution */
+	overflow: auto;
+	height: 100%;
+	/* Ensure body takes full height */
 	min-height: 100%;
 }
 
@@ -374,17 +377,17 @@ body {
 	html {
 		/* Extend background beyond viewport */
 		background-attachment: fixed;
-		min-height: 100%;
-		/* Use -webkit-fill-available for better iOS support */
-		min-height: -webkit-fill-available;
+		height: 100%;
+		/* Use -webkit-fill-available as fallback */
+		height: -webkit-fill-available;
 	}
 	
 	body {
-		min-height: 100%;
-		/* Use -webkit-fill-available for better iOS support */
-		min-height: -webkit-fill-available;
+		height: 100%;
+		/* Use -webkit-fill-available as fallback */
+		height: -webkit-fill-available;
 		/* Prevent overscroll on iOS */
-		overscroll-behavior-y: contain; /* Use contain instead of none for better UX */
+		overscroll-behavior: none;
 		-webkit-overflow-scrolling: touch;
 	}
 }
