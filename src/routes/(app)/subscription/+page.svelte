@@ -25,6 +25,7 @@
 	let error = $state<string | null>(null);
 	let isYearly = $state(false);
 	let showCancelModal = $state(false);
+	let loadingPlanId = $state<string | null>(null); // Track which specific plan is loading
 	
 	// Convert shared pricing config to subscription format
 	const SUBSCRIPTION_PLANS = Object.fromEntries(
@@ -141,6 +142,7 @@
 		if (!user?.id) return;
 		
 		loading = true;
+		loadingPlanId = planId; // Track which plan is loading
 		error = null;
 		
 		try {
@@ -170,6 +172,7 @@
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
 			loading = false; // Reset loading state on error
+			loadingPlanId = null;
 		}
 	}
 	
@@ -662,12 +665,13 @@
 							</button>
 						{:else}
 							<!-- Show upgrade button for Essential and Premium -->
+							{@const isThisPlanLoading = loadingPlanId === plan.id}
 							<button
 								onclick={() => upgradeSubscription(plan.id, isYearly ? 'yearly' : 'monthly')}
 								disabled={loading}
 								class="button-primary button--full-width"
 							>
-								{#if loading}
+								{#if isThisPlanLoading}
 									<Loader2 class="w-4 h-4 animate-spin inline mr-2" />
 									Processing...
 								{:else}
