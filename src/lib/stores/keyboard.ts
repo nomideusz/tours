@@ -55,17 +55,33 @@ if (browser) {
 					// Immediate hide
 					isKeyboardVisible.set(false);
 					
-					// Force viewport reset by scrolling
-					window.scrollTo(0, window.scrollY);
-					
-					// Double-check after animation completes
-					resetTimeout = setTimeout(() => {
-						window.scrollTo(0, window.scrollY);
-						document.body.style.height = '100%';
+					// Force viewport reset
+					if (window.visualViewport) {
+						// Scroll to top temporarily to reset viewport
+						const currentScroll = window.scrollY;
+						window.scrollTo(0, 0);
 						setTimeout(() => {
-							document.body.style.height = '';
-						}, 100);
-					}, 300);
+							window.scrollTo(0, currentScroll);
+						}, 10);
+					}
+					
+					// Force layout recalculation
+					resetTimeout = setTimeout(() => {
+						// Trigger resize event to force Safari to recalculate
+						window.dispatchEvent(new Event('resize'));
+						
+						// Additional reset attempt
+						if (window.visualViewport && window.visualViewport.height < window.innerHeight) {
+							// Force another check if viewport is still wrong
+							isKeyboardVisible.set(false);
+							document.body.style.position = 'fixed';
+							document.body.style.width = '100%';
+							setTimeout(() => {
+								document.body.style.position = '';
+								document.body.style.width = '';
+							}, 100);
+						}
+					}, 350);
 				}
 			} else {
 				isKeyboardVisible.set(keyboardOpen);
@@ -142,11 +158,34 @@ if (browser) {
 	
 	// iOS Safari: Periodic check to ensure proper state
 	if (isIOS) {
-		setInterval(() => {
+		let checkInterval = setInterval(() => {
+			// If no input is focused but keyboard was detected as open
 			if (!isInputFocused && lastKnownKeyboardState) {
 				checkKeyboard();
 			}
-		}, 1000);
+			
+			// Also check if visual viewport is in incorrect state
+			if (!isInputFocused && window.visualViewport) {
+				const viewportHeight = window.visualViewport.height;
+				const windowHeight = window.innerHeight;
+				
+				// If there's still a significant difference without input focus
+				if (Math.abs(windowHeight - viewportHeight) > 50) {
+					isKeyboardVisible.set(false);
+					lastKnownKeyboardState = false;
+					// Force viewport reset
+					window.scrollTo(0, window.scrollY + 1);
+					setTimeout(() => {
+						window.scrollTo(0, window.scrollY - 1);
+					}, 50);
+				}
+			}
+		}, 500);
+		
+		// Clean up interval on page unload
+		window.addEventListener('beforeunload', () => {
+			clearInterval(checkInterval);
+		});
 	}
 }
 

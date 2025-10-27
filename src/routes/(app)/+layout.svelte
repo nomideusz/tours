@@ -644,7 +644,7 @@
 		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
-		<div class="mobile-bottom-nav lg:hidden border-t overflow-x-hidden" class:keyboard-hidden={$isKeyboardVisible} style="border-color: var(--border-primary); -webkit-backface-visibility: hidden;">
+		<div class="mobile-bottom-nav lg:hidden border-t" class:keyboard-hidden={$isKeyboardVisible} style="border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
 					{#if item.isMenu}
@@ -823,24 +823,12 @@
 		/* iOS specific main content adjustments */
 		@supports (-webkit-touch-callout: none) {
 			.main-content {
-				/* Add extra padding to ensure content stays above iOS UI */
-				padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0) + 50px);
+			/* Add padding to ensure content stays above iOS UI */
+			padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0) + 1rem);
 				/* Keep overflow-y for scrolling */
 				position: relative;
 			}
 			
-			/* Add a solid background layer at the bottom of content */
-			.main-content::after {
-				content: '';
-				position: fixed;
-				bottom: calc(3.5rem + env(safe-area-inset-bottom, 0));
-				left: 0;
-				right: 0;
-				height: 150px;
-				background: var(--bg-primary);
-				pointer-events: none;
-				z-index: 35; /* Below nav (40) but above content */
-			}
 		}
 	
 	@media (min-width: 1024px) {
@@ -859,35 +847,16 @@
 		z-index: 40;
 		/* Solid background to prevent transparency issues */
 		background: var(--bg-primary);
-		/* Add backdrop filter for additional opacity on iOS */
-		backdrop-filter: blur(20px) saturate(180%);
-		-webkit-backdrop-filter: blur(20px) saturate(180%);
 		/* iOS Safari viewport fixes */
 		transform: translate3d(0, 0, 0);
 		-webkit-transform: translate3d(0, 0, 0);
 		backface-visibility: hidden;
 		-webkit-backface-visibility: hidden;
-		/* Force GPU acceleration */
-		will-change: transform;
-		/* Ensure nav is always on top of content */
-		contain: layout style;
 		/* Smooth transitions */
 		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out;
 	}
 	
-	/* Add pseudo-element to cover the safe area with solid background */
-	.mobile-bottom-nav::before {
-		content: '';
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: env(safe-area-inset-bottom, 0);
-		background: var(--bg-primary);
-		z-index: -1;
-	}
-	
-	/* Ensure the nav content is above the pseudo-element */
+	/* Ensure the nav content has proper padding */
 	.mobile-bottom-nav nav {
 		position: relative;
 		z-index: 1;
@@ -908,22 +877,6 @@
 				background-image: linear-gradient(to bottom, var(--bg-primary), var(--bg-primary));
 			}
 			
-			/* Additional safe area coverage for iOS 15+ to hide transparent UI */
-			.mobile-bottom-nav::after {
-				content: '';
-				position: fixed;
-				bottom: 0;
-				left: 0;
-				right: 0;
-				/* Extend well below to cover iOS UI chrome */
-				height: calc(env(safe-area-inset-bottom, 0) + 100px);
-				background: var(--bg-primary);
-				/* Use negative z-index to stay behind nav content */
-				z-index: -2;
-				pointer-events: none;
-				/* Force opacity */
-				opacity: 1;
-			}
 		}
 	
 	/* Hide bottom nav when mobile keyboard is visible */
@@ -934,15 +887,6 @@
 		pointer-events: none;
 	}
 	
-	/* Dark mode specific background handling */
-	[data-theme="dark"] .mobile-bottom-nav {
-		background: rgb(17, 24, 39); /* --bg-primary dark mode value */
-	}
-	
-	[data-theme="dark"] .mobile-bottom-nav::before,
-	[data-theme="dark"] .mobile-bottom-nav::after {
-		background: rgb(17, 24, 39);
-	}
 	
 	/* Mobile menu animation */
 	.mobile-menu-backdrop {
