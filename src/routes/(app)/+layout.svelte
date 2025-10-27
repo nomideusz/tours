@@ -123,6 +123,10 @@
 	let scrollDirection = $state<'up' | 'down'>('up');
 	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 	let isMobileDevice = $state(false);
+	
+	// Touch tracking for iOS
+	let touchStartY = 0;
+	let touchEndY = 0;
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
@@ -393,23 +397,13 @@
 		}
 	}
 
-	// Handle scroll events for auto-hide navigation
+	// Handle scroll events for auto-hide navigation (non-iOS)
 	function handleScroll(event?: Event) {
 		if (!browser || $isKeyboardVisible || !isMobileDevice) return; // Only on mobile
 		
-		
-		// For iOS, we need to check the actual scrolling element
-		// Try main content first (iOS often scrolls this), then fallback to standard elements
-		const mainContent = document.querySelector('.main-content') as HTMLElement;
-		let currentScrollY = 0;
-		
-		// Check if main content is the scrolling container (common on iOS)
-		if (mainContent && (mainContent.scrollHeight > mainContent.clientHeight)) {
-			currentScrollY = mainContent.scrollTop;
-		} else {
-			const scrollElement = document.scrollingElement || document.documentElement || document.body;
-			currentScrollY = scrollElement.scrollTop || window.pageYOffset || 0;
-		}
+		// Get scroll position
+		const scrollElement = document.scrollingElement || document.documentElement || document.body;
+		const currentScrollY = scrollElement.scrollTop || window.pageYOffset || 0;
 		const scrollDelta = currentScrollY - lastScrollY;
 		
 		// Ignore small scroll movements
@@ -437,6 +431,56 @@
 		}, 1500);
 	}
 	
+	// iOS touch handlers for navigation auto-hide
+	let lastTouchY = 0;
+	let touchAccumulator = 0;
+	
+	function handleTouchStart(event: TouchEvent) {
+		if (!isMobileDevice || $isKeyboardVisible) return;
+		touchStartY = event.touches[0].clientY;
+		lastTouchY = touchStartY;
+		touchAccumulator = 0;
+	}
+	
+	function handleTouchMove(event: TouchEvent) {
+		if (!isMobileDevice || $isKeyboardVisible) return;
+		
+		const currentTouchY = event.touches[0].clientY;
+		const touchDelta = lastTouchY - currentTouchY;
+		
+		// Accumulate touch movement
+		touchAccumulator += touchDelta;
+		
+		// Check if we've moved enough to trigger
+		if (Math.abs(touchAccumulator) > 20) {
+			// Check scroll position
+			const scrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+			
+			console.log('📱 iOS touch:', { touchAccumulator, scrollY, navHidden });
+			
+			if (touchAccumulator > 0 && scrollY > 80) {
+				// Scrolling down past threshold - hide nav
+				navHidden = true;
+				console.log('📱 iOS: Hiding nav');
+			} else if (touchAccumulator < 0) {
+				// Scrolling up - show nav
+				navHidden = false;
+				console.log('📱 iOS: Showing nav');
+			}
+			
+			// Reset accumulator
+			touchAccumulator = 0;
+			
+			// Clear timeout and set new one
+			if (scrollTimeout) clearTimeout(scrollTimeout);
+			scrollTimeout = setTimeout(() => {
+				navHidden = false;
+			}, 1500);
+		}
+		
+		lastTouchY = currentTouchY;
+	}
+	
 	// Theme communication with embedded widgets
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
@@ -455,18 +499,31 @@
 		};
 		window.addEventListener('resize', handleResize);
 		
-		// Set up scroll listener for auto-hide navigation
-		if (browser) {
-			// Listen on multiple elements for iOS compatibility
+		
+		// Set up scroll listeners as fallback for non-iOS
+		const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+		if (browser && !isIOS) {
 			window.addEventListener('scroll', handleScroll, { passive: true });
 			document.addEventListener('scroll', handleScroll, { passive: true });
 			document.body.addEventListener('scroll', handleScroll, { passive: true });
 			
-			// Also listen on the main content element for iOS
 			const mainContent = document.querySelector('.main-content');
 			if (mainContent) {
 				mainContent.addEventListener('scroll', handleScroll, { passive: true });
 			}
+		}
+		
+		// Add touch events for scroll direction detection on iOS
+		if (browser && isIOS && isMobileDevice) {
+			console.log('📱 iOS: Adding touch event listeners for nav auto-hide');
+			document.addEventListener('touchstart', handleTouchStart, { passive: true });
+			document.addEventListener('touchmove', handleTouchMove, { passive: true });
+			
+			// Test if we can get scroll position on iOS
+			setTimeout(() => {
+				const testScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+				console.log('📱 iOS: Initial scroll position test:', testScrollY);
+			}, 500);
 		}
 		
 		// Check if user is a beta tester and show welcome modal
@@ -543,6 +600,8 @@
 			window.removeEventListener('scroll', handleScroll);
 			document.removeEventListener('scroll', handleScroll);
 			document.body.removeEventListener('scroll', handleScroll);
+			document.removeEventListener('touchstart', handleTouchStart);
+			document.removeEventListener('touchmove', handleTouchMove);
 			const mainContent = document.querySelector('.main-content');
 			if (mainContent) {
 				mainContent.removeEventListener('scroll', handleScroll);
