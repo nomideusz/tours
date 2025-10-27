@@ -486,25 +486,48 @@ export async function updateUserSubscription(
   const trialEnd = subscription.trial_end;
   const isTrialing = subscription.status === 'trialing' && trialEnd && trialEnd > Math.floor(Date.now() / 1000);
   
+  // Safely extract timestamps from subscription
+  const subscriptionData = subscription as any;
+  const currentPeriodStart = subscriptionData.current_period_start;
+  const currentPeriodEnd = subscriptionData.current_period_end;
+  
   // Prepare update data
   const updateData: any = {
     subscriptionPlan: planId,
     subscriptionStatus: subscription.status as any,
     subscriptionId: subscription.id,
-    subscriptionCurrentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-    subscriptionCurrentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-    subscriptionCancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+    subscriptionCancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
     updatedAt: new Date()
   };
   
+  // Safely add period start if valid
+  if (currentPeriodStart && typeof currentPeriodStart === 'number') {
+    updateData.subscriptionCurrentPeriodStart = new Date(currentPeriodStart * 1000);
+  }
+  
+  // Safely add period end if valid
+  if (currentPeriodEnd && typeof currentPeriodEnd === 'number') {
+    updateData.subscriptionCurrentPeriodEnd = new Date(currentPeriodEnd * 1000);
+  }
+  
   // If in trial, set subscription_free_until to match Stripe's trial_end
-  if (isTrialing && trialEnd) {
-    updateData.subscriptionFreeUntil = new Date(trialEnd * 1000);
-    console.log(`User ${user.id} is in trial until ${new Date(trialEnd * 1000).toISOString()}`);
+  if (isTrialing && trialEnd && typeof trialEnd === 'number') {
+    const trialEndDate = new Date(trialEnd * 1000);
+    if (!isNaN(trialEndDate.getTime())) {
+      updateData.subscriptionFreeUntil = trialEndDate;
+      console.log(`User ${user.id} is in trial until ${trialEndDate.toISOString()}`);
+    }
   } else if (subscription.status === 'active' && !isTrialing) {
     // If subscription is now active (trial ended or no trial), clear subscription_free_until
     updateData.subscriptionFreeUntil = null;
   }
+
+  console.log(`Updating user ${user.id} with data:`, {
+    ...updateData,
+    subscriptionCurrentPeriodStart: updateData.subscriptionCurrentPeriodStart?.toISOString(),
+    subscriptionCurrentPeriodEnd: updateData.subscriptionCurrentPeriodEnd?.toISOString(),
+    subscriptionFreeUntil: updateData.subscriptionFreeUntil?.toISOString()
+  });
 
   await db.update(users)
     .set(updateData)
