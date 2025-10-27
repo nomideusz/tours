@@ -44,64 +44,104 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			? await stripe.subscriptions.retrieve(session.subscription)
 			: session.subscription;
 
-		// Determine plan from subscription
-		let planId: SubscriptionPlan = 'free';
-		const priceId = subscription.items.data[0]?.price.id;
+	// Determine plan from subscription by checking price ID against all cohorts
+	let planId: SubscriptionPlan = 'free';
+	const priceId = subscription.items.data[0]?.price.id;
+	
+	for (const [key, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
+		if (key === 'free' || key === 'agency') continue;
 		
-		for (const [key, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
-			const stripePriceId = plan.stripePriceId;
-			if (stripePriceId && typeof stripePriceId === 'object') {
-				if (stripePriceId.monthly === priceId || stripePriceId.yearly === priceId) {
-					planId = key as SubscriptionPlan;
-					break;
-				}
+		const planConfig = plan as typeof SUBSCRIPTION_PLANS.starter_pro | typeof SUBSCRIPTION_PLANS.professional;
+		if (!planConfig.stripePriceId) continue;
+		
+		// Check all cohorts (beta_1, beta_2, public) for matching price ID
+		for (const cohort of ['beta_1', 'beta_2', 'public'] as const) {
+			const cohortPrices = planConfig.stripePriceId[cohort];
+			if (cohortPrices?.monthly === priceId || cohortPrices?.yearly === priceId) {
+				planId = key as SubscriptionPlan;
+				break;
 			}
 		}
-
-		// Extract promo code metadata from subscription
-		const metadata = subscription.metadata || {};
-		const hasPromoCode = metadata.promoCode && metadata.promoCode !== '';
 		
-		// Update user subscription in database
-		const updateData: any = {
-			subscriptionPlan: planId,
-			subscriptionStatus: subscription.status as any,
-			subscriptionId: subscription.id,
-			subscriptionCancelAtPeriodEnd: subscription.cancel_at_period_end,
-			updatedAt: new Date()
-		};
+		if (planId !== 'free') break;
+	}
+	
+	console.log(`Verify session: Detected plan=${planId} from priceId=${priceId}`);
+
+	// Extract metadata from subscription
+	const metadata = subscription.metadata || {};
+	const hasPromoCode = metadata.promoCode && metadata.promoCode !== '';
+	const betaCohort = metadata.betaCohort as 'beta_1' | 'beta_2' | 'public' | undefined;
+	
+	// Check if subscription has a trial period
+	const trialEnd = subscription.trial_end;
+	const isTrialing = subscription.status === 'trialing' && trialEnd && trialEnd > Math.floor(Date.now() / 1000);
+	
+	console.log(`Verify session: status=${subscription.status}, trial=${isTrialing}, trialEnd=${trialEnd ? new Date(trialEnd * 1000).toISOString() : 'none'}, cohort=${betaCohort}`);
+	
+	// Update user subscription in database
+	const updateData: any = {
+		subscriptionPlan: planId,
+		subscriptionStatus: subscription.status as any,
+		subscriptionId: subscription.id,
+		subscriptionCancelAtPeriodEnd: subscription.cancel_at_period_end,
+		updatedAt: new Date()
+	};
+	
+	// If in trial, set subscription_free_until to match Stripe's trial_end
+	if (isTrialing && trialEnd) {
+		updateData.subscriptionFreeUntil = new Date(trialEnd * 1000);
+		console.log(`Verify session: User in trial until ${new Date(trialEnd * 1000).toISOString()}`);
+	} else if (subscription.status === 'active' && !isTrialing) {
+		// If subscription is now active (trial ended or no trial), clear subscription_free_until
+		updateData.subscriptionFreeUntil = null;
+	}
+	
+	// If promo code metadata exists, ensure it's preserved in user profile
+	if (hasPromoCode) {
+		updateData.promoCodeUsed = metadata.promoCode;
 		
-		// If promo code metadata exists, ensure it's preserved in user profile
-		if (hasPromoCode) {
-			updateData.promoCodeUsed = metadata.promoCode;
-			
-			// Parse discount percentage and lifetime status from metadata
-			const discountPercentage = parseInt(metadata.discountPercentage || '0');
-			const isLifetimeDiscount = metadata.isLifetimeDiscount === 'true';
-			
-			if (discountPercentage > 0) {
-				updateData.subscriptionDiscountPercentage = discountPercentage;
-				updateData.isLifetimeDiscount = isLifetimeDiscount;
-			}
+		// Parse discount percentage and lifetime status from metadata
+		const discountPercentage = parseInt(metadata.discountPercentage || '0');
+		const isLifetimeDiscount = metadata.isLifetimeDiscount === 'true';
+		
+		if (discountPercentage > 0) {
+			updateData.subscriptionDiscountPercentage = discountPercentage;
+			updateData.isLifetimeDiscount = isLifetimeDiscount;
 		}
+	}
 
-		// Handle current_period_end safely - cast to any to access expanded properties
-		const subscriptionData = subscription as any;
-		if (subscriptionData.current_period_end && typeof subscriptionData.current_period_end === 'number') {
-			const endDate = new Date(subscriptionData.current_period_end * 1000);
-			if (!isNaN(endDate.getTime())) {
-				updateData.subscriptionCurrentPeriodEnd = endDate;
-			}
+	// Handle current_period_end safely - cast to any to access expanded properties
+	const subscriptionData = subscription as any;
+	if (subscriptionData.current_period_end && typeof subscriptionData.current_period_end === 'number') {
+		const endDate = new Date(subscriptionData.current_period_end * 1000);
+		if (!isNaN(endDate.getTime())) {
+			updateData.subscriptionCurrentPeriodEnd = endDate;
 		}
-
-		// Update stripeCustomerId if not set
-		if (!locals.user.stripeCustomerId && session.customer) {
-			updateData.stripeCustomerId = session.customer as string;
+	}
+	
+	// Handle current_period_start safely
+	if (subscriptionData.current_period_start && typeof subscriptionData.current_period_start === 'number') {
+		const startDate = new Date(subscriptionData.current_period_start * 1000);
+		if (!isNaN(startDate.getTime())) {
+			updateData.subscriptionCurrentPeriodStart = startDate;
 		}
+	}
 
-		await db.update(users)
-			.set(updateData)
-			.where(eq(users.id, locals.user.id));
+	// Update stripeCustomerId if not set
+	if (!locals.user.stripeCustomerId && session.customer) {
+		updateData.stripeCustomerId = session.customer as string;
+	}
+	
+	// Update betaGroup if provided in metadata and not already set
+	if (betaCohort && !locals.user.betaGroup) {
+		updateData.betaGroup = betaCohort;
+		console.log(`Verify session: Setting betaGroup=${betaCohort} for user ${locals.user.id}`);
+	}
+
+	await db.update(users)
+		.set(updateData)
+		.where(eq(users.id, locals.user.id));
 
 		// Return subscription details
 		const plan = SUBSCRIPTION_PLANS[planId];
