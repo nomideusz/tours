@@ -117,10 +117,23 @@
 		);
 	}
 	
-	/* Hide header when scrolling down */
-	.app-header.header-hidden {
-		transform: translateY(-100%);
-		box-shadow: none;
+	/* Hide header when scrolling down - mobile only */
+	@media (max-width: 639px) {
+		.app-header.header-hidden {
+			transform: translateY(-100%);
+			box-shadow: none;
+		}
+		
+		/* Enhanced glassmorphism when re-appearing after scroll */
+		.app-header {
+			transition: transform 0.3s ease-out, background 0.3s ease-out;
+		}
+		
+		.app-header:not(.header-hidden) {
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85) !important;
+			backdrop-filter: blur(12px) !important;
+			-webkit-backdrop-filter: blur(12px) !important;
+		}
 	}
 	
 	/* Mobile optimizations */

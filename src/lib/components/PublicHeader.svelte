@@ -6,6 +6,12 @@
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import Logo from '$lib/components/Logo.svelte';
 
+	let { 
+		hidden = false 
+	} = $props<{
+		hidden?: boolean;
+	}>();
+
 	// Simple logo/brand
 	const isAuthPage = $derived($page.route.id?.includes('/auth/'));
 	const isBookingPage = $derived($page.route.id?.includes('/book/'));
@@ -23,7 +29,7 @@
 </script>
 
 <!-- Professional Public Header -->
-<header class="public-header">
+<header class="public-header" class:header-hidden={hidden}>
 	<div class="public-header-container">
 		<div class="public-header-content">
 			<!-- Logo/Brand with contextual info -->
@@ -41,11 +47,7 @@
 				<Logo 
 					variant="modern" 
 					href="/" 
-					showIcon={true} 
-					showIconBackground={false} 
-					iconSrc="/favicon.png" 
 					size="xl" 
-					textSize="large" 
 				/>
 				
 				{#if tourOwner && (isProfilePage || isBookingPage)}
@@ -308,6 +310,25 @@
 
 		.header-actions {
 			gap: 0.5rem;
+		}
+	}
+	
+	/* Hide header when scrolling down - mobile only */
+	@media (max-width: 639px) {
+		.public-header.header-hidden {
+			transform: translateY(-100%);
+			box-shadow: none;
+		}
+		
+		/* Enhanced glassmorphism when re-appearing after scroll */
+		.public-header {
+			transition: all 0.3s ease-out;
+		}
+		
+		.public-header:not(.header-hidden) {
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85) !important;
+			backdrop-filter: blur(12px) !important;
+			-webkit-backdrop-filter: blur(12px) !important;
 		}
 	}
 </style> 

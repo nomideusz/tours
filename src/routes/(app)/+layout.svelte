@@ -403,7 +403,7 @@
 
 	// Handle scroll events for auto-hide navigation (non-iOS)
 	function handleScroll(event?: Event) {
-		if (!browser || $isKeyboardVisible || !isMobileDevice) return; // Only on mobile
+		if (!browser || $isKeyboardVisible || !isMobileDevice || mobileMenuOpen) return; // Only on mobile, and not when menu is open
 		
 		// Get scroll position
 		const scrollElement = document.scrollingElement || document.documentElement || document.body;
@@ -444,14 +444,14 @@
 	let touchAccumulator = 0;
 	
 	function handleTouchStart(event: TouchEvent) {
-		if (!isMobileDevice || $isKeyboardVisible) return;
+		if (!isMobileDevice || $isKeyboardVisible || mobileMenuOpen) return;
 		touchStartY = event.touches[0].clientY;
 		lastTouchY = touchStartY;
 		touchAccumulator = 0;
 	}
 	
 	function handleTouchMove(event: TouchEvent) {
-		if (!isMobileDevice || $isKeyboardVisible) return;
+		if (!isMobileDevice || $isKeyboardVisible || mobileMenuOpen) return;
 		
 		const currentTouchY = event.touches[0].clientY;
 		const touchDelta = lastTouchY - currentTouchY;
@@ -1058,6 +1058,20 @@
 		-webkit-transform: translate3d(0, 100%, 0);
 		pointer-events: none;
 	}
+	
+	/* Enhanced glassmorphism for mobile nav when re-appearing */
+	@media (max-width: 639px) {
+		.mobile-bottom-nav {
+			transition: all 0.3s ease-out;
+		}
+		
+		.mobile-bottom-nav:not(.nav-hidden) {
+			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.85) !important;
+			backdrop-filter: blur(12px) !important;
+			-webkit-backdrop-filter: blur(12px) !important;
+		}
+	}
+	
 	
 	
 	/* Mobile menu animation */

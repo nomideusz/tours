@@ -142,6 +142,7 @@
 	--text-secondary: var(--color-gray-600);
 	--text-tertiary: var(--color-gray-500);
 	--bg-primary: #ffffff;
+	--bg-primary-rgb: 255, 255, 255;
 	--bg-secondary: var(--color-gray-50);
 	--bg-tertiary: var(--color-gray-100);
 	--bg-input: #ffffff;
@@ -485,6 +486,7 @@
 
 	/* Dark theme semantic colors - cool blue-gray palette */
 	--bg-primary: #0b0d10;
+	--bg-primary-rgb: 11, 13, 16;
 	--bg-secondary: #181b1f;
 	--bg-tertiary: #2a2d32;
 	--text-primary: #f6f7f8;
