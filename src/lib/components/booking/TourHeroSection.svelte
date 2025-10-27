@@ -8,6 +8,7 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
 	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
+	import { formatShortAddress } from '$lib/utils/location.js';
 	import TourLocationMap from './TourLocationMap.svelte';
 	
 	interface TourGuide {
@@ -39,6 +40,9 @@
 		if (!tour.images || tour.images.length === 0) return [];
 		return tour.images.map((img, idx) => `/api/images/${tour.id}/${img}?size=large`);
 	});
+	
+	// Format location for display (shortened version)
+	let displayLocation = $derived(tour.location ? formatShortAddress(tour.location) : '');
 	
 	let hasMultipleImages = $derived(imageUrls.length > 1);
 	let currentImage = $derived(imageUrls[currentImageIndex] || imageUrl);
@@ -145,8 +149,8 @@
 		
 		<span class="meta-item">
 			<Users class="w-4 h-4" />
-			{#if tour.pricingModel === 'private_tour'}
-				{tour.privateTour?.minCapacity || tour.minCapacity || 4}-{tour.privateTour?.maxCapacity || tour.maxCapacity || 12}
+			{#if tour.pricingModel === 'private_tour' && tour.privateTour}
+				{tour.privateTour.minCapacity || 4}-{tour.privateTour.maxCapacity || 12}
 			{:else}
 				Up to {tour.maxCapacity || tour.capacity || 20}
 			{/if}
@@ -157,9 +161,10 @@
 				type="button"
 				onclick={() => showMap = !showMap}
 				class="meta-item meta-item-link"
+				title={tour.location}
 			>
 				<MapPin class="w-4 h-4" />
-				<span>{tour.location}</span>
+				<span>{displayLocation}</span>
 				{#if tourCoordinates && googleMapsApiKey}
 					{#if showMap}
 						<ChevronDown class="w-3 h-3" />

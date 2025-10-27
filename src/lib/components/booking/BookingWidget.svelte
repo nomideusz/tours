@@ -430,8 +430,8 @@
 								
 								{#if tour.pricingModel === 'private_tour' && tour.privateTour}
 									<!-- Private Tour -->
-									{@const minCap = tour.minCapacity || tour.privateTour?.minCapacity || 1}
-									{@const maxCap = tour.maxCapacity || tour.privateTour?.maxCapacity || 20}
+									{@const minCap = tour.privateTour.minCapacity || 4}
+									{@const maxCap = tour.privateTour.maxCapacity || 12}
 									<div class="space-y-3">
 										<div class="p-3 rounded-lg" style="background: var(--bg-secondary);">
 											<div class="text-sm font-medium mb-1" style="color: var(--text-primary);">
@@ -468,6 +468,8 @@
 									/>
 								{:else if tour.enablePricingTiers && tour.pricingTiers}
 									<!-- Adult/Child Pricing -->
+									{@const minParticipants = tour.minCapacity || 1}
+									{@const maxAvailable = Math.min(10, (selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0))}
 									<div class="space-y-3">
 										<div class="grid grid-cols-2 gap-2 sm:gap-3">
 											<div>
@@ -480,7 +482,7 @@
 													class="form-select w-full"
 													required
 												>
-													{#each Array.from({length: Math.min(10, (selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0))}, (_, i) => i + 1) as num}
+													{#each Array.from({length: Math.max(1, maxAvailable)}, (_, i) => i + 1) as num}
 														<option value={num}>{num}</option>
 													{/each}
 												</select>
@@ -494,15 +496,23 @@
 													bind:value={childParticipants}
 													class="form-select w-full"
 												>
-													{#each Array.from({length: Math.min(10, (selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0) - adultParticipants) + 1}, (_, i) => i) as num}
+													{#each Array.from({length: Math.max(0, maxAvailable - adultParticipants) + 1}, (_, i) => i) as num}
 														<option value={num}>{num}</option>
 													{/each}
 												</select>
 											</div>
 										</div>
+										{#if minParticipants > 1}
+											<div class="text-xs" style="color: var(--text-tertiary);">
+												Minimum {minParticipants} total participants required
+											</div>
+										{/if}
 									</div>
 								{:else}
 									<!-- Simple Per-Person Pricing -->
+									{@const minParticipants = tour.minCapacity || 1}
+									{@const maxAvailable = Math.min(20, (selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0))}
+									{@const maxParticipants = Math.max(minParticipants, maxAvailable)}
 									<div>
 										<select
 											bind:value={participants}
@@ -511,12 +521,17 @@
 											required
 										>
 											<option value="" disabled>Select number of participants</option>
-											{#each Array.from({length: Math.min(20, (selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0))}, (_, i) => i + 1) as num}
+											{#each Array.from({length: maxParticipants - minParticipants + 1}, (_, i) => minParticipants + i) as num}
 												<option value={num}>
 													{num} {num === 1 ? 'person' : 'people'} • {formatTourOwnerCurrency(parseFloat(tour.price) * num, tourOwner?.currency)}
 												</option>
 											{/each}
 										</select>
+										{#if minParticipants > 1}
+											<div class="text-xs mt-1" style="color: var(--text-tertiary);">
+												Minimum {minParticipants} participants required
+											</div>
+										{/if}
 									</div>
 								{/if}
 							</div>

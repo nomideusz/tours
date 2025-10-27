@@ -34,11 +34,23 @@ export interface PricingBreakdown {
 
 /**
  * Calculate all-in pricing with Stripe fees
+ * NOTE: Free tours (basePrice = 0) have no Stripe fees
  */
 export function calculateAllInPricing(
 	basePrice: number,
 	currency: string = 'EUR'
 ): PricingBreakdown {
+	// FREE TOUR: No Stripe fees
+	if (basePrice === 0) {
+		return {
+			basePrice: 0,
+			stripeFee: 0,
+			totalPrice: 0,
+			guideReceives: 0
+		};
+	}
+	
+	// PAID TOUR: Calculate Stripe fees
 	const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
 	
 	// Calculate Stripe processing fee
@@ -559,24 +571,34 @@ export function calculateBookingPrice(
 	const subtotal = discountedBase + addonsTotal;
 	
 	// Calculate Stripe processing fee for regulatory compliance
+	// NOTE: For FREE tours (subtotal = 0), skip Stripe fees entirely
 	const guidePaysStripeFee = tour.guidePaysStripeFee || false;
-	const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
-	
-	// Stripe fee calculation: percentage + fixed amount
-	const stripeFee = subtotal * (fees.percentage / 100) + fees.fixed;
-	
-	// Final amounts based on who pays the fee
+	let stripeFee = 0;
 	let totalAmount: number;  // What customer pays (ALL-IN PRICE for compliance)
 	let guideReceives: number; // What guide receives
 	
-	if (guidePaysStripeFee) {
-		// Guide pays: customer pays subtotal, guide receives less
-		totalAmount = subtotal;
-		guideReceives = subtotal - stripeFee;
+	if (subtotal === 0) {
+		// FREE TOUR: No Stripe fees, no payment processing
+		stripeFee = 0;
+		totalAmount = 0;
+		guideReceives = 0;
 	} else {
-		// Customer pays (RECOMMENDED): customer pays subtotal + fee, guide receives subtotal
-		totalAmount = subtotal + stripeFee;
-		guideReceives = subtotal;
+		// PAID TOUR: Calculate Stripe fees
+		const fees = STRIPE_FEES[currency as keyof typeof STRIPE_FEES] || STRIPE_FEES.DEFAULT;
+		
+		// Stripe fee calculation: percentage + fixed amount
+		stripeFee = subtotal * (fees.percentage / 100) + fees.fixed;
+		
+		// Final amounts based on who pays the fee
+		if (guidePaysStripeFee) {
+			// Guide pays: customer pays subtotal, guide receives less
+			totalAmount = subtotal;
+			guideReceives = subtotal - stripeFee;
+		} else {
+			// Customer pays (RECOMMENDED): customer pays subtotal + fee, guide receives subtotal
+			totalAmount = subtotal + stripeFee;
+			guideReceives = subtotal;
+		}
 	}
 	
 	return {
