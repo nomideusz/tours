@@ -21,6 +21,7 @@
 		imageUrl?: string;
 		tourCoordinates?: { lat: number; lng: number } | null;
 		googleMapsApiKey?: string;
+		showMap?: boolean;
 	}
 	
 	let { 
@@ -28,10 +29,9 @@
 		tourGuide, 
 		imageUrl,
 		tourCoordinates = null,
-		googleMapsApiKey = ''
+		googleMapsApiKey = '',
+		showMap = $bindable(false)
 	}: Props = $props();
-	
-	let showMap = $state(false);
 	let currentImageIndex = $state(0);
 	
 	// Build image URLs array

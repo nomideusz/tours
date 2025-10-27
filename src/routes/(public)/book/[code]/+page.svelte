@@ -263,33 +263,41 @@
 	let tourCoordinates = $state<{ lat: number; lng: number } | null>(null);
 	let isGeocodingLocation = $state(false);
 	let geocodingAttempted = $state<string | null>(null);
+	let showMapInHero = $state(false);
 	
-	// Geocode tour location for weather
-	$effect(() => {
-		if (tour?.location && 
-		    !tourCoordinates && 
-		    !isGeocodingLocation && 
-		    geocodingAttempted !== tour.location && 
-		    browser && 
-		    env.PUBLIC_GOOGLE_MAPS_API_KEY) {
-			
-			isGeocodingLocation = true;
-			geocodingAttempted = tour.location;
-			
+	// Geocode tour location only when needed (for weather or map)
+	// This defers the API call until user selects a time slot or clicks to show map
+	async function geocodeLocationIfNeeded() {
+		if (!tour?.location || 
+		    tourCoordinates || 
+		    isGeocodingLocation || 
+		    geocodingAttempted === tour.location ||
+		    !browser || 
+		    !env.PUBLIC_GOOGLE_MAPS_API_KEY) {
+			return;
+		}
+		
+		isGeocodingLocation = true;
+		geocodingAttempted = tour.location;
+		
+		try {
 			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
-			mapService.searchLocations(tour.location)
-				.then((results) => {
-					if (results.length > 0) {
-						tourCoordinates = results[0].coordinates;
-						console.log('📍 Geocoded tour location for weather:', tour.location, '→', tourCoordinates);
-					}
-				})
-				.catch((error) => {
-					console.warn('Failed to geocode tour location:', error);
-				})
-				.finally(() => {
-					isGeocodingLocation = false;
-				});
+			const results = await mapService.searchLocations(tour.location);
+			if (results.length > 0) {
+				tourCoordinates = results[0].coordinates;
+				console.log('📍 Geocoded tour location:', tour.location, '→', tourCoordinates);
+			}
+		} catch (error) {
+			console.warn('Failed to geocode tour location:', error);
+		} finally {
+			isGeocodingLocation = false;
+		}
+	}
+	
+	// Geocode when user selects a time slot (for weather) or shows map
+	$effect(() => {
+		if (selectedTimeSlot || showMapInHero) {
+			geocodeLocationIfNeeded();
 		}
 	});
 	
@@ -323,6 +331,7 @@
 						imageUrl={imageUrl || undefined}
 						{tourCoordinates}
 						googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
+						bind:showMap={showMapInHero}
 					/>
 					
 					<!-- Tour Details - Desktop Only (hidden on mobile) -->
