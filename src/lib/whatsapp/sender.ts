@@ -447,9 +447,16 @@ function getConfiguredProvider(): WhatsAppProviderType | null {
  * Check if user has WhatsApp notifications enabled
  */
 export async function canSendWhatsApp(user: AuthUser): Promise<boolean> {
+	// Beta 1 and Beta 2 users get Premium features (including WhatsApp) during their trial
+	const isInFreeTrial = user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date();
+	const isBetaUser = user.betaGroup === 'beta_1' || user.betaGroup === 'beta_2';
+	
 	// Check if feature is enabled for user's plan
 	const allowedPlans = ['professional', 'agency'];
-	if (!allowedPlans.includes(user.subscriptionPlan || 'free')) {
+	const hasPlanAccess = allowedPlans.includes(user.subscriptionPlan || 'free');
+	const hasBetaAccess = isBetaUser && isInFreeTrial;
+	
+	if (!hasPlanAccess && !hasBetaAccess) {
 		return false;
 	}
 	

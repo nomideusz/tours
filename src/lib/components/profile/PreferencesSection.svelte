@@ -52,7 +52,13 @@
 	
 	// Check if user can use WhatsApp features
 	const whatsappFeatureEnabled = isFeatureEnabled('WHATSAPP_NOTIFICATIONS');
-	const hasWhatsAppAccess = user?.subscriptionPlan && hasFeatureAccess('WHATSAPP_NOTIFICATIONS', user.subscriptionPlan);
+	const isInFreeTrial = user?.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date();
+	const hasWhatsAppAccess = user?.subscriptionPlan && hasFeatureAccess(
+		'WHATSAPP_NOTIFICATIONS', 
+		user.subscriptionPlan,
+		user.betaGroup,
+		isInFreeTrial
+	);
 	const showWhatsAppOption = whatsappFeatureEnabled && hasWhatsAppAccess;
 	
 	// Test notification sound

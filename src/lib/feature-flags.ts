@@ -36,11 +36,29 @@ export function isFeatureEnabled(feature: FeatureFlag): boolean {
 // Check if user's plan has access to a feature (when it's released)
 export function hasFeatureAccess(
 	feature: FeatureFlag, 
-	userPlan: 'free' | 'starter_pro' | 'professional' | 'agency'
+	userPlan: 'free' | 'starter_pro' | 'professional' | 'agency',
+	betaGroup?: 'beta_1' | 'beta_2' | 'public' | null,
+	isInFreeTrial?: boolean
 ): boolean {
 	// First check if feature is even enabled
 	if (!isFeatureEnabled(feature)) {
 		return false;
+	}
+	
+	// Beta 1 and Beta 2 users get Premium access during their free trial
+	// This allows them to test all Premium features before committing
+	if ((betaGroup === 'beta_1' || betaGroup === 'beta_2') && isInFreeTrial) {
+		const professionalFeatures: FeatureFlag[] = [
+			'CORE_BOOKING', 'QR_CODES', 'EMAIL_NOTIFICATIONS', 'BASIC_DASHBOARD',
+			'CUSTOM_BRANDING', 'SMS_NOTIFICATIONS', 'BASIC_ANALYTICS', 
+			'QR_CUSTOMIZATION', 'REVIEW_COLLECTION',
+			'CUSTOMER_EXPORT', 'ADVANCED_ANALYTICS', 'WHATSAPP_NOTIFICATIONS',
+			'CALENDAR_SYNC', 'MULTI_LANGUAGE', 'WEATHER_INTEGRATION', 'CANCELLATION_MANAGEMENT'
+		];
+		
+		if (professionalFeatures.includes(feature)) {
+			return true;
+		}
 	}
 	
 	// Then check plan access

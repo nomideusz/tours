@@ -156,6 +156,15 @@ export async function canUserCreateBooking(userId: string): Promise<{ allowed: b
   }
 
   const user = userRecords[0];
+  
+  // Beta 1 and Beta 2 users get unlimited bookings during their trial (Premium access)
+  const isInFreeTrial = user.subscriptionFreeUntil && new Date(user.subscriptionFreeUntil) > new Date();
+  const isBetaUser = user.betaGroup === 'beta_1' || user.betaGroup === 'beta_2';
+  
+  if (isBetaUser && isInFreeTrial) {
+    return { allowed: true };
+  }
+  
   const plan = getPlanConfig(user.subscriptionPlan);
 
   // Unlimited plans

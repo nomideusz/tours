@@ -27,7 +27,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		// Verify this session belongs to the current user
-		if (session.customer !== locals.user.stripeCustomerId) {
+		// session.customer could be expanded (object) or just the ID (string)
+		const sessionCustomerId = typeof session.customer === 'string' 
+			? session.customer 
+			: session.customer?.id;
+		
+		if (sessionCustomerId !== locals.user.stripeCustomerId) {
 			// If user doesn't have a stripeCustomerId yet, check by email
 			const customer = session.customer_details;
 			if (!customer || customer.email !== locals.user.email) {
@@ -130,7 +135,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	// Update stripeCustomerId if not set
 	if (!locals.user.stripeCustomerId && session.customer) {
-		updateData.stripeCustomerId = session.customer as string;
+		// session.customer is expanded, so it could be an object or string
+		const customerId = typeof session.customer === 'string' 
+			? session.customer 
+			: session.customer.id;
+		updateData.stripeCustomerId = customerId;
 	}
 	
 	// Update betaGroup if provided in metadata and not already set

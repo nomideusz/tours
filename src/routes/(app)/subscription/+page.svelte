@@ -394,19 +394,80 @@
 			</div>
 		{/if}
 
-		<!-- Early Access Notice -->
-		<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
-			<div class="flex items-start gap-3">
-				<AlertCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
-				<div class="flex-1">
-					<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Early Access</h3>
-					<p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
-						Zaur is in early access. Some features are being actively developed and will be rolled out progressively.
-						Check our social media for special promo codes with exclusive discounts.
-					</p>
+		<!-- Beta 2 Special Notice -->
+		{#if user?.betaGroup === 'beta_2'}
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--bg-secondary) 100%); border-color: var(--color-primary-500);">
+				<div class="flex items-start gap-3">
+					<Crown class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-2 text-sm sm:text-base" style="color: var(--text-primary);">🎉 Beta 2 Member Benefits</h3>
+						<div class="space-y-2 text-sm" style="color: var(--text-secondary);">
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>4 months free trial</strong> — Full Premium access, no credit card required</span>
+							</p>
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>20% lifetime discount</strong> — €20/month (Essential) or €39/month (Premium) forever</span>
+							</p>
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>Premium features unlocked</strong> — Use unlimited bookings, WhatsApp notifications, and more during trial</span>
+							</p>
+							{#if user?.subscriptionFreeUntil}
+								<p class="flex items-center gap-2 mt-3 pt-3 border-t" style="border-color: var(--border-secondary);">
+									<Calendar class="w-4 h-4 flex-shrink-0" style="color: var(--color-info-600);" />
+									<span>Free trial ends: <strong>{formatDate(user.subscriptionFreeUntil)}</strong></span>
+								</p>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
-		</div>
+		{:else if user?.betaGroup === 'beta_1'}
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--bg-secondary) 100%); border-color: var(--color-primary-500);">
+				<div class="flex items-start gap-3">
+					<Crown class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-2 text-sm sm:text-base" style="color: var(--text-primary);">🌟 Beta 1 Founding Member Benefits</h3>
+						<div class="space-y-2 text-sm" style="color: var(--text-secondary);">
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>12 months free trial</strong> — Full Premium access</span>
+							</p>
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>30% lifetime discount</strong> — €17.50/month (Essential) or €34.30/month (Premium) forever</span>
+							</p>
+							<p class="flex items-center gap-2">
+								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
+								<span><strong>Premium features unlocked</strong> — All features available during trial</span>
+							</p>
+							{#if user?.subscriptionFreeUntil}
+								<p class="flex items-center gap-2 mt-3 pt-3 border-t" style="border-color: var(--border-secondary);">
+									<Calendar class="w-4 h-4 flex-shrink-0" style="color: var(--color-info-600);" />
+									<span>Free trial ends: <strong>{formatDate(user.subscriptionFreeUntil)}</strong></span>
+								</p>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<!-- Early Access Notice -->
+			<div class="mb-6 sm:mb-8 p-4 sm:p-5 rounded-lg border" style="background: var(--bg-secondary); border-color: var(--border-primary);">
+				<div class="flex items-start gap-3">
+					<AlertCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-primary-600);" />
+					<div class="flex-1">
+						<h3 class="font-semibold mb-1 text-sm sm:text-base" style="color: var(--text-primary);">Early Access</h3>
+						<p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
+							Zaur is in early access. Some features are being actively developed and will be rolled out progressively.
+							Check our social media for special promo codes with exclusive discounts.
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Trial Period Info (for users in trial without promo code) -->
 		{#if isInFreePeriod && !hasActivePromoCode && user?.subscriptionFreeUntil && subscriptionStatus === 'trialing'}
