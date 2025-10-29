@@ -31,18 +31,14 @@
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
 
-	// Handle body scroll lock when mobile menu is open
+	// Handle body scroll lock when mobile menu is open - simple approach without iOS hacks
 	$effect(() => {
 		if (mobileMenuOpen) {
-			// Lock body scroll
+			// Lock body scroll - simplified without position fixed
 			document.body.style.overflow = 'hidden';
-			document.body.style.position = 'fixed';
-			document.body.style.width = '100%';
 		} else {
 			// Restore body scroll
 			document.body.style.overflow = '';
-			document.body.style.position = '';
-			document.body.style.width = '';
 		}
 	});
 
@@ -61,8 +57,6 @@
 			// Clean up event listener and restore body scroll
 			document.removeEventListener('keydown', handleEscapeKey);
 			document.body.style.overflow = '';
-			document.body.style.position = '';
-			document.body.style.width = '';
 		};
 	});
 
