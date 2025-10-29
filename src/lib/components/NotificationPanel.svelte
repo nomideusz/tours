@@ -140,8 +140,7 @@
 		<div
 			bind:this={panelElement}
 			use:clickOutside={handleClickOutside}
-			class="fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl border border-gray-200"
-			style="z-index: var(--z-dropdown);"
+			class="notification-panel"
 			transition:fly={{ y: -10, duration: 200 }}
 		>
 			<!-- Header -->
@@ -272,4 +271,23 @@
 
 <style lang="postcss">
 	@reference "tailwindcss";
+	
+	.notification-panel {
+		position: fixed;
+		top: 4rem;
+		right: 1rem;
+		width: 20rem;
+		max-width: calc(100vw - 2rem);
+		background: var(--bg-primary);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-xl);
+		border: 1px solid var(--border-primary);
+		z-index: 100;
+	}
+	
+	@media (min-width: 768px) {
+		.notification-panel {
+			top: 5rem;
+		}
+	}
 </style> 

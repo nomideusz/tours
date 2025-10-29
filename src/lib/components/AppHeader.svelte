@@ -3,6 +3,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
 	import Logo from '$lib/components/Logo.svelte';
+	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 	
 	let { 
 		user, 
@@ -26,11 +27,14 @@
 
 			<!-- Right Side Actions -->
 			<div class="header-actions">
-			<!-- Notifications -->
-			<NotificationPanel tooltipPosition="bottom-left" />
+				<!-- Global Search -->
+				<GlobalSearch />
+				
+				<!-- Notifications -->
+				<NotificationPanel tooltipPosition="bottom-left" />
 
-			<!-- Theme Toggle -->
-			<ThemeToggle tooltipPosition="bottom" />
+				<!-- Theme Toggle -->
+				<ThemeToggle tooltipPosition="bottom" />
 			</div>
 		</div>
 	</div>
@@ -66,6 +70,7 @@
 			rgba(0, 0, 0, 0.01) 100%
 		);
 		pointer-events: none;
+		z-index: 1;
 	}
 
 	.app-header-container {
@@ -106,6 +111,14 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		position: relative;
+		z-index: 20;
+		pointer-events: auto;
+	}
+	
+	/* Ensure all interactive elements in header actions are clickable */
+	.header-actions > * {
+		pointer-events: auto;
 	}
 
 	/* Dark Mode Support */

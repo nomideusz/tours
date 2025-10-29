@@ -45,6 +45,8 @@
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import X from 'lucide-svelte/icons/x';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 
 	// Type definitions
 	interface NavigationItem {
@@ -97,6 +99,7 @@
 
 	// Sidebar state (desktop only now)
 	let sidebarOpen = $state(false);
+	let sidebarCollapsed = $state(false);
 	let isLoggingOut = $state(false);
 	
 	// Beta welcome modal state
@@ -493,6 +496,12 @@
 		// Check if mobile device (consistent with other layouts)
 		isMobileDevice = window.innerWidth <= 639;
 		
+		// Load sidebar collapsed state from localStorage
+		const savedSidebarState = localStorage.getItem('sidebar_collapsed');
+		if (savedSidebarState === 'true') {
+			sidebarCollapsed = true;
+		}
+		
 		
 		// Listen for resize to update mobile state
 		const handleResize = () => {
@@ -614,6 +623,14 @@
 		mobileMenuOpen = !mobileMenuOpen;
 	}
 	
+	function toggleSidebarCollapse() {
+		sidebarCollapsed = !sidebarCollapsed;
+		// Save preference to localStorage
+		if (browser) {
+			localStorage.setItem('sidebar_collapsed', sidebarCollapsed.toString());
+		}
+	}
+	
 	function handleCloseBetaWelcome() {
 		showBetaWelcome = false;
 		if (browser) {
@@ -684,27 +701,45 @@
 		<div class="flex flex-1 min-w-0 pt-16 md:pt-20 overflow-x-hidden"> <!-- Smaller padding on mobile -->
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
-				<div class="professional-sidebar">
+				<div class="professional-sidebar" class:sidebar-collapsed={sidebarCollapsed}>
+					<!-- Collapse Toggle Button -->
+					<button 
+						onclick={toggleSidebarCollapse}
+						class="sidebar-toggle"
+						aria-label="{sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar"
+					>
+						{#if sidebarCollapsed}
+							<ChevronRight class="h-4 w-4" />
+						{:else}
+							<ChevronLeft class="h-4 w-4" />
+						{/if}
+					</button>
+					
 					<div class="sidebar-container">
 						<!-- Navigation - Scrollable area -->
 						<nav class="sidebar-nav">
 							{#each navigationItems as section}
 								<div class="nav-section">
-									<h3 class="nav-section-header">
-										{section.name}
-									</h3>
+									{#if !sidebarCollapsed}
+										<h3 class="nav-section-header">
+											{section.name}
+										</h3>
+									{/if}
 									<div class="nav-section-items">
 										{#each section.items as item}
 											<a
 												href={item.href}
 												class="nav-link {item.current ? 'nav-link--active' : ''}"
+												title={sidebarCollapsed ? item.name : undefined}
 											>
 												<div class="nav-link-content">
 													<item.icon class="nav-link-icon" />
-													<span class="nav-link-text">{item.name}</span>
+													{#if !sidebarCollapsed}
+														<span class="nav-link-text">{item.name}</span>
+													{/if}
 												</div>
 												{#if item.badge}
-													<span class="nav-badge">
+													<span class="nav-badge" class:nav-badge--collapsed={sidebarCollapsed}>
 														{item.badge}
 													</span>
 												{/if}
@@ -719,48 +754,56 @@
 						<div class="sidebar-user">
 							{#if currentUserData}
 								<div class="user-profile">
-									<a href="/profile" class="user-profile-link">
-																			<div class="user-avatar">
-										{#if currentUserData.avatar && !avatarLoadError}
-											<img 
-												src={currentUserData.avatar} 
-												alt={currentUserData.name || 'User'} 
-												class="avatar-image"
-												onerror={() => avatarLoadError = true}
-											/>
-										{:else}
-											<div class="avatar-fallback">
-												<User class="h-4 w-4" />
-											</div>
-										{/if}
-									</div>
-										<div class="user-info">
-											<p class="user-name">{currentUserData.name || 'Profile'}</p>
-											<p class="user-email">{currentUserData.email}</p>
+									<a 
+										href="/profile" 
+										class="user-profile-link"
+										title={sidebarCollapsed ? `${currentUserData.name || 'Profile'} - ${currentUserData.email}` : undefined}
+									>
+										<div class="user-avatar">
+											{#if currentUserData.avatar && !avatarLoadError}
+												<img 
+													src={currentUserData.avatar} 
+													alt={currentUserData.name || 'User'} 
+													class="avatar-image"
+													onerror={() => avatarLoadError = true}
+												/>
+											{:else}
+												<div class="avatar-fallback">
+													<User class="h-4 w-4" />
+												</div>
+											{/if}
 										</div>
-										<Settings class="user-settings-icon" />
+										{#if !sidebarCollapsed}
+											<div class="user-info">
+												<p class="user-name">{currentUserData.name || 'Profile'}</p>
+												<p class="user-email">{currentUserData.email}</p>
+											</div>
+											<Settings class="user-settings-icon" />
+										{/if}
 									</a>
 									
-									<div class="user-actions">
-										{#if userIsAdmin}
-											<a href="/admin" class="user-action-button">
-												<Shield class="h-3.5 w-3.5" />
-												<span>Admin</span>
-											</a>
-										{/if}
-										<button
-											onclick={handleLogout}
-											disabled={isLoggingOut}
-											class="user-action-button user-action-button--logout"
-										>
-											{#if isLoggingOut}
-												<Loader2 class="h-3.5 w-3.5 animate-spin" />
-											{:else}
-												<LogOut class="h-3.5 w-3.5" />
+									{#if !sidebarCollapsed}
+										<div class="user-actions">
+											{#if userIsAdmin}
+												<a href="/admin" class="user-action-button">
+													<Shield class="h-3.5 w-3.5" />
+													<span>Admin</span>
+												</a>
 											{/if}
-											<span>Sign out</span>
-										</button>
-									</div>
+											<button
+												onclick={handleLogout}
+												disabled={isLoggingOut}
+												class="user-action-button user-action-button--logout"
+											>
+												{#if isLoggingOut}
+													<Loader2 class="h-3.5 w-3.5 animate-spin" />
+												{:else}
+													<LogOut class="h-3.5 w-3.5" />
+												{/if}
+												<span>Sign out</span>
+											</button>
+										</div>
+									{/if}
 								</div>
 							{/if}
 						</div>
@@ -769,7 +812,7 @@
 			</div>
 
 			<!-- Main content -->
-			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 lg:pl-72">
+			<div class="flex w-0 flex-1 flex-col overflow-hidden min-w-0 {sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}">
 				<!-- Page content with bottom padding on mobile for bottom nav -->
 				<main class="main-content relative flex-1 overflow-y-auto overflow-x-hidden focus:outline-none app-texture-overlay pt-6 lg:pt-0">
 					{@render children()}
@@ -841,14 +884,22 @@
 		<!-- Mobile Menu Dropdown -->
 		{#if mobileMenuOpen}
 			<div 
+				role="button"
+				tabindex="-1"
 				class="lg:hidden fixed inset-0 z-50 mobile-menu-backdrop" 
 				style="background: rgba(0, 0, 0, 0.5);"
 				onclick={() => mobileMenuOpen = false}
+				onkeydown={(e) => e.key === 'Escape' && (mobileMenuOpen = false)}
 			>
 				<div 
+					role="dialog"
+					tabindex="-1"
+					aria-modal="true"
+					aria-label="Mobile menu"
 					class="fixed bottom-0 left-0 right-0 z-50 mobile-menu-panel" 
 					id="mobile-menu"
 					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
 				>
 					<div class="rounded-t-xl shadow-lg mobile-menu-container" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
 						<!-- Menu Header -->
@@ -1176,7 +1227,52 @@
 		transition: all var(--transition-base) ease;
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		overflow: visible; /* Allow toggle button to be visible */
+	}
+	
+	/* Collapsed Sidebar Styles */
+	.professional-sidebar.sidebar-collapsed {
+		width: 5rem;
+	}
+	
+	/* Sidebar Toggle Button */
+	.sidebar-toggle {
+		position: absolute;
+		top: 1rem;
+		right: -0.75rem;
+		z-index: 50;
+		width: 1.5rem;
+		height: 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-full);
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		box-shadow: var(--shadow-sm);
+		color: var(--text-secondary);
+	}
+	
+	.sidebar-toggle:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
+		color: var(--text-primary);
+		transform: scale(1.1);
+		box-shadow: var(--shadow-md);
+	}
+	
+	/* Dark mode toggle button */
+	:global([data-theme="dark"]) .sidebar-toggle {
+		background: var(--bg-primary);
+		border-color: var(--border-primary);
+		box-shadow: var(--shadow-sm);
+	}
+	
+	:global([data-theme="dark"]) .sidebar-toggle:hover {
+		background: var(--bg-secondary);
+		border-color: var(--border-secondary);
 	}
 
 	.sidebar-container {
@@ -1184,6 +1280,12 @@
 		flex-direction: column;
 		height: 100%;
 		padding-top: 1.5rem;
+		overflow: hidden; /* Keep content inside */
+	}
+	
+	/* Collapsed sidebar adjustments */
+	.sidebar-collapsed .sidebar-container {
+		padding-top: 3rem; /* Space for toggle button */
 	}
 
 	/* Navigation */
@@ -1269,20 +1371,34 @@
 	}
 
 	/* Dark mode adjustments for sidebar nav links */
-	[data-theme="dark"] .nav-link--active {
+	:global([data-theme="dark"]) .nav-link--active {
 		background: rgba(255, 89, 89, 0.1);
 		color: var(--color-primary-500);
 		border-color: rgba(255, 89, 89, 0.2);
 	}
 
-	[data-theme="dark"] .nav-link--active:hover {
+	:global([data-theme="dark"]) .nav-link--active:hover {
 		background: rgba(255, 89, 89, 0.15);
 		border-color: rgba(255, 89, 89, 0.3);
 	}
 
-	[data-theme="dark"] .nav-link:hover {
+	:global([data-theme="dark"]) .nav-link:hover {
 		background: var(--bg-secondary);
 		border-color: var(--border-primary);
+	}
+
+	/* Collapsed sidebar nav adjustments */
+	.sidebar-collapsed .nav-section {
+		margin-bottom: 1rem;
+	}
+	
+	.sidebar-collapsed .nav-link {
+		justify-content: center;
+		padding: 0.75rem;
+	}
+	
+	.sidebar-collapsed .nav-link-content {
+		justify-content: center;
 	}
 
 	.nav-link-content {
@@ -1293,7 +1409,7 @@
 		gap: 0.75rem;
 	}
 
-	.nav-link-icon {
+	:global(.nav-link-icon) {
 		width: 1.125rem;
 		height: 1.125rem;
 		flex-shrink: 0;
@@ -1302,11 +1418,11 @@
 		opacity: 0.8;
 	}
 
-	.nav-link:hover .nav-link-icon {
+	.nav-link:hover :global(.nav-link-icon) {
 		opacity: 1;
 	}
 	
-	.nav-link--active .nav-link-icon {
+	.nav-link--active :global(.nav-link-icon) {
 		color: inherit;
 		opacity: 1;
 	}
@@ -1332,6 +1448,17 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+	
+	/* Collapsed sidebar badge position */
+	.nav-badge--collapsed {
+		position: absolute;
+		top: 0.375rem;
+		right: 0.375rem;
+		padding: 0.125rem;
+		min-width: 1rem;
+		height: 1rem;
+		font-size: 0.5rem;
 	}
 	
 	/* Mobile bottom nav badge */
@@ -1360,6 +1487,11 @@
 		padding: 1.25rem 1.5rem;
 		background: var(--bg-secondary);
 	}
+	
+	/* Collapsed sidebar user section */
+	.sidebar-collapsed .sidebar-user {
+		padding: 0.75rem;
+	}
 
 	.user-profile {
 		display: flex;
@@ -1379,6 +1511,12 @@
 		transition: all var(--transition-base) ease;
 		background: var(--bg-primary);
 	}
+	
+	/* Collapsed sidebar user profile link */
+	.sidebar-collapsed .user-profile-link {
+		justify-content: center;
+		padding: 0.5rem;
+	}
 
 	.user-profile-link:hover {
 		background: var(--bg-primary);
@@ -1389,7 +1527,7 @@
 	}
 
 	/* Dark mode adjustments for user profile */
-	[data-theme="dark"] .user-profile-link:hover {
+	:global([data-theme="dark"]) .user-profile-link:hover {
 		background: var(--bg-tertiary);
 		border-color: var(--border-secondary);
 	}
@@ -1441,7 +1579,7 @@
 		white-space: nowrap;
 	}
 
-	.user-settings-icon {
+	:global(.user-settings-icon) {
 		width: 1rem;
 		height: 1rem;
 		flex-shrink: 0;
@@ -1449,7 +1587,7 @@
 		transition: color var(--transition-base) ease;
 	}
 
-	.user-profile-link:hover .user-settings-icon {
+	.user-profile-link:hover :global(.user-settings-icon) {
 		color: var(--text-secondary);
 	}
 
@@ -1494,7 +1632,7 @@
 	}
 
 	/* Dark mode adjustments for user action buttons */
-	[data-theme="dark"] .user-action-button:hover:not(:disabled) {
+	:global([data-theme="dark"]) .user-action-button:hover:not(:disabled) {
 		background: var(--bg-tertiary);
 		border-color: var(--border-secondary);
 	}
@@ -1512,7 +1650,7 @@
 	}
 
 	/* Dark mode adjustments for logout button */
-	[data-theme="dark"] .user-action-button--logout:hover:not(:disabled) {
+	:global([data-theme="dark"]) .user-action-button--logout:hover:not(:disabled) {
 		background: rgba(251, 113, 133, 0.1);
 		border-color: rgba(251, 113, 133, 0.2);
 		color: var(--color-danger-600);
@@ -1526,12 +1664,12 @@
 	}
 
 	/* Dark Mode Support */
-	[data-theme="dark"] .professional-sidebar {
+	:global([data-theme="dark"]) .professional-sidebar {
 		background: var(--bg-primary);
 		border-color: var(--border-primary);
 	}
 	
-	[data-theme="dark"] .sidebar-user {
+	:global([data-theme="dark"]) .sidebar-user {
 		background: var(--bg-secondary);
 		border-color: var(--border-primary);
 	}
