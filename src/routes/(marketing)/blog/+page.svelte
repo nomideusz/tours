@@ -77,7 +77,7 @@
 						</div>
 						
 						<h3 class="text-2xl lg:text-3xl font-semibold mb-4">
-							<a href="/blog/{data.featuredPost.slug}" class="text-primary group-hover:text-coral-600 transition-colors">
+							<a href="/blog/{data.featuredPost.slug}" class="text-primary group-hover:text-primary-600 transition-colors">
 								{data.featuredPost.title}
 							</a>
 						</h3>
@@ -88,7 +88,7 @@
 						
 						<a 
 							href="/blog/{data.featuredPost.slug}" 
-							class="inline-flex items-center gap-2 text-coral-600 font-medium hover:gap-3 transition-all"
+							class="inline-flex items-center gap-2 text-primary-600 font-medium hover:gap-3 transition-all"
 						>
 							Read Full Article
 							<ArrowRight class="w-5 h-5" />
@@ -217,7 +217,7 @@
 		left: 0;
 		right: 0;
 		height: 3px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -350,7 +350,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		font-weight: 500;
 		font-size: 0.875rem;
 		transition: all var(--transition-base) ease;
@@ -359,7 +359,7 @@
 	
 	.post-link:hover {
 		gap: 0.75rem;
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 	}
 
 	/* Post meta */
@@ -401,7 +401,7 @@
 	}
 	
 	.post-title-link:hover {
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 	}
 
 	/* Responsive */

@@ -63,7 +63,7 @@
 	<!-- Quick Actions -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 		<button
-			class="professional-card hover:border-coral-200 transition-colors cursor-pointer text-left"
+			class="professional-card hover:border-primary-200 transition-colors cursor-pointer text-left"
 			onclick={generatePDF}
 			disabled={generating}
 		>
@@ -83,7 +83,7 @@
 		</button>
 		
 		<button
-			class="professional-card hover:border-coral-200 transition-colors cursor-pointer text-left"
+			class="professional-card hover:border-primary-200 transition-colors cursor-pointer text-left"
 			onclick={copyURL}
 		>
 			<div class="flex items-center gap-3 mb-3">

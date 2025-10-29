@@ -768,7 +768,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-fast) ease;
 	}

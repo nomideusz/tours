@@ -62,7 +62,7 @@
 					<p class="text-sm text-gray-600 mb-4">
 						We've sent a password reset link to your email address if an account exists.
 					</p>
-					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-500">
 						<ArrowLeft class="w-4 h-4" />
 						Back to sign in
 					</a>

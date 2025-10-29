@@ -1,7 +1,7 @@
 :root {
 	/* Professional Color Palette - Tour Guide Edition */
 
-	/* Primary Coral - Professional, warm, and engaging */
+	/* Primary Color - Coral/red palette for tour guide brand */
 	--color-primary-50: #fff5f3;
 	--color-primary-100: #ffe4de;
 	--color-primary-200: #ffcdc2;
@@ -342,7 +342,7 @@
 
 /* Dark mode overrides */
 [data-theme="dark"] {
-	/* Primary Coral - adjusted for dark mode (darker for better contrast) */
+	/* Primary Color - adjusted for dark mode (darker for better contrast) */
 	--color-primary-50: #4c1f1d;
 	--color-primary-100: #872f29;
 	--color-primary-200: #a5342a;
@@ -526,7 +526,7 @@
 	--color-failed: var(--color-error-600);
 	--color-refunded: var(--color-gray-400);
 
-	/* Dark mode background variations - warm coral undertones */
+	/* Dark mode background variations */
 	--bg-gradient-soft: radial-gradient(circle at 30% 20%, #181b1f 0%, #0b0d10 60%);
 	--bg-gradient-ocean: linear-gradient(135deg, #0b0d10 0%, #181b1f 50%, #1d2025 100%);
 	--bg-gradient-mist: linear-gradient(to bottom, #0b0d10 0%, #181b1f 100%);

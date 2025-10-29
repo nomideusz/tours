@@ -203,7 +203,7 @@
 	.professional-badge {
 		display: inline-block;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -235,7 +235,7 @@
 	}
 	
 	.promo-badge {
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		color: white;
 		padding: 0.25rem 0.75rem;
 		border-radius: 1rem;
@@ -267,7 +267,7 @@
 	
 	.promo-button:hover {
 		background: var(--bg-tertiary);
-		border-color: var(--color-coral-500);
+		border-color: var(--color-primary-500);
 	}
 	
 	.promo-code {
@@ -342,7 +342,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}

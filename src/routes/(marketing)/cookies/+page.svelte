@@ -155,7 +155,7 @@
 
 						<div class="warning-card">
 							<div class="flex items-start gap-3">
-								<AlertTriangle class="w-5 h-5 text-warm-orange-600 flex-shrink-0 mt-0.5" />
+								<AlertTriangle class="w-5 h-5 text-secondary-600 flex-shrink-0 mt-0.5" />
 								<div>
 									<p class="warning-text">
 										<strong>Note:</strong> Disabling essential cookies may affect the functionality of our website. 
@@ -269,7 +269,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -298,7 +298,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -358,15 +358,15 @@
 	}
 
 	.professional-icon--coral {
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 	}
 
 	.professional-icon--teal {
-		background: var(--color-pro-teal-500);
+		background: var(--color-success-500);
 	}
 
 	.professional-icon--orange {
-		background: var(--color-warm-orange-500);
+		background: var(--color-secondary-500);
 	}
 
 	/* Cookie grid */
@@ -422,15 +422,15 @@
 
 	/* Warning card */
 	.warning-card {
-		background: var(--color-warm-orange-50);
-		border: 1px solid var(--color-warm-orange-200);
+		background: var(--color-secondary-50);
+		border: 1px solid var(--color-secondary-200);
 		border-radius: var(--radius-lg);
 		padding: 1rem;
 	}
 
 	.warning-text {
 		font-size: 0.875rem;
-		color: var(--color-warm-orange-800);
+		color: var(--color-secondary-800);
 	}
 
 	/* Service items */
@@ -464,13 +464,13 @@
 	}
 
 	.service-link {
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		text-decoration: none;
 		transition: color var(--transition-base) ease;
 	}
 
 	.service-link:hover {
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 		text-decoration: underline;
 	}
 

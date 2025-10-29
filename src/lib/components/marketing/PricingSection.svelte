@@ -177,7 +177,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -233,7 +233,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -249,7 +249,7 @@
 	}
 
 	.pricing-card--popular {
-		border-color: var(--color-coral-400);
+		border-color: var(--color-primary-400);
 		background: var(--bg-secondary);
 		box-shadow: var(--shadow-md);
 	}
@@ -264,7 +264,7 @@
 		top: -0.75rem;
 		left: 50%;
 		transform: translateX(-50%);
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		color: white;
 		padding: 0.5rem 1rem;
 		border-radius: var(--radius-full);
@@ -320,9 +320,9 @@
 	}
 
 	.founding-member-badge {
-		background: var(--color-warm-orange-100);
-		border: 1px solid var(--color-warm-orange-300);
-		color: var(--color-warm-orange-800);
+		background: var(--color-secondary-100);
+		border: 1px solid var(--color-secondary-300);
+		color: var(--color-secondary-800);
 		padding: 0.25rem 0.75rem;
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
@@ -359,7 +359,7 @@
 	}
 
 	.feature-icon--included {
-		color: var(--color-pro-teal-600);
+		color: var(--color-success-600);
 	}
 
 	.feature-icon--excluded {
@@ -389,9 +389,9 @@
 	}
 
 	.coming-soon-badge {
-		background: var(--color-pro-teal-100);
-		border: 1px solid var(--color-pro-teal-300);
-		color: var(--color-pro-teal-700);
+		background: var(--color-success-100);
+		border: 1px solid var(--color-success-300);
+		color: var(--color-success-700);
 		padding: 0.125rem 0.5rem;
 		border-radius: var(--radius-md);
 		font-size: 0.625rem;
@@ -489,7 +489,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}

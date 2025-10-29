@@ -51,7 +51,7 @@
 					<div class="service-features">
 						<div class="feature-item">
 							<div class="feature-icon">
-								<CheckCircle class="w-5 h-5 text-pro-teal-600" />
+								<CheckCircle class="w-5 h-5 text-success-600" />
 							</div>
 							<div class="feature-content">
 								<h4 class="feature-title">Tour Guide Tools</h4>
@@ -61,7 +61,7 @@
 						
 						<div class="feature-item">
 							<div class="feature-icon">
-								<CheckCircle class="w-5 h-5 text-pro-teal-600" />
+								<CheckCircle class="w-5 h-5 text-success-600" />
 							</div>
 							<div class="feature-content">
 								<h4 class="feature-title">QR Code System</h4>
@@ -71,7 +71,7 @@
 						
 						<div class="feature-item">
 							<div class="feature-icon">
-								<CheckCircle class="w-5 h-5 text-pro-teal-600" />
+								<CheckCircle class="w-5 h-5 text-success-600" />
 							</div>
 							<div class="feature-content">
 								<h4 class="feature-title">Payment Processing</h4>
@@ -81,7 +81,7 @@
 						
 						<div class="feature-item">
 							<div class="feature-icon">
-								<CheckCircle class="w-5 h-5 text-pro-teal-600" />
+								<CheckCircle class="w-5 h-5 text-success-600" />
 							</div>
 							<div class="feature-content">
 								<h4 class="feature-title">Customer Communication</h4>
@@ -168,7 +168,7 @@
 					
 					<div class="pricing-commitment">
 						<div class="flex items-start gap-3">
-							<CheckCircle class="w-5 h-5 text-pro-teal-600 flex-shrink-0 mt-0.5" />
+							<CheckCircle class="w-5 h-5 text-success-600 flex-shrink-0 mt-0.5" />
 							<div>
 								<p class="commitment-text">
 									<strong>No Commission Fees:</strong> We never take a percentage of your bookings. You keep 100% of your tour revenue.
@@ -312,7 +312,7 @@
 					
 					<div class="liability-warning">
 						<div class="flex items-start gap-3">
-							<AlertTriangle class="w-5 h-5 text-warm-orange-600 flex-shrink-0 mt-0.5" />
+							<AlertTriangle class="w-5 h-5 text-secondary-600 flex-shrink-0 mt-0.5" />
 							<div>
 								<p class="warning-text">
 									<strong>Important:</strong> We strongly recommend tour guides obtain appropriate insurance coverage for their business operations.
@@ -386,7 +386,7 @@
 					<div class="contact-info">
 						<div class="contact-item">
 							<div class="contact-icon">
-								<Gavel class="w-5 h-5 text-coral-600" />
+								<Gavel class="w-5 h-5 text-primary-600" />
 							</div>
 							<div class="contact-content">
 								<p class="contact-text">
@@ -397,7 +397,7 @@
 						
 						<div class="contact-item">
 							<div class="contact-icon">
-								<Shield class="w-5 h-5 text-coral-600" />
+								<Shield class="w-5 h-5 text-primary-600" />
 							</div>
 							<div class="contact-content">
 								<p class="contact-text">
@@ -408,7 +408,7 @@
 						
 						<div class="contact-item">
 							<div class="contact-icon">
-								<Users class="w-5 h-5 text-coral-600" />
+								<Users class="w-5 h-5 text-primary-600" />
 							</div>
 							<div class="contact-content">
 								<p class="contact-text">
@@ -460,7 +460,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -489,7 +489,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -536,15 +536,15 @@
 	}
 
 	.professional-icon--coral {
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 	}
 
 	.professional-icon--teal {
-		background: var(--color-pro-teal-500);
+		background: var(--color-success-500);
 	}
 
 	.professional-icon--orange {
-		background: var(--color-warm-orange-500);
+		background: var(--color-secondary-500);
 	}
 
 	/* Service features */
@@ -622,8 +622,8 @@
 	}
 
 	.liability-warning {
-		background: var(--color-warm-orange-50);
-		border: 1px solid var(--color-warm-orange-200);
+		background: var(--color-secondary-50);
+		border: 1px solid var(--color-secondary-200);
 		border-radius: var(--radius-lg);
 		padding: 1rem;
 		margin-top: 1.5rem;
@@ -631,7 +631,7 @@
 
 	.warning-text {
 		font-size: 0.875rem;
-		color: var(--color-warm-orange-800);
+		color: var(--color-secondary-800);
 	}
 
 	/* Contact info */
@@ -667,13 +667,13 @@
 	}
 
 	.service-link {
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		text-decoration: none;
 		transition: color var(--transition-base) ease;
 	}
 
 	.service-link:hover {
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 		text-decoration: underline;
 	}
 

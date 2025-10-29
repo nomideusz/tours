@@ -135,7 +135,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -165,7 +165,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -254,7 +254,7 @@
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, var(--color-coral-500), var(--color-warm-orange-500));
+		background: linear-gradient(90deg, var(--color-primary-500), var(--color-secondary-500));
 		border-radius: var(--radius-full);
 		transition: width var(--transition-base) ease;
 	}
@@ -283,8 +283,8 @@
 
 	.promo-code {
 		background: var(--bg-secondary);
-		border: 1px solid var(--color-coral-500);
-		color: var(--color-coral-600);
+		border: 1px solid var(--color-primary-500);
+		color: var(--color-primary-600);
 		padding: 0.25rem 0.75rem;
 		border-radius: var(--radius-md);
 		font-weight: 600;
@@ -295,9 +295,9 @@
 	}
 
 	.promo-code:hover {
-		background: var(--color-coral-50);
-		border-color: var(--color-coral-600);
-		color: var(--color-coral-700);
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-600);
+		color: var(--color-primary-700);
 	}
 
 	/* Responsive Design */

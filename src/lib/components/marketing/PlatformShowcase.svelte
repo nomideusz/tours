@@ -414,7 +414,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -473,7 +473,7 @@
 		padding: 0.25rem 0.75rem;
 		background: var(--bg-primary);
 		color: var(--text-secondary);
-		border: 2px solid var(--color-coral-500); /* Updated to 2px */
+		border: 2px solid var(--color-primary-500); /* Updated to 2px */
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
 		font-weight: 500;
@@ -521,7 +521,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -533,11 +533,11 @@
 	.qr-code-wrapper:hover {
 		transform: translateY(-2px);
 		box-shadow: var(--shadow-lg);
-		border-color: var(--color-coral-500);
+		border-color: var(--color-primary-500);
 	}
 
 	.qr-code-wrapper:focus {
-		outline: 2px solid var(--color-coral-500);
+		outline: 2px solid var(--color-primary-500);
 		outline-offset: 2px;
 	}
 	
@@ -585,7 +585,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -757,7 +757,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -869,7 +869,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -922,14 +922,14 @@
 	}
 	
 	.slot:hover {
-		border-color: var(--color-coral-500);
+		border-color: var(--color-primary-500);
 		color: var(--text-primary);
 	}
 	
 	.slot.active {
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		color: white;
-		border-color: var(--color-coral-500);
+		border-color: var(--color-primary-500);
 		box-shadow: var(--shadow-md);
 	}
 	

@@ -165,7 +165,7 @@
 						</button>
 						<button
 							onclick={goToDashboard}
-							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 						>
 							<Shield class="w-4 h-4 mr-2" />
 							Go to Dashboard
@@ -184,7 +184,7 @@
 					<p class="text-sm text-gray-600 mb-4">
 						{form?.error || data?.error}
 					</p>
-					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+					<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-500">
 						<ArrowLeft class="w-4 h-4" />
 						Back to sign in
 					</a>
@@ -210,7 +210,7 @@
 							Back to Sign In
 						</button>
 						<button 
-							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:border-coral-500"
+							class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 							onclick={goToRegister}
 						>
 							Create Account
@@ -260,16 +260,16 @@
 
 						{#if isLoading}
 							<div class="mb-6">
-								<div class="w-12 h-12 mx-auto bg-coral-100 rounded-full flex items-center justify-center mb-4">
-									<Loader class="w-6 h-6 text-coral-600 animate-spin" />
+								<div class="w-12 h-12 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-4">
+									<Loader class="w-6 h-6 text-primary-600 animate-spin" />
 								</div>
 								<h3 class="text-lg font-semibold text-gray-900 mb-2">Verifying Email...</h3>
 								<p class="text-sm text-gray-600">Please wait while we verify your email address</p>
 							</div>
 						{:else}
 							<div class="mb-6">
-								<div class="w-12 h-12 mx-auto bg-coral-100 rounded-full flex items-center justify-center mb-4">
-									<Mail class="w-6 h-6 text-coral-600" />
+								<div class="w-12 h-12 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-4">
+									<Mail class="w-6 h-6 text-primary-600" />
 								</div>
 								<h3 class="text-lg font-semibold text-gray-900 mb-4">Ready to Verify</h3>
 								<p class="text-sm text-gray-600 mb-6">
@@ -289,7 +289,7 @@
 
 					<!-- Navigation -->
 					<div class="mt-6 text-center">
-						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+						<a href="/auth/login" class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-500">
 							<ArrowLeft class="w-4 h-4" />
 							Back to sign in
 						</a>

@@ -92,7 +92,7 @@
 					</div>
 					<h3 class="text-lg font-semibold text-gray-900 mb-2">Invalid Reset Link</h3>
 					<p class="text-sm text-gray-600 mb-4">{data.error}</p>
-					<a href="/auth/forgot-password" class="inline-flex items-center gap-2 text-sm font-medium text-coral-600 hover:text-coral-500">
+					<a href="/auth/forgot-password" class="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-500">
 						<ArrowLeft class="w-4 h-4" />
 						Request new reset link
 					</a>

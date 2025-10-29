@@ -216,7 +216,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-500);
+		border: 2px solid var(--color-primary-500);
 		color: var(--text-primary);
 		padding: 0.5rem 1.5rem;
 		border-radius: 2rem;
@@ -228,11 +228,11 @@
 	/* Code highlight - matches HeroSection promo styling */
 	.code-highlight {
 		color: var(--text-primary);
-		background: var(--color-coral-100);
+		background: var(--color-primary-100);
 		padding: 0.125rem 0.5rem;
 		border-radius: var(--radius-md);
 		font-weight: 700;
-		border: 1px solid var(--color-coral-300);
+		border: 1px solid var(--color-primary-300);
 		box-shadow: var(--shadow-sm);
 	}
 	
@@ -262,7 +262,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -285,7 +285,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		color: white;
 		padding: 0.5rem 1rem;
 		border-radius: var(--radius-full);
@@ -323,7 +323,7 @@
 	.spots-remaining {
 		font-size: 1rem;
 		font-weight: 700;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 	}
 	
 	.spots-total {
@@ -367,7 +367,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -393,15 +393,15 @@
 	}
 
 	.benefit-icon--coral {
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 	}
 
 	.benefit-icon--orange {
-		background: var(--color-warm-orange-500);
+		background: var(--color-secondary-500);
 	}
 
 	.benefit-icon--teal {
-		background: var(--color-pro-teal-500);
+		background: var(--color-success-500);
 	}
 	
 	.benefit-content {
@@ -444,7 +444,7 @@
 		left: 0;
 		right: 0;
 		height: 2px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		transform: scaleX(0);
 		transition: transform var(--transition-base) ease;
 	}
@@ -466,9 +466,9 @@
 	}
 
 	.promo-badge {
-		background: var(--color-pro-teal-100);
-		border: 1px solid var(--color-pro-teal-300);
-		color: var(--color-pro-teal-700);
+		background: var(--color-success-100);
+		border: 1px solid var(--color-success-300);
+		color: var(--color-success-700);
 		padding: 0.375rem 0.75rem;
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
@@ -513,7 +513,7 @@
 	
 	.promo-code-button:hover {
 		background: var(--bg-tertiary);
-		border-color: var(--color-coral-500);
+		border-color: var(--color-primary-500);
 	}
 	
 	.code-text {
@@ -525,10 +525,10 @@
 	}
 
 	.copy-icon-container {
-		background: var(--color-coral-100);
+		background: var(--color-primary-100);
 		border-radius: var(--radius-md);
 		padding: 0.5rem;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 	}
 
 	.copy-feedback {

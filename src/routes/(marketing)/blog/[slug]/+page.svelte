@@ -101,7 +101,7 @@
 						{#if typeof navigator !== 'undefined' && 'share' in navigator}
 							<button 
 								onclick={sharePost}
-								class="ml-auto flex items-center gap-1.5 transition-colors hover:text-coral-600"
+								class="ml-auto flex items-center gap-1.5 transition-colors hover:text-primary-600"
 								style="color: var(--text-secondary);"
 							>
 								<Share2 class="w-4 h-4" />
@@ -244,9 +244,9 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		background: var(--color-coral-100);
-		border: 1px solid var(--color-coral-300);
-		color: var(--color-coral-800);
+		background: var(--color-primary-100);
+		border: 1px solid var(--color-primary-300);
+		color: var(--color-primary-800);
 		padding: 0.5rem 1rem;
 		border-radius: var(--radius-full);
 		font-size: 0.75rem;
@@ -299,7 +299,7 @@
 	}
 	
 	.article-content :global(blockquote) {
-		border-left: 4px solid var(--color-coral-500);
+		border-left: 4px solid var(--color-primary-500);
 		padding-left: 1.5rem;
 		margin: 2rem 0;
 		font-style: italic;
@@ -383,7 +383,7 @@
 	}
 	
 	.related-post-title-link:hover {
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 	}
 	
 	.related-post-excerpt {
@@ -402,7 +402,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 		font-weight: 500;
 		font-size: 0.875rem;
 		transition: all var(--transition-base) ease;
@@ -411,13 +411,13 @@
 	
 	.related-post-link:hover {
 		gap: 0.625rem;
-		color: var(--color-coral-700);
+		color: var(--color-primary-700);
 	}
 
 	/* CTA Box */
 	.cta-box {
 		background: var(--bg-primary);
-		border: 2px solid var(--color-coral-200);
+		border: 2px solid var(--color-primary-200);
 		border-radius: var(--radius-lg);
 		padding: 3rem 2rem;
 		box-shadow: var(--shadow-sm);
@@ -433,7 +433,7 @@
 		transform: translateX(-50%);
 		width: 200px;
 		height: 4px;
-		background: var(--color-coral-500);
+		background: var(--color-primary-500);
 		border-radius: var(--radius-full);
 	}
 	
@@ -451,8 +451,8 @@
 	}
 	
 	/* Hover states */
-	.hover\:text-coral-600:hover {
-		color: var(--color-coral-600);
+	.hover\:text-primary-600:hover {
+		color: var(--color-primary-600);
 	}
 	
 	/* Button spacing */
@@ -479,7 +479,7 @@
 	}
 	
 	.back-to-blog-link:hover {
-		color: var(--color-coral-600);
+		color: var(--color-primary-600);
 	}
 	
 	/* Responsive */
