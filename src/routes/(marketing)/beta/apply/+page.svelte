@@ -145,7 +145,7 @@
 			
 			<div class="flex flex-col sm:flex-row gap-4 justify-center">
 				<button 
-					class="button-primary button--large button--gap"
+					class="button-primary button-large button-gap"
 					onclick={() => goto('/beta-2/apply')}
 				>
 					<span>Apply for Beta 2</span>
@@ -153,7 +153,7 @@
 				</button>
 					
 					<button 
-						class="button-secondary button--large"
+						class="button-secondary button-large"
 						onclick={() => goto('/beta')}
 					>
 						Learn More About Beta
@@ -176,7 +176,7 @@
 
 <style lang="postcss">
 	/* Button styles */
-	:global(.button--gap) {
+	:global(.button-gap) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;

@@ -180,28 +180,28 @@
 		<!-- Action Buttons -->
 		<div class="mt-6 space-y-3">
 			{#if info.showScanButton}
-				<a href="/checkin-scanner" class="w-full button-primary button--gap button--large justify-center">
+				<a href="/checkin-scanner" class="w-full button-primary button-gap button-large justify-center">
 					<QrCode class="w-5 h-5" />
 					Try Scanning Again
 				</a>
 			{/if}
 			
 			{#if info.showLoginButton}
-				<a href="/auth/login?redirect=/checkin-scanner" class="w-full button-primary button--gap button--large justify-center">
+				<a href="/auth/login?redirect=/checkin-scanner" class="w-full button-primary button-gap button-large justify-center">
 					<Lock class="w-5 h-5" />
 					Log In
 				</a>
 			{/if}
 			
 			{#if info.showDashboard}
-				<a href="/dashboard" class="w-full button-secondary button--gap button--large justify-center">
+				<a href="/dashboard" class="w-full button-secondary button-gap button-large justify-center">
 					<ArrowLeft class="w-5 h-5" />
 					Back to Dashboard
 				</a>
 			{/if}
 			
 			{#if !info.showDashboard && !info.showLoginButton}
-				<a href="/dashboard" class="w-full button-secondary button--gap justify-center">
+				<a href="/dashboard" class="w-full button-secondary button-gap justify-center">
 					<ArrowLeft class="w-4 h-4" />
 					Back to Dashboard
 				</a>

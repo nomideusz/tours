@@ -1,0 +1,138 @@
+/* Typography - Global element styles and text utilities */
+
+/* Ensure all text elements inherit color properly */
+p,
+span,
+div,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+nav,
+header,
+footer,
+main,
+section,
+article,
+aside,
+li,
+dt,
+dd,
+td,
+th,
+label,
+legend,
+figcaption,
+blockquote,
+q,
+cite,
+code,
+pre,
+kbd,
+samp,
+var,
+small,
+strong,
+em,
+b,
+i,
+u,
+s,
+time,
+mark,
+abbr,
+address {
+	color: inherit;
+}
+
+/* Ensure all headings use proper colors */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--text-primary);
+}
+
+/* Form elements should use proper colors */
+input,
+textarea,
+select {
+	color: var(--text-primary);
+	background-color: var(--bg-input);
+}
+
+/* Placeholder text should be slightly muted */
+::placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Firefox specific - needs opacity in the pseudo-element */
+::-moz-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Edge/IE specific */
+::-ms-input-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Webkit specific */
+::-webkit-input-placeholder {
+	color: var(--text-tertiary);
+	opacity: 0.5;
+}
+
+/* Selection colors */
+::selection {
+	background-color: var(--color-primary-500);
+	color: white;
+}
+
+[data-theme="dark"] ::selection {
+	background-color: var(--color-primary-600);
+	color: var(--bg-primary);
+}
+
+/* Ensure tables use proper colors */
+table {
+	color: var(--text-primary);
+}
+
+th {
+	color: var(--text-primary);
+	border-color: var(--border-primary);
+}
+
+td {
+	color: var(--text-secondary);
+	border-color: var(--border-primary);
+}
+
+/* Tailwind color class overrides for theme support */
+.text-gray-900 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-800 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-700 {
+	color: var(--text-primary) !important;
+}
+
+.text-gray-600 {
+	color: var(--text-secondary) !important;
+}
+
+.text-gray-500 {
+	color: var(--text-secondary) !important;
+}
+

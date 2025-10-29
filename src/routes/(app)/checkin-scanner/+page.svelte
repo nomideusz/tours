@@ -338,7 +338,7 @@
 							<p class="text-sm mb-4" style="color: var(--text-secondary);">
 								Please check camera permissions or use manual entry
 							</p>
-							<button onclick={() => switchMode('manual')} class="button-primary button--gap">
+							<button onclick={() => switchMode('manual')} class="button-primary button-gap">
 								<Keyboard class="w-4 h-4" />
 								Switch to Manual Entry
 							</button>
@@ -378,7 +378,7 @@
 							<button
 								type="submit"
 								disabled={isSubmitting || !manualCode.trim()}
-								class="w-full button-primary button--gap justify-center"
+								class="w-full button-primary button-gap justify-center"
 							>
 								{#if isSubmitting}
 									<div class="form-spinner"></div>

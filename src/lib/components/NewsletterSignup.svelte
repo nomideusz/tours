@@ -140,7 +140,7 @@
 					/>
 					<button 
 						type="submit" 
-						class="button-primary button--small"
+						class="button-primary button-small"
 						disabled={status === 'loading' || status === 'success'}
 					>
 						{#if status === 'loading'}
@@ -189,7 +189,7 @@
 				</div>
 				<button 
 					type="submit" 
-					class="button-primary button--small"
+					class="button-primary button-small"
 					disabled={status === 'loading' || status === 'success'}
 				>
 					{#if status === 'loading'}
@@ -224,7 +224,7 @@
 			/>
 			<button 
 				type="submit" 
-				class="button-primary button--small"
+				class="button-primary button-small"
 				disabled={status === 'loading' || status === 'success'}
 			>
 				{#if status === 'loading'}

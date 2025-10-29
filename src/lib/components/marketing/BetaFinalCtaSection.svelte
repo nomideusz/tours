@@ -39,7 +39,7 @@
 			
 			<div class="button-group">
 				<button 
-					class="button-primary button--large button--gap"
+					class="button-primary button-large button-gap"
 					onclick={handleJoinWaitlist}
 				>
 					Apply for Beta 2
@@ -47,7 +47,7 @@
 				</button>
 				
 				<button 
-					class="button-secondary button--large"
+					class="button-secondary button-large"
 					onclick={handleLearnMore}
 				>
 					Learn About Our Beta

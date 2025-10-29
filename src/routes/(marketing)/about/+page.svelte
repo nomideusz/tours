@@ -176,7 +176,7 @@
 					onclick={() => {
 						window.location.href = '/auth/register';
 					}}
-					class="button-primary button--large"
+					class="button-primary button-large"
 				>
 					Get Started
 				</button>

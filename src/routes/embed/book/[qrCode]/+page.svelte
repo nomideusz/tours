@@ -230,12 +230,12 @@
 					<!-- Action button positioned on the right on desktop -->
 					<div class="widget-actions">
 						{#if tour.status === 'active'}
-							<button class="button-primary button--gap" onclick={handleBookNow}>
+							<button class="button-primary button-gap" onclick={handleBookNow}>
 								<Calendar class="w-4 h-4" />
 								<span>Book Now</span>
 							</button>
 						{:else}
-							<button class="button-secondary button--gap" onclick={handleContactUs}>
+							<button class="button-secondary button-gap" onclick={handleContactUs}>
 								<Calendar class="w-4 h-4" />
 								<span>Contact Us</span>
 							</button>

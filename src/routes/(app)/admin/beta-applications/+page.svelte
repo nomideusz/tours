@@ -579,7 +579,7 @@
 								<button
 									onclick={() => updateApplicationStatus(selectedApplication.id, 'accepted')}
 									disabled={isUpdating || isCreatingAccount}
-									class="button-primary button--gap flex-1 sm:flex-none"
+									class="button-primary button-gap flex-1 sm:flex-none"
 								>
 									{#if isUpdating || isCreatingAccount}
 										<Loader2 class="h-4 w-4 animate-spin" />
@@ -591,7 +591,7 @@
 								<button
 									onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
 									disabled={isUpdating}
-									class="button-secondary button--gap flex-1 sm:flex-none"
+									class="button-secondary button-gap flex-1 sm:flex-none"
 								>
 									<UserX class="h-4 w-4" />
 									Waitlist
@@ -599,7 +599,7 @@
 								<button
 									onclick={() => updateApplicationStatus(selectedApplication.id, 'rejected')}
 									disabled={isUpdating}
-									class="button-danger button--gap flex-1 sm:flex-none"
+									class="button-danger button-gap flex-1 sm:flex-none"
 								>
 									<XCircle class="h-4 w-4" />
 									Reject
@@ -633,7 +633,7 @@
 									<button
 										onclick={() => createBetaAccount(selectedApplication)}
 										disabled={isCreatingAccount}
-										class="button-primary button--gap flex-1 sm:flex-none"
+										class="button-primary button-gap flex-1 sm:flex-none"
 									>
 										{#if isCreatingAccount}
 											<Loader2 class="h-4 w-4 animate-spin" />
@@ -654,7 +654,7 @@
 										<button
 											onclick={() => updateApplicationStatus(selectedApplication.id, 'pending')}
 											disabled={isUpdating}
-											class="button-secondary button--gap text-xs px-3 py-1.5"
+											class="button-secondary button-gap text-xs px-3 py-1.5"
 										>
 											<Clock class="h-3 w-3" />
 											Back to Pending
@@ -662,7 +662,7 @@
 										<button
 											onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
 											disabled={isUpdating}
-											class="button-secondary button--gap text-xs px-3 py-1.5"
+											class="button-secondary button-gap text-xs px-3 py-1.5"
 										>
 											<UserX class="h-3 w-3" />
 											Waitlist
@@ -670,7 +670,7 @@
 										<button
 											onclick={() => updateApplicationStatus(selectedApplication.id, 'rejected')}
 											disabled={isUpdating}
-											class="button-danger button--gap text-xs px-3 py-1.5"
+											class="button-danger button-gap text-xs px-3 py-1.5"
 										>
 											<XCircle class="h-3 w-3" />
 											Reject
@@ -685,7 +685,7 @@
 									<button
 										onclick={() => updateApplicationStatus(selectedApplication.id, 'pending')}
 										disabled={isUpdating}
-										class="button-secondary button--gap text-sm px-4 py-2"
+										class="button-secondary button-gap text-sm px-4 py-2"
 									>
 										<Clock class="h-4 w-4" />
 										Back to Pending
@@ -693,7 +693,7 @@
 									<button
 										onclick={() => updateApplicationStatus(selectedApplication.id, 'accepted')}
 										disabled={isUpdating}
-										class="button-primary button--gap text-sm px-4 py-2"
+										class="button-primary button-gap text-sm px-4 py-2"
 									>
 										<CheckCircle class="h-4 w-4" />
 										Accept
@@ -702,7 +702,7 @@
 										<button
 											onclick={() => updateApplicationStatus(selectedApplication.id, 'waitlisted')}
 											disabled={isUpdating}
-											class="button-secondary button--gap text-sm px-4 py-2"
+											class="button-secondary button-gap text-sm px-4 py-2"
 										>
 											<UserX class="h-4 w-4" />
 											Waitlist
@@ -711,7 +711,7 @@
 										<button
 											onclick={() => updateApplicationStatus(selectedApplication.id, 'rejected')}
 											disabled={isUpdating}
-											class="button-danger button--gap text-sm px-4 py-2"
+											class="button-danger button-gap text-sm px-4 py-2"
 										>
 											<XCircle class="h-4 w-4" />
 											Reject

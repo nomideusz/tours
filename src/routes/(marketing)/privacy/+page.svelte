@@ -54,17 +54,17 @@
 			</p>
 			<div class="flex gap-2 flex-wrap">
 				{#if consent !== 'accepted'}
-					<button class="button-primary button--small" onclick={handleAccept} type="button">
+					<button class="button-primary button-small" onclick={handleAccept} type="button">
 						Accept Analytics
 					</button>
 				{/if}
 				{#if consent !== 'rejected'}
-					<button class="button-secondary button--small" onclick={handleReject} type="button">
+					<button class="button-secondary button-small" onclick={handleReject} type="button">
 						Reject Analytics
 					</button>
 				{/if}
 				{#if consent !== 'pending'}
-					<button class="button-text button--small" onclick={handleReset} type="button">
+					<button class="button-text button-small" onclick={handleReset} type="button">
 						Reset Preferences
 					</button>
 				{/if}

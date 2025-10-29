@@ -136,7 +136,7 @@
 						<button
 							type="button"
 							onclick={testNotificationSound}
-							class="button--small button--gap mt-2"
+							class="button-small button-gap mt-2"
 							style="font-size: 0.75rem; padding: 0.25rem 0.75rem;"
 						>
 							<Volume2 class="h-3 w-3" style="display: inline;" />

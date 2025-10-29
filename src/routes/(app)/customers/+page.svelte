@@ -315,12 +315,12 @@
 								const emails = Array.from(selectedCustomers).join(',');
 								window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 							}} 
-							class="button-primary button--gap button--small"
+							class="button-primary button-gap button-small"
 						>
 							<Mail class="h-4 w-4" />
 							Email Selected
 						</button>
-						<button onclick={copySelectedEmails} class="button-secondary button--gap button--small">
+						<button onclick={copySelectedEmails} class="button-secondary button-gap button-small">
 							{#if copiedEmails}
 								<CheckCircle class="h-4 w-4" />
 								Copied!
@@ -330,7 +330,7 @@
 							{/if}
 						</button>
 					{/if}
-					<button onclick={exportToCSV} class="button-secondary button--gap" disabled={customers.length === 0}>
+					<button onclick={exportToCSV} class="button-secondary button-gap" disabled={customers.length === 0}>
 						<Download class="h-4 w-4" />
 						Export CSV
 					</button>
@@ -386,7 +386,7 @@
 			<!-- Filter Button -->
 			<button
 				onclick={() => showFilters = !showFilters}
-				class="button-secondary button--gap {hasActiveFilters ? 'ring-2' : ''}"
+				class="button-secondary button-gap {hasActiveFilters ? 'ring-2' : ''}"
 				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
 			>
 				<Filter class="h-4 w-4" />
@@ -462,12 +462,12 @@
 				
 				<div class="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
 					{#if hasActiveFilters}
-						<button onclick={clearFilters} class="button-secondary button--small button--gap w-full sm:w-auto">
+						<button onclick={clearFilters} class="button-secondary button-small button-gap w-full sm:w-auto">
 							<X class="h-4 w-4" />
 							Clear Filters
 						</button>
 					{/if}
-					<button onclick={() => showFilters = false} class="button-primary button--small w-full sm:w-auto sm:hidden">
+					<button onclick={() => showFilters = false} class="button-primary button-small w-full sm:w-auto sm:hidden">
 						Done
 					</button>
 				</div>
@@ -496,7 +496,7 @@
 				<Users class="h-12 w-12 mx-auto mb-4" style="color: var(--text-tertiary);" />
 				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No customers yet</h3>
 				<p class="text-sm mb-6" style="color: var(--text-secondary);">Start accepting bookings to build your customer base</p>
-				<button onclick={() => goto('/tours')} class="button-primary button--gap">
+				<button onclick={() => goto('/tours')} class="button-primary button-gap">
 					<Users class="h-4 w-4" />
 					Manage Tours
 				</button>
@@ -545,14 +545,14 @@
 									const emails = Array.from(selectedCustomers).join(',');
 									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 								}} 
-								class="button-primary button--small button--gap flex-1"
+								class="button-primary button-small button-gap flex-1"
 							>
 								<Mail class="h-4 w-4" />
 								Email
 							</button>
 							<button 
 								onclick={copySelectedEmails} 
-								class="button-secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 							>
 								{#if copiedEmails}
 									<CheckCircle class="h-4 w-4" />
@@ -562,7 +562,7 @@
 							</button>
 							<button 
 								onclick={exportToCSV} 
-								class="button-secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 							>
 								<Download class="h-4 w-4" />
 							</button>
@@ -602,7 +602,7 @@
 									const emails = Array.from(selectedCustomers).join(',');
 									window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
 								}} 
-								class="button-primary button--small button--gap"
+								class="button-primary button-small button-gap"
 								disabled={selectedCustomers.size === 0}
 							>
 								<Mail class="h-4 w-4" />
@@ -610,7 +610,7 @@
 							</button>
 							<button 
 								onclick={copySelectedEmails} 
-								class="button-secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 								disabled={selectedCustomers.size === 0}
 							>
 								{#if copiedEmails}
@@ -623,7 +623,7 @@
 							</button>
 							<button 
 								onclick={exportToCSV} 
-								class="button-secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 								disabled={selectedCustomers.size === 0}
 							>
 								<Download class="h-4 w-4" />
@@ -754,7 +754,7 @@
 										<Tooltip text="Send email" position="top">
 											<button
 												onclick={() => window.location.href = `mailto:${customer.email}`}
-												class="button-secondary button--small button--icon"
+												class="button-secondary button-small button-icon"
 											>
 												<Mail class="h-4 w-4" />
 											</button>
@@ -763,7 +763,7 @@
 											<Tooltip text="Call customer" position="top">
 												<button
 													onclick={() => window.location.href = `tel:${customer.phone}`}
-													class="button-secondary button--small button--icon"
+													class="button-secondary button-small button-icon"
 												>
 													<Phone class="h-4 w-4" />
 												</button>
@@ -812,7 +812,7 @@
 										<Tooltip text="Send email" position="bottom-left">
 											<button
 												onclick={() => window.location.href = `mailto:${customer.email}`}
-												class="button-secondary button--small button--icon"
+												class="button-secondary button-small button-icon"
 											>
 												<Mail class="h-4 w-4" />
 											</button>
@@ -821,7 +821,7 @@
 											<Tooltip text="Call customer" position="bottom-left">
 												<button
 													onclick={() => window.location.href = `tel:${customer.phone}`}
-													class="button-secondary button--small button--icon"
+													class="button-secondary button-small button-icon"
 												>
 													<Phone class="h-4 w-4" />
 												</button>

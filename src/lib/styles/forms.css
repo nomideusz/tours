@@ -453,7 +453,7 @@
 	/* Ensure consistent heights when grouped */
 	.form-group--inline > .form-input--small,
 	.form-group--inline > .form-select--small,
-	.form-group--inline > .button--small {
+	.form-group--inline > .button-small {
 		height: 2.25rem; /* 36px */
 	}
 
@@ -465,7 +465,7 @@
 
 	.form-group--inline > .form-input--large,
 	.form-group--inline > .form-select--large,
-	.form-group--inline > .button--large {
+	.form-group--inline > .button-large {
 		height: 3.5rem; /* 56px */
 	}
 

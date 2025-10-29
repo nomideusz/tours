@@ -114,7 +114,7 @@
 			<button 
 				onclick={() => window.open(getDirectionsUrl(), '_blank')}
 				type="button"
-				class="button-primary button--full-width button--gap"
+				class="button-primary button--full-width button-gap"
 			>
 				<Navigation class="w-4 h-4" />
 				Get Directions

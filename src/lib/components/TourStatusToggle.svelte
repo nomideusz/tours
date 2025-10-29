@@ -75,9 +75,9 @@
 			: variant === 'inline'
 			? 'inline-flex items-center gap-1.5 text-sm font-medium transition-colors'
 			: (() => {
-				const sizeClass = size === 'large' ? 'button--large' : size === 'small' ? 'button--small' : '';
+				const sizeClass = size === 'large' ? 'button-large' : size === 'small' ? 'button-small' : '';
 				const variantClass = localStatus === 'draft' ? 'button-primary' : 'button-secondary';
-				return `${variantClass} ${sizeClass} button--gap ${className}`;
+				return `${variantClass} ${sizeClass} button-gap ${className}`;
 			})()
 	);
 </script>

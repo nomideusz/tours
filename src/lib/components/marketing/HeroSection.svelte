@@ -94,7 +94,7 @@
 				</div>
 				
 				<div class="action-button-container">
-					<button onclick={handleGetStarted} class="button-primary button--large button--gap button--full-width">
+					<button onclick={handleGetStarted} class="button-primary button-large button-gap button--full-width">
 						Get Started
 						<ArrowRight class="w-4 h-4" />
 					</button>

@@ -148,7 +148,7 @@
         type="button"
         onclick={applyCode}
         disabled={loading || disabled}
-        class="button-primary button--small"
+        class="button-primary button-small"
       >
         {#if loading}
           <Loader class="w-4 h-4 animate-spin" />
@@ -160,7 +160,7 @@
         type="button"
         onclick={resetForm}
         disabled={loading || disabled}
-        class="button-secondary button--small"
+        class="button-secondary button-small"
       >
         <X class="w-4 h-4" />
       </button>
@@ -169,7 +169,7 @@
         type="button"
         onclick={validateCode}
         disabled={loading || disabled || !code.trim()}
-        class="button-secondary button--small"
+        class="button-secondary button-small"
       >
         {#if loading}
           <Loader class="w-4 h-4 animate-spin" />

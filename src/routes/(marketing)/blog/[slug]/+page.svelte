@@ -184,7 +184,7 @@
 				<p class="text-lg text-secondary mb-6 max-w-2xl mx-auto">
 					Apply now to lock in your 20% lifetime discount before we launch in Q1 2026.
 				</p>
-				<button onclick={() => window.location.href='/beta-2/apply'} class="button-primary button--large button-gap">
+				<button onclick={() => window.location.href='/beta-2/apply'} class="button-primary button-large button-gap">
 					<BookOpen class="w-5 h-5" />
 					Apply for Beta 2
 				</button>
@@ -461,7 +461,7 @@
 	}
 	
 	/* Large button size */
-	.button--large {
+	.button-large {
 		padding: 1rem 2rem;
 		font-size: 1.125rem;
 	}

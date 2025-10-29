@@ -361,7 +361,7 @@
 								</div>
 								<button 
 									onclick={copyProfileURL}
-									class="button-secondary button--small"
+									class="button-secondary button-small"
 									title="Copy profile URL"
 								>
 									{#if urlCopied}

@@ -673,7 +673,7 @@
 					</div>
 					<button
 						onclick={() => (paymentSetupError = null)}
-						class="button-secondary button--small button--icon ml-2"
+						class="button-secondary button-small button-icon ml-2"
 						aria-label="Close"
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -707,11 +707,11 @@
 				>
 					<div class="flex gap-3">
 						{#if username}
-							<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button--gap">
+							<button onclick={() => window.open(`/${username}`, '_blank')} class="button-secondary button-gap">
 								<ExternalLink class="h-4 w-4" />
 								View Profile
 							</button>
-							<button onclick={copyProfileLink} class="button-secondary button--gap">
+							<button onclick={copyProfileLink} class="button-secondary button-gap">
 								{#if profileLinkCopied}
 									<CheckCircle class="h-4 w-4" />
 									Copied!

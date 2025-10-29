@@ -255,7 +255,7 @@
 									<div class="grid gap-3 sm:grid-cols-3">
 										<button
 											onclick={downloadQRCode}
-											class="button--secondary button--gap justify-center"
+											class="button-secondary button-gap justify-center"
 										>
 											<Download class="w-4 h-4" />
 											Download QR
@@ -264,7 +264,7 @@
 										<a
 											href={ticketURL}
 											target="_blank"
-											class="button--secondary button--gap justify-center"
+											class="button-secondary button-gap justify-center"
 										>
 											<Ticket class="w-4 h-4" />
 											View Ticket
@@ -273,7 +273,7 @@
 										
 										<button
 											onclick={() => navigator.share?.({ url: ticketURL, title: 'Tour Ticket' })}
-											class="button--secondary button--gap justify-center"
+											class="button-secondary button-gap justify-center"
 											disabled={!navigator.share}
 										>
 											<Smartphone class="w-4 h-4" />

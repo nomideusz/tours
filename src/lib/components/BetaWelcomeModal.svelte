@@ -171,11 +171,11 @@
 			<button onclick={handleGoDashboard} class="button-secondary">
 				Go to Dashboard
 			</button>
-			<button onclick={handleSubscribe} class="button-success button--gap">
+			<button onclick={handleSubscribe} class="button-success button-gap">
 				<CreditCard class="w-4 h-4" />
 				<span>Subscribe Now</span>
 			</button>
-			<button onclick={handleCreateTour} class="button-primary button--gap">
+			<button onclick={handleCreateTour} class="button-primary button-gap">
 				<span>Create Your First Tour</span>
 				<ArrowRight class="w-4 h-4" />
 			</button>
@@ -432,7 +432,7 @@
 		flex-wrap: wrap;
 	}
 	
-	:global(.button--gap) {
+	:global(.button-gap) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;

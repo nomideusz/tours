@@ -97,7 +97,7 @@
 					{/if}
 				</button>
 			</div>
-			<button onclick={() => goto('/tours/new')} class="button-primary button--small button--gap">
+			<button onclick={() => goto('/tours/new')} class="button-primary button-small button-gap">
 				<Plus class="h-4 w-4" />
 				<span class="hidden sm:inline">Create Tour</span>
 			</button>

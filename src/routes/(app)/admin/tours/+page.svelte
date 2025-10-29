@@ -335,7 +335,7 @@
 				<!-- Filter Toggle (Mobile) -->
 				<button
 					onclick={() => showFilters = !showFilters}
-					class="lg:hidden button-secondary button--gap"
+					class="lg:hidden button-secondary button-gap"
 				>
 					<Filter class="h-4 w-4" />
 					Filters
@@ -371,7 +371,7 @@
 					</select>
 
 					{#if activeFiltersCount > 0}
-						<button onclick={clearFilters} class="button-secondary button--small">
+						<button onclick={clearFilters} class="button-secondary button-small">
 							Clear
 						</button>
 					{/if}
@@ -432,7 +432,7 @@
 					{/if}
 
 					{#if activeFiltersCount > 0}
-						<button onclick={clearFilters} class="button-secondary button--small w-full">
+						<button onclick={clearFilters} class="button-secondary button-small w-full">
 							Clear All Filters
 						</button>
 					{/if}
@@ -897,7 +897,7 @@
 					<button
 						onclick={() => goToPage(currentPage - 1)}
 						disabled={currentPage === 1}
-						class="button-secondary button--small"
+						class="button-secondary button-small"
 						class:opacity-50={currentPage === 1}
 						class:cursor-not-allowed={currentPage === 1}
 						class:cursor-pointer={currentPage > 1}
@@ -925,7 +925,7 @@
 					<button
 						onclick={() => goToPage(currentPage + 1)}
 						disabled={currentPage === pagination.totalPages}
-						class="button-secondary button--small"
+						class="button-secondary button-small"
 						class:opacity-50={currentPage === pagination.totalPages}
 						class:cursor-not-allowed={currentPage === pagination.totalPages}
 						class:cursor-pointer={currentPage < pagination.totalPages}

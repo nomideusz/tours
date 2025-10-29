@@ -436,7 +436,7 @@
 							<!-- Create New Tour Button -->
 							<button 
 								onclick={() => dispatch('createFirstTour')}
-								class="button-secondary button--full button--gap"
+								class="button-secondary button--full button-gap"
 							>
 								<Plus class="w-4 h-4" />
 								Create New Tour
@@ -614,7 +614,7 @@
 							<button 
 								type="button" 
 								onclick={handleBackToTourSelection}
-								class="button-secondary button--gap"
+								class="button-secondary button-gap"
 								disabled={isAddingSlot}
 							>
 								<ChevronLeft class="w-4 h-4" />

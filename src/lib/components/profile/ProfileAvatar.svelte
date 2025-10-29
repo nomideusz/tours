@@ -72,7 +72,7 @@
 		<div class="flex gap-2">
 			<label
 				for="avatar"
-				class="button-secondary button--gap button--small cursor-pointer {uploadingAvatar ? 'opacity-60 cursor-not-allowed' : ''}"
+				class="button-secondary button-gap button-small cursor-pointer {uploadingAvatar ? 'opacity-60 cursor-not-allowed' : ''}"
 			>
 				<Camera class="h-3 w-3" />
 				{uploadingAvatar ? 'Uploading...' : 'Change Photo'}
@@ -82,7 +82,7 @@
 				<button
 					type="button"
 					onclick={onRemoveAvatar}
-					class="button--danger button--small"
+					class="button-danger button-small"
 				>
 					<X class="h-3 w-3" />
 				</button>

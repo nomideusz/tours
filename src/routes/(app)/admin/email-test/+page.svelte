@@ -260,7 +260,7 @@
           <button 
             onclick={confirmTestPayment}
             disabled={testingPayment || !testBookingId}
-            class="button-primary button--gap"
+            class="button-primary button-gap"
           >
             {#if testingPayment}
               <div class="form-spinner"></div>
@@ -273,7 +273,7 @@
           <button 
             onclick={checkBookingStatus}
             disabled={testingPayment || !testBookingId}
-            class="button-secondary button--gap"
+            class="button-secondary button-gap"
           >
             Check Status
           </button>

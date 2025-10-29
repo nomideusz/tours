@@ -262,7 +262,7 @@
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="w-full button-success button--gap button--large justify-center font-semibold shadow-lg"
+						class="w-full button-success button-gap button-large justify-center font-semibold shadow-lg"
 					>
 						{#if isSubmitting}
 							<div class="form-spinner"></div>
@@ -279,12 +279,12 @@
 					<button
 						onclick={() => showNoShowModal = true}
 						disabled={isSubmitting}
-						class="flex-1 button-danger button--small"
+						class="flex-1 button-danger button-small"
 					>
 						<UserX class="w-4 h-4 mr-1" />
 						No Show
 					</button>
-					<a href="/checkin-scanner" class="flex-1 button-secondary button--small text-center">
+					<a href="/checkin-scanner" class="flex-1 button-secondary button-small text-center">
 						<QrCode class="w-4 h-4 mr-1 inline" />
 						Scan Next
 					</a>
@@ -310,7 +310,7 @@
 						</p>
 					{/if}
 				</div>
-				<a href="/checkin-scanner" class="w-full button-primary button--gap mt-3 text-center">
+				<a href="/checkin-scanner" class="w-full button-primary button-gap mt-3 text-center">
 					<QrCode class="w-5 h-5 inline" />
 					Scan Next Ticket
 				</a>

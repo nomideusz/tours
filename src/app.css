@@ -1,12 +1,31 @@
 @import 'tailwindcss';
+
+/* Fonts */
 @import './lib/styles/fonts.css';
+
+/* CSS Custom Properties (Variables) */
 @import './lib/styles/variables.css';
+
+/* Base Styles - Global element defaults */
+@import './lib/styles/base/typography.css';
+@import './lib/styles/base/links.css';
+@import './lib/styles/base/icons.css';
+
+/* Professional Touches - Focus rings, scrolling, etc. */
 @import './lib/styles/professional-touches.css';
+
+/* Component Styles */
 @import './lib/styles/auth.css';
 @import './lib/styles/buttons.css';
 @import './lib/styles/forms.css';
 @import './lib/styles/badges.css';
 @import './lib/styles/cards.css';
-@import './lib/styles/backgrounds.css';
 @import './lib/styles/pricing.css';
+
+/* Utilities */
+@import './lib/styles/backgrounds.css';
+@import './lib/styles/utilities/color-utilities.css';
+@import './lib/styles/utilities/marketing-utilities.css';
+
+/* Theme Overrides - Must be last */
 @import './lib/styles/theme-overrides.css';

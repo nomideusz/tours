@@ -95,7 +95,7 @@
 			
 			<!-- CTA Button -->
 			<div class="hero-actions">
-				<button onclick={handleJoinBeta2} class="button-primary button--large button--gap">
+				<button onclick={handleJoinBeta2} class="button-primary button-large button-gap">
 					Lock In Your 20% Discount
 					<ArrowRight class="w-4 h-4" />
 				</button>

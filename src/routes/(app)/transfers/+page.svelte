@@ -175,7 +175,7 @@
 							<div class="mt-3 flex gap-2">
 								<a
 									href="/bookings/{transfer.bookingId}"
-									class="button-secondary button--small button--gap"
+									class="button-secondary button-small button-gap"
 								>
 									<ExternalLink class="h-4 w-4" />
 									View Booking
@@ -276,7 +276,7 @@
 							
 							<a
 								href="/bookings/{transfer.bookingId}"
-								class="button-secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 							>
 								<ExternalLink class="h-4 w-4" />
 								View Booking

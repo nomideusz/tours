@@ -96,7 +96,7 @@
 				<button
 					onclick={handleSave}
 					disabled={!selectedCountry || savingCurrency}
-					class="button-primary button--gap"
+					class="button-primary button-gap"
 				>
 					{#if savingCurrency}
 						<Loader2 class="h-4 w-4 animate-spin" />

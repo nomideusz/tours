@@ -35,14 +35,14 @@
 			</p>
 			<div class="cookie-actions">
 				<button 
-					class="button-text button--small"
+					class="button-text button-small"
 					onclick={handleReject}
 					type="button"
 				>
 					Reject
 				</button>
 				<button 
-					class="button-primary button--small"
+					class="button-primary button-small"
 					onclick={handleAccept}
 					type="button"
 				>

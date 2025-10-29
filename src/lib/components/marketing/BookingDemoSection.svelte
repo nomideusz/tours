@@ -206,7 +206,7 @@
 									{/if}
 								</div>
 								
-								<button class="button-primary button--large">
+								<button class="button-primary button-large">
 									Try Live Demo
 									<ArrowRight class="w-4 h-4" />
 								</button>

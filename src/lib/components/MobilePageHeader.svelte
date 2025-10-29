@@ -155,7 +155,7 @@
 				<button 
 					onclick={primaryAction.onclick} 
 					disabled={primaryAction.disabled}
-					class="button-{primaryAction.variant || 'primary'} button--small flex-shrink-0 relative transition-all duration-200 active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
+					class="button-{primaryAction.variant || 'primary'} button-small flex-shrink-0 relative transition-all duration-200 active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
 				>
 					<primaryAction.icon class="h-3 w-3 flex-shrink-0" />
 					<span class="text-xs font-medium">{primaryAction.label}</span>
@@ -204,8 +204,8 @@
 				<button 
 					onclick={action.onclick} 
 					disabled={action.disabled}
-					class="relative flex-1 button-{action.variant || 'secondary'} button--small button--gap justify-center transition-all duration-200 active:scale-95"
-					class:button--icon={action.size === 'icon'}
+					class="relative flex-1 button-{action.variant || 'secondary'} button-small button-gap justify-center transition-all duration-200 active:scale-95"
+					class:button-icon={action.size === 'icon'}
 					class:flex-none={action.size === 'icon'}
 					class:w-12={action.size === 'icon'}
 				>

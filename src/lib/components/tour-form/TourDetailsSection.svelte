@@ -163,7 +163,7 @@
 								input.value = '';
 							}
 						}}
-						class="button-secondary button--small w-full sm:w-auto"
+						class="button-secondary button-small w-full sm:w-auto"
 					>
 						Add Item
 					</button>
@@ -249,7 +249,7 @@
 								input.value = '';
 							}
 						}}
-						class="button-secondary button--small w-full sm:w-auto"
+						class="button-secondary button-small w-full sm:w-auto"
 					>
 						Add Requirement
 					</button>

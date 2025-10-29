@@ -152,7 +152,7 @@
 				{/if}
 			</div>
 			
-			<button class="button-primary button--large">
+			<button class="button-primary button-large">
 				Book Now
 				<ArrowRight class="w-4 h-4" />
 			</button>

@@ -117,7 +117,7 @@
 		<div class="error-state">
 			<AlertCircle class="h-5 w-5" />
 			<p>{error}</p>
-			<button onclick={loadPayoutData} class="button-secondary button--gap button--small">
+			<button onclick={loadPayoutData} class="button-secondary button-gap button-small">
 				<RefreshCcw class="h-4 w-4" />
 				Retry
 			</button>

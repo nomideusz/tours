@@ -49,7 +49,7 @@
 	$: variantStyles = {
 		danger: {
 			iconClass: 'confirmation-icon-danger',
-			confirmButton: 'button--danger'
+			confirmButton: 'button-danger'
 		},
 		warning: {
 			iconClass: 'confirmation-icon-warning',

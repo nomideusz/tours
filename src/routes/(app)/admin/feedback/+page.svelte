@@ -433,7 +433,7 @@
 				<!-- Type Filter -->
 				<button
 					onclick={() => selectedType = 'all'}
-					class="button-secondary button--gap"
+					class="button-secondary button-gap"
 				>
 					{selectedType === 'all' ? 'All Types' : selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}
 					<ChevronDown class="h-4 w-4" />
@@ -660,7 +660,7 @@
 								<button
 									onclick={() => updateFeedbackStatus(selectedFeedback.id, newStatus, adminNotes)}
 									disabled={isUpdating}
-									class="button-primary button--gap flex-1"
+									class="button-primary button-gap flex-1"
 								>
 									{#if isUpdating}
 										<Loader2 class="h-4 w-4 animate-spin" />
@@ -687,7 +687,7 @@
 											initializeConvertForm(selectedFeedback);
 											showConvertModal = true;
 										}}
-										class="button-info button--gap w-full"
+										class="button-info button-gap w-full"
 									>
 										<Code class="h-4 w-4" />
 										<ArrowRight class="h-4 w-4" />
@@ -726,7 +726,7 @@
 								resetConvertForm();
 								convertError = null;
 							}}
-							class="button-secondary button--icon"
+							class="button-secondary button-icon"
 						>
 							<X class="h-5 w-5" />
 						</button>
@@ -851,7 +851,7 @@
 										<button
 											type="button"
 											onclick={() => removeAcceptanceCriteria(index)}
-											class="button-danger button--icon"
+											class="button-danger button-icon"
 										>
 											<X class="h-4 w-4" />
 										</button>
@@ -861,7 +861,7 @@
 							<button
 								type="button"
 								onclick={addAcceptanceCriteria}
-								class="button-secondary button--gap text-sm"
+								class="button-secondary button-gap text-sm"
 							>
 								<Plus class="h-3 w-3" />
 								Add Criteria
@@ -910,7 +910,7 @@
 							<button
 								type="submit"
 								disabled={isConverting || !convertForm.title}
-								class="button-primary button--gap flex-1"
+								class="button-primary button-gap flex-1"
 							>
 								{#if isConverting}
 									<Loader2 class="h-4 w-4 animate-spin" />

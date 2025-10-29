@@ -996,6 +996,11 @@
 		color: #ffffff;
 	}
 
+	[data-theme="dark"] .guest-cta-button:active:not(:disabled) {
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-200);
+	}
+
 	[data-theme="dark"] .separator {
 		color: var(--text-tertiary);
 	}

@@ -592,7 +592,7 @@ import Copy from 'lucide-svelte/icons/copy';
 							{/if}
 						</div>
 					{/if}
-					<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+					<button onclick={() => goto('/tours/new')} class="button-primary button-gap">
 						<Plus class="h-4 w-4" />
 						Create Tour
 					</button>
@@ -675,26 +675,26 @@ import Copy from 'lucide-svelte/icons/copy';
 			<div class="flex gap-2">
 				<button
 					onclick={() => showTimeline = !showTimeline}
-					class="{showTimeline ? 'button-primary' : 'button-secondary'} button--small button--gap"
+					class="{showTimeline ? 'button-primary' : 'button-secondary'} button-small button-gap"
 				>
 					<Calendar class="h-4 w-4" />
 					Timeline
 				</button>
 				<button
 					onclick={() => statusFilter = 'all'}
-					class="{statusFilter === 'all' ? 'button-primary' : 'button-secondary'} button--small"
+					class="{statusFilter === 'all' ? 'button-primary' : 'button-secondary'} button-small"
 				>
 					All ({tours.length})
 				</button>
 				<button
 					onclick={() => statusFilter = 'active'}
-					class="{statusFilter === 'active' ? 'button-primary' : 'button-secondary'} button--small"
+					class="{statusFilter === 'active' ? 'button-primary' : 'button-secondary'} button-small"
 				>
 					Active ({tours.filter(t => t.status === 'active').length})
 				</button>
 				<button
 					onclick={() => statusFilter = 'draft'}
-					class="{statusFilter === 'draft' ? 'button-primary' : 'button-secondary'} button--small"
+					class="{statusFilter === 'draft' ? 'button-primary' : 'button-secondary'} button-small"
 				>
 					Draft ({tours.filter(t => t.status === 'draft').length})
 				</button>
@@ -733,7 +733,7 @@ import Copy from 'lucide-svelte/icons/copy';
 				<Plus class="h-12 w-12 mx-auto mb-4 rounded-full p-3" style="color: var(--text-tertiary); background: var(--bg-secondary);" />
 				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No tours yet</h3>
 				<p class="text-sm mb-6" style="color: var(--text-secondary);">Create your first tour to start accepting bookings</p>
-				<button onclick={() => goto('/tours/new')} class="button-primary button--gap">
+				<button onclick={() => goto('/tours/new')} class="button-primary button-gap">
 					<Plus class="h-4 w-4" />
 					Create Your First Tour
 				</button>
@@ -843,7 +843,7 @@ import Copy from 'lucide-svelte/icons/copy';
 									{#if canActivateTour(tour)}
 										<button 
 											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-											class="flex-1 button-primary button--small text-xs py-2"
+											class="flex-1 button-primary button-small text-xs py-2"
 										>
 											<CheckCircle class="h-3.5 w-3.5" />
 											<span>Activate</span>
@@ -851,7 +851,7 @@ import Copy from 'lucide-svelte/icons/copy';
 									{:else}
 										<button 
 											onclick={(e) => { e.stopPropagation(); }}
-											class="flex-1 button-secondary button--small text-xs py-2 opacity-50 cursor-not-allowed"
+											class="flex-1 button-secondary button-small text-xs py-2 opacity-50 cursor-not-allowed"
 											disabled
 										>
 											<AlertTriangle class="h-3.5 w-3.5" />
@@ -861,7 +861,7 @@ import Copy from 'lucide-svelte/icons/copy';
 								{:else}
 									<button 
 										onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/edit`); }}
-										class="flex-1 button-secondary button--small text-xs py-2"
+										class="flex-1 button-secondary button-small text-xs py-2"
 									>
 										<Edit class="h-3.5 w-3.5" />
 										<span>Edit</span>
@@ -878,7 +878,7 @@ import Copy from 'lucide-svelte/icons/copy';
 											}
 											actionMenuOpen = actionMenuOpen === tour.id ? null : tour.id; 
 										}}
-										class="button-secondary button--small button--icon py-2 px-3"
+										class="button-secondary button-small button-icon py-2 px-3"
 										style="position: relative; z-index: 1;"
 									>
 										<MoreVertical class="h-4 w-4" />
@@ -1133,13 +1133,13 @@ import Copy from 'lucide-svelte/icons/copy';
 						<div class="flex gap-2 items-center mt-auto">
 							<div class="flex gap-2 flex-1">
 								<Tooltip text="Manage tour details & schedule" position="top">
-									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex button-secondary button--small button--gap text-xs sm:text-sm">
+									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}`); }} class="flex button-secondary button-small button-gap text-xs sm:text-sm">
 										<Settings class="h-4 w-4" />
 										<span>Manage</span>
 									</button>
 								</Tooltip>
 								<Tooltip text="Edit tour information" position="top">
-									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/edit`); }} class="flex button-secondary button--small button--gap text-xs sm:text-sm">
+									<button onclick={(e) => { e.stopPropagation(); goto(`/tours/${tour.id}/edit`); }} class="flex button-secondary button-small button-gap text-xs sm:text-sm">
 										<Edit class="h-4 w-4" />
 										<span>Edit</span>
 									</button>
@@ -1148,7 +1148,7 @@ import Copy from 'lucide-svelte/icons/copy';
 									{#if canActivateTour(tour)}
 										<button 
 											onclick={(e) => { e.stopPropagation(); updateTourStatus(tour.id, 'active'); }}
-											class="flex button-primary button--small button--gap text-xs sm:text-sm"
+											class="flex button-primary button-small button-gap text-xs sm:text-sm"
 										>
 											<CheckCircle class="h-4 w-4" />
 											<span>Activate</span>
@@ -1156,7 +1156,7 @@ import Copy from 'lucide-svelte/icons/copy';
 									{:else}
 										<Tooltip text={`Complete onboarding first: ${getTourOnboardingMessage(tour)}`} position="top">
 											<button 
-												class="flex button-secondary button--small button--gap opacity-50 cursor-not-allowed text-xs sm:text-sm"
+												class="flex button-secondary button-small button-gap opacity-50 cursor-not-allowed text-xs sm:text-sm"
 												disabled
 											>
 												<CheckCircle class="h-4 w-4" />
@@ -1178,7 +1178,7 @@ import Copy from 'lucide-svelte/icons/copy';
 											}
 											actionMenuOpen = actionMenuOpen === tour.id ? null : tour.id; 
 										}}
-										class="button-secondary button--small button--icon"
+										class="button-secondary button-small button-icon"
 									>
 										<MoreVertical class="h-4 w-4" />
 									</button>

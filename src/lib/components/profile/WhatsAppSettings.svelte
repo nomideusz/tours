@@ -28,7 +28,7 @@
 						WhatsApp notifications are available on Professional and Agency plans. 
 						You're currently on the {planName} plan.
 					</p>
-					<a href="/subscription" class="button--primary button--small">
+					<a href="/subscription" class="button-primary button-small">
 						View Plans
 					</a>
 				</div>
@@ -80,7 +80,7 @@
 				</div>
 				
 				<div class="form-actions">
-					<button type="submit" class="button--primary">
+					<button type="submit" class="button-primary">
 						Save WhatsApp Settings
 					</button>
 				</div>

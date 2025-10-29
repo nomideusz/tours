@@ -86,7 +86,7 @@
 		</div>
 		<button
 			onclick={toggleSortOrder}
-			class="button-secondary button--small button--icon"
+			class="button-secondary button-small button-icon"
 			title={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
 		>
 			{#if sortOrder === 'asc'}

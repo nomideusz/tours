@@ -68,7 +68,7 @@
 		<!-- CTA -->
 		<div class="cta-section">
 			<button 
-				class="button-primary button--large"
+				class="button-primary button-large"
 				onclick={() => goto('/beta-2/apply')}
 			>
 				Apply for Beta 2
@@ -76,7 +76,7 @@
 			</button>
 				
 				<button 
-					class="button-secondary button--large"
+					class="button-secondary button-large"
 					onclick={() => goto('/')}
 					style="margin-top: 1rem;"
 				>

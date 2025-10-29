@@ -1,0 +1,74 @@
+/* Link Styles - Default link behaviors and navigation */
+
+/* Links should use primary color by default */
+a {
+	color: var(--color-primary-600);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--color-primary-700);
+	text-decoration: underline;
+}
+
+/* Better link styling - exclude navigation, sidebar, and footer links */
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *) {
+	position: relative;
+	text-decoration: none;
+	color: var(--primary);
+	transition: color var(--transition-fast);
+}
+
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *)::after {
+	content: '';
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	width: 100%;
+	height: 1px;
+	background: currentColor;
+	opacity: 0.3;
+	transition: opacity var(--transition-fast);
+}
+
+a:not([class*="button"]):not(.no-underline):not(.nav-link):not(.user-profile-link):not(.user-action-button):not(.powered-by):not(.powered-by-link):not([role="navigation"] *):hover::after {
+	opacity: 0.8;
+}
+
+/* Ensure navigation and sidebar links have no underlines */
+.nav-link,
+.user-profile-link,
+.user-action-button,
+nav a,
+[role="navigation"] a {
+	text-decoration: none !important;
+}
+
+.nav-link::after,
+.user-profile-link::after,
+.user-action-button::after,
+nav a::after,
+[role="navigation"] a::after {
+	display: none !important;
+}
+
+/* No underline for navigation links on hover */
+nav a:hover,
+.nav-link:hover,
+[role="navigation"] a:hover {
+	text-decoration: none;
+}
+
+/* Hover primary color utility */
+.hover-primary:hover {
+	color: var(--color-primary-600);
+}
+
+/* Dark mode link adjustments */
+[data-theme="dark"] a {
+	color: var(--color-primary-600);
+}
+
+[data-theme="dark"] a:hover {
+	color: var(--color-primary-500);
+}

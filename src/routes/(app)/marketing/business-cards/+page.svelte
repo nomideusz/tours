@@ -476,7 +476,7 @@
 					<div class="flex gap-2">
 						<button
 							onclick={printBusinessCard}
-							class="button--secondary button--small button--gap"
+							class="button-secondary button-small button-gap"
 							disabled={!profileURL || generatingPDF}
 						>
 							{#if generatingPDF}
@@ -489,7 +489,7 @@
 						</button>
 						<button
 							onclick={downloadBusinessCard}
-							class="button--primary button--small button--gap"
+							class="button-primary button-small button-gap"
 							disabled={!profileURL}
 						>
 							<Download class="w-4 h-4" />
@@ -638,7 +638,7 @@
 			<User class="w-12 h-12 mx-auto mb-4 text-secondary" />
 			<h2 class="text-xl font-semibold text-primary mb-2">Complete Your Profile</h2>
 			<p class="text-secondary mb-6">Set up your profile to create professional business cards</p>
-			<button onclick={() => goto('/profile')} class="button--primary">
+			<button onclick={() => goto('/profile')} class="button-primary">
 				Complete Profile
 			</button>
 		</div>

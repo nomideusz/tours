@@ -178,7 +178,7 @@
 			<User class="w-8 h-8 mx-auto mb-3 text-secondary" />
 			<h2 class="text-lg font-semibold text-primary mb-2">Complete Profile First</h2>
 			<p class="text-secondary mb-4">Set up your username to create flyers</p>
-			<button onclick={() => goto('/profile')} class="button--primary">
+			<button onclick={() => goto('/profile')} class="button-primary">
 				Complete Profile
 			</button>
 		</div>
@@ -187,7 +187,7 @@
 			<FileText class="w-8 h-8 mx-auto mb-3 text-secondary" />
 			<h2 class="text-lg font-semibold text-primary mb-2">No Active Tours</h2>
 			<p class="text-secondary mb-4">Create at least one active tour first</p>
-			<button onclick={() => goto('/tours/new')} class="button--primary">
+			<button onclick={() => goto('/tours/new')} class="button-primary">
 				Create Tour
 			</button>
 		</div>
@@ -504,7 +504,7 @@
 					<h3 class="font-semibold text-primary">Preview</h3>
 					<button
 						onclick={generatePDF}
-						class="button--primary button--small"
+						class="button-primary button-small"
 						disabled={generating || (selectedLayout === 'single' && !selectedTourId)}
 					>
 						{#if generating}

@@ -1,0 +1,488 @@
+/* Marketing Utilities - Background variations, onboarding, and marketing character styles */
+
+/* =============================================
+   BACKGROUND VARIATION UTILITIES 
+   ============================================= */
+
+/* Gradient backgrounds */
+.bg-gradient-soft {
+	background: var(--bg-gradient-soft);
+}
+
+.bg-gradient-ocean {
+	background: var(--bg-gradient-ocean);
+}
+
+.bg-gradient-mist {
+	background: var(--bg-gradient-mist);
+}
+
+/* Pattern backgrounds */
+.bg-pattern-dots {
+	background-image: var(--bg-pattern-dots);
+	background-size: var(--bg-pattern-size);
+}
+
+.bg-pattern-grid {
+	background-image: var(--bg-pattern-grid);
+	background-size: var(--bg-pattern-size);
+}
+
+/* Combined backgrounds */
+.hero-section {
+	background: var(--bg-gradient-ocean);
+	position: relative;
+}
+
+.dashboard-bg {
+	background: var(--bg-gradient-mist);
+}
+
+.card-elevated {
+	background: var(--bg-primary);
+	box-shadow: var(--shadow-md);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+/* Pattern overlay for sections */
+.section-pattern {
+	position: relative;
+	overflow: hidden;
+}
+
+.section-pattern::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--bg-pattern-dots);
+	background-size: var(--bg-pattern-size);
+	opacity: 0.3;
+	pointer-events: none;
+}
+
+/* Subtle card backgrounds */
+.card-ocean {
+	background: var(--bg-gradient-ocean);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+.card-mist {
+	background: var(--bg-gradient-mist);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+}
+
+/* =============================================
+   ONBOARDING SECTION STYLES 
+   ============================================= */
+
+/* Base onboarding card */
+.onboarding-step {
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-6);
+	transition: all var(--transition-base) ease;
+}
+
+.onboarding-step:hover {
+	border-color: var(--border-secondary);
+	box-shadow: var(--shadow-sm);
+}
+
+/* Completed step state */
+.onboarding-step--completed {
+	background: var(--color-success-50);
+	border-color: var(--color-success-200);
+}
+
+[data-theme="dark"] .onboarding-step--completed {
+	background: var(--color-success-100);
+	border-color: var(--color-success-300);
+}
+
+/* Progress section */
+.onboarding-progress {
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-6);
+	margin-bottom: var(--space-8);
+}
+
+.onboarding-progress-bar {
+	width: 100%;
+	height: 0.75rem;
+	background: var(--bg-secondary);
+	border-radius: var(--radius-full);
+	overflow: hidden;
+}
+
+.onboarding-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
+	border-radius: var(--radius-full);
+	transition: width 500ms ease;
+}
+
+/* Location confirmation expanded section */
+.onboarding-location-section {
+	background: var(--bg-primary);
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-xl);
+	padding: var(--space-6);
+	margin-bottom: var(--space-8);
+	max-width: 100%;
+	overflow-x: hidden;
+}
+
+/* Country selection grid */
+.country-selection-grid {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	width: 100%;
+	overflow: visible;
+}
+
+@media (min-width: 640px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 900px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1100px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1300px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1500px) {
+	.country-selection-grid {
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+	}
+}
+
+/* Country selection button */
+.country-option {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem;
+	text-align: left;
+	border: 1px solid var(--border-primary);
+	border-radius: var(--radius-lg);
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	cursor: pointer;
+	transition: all var(--transition-base) ease;
+	height: 3.5rem;
+	min-height: 3.5rem;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+.country-option:hover {
+	border-color: var(--border-secondary);
+	box-shadow: var(--shadow-sm);
+}
+
+.country-option--selected {
+	border-color: var(--color-primary-500);
+	background: var(--color-primary-50);
+}
+
+[data-theme="dark"] .country-option--selected {
+	background: var(--color-primary-100);
+}
+
+/* Country info */
+.country-name {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+	line-height: 1.2;
+}
+
+.country-currency {
+	font-size: 0.7rem;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+	line-height: 1.1;
+}
+
+/* Selected country highlight box */
+.country-selected-info {
+	padding: var(--space-4);
+	border-radius: var(--radius-lg);
+	background: var(--color-primary-50);
+	border: 1px solid var(--color-primary-200);
+}
+
+[data-theme="dark"] .country-selected-info {
+	background: var(--color-primary-100);
+	border-color: var(--color-primary-300);
+}
+
+.country-selected-title {
+	font-weight: 500;
+	color: var(--color-primary-900);
+	margin-bottom: var(--space-2);
+}
+
+[data-theme="dark"] .country-selected-title {
+	color: var(--color-primary-800);
+}
+
+.country-selected-text {
+	font-size: var(--text-sm);
+	color: var(--color-primary-700);
+}
+
+[data-theme="dark"] .country-selected-text {
+	color: var(--color-primary-700);
+}
+
+.country-selected-warning {
+	font-size: var(--text-xs);
+	color: var(--color-primary-600);
+	margin-top: var(--space-2);
+}
+
+[data-theme="dark"] .country-selected-warning {
+	color: var(--color-primary-600);
+}
+
+/* Step icons */
+.onboarding-step-icon {
+	flex-shrink: 0;
+	width: 2rem;
+	height: 2rem;
+	color: var(--text-tertiary);
+}
+
+.onboarding-step-icon--completed {
+	color: var(--color-success-600);
+}
+
+/* Step titles */
+.onboarding-step-title {
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: var(--space-2);
+}
+
+/* Step descriptions */
+.onboarding-step-description {
+	font-size: var(--text-sm);
+	color: var(--text-secondary);
+	margin-bottom: var(--space-4);
+}
+
+/* Status messages */
+.onboarding-status-message {
+	font-size: var(--text-xs);
+	color: var(--text-tertiary);
+	margin-top: var(--space-2);
+}
+
+.onboarding-success-message {
+	color: var(--color-success-600);
+}
+
+.onboarding-error-message {
+	color: var(--color-error-600);
+}
+
+/* Location lock warning */
+.location-lock-warning {
+	font-size: var(--text-xs);
+	color: var(--text-tertiary);
+	margin-top: var(--space-1);
+}
+
+.location-lock-text {
+	font-size: var(--text-xs);
+	color: var(--text-secondary);
+}
+
+.location-lock-link {
+	color: var(--color-primary-600);
+	text-decoration: underline;
+}
+
+.location-lock-link:hover {
+	text-decoration: none;
+}
+
+/* =============================================
+   MARKETING CHARACTER UTILITIES - Vintage Travel Theme
+   ============================================= */
+
+/* Pattern overlays */
+.pattern-vintage-grain {
+	position: relative;
+}
+
+.pattern-vintage-grain::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-vintage-grain);
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+.pattern-compass-points {
+	position: relative;
+}
+
+.pattern-compass-points::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-compass-points);
+	background-size: 60px 60px;
+	pointer-events: none;
+}
+
+.pattern-journey-lines {
+	position: relative;
+}
+
+.pattern-journey-lines::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-image: var(--pattern-journey-lines);
+	background-size: 80px 80px;
+	pointer-events: none;
+}
+
+/* Adventure CTA effects */
+.adventure-cta::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+	transition: left 0.6s ease;
+}
+
+.adventure-cta:hover::before {
+	left: 100%;
+}
+
+.adventure-cta:hover {
+	box-shadow: 0 8px 24px rgba(248, 85, 37, 0.4);
+}
+
+/* Secondary adventure button */
+.adventure-cta-secondary {
+	background: var(--color-vintage-100);
+	border: 2px solid var(--color-earth-600);
+	border-radius: 0.75rem;
+	padding: 1rem 2rem;
+	color: var(--color-earth-700);
+	font-weight: 600;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.adventure-cta-secondary:hover {
+	background: var(--color-earth-50);
+	border-color: var(--color-earth-700);
+	box-shadow: 0 6px 20px rgba(118, 67, 56, 0.2);
+}
+
+/* Journey dividers */
+.journey-divider {
+	width: 100%;
+	height: 80px;
+	background: var(--pattern-journey-lines);
+	background-size: 80px 80px;
+	margin: 3rem 0;
+	opacity: 0.6;
+}
+
+/* Vintage heading styles */
+.adventure-heading {
+	font-weight: 700;
+	color: var(--adventure-primary);
+	line-height: 1.2;
+	position: relative;
+}
+
+.adventure-heading::after {
+	content: '';
+	position: absolute;
+	bottom: -0.5rem;
+	left: 0;
+	width: 3rem;
+	height: 0.25rem;
+	background: linear-gradient(90deg, var(--color-sunset-500), var(--color-golden-500));
+	border-radius: 0.125rem;
+}
+
+.adventure-heading-centered::after {
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+/* Mobile responsiveness for adventure elements */
+@media (max-width: 640px) {
+	.adventure-section {
+		padding: 2rem 0;
+	}
+
+	.adventure-card {
+		padding: 1.5rem;
+	}
+
+	.adventure-cta,
+	.adventure-cta-secondary {
+		padding: 0.875rem 1.5rem;
+		font-size: 0.9375rem;
+	}
+}
+

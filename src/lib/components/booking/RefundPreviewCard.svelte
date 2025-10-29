@@ -108,7 +108,7 @@
 			<!-- Cancel Button -->
 			<button
 				onclick={() => showCancelModal = true}
-				class="button-danger w-full button--gap"
+				class="button-danger w-full button-gap"
 				disabled={$cancelMutation.isPending}
 			>
 				{#if $cancelMutation.isPending}
@@ -208,7 +208,7 @@
 				</button>
 				<button
 					onclick={handleCancel}
-					class="button-danger flex-1 button--gap"
+					class="button-danger flex-1 button-gap"
 					disabled={$cancelMutation.isPending}
 				>
 					{#if $cancelMutation.isPending}

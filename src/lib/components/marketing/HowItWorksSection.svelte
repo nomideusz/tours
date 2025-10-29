@@ -107,7 +107,7 @@
 			No complicated dashboards. No overwhelming features. Just the simplest way to turn QR codes into bookings.
 		</p>
 		<div class="cta-actions">
-			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
+			<button onclick={handleJoinWaitlist} class="button-primary button-large button-gap">
 				Apply for Beta 2
 				<ArrowRight class="w-4 h-4" />
 			</button>

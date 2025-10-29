@@ -716,7 +716,7 @@
 					subtitle="Manage users and monitor platform activity"
 				>
 					<div class="flex flex-wrap items-center gap-3">
-						<button onclick={exportUsers} class="button-primary button--gap">
+						<button onclick={exportUsers} class="button-primary button-gap">
 							<Download class="h-4 w-4" />
 							Export Users
 						</button>
@@ -857,7 +857,7 @@
 				<!-- Create User Button -->
 				<button
 					onclick={() => showCreateUserModal = true}
-					class="button-primary button--gap"
+					class="button-primary button-gap"
 				>
 					<UserPlus class="h-4 w-4" />
 					Create User
@@ -866,7 +866,7 @@
 				<!-- Filter Button -->
 				<button
 					onclick={() => showFilters = !showFilters}
-					class="button-secondary button--gap"
+					class="button-secondary button-gap"
 				>
 					<Filter class="h-4 w-4" />
 					Filters
@@ -1053,7 +1053,7 @@
 											<Tooltip text="View Details" position="top">
 												<button
 													onclick={() => fetchUserDetails(user)}
-													class="button-primary button--small button--icon"
+													class="button-primary button-small button-icon"
 												>
 													<Eye class="h-4 w-4" />
 												</button>
@@ -1061,7 +1061,7 @@
 											<Tooltip text="View Profile" position="top">
 												<button
 													onclick={() => window.open(`/${user.username}`, '_blank')}
-													class="button-secondary button--small button--icon"
+													class="button-secondary button-small button-icon"
 													disabled={!user.username}
 												>
 													<ExternalLink class="h-4 w-4" />
@@ -1074,7 +1074,7 @@
 															userToDelete = user;
 															deleteUserModal = true;
 														}}
-														class="button-danger button--small button--icon"
+														class="button-danger button-small button-icon"
 													>
 														<Trash2 class="h-4 w-4" />
 													</button>
@@ -1115,13 +1115,13 @@
 								<div class="flex items-center gap-2 flex-shrink-0">
 									<button
 										onclick={() => fetchUserDetails(user)}
-										class="button-primary button--small button--icon"
+										class="button-primary button-small button-icon"
 									>
 										<Eye class="h-4 w-4" />
 									</button>
 									<button
 										onclick={() => window.open(`/${user.username}`, '_blank')}
-										class="button-secondary button--small button--icon"
+										class="button-secondary button-small button-icon"
 										disabled={!user.username}
 									>
 										<ExternalLink class="h-4 w-4" />
@@ -1132,7 +1132,7 @@
 												userToDelete = user;
 												deleteUserModal = true;
 											}}
-											class="button-danger button--small button--icon"
+											class="button-danger button-small button-icon"
 										>
 											<Trash2 class="h-4 w-4" />
 										</button>
@@ -1211,7 +1211,7 @@
 					</div>
 					<button
 						onclick={() => showUserDetailsModal = false}
-						class="button-secondary button--icon"
+						class="button-secondary button-icon"
 					>
 						<X class="h-5 w-5" />
 					</button>
@@ -1603,7 +1603,7 @@
 					<button
 						type="submit"
 						disabled={isCreatingUser}
-						class="button-primary flex-1 button--gap"
+						class="button-primary flex-1 button-gap"
 					>
 						{#if isCreatingUser}
 							<Loader2 class="h-4 w-4 animate-spin" />
@@ -1745,7 +1745,7 @@
 					<button
 						type="submit"
 						disabled={isTestingWhatsApp || !testPhoneNumber}
-						class="button-primary flex-1 button--gap"
+						class="button-primary flex-1 button-gap"
 					>
 						{#if isTestingWhatsApp}
 							<Loader2 class="h-4 w-4 animate-spin" />
@@ -1841,7 +1841,7 @@
 									type="button"
 									onclick={selectAllUsers}
 									disabled={isSendingAnnouncement}
-									class="text-xs button-secondary button--small"
+									class="text-xs button-secondary button-small"
 								>
 									Select All ({selectableUsers.length})
 								</button>
@@ -1849,7 +1849,7 @@
 									type="button"
 									onclick={deselectAllUsers}
 									disabled={isSendingAnnouncement || selectedUserIds.size === 0}
-									class="text-xs button-secondary button--small"
+									class="text-xs button-secondary button-small"
 								>
 									Clear
 								</button>
@@ -1923,7 +1923,7 @@
 							type="button"
 							onclick={previewRecipients}
 							disabled={isLoadingRecipients || announcementRecipientCount === 0}
-							class="text-xs button-secondary button--small button--gap"
+							class="text-xs button-secondary button-small button-gap"
 						>
 							{#if isLoadingRecipients}
 								<Loader2 class="h-3 w-3 animate-spin" />
@@ -2091,7 +2091,7 @@
 						<button
 							type="submit"
 							disabled={isSendingAnnouncement || announcementRecipientCount === 0}
-							class="button-primary flex-1 button--gap"
+							class="button-primary flex-1 button-gap"
 						>
 							{#if isSendingAnnouncement}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -2123,7 +2123,7 @@
 						type="button"
 						onclick={(e) => sendAnnouncement(e as any, true)}
 						disabled={isSendingAnnouncement}
-						class="button-secondary w-full button--gap"
+						class="button-secondary w-full button-gap"
 					>
 						<Mail class="h-4 w-4" />
 						Send Test Email to b.dymet@gmail.com

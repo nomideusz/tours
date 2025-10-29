@@ -311,7 +311,7 @@
 			<User class="w-8 h-8 mx-auto mb-3 text-secondary" />
 			<h2 class="text-lg font-semibold text-primary mb-2">Complete Profile First</h2>
 			<p class="text-secondary mb-4">Set up your username to create stickers</p>
-			<button onclick={() => goto('/profile')} class="button--primary">
+			<button onclick={() => goto('/profile')} class="button-primary">
 				Complete Profile
 			</button>
 		</div>
@@ -365,7 +365,7 @@
 						<div class="flex gap-2">
 							<button
 								onclick={printStickers}
-								class="button--secondary button--small button--gap"
+								class="button-secondary button-small button-gap"
 								disabled={!personalizedURL || generatingPDF}
 							>
 								{#if generatingPDF}
@@ -378,7 +378,7 @@
 							</button>
 							<button
 								onclick={downloadSticker}
-								class="button--primary button--small button--gap"
+								class="button-primary button-small button-gap"
 								disabled={!personalizedURL}
 							>
 								<Download class="w-4 h-4" />

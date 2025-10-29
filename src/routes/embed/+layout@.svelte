@@ -256,7 +256,7 @@
 	}
 
 	/* Button modifiers */
-	:global(.button--gap) {
+	:global(.button-gap) {
 		gap: 0.5rem;
 	}
 

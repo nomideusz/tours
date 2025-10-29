@@ -193,7 +193,7 @@
 						
 						<!-- QR Actions -->
 						<div class="qr-actions">
-							<button onclick={copyQrCode} class="button-primary button--large button--gap button--full-width">
+							<button onclick={copyQrCode} class="button-primary button-large button-gap button--full-width">
 								{#if qrCopied}
 									<CheckCircle class="w-4 h-4" />
 									Link Copied!
@@ -203,11 +203,11 @@
 								{/if}
 							</button>
 							<div class="qr-action-grid">
-								<button onclick={previewTour} class="button-secondary button--gap">
+								<button onclick={previewTour} class="button-secondary button-gap">
 									<ExternalLink class="w-4 h-4" />
 									Preview
 								</button>
-								<button onclick={downloadQrCode} class="button-secondary button--gap">
+								<button onclick={downloadQrCode} class="button-secondary button-gap">
 									<Download class="w-4 h-4" />
 									Download
 								</button>
@@ -350,7 +350,7 @@
 						<div class="slot">16:30</div>
 					</div>
 					
-					<button class="button-primary button--large button--gap button--full-width">
+					<button class="button-primary button-large button-gap button--full-width">
 						<DollarSign class="w-4 h-4" />
 						Book Instantly
 					</button>

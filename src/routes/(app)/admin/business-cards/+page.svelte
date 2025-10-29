@@ -132,7 +132,7 @@
 			title="Business Cards Generator"
 			subtitle="Create professional business cards for Zaur platform promotion"
 		>
-			<a href="/admin" class="button-secondary button--gap">
+			<a href="/admin" class="button-secondary button-gap">
 				<ArrowLeft class="h-4 w-4" />
 				Back to Admin
 			</a>
@@ -212,7 +212,7 @@
 				<button
 					onclick={generateBusinessCards}
 					disabled={generating}
-					class="button button--primary button--large w-full flex items-center justify-center gap-2"
+					class="button button-primary button-large w-full flex items-center justify-center gap-2"
 				>
 					{#if generating}
 						<div class="w-5 h-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

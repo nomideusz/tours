@@ -97,7 +97,7 @@
 								{#if onClearCrossBorderInfo}
 									<button 
 										onclick={onClearCrossBorderInfo}
-										class="button-secondary button--small mt-2"
+										class="button-secondary button-small mt-2"
 									>
 										Choose Different Country
 									</button>
@@ -122,7 +122,7 @@
 							<button
 								onclick={onSetupPayments}
 								disabled={isSettingUpPayment}
-								class="button-primary button--gap button--small"
+								class="button-primary button-gap button-small"
 							>
 							{#if isSettingUpPayment}
 								<span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -136,7 +136,7 @@
 						<button
 							onclick={onSetupPayments}
 							disabled={isSettingUpPayment}
-							class="button-secondary button--gap button--small"
+							class="button-secondary button-gap button-small"
 						>
 							{#if isSettingUpPayment}
 								<span class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>

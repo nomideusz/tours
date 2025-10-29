@@ -250,7 +250,7 @@
 			/>
 			<button
 				onclick={() => showCreateModal = true}
-				class="button-primary button--gap"
+				class="button-primary button-gap"
 			>
 				<Plus class="h-4 w-4" />
 				New Item
@@ -405,7 +405,7 @@
 				</p>
 				<button
 					onclick={() => showCreateModal = true}
-					class="button-primary button--gap"
+					class="button-primary button-gap"
 				>
 					<Plus class="h-4 w-4" />
 					Create First Item
@@ -519,7 +519,7 @@
 								resetCreateForm();
 								createError = null;
 							}}
-							class="button-secondary button--icon"
+							class="button-secondary button-icon"
 						>
 							<X class="h-5 w-5" />
 						</button>
@@ -642,7 +642,7 @@
 										<button
 											type="button"
 											onclick={() => removeAcceptanceCriteria(index)}
-											class="button-danger button--icon"
+											class="button-danger button-icon"
 										>
 											<X class="h-4 w-4" />
 										</button>
@@ -652,7 +652,7 @@
 							<button
 								type="button"
 								onclick={addAcceptanceCriteria}
-								class="button-secondary button--gap text-sm"
+								class="button-secondary button-gap text-sm"
 							>
 								<Plus class="h-3 w-3" />
 								Add Criteria
@@ -701,7 +701,7 @@
 							<button
 								type="submit"
 								disabled={isCreating || !createForm.title || !createForm.description}
-								class="button-primary button--gap flex-1"
+								class="button-primary button-gap flex-1"
 							>
 								{#if isCreating}
 									<Loader2 class="h-4 w-4 animate-spin" />
@@ -755,7 +755,7 @@
 								showItemModal = false;
 								selectedItem = null;
 							}}
-							class="button-secondary button--icon"
+							class="button-secondary button-icon"
 						>
 							<X class="h-5 w-5" />
 						</button>

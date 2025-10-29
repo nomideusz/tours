@@ -98,7 +98,7 @@
 			<button 
 				onclick={exportData}
 				disabled={exportingData}
-				class="button-secondary button--small button--gap w-full sm:w-auto"
+				class="button-secondary button-small button-gap w-full sm:w-auto"
 			>
 				<Download class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 				{exportingData ? 'Exporting...' : 'Export Data'}
@@ -115,7 +115,7 @@
 			</div>
 			<button 
 				onclick={openDeleteModal}
-				class="button-danger button--small button--gap w-full sm:w-auto"
+				class="button-danger button-small button-gap w-full sm:w-auto"
 			>
 				<Trash2 class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 				Delete Account
@@ -195,14 +195,14 @@
 						deletePassword = '';
 						deleteError = '';
 					}}
-					class="button-secondary button--small sm:button-secondary flex-1 order-2 sm:order-1"
+					class="button-secondary button-small sm:button-secondary flex-1 order-2 sm:order-1"
 					disabled={isDeleting}
 				>
 					Cancel
 				</button>
 				<button 
 					onclick={confirmDelete}
-					class="button-danger button--small sm:button-danger flex-1 order-1 sm:order-2"
+					class="button-danger button-small sm:button-danger flex-1 order-1 sm:order-2"
 					disabled={isDeleting}
 				>
 					{isDeleting ? "Deleting..." : "Yes, Delete My Account"}

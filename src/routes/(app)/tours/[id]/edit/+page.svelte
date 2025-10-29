@@ -856,11 +856,11 @@
 					]}
 				>
 					<div class="hidden sm:flex gap-3">
-						<button onclick={handleCancel} class="button-secondary button--gap">
+						<button onclick={handleCancel} class="button-secondary button-gap">
 							<X class="h-4 w-4" />
 							Cancel
 						</button>
-						<button onclick={handleSave} class="button-primary button--gap">
+						<button onclick={handleSave} class="button-primary button-gap">
 							<Save class="h-4 w-4" />
 							Save Changes
 						</button>
@@ -905,7 +905,7 @@
 						<p class="font-medium" style="color: var(--color-danger-900);">Tour not found</p>
 						<p class="text-sm mt-1" style="color: var(--color-danger-700);">The tour you're looking for doesn't exist or you don't have permission to edit it.</p>
 					</div>
-					<button onclick={() => goto('/tours')} class="button-secondary button--small">
+					<button onclick={() => goto('/tours')} class="button-secondary button-small">
 						Back to Tours
 					</button>
 				</div>

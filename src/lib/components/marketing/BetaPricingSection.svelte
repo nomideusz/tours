@@ -122,7 +122,7 @@
 <div class="cta-section">
 	<div class="cta-content">
 		<div class="cta-actions">
-			<button onclick={handleJoinWaitlist} class="button-primary button--large button--gap">
+			<button onclick={handleJoinWaitlist} class="button-primary button-large button-gap">
 				Claim Your Beta 2 Spot
 				<ArrowRight class="w-4 h-4" />
 			</button>

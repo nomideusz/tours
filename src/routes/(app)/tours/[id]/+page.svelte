@@ -812,15 +812,15 @@
 										scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 									}
 									showWelcomePrompt = false;
-								}} class="button-primary button--gap">
+								}} class="button-primary button-gap">
 									<Calendar class="h-4 w-4" />
 									View Schedule
 								</button>
-							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-secondary button--gap">
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-secondary button-gap">
 								<Plus class="h-4 w-4" />
 								Add More Slots
 								</button>
-								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button-gap">
 									<X class="h-4 w-4" />
 									Dismiss
 								</button>
@@ -830,11 +830,11 @@
 								Your tour is now live! To start accepting bookings, you'll need to add some time slots when your tour will be available.
 							</p>
 						<div class="flex flex-col sm:flex-row gap-3">
-							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button-gap">
 								<Plus class="h-4 w-4" />
 								Add Time Slots Now
 								</button>
-								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button-gap">
 									<X class="h-4 w-4" />
 									Dismiss
 								</button>
@@ -849,7 +849,7 @@
 							<div class="flex flex-col sm:flex-row gap-3">
 								<button 
 									onclick={activateTour} 
-									class="button-primary button--gap"
+									class="button-primary button-gap"
 									disabled={$updateStatusMutation.isPending}
 								>
 									{#if $updateStatusMutation.isPending}
@@ -865,15 +865,15 @@
 										scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 									}
 									showWelcomePrompt = false;
-								}} class="button-secondary button--gap">
+								}} class="button-secondary button-gap">
 									<Calendar class="h-4 w-4" />
 									View Schedule
 								</button>
-								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button-gap">
 									<Edit class="h-4 w-4" />
 									Edit First
 								</button>
-								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button-gap">
 									<X class="h-4 w-4" />
 									Dismiss
 								</button>
@@ -883,13 +883,13 @@
 								Your tour has been created as a draft. Add some time slots to start accepting bookings, then activate your tour when you're ready.
 							</p>
 						<div class="flex flex-col sm:flex-row gap-3">
-							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+							<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button-gap">
 								<Plus class="h-4 w-4" />
 								Add Time Slots
 								</button>
 								<button 
 									onclick={activateTour} 
-									class="button-secondary button--gap"
+									class="button-secondary button-gap"
 									disabled={$updateStatusMutation.isPending}
 								>
 									{#if $updateStatusMutation.isPending}
@@ -899,11 +899,11 @@
 									{/if}
 									{$updateStatusMutation.isPending ? 'Activating...' : 'Activate Now'}
 								</button>
-								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button-gap">
 									<Edit class="h-4 w-4" />
 									Edit Tour
 								</button>
-								<button onclick={() => showWelcomePrompt = false} class="button-secondary button--gap">
+								<button onclick={() => showWelcomePrompt = false} class="button-secondary button-gap">
 									<X class="h-4 w-4" />
 									Dismiss
 								</button>
@@ -982,11 +982,11 @@
 						</Tooltip>
 					{/if}
 				{/if}
-				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--gap">
+				<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button-gap">
 					<Edit class="h-4 w-4" />
 					Edit Tour
 				</button>
-				<button onclick={() => handleCopyTour()} class="button-secondary button--gap" disabled={isCopyingTour}>
+				<button onclick={() => handleCopyTour()} class="button-secondary button-gap" disabled={isCopyingTour}>
 					{#if isCopyingTour}
 						<RefreshCw class="h-4 w-4 animate-spin" />
 						Copying...
@@ -995,7 +995,7 @@
 						Copy Tour
 					{/if}
 				</button>
-				<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button--gap">
+				<button onclick={() => { addSlotsInitialDate = undefined; showAddSlotsDrawer = true; }} class="button-primary button-gap">
 					<Plus class="h-4 w-4" />
 					Add Time Slots
 				</button>
@@ -1016,7 +1016,7 @@
 					{#if tourId}
 						<p class="text-xs mt-1 opacity-75">Tour ID: {tourId}</p>
 					{/if}
-					<button onclick={() => $tourDetailsQuery.refetch()} class="button-secondary button--small mt-2">
+					<button onclick={() => $tourDetailsQuery.refetch()} class="button-secondary button-small mt-2">
 						Retry
 					</button>
 				</div>
@@ -1161,12 +1161,12 @@
 								</div>
 								<!-- Edit and Copy buttons - visible on all screen sizes -->
 								<div class="flex items-center gap-3">
-									<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
+									<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button-small button-gap">
 										<Edit class="h-4 w-4" />
 										<span class="hidden sm:inline">Edit</span>
 										<span class="sm:hidden">Edit</span>
 									</button>
-									<button onclick={() => handleCopyTour()} class="button-secondary button--small button--gap" disabled={isCopyingTour}>
+									<button onclick={() => handleCopyTour()} class="button-secondary button-small button-gap" disabled={isCopyingTour}>
 										{#if isCopyingTour}
 											<RefreshCw class="h-4 w-4 animate-spin" />
 											<span class="hidden sm:inline">Copying...</span>
@@ -1360,7 +1360,7 @@
 							
 							<!-- Actions -->
 							<div class="space-y-2">
-								<button onclick={copyQrCode} class="button-primary button--full-width button--gap">
+								<button onclick={copyQrCode} class="button-primary button--full-width button-gap">
 									{#if qrCopied}
 										<CheckCircle class="h-4 w-4" />
 										Link Copied!
@@ -1370,12 +1370,12 @@
 									{/if}
 								</button>
 								<div class="grid grid-cols-2 gap-2">
-									<button onclick={() => window.open(bookingUrl, '_blank')} class="button-secondary button--full-width button--gap">
+									<button onclick={() => window.open(bookingUrl, '_blank')} class="button-secondary button--full-width button-gap">
 										<ExternalLink class="h-4 w-4" />
 										<span class="hidden sm:inline">Preview</span>
 										<span class="sm:hidden">Preview</span>
 									</button>
-									<button onclick={downloadQrCode} class="button-secondary button--full-width button--gap">
+									<button onclick={downloadQrCode} class="button-secondary button--full-width button-gap">
 										<Download class="h-4 w-4" />
 										<span class="hidden sm:inline">Download</span>
 										<span class="sm:hidden">Download</span>
@@ -1416,12 +1416,12 @@
 									{/each}
 								</div>
 								{#if tour.images.length > 6 && !showAllImages}
-									<button onclick={() => showAllImages = true} class="mt-3 button-secondary button--small button--full-width">
+									<button onclick={() => showAllImages = true} class="mt-3 button-secondary button-small button--full-width">
 										Show all {tour.images.length} images
 									</button>
 								{/if}
 								{#if tour.images.length > 6 && showAllImages}
-									<button onclick={() => showAllImages = false} class="mt-3 button-secondary button--small button--full-width">
+									<button onclick={() => showAllImages = false} class="mt-3 button-secondary button-small button--full-width">
 										Show less
 									</button>
 								{/if}
@@ -1431,7 +1431,7 @@
 						<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
 							<div class="p-4 border-b flex items-center justify-between" style="border-color: var(--border-primary);">
 								<h2 class="font-semibold" style="color: var(--text-primary);">Tour Gallery</h2>
-								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button--small button--gap">
+								<button onclick={() => goto(`/tours/${tourId}/edit`)} class="button-secondary button-small button-gap">
 									<Edit class="h-4 w-4" />
 									Edit
 								</button>
@@ -1493,7 +1493,7 @@
 										<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 										<p class="text-xs mt-0.5" style="color: var(--text-secondary);">Last {stats.recentBookings.length} bookings</p>
 									</div>
-									<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button--small button--gap">
+									<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button-small button-gap">
 										<Eye class="h-3 w-3" />
 										View All
 									</button>
@@ -1588,7 +1588,7 @@
 						
 						<!-- Actions -->
 						<div class="space-y-2">
-							<button onclick={copyQrCode} class="button-primary button--full-width button--gap">
+							<button onclick={copyQrCode} class="button-primary button--full-width button-gap">
 								{#if qrCopied}
 									<CheckCircle class="h-4 w-4" />
 									Link Copied!
@@ -1598,12 +1598,12 @@
 								{/if}
 							</button>
 							<div class="grid grid-cols-2 gap-2">
-								<button onclick={() => window.open(bookingUrl, '_blank')} class="button-secondary button--full-width button--gap">
+								<button onclick={() => window.open(bookingUrl, '_blank')} class="button-secondary button--full-width button-gap">
 									<ExternalLink class="h-4 w-4" />
 									<span class="hidden sm:inline">Preview</span>
 									<span class="sm:hidden">Preview</span>
 								</button>
-								<button onclick={downloadQrCode} class="button-secondary button--full-width button--gap">
+								<button onclick={downloadQrCode} class="button-secondary button--full-width button-gap">
 									<Download class="h-4 w-4" />
 									<span class="hidden sm:inline">Download</span>
 									<span class="sm:hidden">Download</span>
@@ -1626,7 +1626,7 @@
 								<h3 class="font-semibold" style="color: var(--text-primary);">Recent Bookings</h3>
 								<p class="text-xs mt-0.5" style="color: var(--text-secondary);">Last {stats.recentBookings.length} bookings</p>
 							</div>
-							<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button--small button--gap">
+							<button onclick={() => goto(`/bookings?tour=${tourId}`)} class="button-secondary button-small button-gap">
 								<Eye class="h-3 w-3" />
 								<span class="hidden sm:inline">View All</span>
 								<span class="sm:hidden">All</span>
@@ -1758,7 +1758,7 @@
 				<div class="lightbox-error">
 					<AlertCircle class="w-12 h-12 mb-4" />
 					<p class="error-text">Failed to load image</p>
-					<button onclick={closeLightbox} class="button-secondary button--small mt-4">
+					<button onclick={closeLightbox} class="button-secondary button-small mt-4">
 						Close
 					</button>
 				</div>

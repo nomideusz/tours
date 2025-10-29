@@ -103,7 +103,7 @@
 			<div class="notice-actions">
 				<button 
 					onclick={handleResendEmail}
-					class="button--secondary button--small"
+					class="button-secondary button-small"
 					disabled={resendingEmail}
 				>
 					{#if resendingEmail}
@@ -138,7 +138,7 @@
 			<div class="notice-actions">
 				<button 
 					onclick={() => showLocationModal = true}
-					class="button--primary button--small"
+					class="button-primary button-small"
 				>
 					<Globe class="w-4 h-4" />
 					Select Country

@@ -135,13 +135,13 @@
 			<div class="flex gap-2">
 				<button
 					onclick={installAndroid}
-					class="button-primary button--small flex-1"
+					class="button-primary button-small flex-1"
 				>
 					Install App
 				</button>
 				<button
 					onclick={dismissPrompt}
-					class="button-secondary button--small"
+					class="button-secondary button-small"
 				>
 					Not Now
 				</button>

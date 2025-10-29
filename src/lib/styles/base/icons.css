@@ -1,0 +1,207 @@
+/* Icon Styles - SVG and Lucide icon defaults */
+
+/* Active navigation icon styles */
+.nav-icon-active {
+	color: var(--color-primary-600) !important;
+	opacity: 1 !important;
+}
+
+/* Ensure Lucide SVG icons in navigation are visible */
+.nav-link .lucide-icon,
+.nav-link svg.lucide {
+	stroke: currentColor !important;
+	fill: none !important;
+	stroke-width: 2 !important;
+}
+
+/* Active navigation icons get bolder strokes */
+.nav-link .nav-icon-active,
+.nav-link .nav-icon-active svg {
+	stroke: var(--color-primary-600) !important;
+	stroke-width: 2.5 !important;
+	opacity: 1 !important;
+}
+
+/* Dark mode adjustment for active nav icons */
+[data-theme="dark"] .nav-link .nav-icon-active,
+[data-theme="dark"] .nav-link .nav-icon-active svg {
+	stroke: var(--color-primary-600) !important;
+}
+
+/* Ensure SVG icons inherit color - but only for specific cases */
+/* Only apply fill to icons that aren't stroke-based */
+nav svg:not([fill="none"]),
+button:not(.preserve-icon-colors) svg:not([fill="none"]),
+a:not(.preserve-icon-colors) svg:not([fill="none"]),
+.icon:not(.preserve-icon-colors) svg:not([fill="none"]) {
+	fill: currentColor;
+}
+
+/* Lucide icons - ensure proper contrast */
+.lucide-icon,
+.lucide,
+svg.lucide {
+	stroke: currentColor;
+	fill: none !important;
+	color: inherit;
+}
+
+/* Ensure lucide icons in specific contexts have proper contrast */
+button .lucide-icon,
+button .lucide,
+button svg.lucide,
+a .lucide-icon,
+a .lucide,
+a svg.lucide {
+	color: inherit;
+	stroke: currentColor;
+}
+
+/* Only apply inline-block to non-absolutely positioned icons in buttons/links */
+button .lucide-icon:not([class*="absolute"]),
+button .lucide:not([class*="absolute"]),
+button svg.lucide:not([class*="absolute"]),
+a .lucide-icon:not([class*="absolute"]),
+a .lucide:not([class*="absolute"]),
+a svg.lucide:not([class*="absolute"]) {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/* Fix lucide icons that might have poor contrast */
+.text-gray-400 .lucide-icon,
+.text-gray-400 .lucide,
+.text-gray-500 .lucide-icon,
+.text-gray-500 .lucide {
+	color: var(--text-secondary);
+}
+
+.text-gray-600 .lucide-icon,
+.text-gray-600 .lucide,
+.text-gray-700 .lucide-icon,
+.text-gray-700 .lucide {
+	color: var(--text-primary);
+}
+
+/* Notification panel specific icon colors */
+/* Light mode notification icons */
+.text-green-600 svg.lucide,
+svg.lucide.text-green-600 {
+	color: #16a34a;
+	stroke: #16a34a;
+}
+
+.text-blue-600 svg.lucide,
+svg.lucide.text-blue-600 {
+	color: #2563eb;
+	stroke: #2563eb;
+}
+
+.text-red-600 svg.lucide,
+svg.lucide.text-red-600 {
+	color: #dc2626;
+	stroke: #dc2626;
+}
+
+.text-gray-300 svg.lucide,
+svg.lucide.text-gray-300 {
+	color: #d1d5db;
+	stroke: #d1d5db;
+}
+
+.text-gray-400 svg.lucide,
+svg.lucide.text-gray-400 {
+	color: #9ca3af;
+	stroke: #9ca3af;
+}
+
+.text-gray-500 svg.lucide,
+svg.lucide.text-gray-500 {
+	color: #6b7280;
+	stroke: #6b7280;
+}
+
+.text-gray-600 svg.lucide,
+svg.lucide.text-gray-600 {
+	color: #4b5563;
+	stroke: #4b5563;
+}
+
+/* Dark mode notification icons - brighter colors for visibility */
+[data-theme="dark"] .text-green-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-green-600 {
+	color: #22c55e;
+	stroke: #22c55e;
+}
+
+[data-theme="dark"] .text-blue-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-blue-600 {
+	color: #3b9ef7;
+	stroke: #3b9ef7;
+}
+
+[data-theme="dark"] .text-red-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-red-600 {
+	color: #ef4444;
+	stroke: #ef4444;
+}
+
+[data-theme="dark"] .text-gray-300 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-300 {
+	color: var(--text-tertiary);
+	stroke: var(--text-tertiary);
+}
+
+[data-theme="dark"] .text-gray-400 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-400 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
+}
+
+[data-theme="dark"] .text-gray-500 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-500 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
+}
+
+[data-theme="dark"] .text-gray-600 svg.lucide,
+[data-theme="dark"] svg.lucide.text-gray-600 {
+	color: var(--text-secondary);
+	stroke: var(--text-secondary);
+}
+
+/* Status and payment badges icons */
+.status-confirmed .lucide-icon,
+.status-confirmed .lucide,
+.status-pending .lucide-icon,
+.status-pending .lucide,
+.status-cancelled .lucide-icon,
+.status-cancelled .lucide,
+.status-completed .lucide-icon,
+.status-completed .lucide,
+.payment-paid .lucide-icon,
+.payment-paid .lucide,
+.payment-pending .lucide-icon,
+.payment-pending .lucide,
+.payment-failed .lucide-icon,
+.payment-failed .lucide,
+.payment-refunded .lucide-icon,
+.payment-refunded .lucide {
+	color: inherit;
+	stroke: inherit;
+}
+
+/* Navigation icons */
+nav .lucide-icon,
+nav .lucide {
+	color: inherit;
+	stroke: inherit;
+}
+
+/* Ensure minimum contrast for all lucide icons */
+.lucide-icon,
+.lucide {
+	min-width: 1em;
+	min-height: 1em;
+}
+

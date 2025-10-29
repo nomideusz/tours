@@ -368,14 +368,14 @@
 				] : undefined}
 			>
 				{#if isFilteredByTour}
-					<button onclick={() => goto(`/tours/${tourFilter}`)} class="button-secondary button--gap mr-3">
+					<button onclick={() => goto(`/tours/${tourFilter}`)} class="button-secondary button-gap mr-3">
 						<ArrowLeft class="h-4 w-4" />
 						Back to Tour
 					</button>
 				{/if}
 				<button
 					onclick={() => goto('/checkin-scanner')}
-					class="button-primary button--gap"
+					class="button-primary button-gap"
 				>
 					<QrCode class="h-4 w-4" />
 					QR Scanner
@@ -401,7 +401,7 @@
 			<!-- Filter Button -->
 			<button
 				onclick={() => showFilters = !showFilters}
-				class="button-secondary button--gap {hasActiveFilters ? 'ring-2' : ''}"
+				class="button-secondary button-gap {hasActiveFilters ? 'ring-2' : ''}"
 				style="{hasActiveFilters ? 'ring-color: var(--color-primary-500);' : ''}"
 			>
 				<Filter class="h-4 w-4" />
@@ -465,7 +465,7 @@
 					<div class="flex items-end">
 						<button
 							onclick={clearFilters}
-							class="button-secondary button--small button--gap"
+							class="button-secondary button-small button-gap"
 						>
 							<X class="h-4 w-4" />
 							Clear All
@@ -673,7 +673,7 @@
 											e.stopPropagation();
 											goto(`/bookings/${booking.id}`);
 										}}
-									class="opacity-0 group-hover:opacity-100 transition-opacity button-secondary button--small button--icon"
+									class="opacity-0 group-hover:opacity-100 transition-opacity button-secondary button-small button-icon"
 										title="View booking details"
 									>
 										<Eye class="h-4 w-4" />
@@ -692,7 +692,7 @@
 						</p>
 						<button
 							onclick={clearFilters}
-							class="button-secondary button--small"
+							class="button-secondary button-small"
 						>
 							Clear Filters
 						</button>
@@ -704,7 +704,7 @@
 					</p>
 					<button
 						onclick={() => goto('/tours')}
-						class="button-primary button--small"
+						class="button-primary button-small"
 					>
 						View Tours
 					</button>
@@ -725,7 +725,7 @@
 			<div class="p-4 border-t" style="border-color: var(--border-primary);">
 				<button
 					onclick={loadMore}
-					class="w-full button-secondary button--small transition-all duration-200 active:scale-95"
+					class="w-full button-secondary button-small transition-all duration-200 active:scale-95"
 				>
 					Show More ({filteredBookings.length - displayBookings.length} remaining)
 				</button>

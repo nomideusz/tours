@@ -615,7 +615,7 @@
 						</p>
 						<button 
 							onclick={() => goto('/tours/new')}
-							class="button-primary button--large button--gap"
+							class="button-primary button-large button-gap"
 						>
 							<Plus class="h-5 w-5" />
 							Create Your First Tour

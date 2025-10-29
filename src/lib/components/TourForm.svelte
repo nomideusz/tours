@@ -1694,7 +1694,7 @@ Key extracted components:
 								<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
 									<button 
 										type="button" 
-										class="button-secondary button--small w-full sm:w-auto cursor-not-allowed opacity-50" 
+										class="button-secondary button-small w-full sm:w-auto cursor-not-allowed opacity-50" 
 										disabled
 									>
 										<Calendar class="w-4 h-4 mr-2" />
@@ -1705,7 +1705,7 @@ Key extracted components:
 								<button 
 									type="button" 
 									onclick={onDelete} 
-									class="button-danger button--small w-full sm:w-auto" 
+									class="button-danger button-small w-full sm:w-auto" 
 									disabled={isDeleting}
 									title="Delete this tour permanently"
 								>
@@ -1893,7 +1893,7 @@ Key extracted components:
 						type="button"
 						onclick={onPublish}
 						disabled={isSubmitting || !canActivate || allErrors.length > 0}
-						class="button-primary button--full-width button--gap"
+						class="button-primary button--full-width button-gap"
 						title={!canActivate ? 'Complete required setup steps to activate' : allErrors.length > 0 ? 'Fix validation errors to activate' : ''}
 					>
 						{#if isSubmitting && formData.status === 'active'}
@@ -1914,7 +1914,7 @@ Key extracted components:
 						type="button"
 						onclick={onSaveAsDraft}
 						disabled={isSubmitting || allErrors.length > 0}
-						class="button-secondary button--full-width button--gap"
+						class="button-secondary button--full-width button-gap"
 						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
 					>
 						{#if isSubmitting && formData.status === 'draft'}
@@ -1932,7 +1932,7 @@ Key extracted components:
 						type={onSubmit ? "button" : "submit"}
 						onclick={onSubmit || handleSubmit}
 						disabled={isSubmitting || allErrors.length > 0}
-						class="button-primary button--full-width button--gap"
+						class="button-primary button--full-width button-gap"
 						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
 					>
 						{#if isSubmitting}

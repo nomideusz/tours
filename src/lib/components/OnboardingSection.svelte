@@ -97,7 +97,7 @@
 						<button 
 							onclick={resendVerificationEmail}
 							disabled={resendingEmail}
-							class="button-secondary button--small"
+							class="button-secondary button-small"
 						>
 							{#if resendingEmail}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -181,7 +181,7 @@
 									<button 
 										onclick={saveCurrencySelection}
 										disabled={savingCurrency}
-										class="button-primary button--small"
+										class="button-primary button-small"
 									>
 										{#if savingCurrency}
 											<Loader2 class="h-4 w-4 animate-spin" />
@@ -203,7 +203,7 @@
 												}
 											}, 100);
 										}}
-										class="button-secondary button--small"
+										class="button-secondary button-small"
 									>
 										Change
 									</button>
@@ -227,7 +227,7 @@
 										}
 									}, 100); // Small delay to ensure DOM is updated
 								}}
-								class="button-secondary button--small"
+								class="button-secondary button-small"
 							>
 								Set Location
 							</button>
@@ -262,7 +262,7 @@
 						<button 
 							onclick={setupPayments}
 							disabled={isSettingUpPayment || needsConfirmation}
-							class="{needsConfirmation ? 'button-secondary opacity-50' : 'button-primary'} button--small"
+							class="{needsConfirmation ? 'button-secondary opacity-50' : 'button-primary'} button-small"
 						>
 							{#if isSettingUpPayment}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -301,7 +301,7 @@
 					{#if stats.totalTours === 0}
 						<button 
 							onclick={() => goto('/tours/new')}
-							class="button-primary button--small"
+							class="button-primary button-small"
 						>
 							Create Tour
 						</button>

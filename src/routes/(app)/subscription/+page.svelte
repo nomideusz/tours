@@ -599,7 +599,7 @@
 							<button
 								onclick={cancelSubscription}
 								disabled={loading}
-								class="button-secondary button--danger-text"
+								class="button-secondary button-danger-text"
 							>
 								Cancel
 							</button>

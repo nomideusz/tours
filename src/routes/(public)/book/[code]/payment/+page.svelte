@@ -469,7 +469,7 @@
 									<button
 										type="submit"
 										disabled={processing || !stripe || paymentSucceeded}
-										class="w-full {paymentSucceeded ? 'button-success' : 'button-primary'} button--large button--gap justify-center"
+										class="w-full {paymentSucceeded ? 'button-success' : 'button-primary'} button-large button-gap justify-center"
 									>
 										{#if paymentSucceeded}
 											<CheckCircle class="w-5 h-5" />
@@ -644,7 +644,7 @@
 	}
 	
 	/* Button enhancements */
-	:global(.button--large) {
+	:global(.button-large) {
 		padding: 1rem 2rem;
 		font-size: 1rem;
 		font-weight: 600;
@@ -652,7 +652,7 @@
 		min-height: 3.5rem;
 	}
 	
-	:global(.button--gap) {
+	:global(.button-gap) {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -693,7 +693,7 @@
 			padding: 1.25rem !important;
 		}
 		
-		:global(.button--large) {
+		:global(.button-large) {
 			padding: 0.875rem 1.5rem;
 			font-size: 0.9375rem;
 			min-height: 3rem;

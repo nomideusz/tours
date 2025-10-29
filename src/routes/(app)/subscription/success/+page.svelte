@@ -150,7 +150,7 @@
 				<div class="space-y-3">
 					<button
 						onclick={goToDashboard}
-						class="button-primary button--full-width button--gap"
+						class="button-primary button--full-width button-gap"
 					>
 						Go to Dashboard
 						<ArrowRight class="w-4 h-4" />

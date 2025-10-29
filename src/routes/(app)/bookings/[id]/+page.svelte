@@ -420,7 +420,7 @@
 					<p class="font-medium" style="color: var(--color-danger-900);">Failed to load booking</p>
 					<p class="text-sm mt-1" style="color: var(--color-danger-700);">Please check your connection and try again.</p>
 				</div>
-				<button onclick={() => goto('/bookings')} class="button-secondary button--small">
+				<button onclick={() => goto('/bookings')} class="button-secondary button-small">
 					Back to Bookings
 				</button>
 			</div>
@@ -452,7 +452,7 @@
 						{ label: `#${booking.id.slice(-8)}` }
 					]}
 				>
-									<button onclick={handleSmartBack} class="button-secondary button--gap">
+									<button onclick={handleSmartBack} class="button-secondary button-gap">
 					<ArrowLeft class="h-4 w-4" />
 					{getSmartBackText()}
 				</button>
@@ -952,7 +952,7 @@
 						<div class="grid grid-cols-1 gap-2 pt-2">
 							<button
 								onclick={openEmailClient}
-								class="button-secondary button--gap button--small"
+								class="button-secondary button-gap button-small"
 							>
 								<Mail class="h-4 w-4" />
 								Email Customer
@@ -961,7 +961,7 @@
 							{#if booking.customerPhone}
 								<button
 									onclick={() => window.location.href = `tel:${booking.customerPhone}`}
-									class="button-secondary button--gap button--small"
+									class="button-secondary button-gap button-small"
 								>
 									<Phone class="h-4 w-4" />
 									Call Customer
@@ -970,7 +970,7 @@
 							
 							<button
 								onclick={() => goto(`/tours/${booking.expand?.tour?.id}`)}
-								class="button-secondary button--gap button--small"
+								class="button-secondary button-gap button-small"
 							>
 								<MapPin class="h-4 w-4" />
 								View Tour
@@ -1151,7 +1151,7 @@
 					<button
 						type="submit"
 						disabled={isUpdating || newStatus === booking.status}
-						class="button-primary button--gap {isUpdating ? 'opacity-50' : ''}"
+						class="button-primary button-gap {isUpdating ? 'opacity-50' : ''}"
 					>
 						{#if isUpdating}
 							<Loader2 class="h-4 w-4 animate-spin" />

@@ -30,7 +30,7 @@
 				</p>
 				<button onclick={() => {
 					window.location.href = 'mailto:support@zaur.app';
-				}} class="button-primary button--large">
+				}} class="button-primary button-large">
 					support@zaur.app
 				</button>
 			</div>
@@ -45,7 +45,7 @@
 			</p>
 			<button onclick={() => {
 				window.location.href = '/beta-2/apply';
-			}} class="button-secondary button--large">
+			}} class="button-secondary button-large">
 				Apply for Beta 2
 			</button>
 		</div>

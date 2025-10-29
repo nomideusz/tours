@@ -53,11 +53,11 @@
 		
 		{#if actionText && (actionHref || onAction)}
 			{#if actionHref}
-				<a href={actionHref} class="button-primary button--gap">
+				<a href={actionHref} class="button-primary button-gap">
 					{actionText}
 				</a>
 			{:else if onAction}
-				<button onclick={onAction} class="button-primary button--gap">
+				<button onclick={onAction} class="button-primary button-gap">
 					{actionText}
 				</button>
 			{/if}
