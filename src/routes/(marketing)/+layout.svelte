@@ -30,77 +30,6 @@
 		}
 	});
 	
-	// Mobile detection
-	let isMobileDevice = $state(false);
-	
-	// Auto-hide navigation on scroll
-	let navHidden = $state(false);
-	let lastScrollY = 0;
-	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
-	
-	function handleScroll() {
-		if (!browser || !isMobileDevice) return;
-		
-		const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-		const scrollDelta = currentScrollY - lastScrollY;
-		
-		if (Math.abs(scrollDelta) < 5) return;
-		
-		if (currentScrollY > lastScrollY) {
-			// Scrolling down
-			navHidden = true;
-		} else if (currentScrollY < lastScrollY) {
-			// Scrolling up
-			navHidden = false;
-		}
-		
-		lastScrollY = currentScrollY;
-		
-		if (scrollTimeout) clearTimeout(scrollTimeout);
-		scrollTimeout = setTimeout(() => {
-			navHidden = false;
-		}, 1500);
-	}
-	
-	// Touch handlers for mobile
-	let touchStartY = 0;
-	let lastTouchY = 0;
-	let touchAccumulator = 0;
-	
-	function handleTouchStart(event: TouchEvent) {
-		if (!isMobileDevice) return;
-		touchStartY = event.touches[0].clientY;
-		lastTouchY = touchStartY;
-		touchAccumulator = 0;
-	}
-	
-	function handleTouchMove(event: TouchEvent) {
-		if (!isMobileDevice) return;
-		
-		const currentTouchY = event.touches[0].clientY;
-		const touchDelta = lastTouchY - currentTouchY;
-		
-		touchAccumulator += touchDelta;
-		
-		if (Math.abs(touchAccumulator) > 20) {
-			if (touchAccumulator > 0) {
-				// Scrolling down
-				navHidden = true;
-			} else if (touchAccumulator < 0) {
-				// Scrolling up
-				navHidden = false;
-			}
-			
-			touchAccumulator = 0;
-			
-			if (scrollTimeout) clearTimeout(scrollTimeout);
-			scrollTimeout = setTimeout(() => {
-				navHidden = false;
-			}, 1500);
-		}
-		
-		lastTouchY = currentTouchY;
-	}
 
 	// Use auth stores for reactive auth state
 	let userIsAuthenticated = $derived($isAuthenticated);
@@ -157,36 +86,13 @@
 	// Header reference for closing mobile menu
 	let headerRef: Header;
 
-	// Initialize theme store and scroll listeners
+	// Initialize theme store
 	let themeCleanup: (() => void) | undefined;
 	onMount(() => {
 		themeCleanup = themeStore.init();
 		
-		// Initialize mobile state
-		isMobileDevice = window.innerWidth <= 639;
-		
-		// Add scroll listeners - always add them, we check isMobileDevice in handlers
-		if (browser) {
-			document.addEventListener('touchstart', handleTouchStart, { passive: true });
-			document.addEventListener('touchmove', handleTouchMove, { passive: true });
-			window.addEventListener('scroll', handleScroll, { passive: true });
-		}
-		
-		// Handle resize
-		const handleResize = () => {
-			isMobileDevice = window.innerWidth <= 639;
-		};
-		window.addEventListener('resize', handleResize);
-		
 		return () => {
 			themeCleanup?.();
-			if (browser) {
-				document.removeEventListener('touchstart', handleTouchStart);
-				document.removeEventListener('touchmove', handleTouchMove);
-				window.removeEventListener('scroll', handleScroll);
-				window.removeEventListener('resize', handleResize);
-			}
-			if (scrollTimeout) clearTimeout(scrollTimeout);
 		};
 	});
 
@@ -281,14 +187,13 @@
 </svelte:head>
 
 <!-- Clean Marketing Layout -->
-<div class="min-h-screen flex flex-col subtle-retro-section glass-variant">
+<div class="min-h-screen flex flex-col subtle-retro-section">
 	<Header 
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
-		hidden={navHidden}
 	/>
-	<main class="flex-1 pt-20 sm:pt-[8.5rem] relative z-10"> <!-- Responsive padding for Header -->
+	<main class="flex-1 pt-14 sm:pt-[4.5rem] lg:pt-20 relative z-10"> <!-- Responsive padding for Header -->
 		{#if browser && data?.queryClient}
 			<QueryClientProvider client={data.queryClient}>
 				{@render children()}

@@ -114,7 +114,7 @@
 	}
 </script>
 
-<div class="booking-demo-section max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-20">
+<div class="booking-demo-section max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12 lg:py-16">
 		
 		<!-- Section Header -->
 		<div class="text-center mb-8 sm:mb-12" in:fade={{ delay: 100 }}>

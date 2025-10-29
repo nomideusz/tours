@@ -110,19 +110,19 @@
 </section>
 
 <!-- Booking Demo Section -->
-<section id="booking-demo" class="subtle-retro-section py-20">
+<section id="booking-demo" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 		<BookingDemoSection />
 </section>
 
 <!-- How it works with subtle texture -->
-<section id="how-it-works" class="subtle-retro-section py-20">
+<section id="how-it-works" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<HowItWorksSection />
 	</div>
 </section>
 
 <!-- Beta Pricing Section -->
-<section id="pricing" class="subtle-retro-section py-20">
+<section id="pricing" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<BetaPricingSection />
 	</div>
@@ -136,7 +136,7 @@
 </section>
 
 <!-- FAQ with subtle texture -->
-<section id="faq" class="subtle-retro-section py-20">
+<section id="faq" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
 		<Beta2FAQSection />
 	</div>

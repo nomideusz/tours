@@ -113,8 +113,8 @@
 				// Wait for the body scroll lock to be removed before scrolling
 				setTimeout(() => {
 					// Element exists on current page, scroll with offset for fixed header
-					// Header height is 5rem (80px) on mobile, use 90px offset for clean look
-					const headerOffset = 80;
+					// Header height is 3.5rem (56px) on mobile, 4.5rem (72px) on tablet, 5rem (80px) on desktop
+					const headerOffset = window.innerWidth < 640 ? 56 : window.innerWidth < 1024 ? 72 : 80;
 					const elementPosition = target.getBoundingClientRect().top;
 					const offsetPosition = elementPosition + window.scrollY - headerOffset;
 					
@@ -237,7 +237,7 @@
 							{t('auth.login', $language)}
 						</a>
 				<button 
-					class="button-primary guest-cta-button"
+					class="guest-cta-button"
 					onclick={() => window.location.href = '/beta-2/apply'}
 				>
 					<span class="guest-cta-text-mobile">Join Beta 2</span>
@@ -346,68 +346,30 @@
 {/if}
 
 <style>
-	/* Site Header - refined and professional */
+	/* Site Header - compact and minimal */
 	.site-header {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		z-index: 100;
-		background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7);
-		border-bottom: 1.5px solid var(--border-primary);
-		backdrop-filter: blur(20px) saturate(180%);
-		-webkit-backdrop-filter: blur(20px) saturate(180%);
-		box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+		background: var(--bg-primary);
+		border-bottom: 1px solid var(--border-primary);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 		transition: all var(--transition-base);
-	}
-
-	/* Hide header when scrolling down - mobile only */
-	@media (max-width: 639px) {
-		.site-header.header-hidden {
-			transform: translateY(-100%);
-			box-shadow: none;
-		}
-		
-		/* Enhanced glassmorphism when re-appearing after scroll */
-		.site-header {
-			transition: transform 0.3s ease-out, background 0.3s ease-out;
-		}
-		
-		.site-header:not(.header-hidden) {
-			background: rgba(var(--bg-primary-rgb, 255, 255, 255), 0.7) !important;
-			backdrop-filter: blur(20px) saturate(180%) !important;
-			-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-			box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
-		}
-	}
-	
-	/* Subtle refined overlay */
-	.site-header::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: linear-gradient(
-			to bottom,
-			transparent 0%,
-			rgba(0, 0, 0, 0.01) 100%
-		);
-		pointer-events: none;
 	}
 
 	.site-header-container {
 		max-width: 1600px;
 		margin: 0 auto;
-		padding: 0 1.5rem;
+		padding: 0 1rem;
 		position: relative;
 		z-index: 2;
 	}
 
 	@media (min-width: 640px) {
 		.site-header-container {
-			padding: 0 2rem;
+			padding: 0 1.5rem;
 		}
 	}
 
@@ -419,17 +381,35 @@
 
 	.site-header-content {
 		display: flex;
-		height: 5rem;
+		height: 3.5rem;
 		align-items: center;
 		justify-content: space-between;
+	}
+
+	@media (min-width: 640px) {
+		.site-header-content {
+			height: 4.5rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.site-header-content {
+			height: 5rem;
+		}
 	}
 
 	/* Brand */
 	.site-header-brand {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem;
 		height: 100%;
+	}
+
+	@media (min-width: 640px) {
+		.site-header-brand {
+			gap: 1rem;
+		}
 	}
 
 	/* Beta Badge positioning */
@@ -489,7 +469,19 @@
 	.header-actions {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.5rem;
+	}
+
+	@media (min-width: 640px) {
+		.header-actions {
+			gap: 0.75rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.header-actions {
+			gap: 1rem;
+		}
 	}
 
 	/* Loading Text */
@@ -597,34 +589,104 @@
 	}
 
 	.login-link {
-		font-size: 0.8rem;
-		font-weight: 600;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.75rem;
+		font-weight: 700;
 		color: var(--text-secondary);
-		text-decoration: none;
-		transition: color var(--transition-base) ease;
+		text-decoration: none !important;
+		transition: all var(--transition-base) ease;
+		padding: 0.4rem 0.75rem;
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-primary);
+		background: var(--bg-secondary);
+		white-space: nowrap;
+		letter-spacing: -0.01em;
+		line-height: 1.4;
+		box-sizing: border-box;
 	}
 
 	.login-link:hover {
 		color: var(--text-primary);
+		border-color: var(--border-secondary);
+		background: var(--bg-tertiary);
+		text-decoration: none !important;
+	}
+
+	/* Remove any potential underlines */
+	.login-link::before,
+	.login-link::after {
+		display: none !important;
+	}
+
+	@media (min-width: 640px) {
+		.login-link {
+			font-size: 0.8rem;
+			padding: 0.5rem 0.875rem;
+		}
 	}
 
 	@media (min-width: 768px) {
 		.login-link {
 			font-size: 0.875rem;
+			padding: 0.5rem 1rem;
 		}
 	}
 
 	/* Guest CTA Button - Responsive sizing */
 	.guest-cta-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		font-size: 0.75rem;
-		padding: 0.5rem 0.75rem;
-		font-weight: 600;
+		padding: 0.4rem 0.75rem;
+		font-weight: 700;
+		white-space: nowrap;
+		letter-spacing: -0.01em;
+		line-height: 1.4;
+		box-sizing: border-box;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all var(--transition-base);
+		text-decoration: none;
+		text-align: center;
+		user-select: none;
+		background: var(--color-primary-700);
+		color: #ffffff;
+		border: 1.5px solid var(--color-primary-700);
+		-webkit-tap-highlight-color: transparent;
+		box-shadow: var(--shadow-sm), var(--shadow-primary);
+	}
+
+	.guest-cta-button:hover:not(:disabled) {
+		background: var(--color-primary-800);
+		border-color: var(--color-primary-800);
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-md), 0 4px 12px -2px rgba(250, 107, 93, 0.4);
+	}
+
+	.guest-cta-button:active:not(:disabled) {
+		transform: translateY(0);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.guest-cta-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	@media (min-width: 640px) {
+		.guest-cta-button {
+			font-size: 0.8rem;
+			padding: 0.5rem 0.875rem;
+		}
 	}
 
 	@media (min-width: 768px) {
 		.guest-cta-button {
 			font-size: 0.875rem;
-			padding: 0.75rem 1rem;
+			padding: 0.5rem 1rem;
 		}
 	}
 
@@ -656,7 +718,7 @@
 		border: none;
 		color: var(--text-secondary);
 		cursor: pointer;
-		padding: 0.5rem;
+		padding: 0.25rem;
 		border-radius: var(--radius-md);
 		transition: all var(--transition-base) ease;
 	}
@@ -664,6 +726,22 @@
 	.mobile-toggle:hover {
 		background: var(--bg-secondary);
 		color: var(--text-primary);
+	}
+
+	.mobile-toggle svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	@media (min-width: 640px) {
+		.mobile-toggle {
+			padding: 0.5rem;
+		}
+
+		.mobile-toggle svg {
+			width: 1.5rem;
+			height: 1.5rem;
+		}
 	}
 
 	@media (min-width: 1024px) {
@@ -697,7 +775,7 @@
 
 	.mobile-menu {
 		position: fixed;
-		top: 5rem;
+		top: 3.5rem;
 		left: 0;
 		right: 0;
 		bottom: 0;
@@ -709,6 +787,18 @@
 		transform: translateY(0);
 		transition: transform var(--transition-base) ease;
 		animation: slideIn 0.3s ease-out;
+	}
+
+	@media (min-width: 640px) {
+		.mobile-menu {
+			top: 4.5rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.mobile-menu {
+			top: 5rem;
+		}
 	}
 
 	@keyframes slideIn {
@@ -863,16 +953,6 @@
 	/* Dark Mode Support */
 	/* Header background now uses theme-aware CSS variables automatically */
 
-	[data-theme="dark"] .site-header::before {
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(255, 255, 255, 0.02) 40px,
-			rgba(255, 255, 255, 0.02) 41px
-		);
-	}
-
 	/* Dark mode navigation */
 	[data-theme="dark"] .nav-link {
 		color: var(--text-secondary);
@@ -896,11 +976,30 @@
 	[data-theme="dark"] .dashboard-link,
 	[data-theme="dark"] .login-link {
 		color: var(--text-secondary);
+		border-color: var(--border-primary);
+		background: var(--bg-secondary);
 	}
 
 	[data-theme="dark"] .dashboard-link:hover,
 	[data-theme="dark"] .login-link:hover {
 		color: var(--text-primary);
+	}
+
+	[data-theme="dark"] .login-link:hover {
+		border-color: var(--border-secondary);
+		background: var(--bg-tertiary);
+	}
+
+	[data-theme="dark"] .guest-cta-button {
+		background: var(--color-primary-200);
+		border-color: var(--color-primary-200);
+		color: #ffffff;
+	}
+
+	[data-theme="dark"] .guest-cta-button:hover:not(:disabled) {
+		background: var(--color-primary-300);
+		border-color: var(--color-primary-300);
+		color: #ffffff;
 	}
 
 	[data-theme="dark"] .separator {
