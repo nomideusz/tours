@@ -984,21 +984,35 @@
 		background: var(--bg-tertiary);
 	}
 
-	[data-theme="dark"] .guest-cta-button {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-200);
-		color: #ffffff;
+	/* Force dark mode styles with maximum specificity */
+	:global([data-theme="dark"]) .guest-section .guest-cta-button,
+	:global(html[data-theme="dark"]) .guest-section .guest-cta-button,
+	:global([data-theme="dark"]) button.guest-cta-button {
+		background: var(--color-primary-600) !important;
+		border-color: var(--color-primary-600) !important;
+		color: rgb(11, 13, 16) !important;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(255, 107, 85, 0.3) !important;
+		text-shadow: none !important;
 	}
 
-	[data-theme="dark"] .guest-cta-button:hover:not(:disabled) {
-		background: var(--color-primary-300);
-		border-color: var(--color-primary-300);
-		color: #ffffff;
+	:global([data-theme="dark"]) .guest-section .guest-cta-button:hover:not(:disabled),
+	:global(html[data-theme="dark"]) .guest-section .guest-cta-button:hover:not(:disabled),
+	:global([data-theme="dark"]) button.guest-cta-button:hover:not(:disabled) {
+		background: var(--color-primary-700) !important;
+		border-color: var(--color-primary-700) !important;
+		color: rgb(11, 13, 16) !important;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(255, 138, 115, 0.4) !important;
+		text-shadow: none !important;
 	}
 
-	[data-theme="dark"] .guest-cta-button:active:not(:disabled) {
-		background: var(--color-primary-200);
-		border-color: var(--color-primary-200);
+	:global([data-theme="dark"]) .guest-section .guest-cta-button:active:not(:disabled),
+	:global(html[data-theme="dark"]) .guest-section .guest-cta-button:active:not(:disabled),
+	:global([data-theme="dark"]) button.guest-cta-button:active:not(:disabled) {
+		background: var(--color-primary-500) !important;
+		border-color: var(--color-primary-500) !important;
+		color: rgb(11, 13, 16) !important;
+		text-shadow: none !important;
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 	}
 
 	[data-theme="dark"] .separator {
