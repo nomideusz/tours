@@ -117,7 +117,7 @@
   }
 </script>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="w-full px-6 sm:px-8 lg:px-12 py-8">
   <div class="space-y-8">
     <div>
       <h1 class="text-3xl font-bold text-gray-900 mb-2">📧 Email System Test</h1>

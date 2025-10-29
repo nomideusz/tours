@@ -17,7 +17,7 @@
 	<meta name="description" content="Get help with managing your tours, bookings, and customer interactions on Zaur." />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<PageHeader 
 		title="Help Center" 
 		subtitle="Get help with managing your tours and bookings"

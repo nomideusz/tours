@@ -339,7 +339,7 @@
 	<meta name="description" content={isFilteredByTour ? `Manage bookings for ${tourName} tour` : 'Manage all your tour bookings and customer reservations'} />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Header -->
 	<div class="mb-6 sm:mb-8">
 		<!-- Compact Mobile Header -->

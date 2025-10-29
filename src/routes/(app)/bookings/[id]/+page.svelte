@@ -407,7 +407,7 @@
 	<meta name="description" content="Manage booking details for {booking?.customerName || 'customer'}" />
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<div class="p-8 text-center">
 			<Loader2 class="w-8 h-8 mx-auto mb-2 animate-spin" style="color: var(--text-tertiary);" />

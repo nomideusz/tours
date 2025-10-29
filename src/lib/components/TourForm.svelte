@@ -827,11 +827,12 @@ Key extracted components:
 
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-	<!-- ================================================================ -->
-	<!-- MAIN FORM CONTENT                                                -->
-	<!-- ================================================================ -->
-	<div class="lg:col-span-2 space-y-2 sm:space-y-8">
+<div class="tour-form-container">
+	<div class="tour-form-grid">
+		<!-- ================================================================ -->
+		<!-- MAIN FORM CONTENT                                                -->
+		<!-- ================================================================ -->
+		<div class="tour-form-main">
 		
 		<!-- ============================================================ -->
 		<!-- BASIC INFORMATION SECTION (Name, Categories, Location, Description, Duration) -->
@@ -1722,18 +1723,17 @@ Key extracted components:
 				</div>
 			</div>
 		{/if}
-	</div>
+		</div>
 
-	<!-- Sidebar -->
-	<div class="space-y-6">
-
-		<!-- ============================================================ -->
-		<!-- COMBINED STATUS & VISIBILITY SECTION (Edit Mode Only)       -->
-		<!-- ============================================================ -->
-		{#if isEdit}
-			<!-- Mobile: Combined compact view -->
-			<div class="sm:hidden px-4">
-				<div class="space-y-3">
+		<!-- Sidebar -->
+		<div class="tour-form-sidebar">
+			<!-- ============================================================ -->
+			<!-- COMBINED STATUS & VISIBILITY SECTION (Edit Mode Only)       -->
+			<!-- ============================================================ -->
+			{#if isEdit}
+				<!-- Mobile: Combined compact view -->
+				<div class="sm:hidden px-4">
+					<div class="space-y-3">
 					<!-- Status display -->
 					{#if !hideStatusField}
 						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
@@ -1956,7 +1956,8 @@ Key extracted components:
 			</div>
 		</div>
 	</div>
-</div>
+		</div>
+	</div>
 </div>
 
 <style>
@@ -2667,6 +2668,98 @@ Key extracted components:
 		.action-buttons-section {
 			border: none !important;
 			background: transparent !important;
+		}
+	}
+
+	/* Modern Tour Form Layout */
+	.tour-form-container {
+		width: 100%;
+		max-width: 1400px;
+		margin: 0 auto;
+	}
+
+	.tour-form-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.tour-form-main {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.tour-form-sidebar {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	/* Tablet and up */
+	@media (min-width: 640px) {
+		.tour-form-main {
+			gap: 2rem;
+		}
+	}
+
+	/* Desktop layout */
+	@media (min-width: 1024px) {
+		.tour-form-grid {
+			grid-template-columns: 1fr 340px;
+			gap: 2rem;
+			align-items: start;
+		}
+
+		.tour-form-sidebar {
+			position: sticky;
+			top: 5rem;
+			max-height: calc(100vh - 6rem);
+			overflow-y: auto;
+		}
+
+		/* Custom scrollbar for sidebar */
+		.tour-form-sidebar::-webkit-scrollbar {
+			width: 6px;
+		}
+
+		.tour-form-sidebar::-webkit-scrollbar-track {
+			background: var(--bg-secondary);
+			border-radius: 3px;
+		}
+
+		.tour-form-sidebar::-webkit-scrollbar-thumb {
+			background: var(--border-secondary);
+			border-radius: 3px;
+		}
+
+		.tour-form-sidebar::-webkit-scrollbar-thumb:hover {
+			background: var(--border-primary);
+		}
+	}
+
+	/* Large desktop - wider sidebar */
+	@media (min-width: 1536px) {
+		.tour-form-grid {
+			grid-template-columns: 1fr 380px;
+			gap: 3rem;
+		}
+	}
+
+	/* Form sections visual enhancement */
+	.form-section-card {
+		transition: box-shadow 0.2s ease, transform 0.2s ease;
+	}
+
+	.form-section-card:hover {
+		box-shadow: var(--shadow-md);
+		transform: translateY(-1px);
+	}
+
+	/* Responsive padding adjustments */
+	@media (max-width: 639px) {
+		.tour-form-sidebar {
+			margin-top: 1rem;
 		}
 	}
 </style>

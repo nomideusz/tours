@@ -52,7 +52,7 @@
   <title>SSE Monitor - Admin</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="w-full px-6 sm:px-8 lg:px-12 py-8">
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">SSE Connection Monitor</h1>
     <p class="text-gray-600 dark:text-gray-400">

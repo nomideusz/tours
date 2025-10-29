@@ -272,7 +272,7 @@
 	<title>Promotional Stickers - Marketing - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 	<!-- Mobile Header -->
 	<MobilePageHeader
 		title="Promotional Stickers"

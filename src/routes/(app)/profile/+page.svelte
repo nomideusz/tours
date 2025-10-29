@@ -648,7 +648,7 @@
 	<title>Profile Settings - Zaur</title>
 </svelte:head>
 
-<PageContainer class="py-4 sm:py-8">
+<PageContainer class="py-4 sm:py-8 max-w-6xl mx-auto">
 	{#if isLoading}
 		<div class="flex justify-center items-center py-12">
 			<LoadingSpinner size="large" text="Loading profile..." />

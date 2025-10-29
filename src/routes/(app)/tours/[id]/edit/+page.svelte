@@ -794,7 +794,7 @@
 	<title>Edit {tour?.name || 'Tour'} - Zaur</title>
 </svelte:head>
 
-<div class="max-w-screen-2xl mx-auto px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
+<div class="tours-page-container px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
 	{#if isLoading}
 		<!-- Mobile Loading Header -->
 		<div class="mb-3 sm:mb-8 px-4 sm:px-0">
@@ -976,4 +976,10 @@
 		onConfirm={handleDeleteErrorViewBookings}
 		onCancel={handleDeleteErrorClose}
 	/>
-{/if} 
+{/if}
+
+<style>
+	.tours-page-container {
+		width: 100%;
+	}
+</style> 
