@@ -636,28 +636,14 @@
 		if (browser && mobileMenuOpen) {
 			document.addEventListener('click', handleClickOutside);
 			
-			// Prevent body scroll when menu is open (mobile-friendly approach)
-			const scrollY = window.scrollY;
-			const body = document.body;
-			const originalPosition = body.style.position;
-			const originalTop = body.style.top;
-			const originalWidth = body.style.width;
-			const originalOverflow = body.style.overflow;
-			
-			body.style.position = 'fixed';
-			body.style.top = `-${scrollY}px`;
-			body.style.width = '100%';
-			body.style.overflow = 'hidden';
+			// Prevent body scroll when menu is open - simplified without iOS hacks
+			document.body.style.overflow = 'hidden';
 			
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
 				
-				// Restore scroll position
-				body.style.position = originalPosition;
-				body.style.top = originalTop;
-				body.style.width = originalWidth;
-				body.style.overflow = originalOverflow;
-				window.scrollTo(0, scrollY);
+				// Restore scroll
+				document.body.style.overflow = '';
 			};
 		}
 	});
