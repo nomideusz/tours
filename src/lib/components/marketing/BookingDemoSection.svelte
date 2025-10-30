@@ -16,6 +16,9 @@
 	// Umami tracking
 	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
 	
+	// Markdown utilities
+	import { truncateMarkdown } from '$lib/utils/markdown-helpers.js';
+	
 	// Fetch featured tours (demo tour + Beta 1 tours)
 	let toursQuery = $derived(createQuery({
 		queryKey: ['featured-tours-marketing'],
@@ -174,7 +177,7 @@
 								<h3 class="tour-name">{tour.name}</h3>
 								
 								<p class="tour-description">
-									{tour.description?.slice(0, 120)}{tour.description?.length > 120 ? '...' : ''}
+									{truncateMarkdown(tour.description || '', 120)}
 								</p>
 								
 								<!-- Tour Details -->

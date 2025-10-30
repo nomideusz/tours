@@ -23,6 +23,7 @@ export interface TourFormData {
 	status: Tour['status'];
 	categories: string[];
 	location: string;
+	languages?: string[];
 	includedItems: string[];
 	requirements: string[];
 	cancellationPolicy: string;
@@ -189,10 +190,13 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		errors.push({ field: 'description', message: 'Tour description is required' });
 	} else {
 		const description = data.description.trim();
-		if (description.length < VALIDATION_RULES.description.minLength) {
+		// Count visible characters (excluding excessive whitespace)
+		const visibleCharCount = description.replace(/\s+/g, ' ').trim().length;
+		
+		if (visibleCharCount < VALIDATION_RULES.description.minLength) {
 			errors.push({ field: 'description', message: `Minimum ${VALIDATION_RULES.description.minLength} characters` });
 		}
-		if (description.length > VALIDATION_RULES.description.maxLength) {
+		if (visibleCharCount > VALIDATION_RULES.description.maxLength) {
 			errors.push({ field: 'description', message: `Description must be no more than ${VALIDATION_RULES.description.maxLength} characters` });
 		}
 	}
@@ -319,6 +323,11 @@ export function validateTourForm(data: Partial<TourFormData>): ValidationResult 
 		}
 	}
 
+	// Validate languages
+	if (!data.languages || data.languages.length === 0) {
+		errors.push({ field: 'languages', message: 'At least one language must be selected' });
+	}
+	
 	// Validate status
 	if (data.status && !VALID_STATUSES.includes(data.status)) {
 		errors.push({ field: 'status', message: 'Invalid tour status' });
@@ -512,15 +521,24 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		status: (data.status as Tour['status']) || 'draft',
 		categories: Array.isArray(data.categories) ? data.categories.map((cat: any) => String(cat).trim()).filter((cat: string) => cat !== '') : [],
 		location: sanitizeLocation(String(data.location || '')),
+		languages: Array.isArray(data.languages) ? data.languages.filter((lang: any) => typeof lang === 'string' && lang.trim()) : ['en'],
 		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
 		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
 		cancellationPolicy: String(data.cancellationPolicy || '').trim(),
 		cancellationPolicyId: data.cancellationPolicyId ? String(data.cancellationPolicyId).trim() : undefined,
+		pricingModel: data.pricingModel || 'participant_categories',
 		enablePricingTiers: Boolean(data.enablePricingTiers),
 		pricingTiers: data.pricingTiers ? {
 			adult: Number(data.pricingTiers.adult) || 0,
 			child: Number(data.pricingTiers.child) || 0
 		} : undefined,
+		participantCategories: data.participantCategories,
+		privateTour: data.privateTour,
+		groupPricingTiers: data.groupPricingTiers,
+		groupDiscounts: data.groupDiscounts,
+		optionalAddons: data.optionalAddons,
+		guidePaysStripeFee: data.guidePaysStripeFee,
+		countInfantsTowardCapacity: data.countInfantsTowardCapacity,
 		publicListing: data.publicListing
 	};
 }

@@ -19,7 +19,7 @@
 	let { title, subtitle, breadcrumbs, backUrl, children }: Props = $props();
 </script>
 
-<div class="mb-8">
+<div class="mb-8 pt-4">
 	<div class="flex items-center gap-4">
 		{#if backUrl}
 			<button 
@@ -34,10 +34,10 @@
 		
 		<div class="flex-1">
 			{#if breadcrumbs && breadcrumbs.length > 0}
-				<nav class="flex items-center gap-2 text-sm mb-2" style="color: var(--text-secondary);">
+				<nav class="flex items-center text-sm mb-3" style="color: var(--text-secondary);">
 					{#each breadcrumbs as crumb, i}
 						{#if i > 0}
-							<ChevronRight class="h-3 w-3" />
+							<span class="mx-1" style="color: var(--text-tertiary);">›</span>
 						{/if}
 						{#if crumb.href}
 							<a href={crumb.href} class="transition-colors hover:text-blue-600" style="color: var(--text-secondary);">{crumb.label}</a>

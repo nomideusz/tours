@@ -221,9 +221,19 @@
 							{/if}
 						</div>
 						
-						<!-- Description with better typography -->
+						<!-- Description with better typography and markdown support -->
 						{#if tour.description}
-							<p class="tour-description">{tour.description}</p>
+							<div class="tour-description">
+								{@html tour.description
+									.replace(/&/g, '&amp;')
+									.replace(/</g, '&lt;')
+									.replace(/>/g, '&gt;')
+									.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+									.replace(/\*(.*?)\*/g, '<em>$1</em>')
+									.replace(/\n\n/g, '</p><p>')
+									.replace(/^(.+)$/gm, '<p>$1</p>')
+									.replace(/<p><\/p>/g, '')}
+							</div>
 						{/if}
 					</div>
 					

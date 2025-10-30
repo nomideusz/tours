@@ -273,13 +273,13 @@ export const actions: Actions = {
       console.log('📝 Public listing from form:', formData.get('publicListing'), '→', publicListing);
       
       // Debug cancellation policy
+      const cancellationPolicyValue = formData.get('cancellationPolicy');
       console.log('📝 Cancellation policy from form:', {
         policyId: formData.get('cancellationPolicyId'),
-        policyText: formData.get('cancellationPolicy')?.substring(0, 50)
+        policyText: typeof cancellationPolicyValue === 'string' ? cancellationPolicyValue.substring(0, 50) : ''
       });
 
       // Prepare tour data
-      console.log('📝 Raw categories from form:', formData.get('categories'));
       const tourData = {
         name: formData.get('name'),
         description: formData.get('description'),
@@ -301,6 +301,14 @@ export const actions: Actions = {
           }
         })(),
         location: formData.get('location'),
+        languages: (() => {
+          const languagesData = formData.get('languages') as string || '["en"]';
+          try {
+            return JSON.parse(languagesData);
+          } catch (e) {
+            return ['en']; // Default to English if parsing fails
+          }
+        })(),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: formData.get('cancellationPolicy'),
@@ -321,7 +329,6 @@ export const actions: Actions = {
 
       // Sanitize the data
       const sanitizedData = sanitizeTourFormData(tourData);
-      console.log('📝 Processed categories:', sanitizedData.categories);
 
       // Check if trying to activate tour without completing onboarding
       if (sanitizedData.status === 'active') {
@@ -479,6 +486,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,

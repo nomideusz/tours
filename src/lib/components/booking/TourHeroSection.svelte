@@ -7,8 +7,10 @@
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import Clock from 'lucide-svelte/icons/clock';
 	import Users from 'lucide-svelte/icons/users';
+	import Globe from 'lucide-svelte/icons/globe';
 	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { formatShortAddress } from '$lib/utils/location.js';
+	import { formatLanguages } from '$lib/utils/languages.js';
 	import TourLocationMap from './TourLocationMap.svelte';
 	
 	interface TourGuide {
@@ -43,6 +45,10 @@
 	
 	// Format location for display (shortened version)
 	let displayLocation = $derived(tour.location ? formatShortAddress(tour.location) : '');
+	
+	// Format languages for display
+	let displayLanguages = $derived(tour.languages ? formatLanguages(tour.languages, { showFlags: false }) : '');
+	let allLanguageNames = $derived(tour.languages ? formatLanguages(tour.languages, { maxDisplay: 100 }) : '');
 	
 	let hasMultipleImages = $derived(imageUrls.length > 1);
 	let currentImage = $derived(imageUrls[currentImageIndex] || imageUrl);
@@ -173,6 +179,13 @@
 					{/if}
 				{/if}
 			</button>
+		{/if}
+		
+		{#if displayLanguages}
+			<span class="meta-item" title={allLanguageNames}>
+				<Globe class="w-4 h-4" />
+				{displayLanguages}
+			</span>
 		{/if}
 	</div>
 	

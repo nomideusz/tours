@@ -179,6 +179,7 @@ export const tours = pgTable('tours', {
   status: tourStatusEnum('status').notNull().default('draft'),
   categories: json('categories').$type<string[]>().default([]),
   location: varchar('location', { length: 255 }),
+  languages: json('languages').$type<string[]>().default(['en']),
   includedItems: json('included_items').$type<string[]>().default([]),
   requirements: json('requirements').$type<string[]>().default([]),
   cancellationPolicy: text('cancellation_policy'),

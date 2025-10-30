@@ -29,28 +29,78 @@
 		html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 		html = html.replace(/_(.*?)_/g, '<em>$1</em>');
 		
-		// Lists
-		html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
-		html = html.replace(/^\- (.+)$/gm, '<li>$1</li>');
-		html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+		// Lists - process line by line to properly group ordered and unordered lists
+		const listLines = html.split('\n');
+		const processedListLines: string[] = [];
+		let currentListType: 'ol' | 'ul' | null = null;
+		let listItems: string[] = [];
 		
-		// Wrap consecutive list items
-		html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
-			const isOrdered = match.includes('1.');
-			return isOrdered ? `<ol>${match}</ol>` : `<ul>${match}</ul>`;
-		});
+		for (const line of listLines) {
+			const trimmedLine = line.trim();
+			
+			// Check for numbered list
+			const numberedMatch = trimmedLine.match(/^(\d+)\.\s+(.+)$/);
+			if (numberedMatch) {
+				if (currentListType !== 'ol') {
+					// Close previous list if different type
+					if (currentListType && listItems.length > 0) {
+						processedListLines.push(`<${currentListType}>${listItems.join('')}</${currentListType}>`);
+						listItems = [];
+					}
+					currentListType = 'ol';
+				}
+				listItems.push(`<li>${numberedMatch[2]}</li>`);
+				continue;
+			}
+			
+			// Check for bullet list
+			const bulletMatch = trimmedLine.match(/^[\*\-]\s+(.+)$/);
+			if (bulletMatch) {
+				if (currentListType !== 'ul') {
+					// Close previous list if different type
+					if (currentListType && listItems.length > 0) {
+						processedListLines.push(`<${currentListType}>${listItems.join('')}</${currentListType}>`);
+						listItems = [];
+					}
+					currentListType = 'ul';
+				}
+				listItems.push(`<li>${bulletMatch[1]}</li>`);
+				continue;
+			}
+			
+			// Not a list item - close any open list
+			if (currentListType && listItems.length > 0) {
+				processedListLines.push(`<${currentListType}>${listItems.join('')}</${currentListType}>`);
+				listItems = [];
+				currentListType = null;
+			}
+			processedListLines.push(line);
+		}
+		
+		// Close any remaining list
+		if (currentListType && listItems.length > 0) {
+			processedListLines.push(`<${currentListType}>${listItems.join('')}</${currentListType}>`);
+		}
+		
+		html = processedListLines.join('\n');
 		
 		// Line breaks and paragraphs
 		const lines = html.split('\n');
 		const processedLines = [];
 		let inBlock = false;
+		let blockLines: string[] = [];
 		
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i].trim();
 			
 			if (line === '') {
+				// Empty line - close current block if any
 				if (inBlock) {
+					// Join lines in block with <br> for single line breaks
+					processedLines.push('<p>');
+					processedLines.push(blockLines.join('<br>\n'));
 					processedLines.push('</p>');
+					blockLines = [];
 					inBlock = false;
 				}
 				continue;
@@ -59,20 +109,26 @@
 			// Skip if already wrapped in tags
 			if (line.startsWith('<h') || line.startsWith('<ul>') || line.startsWith('<ol>') || line.startsWith('<li>')) {
 				if (inBlock) {
+					processedLines.push('<p>');
+					processedLines.push(blockLines.join('<br>\n'));
 					processedLines.push('</p>');
+					blockLines = [];
 					inBlock = false;
 				}
 				processedLines.push(line);
 			} else {
+				// Regular text line - add to current block
 				if (!inBlock) {
-					processedLines.push('<p>');
 					inBlock = true;
 				}
-				processedLines.push(line);
+				blockLines.push(line);
 			}
 		}
 		
-		if (inBlock) {
+		// Close any remaining block
+		if (inBlock && blockLines.length > 0) {
+			processedLines.push('<p>');
+			processedLines.push(blockLines.join('<br>\n'));
 			processedLines.push('</p>');
 		}
 		

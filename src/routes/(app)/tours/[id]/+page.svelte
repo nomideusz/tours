@@ -4,6 +4,7 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDate, getStatusColor } from '$lib/utils/date-helpers.js';
 	import { formatDuration, formatCategoryName, getTourDisplayPriceFormatted } from '$lib/utils/tour-helpers-client.js';
+	import { formatLanguages } from '$lib/utils/languages.js';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	
@@ -27,6 +28,7 @@
 	import PageContainer from '$lib/components/PageContainer.svelte';
 	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';
 	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
+	import Markdown from '$lib/components/ui/Markdown.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -47,6 +49,7 @@
 	import XCircle from 'lucide-svelte/icons/x-circle';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Image from 'lucide-svelte/icons/image';
+	import Globe from 'lucide-svelte/icons/globe';
 	import Check from 'lucide-svelte/icons/check';
 	import Info from 'lucide-svelte/icons/info';
 	import Shield from 'lucide-svelte/icons/shield';
@@ -1229,33 +1232,26 @@
 								/>
 							{/if}
 							
-							<!-- Description - mobile-optimized text -->
+							<!-- Description - mobile-optimized text with markdown support -->
 							{#if tour.description}
 								<div>
-									{#if tour.description.length > 200 && !showFullDescription}
-										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
-											{#each tour.description.slice(0, 200).split('\n').filter((line: string) => line.trim()) as paragraph}
-												<p>{paragraph}</p>
-											{/each}
-											<span>...</span>
+									{#if tour.description.length > 300 && !showFullDescription}
+										<div class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">
+											<Markdown content={tour.description.slice(0, 300) + '...'} />
 											<button onclick={() => showFullDescription = true} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
 												Show more
 											</button>
 										</div>
-									{:else if tour.description.length > 200 && showFullDescription}
-										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
-											{#each tour.description.split('\n').filter((line: string) => line.trim()) as paragraph}
-												<p>{paragraph}</p>
-											{/each}
+									{:else if tour.description.length > 300 && showFullDescription}
+										<div class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">
+											<Markdown content={tour.description} />
 											<button onclick={() => showFullDescription = false} class="text-sm font-medium hover:underline ml-1" style="color: var(--color-primary-600);">
 												Show less
 											</button>
 										</div>
 									{:else}
-										<div class="text-sm sm:text-sm leading-relaxed space-y-2" style="color: var(--text-primary);">
-											{#each tour.description.split('\n').filter((line: string) => line.trim()) as paragraph}
-												<p>{paragraph}</p>
-											{/each}
+										<div class="text-sm sm:text-sm leading-relaxed" style="color: var(--text-primary);">
+											<Markdown content={tour.description} />
 										</div>
 									{/if}
 								</div>
@@ -1275,6 +1271,16 @@
 											{formatCategoryName(category)}
 										</span>
 									{/each}
+								</div>
+							{/if}
+							
+							<!-- Languages -->
+							{#if tour.languages && tour.languages.length > 0}
+								<div class="flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
+									<Globe class="h-4 w-4" />
+									<span title={formatLanguages(tour.languages, { maxDisplay: 100 })}>
+										{formatLanguages(tour.languages)}
+									</span>
 								</div>
 							{/if}
 

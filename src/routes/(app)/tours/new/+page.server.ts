@@ -374,6 +374,14 @@ export const actions: Actions = {
           }
         })(),
         location: formData.get('location'),
+        languages: (() => {
+          const languagesData = formData.get('languages') as string || '["en"]';
+          try {
+            return JSON.parse(languagesData);
+          } catch (e) {
+            return ['en']; // Default to English if parsing fails
+          }
+        })(),
         includedItems: parsedIncludedItems,
         requirements: parsedRequirements,
         cancellationPolicy: formData.get('cancellationPolicy'),
@@ -539,6 +547,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,
@@ -615,6 +624,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
           cancellationPolicy: sanitizedData.cancellationPolicy as string || null,

@@ -162,8 +162,9 @@
 		status: 'draft' as Tour['status'],
 		categories: [],
 		location: '',
-		includedItems: [''],
-		requirements: [''],
+		languages: ['en'],
+		includedItems: [],
+		requirements: [],
 		cancellationPolicy: '',
 		cancellationPolicyId: 'flexible',
 		// Pricing configuration
@@ -373,8 +374,9 @@
 			status: tour.status || 'draft',
 			categories: tour.categories || [],
 			location: tour.location || '',
-			includedItems: tour.includedItems && tour.includedItems.length > 0 ? tour.includedItems : [''],
-			requirements: tour.requirements && tour.requirements.length > 0 ? tour.requirements : [''],
+			languages: tour.languages || ['en'],
+			includedItems: tour.includedItems || [],
+			requirements: tour.requirements || [],
 			cancellationPolicy: tour.cancellationPolicy || '',
 			cancellationPolicyId: tour.cancellationPolicyId || 'flexible',
 			// Pricing configuration
@@ -445,6 +447,9 @@
 							formDataToSubmit.append(key, item.trim());
 						}
 					});
+				} else if (key === 'categories' || key === 'languages') {
+					// JSON.stringify arrays for categories and languages
+					formDataToSubmit.append(key, JSON.stringify(value));
 				} else if (key === 'pricingTiers') {
 					if (formData.enablePricingTiers && value) {
 						formDataToSubmit.append('pricingTiers.adult', String((value as any).adult));

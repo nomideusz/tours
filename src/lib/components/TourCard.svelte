@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
+	import { truncateMarkdown } from '$lib/utils/markdown-helpers.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -102,7 +103,7 @@
 		<h3 class="tour-name">{tour.name}</h3>
 		
 		<p class="tour-description">
-			{tour.description?.slice(0, 120)}{tour.description?.length > 120 ? '...' : ''}
+			{truncateMarkdown(tour.description || '', 120)}
 		</p>
 		
 		<!-- Tour Details -->

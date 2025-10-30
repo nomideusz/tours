@@ -16,6 +16,7 @@ export interface TourFormData {
   status: 'active' | 'draft';
   categories: string[];
   location: string;
+  languages: string[];
   includedItems: string[];
   requirements: string[];
   cancellationPolicy: string;

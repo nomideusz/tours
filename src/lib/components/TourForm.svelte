@@ -11,7 +11,7 @@ Main form for creating and editing tours. Organized into clear sections:
 4. CANCELLATION POLICY - Cancellation terms with templates
 5. DANGER ZONE - Delete tour (edit mode only, shown in main content)
 6. TOUR STATUS - Active/Draft status (edit mode only, shown in sidebar)
-7. PUBLIC LISTING - Discovery toggle (edit mode only, shown in sidebar)
+7. UNLISTED MODE - Hide from public search (edit mode only, shown in sidebar)
 8. ACTION BUTTONS - Save, publish, cancel (shown in sidebar)
 
 Smart button behavior:
@@ -30,6 +30,7 @@ Key extracted components:
 -->
 
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import NumberInput from './NumberInput.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
@@ -58,10 +59,13 @@ Key extracted components:
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
+	import LanguageSelector from './LanguageSelector.svelte';
+	import CategorySelector from './CategorySelector.svelte';
 	import Tooltip from './Tooltip.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Globe from 'lucide-svelte/icons/globe';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Package from 'lucide-svelte/icons/package';
 	import { isValidLocationLength } from '$lib/utils/location.js';
 	
 	// Import new pricing components
@@ -69,8 +73,9 @@ Key extracted components:
 	import type { PricingModel, GroupPricingTier, GroupDiscountTier, OptionalAddon, ParticipantCategory } from '$lib/types.js';
 	
 	// Import tour form section components
-	import TourDetailsSection from './tour-form/TourDetailsSection.svelte';
 	import DurationInput from './DurationInput.svelte';
+	import MarkdownEditor from './ui/MarkdownEditor.svelte';
+	import ChipInput from './ChipInput.svelte';
 
 	interface Props {
 		formData: {
@@ -85,6 +90,7 @@ Key extracted components:
 			status: 'active' | 'draft';
 			categories: string[];
 			location: string;
+			languages: string[];
 			includedItems: string[];
 			requirements: string[];
 			cancellationPolicy: string;
@@ -244,6 +250,11 @@ Key extracted components:
 	if (formData.guidePaysStripeFee === undefined) {
 		formData.guidePaysStripeFee = false;
 	}
+	
+	// Initialize languages if not set (default to English)
+	if (!formData.languages || formData.languages.length === 0) {
+		formData.languages = ['en'];
+	}
 
 	// Client-side validation state
 	let validationErrors = $state<ValidationError[]>([]);
@@ -255,12 +266,9 @@ Key extracted components:
 	
 	// Collapsible sections state
 	let showAdvancedPricing = $state(false);
-	let showTourDetails = $state(false);
 	let showCancellationPolicy = $state(false);
 	
 	// Custom category state
-	let showCustomCategoryInput = $state(false);
-	let customCategoryInput = $state('');
 	
 	// Get currency symbol for display
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');
@@ -292,6 +300,25 @@ Key extracted components:
 	let missingSteps = $derived(activationCheck.missingSteps);
 	let onboardingMessage = $derived(getOnboardingMessage(missingSteps, formData.price === 0));
 	let nextStep = $derived(getNextOnboardingStep(missingSteps));
+	
+	// Suggestions for What's Included and Requirements
+	const includedItemsSuggestions = [
+		'Professional tour guide',
+		'Historical insights',
+		'Photo opportunities',
+		'Small group experience',
+		'Route map',
+		'Local recommendations'
+	];
+
+	const requirementsSuggestions = [
+		'Comfortable walking shoes',
+		'Basic fitness level',
+		'Weather-appropriate clothing',
+		'Minimum age 12+',
+		'No mobility issues',
+		'English speaking'
+	];
 
 	
 	// Serialize for form submission - use state + effect instead of $derived
@@ -423,18 +450,6 @@ Key extracted components:
 		}
 	});
 	
-	// Smart Progressive Reveal - Auto-expand sections based on user progress
-	$effect(() => {
-		// Auto-expand tour details when description is substantial (suggests user is engaged)
-		if (formData.description && formData.description.length > 200 && !showTourDetails) {
-			showTourDetails = true;
-		}
-		
-		// Auto-expand tour details if there are items/requirements already
-		if (formData.includedItems.some(item => item.trim()) || formData.requirements.some(req => req.trim())) {
-			showTourDetails = true;
-		}
-	});
 
 	// Note: Reactive validation is handled by individual field validation functions
 	// to avoid conflicts and ensure consistent error state management
@@ -492,6 +507,9 @@ Key extracted components:
 	// Removed real-time validation to improve UX
 	// Validation now only happens on blur and form submission
 
+	// Typing timeout tracker
+	let typingTimeouts = new Map<string, NodeJS.Timeout>();
+	
 	// Track when user starts typing to hide errors temporarily
 	function handleFieldInput(fieldName: string) {
 		currentlyTypingFields.add(fieldName);
@@ -501,6 +519,22 @@ Key extracted components:
 		if (fieldName === 'name' || fieldName === 'description') {
 			validationErrors = validationErrors.filter(error => error.field !== fieldName);
 		}
+		
+		// Clear any existing timeout for this field
+		const existingTimeout = typingTimeouts.get(fieldName);
+		if (existingTimeout) {
+			clearTimeout(existingTimeout);
+		}
+		
+		// Set a new timeout to remove from typing state after 2 seconds of no input
+		// This ensures currentlyTypingFields gets cleared even if blur doesn't fire
+		const timeout = setTimeout(() => {
+			currentlyTypingFields.delete(fieldName);
+			currentlyTypingFields = currentlyTypingFields;
+			typingTimeouts.delete(fieldName);
+		}, 2000);
+		
+		typingTimeouts.set(fieldName, timeout);
 	}
 
 	// Trigger validation for specific field on blur
@@ -508,6 +542,13 @@ Key extracted components:
 		// Remove from currently typing when field loses focus
 		currentlyTypingFields.delete(fieldName);
 		currentlyTypingFields = currentlyTypingFields; // trigger reactivity
+		
+		// Clear any pending timeout for this field
+		const existingTimeout = typingTimeouts.get(fieldName);
+		if (existingTimeout) {
+			clearTimeout(existingTimeout);
+			typingTimeouts.delete(fieldName);
+		}
 		
 		touchedFields.add(fieldName);
 		
@@ -521,7 +562,7 @@ Key extracted components:
 		const fieldError = validation.errors.find(error => error.field === fieldName);
 		if (fieldError) {
 			validationErrors = [...validationErrors, fieldError];
-		}
+}
 	}
 
 	// Helper to check if error should be shown
@@ -564,75 +605,6 @@ Key extracted components:
 		
 		return validation.isValid;
 	}
-
-	// Custom category handling with validation
-	function addCustomCategory() {
-		const trimmedCategory = customCategoryInput.trim();
-		if (!trimmedCategory) return;
-		
-		if (!formData.categories) formData.categories = [];
-		
-		// Validate category length
-		if (trimmedCategory.length < 2) {
-			return;
-		}
-		
-		if (trimmedCategory.length > 20) {
-			return;
-		}
-		
-		// Check if category already exists (case-insensitive)
-		const existsAlready = formData.categories.some(
-			cat => cat.toLowerCase() === trimmedCategory.toLowerCase()
-		);
-		
-		if (existsAlready) {
-			return;
-		}
-		
-		// Check if we can add more categories
-		if (formData.categories.length >= 5) return;
-		
-		// Add the category
-		formData.categories = [...formData.categories, trimmedCategory];
-		
-		// Reset input state
-		customCategoryInput = '';
-		showSingleCharWarning = false;
-	}
-	
-	// Real-time validation for custom category input
-	function validateCustomCategory(inputValue: string) {
-		if (!inputValue.trim()) return 'valid';
-		
-		const trimmed = inputValue.trim();
-		
-		// Check length
-		if (trimmed.length < 2) return 'too-short';
-		if (trimmed.length > 20) return 'too-long';
-		
-		// Check for duplicates
-		if (formData.categories?.some(cat => cat.toLowerCase() === trimmed.toLowerCase())) {
-			return 'duplicate';
-		}
-		
-		return 'valid';
-	}
-	
-	// Helper to check if validation error should be shown
-	function shouldShowCategoryError(inputValue: string): boolean {
-		// Don't show error when user is typing the first character
-		const length = inputValue.trim().length;
-		if (length === 0 || length === 1) return false;
-		// Show error for 2+ characters (too short still an issue) or too long/duplicate
-		return true;
-	}
-	
-	// Derived validation state for the input
-	let customCategoryValidation = $derived(validateCustomCategory(customCategoryInput));
-	
-	// Track if user tried to submit with only 1 character
-	let showSingleCharWarning = $state(false);
 
 	// Cancellation Policy Templates (using new structured policies)
 	import { CANCELLATION_POLICIES, getCancellationPolicyText } from '$lib/utils/cancellation-policies.js';
@@ -799,14 +771,26 @@ Key extracted components:
 	function scrollToFirstError() {
 		if (typeof window === 'undefined') return;
 		
+		// Don't scroll if user is actively typing in any field
+		// This prevents disruptive scrolling on mobile
+		if (currentlyTypingFields.size > 0) {
+			return;
+		}
+		
 		// Wait for DOM to update
 		setTimeout(() => {
 			const firstErrorField = document.querySelector('.form-input.error, .form-textarea.error, .form-select.error');
 			if (firstErrorField) {
-				// Scroll with some offset for mobile header
-				const yOffset = -100; // Adjust based on your mobile header height
-				const y = firstErrorField.getBoundingClientRect().top + window.pageYOffset + yOffset;
-				window.scrollTo({ top: y, behavior: 'smooth' });
+				// Don't scroll if the error field is already in viewport
+				const rect = firstErrorField.getBoundingClientRect();
+				const isInViewport = rect.top >= 0 && rect.bottom <= window.innerHeight;
+				
+				if (!isInViewport) {
+					// Scroll with some offset for mobile header
+					const yOffset = -100; // Adjust based on your mobile header height
+					const y = rect.top + window.pageYOffset + yOffset;
+					window.scrollTo({ top: y, behavior: 'smooth' });
+				}
 			}
 		}, 100);
 	}
@@ -822,7 +806,13 @@ Key extracted components:
 
 	// Store original per-person price for restoration when switching models
 	let savedPerPersonPrice = $state(formData.price || 25);
-
+	
+	// Cleanup on component destroy
+	onDestroy(() => {
+		// Clear all typing timeouts to prevent memory leaks
+		typingTimeouts.forEach(timeout => clearTimeout(timeout));
+		typingTimeouts.clear();
+	});
 
 
 </script>
@@ -835,22 +825,22 @@ Key extracted components:
 		<div class="tour-form-main">
 		
 		<!-- ============================================================ -->
-		<!-- BASIC INFORMATION SECTION (Name, Categories, Location, Description, Duration) -->
+		<!-- BASIC INFORMATION SECTION                                    -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="px-4 py-2.5 sm:p-4 lg:p-6 space-y-1.5 sm:space-y-3 lg:space-y-4">
+		<div class="form-section-minimal">
+			<div class="space-y-5 sm:space-y-6">
 				<!-- Hidden status field for form submission (when not showing visible toggle) -->
 				{#if !isEdit || hideStatusField}
 					<input type="hidden" name="status" bind:value={formData.status} />
 				{/if}
 				
-				<!-- First Row: Tour Name (full width on mobile, 2/3 on desktop) and Duration (1/3 on desktop) -->
-				<div class="grid grid-cols-1 lg:grid-cols-3 gap-1.5 sm:gap-4 lg:gap-5">
-					<!-- Tour Name -->
-					<div class="lg:col-span-2">
+				<!-- Row 1: Name and Duration -->
+				<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+					<!-- Name -->
+					<div class="lg:col-span-3">
 						<label for="name" class="form-label flex items-center gap-2 hidden sm:flex">
 							<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Tour Name *</span>
+							<span>Name *</span>
 						</label>
 						<div class="form-field-wrapper">
 							<input
@@ -858,7 +848,7 @@ Key extracted components:
 								id="name"
 								name="name"
 								bind:value={formData.name}
-								placeholder="Tour Name *"
+								placeholder="Name *"
 								class="form-input form-input--no-transform tour-name-input {hasFieldError(allErrors, 'name') ? 'error' : ''}"
 								oninput={() => handleFieldInput('name')}
 								onblur={() => validateField('name')}
@@ -901,8 +891,8 @@ Key extracted components:
 					</div>
 				</div>
 
-				<!-- Second Row: Meeting Point and Categories side by side on desktop -->
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-1.5 sm:gap-4 lg:gap-6">
+				<!-- Row 2: Meeting Point | Categories + Languages -->
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 					<!-- Meeting Point -->
 					<div>
 						<label class="form-label flex items-center gap-2 hidden sm:flex">
@@ -936,192 +926,130 @@ Key extracted components:
 						<input type="hidden" name="location" bind:value={formData.location} />
 					</div>
 
-					<!-- Categories - Redesigned -->
-					<div class="space-y-0 sm:space-y-2">
-						<label for="categories" class="form-label flex items-center gap-2 hidden sm:flex">
-							<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Categories</span>
-							{#if formData.categories && formData.categories.length > 0}
-								<span class="text-xs px-2 py-0.5 rounded-full" style="background: var(--bg-tertiary); color: var(--text-secondary);">
-									{formData.categories.length}/5
-								</span>
-							{/if}
-						</label>
-						
-						<!-- Categories Container -->
-						<div class="categories-container">
-							<!-- Preset Categories Grid -->
-							<div class="categories-grid">
-								{#each [
-									{ id: 'walking', name: 'Walking', icon: Users },
-									{ id: 'food', name: 'Food', icon: Utensils },
-									{ id: 'cultural', name: 'Cultural', icon: Building },
-									{ id: 'historical', name: 'Historical', icon: BookOpen },
-									{ id: 'art', name: 'Art', icon: Palette },
-									{ id: 'adventure', name: 'Adventure', icon: Mountain }
-								] as category}
-									{@const Icon = category.icon}
-									{@const isSelected = formData.categories?.includes(category.id) || false}
-									{@const canSelect = !isSelected && (formData.categories?.length || 0) < 5}
-									<button
-										type="button"
-										disabled={!canSelect && !isSelected}
-										onclick={() => { 
-											if (!formData.categories) formData.categories = [];
-											if (isSelected) {
-												formData.categories = formData.categories.filter(c => c !== category.id);
-											} else if (canSelect) {
-												formData.categories = [...formData.categories, category.id];
-											}
-										}}
-										class="category-button"
-										class:selected={isSelected}
-										class:disabled={!canSelect && !isSelected}
-									>
-										<Icon class="w-3.5 h-3.5" />
-										<span>{category.name}</span>
-									</button>
-								{/each}
-							</div>
-							
-							<!-- Custom Categories Section -->
-							{#if formData.categories && formData.categories.some(cat => !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(cat))}
-								<div class="custom-categories-section">
-									<div class="flex flex-wrap gap-1.5 sm:gap-2">
-										{#each formData.categories.filter(cat => !['walking', 'food', 'cultural', 'historical', 'art', 'adventure'].includes(cat)) as customCategory}
-											<span class="custom-category-tag">
-												<Globe class="w-3 h-3 sm:w-3 sm:h-3 flex-shrink-0 mobile-icon" />
-												<span class="truncate">{customCategory}</span>
-												<button
-													type="button"
-													onclick={() => {
-														formData.categories = formData.categories.filter(c => c !== customCategory);
-													}}
-													class="custom-category-remove"
-													aria-label="Remove {customCategory}"
-												>
-													<X class="w-2.5 h-2.5 mobile-icon" />
-												</button>
-											</span>
-										{/each}
-									</div>
-								</div>
-							{/if}
-							
-							<!-- Custom Category Input - Always visible container -->
-							<div class="custom-category-input-wrapper" style="opacity: {(formData.categories?.length || 0) < 5 ? 1 : 0.5}; pointer-events: {(formData.categories?.length || 0) < 5 ? 'auto' : 'none'};">
-								<div class="custom-category-input-container">
-								<input
-									type="text"
-									class="custom-category-input form-input--no-transform"
-									class:error={customCategoryInput && (customCategoryValidation === 'too-long' || customCategoryValidation === 'duplicate')}
-									class:warning={showSingleCharWarning}
-									bind:value={customCategoryInput}
-									placeholder={(formData.categories?.length || 0) < 5 ? "Add custom category..." : "Category limit reached"}
-									disabled={(formData.categories?.length || 0) >= 5}
-									oninput={() => {
-										// Clear warning when user continues typing
-										if (showSingleCharWarning && customCategoryInput.trim().length !== 1) {
-											showSingleCharWarning = false;
-										}
-									}}
-									onkeydown={(e) => {
-										if (e.key === 'Enter') {
-											e.preventDefault();
-											// Show warning if only 1 character
-											if (customCategoryInput.trim().length === 1) {
-												showSingleCharWarning = true;
-											} else if (customCategoryValidation === 'valid') {
-												addCustomCategory();
-												showSingleCharWarning = false;
-											}
-										} else if (e.key === 'Escape') {
-											customCategoryInput = '';
-											showSingleCharWarning = false;
-										}
-									}}
-									autocomplete="off"
-									spellcheck="false"
-									maxlength="20"
+					<!-- Categories & Languages Column -->
+					<div class="space-y-4">
+						<!-- Categories -->
+						<div>
+							<label for="categories" class="form-label flex items-center gap-2 hidden sm:flex">
+								<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span>Categories</span>
+							</label>
+							<div class="form-field-wrapper">
+								<CategorySelector
+									bind:selectedCategories={formData.categories}
+									error={hasFieldError(allErrors, 'categories')}
 								/>
-									<div class="custom-category-actions">
-										<span class="text-xs" style="color: {showSingleCharWarning ? 'var(--color-error-600)' : 'var(--text-tertiary)'}; opacity: {customCategoryInput ? 1 : 0};">
-											{customCategoryInput.length}/20
-										</span>
-										<button
-											type="button"
-											onclick={addCustomCategory}
-											class="custom-category-add"
-											style="opacity: {customCategoryInput && customCategoryValidation === 'valid' ? 1 : 0}; pointer-events: {customCategoryInput && customCategoryValidation === 'valid' ? 'auto' : 'none'};"
-											aria-label="Add category"
-											disabled={!customCategoryInput || customCategoryValidation !== 'valid'}
-										>
-											<Plus class="w-3.5 h-3.5 mobile-icon" />
-										</button>
-									</div>
+								<div class="form-field-footer">
+									{#if getFieldError(allErrors, 'categories') && shouldShowError('categories')}
+										<span class="form-error-message">{getFieldError(allErrors, 'categories')}</span>
+									{:else}
+										<span class="form-field-spacer"></span>
+									{/if}
 								</div>
-								
-								<!-- Validation message container - fixed height to prevent jumps -->
-								<div class="custom-category-validation" style="height: 1.25rem; margin-top: 0.125rem; display: flex; align-items: flex-start;">
-									{#if customCategoryInput.trim().length > 0}
-										{@const showError = customCategoryValidation !== 'valid' && shouldShowCategoryError(customCategoryInput)}
-										<p class="text-xs mobile-validation-text" style="color: var(--color-error-600); opacity: {showError ? 1 : 0}; transition: opacity 0.15s ease;">
-											{#if customCategoryValidation === 'too-short' && showError}
-												Minimum 2 characters
-											{:else if customCategoryValidation === 'too-long'}
-												Maximum 20 characters
-											{:else if customCategoryValidation === 'duplicate'}
-												Category already exists
-											{:else}
-												&nbsp;
-											{/if}
-										</p>
+								<!-- Hidden input for form submission -->
+								<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
+							</div>
+						</div>
+
+						<!-- Languages -->
+						<div>
+							<label for="languages" class="form-label flex items-center gap-2 hidden sm:flex">
+								<Globe class="w-4 h-4" style="color: var(--text-tertiary);" />
+								<span>Languages Offered *</span>
+							</label>
+							<div class="form-field-wrapper">
+								<LanguageSelector
+									bind:selectedLanguages={formData.languages}
+									error={hasFieldError(allErrors, 'languages')}
+								/>
+								<div class="form-field-footer">
+									{#if getFieldError(allErrors, 'languages') && shouldShowError('languages')}
+										<span class="form-error-message">{getFieldError(allErrors, 'languages')}</span>
+									{:else}
+										<span class="form-field-spacer"></span>
 									{/if}
 								</div>
 							</div>
-							
-							<!-- Field-level validation -->
-							{#if getFieldError(allErrors, 'categories') && shouldShowError('categories')}
-								<div class="flex items-start gap-2 text-sm mt-2" style="color: var(--color-error-600);">
-									<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" />
-									<span>{getFieldError(allErrors, 'categories')}</span>
-								</div>
-							{/if}
+							<!-- Hidden input for form submission -->
+							<input type="hidden" name="languages" value={JSON.stringify(formData.languages || [])} />
 						</div>
-
-						<!-- Hidden input for form submission -->
-						<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
 					</div>
 				</div>
 
-				<!-- Description Field - Full Width -->
+				<!-- Row 4: What's Included and Requirements -->
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+					<!-- What's Included -->
+					<div>
+						<label class="form-label flex items-center gap-2 hidden sm:flex">
+							<Package class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>What's Included</span>
+						</label>
+						<div class="form-field-wrapper">
+							<ChipInput
+								bind:items={formData.includedItems}
+								suggestions={includedItemsSuggestions}
+								placeholder="Add included items..."
+								addButtonText="Add"
+							/>
+							<div class="form-field-footer">
+								<span class="form-field-spacer"></span>
+							</div>
+							<!-- Hidden inputs for form submission -->
+							{#each formData.includedItems.filter(item => item.trim()) as item}
+								<input type="hidden" name="includedItems" value={item} />
+							{/each}
+						</div>
+					</div>
+
+					<!-- Requirements -->
+					<div>
+						<label class="form-label flex items-center gap-2 hidden sm:flex">
+							<AlertCircle class="w-4 h-4" style="color: var(--text-tertiary);" />
+							<span>Requirements</span>
+						</label>
+						<div class="form-field-wrapper">
+							<ChipInput
+								bind:items={formData.requirements}
+								suggestions={requirementsSuggestions}
+								placeholder="Add requirements..."
+								addButtonText="Add"
+							/>
+							<div class="form-field-footer">
+								<span class="form-field-spacer"></span>
+							</div>
+							<!-- Hidden inputs for form submission -->
+							{#each formData.requirements.filter(req => req.trim()) as requirement}
+								<input type="hidden" name="requirements" value={requirement} />
+							{/each}
+						</div>
+					</div>
+				</div>
+
+				<!-- Row 5: Description - Full Width -->
 				<div>
 					<label for="description" class="form-label flex items-center gap-2 hidden sm:flex">
 						<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
 						<span>Description *</span>
 					</label>
 					<div class="form-field-wrapper">
-						<textarea
+						<MarkdownEditor
+							bind:value={formData.description}
 							id="description"
 							name="description"
-							bind:value={formData.description}
-							rows="4"
-							placeholder="Description *"
-							class="form-textarea form-input--no-transform {hasFieldError(allErrors, 'description') ? 'error' : ''}"
+							placeholder="Describe your tour experience... Use markdown for formatting!"
+							maxlength={2000}
+							rows={6}
+							error={hasFieldError(allErrors, 'description')}
 							oninput={() => handleFieldInput('description')}
 							onblur={() => validateField('description')}
-							maxlength="1000"
-						></textarea>
-				<div class="form-field-footer">
-					{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
-						<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
-					{:else}
-						<span class="form-field-spacer"></span>
-					{/if}
-					<span class="text-xs form-field-counter hidden sm:inline" style="color: {hasFieldError(allErrors, 'description') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.description && formData.description.length > 0 ? 1 : 0};">
-						{formData.description?.length || 0}/1000
-					</span>
-				</div>
+						/>
+						<div class="form-field-footer">
+							{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
+								<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
+							{:else}
+								<span class="form-field-spacer"></span>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1131,13 +1059,12 @@ Key extracted components:
 		<!-- TOUR IMAGES SECTION (Moved from sidebar)                    -->
 		<!-- ============================================================ -->
 		{#if onImageUpload && onImageRemove}
-			<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-				<div class="px-4 py-3 sm:p-5">
+			<div class="form-section-minimal">
+				<div>
 					
 					<!-- Existing Images (for edit mode) -->
 					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
 						<div class="mb-4 sm:mb-6">
-							<h4 class="text-sm font-medium mb-3 hidden sm:block" style="color: var(--text-primary);">Current Images</h4>
 							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
 								{#each existingImages as imageName, index (imageName)}
 									<div class="relative group aspect-square">
@@ -1283,8 +1210,8 @@ Key extracted components:
 		<!-- ============================================================ -->
 		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="px-4 py-4 sm:p-4">
+		<div class="form-section-minimal">
+			<div>
 			<SimplifiedPricingSection
 				pricingModel={formData.pricingModel || 'participant_categories'}
 				bind:participantCategories={formData.participantCategories}
@@ -1590,18 +1517,6 @@ Key extracted components:
 			{/if}
 		</div>
 
-		<!-- ============================================================ -->
-		<!-- INCLUSIONS & REQUIREMENTS SECTION                           -->
-		<!-- ============================================================ -->
-		<TourDetailsSection
-			bind:includedItems={formData.includedItems}
-			bind:requirements={formData.requirements}
-			bind:isExpanded={showTourDetails}
-			onUpdate={(data) => {
-				formData.includedItems = data.includedItems;
-				formData.requirements = data.requirements;
-			}}
-		/>
 
 		<!-- ============================================================ -->
 		<!-- DANGER ZONE SECTION (Edit Mode Only)                        -->
@@ -1757,29 +1672,31 @@ Key extracted components:
 						</div>
 					{/if}
 					
-					<!-- Public Discovery toggle -->
-					<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-						<div class="flex items-center gap-2">
-							<Globe class="w-4 h-4" style="color: var(--text-accent);" />
+					<!-- Show in Search toggle (only when Active) -->
+					{#if formData.status === 'active'}
+						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
+							<div class="flex items-center gap-2">
+								<Globe class="w-4 h-4" style="color: var(--text-accent);" />
+								<div>
+									<p class="text-sm font-semibold" style="color: var(--text-primary);">Show in Search</p>
+									<p class="text-xs" style="color: var(--text-secondary);">
+										{formData.publicListing ? 'Listed' : 'Unlisted'}
+									</p>
+								</div>
+							</div>
 							<div>
-								<p class="text-sm font-semibold" style="color: var(--text-primary);">Public Listing</p>
-								<p class="text-xs" style="color: var(--text-secondary);">
-									{formData.publicListing ? 'Visible in discovery' : 'QR/direct link only'}
-								</p>
+								<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
+								<label class="relative inline-flex items-center cursor-pointer">
+									<input
+										type="checkbox"
+										bind:checked={formData.publicListing}
+										class="sr-only peer"
+									/>
+									<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+								</label>
 							</div>
 						</div>
-						<div>
-							<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
-							<label class="relative inline-flex items-center cursor-pointer">
-								<input
-									type="checkbox"
-									bind:checked={formData.publicListing}
-									class="sr-only peer"
-								/>
-								<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-							</label>
-						</div>
-					</div>
+					{/if}
 				</div>
 			</div>
 			
@@ -1819,46 +1736,45 @@ Key extracted components:
 					</div>
 				{/if}
 
-				<!-- Public Discovery -->
-				<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-					<div class="px-4 py-4 sm:p-4">
-						<div class="flex items-center justify-between gap-4">
-							<div class="flex-1">
-								<div class="flex items-center gap-2 mb-1">
-									<Globe class="h-5 w-5" style="color: var(--text-accent);" />
-									<h3 class="font-semibold" style="color: var(--text-primary);">Public Discovery</h3>
+				<!-- Search Visibility (only shown when Active) -->
+				{#if formData.status === 'active'}
+					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+						<div class="px-4 py-4 sm:p-4">
+							<div class="flex items-center justify-between gap-4">
+								<div class="flex-1">
+									<div class="flex items-center gap-2 mb-1">
+										<Globe class="h-5 w-5" style="color: var(--text-accent);" />
+										<h3 class="font-semibold" style="color: var(--text-primary);">Show in Search</h3>
+									</div>
+									<p class="text-sm" style="color: var(--text-secondary);">
+										{formData.publicListing 
+											? 'Listed - visible in public browse & search'
+											: 'Unlisted - accessible only via QR code or direct link'}
+									</p>
 								</div>
-								<p class="text-sm" style="color: var(--text-secondary);">
-									{#if formData.status === 'draft'}
-										{formData.publicListing 
-											? 'When activated, tour will be visible in public listings'
-											: 'When activated, tour will only be accessible via QR code or direct link'}
-									{:else}
-										{formData.publicListing 
-											? 'Tour is visible in public listings'
-											: 'Tour is only accessible via QR code or direct link'}
-									{/if}
-								</p>
-							</div>
-							
-							<div class="flex items-center gap-3 flex-shrink-0">
-								<!-- Hidden input to send the actual publicListing value -->
-								<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
-								<label class="relative inline-flex items-center cursor-pointer">
-									<input
-										type="checkbox"
-										bind:checked={formData.publicListing}
-										class="sr-only peer"
-									/>
-									<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-									<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
-										{formData.publicListing ? 'Listed' : 'Unlisted'}
-									</span>
-								</label>
+								
+								<div class="flex items-center gap-3 flex-shrink-0">
+									<!-- Hidden input to send the actual publicListing value -->
+									<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
+									<label class="relative inline-flex items-center cursor-pointer">
+										<input
+											type="checkbox"
+											bind:checked={formData.publicListing}
+											class="sr-only peer"
+										/>
+										<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+										<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
+											{formData.publicListing ? 'Listed' : 'Unlisted'}
+										</span>
+									</label>
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				{:else}
+					<!-- Hidden input for draft tours - always default to public listing when activated -->
+					<input type="hidden" name="publicListing" value="true" />
+				{/if}
 			</div>
 		{/if}
 
@@ -2061,368 +1977,42 @@ Key extracted components:
 		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
 		transform: none !important;
 	}
-	
-	/* Categories Container */
-	.categories-container {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
+
+	/* Section header styling */
+
+	/* Smooth transitions for form sections */
+	.form-section-card {
+		transition: all 0.2s ease-in-out;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		position: relative;
+		overflow: hidden;
 	}
-	
-	/* Categories Grid */
-	.categories-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.5rem;
-	}
-	
-	@media (max-width: 640px) {
-		.categories-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
-	
-	/* Category Button */
-	.category-button {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.375rem;
-		padding: 0.5rem 0.75rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		border-radius: 0.5rem;
-		border: 1px solid var(--border-primary);
-		background: var(--bg-secondary);
-		color: var(--text-secondary);
-		transition: all 0.15s ease;
-		cursor: pointer;
-		min-height: 2.25rem;
-	}
-	
-	.category-button:hover:not(.disabled) {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
+
+	.form-section-card:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 		transform: translateY(-1px);
 	}
 	
-	.category-button.selected {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-400);
-		color: var(--color-primary-700);
-		font-weight: 600;
-	}
-	
-	.category-button.selected:hover {
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-500);
-	}
-	
-	.category-button.disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-	
-	@media (max-width: 640px) {
-		.category-button {
-			min-height: unset !important;
-			padding: 0.375rem 0.625rem !important;
-		}
-	}
-	
-	/* Custom Categories Section */
-	.custom-categories-section {
-		padding-top: 0.5rem;
-		border-top: 1px solid var(--border-primary);
-	}
-	
-	@media (max-width: 640px) {
-		.custom-categories-section {
-			padding-top: 0.375rem !important;
-		}
-	}
-	
-	/* Custom Category Tag */
-	.custom-category-tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0.25rem 0.5rem;
-		background: var(--color-primary-50);
-		color: var(--color-primary-700);
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 500;
-		line-height: 1;
-		max-width: 150px;
-	}
-	
-	@media (max-width: 640px) {
-		.custom-category-tag {
-			padding: 0.125rem 0.375rem !important;
-			font-size: 0.6875rem !important;
-			gap: 0.125rem !important;
-			line-height: 1.1 !important;
-			height: auto !important;
-			min-height: unset !important;
-		}
-		
-		.custom-category-tag :global(svg),
-		.custom-category-tag :global(.mobile-icon) {
-			width: 0.75rem !important;
-			height: 0.75rem !important;
-		}
-		
-		.custom-category-tag button {
-			min-height: unset !important;
-		}
-	}
-	
-	/* Custom Category Remove Button */
-	.custom-category-remove {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1rem;
-		height: 1rem;
-		margin-left: 0.25rem;
-		border-radius: 50%;
+	/* Add subtle animation on form field focus */
+	.form-field-wrapper {
 		transition: all 0.15s ease;
-		cursor: pointer;
 	}
 	
-	.custom-category-remove:hover {
-		background: var(--color-primary-200);
+	.form-field-wrapper:has(:focus) {
+		transform: scale(1.005);
 	}
 	
-	@media (max-width: 640px) {
-		.custom-category-remove {
-			width: 0.875rem !important;
-			height: 0.875rem !important;
-			margin-left: 0.125rem !important;
-			min-height: unset !important;
-		}
-		
-		.custom-category-remove :global(svg) {
-			width: 0.5rem !important;
-			height: 0.5rem !important;
-		}
+	/* Add subtle hover effect on chip containers */
+	:global(.chip-container),
+	:global(.category-container),
+	:global(.language-container) {
+		transition: border-color 0.2s ease;
 	}
 	
-	/* Custom Category Input Wrapper */
-	.custom-category-input-wrapper {
-		margin-top: 0.25rem;
-	}
-	
-	/* Custom Category Input Container */
-	.custom-category-input-container {
-		position: relative;
-		display: flex;
-		align-items: center;
-		min-height: 2.25rem;
-	}
-	
-	@media (max-width: 640px) {
-		.custom-category-input-container {
-			min-height: 1.875rem !important;
-		}
-	}
-	
-	/* Custom Category Input */
-	.custom-category-input {
-		flex: 1;
-		padding: 0.375rem 0.75rem;
-		padding-right: 4.5rem;
-		font-size: 0.875rem;
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		transition: all 0.15s ease;
-		min-height: 2.25rem;
-	}
-	
-	@media (max-width: 640px) {
-		.custom-category-input {
-			padding: 0.25rem 3.25rem !important;
-			font-size: 0.8125rem !important;
-			min-height: 1.875rem !important;
-			text-align: center;
-		}
-		
-		.custom-category-input::placeholder {
-			text-align: center;
-		}
-	}
-	
-	.custom-category-input::placeholder {
-		color: var(--text-tertiary);
-	}
-	
-	.custom-category-input.form-input--no-transform:focus {
-		outline: none;
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 1px var(--color-primary-200);
-		transform: none;
-	}
-	
-	.custom-category-input.error,
-	.custom-category-input.warning {
-		border-color: var(--color-error-500);
-	}
-	
-	.custom-category-input.error:focus,
-	.custom-category-input.warning:focus {
-		box-shadow: 0 0 0 1px var(--color-error-200);
-	}
-	
-	.custom-category-input.warning {
-		animation: shake 0.3s ease;
-		color: var(--color-error-600);
-	}
-	
-	@keyframes shake {
-		0%, 100% { transform: translateX(0); }
-		25% { transform: translateX(-4px); }
-		75% { transform: translateX(4px); }
-	}
-	
-	.custom-category-input.warning::placeholder {
-		color: var(--color-error-400);
-	}
-	
-	.custom-category-input:disabled {
-		background: var(--bg-tertiary);
-		cursor: not-allowed;
-		opacity: 0.6;
-	}
-	
-	/* Custom Category Actions */
-	.custom-category-actions {
-		position: absolute;
-		right: 0.375rem;
-		top: 50%;
-		transform: translateY(-50%);
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-	}
-	
-	@media (max-width: 640px) {
-		.custom-category-actions {
-			right: 0.25rem !important;
-			gap: 0.25rem !important;
-		}
-		
-		.custom-category-actions .text-xs {
-			font-size: 0.6875rem !important;
-		}
-	}
-	
-	/* Custom Category Add Button */
-	.custom-category-add {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 1.5rem;
-		height: 1.5rem;
-		border-radius: 0.375rem;
-		background: var(--color-primary-500);
-		color: white;
-		transition: all 0.15s ease;
-		cursor: pointer;
-		border: none;
-	}
-	
-	@media (max-width: 640px) {
-		.custom-category-add {
-			width: 1.25rem !important;
-			height: 1.25rem !important;
-			border-radius: 0.25rem !important;
-			min-width: 1.25rem !important;
-			min-height: unset !important;
-			max-height: 1.25rem !important;
-			flex-shrink: 0 !important;
-		}
-		
-		.custom-category-add :global(svg),
-		.custom-category-add :global(.mobile-icon) {
-			width: 0.75rem !important;
-			height: 0.75rem !important;
-		}
-		
-		/* Global mobile icon size */
-		:global(.mobile-icon) {
-			width: 0.75rem !important;
-			height: 0.75rem !important;
-		}
-		
-		/* Mobile validation text */
-		.mobile-validation-text {
-			font-size: 0.6875rem !important;
-			line-height: 1.1 !important;
-		}
-	}
-	
-	.custom-category-add:hover:not(:disabled) {
-		background: var(--color-primary-600);
-		transform: scale(1.05);
-	}
-	
-	.custom-category-add:disabled {
-		cursor: not-allowed;
-	}
-	
-	/* Dark mode adjustments */
-	:root[data-theme='dark'] .category-button {
-		background: var(--bg-secondary);
-		border-color: var(--border-primary);
-	}
-	
-	:root[data-theme='dark'] .category-button:hover:not(.disabled) {
-		background: var(--bg-tertiary);
-		border-color: var(--border-secondary);
-	}
-	
-	:root[data-theme='dark'] .category-button.selected {
-		background: rgba(99, 102, 241, 0.15);
-		border-color: rgba(99, 102, 241, 0.4);
-		color: #a5b4fc;
-	}
-	
-	:root[data-theme='dark'] .custom-category-tag {
-		background: rgba(99, 102, 241, 0.15);
-		color: #a5b4fc;
-	}
-	
-	:root[data-theme='dark'] .custom-category-input {
-		background: var(--bg-input);
-		border-color: var(--border-primary);
-	}
-	
-	:root[data-theme='dark'] .custom-category-input.form-input--no-transform:focus {
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
-		transform: none;
-	}
-	
-	/* Dark mode for form field elements */
-	:root[data-theme='dark'] .form-input--no-transform:focus {
-		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
-	}
-	
-	:root[data-theme='dark'] .form-textarea.form-input--no-transform:focus {
-		box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
-	}
-	
-	
-	/* Smooth transitions for form sections */
-	.rounded-xl {
-		transition: all 0.2s ease-in-out;
-	}
-
-	.rounded-xl:hover {
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	:global(.chip-container:hover),
+	:global(.category-container:hover),
+	:global(.language-container:hover) {
+		border-color: var(--border-secondary) !important;
 	}
 
 	/* Smooth expand/collapse animations */
@@ -2563,8 +2153,7 @@ Key extracted components:
 	/* Mobile-enhanced error styling */
 	@media (max-width: 768px) {
 		/* Make error fields more prominent on mobile */
-		.form-input.error,
-		.form-textarea.error {
+		.form-input.error {
 			border-width: 2px;
 		}
 		
@@ -2674,20 +2263,18 @@ Key extracted components:
 	/* Modern Tour Form Layout */
 	.tour-form-container {
 		width: 100%;
-		max-width: 1400px;
-		margin: 0 auto;
 	}
 
 	.tour-form-grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 1.5rem;
+		gap: 2rem;
 	}
 
 	.tour-form-main {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 3rem;
 	}
 
 	.tour-form-sidebar {
@@ -2696,10 +2283,10 @@ Key extracted components:
 		gap: 1.5rem;
 	}
 
-	/* Tablet and up */
+	/* Mobile landscape and up */
 	@media (min-width: 640px) {
 		.tour-form-main {
-			gap: 2rem;
+			gap: 3.5rem;
 		}
 	}
 
@@ -2707,8 +2294,12 @@ Key extracted components:
 	@media (min-width: 1024px) {
 		.tour-form-grid {
 			grid-template-columns: 1fr 340px;
-			gap: 2rem;
+			gap: 2.5rem;
 			align-items: start;
+		}
+		
+		.tour-form-main {
+			gap: 4rem;
 		}
 
 		.tour-form-sidebar {
@@ -2744,6 +2335,10 @@ Key extracted components:
 			grid-template-columns: 1fr 380px;
 			gap: 3rem;
 		}
+		
+		.tour-form-main {
+			gap: 5rem;
+		}
 	}
 
 	/* Form sections visual enhancement */
@@ -2761,5 +2356,13 @@ Key extracted components:
 		.tour-form-sidebar {
 			margin-top: 1rem;
 		}
+	}
+	
+	/* ============================================================ */
+	/* Minimal Apple-Style Sections                                */
+	/* ============================================================ */
+	/* Pure spacing approach - no visual dividers */
+	.form-section-minimal {
+		position: relative;
 	}
 </style>

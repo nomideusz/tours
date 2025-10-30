@@ -100,8 +100,9 @@
 		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
 		categories: (form as any)?.formData?.categories || [],
 		location: (form as any)?.formData?.location || '',
-		includedItems: (form as any)?.formData?.includedItems || [''],
-		requirements: (form as any)?.formData?.requirements || [''],
+		languages: (form as any)?.formData?.languages || ['en'],
+		includedItems: (form as any)?.formData?.includedItems || [],
+		requirements: (form as any)?.formData?.requirements || [],
 		cancellationPolicy: (form as any)?.formData?.cancellationPolicy || '',
 		cancellationPolicyId: (form as any)?.formData?.cancellationPolicyId || 'flexible',
 		// Pricing configuration

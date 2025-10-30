@@ -89,6 +89,7 @@ export interface Tour extends RecordModel {
   status: 'active' | 'draft';
   categories?: string[];
   location?: string;
+  languages?: string[]; // Array of language codes (e.g., ['en', 'es', 'fr'])
   includedItems?: string[];
   requirements?: string[];
   cancellationPolicy?: string; // Legacy free-text policy (kept for backward compatibility)
