@@ -63,8 +63,8 @@
 		
 		// Callbacks
 		onSlotSelect: (slot: TimeSlot | null) => void;
-		totalParticipants: () => number;
-		priceCalculation: () => BookingPriceResult | any;
+		totalParticipants: number;
+		priceCalculation: BookingPriceResult | any;
 		tourCoordinates?: { lat: number; lng: number } | null;
 	}
 	
@@ -111,11 +111,11 @@
 	
 	// Update tracking when steps should appear
 	$effect(() => {
-		if (selectedTimeSlot || totalParticipants() > 0) {
+		if (selectedTimeSlot || totalParticipants > 0) {
 			hasShownStep2 = true;
 		}
 		const addons = tour.optionalAddons?.addons;
-		if (totalParticipants() > 0 && addons && addons.length > 0) {
+		if (totalParticipants > 0 && addons && addons.length > 0) {
 			hasShownStep3 = true;
 		}
 	});
@@ -130,7 +130,7 @@
 		if (!browser || window.innerWidth > 640) return;
 		
 		const hasSlot = !!selectedTimeSlot;
-		const hasParticipants = totalParticipants() > 0;
+		const hasParticipants = totalParticipants > 0;
 		
 		// When time slot is selected, scroll to participants step (but not if user is just changing)
 		if (hasSlot && !previousStepState.slot && !isChangingTimeSlot) {
@@ -343,10 +343,10 @@
 						
 						<!-- Participant data based on pricing model -->
 						{#if tour.pricingModel === 'participant_categories' && participantCounts}
-							<input type="hidden" name="totalParticipants" value={totalParticipants()} />
+							<input type="hidden" name="totalParticipants" value={totalParticipants} />
 							<input type="hidden" name="participantsByCategory" value={JSON.stringify(participantCounts)} />
 						{:else if tour.enablePricingTiers && tour.pricingTiers}
-							<input type="hidden" name="totalParticipants" value={totalParticipants()} />
+							<input type="hidden" name="totalParticipants" value={totalParticipants} />
 							<input type="hidden" name="participantBreakdown" value={JSON.stringify({
 								adults: adultParticipants,
 								children: childParticipants
@@ -422,11 +422,11 @@
 			<!-- Step 2: Participants -->
 			<!-- Once shown, keep visible permanently -->
 			{#if hasShownStep2}
-				<div class="booking-step" class:active={selectedTimeSlot && totalParticipants() === 0} class:completed={selectedTimeSlot && totalParticipants() > 0} data-step="2">
-					<div class="step-number">{totalParticipants() > 0 ? '✓' : '2'}</div>
+				<div class="booking-step" class:active={selectedTimeSlot && totalParticipants === 0} class:completed={selectedTimeSlot && totalParticipants > 0} data-step="2">
+					<div class="step-number">{totalParticipants > 0 ? '✓' : '2'}</div>
 							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
-									{totalParticipants() > 0 ? 'Selected Participants' : 'Select Participants'}
+									{totalParticipants > 0 ? 'Selected Participants' : 'Select Participants'}
 								</h3>
 								
 								{#if tour.pricingModel === 'private_tour' && tour.privateTour}
@@ -542,7 +542,7 @@
 			<!-- Step 3: Add-ons (if available) -->
 			<!-- Once shown, keep visible permanently -->
 			{#if hasShownStep3 && tour.optionalAddons?.addons && tour.optionalAddons.addons.length > 0}
-				<div class="booking-step" class:completed={selectedTimeSlot && totalParticipants() > 0 && selectedAddonIds.length > 0} data-step="3">
+				<div class="booking-step" class:completed={selectedTimeSlot && totalParticipants > 0 && selectedAddonIds.length > 0} data-step="3">
 					<div class="step-number">{selectedAddonIds.length > 0 ? '✓' : '3'}</div>
 							<div>
 								<h3 class="font-medium mb-2" style="color: var(--text-primary);">
@@ -559,11 +559,11 @@
 					{/if}
 					
 					<!-- Price Summary -->
-					{#if selectedTimeSlot && totalParticipants() > 0}
+					{#if selectedTimeSlot && totalParticipants > 0}
 						<div class="mt-4 p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
 							<PriceBreakdown
 								{tour}
-								participants={totalParticipants()}
+								participants={totalParticipants}
 								{participantCounts}
 								{selectedAddonIds}
 								isPrivateTour={tour.pricingModel === 'private_tour' && isPrivateTour}
@@ -574,7 +574,7 @@
 					{/if}
 					
 					<!-- Customer Information -->
-					{#if selectedTimeSlot && totalParticipants() > 0}
+					{#if selectedTimeSlot && totalParticipants > 0}
 					<div class="space-y-3 pt-4 border-t contact-info-section" style="border-color: var(--border-primary);">
 						<h3 class="text-sm font-medium" style="color: var(--text-primary);">
 							Contact Information
@@ -642,11 +642,11 @@
 					{/if}
 					
 					<!-- Submit Button -->
-					{#if selectedTimeSlot && totalParticipants() > 0}
-						{@const displayPrice = priceCalculation().totalAmount}
+					{#if selectedTimeSlot && totalParticipants > 0}
+						{@const displayPrice = priceCalculation.totalAmount}
 						<button
 							type="submit"
-							disabled={isSubmitting || !selectedTimeSlot || totalParticipants() === 0 || !isContactInfoValid}
+							disabled={isSubmitting || !selectedTimeSlot || totalParticipants === 0 || !isContactInfoValid}
 							class="button-primary w-full mt-4 flex items-center justify-center gap-2"
 						>
 							{#if isSubmitting}
@@ -667,8 +667,8 @@
 	</div>
 	
 	<!-- Mobile sticky booking footer (shown only when booking form is ready) -->
-	{#if selectedTimeSlot && totalParticipants() > 0 && !showSuccess}
-		{@const displayPrice = priceCalculation().totalAmount}
+	{#if selectedTimeSlot && totalParticipants > 0 && !showSuccess}
+		{@const displayPrice = priceCalculation.totalAmount}
 		<div class="mobile-sticky-footer" class:keyboard-hidden={$isKeyboardVisible} style="-webkit-backface-visibility: hidden;">
 			<div class="mobile-footer-content">
 				<div class="mobile-price-summary">

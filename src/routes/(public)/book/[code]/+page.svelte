@@ -143,7 +143,7 @@
 	let hasRealTimeSlots = $derived(allTimeSlots?.length > 0);
 	
 	// Calculate pricing using centralized utility
-	let priceCalculation = $derived(() => {
+	let priceCalculation = $derived.by(() => {
 		if (!tour) {
 			return {
 				basePrice: 0,
@@ -201,10 +201,10 @@
 	});
 	
 	// Get the actual price value for display
-	let displayPrice = $derived(priceCalculation().totalAmount);
+	let displayPrice = $derived(priceCalculation.totalAmount);
 	
 	// Total participant count for validation
-	let totalParticipants = $derived(() => {
+	let totalParticipants = $derived.by(() => {
 		if (!tour) return 0;
 		
 		// Private tour: use selected participants (or min capacity)
@@ -306,10 +306,10 @@
 <svelte:head>
 	<title>Book {tour?.name || 'Tour'} - Zaur</title>
 	<meta name="description" content="Book {tour?.name || 'this tour'} instantly with our secure QR booking system." />
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 </svelte:head>
 
-<div class="booking-page" class:has-sticky-footer={selectedTimeSlot && totalParticipants() > 0 && !showSuccess}>
+<div class="booking-page" class:has-sticky-footer={selectedTimeSlot && totalParticipants > 0 && !showSuccess}>
 	<div class="booking-container">
 		{#if isLoading}
 			<LoadingState />
