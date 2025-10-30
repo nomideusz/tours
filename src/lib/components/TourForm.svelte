@@ -2365,4 +2365,12 @@ Key extracted components:
 	.form-section-minimal {
 		position: relative;
 	}
+	
+	/* Add horizontal padding on mobile for form sections */
+	@media (max-width: 640px) {
+		.form-section-minimal {
+			padding-left: 1rem;
+			padding-right: 1rem;
+		}
+	}
 </style>
