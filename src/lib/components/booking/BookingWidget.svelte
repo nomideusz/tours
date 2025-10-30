@@ -126,14 +126,26 @@
 		participants: false
 	});
 	
+	// Add flag to prevent rapid re-execution
+	let isScrolling = $state(false);
+	
 	$effect(() => {
-		if (!browser || window.innerWidth > 640) return;
+		if (!browser || window.innerWidth > 640 || isScrolling) return;
 		
 		const hasSlot = !!selectedTimeSlot;
 		const hasParticipants = typeof totalParticipants === 'number' && totalParticipants > 0;
 		
+		// Only proceed if state actually changed
+		if (hasSlot === previousStepState.slot && hasParticipants === previousStepState.participants) {
+			return;
+		}
+		
+		let scrollTriggered = false;
+		
 		// When time slot is selected, scroll to participants step (but not if user is just changing)
 		if (hasSlot && !previousStepState.slot && !isChangingTimeSlot) {
+			scrollTriggered = true;
+			isScrolling = true;
 			// Wait for DOM to update AND transitions to complete
 			tick().then(() => {
 				// Longer wait for both the calendar collapse and step 2 to appear
@@ -158,17 +170,27 @@
 							
 							if (progress < 1) {
 								requestAnimationFrame(scrollStep);
+							} else {
+								// Scroll complete, reset flag after a delay
+								setTimeout(() => { isScrolling = false; }, 100);
 							}
 						}
 						
 						requestAnimationFrame(scrollStep);
+					} else {
+						isScrolling = false;
 					}
 				}, 500); // Wait for slide transitions (300ms) + buffer
-			}).catch(err => console.error('Scroll animation error:', err));
+			}).catch(err => {
+				console.error('Scroll animation error:', err);
+				isScrolling = false;
+			});
 		}
 		
 		// When participants are selected, scroll to contact info
 		if (hasParticipants && !previousStepState.participants && hasSlot) {
+			scrollTriggered = true;
+			isScrolling = true;
 			tick().then(() => {
 				setTimeout(() => {
 					const contactSection = document.querySelector('.contact-info-section') as HTMLElement;
@@ -190,16 +212,30 @@
 							
 							if (progress < 1) {
 								requestAnimationFrame(scrollStep);
+							} else {
+								// Scroll complete, reset flag after a delay
+								setTimeout(() => { isScrolling = false; }, 100);
 							}
 						}
 						
 						requestAnimationFrame(scrollStep);
+					} else {
+						isScrolling = false;
 					}
 				}, 200);
-			}).catch(err => console.error('Scroll animation error:', err));
+			}).catch(err => {
+				console.error('Scroll animation error:', err);
+				isScrolling = false;
+			});
 		}
 		
+		// Update state tracking
 		previousStepState = { slot: hasSlot, participants: hasParticipants };
+		
+		// If no scroll was triggered, reset the flag immediately
+		if (!scrollTriggered) {
+			isScrolling = false;
+		}
 	});
 	
 	// Ensure infant category is available if countInfantsTowardCapacity is enabled

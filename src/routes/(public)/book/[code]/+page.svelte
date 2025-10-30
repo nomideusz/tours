@@ -251,11 +251,13 @@
 		}
 	});
 	
-	// Initialize private tour values
+	// Initialize private tour values - using a tracked flag to prevent infinite loops
+	let hasInitializedPrivateTour = $state(false);
 	$effect(() => {
-		if (tour && tour.pricingModel === 'private_tour' && tour.privateTour && !isPrivateTour && selectedTimeSlot) {
+		if (tour && tour.pricingModel === 'private_tour' && tour.privateTour && !hasInitializedPrivateTour && selectedTimeSlot) {
 			participants = tour.privateTour.minCapacity || tour.minCapacity || 4;
 			isPrivateTour = true;
+			hasInitializedPrivateTour = true;
 		}
 	});
 	
