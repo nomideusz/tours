@@ -227,7 +227,7 @@ Lets tour guide decide who pays the Stripe processing fee
 	}
 	
 	.option.selected {
-		border-color: var(--color-primary-500);
+		border-color: var(--color-accent-500);
 		background: var(--bg-primary);
 	}
 	

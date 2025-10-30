@@ -85,14 +85,14 @@
 	}
 
 	.model-option:hover {
-		border-color: var(--color-primary-400);
+		border-color: var(--color-accent-400);
 		background: var(--bg-primary);
 		transform: translateY(-1px);
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 	}
 
 	.model-option.selected {
-		border-color: var(--color-primary-500);
+		border-color: var(--color-accent-500);
 		background: var(--bg-primary);
 		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 	}
@@ -117,7 +117,7 @@
 	}
 
 	.model-option.selected :global(.option-icon) {
-		color: var(--color-primary-600);
+		color: var(--color-accent-600);
 	}
 	
 	.option-text {

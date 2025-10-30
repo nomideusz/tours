@@ -22,15 +22,15 @@
 }
 
 .pricing-model-card:hover {
-  border-color: var(--color-primary-400);
+  border-color: var(--color-accent-400);
   background: var(--bg-secondary);
   transform: translateY(-1px);
 }
 
 .pricing-model-card.selected {
-  border-color: var(--color-primary-500);
-  background: var(--color-primary-50);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  border-color: var(--color-accent-500);
+  background: var(--color-accent-50);
+  box-shadow: 0 0 0 3px var(--color-accent-100);
 }
 
 .pricing-model-card .icon-container {
@@ -46,8 +46,8 @@
 }
 
 .pricing-model-card.selected .icon-container {
-  background: var(--color-primary-100);
-  color: var(--color-primary-600);
+  background: var(--color-accent-100);
+  color: var(--color-accent-600);
 }
 
 .pricing-model-card .model-info {
@@ -131,8 +131,8 @@
 
 .tier-range-input:focus {
   outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  border-color: var(--color-accent-500);
+  box-shadow: 0 0 0 3px var(--color-accent-100);
 }
 
 .tier-price-group {
@@ -157,8 +157,8 @@
 
 .tier-label-optional:focus {
   outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  border-color: var(--color-accent-500);
+  box-shadow: 0 0 0 3px var(--color-accent-100);
   color: var(--text-primary);
 }
 
@@ -400,12 +400,12 @@
 
 .tier-range-input:focus-visible,
 .tier-label-optional:focus-visible {
-  outline: 2px solid var(--color-primary-500);
+  outline: 2px solid var(--color-accent-500);
   outline-offset: 2px;
 }
 
 .pricing-model-card:focus-visible {
-  outline: 2px solid var(--color-primary-500);
+  outline: 2px solid var(--color-accent-500);
   outline-offset: 2px;
 }
 

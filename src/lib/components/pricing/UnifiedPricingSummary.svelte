@@ -200,7 +200,7 @@
 						</div>
 						<div class="processing-row highlighted">
 							<span class="processing-label"><strong>You receive</strong></span>
-							<span class="processing-value success">{currencySymbol}{stripeFeeExample()?.guideReceives.toFixed(2)}</span>
+							<span class="processing-value success">{currencySymbol}{(basePrice() - (stripeFeeExample()?.stripeFee || 0)).toFixed(2)}</span>
 						</div>
 						<div class="fee-note">
 							<Info class="note-icon" />
@@ -370,7 +370,7 @@
 	
 	.addon-price {
 		font-weight: 600;
-		color: var(--color-primary-600);
+		color: var(--color-accent-600);
 		font-family: monospace;
 	}
 	
@@ -446,8 +446,8 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 0.75rem;
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
+		background: var(--color-accent-50);
+		border: 1px solid var(--color-accent-200);
 		border-radius: 0.375rem;
 	}
 	
@@ -460,7 +460,7 @@
 	.total-price {
 		font-size: 1.125rem;
 		font-weight: 700;
-		color: var(--color-primary-700);
+		color: var(--color-accent-700);
 		font-family: monospace;
 	}
 	
@@ -514,7 +514,7 @@
 	}
 	
 	.processing-value.primary {
-		color: var(--color-primary-600);
+		color: var(--color-accent-600);
 		font-weight: 600;
 	}
 	

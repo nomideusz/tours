@@ -301,6 +301,25 @@ Key extracted components:
 	let onboardingMessage = $derived(getOnboardingMessage(missingSteps, formData.price === 0));
 	let nextStep = $derived(getNextOnboardingStep(missingSteps));
 	
+	// Check if basic required fields are filled (for disabling save buttons on new tours)
+	let hasMinimumRequiredFields = $derived(() => {
+		// Required fields for saving
+		const hasName = formData.name && formData.name.trim().length > 0;
+		const hasDescription = formData.description && formData.description.trim().length > 0;
+		const hasDuration = formData.duration && formData.duration > 0;
+		const hasLanguages = formData.languages && formData.languages.length > 0;
+		
+		// Check pricing based on model
+		let hasValidPricing = false;
+		if (formData.pricingModel === 'participant_categories' && formData.participantCategories) {
+			hasValidPricing = formData.participantCategories.categories.some(c => c.price > 0);
+		} else if (formData.pricingModel === 'private_tour' && formData.privateTour) {
+			hasValidPricing = formData.privateTour.flatPrice > 0;
+		}
+		
+		return hasName && hasDescription && hasDuration && hasLanguages && hasValidPricing;
+	});
+	
 	// Suggestions for What's Included and Requirements
 	const includedItemsSuggestions = [
 		'Professional tour guide',
@@ -1091,7 +1110,7 @@ Key extracted components:
 													onExistingImageRemove(imageName);
 												}
 											}}
-											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											class="image-remove-btn absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
 											style="
 												background: var(--color-error-500);
 												color: white;
@@ -1100,7 +1119,7 @@ Key extracted components:
 											"
 											aria-label="Remove image"
 										>
-											<X class="w-3 h-3" />
+											<X class="w-3 h-3 flex-shrink-0" />
 										</button>
 									</div>
 								{/each}
@@ -1184,7 +1203,7 @@ Key extracted components:
 													onImageRemove(index);
 												}
 											}}
-											class="absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
+											class="image-remove-btn absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
 											style="
 												background: var(--color-error-500);
 												color: white;
@@ -1193,11 +1212,8 @@ Key extracted components:
 											"
 											aria-label="Remove image"
 										>
-											<X class="w-3 h-3" />
+											<X class="w-3 h-3 flex-shrink-0" />
 										</button>
-										<div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
-											{image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
-										</div>
 									</div>
 								{/each}
 							</div>
@@ -1364,7 +1380,7 @@ Key extracted components:
 					{/if}
 					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
 					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
-						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-primary-100); color: var(--color-primary-700);">
+						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-accent-100); color: var(--color-accent-700);">
 							{selectedPolicyTemplate === 'veryFlexible' ? 'Very Flexible' : 
 							 selectedPolicyTemplate === 'flexible' ? 'Flexible' :
 							 selectedPolicyTemplate === 'moderate' ? 'Moderate' :
@@ -1808,9 +1824,9 @@ Key extracted components:
 					<button
 						type="button"
 						onclick={onPublish}
-						disabled={isSubmitting || !canActivate || allErrors.length > 0}
+						disabled={isSubmitting || !canActivate || allErrors.length > 0 || !hasMinimumRequiredFields}
 						class="button-primary button--full-width button-gap"
-						title={!canActivate ? 'Complete required setup steps to activate' : allErrors.length > 0 ? 'Fix validation errors to activate' : ''}
+						title={!canActivate ? 'Complete required setup steps to activate' : allErrors.length > 0 ? 'Fix validation errors to activate' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
 					>
 						{#if isSubmitting && formData.status === 'active'}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1829,9 +1845,9 @@ Key extracted components:
 					<button
 						type="button"
 						onclick={onSaveAsDraft}
-						disabled={isSubmitting || allErrors.length > 0}
+						disabled={isSubmitting || allErrors.length > 0 || !hasMinimumRequiredFields}
 						class="button-secondary button--full-width button-gap"
-						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
+						title={allErrors.length > 0 ? 'Fix validation errors to save' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
 					>
 						{#if isSubmitting && formData.status === 'draft'}
 							<div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -1847,9 +1863,9 @@ Key extracted components:
 					<button
 						type={onSubmit ? "button" : "submit"}
 						onclick={onSubmit || handleSubmit}
-						disabled={isSubmitting || allErrors.length > 0}
+						disabled={isSubmitting || allErrors.length > 0 || !hasMinimumRequiredFields}
 						class="button-primary button--full-width button-gap"
-						title={allErrors.length > 0 ? 'Fix validation errors to save' : ''}
+						title={allErrors.length > 0 ? 'Fix validation errors to save' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
 					>
 						{#if isSubmitting}
 							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1938,6 +1954,14 @@ Key extracted components:
 		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
 		border-color: var(--color-primary-500) !important;
 		outline: none !important;
+	}
+	
+	/* Tour name input uses accent color on mobile */
+	@media (max-width: 640px) {
+		:global(.form-input.tour-name-input:focus) {
+			box-shadow: 0 0 0 1px var(--color-accent-200) !important;
+			border-color: var(--color-accent-500) !important;
+		}
 	}
 	
 	:global(.form-input.form-input--no-transform.error) {
@@ -2118,6 +2142,19 @@ Key extracted components:
 		}
 	}
 
+	/* Image remove button - ensure proper aspect ratio */
+	.image-remove-btn {
+		aspect-ratio: 1 / 1;
+		padding: 0;
+		min-width: 0;
+		min-height: 0;
+	}
+	
+	.image-remove-btn :global(svg) {
+		flex-shrink: 0;
+		display: block;
+	}
+
 	/* Mobile Enhancements - Better touch targets */
 	@media (max-width: 640px) {
 		#images-upload {
@@ -2136,14 +2173,8 @@ Key extracted components:
 		}
 
 		/* Increase touch targets for all buttons */
-		button[type="button"]:not(.tag-remove):not(.remove-btn) {
+		button[type="button"]:not(.tag-remove):not(.remove-btn):not(.image-remove-btn) {
 			min-height: 44px;
-		}
-
-		/* Category buttons - better touch targets */
-		.grid.grid-cols-2 button {
-			min-height: 48px;
-			padding: 0.75rem;
 		}
 
 	}
@@ -2167,14 +2198,14 @@ Key extracted components:
 			text-align: center;
 			font-weight: 600;
 			font-size: 1rem;
-			background: var(--color-primary-50);
-			border-color: var(--color-primary-200);
-			color: var(--color-primary-900);
+			background: var(--color-accent-50);
+			border-color: var(--color-accent-200);
+			color: var(--color-accent-900);
 		}
 		
 		.tour-name-input:focus {
 			background: var(--bg-primary);
-			border-color: var(--color-primary-500);
+			border-color: var(--color-accent-500);
 			color: var(--text-primary);
 		}
 		
@@ -2182,7 +2213,7 @@ Key extracted components:
 			text-align: center;
 			font-weight: 500;
 			font-size: 0.875rem;
-			color: var(--color-primary-400);
+			color: var(--color-accent-400);
 		}
 		
 		/* Mobile: Centered placeholders for all inputs */

@@ -237,15 +237,10 @@
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
+	/* Adult category card - uses accent colors for visual distinction */
 	.category-card.adult-card {
-		background: var(--color-primary-50);
-		border-color: var(--color-primary-200);
-	}
-
-	/* Dark mode - softer adult card colors */
-	:root[data-theme='dark'] .category-card.adult-card {
-		background: rgba(99, 102, 241, 0.08);
-		border-color: rgba(99, 102, 241, 0.25);
+		background: var(--color-accent-50);
+		border-color: var(--color-accent-200);
 	}
 
 	.card-header {
@@ -294,8 +289,8 @@
 
 	.category-input:focus {
 		outline: none;
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 3px var(--color-primary-100);
+		border-color: var(--color-accent-500);
+		box-shadow: 0 0 0 3px var(--color-accent-100);
 	}
 
 
@@ -372,9 +367,9 @@
 	}
 
 	.discount-btn-small.active {
-		background: var(--color-primary-100);
-		border-color: var(--color-primary-400);
-		color: var(--color-primary-700);
+		background: var(--color-accent-100);
+		border-color: var(--color-accent-400);
+		color: var(--color-accent-700);
 		font-weight: 600;
 	}
 	
@@ -390,8 +385,8 @@
 	}
 	
 	.custom-discount-input:focus-within {
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 2px var(--color-primary-100);
+		border-color: var(--color-accent-500);
+		box-shadow: 0 0 0 2px var(--color-accent-100);
 	}
 	
 	.discount-number-input {
