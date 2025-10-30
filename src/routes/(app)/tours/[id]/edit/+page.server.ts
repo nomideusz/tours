@@ -153,7 +153,7 @@ export const actions: Actions = {
         // Also try JSON parsing if still empty
         try {
           const includedItemsJson = formData.get('includedItems');
-          if (typeof includedItemsJson === 'string') {
+          if (typeof includedItemsJson === 'string' && includedItemsJson !== 'null' && includedItemsJson !== 'undefined' && includedItemsJson !== '') {
             parsedIncludedItems = JSON.parse(includedItemsJson);
           }
         } catch (e) {
@@ -176,7 +176,7 @@ export const actions: Actions = {
         // Also try JSON parsing if still empty
         try {
           const requirementsJson = formData.get('requirements');
-          if (typeof requirementsJson === 'string') {
+          if (typeof requirementsJson === 'string' && requirementsJson !== 'null' && requirementsJson !== 'undefined' && requirementsJson !== '') {
             parsedRequirements = JSON.parse(requirementsJson);
           }
         } catch (e) {
@@ -230,7 +230,7 @@ export const actions: Actions = {
       // Get group pricing tiers (legacy)
       let groupPricingTiers = null;
       const groupPricingTiersRaw = formData.get('groupPricingTiers');
-      if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null' && groupPricingTiersRaw !== '[object Object]') {
+      if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null' && groupPricingTiersRaw !== 'undefined' && groupPricingTiersRaw !== '' && !groupPricingTiersRaw.startsWith('[object')) {
         try {
           groupPricingTiers = JSON.parse(groupPricingTiersRaw);
         } catch (e) {
@@ -254,7 +254,7 @@ export const actions: Actions = {
       // Get optional add-ons
       let optionalAddons = null;
       const optionalAddonsRaw = formData.get('optionalAddons');
-      if (optionalAddonsRaw && typeof optionalAddonsRaw === 'string' && optionalAddonsRaw !== 'null') {
+      if (optionalAddonsRaw && typeof optionalAddonsRaw === 'string' && optionalAddonsRaw !== 'null' && optionalAddonsRaw !== 'undefined' && optionalAddonsRaw !== '' && !optionalAddonsRaw.startsWith('[object')) {
         try {
           optionalAddons = JSON.parse(optionalAddonsRaw);
         } catch (e) {
@@ -289,6 +289,10 @@ export const actions: Actions = {
         status: formData.get('status'),
         categories: (() => {
           const categoriesData = formData.get('categories') as string || '[]';
+          // Skip parsing for invalid values
+          if (categoriesData === 'undefined' || categoriesData === 'null' || categoriesData === '') {
+            return [];
+          }
           try {
             return JSON.parse(categoriesData);
           } catch (e) {

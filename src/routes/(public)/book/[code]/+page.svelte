@@ -201,7 +201,7 @@
 	});
 	
 	// Get the actual price value for display
-	let displayPrice = $derived(priceCalculation.totalAmount);
+	let displayPrice = $derived(priceCalculation?.totalAmount || 0);
 	
 	// Total participant count for validation
 	let totalParticipants = $derived.by(() => {
@@ -297,7 +297,9 @@
 	// Geocode when user selects a time slot (for weather) or shows map
 	$effect(() => {
 		if (selectedTimeSlot || showMapInHero) {
-			geocodeLocationIfNeeded();
+			geocodeLocationIfNeeded().catch(err => {
+				console.error('Geocoding effect error:', err);
+			});
 		}
 	});
 	

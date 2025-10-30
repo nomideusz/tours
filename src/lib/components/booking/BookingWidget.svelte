@@ -111,11 +111,11 @@
 	
 	// Update tracking when steps should appear
 	$effect(() => {
-		if (selectedTimeSlot || totalParticipants > 0) {
+		if (selectedTimeSlot || (typeof totalParticipants === 'number' && totalParticipants > 0)) {
 			hasShownStep2 = true;
 		}
 		const addons = tour.optionalAddons?.addons;
-		if (totalParticipants > 0 && addons && addons.length > 0) {
+		if (typeof totalParticipants === 'number' && totalParticipants > 0 && addons && addons.length > 0) {
 			hasShownStep3 = true;
 		}
 	});
@@ -130,7 +130,7 @@
 		if (!browser || window.innerWidth > 640) return;
 		
 		const hasSlot = !!selectedTimeSlot;
-		const hasParticipants = totalParticipants > 0;
+		const hasParticipants = typeof totalParticipants === 'number' && totalParticipants > 0;
 		
 		// When time slot is selected, scroll to participants step (but not if user is just changing)
 		if (hasSlot && !previousStepState.slot && !isChangingTimeSlot) {
@@ -164,7 +164,7 @@
 						requestAnimationFrame(scrollStep);
 					}
 				}, 500); // Wait for slide transitions (300ms) + buffer
-			});
+			}).catch(err => console.error('Scroll animation error:', err));
 		}
 		
 		// When participants are selected, scroll to contact info
@@ -196,7 +196,7 @@
 						requestAnimationFrame(scrollStep);
 					}
 				}, 200);
-			});
+			}).catch(err => console.error('Scroll animation error:', err));
 		}
 		
 		previousStepState = { slot: hasSlot, participants: hasParticipants };
@@ -643,7 +643,7 @@
 					
 					<!-- Submit Button -->
 					{#if selectedTimeSlot && totalParticipants > 0}
-						{@const displayPrice = priceCalculation.totalAmount}
+						{@const displayPrice = priceCalculation?.totalAmount || 0}
 						<button
 							type="submit"
 							disabled={isSubmitting || !selectedTimeSlot || totalParticipants === 0 || !isContactInfoValid}
@@ -668,7 +668,7 @@
 	
 	<!-- Mobile sticky booking footer (shown only when booking form is ready) -->
 	{#if selectedTimeSlot && totalParticipants > 0 && !showSuccess}
-		{@const displayPrice = priceCalculation.totalAmount}
+		{@const displayPrice = priceCalculation?.totalAmount || 0}
 		<div class="mobile-sticky-footer" class:keyboard-hidden={$isKeyboardVisible} style="-webkit-backface-visibility: hidden;">
 			<div class="mobile-footer-content">
 				<div class="mobile-price-summary">
