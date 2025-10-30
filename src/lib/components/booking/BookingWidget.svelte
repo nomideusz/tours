@@ -203,7 +203,7 @@
 	});
 	
 	// Ensure infant category is available if countInfantsTowardCapacity is enabled
-	let categoriesForBooking = $derived(() => {
+	let categoriesForBooking = $derived.by(() => {
 		if (!tour.participantCategories?.categories) return [];
 		
 		const categories = [...tour.participantCategories.categories];
@@ -458,7 +458,7 @@
 								{:else if tour.pricingModel === 'participant_categories' && tour.participantCategories}
 									<!-- Participant Categories (with auto-added infant if needed) -->
 									<ParticipantCategorySelector
-										categories={categoriesForBooking()}
+										categories={categoriesForBooking}
 										bind:participantCounts
 										availableSpots={(selectedTimeSlot?.availableSpots || 10) - (selectedTimeSlot?.bookedSpots || 0)}
 										currencySymbol={tourOwner?.currency === 'PLN' ? 'zł' : tourOwner?.currency === 'EUR' ? '€' : '$'}

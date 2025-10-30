@@ -34,7 +34,7 @@
 	}: Props = $props();
 
 	// Calculate participant breakdown from counts
-	let participantBreakdown = $derived(() => {
+	let participantBreakdown = $derived.by(() => {
 		if (!participantCounts || Object.keys(participantCounts).length === 0) {
 			return null;
 		}
@@ -55,7 +55,7 @@
 	});
 	
 	// Calculate price breakdown with Stripe fees for regulatory compliance
-	let priceCalculation = $derived(() => {
+	let priceCalculation = $derived.by(() => {
 		// For private tour with flat rate
 		if (isPrivateTour && tour.privateTour) {
 			const addonsTotal = selectedAddonIds.length > 0 && tour.optionalAddons?.addons
@@ -100,7 +100,7 @@
 	});
 
 	// Get selected addons details
-	let selectedAddons = $derived(() => {
+	let selectedAddons = $derived.by(() => {
 		if (!tour.optionalAddons?.addons) return [];
 		return (tour.optionalAddons.addons || []).filter(addon => 
 			selectedAddonIds.includes(addon.id)
@@ -131,9 +131,9 @@
 					{formatPrice(tour.privateTour.flatPrice)}
 				</div>
 			</div>
-		{:else if priceCalculation().categoryBreakdown}
+		{:else if priceCalculation.categoryBreakdown}
 			<!-- Category Breakdown (New System) -->
-			{@const breakdown = priceCalculation().categoryBreakdown || {}}
+			{@const breakdown = priceCalculation.categoryBreakdown || {}}
 			{#each Object.entries(breakdown) as [catId, cat]}
 				<div class="breakdown-item category">
 					<div class="item-label">
@@ -152,18 +152,18 @@
 			{/each}
 			
 			<!-- Group Discount Badge -->
-			{#if priceCalculation().groupDiscount > 0}
+			{#if priceCalculation.groupDiscount > 0}
 				<div class="discount-banner">
 					<Tag class="w-4 h-4" />
 					<div class="flex-1">
 						<span class="discount-label">Group Discount ({participants} {participants === 1 ? 'person' : 'people'})</span>
 					</div>
-					<span class="discount-value">-{formatPrice(priceCalculation().groupDiscount)}</span>
+					<span class="discount-value">-{formatPrice(priceCalculation.groupDiscount)}</span>
 				</div>
 			{/if}
-		{:else if participantBreakdown() && (participantBreakdown() || []).length > 0}
+		{:else if participantBreakdown && (participantBreakdown || []).length > 0}
 			<!-- Participant Breakdown (when no discount applied) -->
-			{#each (participantBreakdown() || []) as cat}
+			{#each (participantBreakdown || []) as cat}
 				<div class="breakdown-item category">
 					<div class="item-label">
 						<span>{cat.count} {cat.label}{cat.count === 1 ? '' : 's'}</span>
@@ -179,7 +179,7 @@
 			<div class="breakdown-item">
 				<div class="item-label">
 					{#if tour.pricingModel === 'group_tiers'}
-						{@const tier = priceCalculation().selectedTier}
+						{@const tier = priceCalculation.selectedTier}
 						{#if tier}
 							<span>
 								{tier.label || `Group of ${participants}`}
@@ -192,18 +192,18 @@
 					{/if}
 				</div>
 				<div class="item-value">
-					{formatPrice(priceCalculation().discountedBase)}
+					{formatPrice(priceCalculation.discountedBase)}
 				</div>
 			</div>
 		{/if}
 
 		<!-- Add-ons Section -->
-		{#if selectedAddons().length > 0}
+		{#if selectedAddons.length > 0}
 			<div class="breakdown-divider">
 				<Plus class="w-3 h-3" style="color: var(--text-tertiary);" />
 			</div>
 			
-			{#each selectedAddons() as addon}
+			{#each selectedAddons as addon}
 				<div class="breakdown-item addon">
 					<div class="item-label">
 						{#if addon.icon}
@@ -219,7 +219,7 @@
 		{/if}
 
 		<!-- Stripe Processing Fee (Regulatory Compliance) -->
-		{#if priceCalculation().stripeFee && priceCalculation().stripeFee > 0}
+		{#if priceCalculation.stripeFee && priceCalculation.stripeFee > 0}
 			<div class="breakdown-divider">
 				<Plus class="w-3 h-3" style="color: var(--text-tertiary);" />
 			</div>
@@ -227,17 +227,17 @@
 			<div class="breakdown-item processing-fee">
 				<div class="item-label">
 					<span>Payment Processing Fee</span>
-					{#if priceCalculation().guidePaysStripeFee}
+					{#if priceCalculation.guidePaysStripeFee}
 						<span class="fee-note">(Included by tour guide)</span>
 					{:else}
 						<span class="fee-note">(Stripe payment processing)</span>
 					{/if}
 				</div>
 				<div class="item-value">
-					{#if priceCalculation().guidePaysStripeFee}
+					{#if priceCalculation.guidePaysStripeFee}
 						<span class="included-fee">Included</span>
 					{:else}
-						{formatPrice(priceCalculation().stripeFee)}
+						{formatPrice(priceCalculation.stripeFee)}
 					{/if}
 				</div>
 			</div>
@@ -254,14 +254,14 @@
 				<span class="all-in-note">All fees included - no surprises!</span>
 			</div>
 			<div class="item-value">
-				{formatPrice(priceCalculation().totalAmount)}
+				{formatPrice(priceCalculation.totalAmount)}
 			</div>
 		</div>
 
 		<!-- Error messages -->
-		{#if priceCalculation().errors && (priceCalculation().errors || []).length > 0}
+		{#if priceCalculation.errors && (priceCalculation.errors || []).length > 0}
 			<div class="breakdown-errors">
-				{#each (priceCalculation().errors || []) as error}
+				{#each (priceCalculation.errors || []) as error}
 					<p class="error-message">{error}</p>
 				{/each}
 			</div>

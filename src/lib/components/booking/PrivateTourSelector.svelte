@@ -23,7 +23,7 @@
 	}: Props = $props();
 	
 	// Calculate per-person estimate (using average of min/max)
-	let avgPricePerPerson = $derived(() => {
+	let avgPricePerPerson = $derived.by(() => {
 		const avgCapacity = (minCapacity + maxCapacity) / 2;
 		return flatPrice / avgCapacity;
 	});
@@ -67,7 +67,7 @@
 				<span>{minCapacity}-{maxCapacity} participants</span>
 			</div>
 			<div class="detail-item estimate">
-				<span>~{currencySymbol}{avgPricePerPerson().toFixed(0)} per person</span>
+				<span>~{currencySymbol}{avgPricePerPerson.toFixed(0)} per person</span>
 			</div>
 		</div>
 	</button>

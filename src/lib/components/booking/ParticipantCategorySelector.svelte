@@ -39,7 +39,7 @@
 	);
 	
 	// Calculate total participants (only counting those that count toward capacity)
-	let totalParticipants = $derived(() => {
+	let totalParticipants = $derived.by(() => {
 		return Object.entries(participantCounts).reduce((sum, [catId, count]) => {
 			const category = categories.find(c => c.id === catId);
 			if (category && category.countsTowardCapacity !== false) {
@@ -58,7 +58,7 @@
 		if (category.countsTowardCapacity === false) return true;
 		
 		// Otherwise check against available spots
-		return totalParticipants() < availableSpots;
+		return totalParticipants < availableSpots;
 	}
 	
 	// Update participant count
@@ -95,13 +95,13 @@
 	}
 	
 	// Check if at least one participant is selected
-	let hasParticipants = $derived(totalParticipants() > 0);
+	let hasParticipants = $derived(totalParticipants > 0);
 </script>
 
 <div class="participant-selector">
 	<div class="selector-header">
-		<span class="spots-indicator" class:warning={totalParticipants() >= availableSpots * 0.8}>
-			{totalParticipants()} / {availableSpots} spots
+		<span class="spots-indicator" class:warning={totalParticipants >= availableSpots * 0.8}>
+			{totalParticipants} / {availableSpots} spots
 		</span>
 	</div>
 	
@@ -173,7 +173,7 @@
 	
 	<!-- Hidden input for form submission -->
 	<input type="hidden" name="participantsByCategory" value={JSON.stringify(participantCounts)} />
-	<input type="hidden" name="totalParticipants" value={totalParticipants()} />
+	<input type="hidden" name="totalParticipants" value={totalParticipants} />
 </div>
 
 <style>
