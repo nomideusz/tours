@@ -443,19 +443,34 @@
 			if (response.ok) {
 				const data = await response.json();
 				const slotsCreated = data.slotsCreated || 1;
-				
-				// Show success message
-				successMessage = recurring 
+
+				// Wait for all queries to refetch before showing success
+				// This ensures the timeline displays real data, not stale data
+				await Promise.all([
+					queryClient.refetchQueries({
+						queryKey: queryKeys.tourSchedule(activeTourId),
+						exact: true,
+						type: 'active'
+					}),
+					queryClient.refetchQueries({
+						queryKey: queryKeys.tourDetails(activeTourId),
+						exact: true,
+						type: 'active'
+					}),
+					queryClient.refetchQueries({
+						queryKey: queryKeys.userTours,
+						exact: true,
+						type: 'active'
+					})
+				]);
+
+				// Show success message after data is loaded
+				successMessage = recurring
 					? `Successfully created ${slotsCreated} recurring time slot${slotsCreated !== 1 ? 's' : ''}!`
 					: `Time slot${slotsCreated !== 1 ? 's' : ''} created successfully!`;
 				showSuccess = true;
 				error = null;
-				
-				// Invalidate schedule
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.tourSchedule(activeTourId)
-				});
-				
+
 				// Call success callback
 				onSuccess?.();
 			} else {

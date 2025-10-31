@@ -116,7 +116,7 @@
 	
 	// Query for timeline data - make reactive to date and view changes
 	let timelineQuery = $derived(createQuery({
-		queryKey: tourId 
+		queryKey: tourId
 			? queryKeys.tourSchedule(tourId)
 			: queryKeys.allTimeSlots(view, dateString),
 		queryFn: async () => {
@@ -141,10 +141,10 @@
 				throw error;
 			}
 		},
-		staleTime: 0, // Always consider data potentially stale for immediate updates
-		gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
-		refetchOnWindowFocus: 'always', // Always refetch on window focus for immediate updates
-		refetchOnMount: 'always', // Always refetch on mount for immediate updates
+		staleTime: 30 * 1000, // Consider data fresh for 30 seconds to avoid excessive refetching
+		gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
+		refetchOnWindowFocus: true, // Refetch on window focus (but not 'always' - respect staleTime)
+		refetchOnMount: true, // Refetch on mount (but respect staleTime)
 		enabled: browser,
 		retry: 1, // Reduce retries
 		retryDelay: 1000, // 1 second retry delay

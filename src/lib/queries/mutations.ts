@@ -624,7 +624,7 @@ export function updateBookingStatusMutation() {
 export function createTimeSlotMutation(tourId: string) {
 	const queryClient = useQueryClient();
 	const invalidate = createInvalidationHelper(queryClient);
-	
+
 	return createMutation({
 		mutationFn: async (slotData: any) => {
 			const response = await fetch(`/api/tours/${tourId}/schedule`, {
@@ -632,64 +632,46 @@ export function createTimeSlotMutation(tourId: string) {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(slotData)
 			});
-			
+
 			if (!response.ok) {
 				const error = await response.json();
 				throw new Error(error.error || 'Failed to create time slot');
 			}
-			
+
 			return response.json();
 		},
-		onMutate: async (slotData) => {
-			// Cancel any outgoing refetches to prevent overwriting optimistic update
-			await queryClient.cancelQueries({ queryKey: queryKeys.tourSchedule(tourId) });
-			
-			// Snapshot the previous value
-			const previousSchedule = queryClient.getQueryData(queryKeys.tourSchedule(tourId));
-			
-			// Optimistically update the schedule
-			queryClient.setQueryData(queryKeys.tourSchedule(tourId), (old: any) => {
-				if (!old) return old;
-				
-				// Create a temporary slot for optimistic UI
-				const tempSlot = {
-					id: `temp-${Date.now()}`,
-					tourId,
-					startTime: slotData.startTime,
-					endTime: slotData.endTime,
-					capacity: slotData.capacity,
-					status: slotData.status || 'available',
-					notes: slotData.notes || null,
-					totalBookings: 0,
-					confirmedBookings: 0,
-					pendingBookings: 0,
-					totalParticipants: 0,
-					bookedSpots: 0,
-					availableSpots: slotData.capacity,
-					isUpcoming: true,
-					isPast: false
-				};
-				
-				return {
-					...old,
-					timeSlots: [...(old.timeSlots || []), tempSlot].sort((a, b) => 
-						new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-					)
-				};
-			});
-			
-			return { previousSchedule };
-		},
-		onError: (err, newSlot, context) => {
-			// If the mutation fails, use the context returned from onMutate to roll back
-			if (context?.previousSchedule) {
-				queryClient.setQueryData(queryKeys.tourSchedule(tourId), context.previousSchedule);
-			}
-		},
-		onSuccess: async () => {
+		onSuccess: async (data) => {
+			console.log('✅ Time slot created successfully:', data);
+
 			// Get tour QR code for public invalidation
 			const tour = queryClient.getQueryData(queryKeys.tourDetails(tourId)) as any;
-			await invalidate.invalidateScheduleQueries(tourId, tour?.tour?.qrCode);
+
+			// Wait for all refetches to complete before resolving
+			// This ensures the UI shows real data, not temporary optimistic updates
+			await Promise.all([
+				queryClient.refetchQueries({
+					queryKey: queryKeys.tourSchedule(tourId),
+					exact: true,
+					type: 'active'
+				}),
+				queryClient.refetchQueries({
+					queryKey: queryKeys.tourDetails(tourId),
+					exact: true,
+					type: 'active'
+				}),
+				queryClient.refetchQueries({
+					queryKey: queryKeys.userTours,
+					exact: true,
+					type: 'active'
+				})
+			]);
+
+			// Also invalidate public booking pages if tour has QR code
+			if (tour?.tour?.qrCode) {
+				invalidatePublicTourData(queryClient, tour.tour.qrCode);
+			}
+
+			console.log('✅ Time slot mutation: Cache refreshed with real data');
 		}
 	});
 }
