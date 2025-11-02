@@ -1,6 +1,4 @@
 <script lang="ts">
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
 	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
@@ -32,9 +30,6 @@
 				
 				<!-- Notifications -->
 				<NotificationPanel tooltipPosition="bottom-left" />
-
-				<!-- Theme Toggle -->
-				<ThemeToggle tooltipPosition="bottom" />
 			</div>
 		</div>
 	</div>
@@ -94,7 +89,7 @@
 
 	.app-header-content {
 		display: flex;
-		height: 5rem;
+		height: 4rem;
 		align-items: center;
 		justify-content: space-between;
 	}
@@ -120,15 +115,6 @@
 	.header-actions > * {
 		pointer-events: auto;
 	}
-
-	/* Dark Mode Support */
-	[data-theme="dark"] .app-header::before {
-		background: linear-gradient(
-			to bottom,
-			transparent 0%,
-			rgba(255, 255, 255, 0.01) 100%
-		);
-	}
 	
 	/* Hide header when scrolling down - mobile only */
 	@media (max-width: 639px) {
@@ -153,7 +139,7 @@
 	/* Mobile optimizations */
 	@media (max-width: 768px) {
 		.app-header-content {
-			height: 4rem; /* Smaller on mobile */
+			height: 3.5rem; /* Smaller on mobile */
 		}
 		
 		.header-actions {

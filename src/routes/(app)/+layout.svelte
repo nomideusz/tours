@@ -22,7 +22,7 @@
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
 	import BetaWelcomeModal from '$lib/components/BetaWelcomeModal.svelte';
-	import { themeStore } from '$lib/stores/theme.js';
+	import { themeStore, type Theme } from '$lib/stores/theme.js';
 	import { onMount, onDestroy } from 'svelte';
 	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';
 	import { isKeyboardVisible } from '$lib/stores/keyboard.js';
@@ -47,6 +47,8 @@
 	import X from 'lucide-svelte/icons/x';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+	import Sun from 'lucide-svelte/icons/sun';
+	import Moon from 'lucide-svelte/icons/moon';
 
 	// Type definitions
 	interface NavigationItem {
@@ -121,16 +123,24 @@
 	// Avatar loading state
 	let avatarLoadError = $state(false);
 	
-	// Auto-hide navigation on scroll
-	let navHidden = $state(false);
-	let lastScrollY = $state(0);
-	let scrollDirection = $state<'up' | 'down'>('up');
-	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+	// Mobile device detection
 	let isMobileDevice = $state(false);
 	
-	// Touch tracking for iOS
-	let touchStartY = 0;
-	let touchEndY = 0;
+	// Theme state
+	let currentTheme = $state<Theme>('light');
+	
+	// Subscribe to theme changes
+	$effect(() => {
+		const unsubscribe = themeStore.subscribe(theme => {
+			currentTheme = theme;
+		});
+		return unsubscribe;
+	});
+	
+	function toggleTheme() {
+		const newTheme: Theme = currentTheme === 'light' ? 'dark' : 'light';
+		themeStore.setTheme(newTheme);
+	}
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
@@ -138,10 +148,6 @@
 		mobileMenuOpen = false;
 		if (browser) {
 			currentPath = window.location.pathname;
-			
-			// Reset touch state for iOS
-			touchAccumulator = 0;
-			lastTouchY = 0;
 			
 			// Scroll to top on navigation (mobile fix)
 			// Use both window and the main content element
@@ -405,91 +411,6 @@
 		}
 	}
 
-	// Handle scroll events for auto-hide navigation (non-iOS)
-	function handleScroll(event?: Event) {
-		if (!browser || $isKeyboardVisible || !isMobileDevice || mobileMenuOpen) return; // Only on mobile, and not when menu is open
-		
-		// Get scroll position
-		const scrollElement = document.scrollingElement || document.documentElement || document.body;
-		const currentScrollY = scrollElement.scrollTop || window.pageYOffset || 0;
-		const scrollDelta = currentScrollY - lastScrollY;
-		
-		// Ignore small scroll movements
-		if (Math.abs(scrollDelta) < 5) return;
-		
-		// Determine scroll direction
-		if (currentScrollY > lastScrollY) {
-			// Scrolling down
-			scrollDirection = 'down';
-			navHidden = true;
-			// Also close mobile menu if open
-			if (mobileMenuOpen) {
-				mobileMenuOpen = false;
-			}
-		} else if (currentScrollY < lastScrollY) {
-			// Scrolling up
-			scrollDirection = 'up';
-			navHidden = false;
-		}
-		
-		lastScrollY = currentScrollY;
-		
-		// Clear any existing timeout
-		if (scrollTimeout) clearTimeout(scrollTimeout);
-		
-		// Show navigation after scrolling stops
-		scrollTimeout = setTimeout(() => {
-			navHidden = false;
-		}, 1500);
-	}
-	
-	// iOS touch handlers for navigation auto-hide
-	let lastTouchY = 0;
-	let touchAccumulator = 0;
-	
-	function handleTouchStart(event: TouchEvent) {
-		if (!isMobileDevice || $isKeyboardVisible || mobileMenuOpen) return;
-		touchStartY = event.touches[0].clientY;
-		lastTouchY = touchStartY;
-		touchAccumulator = 0;
-	}
-	
-	function handleTouchMove(event: TouchEvent) {
-		if (!isMobileDevice || $isKeyboardVisible || mobileMenuOpen) return;
-		
-		const currentTouchY = event.touches[0].clientY;
-		const touchDelta = lastTouchY - currentTouchY;
-		
-		// Accumulate touch movement
-		touchAccumulator += touchDelta;
-		
-		// Check if we've moved enough to trigger
-		if (Math.abs(touchAccumulator) > 20) {
-			if (touchAccumulator > 0) {
-				// Scrolling down - hide nav
-				navHidden = true;
-				// Also close mobile menu if open
-				if (mobileMenuOpen) {
-					mobileMenuOpen = false;
-				}
-			} else if (touchAccumulator < 0) {
-				// Scrolling up - show nav
-				navHidden = false;
-			}
-			
-			// Reset accumulator
-			touchAccumulator = 0;
-			
-			// Clear timeout and set new one
-			if (scrollTimeout) clearTimeout(scrollTimeout);
-			scrollTimeout = setTimeout(() => {
-				navHidden = false;
-			}, 1500);
-		}
-		
-		lastTouchY = currentTouchY;
-	}
-	
 	// Theme communication with embedded widgets
 	onMount(() => {
 		let currentTheme: 'light' | 'dark' = 'light';
@@ -509,33 +430,10 @@
 		// Listen for resize to update mobile state and menu height
 		const handleResize = () => {
 			isMobileDevice = window.innerWidth <= 639;
-			// Reset nav state on resize
-			if (!isMobileDevice) {
-				navHidden = false;
-			}
 			// Recalculate menu height on resize
 			calculateMenuHeight();
 		};
 		window.addEventListener('resize', handleResize);
-		
-		
-		// Set up listeners for mobile navigation auto-hide
-		// Always add listeners - we check isMobileDevice inside the handlers
-		if (browser) {
-			// Touch events work best on all mobile devices
-			document.addEventListener('touchstart', handleTouchStart, { passive: true });
-			document.addEventListener('touchmove', handleTouchMove, { passive: true });
-			
-			// Also add scroll listeners as fallback
-			window.addEventListener('scroll', handleScroll, { passive: true });
-			document.addEventListener('scroll', handleScroll, { passive: true });
-			document.body.addEventListener('scroll', handleScroll, { passive: true });
-			
-			const mainContent = document.querySelector('.main-content');
-			if (mainContent) {
-				mainContent.addEventListener('scroll', handleScroll, { passive: true });
-			}
-		}
 		
 		// Check if user is a beta tester and show welcome modal
 		// Beta testers have early_access_member flag set to true in database (camelCase in JS)
@@ -608,16 +506,6 @@
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 			window.removeEventListener('resize', handleResize);
-			window.removeEventListener('scroll', handleScroll);
-			document.removeEventListener('scroll', handleScroll);
-			document.body.removeEventListener('scroll', handleScroll);
-			document.removeEventListener('touchstart', handleTouchStart);
-			document.removeEventListener('touchmove', handleTouchMove);
-			const mainContent = document.querySelector('.main-content');
-			if (mainContent) {
-				mainContent.removeEventListener('scroll', handleScroll);
-			}
-			if (scrollTimeout) clearTimeout(scrollTimeout);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
 		};
@@ -684,14 +572,37 @@
 		if (browser && mobileMenuOpen) {
 			document.addEventListener('click', handleClickOutside);
 			
-			// Prevent body scroll when menu is open - simplified without iOS hacks
+			// Save current scroll position
+			const scrollY = window.scrollY;
+			
+			// Prevent body scroll when menu is open - comprehensive approach
 			document.body.style.overflow = 'hidden';
+			document.body.style.position = 'fixed';
+			document.body.style.top = `-${scrollY}px`;
+			document.body.style.width = '100%';
+			
+			// Prevent touch move on body to stop scroll chaining
+			const preventScroll = (e: TouchEvent) => {
+				const target = e.target as HTMLElement;
+				const menuItems = document.querySelector('.mobile-menu-items');
+				// Allow scrolling only within menu items
+				if (menuItems && !menuItems.contains(target)) {
+					e.preventDefault();
+				}
+			};
+			
+			document.body.addEventListener('touchmove', preventScroll, { passive: false });
 			
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
+				document.body.removeEventListener('touchmove', preventScroll);
 				
-				// Restore scroll
+				// Restore scroll and position
 				document.body.style.overflow = '';
+				document.body.style.position = '';
+				document.body.style.top = '';
+				document.body.style.width = '';
+				window.scrollTo(0, scrollY);
 			};
 		}
 	});
@@ -725,11 +636,10 @@
 		<!-- App Header -->
 		<AppHeader 
 			user={currentUserData}
-			hidden={navHidden}
 		/>
 
 		<!-- Main content area with sidebar -->
-		<div class="flex flex-1 min-w-0 pt-16 md:pt-20 overflow-x-hidden"> <!-- Smaller padding on mobile -->
+		<div class="flex flex-1 min-w-0 pt-14 md:pt-16 overflow-x-hidden"> <!-- Smaller padding on mobile -->
 			<!-- Desktop Sidebar - Fixed position -->
 			<div class="hidden lg:block">
 				<div class="professional-sidebar" class:sidebar-collapsed={sidebarCollapsed}>
@@ -857,15 +767,14 @@
 		</div>
 
 		<!-- Feedback Widget for Beta Users -->
-		<FeedbackWidget navHidden={navHidden} />
+		<FeedbackWidget />
 
 		<!-- PWA Install Prompt -->
-		<InstallPWAPrompt navHidden={navHidden} />
+		<InstallPWAPrompt />
 
 		<!-- Mobile Bottom Navigation -->
 		<div class="mobile-bottom-nav lg:hidden border-t" 
-			class:keyboard-hidden={$isKeyboardVisible} 
-			class:nav-hidden={navHidden}
+			class:keyboard-hidden={$isKeyboardVisible}
 			style="border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
@@ -921,6 +830,7 @@
 				style="background: rgba(0, 0, 0, 0.5);"
 				onclick={() => mobileMenuOpen = false}
 				onkeydown={(e) => e.key === 'Escape' && (mobileMenuOpen = false)}
+				ontouchmove={(e) => e.preventDefault()}
 			>
 				<div 
 					role="dialog"
@@ -931,6 +841,18 @@
 					id="mobile-menu"
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => e.stopPropagation()}
+					ontouchmove={(e) => {
+						// Allow scrolling within the menu but prevent body scroll
+						const target = e.target as HTMLElement;
+						const menuItems = document.querySelector('.mobile-menu-items');
+						if (menuItems && menuItems.contains(target)) {
+							// Let the menu items handle scrolling
+							e.stopPropagation();
+						} else {
+							// Prevent scrolling outside menu items
+							e.preventDefault();
+						}
+					}}
 				>
 					<div class="rounded-t-xl shadow-lg mobile-menu-container" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: {mobileMenuHeight};">
 						<!-- Menu Header -->
@@ -964,6 +886,33 @@
 									</div>
 								</a>
 							{/each}
+							
+							<!-- Theme Toggle -->
+							<div class="border-t mt-2 pt-2" style="border-color: var(--border-primary);">
+								<button
+									onclick={toggleTheme}
+									class="w-full flex items-center gap-3 px-4 py-3 transition-colors"
+									style="color: var(--text-secondary); background: transparent; border: none; cursor: pointer; text-align: left;"
+									onmouseenter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'}
+									onmouseleave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+								>
+									{#if currentTheme === 'light'}
+										<Sun class="h-5 w-5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="flex-1">
+											<p class="text-sm font-medium">Light Mode</p>
+											<p class="text-xs" style="color: var(--text-tertiary);">Switch to dark mode</p>
+										</div>
+										<Moon class="h-4 w-4 flex-shrink-0 opacity-50" style="color: var(--text-tertiary);" />
+									{:else}
+										<Moon class="h-5 w-5 flex-shrink-0" style="color: var(--text-tertiary);" />
+										<div class="flex-1">
+											<p class="text-sm font-medium">Dark Mode</p>
+											<p class="text-xs" style="color: var(--text-tertiary);">Switch to light mode</p>
+										</div>
+										<Sun class="h-4 w-4 flex-shrink-0 opacity-50" style="color: var(--text-tertiary);" />
+									{/if}
+								</button>
+							</div>
 							
 							<!-- User Info -->
 							{#if currentUserData}
@@ -1124,13 +1073,6 @@
 		pointer-events: none;
 	}
 	
-	/* Hide bottom nav when scrolling down */
-	.mobile-bottom-nav.nav-hidden {
-		transform: translate3d(0, 100%, 0);
-		-webkit-transform: translate3d(0, 100%, 0);
-		pointer-events: none;
-	}
-	
 	/* Glass-enhanced background for better glassmorphism */
 	.glass-enhanced-bg {
 		background: var(--bg-primary);
@@ -1199,6 +1141,10 @@
 		overscroll-behavior: contain;
 		/* Add padding at bottom to ensure last items are visible */
 		padding-bottom: 1rem;
+		/* Prevent scroll chaining to body */
+		touch-action: pan-y;
+		/* Ensure this container captures all scroll events */
+		position: relative;
 	}
 	
 	/* Scrollbar styling for mobile menu */
@@ -1241,9 +1187,9 @@
 	.professional-sidebar {
 		position: fixed;
 		left: 0;
-		top: 5rem;
+		top: 4rem;
 		width: 18rem;
-		height: calc(100vh - 5rem);
+		height: calc(100vh - 4rem);
 		z-index: 30;
 		background: var(--bg-primary);
 		border-right: 1px solid var(--border-primary);
