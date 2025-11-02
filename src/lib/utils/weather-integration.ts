@@ -40,6 +40,24 @@ export interface ForecastData {
 	pop: number; // probability of precipitation (0-1)
 }
 
+// OpenWeatherMap API raw forecast item structure
+interface OpenWeatherMapForecastItem {
+	dt: number;
+	main: {
+		temp: number;
+		feels_like: number;
+		temp_min: number;
+		temp_max: number;
+		humidity: number;
+	};
+	weather: WeatherCondition[];
+	rain?: { '3h'?: number };
+	snow?: { '3h'?: number };
+	wind: { speed: number };
+	clouds: { all: number };
+	pop: number;
+}
+
 export interface WeatherForecast {
 	list: ForecastData[];
 	city: {
@@ -240,21 +258,21 @@ export class OpenWeatherMapService extends WeatherService {
 
 			const data = await response.json();
 
-			return {
-				list: data.list.map((item: any) => ({
-					dt: item.dt,
-					temperature: item.main.temp,
-					feelsLike: item.main.feels_like,
-					tempMin: item.main.temp_min,
-					tempMax: item.main.temp_max,
-					humidity: item.main.humidity,
-					conditions: item.weather,
-					rain: item.rain?.['3h'],
-					snow: item.snow?.['3h'],
-					windSpeed: item.wind.speed,
-					cloudiness: item.clouds.all,
-					pop: item.pop
-				})),
+		return {
+			list: data.list.map((item: OpenWeatherMapForecastItem) => ({
+				dt: item.dt,
+				temperature: item.main.temp,
+				feelsLike: item.main.feels_like,
+				tempMin: item.main.temp_min,
+				tempMax: item.main.temp_max,
+				humidity: item.main.humidity,
+				conditions: item.weather,
+				rain: item.rain?.['3h'],
+				snow: item.snow?.['3h'],
+				windSpeed: item.wind.speed,
+				cloudiness: item.clouds.all,
+				pop: item.pop
+			})),
 				city: {
 					name: data.city.name,
 					country: data.city.country,
@@ -374,7 +392,6 @@ export class GoogleWeatherService extends WeatherService {
 			if (dailyData.forecastDays && Array.isArray(dailyData.forecastDays)) {
 				for (const day of dailyData.forecastDays) {
 					const daytime = day.daytimeForecast || {};
-					const nighttime = day.nighttimeForecast || {};
 					
 					// Use displayDate for more accurate date matching
 					const dateStr = day.displayDate 

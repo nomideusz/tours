@@ -1,7 +1,7 @@
 // Map integration utilities for Zaur
 // This file provides a foundation for integrating various map services
 
-import type { PlaceSuggestion, PlaceDetails, AutocompleteOptions, PlaceDetailsOptions } from '$lib/types/places.js';
+import type { PlaceSuggestion, PlaceDetails, AutocompleteOptions } from '$lib/types/places.js';
 
 export interface LocationCoordinates {
 	lat: number;
@@ -13,6 +13,28 @@ export interface LocationSearchResult {
 	fullAddress: string;
 	coordinates: LocationCoordinates;
 	type: 'address' | 'poi' | 'establishment' | 'locality';
+}
+
+// API response interfaces
+interface GoogleGeocodingResult {
+	name: string;
+	fullAddress: string;
+	coordinates: LocationCoordinates;
+	types?: string[];
+}
+
+interface OpenStreetMapResult {
+	display_name: string;
+	lat: string;
+	lon: string;
+	type: string;
+}
+
+interface MapboxFeature {
+	text: string;
+	place_name: string;
+	center: [number, number]; // [lng, lat]
+	place_type: string[];
 }
 
 export interface MapServiceConfig {
@@ -50,16 +72,16 @@ export class GoogleMapsService extends MapService {
 				return [];
 			}
 			
-			if (!data.results || data.results.length === 0) {
-				return [];
-			}
-			
-			return data.results.map((result: any) => ({
-				name: result.name,
-				fullAddress: result.fullAddress,
-				coordinates: result.coordinates,
-				type: this.getLocationType(result.types || [])
-			}));
+	if (!data.results || data.results.length === 0) {
+		return [];
+	}
+	
+	return data.results.map((result: GoogleGeocodingResult) => ({
+		name: result.name,
+		fullAddress: result.fullAddress,
+		coordinates: result.coordinates,
+		type: this.getLocationType(result.types || [])
+	}));
 		} catch (error) {
 			console.error('Geocoding error:', error);
 			return [];
@@ -180,16 +202,16 @@ export class GooglePlacesAPIService extends MapService {
 			const response = await fetch(url);
 			const data = await response.json();
 			
-			if (!response.ok || !data.results) {
-				return [];
-			}
-			
-			return data.results.map((result: any) => ({
-				name: result.name,
-				fullAddress: result.fullAddress,
-				coordinates: result.coordinates,
-				type: this.getLocationType(result.types || [])
-			}));
+	if (!response.ok || !data.results) {
+		return [];
+	}
+	
+	return data.results.map((result: GoogleGeocodingResult) => ({
+		name: result.name,
+		fullAddress: result.fullAddress,
+		coordinates: result.coordinates,
+		type: this.getLocationType(result.types || [])
+	}));
 		} catch (error) {
 			console.error('Geocoding error:', error);
 			return [];
@@ -241,17 +263,17 @@ export class OpenStreetMapService extends MapService {
 					'User-Agent': 'Zaur-Tours-App'
 				}
 			});
-			const data = await response.json();
-			
-			return data.map((result: any) => ({
-				name: result.display_name.split(',')[0],
-				fullAddress: result.display_name,
-				coordinates: {
-					lat: parseFloat(result.lat),
-					lng: parseFloat(result.lon)
-				},
-				type: this.getLocationType(result.type)
-			}));
+		const data = await response.json();
+		
+		return data.map((result: OpenStreetMapResult) => ({
+			name: result.display_name.split(',')[0],
+			fullAddress: result.display_name,
+			coordinates: {
+				lat: parseFloat(result.lat),
+				lng: parseFloat(result.lon)
+			},
+			type: this.getLocationType(result.type)
+		}));
 		} catch (error) {
 			console.error('OpenStreetMap search error:', error);
 			return [];
@@ -281,7 +303,7 @@ export class OpenStreetMapService extends MapService {
 		}
 	}
 	
-	getStaticMapUrl(coordinates: LocationCoordinates, zoom: number = 15, size: string = '600x400'): string {
+	getStaticMapUrl(coordinates: LocationCoordinates, zoom: number = 15): string {
 		// OpenStreetMap doesn't have a built-in static map API, but we can use third-party services
 		// or implement our own using Leaflet for dynamic maps
 		return `https://www.openstreetmap.org/?mlat=${coordinates.lat}&mlon=${coordinates.lng}&zoom=${zoom}`;
@@ -310,17 +332,17 @@ export class MapboxService extends MapService {
 		
 		try {
 			const response = await fetch(url);
-			const data = await response.json();
-			
-			return data.features.map((feature: any) => ({
-				name: feature.text,
-				fullAddress: feature.place_name,
-				coordinates: {
-					lat: feature.center[1],
-					lng: feature.center[0]
-				},
-				type: this.getLocationType(feature.place_type)
-			}));
+		const data = await response.json();
+		
+		return data.features.map((feature: MapboxFeature) => ({
+			name: feature.text,
+			fullAddress: feature.place_name,
+			coordinates: {
+				lat: feature.center[1],
+				lng: feature.center[0]
+			},
+			type: this.getLocationType(feature.place_type)
+		}));
 		} catch (error) {
 			console.error('Mapbox search error:', error);
 			return [];
@@ -441,19 +463,19 @@ export const defaultMapService = createMapService('google', { apiKey: '' });
 /**
  * Get map service - always uses Google Maps via server proxy
  * API key is handled server-side for security
+ * @deprecated apiKey parameter - kept for backward compatibility but unused (handled server-side)
  */
-export function getMapService(apiKey?: string): MapService {
+export function getMapService(): MapService {
 	// Always use Google Maps now (calls server endpoints)
-	// API key parameter is ignored but kept for backward compatibility
 	return createMapService('google', { apiKey: '' });
 }
 
 /**
  * Get Places API service - uses the new Google Places API
  * Provides enhanced features like better autocomplete, place details, photos, etc.
+ * API key is handled server-side for security
  */
-export function getPlacesAPIService(apiKey?: string): GooglePlacesAPIService {
-	// API key is handled server-side for security
+export function getPlacesAPIService(): GooglePlacesAPIService {
 	return new GooglePlacesAPIService({ apiKey: '' });
 }
 

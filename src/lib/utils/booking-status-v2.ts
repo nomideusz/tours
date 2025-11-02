@@ -6,12 +6,29 @@
  * falls back to old VARCHAR columns for backward compatibility
  */
 
-import type { Booking } from '$lib/types.js';
-
 // Feature flag - can be toggled in environment
 const USE_NEW_STATUS_SYSTEM = typeof process !== 'undefined' 
   ? process.env.PUBLIC_USE_NEW_BOOKING_STATUS === 'true'
   : false;
+
+// Booking data interface for status utilities
+export interface BookingData {
+  status?: string;
+  paymentStatus?: string;
+  transferId?: string | null;
+  transferScheduledFor?: string | Date | null;
+  refundId?: string | null;
+  refundAmount?: string | number | null;
+  refundStatus?: string | null;
+  refundStatusNew?: string | null;
+  transferStatus?: string | null;
+  transferStatusNew?: string | null;
+  expand?: {
+    timeSlot?: {
+      startTime?: string | Date;
+    };
+  };
+}
 
 export interface StatusDisplay {
   label: string;
@@ -24,7 +41,7 @@ export interface StatusDisplay {
  * Get unified booking status display
  * Combines booking status, payment status, and transfer status
  */
-export function getBookingStatusDisplay(booking: any): StatusDisplay {
+export function getBookingStatusDisplay(booking: BookingData): StatusDisplay {
   const { status, paymentStatus, transferId } = booking;
   
   // Use new enum columns if feature flag enabled, otherwise use old VARCHAR
@@ -169,7 +186,7 @@ export function getBookingStatusDisplay(booking: any): StatusDisplay {
 /**
  * Get payment status display (separate from booking status)
  */
-export function getPaymentStatusDisplay(paymentStatus: string, booking?: any): StatusDisplay {
+export function getPaymentStatusDisplay(paymentStatus: string, booking?: BookingData): StatusDisplay {
   const transferId = booking?.transferId;
   const transferStatus = USE_NEW_STATUS_SYSTEM
     ? (booking?.transferStatusNew || booking?.transferStatus)
@@ -232,7 +249,7 @@ export function getPaymentStatusDisplay(paymentStatus: string, booking?: any): S
 /**
  * Get transfer status display
  */
-export function getTransferStatusDisplay(booking: any): StatusDisplay | null {
+export function getTransferStatusDisplay(booking: BookingData): StatusDisplay | null {
   const transferStatus = USE_NEW_STATUS_SYSTEM
     ? (booking.transferStatusNew || booking.transferStatus)
     : booking.transferStatus;
@@ -316,12 +333,11 @@ export function getTransferStatusDisplay(booking: any): StatusDisplay | null {
 /**
  * Get refund status display
  */
-export function getRefundStatusDisplay(booking: any): StatusDisplay | null {
+export function getRefundStatusDisplay(booking: BookingData): StatusDisplay | null {
   const refundStatus = USE_NEW_STATUS_SYSTEM
     ? (booking.refundStatusNew || booking.refundStatus)
     : booking.refundStatus;
   
-  const refundId = booking.refundId;
   const refundAmount = booking.refundAmount;
   
   // No refund info
@@ -367,7 +383,7 @@ export function getRefundStatusDisplay(booking: any): StatusDisplay | null {
 /**
  * Check if booking can be cancelled
  */
-export function canCancelBooking(booking: any): { allowed: boolean; reason?: string } {
+export function canCancelBooking(booking: BookingData): { allowed: boolean; reason?: string } {
   // Can't cancel already cancelled bookings
   if (booking.status === 'cancelled') {
     return { allowed: false, reason: 'Booking is already cancelled' };
@@ -397,7 +413,7 @@ export function canCancelBooking(booking: any): { allowed: boolean; reason?: str
 /**
  * Check if booking can be marked as completed
  */
-export function canMarkCompleted(booking: any): { allowed: boolean; reason?: string } {
+export function canMarkCompleted(booking: BookingData): { allowed: boolean; reason?: string } {
   // Must be confirmed
   if (booking.status !== 'confirmed') {
     return { allowed: false, reason: 'Only confirmed bookings can be completed' };
@@ -414,7 +430,7 @@ export function canMarkCompleted(booking: any): { allowed: boolean; reason?: str
 /**
  * Check if booking can be marked as no-show
  */
-export function canMarkNoShow(booking: any): { allowed: boolean; reason?: string } {
+export function canMarkNoShow(booking: BookingData): { allowed: boolean; reason?: string } {
   // Must be confirmed
   if (booking.status !== 'confirmed') {
     return { allowed: false, reason: 'Only confirmed bookings can be marked no-show' };
@@ -434,7 +450,7 @@ export function canMarkNoShow(booking: any): { allowed: boolean; reason?: string
 /**
  * Get detailed booking state (for debugging/admin)
  */
-export function getBookingStateDetails(booking: any) {
+export function getBookingStateDetails(booking: BookingData) {
   const refundStatus = USE_NEW_STATUS_SYSTEM 
     ? (booking.refundStatusNew || booking.refundStatus)
     : booking.refundStatus;
@@ -496,7 +512,7 @@ export function isValidStatusTransition(
 /**
  * Backward compatibility: Get status display using old logic
  */
-export function getCombinedStatusBadgeCompat(booking: any): { label: string; color: string } {
+export function getCombinedStatusBadgeCompat(booking: BookingData): { label: string; color: string } {
   const paymentStatusValue = booking.paymentStatus || 'pending';
   
   if (booking.status === 'cancelled') {

@@ -1066,10 +1066,10 @@ Key extracted components:
 							</div>
 							<div class="form-field-footer">
 								<span class="form-field-spacer"></span>
-								<span class="text-xs form-field-counter" style="color: var(--text-tertiary); opacity: {formData.location && formData.location.length > 50 ? 1 : 0};">
-									{formData.location?.length || 0}/100
-									{#if formData.location && formData.location.length >= 100}
-										<span style="color: var(--color-warning-600);"> (truncated)</span>
+								<span class="text-xs form-field-counter" style="color: var(--text-tertiary); opacity: {formData.location && formData.location.length > 100 ? 1 : 0};">
+									{formData.location?.length || 0}/255
+									{#if formData.location && formData.location.length > 255}
+										<span style="color: var(--color-warning-600);"> (too long)</span>
 									{/if}
 								</span>
 							</div>

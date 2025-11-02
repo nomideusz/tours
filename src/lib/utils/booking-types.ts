@@ -46,13 +46,13 @@ export interface ProcessedBooking {
 		tour?: {
 			id?: string;
 			name?: string;
-			[key: string]: any;
+			[key: string]: unknown;
 		};
 		timeSlot?: {
 			id?: string;
 			startTime?: string | null;
 			endTime?: string | null;
-			[key: string]: any;
+			[key: string]: unknown;
 		};
 	};
 } 

@@ -4,10 +4,10 @@ import type { Booking } from '$lib/types.js';
  * Formats participant display for booking lists and details
  * Shows breakdown when pricing tiers are used, falls back to simple count
  */
-export function formatParticipantDisplay(booking: Booking | any): string {
+export function formatParticipantDisplay(booking: Booking): string {
   // New system: participants_by_category
-  if (booking.participants_by_category || booking.participantsByCategory) {
-    const categories = booking.participants_by_category || booking.participantsByCategory;
+  if (booking.participantsByCategory) {
+    const categories = booking.participantsByCategory;
     const parts = [];
     
     for (const [categoryId, count] of Object.entries(categories)) {
@@ -50,10 +50,10 @@ export function formatParticipantDisplay(booking: Booking | any): string {
  * Formats participant display for compact views (mobile lists, etc.)
  * Shows just the count with breakdown in parentheses if available
  */
-export function formatParticipantDisplayCompact(booking: Booking | any): string {
+export function formatParticipantDisplayCompact(booking: Booking): string {
   // New system: participants_by_category
-  if (booking.participants_by_category || booking.participantsByCategory) {
-    const categories = booking.participants_by_category || booking.participantsByCategory;
+  if (booking.participantsByCategory) {
+    const categories = booking.participantsByCategory;
     const parts = [];
     
     for (const [categoryId, count] of Object.entries(categories)) {
@@ -96,10 +96,10 @@ export function formatParticipantDisplayCompact(booking: Booking | any): string 
  * Formats participant display for tooltips and detailed views
  * Shows full breakdown with labels
  */
-export function formatParticipantDisplayDetailed(booking: Booking | any): string {
+export function formatParticipantDisplayDetailed(booking: Booking): string {
   // New system: participants_by_category
-  if (booking.participants_by_category || booking.participantsByCategory) {
-    const categories = booking.participants_by_category || booking.participantsByCategory;
+  if (booking.participantsByCategory) {
+    const categories = booking.participantsByCategory;
     const parts = [];
     
     for (const [categoryId, count] of Object.entries(categories)) {

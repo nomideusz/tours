@@ -208,7 +208,7 @@ export async function getToursSpecificStats(userId: string, sharedStats: SharedS
 		let todayBookings = 0;
 		let weekBookings = 0;
 		let monthRevenue = 0;
-		let totalBookings = recentBookingsData.length;
+		const totalBookings = recentBookingsData.length;
 		let confirmedBookings = 0;
 		let totalParticipants = 0;
 		

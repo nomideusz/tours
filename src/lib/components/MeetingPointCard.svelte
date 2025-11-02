@@ -33,15 +33,25 @@
 	let photos = $state<string[]>([]);
 	let loadingPhotos = $state(false);
 	let photoError = $state(false);
+	let lastFetchedPlaceId = $state<string | null>(null);
 	
 	// Fetch place photos when component mounts
-	onMount(async () => {
-		if (showPhotos && placeId && placeId.trim()) {
-			// Clean expired cache entries periodically
-			cleanPhotoCache();
-			await fetchPlacePhotos();
-		} else {
-			console.log('📸 Skipping photo fetch:', { showPhotos, placeId: placeId || 'null' });
+	onMount(() => {
+		// Clean expired cache entries periodically
+		cleanPhotoCache();
+	});
+	
+	// Reactively fetch photos when placeId changes
+	$effect(() => {
+		if (showPhotos && placeId && placeId.trim() && placeId !== lastFetchedPlaceId) {
+			console.log('📸 PlaceId changed, fetching new photos:', placeId);
+			lastFetchedPlaceId = placeId;
+			fetchPlacePhotos();
+		} else if (!placeId) {
+			// Clear photos if placeId is removed
+			photos = [];
+			lastFetchedPlaceId = null;
+			console.log('📸 PlaceId cleared, removing photos');
 		}
 	});
 	
@@ -148,7 +158,7 @@
 	<!-- Location Info -->
 	<div class="meeting-point-info">
 		<p class="location-name">{locationName}</p>
-		{#if locationAddress}
+		{#if locationAddress && locationAddress !== locationName}
 			<p class="location-address">{locationAddress}</p>
 		{/if}
 	</div>

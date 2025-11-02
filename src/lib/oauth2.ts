@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import { goto } from '$app/navigation';
 
 // OAuth2 provider types
 export type OAuth2Provider = 'google' | 'github';
@@ -69,8 +68,6 @@ export async function getAvailableOAuth2Providers(): Promise<OAuth2Provider[]> {
 }
 
 // Check if user is authenticated via OAuth2 (would need to be implemented based on user data)
-export function isOAuth2User(user: any): boolean {
-    // This would check if the user has OAuth accounts linked
-    // For now, return false as we'd need to query the database
-    return false;
+export function isOAuth2User(user: Record<string, unknown>): boolean {
+    return !!(user.avatar && typeof user.avatar === 'string' && (user.avatar as string).startsWith('http'));
 } 

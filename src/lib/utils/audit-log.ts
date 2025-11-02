@@ -9,7 +9,7 @@ const auditLog: Array<{
 	resource: string;
 	resourceId: string;
 	resourceName?: string;
-	details: any;
+	details: Record<string, unknown>;
 	ipAddress?: string;
 	userAgent?: string;
 }> = [];
@@ -22,7 +22,7 @@ export function addAuditLog(entry: {
 	resource: string;
 	resourceId: string;
 	resourceName?: string;
-	details: any;
+	details: Record<string, unknown>;
 	ipAddress?: string;
 	userAgent?: string;
 }) {
@@ -55,7 +55,7 @@ export function createAuditLog(entry: {
 	resource: string;
 	resourceId: string;
 	resourceName?: string;
-	details: any;
+	details: Record<string, unknown>;
 	ipAddress?: string;
 	userAgent?: string;
 }) {

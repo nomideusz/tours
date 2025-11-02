@@ -11,7 +11,7 @@
  */
 
 import type { TimeSlot } from '$lib/types.js';
-import { formatDate, formatTime, formatDateTime } from '$lib/utils/date-helpers.js';
+import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
 
 /**
  * Format time slot date and time with consistent display format
@@ -29,7 +29,7 @@ export function formatSlotDateTime(dateInput: string | Date | undefined): string
 			minute: '2-digit',
 			hour12: false
 		});
-	} catch (error) {
+	} catch {
 		console.warn('Error formatting slot date:', dateInput);
 		return 'Invalid date';
 	}
@@ -59,7 +59,7 @@ export function formatSlotTimeRange(startTime: string | undefined, endTime: stri
 		});
 		
 		return `${startStr} - ${endStr}`;
-	} catch (error) {
+	} catch {
 		console.warn('Error formatting time range:', startTime, endTime);
 		return 'Invalid time';
 	}
@@ -215,7 +215,7 @@ export function formatSlotForDesktop(slot: TimeSlot): {
  * Get status color for schedule page slots (with totalBookings, isPast, etc.)
  * Using semantic classes that work with CSS variables
  */
-export function getScheduleSlotStatusColor(slot: any): string {
+export function getScheduleSlotStatusColor(slot: any): string { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	if (slot.isPast) return 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-primary)]';
 	if (slot.status === 'cancelled') return 'bg-[var(--color-error-50)] text-[var(--color-error-700)] border-[var(--color-error-200)]';
 	if (slot.availableSpots === 0) return 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)] border-[var(--color-warning-200)]';
@@ -226,7 +226,7 @@ export function getScheduleSlotStatusColor(slot: any): string {
 /**
  * Get status text for schedule page slots (with totalBookings, isPast, etc.)
  */
-export function getScheduleSlotStatusText(slot: any): string {
+export function getScheduleSlotStatusText(slot: any): string { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
 	if (slot.isPast) return 'Completed';
 	if (slot.status === 'cancelled') return 'Cancelled';
 	if (slot.availableSpots === 0) return 'Fully Booked';
@@ -238,8 +238,8 @@ export function getScheduleSlotStatusText(slot: any): string {
  * Get status icon name for schedule page slots (with totalBookings, isPast, etc.)
  * Returns the icon name as a string for use with dynamic imports
  */
-export function getScheduleSlotStatusIcon(slot: any): string {
-	if (slot.isPast) return 'Clock';
+export function getScheduleSlotStatusIcon(slot: any): string { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+	if (slot.isPast) return 'Clock'; // eslint-disable-line @typescript-eslint/no-unsafe-argument
 	if (slot.status === 'cancelled') return 'XCircle';
 	if (slot.availableSpots === 0) return 'AlertCircle';
 	if (slot.totalBookings > 0) return 'Users';

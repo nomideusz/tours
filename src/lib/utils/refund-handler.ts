@@ -3,7 +3,7 @@
  * Determines correct refund method based on transfer status
  */
 
-import { createDirectRefund, getStripe, formatAmountForStripe } from '$lib/stripe.server.js';
+import { getStripe, formatAmountForStripe } from '$lib/stripe.server.js';
 import { createTransferReversal } from '$lib/payment-transfers.js';
 
 interface RefundOptions {
@@ -33,7 +33,6 @@ interface RefundResult {
 export async function processSmartRefund(options: RefundOptions): Promise<RefundResult> {
   const {
     paymentIntentId,
-    connectedAccountId,
     amount,
     currency,
     reason,
@@ -95,7 +94,7 @@ export async function processSmartRefund(options: RefundOptions): Promise<Refund
   try {
     // Step 1: Reverse the transfer (brings money back to platform)
     console.log(`   ↩️ Reversing transfer ${transferId}...`);
-    const amountCents = formatAmountForStripe(amount, currency);
+    const amountCents: number = formatAmountForStripe(amount, currency);
     
     const reversal = await createTransferReversal(
       transferId,
@@ -107,7 +106,7 @@ export async function processSmartRefund(options: RefundOptions): Promise<Refund
       }
     );
 
-    console.log(`   ✅ Transfer reversed: ${reversal.id}`);
+    console.log(`   ✅ Transfer reversed:`, reversal.id);
 
     // Step 2: Now refund to customer from platform account
     console.log('   💳 Refunding customer from platform account...');
@@ -120,7 +119,7 @@ export async function processSmartRefund(options: RefundOptions): Promise<Refund
       metadata: {
         ...metadata,
         refundMethod: 'transfer_reversal',
-        transferReversalId: reversal.id,
+        transferReversalId: typeof reversal.id === 'string' ? reversal.id : String(reversal.id),
         refundedAt: new Date().toISOString()
       }
     });
@@ -130,7 +129,7 @@ export async function processSmartRefund(options: RefundOptions): Promise<Refund
     return {
       success: true,
       refundId: refund.id,
-      transferReversalId: reversal.id,
+      transferReversalId: typeof reversal.id === 'string' ? reversal.id : String(reversal.id),
       method: 'transfer_reversal_then_refund'
     };
 
@@ -150,8 +149,7 @@ export async function processSmartRefund(options: RefundOptions): Promise<Refund
  */
 export function canProcessRefund(
   transferId: string | null | undefined,
-  transferStatus: string | null | undefined,
-  guideHasStripeBalance: boolean
+  transferStatus: string | null | undefined
 ): { possible: boolean; method: string; warning?: string } {
   // No transfer yet - always possible from platform
   if (!transferId || transferStatus !== 'completed') {

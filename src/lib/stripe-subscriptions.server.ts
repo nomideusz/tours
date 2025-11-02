@@ -233,7 +233,7 @@ export async function createStripeCustomer(userId: string, email: string, name: 
   console.log(`Stripe customer created:`, { id: customer.id, email: customer.email });
   
   // Update user with customer ID
-  const updateResult = await db.update(users)
+  await db.update(users)
     .set({
       stripeCustomerId: customer.id,
       updatedAt: new Date()
@@ -496,14 +496,19 @@ export async function updateUserSubscription(
   const isTrialing = subscription.status === 'trialing' && trialEnd && trialEnd > Math.floor(Date.now() / 1000);
   
   // Safely extract timestamps from subscription
-  const subscriptionData = subscription as any;
+  // Note: These properties exist on Stripe.Subscription but may not be in all type versions
+  const subscriptionData = subscription as Stripe.Subscription & {
+    current_period_start?: number;
+    current_period_end?: number;
+    cancel_at_period_end?: boolean;
+  };
   const currentPeriodStart = subscriptionData.current_period_start;
   const currentPeriodEnd = subscriptionData.current_period_end;
   
   // Prepare update data
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     subscriptionPlan: planId,
-    subscriptionStatus: subscription.status as any,
+    subscriptionStatus: subscription.status,
     subscriptionId: subscription.id,
     subscriptionCancelAtPeriodEnd: subscriptionData.cancel_at_period_end || false,
     updatedAt: new Date()
@@ -533,9 +538,15 @@ export async function updateUserSubscription(
 
   console.log(`Updating user ${user.id} with data:`, {
     ...updateData,
-    subscriptionCurrentPeriodStart: updateData.subscriptionCurrentPeriodStart?.toISOString(),
-    subscriptionCurrentPeriodEnd: updateData.subscriptionCurrentPeriodEnd?.toISOString(),
-    subscriptionFreeUntil: updateData.subscriptionFreeUntil?.toISOString()
+    subscriptionCurrentPeriodStart: updateData.subscriptionCurrentPeriodStart instanceof Date 
+      ? updateData.subscriptionCurrentPeriodStart.toISOString() 
+      : updateData.subscriptionCurrentPeriodStart,
+    subscriptionCurrentPeriodEnd: updateData.subscriptionCurrentPeriodEnd instanceof Date
+      ? updateData.subscriptionCurrentPeriodEnd.toISOString()
+      : updateData.subscriptionCurrentPeriodEnd,
+    subscriptionFreeUntil: updateData.subscriptionFreeUntil instanceof Date
+      ? updateData.subscriptionFreeUntil.toISOString()
+      : updateData.subscriptionFreeUntil
   });
 
   await db.update(users)

@@ -133,7 +133,7 @@ const VALIDATION_RULES = {
 	},
 	location: {
 		required: false,
-		maxLength: 100
+		maxLength: 255 // Match database VARCHAR(255) constraint
 	},
 	includedItems: {
 		required: false,

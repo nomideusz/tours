@@ -5,8 +5,7 @@
 	import Search from 'lucide-svelte/icons/search';
 	import X from 'lucide-svelte/icons/x';
 	import GoogleMapPickerModal from './GoogleMapPickerModal.svelte';
-	import { getMapService, getPlacesAPIService } from '$lib/utils/map-integration.js';
-	import { truncateLocation } from '$lib/utils/location.js';
+	import { defaultMapService, getPlacesAPIService } from '$lib/utils/map-integration.js';
 	import { env } from '$env/dynamic/public';
 	import { MEETING_POINT_TYPES } from '$lib/types/places.js';
 	import type { PlaceSuggestion } from '$lib/types/places.js';
@@ -90,11 +89,10 @@
 			
 			// Try to reverse geocode to get human-readable address
 			try {
-				const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
-				const result = await mapService.reverseGeocode(coordinates);
-				const truncatedAddress = truncateLocation(result.fullAddress);
-				value = truncatedAddress;
-				onLocationSelect?.(truncatedAddress);
+				const result = await defaultMapService.reverseGeocode(coordinates);
+				// Use full address - no truncation for precise location selection
+				value = result.fullAddress;
+				onLocationSelect?.(result.fullAddress);
 			} catch (reverseGeocodeError) {
 				console.warn('Reverse geocoding failed, using coordinates:', reverseGeocodeError);
 				// Fallback to coordinates if reverse geocoding fails
@@ -147,8 +145,7 @@
 			// Fallback to Geocoding API if Places API returns no results or is disabled
 			if (realResults.length === 0) {
 				console.log('🔄 Falling back to Geocoding API');
-				const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
-				const geocodingResults = await mapService.searchLocations(query);
+				const geocodingResults = await defaultMapService.searchLocations(query);
 				realResults = geocodingResults.map(result => ({
 					...result,
 					isPlace: false // Mark as coming from Geocoding API
@@ -208,14 +205,16 @@
 	}
 	
 	function selectSuggestion(suggestion: any) {
-		const selectedLocation = truncateLocation(suggestion.fullAddress || suggestion.name);
+		// Use the full address text from autocomplete (what user saw and clicked)
+		// This ensures "what you see is what you get" UX
+		const selectedLocation = suggestion.fullAddress || suggestion.name;
 		value = selectedLocation;
 		
 		// Store place ID if this is from Places API
 		if (suggestion.isPlace && suggestion.placeId) {
 			selectedPlaceId = suggestion.placeId;
 			placeId = suggestion.placeId; // Bind to parent component
-			console.log('📍 Selected place ID:', selectedPlaceId);
+			console.log('📍 Selected:', selectedLocation, '| Place ID:', selectedPlaceId);
 		} else {
 			selectedPlaceId = null;
 			placeId = null;
@@ -260,9 +259,9 @@
 	
 	// Handle location selection from map
 	function handleMapLocationSelect(location: string, coordinates: any) {
-		const truncatedLocation = truncateLocation(location);
-		value = truncatedLocation;
-		onLocationSelect?.(truncatedLocation);
+		// Use full address - no truncation for precise location selection
+		value = location;
+		onLocationSelect?.(location);
 		showMapPicker = false;
 	}
 </script>

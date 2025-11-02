@@ -411,8 +411,8 @@ export function calculateBookingPrice(
 	let basePrice = 0;
 	let groupDiscount = 0;
 	let discountedBase = 0;
-	let categoryBreakdown: any = {};
-	let selectedTier: any = null;
+	const categoryBreakdown: Record<string, { label: string; count: number; originalPrice: number; discountedPrice: number; subtotal: number }> = {};
+	let selectedTier: { minParticipants: number; maxParticipants: number; discountPercent?: number; label?: string } | null = null;
 	
 	// Handle different pricing models
 	if (tour.pricingModel === 'private_tour' && tour.privateTour) {
@@ -508,7 +508,7 @@ export function calculateBookingPrice(
 						const discountPercent = applicableTier.discountValue;
 						cat.discountedPrice = cat.originalPrice * (1 - discountPercent / 100);
 						cat.subtotal = cat.discountedPrice * cat.count;
-						selectedTier.discountPercent = discountPercent;
+						selectedTier!.discountPercent = discountPercent;
 					} else {
 						// Fixed price: set new price per person
 						cat.discountedPrice = applicableTier.discountValue;
@@ -518,7 +518,7 @@ export function calculateBookingPrice(
 				
 				// Recalculate discounted base
 				discountedBase = Object.values(categoryBreakdown).reduce(
-					(sum: number, cat: any) => sum + cat.subtotal, 
+					(sum: number, cat: { subtotal: number }) => sum + cat.subtotal, 
 					0
 				);
 				groupDiscount = basePrice - discountedBase;
@@ -533,7 +533,7 @@ export function calculateBookingPrice(
 		
 	} else if (tour.pricingModel === 'group_tiers' && tour.groupPricingTiers) {
 		// Group-based pricing (flat price for group size)
-		const tier = tour.groupPricingTiers.tiers.find((t: any) => 
+		const tier = tour.groupPricingTiers.tiers.find((t: { minParticipants: number; maxParticipants: number; price: number; label?: string }) => 
 			totalParticipants >= t.minParticipants && 
 			totalParticipants <= t.maxParticipants
 		);
@@ -544,7 +544,7 @@ export function calculateBookingPrice(
 			selectedTier = {
 				minParticipants: tier.minParticipants,
 				maxParticipants: tier.maxParticipants,
-				label: tier.label
+				label: tier.label || ''
 			};
 		} else {
 			errors.push('No pricing tier found for this group size');
@@ -613,6 +613,6 @@ export function calculateBookingPrice(
 		guidePaysStripeFee,
 		errors,
 		categoryBreakdown: Object.keys(categoryBreakdown).length > 0 ? categoryBreakdown : undefined,
-		selectedTier
+		selectedTier: selectedTier ? selectedTier : undefined
 	};
 }

@@ -9,8 +9,9 @@
 declare global {
 	interface Window {
 		umami?: {
-			track: (eventName: string, eventData?: Record<string, any>) => void;
+			track: (eventName: string, eventData?: Record<string, unknown>) => void;
 		};
+		debugUmamiFingerprint?: () => void;
 	}
 }
 
@@ -120,7 +121,7 @@ function shouldExcludeFromTracking(): boolean {
 	if (typeof window === 'undefined') return false;
 	
 	// Admin user exclusion
-	const currentUserData = (window as any).__CURRENT_USER__;
+	const currentUserData = (window as { __CURRENT_USER__?: { role?: string } }).__CURRENT_USER__;
 	if (currentUserData?.role === 'admin') {
 		return true;
 	}
@@ -218,7 +219,7 @@ export function debugDeviceFingerprint(): boolean {
 
 // Make debug function available globally in development
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-	(window as any).debugUmamiFingerprint = debugDeviceFingerprint;
+	window.debugUmamiFingerprint = debugDeviceFingerprint;
 }
 
 /**
@@ -226,7 +227,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
  */
 export function trackEvent(
 	eventName: string, 
-	eventData?: Record<string, any>
+	eventData?: Record<string, unknown>
 ): void {
 	if (typeof window === 'undefined' || !window.umami) {
 		// Server-side or Umami not loaded (dev mode, admin users, etc.)
@@ -244,7 +245,7 @@ export function trackEvent(
 	try {
 		// Clean event data - remove undefined values
 		const cleanData = eventData ? Object.fromEntries(
-			Object.entries(eventData).filter(([_, value]) => value !== undefined)
+			Object.entries(eventData).filter(([, value]) => value !== undefined)
 		) : undefined;
 		
 		window.umami.track(eventName, cleanData);
@@ -377,7 +378,7 @@ export function trackAuthEvent(
 export function trackTourEvent(
 	action: 'create' | 'update' | 'delete' | 'status_change' | 'duplicate',
 	tourId?: string,
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 ): void {
 	const eventMap = {
 		create: UMAMI_EVENTS.TOUR_CREATE,
@@ -421,7 +422,7 @@ export function trackTimeSlotEvent(
 export function trackBookingEvent(
 	action: 'view' | 'status_update' | 'check_in' | 'export',
 	bookingId?: string,
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 ): void {
 	const eventMap = {
 		view: UMAMI_EVENTS.BOOKING_VIEW,
@@ -442,7 +443,7 @@ export function trackBookingEvent(
  */
 export function trackDashboardEvent(
 	action: 'view' | 'qr_copy' | 'qr_download',
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 ): void {
 	const eventMap = {
 		view: UMAMI_EVENTS.DASHBOARD_VIEW,
@@ -461,7 +462,7 @@ export function trackDashboardEvent(
  */
 export function trackProfileEvent(
 	action: 'update' | 'payment_start' | 'payment_complete' | 'subscription_change',
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 ): void {
 	const eventMap = {
 		update: UMAMI_EVENTS.PROFILE_UPDATE,
@@ -523,8 +524,8 @@ export function initScrollTracking(): (() => void) | undefined {
 	if (typeof window === 'undefined') return;
 	
 	let maxScroll = 0;
-	let scrollMilestones = [25, 50, 75, 90];
-	let trackedMilestones = new Set<number>();
+	const scrollMilestones = [25, 50, 75, 90];
+	const trackedMilestones = new Set<number>();
 	
 	const trackScroll = () => {
 		const scrollPercent = Math.round(

@@ -1,6 +1,6 @@
 import { db } from '$lib/db/connection.js';
 import { promoCodes, users } from '$lib/db/schema/index.js';
-import { eq, and, gte, lte, or, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { PromoCodeBenefits } from './promo-types.js';
 
 export async function validatePromoCode(code: string): Promise<{ 

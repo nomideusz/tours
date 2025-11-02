@@ -77,7 +77,7 @@ Meeting Point: [Eiffel Tower, Champ de Mars, 5 Avenue...] ← Full for accuracy
 #### 2. **LocationPicker Autocomplete**
 **File**: `src/lib/components/LocationPicker.svelte`
 
-**Reason**: Already truncated at 100 chars by `truncateLocation()` on selection
+**Reason**: Now stores FULL address (up to 255 chars - database limit) for precise meeting point selection. Only truncates if exceeds database limit.
 
 ---
 
@@ -118,7 +118,7 @@ Meeting Point: [Eiffel Tower, Champ de Mars, 5 Avenue...] ← Full for accuracy
 | Tour Details (Guide) | `tours/[id]/+page.svelte` | ✅ Short | Working |
 | Tour Creation | `TourForm.svelte` | ❌ Full | Intentional |
 | Tour Edit | `tours/[id]/edit` | ❌ Full | Intentional |
-| LocationPicker | `LocationPicker.svelte` | ⚙️ Truncate | 100 char limit |
+| LocationPicker | `LocationPicker.svelte` | ❌ Full | 255 char DB limit |
 
 ---
 
@@ -160,6 +160,19 @@ Tour Details:     "Colosseum, Rome"
 ---
 
 ## 🔧 **How It Works**
+
+### LocationPicker Behavior:
+
+**During Tour Creation/Editing:**
+```
+User selects: "Eiffel Tower, Champ de Mars, 5 Avenue Anatole France, Paris, Île-de-France, France"
+Stored in DB:  [Full address up to 255 chars - no truncation]
+```
+
+**During Customer Display:**
+```
+formatShortAddress() → "Eiffel Tower, Paris"
+```
 
 ### MeetingPointCard Enhancement:
 
@@ -234,23 +247,80 @@ Works intelligently with addresses from:
 │  Keep FULL address for accuracy         │
 │  ✅ Tour creation                       │
 │  ✅ Tour edit                           │
+│  ✅ LocationPicker autocomplete         │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
 │  STORAGE (Database)                     │
-│  Truncated to 100 chars if needed       │
-│  ✅ Automatic via sanitizeLocation()    │
+│  Full address up to 255 chars (DB max)  │
+│  ✅ Precise meeting point preserved     │
+│  ✅ Only truncates if > 255 chars       │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
-│  DISPLAY (All pages)                    │
+│  DISPLAY (Customer-facing pages)        │
 │  Smart shortened format                 │
 │  ✅ Booking pages                       │
 │  ✅ Confirmation                        │
 │  ✅ Tour details                        │
 │  ✅ Profile pages                       │
+│  ⚙️ formatShortAddress()                │
 └─────────────────────────────────────────┘
 ```
 
 Perfect flow! 🚀
+
+## 🔄 **Recent Fix: Full Address Preservation**
+
+### **Problem 1: Server-side Truncation**
+LocationPicker was truncating addresses to 100 chars immediately on selection, and server-side validation was rejecting locations over 100 chars.
+
+**Solution:**
+- ✅ **Client-side**: Removed `truncateLocation()` from LocationPicker selection
+- ✅ **Server-side**: Updated `sanitizeLocation()` default from 100 → 255 chars
+- ✅ **Validation**: Updated `VALIDATION_RULES.location.maxLength` from 100 → 255 chars
+
+### **Problem 2: Places API Autocomplete Returns Short Addresses**
+Google Places Autocomplete API only returns shortened addresses:
+- **Autocomplete**: "Acropolis" → "Athens, Greece" (short format for UX)
+- **Needed**: Full formatted address for precise location
+
+**Root Cause:**
+```typescript
+// Autocomplete API returns:
+{
+  mainText: "Acropolis",
+  secondaryText: "Athens, Greece"  // ← Not the full address!
+}
+```
+
+**Solution:**
+Use the complete text from autocomplete suggestions (WYSIWYG):
+
+```typescript
+// Places API Autocomplete returns:
+{
+  text: { text: "Acropolis, Athens, Greece" },  // ← Use this!
+  structuredFormat: {
+    mainText: "Acropolis",
+    secondaryText: "Athens, Greece"
+  }
+}
+
+// We now use the full text field for "what you see is what you get"
+```
+
+**Files Changed:**
+- ✅ `src/routes/api/places/autocomplete/+server.ts` - Returns full text from autocomplete
+- ✅ `src/lib/components/LocationPicker.svelte` - Uses autocomplete text directly (WYSIWYG)
+- ✅ `src/lib/components/MeetingPointCard.svelte` - Hides duplicate addresses
+- ✅ `src/lib/components/TourForm.svelte` - Character counter now shows 255 limit
+- ✅ `src/lib/utils/location.ts` - Updated defaults to 255 chars
+- ✅ `src/lib/validation.ts` - Validation now accepts up to 255 chars
+
+**Result:**
+- ✅ Autocomplete shows: "Acropolis, Athens, Greece"
+- ✅ Input field shows: "Acropolis, Athens, Greece" (same as clicked - WYSIWYG!)
+- ✅ Database saves: "Acropolis, Athens, Greece" (up to 255 chars)
+- ✅ Customer display: "Acropolis, Athens, Greece" (clean, no duplicates)
 

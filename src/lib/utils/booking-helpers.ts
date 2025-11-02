@@ -7,6 +7,23 @@ import { tours, bookings, timeSlots } from '$lib/db/schema/index.js';
 import { eq, and, desc } from 'drizzle-orm';
 import type { ProcessedBooking } from './booking-types.js';
 
+// Type for the database query result
+interface RecentBookingData {
+	id: string;
+	customerName: string | null;
+	customerEmail: string | null;
+	participants: number | null;
+	status: string | null;
+	createdAt: Date | null;
+	totalAmount: string | number | null;
+	paymentStatus: string | null;
+	timeSlotId: string | null;
+	tourName: string | null;
+	tourId: string;
+	timeSlotStartTime: Date | null;
+	timeSlotEndTime: Date | null;
+}
+
 /**
  * Get recent bookings for dashboard display
  * This is designed to be compatible with future TanStack Query implementation
@@ -36,10 +53,10 @@ export async function getRecentBookings(userId: string, limit: number = 10): Pro
 		.orderBy(desc(bookings.createdAt))
 		.limit(Math.min(limit, 1000)); // Allow higher limits for comprehensive stats
 		
-		// Process for display - convert to ProcessedBooking format with timeSlot data for dashboard
-		return recentBookingsData.map((booking: any) => {
-			// Safe date conversion with null checks
-			const createdAtDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
+	// Process for display - convert to ProcessedBooking format with timeSlot data for dashboard
+	return recentBookingsData.map((booking: RecentBookingData) => {
+		// Safe date conversion with null checks
+		const createdAtDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
 			const createdAtStr = !isNaN(createdAtDate.getTime()) ? createdAtDate.toISOString() : new Date().toISOString();
 			
 			// Handle time slot dates safely
@@ -134,12 +151,12 @@ export async function getTourBookingData(userId: string, tourId: string) {
 		.orderBy(desc(bookings.createdAt))
 		.limit(15); // Reduced limit to prevent timeout
 		
-		// Get time slot data separately if needed
-		const timeSlotIds = [...new Set(bookingsData
-			.map(b => b.timeSlotId)
-			.filter(id => id !== null))];
+	// Get time slot data separately if needed
+	const timeSlotIds = [...new Set(bookingsData
+		.map(b => b.timeSlotId)
+		.filter(id => id !== null))];
 		
-		let timeSlotsMap = new Map();
+		const timeSlotsMap = new Map();
 		if (timeSlotIds.length > 0) {
 			for (const timeSlotId of timeSlotIds.slice(0, 5)) { // Limit to 5 for tour detail page
 				try {
@@ -211,9 +228,9 @@ export async function getTourBookingData(userId: string, tourId: string) {
 			};
 		});
 		
-		// Calculate stats
-		let totalBookings = processedBookings.length;
-		let confirmed = 0;
+	// Calculate stats
+	const totalBookings = processedBookings.length;
+	let confirmed = 0;
 		let pending = 0;
 		let cancelled = 0;
 		let totalRevenue = 0;
@@ -348,15 +365,15 @@ export async function getTourAllBookings(userId: string, tourId: string) {
 		.orderBy(desc(bookings.createdAt))
 		.limit(25); // Reduced limit to prevent timeout
 		
-		// Step 2: Get time slot data separately for only the bookings that have time slots
-		const timeSlotIds = [...new Set(bookingsData
-			.map(b => b.timeSlotId)
-			.filter(id => id !== null))];
-		
-		let timeSlotsMap = new Map();
-		if (timeSlotIds.length > 0) {
-			// Fetch time slots individually to avoid complex queries
-			for (const timeSlotId of timeSlotIds.slice(0, 10)) { // Limit to 10 time slots to prevent timeout
+	// Step 2: Get time slot data separately for only the bookings that have time slots
+	const timeSlotIds = [...new Set(bookingsData
+		.map(b => b.timeSlotId)
+		.filter(id => id !== null))];
+	
+	const timeSlotsMap = new Map();
+	if (timeSlotIds.length > 0) {
+		// Fetch time slots individually to avoid complex queries
+		for (const timeSlotId of timeSlotIds.slice(0, 10)) { // Limit to 10 time slots to prevent timeout
 				try {
 					const timeSlotData = await db.select({
 						id: timeSlots.id,

@@ -44,7 +44,8 @@ export function detectCountry(): string {
     if (countryByTimezone) {
       return countryByTimezone.code;
     }
-  } catch (e) {
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
     // Timezone detection failed, continue with default
   }
   

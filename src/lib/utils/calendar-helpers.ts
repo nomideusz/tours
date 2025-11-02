@@ -2,6 +2,21 @@
  * Calendar utility functions
  */
 
+// Type definitions for time slots
+interface TimeSlot {
+	createdAt?: string | Date;
+	created?: string | Date;
+	startTime?: string | Date;
+	capacity?: number;
+	availableSpots?: number;
+	tourId?: string;
+}
+
+interface Tour {
+	capacity?: number;
+	[key: string]: unknown;
+}
+
 /**
  * Format date for input (YYYY-MM-DD format)
  */
@@ -58,13 +73,13 @@ export function calculateTotalRecurringSlots(startDate: string, recurringType: s
 /**
  * Get last used capacity from existing time slots
  */
-export function getLastUsedCapacity(timeSlots: any[]): number | null {
+export function getLastUsedCapacity(timeSlots: TimeSlot[]): number | null {
 	if (!timeSlots || timeSlots.length === 0) return null;
 	
 	// Sort by creation time descending and get the first one
 	const sortedSlots = [...timeSlots].sort((a, b) => {
-		const aTime = new Date(a.createdAt || a.created || a.startTime).getTime();
-		const bTime = new Date(b.createdAt || b.created || b.startTime).getTime();
+		const aTime = new Date(a.createdAt || a.created || a.startTime || 0).getTime();
+		const bTime = new Date(b.createdAt || b.created || b.startTime || 0).getTime();
 		return bTime - aTime; // Most recent first
 	});
 	
@@ -76,19 +91,19 @@ export function getLastUsedCapacity(timeSlots: any[]): number | null {
 /**
  * Get smart capacity default based on various factors
  */
-export function getSmartCapacity(tourId: string, tour: any, timeSlots?: any[], lastCreatedSlot?: any): number {
+export function getSmartCapacity(tourId: string, tour: Tour, timeSlots?: TimeSlot[], lastCreatedSlot?: TimeSlot): number {
 	// Priority order:
 	// 1. Last created slot for the same tour (if within this session)
 	// 2. Last used capacity from existing slots for this tour
 	// 3. Tour's default capacity (but min 10 for better UX)
 	
 	// Check if we have a recent slot for this same tour
-	if (lastCreatedSlot && lastCreatedSlot.tourId === tourId) {
+	if (lastCreatedSlot && lastCreatedSlot.tourId === tourId && lastCreatedSlot.capacity) {
 		return lastCreatedSlot.capacity;
 	}
 	
 	// Check existing slots for this tour
-	const lastUsed = getLastUsedCapacity(timeSlots);
+	const lastUsed = timeSlots ? getLastUsedCapacity(timeSlots) : null;
 	if (lastUsed && lastUsed > 1) {
 		return lastUsed;
 	}

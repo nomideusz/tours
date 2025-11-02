@@ -109,18 +109,24 @@ export const POST: RequestHandler = async ({ request }) => {
 			console.warn('   → Visit: https://console.cloud.google.com/apis/library/places-backend.googleapis.com');
 		}
 		
-		// Transform suggestions to our format
-		const suggestions = (data.suggestions || []).map((suggestion: any) => {
-			const placePrediction = suggestion.placePrediction || {};
-			
-			return {
-				placeId: placePrediction.placeId || '',
-				name: placePrediction.text?.text || placePrediction.structuredFormat?.mainText?.text || '',
-				fullAddress: placePrediction.structuredFormat?.secondaryText?.text || '',
-				types: placePrediction.types || [],
-				type: getLocationType(placePrediction.types || [])
-			};
-		});
+	// Transform suggestions to our format
+	const suggestions = (data.suggestions || []).map((suggestion: any) => {
+		const placePrediction = suggestion.placePrediction || {};
+		
+		// Get the full display text (what user sees in autocomplete)
+		const fullText = placePrediction.text?.text || '';
+		const mainText = placePrediction.structuredFormat?.mainText?.text || '';
+		const secondaryText = placePrediction.structuredFormat?.secondaryText?.text || '';
+		
+		return {
+			placeId: placePrediction.placeId || '',
+			name: mainText, // e.g., "Acropolis"
+			fullAddress: fullText, // e.g., "Acropolis, Athens, Greece" - complete suggestion text
+			secondaryText: secondaryText, // e.g., "Athens, Greece"
+			types: placePrediction.types || [],
+			type: getLocationType(placePrediction.types || [])
+		};
+	});
 		
 		return json({ suggestions });
 		

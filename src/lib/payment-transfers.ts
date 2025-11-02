@@ -4,7 +4,6 @@
  */
 
 import { getStripe, formatAmountForStripe } from './stripe.server.js';
-import { CANCELLATION_POLICIES } from './utils/cancellation-policies.js';
 import type Stripe from 'stripe';
 
 /**
@@ -14,7 +13,6 @@ import type Stripe from 'stripe';
  */
 export function calculateTransferTime(
   tourStartTime: Date | string,
-  policyId: string = 'flexible'
 ): Date {
   const startTime = typeof tourStartTime === 'string' ? new Date(tourStartTime) : tourStartTime;
   const now = new Date();
@@ -59,7 +57,6 @@ export function calculateTourCompletionTime(
 export function getOptimalTransferTime(
   tourStartTime: Date | string,
   tourDuration: number,
-  policyId: string = 'flexible',
   bookingStatus: string = 'confirmed'
 ): { transferTime: Date; reason: string; immediate: boolean } {
   const now = new Date();
@@ -78,7 +75,7 @@ export function getOptimalTransferTime(
   }
   
   // Tour hasn't started yet - use standard calculation (1 hour after start)
-  const transferTime = calculateTransferTime(startTime, policyId);
+  const transferTime = calculateTransferTime(startTime);
   
   return {
     transferTime,
@@ -134,13 +131,13 @@ export async function createTransferReversal(
   transferId: string,
   amount?: number, // Optional: partial reversal
   metadata: Record<string, string> = {}
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   const stripe = getStripe();
   
   console.log('↩️ Creating transfer reversal:', { transferId, amount });
   
   try {
-    const reversalParams: any = {
+    const reversalParams: Record<string, unknown> = {
       metadata: {
         ...metadata,
         reversedAt: new Date().toISOString()
@@ -153,13 +150,13 @@ export async function createTransferReversal(
     }
     
     // Using any type since Stripe typing for reversals varies
-    const reversal = await (stripe as any).transfers.createReversal(
-      transferId,
-      reversalParams
-    );
+    const reversal = await (stripe as unknown as Stripe).transfers.createReversal(
+        transferId,
+        reversalParams
+      ) as Stripe.TransferReversal;
     
     console.log('✅ Transfer reversed:', reversal.id);
-    return reversal;
+    return reversal as unknown as Record<string, unknown>;
   } catch (error) {
     console.error('❌ Failed to reverse transfer:', error);
     throw error;

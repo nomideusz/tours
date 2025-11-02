@@ -8,9 +8,9 @@ export interface SortConfig<T = string> {
 	sortOrder: 'asc' | 'desc';
 }
 
-export interface SortableField<T = any> {
+export interface SortableField<T = unknown> {
 	key: string;
-	getValue: (item: T) => any;
+	getValue: (item: T) => unknown;
 	type?: 'string' | 'number' | 'date';
 }
 
@@ -59,11 +59,11 @@ export function createTableSort<T extends string>(
  */
 export function sortData<T>(
 	data: T[],
-	sortConfig: SortConfig,
+	sortConfig: SortConfig<T>,
 	sortableFields: Record<string, SortableField<T>>
 ): T[] {
 	const { sortBy, sortOrder } = sortConfig;
-	const field = sortableFields[sortBy];
+	const field = sortableFields[sortBy as string];
 	
 	if (!field) {
 		console.warn(`Sort field "${sortBy}" not found in sortable fields`);
@@ -87,16 +87,18 @@ export function sortData<T>(
 				comparison = Number(aValue) - Number(bValue);
 				break;
 			case 'date':
-				const aDate = aValue instanceof Date ? aValue : new Date(aValue);
-				const bDate = bValue instanceof Date ? bValue : new Date(bValue);
-				comparison = aDate.getTime() - bDate.getTime();
-				break;
+				{const aDate = aValue instanceof Date ? aValue : new Date(aValue as string);
+					const bDate = bValue instanceof Date ? bValue : new Date(bValue as string);
+					comparison = aDate.getTime() - bDate.getTime();
+					break;
+				}
 			case 'string':
 			default:
-				const aStr = String(aValue).toLowerCase();
-				const bStr = String(bValue).toLowerCase();
-				comparison = aStr.localeCompare(bStr);
-				break;
+				{const aStr = String(aValue as string).toLowerCase();
+					const bStr = String(bValue as string).toLowerCase();
+					comparison = aStr.localeCompare(bStr);
+					break;
+				}
 		}
 
 		return sortOrder === 'asc' ? comparison : -comparison;
@@ -107,7 +109,7 @@ export function sortData<T>(
  * Helper to create sortable field configurations
  */
 export function createSortableFields<T>(
-	fields: Record<string, Omit<SortableField<T>, 'key'>>
+	fields: Record<string, Omit<SortableField<T>, 'key'>> = {}
 ): Record<string, SortableField<T>> {
 	const result: Record<string, SortableField<T>> = {};
 	

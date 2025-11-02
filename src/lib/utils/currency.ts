@@ -153,7 +153,7 @@ export function formatTourOwnerCurrency(amount: number | string, ownerCurrency?:
  * Minimum charge amounts for different currencies in Stripe
  * https://stripe.com/docs/currencies#minimum-and-maximum-charge-amounts
  */
-export const STRIPE_MINIMUM_CHARGE_AMOUNTS: Record<Currency, number> = {
+export const STRIPE_MINIMUM_CHARGE_AMOUNTS: Record<string, number> = {
 	EUR: 0.50,
 	USD: 0.50,
 	GBP: 0.50,

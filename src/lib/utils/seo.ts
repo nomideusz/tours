@@ -1,3 +1,35 @@
+// Type definitions
+interface Tour {
+	id: string;
+	name: string;
+	description?: string;
+	location: string;
+	category?: string;
+	price: number;
+	duration: number;
+	capacity?: number;
+	images?: string[];
+}
+
+interface Booking {
+	bookingReference: string;
+	customerName: string;
+	customerEmail: string;
+	totalAmount: number;
+	participants: number;
+	expand?: {
+		tour?: {
+			name?: string;
+			description?: string;
+			location?: string;
+		};
+		timeSlot?: {
+			startTime?: string;
+			endTime?: string;
+		};
+	};
+}
+
 export interface SEOData {
 	title: string;
 	description: string;
@@ -17,7 +49,7 @@ export interface SEOData {
 		description: string;
 		image: string;
 	};
-	structuredData?: any;
+	structuredData?: Record<string, unknown>;
 }
 
 /**
@@ -31,7 +63,7 @@ export function truncateText(text: string, maxLength: number): string {
 /**
  * Generate keywords from tour data
  */
-export function generateTourKeywords(tour: any): string {
+export function generateTourKeywords(tour: Tour): string {
 	const keywords = [
 		tour.name,
 		tour.location,
@@ -58,7 +90,7 @@ export function generateSEOTitle(pageName: string, tourName?: string): string {
 /**
  * Generate tour structured data for search engines
  */
-export function generateTourStructuredData(tour: any, qrCode: string, origin: string) {
+export function generateTourStructuredData(tour: Tour, qrCode: string, origin: string) {
 	return {
 		'@context': 'https://schema.org',
 		'@type': 'TouristAttraction',
@@ -97,7 +129,7 @@ export function generateTourStructuredData(tour: any, qrCode: string, origin: st
 /**
  * Generate booking structured data
  */
-export function generateBookingStructuredData(booking: any, origin: string) {
+export function generateBookingStructuredData(booking: Booking) {
 	return {
 		'@context': 'https://schema.org',
 		'@type': 'EventReservation',

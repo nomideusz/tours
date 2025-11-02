@@ -98,7 +98,7 @@ export function getComingSoonFeatures(userPlan: string): string[] {
 	const features: string[] = [];
 	
 	for (const [key, enabled] of Object.entries(FEATURES)) {
-		if (!enabled && hasFeatureAccess(key as FeatureFlag, userPlan as any)) {
+		if (!enabled && hasFeatureAccess(key as FeatureFlag, userPlan as unknown as 'free' | 'starter_pro' | 'professional' | 'agency')) {
 			features.push(key);
 		}
 	}

@@ -70,7 +70,6 @@ export function formatShortAddress(address: string): string {
 	
 	// Work backwards to find city (skip regions and countries)
 	let cityIndex = -1;
-	let foundCity = false;
 	
 	for (let i = parts.length - 1; i >= 1; i--) {
 		const part = parts[i].toLowerCase();
@@ -92,7 +91,6 @@ export function formatShortAddress(address: string): string {
 		
 		// This is likely the city (first non-region, non-country we encounter)
 		cityIndex = i;
-		foundCity = true;
 		break;
 	}
 	
@@ -156,20 +154,22 @@ export function truncateLocation(location: string, maxLength: number = 100): str
 
 /**
  * Validates if a location string is within acceptable length
+ * Database constraint: VARCHAR(255)
  */
-export function isValidLocationLength(location: string, maxLength: number = 100): boolean {
+export function isValidLocationLength(location: string, maxLength: number = 255): boolean {
 	return !location || location.length <= maxLength;
 }
 
 /**
  * Sanitizes and truncates a location string for form submission
+ * Default maxLength matches database constraint: VARCHAR(255)
  */
-export function sanitizeLocation(location: string, maxLength: number = 100): string {
+export function sanitizeLocation(location: string, maxLength: number = 255): string {
 	if (!location) return '';
 	
 	// Trim whitespace
 	const trimmed = location.trim();
 	
-	// Truncate if necessary
+	// Truncate if necessary (rare for Google addresses, but prevents DB errors)
 	return truncateLocation(trimmed, maxLength);
 }

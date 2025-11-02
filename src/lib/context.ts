@@ -1,6 +1,6 @@
 import { Context } from 'runed';
 import { writable, type Writable } from 'svelte/store';
-import { language, type Language } from './i18n.js';
+import { type Language } from './i18n.js';
 
 // Create a writable store for language - always English now
 export const languageStore: Writable<Language> = writable('en');

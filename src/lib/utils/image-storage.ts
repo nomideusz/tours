@@ -5,7 +5,6 @@ import {
   isMinIOAvailable,
   uploadToMinIO,
   deleteFromMinIO,
-  getPresignedUrl,
   listObjects
 } from './minio-client.js';
 
