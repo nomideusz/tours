@@ -67,6 +67,7 @@ export const load: PageServerLoad = async ({ locals, url, params }) => {
         status: tour.status,
         categories: tour.categories || [],
         location: tour.location,
+        locationPlaceId: tour.locationPlaceId,
         includedItems: tour.includedItems,
         requirements: tour.requirements,
         cancellationPolicy: tour.cancellationPolicy,
@@ -156,7 +157,7 @@ export const actions: Actions = {
           if (typeof includedItemsJson === 'string' && includedItemsJson !== 'null' && includedItemsJson !== 'undefined' && includedItemsJson !== '') {
             parsedIncludedItems = JSON.parse(includedItemsJson);
           }
-        } catch (e) {
+        } catch {
           // Use the array version if JSON parsing fails
         }
       }
@@ -179,7 +180,7 @@ export const actions: Actions = {
           if (typeof requirementsJson === 'string' && requirementsJson !== 'null' && requirementsJson !== 'undefined' && requirementsJson !== '') {
             parsedRequirements = JSON.parse(requirementsJson);
           }
-        } catch (e) {
+        } catch {
           // Use the array version if JSON parsing fails
         }
       }
@@ -211,8 +212,8 @@ export const actions: Actions = {
           if (parsed && parsed.categories && parsed.categories.length > 0) {
             participantCategories = parsed;
           }
-        } catch (e) {
-          console.warn('Failed to parse participant categories:', e);
+        } catch (_e) {
+          console.warn('Failed to parse participant categories:', _e);
         }
       }
       
@@ -222,8 +223,8 @@ export const actions: Actions = {
       if (privateTourRaw && typeof privateTourRaw === 'string' && privateTourRaw !== 'null' && privateTourRaw !== 'undefined' && privateTourRaw !== '' && !privateTourRaw.startsWith('[object')) {
         try {
           privateTour = JSON.parse(privateTourRaw);
-        } catch (e) {
-          console.warn('Failed to parse private tour:', e);
+        } catch (_e) {
+          console.warn('Failed to parse private tour:', _e);
         }
       }
       
@@ -233,8 +234,8 @@ export const actions: Actions = {
       if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null' && groupPricingTiersRaw !== 'undefined' && groupPricingTiersRaw !== '' && !groupPricingTiersRaw.startsWith('[object')) {
         try {
           groupPricingTiers = JSON.parse(groupPricingTiersRaw);
-        } catch (e) {
-          console.warn('Failed to parse group pricing tiers:', e);
+        } catch (_e) {
+          console.warn('Failed to parse group pricing tiers:', _e);
           // If parsing fails, just leave it as null (won't update this field)
           groupPricingTiers = null;
         }
@@ -246,8 +247,8 @@ export const actions: Actions = {
       if (groupDiscountsRaw && typeof groupDiscountsRaw === 'string' && groupDiscountsRaw !== 'null' && groupDiscountsRaw !== 'undefined' && groupDiscountsRaw !== '' && !groupDiscountsRaw.startsWith('[object')) {
         try {
           groupDiscounts = JSON.parse(groupDiscountsRaw);
-        } catch (e) {
-          console.warn('Failed to parse group discounts:', e);
+        } catch (_e) {
+          console.warn('Failed to parse group discounts:', _e);
         }
       }
       
@@ -257,8 +258,8 @@ export const actions: Actions = {
       if (optionalAddonsRaw && typeof optionalAddonsRaw === 'string' && optionalAddonsRaw !== 'null' && optionalAddonsRaw !== 'undefined' && optionalAddonsRaw !== '' && !optionalAddonsRaw.startsWith('[object')) {
         try {
           optionalAddons = JSON.parse(optionalAddonsRaw);
-        } catch (e) {
-          console.warn('Failed to parse optional add-ons:', e);
+        } catch (_e) {
+          console.warn('Failed to parse optional add-ons:', _e);
         }
       }
       
@@ -295,17 +296,27 @@ export const actions: Actions = {
           }
           try {
             return JSON.parse(categoriesData);
-          } catch (e) {
+          } catch {
             // Handle old comma-separated format or invalid JSON
             return categoriesData.split(',').map(c => c.trim()).filter(Boolean);
           }
         })(),
         location: formData.get('location'),
+        locationPlaceId: (() => {
+          const placeId = formData.get('locationPlaceId');
+          // Handle null, undefined, "null", and "undefined" strings
+          if (!placeId || placeId === 'null' || placeId === 'undefined' || placeId === '') {
+            console.log('📍 No Place ID provided for location');
+            return null;
+          }
+          console.log('📍 Place ID from form:', placeId);
+          return placeId as string;
+        })(),
         languages: (() => {
           const languagesData = formData.get('languages') as string || '["en"]';
           try {
             return JSON.parse(languagesData);
-          } catch (e) {
+          } catch {
             return ['en']; // Default to English if parsing fails
           }
         })(),
@@ -468,7 +479,7 @@ export const actions: Actions = {
         basePrice = String(sortedCategories[0]?.price || 0);
       } else if (pricingModel === 'group_tiers' && groupPricingTiers?.tiers?.length) {
         // Use minimum tier price
-        const minPrice = Math.min(...groupPricingTiers.tiers.map((t: any) => t.price));
+        const minPrice = Math.min(...groupPricingTiers.tiers.map((t: { price: number }) => t.price));
         basePrice = String(minPrice);
       }
       console.log('💰 Calculated base price for backward compatibility:', basePrice, 'from model:', pricingModel);
@@ -486,6 +497,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          locationPlaceId: sanitizedData.locationPlaceId as string || null,
           languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,

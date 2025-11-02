@@ -89,6 +89,7 @@ export interface Tour extends RecordModel {
   status: 'active' | 'draft';
   categories?: string[];
   location?: string;
+  locationPlaceId?: string | null; // Google Places API Place ID for meeting point photos
   languages?: string[]; // Array of language codes (e.g., ['en', 'es', 'fr'])
   includedItems?: string[];
   requirements?: string[];

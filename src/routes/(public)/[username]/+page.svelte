@@ -26,6 +26,7 @@
 	import FileQuestion from 'lucide-svelte/icons/file-question';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import ChevronUp from 'lucide-svelte/icons/chevron-up';
+	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -305,7 +306,7 @@
 											title="Click to {showMap ? 'hide' : 'show'} map"
 										>
 											<MapPin class="badge-icon" />
-											<span>{profile.location}</span>
+											<span>{formatShortAddress(profile.location)}</span>
 											{#if showMap}
 												<ChevronUp class="w-3.5 h-3.5 ml-auto" />
 											{:else}
@@ -316,7 +317,7 @@
 										<!-- Non-clickable location badge if no maps API key -->
 										<div class="profile-badge profile-badge-full-width">
 											<MapPin class="badge-icon" />
-											<span>{profile.location}</span>
+											<span>{formatShortAddress(profile.location)}</span>
 										</div>
 									{/if}
 									

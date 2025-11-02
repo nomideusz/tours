@@ -21,6 +21,8 @@
 	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import Info from 'lucide-svelte/icons/info';
 	import XCircle from 'lucide-svelte/icons/x-circle';
+	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	let { data }: { data: PageData } = $props();
 	
@@ -331,16 +333,40 @@
 									</div>
 								</div>
 								
-								<!-- Meeting Point -->
+								<!-- Meeting Point with Photos -->
 								{#if booking.expand?.tour?.location}
-									<div class="flex items-start gap-3">
-										<MapPin class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--text-tertiary);" />
-										<div class="flex-1">
-											<p class="font-medium" style="color: var(--text-primary);">Meeting Point</p>
-											<p class="text-sm mt-1" style="color: var(--text-secondary);">
-												{booking.expand?.tour?.location}
-											</p>
-										</div>
+									<div class="mt-4">
+										{#if booking.expand.tour.locationPlaceId}
+											<!-- Rich card with photos -->
+											<MeetingPointCard
+												locationName={formatShortAddress(booking.expand.tour.location)}
+												locationAddress={booking.expand.tour.location}
+												placeId={booking.expand.tour.locationPlaceId}
+												showPhotos={true}
+												photoCount={3}
+											/>
+										{:else}
+											<!-- Simple fallback -->
+											<div class="flex items-start gap-3">
+												<MapPin class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: var(--text-tertiary);" />
+												<div class="flex-1">
+													<p class="font-medium" style="color: var(--text-primary);">Meeting Point</p>
+													<p class="text-sm mt-1" style="color: var(--text-secondary);">
+														{booking.expand.tour.location}
+													</p>
+													<button 
+														onclick={() => {
+															window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.expand.tour.location)}`, '_blank');
+														}}
+														class="text-sm mt-2 inline-flex items-center gap-1"
+														style="color: var(--color-primary-600);"
+													>
+														<MapPin class="w-3 h-3" />
+														View on Google Maps
+													</button>
+												</div>
+											</div>
+										{/if}
 									</div>
 								{/if}
 								

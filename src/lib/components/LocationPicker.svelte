@@ -5,9 +5,11 @@
 	import Search from 'lucide-svelte/icons/search';
 	import X from 'lucide-svelte/icons/x';
 	import GoogleMapPickerModal from './GoogleMapPickerModal.svelte';
-	import { getMapService } from '$lib/utils/map-integration.js';
+	import { getMapService, getPlacesAPIService } from '$lib/utils/map-integration.js';
 	import { truncateLocation } from '$lib/utils/location.js';
 	import { env } from '$env/dynamic/public';
+	import { MEETING_POINT_TYPES } from '$lib/types/places.js';
+	import type { PlaceSuggestion } from '$lib/types/places.js';
 	
 	// Cleanup on component destroy
 	onDestroy(() => {
@@ -18,6 +20,7 @@
 	
 	interface Props {
 		value: string;
+		placeId?: string | null;
 		placeholder?: string;
 		label?: string;
 		profileLocation?: string;
@@ -28,6 +31,7 @@
 	
 	let {
 		value = $bindable(),
+		placeId = $bindable(null),
 		placeholder = 'Enter location...',
 		label = 'Location',
 		profileLocation = '',
@@ -37,11 +41,15 @@
 	}: Props = $props();
 	
 	let isGeolocating = $state(false);
-	let locationSuggestions = $state<any[]>([]);
+	let locationSuggestions = $state<(PlaceSuggestion | any)[]>([]);
 	let showSuggestions = $state(false);
 	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 	let showMapPicker = $state(false);
 	let isSearching = $state(false);
+	let usePlacesAPI = $state(true); // Flag to enable/disable Places API
+	
+	// Track selected place ID for potential future use (e.g., getting details)
+	let selectedPlaceId = $state<string | null>(null);
 	
 	// Popular location suggestions based on common tour locations
 	const popularLocations = [
@@ -105,23 +113,60 @@
 		}
 	}
 	
-	// Search for location suggestions using real map service
+	// Search for location suggestions using Places API (New) with Geocoding fallback
 	async function searchLocations(query: string) {
 		if (!query.trim() || isSearching) return;
 		
 		isSearching = true;
 		try {
-			// Get real location results from map service
-			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
-			const realResults = await mapService.searchLocations(query);
+			let realResults: any[] = [];
+			
+			if (usePlacesAPI) {
+				// Try Places API (New) first - better autocomplete for landmarks and POIs
+				console.log('🗺️ Using Places API (New) for autocomplete');
+				const placesService = getPlacesAPIService();
+				// Don't filter by types to get broader results (includes all landmarks)
+				// We can add type filtering later for more specific use cases
+				const placeSuggestions = await placesService.searchLocationsWithPlacesAPI(query, {
+					// types: MEETING_POINT_TYPES, // Commented out - too restrictive
+					sessionToken: undefined // TODO: Implement session tokens for cost optimization
+				});
+				
+				// Transform PlaceSuggestion to match our interface
+				realResults = placeSuggestions.map(suggestion => ({
+					placeId: suggestion.placeId,
+					name: suggestion.name,
+					fullAddress: suggestion.fullAddress || suggestion.name,
+					type: suggestion.type,
+					isPlace: true // Mark as coming from Places API
+				}));
+				
+				console.log(`✅ Places API returned ${realResults.length} results`);
+			}
+			
+			// Fallback to Geocoding API if Places API returns no results or is disabled
+			if (realResults.length === 0) {
+				console.log('🔄 Falling back to Geocoding API');
+				const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
+				const geocodingResults = await mapService.searchLocations(query);
+				realResults = geocodingResults.map(result => ({
+					...result,
+					isPlace: false // Mark as coming from Geocoding API
+				}));
+			}
 			
 			// Filter popular locations that match query
 			const popularMatches = popularLocations
 				.filter(loc => loc.toLowerCase().includes(query.toLowerCase()))
-				.map(loc => ({ name: loc, fullAddress: loc, type: 'popular' }));
+				.map(loc => ({ 
+					name: loc, 
+					fullAddress: loc, 
+					type: 'popular',
+					isPlace: false
+				}));
 			
-			// Combine real results with popular matches, limit to 6 total
-			const combined = [...realResults.slice(0, 4), ...popularMatches.slice(0, 2)];
+			// Combine results: prioritize Places API results, then add popular matches
+			const combined = [...realResults.slice(0, 5), ...popularMatches.slice(0, 1)];
 			locationSuggestions = combined.slice(0, 6);
 			showSuggestions = locationSuggestions.length > 0;
 		} catch (error) {
@@ -129,7 +174,12 @@
 			// Fallback to popular locations only
 			const filtered = popularLocations.filter(loc => 
 				loc.toLowerCase().includes(query.toLowerCase())
-			).map(loc => ({ name: loc, fullAddress: loc, type: 'popular' }));
+			).map(loc => ({ 
+				name: loc, 
+				fullAddress: loc, 
+				type: 'popular',
+				isPlace: false
+			}));
 			locationSuggestions = filtered.slice(0, 6);
 			showSuggestions = filtered.length > 0;
 		} finally {
@@ -160,6 +210,17 @@
 	function selectSuggestion(suggestion: any) {
 		const selectedLocation = truncateLocation(suggestion.fullAddress || suggestion.name);
 		value = selectedLocation;
+		
+		// Store place ID if this is from Places API
+		if (suggestion.isPlace && suggestion.placeId) {
+			selectedPlaceId = suggestion.placeId;
+			placeId = suggestion.placeId; // Bind to parent component
+			console.log('📍 Selected place ID:', selectedPlaceId);
+		} else {
+			selectedPlaceId = null;
+			placeId = null;
+		}
+		
 		onLocationSelect?.(selectedLocation);
 		showSuggestions = false;
 		locationSuggestions = [];
@@ -168,6 +229,8 @@
 	function useProfileLocation() {
 		if (profileLocation) {
 			value = profileLocation;
+			placeId = null; // Profile location doesn't have a place ID
+			selectedPlaceId = null;
 			onLocationSelect?.(profileLocation);
 		}
 	}
@@ -183,6 +246,8 @@
 	// Clear the location input
 	function clearLocation() {
 		value = '';
+		placeId = null;
+		selectedPlaceId = null;
 		showSuggestions = false;
 		locationSuggestions = [];
 		onLocationSelect?.('');
@@ -247,7 +312,7 @@
 		
 				<!-- Location suggestions dropdown -->
 		{#if showSuggestions && (locationSuggestions.length > 0 || isSearching)}
-			<div class="absolute z-10 w-full mt-1 rounded-md shadow-lg" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
+			<div class="location-suggestions-dropdown">
 				<div class="max-h-48 overflow-y-auto">
 				{#if isSearching}
 					<div class="px-3 py-2 text-sm flex items-center gap-2" style="color: var(--text-secondary);">
@@ -452,5 +517,17 @@
 	@keyframes spin {
 		from { transform: rotate(0deg); }
 		to { transform: rotate(360deg); }
+	}
+	
+	/* Location suggestions dropdown - High z-index for modal compatibility */
+	.location-suggestions-dropdown {
+		position: absolute;
+		z-index: 9999; /* Very high to appear above modals */
+		width: 100%;
+		margin-top: 0.25rem;
+		border-radius: 0.375rem;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
 	}
 </style> 

@@ -179,6 +179,7 @@ export const tours = pgTable('tours', {
   status: tourStatusEnum('status').notNull().default('draft'),
   categories: json('categories').$type<string[]>().default([]),
   location: varchar('location', { length: 255 }),
+  locationPlaceId: varchar('location_place_id', { length: 255 }), // Google Places API Place ID
   languages: json('languages').$type<string[]>().default(['en']),
   includedItems: json('included_items').$type<string[]>().default([]),
   requirements: json('requirements').$type<string[]>().default([]),

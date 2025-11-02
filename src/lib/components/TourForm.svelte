@@ -93,6 +93,7 @@ Key extracted components:
 			status: 'active' | 'draft';
 			categories: string[];
 			location: string;
+			locationPlaceId?: string | null;
 			languages: string[];
 			includedItems: string[];
 			requirements: string[];
@@ -1052,6 +1053,7 @@ Key extracted components:
 							<div class="location-picker-wrapper">
 								<LocationPicker
 									bind:value={formData.location}
+									bind:placeId={formData.locationPlaceId}
 									placeholder="Meeting Point"
 									profileLocation={profile?.location}
 									enableGeolocation={true}
@@ -1073,6 +1075,7 @@ Key extracted components:
 							</div>
 						</div>
 						<input type="hidden" name="location" bind:value={formData.location} />
+						<input type="hidden" name="locationPlaceId" bind:value={formData.locationPlaceId} />
 					</div>
 
 					<!-- Categories & Languages Column -->

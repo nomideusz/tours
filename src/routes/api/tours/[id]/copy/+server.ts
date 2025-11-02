@@ -57,6 +57,8 @@ export const POST: RequestHandler = async ({ params, locals, fetch }) => {
 		name: `${originalTour.name} (Copy)`,
 		description: originalTour.description,
 		location: originalTour.location,
+		locationPlaceId: originalTour.locationPlaceId,
+		languages: originalTour.languages || [],
 		duration: originalTour.duration,
 		price: originalTour.price,
 		capacity: originalTour.capacity,

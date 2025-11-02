@@ -38,6 +38,7 @@ export const GET: RequestHandler = async ({ params }) => {
 				tourName: tours.name,
 				tourDescription: tours.description,
 				tourLocation: tours.location,
+				tourLocationPlaceId: tours.locationPlaceId,
 				tourPrice: tours.price,
 				tourDuration: tours.duration,
 				tourUserId: tours.userId,
@@ -130,6 +131,7 @@ export const GET: RequestHandler = async ({ params }) => {
 					name: booking.tourName,
 					description: booking.tourDescription,
 					location: booking.tourLocation,
+					locationPlaceId: booking.tourLocationPlaceId,
 					price: booking.tourPrice,
 					duration: booking.tourDuration,
 					user: {

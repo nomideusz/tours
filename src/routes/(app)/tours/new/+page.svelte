@@ -100,6 +100,7 @@
 		status: ((form as any)?.formData?.status as 'active' | 'draft') || (shouldActivate ? 'active' : 'draft'),
 		categories: (form as any)?.formData?.categories || [],
 		location: (form as any)?.formData?.location || '',
+		locationPlaceId: (form as any)?.formData?.locationPlaceId || null,
 		languages: (form as any)?.formData?.languages || ['en'],
 		includedItems: (form as any)?.formData?.includedItems || [],
 		requirements: (form as any)?.formData?.requirements || [],

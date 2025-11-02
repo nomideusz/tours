@@ -1,6 +1,8 @@
 // Map integration utilities for Zaur
 // This file provides a foundation for integrating various map services
 
+import type { PlaceSuggestion, PlaceDetails, AutocompleteOptions, PlaceDetailsOptions } from '$lib/types/places.js';
+
 export interface LocationCoordinates {
 	lat: number;
 	lng: number;
@@ -66,6 +68,135 @@ export class GoogleMapsService extends MapService {
 	
 	async reverseGeocode(coordinates: LocationCoordinates): Promise<LocationSearchResult> {
 		// Use server-side proxy endpoint
+		const url = `/api/maps/reverse-geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`;
+		
+		const response = await fetch(url);
+		const data = await response.json();
+		
+		if (!response.ok) {
+			throw new Error('Unable to reverse geocode location');
+		}
+		
+		return {
+			name: data.name,
+			fullAddress: data.fullAddress,
+			coordinates: data.coordinates,
+			type: this.getLocationType(data.types || [])
+		};
+	}
+	
+	getStaticMapUrl(coordinates: LocationCoordinates, zoom: number = 15, size: string = '600x400'): string {
+		return `https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=${zoom}&size=${size}&markers=color:red%7C${coordinates.lat},${coordinates.lng}&key=${this.config.apiKey}`;
+	}
+	
+	getDirectionsUrl(from: LocationCoordinates, to: LocationCoordinates): string {
+		return `https://www.google.com/maps/dir/${from.lat},${from.lng}/${to.lat},${to.lng}`;
+	}
+	
+	private getLocationType(types: string[]): 'address' | 'poi' | 'establishment' | 'locality' {
+		if (types.includes('establishment') || types.includes('point_of_interest')) return 'poi';
+		if (types.includes('locality') || types.includes('sublocality')) return 'locality';
+		if (types.includes('street_address') || types.includes('premise')) return 'address';
+		return 'establishment';
+	}
+}
+
+/**
+ * Google Places API (New) implementation
+ * Uses the new Places API with enhanced features:
+ * - Better autocomplete
+ * - Rich place details (ratings, photos, opening hours)
+ * - AI-powered summaries
+ */
+export class GooglePlacesAPIService extends MapService {
+	/**
+	 * Search locations using Places API Autocomplete (New)
+	 * More accurate and feature-rich than Geocoding API
+	 */
+	async searchLocationsWithPlacesAPI(
+		input: string,
+		options?: Partial<AutocompleteOptions>
+	): Promise<PlaceSuggestion[]> {
+		try {
+			const response = await fetch('/api/places/autocomplete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					input,
+					types: options?.types,
+					locationBias: options?.locationBias,
+					sessionToken: options?.sessionToken
+				})
+			});
+			
+			if (!response.ok) {
+				console.error('Places Autocomplete failed:', response.status);
+				return [];
+			}
+			
+			const data = await response.json();
+			return data.suggestions || [];
+		} catch (error) {
+			console.error('Places Autocomplete error:', error);
+			return [];
+		}
+	}
+	
+	/**
+	 * Get detailed place information using Place ID
+	 */
+	async getPlaceDetails(
+		placeId: string,
+		fields?: string[]
+	): Promise<PlaceDetails | null> {
+		try {
+			const response = await fetch('/api/places/details', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ placeId, fields })
+			});
+			
+			if (!response.ok) {
+				console.error('Place Details failed:', response.status);
+				return null;
+			}
+			
+			const data = await response.json();
+			return data;
+		} catch (error) {
+			console.error('Place Details error:', error);
+			return null;
+		}
+	}
+	
+	/**
+	 * Legacy searchLocations method - uses Geocoding API for backward compatibility
+	 */
+	async searchLocations(query: string): Promise<LocationSearchResult[]> {
+		// Use existing Geocoding API implementation
+		const url = `/api/maps/geocode?query=${encodeURIComponent(query)}`;
+		
+		try {
+			const response = await fetch(url);
+			const data = await response.json();
+			
+			if (!response.ok || !data.results) {
+				return [];
+			}
+			
+			return data.results.map((result: any) => ({
+				name: result.name,
+				fullAddress: result.fullAddress,
+				coordinates: result.coordinates,
+				type: this.getLocationType(result.types || [])
+			}));
+		} catch (error) {
+			console.error('Geocoding error:', error);
+			return [];
+		}
+	}
+	
+	async reverseGeocode(coordinates: LocationCoordinates): Promise<LocationSearchResult> {
 		const url = `/api/maps/reverse-geocode?lat=${coordinates.lat}&lng=${coordinates.lng}`;
 		
 		const response = await fetch(url);
@@ -316,6 +447,20 @@ export function getMapService(apiKey?: string): MapService {
 	// API key parameter is ignored but kept for backward compatibility
 	return createMapService('google', { apiKey: '' });
 }
+
+/**
+ * Get Places API service - uses the new Google Places API
+ * Provides enhanced features like better autocomplete, place details, photos, etc.
+ */
+export function getPlacesAPIService(apiKey?: string): GooglePlacesAPIService {
+	// API key is handled server-side for security
+	return new GooglePlacesAPIService({ apiKey: '' });
+}
+
+/**
+ * Default Places API service instance
+ */
+export const defaultPlacesAPIService = getPlacesAPIService();
 
 // Popular tourist locations for suggestions
 export const POPULAR_TOUR_LOCATIONS = [

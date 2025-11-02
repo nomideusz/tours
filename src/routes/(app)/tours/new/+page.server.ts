@@ -9,8 +9,17 @@ import { processAndSaveImage, initializeImageStorage, isImageStorageAvailable } 
 import { generateTourQRCode } from '$lib/utils/qr-generation.js';
 import { canUserCreateTour } from '$lib/stripe-subscriptions.server.js';
 
+// Schedule data types
+interface ScheduleData {
+	selectedPattern: 'daily' | 'weekend' | 'custom' | 'manual' | null;
+	dailyPattern?: { startDate: string; times: Array<{ startTime: string; endTime: string }>; duration: string; customEndDate?: string };
+	weekendPattern?: { startDate: string; times: Array<{ startTime: string; endTime: string }>; duration: string; customEndDate?: string };
+	customPattern?: { startDate: string; times: Array<{ startTime: string; endTime: string }>; selectedDays: string[]; duration: string; customEndDate?: string };
+	manualSlots?: Array<{ date: string; startTime: string; endTime: string }>;
+}
+
 // Helper function to create schedule slots based on pattern data
-async function createScheduleSlots(tourId: string, scheduleData: any, userId: string) {
+async function createScheduleSlots(tourId: string, scheduleData: ScheduleData) {
   if (!scheduleData.selectedPattern) return;
 
   // Get tour capacity (use maxCapacity for new system, fallback to capacity for legacy)
@@ -27,7 +36,7 @@ async function createScheduleSlots(tourId: string, scheduleData: any, userId: st
     switch (scheduleData.selectedPattern) {
       case 'daily': {
         const pattern = scheduleData.dailyPattern;
-        if (!pattern.startDate || !pattern.times?.length) break;
+        if (!pattern || !pattern.startDate || !pattern.times?.length) break;
 
         const startDate = new Date(pattern.startDate);
         const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
@@ -49,7 +58,7 @@ async function createScheduleSlots(tourId: string, scheduleData: any, userId: st
 
       case 'weekend': {
         const pattern = scheduleData.weekendPattern;
-        if (!pattern.startDate || !pattern.times?.length) break;
+        if (!pattern || !pattern.startDate || !pattern.times?.length) break;
 
         const startDate = new Date(pattern.startDate);
         const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
@@ -74,7 +83,7 @@ async function createScheduleSlots(tourId: string, scheduleData: any, userId: st
 
       case 'custom': {
         const pattern = scheduleData.customPattern;
-        if (!pattern.startDate || !pattern.times?.length || !pattern.selectedDays?.length) break;
+        if (!pattern || !pattern.startDate || !pattern.times?.length || !pattern.selectedDays?.length) break;
 
         const startDate = new Date(pattern.startDate);
         const endDate = calculateEndDate(startDate, pattern.duration, pattern.customEndDate);
@@ -241,8 +250,8 @@ export const actions: Actions = {
         if (includedItemsJson && typeof includedItemsJson === 'string' && includedItemsJson.trim()) {
           try {
             parsedIncludedItems = JSON.parse(includedItemsJson) || [];
-          } catch (e) {
-            console.warn('Failed to parse included items JSON, using empty array:', e);
+          } catch {
+            console.warn('Failed to parse included items JSON, using empty array');
             parsedIncludedItems = [];
           }
         }
@@ -253,8 +262,8 @@ export const actions: Actions = {
         if (requirementsJson && typeof requirementsJson === 'string' && requirementsJson.trim()) {
           try {
             parsedRequirements = JSON.parse(requirementsJson) || [];
-          } catch (e) {
-            console.warn('Failed to parse requirements JSON, using empty array:', e);
+          } catch {
+            console.warn('Failed to parse requirements JSON, using empty array');
             parsedRequirements = [];
           }
         }
@@ -287,8 +296,8 @@ export const actions: Actions = {
           if (parsed && parsed.categories && parsed.categories.length > 0) {
             participantCategories = parsed;
           }
-        } catch (e) {
-          console.warn('Failed to parse participant categories:', e);
+        } catch {
+          console.warn('Failed to parse participant categories');
         }
       }
       
@@ -298,8 +307,8 @@ export const actions: Actions = {
       if (privateTourRaw && typeof privateTourRaw === 'string' && privateTourRaw !== 'null' && privateTourRaw !== 'undefined' && privateTourRaw !== '' && !privateTourRaw.startsWith('[object')) {
         try {
           privateTour = JSON.parse(privateTourRaw);
-        } catch (e) {
-          console.warn('Failed to parse private tour:', e);
+        } catch {
+          console.warn('Failed to parse private tour');
         }
       }
       
@@ -309,8 +318,8 @@ export const actions: Actions = {
       if (groupPricingTiersRaw && typeof groupPricingTiersRaw === 'string' && groupPricingTiersRaw !== 'null') {
         try {
           groupPricingTiers = JSON.parse(groupPricingTiersRaw);
-        } catch (e) {
-          console.warn('Failed to parse group pricing tiers:', e);
+        } catch {
+          console.warn('Failed to parse group pricing tiers');
         }
       }
       
@@ -320,8 +329,8 @@ export const actions: Actions = {
       if (groupDiscountsRaw && typeof groupDiscountsRaw === 'string' && groupDiscountsRaw !== 'null' && groupDiscountsRaw !== 'undefined' && groupDiscountsRaw !== '' && !groupDiscountsRaw.startsWith('[object')) {
         try {
           groupDiscounts = JSON.parse(groupDiscountsRaw);
-        } catch (e) {
-          console.warn('Failed to parse group discounts:', e);
+        } catch {
+          console.warn('Failed to parse group discounts');
         }
       }
       
@@ -331,8 +340,8 @@ export const actions: Actions = {
       if (optionalAddonsRaw && typeof optionalAddonsRaw === 'string' && optionalAddonsRaw !== 'null') {
         try {
           optionalAddons = JSON.parse(optionalAddonsRaw);
-        } catch (e) {
-          console.warn('Failed to parse optional add-ons:', e);
+        } catch {
+          console.warn('Failed to parse optional add-ons');
         }
       }
       
@@ -350,8 +359,8 @@ export const actions: Actions = {
         if (scheduleDataRaw && typeof scheduleDataRaw === 'string') {
           try {
             scheduleData = JSON.parse(scheduleDataRaw);
-          } catch (e) {
-            console.warn('Failed to parse schedule data:', e);
+          } catch {
+            console.warn('Failed to parse schedule data');
           }
         }
       }
@@ -368,17 +377,27 @@ export const actions: Actions = {
           const categoriesData = formData.get('categories') as string || '[]';
           try {
             return JSON.parse(categoriesData);
-          } catch (e) {
+          } catch {
             // Handle old comma-separated format or invalid JSON
             return categoriesData.split(',').map(c => c.trim()).filter(Boolean);
           }
         })(),
         location: formData.get('location'),
+        locationPlaceId: (() => {
+          const placeId = formData.get('locationPlaceId');
+          // Handle null, undefined, "null", and "undefined" strings
+          if (!placeId || placeId === 'null' || placeId === 'undefined' || placeId === '') {
+            console.log('📍 No Place ID provided for location');
+            return null;
+          }
+          console.log('📍 Place ID from form:', placeId);
+          return placeId as string;
+        })(),
         languages: (() => {
           const languagesData = formData.get('languages') as string || '["en"]';
           try {
             return JSON.parse(languagesData);
-          } catch (e) {
+          } catch {
             return ['en']; // Default to English if parsing fails
           }
         })(),
@@ -531,7 +550,7 @@ export const actions: Actions = {
           basePrice = String(sortedCategories[0]?.price || 0);
         } else if (pricingModel === 'group_tiers' && groupPricingTiers?.tiers?.length) {
           // Use minimum tier price
-          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: any) => t.price));
+          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: { price: number }) => t.price));
           basePrice = String(minPrice);
         }
         console.log('💰 Calculated base price for new tour:', basePrice, 'from model:', pricingModel);
@@ -547,6 +566,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          locationPlaceId: sanitizedData.locationPlaceId as string || null,
           languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
@@ -582,7 +602,7 @@ export const actions: Actions = {
 
         // Create schedule if provided
         if (scheduleData) {
-          await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
+          await createScheduleSlots(createdTour.id, scheduleData);
         }
 
         // Redirect to tour details page with welcome prompt for time slot creation
@@ -609,7 +629,7 @@ export const actions: Actions = {
           basePrice = String(sortedCategories[0]?.price || 0);
         } else if (pricingModel === 'group_tiers' && groupPricingTiers?.tiers?.length) {
           // Use minimum tier price
-          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: any) => t.price));
+          const minPrice = Math.min(...groupPricingTiers.tiers.map((t: { price: number }) => t.price));
           basePrice = String(minPrice);
         }
         console.log('💰 Calculated base price for new tour (no images):', basePrice, 'from model:', pricingModel);
@@ -624,6 +644,7 @@ export const actions: Actions = {
           status: (sanitizedData.status as 'active' | 'draft') || 'draft',
           categories: sanitizedData.categories as string[] || [],
           location: sanitizedData.location as string || null,
+          locationPlaceId: sanitizedData.locationPlaceId as string || null,
           languages: sanitizedData.languages as string[] || ['en'],
           includedItems: parsedIncludedItems,
           requirements: parsedRequirements,
@@ -659,7 +680,7 @@ export const actions: Actions = {
 
         // Create schedule if provided
         if (scheduleData) {
-          await createScheduleSlots(createdTour.id, scheduleData, locals.user.id);
+          await createScheduleSlots(createdTour.id, scheduleData);
         }
 
         // Redirect to tour details page with welcome prompt for time slot creation

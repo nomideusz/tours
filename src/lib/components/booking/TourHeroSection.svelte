@@ -51,13 +51,58 @@
 	let allLanguageNames = $derived(tour.languages ? formatLanguages(tour.languages, { maxDisplay: 100 }) : '');
 	
 	let hasMultipleImages = $derived(imageUrls.length > 1);
-	let currentImage = $derived(imageUrls[currentImageIndex] || imageUrl);
+	let currentImage = $derived.by(() => {
+		if (imageUrls.length > 0 && currentImageIndex < imageUrls.length) {
+			return imageUrls[currentImageIndex];
+		}
+		return imageUrl;
+	});
+	
+	// Touch/swipe handling for mobile
+	let touchStartX = $state(0);
+	let touchEndX = $state(0);
+	let isSwiping = $state(false);
+	
+	function handleTouchStart(e: TouchEvent) {
+		if (!hasMultipleImages) return;
+		touchStartX = e.touches[0].clientX;
+		isSwiping = true;
+	}
+	
+	function handleTouchMove(e: TouchEvent) {
+		if (!hasMultipleImages || !isSwiping) return;
+		touchEndX = e.touches[0].clientX;
+	}
+	
+	function handleTouchEnd() {
+		if (!hasMultipleImages || !isSwiping) return;
+		isSwiping = false;
+		
+		const swipeThreshold = 50; // Minimum distance for a swipe
+		const swipeDistance = touchStartX - touchEndX;
+		
+		if (Math.abs(swipeDistance) > swipeThreshold) {
+			if (swipeDistance > 0) {
+				// Swiped left - go to next image
+				nextImage();
+			} else {
+				// Swiped right - go to previous image
+				prevImage();
+			}
+		}
+		
+		// Reset touch positions
+		touchStartX = 0;
+		touchEndX = 0;
+	}
 	
 	function nextImage() {
+		if (imageUrls.length === 0) return;
 		currentImageIndex = (currentImageIndex + 1) % imageUrls.length;
 	}
 	
 	function prevImage() {
+		if (imageUrls.length === 0) return;
 		currentImageIndex = (currentImageIndex - 1 + imageUrls.length) % imageUrls.length;
 	}
 	
@@ -70,7 +115,12 @@
 {#if currentImage || imageUrl}
 	<div class="hero-gallery hero-gallery-spacing">
 		<!-- Main Image -->
-		<div class="main-image-container">
+		<div 
+			class="main-image-container"
+			ontouchstart={handleTouchStart}
+			ontouchmove={handleTouchMove}
+			ontouchend={handleTouchEnd}
+		>
 			<img 
 				src={currentImage || imageUrl} 
 				alt={tour.name}
@@ -346,6 +396,10 @@
 		overflow: hidden;
 		border-radius: 1rem;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+		touch-action: pan-y pinch-zoom; /* Allow vertical scroll but enable swipe detection */
+		user-select: none; /* Prevent text/image selection during swipe */
+		-webkit-user-select: none;
+		-webkit-touch-callout: none; /* Prevent iOS long-press menu */
 	}
 	
 	@media (min-width: 768px) {
@@ -365,6 +419,7 @@
 		height: 100%;
 		object-fit: cover;
 		object-position: center;
+		transition: opacity 0.3s ease;
 	}
 	
 	/* Navigation Arrows */

@@ -23,6 +23,7 @@ export interface TourFormData {
 	status: Tour['status'];
 	categories: string[];
 	location: string;
+	locationPlaceId?: string | null;
 	languages?: string[];
 	includedItems: string[];
 	requirements: string[];
@@ -63,6 +64,17 @@ export interface TourFormData {
 		}>;
 		privateBooking?: boolean;
 	};
+	groupDiscounts?: {
+		tiers: Array<{
+			id: string;
+			minParticipants: number;
+			maxParticipants: number;
+			discountType: 'percentage' | 'fixed';
+			discountValue: number;
+			label?: string;
+		}>;
+		enabled: boolean;
+	};
 	optionalAddons?: {
 		addons: Array<{
 			id: string;
@@ -73,6 +85,8 @@ export interface TourFormData {
 			icon?: string;
 		}>;
 	};
+	guidePaysStripeFee?: boolean;
+	countInfantsTowardCapacity?: boolean;
 	publicListing?: string | boolean;
 }
 
@@ -511,7 +525,7 @@ export function hasFieldError(errors: ValidationError[], fieldName: string): boo
 }
 
 // Sanitize and clean form data
-export function sanitizeTourFormData(data: any): TourFormData {
+export function sanitizeTourFormData(data: Record<string, unknown>): TourFormData {
 	return {
 		name: String(data.name || '').trim(),
 		description: String(data.description || '').trim(),
@@ -519,31 +533,32 @@ export function sanitizeTourFormData(data: any): TourFormData {
 		duration: Number(data.duration) || 60,
 		capacity: Number(data.capacity) || 1,
 		status: (data.status as Tour['status']) || 'draft',
-		categories: Array.isArray(data.categories) ? data.categories.map((cat: any) => String(cat).trim()).filter((cat: string) => cat !== '') : [],
+		categories: Array.isArray(data.categories) ? data.categories.map(cat => String(cat).trim()).filter((cat: string) => cat !== '') : [],
 		location: sanitizeLocation(String(data.location || '')),
-		languages: Array.isArray(data.languages) ? data.languages.filter((lang: any) => typeof lang === 'string' && lang.trim()) : ['en'],
-		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map((item: any) => String(item).trim()).filter((item: string) => item !== '') : [],
-		requirements: Array.isArray(data.requirements) ? data.requirements.map((req: any) => String(req).trim()).filter((req: string) => req !== '') : [],
+		locationPlaceId: data.locationPlaceId ? String(data.locationPlaceId).trim() : null,
+		languages: Array.isArray(data.languages) ? data.languages.filter(lang => typeof lang === 'string' && lang.trim()) : ['en'],
+		includedItems: Array.isArray(data.includedItems) ? data.includedItems.map(item => String(item).trim()).filter((item: string) => item !== '') : [],
+		requirements: Array.isArray(data.requirements) ? data.requirements.map(req => String(req).trim()).filter((req: string) => req !== '') : [],
 		cancellationPolicy: String(data.cancellationPolicy || '').trim(),
 		cancellationPolicyId: data.cancellationPolicyId ? String(data.cancellationPolicyId).trim() : undefined,
-		pricingModel: data.pricingModel || 'participant_categories',
+		pricingModel: (data.pricingModel as TourFormData['pricingModel']) || 'participant_categories',
 		enablePricingTiers: Boolean(data.enablePricingTiers),
 		pricingTiers: data.pricingTiers ? {
-			adult: Number(data.pricingTiers.adult) || 0,
-			child: Number(data.pricingTiers.child) || 0
+			adult: Number((data.pricingTiers as Record<string, unknown>).adult) || 0,
+			child: Number((data.pricingTiers as Record<string, unknown>).child) || 0
 		} : undefined,
-		participantCategories: data.participantCategories,
-		privateTour: data.privateTour,
-		groupPricingTiers: data.groupPricingTiers,
-		groupDiscounts: data.groupDiscounts,
-		optionalAddons: data.optionalAddons,
-		guidePaysStripeFee: data.guidePaysStripeFee,
-		countInfantsTowardCapacity: data.countInfantsTowardCapacity,
-		publicListing: data.publicListing
+		participantCategories: data.participantCategories as TourFormData['participantCategories'],
+		privateTour: data.privateTour as TourFormData['privateTour'],
+		groupPricingTiers: data.groupPricingTiers as TourFormData['groupPricingTiers'],
+		groupDiscounts: data.groupDiscounts as TourFormData['groupDiscounts'],
+		optionalAddons: data.optionalAddons as TourFormData['optionalAddons'],
+		guidePaysStripeFee: Boolean(data.guidePaysStripeFee),
+		countInfantsTowardCapacity: Boolean(data.countInfantsTowardCapacity),
+		publicListing: data.publicListing as TourFormData['publicListing']
 	};
 }
 
-export function sanitizeTimeSlotFormData(data: any): TimeSlotFormData {
+export function sanitizeTimeSlotFormData(data: Record<string, unknown>): TimeSlotFormData {
 	return {
 		startDate: String(data.startDate || '').trim(),
 		startTime: String(data.startTime || '').trim(),

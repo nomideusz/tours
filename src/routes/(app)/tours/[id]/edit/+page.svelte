@@ -162,6 +162,7 @@
 		status: 'draft' as Tour['status'],
 		categories: [],
 		location: '',
+		locationPlaceId: null as string | null,
 		languages: ['en'],
 		includedItems: [],
 		requirements: [],
@@ -374,6 +375,7 @@
 			status: tour.status || 'draft',
 			categories: tour.categories || [],
 			location: tour.location || '',
+			locationPlaceId: tour.locationPlaceId || null,
 			languages: tour.languages || ['en'],
 			includedItems: tour.includedItems || [],
 			requirements: tour.requirements || [],
@@ -436,6 +438,14 @@
 			isSubmitting = true;
 			error = null;
 			
+			// Debug: Log location data before submission
+			console.log('📍 DEBUG: formData before submit:', {
+				location: formData.location,
+				locationPlaceId: formData.locationPlaceId,
+				placeIdType: typeof formData.locationPlaceId,
+				placeIdValue: formData.locationPlaceId
+			});
+			
 			// Create form data
 			const formDataToSubmit = new FormData();
 			
@@ -461,6 +471,14 @@
 				} else if (key === 'guidePaysStripeFee' || key === 'countInfantsTowardCapacity') {
 					// Boolean fields
 					formDataToSubmit.append(key, value ? 'true' : 'false');
+				} else if (key === 'locationPlaceId') {
+					// Only append if not null/undefined
+					if (value !== null && value !== undefined && value !== '') {
+						console.log('📍 Client: Adding locationPlaceId to form:', value);
+						formDataToSubmit.append(key, String(value));
+					} else {
+						console.log('📍 Client: locationPlaceId is null/empty, not adding to form');
+					}
 				} else {
 					formDataToSubmit.append(key, String(value));
 				}

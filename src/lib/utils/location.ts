@@ -18,7 +18,12 @@ export function formatShortAddress(address: string): string {
 	// Split by comma
 	const parts = address.split(',').map(part => part.trim()).filter(Boolean);
 	
-	// If 3 or fewer parts, return as-is
+	// If only 1 part (e.g., just "Germany"), return as-is
+	if (parts.length === 1) {
+		return address;
+	}
+	
+	// If 2-3 parts, return as-is (already good format like "Berlin, Germany")
 	if (parts.length <= 3) {
 		return address;
 	}

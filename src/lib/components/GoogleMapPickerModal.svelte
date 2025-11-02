@@ -262,7 +262,7 @@
 		}
 	}
 	
-	// Debounced search for autocomplete
+	// Debounced search for autocomplete - Uses Places API (New)
 	async function searchLocationsAutocomplete(query: string) {
 		if (!query.trim() || query.length < 2) {
 			searchSuggestions = [];
@@ -274,7 +274,30 @@
 		showSuggestions = true;
 		
 		try {
-			// Use our server endpoint for geocoding
+			// Try Places API (New) first
+			const placesResponse = await fetch('/api/places/autocomplete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ input: query })
+			});
+			
+			if (placesResponse.ok) {
+				const placesData = await placesResponse.json();
+				if (placesData.suggestions && placesData.suggestions.length > 0) {
+					// Transform Places API results
+					searchSuggestions = placesData.suggestions.map((s: any) => ({
+						name: s.name,
+						fullAddress: s.fullAddress || s.name,
+						coordinates: null, // Will fetch via Place Details if needed
+						placeId: s.placeId,
+						isPlace: true
+					}));
+					isSearching = false;
+					return;
+				}
+			}
+			
+			// Fallback to Geocoding API
 			const response = await fetch(`/api/maps/geocode?query=${encodeURIComponent(query)}`);
 			const data = await response.json();
 			
@@ -313,24 +336,53 @@
 		}, 300);
 	}
 	
-	function selectSearchSuggestion(suggestion: any) {
-		const coords = suggestion.coordinates;
+	async function selectSearchSuggestion(suggestion: any) {
 		const address = suggestion.fullAddress;
-		
-		// Update search input
 		searchInput = address;
-		
-		// Add marker and select location
-		addMarker(coords, address);
 		selectedLocation = truncateLocation(address);
-		selectedCoordinates = coords;
-		
-		// Pan to location
-		map?.setCenter(coords);
 		
 		// Hide suggestions
 		showSuggestions = false;
 		searchSuggestions = [];
+		
+		// If this is from Places API, fetch coordinates via Place Details
+		if (suggestion.isPlace && suggestion.placeId) {
+			try {
+				const detailsResponse = await fetch('/api/places/details', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ 
+						placeId: suggestion.placeId,
+						fields: ['id', 'location', 'formattedAddress']
+					})
+				});
+				
+				if (detailsResponse.ok) {
+					const details = await detailsResponse.json();
+					if (details.coordinates) {
+						const coords = details.coordinates;
+						selectedCoordinates = coords;
+						
+						// Add marker and pan to location
+						addMarker(coords, address);
+						map?.setCenter(coords);
+						return;
+					}
+				}
+			} catch (error) {
+				console.error('Failed to fetch place details:', error);
+			}
+		}
+		
+		// Fallback for geocoded results or if Place Details fails
+		if (suggestion.coordinates) {
+			const coords = suggestion.coordinates;
+			selectedCoordinates = coords;
+			
+			// Add marker and pan to location
+			addMarker(coords, address);
+			map?.setCenter(coords);
+		}
 	}
 	
 	function handleSearch() {

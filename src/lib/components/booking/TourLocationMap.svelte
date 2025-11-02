@@ -20,7 +20,7 @@
 		googleMapsApiKey
 	}: Props = $props();
 	
-	let mapContainer: HTMLElement;
+	let mapContainer = $state<HTMLElement>();
 	let map = $state<google.maps.Map | null>(null);
 	let marker = $state<google.maps.Marker | null>(null);
 	let isLoaded = $state(false);
@@ -114,7 +114,7 @@
 			<button 
 				onclick={() => window.open(getDirectionsUrl(), '_blank')}
 				type="button"
-				class="button-primary button--full-width button-gap"
+				class="button-accent button--full-width button-gap"
 			>
 				<Navigation class="w-4 h-4" />
 				Get Directions

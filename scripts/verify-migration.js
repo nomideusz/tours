@@ -1,91 +1,40 @@
-/**
- * Verify migration status
- */
+#!/usr/bin/env node
 
+import { config } from 'dotenv';
 import pg from 'pg';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const { Pool } = pg;
+const { Client } = pg;
+config();
 
 async function verify() {
-  const pool = new Pool({
+  const client = new Client({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
+    ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
   });
 
-  const client = await pool.connect();
-
   try {
-    // Check columns exist
-    console.log('🔍 Checking new columns exist...\n');
-    const columns = await client.query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns
-      WHERE table_name = 'bookings' 
-        AND column_name IN ('refund_status_new', 'transfer_status_new')
-      ORDER BY column_name;
+    await client.connect();
+    
+    // Check if column exists
+    const result = await client.query(`
+      SELECT column_name, data_type, character_maximum_length
+      FROM information_schema.columns 
+      WHERE table_name = 'tours' 
+      AND column_name = 'location_place_id';
     `);
-
-    if (columns.rows.length === 2) {
-      console.log('✅ New columns exist:');
-      columns.rows.forEach(col => {
-        console.log(`   ${col.column_name}: ${col.data_type}`);
-      });
+    
+    if (result.rows.length > 0) {
+      console.log('✅ Migration verified! Column details:');
+      console.log(result.rows[0]);
     } else {
-      console.error('❌ New columns NOT found!');
-      process.exit(1);
+      console.log('❌ Column not found');
     }
-
-    // Check trigger exists
-    console.log('\n🔍 Checking trigger...\n');
-    const trigger = await client.query(`
-      SELECT tgname, tgenabled 
-      FROM pg_trigger 
-      WHERE tgname = 'sync_booking_statuses_trigger';
-    `);
-
-    if (trigger.rows.length > 0) {
-      console.log('✅ Trigger exists and is enabled');
-    } else {
-      console.error('❌ Trigger NOT found!');
-      process.exit(1);
-    }
-
-    // Sample bookings
-    console.log('\n📊 Sample booking statuses:\n');
-    const sample = await client.query(`
-      SELECT 
-        booking_reference,
-        status,
-        refund_status as old_refund,
-        refund_status_new as new_refund,
-        transfer_status as old_transfer,
-        transfer_status_new as new_transfer
-      FROM bookings
-      ORDER BY created_at DESC
-      LIMIT 5;
-    `);
-
-    sample.rows.forEach(row => {
-      console.log(`${row.booking_reference}:`);
-      console.log(`  Status: ${row.status}`);
-      console.log(`  Refund: ${row.old_refund || 'NULL'} → ${row.new_refund}`);
-      console.log(`  Transfer: ${row.old_transfer || 'NULL'} → ${row.new_transfer}`);
-      console.log('');
-    });
-
-    console.log('✅ Migration verification complete!');
-    console.log('\n📝 Note: NULL values in old columns are NORMAL.');
-    console.log('   They will sync to enum defaults via trigger on next update.');
-    console.log('\n🚀 Safe to proceed with deployment!');
-
+    
+  } catch (error) {
+    console.error('Error:', error.message);
   } finally {
-    client.release();
-    await pool.end();
+    await client.end();
   }
 }
 
 verify();
-

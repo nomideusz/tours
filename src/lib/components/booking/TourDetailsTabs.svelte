@@ -3,7 +3,10 @@
 	import Check from 'lucide-svelte/icons/check';
 	import Info from 'lucide-svelte/icons/info';
 	import Shield from 'lucide-svelte/icons/shield';
+	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Markdown from '$lib/components/ui/Markdown.svelte';
+	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	interface Props {
 		tour: Tour;
@@ -21,8 +24,41 @@
 		</section>
 	{/if}
 	
-	<!-- Tour Info Cards - Hidden, now shown as badges in hero -->
-	<!-- Kept in code for potential future use or desktop-only display -->
+	<!-- Meeting Point Section with Photos -->
+	{#if tour.location}
+		<section class="meeting-point-section">
+			{#if (tour as any).locationPlaceId}
+				<!-- Rich card with photos -->
+				<MeetingPointCard
+					locationName={formatShortAddress(tour.location)}
+					locationAddress={tour.location}
+					placeId={(tour as any).locationPlaceId}
+					showPhotos={true}
+					photoCount={3}
+				/>
+			{:else}
+				<!-- Simple fallback for locations without Place ID -->
+				<div class="simple-meeting-point">
+					<div class="meeting-point-header">
+						<div class="flex items-center gap-2">
+							<MapPin class="w-5 h-5" style="color: var(--color-primary-600);" />
+							<h3 class="meeting-point-title">Meeting Point</h3>
+						</div>
+					</div>
+					<p class="location-text">{tour.location}</p>
+				<button 
+					onclick={() => {
+						window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tour.location ?? '')}`, '_blank');
+					}}
+					class="button-accent button-gap"
+				>
+						<MapPin class="w-4 h-4" />
+						View on Google Maps
+					</button>
+				</div>
+			{/if}
+		</section>
+	{/if}
 	
 	<!-- What's Included & Requirements -->
 	<section class="highlights-section">
@@ -97,6 +133,60 @@
 	.description-section {
 		padding-bottom: 1.5rem;
 		border-bottom: 1px solid var(--border-primary);
+	}
+	
+	.meeting-point-section {
+		padding: 1.5rem 0;
+		border-bottom: 1px solid var(--border-primary);
+	}
+	
+	/* Simple meeting point fallback */
+	.simple-meeting-point {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	
+	.meeting-point-header {
+		border-bottom: 1px solid var(--border-primary);
+		padding-bottom: 0.75rem;
+	}
+	
+	.meeting-point-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.location-text {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	
+	.maps-link-simple {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-primary-600);
+		background: var(--color-primary-50);
+		border: 1px solid var(--color-primary-200);
+		text-decoration: none;
+		transition: all 0.2s ease;
+	}
+	
+	.maps-link-simple:hover {
+		background: var(--color-primary-100);
+		transform: translateY(-1px);
 	}
 	
 	:global(.tour-description) {

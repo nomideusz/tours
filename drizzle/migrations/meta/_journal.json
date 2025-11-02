@@ -106,6 +106,13 @@
       "when": 1728360000000,
       "tag": "0014_private_tour_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1762053709771,
+      "tag": "0015_crazy_luke_cage",
+      "breakpoints": true
     }
   ]
 }

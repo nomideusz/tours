@@ -59,6 +59,12 @@
 	import X from 'lucide-svelte/icons/x';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Baby from 'lucide-svelte/icons/baby';
+	import MapPin from 'lucide-svelte/icons/map-pin';
+	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import { formatShortAddress } from '$lib/utils/location.js';
+	
+	// Format location for cleaner display
+	let displayLocation = $derived(tour?.location ? formatShortAddress(tour.location) : '');
 	
 	// Get data from load function
 	let { data } = $props();
@@ -950,7 +956,7 @@
 			{/if}
 			<PageHeader 
 				title={tour?.name || 'Loading...'}
-				subtitle={tour ? `Tour • ${tour.location || 'Location not set'}` : 'Loading tour details...'}
+				subtitle={tour ? `Tour • ${tour.location ? formatShortAddress(tour.location) : 'Location not set'}` : 'Loading tour details...'}
 				breadcrumbs={[
 					{ label: 'Tours', href: '/tours' },
 					{ label: tour?.name || 'Tour' }
@@ -1281,6 +1287,32 @@
 									<span title={formatLanguages(tour.languages, { maxDisplay: 100 })}>
 										{formatLanguages(tour.languages)}
 									</span>
+								</div>
+							{/if}
+							
+							<!-- Meeting Point Preview (for guides to see what customers will see) -->
+							{#if tour.location}
+								<div class="meeting-point-preview">
+									<p class="text-xs font-medium mb-2" style="color: var(--text-tertiary);">Customer View Preview:</p>
+									{#if tour.locationPlaceId}
+										<MeetingPointCard
+											locationName={displayLocation}
+											locationAddress={tour.location}
+											placeId={tour.locationPlaceId}
+											showPhotos={true}
+											photoCount={3}
+										/>
+									{:else}
+										<div class="simple-location-notice">
+											<MapPin class="w-4 h-4" style="color: var(--color-warning-600);" />
+											<div>
+												<p class="text-sm font-medium" style="color: var(--text-primary);">Meeting Point: {tour.location}</p>
+												<p class="text-xs" style="color: var(--text-secondary);">
+													💡 Tip: Edit tour and select location from autocomplete to add photos!
+												</p>
+											</div>
+										</div>
+									{/if}
 								</div>
 							{/if}
 
@@ -2084,5 +2116,26 @@
 	.accordion-content :global(.pricing-summary:hover) {
 		border-color: transparent;
 		box-shadow: none;
+	}
+	
+	/* Meeting Point Preview Section */
+	.meeting-point-preview {
+		margin-top: 1rem;
+		margin-bottom: 1rem;
+	}
+	
+	.simple-location-notice {
+		display: flex;
+		align-items: start;
+		gap: 0.75rem;
+		padding: 1rem;
+		background: var(--color-warning-50);
+		border: 1px solid var(--color-warning-200);
+		border-radius: 0.75rem;
+	}
+	
+	:root[data-theme='dark'] .simple-location-notice {
+		background: rgba(245, 158, 11, 0.08);
+		border-color: rgba(245, 158, 11, 0.25);
 	}
 </style> 

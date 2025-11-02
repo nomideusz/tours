@@ -315,6 +315,75 @@
 		box-shadow: none;
 	}
 
+	/* Accent button - distinctive and eye-catching */
+	.button-accent,
+	.button-accent {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--radius-md);
+		padding: 0.625rem 1.25rem;
+		font-size: 0.9375rem;
+		font-weight: 700;
+		line-height: 1.4;
+		letter-spacing: 0.01em;
+		gap: 0.5rem;
+		cursor: pointer;
+		transition: all var(--transition-base);
+		text-decoration: none;
+		text-align: center;
+		white-space: nowrap;
+		user-select: none;
+		background: var(--color-accent-700);
+		color: #ffffff;
+		border: 1.5px solid var(--color-accent-700);
+		-webkit-tap-highlight-color: transparent;
+		box-shadow: var(--shadow-sm), var(--shadow-accent);
+		text-shadow: 
+			0 1px 3px rgba(0, 0, 0, 0.3),
+			0 1px 1px rgba(0, 0, 0, 0.2);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+	}
+
+	.button-accent:hover:not(:disabled),
+	.button-accent:hover:not(:disabled) {
+		background: var(--color-accent-800);
+		border-color: var(--color-accent-800);
+		color: #ffffff;
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-lg), 0 6px 20px -4px rgba(139, 92, 246, 0.5);
+		text-shadow: 
+			0 1px 3px rgba(0, 0, 0, 0.4),
+			0 1px 1px rgba(0, 0, 0, 0.25);
+	}
+
+	.button-accent:active:not(:disabled),
+	.button-accent:active:not(:disabled) {
+		transform: translateY(0);
+		box-shadow: 
+			inset 0 2px 4px rgba(0, 0, 0, 0.2),
+			var(--shadow-sm);
+		text-shadow: 
+			0 1px 2px rgba(0, 0, 0, 0.35),
+			0 0px 1px rgba(0, 0, 0, 0.3);
+	}
+
+	.button-accent:focus-visible,
+	.button-accent:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.button-accent:disabled,
+	.button-accent:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
+	}
+
 	/* Ghost button - subtle and unobtrusive */
 	.button-ghost,
 	.button-ghost {
@@ -512,6 +581,8 @@
 	.button-success svg,
 	.button-danger svg,
 	.button-danger svg,
+	.button-accent svg,
+	.button-accent svg,
 	.button-ghost svg,
 	.button-ghost svg,
 	.button-text svg,
@@ -532,6 +603,8 @@
 	.button-success svg:not([class*="absolute"]),
 	.button-danger svg:not([class*="absolute"]),
 	.button-danger svg:not([class*="absolute"]),
+	.button-accent svg:not([class*="absolute"]),
+	.button-accent svg:not([class*="absolute"]),
 	.button-ghost svg:not([class*="absolute"]),
 	.button-ghost svg:not([class*="absolute"]),
 	.button-text svg:not([class*="absolute"]),
@@ -617,6 +690,27 @@
 	[data-theme="dark"] .button-danger:active:not(:disabled) {
 		background: var(--color-danger-400);
 		border-color: var(--color-danger-400);
+	}
+
+	/* Dark mode accent buttons */
+	[data-theme="dark"] .button-accent,
+	[data-theme="dark"] .button-accent {
+		background: var(--color-accent-400);
+		border-color: var(--color-accent-400);
+		color: #ffffff;
+	}
+
+	[data-theme="dark"] .button-accent:hover:not(:disabled),
+	[data-theme="dark"] .button-accent:hover:not(:disabled) {
+		background: var(--color-accent-500);
+		border-color: var(--color-accent-500);
+		color: #ffffff;
+	}
+
+	[data-theme="dark"] .button-accent:active:not(:disabled),
+	[data-theme="dark"] .button-accent:active:not(:disabled) {
+		background: var(--color-accent-400);
+		border-color: var(--color-accent-400);
 	}
 
 	/* Dark mode hero button */
@@ -807,6 +901,8 @@
 		.button-success,
 		.button-danger,
 		.button-danger,
+		.button-accent,
+		.button-accent,
 		.button-ghost,
 		.button-ghost {
 			min-height: 44px; /* Optimal touch target size */
