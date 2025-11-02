@@ -2,8 +2,6 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
@@ -516,7 +514,7 @@
 	<title>Calendar - Zaur</title>
 </svelte:head>
 
-<div class="w-full px-4 sm:px-6 lg:px-12 py-8">
+<div class="w-full px-4 sm:px-6 lg:px-12 py-6">
 	{#if isLoading}
 		{#if isNewUser}
 			<OnboardingSkeleton />
@@ -534,21 +532,6 @@
 			</button>
 		</div>
 	{:else}
-		<!-- Simple Header -->
-		<div class="mb-6">
-			<MobilePageHeader
-				title="Calendar"
-				quickActions={[]}
-			/>
-			
-			<div class="hidden sm:block">
-				<PageHeader 
-					title="Calendar"
-					subtitle={showOnboarding ? "Complete setup to start accepting bookings" : "Your tour schedule at a glance"}
-				/>
-			</div>
-		</div>
-
 		<!-- Onboarding Section -->
 		{#if showOnboarding}
 			<OnboardingSection
