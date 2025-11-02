@@ -9,6 +9,9 @@ node_modules
 /build
 /dist
 
+# Logs
+/logs
+
 # OS
 .DS_Store
 Thumbs.db

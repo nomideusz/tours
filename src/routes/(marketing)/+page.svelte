@@ -1,22 +1,13 @@
 <script lang="ts">
-	// import HeroSection from '$lib/components/marketing/HeroSection.svelte';
-	import BetaHeroSection from '$lib/components/marketing/BetaHeroSection.svelte';
-	import CalculatorSection from '$lib/components/marketing/CalculatorSection.svelte';
+	// Combined hero + calculator + how-it-works section
+	import HeroCalculatorSection from '$lib/components/marketing/HeroCalculatorSection.svelte';
 	import BookingDemoSection from '$lib/components/marketing/BookingDemoSection.svelte';
-	// import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
-	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
 	import Photorealistic3DTiles from '$lib/components/marketing/Photorealistic3DTiles.svelte';
 	import TourFormShowcase from '$lib/components/marketing/TourFormShowcase.svelte';
-	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
 	import SocialProofSection from '$lib/components/marketing/SocialProofSection.svelte';
 	import { env } from '$env/dynamic/public';
-	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
-	// import BetaPricingComparison from '$lib/components/marketing/BetaPricingComparison.svelte';
 	import Beta2FAQSection from '$lib/components/marketing/Beta2FAQSection.svelte';
-	// import EarlyAccessCTA from '$lib/components/marketing/EarlyAccessCTA.svelte';
-	// import FinalCtaSection from '$lib/components/marketing/FinalCtaSection.svelte';
-	// import BetaFinalCtaSection from '$lib/components/marketing/BetaFinalCtaSection.svelte';
 	import BetaTimelineSection from '$lib/components/marketing/BetaTimelineSection.svelte';
 	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 	
@@ -38,9 +29,7 @@
 		
 		// Initialize section visibility tracking
 		const cleanupSections = initSectionTracking([
-			'hero',
-			'calculator',
-			'how-it-works',
+			'hero-calculator',
 			'social-proof',
 			'booking-demo',
 			'form-demo',
@@ -106,21 +95,9 @@
 	</script>`}
 </svelte:head>
 
-<!-- Beta Hero Section -->
-<section id="hero">
-	<BetaHeroSection />
-</section>
-
-<!-- Calculator Section -->
-<section id="calculator">
-	<CalculatorSection />
-</section>
-
-<!-- How it works - Moved up for better flow -->
-<section id="how-it-works" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<HowItWorksSection />
-	</div>
+<!-- Combined Hero + Calculator + How It Works Section -->
+<section id="hero-calculator">
+	<HeroCalculatorSection />
 </section>
 
 <!-- Social Proof Section - Build trust early -->

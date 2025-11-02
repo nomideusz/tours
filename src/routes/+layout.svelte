@@ -5,6 +5,7 @@
 	import { language, t } from '$lib/i18n.js';
 	import { languageContext, languageStore } from '$lib/context.js';
 	import { navigationContext, navigationStore } from '$lib/context.js';
+	import PaletteSwitcher from '$lib/components/dev/PaletteSwitcher.svelte';
 
 	let { children, data } = $props<{ data?: any }>();
 
@@ -68,6 +69,9 @@
 		<div class="loading-bar h-full" style="background: var(--color-primary-600);"></div>
 	</div>
 {/if}
+
+<!-- Dev Tool: Palette Switcher -->
+<PaletteSwitcher />
 
 <style lang="postcss">
 	@reference "tailwindcss";
