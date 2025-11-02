@@ -183,20 +183,20 @@
 	.professional-footer-container {
 		max-width: 1600px;
 		margin: 0 auto;
-		padding: 3rem 1.5rem;
+		padding: 3rem 3rem; /* Match page sections: px-4 */
 		position: relative;
 		z-index: 2;
 	}
 
 	@media (min-width: 640px) {
 		.professional-footer-container {
-			padding: 3rem 2rem;
+			padding: 3rem 1.5rem; /* Match page sections: px-6 */
 		}
 	}
 
 	@media (min-width: 1024px) {
 		.professional-footer-container {
-			padding: 3rem;
+			padding: 3rem 5rem; /* Match page sections: px-12 */
 		}
 	}
 

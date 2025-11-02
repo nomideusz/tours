@@ -383,6 +383,7 @@
 	@media (min-width: 640px) {
 		.site-header-content {
 			height: 4.5rem;
+			padding: 0 3.25rem;
 		}
 	}
 

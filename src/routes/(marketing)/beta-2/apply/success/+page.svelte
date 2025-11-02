@@ -115,13 +115,22 @@
 		</div>
 
 		<!-- Actions -->
-		<div class="text-center">
+		<div class="flex gap-3 justify-center flex-wrap">
 			<button
 				onclick={() => goto('/')}
-				class="button-secondary"
+				class="button-primary"
 			>
+				<ArrowRight class="w-5 h-5 mr-2" />
 				Back to Home
 			</button>
+			<a
+				href="https://zaur.app/explore"
+				class="button-secondary"
+				target="_blank"
+				rel="noopener noreferrer"
+			>
+				Explore Tours
+			</a>
 		</div>
 
 		<!-- Contact Info -->

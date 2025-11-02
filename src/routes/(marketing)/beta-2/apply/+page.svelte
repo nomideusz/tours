@@ -248,12 +248,12 @@
 				Join Beta 2
 			</h1>
 			<p class="text-xl mb-4" style="color: var(--text-secondary);">
-				4 months free + 20% off forever
+				Get 4 months free + 20% lifetime discount
 			</p>
 			{#if spotsRemaining !== null}
-				<div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
+				<div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg mb-2" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
 					<span class="text-sm font-semibold" style="color: var(--color-warning-700);">
-						Only {spotsRemaining} of 100 spots remaining
+						⚡ Only {spotsRemaining} of 100 spots remaining
 					</span>
 				</div>
 			{/if}

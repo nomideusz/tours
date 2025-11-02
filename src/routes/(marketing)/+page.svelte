@@ -6,7 +6,9 @@
 	// import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
 	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
 	import Photorealistic3DTiles from '$lib/components/marketing/Photorealistic3DTiles.svelte';
+	import TourFormShowcase from '$lib/components/marketing/TourFormShowcase.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
+	import SocialProofSection from '$lib/components/marketing/SocialProofSection.svelte';
 	import { env } from '$env/dynamic/public';
 	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
@@ -38,8 +40,11 @@
 		const cleanupSections = initSectionTracking([
 			'hero',
 			'calculator',
-			'booking-demo',
 			'how-it-works',
+			'social-proof',
+			'booking-demo',
+			'form-demo',
+			'3d-showcase',
 			'pricing',
 			'timeline',
 			'faq',
@@ -111,28 +116,38 @@
 	<CalculatorSection />
 </section>
 
+<!-- How it works - Moved up for better flow -->
+<section id="how-it-works" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
+		<HowItWorksSection />
+	</div>
+</section>
+
+<!-- Social Proof Section - Build trust early -->
+<section id="social-proof" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
+	<SocialProofSection />
+</section>
+
 <!-- Booking Demo Section -->
 <section id="booking-demo" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 		<BookingDemoSection />
 </section>
 
-<!-- 3D Destination Showcase -->
-<section id="3d-showcase" class="py-8 sm:py-12 lg:py-20" style="background: var(--bg-secondary);">
+<!-- Tour Form Demo -->
+<section id="form-demo" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<Photorealistic3DTiles 
-			googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
-			height="600px"
-			autoRotate={false}
-			rotateInterval={15000}
-		/>
+		<TourFormShowcase />
 	</div>
 </section>
 
-<!-- How it works with subtle texture -->
-<section id="how-it-works" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<HowItWorksSection />
-	</div>
+<!-- 3D Destination Showcase - Visual wow factor after functional demos -->
+<section id="3d-showcase" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
+	<Photorealistic3DTiles 
+		googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+		height="600px"
+		autoRotate={false}
+		rotateInterval={15000}
+	/>
 </section>
 
 <!-- Beta Pricing Section -->
