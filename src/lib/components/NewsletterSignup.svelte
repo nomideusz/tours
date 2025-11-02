@@ -213,18 +213,17 @@
 		</div>
 		
 	{:else if variant === 'inline'}
-		<form onsubmit={handleSubmit} class="form-group--inline">
+		<form onsubmit={handleSubmit} class="newsletter-inline-form">
 			<input
-				type="text"
+				type="email"
 				bind:value={email}
-				placeholder="Enter your email for updates"
-				class="form-input"
+				placeholder="your@email.com"
+				class="inline-input"
 				disabled={status === 'loading' || status === 'success'}
-
 			/>
 			<button 
 				type="submit" 
-				class="button-primary button-small"
+				class="inline-button"
 				disabled={status === 'loading' || status === 'success'}
 			>
 				{#if status === 'loading'}
@@ -236,6 +235,14 @@
 				{/if}
 			</button>
 		</form>
+		{#if message}
+			<div class={`inline-message ${status === 'error' ? 'inline-message--error' : 'inline-message--success'}`} in:fade>
+				{#if status === 'error'}
+					<AlertCircle class="w-4 h-4 flex-shrink-0" />
+				{/if}
+				{message}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -256,11 +263,11 @@
 		border-radius: var(--radius-lg);
 		padding: 2rem;
 		box-shadow: var(--shadow-sm);
+		max-width: 28rem;
+		margin: 0 auto;
 	}
 	
 	.newsletter-content {
-		max-width: 28rem;
-		margin: 0 auto;
 		text-align: center;
 	}
 	
@@ -345,6 +352,101 @@
 		gap: 0.75rem;
 	}
 	
+	/* Inline Variant */
+	.newsletter-inline-form {
+		display: flex;
+		gap: 0.5rem;
+		max-width: 32rem;
+		width: 100%;
+		margin: 0 auto;
+	}
+
+	.inline-input {
+		flex: 1;
+		padding: 0.875rem 1.25rem;
+		border: 2px solid var(--border-primary);
+		border-radius: 0.75rem;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 1rem;
+		transition: all 0.2s ease;
+	}
+
+	.inline-input:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px rgba(var(--color-primary-500-rgb), 0.1);
+	}
+
+	.inline-input::placeholder {
+		color: var(--text-tertiary);
+	}
+
+	.inline-button {
+		padding: 0.875rem 2rem;
+		background: var(--color-primary-600);
+		color: white;
+		border: 2px solid var(--color-primary-600);
+		border-radius: 0.75rem;
+		font-weight: 600;
+		font-size: 1rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 8rem;
+	}
+
+	.inline-button:hover:not(:disabled) {
+		background: var(--color-primary-700);
+		border-color: var(--color-primary-700);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(var(--color-primary-500-rgb), 0.3);
+	}
+
+	.inline-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.inline-message {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		max-width: 32rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.inline-message--success {
+		background: var(--color-success-50);
+		color: var(--color-success-700);
+		border: 1px solid var(--color-success-200);
+	}
+
+	.inline-message--error {
+		background: var(--color-danger-50);
+		color: var(--color-danger-700);
+		border: 1px solid var(--color-danger-200);
+	}
+
+	/* Dark mode support for inline variant */
+	:root[data-theme='dark'] .inline-message--success {
+		background: rgba(var(--color-success-500-rgb), 0.1);
+		border-color: rgba(var(--color-success-500-rgb), 0.3);
+	}
+
+	:root[data-theme='dark'] .inline-message--error {
+		background: rgba(var(--color-danger-500-rgb), 0.1);
+		border-color: rgba(var(--color-danger-500-rgb), 0.3);
+	}
+
 	/* Mobile Responsive */
 	@media (max-width: 640px) {
 		.newsletter-signup--default {
@@ -357,6 +459,15 @@
 		
 		.newsletter-description {
 			font-size: 0.875rem;
+		}
+
+		.newsletter-inline-form {
+			flex-direction: column;
+			max-width: 100%;
+		}
+
+		.inline-button {
+			width: 100%;
 		}
 	}
 	

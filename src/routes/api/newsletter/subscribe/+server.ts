@@ -32,8 +32,35 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		// Add to Resend Audience for email campaigns
 		if (resend && env.RESEND_AUDIENCE_ID) {
 			try {
+				// First, check if the contact already exists
+				// Resend doesn't prevent duplicates, so we need to check manually
+				const normalizedEmail = email.toLowerCase();
+				
+				// Try to list contacts and check if email exists
+				try {
+					const { data: contacts } = await resend.contacts.list({
+						audienceId: env.RESEND_AUDIENCE_ID
+					});
+					
+					const existingContact = contacts?.data?.find((contact: any) => 
+						contact.email?.toLowerCase() === normalizedEmail
+					);
+					
+					if (existingContact) {
+						console.log(`ℹ️ ${email} already in audience - skipping`);
+						return json({ 
+							success: true, 
+							message: 'You\'re already subscribed! Thanks for your interest.' 
+						});
+					}
+				} catch (listError) {
+					console.warn('Could not check existing contacts, proceeding with creation:', listError);
+					// Continue to create if we can't check
+				}
+				
+				// Email doesn't exist, create it
 				await resend.contacts.create({
-					email: email.toLowerCase(),
+					email: normalizedEmail,
 					audienceId: env.RESEND_AUDIENCE_ID,
 					unsubscribed: false,
 					firstName: email.split('@')[0] // Use email prefix as name
@@ -41,17 +68,8 @@ export const POST: RequestHandler = async ({ request, url }) => {
 				
 				console.log(`✅ Added ${email} to newsletter audience`);
 			} catch (resendError: any) {
-				// Check if email already exists in audience
-				if (resendError?.message?.includes('already exists') || resendError?.message?.includes('Contact already')) {
-					console.log(`ℹ️ ${email} already in audience`);
-					return json({ 
-						success: true, 
-						message: 'You\'re already on our waitlist! We\'ll notify you when we launch in Q1 2026.' 
-					});
-				}
-				
-				console.warn('Failed to add to Resend audience:', resendError);
-				// Don't fail the request if Resend fails
+				console.warn('⚠️ Failed to add to Resend audience:', resendError);
+				// Don't fail the request if Resend fails - continue to success
 			}
 		} else {
 			console.warn('⚠️ Resend not configured - skipping audience addition');
@@ -59,7 +77,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		
 		return json({ 
 			success: true, 
-			message: 'You\'re on the waitlist! We\'ll notify you when we launch in Q1 2026.' 
+			message: 'Thanks for subscribing! Check your inbox for updates.' 
 		});
 		
 	} catch (error) {

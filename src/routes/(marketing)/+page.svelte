@@ -171,15 +171,19 @@
 	</div>
 </section>
 
-<!-- Newsletter Signup / Final CTA -->
-<section id="newsletter" class="py-12 sm:py-16">
+<!-- Newsletter Banner -->
+<section id="newsletter" class="newsletter-banner">
 	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<NewsletterSignup 
-			title="Miss Beta 2? Join the Waitlist"
-			description="Get notified when we launch publicly in March 2026. Be among the first to try Zaur at public launch."
-			buttonText="Join Public Launch Waitlist"
-			apiEndpoint="/api/newsletter/subscribe"
-		/>
+		<div class="newsletter-banner-content">
+			<div class="newsletter-banner-text">
+				<h3 class="newsletter-banner-title">Stay Updated</h3>
+				<p class="newsletter-banner-description">Get the latest news and updates delivered to your inbox.</p>
+			</div>
+			<NewsletterSignup 
+				variant="inline"
+				apiEndpoint="/api/newsletter/subscribe"
+			/>
+		</div>
 	</div>
 </section>
 
@@ -233,6 +237,47 @@
 			);
 		position: relative;
 		overflow: hidden;
+	}
+	
+	/* Newsletter Banner */
+	.newsletter-banner {
+		background: var(--bg-secondary);
+		border-top: 1px solid var(--border-primary);
+		border-bottom: 1px solid var(--border-primary);
+		padding: 4rem 0;
+	}
+
+	.newsletter-banner-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+		text-align: center;
+	}
+
+	.newsletter-banner-text {
+		max-width: 600px;
+	}
+
+	.newsletter-banner-title {
+		font-size: 2rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 0.75rem;
+	}
+
+	.newsletter-banner-description {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	@media (min-width: 768px) {
+		.newsletter-banner {
+			padding: 5rem 0;
+		}
 	}
 	
 	/* Dark mode support */
