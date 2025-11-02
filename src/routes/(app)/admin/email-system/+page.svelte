@@ -16,6 +16,7 @@
 	import History from 'lucide-svelte/icons/history';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Clock from 'lucide-svelte/icons/clock';
+	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 
 	// State
 	let activeTab = $state<'test' | 'announcement' | 'whatsapp' | 'history'>('test');
@@ -30,10 +31,10 @@
 	let announcementSubject = $state('');
 	let announcementHeading = $state('');
 	let announcementMessage = $state('');
-	let announcementCTA = $state('');
-	let announcementCTAUrl = $state('');
-	let announcementFooter = $state('');
-	let announcementTarget = $state<'all' | 'active' | 'beta' | 'specific' | 'custom'>('specific');
+	let announcementCTA = $state('Learn More');
+	let announcementCTAUrl = $state('https://zaur.app');
+	let announcementFooter = $state("Questions or concerns? nom@zaur.app — I'm here to help!");
+	let announcementTarget = $state<'all' | 'active' | 'beta' | 'beta_1' | 'specific' | 'custom'>('specific');
 	let specificEmail = $state('');
 	let selectedUserIds = $state<Set<string>>(new Set());
 	let showAdvancedOptions = $state(false);
@@ -71,6 +72,16 @@
 	}));
 
 	let allUsers = $derived($usersQuery.data || []);
+
+	// Target options for CustomSelect (must be after allUsers is defined)
+	let targetOptions = $derived([
+		{ value: 'specific', label: `Specific Email Address` },
+		{ value: 'beta_1', label: `Beta 1 Users (${allUsers.filter((u: any) => u.betaGroup === 'beta_1').length})` },
+		{ value: 'beta', label: `Beta Testers (${allUsers.filter((u: any) => u.earlyAccessMember).length})` },
+		{ value: 'active', label: `Active Users (${allUsers.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0).length})` },
+		{ value: 'all', label: `All Users (${allUsers.length})` },
+		{ value: 'custom', label: 'Custom Selection' }
+	]);
 	
 	// Fetch sent announcements for the current subject
 	let sentAnnouncementsQuery = $derived(createQuery({
@@ -125,6 +136,8 @@
 		// Apply target filter
 		if (announcementTarget === 'active') {
 			users = users.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0);
+		} else if (announcementTarget === 'beta_1') {
+			users = users.filter((u: any) => u.betaGroup === 'beta_1');
 		} else if (announcementTarget === 'beta') {
 			users = users.filter((u: any) => u.earlyAccessMember);
 		}
@@ -245,7 +258,7 @@
 				recipientFilter = { userIds: Array.from(validSelectedUserIds) };
 			} else if (announcementTarget === 'custom') {
 				recipientFilter = { userIds: Array.from(validSelectedUserIds) };
-			} else if (announcementTarget === 'active' || announcementTarget === 'beta') {
+			} else if (announcementTarget === 'active' || announcementTarget === 'beta' || announcementTarget === 'beta_1') {
 				recipientFilter = { type: announcementTarget };
 			}
 
@@ -464,239 +477,294 @@
 	<!-- Send Announcement Tab -->
 	{#if activeTab === 'announcement'}
 		<div class="tab-content">
-			<div class="section-card">
-				<div class="section-header">
-					<Megaphone class="w-5 h-5 text-primary" />
-					<h2>Send Announcement</h2>
-				</div>
-
-			<div class="form-group">
-				<label for="target">Send To *</label>
-				<select id="target" bind:value={announcementTarget}>
-					<option value="specific">Specific Email Address</option>
-					<option value="beta">Beta Testers ({allUsers.filter((u: any) => u.earlyAccessMember).length})</option>
-					<option value="active">Active Users ({allUsers.filter((u: any) => u.tourCount > 0 || u.bookingCount > 0).length})</option>
-					<option value="all">All Users ({allUsers.length})</option>
-					<option value="custom">Custom Selection</option>
-				</select>
-				<p class="help-text">
-					{#if announcementTarget === 'specific'}
-						Send to a single email address (useful for testing)
-					{:else if announcementTarget === 'beta'}
-						Send to all beta testers / early access members
-					{:else if announcementTarget === 'active'}
-						Send to users who have created tours or made bookings
-					{:else if announcementTarget === 'all'}
-						Send to all registered users
-					{:else if announcementTarget === 'custom'}
-						Manually select recipients from the list below
-					{/if}
-				</p>
-			</div>
-
-			{#if announcementTarget === 'specific'}
-				<div class="form-group">
-					<label for="specific-email">Recipient Email *</label>
-					<input 
-						type="email" 
-						id="specific-email" 
-						bind:value={specificEmail}
-						placeholder="e.g., b.dymet@gmail.com"
-					/>
-					<p class="help-text">Enter the email address to send to</p>
-				</div>
-			{/if}
-
-			{#if announcementTarget !== 'specific' && filteredUsers.length > 0}
-				<div class="recipients-preview">
-					<div class="recipients-header">
-						<Users class="w-4 h-4" />
-						<span>
-							{#if selectedUserIds.size > 0}
-								{selectedUserIds.size} selected
-							{:else}
-								{filteredUsers.length} recipients
-							{/if}
-							{#if alreadySentCount > 0}
-								<span class="sent-badge">({alreadySentCount} already sent)</span>
-							{/if}
-						</span>
-						<button 
-							class="btn-link"
-							onclick={() => {
-								// Select only unsent users
-								if (selectedUserIds.size > 0) {
-									selectedUserIds = new Set();
-								} else {
-									selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
-								}
-							}}
-						>
-							{selectedUserIds.size > 0 ? 'Deselect All' : 'Select All Unsent'}
-						</button>
-						{#if alreadySentCount > 0 && unsentUsers.length > 0}
-							<button 
-								class="btn-link"
-								onclick={() => {
-									// Select users who didn't receive the announcement
-									selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
-								}}
-							>
-								Select {unsentUsers.length} who didn't receive it
-							</button>
-						{/if}
+			<div class="announcement-form-card">
+				<div class="form-header">
+					<div class="form-header-icon">
+						<Megaphone class="w-6 h-6" />
 					</div>
-					<div class="recipients-list">
-						{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 10) as user}
-							{@const isSent = sentUserIds.has(user.id)}
-							<div class="recipient-item {isSent ? 'already-sent' : ''}">
-								<input 
-									type="checkbox" 
-									checked={selectedUserIds.has(user.id)}
-									disabled={isSent}
-									onchange={(e) => {
-										const checked = (e.target as HTMLInputElement).checked;
-										if (checked) {
-											selectedUserIds = new Set([...selectedUserIds, user.id]);
-										} else {
-											selectedUserIds = new Set([...selectedUserIds].filter(id => id !== user.id));
-										}
-									}}
-								/>
-								<div class="recipient-info">
-									<strong>{user.name}</strong>
-									<span class="email">{user.email}</span>
-									{#if user.earlyAccessMember}
-										<span class="badge beta">Beta</span>
+					<div class="form-header-content">
+						<h2>Send Announcement</h2>
+						<p>Compose and send announcements to your users</p>
+					</div>
+				</div>
+
+				<!-- Recipients Section -->
+				<div class="form-section">
+					<div class="section-label">
+						<Users class="w-4 h-4" />
+						<span>Recipients</span>
+					</div>
+					
+					<div class="form-group-enhanced">
+						<label for="target">Send To *</label>
+						<CustomSelect
+							bind:value={announcementTarget}
+							options={targetOptions}
+							placeholder="Select recipient group..."
+							class="full-width"
+						/>
+						<p class="help-text-enhanced">
+							{#if announcementTarget === 'specific'}
+								Send to a single email address (useful for testing)
+							{:else if announcementTarget === 'beta_1'}
+								Send to Beta 1 users only (founding members with 30% lifetime discount)
+							{:else if announcementTarget === 'beta'}
+								Send to all beta testers / early access members (Beta 1 + Beta 2)
+							{:else if announcementTarget === 'active'}
+								Send to users who have created tours or made bookings
+							{:else if announcementTarget === 'all'}
+								Send to all registered users
+							{:else if announcementTarget === 'custom'}
+								Manually select recipients from the list below
+							{/if}
+						</p>
+					</div>
+
+					{#if announcementTarget === 'specific'}
+						<div class="form-group-enhanced">
+							<label for="specific-email">Recipient Email *</label>
+							<input 
+								type="email" 
+								id="specific-email" 
+								bind:value={specificEmail}
+								placeholder="e.g., b.dymet@gmail.com"
+								class="form-input-enhanced"
+							/>
+							<p class="help-text-enhanced">Enter the email address to send to</p>
+						</div>
+					{/if}
+
+					{#if announcementTarget !== 'specific' && filteredUsers.length > 0}
+						<div class="recipients-preview-enhanced">
+							<div class="recipients-header-enhanced">
+								<div class="recipients-count">
+									<Users class="w-4 h-4" />
+									<span class="count-text">
+										{#if selectedUserIds.size > 0}
+											{selectedUserIds.size} selected
+										{:else}
+											{filteredUsers.length} recipients
+										{/if}
+									</span>
+									{#if alreadySentCount > 0}
+										<span class="sent-badge">({alreadySentCount} already sent)</span>
 									{/if}
-									{#if user.tourCount > 0}
-										<span class="badge">{user.tourCount} tours</span>
-									{/if}
-									{#if isSent}
-										<span class="badge sent">✓ Sent</span>
+								</div>
+								<div class="recipients-actions">
+									<button 
+										class="btn-action"
+										onclick={() => {
+											if (selectedUserIds.size > 0) {
+												selectedUserIds = new Set();
+											} else {
+												selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
+											}
+										}}
+									>
+										{selectedUserIds.size > 0 ? 'Deselect All' : 'Select All Unsent'}
+									</button>
+									{#if alreadySentCount > 0 && unsentUsers.length > 0}
+										<button 
+											class="btn-action"
+											onclick={() => {
+												selectedUserIds = new Set(unsentUsers.map((u: any) => u.id));
+											}}
+										>
+											Select {unsentUsers.length} who didn't receive it
+										</button>
 									{/if}
 								</div>
 							</div>
-						{/each}
-						{#if !showAdvancedOptions && filteredUsers.length > 10}
-							<button 
-								class="btn-link show-more"
-								onclick={() => showAdvancedOptions = true}
-							>
-								Show all {filteredUsers.length} recipients
-							</button>
-						{/if}
-						{#if showAdvancedOptions && filteredUsers.length > 10}
-							<button 
-								class="btn-link show-more"
-								onclick={() => showAdvancedOptions = false}
-							>
-								Show less
-							</button>
-						{/if}
+							<div class="recipients-list-enhanced">
+								{#each filteredUsers.slice(0, showAdvancedOptions ? undefined : 10) as user}
+									{@const isSent = sentUserIds.has(user.id)}
+									<div class="recipient-item-enhanced {isSent ? 'already-sent' : ''}">
+										<input 
+											type="checkbox" 
+											checked={selectedUserIds.has(user.id)}
+											disabled={isSent}
+											onchange={(e) => {
+												const checked = (e.target as HTMLInputElement).checked;
+												if (checked) {
+													selectedUserIds = new Set([...selectedUserIds, user.id]);
+												} else {
+													selectedUserIds = new Set([...selectedUserIds].filter(id => id !== user.id));
+												}
+											}}
+											class="recipient-checkbox"
+										/>
+										<div class="recipient-info-enhanced">
+											<div class="recipient-name-row">
+												<strong>{user.name}</strong>
+												<div class="recipient-badges">
+													{#if user.betaGroup === 'beta_1'}
+														<span class="badge beta-1">Beta 1</span>
+													{:else if user.betaGroup === 'beta_2'}
+														<span class="badge beta-2">Beta 2</span>
+													{/if}
+													{#if user.tourCount > 0}
+														<span class="badge">{user.tourCount} tours</span>
+													{/if}
+													{#if isSent}
+														<span class="badge sent">✓ Sent</span>
+													{/if}
+												</div>
+											</div>
+											<span class="email">{user.email}</span>
+										</div>
+									</div>
+								{/each}
+								{#if !showAdvancedOptions && filteredUsers.length > 10}
+									<button 
+										class="btn-action show-more-btn"
+										onclick={() => showAdvancedOptions = true}
+									>
+										Show all {filteredUsers.length} recipients
+									</button>
+								{/if}
+								{#if showAdvancedOptions && filteredUsers.length > 10}
+									<button 
+										class="btn-action show-more-btn"
+										onclick={() => showAdvancedOptions = false}
+									>
+										Show less
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Content Section -->
+				<div class="form-section">
+					<div class="section-label">
+						<FileText class="w-4 h-4" />
+						<span>Email Content</span>
+					</div>
+					
+					<div class="form-grid">
+						<div class="form-group-enhanced">
+							<label for="subject">Email Subject *</label>
+							<input 
+								type="text" 
+								id="subject" 
+								bind:value={announcementSubject}
+								placeholder="e.g., Beta 2 is open (and your pricing is locked forever 🎉)"
+								class="form-input-enhanced"
+							/>
+						</div>
+
+						<div class="form-group-enhanced">
+							<label for="heading">Email Heading *</label>
+							<input 
+								type="text" 
+								id="heading" 
+								bind:value={announcementHeading}
+								placeholder="e.g., Beta 2 is open (and your pricing is locked forever 🎉)"
+								class="form-input-enhanced"
+							/>
+						</div>
+					</div>
+
+					<div class="form-group-enhanced">
+						<label for="message">Message *</label>
+						<textarea 
+							id="message" 
+							bind:value={announcementMessage}
+							placeholder="Write your announcement message here... Use double line breaks for paragraphs."
+							rows="10"
+							class="form-input-enhanced"
+						></textarea>
+						<p class="help-text-enhanced">Supports paragraphs (double line break) and line breaks</p>
 					</div>
 				</div>
-			{/if}
 
-				<div class="form-group">
-					<label for="subject">Email Subject *</label>
-					<input 
-						type="text" 
-						id="subject" 
-						bind:value={announcementSubject}
-						placeholder="e.g., New Features Released!"
-					/>
-				</div>
-
-				<div class="form-group">
-					<label for="heading">Email Heading *</label>
-					<input 
-						type="text" 
-						id="heading" 
-						bind:value={announcementHeading}
-						placeholder="e.g., Exciting Updates for Your Tours"
-					/>
-				</div>
-
-				<div class="form-group">
-					<label for="message">Message *</label>
-					<textarea 
-						id="message" 
-						bind:value={announcementMessage}
-						placeholder="Write your announcement message here... Use double line breaks for paragraphs."
-						rows="8"
-					></textarea>
-					<p class="help-text">Supports paragraphs (double line break) and line breaks</p>
-				</div>
-
-				<div class="form-row">
-					<div class="form-group">
-						<label for="cta-text">Call-to-Action Text (Optional)</label>
-						<input 
-							type="text" 
-							id="cta-text" 
-							bind:value={announcementCTA}
-							placeholder="e.g., Check It Out"
-						/>
-					</div>
-
-					<div class="form-group">
-						<label for="cta-url">Call-to-Action URL (Optional)</label>
-						<input 
-							type="url" 
-							id="cta-url" 
-							bind:value={announcementCTAUrl}
-							placeholder="https://zaur.app/..."
-						/>
-					</div>
-				</div>
-
-				<div class="form-group">
-					<label for="footer">Footer Text (Optional)</label>
-					<textarea 
-						id="footer" 
-						bind:value={announcementFooter}
-						placeholder="e.g., Questions? Reply to this email anytime."
-						rows="2"
-					></textarea>
-				</div>
-
-				<button 
-					class="btn-primary" 
-					onclick={sendAnnouncement}
-					disabled={isLoading || !announcementSubject || !announcementHeading || !announcementMessage}
-				>
-					{#if isLoading}
-						<Loader2 class="w-4 h-4 animate-spin" />
-					{:else}
+				<!-- Optional Section -->
+				<div class="form-section">
+					<div class="section-label">
 						<Send class="w-4 h-4" />
-					{/if}
-					Send Announcement
-				</button>
+						<span>Optional Settings</span>
+					</div>
+					
+					<div class="form-grid">
+						<div class="form-group-enhanced">
+							<label for="cta-text">Call-to-Action Text</label>
+							<input 
+								type="text" 
+								id="cta-text" 
+								bind:value={announcementCTA}
+								placeholder="e.g., Learn More"
+								class="form-input-enhanced"
+							/>
+							<p class="help-text-enhanced">Optional button text</p>
+						</div>
 
-		<div class="warning-box">
-			<AlertCircle class="w-5 h-5 text-warning" />
-			<div>
-				<strong>
-					{#if announcementTarget === 'specific'}
-						This will send 1 email to: {specificEmail || '(enter email above)'}
-					{:else if validSelectedUserIds.size > 0}
-						This will send emails to {validSelectedUserIds.size} selected user{validSelectedUserIds.size === 1 ? '' : 's'}!
-					{:else}
-						This will send emails to {filteredUsers.length} real user{filteredUsers.length === 1 ? '' : 's'}!
-					{/if}
-				</strong>
-				<p>
-					{#if validSelectedUserIds.size > 0}
-						You have manually selected {validSelectedUserIds.size} out of {filteredUsers.length} users.
-					{:else if announcementTarget !== 'specific'}
-						All {filteredUsers.length} {announcementTarget} users will receive this email.
-					{:else}
-						Make sure to review your message carefully before sending.
-					{/if}
-				</p>
-			</div>
-		</div>
+						<div class="form-group-enhanced">
+							<label for="cta-url">Call-to-Action URL</label>
+							<input 
+								type="url" 
+								id="cta-url" 
+								bind:value={announcementCTAUrl}
+								placeholder="https://zaur.app/..."
+								class="form-input-enhanced"
+							/>
+							<p class="help-text-enhanced">Link for the button</p>
+						</div>
+					</div>
+
+					<div class="form-group-enhanced">
+						<label for="footer">Footer Text</label>
+						<textarea 
+							id="footer" 
+							bind:value={announcementFooter}
+							placeholder="e.g., Questions? Reply to this email anytime."
+							rows="3"
+							class="form-input-enhanced"
+						></textarea>
+						<p class="help-text-enhanced">Optional footer message</p>
+					</div>
+				</div>
+
+				<!-- Summary & Action -->
+				<div class="form-section">
+					<div class="summary-box">
+						<AlertCircle class="w-5 h-5" />
+						<div class="summary-content">
+							<strong>
+								{#if announcementTarget === 'specific'}
+									This will send 1 email to: {specificEmail || '(enter email above)'}
+								{:else if validSelectedUserIds.size > 0}
+									This will send emails to {validSelectedUserIds.size} selected user{validSelectedUserIds.size === 1 ? '' : 's'}!
+								{:else}
+									This will send emails to {filteredUsers.length} real user{filteredUsers.length === 1 ? '' : 's'}!
+								{/if}
+							</strong>
+							<p>
+								{#if validSelectedUserIds.size > 0}
+									You have manually selected {validSelectedUserIds.size} out of {filteredUsers.length} users.
+								{:else if announcementTarget !== 'specific'}
+									All {filteredUsers.length} {announcementTarget} users will receive this email.
+								{:else}
+									Make sure to review your message carefully before sending.
+								{/if}
+							</p>
+						</div>
+					</div>
+					
+					<button 
+						class="btn-primary-enhanced" 
+						onclick={sendAnnouncement}
+						disabled={isLoading || !announcementSubject || !announcementHeading || !announcementMessage}
+					>
+						{#if isLoading}
+							<Loader2 class="w-5 h-5 animate-spin" />
+							Processing...
+						{:else}
+							<Send class="w-5 h-5" />
+							Send Announcement
+						{/if}
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -1073,7 +1141,7 @@
 		border: 1px solid var(--color-warning-200);
 	}
 
-	.info-box strong, .warning-box strong {
+	.info-box strong {
 		display: block;
 		margin-bottom: 0.25rem;
 		color: var(--text-primary);
@@ -1128,29 +1196,6 @@
 		background: var(--bg-secondary);
 	}
 
-	.recipient-item input[type="checkbox"] {
-		width: auto;
-		margin: 0;
-	}
-
-	.recipient-info {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-		flex: 1;
-	}
-
-	.recipient-info strong {
-		font-size: 0.875rem;
-		color: var(--text-primary);
-	}
-
-	.recipient-info .email {
-		font-size: 0.75rem;
-		color: var(--text-secondary);
-	}
-
 	.badge {
 		padding: 0.125rem 0.5rem;
 		background: var(--bg-secondary);
@@ -1186,9 +1231,6 @@
 		background: var(--bg-secondary);
 	}
 
-	.recipient-item.already-sent input[type="checkbox"] {
-		cursor: not-allowed;
-	}
 
 	.btn-link {
 		padding: 0;
@@ -1497,6 +1539,348 @@
 		color: var(--text-secondary);
 	}
 
+	/* Enhanced Announcement Form Styles */
+	.announcement-form-card {
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 1rem;
+		padding: 2rem;
+	}
+
+	.form-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 2rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 2px solid var(--border-primary);
+	}
+
+	.form-header-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 3rem;
+		height: 3rem;
+		background: var(--color-primary-100);
+		border-radius: 0.75rem;
+		color: var(--color-primary-600);
+	}
+
+	.form-header-content h2 {
+		margin: 0 0 0.25rem 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--text-primary);
+	}
+
+	.form-header-content p {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+	}
+
+	.form-section {
+		margin-bottom: 2.5rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid var(--border-secondary);
+	}
+
+	.form-section:last-of-type {
+		border-bottom: none;
+		margin-bottom: 0;
+		padding-bottom: 0;
+	}
+
+	.section-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-secondary);
+	}
+
+
+	.form-group-enhanced {
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group-enhanced:last-child {
+		margin-bottom: 0;
+	}
+
+	.form-group-enhanced label {
+		display: block;
+		margin-bottom: 0.625rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.form-input-enhanced {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.625rem;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+		transition: all 0.2s ease;
+		font-family: inherit;
+	}
+
+	.form-input-enhanced:focus {
+		outline: none;
+		border-color: var(--color-primary-500);
+		box-shadow: 0 0 0 3px var(--color-primary-100);
+	}
+
+	.form-input-enhanced::placeholder {
+		color: var(--text-tertiary);
+	}
+
+	.help-text-enhanced {
+		margin: 0.5rem 0 0 0;
+		font-size: 0.75rem;
+		color: var(--text-tertiary);
+		line-height: 1.4;
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.full-width {
+		width: 100%;
+	}
+
+	/* Enhanced Recipients Preview */
+	.recipients-preview-enhanced {
+		margin-top: 1.5rem;
+		border: 1px solid var(--border-primary);
+		border-radius: 0.75rem;
+		overflow: hidden;
+		background: var(--bg-primary);
+	}
+
+	.recipients-header-enhanced {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1.25rem;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-primary);
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.recipients-count {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.count-text {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.recipients-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.btn-action {
+		padding: 0.5rem 1rem;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.5rem;
+		color: var(--color-primary-600);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+	}
+
+	.btn-action:hover {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-300);
+		color: var(--color-primary-700);
+	}
+
+	.recipients-list-enhanced {
+		max-height: 450px;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.recipient-item-enhanced {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		padding: 1rem 1.25rem;
+		border-bottom: 1px solid var(--border-secondary);
+		transition: background 0.15s ease;
+	}
+
+	.recipient-item-enhanced:last-child {
+		border-bottom: none;
+	}
+
+	.recipient-item-enhanced:hover:not(.already-sent) {
+		background: var(--bg-secondary);
+	}
+
+	.recipient-item-enhanced.already-sent {
+		opacity: 0.65;
+		background: var(--bg-secondary);
+	}
+
+	.recipient-checkbox {
+		margin-top: 0.125rem;
+		width: 1.125rem;
+		height: 1.125rem;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.recipient-info-enhanced {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.recipient-name-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-bottom: 0.25rem;
+		flex-wrap: wrap;
+	}
+
+	.recipient-name-row strong {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.recipient-badges {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.badge.beta-1 {
+		background: var(--color-primary-100);
+		border-color: var(--color-primary-400);
+		color: var(--color-primary-700);
+		font-weight: 600;
+	}
+
+	.badge.beta-2 {
+		background: var(--color-info-100);
+		border-color: var(--color-info-400);
+		color: var(--color-info-700);
+		font-weight: 600;
+	}
+
+	.recipient-info-enhanced .email {
+		display: block;
+		font-size: 0.8125rem;
+		color: var(--text-secondary);
+		margin-top: 0.125rem;
+		word-break: break-word;
+	}
+
+	.show-more-btn {
+		width: 100%;
+		padding: 0.875rem;
+		text-align: center;
+		border-top: 1px solid var(--border-primary);
+		border-radius: 0;
+		margin: 0;
+	}
+
+	/* Summary Box */
+	.summary-box {
+		display: flex;
+		gap: 1rem;
+		padding: 1.25rem;
+		background: var(--color-warning-50);
+		border: 1px solid var(--color-warning-200);
+		border-radius: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+
+	.summary-content {
+		flex: 1;
+	}
+
+	.summary-content strong {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-size: 0.9375rem;
+		color: var(--text-primary);
+	}
+
+	.summary-content p {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+
+	/* Enhanced Primary Button */
+	.btn-primary-enhanced {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		width: 100%;
+		padding: 1rem 2rem;
+		background: var(--color-primary-600);
+		color: white;
+		border: none;
+		border-radius: 0.75rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	.btn-primary-enhanced:hover:not(:disabled) {
+		background: var(--color-primary-700);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	}
+
+	.btn-primary-enhanced:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	.btn-primary-enhanced:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+	}
+
 	/* Mobile responsive */
 	@media (max-width: 768px) {
 		.header-content {
@@ -1516,8 +1900,40 @@
 			grid-template-columns: 1fr;
 		}
 
+		.form-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+
 		.section-card {
 			padding: 1.5rem;
+		}
+
+		.announcement-form-card {
+			padding: 1.5rem;
+		}
+
+		.form-header {
+			flex-direction: column;
+			text-align: center;
+		}
+
+		.form-header-icon {
+			margin: 0 auto;
+		}
+
+		.recipients-header-enhanced {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.recipients-actions {
+			width: 100%;
+			flex-direction: column;
+		}
+
+		.btn-action {
+			width: 100%;
 		}
 	}
 </style>

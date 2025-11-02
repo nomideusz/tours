@@ -59,6 +59,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         recipients = await db.select().from(users).where(eq(users.earlyAccessMember, true));
         break;
         
+      case 'beta_1':
+        // Beta 1 users only (founding members)
+        recipients = await db.select().from(users).where(eq(users.betaGroup, 'beta_1'));
+        break;
+        
       case 'plan':
         // Users with specific subscription plan
         if (!recipientFilter?.plan) {
