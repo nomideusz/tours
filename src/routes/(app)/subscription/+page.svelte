@@ -437,7 +437,7 @@
 							</p>
 							<p class="flex items-center gap-2">
 								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />
-								<span><strong>30% lifetime discount</strong> — €17.50/month (Essential) or €34.30/month (Premium) forever</span>
+								<span><strong>30% lifetime discount</strong> — €11.20/month (Essential) or €24.50/month (Premium) forever</span>
 							</p>
 							<p class="flex items-center gap-2">
 								<Check class="w-4 h-4 flex-shrink-0" style="color: var(--color-success-600);" />

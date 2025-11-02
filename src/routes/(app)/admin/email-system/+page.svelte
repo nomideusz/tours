@@ -274,33 +274,34 @@
 					...result
 				};
 
+				const allSent = result.sent === result.totalRecipients && (!result.failed || result.failed === 0);
+				
 				results = [{ 
 					time: new Date().toLocaleTimeString(), 
 					action: 'Send Announcement', 
-					status: 'success', 
-					message: `Successfully sent to ${result.sent} out of ${result.totalRecipients} recipients` 
+					status: allSent ? 'success' : 'error',
+					message: allSent 
+						? `Successfully sent to all ${result.totalRecipients} recipients`
+						: `Sent to ${result.sent} out of ${result.totalRecipients} recipients (${result.failed || 0} failed)`
 				}, ...results];
 				
 				// Show details modal
 				showSentDetailsModal = true;
 				
-				// Clear form
-				announcementSubject = '';
-				announcementHeading = '';
-				announcementMessage = '';
-				announcementCTA = '';
-				announcementCTAUrl = '';
-				announcementFooter = '';
+				// Preserve form fields even after success so user can review or resend
+				// All input values remain intact
 			} else {
 				throw new Error(result.error || 'Unknown error');
 			}
 		} catch (error) {
+			// On error, preserve all input values so user can retry without retyping
 			results = [{ 
 				time: new Date().toLocaleTimeString(), 
 				action: 'Send Announcement', 
 				status: 'error', 
 				message: error instanceof Error ? error.message : 'Unknown error' 
 			}, ...results];
+			// Form fields remain intact for retry
 		} finally {
 			isLoading = false;
 		}

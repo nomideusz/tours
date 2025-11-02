@@ -54,21 +54,25 @@ This document shows exactly what pricing is displayed for each cohort and plan c
 
 ### Essential Plan
 **Monthly:**
-- ~~€25~~ **€17.50/month**
+- **€11.20/month**
 - Badge: 30% OFF forever
+- *Note: Based on original base price of €16 (not current €25)*
 
 **Yearly:**
-- ~~€250~~ **€175/year**
+- **€109.20/year**
 - Badge: 30% OFF forever
+- *Note: Based on original base price with 2 free months built in*
 
 ### Premium Plan
 **Monthly:**
-- ~~€49~~ **€34.30/month**
+- **€24.50/month**
 - Badge: 30% OFF forever
+- *Note: Based on original base price of €35 (not current €49)*
 
 **Yearly:**
-- ~~€490~~ **€343/year**
+- **€310.80/year**
 - Badge: 30% OFF forever
+- *Note: Based on original base price with 2 free months built in*
 
 ---
 

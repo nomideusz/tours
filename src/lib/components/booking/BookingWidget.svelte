@@ -1079,6 +1079,9 @@
 			padding-bottom: 1rem;
 			/* iOS Safari scroll fix */
 			-webkit-overflow-scrolling: touch;
+			/* Ensure widget doesn't prevent page scrolling */
+			position: relative;
+			overflow: visible;
 		}
 		
 		/* Add extra padding when sticky footer is shown to prevent content overlap */

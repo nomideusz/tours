@@ -403,8 +403,17 @@
 
 <style>
 	.booking-page {
+		/* Use dvh instead of vh to fix iOS Safari viewport locking */
+		min-height: 100dvh;
+		/* Fallback for browsers that don't support dvh */
 		min-height: 100vh;
 		background: var(--bg-primary);
+		/* Ensure page can scroll on mobile */
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		/* Prevent viewport height locking on iOS */
+		position: relative;
+		height: auto;
 	}
 	
 	.booking-container {
@@ -554,13 +563,26 @@
 	
 	/* Mobile experience improvements */
 	@media (max-width: 640px) {
+		.booking-page {
+			/* iOS Safari fix: ensure page can scroll */
+			position: relative;
+			height: auto;
+			min-height: -webkit-fill-available; /* iOS Safari fix */
+			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+		
 		.booking-container {
 			padding: 0.5rem 1rem 2rem 1rem; /* Normal padding when footer is visible */
+			/* Ensure container allows scrolling */
+			position: relative;
+			min-height: auto;
+			height: auto;
 		}
 		
 		/* When sticky footer is visible (footer is hidden), add more bottom space */
 		.booking-page.has-sticky-footer .booking-container {
-			padding-bottom: 6rem; /* Space for sticky footer (footer is hidden) */
+			padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0)); /* Space for sticky footer with safe area */
 		}
 		
 		.booking-layout {

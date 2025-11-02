@@ -16,21 +16,21 @@
 			discount: '30% off forever',
 			essential: {
 				original: 25,
-				discounted: 17.50,
-				savings: 7.50
+				discounted: 11.20,
+				savings: 13.80
 			},
 			premium: {
 				original: 49,
-				discounted: 34.30,
-				savings: 14.70
+				discounted: 24.50,
+				savings: 24.50
 			},
 			yearSavings: {
-				essential: 90,
-				premium: 176.40
+				essential: 140.80, // €250/year - €109.20/year
+				premium: 179.20  // €490/year - €310.80/year
 			},
 			fiveYearSavings: {
-				essential: 750, // 12 months free (€300) + 48 months at €7.50/mo savings (€360) = €660, rounded to €750
-				premium: 1293  // 12 months free (€588) + 48 months at €14.70/mo savings (€705.60) = €1293.60, rounded to €1293
+				essential: 963, // 12 months free (€300 value) + 48 months at €11.20/month = €537.60 spent vs €1,500 public = €962.40 savings
+				premium: 1179  // 12 months free (€588 value) + 48 months at €24.50/month = €1,176 spent vs €2,450 public = €1,274 savings
 			},
 			status: 'Closed',
 			statusColor: 'var(--text-tertiary)'

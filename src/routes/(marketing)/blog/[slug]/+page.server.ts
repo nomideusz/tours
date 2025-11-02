@@ -39,7 +39,7 @@ const blogPosts = {
 			<h2>Beta 1 vs Beta 2: What's Different?</h2>
 			<p>Our Beta 1 members (50 guides) received an even better deal as our earliest believers:</p>
 			<ul>
-				<li><strong>Beta 1:</strong> 1 year free + 30% lifetime discount (€17.50 or €34.30/month)</li>
+				<li><strong>Beta 1:</strong> 1 year free + 30% lifetime discount (€11.20 or €24.50/month)</li>
 				<li><strong>Beta 2:</strong> 4 months free + 20% lifetime discount (€20 or €39/month)</li>
 			</ul>
 			<p>Beta 2 is still an incredible deal – you'll save <strong>€320-€664 over 5 years</strong> compared to public launch pricing.</p>
