@@ -1,16 +1,20 @@
 <script lang="ts">
 	/**
-	 * Meeting Point Card with Place Photos
+	 * Meeting Point Card with Place Photos and Street View
 	 * 
-	 * Displays meeting point information with photos from Places API
+	 * Displays meeting point information with photos from Places API and Street View panorama
 	 * Helps customers easily identify where to meet the tour guide
 	 */
 	import { onMount } from 'svelte';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Image from 'lucide-svelte/icons/image';
 	import ExternalLink from 'lucide-svelte/icons/external-link';
+	import Camera from 'lucide-svelte/icons/camera';
+	import MapIcon from 'lucide-svelte/icons/map';
 	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
 	import { getCachedPhotos, cachePhotos, cleanPhotoCache } from '$lib/utils/place-photo-cache.js';
+	import StreetViewPanorama from './booking/StreetViewPanorama.svelte';
+	import { env } from '$env/dynamic/public';
 	
 	interface Props {
 		locationName: string;
@@ -19,6 +23,8 @@
 		coordinates?: LocationCoordinates;
 		showPhotos?: boolean;
 		photoCount?: number;
+		showStreetView?: boolean;
+		googleMapsApiKey?: string;
 	}
 	
 	let {
@@ -27,13 +33,21 @@
 		placeId = null,
 		coordinates,
 		showPhotos = true,
-		photoCount = 3
+		photoCount = 3,
+		showStreetView = true,
+		googleMapsApiKey = ''
 	}: Props = $props();
 	
 	let photos = $state<string[]>([]);
 	let loadingPhotos = $state(false);
 	let photoError = $state(false);
 	let lastFetchedPlaceId = $state<string | null>(null);
+	
+	// View toggle state: 'photos' or 'streetview'
+	// Default to streetview if coordinates available, otherwise photos
+	let activeView = $state<'photos' | 'streetview'>(
+		coordinates && showStreetView ? 'streetview' : 'photos'
+	);
 	
 	// Fetch place photos when component mounts
 	onMount(() => {
@@ -81,7 +95,8 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					placeId,
-					fields: ['photos'] // Only request photos to minimize cost
+					// Request photos plus minimal essential fields
+					fields: ['id', 'displayName', 'photos']
 				})
 			});
 			
@@ -163,8 +178,50 @@
 		{/if}
 	</div>
 	
+	<!-- View Toggle (if both photos and street view available) -->
+	{#if showPhotos && showStreetView && placeId && coordinates && (photos.length > 0 || loadingPhotos)}
+		<div class="view-toggle">
+			<button
+				type="button"
+				class="toggle-btn"
+				class:active={activeView === 'streetview'}
+				onclick={() => activeView = 'streetview'}
+			>
+				<MapIcon class="w-4 h-4" />
+				Street View
+			</button>
+			<button
+				type="button"
+				class="toggle-btn"
+				class:active={activeView === 'photos'}
+				onclick={() => activeView = 'photos'}
+			>
+				<Camera class="w-4 h-4" />
+				Photos
+			</button>
+		</div>
+	{:else if showPhotos && placeId && !coordinates && (photos.length > 0 || loadingPhotos)}
+		<!-- No toggle needed - only photos available -->
+		<div class="view-label">
+			<Camera class="w-4 h-4" style="color: var(--text-tertiary);" />
+			<span class="text-sm" style="color: var(--text-tertiary);">Location Photos</span>
+		</div>
+	{/if}
+	
+	<!-- Street View Panorama -->
+	{#if showStreetView && activeView === 'streetview' && coordinates}
+		<div class="street-view-section">
+			<StreetViewPanorama
+				{coordinates}
+				{locationName}
+				googleMapsApiKey={googleMapsApiKey || env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+				height="300px"
+			/>
+		</div>
+	{/if}
+	
 	<!-- Photos Grid -->
-	{#if showPhotos && placeId}
+	{#if showPhotos && activeView === 'photos' && placeId}
 		<div class="photos-section">
 			{#if loadingPhotos}
 				<div class="photos-loading">
@@ -217,6 +274,56 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+	
+	/* View Toggle */
+	.view-toggle {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.25rem;
+		background: var(--bg-secondary);
+		border-radius: 0.5rem;
+	}
+	
+	.toggle-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border-radius: 0.375rem;
+		border: none;
+		background: transparent;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.toggle-btn:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+	}
+	
+	.toggle-btn.active {
+		background: var(--bg-primary);
+		color: var(--color-primary-600);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+	
+	/* Street View Section */
+	.street-view-section {
+		width: 100%;
+	}
+	
+	/* View Label (when no toggle) */
+	.view-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0;
 	}
 	
 	.meeting-point-header {
@@ -335,27 +442,6 @@
 		color: var(--text-secondary);
 	}
 	
-	/* Maps Link */
-	.maps-link {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		border-radius: 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-primary-600);
-		background: var(--color-primary-50);
-		border: 1px solid var(--color-primary-200);
-		text-decoration: none;
-		transition: all 0.2s ease;
-	}
-	
-	.maps-link:hover {
-		background: var(--color-primary-100);
-		transform: translateY(-1px);
-	}
 	
 	/* Mobile Optimizations */
 	@media (max-width: 640px) {

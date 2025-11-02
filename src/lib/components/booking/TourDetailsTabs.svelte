@@ -7,12 +7,19 @@
 	import Markdown from '$lib/components/ui/Markdown.svelte';
 	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
 	import { formatShortAddress } from '$lib/utils/location.js';
+	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
 	
 	interface Props {
 		tour: Tour;
+		coordinates?: LocationCoordinates | null;
+		googleMapsApiKey?: string;
 	}
 	
-	let { tour }: Props = $props();
+	let { 
+		tour,
+		coordinates = null,
+		googleMapsApiKey = ''
+	}: Props = $props();
 </script>
 
 <div class="tour-details">
@@ -28,13 +35,16 @@
 	{#if tour.location}
 		<section class="meeting-point-section">
 			{#if (tour as any).locationPlaceId}
-				<!-- Rich card with photos -->
+				<!-- Rich card with photos and Street View -->
 				<MeetingPointCard
 					locationName={formatShortAddress(tour.location)}
 					locationAddress={tour.location}
 					placeId={(tour as any).locationPlaceId}
+					coordinates={coordinates}
 					showPhotos={true}
+					showStreetView={true}
 					photoCount={3}
+					{googleMapsApiKey}
 				/>
 			{:else}
 				<!-- Simple fallback for locations without Place ID -->

@@ -1950,8 +1950,8 @@ Key extracted components:
 						</div>
 					</div>
 				{:else}
-					<!-- Hidden input for draft tours - always default to public listing when activated -->
-					<input type="hidden" name="publicListing" value="true" />
+					<!-- Hidden input for draft tours - preserve current publicListing setting -->
+					<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
 				{/if}
 			</div>
 		{/if}

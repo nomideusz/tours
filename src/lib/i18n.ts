@@ -270,6 +270,22 @@ export const language: Writable<Language> = writable<Language>(initLang());
 
 // Helper function to get translated text
 export function t(key: string, lang: Language): string {
-  const result: TranslationContent = translations[lang] as TranslationContent;
-  return (result[key as keyof TranslationContent] as string) || key;
+  const keys = key.split('.');
+  let result: any = translations[lang];
+
+  for (const k of keys) {
+    if (result && result[k] !== undefined) {
+      result = result[k];
+    } else {
+      return key; // Return the key if translation is missing
+    }
+  }
+
+  // Handle special variables like {year}
+  if (typeof result === 'string') {
+    const yearStr = String(new Date().getFullYear());
+    result = result.replace('{year}', yearStr);
+  }
+
+  return result;
 } 

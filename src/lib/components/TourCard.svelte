@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getTourDisplayPriceFormattedWithCurrency, formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import { truncateMarkdown } from '$lib/utils/markdown-helpers.js';
+	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';
@@ -110,7 +111,7 @@
 		<div class="tour-details">
 			<div class="detail-item">
 				<MapPin class="w-4 h-4" />
-				<span>{tour.location || 'Location TBD'}</span>
+				<span>{formatShortAddress(tour.location) || 'Location TBD'}</span>
 			</div>
 			{#if tour.duration}
 				<div class="detail-item">

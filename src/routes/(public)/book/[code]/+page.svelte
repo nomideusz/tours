@@ -24,7 +24,7 @@
 	import TourDetailsTabs from '$lib/components/booking/TourDetailsTabs.svelte';
 	import BookingWidget from '$lib/components/booking/BookingWidget.svelte';
 	import { calculateBookingPrice, STRIPE_FEES } from '$lib/utils/pricing-calculations.js';
-	import { getMapService } from '$lib/utils/map-integration.js';
+	import { defaultMapService } from '$lib/utils/map-integration.js';
 	import { env } from '$env/dynamic/public';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
@@ -267,8 +267,8 @@
 	let geocodingAttempted = $state<string | null>(null);
 	let showMapInHero = $state(false);
 	
-	// Geocode tour location only when needed (for weather or map)
-	// This defers the API call until user selects a time slot or clicks to show map
+	// Geocode tour location for Street View and weather
+	// Now happens immediately when tour loads (not deferred)
 	async function geocodeLocationIfNeeded() {
 		if (!tour?.location || 
 		    tourCoordinates || 
@@ -276,29 +276,39 @@
 		    geocodingAttempted === tour.location ||
 		    !browser || 
 		    !env.PUBLIC_GOOGLE_MAPS_API_KEY) {
+			console.log('🔍 Geocoding skipped:', {
+				hasLocation: !!tour?.location,
+				hasCoordinates: !!tourCoordinates,
+				isGeocoding: isGeocodingLocation,
+				attempted: geocodingAttempted === tour?.location,
+				hasBrowser: browser,
+				hasApiKey: !!env.PUBLIC_GOOGLE_MAPS_API_KEY
+			});
 			return;
 		}
 		
 		isGeocodingLocation = true;
 		geocodingAttempted = tour.location;
+		console.log('🗺️ Geocoding location for Street View:', tour.location);
 		
 		try {
-			const mapService = getMapService(env.PUBLIC_GOOGLE_MAPS_API_KEY);
-			const results = await mapService.searchLocations(tour.location);
+			const results = await defaultMapService.searchLocations(tour.location);
 			if (results.length > 0) {
 				tourCoordinates = results[0].coordinates;
-				console.log('📍 Geocoded tour location:', tour.location, '→', tourCoordinates);
+				console.log('✅ Geocoded tour location:', tour.location, '→', tourCoordinates);
+			} else {
+				console.warn('⚠️ No geocoding results for:', tour.location);
 			}
 		} catch (error) {
-			console.warn('Failed to geocode tour location:', error);
+			console.error('❌ Failed to geocode tour location:', error);
 		} finally {
 			isGeocodingLocation = false;
 		}
 	}
 	
-	// Geocode when user selects a time slot (for weather) or shows map
+	// Geocode when user selects a time slot (for weather), shows map, or when tour loads (for Street View)
 	$effect(() => {
-		if (selectedTimeSlot || showMapInHero) {
+		if (selectedTimeSlot || showMapInHero || (tour && tour.location)) {
 			geocodeLocationIfNeeded().catch(err => {
 				console.error('Geocoding effect error:', err);
 			});
@@ -340,7 +350,11 @@
 					
 					<!-- Tour Details - Desktop Only (hidden on mobile) -->
 					<div class="tour-details-section tour-details-desktop">
-						<TourDetailsTabs {tour} />
+						<TourDetailsTabs 
+							{tour} 
+							coordinates={tourCoordinates}
+							googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
+						/>
 					</div>
 				</div>
 				
@@ -377,7 +391,11 @@
 			
 			<!-- Tour Details - Mobile Only (below booking widget) -->
 			<div class="tour-details-mobile">
-				<TourDetailsTabs {tour} />
+				<TourDetailsTabs 
+					{tour} 
+					coordinates={tourCoordinates}
+					googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY}
+				/>
 			</div>
 		{/if}
 	</div>

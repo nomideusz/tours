@@ -5,7 +5,9 @@
 	import BookingDemoSection from '$lib/components/marketing/BookingDemoSection.svelte';
 	// import TravelRetroHero from '$lib/components/marketing/TravelRetroHero.svelte';
 	import PlatformShowcase from '$lib/components/marketing/PlatformShowcase.svelte';
+	import Photorealistic3DTiles from '$lib/components/marketing/Photorealistic3DTiles.svelte';
 	import HowItWorksSection from '$lib/components/marketing/HowItWorksSection.svelte';
+	import { env } from '$env/dynamic/public';
 	// import PricingSection from '$lib/components/marketing/PricingSection.svelte';
 	import BetaPricingSection from '$lib/components/marketing/BetaPricingSection.svelte';
 	// import BetaPricingComparison from '$lib/components/marketing/BetaPricingComparison.svelte';
@@ -112,6 +114,18 @@
 <!-- Booking Demo Section -->
 <section id="booking-demo" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
 		<BookingDemoSection />
+</section>
+
+<!-- 3D Destination Showcase -->
+<section id="3d-showcase" class="py-8 sm:py-12 lg:py-20" style="background: var(--bg-secondary);">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
+		<Photorealistic3DTiles 
+			googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+			height="600px"
+			autoRotate={false}
+			rotateInterval={15000}
+		/>
+	</div>
 </section>
 
 <!-- How it works with subtle texture -->

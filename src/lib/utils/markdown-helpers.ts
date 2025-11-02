@@ -9,6 +9,8 @@ export function stripMarkdown(text: string): string {
 	if (!text) return '';
 	
 	return text
+		// Remove HTML tags
+		.replace(/<[^>]*>/g, '')
 		// Remove headers
 		.replace(/^#{1,6}\s+/gm, '')
 		// Remove bold/italic
