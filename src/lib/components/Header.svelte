@@ -107,8 +107,9 @@
 				// Wait for the body scroll lock to be removed before scrolling
 				setTimeout(() => {
 					// Element exists on current page, scroll with offset for fixed header
-					// Header height is 3.5rem (56px) on mobile, 4.5rem (72px) on tablet, 5rem (80px) on desktop
-					const headerOffset = window.innerWidth < 640 ? 56 : window.innerWidth < 1024 ? 72 : 80;
+					// Use larger offset for better spacing, especially for "how-it-works" section
+					// Mobile: 8rem (128px), Tablet: 10rem (160px), Desktop: 12rem (192px)
+					const headerOffset = window.innerWidth < 640 ? 128 : window.innerWidth < 1024 ? 160 : 192;
 					const elementPosition = target.getBoundingClientRect().top;
 					const offsetPosition = elementPosition + window.scrollY - headerOffset;
 					

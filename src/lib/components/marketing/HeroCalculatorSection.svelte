@@ -112,7 +112,7 @@
 			<hr class="section-divider" aria-hidden="true" />
 			
 			<!-- How It Works - 3 Simple Steps -->
-			<div class="how-it-works-container">
+			<div id="how-it-works" class="how-it-works-container">
 				<div class="steps-grid">
 					<!-- Step 1 -->
 					<div class="step-card">
@@ -171,7 +171,7 @@
 			<hr class="section-divider" aria-hidden="true" />
 			
 			<!-- Calculator: Show What You're Losing -->
-			<div class="calculator-container" role="region" aria-labelledby="calculator-title">
+			<div id="calculator" class="calculator-container" role="region" aria-labelledby="calculator-title">
 				<div class="calculator-header">
 					<h2 id="calculator-title" class="calculator-title">
 						Calculate Your Savings
@@ -525,6 +525,23 @@
 		position: relative;
 		z-index: 1;
 		margin-bottom: 5rem;
+	}
+	
+	/* Scroll offset for anchor links to account for fixed header */
+	#how-it-works {
+		scroll-margin-top: 8rem;
+	}
+	
+	@media (min-width: 640px) {
+		#how-it-works {
+			scroll-margin-top: 10rem;
+		}
+	}
+	
+	@media (min-width: 1024px) {
+		#how-it-works {
+			scroll-margin-top: 12rem;
+		}
 	}
 	
 	.steps-grid {
