@@ -2631,4 +2631,37 @@ Key extracted components:
 			line-height: 1.7;
 		}
 	}
+	
+	/* Horizontal rule styling in editor */
+	:global(.tipex-description-editor .ProseMirror hr) {
+		border: none;
+		border-top: 2px solid var(--border-secondary);
+		margin: 1.5rem 0;
+		cursor: pointer;
+	}
+	
+	:global(.tipex-description-editor .ProseMirror hr:hover) {
+		border-top-color: var(--border-primary);
+	}
+	
+	/* Paragraph spacing for better readability */
+	:global(.tipex-description-editor .ProseMirror p) {
+		margin-bottom: 0.75rem;
+	}
+	
+	:global(.tipex-description-editor .ProseMirror p:last-child) {
+		margin-bottom: 0;
+	}
+	
+	/* Better spacing for headings after paragraphs */
+	:global(.tipex-description-editor .ProseMirror h2, 
+	        .tipex-description-editor .ProseMirror h3) {
+		margin-top: 1.5rem;
+		margin-bottom: 0.75rem;
+	}
+	
+	:global(.tipex-description-editor .ProseMirror h2:first-child, 
+	        .tipex-description-editor .ProseMirror h3:first-child) {
+		margin-top: 0;
+	}
 </style>

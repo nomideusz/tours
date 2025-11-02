@@ -10,6 +10,7 @@
 	import ListOrdered from 'lucide-svelte/icons/list-ordered';
 	import Link2 from 'lucide-svelte/icons/link-2';
 	import Unlink from 'lucide-svelte/icons/unlink';
+	import Minus from 'lucide-svelte/icons/minus';
 	
 	interface Props {
 		tipex: Editor;
@@ -29,31 +30,38 @@
 	// Check if commands can execute
 	let canExecute = $derived((command: string) => tipex?.can()[command as keyof ReturnType<typeof tipex.can>]() ?? false);
 	
-	function toggleBold() {
+	function toggleBold(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleBold().run();
 	}
 	
-	function toggleItalic() {
+	function toggleItalic(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleItalic().run();
 	}
 	
-	function toggleH2() {
+	function toggleH2(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleHeading({ level: 2 }).run();
 	}
 	
-	function toggleH3() {
+	function toggleH3(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleHeading({ level: 3 }).run();
 	}
 	
-	function toggleBulletList() {
+	function toggleBulletList(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleBulletList().run();
 	}
 	
-	function toggleOrderedList() {
+	function toggleOrderedList(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		tipex?.chain().focus().toggleOrderedList().run();
 	}
 	
-	function setLink() {
+	function setLink(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
 		if (isLinkActive) {
 			// Remove link
 			tipex?.chain().focus().unsetLink().run();
@@ -66,6 +74,12 @@
 			tipex?.chain().focus().setLink({ href: url, target: '_blank' }).run();
 		}
 	}
+	
+	function insertHorizontalRule(event: MouseEvent | TouchEvent) {
+		event.preventDefault();
+		// Use TipTap's built-in setHorizontalRule command from StarterKit
+		tipex?.chain().focus().setHorizontalRule().run();
+	}
 </script>
 
 <div class="tour-editor-controls">
@@ -76,6 +90,8 @@
 			class="control-btn"
 			class:active={isBoldActive}
 			onclick={toggleBold}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Bold"
 			title="Bold (Ctrl+B)"
 		>
@@ -87,6 +103,8 @@
 			class="control-btn"
 			class:active={isItalicActive}
 			onclick={toggleItalic}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Italic"
 			title="Italic (Ctrl+I)"
 		>
@@ -103,6 +121,8 @@
 			class="control-btn"
 			class:active={isH2Active}
 			onclick={toggleH2}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Heading 2"
 			title="Heading 2"
 		>
@@ -114,6 +134,8 @@
 			class="control-btn"
 			class:active={isH3Active}
 			onclick={toggleH3}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Heading 3"
 			title="Heading 3"
 		>
@@ -130,6 +152,8 @@
 			class="control-btn"
 			class:active={isBulletListActive}
 			onclick={toggleBulletList}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Bullet List"
 			title="Bullet List"
 		>
@@ -141,6 +165,8 @@
 			class="control-btn"
 			class:active={isOrderedListActive}
 			onclick={toggleOrderedList}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label="Numbered List"
 			title="Numbered List"
 		>
@@ -157,6 +183,8 @@
 			class="control-btn"
 			class:active={isLinkActive}
 			onclick={setLink}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
 			aria-label={isLinkActive ? 'Remove Link' : 'Add Link'}
 			title={isLinkActive ? 'Remove Link' : 'Add Link'}
 		>
@@ -165,6 +193,23 @@
 			{:else}
 				<Link2 class="w-4 h-4" />
 			{/if}
+		</button>
+	</div>
+	
+	<div class="controls-divider"></div>
+	
+	<div class="controls-group">
+		<!-- Horizontal Rule -->
+		<button
+			type="button"
+			class="control-btn"
+			onclick={insertHorizontalRule}
+			onmousedown={(e) => e.preventDefault()}
+			ontouchstart={(e) => e.preventDefault()}
+			aria-label="Horizontal Line"
+			title="Insert Horizontal Line"
+		>
+			<Minus class="w-4 h-4" />
 		</button>
 	</div>
 </div>
@@ -178,6 +223,11 @@
 		background: var(--bg-secondary);
 		border-bottom: 1px solid var(--border-primary);
 		flex-wrap: wrap;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 	
 	/* Override Tipex's default 2px border-bottom if it exists */
@@ -211,6 +261,10 @@
 		color: var(--text-secondary);
 		cursor: pointer;
 		transition: all 0.15s ease;
+		user-select: none;
+		-webkit-user-select: none;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 	
 	.control-btn:hover {
@@ -252,17 +306,24 @@
 		.tour-editor-controls {
 			padding: 0.625rem 0.5rem;
 			gap: 0.375rem;
+			/* Prevent any scrolling when touching buttons */
+			overscroll-behavior: contain;
+			overflow: visible;
 		}
 		
 		.control-btn {
 			width: 2.5rem;
 			height: 2.5rem;
 			padding: 0.5rem;
+			/* Prevent text selection and improve touch response */
+			-webkit-touch-callout: none;
 		}
 		
 		.control-btn :global(svg) {
 			width: 1.25rem;
 			height: 1.25rem;
+			/* Prevent pointer events on SVG children to ensure button gets the event */
+			pointer-events: none;
 		}
 		
 		.controls-divider {

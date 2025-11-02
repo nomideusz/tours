@@ -116,6 +116,7 @@
 
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
+	let mobileMenuHeight = $state('75vh'); // Default height, will be calculated dynamically
 	
 	// Avatar loading state
 	let avatarLoadError = $state(false);
@@ -502,14 +503,18 @@
 			sidebarCollapsed = true;
 		}
 		
+		// Calculate initial menu height
+		calculateMenuHeight();
 		
-		// Listen for resize to update mobile state
+		// Listen for resize to update mobile state and menu height
 		const handleResize = () => {
 			isMobileDevice = window.innerWidth <= 639;
 			// Reset nav state on resize
 			if (!isMobileDevice) {
 				navHidden = false;
 			}
+			// Recalculate menu height on resize
+			calculateMenuHeight();
 		};
 		window.addEventListener('resize', handleResize);
 		
@@ -620,7 +625,33 @@
 
 	function toggleMobileMenu(event: Event) {
 		event.preventDefault();
+		
+		// Calculate optimal menu height when opening
+		if (!mobileMenuOpen && browser) {
+			calculateMenuHeight();
+		}
+		
 		mobileMenuOpen = !mobileMenuOpen;
+	}
+	
+	function calculateMenuHeight() {
+		if (!browser) return;
+		
+		const vh = window.innerHeight;
+		const bottomNavHeight = 56; // Approximate height of bottom nav
+		const safeAreaBottom = parseInt(getComputedStyle(document.documentElement)
+			.getPropertyValue('--sai-bottom') || '0');
+		
+		// Use 80% of viewport height minus bottom nav and safe area
+		// This gives more space while still feeling like a drawer
+		const calculatedHeight = vh * 0.85 - bottomNavHeight - safeAreaBottom;
+		
+		// Set minimum and maximum heights
+		const minHeight = 400; // Minimum height in pixels
+		const maxHeight = vh * 0.9; // Maximum 90% of viewport
+		
+		const finalHeight = Math.min(Math.max(calculatedHeight, minHeight), maxHeight);
+		mobileMenuHeight = `${finalHeight}px`;
 	}
 	
 	function toggleSidebarCollapse() {
@@ -901,7 +932,7 @@
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => e.stopPropagation()}
 				>
-					<div class="rounded-t-xl shadow-lg mobile-menu-container" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary);">
+					<div class="rounded-t-xl shadow-lg mobile-menu-container" style="background: var(--bg-primary); border-top: 1px solid var(--border-primary); max-height: {mobileMenuHeight};">
 						<!-- Menu Header -->
 						<div class="flex items-center justify-between px-4 py-3 border-b" style="border-color: var(--border-primary);">
 							<h3 class="text-base font-semibold" style="color: var(--text-primary);">Menu</h3>
@@ -1155,8 +1186,9 @@
 	.mobile-menu-container {
 		display: flex;
 		flex-direction: column;
-		/* Reduce height to account for bottom navigation and make scrolling obvious */
-		max-height: calc(70vh - 3.5rem - env(safe-area-inset-bottom, 0));
+		/* Height is now dynamically calculated via inline style */
+		/* Fallback height if JavaScript hasn't run yet */
+		max-height: 75vh;
 		overflow: hidden;
 	}
 	
@@ -1167,14 +1199,6 @@
 		overscroll-behavior: contain;
 		/* Add padding at bottom to ensure last items are visible */
 		padding-bottom: 1rem;
-	}
-	
-	/* iOS specific adjustments for mobile menu */
-	@supports (-webkit-touch-callout: none) {
-		.mobile-menu-container {
-			/* Further reduce on iOS to ensure Sign Out button is more visible */
-			max-height: calc(60vh - env(safe-area-inset-bottom, 0));
-		}
 	}
 	
 	/* Scrollbar styling for mobile menu */

@@ -215,4 +215,28 @@
 	.markdown-content :global(ol li) {
 		list-style-type: decimal;
 	}
+	
+	.markdown-content :global(hr) {
+		border: none;
+		border-top: 2px solid var(--border-secondary);
+		margin: 1.5em 0;
+	}
+	
+	.markdown-content :global(a) {
+		color: var(--color-accent-600);
+		text-decoration: underline;
+		transition: color 0.15s ease;
+	}
+	
+	.markdown-content :global(a:hover) {
+		color: var(--color-accent-700);
+	}
+	
+	:global([data-theme="dark"]) .markdown-content :global(a) {
+		color: var(--color-accent-400);
+	}
+	
+	:global([data-theme="dark"]) .markdown-content :global(a:hover) {
+		color: var(--color-accent-300);
+	}
 </style>
