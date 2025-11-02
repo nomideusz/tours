@@ -126,6 +126,11 @@
 	// Mobile device detection
 	let isMobileDevice = $state(false);
 	
+	// Bottom nav auto-hide on scroll
+	let navHidden = $state(false);
+	let lastScrollY = $state(0);
+	let scrollThreshold = 10; // Minimum scroll before hiding
+	
 	// Theme state
 	let currentTheme = $state<Theme>('light');
 	
@@ -141,11 +146,56 @@
 		const newTheme: Theme = currentTheme === 'light' ? 'dark' : 'light';
 		themeStore.setTheme(newTheme);
 	}
+	
+	// Improved scroll handler for bottom nav
+	let ticking = false;
+	
+	function handleScroll() {
+		if (!browser || !isMobileDevice || mobileMenuOpen || $isKeyboardVisible) return;
+		
+		if (!ticking) {
+			window.requestAnimationFrame(() => {
+				const currentScrollY = window.scrollY || window.pageYOffset;
+				const scrollDifference = currentScrollY - lastScrollY;
+				
+				// Only react to significant scroll movements
+				if (Math.abs(scrollDifference) < scrollThreshold) {
+					ticking = false;
+					return;
+				}
+				
+				// Don't hide when near top of page (within 100px)
+				if (currentScrollY < 100) {
+					navHidden = false;
+					lastScrollY = currentScrollY;
+					ticking = false;
+					return;
+				}
+				
+				// Scrolling down - hide nav
+				if (scrollDifference > 0 && currentScrollY > lastScrollY) {
+					navHidden = true;
+				}
+				// Scrolling up - show nav immediately
+				else if (scrollDifference < 0) {
+					navHidden = false;
+				}
+				
+				lastScrollY = currentScrollY;
+				ticking = false;
+			});
+			
+			ticking = true;
+		}
+	}
 
 	// Close sidebar on navigation and update current path
 	afterNavigate(() => {
 		sidebarOpen = false;
 		mobileMenuOpen = false;
+		navHidden = false; // Always show nav on navigation
+		lastScrollY = 0; // Reset scroll position
+		
 		if (browser) {
 			currentPath = window.location.pathname;
 			
@@ -429,11 +479,23 @@
 		
 		// Listen for resize to update mobile state and menu height
 		const handleResize = () => {
+			const wasMobile = isMobileDevice;
 			isMobileDevice = window.innerWidth <= 639;
+			
+			// Reset nav state when switching to desktop
+			if (wasMobile && !isMobileDevice) {
+				navHidden = false;
+			}
+			
 			// Recalculate menu height on resize
 			calculateMenuHeight();
 		};
 		window.addEventListener('resize', handleResize);
+		
+		// Set up scroll listener for bottom nav auto-hide (mobile only)
+		if (browser) {
+			window.addEventListener('scroll', handleScroll, { passive: true });
+		}
 		
 		// Check if user is a beta tester and show welcome modal
 		// Beta testers have early_access_member flag set to true in database (camelCase in JS)
@@ -506,6 +568,7 @@
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('scroll', handleScroll);
 			unsubscribe();
 			window.removeEventListener('message', handleMessage);
 		};
@@ -775,6 +838,7 @@
 		<!-- Mobile Bottom Navigation -->
 		<div class="mobile-bottom-nav lg:hidden border-t" 
 			class:keyboard-hidden={$isKeyboardVisible}
+			class:nav-hidden={navHidden}
 			style="border-color: var(--border-primary);">
 			<nav class="flex min-w-0">
 				{#each mobileNavItems as item}
@@ -1071,6 +1135,24 @@
 		-webkit-transform: translate3d(0, 100%, 0);
 		opacity: 0;
 		pointer-events: none;
+	}
+	
+	/* Hide bottom nav when scrolling down - improved with faster animation */
+	.mobile-bottom-nav.nav-hidden {
+		transform: translate3d(0, 100%, 0);
+		-webkit-transform: translate3d(0, 100%, 0);
+	}
+	
+	/* Improved transitions for smoother auto-hide */
+	@media (max-width: 639px) {
+		.mobile-bottom-nav {
+			transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+		
+		/* Show quickly when scrolling up */
+		.mobile-bottom-nav:not(.nav-hidden):not(.keyboard-hidden) {
+			transition: transform 0.15s cubic-bezier(0.0, 0, 0.2, 1);
+		}
 	}
 	
 	/* Glass-enhanced background for better glassmorphism */
