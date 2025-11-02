@@ -47,7 +47,7 @@
 			<div class="stat-icon">
 				<Star class="w-8 h-8" style="color: var(--color-warning-500);" />
 			</div>
-			<div class="stat-number">Beta 1</div>
+			<div class="stat-number">Beta 2</div>
 			<div class="stat-label">Active Now</div>
 		</div>
 	</div>
@@ -212,6 +212,7 @@
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
 		margin-bottom: 1.5rem;
+		padding-bottom: 0.5rem;
 	}
 
 	.beta-callout-text {
@@ -296,6 +297,69 @@
 		.feature-item {
 			width: 100%;
 			justify-content: center;
+		}
+	}
+
+	/* Narrow smartphones */
+	@media (max-width: 480px) {
+		.social-proof-section {
+			padding: 0 0.75rem;
+		}
+
+		.stats-grid {
+			gap: 0.75rem;
+		}
+
+		.stat-card {
+			padding: 1.5rem 1rem;
+			border-radius: 1rem;
+		}
+
+		.stat-icon {
+			width: 3.5rem;
+			height: 3.5rem;
+			margin-bottom: 1rem;
+		}
+
+		.stat-icon :global(svg) {
+			width: 1.75rem;
+			height: 1.75rem;
+		}
+
+		.stat-number {
+			font-size: 2rem;
+		}
+
+		.stat-label {
+			font-size: 0.8125rem;
+		}
+
+		.beta-callout {
+			padding: 2rem 1.25rem;
+			border-radius: 1.5rem;
+		}
+
+		.beta-callout-title {
+			font-size: 1.5rem;
+		}
+
+		.beta-callout-text {
+			font-size: 0.9375rem;
+			margin-bottom: 1.5rem;
+		}
+
+		.beta-callout-features {
+			gap: 0.75rem;
+		}
+
+		.feature-item {
+			font-size: 0.875rem;
+			padding: 0.625rem 1rem;
+		}
+
+		.feature-item :global(svg) {
+			width: 1rem;
+			height: 1rem;
 		}
 	}
 

@@ -373,6 +373,8 @@
 								bind:value={formData.country}
 								options={countryOptions}
 								placeholder="Select country..."
+								searchable={true}
+								searchPlaceholder="Search countries..."
 								class="w-full form-input-height {validationErrors.country ? 'input-error' : ''}"
 							/>
 							{#if validationErrors.country}
@@ -540,6 +542,43 @@
 	:global(.input-error .select-button) {
 		border-color: var(--color-danger-500) !important;
 		background-color: var(--color-danger-50) !important;
+	}
+
+	/* Narrow smartphones optimization */
+	@media (max-width: 480px) {
+		.card {
+			padding: 1.25rem;
+			border-radius: 0.75rem;
+		}
+
+		h1 {
+			font-size: 2rem !important;
+		}
+
+		h2 {
+			font-size: 1.5rem !important;
+		}
+
+		.form-input,
+		.form-label,
+		:global(.select-button) {
+			font-size: 0.9375rem !important;
+		}
+
+		/* Better spacing for narrow screens */
+		.space-y-5 {
+			gap: 1rem !important;
+		}
+
+		/* Make grids single column on very narrow screens */
+		.grid {
+			grid-template-columns: 1fr !important;
+		}
+
+		/* Adjust validation errors */
+		.validation-error {
+			font-size: 0.8125rem;
+		}
 	}
 </style>
 

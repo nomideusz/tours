@@ -134,20 +134,20 @@
 </section>
 
 <!-- Tour Form Demo -->
-<section id="form-demo" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
-	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12">
-		<TourFormShowcase />
-	</div>
+<section id="form-demo" class="subtle-retro-section form-demo-section py-8 sm:py-12 lg:py-20">
+	<TourFormShowcase />
 </section>
 
 <!-- 3D Destination Showcase - Visual wow factor after functional demos -->
 <section id="3d-showcase" class="subtle-retro-section py-8 sm:py-12 lg:py-20">
-	<Photorealistic3DTiles 
-		googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
-		height="600px"
-		autoRotate={false}
-		rotateInterval={15000}
-	/>
+	<div class="tiles-showcase-wrapper">
+		<Photorealistic3DTiles 
+			googleMapsApiKey={env.PUBLIC_GOOGLE_MAPS_API_KEY || ''}
+			height="600px"
+			autoRotate={false}
+			rotateInterval={15000}
+		/>
+	</div>
 </section>
 
 <!-- Beta Pricing Section -->
@@ -277,6 +277,39 @@
 	@media (min-width: 768px) {
 		.newsletter-banner {
 			padding: 5rem 0;
+		}
+	}
+
+
+	/* 3D Tiles showcase wrapper - add padding on mobile */
+	.tiles-showcase-wrapper {
+		width: 100%;
+	}
+
+	@media (max-width: 768px) {
+		.tiles-showcase-wrapper {
+			padding: 0 1rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.tiles-showcase-wrapper {
+			padding: 0 0.5rem;
+		}
+	}
+
+	/* Narrow smartphones */
+	@media (max-width: 480px) {
+		.newsletter-banner {
+			padding: 2.5rem 0;
+		}
+
+		.newsletter-banner-title {
+			font-size: 1.5rem;
+		}
+
+		.newsletter-banner-description {
+			font-size: 0.9375rem;
 		}
 	}
 	

@@ -470,6 +470,41 @@
 			width: 100%;
 		}
 	}
+
+	/* Narrow smartphones */
+	@media (max-width: 480px) {
+		.newsletter-inline-form {
+			gap: 0.375rem;
+		}
+
+		.inline-input {
+			padding: 0.75rem 1rem;
+			font-size: 0.9375rem;
+		}
+
+		.inline-button {
+			padding: 0.75rem 1.25rem;
+			font-size: 0.9375rem;
+			min-width: 6rem;
+		}
+
+		.inline-message {
+			font-size: 0.8125rem;
+			padding: 0.625rem 0.875rem;
+		}
+
+		.newsletter-signup--default {
+			padding: 1.25rem;
+		}
+
+		.newsletter-title {
+			font-size: 1.125rem;
+		}
+
+		.newsletter-description {
+			font-size: 0.8125rem;
+		}
+	}
 	
 	/* Animation for spinner */
 	@keyframes spin {

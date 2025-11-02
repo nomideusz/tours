@@ -371,6 +371,7 @@
 		width: 100%;
 		max-width: 1400px;
 		margin: 0 auto;
+		overflow-x: hidden;
 	}
 	
 	.showcase-header {
@@ -397,6 +398,7 @@
 		overflow: hidden;
 		background: var(--bg-secondary);
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+		box-sizing: border-box;
 	}
 	
 	.map-3d-container {
@@ -665,15 +667,20 @@
 			font-size: 1rem;
 		}
 		
+		.tiles-container {
+			border-radius: 0.75rem;
+		}
+
 		.location-overlay {
-			top: 1rem;
-			left: 1rem;
-			right: 1rem;
-			padding: 0.75rem 1rem;
+			top: 0.75rem;
+			left: 0.75rem;
+			right: 0.75rem;
+			padding: 0.625rem 0.875rem;
+			border-radius: 0.5rem;
 		}
 		
 		.location-name {
-			font-size: 1rem;
+			font-size: 0.9375rem;
 		}
 		
 		.location-description {
@@ -681,24 +688,147 @@
 		}
 		
 		.location-selector {
-			bottom: 1rem;
-			left: 1rem;
-			right: 1rem;
+			bottom: 0.75rem;
+			left: 0.75rem;
+			right: 0.75rem;
 			transform: none;
 			flex-wrap: wrap;
 			justify-content: center;
+			padding: 0.375rem;
+			gap: 0.375rem;
+			border-radius: 0.5rem;
 		}
 		
 		.location-btn {
 			padding: 0.375rem 0.75rem;
 			font-size: 0.75rem;
+			border-radius: 0.375rem;
 		}
 		
 		.rotate-toggle {
 			bottom: auto;
-			top: 1rem;
-			right: 1rem;
+			top: 0.75rem;
+			right: 0.75rem;
 			padding: 0.5rem;
+			border-radius: 0.375rem;
+		}
+
+		.place-details-popup {
+			top: 0.75rem;
+			right: 0.75rem;
+			left: 0.75rem;
+			max-width: none;
+			padding: 1rem;
+		}
+	}
+
+	/* Narrow smartphones */
+	@media (max-width: 480px) {
+		.showcase-header {
+			padding: 0 0.5rem;
+		}
+
+		.showcase-title {
+			font-size: 1.5rem;
+			line-height: 1.3;
+		}
+		
+		.showcase-subtitle {
+			font-size: 0.9375rem;
+		}
+
+		.tiles-container {
+			border-radius: 0.5rem;
+			height: 400px !important;
+		}
+		
+		.location-overlay {
+			top: 0.5rem;
+			left: 0.5rem;
+			right: 0.5rem;
+			padding: 0.5rem 0.75rem;
+		}
+
+		.location-info {
+			gap: 0.5rem;
+		}
+
+		.location-info :global(svg) {
+			width: 1rem;
+			height: 1rem;
+		}
+		
+		.location-name {
+			font-size: 0.875rem;
+			line-height: 1.3;
+		}
+		
+		.location-description {
+			font-size: 0.6875rem;
+			display: none; /* Hide on very small screens for space */
+		}
+		
+		.location-selector {
+			bottom: 0.5rem;
+			left: 0.5rem;
+			right: 0.5rem;
+			padding: 0.25rem;
+			gap: 0.25rem;
+			max-height: 3rem;
+			overflow-x: auto;
+			overflow-y: hidden;
+			flex-wrap: nowrap;
+			justify-content: flex-start;
+			scrollbar-width: none;
+		}
+
+		.location-selector::-webkit-scrollbar {
+			display: none;
+		}
+		
+		.location-btn {
+			padding: 0.375rem 0.625rem;
+			font-size: 0.6875rem;
+			flex-shrink: 0;
+		}
+		
+		.rotate-toggle {
+			top: 0.5rem;
+			right: 0.5rem;
+			padding: 0.375rem;
+			width: 2rem;
+			height: 2rem;
+		}
+
+		.rotate-toggle :global(svg) {
+			width: 0.875rem;
+			height: 0.875rem;
+		}
+
+		.place-details-popup {
+			top: 0.5rem;
+			right: 0.5rem;
+			left: 0.5rem;
+			padding: 0.75rem;
+			font-size: 0.875rem;
+		}
+
+		.place-name {
+			font-size: 1rem;
+			padding-right: 1.25rem;
+		}
+
+		.place-rating {
+			font-size: 0.8125rem;
+		}
+
+		.place-address {
+			font-size: 0.6875rem;
+		}
+
+		.place-type-chip {
+			font-size: 0.5625rem;
+			padding: 0.1875rem 0.375rem;
 		}
 	}
 </style>

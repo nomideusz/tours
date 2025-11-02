@@ -68,36 +68,34 @@
 					</div>
 				</div>
 
-				<!-- Kasia Bednarz -->
-				<div class="team-member">
-					<div class="text-center">
-						<div
-							class="mx-auto mb-4 h-40 w-40 overflow-hidden rounded-xl border-4 border-white shadow-lg"
-						>
-							<img
-								src="/kasiab.png"
-								alt="Kasia Bednarz - Design & UX at Zaur"
-								class="h-full w-full object-cover"
-							/>
-						</div>
-						<h3 class="text-primary mb-1 text-lg font-semibold">Kasia Bednarz</h3>
-						<p class="text-secondary mb-3 text-sm font-medium">Design & UX</p>
-						<div class="text-secondary mb-4 flex items-center justify-center gap-2 text-xs">
-							<span>Product design & user experience</span>
-						</div>
+			<!-- Magda Makaruk -->
+			<div class="team-member">
+				<div class="text-center">
+					<div
+						class="mx-auto mb-4 h-40 w-40 overflow-hidden rounded-xl border-4 border-white shadow-lg"
+					>
+					<img
+						src="/magda.png"
+						alt="Magda Makaruk - Graphic Designer, AI tools specialist at Zaur"
+						class="h-full w-full object-cover"
+					/>
 					</div>
-
-					<div class="text-secondary space-y-2 text-center text-sm md:text-left">
-						<p>
-							I design interfaces that make complex things simple. My focus is on creating booking
-							flows and dashboards that work intuitively on any device.
-						</p>
-						<p>
-							At Zaur, I ensure every interaction is clear and purposeful. Clean design, thoughtful
-							layouts, and user experiences that feel natural.
-						</p>
+					<h3 class="text-primary mb-1 text-lg font-semibold">Magda Makaruk</h3>
+					<p class="text-secondary mb-3 text-sm font-medium">Graphic Designer, AI tools specialist</p>
+					<div class="text-secondary mb-4 flex items-center justify-center gap-2 text-xs">
+						<span>Graphic design & AI tools</span>
 					</div>
 				</div>
+
+				<div class="text-secondary space-y-2 text-center text-sm md:text-left">
+					<p>
+						I create visual designs and leverage AI tools to enhance our creative process. My focus is on delivering high-quality graphics that communicate effectively.
+					</p>
+					<p>
+						At Zaur, I bring modern design techniques and AI-powered workflows to create compelling visuals that resonate with tour guides and travelers.
+					</p>
+				</div>
+			</div>
 
 				<!-- Kasia Kucaj -->
 				<div class="team-member">

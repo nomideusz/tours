@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import Search from 'lucide-svelte/icons/search';
 	
 	// Props
 	interface Option {
@@ -14,6 +15,8 @@
 		icon = null,
 		disabled = false,
 		class: className = '',
+		searchable = false,
+		searchPlaceholder = 'Search...',
 		onchange = undefined
 	}: {
 		value?: string;
@@ -22,6 +25,8 @@
 		icon?: any;
 		disabled?: boolean;
 		class?: string;
+		searchable?: boolean;
+		searchPlaceholder?: string;
 		onchange?: (value: string) => void;
 	} = $props();
 	
@@ -29,24 +34,43 @@
 	let isOpen = $state(false);
 	let dropdownRef: HTMLDivElement | null = $state(null);
 	let buttonRef: HTMLButtonElement | null = $state(null);
+	let searchInputRef: HTMLInputElement | null = $state(null);
 	let highlightedIndex = $state(-1);
+	let searchQuery = $state('');
 	
 	// Computed
 	let selectedOption = $derived(options.find(opt => opt.value === value));
 	let displayText = $derived(selectedOption?.label || placeholder);
+	
+	// Filter options based on search query
+	let filteredOptions = $derived(
+		searchQuery.trim()
+			? options.filter(opt => 
+				opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+			)
+			: options
+	);
 	
 	// Methods
 	function toggleDropdown() {
 		if (disabled) return;
 		isOpen = !isOpen;
 		if (isOpen) {
-			highlightedIndex = options.findIndex(opt => opt.value === value);
+			searchQuery = '';
+			highlightedIndex = filteredOptions.findIndex(opt => opt.value === value);
+			
+			// Focus search input if searchable
+			if (searchable) {
+				setTimeout(() => searchInputRef?.focus(), 50);
+			}
 		}
 	}
 	
 	function closeDropdown() {
 		isOpen = false;
 		highlightedIndex = -1;
+		searchQuery = '';
 		buttonRef?.focus();
 	}
 	
@@ -70,8 +94,8 @@
 				event.preventDefault();
 				if (!isOpen) {
 					toggleDropdown();
-				} else if (highlightedIndex >= 0) {
-					selectOption(options[highlightedIndex]);
+				} else if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+					selectOption(filteredOptions[highlightedIndex]);
 				}
 				break;
 			case 'Escape':
@@ -83,7 +107,7 @@
 				if (!isOpen) {
 					toggleDropdown();
 				} else {
-					highlightedIndex = Math.min(highlightedIndex + 1, options.length - 1);
+					highlightedIndex = Math.min(highlightedIndex + 1, filteredOptions.length - 1);
 				}
 				break;
 			case 'ArrowUp':
@@ -101,9 +125,17 @@
 			case 'End':
 				event.preventDefault();
 				if (isOpen) {
-					highlightedIndex = options.length - 1;
+					highlightedIndex = filteredOptions.length - 1;
 				}
 				break;
+		}
+	}
+	
+	function handleSearchKeydown(event: KeyboardEvent) {
+		// Allow arrow keys to navigate filtered options while in search input
+		if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || 
+		    event.key === 'Enter' || event.key === 'Escape') {
+			handleKeydown(event);
 		}
 	}
 	
@@ -169,21 +201,43 @@
 			role="listbox"
 			aria-label={placeholder}
 		>
-			{#each options as option, index}
-				<button
-					type="button"
-					class="select-option"
-					class:selected={option.value === value}
-					class:highlighted={index === highlightedIndex}
-					role="option"
-					aria-selected={option.value === value}
-					data-index={index}
-					onclick={() => selectOption(option)}
-					onmouseenter={() => highlightedIndex = index}
-				>
-					{option.label}
-				</button>
-			{/each}
+			{#if searchable}
+				<div class="search-container">
+					<Search class="search-icon" />
+					<input
+						bind:this={searchInputRef}
+						type="text"
+						bind:value={searchQuery}
+						placeholder={searchPlaceholder}
+						class="search-input"
+						onkeydown={handleSearchKeydown}
+					/>
+				</div>
+			{/if}
+			
+			<div class="options-container">
+				{#if filteredOptions.length > 0}
+					{#each filteredOptions as option, index}
+						<button
+							type="button"
+							class="select-option"
+							class:selected={option.value === value}
+							class:highlighted={index === highlightedIndex}
+							role="option"
+							aria-selected={option.value === value}
+							data-index={index}
+							onclick={() => selectOption(option)}
+							onmouseenter={() => highlightedIndex = index}
+						>
+							{option.label}
+						</button>
+					{/each}
+				{:else}
+					<div class="no-results">
+						No results found
+					</div>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>
@@ -274,14 +328,63 @@
 		top: calc(100% + 0.25rem);
 		left: 0;
 		right: 0;
-		max-height: 16rem;
-		overflow-y: auto;
 		background: var(--bg-primary);
 		border: 1px solid var(--border-primary);
 		border-radius: 0.5rem;
 		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 		z-index: 50;
+		overflow: hidden;
+	}
+	
+	.search-container {
+		position: relative;
+		padding: 0.5rem;
+		border-bottom: 1px solid var(--border-primary);
+	}
+	
+	.search-icon {
+		position: absolute;
+		left: 1rem;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 1rem;
+		height: 1rem;
+		color: var(--text-tertiary);
+		pointer-events: none;
+	}
+	
+	.search-input {
+		width: 100%;
+		padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
+		border-radius: 0.375rem;
+		color: var(--text-primary);
+		font-size: 0.875rem;
+		transition: all 0.2s ease;
+	}
+	
+	.search-input:focus {
+		outline: none;
+		border-color: var(--color-primary-400);
+		background: var(--bg-primary);
+	}
+	
+	.search-input::placeholder {
+		color: var(--text-tertiary);
+	}
+	
+	.options-container {
+		max-height: 14rem;
+		overflow-y: auto;
 		padding: 0.25rem;
+	}
+	
+	.no-results {
+		padding: 1.5rem 1rem;
+		text-align: center;
+		color: var(--text-tertiary);
+		font-size: 0.875rem;
 	}
 	
 	.select-option {
@@ -315,25 +418,25 @@
 	}
 	
 	/* Scrollbar styling */
-	.select-dropdown {
+	.options-container {
 		scrollbar-width: thin;
 		scrollbar-color: var(--border-secondary) transparent;
 	}
 	
-	.select-dropdown::-webkit-scrollbar {
+	.options-container::-webkit-scrollbar {
 		width: 0.375rem;
 	}
 	
-	.select-dropdown::-webkit-scrollbar-track {
+	.options-container::-webkit-scrollbar-track {
 		background: transparent;
 	}
 	
-	.select-dropdown::-webkit-scrollbar-thumb {
+	.options-container::-webkit-scrollbar-thumb {
 		background: var(--border-secondary);
 		border-radius: 0.25rem;
 	}
 	
-	.select-dropdown::-webkit-scrollbar-thumb:hover {
+	.options-container::-webkit-scrollbar-thumb:hover {
 		background: var(--border-primary);
 	}
 </style>
