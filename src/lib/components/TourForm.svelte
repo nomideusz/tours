@@ -74,7 +74,10 @@ Key extracted components:
 	
 	// Import tour form section components
 	import DurationInput from './DurationInput.svelte';
-	import MarkdownEditor from './ui/MarkdownEditor.svelte';
+	import { Tipex, defaultExtensions } from '@friendofsvelte/tipex';
+	import '@friendofsvelte/tipex/styles/index.css';
+	import CharacterCount from '@tiptap/extension-character-count';
+	import TourDescriptionControls from './TourDescriptionControls.svelte';
 	import ChipInput from './ChipInput.svelte';
 
 	interface Props {
@@ -189,6 +192,133 @@ Key extracted components:
 		isDeleting = false,
 		tourId = undefined
 	}: Props = $props();
+	
+	// Tipex editor instance for managing description content
+	let descriptionEditor = $state<any>(undefined);
+	
+	// Track initial load to prevent overwriting user edits
+	let initialDescriptionLoaded = $state(false);
+	
+	// Character count tracking
+	const MAX_DESCRIPTION_LENGTH = 2000;
+	let descriptionCharCount = $state(0);
+	let descriptionWordCount = $state(0);
+	
+	// Configure Tipex extensions with CharacterCount
+	const tourDescriptionExtensions = [
+		...defaultExtensions,
+		CharacterCount.configure({
+			limit: MAX_DESCRIPTION_LENGTH,
+		}),
+	];
+	
+	// Check if content is HTML or Markdown
+	function isHTML(text: string): boolean {
+		if (!text) return false;
+		return /<\/?[a-z][\s\S]*>/i.test(text);
+	}
+	
+	// Convert markdown to HTML for Tipex
+	function markdownToHTML(text: string): string {
+		if (!text) return '';
+		
+		let html = text;
+		
+		// Headers (must be processed before other formatting)
+		html = html.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
+		html = html.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+		html = html.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+		
+		// Bold
+		html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+		html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+		
+		// Italic
+		html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+		html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+		
+		// Links
+		html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+		
+		// Lists - Convert to HTML lists
+		const lines = html.split('\n');
+		const processedLines: string[] = [];
+		let inList = false;
+		let listType: 'ul' | 'ol' | null = null;
+		
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			const trimmedLine = line.trim();
+			
+			// Check for ordered list
+			const orderedMatch = trimmedLine.match(/^(\d+)\.\s+(.+)$/);
+			if (orderedMatch) {
+				if (!inList || listType !== 'ol') {
+					if (inList && listType) {
+						processedLines.push(`</${listType}>`);
+					}
+					processedLines.push('<ol>');
+					listType = 'ol';
+					inList = true;
+				}
+				processedLines.push(`<li>${orderedMatch[2]}</li>`);
+				continue;
+			}
+			
+			// Check for unordered list
+			const unorderedMatch = trimmedLine.match(/^[\*\-]\s+(.+)$/);
+			if (unorderedMatch) {
+				if (!inList || listType !== 'ul') {
+					if (inList && listType) {
+						processedLines.push(`</${listType}>`);
+					}
+					processedLines.push('<ul>');
+					listType = 'ul';
+					inList = true;
+				}
+				processedLines.push(`<li>${unorderedMatch[1]}</li>`);
+				continue;
+			}
+			
+			// Not a list item
+			if (inList && listType) {
+				processedLines.push(`</${listType}>`);
+				inList = false;
+				listType = null;
+			}
+			
+			// Regular line - wrap in <p> if not empty and not already a heading
+			if (trimmedLine && !trimmedLine.startsWith('<h')) {
+				processedLines.push(`<p>${line}</p>`);
+			} else if (trimmedLine) {
+				processedLines.push(line);
+			}
+		}
+		
+		// Close any open list
+		if (inList && listType) {
+			processedLines.push(`</${listType}>`);
+		}
+		
+		return processedLines.join('\n');
+	}
+	
+	// Sync editor content when formData.description changes (e.g., when loading existing tour)
+	$effect(() => {
+		if (descriptionEditor && formData.description && !initialDescriptionLoaded) {
+			// Load initial content from existing tour
+			const currentContent = descriptionEditor.getHTML();
+			if (currentContent !== formData.description && formData.description.trim() !== '') {
+				// Convert markdown to HTML if needed
+				const contentToLoad = isHTML(formData.description) 
+					? formData.description 
+					: markdownToHTML(formData.description);
+				
+				descriptionEditor.commands.setContent(contentToLoad);
+				initialDescriptionLoaded = true;
+			}
+		}
+	});
 	
 	// Migrate old capacity values to nested structures if needed
 	const legacyMinCapacity = formData.minCapacity ?? 1;
@@ -1044,33 +1174,62 @@ Key extracted components:
 					</div>
 				</div>
 
-				<!-- Row 5: Description - Full Width -->
-				<div>
-					<label for="description" class="form-label flex items-center gap-2 hidden sm:flex">
-						<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
-						<span>Description *</span>
-					</label>
-					<div class="form-field-wrapper">
-						<MarkdownEditor
-							bind:value={formData.description}
-							id="description"
-							name="description"
-							placeholder="Describe your tour experience... Use markdown for formatting!"
-							maxlength={2000}
-							rows={6}
-							error={hasFieldError(allErrors, 'description')}
-							oninput={() => handleFieldInput('description')}
-							onblur={() => validateField('description')}
-						/>
-						<div class="form-field-footer">
-							{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
-								<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
-							{:else}
-								<span class="form-field-spacer"></span>
-							{/if}
-						</div>
+			<!-- Row 5: Description - Full Width -->
+			<div>
+				<label for="description" class="form-label flex items-center gap-2 hidden sm:flex">
+					<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
+					<span>Description *</span>
+				</label>
+				<div class="form-field-wrapper">
+					<Tipex 
+						body={formData.description || ''}
+						bind:tipex={descriptionEditor}
+						extensions={tourDescriptionExtensions}
+						floating
+						focal
+						autofocus={false}
+						onupdate={({ editor }) => {
+							if (editor) {
+								formData.description = editor.getHTML();
+								handleFieldInput('description');
+								// Update character and word count
+								descriptionCharCount = editor.storage.characterCount.characters();
+								descriptionWordCount = editor.storage.characterCount.words();
+							}
+						}}
+						oncreate={({ editor }) => {
+							if (editor) {
+								// Initialize character count
+								descriptionCharCount = editor.storage.characterCount.characters();
+								descriptionWordCount = editor.storage.characterCount.words();
+							}
+						}}
+						class="tipex-description-editor {hasFieldError(allErrors, 'description') ? 'tipex-error' : ''} {descriptionCharCount >= MAX_DESCRIPTION_LENGTH ? 'at-limit' : descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9 ? 'near-limit' : ''}"
+						style="min-height: 200px;"
+					>
+						{#snippet controlComponent(tipex)}
+							<TourDescriptionControls {tipex} />
+						{/snippet}
+					</Tipex>
+					<input 
+						type="hidden" 
+						id="description" 
+						name="description" 
+						value={formData.description}
+						onblur={() => validateField('description')}
+					/>
+					<div class="form-field-footer">
+						{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
+							<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
+						{:else}
+							<span class="form-field-spacer"></span>
+						{/if}
+						<span class="form-field-counter" class:counter-warning={descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9} class:counter-error={descriptionCharCount >= MAX_DESCRIPTION_LENGTH}>
+							{descriptionCharCount}/{MAX_DESCRIPTION_LENGTH}
+						</span>
 					</div>
 				</div>
+			</div>
 			</div>
 		</div>
 
@@ -1940,28 +2099,33 @@ Key extracted components:
 	/* Form Field Counter - Always present but hidden when empty */
 	.form-field-counter {
 		flex-shrink: 0;
-		transition: opacity 0.15s ease;
+		transition: all 0.15s ease;
 		white-space: nowrap;
+		font-size: 0.6875rem;
+		color: var(--text-tertiary);
+		font-weight: 500;
 	}
 	
-	/* Override default form-input focus styles to prevent layout shifts */
+	.form-field-counter.counter-warning {
+		color: var(--color-warning-600);
+		font-weight: 600;
+	}
+	
+	.form-field-counter.counter-error {
+		color: var(--color-error-600);
+		font-weight: 700;
+	}
+	
+	/* Override default form-input focus styles to use accent color */
 	:global(.form-input.form-input--no-transform) {
 		transition: border-color 0.15s ease, box-shadow 0.15s ease;
 	}
 	
 	:global(.form-input.form-input--no-transform:focus) {
 		transform: none !important;
-		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
-		border-color: var(--color-primary-500) !important;
+		box-shadow: 0 0 0 1px var(--color-accent-200) !important;
+		border-color: var(--color-accent-500) !important;
 		outline: none !important;
-	}
-	
-	/* Tour name input uses accent color on mobile */
-	@media (max-width: 640px) {
-		:global(.form-input.tour-name-input:focus) {
-			box-shadow: 0 0 0 1px var(--color-accent-200) !important;
-			border-color: var(--color-accent-500) !important;
-		}
 	}
 	
 	:global(.form-input.form-input--no-transform.error) {
@@ -1970,8 +2134,8 @@ Key extracted components:
 	
 	:global(.form-textarea.form-input--no-transform:focus) {
 		transform: none !important;
-		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
-		border-color: var(--color-primary-500) !important;
+		box-shadow: 0 0 0 1px var(--color-accent-200) !important;
+		border-color: var(--color-accent-500) !important;
 		outline: none !important;
 	}
 	
@@ -1998,7 +2162,6 @@ Key extracted components:
 	
 	/* Ensure focus styles work properly for location picker */
 	.location-picker-wrapper :global(.form-input:focus) {
-		box-shadow: 0 0 0 1px var(--color-primary-200) !important;
 		transform: none !important;
 	}
 
@@ -2402,6 +2565,70 @@ Key extracted components:
 		.form-section-minimal {
 			padding-left: 1rem;
 			padding-right: 1rem;
+		}
+	}
+	
+	/* Tipex Editor Styling - Match form design */
+	:global(.tipex-description-editor) {
+		border: 1px solid var(--border-primary) !important;
+		border-radius: 0.5rem;
+		background: var(--bg-primary);
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+	
+	/* Focus state with higher specificity */
+	:global(.tipex-description-editor:focus-within),
+	:global(.tipex-description-editor.focused),
+	:global(.tipex-description-editor:has(.ProseMirror:focus)) {
+		border-color: var(--color-accent-500) !important;
+		box-shadow: 0 0 0 1px var(--color-accent-200) !important;
+		outline: none;
+	}
+	
+	:global(.tipex-description-editor.tipex-error) {
+		border-color: var(--color-error-500);
+	}
+	
+	:global(.tipex-description-editor.tipex-error:focus-within) {
+		border-color: var(--color-error-500);
+		box-shadow: 0 0 0 1px var(--color-error-200);
+	}
+	
+	/* Character limit warning */
+	:global(.tipex-description-editor.at-limit) {
+		border-color: var(--color-error-400);
+	}
+	
+	:global(.tipex-description-editor.near-limit) {
+		border-color: var(--color-warning-400);
+	}
+	
+	/* Tipex content area styling */
+	:global(.tipex-description-editor .ProseMirror) {
+		padding: 0.75rem;
+		min-height: 200px;
+		color: var(--text-primary);
+		font-size: 0.9375rem;
+		line-height: 1.6;
+	}
+	
+	:global(.tipex-description-editor .ProseMirror:focus) {
+		outline: none;
+	}
+	
+	/* Tipex placeholder (handled by Placeholder extension) */
+	:global(.tipex-description-editor .ProseMirror .is-empty::before) {
+		color: var(--text-tertiary);
+		opacity: 0.5;
+	}
+	
+	/* Mobile-specific adjustments for Tipex */
+	@media (max-width: 640px) {
+		/* Better padding on mobile for easier editing */
+		:global(.tipex-description-editor .ProseMirror) {
+			padding: 1rem;
+			font-size: 1rem;
+			line-height: 1.7;
 		}
 	}
 </style>

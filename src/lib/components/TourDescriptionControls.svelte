@@ -1,0 +1,274 @@
+<script lang="ts">
+	import type { Editor } from '@tiptap/core';
+	
+	// Icons
+	import Bold from 'lucide-svelte/icons/bold';
+	import Italic from 'lucide-svelte/icons/italic';
+	import Heading2 from 'lucide-svelte/icons/heading-2';
+	import Heading3 from 'lucide-svelte/icons/heading-3';
+	import List from 'lucide-svelte/icons/list';
+	import ListOrdered from 'lucide-svelte/icons/list-ordered';
+	import Link2 from 'lucide-svelte/icons/link-2';
+	import Unlink from 'lucide-svelte/icons/unlink';
+	
+	interface Props {
+		tipex: Editor;
+	}
+	
+	let { tipex }: Props = $props();
+	
+	// Reactive active states using runes
+	let isBoldActive = $derived(tipex?.isActive('bold') ?? false);
+	let isItalicActive = $derived(tipex?.isActive('italic') ?? false);
+	let isH2Active = $derived(tipex?.isActive('heading', { level: 2 }) ?? false);
+	let isH3Active = $derived(tipex?.isActive('heading', { level: 3 }) ?? false);
+	let isBulletListActive = $derived(tipex?.isActive('bulletList') ?? false);
+	let isOrderedListActive = $derived(tipex?.isActive('orderedList') ?? false);
+	let isLinkActive = $derived(tipex?.isActive('link') ?? false);
+	
+	// Check if commands can execute
+	let canExecute = $derived((command: string) => tipex?.can()[command as keyof ReturnType<typeof tipex.can>]() ?? false);
+	
+	function toggleBold() {
+		tipex?.chain().focus().toggleBold().run();
+	}
+	
+	function toggleItalic() {
+		tipex?.chain().focus().toggleItalic().run();
+	}
+	
+	function toggleH2() {
+		tipex?.chain().focus().toggleHeading({ level: 2 }).run();
+	}
+	
+	function toggleH3() {
+		tipex?.chain().focus().toggleHeading({ level: 3 }).run();
+	}
+	
+	function toggleBulletList() {
+		tipex?.chain().focus().toggleBulletList().run();
+	}
+	
+	function toggleOrderedList() {
+		tipex?.chain().focus().toggleOrderedList().run();
+	}
+	
+	function setLink() {
+		if (isLinkActive) {
+			// Remove link
+			tipex?.chain().focus().unsetLink().run();
+			return;
+		}
+		
+		// Get URL from user
+		const url = window.prompt('Enter URL:');
+		if (url) {
+			tipex?.chain().focus().setLink({ href: url, target: '_blank' }).run();
+		}
+	}
+</script>
+
+<div class="tour-editor-controls">
+	<div class="controls-group">
+		<!-- Text formatting -->
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isBoldActive}
+			onclick={toggleBold}
+			aria-label="Bold"
+			title="Bold (Ctrl+B)"
+		>
+			<Bold class="w-4 h-4" />
+		</button>
+		
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isItalicActive}
+			onclick={toggleItalic}
+			aria-label="Italic"
+			title="Italic (Ctrl+I)"
+		>
+			<Italic class="w-4 h-4" />
+		</button>
+	</div>
+	
+	<div class="controls-divider"></div>
+	
+	<div class="controls-group">
+		<!-- Headings -->
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isH2Active}
+			onclick={toggleH2}
+			aria-label="Heading 2"
+			title="Heading 2"
+		>
+			<Heading2 class="w-4 h-4" />
+		</button>
+		
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isH3Active}
+			onclick={toggleH3}
+			aria-label="Heading 3"
+			title="Heading 3"
+		>
+			<Heading3 class="w-4 h-4" />
+		</button>
+	</div>
+	
+	<div class="controls-divider"></div>
+	
+	<div class="controls-group">
+		<!-- Lists -->
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isBulletListActive}
+			onclick={toggleBulletList}
+			aria-label="Bullet List"
+			title="Bullet List"
+		>
+			<List class="w-4 h-4" />
+		</button>
+		
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isOrderedListActive}
+			onclick={toggleOrderedList}
+			aria-label="Numbered List"
+			title="Numbered List"
+		>
+			<ListOrdered class="w-4 h-4" />
+		</button>
+	</div>
+	
+	<div class="controls-divider"></div>
+	
+	<div class="controls-group">
+		<!-- Link -->
+		<button
+			type="button"
+			class="control-btn"
+			class:active={isLinkActive}
+			onclick={setLink}
+			aria-label={isLinkActive ? 'Remove Link' : 'Add Link'}
+			title={isLinkActive ? 'Remove Link' : 'Add Link'}
+		>
+			{#if isLinkActive}
+				<Unlink class="w-4 h-4" />
+			{:else}
+				<Link2 class="w-4 h-4" />
+			{/if}
+		</button>
+	</div>
+</div>
+
+<style>
+	.tour-editor-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem;
+		background: var(--bg-secondary);
+		border-bottom: 1px solid var(--border-primary);
+		flex-wrap: wrap;
+	}
+	
+	/* Override Tipex's default 2px border-bottom if it exists */
+	:global(.tipex-description-editor .tour-editor-controls) {
+		border-bottom: 1px solid var(--border-primary) !important;
+	}
+	
+	.controls-group {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	
+	.controls-divider {
+		width: 1px;
+		height: 1.25rem;
+		background: var(--border-primary);
+		margin: 0 0.25rem;
+	}
+	
+	.control-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		padding: 0.375rem;
+		background: transparent;
+		border: 1px solid transparent;
+		border-radius: 0.375rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+	
+	.control-btn:hover {
+		background: var(--bg-tertiary);
+		color: var(--text-primary);
+		border-color: var(--border-secondary);
+	}
+	
+	.control-btn:focus {
+		outline: none;
+		border-color: var(--color-accent-500);
+		box-shadow: 0 0 0 2px var(--color-accent-200);
+	}
+	
+	.control-btn.active {
+		background: var(--color-accent-100);
+		color: var(--color-accent-700);
+		border-color: var(--color-accent-300);
+	}
+	
+	.control-btn.active:focus {
+		box-shadow: 0 0 0 2px var(--color-accent-300);
+	}
+	
+	.control-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	
+	/* Dark mode support */
+	:global([data-theme="dark"]) .control-btn.active {
+		background: var(--color-accent-900);
+		color: var(--color-accent-300);
+		border-color: var(--color-accent-700);
+	}
+	
+	/* Mobile adjustments */
+	@media (max-width: 640px) {
+		.tour-editor-controls {
+			padding: 0.625rem 0.5rem;
+			gap: 0.375rem;
+		}
+		
+		.control-btn {
+			width: 2.5rem;
+			height: 2.5rem;
+			padding: 0.5rem;
+		}
+		
+		.control-btn :global(svg) {
+			width: 1.25rem;
+			height: 1.25rem;
+		}
+		
+		.controls-divider {
+			height: 1.5rem;
+			margin: 0 0.125rem;
+		}
+	}
+</style>
+

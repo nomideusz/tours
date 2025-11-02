@@ -365,8 +365,8 @@ Educational tool to prevent underpricing
 	}
 	
 	.input-group:focus-within {
-		border-color: var(--color-primary-500);
-		box-shadow: 0 0 0 3px var(--color-primary-100);
+		border-color: var(--color-accent-500);
+		box-shadow: 0 0 0 3px var(--color-accent-100);
 	}
 	
 	.prefix, .suffix {

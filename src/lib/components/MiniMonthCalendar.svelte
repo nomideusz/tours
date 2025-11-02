@@ -267,13 +267,13 @@
 			{#if previewDates.size > 0}
 				<div class="legend-item">
 					<span class="legend-dot legend-dot--preview"></span>
-					<span class="legend-label">Preview</span>
+					<span class="legend-label">New</span>
 				</div>
 			{/if}
 			<div class="legend-item">
-				<span class="legend-today">T</span>
+				<span class="legend-today-indicator"></span>
 				<span class="legend-label">Today</span>
-		</div>
+			</div>
 		</div>
 	{/if}
 </div>
@@ -700,25 +700,39 @@
 		background: var(--text-tertiary);
 	}
 
-	.legend-today {
+	.legend-today-indicator {
 		width: 0.75rem;
 		height: 0.75rem;
-		border-radius: 0.125rem;
-		background: var(--color-primary-50);
-		color: var(--color-primary-700);
-		font-size: 0.625rem;
-		font-weight: 500;
+		border-radius: 50%;
+		border: 2px solid var(--color-primary-500);
+		background: transparent;
+		flex-shrink: 0;
+		position: relative;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
+	
+	.legend-today-indicator::after {
+		content: '';
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: var(--color-primary-500);
+		position: absolute;
+	}
 
-	.calendar-container--medium .legend-today,
-	.calendar-container--large .legend-today {
+	.calendar-container--medium .legend-today-indicator,
+	.calendar-container--large .legend-today-indicator {
 		width: 1rem;
 		height: 1rem;
-		font-size: 0.75rem;
-		border-radius: 0.25rem;
+		border-width: 2px;
+	}
+	
+	.calendar-container--medium .legend-today-indicator::after,
+	.calendar-container--large .legend-today-indicator::after {
+		width: 5px;
+		height: 5px;
 	}
 
 	.legend-label {
@@ -820,7 +834,7 @@
 			height: 0.25rem !important;
 		}
 		
-		.legend-today {
+		.legend-today-indicator {
 			width: 0.75rem !important;
 			height: 0.75rem !important;
 			font-size: 0.625rem !important;

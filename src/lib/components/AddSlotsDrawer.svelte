@@ -223,12 +223,17 @@
 			const start = new Date(slot.startTime);
 			const end = new Date(slot.endTime);
 			
-			start.setHours(0, 0, 0, 0);
-			end.setHours(0, 0, 0, 0);
+			// Extract date in local timezone (avoid UTC conversion issues)
+			const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+			const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 			
-			const current = new Date(start);
-			while (current <= end) {
-				const dateStr = current.toISOString().split('T')[0];
+			const current = new Date(startDate);
+			while (current <= endDate) {
+				// Format date in local time without UTC conversion
+				const year = current.getFullYear();
+				const month = String(current.getMonth() + 1).padStart(2, '0');
+				const day = String(current.getDate()).padStart(2, '0');
+				const dateStr = `${year}-${month}-${day}`;
 				map.set(dateStr, (map.get(dateStr) || 0) + 1);
 				current.setDate(current.getDate() + 1);
 			}

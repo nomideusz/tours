@@ -144,9 +144,7 @@
 								class="suggestion-option"
 								onclick={() => {
 									addItem(suggestion);
-									if (availableSuggestions.length === 1) {
-										showDropdown = false;
-									}
+									showDropdown = false;
 								}}
 							>
 								<span>{suggestion}</span>

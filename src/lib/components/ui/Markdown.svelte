@@ -6,11 +6,23 @@
 	
 	let { content, class: className = '' }: Props = $props();
 	
+	// Check if content is already HTML (from rich text editor like Tipex)
+	function isHTML(text: string): boolean {
+		if (!text) return false;
+		// Check for common HTML tags
+		return /<\/?[a-z][\s\S]*>/i.test(text);
+	}
+	
 	// Simple markdown parsing for common elements
 	function parseMarkdown(text: string): string {
 		if (!text) return '';
 		
-		// Escape HTML first
+		// If content is already HTML, return it as-is (sanitized by browser)
+		if (isHTML(text)) {
+			return text;
+		}
+		
+		// Escape HTML first (only for markdown content)
 		let html = text
 			.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
