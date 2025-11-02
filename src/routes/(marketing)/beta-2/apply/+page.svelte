@@ -484,20 +484,6 @@
 						></textarea>
 					</div>
 
-					<!-- Benefits inside card -->
-					<div class="mt-6 p-4 rounded-lg" style="background: var(--color-success-50); border: 1px solid var(--color-success-200);">
-						<div class="grid grid-cols-2 gap-2 text-sm">
-							<div class="flex items-center gap-1.5">
-								<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
-								<span style="color: var(--color-success-800);">4 months free</span>
-							</div>
-							<div class="flex items-center gap-1.5">
-								<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
-								<span style="color: var(--color-success-800);">20% off forever</span>
-							</div>
-						</div>
-					</div>
-
 					<!-- Submit inside card -->
 					<div class="mt-6">
 						<button
