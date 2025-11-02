@@ -7,13 +7,6 @@
 	 * Mobile-first design with 95% smartphone users in mind
 	 */
 	import TourForm from '$lib/components/TourForm.svelte';
-	import Sparkles from 'lucide-svelte/icons/sparkles';
-	import ArrowRight from 'lucide-svelte/icons/arrow-right';
-	import Check from 'lucide-svelte/icons/check';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	import DollarSign from 'lucide-svelte/icons/dollar-sign';
-	import Edit3 from 'lucide-svelte/icons/edit-3';
-	import Camera from 'lucide-svelte/icons/camera';
 	
 	// Pre-filled demo tour data
 	let demoFormData = $state({
@@ -116,78 +109,20 @@
 	});
 	
 	let demoUploadedImages: File[] = $state([]);
-	
-	// Feature highlights
-	let highlights = [
-		{
-			id: 'location',
-			title: 'Smart Location',
-			description: 'Places API',
-			icon: MapPin
-		},
-		{
-			id: 'pricing',
-			title: 'Flexible Pricing',
-			description: 'All options',
-			icon: DollarSign
-		},
-		{
-			id: 'rich-editor',
-			title: 'Rich Editor',
-			description: 'Easy formatting',
-			icon: Edit3
-		},
-		{
-			id: 'photos',
-			title: 'Easy Photos',
-			description: 'Drag & drop',
-			icon: Camera
-		}
-	];
-	
-	function scrollToCTA() {
-		const cta = document.getElementById('form-demo-cta');
-		cta?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-	}
 </script>
 
 <section class="tour-form-showcase">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-20">
+		
+		<!-- Section Divider -->
+		<hr class="section-divider" aria-hidden="true" />
+		
 	<!-- Header -->
 	<div class="showcase-header">
-		<div class="showcase-icon">
-			<Sparkles class="w-8 h-8" />
-		</div>
 		<h2 class="showcase-title">Create Tours in Minutes</h2>
 		<p class="showcase-subtitle">
-			Try our intuitive tour creation form
+				Explore our intuitive tour creation form
 		</p>
-	</div>
-	
-	<!-- Feature Pills -->
-	<div class="feature-grid">
-		{#each highlights as feature}
-			<div class="feature-pill">
-				<div class="feature-icon">
-					{#if feature.icon}
-						{@const Icon = feature.icon}
-						<Icon class="w-5 h-5" />
-					{/if}
-				</div>
-				<div class="feature-content">
-					<h3 class="feature-title">{feature.title}</h3>
-					<p class="feature-desc">{feature.description}</p>
-				</div>
-			</div>
-		{/each}
-	</div>
-	
-	<!-- Demo Badge -->
-	<div class="demo-notice">
-		<div class="demo-badge">
-			<Sparkles class="w-4 h-4" />
-			<span>Interactive Demo</span>
-		</div>
-		<p>Preview mode - explore the features!</p>
 	</div>
 	
 	<!-- Form Demo -->
@@ -198,9 +133,9 @@
 				bind:uploadedImages={demoUploadedImages}
 				isSubmitting={false}
 				isEdit={false}
-				onCancel={scrollToCTA}
-				onSaveAsDraft={scrollToCTA}
-				onPublish={scrollToCTA}
+				onCancel={() => {}}
+				onSaveAsDraft={() => {}}
+				onPublish={() => {}}
 				imageUploadErrors={[]}
 				serverErrors={[]}
 				triggerValidation={false}
@@ -225,159 +160,103 @@
 		<div class="form-overlay"></div>
 	</div>
 	
-	<!-- CTA Section -->
-	<div id="form-demo-cta" class="cta-section">
-		<h3 class="cta-title">Ready to Start?</h3>
-		<p class="cta-text">
-			Join our beta today
-		</p>
-		
-		<div class="cta-buttons">
-			<a href="/beta-2/apply" class="btn-primary">
-				Start Creating Tours
-				<ArrowRight class="w-5 h-5" />
-			</a>
-			<a href="#pricing" class="btn-secondary">
-				View Pricing
-			</a>
-		</div>
-		
-		<div class="trust-indicators">
-			<div class="trust-item">
-				<Check class="w-4 h-4" />
-				<span>No credit card required</span>
-			</div>
-			<div class="trust-item">
-				<Check class="w-4 h-4" />
-				<span>4 months free for beta users</span>
-			</div>
-			<div class="trust-item">
-				<Check class="w-4 h-4" />
-				<span>20% lifetime discount</span>
-			</div>
-		</div>
 	</div>
 </section>
 
 <style>
-	/* Mobile-first design with clean, maintainable CSS */
+	/* Section Background - Clean & Professional */
 	.tour-form-showcase {
-		padding: 0.75rem;
-		overflow-x: hidden;
-		width: 100%;
-		max-width: 100vw;
+		background: linear-gradient(
+			180deg,
+			var(--bg-secondary) 0%,
+			var(--bg-primary) 100%
+		);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	/* Section Divider */
+	.section-divider {
+		border: none;
+		max-width: 14rem;
+		height: 8px;
+		background: transparent;
+		margin: 0 auto 4rem;
+		position: relative;
+		display: flex;
+		align-items: center;
+		overflow: visible;
+	}
+	
+	.section-divider::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		height: 1px;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			var(--border-secondary) 50%,
+			transparent 100%
+		);
+	}
+	
+	.section-divider::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 8px;
+		height: 8px;
+		background: var(--primary);
+		border-radius: 50%;
+		opacity: 0.6;
+		z-index: 1;
+		box-shadow: 0 0 0 2px var(--bg-secondary);
 	}
 	
 	/* Header */
 	.showcase-header {
 		text-align: center;
-		margin-bottom: 2rem;
-	}
-	
-	.showcase-icon {
-		display: flex;
-		justify-content: center;
-		margin-bottom: 1rem;
-		color: var(--color-primary-600);
+		margin-bottom: 3rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
 	}
 	
 	.showcase-title {
-		font-size: 1.75rem;
-		font-weight: 700;
+		font-size: 2rem;
+		font-weight: 800;
 		color: var(--text-primary);
-		margin-bottom: 0.75rem;
-		line-height: 1.3;
+		margin-bottom: 1rem;
+		line-height: 1.2;
+		letter-spacing: -0.025em;
 	}
 	
 	.showcase-subtitle {
-		font-size: 0.9375rem;
+		font-size: 1.0625rem;
 		color: var(--text-secondary);
-		line-height: 1.5;
-		max-width: 500px;
+		line-height: 1.6;
+		letter-spacing: -0.01em;
+		max-width: 36rem;
 		margin: 0 auto;
-	}
-	
-	/* Feature Grid */
-	.feature-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
-	}
-	
-	.feature-pill {
-		background: var(--bg-secondary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.75rem;
-		padding: 0.75rem;
-		display: flex;
-		gap: 0.625rem;
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
-	}
-	
-	.feature-icon {
-		flex-shrink: 0;
-		color: var(--color-primary-600);
-	}
-	
-	.feature-content {
-		flex: 1;
-		min-width: 0;
-	}
-	
-	.feature-title {
-		font-size: 0.8125rem;
-		font-weight: 600;
-		color: var(--text-primary);
-		margin-bottom: 0.125rem;
-		line-height: 1.2;
-	}
-	
-	.feature-desc {
-		font-size: 0.6875rem;
-		color: var(--text-secondary);
-		line-height: 1.3;
-	}
-	
-	/* Demo Notice */
-	.demo-notice {
-		background: var(--bg-secondary);
-		border: 1px solid var(--color-primary-200);
-		border-radius: 0.75rem;
-		padding: 1rem;
-		margin-bottom: 1.5rem;
-		text-align: center;
-	}
-	
-	.demo-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.375rem;
-		background: var(--color-primary-600);
-		color: white;
-		padding: 0.375rem 0.875rem;
-		border-radius: 2rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
-	}
-	
-	.demo-notice p {
-		font-size: 0.8125rem;
-		color: var(--text-secondary);
-		margin: 0;
-		line-height: 1.4;
 	}
 	
 	/* Form Container */
 	.form-container {
 		position: relative;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		background: var(--bg-secondary);
+		border: 2px solid var(--border-primary);
 		border-radius: 0.75rem;
 		overflow: hidden;
 		margin-bottom: 2rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		box-shadow: 
+			0 4px 16px rgba(0, 0, 0, 0.08),
+			0 0 0 1px rgba(var(--color-accent-600-rgb), 0.05);
 	}
 	
 	.form-wrapper {
@@ -388,11 +267,56 @@
 		-webkit-overflow-scrolling: touch;
 	}
 	
-	/* Remove scroll container on mobile */
+	/* Mobile improvements */
 	@media (max-width: 767px) {
+		/* Section spacing */
+		.section-divider {
+			margin: 0 auto 3rem;
+			max-width: 10rem;
+		}
+		
+		/* Header spacing */
+		.showcase-header {
+			margin-bottom: 2rem;
+			padding: 0;
+		}
+		
+		.showcase-title {
+			font-size: 1.75rem;
+			line-height: 1.15;
+			margin-bottom: 0.75rem;
+		}
+		
+		.showcase-subtitle {
+			font-size: 0.9375rem;
+			line-height: 1.5;
+		}
+		
+		/* Form container on mobile - remove padding since outer wrapper already provides it */
 		.form-wrapper {
 			max-height: none;
 			overflow-y: visible;
+			padding: 0;
+		}
+		
+		/* Better spacing for form sections */
+		.form-wrapper :global(.form-section),
+		.form-wrapper :global(.tour-form-section),
+		.form-wrapper :global(.form-field) {
+			margin-bottom: 1.25rem;
+		}
+		
+		/* Tour Name input needs top padding - first field in form */
+		.form-wrapper :global(.tour-form-main > div:first-child),
+		.form-wrapper :global(.tour-form-main > div:first-child .form-field-wrapper),
+		.form-wrapper :global(.tour-name-input) {
+			padding-top: 1rem;
+			margin-top: 0;
+		}
+		
+		/* Target the grid container that holds Tour Name */
+		.form-wrapper :global(.grid:first-child) {
+			margin-top: 1rem;
 		}
 	}
 	
@@ -400,6 +324,104 @@
 	.form-wrapper :global(.tour-form-sidebar),
 	.form-wrapper :global(.action-buttons-section) {
 		display: none;
+	}
+	
+	/* Base radio button size for all screens - custom styled like cancellation policies */
+	.form-wrapper :global(input[type="radio"]),
+	.form-wrapper :global(.form-radio),
+	.form-wrapper :global(input.form-radio),
+	.form-wrapper :global(label input[type="radio"]),
+	.form-wrapper :global(.cancellation-policy-card input[type="radio"]),
+	.form-wrapper :global(* input[type="radio"]) {
+		width: 1.125rem !important;
+		height: 1.125rem !important;
+		min-width: 1.125rem !important;
+		min-height: 1.125rem !important;
+		max-width: 1.125rem !important;
+		max-height: 1.125rem !important;
+		flex-shrink: 0 !important;
+		padding: 0 !important;
+		opacity: 1 !important;
+		visibility: visible !important;
+		display: inline-block !important;
+		appearance: none !important;
+		-webkit-appearance: none !important;
+		-moz-appearance: none !important;
+		cursor: pointer !important;
+		vertical-align: middle !important;
+		margin: 0 !important;
+		position: relative !important;
+		/* Custom radio button styling */
+		color: var(--color-accent-600) !important;
+		border: 2px solid var(--border-primary) !important;
+		background-color: var(--bg-primary) !important;
+		border-radius: 50% !important;
+		transition: all var(--transition-fast) ease !important;
+	}
+	
+	/* Custom radio button hover state */
+	.form-wrapper :global(input[type="radio"]:hover),
+	.form-wrapper :global(.form-radio:hover),
+	.form-wrapper :global(input.form-radio:hover) {
+		border-color: var(--color-accent-400) !important;
+	}
+	
+	/* Custom radio button focus state */
+	.form-wrapper :global(input[type="radio"]:focus),
+	.form-wrapper :global(.form-radio:focus),
+	.form-wrapper :global(input.form-radio:focus) {
+		outline: none !important;
+		outline-offset: 0 !important;
+		border-color: var(--color-accent-600) !important;
+		box-shadow: 0 0 0 3px rgba(var(--color-accent-600-rgb), 0.1) !important;
+	}
+	
+	.form-wrapper :global(input[type="radio"]:focus-visible),
+	.form-wrapper :global(.form-radio:focus-visible),
+	.form-wrapper :global(input.form-radio:focus-visible) {
+		outline: none !important;
+		border-color: var(--color-accent-600) !important;
+		box-shadow: 0 0 0 3px rgba(var(--color-accent-600-rgb), 0.1) !important;
+	}
+	
+	/* Custom radio button checked state */
+	.form-wrapper :global(input[type="radio"]:checked),
+	.form-wrapper :global(.form-radio:checked),
+	.form-wrapper :global(input.form-radio:checked) {
+		border-color: var(--color-accent-600) !important;
+		background-color: var(--color-accent-600) !important;
+	}
+	
+	/* Custom radio button checked inner circle */
+	.form-wrapper :global(input[type="radio"]:checked)::before,
+	.form-wrapper :global(.form-radio:checked)::before,
+	.form-wrapper :global(input.form-radio:checked)::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 0.375rem;
+		height: 0.375rem;
+		background-color: white;
+		border-radius: 50%;
+	}
+	
+	/* Custom radio button checked hover state */
+	.form-wrapper :global(input[type="radio"]:checked:hover),
+	.form-wrapper :global(.form-radio:checked:hover),
+	.form-wrapper :global(input.form-radio:checked:hover) {
+		border-color: var(--color-accent-700) !important;
+		background-color: var(--color-accent-700) !important;
+	}
+	
+	/* Custom radio button checked focus state */
+	.form-wrapper :global(input[type="radio"]:checked:focus),
+	.form-wrapper :global(.form-radio:checked:focus),
+	.form-wrapper :global(input.form-radio:checked:focus) {
+		border-color: var(--color-accent-600) !important;
+		background-color: var(--color-accent-600) !important;
+		box-shadow: 0 0 0 3px rgba(var(--color-accent-600-rgb), 0.1) !important;
 	}
 	
 	.form-wrapper :global(.tour-form-grid) {
@@ -437,11 +459,17 @@
 	
 	/* Fix icon positioning on narrow phones */
 	@media (max-width: 430px) {
-		.form-wrapper :global(.location-picker-wrapper .absolute.left-3),
+		/* Only fix the left icon (map pin), keep the X button at top */
+		.form-wrapper :global(.location-picker-wrapper .absolute.left-3) {
+			transform: none !important;
+			bottom: auto !important;
+			margin-top: 0 !important;
+		}
+		
+		/* Position the X button and search icon at top with no transform */
 		.form-wrapper :global(.location-picker-wrapper .absolute.right-3),
 		.form-wrapper :global(.location-picker-wrapper button[aria-label="Clear location"]) {
 			transform: none !important;
-			top: 0.75rem !important;
 			bottom: auto !important;
 			margin-top: 0 !important;
 		}
@@ -454,6 +482,88 @@
 			border: none;
 			box-shadow: none;
 			background: transparent;
+			margin-bottom: 1.5rem;
+		}
+		
+		/* Better form field spacing */
+		.form-wrapper :global(label),
+		.form-wrapper :global(.form-label) {
+			font-size: 0.875rem;
+			margin-bottom: 0.5rem;
+		}
+		
+		/* Better input spacing */
+		.form-wrapper :global(input),
+		.form-wrapper :global(textarea),
+		.form-wrapper :global(select) {
+			font-size: 1rem;
+			padding: 0.75rem;
+		}
+		
+		/* Exclude radio buttons from general padding - they have their own sizing */
+		.form-wrapper :global(input[type="radio"]),
+		.form-wrapper :global(.form-radio),
+		.form-wrapper :global(input.form-radio) {
+			padding: 0 !important;
+			font-size: inherit !important;
+			opacity: 1 !important;
+			visibility: visible !important;
+			display: inline-block !important;
+			width: 1rem !important;
+			height: 1rem !important;
+			appearance: none !important;
+			-webkit-appearance: none !important;
+			-moz-appearance: none !important;
+			border: 2px solid var(--border-primary) !important;
+			background-color: var(--bg-primary) !important;
+			border-radius: 50% !important;
+			vertical-align: middle !important;
+		}
+		
+		/* Align all radio button labels to middle */
+		.form-wrapper :global(.stripe-fee-selector .option),
+		.form-wrapper :global(label:has(input[type="radio"])) {
+			align-items: center !important;
+		}
+		
+		.form-wrapper :global(.stripe-fee-selector .option input[type="radio"]),
+		.form-wrapper :global(label:has(input[type="radio"]) input[type="radio"]) {
+			margin-top: 0 !important;
+			vertical-align: middle !important;
+			align-self: center !important;
+		}
+		
+		/* Exclude discount inputs from general padding - they have their own sizing */
+		.form-wrapper :global(.discount-number-input),
+		.form-wrapper :global(.discount-input),
+		.form-wrapper :global(.custom-discount-input input),
+		.form-wrapper :global(input.discount-number-input),
+		.form-wrapper :global(input.discount-input) {
+			padding: 0.25rem 0.375rem !important;
+			font-size: 0.75rem !important;
+			min-height: 2rem !important;
+			height: 2rem !important;
+			max-height: 2rem !important;
+		}
+		
+		/* Tour Name input top padding on mobile */
+		.form-wrapper :global(.tour-name-input) {
+			margin-top: 1rem;
+		}
+		
+		/* Smaller font size for tour description editor on mobile */
+		.form-wrapper :global(.tipex-description-editor),
+		.form-wrapper :global(.tipex-description-editor .ProseMirror),
+		.form-wrapper :global(.tipex-description-editor p),
+		.form-wrapper :global(.tipex-description-editor h2),
+		.form-wrapper :global(.tipex-description-editor h3),
+		.form-wrapper :global(.tipex-description-editor ul),
+		.form-wrapper :global(.tipex-description-editor li) {
+			font-size: 0.875rem;
+		}
+		
+		.form-wrapper :global(.tipex-description-editor h2) {
+			font-size: 1rem;
 		}
 		
 		.form-wrapper :global(.category-chip),
@@ -479,6 +589,7 @@
 			display: grid !important;
 			grid-template-columns: 1fr auto !important;
 			align-items: center !important;
+			align-content: center !important;
 			gap: 0.5rem !important;
 			padding: 0.5rem 0.75rem !important;
 		}
@@ -495,12 +606,51 @@
 			overflow-wrap: break-word !important;
 		}
 		
-		/* Fix language chip content alignment */
+		/* Fix language chip content alignment - flag and text together */
+		.form-wrapper :global(.language-chip) {
+			display: flex !important;
+			align-items: center !important;
+			justify-content: flex-start !important;
+			gap: 0.25rem !important;
+		}
+		
+		/* Group flag and text together on the left */
 		.form-wrapper :global(.language-chip > span:not(button)) {
 			display: inline-flex !important;
 			align-items: center !important;
-			gap: 0.375rem !important;
-			flex: 1 !important;
+			gap: 0.25rem !important;
+			flex: 0 1 auto !important;
+			text-align: left !important;
+			justify-content: flex-start !important;
+			margin-right: auto !important;
+		}
+		
+		/* Ensure language chip text (chip-name) is left-aligned */
+		.form-wrapper :global(.language-chip .chip-name),
+		.form-wrapper :global(.language-chip span:not(.chip-flag):not(button)) {
+			text-align: left !important;
+			justify-content: flex-start !important;
+		}
+		
+		/* Ensure flag icon is properly aligned and smaller */
+		.form-wrapper :global(.language-chip .chip-flag) {
+			flex-shrink: 0 !important;
+			flex-grow: 0 !important;
+			text-align: left !important;
+			font-size: 0.875rem !important;
+			width: auto !important;
+			min-width: 0 !important;
+			max-width: none !important;
+			line-height: 1 !important;
+			margin-right: 0.25rem !important;
+			display: inline-block !important;
+		}
+		
+		/* Ensure chip-name is left-aligned and not taking too much space */
+		.form-wrapper :global(.language-chip .chip-name) {
+			text-align: left !important;
+			flex: 0 1 auto !important;
+			margin-left: 0 !important;
 		}
 		
 		.form-wrapper :global(.chip-container),
@@ -569,7 +719,7 @@
 		}
 		
 		.form-wrapper :global(.language-chip) {
-			justify-content: space-between !important;
+			justify-content: flex-start !important;
 		}
 		
 		/* Consistent badge heights and alignment */
@@ -579,6 +729,7 @@
 		.form-wrapper :global(.selected-languages > *) {
 			height: 2.75rem !important;
 			min-height: 2.75rem !important;
+			max-height: 2.75rem !important;
 			display: flex !important;
 			align-items: center !important;
 			justify-content: space-between !important;
@@ -586,11 +737,29 @@
 			gap: 0.5rem !important;
 		}
 		
+		/* Language chip specific - flag and text together on left */
+		.form-wrapper :global(.language-chip) {
+			justify-content: flex-start !important;
+		}
+		
+		/* Group flag and name together */
+		.form-wrapper :global(.language-chip .chip-flag),
+		.form-wrapper :global(.language-chip .chip-name) {
+			margin-right: 0.25rem !important;
+		}
+		
+		/* Push button to the right */
+		.form-wrapper :global(.language-chip .chip-remove) {
+			margin-left: auto !important;
+		}
+		
 		/* Item and requirement chips use grid for Opera compatibility */
 		.form-wrapper :global(.item-chip),
 		.form-wrapper :global(.requirement-chip),
 		.form-wrapper :global(.chip-input .chip-item) {
+			height: 2.75rem !important;
 			min-height: 2.75rem !important;
+			max-height: 2.75rem !important;
 			display: grid !important;
 			grid-template-columns: 1fr auto !important;
 			align-items: center !important;
@@ -603,7 +772,7 @@
 		.form-wrapper :global(.language-chip > span:first-child),
 		.form-wrapper :global(.category-chip > span:not(button)),
 		.form-wrapper :global(.language-chip > span:not(button)) {
-			flex: 1 !important;
+			flex: 0 1 auto !important;
 			text-align: left !important;
 			display: flex !important;
 			align-items: center !important;
@@ -614,11 +783,18 @@
 		.form-wrapper :global(.item-chip > span:first-child),
 		.form-wrapper :global(.requirement-chip > span:first-child),
 		.form-wrapper :global(.item-chip > span:not(button)),
-		.form-wrapper :global(.requirement-chip > span:not(button)) {
+		.form-wrapper :global(.requirement-chip > span:not(button)),
+		.form-wrapper :global(.item-chip .chip-text),
+		.form-wrapper :global(.requirement-chip .chip-text) {
 			grid-column: 1 !important;
 			text-align: left !important;
 			overflow-wrap: break-word !important;
 			word-break: break-word !important;
+			display: block !important;
+			align-self: center !important;
+			line-height: 1.5 !important;
+			margin: 0 !important;
+			padding: 0 !important;
 		}
 		
 		/* Fix X button alignment in badges - Opera compatible */
@@ -640,6 +816,8 @@
 		/* Fix X button for what's included and requirements - Grid layout for Opera */
 		.form-wrapper :global(.item-chip button),
 		.form-wrapper :global(.requirement-chip button),
+		.form-wrapper :global(.item-chip .chip-remove),
+		.form-wrapper :global(.requirement-chip .chip-remove),
 		.form-wrapper :global(.chip-input .chip-item button) {
 			grid-column: 2 !important;
 			width: 1.5rem !important;
@@ -650,8 +828,10 @@
 			display: flex !important;
 			align-items: center !important;
 			justify-content: center !important;
+			align-self: center !important;
 			flex-shrink: 0 !important;
 			margin: 0 !important;
+			margin-left: auto !important;
 		}
 		
 		/* Stretch Add buttons */
@@ -666,23 +846,98 @@
 			min-height: 2.75rem !important;
 		}
 		
+		/* Add bottom padding to cancellation policy card */
+		.form-wrapper :global(.form-section-card) {
+			padding-bottom: 1.5rem !important;
+			margin-bottom: 1.5rem !important;
+		}
+		
+		/* Make cancellation policy card more distinctive */
+		.form-wrapper :global(.form-section-card) {
+			background: transparent !important;
+			border: none !important;
+			border-radius: var(--radius-xl) !important;
+			box-shadow: none !important;
+		}
+		
 		/* Fix cancellation policy radio buttons */
 		.form-wrapper :global(.cancellation-policy-card),
 		.form-wrapper :global(label:has(input[type="radio"])) {
 			max-width: 100% !important;
 			width: 100% !important;
-			padding: 0.75rem !important;
+			padding: 0.625rem !important;
+			display: flex !important;
+			align-items: center !important;
 		}
 		
-		.form-wrapper :global(input[type="radio"]) {
-			width: 1.25rem !important;
-			height: 1.25rem !important;
+		/* Add bottom padding to cancellation policy card content */
+		.form-wrapper :global(.form-section-card > div:last-child) {
+			padding-bottom: 1rem !important;
+		}
+		
+		/* Cancellation Policy section - reduce padding and spacing */
+		.form-wrapper :global(.cancellation-policy-card > div),
+		.form-wrapper :global(.cancellation-policy-card .space-y-3) {
+			gap: 0.5rem !important;
+		}
+		
+		.form-wrapper :global(input[type="radio"]),
+		.form-wrapper :global(.form-radio),
+		.form-wrapper :global(input.form-radio),
+		.form-wrapper :global(label input[type="radio"]),
+		.form-wrapper :global(.cancellation-policy-card input[type="radio"]) {
+			width: 1rem !important;
+			height: 1rem !important;
+			max-width: 1rem !important;
+			max-height: 1rem !important;
 			flex-shrink: 0 !important;
+			min-width: 1rem !important;
+			min-height: 1rem !important;
+			appearance: none !important;
+			-webkit-appearance: none !important;
+			-moz-appearance: none !important;
+			border: 2px solid var(--border-primary) !important;
+			background-color: var(--bg-primary) !important;
+			border-radius: 50% !important;
+			margin-top: 0 !important;
+			align-self: center !important;
+			vertical-align: middle !important;
 		}
 		
-		/* Better spacing for radio content */
-		.form-wrapper :global(label:has(input[type="radio"]) > div) {
+		/* Custom radio button checked inner circle on mobile */
+		.form-wrapper :global(input[type="radio"]:checked)::before,
+		.form-wrapper :global(.form-radio:checked)::before,
+		.form-wrapper :global(input.form-radio:checked)::before {
+			width: 0.375rem !important;
+			height: 0.375rem !important;
+		}
+		
+		/* Better spacing for radio content in cancellation policy - exclude pricing model selector */
+		.form-wrapper :global(.cancellation-policy-card label:has(input[type="radio"]) > div),
+		.form-wrapper :global(label:has(input[type="radio"]):not(.model-option) > div) {
 			margin-left: 0.5rem !important;
+			flex: 1 !important;
+			display: flex !important;
+			flex-direction: column !important;
+			align-items: flex-start !important;
+		}
+		
+		/* Ensure pricing model selector stays inline */
+		.form-wrapper :global(.pricing-model-selector .option-content),
+		.form-wrapper :global(.model-option .option-content) {
+			display: flex !important;
+			flex-direction: row !important;
+			align-items: center !important;
+			flex-wrap: nowrap !important;
+		}
+		
+		/* Reduce font sizes in cancellation policy labels */
+		.form-wrapper :global(.cancellation-policy-card label .font-medium) {
+			font-size: 0.875rem !important;
+		}
+		
+		.form-wrapper :global(.cancellation-policy-card label .text-xs) {
+			font-size: 0.75rem !important;
 		}
 	}
 	
@@ -719,149 +974,24 @@
 		}
 	}
 	
-	/* CTA Section */
-	.cta-section {
-		background: linear-gradient(135deg, var(--color-primary-600), var(--color-accent-600));
-		border-radius: 0.75rem;
-		padding: 2rem 1.5rem;
-		text-align: center;
-		color: white;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-	}
-	
-	.cta-title {
-		font-size: 1.5rem;
-		font-weight: 700;
-		margin-bottom: 0.75rem;
-		line-height: 1.3;
-	}
-	
-	.cta-text {
-		font-size: 0.9375rem;
-		margin-bottom: 1.5rem;
-		opacity: 0.95;
-		line-height: 1.5;
-	}
-	
-	.cta-buttons {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		margin-bottom: 1.5rem;
-	}
-	
-	.btn-primary,
-	.btn-secondary {
-		padding: 0.875rem 1.5rem;
-		border-radius: 0.5rem;
-		font-weight: 600;
-		font-size: 0.9375rem;
-		text-decoration: none;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
-		width: 100%;
-	}
-	
-	.btn-primary {
-		background: white;
-		color: var(--color-primary-600);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-	}
-	
-	.btn-secondary {
-		background: transparent;
-		color: white;
-		border: 2px solid rgba(255, 255, 255, 0.9);
-	}
-	
-	/* Trust Indicators */
-	.trust-indicators {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		align-items: center;
-	}
-	
-	.trust-item {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		font-size: 0.8125rem;
-		opacity: 0.95;
-	}
-	
-	.trust-item :global(svg) {
-		color: #10b981;
-	}
-	
 	/* Tablet and larger */
 	@media (min-width: 768px) {
-		.tour-form-showcase {
-			padding: 2rem;
-		}
-		
-		.showcase-header {
-			margin-bottom: 3rem;
-		}
-		
 		.showcase-title {
 			font-size: 2.25rem;
-			margin-bottom: 1rem;
 		}
 		
 		.showcase-subtitle {
 			font-size: 1.125rem;
-			max-width: 600px;
-		}
-		
-		.feature-grid {
-			grid-template-columns: repeat(4, 1fr);
-			gap: 1rem;
-			margin-bottom: 2.5rem;
-		}
-		
-		.feature-pill {
-			padding: 1rem;
-		}
-		
-		.feature-pill:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		}
-		
-		.feature-title {
-			font-size: 0.875rem;
-			margin-bottom: 0.25rem;
-		}
-		
-		.feature-desc {
-			font-size: 0.75rem;
-		}
-		
-		.demo-notice {
-			padding: 1.5rem;
-			margin-bottom: 2.5rem;
-			border-radius: 1rem;
-		}
-		
-		.demo-badge {
-			font-size: 0.875rem;
-			padding: 0.5rem 1rem;
-			margin-bottom: 0.75rem;
-		}
-		
-		.demo-notice p {
-			font-size: 0.9375rem;
 		}
 		
 		.form-container {
 			border-radius: 1rem;
 			margin-bottom: 3rem;
 			border-width: 2px;
-			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+			border-color: var(--border-secondary);
+			box-shadow: 
+				0 8px 32px rgba(0, 0, 0, 0.12),
+				0 0 0 1px rgba(var(--color-accent-600-rgb), 0.08);
 		}
 		
 		.form-wrapper {
@@ -869,62 +999,17 @@
 			max-height: 800px;
 		}
 		
-		.cta-section {
-			padding: 3rem 2rem;
-			border-radius: 1rem;
-		}
-		
-		.cta-title {
-			font-size: 2rem;
-			margin-bottom: 1rem;
-		}
-		
-		.cta-text {
-			font-size: 1.125rem;
-			margin-bottom: 2rem;
-		}
-		
-		.cta-buttons {
-			flex-direction: row;
-			justify-content: center;
-			margin-bottom: 2rem;
-		}
-		
-		.btn-primary,
-		.btn-secondary {
-			width: auto;
-			padding: 1rem 2rem;
-			font-size: 1.125rem;
-		}
-		
-		.btn-primary:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-		}
-		
-		.btn-secondary:hover {
-			background: rgba(255, 255, 255, 0.1);
-			transform: translateY(-2px);
-		}
-		
-		.trust-indicators {
-			flex-direction: row;
-			gap: 2rem;
-		}
-		
-		.trust-item {
-			font-size: 0.875rem;
+		/* Make cancellation policy card more distinctive on larger screens */
+		.form-wrapper :global(.form-section-card) {
+			background: transparent !important;
+			border: none !important;
+			border-radius: var(--radius-xl) !important;
+			box-shadow: none !important;
 		}
 	}
 	
 	/* Desktop */
 	@media (min-width: 1024px) {
-		.tour-form-showcase {
-			padding: 3rem;
-			max-width: 1400px;
-			margin: 0 auto;
-		}
-		
 		.showcase-title {
 			font-size: 2.5rem;
 		}
@@ -940,150 +1025,191 @@
 	
 	/* Very small screens */
 	@media (max-width: 480px) {
-		.tour-form-showcase {
-			padding: 0.5rem;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
+		/* Section spacing */
+		.section-divider {
+			margin: 0 auto 2.5rem;
+			max-width: 8rem;
 		}
 		
-		.showcase-header,
-		.feature-grid,
-		.demo-notice,
-		.form-container,
-		.cta-section {
+		.showcase-header {
 			width: 100%;
 			max-width: 100%;
-		}
-		
-		.form-wrapper {
-			padding: 0.5rem;
-		}
-		
-		.demo-notice {
-			padding: 0.75rem;
-		}
-		
-		.cta-section {
-			padding: 1.5rem 1rem;
-		}
-	}
-	
-	@media (max-width: 360px) {
-		.tour-form-showcase {
-			padding: 0.375rem;
+			margin-bottom: 1.75rem;
+			padding: 0;
 		}
 		
 		.showcase-title {
-			font-size: 1.5rem;
+			font-size: 1.625rem;
+			line-height: 1.15;
+			margin-bottom: 0.625rem;
 		}
 		
 		.showcase-subtitle {
 			font-size: 0.875rem;
+			line-height: 1.5;
 		}
 		
-		.feature-grid {
-			gap: 0.5rem;
-			grid-template-columns: 1fr;
-		}
-		
-		.feature-pill {
-			padding: 0.625rem;
+		.form-container {
+			width: 100%;
+			max-width: 100%;
+			margin-bottom: 1.25rem;
 		}
 		
 		.form-wrapper {
-			padding: 0.375rem;
+			padding: 0;
+	}
+	
+		/* Tighter spacing for form fields on small screens */
+		.form-wrapper :global(.form-section),
+		.form-wrapper :global(.tour-form-section),
+		.form-wrapper :global(.form-field) {
+			margin-bottom: 1rem;
+		}
+		
+		/* Even smaller font size for tour description on very small screens */
+		.form-wrapper :global(.tipex-description-editor),
+		.form-wrapper :global(.tipex-description-editor .ProseMirror),
+		.form-wrapper :global(.tipex-description-editor p),
+		.form-wrapper :global(.tipex-description-editor ul),
+		.form-wrapper :global(.tipex-description-editor li) {
+			font-size: 0.8125rem;
+		}
+		
+		.form-wrapper :global(.tipex-description-editor h2) {
+			font-size: 0.9375rem;
+		}
+		}
+		
+	@media (max-width: 360px) {
+		.showcase-title {
+			font-size: 1.5rem;
+			line-height: 1.1;
+		}
+		
+		.showcase-subtitle {
+			font-size: 0.8125rem;
+			line-height: 1.4;
+		}
+		
+		.form-wrapper {
+			padding: 0;
+		}
+		
+		/* Even tighter spacing on very small screens */
+		.form-wrapper :global(.form-section),
+		.form-wrapper :global(.tour-form-section),
+		.form-wrapper :global(.form-field) {
+			margin-bottom: 0.875rem;
+		}
+		
+		/* Radio buttons on very small screens - custom styled */
+		.form-wrapper :global(input[type="radio"]),
+		.form-wrapper :global(.form-radio),
+		.form-wrapper :global(input.form-radio) {
+			width: 0.875rem !important;
+			height: 0.875rem !important;
+			max-width: 0.875rem !important;
+			max-height: 0.875rem !important;
+			min-width: 0.875rem !important;
+			min-height: 0.875rem !important;
+			appearance: none !important;
+			-webkit-appearance: none !important;
+			-moz-appearance: none !important;
+			border: 2px solid var(--border-primary) !important;
+			background-color: var(--bg-primary) !important;
+			border-radius: 50% !important;
+			vertical-align: middle !important;
+		}
+		
+		/* Custom radio button checked inner circle on very small screens */
+		.form-wrapper :global(input[type="radio"]:checked)::before,
+		.form-wrapper :global(.form-radio:checked)::before,
+		.form-wrapper :global(input.form-radio:checked)::before {
+			width: 0.25rem !important;
+			height: 0.25rem !important;
+		}
+		
+		/* Even tighter cancellation policy spacing on very small screens */
+		.form-wrapper :global(.cancellation-policy-card label:has(input[type="radio"])) {
+			padding: 0.5rem !important;
+			display: flex !important;
+			align-items: center !important;
+		}
+		
+		.form-wrapper :global(.cancellation-policy-card label:has(input[type="radio"]) input[type="radio"]) {
+			margin-top: 0 !important;
+			align-self: center !important;
+		}
+		
+		.form-wrapper :global(.cancellation-policy-card label .font-medium) {
+			font-size: 0.8125rem !important;
+		}
+		
+		.form-wrapper :global(.cancellation-policy-card label .text-xs) {
+			font-size: 0.6875rem !important;
+		}
+		
+		/* Ensure pricing model selector stays inline on very small screens */
+		.form-wrapper :global(.pricing-model-selector .option-content),
+		.form-wrapper :global(.model-option .option-content) {
+			display: flex !important;
+			flex-direction: row !important;
+			align-items: center !important;
+			flex-wrap: nowrap !important;
+		}
+	}
+	
+	/* Light mode - make form more distinctive */
+	:root[data-theme='light'] .tour-form-showcase,
+	:root:not([data-theme]) .tour-form-showcase {
+		.form-container {
+			background: var(--bg-primary);
+			border-color: var(--border-secondary);
+			box-shadow: 
+				0 8px 32px rgba(0, 0, 0, 0.12),
+				0 4px 16px rgba(0, 0, 0, 0.08),
+				0 0 0 1px rgba(var(--color-accent-600-rgb), 0.12);
+		}
+		
+		@media (min-width: 768px) {
+			.form-container {
+				box-shadow: 
+					0 12px 48px rgba(0, 0, 0, 0.15),
+					0 8px 24px rgba(0, 0, 0, 0.1),
+					0 0 0 1px rgba(var(--color-accent-600-rgb), 0.15);
+		}
 		}
 	}
 	
 	/* Dark mode adjustments */
 	:root[data-theme='dark'] .tour-form-showcase {
-		.showcase-icon {
-			color: var(--color-primary-400);
-		}
-		
-		.feature-pill {
-			background: rgba(255, 255, 255, 0.05);
-			border-color: var(--border-secondary);
-			
-			&:hover {
-				background: rgba(255, 255, 255, 0.08);
-				border-color: var(--color-primary-400);
-			}
-		}
-		
-		.feature-icon {
-			color: var(--color-primary-400);
-		}
-		
-		.demo-notice {
-			background: rgba(255, 255, 255, 0.05);
-			border-color: var(--color-primary-400);
-		}
-		
-		.demo-badge {
-			background: var(--color-primary-500);
-		}
-		
 		.form-container {
-			background: var(--bg-primary);
+			background: var(--bg-secondary);
 			border-color: var(--border-secondary);
-			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+			box-shadow: 
+				0 8px 32px rgba(0, 0, 0, 0.4),
+				0 0 0 1px rgba(var(--color-accent-500-rgb), 0.1);
 		}
 		
 		.form-overlay {
 			background: linear-gradient(to bottom, transparent 0%, var(--bg-primary) 100%);
 		}
 		
-		/* Enhanced CTA section for dark mode */
-		.cta-section {
-			background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-			border: 1px solid rgba(255, 255, 255, 0.1);
-		}
-		
-		.cta-title {
-			color: white !important;
-			text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-		}
-		
-		.cta-text {
-			color: rgba(255, 255, 255, 0.95) !important;
-		}
-		
-		.btn-primary {
-			background: white !important;
-			color: #1e3a8a !important;
-			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-		}
-		
-		.btn-secondary {
-			border-color: rgba(255, 255, 255, 0.9) !important;
-			color: white !important;
-			
-			&:hover {
-				background: rgba(255, 255, 255, 0.15) !important;
-			}
-		}
-		
-		.trust-item {
-			color: rgba(255, 255, 255, 0.95) !important;
-		}
-		
-		.trust-item :global(svg) {
-			color: #10b981 !important;
-		}
-		
-		/* Fix radio button visibility in dark mode */
-		.form-wrapper :global(input[type="radio"]) {
-			accent-color: var(--color-primary-400) !important;
-			background-color: var(--bg-secondary) !important;
+		/* Fix radio button visibility in dark mode - custom styling */
+		.form-wrapper :global(input[type="radio"]),
+		.form-wrapper :global(.form-radio),
+		.form-wrapper :global(input.form-radio) {
 			border-color: var(--border-primary) !important;
+			background-color: var(--bg-secondary) !important;
 			opacity: 1 !important;
+			visibility: visible !important;
 		}
 		
-		.form-wrapper :global(input[type="radio"]:checked) {
-			accent-color: var(--color-primary-400) !important;
+		.form-wrapper :global(input[type="radio"]:checked),
+		.form-wrapper :global(.form-radio:checked),
+		.form-wrapper :global(input.form-radio:checked) {
+			border-color: var(--color-accent-500) !important;
+			background-color: var(--color-accent-500) !important;
 		}
 		
 		/* Ensure radio button container has proper contrast */
@@ -1091,6 +1217,63 @@
 		.form-wrapper :global(label:has(input[type="radio"])) {
 			background: rgba(255, 255, 255, 0.03);
 			border-color: var(--border-secondary);
+		}
+		
+		/* Make cancellation policy card more distinctive in dark mode */
+		.form-wrapper :global(.form-section-card) {
+			background: transparent !important;
+			border: none !important;
+			box-shadow: none !important;
+			}
+		
+		/* Ensure colored dots are visible in dark mode */
+		.form-wrapper :global(.w-2.h-2.rounded-full),
+		.form-wrapper :global(div.w-2.h-2.rounded-full),
+		.form-wrapper :global(.cancellation-policy-card .w-2.h-2.rounded-full),
+		.form-wrapper :global(.cancellation-policy-card div[class*="w-2"][class*="h-2"]) {
+			opacity: 1 !important;
+			filter: brightness(1.3) saturate(1.2) !important;
+		}
+		
+		/* Specific color adjustments for dark mode visibility - override inline styles */
+		.form-wrapper :global(div[style*="var(--color-success-500)"]),
+		.form-wrapper :global(div[style*="--color-success-500"]) {
+			background: var(--color-success-400) !important;
+			opacity: 1 !important;
+		}
+		
+		.form-wrapper :global(div[style*="var(--color-warning-500)"]),
+		.form-wrapper :global(div[style*="--color-warning-500"]) {
+			background: var(--color-warning-400) !important;
+			opacity: 1 !important;
+		}
+		
+		.form-wrapper :global(div[style*="var(--color-error-500)"]),
+		.form-wrapper :global(div[style*="--color-error-500"]),
+		.form-wrapper :global(div[style*="var(--color-danger-500)"]),
+		.form-wrapper :global(div[style*="--color-danger-500"]) {
+			background: var(--color-error-400) !important;
+			opacity: 1 !important;
+		}
+		
+		/* Brighten success colors for better visibility */
+		.form-wrapper :global(div[style*="var(--color-success"]),
+		.form-wrapper :global(div[style*="--color-success"]) {
+			filter: brightness(1.4) !important;
+		}
+		
+		/* Brighten warning colors for better visibility */
+		.form-wrapper :global(div[style*="var(--color-warning"]),
+		.form-wrapper :global(div[style*="--color-warning"]) {
+			filter: brightness(1.3) !important;
+		}
+		
+		/* Brighten error/danger colors for better visibility */
+		.form-wrapper :global(div[style*="var(--color-error"]),
+		.form-wrapper :global(div[style*="--color-error"]),
+		.form-wrapper :global(div[style*="var(--color-danger"]),
+		.form-wrapper :global(div[style*="--color-danger"]) {
+			filter: brightness(1.3) !important;
 		}
 	}
 </style>

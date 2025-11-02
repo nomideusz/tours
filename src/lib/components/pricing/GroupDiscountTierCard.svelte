@@ -399,11 +399,10 @@
 	}
 	
 	.discount-buttons {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
 		flex-wrap: wrap;
-		flex: 1;
 		min-width: 0;
 	}
 	
@@ -418,6 +417,12 @@
 		cursor: pointer;
 		transition: all 0.15s ease;
 		white-space: nowrap;
+		min-height: 2.5rem;
+		height: 2.5rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
 	}
 	
 	.discount-btn:hover {
@@ -436,12 +441,24 @@
 	.custom-discount {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
-		padding: 0.25rem 0.5rem;
+		gap: 0.125rem;
+		padding: 0.25rem 0.375rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-secondary);
 		border-radius: 0.375rem;
 		transition: all 0.15s ease;
+		min-height: 2.5rem;
+		height: 2.5rem;
+		box-sizing: border-box;
+		min-width: 4.5rem;
+		flex: 1;
+		max-width: 6rem;
+	}
+	
+	.custom-discount input {
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
 	}
 	
 	.custom-discount:focus-within {
@@ -450,24 +467,27 @@
 	}
 	
 	.discount-input {
-		width: 3.25rem;
-		padding: 0.125rem 0.25rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		text-align: center;
-		border: none;
-		background: transparent;
-		color: var(--text-primary);
+		flex: 1 !important;
+		min-width: 3rem !important;
+		width: auto !important;
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
+		padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+		font-size: 0.75rem !important;
+		font-weight: 500 !important;
+		text-align: right !important;
+		border: none !important;
+		background: transparent !important;
+		color: var(--text-primary) !important;
+		line-height: 1.5 !important;
+		box-sizing: border-box !important;
+		margin: 0 !important;
+		margin-left: 0 !important;
 	}
 	
 	.discount-input:focus {
 		outline: none;
-	}
-	
-	.percent-sign {
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--text-tertiary);
 	}
 	
 	/* Hide number spinners */
@@ -481,6 +501,26 @@
 	.discount-input[type="number"] {
 		-moz-appearance: textfield;
 		appearance: textfield;
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
+		line-height: 1.5 !important;
+		padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+		box-sizing: border-box !important;
+		flex: 1 !important;
+		min-width: 3rem !important;
+		width: auto !important;
+		text-align: right !important;
+		margin-left: 0 !important;
+	}
+	
+	.percent-sign {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-tertiary);
+		flex-shrink: 0;
+		margin-left: 0;
+		padding-left: 0;
 	}
 	
 	.price-input-wrapper {
@@ -541,6 +581,26 @@
 			justify-content: center;
 		}
 		
+		.discount-input {
+			flex: 1 !important;
+			min-width: 3rem !important;
+			width: auto !important;
+			min-height: 2rem !important;
+			height: 2rem !important;
+			text-align: right !important;
+			font-size: 0.75rem !important;
+			padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+			margin-left: 0 !important;
+		}
+		
+		.custom-discount {
+			flex: 1 !important;
+			min-width: 4.5rem !important;
+			max-width: 6rem !important;
+			gap: 0.125rem !important;
+			justify-content: center;
+		}
+		
 		.price-input-wrapper {
 			width: 100%;
 		}
@@ -548,16 +608,6 @@
 		.discount-btn {
 			flex: 1;
 			min-width: fit-content;
-		}
-		
-		.custom-discount {
-			flex: 0 0 auto;
-			justify-content: center;
-		}
-		
-		.discount-input {
-			width: 4rem;
-			text-align: center;
 		}
 		
 		.discount-buttons {

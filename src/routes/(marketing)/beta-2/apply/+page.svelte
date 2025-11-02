@@ -235,41 +235,45 @@
 	<meta name="description" content="Join Zaur Beta 2 - Get 4 months free + 20% off forever. Limited to 100 tour guides." />
 </svelte:head>
 
-<div class="min-h-screen py-8 sm:py-12" style="background: var(--bg-primary);" in:fade={{ duration: 300 }}>
-	<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="apply-page" style="background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);" in:fade={{ duration: 300 }}>
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-20">
+		
+		<!-- Section Divider -->
+		<hr class="section-divider" aria-hidden="true" />
+		
 		<!-- Header -->
-		<div class="text-center mb-10">
-			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style="background: var(--color-primary-100); color: var(--color-primary-700);">
-				<FlaskConical class="w-5 h-5" />
-				<span class="font-semibold">Beta 2 Application</span>
+		<div class="apply-header">
+			<div class="beta-badge">
+				<FlaskConical class="w-4 h-4" />
+				<span>Beta 2 Application</span>
 			</div>
 
-			<h1 class="text-4xl sm:text-5xl font-bold mb-4" style="color: var(--text-primary);">
+			<h1 class="apply-title">
 				Join Beta 2
 			</h1>
-			<p class="text-xl mb-4" style="color: var(--text-secondary);">
+			<p class="apply-subtitle">
 				Get 4 months free + 20% lifetime discount
 			</p>
+			
 			{#if spotsRemaining !== null}
-				<div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg mb-2" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-					<span class="text-sm font-semibold" style="color: var(--color-warning-700);">
-						⚡ Only {spotsRemaining} of 100 spots remaining
-					</span>
+				<div class="spots-badge">
+					<Sparkles class="w-4 h-4" />
+					<span>Only {spotsRemaining} of 100 spots remaining</span>
 				</div>
 			{/if}
 		</div>
 
 		{#if error}
-			<div class="alert-error mb-6">
+			<div class="error-alert">
 				<AlertCircle class="w-5 h-5" />
 				<p>{error}</p>
 			</div>
 		{/if}
 
 		<!-- Application Form -->
-		<form onsubmit={handleSubmit}>
-			<div class="card mb-8" style="overflow: visible;">
-				<h2 class="text-2xl font-semibold mb-6" style="color: var(--text-primary);">Application Details</h2>
+		<form onsubmit={handleSubmit} class="apply-form">
+			<div class="form-card">
+				<h2 class="form-card-title">Application Details</h2>
 				
 				<div class="space-y-5">
 					<!-- Personal Info -->
@@ -513,6 +517,167 @@
 </div>
 
 <style>
+	/* Apply Page */
+	.apply-page {
+		min-height: 100vh;
+		position: relative;
+		overflow: hidden;
+		padding-bottom: 3rem;
+	}
+	
+	/* Section Divider */
+	.section-divider {
+		border: none;
+		max-width: 14rem;
+		height: 8px;
+		background: transparent;
+		margin: 0 auto 4rem;
+		position: relative;
+		display: flex;
+		align-items: center;
+		overflow: visible;
+	}
+	
+	.section-divider::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		height: 1px;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			var(--border-secondary) 50%,
+			transparent 100%
+		);
+	}
+	
+	.section-divider::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 8px;
+		height: 8px;
+		background: var(--primary);
+		border-radius: 50%;
+		opacity: 0.6;
+		z-index: 1;
+		box-shadow: 0 0 0 2px var(--bg-primary);
+	}
+	
+	/* Apply Header */
+	.apply-header {
+		text-align: center;
+		margin-bottom: 3rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	.beta-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1.25rem;
+		background: var(--color-accent-100);
+		color: var(--color-accent-700);
+		border: 1px solid var(--color-accent-300);
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		margin-bottom: 1.5rem;
+		text-transform: uppercase;
+		box-shadow: 0 2px 8px rgba(var(--color-accent-600-rgb), 0.2);
+		transition: all var(--transition-base);
+	}
+	
+	.beta-badge:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(var(--color-accent-600-rgb), 0.3);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-200);
+	}
+	
+	.apply-title {
+		font-size: 3rem;
+		font-weight: 800;
+		color: var(--text-primary);
+		margin-bottom: 1rem;
+		line-height: 1.2;
+		letter-spacing: -0.025em;
+	}
+	
+	.apply-subtitle {
+		font-size: 1.25rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		letter-spacing: -0.01em;
+		margin-bottom: 1.5rem;
+	}
+	
+	.spots-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.625rem 1rem;
+		background: var(--color-primary-50);
+		color: var(--color-primary-700);
+		border: 1px solid var(--color-primary-200);
+		border-radius: var(--radius-lg);
+		font-size: 0.875rem;
+		font-weight: 600;
+		box-shadow: 0 2px 8px rgba(var(--color-primary-600-rgb), 0.15);
+	}
+	
+	/* Form Card */
+	.apply-form {
+		max-width: 48rem;
+		margin: 0 auto;
+	}
+	
+	.form-card {
+		background: var(--bg-secondary);
+		border: 2px solid var(--border-primary);
+		border-radius: var(--radius-xl);
+		padding: 2.5rem;
+		box-shadow: var(--shadow-lg);
+		overflow: visible;
+	}
+	
+	.form-card-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 2rem;
+		letter-spacing: -0.02em;
+	}
+	
+	/* Error Alert */
+	.error-alert {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 1rem 1.25rem;
+		background: var(--color-danger-50);
+		color: var(--color-danger-700);
+		border: 2px solid var(--color-danger-200);
+		border-radius: var(--radius-lg);
+		margin-bottom: 2rem;
+		font-size: 0.9375rem;
+		font-weight: 500;
+		box-shadow: 0 2px 8px rgba(var(--color-danger-500-rgb), 0.1);
+	}
+	
+	.error-alert :global(svg) {
+		flex-shrink: 0;
+		color: var(--color-danger-600);
+	}
+	
 	/* Make CustomSelect match form-input height */
 	:global(.form-input-height .select-button) {
 		min-height: 2.75rem;
@@ -543,20 +708,61 @@
 		border-color: var(--color-danger-500) !important;
 		background-color: var(--color-danger-50) !important;
 	}
+	
+	/* Mobile Responsive */
+	@media (max-width: 768px) {
+		.section-divider {
+			margin: 0 auto 3rem;
+			max-width: 10rem;
+		}
+		
+		.apply-header {
+			margin-bottom: 2rem;
+		}
+		
+		.apply-title {
+			font-size: 2rem;
+			line-height: 1.15;
+		}
+		
+		.apply-subtitle {
+			font-size: 1.0625rem;
+		}
+		
+		.form-card {
+			padding: 1.75rem;
+			border-radius: var(--radius-lg);
+		}
+		
+		.form-card-title {
+			font-size: 1.5rem;
+			margin-bottom: 1.5rem;
+		}
+	}
 
 	/* Narrow smartphones optimization */
 	@media (max-width: 480px) {
-		.card {
-			padding: 1.25rem;
-			border-radius: 0.75rem;
+		.section-divider {
+			margin: 0 auto 2.5rem;
+			max-width: 8rem;
+		}
+		
+		.apply-title {
+			font-size: 1.75rem !important;
+		}
+		
+		.apply-subtitle {
+			font-size: 1rem;
+		}
+		
+		.form-card {
+			padding: 1.5rem;
+			border-radius: var(--radius-md);
 		}
 
-		h1 {
-			font-size: 2rem !important;
-		}
-
-		h2 {
-			font-size: 1.5rem !important;
+		.form-card-title {
+			font-size: 1.375rem !important;
+			margin-bottom: 1.25rem;
 		}
 
 		.form-input,

@@ -211,7 +211,7 @@ Lets tour guide decide who pays the Stripe processing fee
 	
 	.option {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		gap: 0.75rem;
 		padding: 0.875rem;
 		background: var(--bg-secondary);
@@ -232,7 +232,9 @@ Lets tour guide decide who pays the Stripe processing fee
 	}
 	
 	.option input[type="radio"] {
-		margin-top: 0.125rem;
+		margin-top: 0;
+		vertical-align: middle;
+		flex-shrink: 0;
 	}
 	
 	.option-content {

@@ -71,7 +71,7 @@
 {/if}
 
 <!-- Dev Tool: Palette Switcher -->
-<PaletteSwitcher />
+<!-- <PaletteSwitcher /> -->
 
 <style lang="postcss">
 	@reference "tailwindcss";

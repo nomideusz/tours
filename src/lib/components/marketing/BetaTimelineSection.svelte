@@ -27,8 +27,11 @@
 	];
 </script>
 
-<div class="timeline-section py-16 sm:py-20">
-	<div class="max-w-screen-2xl mx-auto px-6 sm:px-8 lg:px-12">
+<div class="timeline-section">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-20">
+		
+		<!-- Section Divider -->
+		<hr class="section-divider" aria-hidden="true" />
 		<div class="text-center mb-12 sm:mb-16">
 			<h2 class="marketing-heading marketing-heading-lg mb-4">
 				Roadmap
@@ -185,7 +188,7 @@
 </div>
 
 <style>
-	/* Timeline section background */
+	/* Section Background - Clean & Professional */
 	.timeline-section {
 		background: linear-gradient(
 			180deg,
@@ -196,22 +199,48 @@
 		overflow: hidden;
 	}
 	
-	/* Very subtle texture overlay */
-	.timeline-section::before {
+	/* Section Divider */
+	.section-divider {
+		border: none;
+		max-width: 14rem;
+		height: 8px;
+		background: transparent;
+		margin: 0 auto 4rem;
+		position: relative;
+		display: flex;
+		align-items: center;
+		overflow: visible;
+	}
+	
+	.section-divider::after {
 		content: '';
 		position: absolute;
-		top: 0;
 		left: 0;
 		right: 0;
-		bottom: 0;
-		background-image: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 40px,
-			rgba(0, 0, 0, 0.02) 40px,
-			rgba(0, 0, 0, 0.02) 41px
+		top: 50%;
+		transform: translateY(-50%);
+		height: 1px;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			var(--border-secondary) 50%,
+			transparent 100%
 		);
-		pointer-events: none;
+	}
+	
+	.section-divider::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 8px;
+		height: 8px;
+		background: var(--primary);
+		border-radius: 50%;
+		opacity: 0.6;
+		z-index: 1;
+		box-shadow: 0 0 0 2px var(--bg-primary);
 	}
 
 	@keyframes pulse {

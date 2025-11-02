@@ -31,12 +31,7 @@
 					onModelChange('participant_categories');
 				}}
 			/>
-			<div class="option-content">
-				<User class="option-icon" />
-				<div class="option-text">
-					<div class="option-title">Per Person</div>
-				</div>
-			</div>
+			<div class="option-content"><User class="option-icon" /><span class="option-title">Per Person</span></div>
 		</label>
 
 		<label class="model-option {selectedModel === 'private_tour' ? 'selected' : ''}">
@@ -50,12 +45,7 @@
 					onModelChange('private_tour');
 				}}
 			/>
-			<div class="option-content">
-				<Lock class="option-icon" />
-				<div class="option-text">
-					<div class="option-title">Private Tour</div>
-				</div>
-			</div>
+			<div class="option-content"><Lock class="option-icon" /><span class="option-title">Private Tour</span></div>
 		</label>
 	</div>
 </div>
@@ -105,8 +95,9 @@
 	.option-content {
 		flex: 1;
 		display: flex;
-		gap: 0.75rem;
 		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: nowrap;
 	}
 	
 	:global(.option-icon) {
@@ -114,21 +105,21 @@
 		height: 1.375rem;
 		color: var(--text-secondary);
 		flex-shrink: 0;
+		display: inline-block;
+		vertical-align: middle;
 	}
 
 	.model-option.selected :global(.option-icon) {
 		color: var(--color-accent-600);
-	}
-	
-	.option-text {
-		flex: 1;
-		min-width: 0;
 	}
 
 	.option-title {
 		font-size: 1rem;
 		font-weight: 600;
 		color: var(--text-primary);
+		white-space: nowrap;
+		display: inline-block;
+		vertical-align: middle;
 	}
 
 	/* Mobile: Stack vertically */

@@ -447,6 +447,20 @@
 		border-color: rgba(var(--color-danger-500-rgb), 0.3);
 	}
 
+	/* Dark mode improvements for inline button - better contrast */
+	:root[data-theme='dark'] .inline-button {
+		background: var(--color-primary-500);
+		border-color: var(--color-primary-500);
+		color: white;
+		box-shadow: 0 2px 8px rgba(var(--color-primary-500-rgb), 0.4);
+	}
+	
+	:root[data-theme='dark'] .inline-button:hover:not(:disabled) {
+		background: var(--color-primary-400);
+		border-color: var(--color-primary-400);
+		box-shadow: 0 4px 16px rgba(var(--color-primary-500-rgb), 0.5);
+	}
+
 	/* Mobile Responsive */
 	@media (max-width: 640px) {
 		.newsletter-signup--default {

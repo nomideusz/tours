@@ -187,7 +187,7 @@
 </svelte:head>
 
 <!-- Clean Marketing Layout -->
-<div class="min-h-screen flex flex-col subtle-retro-section">
+<div class="marketing-layout">
 	<Header 
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
@@ -273,6 +273,15 @@
 	
 	:global(button) {
 		cursor: pointer;
+	}
+
+	/* Clean Marketing Layout - No Retro Background */
+	.marketing-layout {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-primary);
+		position: relative;
 	}
 
 	/* Subtle retro section with horizontal stripes */

@@ -339,11 +339,10 @@
 	}
 
 	.discount-buttons-left {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
 		flex-wrap: wrap;
-		flex: 1;
 		min-width: 0;
 	}
 
@@ -358,6 +357,12 @@
 		cursor: pointer;
 		transition: all 0.15s ease;
 		white-space: nowrap;
+		min-height: 2.5rem;
+		height: 2.5rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
 	}
 
 	.discount-btn-small:hover {
@@ -376,12 +381,23 @@
 	.custom-discount-input {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
-		padding: 0.25rem 0.5rem;
+		gap: 0.125rem;
+		padding: 0.25rem 0.375rem;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border-secondary);
 		border-radius: 0.375rem;
 		transition: all 0.15s ease;
+		min-height: 2.5rem;
+		height: 2.5rem;
+		min-width: 4.5rem;
+		flex: 1;
+		max-width: 6rem;
+	}
+	
+	.custom-discount-input input {
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
 	}
 	
 	.custom-discount-input:focus-within {
@@ -390,14 +406,23 @@
 	}
 	
 	.discount-number-input {
-		width: 3.25rem;
-		padding: 0.125rem 0.25rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		text-align: center;
-		border: none;
-		background: transparent;
-		color: var(--text-primary);
+		flex: 1 !important;
+		min-width: 3rem !important;
+		width: auto !important;
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
+		padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+		font-size: 0.75rem !important;
+		font-weight: 500 !important;
+		text-align: right !important;
+		border: none !important;
+		background: transparent !important;
+		color: var(--text-primary) !important;
+		line-height: 1.5 !important;
+		box-sizing: border-box !important;
+		margin: 0 !important;
+		margin-left: 0 !important;
 	}
 	
 	.discount-number-input:focus {
@@ -408,6 +433,9 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--text-tertiary);
+		flex-shrink: 0;
+		margin-left: 0;
+		padding-left: 0;
 	}
 	
 	/* Hide number spinners */
@@ -421,6 +449,18 @@
 	.discount-number-input[type="number"] {
 		-moz-appearance: textfield;
 		appearance: textfield;
+		min-height: 2rem !important;
+		height: 2rem !important;
+		max-height: 2rem !important;
+		line-height: 1.5 !important;
+		padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+		box-sizing: border-box !important;
+		flex: 1 !important;
+		min-width: 3rem !important;
+		width: auto !important;
+		font-size: 0.75rem !important;
+		text-align: right !important;
+		margin-left: 0 !important;
 	}
 	
 	.price-input-right {
@@ -474,12 +514,22 @@
 		}
 		
 		.discount-number-input {
-			width: 4rem;
-			text-align: center;
+			flex: 1 !important;
+			min-width: 3rem !important;
+			width: auto !important;
+			min-height: 2rem !important;
+			height: 2rem !important;
+			text-align: right !important;
+			font-size: 0.75rem !important;
+			padding: 0.25rem 0.375rem 0.25rem 0.25rem !important;
+			margin-left: 0 !important;
 		}
 		
 		.custom-discount-input {
-			flex: 0 0 auto;
+			flex: 1 !important;
+			min-width: 4.5rem !important;
+			max-width: 6rem !important;
+			gap: 0.125rem !important;
 			justify-content: center;
 		}
 	}

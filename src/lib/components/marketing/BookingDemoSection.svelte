@@ -11,7 +11,6 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
-	import Sparkles from 'lucide-svelte/icons/sparkles';
 	
 	// Umami tracking
 	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';
@@ -117,22 +116,19 @@
 	}
 </script>
 
-<div class="booking-demo-section max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12 lg:py-16">
+<div class="booking-demo-section">
+	<div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-20">
+		
+		<!-- Section Divider -->
+		<hr class="section-divider" aria-hidden="true" />
 		
 		<!-- Section Header -->
-		<div class="text-center mb-8 sm:mb-12" in:fade={{ delay: 100 }}>
-				<div class="badge-container mb-4">
-					<div class="demo-badge">
-						<Sparkles class="w-3.5 h-3.5" />
-						<span>INTERACTIVE DEMO</span>
-					</div>
-				</div>
-				
+		<div class="section-header" in:fade={{ delay: 100 }}>
 				<h2 class="section-title">
 					Try the Booking Experience
 				</h2>
 				<p class="section-subtitle">
-					See how your customers will discover and book your tours. Click any tour to experience the complete booking flow. {#if meta.beta1ToursCount > 0}Featuring real tours from our Beta 1 community.{/if}
+				See how your customers will discover and book your tours
 				</p>
 			</div>
 			
@@ -155,7 +151,6 @@
 					{#each featuredTours as tour, i (tour.id)}
 						<a 
 							href="/book/{tour.qrCode}" 
-							target="_blank"
 							onclick={() => handleDemoClick(tour)}
 							class="tour-card"
 							in:fly={{ y: 20, delay: 100 + (i * 100), duration: 600, easing: quintOut }}
@@ -217,59 +212,91 @@
 							</div>
 						</a>
 					{/each}
-				</div>
-				
-			<!-- Bottom CTA -->
-			<div class="bottom-cta" in:fade={{ delay: 500 }}>
-				<p class="cta-text">
-					{#if meta.beta1ToursCount > 0}
-						These are real booking pages from our Beta 1 community, powered by Zaur. Your customers get the same seamless experience.
-					{:else}
-						These are real booking pages powered by Zaur. Your customers get the same seamless experience.
-					{/if}
-				</p>
 			</div>
 		{/if}
 		
+	</div>
 </div>
 
 <style>
-	/* Badge */
-	.badge-container {
-		display: flex;
-		justify-content: center;
+	/* Section Background - Clean & Professional */
+	.booking-demo-section {
+		background: linear-gradient(
+			180deg,
+			var(--bg-primary) 0%,
+			var(--bg-secondary) 100%
+		);
+		position: relative;
+		overflow: hidden;
 	}
 	
-	.demo-badge {
-		display: inline-flex;
+	/* Section Divider */
+	.section-divider {
+		border: none;
+		max-width: 14rem;
+		height: 8px;
+		background: transparent;
+		margin: 0 auto 4rem;
+		position: relative;
+		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		background: var(--color-primary-100);
-		color: var(--color-primary-700);
-		border: 1px solid var(--color-primary-300);
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
+		overflow: visible;
+	}
+	
+	.section-divider::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		height: 1px;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			var(--border-secondary) 50%,
+			transparent 100%
+		);
+	}
+	
+	.section-divider::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 8px;
+		height: 8px;
+		background: var(--primary);
+		border-radius: 50%;
+		opacity: 0.6;
+		z-index: 1;
+		box-shadow: 0 0 0 2px var(--bg-primary);
 	}
 	
 	/* Section Header */
+	.section-header {
+		text-align: center;
+		margin-bottom: 3rem;
+		max-width: 56rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
 	.section-title {
-		font-size: 2.5rem;
+		font-size: 2.25rem;
 		font-weight: 800;
-		line-height: 1.15;
-		letter-spacing: -0.02em;
 		color: var(--text-primary);
 		margin-bottom: 1rem;
+		letter-spacing: -0.025em;
+		line-height: 1.2;
 	}
 	
 	.section-subtitle {
-		font-size: 1.125rem;
-		line-height: 1.6;
+		font-size: 1.0625rem;
 		color: var(--text-secondary);
-		max-width: 48rem;
-		margin: 0 auto;
+		line-height: 1.6;
+		letter-spacing: -0.01em;
 	}
 	
 	/* Loading State */
@@ -431,27 +458,23 @@
 		white-space: nowrap;
 	}
 	
-	/* Bottom CTA */
-	.bottom-cta {
-		text-align: center;
-		padding: 2rem 1rem 0;
-	}
-	
-	.cta-text {
-		font-size: 0.9375rem;
-		color: var(--text-tertiary);
-		font-style: italic;
-		margin: 0;
-	}
-	
 	/* Mobile Responsiveness */
 	@media (max-width: 768px) {
+		.section-divider {
+			margin: 0 auto 3rem;
+			max-width: 10rem;
+		}
+		
+		.section-header {
+			margin-bottom: 2.5rem;
+		}
+		
 		.section-title {
-			font-size: 2rem;
+			font-size: 1.75rem;
 		}
 		
 		.section-subtitle {
-			font-size: 1rem;
+			font-size: 0.9375rem;
 		}
 		
 		.tours-grid {
@@ -472,8 +495,21 @@
 	
 	/* Extra small screens */
 	@media (max-width: 400px) {
+		.section-divider {
+			margin: 0 auto 2.5rem;
+			max-width: 8rem;
+		}
+		
+		.section-header {
+			margin-bottom: 2rem;
+		}
+		
 		.section-title {
-			font-size: 1.75rem;
+			font-size: 1.5rem;
+		}
+		
+		.section-subtitle {
+			font-size: 0.875rem;
 		}
 		
 		.tour-name {

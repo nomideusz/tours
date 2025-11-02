@@ -384,21 +384,22 @@
 	.beta-badge {
 		display: inline-block;
 		padding: 0.5rem 1.25rem;
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border: 1px solid var(--border-primary);
+		background: var(--color-accent-100);
+		color: var(--color-accent-700);
+		border: 1px solid var(--color-accent-300);
 		border-radius: 9999px;
 		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		transition: all var(--transition-base);
-		box-shadow: var(--shadow-sm);
+		box-shadow: 0 2px 8px rgba(var(--color-accent-600-rgb), 0.2);
 	}
 	
 	.beta-badge:hover {
 		transform: translateY(-1px);
-		box-shadow: var(--shadow-md);
-		border-color: var(--primary);
+		box-shadow: 0 4px 12px rgba(var(--color-accent-600-rgb), 0.3);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-200);
 	}
 	
 	/* Hero Content Container */
@@ -1046,19 +1047,20 @@
 	.cta-badge {
 		display: inline-block;
 		padding: 0.5rem 1rem;
-		background: var(--primary);
+		background: var(--color-accent-600);
 		color: white;
 		border-radius: 9999px;
 		font-size: 0.6875rem;
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		margin-bottom: 1.25rem;
-		box-shadow: var(--shadow-primary);
+		box-shadow: 0 2px 8px rgba(var(--color-accent-600-rgb), 0.3);
 		transition: all var(--transition-base);
 	}
 	
 	.cta-badge:hover {
 		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(var(--color-accent-600-rgb), 0.4);
 	}
 	
 	.cta-title {

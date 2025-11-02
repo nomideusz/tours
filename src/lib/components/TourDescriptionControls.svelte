@@ -302,33 +302,76 @@
 	}
 	
 	/* Mobile adjustments */
-	@media (max-width: 640px) {
+	@media (max-width: 767px) {
 		.tour-editor-controls {
-			padding: 0.625rem 0.5rem;
-			gap: 0.375rem;
-			/* Prevent any scrolling when touching buttons */
-			overscroll-behavior: contain;
-			overflow: visible;
+			padding: 0.5rem 0.375rem;
+			gap: 0.25rem;
+			justify-content: center;
+			overflow-x: auto;
+			overflow-y: hidden;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none; /* Firefox */
+			overscroll-behavior-x: contain;
+		}
+		
+		.tour-editor-controls::-webkit-scrollbar {
+			display: none; /* Chrome, Safari, Edge */
+		}
+		
+		.controls-group {
+			gap: 0.125rem;
 		}
 		
 		.control-btn {
-			width: 2.5rem;
-			height: 2.5rem;
-			padding: 0.5rem;
+			width: 2.25rem;
+			height: 2.25rem;
+			min-width: 2.25rem;
+			padding: 0.375rem;
 			/* Prevent text selection and improve touch response */
 			-webkit-touch-callout: none;
+			flex-shrink: 0;
 		}
 		
 		.control-btn :global(svg) {
-			width: 1.25rem;
-			height: 1.25rem;
+			width: 1rem;
+			height: 1rem;
 			/* Prevent pointer events on SVG children to ensure button gets the event */
 			pointer-events: none;
 		}
 		
 		.controls-divider {
-			height: 1.5rem;
+			height: 1.25rem;
 			margin: 0 0.125rem;
+			flex-shrink: 0;
+		}
+	}
+	
+	/* Very small mobile devices */
+	@media (max-width: 430px) {
+		.tour-editor-controls {
+			padding: 0.5rem 0.25rem;
+			gap: 0.125rem;
+		}
+		
+		.control-btn {
+			width: 2rem;
+			height: 2rem;
+			min-width: 2rem;
+			padding: 0.25rem;
+		}
+		
+		.control-btn :global(svg) {
+			width: 0.875rem;
+			height: 0.875rem;
+		}
+		
+		.controls-divider {
+			height: 1rem;
+			margin: 0 0.125rem;
+		}
+		
+		.controls-group {
+			gap: 0.125rem;
 		}
 	}
 </style>

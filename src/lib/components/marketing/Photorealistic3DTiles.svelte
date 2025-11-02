@@ -272,8 +272,16 @@
 
 <div class="tiles-3d-showcase">
 	<div class="showcase-header">
+		<div class="coming-soon-badge">Coming Soon</div>
 		<h2 class="showcase-title">Experience Tour Destinations in 3D</h2>
-		<p class="showcase-subtitle">Explore iconic landmarks with photorealistic 3D maps</p>
+		<p class="showcase-subtitle">
+			Let your customers explore tour destinations in stunning 3D before they book. 
+			<br />
+			<strong>Preview locations, visualize routes, and discover landmarks in photorealistic detail.</strong>
+		</p>
+		<p class="use-case-text">
+			Perfect for: City tours, historical landmarks, scenic routes, and destination discovery
+		</p>
 	</div>
 	
 	<div class="tiles-container" style="height: {height};">
@@ -376,19 +384,63 @@
 	
 	.showcase-header {
 		text-align: center;
-		margin-bottom: 2rem;
+		margin-bottom: 2.5rem;
+		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	
+	.coming-soon-badge {
+		display: inline-block;
+		padding: 0.5rem 1.25rem;
+		background: var(--color-accent-100);
+		color: var(--color-accent-700);
+		border: 1px solid var(--color-accent-300);
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		margin-bottom: 1.5rem;
+		text-transform: uppercase;
+		box-shadow: 0 2px 8px rgba(var(--color-accent-600-rgb), 0.2);
+		transition: all var(--transition-base);
+	}
+	
+	.coming-soon-badge:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(var(--color-accent-600-rgb), 0.3);
+		border-color: var(--color-accent-600);
+		background: var(--color-accent-200);
 	}
 	
 	.showcase-title {
 		font-size: 2.5rem;
-		font-weight: 700;
+		font-weight: 800;
 		color: var(--text-primary);
-		margin-bottom: 0.5rem;
+		margin-bottom: 1rem;
+		letter-spacing: -0.025em;
+		line-height: 1.2;
 	}
 	
 	.showcase-subtitle {
 		font-size: 1.125rem;
 		color: var(--text-secondary);
+		line-height: 1.7;
+		margin-bottom: 1rem;
+		letter-spacing: -0.01em;
+	}
+	
+	.showcase-subtitle strong {
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+	
+	.use-case-text {
+		font-size: 0.9375rem;
+		color: var(--text-tertiary);
+		margin-top: 1.25rem;
+		font-style: italic;
+		line-height: 1.6;
 	}
 	
 	.tiles-container {
@@ -535,7 +587,7 @@
 	.rotate-toggle {
 		position: absolute;
 		bottom: 1.5rem;
-		right: 1.5rem;
+		left: 1.5rem;
 		padding: 0.75rem;
 		background: rgba(255, 255, 255, 0.95);
 		backdrop-filter: blur(10px);
@@ -708,7 +760,7 @@
 		.rotate-toggle {
 			bottom: auto;
 			top: 0.75rem;
-			right: 0.75rem;
+			left: 0.75rem;
 			padding: 0.5rem;
 			border-radius: 0.375rem;
 		}
@@ -794,7 +846,7 @@
 		
 		.rotate-toggle {
 			top: 0.5rem;
-			right: 0.5rem;
+			left: 0.5rem;
 			padding: 0.375rem;
 			width: 2rem;
 			height: 2rem;
