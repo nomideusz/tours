@@ -44,6 +44,7 @@ export const actions: Actions = {
                 const resetUrl = `${url.origin}/auth/reset-password?token=${token}`;
                 
                 // Send password reset email
+                console.log(`Attempting to send password reset email to ${user.email}...`);
                 const emailResult = await sendAuthEmail('password-reset', {
                     email: user.email,
                     name: user.name,
@@ -51,11 +52,13 @@ export const actions: Actions = {
                 });
                 
                 if (!emailResult.success) {
-                    console.error('Failed to send password reset email:', emailResult.error);
+                    console.error('❌ Failed to send password reset email:', emailResult.error);
+                    console.error(`   User ID: ${user.id}, Email: ${user.email}`);
+                    console.error(`   Reset URL: ${resetUrl}`);
                     return fail(500, { message: 'Failed to send reset email. Please try again later.' });
                 }
                 
-                console.log(`✅ Password reset email sent to ${email}`);
+                console.log(`✅ Password reset email sent successfully to ${email} (messageId: ${emailResult.messageId})`);
             } else {
                 console.log('Password reset requested for non-existent user:', email);
                 // Still continue to prevent email enumeration

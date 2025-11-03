@@ -213,6 +213,11 @@ export async function sendAuthEmail(
         throw new Error(`Invalid auth email type: ${emailType}`);
     }
 
+    // Check for API key before attempting to send
+    if (!env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY environment variable is not set');
+    }
+
     const resend = getResend();
     const result = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
@@ -222,13 +227,20 @@ export async function sendAuthEmail(
     });
 
     if (result.error) {
-      throw new Error(`Resend error: ${result.error.message}`);
+      console.error(`❌ Resend API error for ${emailType}:`, result.error);
+      throw new Error(`Resend error: ${result.error.message || JSON.stringify(result.error)}`);
     }
 
-    console.log(`✅ ${emailType} email sent successfully to ${data.email}`);
-    return { success: true, messageId: result.data?.id };
+    if (!result.data || !result.data.id) {
+      console.error(`❌ Resend API returned no data for ${emailType} email to ${data.email}`);
+      throw new Error('Resend API returned no data - email may not have been sent');
+    }
+
+    console.log(`✅ ${emailType} email sent successfully to ${data.email} (messageId: ${result.data.id})`);
+    return { success: true, messageId: result.data.id };
   } catch (error) {
-    console.error(`Error sending ${emailType} email:`, error);
+    console.error(`❌ Error sending ${emailType} email to ${data.email}:`, error);
+    console.error(`   Error details:`, error instanceof Error ? error.stack : error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
