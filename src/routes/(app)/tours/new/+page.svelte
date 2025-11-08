@@ -11,18 +11,22 @@
 	import type { PageData, ActionData } from './$types.js';
 	import type { ValidationError } from '$lib/validation.js';
 	import { validateTourForm } from '$lib/validation.js';
-	
+
 	// TanStack Query
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys } from '$lib/queries/shared-stats.js';
 	import { createTourMutation } from '$lib/queries/mutations.js';
-	
+
 	// Onboarding utilities
 	import { canActivateTours } from '$lib/utils/onboarding.js';
-	
+
 	// Umami tracking
 	import { trackTourEvent } from '$lib/utils/umami-tracking.js';
-	
+
+	// Enhanced UX Components
+	import FormProgressIndicator from '$lib/components/tour-creation/FormProgressIndicator.svelte';
+	import AutosaveIndicator from '$lib/components/tour-creation/AutosaveIndicator.svelte';
+
 	// Icons
 	import Save from 'lucide-svelte/icons/save';
 	import X from 'lucide-svelte/icons/x';
@@ -36,7 +40,8 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
-	
+	import Sparkles from 'lucide-svelte/icons/sparkles';
+
 	// Date and Time Components
 	import DatePicker from '$lib/components/DatePicker.svelte';
 	import TimePicker from '$lib/components/TimePicker.svelte';
@@ -484,7 +489,7 @@
 	// Get preview text for selected pattern
 	function getPatternPreview(): string {
 		if (!selectedPattern) return '';
-		
+
 		switch (selectedPattern) {
 			case 'daily':
 				return `Daily tours with ${dailyPattern.times.length} time slot${dailyPattern.times.length === 1 ? '' : 's'} per day`;
@@ -500,6 +505,147 @@
 				return '';
 		}
 	}
+
+	// ============================================================
+	// AUTOSAVE & PROGRESS TRACKING - NEW UX FEATURES
+	// ============================================================
+
+	// Autosave state
+	let autosaveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let lastSaved = $state<Date | undefined>(undefined);
+	let autosaveTimer: NodeJS.Timeout | null = null;
+
+	// Progress tracking for sections
+	let progressSections = $derived.by(() => {
+		const validation = validateTourForm(formData);
+
+		return [
+			{
+				id: 'basic',
+				label: 'Basic Information',
+				completed: !!(formData.name && formData.description && formData.location)
+			},
+			{
+				id: 'details',
+				label: 'Tour Details',
+				completed: !!(formData.duration && formData.languages?.length > 0 && formData.categories?.length > 0)
+			},
+			{
+				id: 'pricing',
+				label: 'Pricing',
+				completed: formData.price > 0 || (formData.participantCategories?.categories?.some(c => c.price > 0))
+			},
+			{
+				id: 'photos',
+				label: 'Photos',
+				completed: uploadedImages.length > 0
+			},
+			{
+				id: 'policies',
+				label: 'Policies',
+				completed: !!(formData.cancellationPolicy || formData.cancellationPolicyId)
+			}
+		];
+	});
+
+	// Autosave functionality - saves draft to localStorage
+	function scheduledAutosave() {
+		if (autosaveTimer) {
+			clearTimeout(autosaveTimer);
+		}
+
+		autosaveTimer = setTimeout(() => {
+			performAutosave();
+		}, 2000); // Debounce 2 seconds
+	}
+
+	function performAutosave() {
+		if (!browser) return;
+
+		try {
+			autosaveStatus = 'saving';
+
+			// Save to localStorage
+			const draftData = {
+				formData,
+				uploadedImagesNames: uploadedImages.map(img => img.name),
+				timestamp: new Date().toISOString(),
+				scheduleData: {
+					enableScheduling,
+					selectedPattern,
+					dailyPattern,
+					weekendPattern,
+					customPattern,
+					manualSlots
+				}
+			};
+
+			localStorage.setItem('tourDraft', JSON.stringify(draftData));
+
+			autosaveStatus = 'saved';
+			lastSaved = new Date();
+
+			// Reset to idle after 3 seconds
+			setTimeout(() => {
+				if (autosaveStatus === 'saved') {
+					autosaveStatus = 'idle';
+				}
+			}, 3000);
+		} catch (err) {
+			console.error('Autosave failed:', err);
+			autosaveStatus = 'error';
+		}
+	}
+
+	// Watch for form changes and trigger autosave
+	$effect(() => {
+		// Watch all form data changes
+		const formDataString = JSON.stringify(formData);
+
+		if (browser && formData.name) {
+			// Only autosave if there's meaningful content
+			scheduledAutosave();
+		}
+	});
+
+	// Load draft on mount
+	$effect(() => {
+		if (browser && !formData.name) {
+			// Only load draft if form is empty (new tour)
+			const savedDraft = localStorage.getItem('tourDraft');
+			if (savedDraft) {
+				try {
+					const draft = JSON.parse(savedDraft);
+					const draftAge = new Date().getTime() - new Date(draft.timestamp).getTime();
+
+					// Only load if draft is less than 7 days old
+					if (draftAge < 7 * 24 * 60 * 60 * 1000) {
+						// Show confirmation before loading
+						if (confirm('We found an unsaved draft. Would you like to continue where you left off?')) {
+							Object.assign(formData, draft.formData);
+							if (draft.scheduleData) {
+								enableScheduling = draft.scheduleData.enableScheduling;
+								selectedPattern = draft.scheduleData.selectedPattern;
+								dailyPattern = draft.scheduleData.dailyPattern || dailyPattern;
+								weekendPattern = draft.scheduleData.weekendPattern || weekendPattern;
+								customPattern = draft.scheduleData.customPattern || customPattern;
+								manualSlots = draft.scheduleData.manualSlots || manualSlots;
+							}
+						}
+					}
+				} catch (err) {
+					console.error('Failed to load draft:', err);
+				}
+			}
+		}
+	});
+
+	// Clear draft after successful submission
+	function clearAutosavedDraft() {
+		if (browser) {
+			localStorage.removeItem('tourDraft');
+		}
+	}
 </script>
 
 <svelte:head>
@@ -507,34 +653,44 @@
 </svelte:head>
 
 <div class="tours-page-container px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
-	<!-- Mobile-First Header -->
+	<!-- Enhanced Header with Autosave Indicator -->
 	<div class="mb-3 sm:mb-8 px-4 sm:px-0">
-		<!-- Mobile Compact Header with inline title -->
+		<!-- Mobile Compact Header -->
 		<div class="sm:hidden new-tour-mobile-header mb-3">
-			<div class="flex items-center justify-between">
-				<div class="py-1.5 px-4 rounded-lg" style="background: var(--color-primary-50);">
-					<h1 class="text-base font-bold" style="color: var(--color-primary-700);">New Tour</h1>
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-3 flex-1 min-w-0">
+					<div class="py-1.5 px-4 rounded-lg" style="background: var(--color-primary-50);">
+						<h1 class="text-base font-bold whitespace-nowrap" style="color: var(--color-primary-700);">
+							<Sparkles class="inline h-4 w-4 mr-1" />
+							New Tour
+						</h1>
+					</div>
+					<!-- Mobile Autosave Indicator -->
+					<AutosaveIndicator status={autosaveStatus} lastSaved={lastSaved} />
 				</div>
 				<button
 					onclick={() => goto('/tours')}
-					class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1.5 px-3 rounded-lg active:scale-95"
+					class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1.5 px-3 rounded-lg active:scale-95 flex-shrink-0"
 					style="color: var(--color-primary-600); background: var(--color-primary-50);"
+					aria-label="Go back to tours"
 				>
-					Back
 					<ArrowLeft class="h-4 w-4" />
 				</button>
 			</div>
 		</div>
 
-		<!-- Desktop Header -->
+		<!-- Desktop Header with Autosave -->
 		<div class="hidden sm:block">
-			<PageHeader 
-				title="New Tour"
-				breadcrumbs={[
-					{ label: 'Tours', href: '/tours' },
-					{ label: 'New' }
-				]}
-			/>
+			<div class="flex items-center justify-between gap-4 mb-6">
+				<PageHeader
+					title="New Tour"
+					breadcrumbs={[
+						{ label: 'Tours', href: '/tours' },
+						{ label: 'New' }
+					]}
+				/>
+				<AutosaveIndicator status={autosaveStatus} lastSaved={lastSaved} />
+			</div>
 		</div>
 	</div>
 
@@ -612,29 +768,32 @@
 					isSubmitting = false;
 					triggerValidation = false;
 					if (result.type === 'redirect') {
+						// Clear autosaved draft on successful submission
+						clearAutosavedDraft();
+
 						// Track tour creation
 						trackTourEvent('create', undefined, {
 							status: formData.status,
 							has_schedule: enableScheduling,
 							pricing_model: formData.pricingModel
 						});
-						
+
 						// Give server a moment to fully complete the transaction
 						await new Promise(resolve => setTimeout(resolve, 100));
-						
+
 						// Mark recent tour activity for cache invalidation on tours page
 						if (browser) {
 							sessionStorage.setItem('recentTourActivity', Date.now().toString());
 						}
-						
+
 						// Invalidate queries to refetch with new data
 						console.log('🔄 Tour created successfully, invalidating caches...');
-						
+
 						queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
 						queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-						
+
 						console.log('✅ Caches invalidated, redirecting...');
-						
+
 						// Use goto for client-side navigation with cache already invalidated
 						goto(result.location);
 					} else if (result.type === 'failure') {
@@ -649,6 +808,16 @@
 					}
 				};
 			}}>
+				<!-- Progress Indicator - Desktop Sidebar -->
+				<div class="hidden lg:block fixed right-8 top-32 w-64 xl:w-72 z-10">
+					<FormProgressIndicator sections={progressSections} />
+				</div>
+
+				<!-- Progress Indicator - Mobile/Tablet (Collapsible) -->
+				<div class="lg:hidden mb-6 px-4 sm:px-0">
+					<FormProgressIndicator sections={progressSections} />
+				</div>
+
 				<TourForm
 					bind:formData
 					bind:uploadedImages
