@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
-	import CategorySelector from '../CategorySelector.svelte';
-	import LanguageSelector from '../LanguageSelector.svelte';
-	import ChipInput from '../ChipInput.svelte';
+	import CategorySelector from '../form/inputs/CategorySelector.svelte';
+	import LanguageSelector from '../form/inputs/LanguageSelector.svelte';
+	import ChipInput from '../form/inputs/ChipInput.svelte';
 
 	// Icons
 	import Palette from 'lucide-svelte/icons/palette';
