@@ -128,6 +128,11 @@ export function useTourSubmission(options: SubmissionOptions) {
 			if (response.redirected) {
 				const redirectUrl = new URL(response.url);
 				const extractedTourId = redirectUrl.pathname.split('/').pop()?.split('?')[0];
+				console.log('🔍 Redirect detected:', {
+					fullUrl: response.url,
+					pathname: redirectUrl.pathname,
+					extractedTourId
+				});
 				result = { success: true, redirected: true, tourId: extractedTourId, url: response.url };
 			} else {
 				result = await response.json();
@@ -182,6 +187,8 @@ export function useTourSubmission(options: SubmissionOptions) {
 
 			const finalTourId = isEdit ? tourId! : (result.tourId || result.id);
 
+			console.log('🎯 Final tour ID:', finalTourId, { isEdit, resultTourId: result.tourId, resultId: result.id });
+
 			// Call success callback
 			if (options.onSuccess) {
 				options.onSuccess(finalTourId);
@@ -215,16 +222,20 @@ export function useTourSubmission(options: SubmissionOptions) {
 	): Promise<void> {
 		const result = await submit(formData, uploadedImages, imagesToRemove, scheduleData);
 
+		console.log('🚀 submitAndNavigate result:', result);
+
 		if (result.success && result.tourId) {
 			// Navigate to tour detail page
-			if (isEdit) {
-				goto(`/tours/${result.tourId}?edited=true`);
-			} else {
-				const redirectUrl = scheduleData
+			const targetUrl = isEdit
+				? `/tours/${result.tourId}?edited=true`
+				: scheduleData
 					? `/tours/${result.tourId}?created=true&scheduled=true`
 					: `/tours/${result.tourId}?created=true`;
-				goto(redirectUrl);
-			}
+
+			console.log('🧭 Navigating to:', targetUrl);
+			goto(targetUrl);
+		} else {
+			console.warn('⚠️ Navigation skipped:', { success: result.success, tourId: result.tourId });
 		}
 	}
 
