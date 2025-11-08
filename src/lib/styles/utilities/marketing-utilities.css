@@ -1,84 +1,7 @@
-/* Marketing Utilities - Background variations, onboarding, and marketing character styles */
+/* Marketing Utilities - Onboarding Styles Only */
 
 /* =============================================
-   BACKGROUND VARIATION UTILITIES 
-   ============================================= */
-
-/* Gradient backgrounds */
-.bg-gradient-soft {
-	background: var(--bg-gradient-soft);
-}
-
-.bg-gradient-ocean {
-	background: var(--bg-gradient-ocean);
-}
-
-.bg-gradient-mist {
-	background: var(--bg-gradient-mist);
-}
-
-/* Pattern backgrounds */
-.bg-pattern-dots {
-	background-image: var(--bg-pattern-dots);
-	background-size: var(--bg-pattern-size);
-}
-
-.bg-pattern-grid {
-	background-image: var(--bg-pattern-grid);
-	background-size: var(--bg-pattern-size);
-}
-
-/* Combined backgrounds */
-.hero-section {
-	background: var(--bg-gradient-ocean);
-	position: relative;
-}
-
-.dashboard-bg {
-	background: var(--bg-gradient-mist);
-}
-
-.card-elevated {
-	background: var(--bg-primary);
-	box-shadow: var(--shadow-md);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-}
-
-/* Pattern overlay for sections */
-.section-pattern {
-	position: relative;
-	overflow: hidden;
-}
-
-.section-pattern::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-image: var(--bg-pattern-dots);
-	background-size: var(--bg-pattern-size);
-	opacity: 0.3;
-	pointer-events: none;
-}
-
-/* Subtle card backgrounds */
-.card-ocean {
-	background: var(--bg-gradient-ocean);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-}
-
-.card-mist {
-	background: var(--bg-gradient-mist);
-	border: 1px solid var(--border-primary);
-	border-radius: var(--radius-lg);
-}
-
-/* =============================================
-   ONBOARDING SECTION STYLES 
+   ONBOARDING SECTION STYLES
    ============================================= */
 
 /* Base onboarding card */
@@ -342,147 +265,20 @@
 }
 
 /* =============================================
-   MARKETING CHARACTER UTILITIES - Vintage Travel Theme
-   ============================================= */
+   NOTES FOR DEVELOPERS
+   ============================================
 
-/* Pattern overlays */
-.pattern-vintage-grain {
-	position: relative;
-}
+   This file contains ONLY onboarding-related utility classes.
 
-.pattern-vintage-grain::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-image: var(--pattern-vintage-grain);
-	pointer-events: none;
-	opacity: 0.5;
-}
+   Previously removed (Phase 3 cleanup):
+   - Background gradients (bg-gradient-*, bg-pattern-*) - 0 uses
+   - Card utilities (card-ocean, card-mist, card-elevated) - 0 uses
+   - Hero/dashboard backgrounds (hero-section, dashboard-bg) - Defined in components
+   - Marketing character utilities (adventure-*, pattern-*, journey-*) - 0 uses
 
-.pattern-compass-points {
-	position: relative;
-}
+   Total removed: ~224 lines of unused CSS
 
-.pattern-compass-points::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-image: var(--pattern-compass-points);
-	background-size: 60px 60px;
-	pointer-events: none;
-}
+   If you need component-specific styles (e.g., hero sections, card backgrounds),
+   define them in the component's <style> block instead of adding them here.
 
-.pattern-journey-lines {
-	position: relative;
-}
-
-.pattern-journey-lines::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-image: var(--pattern-journey-lines);
-	background-size: 80px 80px;
-	pointer-events: none;
-}
-
-/* Adventure CTA effects */
-.adventure-cta::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: -100%;
-	right: 0;
-	bottom: 0;
-	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-	transition: left 0.6s ease;
-}
-
-.adventure-cta:hover::before {
-	left: 100%;
-}
-
-.adventure-cta:hover {
-	box-shadow: 0 8px 24px rgba(248, 85, 37, 0.4);
-}
-
-/* Secondary adventure button */
-.adventure-cta-secondary {
-	background: var(--color-vintage-100);
-	border: 2px solid var(--color-earth-600);
-	border-radius: 0.75rem;
-	padding: 1rem 2rem;
-	color: var(--color-earth-700);
-	font-weight: 600;
-	font-size: 1rem;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	position: relative;
-	overflow: hidden;
-}
-
-.adventure-cta-secondary:hover {
-	background: var(--color-earth-50);
-	border-color: var(--color-earth-700);
-	box-shadow: 0 6px 20px rgba(118, 67, 56, 0.2);
-}
-
-/* Journey dividers */
-.journey-divider {
-	width: 100%;
-	height: 80px;
-	background: var(--pattern-journey-lines);
-	background-size: 80px 80px;
-	margin: 3rem 0;
-	opacity: 0.6;
-}
-
-/* Vintage heading styles */
-.adventure-heading {
-	font-weight: 700;
-	color: var(--adventure-primary);
-	line-height: 1.2;
-	position: relative;
-}
-
-.adventure-heading::after {
-	content: '';
-	position: absolute;
-	bottom: -0.5rem;
-	left: 0;
-	width: 3rem;
-	height: 0.25rem;
-	background: linear-gradient(90deg, var(--color-sunset-500), var(--color-golden-500));
-	border-radius: 0.125rem;
-}
-
-.adventure-heading-centered::after {
-	left: 50%;
-	transform: translateX(-50%);
-}
-
-/* Mobile responsiveness for adventure elements */
-@media (max-width: 640px) {
-	.adventure-section {
-		padding: 2rem 0;
-	}
-
-	.adventure-card {
-		padding: 1.5rem;
-	}
-
-	.adventure-cta,
-	.adventure-cta-secondary {
-		padding: 0.875rem 1.5rem;
-		font-size: 0.9375rem;
-	}
-}
-
+   ============================================ */
