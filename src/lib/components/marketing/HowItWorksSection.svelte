@@ -5,7 +5,7 @@
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Euro from 'lucide-svelte/icons/euro';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 	
 	function handleJoinWaitlist() {
 		goto('/beta-2/apply');

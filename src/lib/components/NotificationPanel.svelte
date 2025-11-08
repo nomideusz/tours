@@ -3,7 +3,7 @@
 	import { notifications, unreadCount, notificationActions } from '$lib/stores/notifications.js';
 	import { scale, fly } from 'svelte/transition';
 	import { clickOutside } from '$lib/utils/click-outside.js';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	
 	// Icons
 	import Bell from 'lucide-svelte/icons/bell';

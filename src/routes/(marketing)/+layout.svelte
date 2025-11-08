@@ -10,7 +10,7 @@
 	import MarketingFooter from '$lib/components/layout/MarketingFooter.svelte';
 	import CookieBanner from '$lib/components/CookieBanner.svelte';
 
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
 	import '$lib/styles/auth.css';

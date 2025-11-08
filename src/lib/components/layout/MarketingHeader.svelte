@@ -15,7 +15,7 @@
 	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import Logo from '$lib/components/layout/Logo.svelte';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 
 	interface HeaderProps {
 		isAuthenticated: boolean;

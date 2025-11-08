@@ -23,7 +23,7 @@
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';

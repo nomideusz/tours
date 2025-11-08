@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/components/ui/loaders/LoadingSpinner.svelte';
 	import { onMount } from 'svelte';
 	import { trackAuthEvent } from '$lib/utils/umami-tracking.js';
 	

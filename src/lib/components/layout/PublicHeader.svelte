@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { tourOwnerStore } from '$lib/stores/tourOwner.js';
 	import { auth } from '$lib/stores/auth.js';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
 	import Logo from '$lib/components/layout/Logo.svelte';
 

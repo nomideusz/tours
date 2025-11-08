@@ -17,7 +17,7 @@
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import type { Tour } from '$lib/types.js';

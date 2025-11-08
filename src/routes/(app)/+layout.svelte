@@ -15,7 +15,7 @@
 	import { setUserCurrencyFromServer } from '$lib/stores/currency.js';
 	import AppHeader from '$lib/components/layout/AppHeader.svelte';
 	import AppFooter from '$lib/components/layout/AppFooter.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import InstallPWAPrompt from '$lib/components/InstallPWAPrompt.svelte';
 	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';

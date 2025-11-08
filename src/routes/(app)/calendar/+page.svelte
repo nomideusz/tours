@@ -3,8 +3,8 @@
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
-	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
-	import OnboardingSkeleton from '$lib/components/OnboardingSkeleton.svelte';
+	import DashboardSkeleton from '$lib/components/ui/loaders/DashboardSkeleton.svelte';
+	import OnboardingSkeleton from '$lib/components/ui/loaders/OnboardingSkeleton.svelte';
 	import LocationModal from '$lib/components/calendar/LocationModal.svelte';
 	import ToursLegend from '$lib/components/calendar/ToursLegend.svelte';
 	import OnboardingSection from '$lib/components/calendar/OnboardingSection.svelte';

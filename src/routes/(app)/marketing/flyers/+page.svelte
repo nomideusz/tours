@@ -19,7 +19,7 @@
 	import jsPDF from 'jspdf';
 	
 	// Components
-	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	import MarketingNav from '$lib/components/layout/MarketingNav.svelte';
 	
 	// Profile data query
 	const profileQuery = createQuery({

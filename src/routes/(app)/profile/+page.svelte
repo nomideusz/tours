@@ -24,10 +24,10 @@
 	// Components
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
-	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+	import LoadingSpinner from '$lib/components/ui/loaders/LoadingSpinner.svelte';
+	import ErrorAlert from '$lib/components/ui/feedback/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
-	import FlagIcon from '$lib/components/FlagIcon.svelte';
+	import FlagIcon from '$lib/components/ui/icons/FlagIcon.svelte';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	

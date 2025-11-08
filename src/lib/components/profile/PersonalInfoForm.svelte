@@ -12,7 +12,7 @@
 	import { userCurrency } from '$lib/stores/currency.js';
 	import { COUNTRY_LIST, getCountryInfo, getCurrencyForCountry, getPaymentMethod, getPaymentMethodExplanation } from '$lib/utils/countries.js';
 	import LocationPicker from '../LocationPicker.svelte';
-	import FlagIcon from '$lib/components/FlagIcon.svelte';
+	import FlagIcon from '$lib/components/ui/icons/FlagIcon.svelte';
 
 	let {
 		user,

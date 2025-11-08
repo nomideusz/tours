@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
-	import FlagIcon from '$lib/components/FlagIcon.svelte';
+	import FlagIcon from '$lib/components/ui/icons/FlagIcon.svelte';
 	import { COUNTRY_LIST, getCountryInfo } from '$lib/utils/countries.js';
 
 	// Props

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import { currentUser } from '$lib/stores/auth.js';
 	import { PRICING_PLANS } from '$lib/utils/pricing-config.js';
 	

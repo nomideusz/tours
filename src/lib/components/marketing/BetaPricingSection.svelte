@@ -4,7 +4,7 @@
 	import Sparkles from 'lucide-svelte/icons/sparkles';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import { PRICING_PLANS, type PricingPlan, BETA_2_PRICES } from '$lib/utils/pricing-config.js';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 	
 	let isYearly = $state(false);
 	

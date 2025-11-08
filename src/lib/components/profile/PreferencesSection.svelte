@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { preferences, updatePreferences } from '$lib/stores/preferences.js';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import { isFeatureEnabled, hasFeatureAccess } from '$lib/feature-flags.js';
 	
 	// Icons

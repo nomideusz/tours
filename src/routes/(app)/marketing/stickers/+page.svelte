@@ -20,7 +20,7 @@
 	import jsPDF from 'jspdf';
 	
 	// Components
-	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	import MarketingNav from '$lib/components/layout/MarketingNav.svelte';
 	import ColorSchemeSelector from '$lib/components/form/inputs/ColorSchemeSelector.svelte';
 	import DesignSelector from '$lib/components/form/inputs/DesignSelector.svelte';
 	

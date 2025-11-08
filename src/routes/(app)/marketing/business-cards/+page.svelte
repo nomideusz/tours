@@ -17,7 +17,7 @@
 	import Layout from 'lucide-svelte/icons/layout';
 	
 	// Components
-	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	import MarketingNav from '$lib/components/layout/MarketingNav.svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import ColorSchemeSelector from '$lib/components/form/inputs/ColorSchemeSelector.svelte';

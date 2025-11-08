@@ -2,7 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import HelpCircle from 'lucide-svelte/icons/help-circle';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 	
 	// Umami tracking
 	import { trackEvent, UMAMI_EVENTS } from '$lib/utils/umami-tracking.js';

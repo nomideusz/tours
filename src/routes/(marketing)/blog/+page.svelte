@@ -5,7 +5,7 @@
 	import User from 'lucide-svelte/icons/user';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import Tag from 'lucide-svelte/icons/tag';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 	import NewsletterSignup from '$lib/components/NewsletterSignup.svelte';
 	
 	let { data } = $props();

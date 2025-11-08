@@ -15,7 +15,7 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	
 	// Components
-	import FlagIcon from '$lib/components/FlagIcon.svelte';
+	import FlagIcon from '$lib/components/ui/icons/FlagIcon.svelte';
 
 	// Props
 	interface Props {

@@ -13,7 +13,7 @@
 	// Components
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import TableSort from '$lib/components/TableSort.svelte';
 	

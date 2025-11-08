@@ -5,7 +5,7 @@
 	// Icons
 	import Sun from 'lucide-svelte/icons/sun';
 	import Moon from 'lucide-svelte/icons/moon';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 
 	let { tooltipPosition = 'top' } = $props<{ tooltipPosition?: 'top' | 'bottom' }>();
 

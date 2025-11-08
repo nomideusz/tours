@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import ArrowRight from 'lucide-svelte/icons/arrow-right';
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
-	import BetaBadge from '$lib/components/BetaBadge.svelte';
+	import BetaBadge from '$lib/components/ui/BetaBadge.svelte';
 	
 	// Umami tracking
 	import { trackCTAClick } from '$lib/utils/umami-tracking.js';

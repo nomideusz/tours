@@ -6,7 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import '$lib/styles/timeline.css';
 	

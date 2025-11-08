@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
-	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+	import ErrorAlert from '$lib/components/ui/feedback/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 
 	// Composables

@@ -3,7 +3,7 @@
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/components/ui/loaders/LoadingSpinner.svelte';
 	import PayoutDashboard from './PayoutDashboard.svelte';
 	import { getPaymentMethod } from '$lib/utils/countries.js';
 

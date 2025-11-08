@@ -7,7 +7,7 @@
 	import { goto } from '$app/navigation';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	import MarketingNav from '$lib/components/layout/MarketingNav.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Image from 'lucide-svelte/icons/image';
 	import User from 'lucide-svelte/icons/user';
