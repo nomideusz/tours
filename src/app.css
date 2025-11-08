@@ -24,7 +24,6 @@
 
 /* Utilities */
 @import './lib/styles/backgrounds.css';
-@import './lib/styles/utilities/color-utilities.css';
 @import './lib/styles/utilities/marketing-utilities.css';
 
 /* Theme Overrides - Must be last */
