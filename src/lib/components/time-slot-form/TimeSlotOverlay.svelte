@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { browser } from '$app/environment';
-	import Drawer from '$lib/components/Drawer.svelte';
+	import Drawer from '$lib/components/modals/Drawer.svelte';
 	import TimeSlotForm from './TimeSlotForm.svelte';
 	
 	// Icons

@@ -2,7 +2,7 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { formatDuration, getImageUrl } from '$lib/utils/tour-helpers-client.js';
-	import Drawer from '$lib/components/Drawer.svelte';
+	import Drawer from '$lib/components/modals/Drawer.svelte';
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
 	import NativeDatePicker from '$lib/components/form/inputs/NativeDatePicker.svelte';
 	import NativeTimePicker from '$lib/components/form/inputs/NativeTimePicker.svelte';

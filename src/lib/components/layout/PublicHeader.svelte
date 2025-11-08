@@ -4,7 +4,7 @@
 	import { auth } from '$lib/stores/auth.js';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
-	import Logo from '$lib/components/Logo.svelte';
+	import Logo from '$lib/components/layout/Logo.svelte';
 
 	let { 
 		hidden = false 

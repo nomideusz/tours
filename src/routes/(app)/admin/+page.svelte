@@ -4,8 +4,8 @@
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
+	import Modal from '$lib/components/modals/Modal.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
 	import TableSort from '$lib/components/TableSort.svelte';

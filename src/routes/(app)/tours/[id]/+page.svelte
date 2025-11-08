@@ -24,10 +24,10 @@
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import UnifiedPricingSummary from '$lib/components/pricing/UnifiedPricingSummary.svelte';
-	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
+	import AddSlotsDrawer from '$lib/components/modals/AddSlotsDrawer.svelte';
 	import Markdown from '$lib/components/ui/Markdown.svelte';
 	
 	// Icons

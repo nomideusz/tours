@@ -1,6 +1,6 @@
 <script lang="ts">
 	import NotificationPanel from '$lib/components/NotificationPanel.svelte';
-	import Logo from '$lib/components/Logo.svelte';
+	import Logo from '$lib/components/layout/Logo.svelte';
 	import GlobalSearch from '$lib/components/GlobalSearch.svelte';
 	
 	let { 

@@ -26,7 +26,7 @@
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
@@ -40,7 +40,7 @@
 	import PreferencesSection from '$lib/components/profile/PreferencesSection.svelte';
 	import DangerZone from '$lib/components/profile/DangerZone.svelte';
 	import BankAccountSetup from '$lib/components/profile/BankAccountSetup.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import Modal from '$lib/components/modals/Modal.svelte';
 
 	// TanStack Query
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';

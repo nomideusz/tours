@@ -14,7 +14,7 @@
 	import Calculator from 'lucide-svelte/icons/calculator';
 	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
-	import Logo from '$lib/components/Logo.svelte';
+	import Logo from '$lib/components/layout/Logo.svelte';
 	import BetaBadge from '$lib/components/BetaBadge.svelte';
 
 	interface HeaderProps {

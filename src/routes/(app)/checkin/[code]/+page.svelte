@@ -5,7 +5,7 @@
 	import { formatSlotTimeRange } from '$lib/utils/time-slot-client.js';
 	import { formatTourOwnerCurrency } from '$lib/utils/currency.js';
 	import { formatParticipantDisplay } from '$lib/utils/participant-display.js';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';
 	import MapPin from 'lucide-svelte/icons/map-pin';

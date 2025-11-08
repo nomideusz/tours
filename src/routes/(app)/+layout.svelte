@@ -21,7 +21,7 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 	import NotificationInitializer from '$lib/components/NotificationInitializer.svelte';
-	import BetaWelcomeModal from '$lib/components/BetaWelcomeModal.svelte';
+	import BetaWelcomeModal from '$lib/components/modals/BetaWelcomeModal.svelte';
 	import { themeStore, type Theme } from '$lib/stores/theme.js';
 	import { onMount, onDestroy } from 'svelte';
 	import { unreadCount, unreadBookingCount } from '$lib/stores/notifications.js';

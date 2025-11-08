@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { queryKeys } from '$lib/queries/shared-stats.js';
-	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
+	import AddSlotsDrawer from '$lib/components/modals/AddSlotsDrawer.svelte';
 
 	// Get date from query param
 	// Format current date in local time to avoid timezone shift

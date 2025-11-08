@@ -15,7 +15,7 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Activity from 'lucide-svelte/icons/activity';
 	import type { PageData } from './$types.js';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import PromoCodeInput from '$lib/components/form/inputs/PromoCodeInput.svelte';

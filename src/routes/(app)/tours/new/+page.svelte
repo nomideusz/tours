@@ -4,7 +4,7 @@
 	import TourForm from '$lib/components/TourForm.svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 
 	// Composables
 	import { useTourImages } from '$lib/composables/useTourImages.svelte.js';

@@ -16,7 +16,7 @@
 	import Info from 'lucide-svelte/icons/info';
 	
 	// Components
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	
 	let { data } = $props();
 	let qrCode = $derived($page.params.qrCode);

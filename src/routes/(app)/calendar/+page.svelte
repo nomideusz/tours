@@ -36,8 +36,8 @@
 	import Info from 'lucide-svelte/icons/info';
 	
 	// Components
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import AddSlotsDrawer from '$lib/components/AddSlotsDrawer.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
+	import AddSlotsDrawer from '$lib/components/modals/AddSlotsDrawer.svelte';
 	import { getCountryInfo, getCurrencyForCountry, getPaymentMethod } from '$lib/utils/countries.js';
 	import { formatDateForInput, getSmartCapacity, getLastUsedCapacity, calculateTotalRecurringSlots, getRecurringEndDate } from '$lib/utils/calendar-helpers.js';
 	import { checkConflicts, checkRecurringConflicts } from '$lib/components/time-slot-form/utils/time-utils.js';

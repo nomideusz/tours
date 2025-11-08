@@ -15,7 +15,7 @@
 	// Components
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';

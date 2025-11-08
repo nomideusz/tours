@@ -8,7 +8,7 @@
 	import Globe from 'lucide-svelte/icons/globe';
 	import CreditCard from 'lucide-svelte/icons/credit-card';
 	import Plus from 'lucide-svelte/icons/plus';
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import { getCountryInfo } from '$lib/utils/countries.js';
 
 	// Props

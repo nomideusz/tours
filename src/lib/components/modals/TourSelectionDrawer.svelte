@@ -2,7 +2,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	import { formatDuration, getImageUrl } from '$lib/utils/tour-helpers-client.js';
-	import Drawer from '$lib/components/Drawer.svelte';
+	import Drawer from '$lib/components/modals/Drawer.svelte';
 	
 	// Icons
 	import MapPin from 'lucide-svelte/icons/map-pin';

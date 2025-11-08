@@ -7,7 +7,7 @@
 	import { updateTimeSlotMutation, deleteTimeSlotMutation } from '$lib/queries/mutations.js';
 	
 	// Components
-	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
+	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import TimeRange from '$lib/components/form/inputs/TimeRange.svelte';
 	import NumberInput from '$lib/components/form/inputs/NumberInput.svelte';
 	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
