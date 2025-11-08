@@ -125,23 +125,47 @@ export function useTourSubmission(options: SubmissionOptions) {
 
 			// Handle redirect response
 			let result: any;
+			let extractedTourId: string | undefined;
+
 			if (response.redirected) {
 				const redirectUrl = new URL(response.url);
-				const extractedTourId = redirectUrl.pathname.split('/').pop()?.split('?')[0];
+				// Extract tour ID from URL path like /tours/abc123?created=true
+				const pathParts = redirectUrl.pathname.split('/').filter(Boolean);
+				extractedTourId = pathParts[pathParts.length - 1];
 				console.log('🔍 Redirect detected:', {
 					fullUrl: response.url,
 					pathname: redirectUrl.pathname,
+					pathParts,
 					extractedTourId
 				});
-				result = { success: true, redirected: true, tourId: extractedTourId, url: response.url };
+				result = { success: true, redirected: true, tourId: extractedTourId };
 			} else {
-				result = await response.json();
+				// Try to parse JSON response
+				const text = await response.text();
+				console.log('📄 Response text:', text.substring(0, 200));
+				try {
+					result = JSON.parse(text);
+				} catch (e) {
+					console.error('Failed to parse JSON:', e);
+					result = { success: true };
+				}
 			}
 
 			console.log('✅ Tour submitted successfully:', result);
 
+			// Determine final tour ID
+			const finalTourId = isEdit ? tourId! : (result.tourId || result.id || extractedTourId);
+
+			console.log('🎯 Final tour ID:', finalTourId, {
+				isEdit,
+				resultTourId: result.tourId,
+				resultId: result.id,
+				extractedTourId
+			});
+
 			// Invalidate caches if queryClient is available
 			if (queryClient) {
+				console.log('🔄 Invalidating caches...');
 				queryClient.removeQueries({ queryKey: queryKeys.userTours });
 				queryClient.removeQueries({ queryKey: queryKeys.toursStats });
 
@@ -167,8 +191,8 @@ export function useTourSubmission(options: SubmissionOptions) {
 					status: formData.status,
 					pricing_model: formData.pricingModel
 				});
-			} else {
-				trackTourEvent('create', result.tourId || result.id, {
+			} else if (finalTourId) {
+				trackTourEvent('create', finalTourId, {
 					status: formData.status,
 					has_schedule: !!scheduleData,
 					pricing_model: formData.pricingModel
@@ -179,15 +203,6 @@ export function useTourSubmission(options: SubmissionOptions) {
 			if (browser) {
 				sessionStorage.setItem('recentTourActivity', Date.now().toString());
 			}
-
-			// Invalidate queries
-			console.log('🔄 Invalidating caches...');
-			queryClient.invalidateQueries({ queryKey: queryKeys.userTours });
-			queryClient.invalidateQueries({ queryKey: queryKeys.toursStats });
-
-			const finalTourId = isEdit ? tourId! : (result.tourId || result.id);
-
-			console.log('🎯 Final tour ID:', finalTourId, { isEdit, resultTourId: result.tourId, resultId: result.id });
 
 			// Call success callback
 			if (options.onSuccess) {
