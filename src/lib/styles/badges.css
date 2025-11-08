@@ -19,12 +19,6 @@
 		color: var(--color-error-700);
 	}
 
-	.status-completed {
-		border-color: var(--color-info-200);
-		background: var(--color-info-50);
-		color: var(--color-info-700);
-	}
-
 	.status-default {
 		border-color: var(--border-primary);
 		background: var(--bg-secondary);
@@ -50,63 +44,7 @@
 		border-color: var(--color-muted-border) !important;
 	}
 
-	[data-theme="dark"] .status-completed {
-		background: var(--color-muted-info) !important;
-		color: var(--color-muted-text) !important;
-		border-color: var(--color-muted-border) !important;
-	}
-
 	[data-theme="dark"] .status-default {
-		background: var(--color-muted-gray) !important;
-		color: var(--color-muted-text) !important;
-		border-color: var(--color-muted-border) !important;
-	}
-
-	/* Payment Status Badges */
-	.payment-paid {
-		border-color: var(--color-success-200);
-		background: var(--color-success-50);
-		color: var(--color-success-700);
-	}
-
-	.payment-pending {
-		border-color: var(--color-primary-200);
-		background: var(--color-primary-50);
-		color: var(--color-primary-700);
-	}
-
-	.payment-failed {
-		border-color: var(--color-error-200);
-		background: var(--color-error-50);
-		color: var(--color-error-700);
-	}
-
-	.payment-refunded {
-		border-color: var(--border-primary);
-		background: var(--bg-secondary);
-		color: var(--text-secondary);
-	}
-
-	/* Dark mode adjustments for payment badges - consistent with professional design */
-	[data-theme="dark"] .payment-paid {
-		background: var(--color-muted-success) !important;
-		color: var(--color-muted-text) !important;
-		border-color: var(--color-muted-border) !important;
-	}
-
-	[data-theme="dark"] .payment-pending {
-		background: var(--color-muted-info) !important;
-		color: var(--color-muted-text) !important;
-		border-color: var(--color-muted-border) !important;
-	}
-
-	[data-theme="dark"] .payment-failed {
-		background: var(--color-muted-error) !important;
-		color: var(--color-muted-text) !important;
-		border-color: var(--color-muted-border) !important;
-	}
-
-	[data-theme="dark"] .payment-refunded {
 		background: var(--color-muted-gray) !important;
 		color: var(--color-muted-text) !important;
 		border-color: var(--color-muted-border) !important;
@@ -142,12 +80,7 @@
 	.status-confirmed svg,
 	.status-pending svg,
 	.status-cancelled svg,
-	.status-completed svg,
-	.status-default svg,
-	.payment-paid svg,
-	.payment-pending svg,
-	.payment-failed svg,
-	.payment-refunded svg {
+	.status-default svg {
 		color: inherit;
 		fill: currentColor;
 		stroke: currentColor;
