@@ -179,12 +179,67 @@ export function createTourMutation() {
 }
 
 /**
+ * Create tour with form data mutation (handles multipart form data for image uploads)
+ */
+export function createTourWithFormDataMutation() {
+	const queryClient = useQueryClient();
+	const invalidate = createInvalidationHelper(queryClient);
+
+	return createMutation({
+		mutationFn: async (formData: FormData) => {
+			const response = await fetch('/tours/new', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({ error: 'Failed to create tour' }));
+				throw new Error(error.error || error.message || 'Failed to create tour');
+			}
+
+			// Handle redirect response
+			if (response.redirected) {
+				// Extract tour ID from redirect URL
+				const url = new URL(response.url);
+				const tourId = url.pathname.split('/').pop()?.split('?')[0];
+				return { success: true, redirected: true, tourId, url: response.url };
+			}
+
+			const data = await response.json();
+			return data;
+		},
+		onSuccess: async (data) => {
+			console.log('✅ Create form data mutation: Tour created successfully:', data);
+
+			// Force remove and refetch for immediate sync
+			queryClient.removeQueries({ queryKey: queryKeys.userTours });
+			queryClient.removeQueries({ queryKey: queryKeys.toursStats });
+
+			// Refetch immediately
+			await queryClient.refetchQueries({
+				queryKey: queryKeys.userTours,
+				type: 'active'
+			});
+			await queryClient.refetchQueries({
+				queryKey: queryKeys.toursStats,
+				type: 'active'
+			});
+
+			// Invalidate usage query to update tour count display
+			queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
+
+			console.log('✅ Create form data mutation: Cache synced with server');
+		}
+	});
+}
+
+/**
  * Update tour mutation
  */
 export function updateTourMutation(tourId: string) {
 	const queryClient = useQueryClient();
 	const invalidate = createInvalidationHelper(queryClient);
-	
+
 	return createMutation({
 		mutationFn: async (tourData: any) => {
 			const response = await fetch(`/api/tours/${tourId}`, {
@@ -192,12 +247,12 @@ export function updateTourMutation(tourId: string) {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(tourData)
 			});
-			
+
 			if (!response.ok) {
 				const error = await response.json();
 				throw new Error(error.error || 'Failed to update tour');
 			}
-			
+
 			return response.json();
 		},
 		onSuccess: async (data) => {
