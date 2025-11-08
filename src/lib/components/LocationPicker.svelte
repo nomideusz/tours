@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Navigation from 'lucide-svelte/icons/navigation';
 	import Search from 'lucide-svelte/icons/search';
 	import X from 'lucide-svelte/icons/x';
