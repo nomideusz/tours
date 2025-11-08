@@ -43,21 +43,15 @@ Key extracted components:
 	import Utensils from 'lucide-svelte/icons/utensils';
 	import Building from 'lucide-svelte/icons/building';
 	import BookOpen from 'lucide-svelte/icons/book-open';
-	import Palette from 'lucide-svelte/icons/palette';
 	import Mountain from 'lucide-svelte/icons/mountain';
 	import Edit from 'lucide-svelte/icons/edit';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
-	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import LocationPicker from './LocationPicker.svelte';
-	import LanguageSelector from './LanguageSelector.svelte';
-	import CategorySelector from './CategorySelector.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
-	import Globe from 'lucide-svelte/icons/globe';
 	import Calendar from 'lucide-svelte/icons/calendar';
-	import Package from 'lucide-svelte/icons/package';
 	import { isValidLocationLength } from '$lib/utils/location.js';
 	
 	// Import new pricing components
@@ -70,12 +64,12 @@ Key extracted components:
 	import '@friendofsvelte/tipex/styles/index.css';
 	import CharacterCount from '@tiptap/extension-character-count';
 	import TourDescriptionControls from './TourDescriptionControls.svelte';
-	import ChipInput from './ChipInput.svelte';
 	import TourImagesSection from './tour-form/TourImagesSection.svelte';
 	import DangerZoneSection from './tour-form/DangerZoneSection.svelte';
 	import StatusVisibilitySection from './tour-form/StatusVisibilitySection.svelte';
 	import CancellationPolicySection from './tour-form/CancellationPolicySection.svelte';
 	import ActionButtonsSection from './tour-form/ActionButtonsSection.svelte';
+	import TagsSection from './tour-form/TagsSection.svelte';
 
 	interface Props {
 		formData: {
@@ -996,105 +990,15 @@ Key extracted components:
 					</div>
 				</div>
 
-				<!-- Categories -->
-				<div>
-					{#if !hideLabels}
-						<label for="categories" class="form-label flex items-center gap-2 hidden sm:flex">
-							<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Categories</span>
-						</label>
-					{/if}
-					<div class="form-field-wrapper">
-						<CategorySelector
-							bind:selectedCategories={formData.categories}
-							error={hasFieldError(allErrors, 'categories') && shouldShowError('categories')}
-						/>
-						<div class="form-field-helper">
-							{#if getFieldError(allErrors, 'categories') && shouldShowError('categories')}
-								<span class="form-error-message">{getFieldError(allErrors, 'categories')}</span>
-							{:else}
-								<span class="form-field-spacer"></span>
-							{/if}
-						</div>
-						<!-- Hidden input for form submission -->
-						<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
-					</div>
-				</div>
-
-				<!-- Languages -->
-				<div>
-					{#if !hideLabels}
-						<label for="languages" class="form-label flex items-center gap-2 hidden sm:flex">
-							<Globe class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Languages Offered *</span>
-						</label>
-					{/if}
-					<div class="form-field-wrapper languages-field-wrapper">
-						<LanguageSelector
-							bind:selectedLanguages={formData.languages}
-							error={hasFieldError(allErrors, 'languages') && shouldShowError('languages')}
-						/>
-						<div class="form-field-helper">
-							{#if getFieldError(allErrors, 'languages') && shouldShowError('languages')}
-								<span class="form-error-message">{getFieldError(allErrors, 'languages')}</span>
-							{:else}
-								<span class="form-field-spacer"></span>
-							{/if}
-						</div>
-						<!-- Hidden input for form submission -->
-						<input type="hidden" name="languages" value={JSON.stringify(formData.languages || [])} />
-					</div>
-				</div>
-
-				<!-- What's Included -->
-				<div>
-					{#if !hideLabels}
-						<label class="form-label flex items-center gap-2 hidden sm:flex">
-							<Package class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>What's Included</span>
-						</label>
-					{/if}
-					<div class="form-field-wrapper">
-						<ChipInput
-							bind:items={formData.includedItems}
-							suggestions={includedItemsSuggestions}
-							placeholder="Add included items..."
-							addButtonText="Add"
-						/>
-						<div class="form-field-helper">
-							<span class="form-field-spacer"></span>
-						</div>
-						<!-- Hidden inputs for form submission -->
-						{#each formData.includedItems.filter(item => item.trim()) as item}
-							<input type="hidden" name="includedItems" value={item} />
-						{/each}
-					</div>
-				</div>
-
-				<!-- Requirements -->
-				<div>
-					{#if !hideLabels}
-						<label class="form-label flex items-center gap-2 hidden sm:flex">
-							<AlertCircle class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Requirements</span>
-						</label>
-					{/if}
-					<div class="form-field-wrapper">
-						<ChipInput
-							bind:items={formData.requirements}
-							suggestions={requirementsSuggestions}
-							placeholder="Add requirements..."
-							addButtonText="Add"
-						/>
-						<div class="form-field-helper">
-							<span class="form-field-spacer"></span>
-						</div>
-						<!-- Hidden inputs for form submission -->
-						{#each formData.requirements.filter(req => req.trim()) as requirement}
-							<input type="hidden" name="requirements" value={requirement} />
-						{/each}
-					</div>
-				</div>
+				<!-- Tags: Categories, Languages, Included Items, Requirements -->
+				<TagsSection
+					bind:formData
+					{allErrors}
+					{hideLabels}
+					{includedItemsSuggestions}
+					{requirementsSuggestions}
+					{shouldShowError}
+				/>
 			</div>
 		</div>
 			</div>
