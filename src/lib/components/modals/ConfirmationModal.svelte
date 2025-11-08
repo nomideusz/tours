@@ -7,7 +7,7 @@
 	import X from 'lucide-svelte/icons/x';
 
 	// Components
-	import FlagIcon from './FlagIcon.svelte';
+	import FlagIcon from '../ui/icons/FlagIcon.svelte';
 
 	export let isOpen = false;
 	export let title = 'Are you sure?';

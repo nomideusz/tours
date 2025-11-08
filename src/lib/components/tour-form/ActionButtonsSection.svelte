@@ -41,6 +41,9 @@ Extracted from TourForm.svelte to improve maintainability.
 		onSubmit?: () => void;
 		onCancel: () => void;
 		handleSubmit?: () => void;
+
+		// Layout options
+		sticky?: boolean;
 	}
 
 	let {
@@ -58,12 +61,13 @@ Extracted from TourForm.svelte to improve maintainability.
 		onSaveAsDraft,
 		onSubmit,
 		onCancel,
-		handleSubmit
+		handleSubmit,
+		sticky = false
 	}: Props = $props();
 </script>
 
-<div class="rounded-xl action-buttons-section" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-	<div class="px-4 py-4 sm:p-4">
+<div class="action-buttons-section" class:sticky={sticky}>
+	<div class="px-4 py-4 sm:p-4" class:sticky-content={sticky}>
 		<div class="space-y-3">
 			{#if onPublish && onSaveAsDraft}
 				<!-- Dual Action Buttons for Draft/Publish -->
@@ -169,5 +173,23 @@ Extracted from TourForm.svelte to improve maintainability.
 			box-shadow: none !important;
 			background: transparent !important;
 		}
+	}
+
+	/* Sticky positioning for better UX */
+	.action-buttons-section.sticky {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 50;
+		border-top: 1px solid var(--color-border-200);
+		background: var(--color-bg-primary);
+		box-shadow: 0 -4px 12px -4px rgba(0, 0, 0, 0.1);
+	}
+
+	.sticky-content {
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 0 1rem;
 	}
 </style>

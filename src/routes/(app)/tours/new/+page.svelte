@@ -222,101 +222,116 @@
 	<title>Create New Tour - Zaur</title>
 </svelte:head>
 
-<div class="tours-page-container px-0 sm:px-6 lg:px-8 py-2 sm:py-6 lg:py-8">
-	<!-- Mobile-First Header -->
-	<div class="mb-3 sm:mb-8 px-4 sm:px-0">
-		<!-- Mobile Compact Header with inline title -->
-		<div class="sm:hidden new-tour-mobile-header mb-3">
-			<div class="flex items-center justify-between">
-				<div class="py-1.5 px-4 rounded-lg" style="background: var(--color-primary-50);">
-					<h1 class="text-base font-bold" style="color: var(--color-primary-700);">New Tour</h1>
+<!-- Page Container with consistent layout -->
+<div class="new-tour-page">
+	<!-- Page Header -->
+	<div class="page-header-section">
+		<div class="page-container">
+			<!-- Mobile Header -->
+			<div class="sm:hidden mobile-header">
+				<div class="flex items-center justify-between py-3">
+					<div class="flex items-center gap-3">
+						<button
+							onclick={() => goto('/tours')}
+							class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-2 px-3 rounded-lg hover:bg-gray-100 active:scale-95"
+							style="color: var(--color-primary-600);"
+						>
+							<ArrowLeft class="h-4 w-4" />
+							Back
+						</button>
+						<h1 class="text-lg font-semibold" style="color: var(--text-primary);">New Tour</h1>
+					</div>
 				</div>
-				<button
-					onclick={() => goto('/tours')}
-					class="flex items-center gap-2 text-sm font-medium transition-all duration-200 py-1.5 px-3 rounded-lg active:scale-95"
-					style="color: var(--color-primary-600); background: var(--color-primary-50);"
-				>
-					Back
-					<ArrowLeft class="h-4 w-4" />
-				</button>
 			</div>
-		</div>
 
-		<!-- Desktop Header -->
-		<div class="hidden sm:block">
-			<PageHeader
-				title="New Tour"
-				breadcrumbs={[
-					{ label: 'Tours', href: '/tours' },
-					{ label: 'New' }
-				]}
-			/>
+			<!-- Desktop Header -->
+			<div class="hidden sm:block desktop-header">
+				<PageHeader
+					title="Create New Tour"
+					subtitle="Set up your tour details and pricing"
+					breadcrumbs={[
+						{ label: 'Tours', href: '/tours' },
+						{ label: 'New Tour' }
+					]}
+				/>
+			</div>
 		</div>
 	</div>
 
-	{#if validation.error}
-		<div bind:this={validation.errorElement} class="mb-6 px-4 sm:px-0">
-			{#if (form as any)?.showUpgradeButton}
-				<div class="alert-warning rounded-xl p-4">
-					<div class="flex gap-3">
-						<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
-						<div class="flex-1">
-							<p class="font-medium">Tour Limit Reached</p>
-							<p class="text-sm mt-1">{validation.error}</p>
-							{#if (form as any)?.currentCount !== undefined && (form as any)?.limit !== undefined}
-								<p class="text-sm mt-1">
-									You currently have {(form as any).currentCount} tours out of {(form as any).limit} allowed.
-								</p>
-							{/if}
-							<div class="mt-3">
-								<a href="/subscription" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md" style="background: var(--color-warning-600); color: white;">
-									Upgrade Your Plan
-								</a>
+	<!-- Main Content -->
+	<div class="page-content">
+		<div class="page-container">
+			<!-- Error Messages -->
+			{#if validation.error || imageHandler.imageUploadErrors.length > 0}
+				<div class="error-section mb-6" bind:this={validation.errorElement}>
+					{#if validation.error}
+						{#if (form as any)?.showUpgradeButton}
+							<div class="upgrade-alert">
+								<div class="flex gap-3">
+									<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
+									<div class="flex-1">
+										<p class="font-medium" style="color: var(--color-warning-800);">Tour Limit Reached</p>
+										<p class="text-sm mt-1" style="color: var(--color-warning-700);">{validation.error}</p>
+										{#if (form as any)?.currentCount !== undefined && (form as any)?.limit !== undefined}
+											<p class="text-sm mt-1" style="color: var(--color-warning-700);">
+												You currently have {(form as any).currentCount} tours out of {(form as any).limit} allowed.
+											</p>
+										{/if}
+										<div class="mt-3">
+											<a href="/subscription" class="upgrade-button">
+												Upgrade Your Plan
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						{:else}
+							<ErrorAlert variant="error" title="Error" message={validation.error} />
+						{/if}
+					{/if}
+
+					{#if imageHandler.imageUploadErrors.length > 0}
+						<div class="image-error-alert">
+							<div class="flex gap-3">
+								<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
+								<div class="flex-1">
+									<p class="font-medium" style="color: var(--color-error-800);">Image Upload Issues</p>
+									<ul class="text-sm mt-2 space-y-1" style="color: var(--color-error-700);">
+										{#each imageHandler.imageUploadErrors as error}
+											<li>• {error}</li>
+										{/each}
+									</ul>
+								</div>
 							</div>
 						</div>
-					</div>
+					{/if}
 				</div>
-			{:else}
-				<ErrorAlert variant="error" title="Error" message={validation.error} />
 			{/if}
-		</div>
-	{/if}
 
-	<!-- Image Upload Errors -->
-	{#if imageHandler.imageUploadErrors.length > 0}
-		<div class="alert-error mb-6 rounded-xl p-4 mx-4 sm:mx-0">
-			<div class="flex gap-3">
-				<AlertCircle class="h-5 w-5 flex-shrink-0 mt-0.5" />
-				<div class="flex-1">
-					<p class="font-medium">Image Upload Issues</p>
-					<ul class="text-sm mt-2 space-y-1">
-						{#each imageHandler.imageUploadErrors as error}
-							<li>• {error}</li>
-						{/each}
-					</ul>
-				</div>
+			<!-- Tour Form -->
+			<div class="form-section">
+				<TourForm
+					bind:formData
+					bind:uploadedImages={imageHandler.uploadedImages}
+					isSubmitting={submission.isSubmitting}
+					isEdit={false}
+					onCancel={handleCancel}
+					onSaveAsDraft={handleSaveAsDraft}
+					onPublish={handleSaveAndActivate}
+					onImageUpload={imageHandler.handleImageUpload}
+					onImageRemove={imageHandler.removeImage}
+					imageUploadErrors={imageHandler.imageUploadErrors}
+					serverErrors={validation.validationErrors}
+					triggerValidation={validation.triggerValidation}
+					hideStatusField={true}
+					profile={profile}
+					hasConfirmedLocation={onboarding.hasConfirmedLocation}
+					paymentStatus={onboarding.paymentStatus}
+					showStickyActions={true}
+				/>
 			</div>
 		</div>
-	{/if}
-
-	<TourForm
-		bind:formData
-		bind:uploadedImages={imageHandler.uploadedImages}
-		isSubmitting={submission.isSubmitting}
-		isEdit={false}
-		onCancel={handleCancel}
-		onSaveAsDraft={handleSaveAsDraft}
-		onPublish={handleSaveAndActivate}
-		onImageUpload={imageHandler.handleImageUpload}
-		onImageRemove={imageHandler.removeImage}
-		imageUploadErrors={imageHandler.imageUploadErrors}
-		serverErrors={validation.validationErrors}
-		triggerValidation={validation.triggerValidation}
-		hideStatusField={true}
-		profile={profile}
-		hasConfirmedLocation={onboarding.hasConfirmedLocation}
-		paymentStatus={onboarding.paymentStatus}
-	/>
+	</div>
 </div>
 
 <!-- Confirmation Modal -->
@@ -331,7 +346,93 @@
 />
 
 <style>
-	.tours-page-container {
-		width: 100%;
+	/* New Tour Page Layout */
+	.new-tour-page {
+		min-height: 100vh;
+		background: var(--color-bg-primary);
+	}
+
+	/* Page Header Section */
+	.page-header-section {
+		border-bottom: 1px solid var(--color-border-200);
+		background: var(--color-bg-primary);
+	}
+
+	.page-container {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 1rem;
+	}
+
+	/* Mobile Header */
+	.mobile-header {
+		padding: 0.75rem 0;
+	}
+
+	/* Desktop Header */
+	.desktop-header {
+		padding: 2rem 0 1.5rem 0;
+	}
+
+	/* Page Content */
+	.page-content {
+		flex: 1;
+		padding-bottom: 8rem; /* Extra padding for fixed action buttons */
+	}
+
+	/* Error Section */
+	.error-section {
+		max-width: 800px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.upgrade-alert {
+		background: var(--color-warning-50);
+		border: 1px solid var(--color-warning-200);
+		border-radius: 0.75rem;
+		padding: 1rem;
+	}
+
+	.upgrade-button {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border-radius: 0.375rem;
+		background: var(--color-warning-600);
+		color: white;
+		text-decoration: none;
+		transition: background-color 0.15s ease;
+	}
+
+	.upgrade-button:hover {
+		background: var(--color-warning-700);
+	}
+
+	.image-error-alert {
+		background: var(--color-error-50);
+		border: 1px solid var(--color-error-200);
+		border-radius: 0.75rem;
+		padding: 1rem;
+		margin-top: 1rem;
+	}
+
+	/* Form Section */
+	.form-section {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 640px) {
+		.page-container {
+			padding: 0 0.75rem;
+		}
+
+		.form-section {
+			max-width: 100%;
+		}
 	}
 </style>

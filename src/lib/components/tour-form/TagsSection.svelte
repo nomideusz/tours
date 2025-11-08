@@ -22,6 +22,7 @@
 		includedItemsSuggestions?: string[];
 		requirementsSuggestions?: string[];
 		shouldShowError: (field: string) => boolean;
+		mode?: 'all' | 'categories-only' | 'languages-only' | 'included-only' | 'requirements-only';
 	}
 
 	let {
@@ -30,14 +31,16 @@
 		hideLabels = true,
 		includedItemsSuggestions = [],
 		requirementsSuggestions = [],
-		shouldShowError
+		shouldShowError,
+		mode = 'all'
 	}: Props = $props();
 </script>
 
+{#if mode === 'all' || mode === 'categories-only'}
 <!-- Categories -->
 <div>
 	{#if !hideLabels}
-		<label for="categories" class="form-label flex items-center gap-2 hidden sm:flex">
+		<label for="categories" class="form-label flex items-center gap-2">
 			<Palette class="w-4 h-4" style="color: var(--text-tertiary);" />
 			<span>Categories</span>
 		</label>
@@ -58,11 +61,13 @@
 		<input type="hidden" name="categories" value={JSON.stringify(formData.categories || [])} />
 	</div>
 </div>
+{/if}
 
+{#if mode === 'all' || mode === 'languages-only'}
 <!-- Languages -->
 <div>
 	{#if !hideLabels}
-		<label for="languages" class="form-label flex items-center gap-2 hidden sm:flex">
+		<label for="languages" class="form-label flex items-center gap-2">
 			<Globe class="w-4 h-4" style="color: var(--text-tertiary);" />
 			<span>Languages Offered *</span>
 		</label>
@@ -83,11 +88,13 @@
 		<input type="hidden" name="languages" value={JSON.stringify(formData.languages || [])} />
 	</div>
 </div>
+{/if}
 
+{#if mode === 'all' || mode === 'included-only'}
 <!-- What's Included -->
 <div>
 	{#if !hideLabels}
-		<label class="form-label flex items-center gap-2 hidden sm:flex">
+		<label class="form-label flex items-center gap-2">
 			<Package class="w-4 h-4" style="color: var(--text-tertiary);" />
 			<span>What's Included</span>
 		</label>
@@ -108,11 +115,13 @@
 		{/each}
 	</div>
 </div>
+{/if}
 
+{#if mode === 'all' || mode === 'requirements-only'}
 <!-- Requirements -->
 <div>
 	{#if !hideLabels}
-		<label class="form-label flex items-center gap-2 hidden sm:flex">
+		<label class="form-label flex items-center gap-2">
 			<AlertCircle class="w-4 h-4" style="color: var(--text-tertiary);" />
 			<span>Requirements</span>
 		</label>
@@ -133,3 +142,4 @@
 		{/each}
 	</div>
 </div>
+{/if}

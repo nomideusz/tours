@@ -52,6 +52,10 @@ Key extracted components:
 	import LocationPicker from '../LocationPicker.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Tag from 'lucide-svelte/icons/tag';
+	import CheckCircle from 'lucide-svelte/icons/check-circle';
+	import AlertTriangle from 'lucide-svelte/icons/alert-triangle';
+	import Languages from 'lucide-svelte/icons/languages';
 	import { isValidLocationLength } from '$lib/utils/location.js';
 	
 	// Import new pricing components
@@ -156,6 +160,8 @@ Key extracted components:
 		hasFutureBookings?: boolean;
 		isDeleting?: boolean;
 		tourId?: string;
+		// Show sticky action buttons at bottom
+		showStickyActions?: boolean;
 	}
 
 	let {
@@ -185,7 +191,8 @@ Key extracted components:
 		onDelete = undefined,
 		hasFutureBookings = false,
 		isDeleting = false,
-		tourId = undefined
+		tourId = undefined,
+		showStickyActions = false
 	}: Props = $props();
 	
 	// Tipex editor instance for managing description content
@@ -809,128 +816,235 @@ Key extracted components:
 </script>
 
 <div class="tour-form-container">
-	<div class="tour-form-grid">
-		<!-- ================================================================ -->
-		<!-- MAIN FORM CONTENT                                                -->
-		<!-- ================================================================ -->
-		<div class="tour-form-main">
-		
-		<!-- ============================================================ -->
-		<!-- BASIC INFORMATION SECTION                                    -->
-		<!-- ============================================================ -->
-		<div class="form-section-minimal">
-			<div class="space-y-2 sm:space-y-3">
-				<!-- Hidden status field for form submission (when not showing visible toggle) -->
-				{#if !isEdit || hideStatusField}
-					<input type="hidden" name="status" bind:value={formData.status} />
-				{/if}
+	<!-- ================================================================ -->
+	<!-- MAIN FORM CONTENT                                                -->
+	<!-- ================================================================ -->
+	<div class="tour-form-main">
+		<!-- Hidden status field for form submission (when not showing visible toggle) -->
+		{#if !isEdit || hideStatusField}
+			<input type="hidden" name="status" bind:value={formData.status} />
+		{/if}
 
-		<!-- Two-Column Layout: Primary Fields (Left) + Tag Fields (Right) -->
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-5">
-			<!-- Left Column: Primary Fields (Name & Description) -->
-			<div class="lg:col-span-2 space-y-2 sm:space-y-3">
-				<!-- Name -->
+		<!-- Tour Content: Name & Description -->
+		<div class="tour-content-section">
+			<!-- Name -->
+			<div>
+				{#if !hideLabels}
+					<label for="name" class="form-label-compact flex items-center gap-2 mb-2">
+						<Edit class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-sm font-medium">Tour Name *</span>
+					</label>
+				{/if}
+				<div class="form-field-wrapper">
+					<input
+						type="text"
+						id="name"
+						name="name"
+						bind:value={formData.name}
+						placeholder="Enter tour name *"
+						class="form-input form-input--no-transform tour-name-input {hasFieldError(allErrors, 'name') && shouldShowError('name') ? 'error' : ''}"
+						oninput={() => handleFieldInput('name')}
+						onblur={() => validateField('name')}
+						maxlength="100"
+					/>
+					<div class="form-field-helper">
+						{#if getFieldError(allErrors, 'name') && shouldShowError('name')}
+							<span class="form-error-message">{getFieldError(allErrors, 'name')}</span>
+						{:else}
+							<span class="form-field-spacer"></span>
+						{/if}
+						<span class="text-xs form-field-counter" style="color: {hasFieldError(allErrors, 'name') && shouldShowError('name') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.name && formData.name.length > 0 ? 1 : 0};">
+							{formData.name?.length || 0}/100
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Description -->
+			<div>
+				{#if !hideLabels}
+					<label for="description" class="form-label-compact flex items-center gap-2 mb-2">
+						<FileText class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+						<span class="text-sm font-medium">Description *</span>
+					</label>
+				{/if}
+				<div class="form-field-wrapper description-field-wrapper">
+					<Tipex
+						body={formData.description || ''}
+						bind:tipex={descriptionEditor}
+						extensions={tourDescriptionExtensions}
+						floating
+						focal
+						autofocus={false}
+						onupdate={({ editor }) => {
+							if (editor) {
+								formData.description = editor.getHTML();
+								handleFieldInput('description');
+								// Update character and word count
+								descriptionCharCount = editor.storage.characterCount.characters();
+								descriptionWordCount = editor.storage.characterCount.words();
+
+								// Trigger validation for description
+								const validation = validateTourForm(formData);
+								allErrors = validation.errors;
+							}
+						}}
+						oncreate={({ editor }) => {
+							if (editor) {
+								// Initialize character count
+								descriptionCharCount = editor.storage.characterCount.characters();
+								descriptionWordCount = editor.storage.characterCount.words();
+							}
+						}}
+						class="tipex-description-editor {hasFieldError(allErrors, 'description') && shouldShowError('description') ? 'tipex-error' : ''} {descriptionCharCount >= MAX_DESCRIPTION_LENGTH ? 'at-limit' : descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9 ? 'near-limit' : ''}"
+						style="min-height: 120px;"
+					>
+						{#snippet controlComponent(tipex)}
+							<TourDescriptionControls {tipex} />
+						{/snippet}
+					</Tipex>
+					<input
+						type="hidden"
+						id="description"
+						name="description"
+						value={formData.description}
+						onblur={() => validateField('description')}
+					/>
+					<div class="form-field-helper">
+						{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
+							<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
+						{:else}
+							<span class="form-field-spacer"></span>
+						{/if}
+						<span class="form-field-counter" class:counter-warning={descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9} class:counter-error={descriptionCharCount >= MAX_DESCRIPTION_LENGTH}>
+							{descriptionCharCount}/{MAX_DESCRIPTION_LENGTH}
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Tour Operations: Duration, Categories, Languages, What's Included, Requirements -->
+		<div class="tour-operations-section">
+			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+				<!-- Left Column: Duration -->
 				<div>
 					{#if !hideLabels}
-						<label for="name" class="form-label flex items-center gap-2 hidden sm:flex">
-							<Edit class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Name *</span>
+						<label for="duration" class="form-label-compact flex items-center gap-2 mb-2">
+							<Calendar class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+							<span class="text-sm font-medium">Duration *</span>
 						</label>
 					{/if}
 					<div class="form-field-wrapper">
-						<input
-							type="text"
-							id="name"
-							name="name"
-							bind:value={formData.name}
-							placeholder="Name *"
-							class="form-input form-input--no-transform tour-name-input {hasFieldError(allErrors, 'name') && shouldShowError('name') ? 'error' : ''}"
-							oninput={() => handleFieldInput('name')}
-							onblur={() => validateField('name')}
-							maxlength="100"
+						<DurationInput
+							bind:value={formData.duration}
+							error={hasFieldError(allErrors, 'duration') && shouldShowError('duration')}
+							oninput={() => handleFieldInput('duration')}
+							onblur={() => validateField('duration')}
 						/>
 						<div class="form-field-helper">
-							{#if getFieldError(allErrors, 'name') && shouldShowError('name')}
-								<span class="form-error-message">{getFieldError(allErrors, 'name')}</span>
+							{#if getFieldError(allErrors, 'duration') && shouldShowError('duration')}
+								<span class="form-error-message">{getFieldError(allErrors, 'duration')}</span>
 							{:else}
 								<span class="form-field-spacer"></span>
 							{/if}
-							<span class="text-xs form-field-counter hidden sm:inline" style="color: {hasFieldError(allErrors, 'name') && shouldShowError('name') ? 'var(--color-error-500)' : 'var(--text-tertiary)'}; opacity: {formData.name && formData.name.length > 0 ? 1 : 0};">
-								{formData.name?.length || 0}/100
-							</span>
 						</div>
 					</div>
 				</div>
 
-				<!-- Description -->
-				<div>
-					{#if !hideLabels}
-						<label for="description" class="form-label flex items-center gap-2 hidden sm:flex">
-							<FileText class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Description *</span>
-						</label>
-					{/if}
-					<div class="form-field-wrapper description-field-wrapper">
-						<Tipex
-							body={formData.description || ''}
-							bind:tipex={descriptionEditor}
-							extensions={tourDescriptionExtensions}
-							floating
-							focal
-							autofocus={false}
-							onupdate={({ editor }) => {
-								if (editor) {
-									formData.description = editor.getHTML();
-									handleFieldInput('description');
-									// Update character and word count
-									descriptionCharCount = editor.storage.characterCount.characters();
-									descriptionWordCount = editor.storage.characterCount.words();
-
-									// Trigger validation for description
-									const validation = validateTourForm(formData);
-									allErrors = validation.errors;
-								}
-							}}
-							oncreate={({ editor }) => {
-								if (editor) {
-									// Initialize character count
-									descriptionCharCount = editor.storage.characterCount.characters();
-									descriptionWordCount = editor.storage.characterCount.words();
-								}
-							}}
-							class="tipex-description-editor {hasFieldError(allErrors, 'description') && shouldShowError('description') ? 'tipex-error' : ''} {descriptionCharCount >= MAX_DESCRIPTION_LENGTH ? 'at-limit' : descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9 ? 'near-limit' : ''}"
-							style="min-height: 200px;"
-						>
-							{#snippet controlComponent(tipex)}
-								<TourDescriptionControls {tipex} />
-							{/snippet}
-						</Tipex>
-						<input
-							type="hidden"
-							id="description"
-							name="description"
-							value={formData.description}
-							onblur={() => validateField('description')}
+				<!-- Middle Column: Categories & Languages -->
+				<div class="space-y-3 sm:space-y-4">
+					<!-- Categories -->
+					<div>
+						{#if !hideLabels}
+							<label class="form-label-compact flex items-center gap-2 mb-2">
+								<Tag class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+								<span class="text-sm font-medium">Categories</span>
+							</label>
+						{/if}
+						<TagsSection
+							bind:formData
+							{allErrors}
+							{hideLabels}
+							{includedItemsSuggestions}
+							{requirementsSuggestions}
+							{shouldShowError}
+							mode="categories-only"
 						/>
-						<div class="form-field-helper">
-							{#if getFieldError(allErrors, 'description') && shouldShowError('description')}
-								<span class="form-error-message">{getFieldError(allErrors, 'description')}</span>
-							{:else}
-								<span class="form-field-spacer"></span>
-							{/if}
-							<span class="form-field-counter" class:counter-warning={descriptionCharCount > MAX_DESCRIPTION_LENGTH * 0.9} class:counter-error={descriptionCharCount >= MAX_DESCRIPTION_LENGTH}>
-								{descriptionCharCount}/{MAX_DESCRIPTION_LENGTH}
-							</span>
-						</div>
+					</div>
+
+					<!-- Languages -->
+					<div>
+						{#if !hideLabels}
+							<label class="form-label-compact flex items-center gap-2 mb-2">
+								<Languages class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+								<span class="text-sm font-medium">Languages</span>
+							</label>
+						{/if}
+						<TagsSection
+							bind:formData
+							{allErrors}
+							{hideLabels}
+							{includedItemsSuggestions}
+							{requirementsSuggestions}
+							{shouldShowError}
+							mode="languages-only"
+						/>
 					</div>
 				</div>
 
-				<!-- Meeting Point (Location Info) -->
+				<!-- Right Column: What's Included & Requirements -->
+				<div class="space-y-3 sm:space-y-4">
+					<!-- What's Included -->
+					<div>
+						{#if !hideLabels}
+							<label class="form-label-compact flex items-center gap-2 mb-2">
+								<CheckCircle class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+								<span class="text-sm font-medium">What's Included</span>
+							</label>
+						{/if}
+						<TagsSection
+							bind:formData
+							{allErrors}
+							{hideLabels}
+							{includedItemsSuggestions}
+							{requirementsSuggestions}
+							{shouldShowError}
+							mode="included-only"
+						/>
+					</div>
+
+					<!-- Requirements -->
+					<div>
+						{#if !hideLabels}
+							<label class="form-label-compact flex items-center gap-2 mb-2">
+								<AlertTriangle class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+								<span class="text-sm font-medium">Requirements</span>
+							</label>
+						{/if}
+						<TagsSection
+							bind:formData
+							{allErrors}
+							{hideLabels}
+							{includedItemsSuggestions}
+							{requirementsSuggestions}
+							{shouldShowError}
+							mode="requirements-only"
+						/>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Tour Logistics: Meeting Point & Images -->
+		<div class="tour-logistics-section">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+				<!-- Meeting Point -->
 				<div>
 					{#if !hideLabels}
-						<label class="form-label flex items-center gap-2 hidden sm:flex">
-							<MapPin class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Meeting Point</span>
+						<label class="form-label-compact flex items-center gap-2 mb-2">
+							<MapPin class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+							<span class="text-sm font-medium">Meeting Point</span>
 						</label>
 					{/if}
 					<div class="form-field-wrapper">
@@ -938,7 +1052,7 @@ Key extracted components:
 							<LocationPicker
 								bind:value={formData.location}
 								bind:placeId={formData.locationPlaceId}
-								placeholder="Meeting Point"
+								placeholder="Enter meeting point"
 								profileLocation={profile?.location}
 								enableGeolocation={true}
 								enableMapsIntegration={true}
@@ -961,62 +1075,28 @@ Key extracted components:
 					<input type="hidden" name="location" bind:value={formData.location} />
 					<input type="hidden" name="locationPlaceId" bind:value={formData.locationPlaceId} />
 				</div>
-			</div>
 
-			<!-- Right Column: Quick Info & Tag Fields -->
-			<div class="space-y-2 sm:space-y-3">
-				<!-- Duration (Required - Important Info) -->
+				<!-- Images -->
 				<div>
 					{#if !hideLabels}
-						<label for="duration" class="form-label flex items-center gap-2 hidden sm:flex">
-							<Calendar class="w-4 h-4" style="color: var(--text-tertiary);" />
-							<span>Duration *</span>
+						<label class="form-label-compact flex items-center gap-2 mb-2">
+							<Eye class="w-3.5 h-3.5" style="color: var(--text-tertiary);" />
+							<span class="text-sm font-medium">Tour Images</span>
 						</label>
 					{/if}
-					<div class="form-field-wrapper">
-						<DurationInput
-							bind:value={formData.duration}
-							error={hasFieldError(allErrors, 'duration') && shouldShowError('duration')}
-							oninput={() => handleFieldInput('duration')}
-							onblur={() => validateField('duration')}
-						/>
-						<div class="form-field-helper">
-							{#if getFieldError(allErrors, 'duration') && shouldShowError('duration')}
-								<span class="form-error-message">{getFieldError(allErrors, 'duration')}</span>
-							{:else}
-								<span class="form-field-spacer"></span>
-							{/if}
-						</div>
-					</div>
+					<TourImagesSection
+						{isEdit}
+						{existingImages}
+						{onExistingImageRemove}
+						{getExistingImageUrl}
+						{uploadedImages}
+						{onImageUpload}
+						{onImageRemove}
+						{imageUploadErrors}
+					/>
 				</div>
-
-				<!-- Tags: Categories, Languages, Included Items, Requirements -->
-				<TagsSection
-					bind:formData
-					{allErrors}
-					{hideLabels}
-					{includedItemsSuggestions}
-					{requirementsSuggestions}
-					{shouldShowError}
-				/>
 			</div>
 		</div>
-			</div>
-		</div>
-
-		<!-- ============================================================ -->
-		<!-- TOUR IMAGES SECTION (Moved from sidebar)                    -->
-		<!-- ============================================================ -->
-		<TourImagesSection
-			{isEdit}
-			{existingImages}
-			{onExistingImageRemove}
-			{getExistingImageUrl}
-			{uploadedImages}
-			{onImageUpload}
-			{onImageRemove}
-			{imageUploadErrors}
-		/>
 
 		<!-- ============================================================ -->
 		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
@@ -1184,6 +1264,8 @@ Key extracted components:
 				<StatusVisibilitySection bind:formData {hideStatusField} />
 			{/if}
 
+		</div>
+
 		<!-- ============================================================ -->
 		<!-- ACTION BUTTONS SECTION                                       -->
 		<!-- Save, Publish, Cancel buttons                                -->
@@ -1204,9 +1286,8 @@ Key extracted components:
 			{onSubmit}
 			{onCancel}
 			{handleSubmit}
+			sticky={showStickyActions}
 		/>
-		</div>
-	</div>
 </div>
 
 <style>
@@ -1636,24 +1717,14 @@ Key extracted components:
 	/* Modern Tour Form Layout */
 	.tour-form-container {
 		width: 100%;
-	}
-
-	.tour-form-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 2rem;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.tour-form-main {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-	}
-
-	.tour-form-sidebar {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
 	}
 
 	/* Mobile landscape and up */
@@ -1665,53 +1736,10 @@ Key extracted components:
 
 	/* Desktop layout */
 	@media (min-width: 1024px) {
-		.tour-form-grid {
-			grid-template-columns: 1fr 340px;
-			gap: 2.5rem;
-			align-items: start;
-		}
-		
 		.tour-form-main {
 			gap: 1.5rem;
 		}
 
-		.tour-form-sidebar {
-			position: sticky;
-			top: 5rem;
-			max-height: calc(100vh - 6rem);
-			overflow-y: auto;
-		}
-
-		/* Custom scrollbar for sidebar */
-		.tour-form-sidebar::-webkit-scrollbar {
-			width: 6px;
-		}
-
-		.tour-form-sidebar::-webkit-scrollbar-track {
-			background: var(--bg-secondary);
-			border-radius: 3px;
-		}
-
-		.tour-form-sidebar::-webkit-scrollbar-thumb {
-			background: var(--border-secondary);
-			border-radius: 3px;
-		}
-
-		.tour-form-sidebar::-webkit-scrollbar-thumb:hover {
-			background: var(--border-primary);
-		}
-	}
-
-	/* Large desktop - wider sidebar */
-	@media (min-width: 1536px) {
-		.tour-form-grid {
-			grid-template-columns: 1fr 380px;
-			gap: 3rem;
-		}
-		
-		.tour-form-main {
-			gap: 2rem;
-		}
 	}
 
 	/* Form sections visual enhancement */
@@ -1842,8 +1870,30 @@ Key extracted components:
 		margin-bottom: 0.75rem;
 	}
 	
-	:global(.tipex-description-editor .ProseMirror h2:first-child, 
+	:global(.tipex-description-editor .ProseMirror h2:first-child,
 	        .tipex-description-editor .ProseMirror h3:first-child) {
 		margin-top: 0;
+	}
+
+	/* Compact Form Sections */
+	.tour-content-section,
+	.tour-operations-section,
+	.tour-logistics-section {
+		margin-bottom: 1.5rem;
+	}
+
+	/* Compact Form Label */
+	.form-label-compact {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		color: var(--text-primary);
+		margin-bottom: 0.5rem;
+	}
+
+	/* Reduce spacing between sections */
+	.tour-form-main > div + div {
+		margin-top: 1rem;
 	}
 </style>

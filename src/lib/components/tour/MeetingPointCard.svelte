@@ -13,7 +13,7 @@
 	import MapIcon from 'lucide-svelte/icons/map';
 	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
 	import { getCachedPhotos, cachePhotos, cleanPhotoCache } from '$lib/utils/place-photo-cache.js';
-	import StreetViewPanorama from './booking/StreetViewPanorama.svelte';
+	import StreetViewPanorama from '../booking/StreetViewPanorama.svelte';
 	import { env } from '$env/dynamic/public';
 	
 	interface Props {

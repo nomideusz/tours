@@ -14,7 +14,7 @@ Extracted from TourForm.svelte to improve maintainability.
 
 <script lang="ts">
 	import Calendar from 'lucide-svelte/icons/calendar';
-	import Tooltip from '../Tooltip.svelte';
+	import Tooltip from '../ui/feedback/Tooltip.svelte';
 
 	interface Props {
 		tourId?: string;

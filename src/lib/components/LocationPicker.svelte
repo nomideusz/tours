@@ -6,7 +6,7 @@
 	import X from 'lucide-svelte/icons/x';
 	import Heart from 'lucide-svelte/icons/heart';
 	import Clock from 'lucide-svelte/icons/clock';
-	import GoogleMapPickerModal from './GoogleMapPickerModal.svelte';
+	import GoogleMapPickerModal from './modals/GoogleMapPickerModal.svelte';
 	import { defaultMapService, getPlacesAPIService } from '$lib/utils/map-integration.js';
 	import { env } from '$env/dynamic/public';
 	import { MEETING_POINT_TYPES } from '$lib/types/places.js';
