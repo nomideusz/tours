@@ -1,0 +1,158 @@
+CURRENT STRUCTURE (2,722 lines in single component)
+═══════════════════════════════════════════════════════════════════
+
+TourForm.svelte (2,722 lines)
+├─ Script (32-970 lines)
+│  ├─ Imports & Types
+│  ├─ Props Interface
+│  ├─ State Initialization
+│  ├─ Reactive Effects
+│  ├─ Validation System
+│  ├─ Field Handling Functions
+│  ├─ Cancellation Policy System
+│  └─ Utility Functions
+│
+└─ Template (984-2083 lines)
+   ├─ Main Content Wrapper
+   │  ├─ BASIC INFORMATION SECTION (277 lines) ✅ Extract
+   │  │  ├─ Name field
+   │  │  ├─ Description (Tipex editor)
+   │  │  ├─ Location (LocationPicker)
+   │  │  ├─ Duration (DurationInput)
+   │  │  ├─ Categories (CategorySelector)
+   │  │  ├─ Languages (LanguageSelector)
+   │  │  ├─ What's Included (ChipInput)
+   │  │  └─ Requirements (ChipInput)
+   │  │
+   │  ├─ TOUR IMAGES SECTION (147 lines) ✅ Extract
+   │  │  ├─ Existing images display
+   │  │  ├─ Upload area
+   │  │  ├─ Error display
+   │  │  └─ Preview grid
+   │  │
+   │  ├─ PRICING SECTION (136 lines) ⚠️ Keep/Refactor
+   │  │  └─ SimplifiedPricingSection
+   │  │
+   │  ├─ CANCELLATION POLICY SECTION (170 lines) ✅ Extract
+   │  │  ├─ Policy templates
+   │  │  ├─ Custom policy editor
+   │  │  ├─ Preview
+   │  │  └─ Notes
+   │  │
+   │  └─ DANGER ZONE SECTION (119 lines) ✅ Extract
+   │     ├─ Mobile view
+   │     └─ Desktop view
+   │
+   ├─ Sidebar
+   │  ├─ STATUS & VISIBILITY SECTION (134 lines) ✅ Extract
+   │  │  ├─ Mobile: Combined view
+   │  │  └─ Desktop: Separate cards
+   │  │
+   │  └─ ACTION BUTTONS SECTION (93 lines) ✅ Extract
+   │     ├─ Onboarding notice
+   │     ├─ Dual action buttons
+   │     ├─ Fallback button
+   │     └─ Cancel button
+   │
+   └─ Styles (636 lines)
+
+
+RECOMMENDED REFACTORED STRUCTURE
+═══════════════════════════════════════════════════════════════════
+
+TourForm.svelte (Main orchestrator, ~1,500 lines)
+├─ Script (200-300 lines)
+│  ├─ Core props & state
+│  ├─ Validation system
+│  ├─ Field handlers
+│  ├─ Pricing orchestration
+│  └─ FormData management
+│
+└─ Template (400-500 lines)
+   ├─ BasicInformationSection.svelte (277 lines moved)
+   ├─ TourImagesSection.svelte (147 lines moved)
+   ├─ PricingSection wrapper (136 lines kept+managed)
+   ├─ CancellationPolicySection.svelte (170 lines moved)
+   ├─ DangerZoneSection.svelte (119 lines moved)
+   ├─ StatusVisibilitySection.svelte (134 lines moved)
+   └─ ActionButtonsSection.svelte (93 lines moved)
+
+Extracted Components (NEW)
+├─ BasicInformationSection.svelte (277 lines)
+├─ TourImagesSection.svelte (147 lines)
+├─ CancellationPolicySection.svelte (170 lines)
+├─ DangerZoneSection.svelte (119 lines)
+├─ StatusVisibilitySection.svelte (134 lines)
+└─ ActionButtonsSection.svelte (93 lines)
+
+Existing Sub-components (Already Extracted)
+├─ LocationPicker.svelte
+├─ LanguageSelector.svelte
+├─ CategorySelector.svelte
+├─ DurationInput.svelte
+├─ ChipInput.svelte
+├─ TourDescriptionControls.svelte
+├─ SimplifiedPricingSection.svelte
+├─ Tooltip.svelte
+└─ Many Lucide icons
+
+
+COMPLEXITY ANALYSIS BY SECTION
+═══════════════════════════════════════════════════════════════════
+
+Section                    Lines  Difficulty  Dependencies              Effort
+────────────────────────────────────────────────────────────────────────────
+Basic Information          277    MEDIUM      Sub-components, Tipex    3-4 hrs
+Tour Images               147    EASY        Callbacks only           1-2 hrs
+Pricing                   136    HARD        State orchestration      ⚠️ Skip
+Cancellation Policy       170    MEDIUM      Policy logic, effects    2-3 hrs
+Danger Zone               119    EASY        Simple callbacks         1 hr
+Status & Visibility       134    EASY        Form data binding        1 hr
+Action Buttons             93    MEDIUM      Validation state         1-2 hrs
+────────────────────────────────────────────────────────────────────────────
+TOTAL SAVINGS             ~1,200 lines                                ~10-14 hrs
+
+
+STATE FLOW DIAGRAM
+═══════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      TourForm (Main)                              │
+│                                                                   │
+│  State:                                                           │
+│  • validationErrors                                               │
+│  • touchedFields                                                  │
+│  • savedPerPersonPrice                                            │
+│  • descriptionEditor                                              │
+│                                                                   │
+│  Derived:                                                         │
+│  • allErrors = validationErrors + serverErrors                   │
+│  • canActivate = onboarding check                                │
+│  • hasMinimumRequiredFields                                       │
+└──────────────┬──────────────────────────────────────────────────┘
+               │
+               ├─ formData (bindable) ─────────────────────────────┐
+               │                                                    │
+      ┌────────┴─────────┬────────────────┬─────────────┐          │
+      │                  │                │             │          │
+      v                  v                v             v          v
+┌──────────┐    ┌──────────┐    ┌──────────┐   ┌──────────┐   ┌──────────┐
+│ BasicInfo│    │  Images  │    │Pricing   │   │Cancel    │   │Danger   │
+│          │    │          │    │Policy    │   │Zone      │   │Zone     │
+│ Pass:    │    │ Pass:    │    │ Pass:    │   │ Pass:    │   │ Pass:   │
+│ -errors  │    │ -errors  │    │ -errors  │   │ -errors  │   │ -onDelete│
+│ -handlers│    │ -handlers│    │ -handlers│   │ -handlers│   │ -status │
+└──────────┘    └──────────┘    └──────────┘   └──────────┘   └──────────┘
+
+      Sidebar
+      ┌──────────────────┬──────────────┐
+      │                  │              │
+      v                  v              v
+┌──────────┐    ┌──────────────┐   ┌──────────┐
+│Status &  │    │ Action       │   │Hidden    │
+│Visibility│    │ Buttons      │   │Inputs    │
+│          │    │              │   │          │
+│ Pass:    │    │ Pass:        │   │ Data     │
+│ -status  │    │ -callbacks   │   │ Serialize│
+│ -listing │    │ -validation  │   │          │
+└──────────┘    └──────────────┘   └──────────┘

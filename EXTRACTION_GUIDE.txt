@@ -1,0 +1,355 @@
+═══════════════════════════════════════════════════════════════════════════════
+TOURFORM.SVELTE REFACTORING - QUICK REFERENCE GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+─────────────────────────────────────────────────────────────────────────────
+Current File:        2,722 lines (monolithic)
+Target After Extraction: ~1,500 lines (main orchestrator)
+Lines to Extract:    ~1,200 lines (6 new components)
+Estimated Effort:    10-14 hours
+Risk Level:          Low (with phased approach)
+Benefit:             Massive maintainability improvement
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 1: IMMEDIATE EXTRACTIONS (LOW RISK) - 3 hours
+═══════════════════════════════════════════════════════════════════════════════
+
+1. TourImagesSection.svelte
+   ├─ Source Lines:     1268-1415 (147 lines)
+   ├─ Difficulty:       ⭐ EASY
+   ├─ Risk:            None (completely isolated)
+   ├─ Props to Pass:
+   │  ├─ onImageUpload (callback)
+   │  ├─ onImageRemove (callback)
+   │  ├─ existingImages (array)
+   │  ├─ onExistingImageRemove (callback)
+   │  ├─ getExistingImageUrl (callback)
+   │  ├─ uploadedImages (bindable)
+   │  ├─ imageUploadErrors (array)
+   │  ├─ isEdit (boolean)
+   │  └─ getImagePreview (function)
+   └─ Time: 30 minutes
+
+2. DangerZoneSection.svelte
+   ├─ Source Lines:     1728-1847 (119 lines)
+   ├─ Difficulty:       ⭐ EASY
+   ├─ Risk:            None (callback-only)
+   ├─ Props to Pass:
+   │  ├─ isEdit (boolean)
+   │  ├─ onDelete (callback)
+   │  ├─ hasFutureBookings (boolean)
+   │  ├─ isDeleting (boolean)
+   │  └─ tourId (string)
+   └─ Time: 30 minutes
+
+3. StatusVisibilitySection.svelte
+   ├─ Source Lines:     1852-1986 (134 lines)
+   ├─ Difficulty:       ⭐ EASY
+   ├─ Risk:            None (self-contained)
+   ├─ Props to Pass:
+   │  ├─ isEdit (boolean)
+   │  ├─ hideStatusField (boolean)
+   │  └─ formData (bindable: status, publicListing)
+   └─ Time: 45 minutes
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 2: MEDIUM COMPLEXITY EXTRACTIONS - 8 hours
+═══════════════════════════════════════════════════════════════════════════════
+
+4. BasicInformationSection.svelte
+   ├─ Source Lines:     989-1266 (277 lines)
+   ├─ Difficulty:       ⭐⭐ MEDIUM
+   ├─ Risk:            Low (already uses sub-components)
+   ├─ Key Challenges:
+   │  └─ Tipex editor state management (character count, markdown conversion)
+   ├─ Props to Pass:
+   │  ├─ formData (bindable: name, description, location, duration, etc.)
+   │  ├─ hideLabels (boolean)
+   │  ├─ allErrors (array)
+   │  ├─ shouldShowError (function)
+   │  ├─ getFieldError (function)
+   │  ├─ hasFieldError (function)
+   │  ├─ handleFieldInput (function)
+   │  └─ validateField (function)
+   ├─ State to Move:
+   │  ├─ descriptionEditor (Tipex instance)
+   │  ├─ initialDescriptionLoaded
+   │  ├─ descriptionCharCount
+   │  └─ descriptionWordCount
+   ├─ Functions to Move:
+   │  ├─ markdownToHTML()
+   │  ├─ isHTML()
+   │  └─ Tipex effect for loading
+   └─ Time: 2-3 hours
+
+5. CancellationPolicySection.svelte
+   ├─ Source Lines:     1555-1725 (170 lines)
+   ├─ Difficulty:       ⭐⭐ MEDIUM
+   ├─ Risk:            Low (fully isolated feature)
+   ├─ Key Challenges:
+   │  ├─ Multiple reactive effects
+   │  └─ Policy text generation logic
+   ├─ Props to Pass:
+   │  ├─ formData (bindable: cancellationPolicy, cancellationPolicyId)
+   │  └─ None (self-contained state)
+   ├─ State to Move:
+   │  ├─ selectedPolicyTemplate
+   │  ├─ showCustomPolicy
+   │  ├─ customPolicyHours
+   │  └─ customPolicyNotes
+   ├─ Functions to Move:
+   │  ├─ selectPolicyTemplate()
+   │  ├─ enableCustomPolicy()
+   │  ├─ validateCustomHours()
+   │  ├─ updateCustomPolicyId()
+   │  └─ policyTemplates array
+   ├─ Effects to Move:
+   │  ├─ Watch customPolicyHours
+   │  ├─ Watch customPolicyNotes
+   │  └─ Initialize from cancellationPolicyId
+   └─ Time: 2-3 hours
+
+6. ActionButtonsSection.svelte
+   ├─ Source Lines:     1988-2081 (93 lines)
+   ├─ Difficulty:       ⭐⭐ MEDIUM
+   ├─ Risk:            Low (prop-driven state)
+   ├─ Props to Pass:
+   │  ├─ onPublish (callback)
+   │  ├─ onSaveAsDraft (callback)
+   │  ├─ onCancel (callback)
+   │  ├─ onSubmit (callback)
+   │  ├─ isSubmitting (boolean)
+   │  ├─ isEdit (boolean)
+   │  ├─ formData (read: status)
+   │  ├─ canActivate (boolean)
+   │  ├─ allErrors (array)
+   │  ├─ missingSteps (array)
+   │  ├─ onboardingMessage (string)
+   │  └─ hasMinimumRequiredFields (boolean)
+   ├─ State to Move:
+   │  └─ initialStatus
+   ├─ Functions to Move:
+   │  └─ handleSubmit()
+   └─ Time: 1-2 hours
+
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3: ADVANCED REFACTORING (OPTIONAL) - Skip for now
+═══════════════════════════════════════════════════════════════════════════════
+
+7. Pricing Orchestration (KEEP IN MAIN for now)
+   ├─ Source Lines:     1417-1553 (136 lines)
+   ├─ Difficulty:       ⭐⭐⭐ HARD
+   ├─ Risk:            High (complex state migrations)
+   ├─ Recommendation:   Keep for Phase 3 (or future)
+   └─ Note:            SimplifiedPricingSection already extracted
+                       Consider separate study before extracting
+
+
+═══════════════════════════════════════════════════════════════════════════════
+DEPENDENCIES & STATE MANAGEMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Must Remain in TourForm (Main):
+┌────────────────────────────────────────────────────────────────────┐
+│ Validation Orchestration:                                          │
+│ • validationErrors (state)                                         │
+│ • touchedFields (state)                                            │
+│ • currentlyTypingFields (state)                                    │
+│ • allErrors (derived)                                              │
+│                                                                    │
+│ Validation Functions:                                              │
+│ • validateField()                                                  │
+│ • handleFieldInput()                                               │
+│ • shouldShowError()                                                │
+│ • handleSubmit()                                                   │
+│                                                                    │
+│ Core State:                                                        │
+│ • formData (bindable, passed to all sections)                      │
+│ • serverErrors (passed to all sections)                            │
+│ • savedPerPersonPrice (pricing migrations)                         │
+│                                                                    │
+│ Derived Values:                                                    │
+│ • canActivate                                                      │
+│ • hasMinimumRequiredFields                                         │
+│ • missingSteps, onboardingMessage                                  │
+│ • currencySymbol, minimumPrice, priceStep                          │
+└────────────────────────────────────────────────────────────────────┘
+
+What Each Section Gets:
+┌────────────────────────────────────────────────────────────────────┐
+│ All sections receive:                                              │
+│ • formData (bindable)                                              │
+│ • allErrors (array)                                                │
+│ • shouldShowError (function)                                       │
+│ • getFieldError (function)                                         │
+│ • hasFieldError (function)                                         │
+│                                                                    │
+│ Only form-aware sections receive:                                  │
+│ • validateField (function)                                         │
+│ • handleFieldInput (function)                                      │
+└────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+REFACTORING CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+BEFORE YOU START:
+☐ Create a new branch: `git checkout -b refactor/extract-form-sections`
+☐ Run full test suite to establish baseline
+☐ Commit current state with clear message
+
+PHASE 1:
+☐ Extract TourImagesSection.svelte (1268-1415)
+   ☐ Create new file
+   ☐ Copy and adjust imports
+   ☐ Move getImagePreview() function
+   ☐ Test image upload/remove functionality
+   ☐ Commit: "refactor: extract tour images section"
+
+☐ Extract DangerZoneSection.svelte (1728-1847)
+   ☐ Create new file
+   ☐ Copy mobile and desktop views
+   ☐ Test delete button states
+   ☐ Commit: "refactor: extract danger zone section"
+
+☐ Extract StatusVisibilitySection.svelte (1852-1986)
+   ☐ Create new file
+   ☐ Verify mobile/desktop toggle works
+   ☐ Test status display and publicListing toggle
+   ☐ Commit: "refactor: extract status and visibility section"
+
+PHASE 2:
+☐ Extract BasicInformationSection.svelte (989-1266)
+   ☐ Create new file
+   ☐ Move editor utilities (isHTML, markdownToHTML)
+   ☐ Move Tipex editor state management
+   ☐ Test all field validations
+   ☐ Test description editor loading
+   ☐ Commit: "refactor: extract basic information section"
+
+☐ Extract CancellationPolicySection.svelte (1555-1725)
+   ☐ Create new file
+   ☐ Move policy template logic
+   ☐ Move custom policy functions and state
+   ☐ Test template selection
+   ☐ Test custom policy generation
+   ☐ Commit: "refactor: extract cancellation policy section"
+
+☐ Extract ActionButtonsSection.svelte (1988-2081)
+   ☐ Create new file
+   ☐ Verify button states based on validation
+   ☐ Test onboarding restrictions
+   ☐ Test publish/save/cancel flows
+   ☐ Commit: "refactor: extract action buttons section"
+
+FINAL CHECKS:
+☐ Update any tests that reference TourForm directly
+☐ Run full test suite
+☐ Check bundle size impact (should decrease)
+☐ Verify all form validations work end-to-end
+☐ Test on mobile and desktop
+☐ Create PR and ask for review
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FILE CREATION TEMPLATE
+═══════════════════════════════════════════════════════════════════════════════
+
+Create these files in: src/lib/components/tour-form/
+
+1. TourImagesSection.svelte
+2. DangerZoneSection.svelte
+3. StatusVisibilitySection.svelte
+4. BasicInformationSection.svelte
+5. CancellationPolicySection.svelte
+6. ActionButtonsSection.svelte
+
+(Keep SimplifiedPricingSection as-is in src/lib/components/pricing/)
+
+After extraction, TourForm.svelte should only import:
+├─ Extracted sections (6 components)
+├─ Sub-components (LocationPicker, DurationInput, etc.)
+├─ SimplifiedPricingSection
+└─ Validation and utility modules
+
+
+═══════════════════════════════════════════════════════════════════════════════
+VALIDATION FUNCTION EXPORTS NEEDED
+═══════════════════════════════════════════════════════════════════════════════
+
+From $lib/validation.js (already exported):
+• validateTourForm(formData) → returns { isValid, errors }
+• getFieldError(errors, field) → returns error message
+• hasFieldError(errors, field) → returns boolean
+
+From TourForm (main component, export these):
+• validateField(fieldName)
+• handleFieldInput(fieldName)
+• shouldShowError(fieldName)
+• isValid() → boolean
+• validate() → boolean
+
+Passed to sections via props:
+• shouldShowError, getFieldError, hasFieldError
+• validateField, handleFieldInput (for form-aware sections)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+GOTCHAS & THINGS TO WATCH OUT FOR
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ Tipex Editor State
+   The Tipex editor in BasicInformationSection needs:
+   • Careful binding to avoid losing state
+   • Character count synchronization
+   • Markdown to HTML conversion on load
+   Solution: Keep all Tipex logic in extracted component
+
+⚠️ Form Submission & Hidden Inputs
+   Each section contains hidden inputs for form submission.
+   Ensure they stay in the form or are moved together.
+
+⚠️ Validation Timing
+   Description validation happens on field input AND editor update.
+   Make sure effects are properly coordinated.
+
+⚠️ Pricing State Migration
+   savedPerPersonPrice is used during pricing model switches.
+   Keep in main component, but pass down if needed.
+
+⚠️ Mobile/Desktop UI
+   Some sections have responsive code with sm: breakpoints.
+   Test thoroughly on all screen sizes.
+
+⚠️ Z-index & Positioning
+   Description field has special z-index handling.
+   Ensure Tipex positioning doesn't break in extracted component.
+
+⚠️ Icon Imports
+   Many sections use Lucide icons. Import them in each extracted component.
+
+⚠️ Currency & Formatting
+   Price formatting uses stores and derived values from main component.
+   Ensure these are accessible if needed in sub-sections.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+SUCCESS CRITERIA
+═══════════════════════════════════════════════════════════════════════════════
+
+After Refactoring, You Should:
+✓ Have 6 new extracted components (each < 300 lines)
+✓ Have main TourForm reduced to ~1,500 lines
+✓ All tests passing (new and existing)
+✓ No functionality changes (same UX)
+✓ Clearer component responsibilities
+✓ Easier to add new features
+✓ Easier to test individual sections
+✓ Easier to locate bugs
+✓ Bundle size same or smaller
+✓ No performance regression
+
