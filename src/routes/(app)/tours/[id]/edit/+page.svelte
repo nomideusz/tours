@@ -38,6 +38,7 @@
 	const submission = useTourSubmission({
 		isEdit: true,
 		tourId,
+		queryClient,
 		onError: (error) => {
 			validation.setError(error);
 			validation.scrollToFirstError();

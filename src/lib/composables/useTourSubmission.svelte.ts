@@ -5,7 +5,6 @@
 
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
-import { useQueryClient, createMutation } from '@tanstack/svelte-query';
 import { trackTourEvent } from '$lib/utils/umami-tracking.js';
 import { queryKeys } from '$lib/queries/shared-stats.js';
 
@@ -14,66 +13,12 @@ interface SubmissionOptions {
 	tourId?: string;
 	onSuccess?: (tourId: string) => void;
 	onError?: (error: string) => void;
+	queryClient?: any; // TanStack Query client
 }
 
 export function useTourSubmission(options: SubmissionOptions) {
-	const { isEdit, tourId } = options;
+	const { isEdit, tourId, queryClient } = options;
 	let isSubmitting = $state(false);
-
-	const queryClient = useQueryClient();
-
-	// Create mutation directly in the composable for proper Svelte context
-	const mutation = createMutation({
-		mutationFn: async (formData: FormData) => {
-			const url = isEdit ? `/tours/${tourId}/edit` : '/tours/new';
-			const response = await fetch(url, {
-				method: 'POST',
-				body: formData
-			});
-
-			if (!response.ok) {
-				const error = await response.json().catch(() => ({ error: 'Failed to save tour' }));
-				throw new Error(error.error || error.message || 'Failed to save tour');
-			}
-
-			// Handle redirect response
-			if (response.redirected) {
-				const redirectUrl = new URL(response.url);
-				const extractedTourId = redirectUrl.pathname.split('/').pop()?.split('?')[0];
-				return { success: true, redirected: true, tourId: extractedTourId, url: response.url };
-			}
-
-			const data = await response.json();
-			return data;
-		},
-		onSuccess: async (data) => {
-			console.log(isEdit ? '✅ Tour updated successfully:' : '✅ Tour created successfully:', data);
-
-			// Force remove and refetch for immediate sync
-			queryClient.removeQueries({ queryKey: queryKeys.userTours });
-			queryClient.removeQueries({ queryKey: queryKeys.toursStats });
-
-			// Refetch immediately
-			await queryClient.refetchQueries({
-				queryKey: queryKeys.userTours,
-				type: 'active'
-			});
-			await queryClient.refetchQueries({
-				queryKey: queryKeys.toursStats,
-				type: 'active'
-			});
-
-			// Invalidate tour details if editing
-			if (isEdit && tourId) {
-				await queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
-			}
-
-			// Invalidate usage query to update tour count display
-			queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
-
-			console.log('✅ Cache synced with server');
-		}
-	});
 
 	/**
 	 * Prepare form data for submission
@@ -166,10 +111,50 @@ export function useTourSubmission(options: SubmissionOptions) {
 			// Prepare form data
 			const formDataToSubmit = prepareFormData(formData, uploadedImages, imagesToRemove, scheduleData);
 
-			// Submit using mutation
-			const result = await mutation.mutateAsync(formDataToSubmit);
+			// Submit via fetch
+			const url = isEdit ? `/tours/${tourId}/edit` : '/tours/new';
+			const response = await fetch(url, {
+				method: 'POST',
+				body: formDataToSubmit
+			});
+
+			if (!response.ok) {
+				const error = await response.json().catch(() => ({ error: 'Failed to save tour' }));
+				throw new Error(error.error || error.message || 'Failed to save tour');
+			}
+
+			// Handle redirect response
+			let result: any;
+			if (response.redirected) {
+				const redirectUrl = new URL(response.url);
+				const extractedTourId = redirectUrl.pathname.split('/').pop()?.split('?')[0];
+				result = { success: true, redirected: true, tourId: extractedTourId, url: response.url };
+			} else {
+				result = await response.json();
+			}
 
 			console.log('✅ Tour submitted successfully:', result);
+
+			// Invalidate caches if queryClient is available
+			if (queryClient) {
+				queryClient.removeQueries({ queryKey: queryKeys.userTours });
+				queryClient.removeQueries({ queryKey: queryKeys.toursStats });
+
+				await queryClient.refetchQueries({
+					queryKey: queryKeys.userTours,
+					type: 'active'
+				});
+				await queryClient.refetchQueries({
+					queryKey: queryKeys.toursStats,
+					type: 'active'
+				});
+
+				if (isEdit && tourId) {
+					await queryClient.invalidateQueries({ queryKey: queryKeys.tourDetails(tourId) });
+				}
+
+				queryClient.invalidateQueries({ queryKey: ['subscriptionUsage'] });
+			}
 
 			// Track event
 			if (isEdit && tourId) {
