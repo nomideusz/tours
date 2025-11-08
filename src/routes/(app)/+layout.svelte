@@ -785,9 +785,38 @@
 											<Settings class="user-settings-icon" />
 										{/if}
 									</a>
-									
+
+									{#if sidebarCollapsed}
+										<!-- Theme Toggle (Collapsed Sidebar) -->
+										<button
+											onclick={toggleTheme}
+											class="user-action-button-collapsed"
+											title={currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+										>
+											{#if currentTheme === 'light'}
+												<Sun class="h-4 w-4" />
+											{:else}
+												<Moon class="h-4 w-4" />
+											{/if}
+										</button>
+									{/if}
+
 									{#if !sidebarCollapsed}
 										<div class="user-actions">
+											<!-- Theme Toggle -->
+											<button
+												onclick={toggleTheme}
+												class="user-action-button user-action-button--theme"
+												title="Toggle theme"
+											>
+												{#if currentTheme === 'light'}
+													<Sun class="h-3.5 w-3.5" />
+													<span>Light</span>
+												{:else}
+													<Moon class="h-3.5 w-3.5" />
+													<span>Dark</span>
+												{/if}
+											</button>
 											{#if userIsAdmin}
 												<a href="/admin" class="user-action-button">
 													<Shield class="h-3.5 w-3.5" />
@@ -1847,6 +1876,58 @@
 		cursor: not-allowed;
 		transform: none;
 		box-shadow: none;
+	}
+
+	/* Collapsed sidebar theme toggle */
+	.user-action-button-collapsed {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.625rem;
+		color: var(--text-secondary);
+		background: transparent;
+		border: 1px solid var(--border-primary);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all var(--transition-base) ease;
+		margin-top: 0.625rem;
+	}
+
+	.user-action-button-collapsed:hover {
+		background: var(--bg-secondary);
+		color: var(--text-primary);
+		border-color: var(--border-secondary);
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-xs);
+	}
+
+	.user-action-button-collapsed:active {
+		transform: translateY(0);
+		box-shadow: none;
+	}
+
+	/* Dark mode adjustments for collapsed theme toggle */
+	:global([data-theme="dark"]) .user-action-button-collapsed:hover {
+		background: var(--bg-tertiary);
+		border-color: var(--border-secondary);
+	}
+
+	/* Theme toggle button specific styling */
+	.user-action-button--theme {
+		border-color: var(--border-primary);
+	}
+
+	.user-action-button--theme:hover:not(:disabled) {
+		background: var(--color-primary-50);
+		border-color: var(--color-primary-200);
+		color: var(--text-primary);
+	}
+
+	/* Dark mode adjustments for theme toggle button */
+	:global([data-theme="dark"]) .user-action-button--theme:hover:not(:disabled) {
+		background: rgba(255, 89, 89, 0.1);
+		border-color: rgba(255, 89, 89, 0.2);
 	}
 
 	/* Dark Mode Support */
