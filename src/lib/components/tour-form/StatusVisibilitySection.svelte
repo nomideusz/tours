@@ -162,27 +162,3 @@ Extracted from TourForm.svelte to improve maintainability.
 		<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
 	{/if}
 </div>
-
-<style>
-	.toggle-switch {
-		background-color: var(--color-gray-300);
-		transition: background-color 0.2s ease;
-	}
-
-	.toggle-switch::after {
-		background-color: white;
-		border-color: var(--color-gray-300);
-	}
-
-	input:checked ~ .toggle-switch {
-		background-color: var(--color-primary-600);
-	}
-
-	input:checked ~ .toggle-switch::after {
-		border-color: var(--color-primary-600);
-	}
-
-	input:focus ~ .toggle-switch {
-		box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-	}
-</style>
