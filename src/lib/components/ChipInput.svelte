@@ -173,7 +173,7 @@
 					<input
 						bind:this={customInputRef}
 						type="text"
-						class="custom-item-input"
+						class="form-input"
 						placeholder={placeholder}
 						bind:value={customInput}
 						onkeydown={(e) => {
@@ -189,7 +189,7 @@
 					<div class="custom-input-actions">
 						<button
 							type="button"
-							class="custom-add-btn"
+							class="button-primary button-small"
 							onclick={addCustomItem}
 							disabled={!customInput.trim()}
 						>
@@ -197,7 +197,7 @@
 						</button>
 						<button
 							type="button"
-							class="custom-cancel-btn"
+							class="button-secondary button-small"
 							onclick={() => {
 								showCustomInput = false;
 								customInput = '';
@@ -418,64 +418,18 @@
 	.custom-input-section {
 		padding: 0.75rem;
 	}
-	
-	.custom-item-input {
-		width: 100%;
-		padding: 0.5rem 0.75rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.375rem;
-		color: var(--text-primary);
-		font-size: 0.875rem;
+
+	.custom-input-section .form-input {
 		margin-bottom: 0.5rem;
-		transition: all 0.2s;
 	}
-	
-	.custom-item-input:focus {
-		outline: none;
-		border-color: var(--color-primary-400);
-		box-shadow: 0 0 0 3px var(--color-primary-100);
-	}
-	
+
 	.custom-input-actions {
 		display: flex;
 		gap: 0.5rem;
 	}
-	
-	.custom-add-btn,
-	.custom-cancel-btn {
+
+	.custom-input-actions button {
 		flex: 1;
-		padding: 0.5rem;
-		border-radius: 0.375rem;
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s;
-		border: none;
-	}
-	
-	.custom-add-btn {
-		background: var(--color-primary-600);
-		color: white;
-	}
-	
-	.custom-add-btn:hover:not(:disabled) {
-		background: var(--color-primary-700);
-	}
-	
-	.custom-add-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-	
-	.custom-cancel-btn {
-		background: var(--bg-secondary);
-		color: var(--text-secondary);
-	}
-	
-	.custom-cancel-btn:hover {
-		background: var(--bg-tertiary);
-		color: var(--text-primary);
 	}
 	
 	/* Responsive adjustments */
