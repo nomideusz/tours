@@ -6,8 +6,8 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import Header from '$lib/components/Header.svelte';
-	import Footer from '$lib/components/Footer.svelte';
+	import MarketingHeader from '$lib/components/layout/MarketingHeader.svelte';
+	import MarketingFooter from '$lib/components/layout/MarketingFooter.svelte';
 	import CookieBanner from '$lib/components/CookieBanner.svelte';
 
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -84,7 +84,7 @@
 	let shouldExclude = $derived(shouldExcludeFromAnalytics());
 
 	// Header reference for closing mobile menu
-	let headerRef: Header;
+	let headerRef: MarketingHeader;
 
 	// Initialize theme store
 	let themeCleanup: (() => void) | undefined;
@@ -188,7 +188,7 @@
 
 <!-- Clean Marketing Layout -->
 <div class="marketing-layout">
-	<Header 
+	<MarketingHeader
 		bind:this={headerRef}
 		isAuthenticated={userIsAuthenticated}
 		currentUser={currentUserData}
@@ -211,7 +211,7 @@
 	<!-- Cookie Consent Banner -->
 	<CookieBanner />
 
-	<Footer />
+	<MarketingFooter />
 </div>
 
 <style lang="postcss">
