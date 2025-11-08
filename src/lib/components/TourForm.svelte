@@ -178,7 +178,7 @@ Key extracted components:
 		serverErrors = [],
 		triggerValidation = false,
 		hideStatusField = false,
-		hideLabels = false,
+		hideLabels = true,
 		profile = null,
 		hasConfirmedLocation = false,
 		paymentStatus = { isSetup: false, loading: false },

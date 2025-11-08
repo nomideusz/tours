@@ -27,7 +27,7 @@
 	let {
 		formData = $bindable(),
 		allErrors = [],
-		hideLabels = false,
+		hideLabels = true,
 		includedItemsSuggestions = [],
 		requirementsSuggestions = [],
 		shouldShowError
