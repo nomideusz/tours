@@ -132,7 +132,7 @@ export function useTourSubmission(options: SubmissionOptions) {
 				// Extract tour ID from URL path like /tours/abc123?created=true
 				const pathParts = redirectUrl.pathname.split('/').filter(Boolean);
 				extractedTourId = pathParts[pathParts.length - 1];
-				console.log('🔍 Redirect detected:', {
+				console.log('🔍 HTTP Redirect detected:', {
 					fullUrl: response.url,
 					pathname: redirectUrl.pathname,
 					pathParts,
@@ -145,6 +145,21 @@ export function useTourSubmission(options: SubmissionOptions) {
 				console.log('📄 Response text:', text.substring(0, 200));
 				try {
 					result = JSON.parse(text);
+
+					// Check if response contains redirect information in JSON format
+					if (result.type === 'redirect' && result.location) {
+						console.log('🔍 JSON Redirect detected:', result.location);
+						// Extract tour ID from location field
+						const locationUrl = new URL(result.location, window.location.origin);
+						const pathParts = locationUrl.pathname.split('/').filter(Boolean);
+						extractedTourId = pathParts[pathParts.length - 1];
+						console.log('🔍 Extracted from JSON location:', {
+							location: result.location,
+							pathname: locationUrl.pathname,
+							pathParts,
+							extractedTourId
+						});
+					}
 				} catch (e) {
 					console.error('Failed to parse JSON:', e);
 					result = { success: true };
