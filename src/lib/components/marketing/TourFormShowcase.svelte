@@ -8,100 +8,35 @@
 	 */
 	import TourForm from '$lib/components/TourForm.svelte';
 	
-	// Pre-filled demo tour data
+	// Minimal demo data for clean showcase
 	let demoFormData = $state({
-		name: 'Ancient Athens Walking Tour',
-		description: '<h2>Discover Ancient Greece</h2><p>Join us for an unforgettable journey through the heart of ancient Athens. Walk in the footsteps of Socrates and Plato as we explore the iconic Acropolis, the historic Plaka district, and hidden gems known only to locals.</p><p><strong>Highlights:</strong></p><ul><li>Parthenon and Acropolis exploration</li><li>Ancient Agora marketplace</li><li>Traditional Greek neighborhood tour</li><li>Local food tastings</li></ul>',
-		price: 45,
-		duration: 180, // 3 hours
-		capacity: 12,
-		status: 'active' as const,
-		categories: ['historical', 'cultural', 'walking'],
-		location: 'Acropolis, Athens, Greece',
-		locationPlaceId: 'ChIJs9QmWRG9oRQR6rfRK66vt8E',
-		languages: ['en', 'el'],
-		includedItems: [
-			'Professional tour guide',
-			'Historical insights',
-			'Photo opportunities',
-			'Greek snack tasting',
-			'Map and recommendations'
-		],
-		requirements: [
-			'Comfortable walking shoes',
-			'Basic fitness level',
-			'Sun protection (summer)',
-			'Water bottle recommended'
-		],
-		cancellationPolicy: '• Full refund if cancelled 24+ hours before tour\n• No refund if cancelled less than 24 hours before tour',
-		cancellationPolicyId: 'flexible',
-		pricingModel: 'participant_categories' as const,
+		name: '',
+		description: '',
+		price: 0,
+		duration: 60, // 1 hour
+		capacity: 10,
+		status: 'draft' as const,
+		categories: [],
+		location: '',
+		locationPlaceId: null,
+		languages: [],
+		includedItems: [],
+		requirements: [],
+		cancellationPolicy: '',
+		cancellationPolicyId: 'standard',
+		pricingModel: 'per_person' as const,
 		enablePricingTiers: false,
 		participantCategories: {
-			categories: [
-				{
-					id: 'adult',
-					label: 'Adult (18-64)',
-					price: 45,
-					minAge: 18,
-					maxAge: 64,
-					sortOrder: 0,
-					countsTowardCapacity: true
-				},
-				{
-					id: 'child',
-					label: 'Child (6-17)',
-					price: 25,
-					minAge: 6,
-					maxAge: 17,
-					sortOrder: 1,
-					countsTowardCapacity: true
-				},
-				{
-					id: 'senior',
-					label: 'Senior (65+)',
-					price: 35,
-					minAge: 65,
-					maxAge: 99,
-					sortOrder: 2,
-					countsTowardCapacity: true
-				}
-			],
-			minCapacity: 2,
-			maxCapacity: 12
+			categories: [],
+			minCapacity: 1,
+			maxCapacity: 10
 		},
 		groupDiscounts: {
-			tiers: [
-				{
-					id: '1',
-					minParticipants: 6,
-					maxParticipants: 8,
-					discountType: 'percentage' as const,
-					discountValue: 10,
-					label: 'Group of 6-8: 10% off'
-				},
-				{
-					id: '2',
-					minParticipants: 9,
-					maxParticipants: 12,
-					discountType: 'percentage' as const,
-					discountValue: 15,
-					label: 'Group of 9-12: 15% off'
-				}
-			],
-			enabled: true
+			tiers: [],
+			enabled: false
 		},
 		optionalAddons: {
-			addons: [
-				{
-					id: '1',
-					name: 'Museum Entry Tickets',
-					description: 'Skip-the-line access to Acropolis Museum',
-					price: 15,
-					availableQuantity: 1,
-					required: false
-				}
-			]
+			addons: []
 		},
 		guidePaysStripeFee: false,
 		countInfantsTowardCapacity: false,
@@ -140,6 +75,7 @@
 				serverErrors={[]}
 				triggerValidation={false}
 				hideStatusField={true}
+				hideLabels={true}
 				profile={{
 					id: 'demo',
 					username: 'demo-guide',
@@ -446,7 +382,7 @@
 		transform: translateY(-50%);
 		z-index: 10;
 	}
-	
+
 	/* Clear button (X) */
 	.form-wrapper :global(.location-picker-wrapper .absolute.right-3),
 	.form-wrapper :global(.location-picker-wrapper button[aria-label="Clear location"]) {
@@ -979,26 +915,36 @@
 		.showcase-title {
 			font-size: 2.25rem;
 		}
-		
+
 		.showcase-subtitle {
 			font-size: 1.125rem;
 		}
-		
+
 		.form-container {
 			border-radius: 1rem;
 			margin-bottom: 3rem;
 			border-width: 2px;
 			border-color: var(--border-secondary);
-			box-shadow: 
+			box-shadow:
 				0 8px 32px rgba(0, 0, 0, 0.12),
 				0 0 0 1px rgba(var(--color-accent-600-rgb), 0.08);
 		}
-		
+
 		.form-wrapper {
 			padding: 2rem;
 			max-height: 800px;
 		}
-		
+
+		/* Fix Meeting Point input icons positioning on desktop */
+		.form-wrapper :global(.location-picker-wrapper .absolute.left-3) {
+			transform: translateY(0) !important;
+		}
+
+		.form-wrapper :global(.location-picker-wrapper .absolute.right-3),
+		.form-wrapper :global(.location-picker-wrapper button[aria-label="Clear location"]) {
+			transform: translateY(0) !important;
+		}
+
 		/* Make cancellation policy card more distinctive on larger screens */
 		.form-wrapper :global(.form-section-card) {
 			background: transparent !important;

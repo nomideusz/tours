@@ -155,8 +155,8 @@ Simple, compact initial view with expandable advanced options
 				getFieldError={getFieldError}
 			/>
 			
-			<!-- Group Discounts (only for per-person pricing) -->
-			{#if groupDiscounts && currentPrice > 0 && participantCategories}
+			<!-- Group Discounts (only for per-person pricing with configured prices) -->
+			{#if groupDiscounts && currentPrice > 0 && participantCategories && participantCategories.categories.some(c => c.price > 0)}
 				<div class="section-spacing">
 					<GroupDiscounts
 						bind:tiers={groupDiscounts.tiers}
@@ -187,8 +187,8 @@ Simple, compact initial view with expandable advanced options
 			/>
 		{/if}
 		
-		<!-- Add-ons (show for both pricing models) -->
-		{#if optionalAddons}
+		<!-- Add-ons (show for both pricing models after pricing is configured) -->
+		{#if optionalAddons && currentPrice > 0 && ((pricingModel === 'participant_categories' && participantCategories?.categories.some(c => c.price > 0)) || (pricingModel === 'private_tour' && privateTour?.flatPrice > 0))}
 			<div class="section-spacing">
 				<OptionalAddons
 					bind:addons={optionalAddons.addons}
@@ -197,9 +197,9 @@ Simple, compact initial view with expandable advanced options
 				/>
 			</div>
 		{/if}
-		
+
 		<!-- Stripe Fee Selector (Regulatory Compliance: FTC, California SB 478, UK, EU) -->
-		{#if currentPrice > 0}
+		{#if currentPrice > 0 && ((pricingModel === 'participant_categories' && participantCategories?.categories.some(c => c.price > 0)) || (pricingModel === 'private_tour' && privateTour?.flatPrice > 0))}
 			<div class="section-spacing">
 				<StripeFeeSelector
 					bind:guidePaysStripeFee
