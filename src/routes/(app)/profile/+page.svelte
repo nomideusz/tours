@@ -22,14 +22,14 @@
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	
 	// Components
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import FlagIcon from '$lib/components/FlagIcon.svelte';
 	import PromoStatusBanner from '$lib/components/PromoStatusBanner.svelte';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	
 	// Profile Components
 	import ProfileAvatar from '$lib/components/profile/ProfileAvatar.svelte';

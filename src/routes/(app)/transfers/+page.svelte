@@ -3,8 +3,8 @@
 	import { globalCurrencyFormatter } from '$lib/utils/currency.js';
 	import { formatDateTime } from '$lib/utils/date-helpers.js';
 	import { getTransferStatusMessage } from '$lib/payment-transfers-client.js';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	
 	// Icons
 	import ArrowDownUp from 'lucide-svelte/icons/arrow-down-up';

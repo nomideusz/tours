@@ -13,8 +13,8 @@
 	import { browser } from '$app/environment';
 	import { auth } from '$lib/stores/auth.js';
 	import { setUserCurrencyFromServer } from '$lib/stores/currency.js';
-	import AppHeader from '$lib/components/AppHeader.svelte';
-	import AppFooter from '$lib/components/AppFooter.svelte';
+	import AppHeader from '$lib/components/layout/AppHeader.svelte';
+	import AppFooter from '$lib/components/layout/AppFooter.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import InstallPWAPrompt from '$lib/components/InstallPWAPrompt.svelte';
 	import FeedbackWidget from '$lib/components/FeedbackWidget.svelte';

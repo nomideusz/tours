@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import TourForm from '$lib/components/TourForm.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import ErrorAlert from '$lib/components/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 

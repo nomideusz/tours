@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createQuery } from '@tanstack/svelte-query';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import Mail from 'lucide-svelte/icons/mail';
 	import Send from 'lucide-svelte/icons/send';
 	import TestTube from 'lucide-svelte/icons/test-tube';

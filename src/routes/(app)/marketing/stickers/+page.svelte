@@ -3,8 +3,8 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { goto } from '$app/navigation';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Printer from 'lucide-svelte/icons/printer';
 	import Copy from 'lucide-svelte/icons/copy';

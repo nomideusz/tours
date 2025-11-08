@@ -9,7 +9,7 @@
 	import Euro from 'lucide-svelte/icons/euro';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import { getTourDisplayPriceFormattedWithCurrency } from '$lib/utils/tour-helpers-client.js';
 	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 

@@ -13,12 +13,12 @@
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	
 	// Components
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import TourStatusToggle from '$lib/components/TourStatusToggle.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import TourTimeline from '$lib/components/TourTimeline.svelte';
 	import type { Tour } from '$lib/types.js';
 	

@@ -4,8 +4,8 @@
 	import { generateQRImageURL } from '$lib/utils/qr-generation.js';
 	import { formatCurrency } from '$lib/utils/currency.js';
 	import { goto } from '$app/navigation';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import User from 'lucide-svelte/icons/user';

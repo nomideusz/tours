@@ -18,8 +18,8 @@
 	
 	// Components
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import ColorSchemeSelector from '$lib/components/form/inputs/ColorSchemeSelector.svelte';
 	import DesignSelector from '$lib/components/form/inputs/DesignSelector.svelte';
 

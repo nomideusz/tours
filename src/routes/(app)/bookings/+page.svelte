@@ -11,8 +11,8 @@
 	import { queryKeys, queryFunctions } from '$lib/queries/shared-stats.js';
 	
 	// Components
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	
 	// Icons
 	import Calendar from 'lucide-svelte/icons/calendar';

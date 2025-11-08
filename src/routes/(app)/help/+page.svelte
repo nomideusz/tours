@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import BookOpen from 'lucide-svelte/icons/book-open';
 	import Users from 'lucide-svelte/icons/users';
 	import Calendar from 'lucide-svelte/icons/calendar';

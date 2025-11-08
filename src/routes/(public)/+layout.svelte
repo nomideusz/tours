@@ -2,8 +2,8 @@
 	import { language, t } from '$lib/i18n.js';
 	import { languageContext, languageStore } from '$lib/context.js';
 	import { auth } from '$lib/stores/auth.js';
-	import PublicHeader from '$lib/components/PublicHeader.svelte';
-	import PublicFooter from '$lib/components/PublicFooter.svelte';
+	import PublicHeader from '$lib/components/layout/PublicHeader.svelte';
+	import PublicFooter from '$lib/components/layout/PublicFooter.svelte';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { themeStore } from '$lib/stores/theme.js';
 	import { onMount } from 'svelte';

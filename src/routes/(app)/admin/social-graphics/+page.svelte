@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Image from 'lucide-svelte/icons/image';
 	import Instagram from 'lucide-svelte/icons/instagram';

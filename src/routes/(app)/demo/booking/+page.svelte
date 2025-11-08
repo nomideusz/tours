@@ -7,7 +7,7 @@
 	import DollarSign from 'lucide-svelte/icons/dollar-sign';
 	import Package from 'lucide-svelte/icons/package';
 	import Loader2 from 'lucide-svelte/icons/loader-2';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 
 	// Fetch real tours from the database
 	let toursQuery = $derived(createQuery({

@@ -16,8 +16,8 @@
 	import Activity from 'lucide-svelte/icons/activity';
 	import type { PageData } from './$types.js';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import PromoCodeInput from '$lib/components/form/inputs/PromoCodeInput.svelte';
 	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented, calculatePlanPricing, type UserPricingContext } from '$lib/utils/pricing-config.js';
 	

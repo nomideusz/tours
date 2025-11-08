@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import SimplifiedPricingSection from '$lib/components/pricing/SimplifiedPricingSection.svelte';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	import type { PricingModel, ParticipantCategory, GroupDiscountTier, OptionalAddon } from '$lib/types.js';
 	// Currency
 	let currencySymbol = $derived(SUPPORTED_CURRENCIES[$userCurrency]?.symbol || '€');

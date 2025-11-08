@@ -5,8 +5,8 @@
 	import { formatCurrency } from '$lib/utils/currency.js';
 	import { formatDuration } from '$lib/utils/tour-helpers-client.js';
 	import { goto } from '$app/navigation';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import Download from 'lucide-svelte/icons/download';
 	import Image from 'lucide-svelte/icons/image';

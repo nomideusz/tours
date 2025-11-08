@@ -3,8 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { createQuery, createMutation, useQueryClient } from '@tanstack/svelte-query';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';

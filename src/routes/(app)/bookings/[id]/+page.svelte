@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { tick } from 'svelte';
@@ -17,7 +17,7 @@
 	import { queryKeys } from '$lib/queries/shared-stats.js';
 	
 	// Components
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import TransferStatusCard from '$lib/components/booking/TransferStatusCard.svelte';
 	import RefundPreviewCard from '$lib/components/booking/RefundPreviewCard.svelte';
 	import RefundInfoCard from '$lib/components/booking/RefundInfoCard.svelte';

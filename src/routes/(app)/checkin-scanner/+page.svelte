@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
 	import Camera from 'lucide-svelte/icons/camera';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Scan from 'lucide-svelte/icons/scan';

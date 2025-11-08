@@ -4,9 +4,9 @@
 	import { onMount } from 'svelte';
 	
 	// Components
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	
 	// Icons
 	import FlaskConical from 'lucide-svelte/icons/flask-conical';

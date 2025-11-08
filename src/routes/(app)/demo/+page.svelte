@@ -6,7 +6,7 @@
 	import Users from 'lucide-svelte/icons/users';
 	import MessageSquare from 'lucide-svelte/icons/message-square';
 	import Sparkles from 'lucide-svelte/icons/sparkles';
-	import PageContainer from '$lib/components/PageContainer.svelte';
+	import PageContainer from '$lib/components/layout/PageContainer.svelte';
 	
 	// Available feature demos
 	const demos = [
