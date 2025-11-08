@@ -167,7 +167,7 @@ export function useTourSubmission(options: SubmissionOptions) {
 			const formDataToSubmit = prepareFormData(formData, uploadedImages, imagesToRemove, scheduleData);
 
 			// Submit using mutation
-			const result = await $mutation.mutateAsync(formDataToSubmit);
+			const result = await mutation.mutateAsync(formDataToSubmit);
 
 			console.log('✅ Tour submitted successfully:', result);
 
