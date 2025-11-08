@@ -46,15 +46,11 @@ Key extracted components:
 	import Palette from 'lucide-svelte/icons/palette';
 	import Mountain from 'lucide-svelte/icons/mountain';
 	import Edit from 'lucide-svelte/icons/edit';
-	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Eye from 'lucide-svelte/icons/eye';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import Save from 'lucide-svelte/icons/save';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import LocationPicker from './LocationPicker.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
 	import CategorySelector from './CategorySelector.svelte';
@@ -78,6 +74,8 @@ Key extracted components:
 	import TourImagesSection from './tour-form/TourImagesSection.svelte';
 	import DangerZoneSection from './tour-form/DangerZoneSection.svelte';
 	import StatusVisibilitySection from './tour-form/StatusVisibilitySection.svelte';
+	import CancellationPolicySection from './tour-form/CancellationPolicySection.svelte';
+	import ActionButtonsSection from './tour-form/ActionButtonsSection.svelte';
 
 	interface Props {
 		formData: {
@@ -399,7 +397,6 @@ Key extracted components:
 	
 	// Collapsible sections state
 	let showAdvancedPricing = $state(false);
-	let showCancellationPolicy = $state(false);
 	
 	// Custom category state
 	
@@ -766,161 +763,6 @@ Key extracted components:
 		
 		return validation.isValid;
 	}
-
-	// Cancellation Policy Templates (using new structured policies)
-	import { CANCELLATION_POLICIES, getCancellationPolicyText } from '$lib/utils/cancellation-policies.js';
-	
-	let selectedPolicyTemplate = $state('flexible'); // Default to flexible
-	let showCustomPolicy = $state(false);
-	let customPolicyHours = $state(24); // Default 24 hours for custom policy
-	
-	// Convert our structured policies to template format for the UI
-	const policyTemplates = [
-		{
-			id: 'veryFlexible',
-			name: 'Very Flexible',
-			description: '100% refund up to 2 hours before',
-			policy: getCancellationPolicyText('veryFlexible'),
-			color: 'success',
-			recommended: false
-		},
-		{
-			id: 'flexible',
-			name: 'Flexible ⭐',
-			description: '100% refund up to 24 hours before',
-			policy: getCancellationPolicyText('flexible'),
-			color: 'success',
-			recommended: true
-		},
-		{
-			id: 'moderate',
-			name: 'Moderate', 
-			description: '100% refund up to 48 hours before',
-			policy: getCancellationPolicyText('moderate'),
-			color: 'warning',
-			recommended: false
-		},
-		{
-			id: 'strict',
-			name: 'Strict',
-			description: '100% refund up to 7 days before',
-			policy: getCancellationPolicyText('strict'),
-			color: 'warning',
-			recommended: false
-		},
-		{
-			id: 'nonRefundable',
-			name: 'Non-Refundable',
-			description: 'No refunds • Immediate payout',
-			policy: getCancellationPolicyText('nonRefundable'),
-			color: 'error',
-			recommended: false
-		}
-	];
-
-	function selectPolicyTemplate(templateId: string) {
-		const template = policyTemplates.find(t => t.id === templateId);
-		if (template) {
-			selectedPolicyTemplate = templateId;
-			// Store both the ID (for structured queries) and text (for backward compatibility)
-			formData.cancellationPolicyId = templateId;
-			formData.cancellationPolicy = template.policy;
-			showCustomPolicy = false;
-		}
-	}
-
-	function enableCustomPolicy() {
-		selectedPolicyTemplate = '';
-		showCustomPolicy = true;
-		
-		// Set cancellationPolicyId to the hours value (e.g., "custom_24" for 24 hours)
-		updateCustomPolicyId();
-	}
-	
-	// Store for optional custom notes (separate from auto-generated rules)
-	let customPolicyNotes = $state('');
-	
-	// Validate and constrain custom policy hours
-	function validateCustomHours(hours: number): number {
-		// Constrain to reasonable bounds
-		if (hours < 1) return 1;
-		if (hours > 168) return 168; // Max 7 days (1 week)
-		return Math.floor(hours); // Ensure integer
-	}
-	
-	// Update policy ID when custom hours change
-	function updateCustomPolicyId() {
-		// Validate hours before using
-		customPolicyHours = validateCustomHours(customPolicyHours);
-		
-		formData.cancellationPolicyId = `custom_${customPolicyHours}`;
-		
-		// Generate policy text from the hours value (binary: full refund or no refund)
-		let policyText = `• Full refund if cancelled ${customPolicyHours}+ hours before tour\n` +
-			`• No refund if cancelled less than ${customPolicyHours} hours before tour`;
-		
-		// Add custom notes if provided
-		if (customPolicyNotes.trim()) {
-			policyText += `\n\nAdditional Information:\n${customPolicyNotes.trim()}`;
-		}
-		
-		formData.cancellationPolicy = policyText;
-	}
-	
-	// Watch for changes to custom hours or notes
-	$effect(() => {
-		if (showCustomPolicy && customPolicyHours) {
-			updateCustomPolicyId();
-		}
-	});
-	
-	// Watch for changes to custom notes
-	$effect(() => {
-		if (showCustomPolicy) {
-			updateCustomPolicyId();
-		}
-	});
-
-	// Initialize policy template selection based on existing policy
-	// Watch cancellationPolicyId to update when tour data loads
-	$effect(() => {
-		// Check if it's a custom policy (format: "custom_24")
-		if (formData.cancellationPolicyId?.startsWith('custom_')) {
-			const hours = parseInt(formData.cancellationPolicyId.split('_')[1]);
-			if (!isNaN(hours) && hours > 0) {
-				selectedPolicyTemplate = ''; // Clear any template selection
-				showCustomPolicy = true;
-				customPolicyHours = hours;
-				
-				// Extract custom notes if they exist in the policy text
-				if (formData.cancellationPolicy?.includes('Additional Information:')) {
-					const parts = formData.cancellationPolicy.split('Additional Information:');
-					if (parts[1]) {
-						customPolicyNotes = parts[1].trim();
-					}
-				}
-				return;
-			}
-		}
-		
-		// If we have a predefined policyId, use that
-		if (formData.cancellationPolicyId && !formData.cancellationPolicyId.startsWith('custom_')) {
-			const matchingTemplate = policyTemplates.find(t => t.id === formData.cancellationPolicyId);
-			if (matchingTemplate) {
-				selectedPolicyTemplate = formData.cancellationPolicyId;
-				showCustomPolicy = false;
-				return;
-			}
-		}
-		
-		// Set default if no policy set (new tour)
-		if (!formData.cancellationPolicyId && !formData.cancellationPolicy) {
-			selectedPolicyTemplate = 'flexible';
-			showCustomPolicy = false;
-			// Initialize the form data with the default flexible policy
-			selectPolicyTemplate('flexible');
-		}
-	});
 
 	// Mobile error handling - scroll to first error
 	function scrollToFirstError() {
@@ -1413,174 +1255,7 @@ Key extracted components:
 		<!-- ============================================================ -->
 		<!-- CANCELLATION POLICY SECTION                                 -->
 		<!-- ============================================================ -->
-		<!-- Cancellation Policy (Collapsible) -->
-		<div class="rounded-xl form-section-card" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<button
-				type="button"
-				onclick={() => showCancellationPolicy = !showCancellationPolicy}
-				class="flex items-center justify-between w-full px-4 py-4 sm:p-4 transition-colors hover:bg-opacity-80 {showCancellationPolicy ? 'border-b' : ''}"
-				style="{showCancellationPolicy ? 'border-color: var(--border-primary);' : ''}"
-			>
-				<div class="flex items-center gap-2">
-					{#if showCancellationPolicy}
-						<ChevronDown class="w-4 h-4" />
-					{:else}
-						<ChevronRight class="w-4 h-4" />
-					{/if}
-					<h2 class="font-semibold" style="color: var(--text-primary);">Cancellation Policy</h2>
-					{#if formData.cancellationPolicy?.trim() || selectedPolicyTemplate}
-						<span class="text-xs px-2 py-1 rounded-full" style="background: var(--color-accent-100); color: var(--color-accent-700);">
-							{selectedPolicyTemplate === 'veryFlexible' ? 'Very Flexible' : 
-							 selectedPolicyTemplate === 'flexible' ? 'Flexible' :
-							 selectedPolicyTemplate === 'moderate' ? 'Moderate' :
-							 selectedPolicyTemplate === 'strict' ? 'Strict' :
-							 selectedPolicyTemplate === 'nonRefundable' ? 'Non-Refundable' :
-							 'Custom'}
-						</span>
-					{/if}
-				</div>
-			</button>
-			
-			{#if showCancellationPolicy}
-				<div class="px-4 py-3 sm:p-5">
-					<div class="space-y-3">
-						<!-- Template Options -->
-						{#each policyTemplates as template}
-							<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors" 
-								style="
-									background: {selectedPolicyTemplate === template.id ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-									border-color: {selectedPolicyTemplate === template.id ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-								"
-							>
-								<input
-									type="radio"
-									name="policyTemplate"
-									value={template.id}
-									checked={selectedPolicyTemplate === template.id}
-									onchange={() => selectPolicyTemplate(template.id)}
-									class="form-radio mt-0.5"
-								/>
-								<div class="flex-1">
-									<div class="flex items-center gap-2 mb-1">
-										<div class="w-2 h-2 rounded-full" 
-											style="background: var(--color-{template.color}-500);"
-										></div>
-										<div class="font-medium text-sm" style="color: var(--text-primary);">
-											{template.name}
-										</div>
-									</div>
-									<p class="text-xs" style="color: var(--text-secondary);">{template.description}</p>
-								</div>
-							</label>
-						{/each}
-
-						<!-- Custom Policy Option -->
-						<label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-							style="
-								background: {showCustomPolicy ? 'var(--color-primary-50)' : 'var(--bg-primary)'};
-								border-color: {showCustomPolicy ? 'var(--color-primary-300)' : 'var(--border-primary)'};
-							"
-						>
-							<input
-								type="radio"
-								name="policyTemplate"
-								checked={showCustomPolicy}
-								onchange={enableCustomPolicy}
-								class="form-radio mt-0.5"
-							/>
-							<div class="flex-1">
-								<div class="flex items-center gap-2 mb-1">
-									<Edit class="w-3 h-3" style="color: var(--text-secondary);" />
-									<div class="font-medium text-sm" style="color: var(--text-primary);">
-										Custom Policy
-									</div>
-								</div>
-								<p class="text-xs" style="color: var(--text-secondary);">Write your own cancellation terms</p>
-							</div>
-						</label>
-							</div>
-							
-					{#if showCustomPolicy}
-						<div class="mt-4 space-y-4">
-							<div class="p-4 rounded-lg" style="background: var(--bg-secondary); border: 1px solid var(--border-primary);">
-								<h4 class="text-sm font-semibold mb-3" style="color: var(--text-primary);">Custom Refund Rules</h4>
-								
-								<div class="space-y-3">
-									<!-- Full Refund Window -->
-									<div>
-										<label for="customPolicyHours" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
-											Full Refund Window (100%)
-										</label>
-										<div class="flex items-center gap-2">
-											<input
-												id="customPolicyHours"
-												type="number"
-												bind:value={customPolicyHours}
-												min="1"
-												max="168"
-												step="1"
-												class="form-input"
-												style="max-width: 100px;"
-												onfocus={(e) => e.currentTarget.select()}
-												onblur={() => { customPolicyHours = validateCustomHours(customPolicyHours); }}
-											/>
-											<span class="text-sm" style="color: var(--text-secondary);">hours before tour</span>
-										</div>
-										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-											Range: 1-168 hours (1 hour to 7 days)
-										</p>
-										<p class="text-xs mt-0.5" style="color: var(--text-tertiary);">
-											Common: 2h, 12h, 24h, 48h, 72h, 168h
-										</p>
-									</div>
-									
-									<!-- Preview -->
-									<div class="p-3 rounded-lg" style="background: var(--color-primary-50); border: 1px solid var(--color-primary-200);">
-										<p class="text-xs font-medium mb-1" style="color: var(--color-primary-900);">Your Policy:</p>
-										<p class="text-xs" style="color: var(--color-primary-800);">
-											• Full refund if cancelled {customPolicyHours}+ hours before tour<br/>
-											• No refund if cancelled less than {customPolicyHours} hours before
-										</p>
-									</div>
-									
-									<!-- Optional custom notes -->
-									<div>
-										<label for="customPolicyNotes" class="block text-xs font-medium mb-1.5" style="color: var(--text-secondary);">
-											Additional Notes (Optional)
-										</label>
-										<textarea
-											id="customPolicyNotes"
-											bind:value={customPolicyNotes}
-											rows="2"
-											placeholder="e.g., 'Contact us for special circumstances' or 'Emergency cancellations always considered'"
-											class="form-textarea text-sm"
-										></textarea>
-										<p class="text-xs mt-1" style="color: var(--text-tertiary);">
-											Extra information for customers - doesn't affect automatic refund calculations
-										</p>
-									</div>
-								</div>
-							</div>
-							
-							<div class="p-3 rounded-lg" style="background: var(--color-info-50); border: 1px solid var(--color-info-200);">
-								<p class="text-xs" style="color: var(--color-info-800);">
-									<strong>💸 Payment Schedule:</strong> Funds will be held on the platform for <strong>{customPolicyHours + 1} hours</strong> after booking, then automatically transferred to your account {customPolicyHours + 1} hours before the tour starts.
-								</p>
-							</div>
-							<div class="p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-								<p class="text-xs" style="color: var(--color-warning-800);">
-									<strong>⚠️ Remember:</strong> More flexible policies = happier customers and higher bookings, but funds are held longer to ensure refunds are always available.
-								</p>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Hidden inputs for form submission -->
-					<input type="hidden" name="cancellationPolicy" bind:value={formData.cancellationPolicy} />
-					<input type="hidden" name="cancellationPolicyId" bind:value={formData.cancellationPolicyId} />
-				</div>
-			{/if}
-		</div>
+		<CancellationPolicySection bind:formData />
 
 
 		<!-- ============================================================ -->
@@ -1609,96 +1284,23 @@ Key extracted components:
 		<!-- ACTION BUTTONS SECTION                                       -->
 		<!-- Save, Publish, Cancel buttons                                -->
 		<!-- ============================================================ -->
-		<div class="rounded-xl action-buttons-section" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-			<div class="px-4 py-4 sm:p-4">
-			<div class="space-y-3">
-				{#if onPublish && onSaveAsDraft}
-					<!-- Dual Action Buttons for Draft/Publish -->
-					
-					<!-- Onboarding Restriction Notice -->
-					{#if !canActivate && missingSteps.length > 0}
-						<div class="mb-2 p-3 rounded-lg" style="background: var(--color-warning-50); border: 1px solid var(--color-warning-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-warning-600);" />
-								<div class="flex-1">
-									<p class="text-xs font-medium" style="color: var(--color-warning-700);">
-										Complete setup to activate
-									</p>
-									<p class="text-xs mt-1" style="color: var(--color-warning-600);">
-										{onboardingMessage}
-									</p>
-								</div>
-							</div>
-						</div>
-					{/if}
-					
-					<button
-						type="button"
-						onclick={onPublish}
-						disabled={isSubmitting || !canActivate || allErrors.length > 0 || !hasMinimumRequiredFields}
-						class="button-primary button--full-width button-gap"
-						title={!canActivate ? 'Complete required setup steps to activate' : allErrors.length > 0 ? 'Fix validation errors to activate' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
-					>
-						{#if isSubmitting && formData.status === 'active'}
-							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-							Saving...
-						{:else}
-							{#if isEdit && initialStatus === 'active'}
-								<Save class="w-4 h-4" />
-								Save Changes
-							{:else}
-								<CheckCircle class="w-4 h-4" />
-								{isEdit ? 'Save & Activate' : 'Activate Tour'}
-							{/if}
-						{/if}
-					</button>
-					
-					<button
-						type="button"
-						onclick={onSaveAsDraft}
-						disabled={isSubmitting || allErrors.length > 0 || !hasMinimumRequiredFields}
-						class="button-secondary button--full-width button-gap"
-						title={allErrors.length > 0 ? 'Fix validation errors to save' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
-					>
-						{#if isSubmitting && formData.status === 'draft'}
-							<div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-							Saving...
-						{:else}
-							<FileText class="w-4 h-4" />
-							{isEdit ? 'Save as Draft' : 'Save as Draft'}
-						{/if}
-					</button>
-				{:else}
-					<!-- Single Action Button (fallback for old usage) -->
-					
-					<button
-						type={onSubmit ? "button" : "submit"}
-						onclick={onSubmit || handleSubmit}
-						disabled={isSubmitting || allErrors.length > 0 || !hasMinimumRequiredFields}
-						class="button-primary button--full-width button-gap"
-						title={allErrors.length > 0 ? 'Fix validation errors to save' : !hasMinimumRequiredFields ? 'Fill in all required fields' : ''}
-					>
-						{#if isSubmitting}
-							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-							Saving...
-						{:else}
-							<Save class="w-4 h-4" />
-							{submitButtonText || (isEdit ? 'Save Changes' : 'Save Tour')}
-						{/if}
-					</button>
-				{/if}
-				
-				<button
-					type="button"
-					onclick={onCancel}
-					disabled={isSubmitting}
-					class="button-secondary button--full-width"
-				>
-					Cancel
-				</button>
-			</div>
-		</div>
-	</div>
+		<ActionButtonsSection
+			{isSubmitting}
+			{isEdit}
+			formStatus={formData.status}
+			{initialStatus}
+			{submitButtonText}
+			{canActivate}
+			{missingSteps}
+			{onboardingMessage}
+			hasErrors={allErrors.length > 0}
+			{hasMinimumRequiredFields}
+			{onPublish}
+			{onSaveAsDraft}
+			{onSubmit}
+			{onCancel}
+			{handleSubmit}
+		/>
 		</div>
 	</div>
 </div>
