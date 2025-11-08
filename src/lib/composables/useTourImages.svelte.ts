@@ -3,8 +3,6 @@
  * Handles validation, upload, removal, and error states
  */
 
-import { browser } from '$app/environment';
-
 // Image validation constants (matching server-side)
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 6; // Maximum 6 images per tour

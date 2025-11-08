@@ -7,13 +7,44 @@ import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 import { trackTourEvent } from '$lib/utils/umami-tracking.js';
 import { queryKeys } from '$lib/queries/shared-stats.js';
+import type { QueryClient } from '@tanstack/svelte-query';
+import type { Tour, PricingModel } from '$lib/types.d.ts';
+
+interface PricingTiers {
+	adult: number;
+	child?: number;
+}
+
+interface ScheduleData {
+	[key: string]: unknown;
+}
+
+interface SubmissionResult {
+	success: boolean;
+	tourId?: string;
+	error?: string;
+	redirected?: boolean;
+	id?: string;
+	type?: string;
+	location?: string;
+	[key: string]: unknown;
+}
+
+interface TourFormData extends Partial<Tour> {
+	// Form-specific fields
+	enablePricingTiers?: boolean;
+	pricingTiers?: PricingTiers;
+	pricingModel?: PricingModel;
+	// Allow additional dynamic properties with specific types
+	[key: string]: string | number | boolean | string[] | object | null | undefined;
+}
 
 interface SubmissionOptions {
 	isEdit: boolean;
 	tourId?: string;
 	onSuccess?: (tourId: string) => void;
 	onError?: (error: string) => void;
-	queryClient?: any; // TanStack Query client
+	queryClient?: QueryClient; // TanStack Query client
 }
 
 export function useTourSubmission(options: SubmissionOptions) {
@@ -24,10 +55,10 @@ export function useTourSubmission(options: SubmissionOptions) {
 	 * Prepare form data for submission
 	 */
 	function prepareFormData(
-		formData: any,
+		formData: TourFormData,
 		uploadedImages: File[],
 		imagesToRemove: string[] = [],
-		scheduleData?: any
+		scheduleData?: ScheduleData
 	): FormData {
 		const formDataToSubmit = new FormData();
 
@@ -45,8 +76,11 @@ export function useTourSubmission(options: SubmissionOptions) {
 				formDataToSubmit.append(key, JSON.stringify(value));
 			} else if (key === 'pricingTiers') {
 				if (formData.enablePricingTiers && value) {
-					formDataToSubmit.append('pricingTiers.adult', String((value as any).adult));
-					formDataToSubmit.append('pricingTiers.child', String((value as any).child));
+					const tiers = value as PricingTiers;
+					formDataToSubmit.append('pricingTiers.adult', String(tiers.adult));
+					if (tiers.child !== undefined) {
+						formDataToSubmit.append('pricingTiers.child', String(tiers.child));
+					}
 				}
 			} else if (key === 'participantCategories' || key === 'privateTour' || key === 'groupDiscounts' || key === 'optionalAddons' || key === 'groupPricingTiers') {
 				// JSON.stringify objects for pricing features
@@ -65,9 +99,9 @@ export function useTourSubmission(options: SubmissionOptions) {
 			}
 		});
 
-		// Add capacity fields from participantCategories or privateTour or defaults
-		const minCap = (formData.participantCategories?.minCapacity) || ((formData.privateTour as any)?.minCapacity) || 1;
-		const maxCap = (formData.participantCategories?.maxCapacity) || ((formData.privateTour as any)?.maxCapacity) || formData.capacity;
+		// Add capacity fields from privateTour or main tour fields
+		const minCap = formData.privateTour?.minCapacity || formData.minCapacity || 1;
+		const maxCap = formData.privateTour?.maxCapacity || formData.maxCapacity || formData.capacity;
 		formDataToSubmit.append('minCapacity', String(minCap));
 		formDataToSubmit.append('maxCapacity', String(maxCap));
 
@@ -96,10 +130,10 @@ export function useTourSubmission(options: SubmissionOptions) {
 	 * Submit the tour form
 	 */
 	async function submit(
-		formData: any,
+		formData: TourFormData,
 		uploadedImages: File[],
 		imagesToRemove: string[] = [],
-		scheduleData?: any
+		scheduleData?: ScheduleData
 	): Promise<{ success: boolean; tourId?: string; error?: string }> {
 		if (isSubmitting) {
 			return { success: false, error: 'Submission already in progress' };
@@ -124,7 +158,7 @@ export function useTourSubmission(options: SubmissionOptions) {
 			}
 
 			// Handle redirect response
-			let result: any;
+			let result: SubmissionResult;
 			let extractedTourId: string | undefined;
 
 			if (response.redirected) {
@@ -220,7 +254,7 @@ export function useTourSubmission(options: SubmissionOptions) {
 			}
 
 			// Call success callback
-			if (options.onSuccess) {
+			if (options.onSuccess && finalTourId) {
 				options.onSuccess(finalTourId);
 			}
 
@@ -245,10 +279,10 @@ export function useTourSubmission(options: SubmissionOptions) {
 	 * Submit and navigate to tour detail page
 	 */
 	async function submitAndNavigate(
-		formData: any,
+		formData: TourFormData,
 		uploadedImages: File[],
 		imagesToRemove: string[] = [],
-		scheduleData?: any
+		scheduleData?: ScheduleData
 	): Promise<void> {
 		const result = await submit(formData, uploadedImages, imagesToRemove, scheduleData);
 

@@ -3,7 +3,7 @@
  * Handles client-side validation with error tracking
  */
 
-import type { ValidationError } from '$lib/validation.js';
+import type { ValidationError, TourFormData } from '$lib/validation.js';
 import { validateTourForm } from '$lib/validation.js';
 import { browser } from '$app/environment';
 
@@ -16,7 +16,7 @@ export function useTourValidation() {
 	/**
 	 * Validate tour form data
 	 */
-	function validate(formData: any): { isValid: boolean; errors: ValidationError[] } {
+	function validate(formData: Partial<TourFormData>): { isValid: boolean; errors: ValidationError[] } {
 		const validation = validateTourForm(formData);
 
 		// Only update errors if validation failed

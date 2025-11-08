@@ -4,13 +4,14 @@
  */
 
 import { browser } from '$app/environment';
+import type { User } from '$lib/types.d.ts';
 
 interface PaymentStatus {
 	isSetup: boolean;
 	loading: boolean;
 }
 
-export function useOnboarding(profile: any) {
+export function useOnboarding(profile: User) {
 	let hasConfirmedLocation = $state(false);
 	let paymentStatus = $state<PaymentStatus>({ isSetup: false, loading: true });
 
