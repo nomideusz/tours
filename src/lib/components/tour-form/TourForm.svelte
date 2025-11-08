@@ -31,7 +31,7 @@ Key extracted components:
 
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import NumberInput from './NumberInput.svelte';
+	import NumberInput from '../form/inputs/NumberInput.svelte';
 	import { validateTourForm, getFieldError, hasFieldError, type ValidationError } from '$lib/validation.js';
 	import { userCurrency, SUPPORTED_CURRENCIES } from '$lib/stores/currency.js';
 	import { currentMinimumChargeAmount } from '$lib/utils/currency.js';
@@ -49,7 +49,7 @@ Key extracted components:
 	import Eye from 'lucide-svelte/icons/eye';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import LocationPicker from './LocationPicker.svelte';
+	import LocationPicker from '../LocationPicker.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import { isValidLocationLength } from '$lib/utils/location.js';
@@ -59,17 +59,17 @@ Key extracted components:
 	import type { PricingModel, GroupPricingTier, GroupDiscountTier, OptionalAddon, ParticipantCategory } from '$lib/types.js';
 	
 	// Import tour form section components
-	import DurationInput from './DurationInput.svelte';
+	import DurationInput from '../form/inputs/DurationInput.svelte';
 	import { Tipex, defaultExtensions } from '@friendofsvelte/tipex';
 	import '@friendofsvelte/tipex/styles/index.css';
 	import CharacterCount from '@tiptap/extension-character-count';
-	import TourDescriptionControls from './TourDescriptionControls.svelte';
-	import TourImagesSection from './tour-form/TourImagesSection.svelte';
-	import DangerZoneSection from './tour-form/DangerZoneSection.svelte';
-	import StatusVisibilitySection from './tour-form/StatusVisibilitySection.svelte';
-	import CancellationPolicySection from './tour-form/CancellationPolicySection.svelte';
-	import ActionButtonsSection from './tour-form/ActionButtonsSection.svelte';
-	import TagsSection from './tour-form/TagsSection.svelte';
+	import TourDescriptionControls from '../tour/TourDescriptionControls.svelte';
+	import TourImagesSection from './TourImagesSection.svelte';
+	import DangerZoneSection from './DangerZoneSection.svelte';
+	import StatusVisibilitySection from './StatusVisibilitySection.svelte';
+	import CancellationPolicySection from './CancellationPolicySection.svelte';
+	import ActionButtonsSection from './ActionButtonsSection.svelte';
+	import TagsSection from './TagsSection.svelte';
 
 	interface Props {
 		formData: {
