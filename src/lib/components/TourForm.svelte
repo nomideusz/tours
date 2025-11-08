@@ -447,7 +447,7 @@ Key extracted components:
 			hasValidPricing = formData.privateTour.flatPrice > 0;
 		}
 		
-		return hasName && hasDescription && hasDuration && hasLanguages && hasValidPricing;
+		return Boolean(hasName && hasDescription && hasDuration && hasLanguages && hasValidPricing);
 	});
 	
 	// Suggestions for What's Included and Requirements
@@ -1294,7 +1294,7 @@ Key extracted components:
 			{missingSteps}
 			{onboardingMessage}
 			hasErrors={allErrors.length > 0}
-			{hasMinimumRequiredFields}
+			hasMinimumRequiredFields={hasMinimumRequiredFields()}
 			{onPublish}
 			{onSaveAsDraft}
 			{onSubmit}
