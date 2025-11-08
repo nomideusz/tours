@@ -335,20 +335,6 @@
 		color: var(--text-primary);
 	}
 	
-	.info-box {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		padding: 0.75rem;
-		border-radius: 0.5rem;
-		background: var(--color-info-50);
-		border: 1px solid var(--color-info-200);
-	}
-	
-	.info-box.warning {
-		background: var(--color-warning-50);
-		border-color: var(--color-warning-200);
-	}
 	
 	/* Mobile responsiveness */
 	@media (max-width: 640px) {
@@ -409,12 +395,6 @@
 		}
 
 		.counter-controls {
-			gap: 0.5rem;
-		}
-
-		.info-box {
-			padding: 0.5rem;
-			font-size: 0.75rem;
 			gap: 0.5rem;
 		}
 	}

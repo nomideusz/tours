@@ -2,6 +2,8 @@
  * Calendar utility functions
  */
 
+import type { Tour } from '$lib/types.js';
+
 // Type definitions for time slots
 interface TimeSlot {
 	createdAt?: string | Date;
@@ -10,11 +12,6 @@ interface TimeSlot {
 	capacity?: number;
 	availableSpots?: number;
 	tourId?: string;
-}
-
-interface Tour {
-	capacity?: number;
-	[key: string]: unknown;
 }
 
 /**

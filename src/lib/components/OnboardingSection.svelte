@@ -392,9 +392,9 @@
 			<div class="space-y-4">
 				<div>
 					{#if !selectedCountry}
-						<label class="block onboarding-step-title mb-2">
+						<h3 class="block onboarding-step-title mb-2">
 							Select Country
-						</label>
+						</h3>
 					{/if}
 					<div class="country-selection-grid">
 						{#each COUNTRY_LIST as country}

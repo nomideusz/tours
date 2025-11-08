@@ -115,7 +115,5 @@
 {/if}
 
 <style>
-	button:hover .opacity-50 {
-		opacity: 0.75;
-	}
+	/* No styles needed for this component */
 </style> 

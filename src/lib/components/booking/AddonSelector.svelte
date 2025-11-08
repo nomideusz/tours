@@ -321,23 +321,7 @@
 		letter-spacing: 0.025em;
 	}
 
-	.info-box {
-		display: flex;
-		align-items: start;
-		gap: 0.625rem;
-		padding: 0.75rem;
-		border-radius: 0.5rem;
-		background: var(--color-info-50);
-		border: 1px solid var(--color-info-200);
-		margin-top: 1rem;
-	}
-
 	@media (max-width: 767px) {
-		.info-box {
-			max-width: 400px;
-			margin-left: auto;
-			margin-right: auto;
-		}
 
 		.required-addons-section {
 			max-width: 400px;
@@ -357,12 +341,6 @@
 	@media (max-width: 450px) {
 		.addons-grid {
 			max-width: 100%;
-		}
-
-		.info-box {
-			max-width: 100%;
-			font-size: 0.6875rem;
-			padding: 0.625rem;
 		}
 
 		.required-addons-section {
