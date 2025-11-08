@@ -18,7 +18,7 @@
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import PromoCodeInput from '$lib/components/PromoCodeInput.svelte';
+	import PromoCodeInput from '$lib/components/form/inputs/PromoCodeInput.svelte';
 	import { PRICING_PLANS, type PricingPlan, isFeatureImplemented, calculatePlanPricing, type UserPricingContext } from '$lib/utils/pricing-config.js';
 	
 	let { data }: { data: PageData } = $props();

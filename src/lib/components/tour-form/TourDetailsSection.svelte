@@ -3,7 +3,7 @@
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Package from 'lucide-svelte/icons/package';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
-	import ChipInput from '$lib/components/ChipInput.svelte';
+	import ChipInput from '$lib/components/form/inputs/ChipInput.svelte';
 
 	interface Props {
 		includedItems: string[];

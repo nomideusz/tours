@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Clock from 'lucide-svelte/icons/clock';
 	import Calendar from 'lucide-svelte/icons/calendar';
-	import DatePicker from '$lib/components/DatePicker.svelte';
+	import DatePicker from '$lib/components/form/inputs/DatePicker.svelte';
 	
 	interface Props {
 		startDate: string;

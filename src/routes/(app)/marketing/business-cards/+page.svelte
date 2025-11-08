@@ -20,8 +20,8 @@
 	import MarketingNav from '$lib/components/MarketingNav.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/MobilePageHeader.svelte';
-	import ColorSchemeSelector from '$lib/components/ColorSchemeSelector.svelte';
-	import DesignSelector from '$lib/components/DesignSelector.svelte';
+	import ColorSchemeSelector from '$lib/components/form/inputs/ColorSchemeSelector.svelte';
+	import DesignSelector from '$lib/components/form/inputs/DesignSelector.svelte';
 
 	// Profile data query
 	const profileQuery = createQuery({

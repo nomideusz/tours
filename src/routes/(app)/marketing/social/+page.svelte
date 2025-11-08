@@ -23,7 +23,7 @@
 	import html2canvas from 'html2canvas';
 	
 	// Components
-	import ColorSchemeSelector from '$lib/components/ColorSchemeSelector.svelte';
+	import ColorSchemeSelector from '$lib/components/form/inputs/ColorSchemeSelector.svelte';
 	
 	// Profile data query
 	const profileQuery = createQuery({

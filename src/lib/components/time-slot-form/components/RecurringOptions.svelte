@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import { formatDate, formatTime } from '$lib/utils/date-helpers.js';
-	import NumberInput from '$lib/components/NumberInput.svelte';
-	import DatePicker from '$lib/components/DatePicker.svelte';
+	import NumberInput from '$lib/components/form/inputs/NumberInput.svelte';
+	import DatePicker from '$lib/components/form/inputs/DatePicker.svelte';
 	import Repeat from 'lucide-svelte/icons/repeat';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Clock from 'lucide-svelte/icons/clock';

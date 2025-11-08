@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import DatePicker from '$lib/components/DatePicker.svelte';
+	import DatePicker from '$lib/components/form/inputs/DatePicker.svelte';
 	import { formatDate } from '$lib/utils/date-helpers.js';
 	import { isAdmin, isLoading as authLoading } from '$lib/stores/auth.js';
 	

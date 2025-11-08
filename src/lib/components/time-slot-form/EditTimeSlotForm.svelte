@@ -8,10 +8,10 @@
 	
 	// Components
 	import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
-	import TimeRange from '$lib/components/TimeRange.svelte';
-	import NumberInput from '$lib/components/NumberInput.svelte';
+	import TimeRange from '$lib/components/form/inputs/TimeRange.svelte';
+	import NumberInput from '$lib/components/form/inputs/NumberInput.svelte';
 	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
-	import DatePicker from '$lib/components/DatePicker.svelte';
+	import DatePicker from '$lib/components/form/inputs/DatePicker.svelte';
 	
 	// Icons
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';

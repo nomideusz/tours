@@ -8,10 +8,10 @@
 	
 	// Components
 	import MiniMonthCalendar from '$lib/components/MiniMonthCalendar.svelte';
-	import TimeRange from '$lib/components/TimeRange.svelte';
+	import TimeRange from '$lib/components/form/inputs/TimeRange.svelte';
 	import CapacitySlider from '$lib/components/CapacitySlider.svelte';
-	import NumberInput from '$lib/components/NumberInput.svelte';
-	import DatePicker from '$lib/components/DatePicker.svelte';
+	import NumberInput from '$lib/components/form/inputs/NumberInput.svelte';
+	import DatePicker from '$lib/components/form/inputs/DatePicker.svelte';
 	import ConflictWarning from './components/ConflictWarning.svelte';
 	import DaySlotPreview from './components/DaySlotPreview.svelte';
 	import MultiDayTimeRange from './components/MultiDayTimeRange.svelte';
