@@ -6,7 +6,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import LocationPicker from '$lib/components/LocationPicker.svelte';
-	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import MeetingPointCard from '$lib/components/tour/MeetingPointCard.svelte';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	
 	let location = $state('');

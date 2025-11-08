@@ -6,7 +6,7 @@
 	import { formatCategoryName } from '$lib/utils/tour-helpers-client.js';
 	import CustomSelect from '$lib/components/ui/CustomSelect.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
-	import TourCard from '$lib/components/TourCard.svelte';
+	import TourCard from '$lib/components/tour/TourCard.svelte';
 	
 	// Icons
 	import Search from 'lucide-svelte/icons/search';

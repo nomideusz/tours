@@ -5,7 +5,7 @@
 	import Shield from 'lucide-svelte/icons/shield';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Markdown from '$lib/components/ui/Markdown.svelte';
-	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import MeetingPointCard from '$lib/components/tour/MeetingPointCard.svelte';
 	import { formatShortAddress } from '$lib/utils/location.js';
 	import type { LocationCoordinates } from '$lib/utils/map-integration.js';
 	

@@ -7,7 +7,7 @@
 	import { getMapService } from '$lib/utils/map-integration.js';
 	import { env } from '$env/dynamic/public';
 	import { browser } from '$app/environment';
-	import TourCard from '$lib/components/TourCard.svelte';
+	import TourCard from '$lib/components/tour/TourCard.svelte';
 	import TourLocationMap from '$lib/components/booking/TourLocationMap.svelte';
 	import Pagination from '$lib/components/ui/Pagination.svelte';
 	import User from 'lucide-svelte/icons/user';

@@ -6,7 +6,7 @@
 	 * Shows pre-filled beautiful example with feature highlights
 	 * Mobile-first design with 95% smartphone users in mind
 	 */
-	import TourForm from '$lib/components/TourForm.svelte';
+	import TourForm from '$lib/components/tour-form/TourForm.svelte';
 	
 	// Minimal demo data for clean showcase
 	let demoFormData = $state({

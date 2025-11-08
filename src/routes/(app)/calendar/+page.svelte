@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types.js';
 	import { browser } from '$app/environment';
-	import TourTimeline from '$lib/components/TourTimeline.svelte';
+	import TourTimeline from '$lib/components/tour/TourTimeline.svelte';
 	import DashboardSkeleton from '$lib/components/ui/loaders/DashboardSkeleton.svelte';
 	import OnboardingSkeleton from '$lib/components/ui/loaders/OnboardingSkeleton.svelte';
 	import LocationModal from '$lib/components/calendar/LocationModal.svelte';

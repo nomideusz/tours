@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import TourForm from '$lib/components/TourForm.svelte';
+	import TourForm from '$lib/components/tour-form/TourForm.svelte';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import ErrorAlert from '$lib/components/ui/feedback/ErrorAlert.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';

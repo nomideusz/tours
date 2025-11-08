@@ -21,7 +21,7 @@
 	import Smartphone from 'lucide-svelte/icons/smartphone';
 	import Info from 'lucide-svelte/icons/info';
 	import XCircle from 'lucide-svelte/icons/x-circle';
-	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import MeetingPointCard from '$lib/components/tour/MeetingPointCard.svelte';
 	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	let { data }: { data: PageData } = $props();

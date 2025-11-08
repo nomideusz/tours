@@ -22,7 +22,7 @@
 	// Components
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import MobilePageHeader from '$lib/components/layout/MobilePageHeader.svelte';
-	import TourTimeline from '$lib/components/TourTimeline.svelte';
+	import TourTimeline from '$lib/components/tour/TourTimeline.svelte';
 	import Tooltip from '$lib/components/ui/feedback/Tooltip.svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 	import PageContainer from '$lib/components/layout/PageContainer.svelte';
@@ -60,7 +60,7 @@
 	import RefreshCw from 'lucide-svelte/icons/refresh-cw';
 	import Baby from 'lucide-svelte/icons/baby';
 	import MapPin from 'lucide-svelte/icons/map-pin';
-	import MeetingPointCard from '$lib/components/MeetingPointCard.svelte';
+	import MeetingPointCard from '$lib/components/tour/MeetingPointCard.svelte';
 	import { formatShortAddress } from '$lib/utils/location.js';
 	
 	// Format location for cleaner display
