@@ -23,10 +23,11 @@ export function useTourSubmission(options: SubmissionOptions) {
 
 	const queryClient = useQueryClient();
 
-	// Initialize the appropriate mutation based on mode (reactive)
-	let mutation = $derived(isEdit && tourId
+	// Initialize the appropriate mutation based on mode
+	// No need for $derived since isEdit and tourId are static
+	const mutation = isEdit && tourId
 		? updateTourWithFormDataMutation(tourId)
-		: createTourWithFormDataMutation());
+		: createTourWithFormDataMutation();
 
 	/**
 	 * Prepare form data for submission
