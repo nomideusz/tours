@@ -18,10 +18,15 @@ export function useTourValidation() {
 	 */
 	function validate(formData: any): { isValid: boolean; errors: ValidationError[] } {
 		const validation = validateTourForm(formData);
-		validationErrors = validation.errors || [];
 
+		// Only update errors if validation failed
 		if (!validation.isValid && validation.errors.length > 0) {
+			validationErrors = validation.errors;
 			error = validation.errors[0].message;
+		} else {
+			// Clear errors on successful validation
+			validationErrors = [];
+			error = null;
 		}
 
 		return validation;

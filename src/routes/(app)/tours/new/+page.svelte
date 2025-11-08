@@ -136,6 +136,9 @@
 	async function handleSaveAsDraft() {
 		if (submission.isSubmitting) return;
 
+		// Clear any previous errors
+		validation.clearErrors();
+
 		// Validate form
 		const validationResult = validation.validate(formData);
 		if (!validationResult.isValid) {
@@ -166,6 +169,9 @@
 
 	async function handleSaveAndActivate() {
 		if (submission.isSubmitting) return;
+
+		// Clear any previous errors
+		validation.clearErrors();
 
 		// Validate form
 		const validationResult = validation.validate(formData);
