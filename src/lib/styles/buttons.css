@@ -384,60 +384,6 @@
 		box-shadow: none;
 	}
 
-	/* Ghost button - subtle and unobtrusive */
-	.button-ghost,
-	.button-ghost {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-md);
-		padding: 0.625rem 1.25rem;
-		font-size: 0.9375rem;
-		font-weight: 500;
-		line-height: 1.4;
-		letter-spacing: -0.01em;
-		gap: 0.5rem;
-		cursor: pointer;
-		transition: all var(--transition-base);
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: transparent;
-		color: var(--text-secondary);
-		border: 1.5px solid transparent;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.button-ghost:hover:not(:disabled),
-	.button-ghost:hover:not(:disabled) {
-		background: var(--bg-secondary);
-		color: var(--text-primary);
-		border-color: var(--border-primary);
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.button-ghost:active:not(:disabled),
-	.button-ghost:active:not(:disabled) {
-		transform: translateY(0);
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	.button-ghost:focus-visible,
-	.button-ghost:focus-visible {
-		outline: 2px solid var(--primary);
-		outline-offset: 2px;
-	}
-
-	.button-ghost:disabled,
-	.button-ghost:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		transform: none;
-		box-shadow: none;
-	}
-
 	/* Text button - clean link-style button */
 	.button-text,
 	.button--text {
@@ -536,7 +482,6 @@
 	.button-secondary.button-gap,
 	.button-danger.button-gap,
 	.button-success.button-gap,
-	.button-ghost.button-gap,
 	.button-text.button-gap {
 		display: inline-flex;
 		align-items: center;
@@ -583,8 +528,6 @@
 	.button-danger svg,
 	.button-accent svg,
 	.button-accent svg,
-	.button-ghost svg,
-	.button-ghost svg,
 	.button-text svg,
 	.button--text svg {
 		width: 1rem;
@@ -605,8 +548,6 @@
 	.button-danger svg:not([class*="absolute"]),
 	.button-accent svg:not([class*="absolute"]),
 	.button-accent svg:not([class*="absolute"]),
-	.button-ghost svg:not([class*="absolute"]),
-	.button-ghost svg:not([class*="absolute"]),
 	.button-text svg:not([class*="absolute"]),
 	.button--text svg:not([class*="absolute"]) {
 		display: inline-block;
@@ -713,14 +654,6 @@
 		border-color: var(--color-accent-400);
 	}
 
-	/* Dark mode hero button */
-	[data-theme="dark"] .button-hero:hover:not(:disabled),
-	[data-theme="dark"] .button-hero:hover:not(:disabled) {
-		background: var(--color-primary-300);
-		border-color: var(--color-primary-300);
-		color: #ffffff;
-	}
-
 	/* Toggle button - clean tab-like toggles */
 	.button-toggle,
 	.button--toggle {
@@ -793,102 +726,6 @@
 		border: 1px solid var(--primary);
 		font-weight: 500;
 	}
-	
-
-
-	/* Hero button - larger primary button for hero sections */
-	.button-hero,
-	.button-hero {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 0.625rem;
-		padding: 0.875rem 1.75rem;
-		font-size: 1rem;
-		font-weight: 500;
-		line-height: 1.5;
-		gap: 0.5rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		text-decoration: none;
-		text-align: center;
-		white-space: nowrap;
-		user-select: none;
-		background: var(--bg-primary);
-		color: var(--primary);
-		border: 1px solid var(--primary);
-		-webkit-tap-highlight-color: transparent;
-	}
-	
-	.button-hero:hover:not(:disabled),
-	.button-hero:hover:not(:disabled) {
-		background: var(--color-primary-700);
-		color: #ffffff;
-		font-weight: 700;
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-		text-shadow: 
-			0 1px 3px rgba(0, 0, 0, 0.3),
-			0 1px 1px rgba(0, 0, 0, 0.2);
-		-webkit-font-smoothing: antialiased;
-		-moz-osx-font-smoothing: grayscale;
-		text-rendering: optimizeLegibility;
-	}
-
-	.button-hero:active:not(:disabled),
-	.button-hero:active:not(:disabled) {
-		transform: translateY(0);
-		box-shadow: 
-			inset 0 2px 4px rgba(0, 0, 0, 0.2),
-			0 2px 8px rgba(0, 0, 0, 0.1);
-		text-shadow: 
-			0 1px 2px rgba(0, 0, 0, 0.35),
-			0 0px 1px rgba(0, 0, 0, 0.3);
-	}
-	
-	.button-hero:disabled,
-	.button-hero:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		transform: none;
-		box-shadow: none;
-	}
-
-	/* Action card button - clean card-style interactive element */
-	.button-card,
-	.button-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 1.25rem;
-		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
-		border-radius: 0.5rem;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		text-align: center;
-		color: var(--text-primary);
-		font-weight: 500;
-		min-height: auto;
-		text-decoration: none;
-		gap: 0.5rem;
-	}
-
-	.button-card:hover:not(:disabled),
-	.button-card:hover:not(:disabled) {
-		background: var(--bg-secondary);
-		border-color: var(--border-secondary);
-		transform: translateY(-1px);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		color: var(--text-primary);
-	}
-
-	.button-card:active:not(:disabled),
-	.button-card:active:not(:disabled) {
-		transform: translateY(0);
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-	}
 
 	/* Mobile-specific adjustments for better touch targets */
 	@media (max-width: 640px) {
@@ -902,27 +739,14 @@
 		.button-danger,
 		.button-danger,
 		.button-accent,
-		.button-accent,
-		.button-ghost,
-		.button-ghost {
+		.button-accent {
 			min-height: 44px; /* Optimal touch target size */
 			padding: 0.625rem 1rem; /* Slightly larger padding for mobile */
 		}
-		
+
 		.button-small {
 			min-height: 40px;
 			padding: 0.5rem 0.875rem;
-		}
-		
-		.button-hero,
-		.button-hero {
-			min-height: 48px;
-			padding: 0.75rem 1.5rem;
-		}
-		
-		.button-card,
-		.button-card {
-			padding: 1rem;
 		}
 	}
 }
