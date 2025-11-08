@@ -49,9 +49,6 @@ Key extracted components:
 	import CheckCircle from 'lucide-svelte/icons/check-circle';
 	import FileText from 'lucide-svelte/icons/file-text';
 	import Eye from 'lucide-svelte/icons/eye';
-	import Camera from 'lucide-svelte/icons/camera';
-	import Upload from 'lucide-svelte/icons/upload';
-	import X from 'lucide-svelte/icons/x';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import AlertCircle from 'lucide-svelte/icons/alert-circle';
 	import Save from 'lucide-svelte/icons/save';
@@ -61,7 +58,6 @@ Key extracted components:
 	import LocationPicker from './LocationPicker.svelte';
 	import LanguageSelector from './LanguageSelector.svelte';
 	import CategorySelector from './CategorySelector.svelte';
-	import Tooltip from './Tooltip.svelte';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Globe from 'lucide-svelte/icons/globe';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -79,6 +75,9 @@ Key extracted components:
 	import CharacterCount from '@tiptap/extension-character-count';
 	import TourDescriptionControls from './TourDescriptionControls.svelte';
 	import ChipInput from './ChipInput.svelte';
+	import TourImagesSection from './tour-form/TourImagesSection.svelte';
+	import DangerZoneSection from './tour-form/DangerZoneSection.svelte';
+	import StatusVisibilitySection from './tour-form/StatusVisibilitySection.svelte';
 
 	interface Props {
 		formData: {
@@ -923,12 +922,6 @@ Key extracted components:
 		}
 	});
 
-
-
-	function getImagePreview(file: File): string {
-		return URL.createObjectURL(file);
-	}
-
 	// Mobile error handling - scroll to first error
 	function scrollToFirstError() {
 		if (typeof window === 'undefined') return;
@@ -1268,151 +1261,16 @@ Key extracted components:
 		<!-- ============================================================ -->
 		<!-- TOUR IMAGES SECTION (Moved from sidebar)                    -->
 		<!-- ============================================================ -->
-		{#if onImageUpload && onImageRemove}
-			<div class="form-section-minimal">
-				<div>
-					
-					<!-- Existing Images (for edit mode) -->
-					{#if isEdit && existingImages && existingImages.length > 0 && onExistingImageRemove && getExistingImageUrl}
-						<div class="mb-4 sm:mb-6">
-							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-								{#each existingImages as imageName, index (imageName)}
-									<div class="relative group aspect-square">
-										<img 
-											src={getExistingImageUrl(imageName)} 
-											alt="Tour image {index + 1}"
-											class="w-full h-full object-cover rounded-lg"
-											style="border: 1px solid var(--border-primary);"
-											loading="lazy"
-										/>
-										<button
-											type="button"
-											onclick={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onExistingImageRemove) {
-													onExistingImageRemove(imageName);
-												}
-											}}
-											ontouchend={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onExistingImageRemove) {
-													onExistingImageRemove(imageName);
-												}
-											}}
-											class="image-remove-btn absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-											style="
-												background: var(--color-error-500);
-												color: white;
-												touch-action: manipulation;
-												-webkit-tap-highlight-color: transparent;
-											"
-											aria-label="Remove image"
-										>
-											<X class="w-3 h-3 flex-shrink-0" />
-										</button>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-					
-					<!-- Image Upload Area -->
-					<div class="border-2 border-dashed rounded-lg p-3 sm:p-6 text-center transition-colors"
-						style="border-color: var(--border-secondary); background: var(--bg-secondary);"
-					>
-						<p class="text-xs mb-3 hidden sm:block" style="color: var(--text-secondary);">JPEG, PNG, WebP • Max 6 images</p>
-						
-						<!-- Mobile-optimized file input -->
-						<input
-							type="file"
-							multiple
-							accept="image/jpeg,image/jpg,image/png,image/webp"
-							class="hidden"
-							id="images-upload"
-							name="images"
-							onchange={onImageUpload}
-						/>
-						
-						<!-- Unified upload button - works on all devices -->
-						<label
-							for="images-upload"
-							class="button-secondary cursor-pointer inline-flex items-center gap-2"
-							style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
-						>
-							<Camera class="w-4 h-4 sm:hidden" />
-							<Upload class="w-4 h-4 hidden sm:block" />
-							Add Photos
-						</label>
-					</div>
-
-					<!-- Image Upload Errors - Show on all screen sizes -->
-					{#if imageUploadErrors && imageUploadErrors.length > 0}
-						<div class="mt-4 p-3 rounded-lg" style="background: var(--color-error-50); border: 1px solid var(--color-error-200);">
-							<div class="flex items-start gap-2">
-								<AlertCircle class="w-4 h-4 flex-shrink-0 mt-0.5" style="color: var(--color-error-600);" />
-								<div class="flex-1">
-									<p class="text-sm font-medium" style="color: var(--color-error-900);">Upload Issues:</p>
-									<ul class="text-xs mt-1 space-y-1" style="color: var(--color-error-700);">
-										{#each imageUploadErrors as error}
-											<li>• {error}</li>
-										{/each}
-									</ul>
-								</div>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Image Previews -->
-					{#if uploadedImages && uploadedImages.length > 0}
-						<div class="mt-4 sm:mt-6">
-							<h4 class="text-sm font-medium mb-3 hidden sm:block" style="color: var(--text-primary);">{isEdit ? 'New Images' : 'Selected Images'} ({uploadedImages.length})</h4>
-							<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-								{#each uploadedImages as image, index (index)}
-									<div class="relative group aspect-square">
-										<img 
-											src={getImagePreview(image)} 
-											alt="Tour preview {index + 1}"
-											class="w-full h-full object-cover rounded-lg"
-											style="border: 1px solid var(--border-primary);"
-											loading="lazy"
-										/>
-										<button
-											type="button"
-											onclick={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onImageRemove) {
-													onImageRemove(index);
-												}
-											}}
-											ontouchend={(e) => {
-												e.preventDefault();
-												e.stopPropagation();
-												if (onImageRemove) {
-													onImageRemove(index);
-												}
-											}}
-											class="image-remove-btn absolute -top-2 -right-2 w-8 h-8 sm:w-6 sm:h-6 rounded-full text-sm sm:text-xs transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center z-10 shadow-sm"
-											style="
-												background: var(--color-error-500);
-												color: white;
-												touch-action: manipulation;
-												-webkit-tap-highlight-color: transparent;
-											"
-											aria-label="Remove image"
-										>
-											<X class="w-3 h-3 flex-shrink-0" />
-										</button>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
-		{/if}
+		<TourImagesSection
+			{isEdit}
+			{existingImages}
+			{onExistingImageRemove}
+			{getExistingImageUrl}
+			{uploadedImages}
+			{onImageUpload}
+			{onImageRemove}
+			{imageUploadErrors}
+		/>
 
 		<!-- ============================================================ -->
 		<!-- PRICING SECTION (SIMPLIFIED) - Includes capacity           -->
@@ -1728,122 +1586,13 @@ Key extracted components:
 		<!-- ============================================================ -->
 		<!-- DANGER ZONE SECTION (Edit Mode Only)                        -->
 		<!-- ============================================================ -->
-		{#if isEdit && onDelete}
-			<!-- Mobile: Compact Danger Zone -->
-			<div class="sm:hidden px-4">
-				<div class="p-3 rounded-lg danger-zone-container-mobile">
-					<div class="flex items-center justify-between gap-3">
-						<div class="flex-1">
-							<p class="text-sm font-semibold" style="color: var(--color-danger-900);">Delete Tour</p>
-							<p class="text-xs mt-0.5" style="color: var(--color-danger-700);">
-								{#if hasFutureBookings}
-									Has upcoming bookings
-								{:else}
-									Permanent action
-								{/if}
-							</p>
-						</div>
-						<div>
-							{#if hasFutureBookings}
-								<button 
-									type="button" 
-									class="text-xs px-3 py-2 rounded-lg font-medium cursor-not-allowed opacity-50" 
-									style="background: var(--bg-secondary); color: var(--text-secondary);"
-									disabled
-								>
-									Locked
-								</button>
-							{:else}
-								<button 
-									type="button" 
-									onclick={onDelete} 
-									class="text-xs px-3 py-2 rounded-lg font-medium" 
-									style="background: var(--color-danger-600); color: white;"
-									disabled={isDeleting}
-								>
-									{#if isDeleting}
-										Deleting...
-									{:else}
-										Delete
-									{/if}
-								</button>
-							{/if}
-						</div>
-					</div>
-					{#if hasFutureBookings}
-						<div class="mt-2 pt-2 border-t" style="border-color: var(--color-danger-200);">
-							<a 
-								href="/bookings?tour={tourId}"
-								class="text-xs font-medium underline"
-								style="color: var(--color-primary-600);"
-							>
-								View bookings →
-							</a>
-						</div>
-					{/if}
-				</div>
-			</div>
-			
-			<!-- Desktop: Full Danger Zone -->
-			<div class="hidden sm:block rounded-xl danger-zone-container">
-				<div class="px-4 py-4 sm:p-4 border-b danger-zone-header">
-					<h3 class="font-semibold danger-zone-title">Danger Zone</h3>
-				</div>
-				<div class="px-4 py-4 sm:p-4">
-					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-						<div class="flex-1">
-							<p class="font-medium" style="color: var(--color-danger-900);">Delete this tour</p>
-							{#if hasFutureBookings}
-								<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-									Cannot delete tour with upcoming bookings. Cancel all future bookings first, then deletion will be available.
-								</p>
-								<p class="text-sm mt-2" style="color: var(--color-primary-600);">
-									<a 
-										href="/bookings?tour={tourId}"
-										class="text-sm underline hover:no-underline"
-										style="color: var(--color-primary-600);"
-									>
-										View bookings →
-									</a>
-								</p>
-							{:else}
-								<p class="text-sm mt-1" style="color: var(--color-danger-700);">
-									This will permanently delete the tour and all data, including historical bookings. This action cannot be undone.
-								</p>
-							{/if}
-						</div>
-						<div class="flex-shrink-0">
-							{#if hasFutureBookings}
-								<Tooltip text="Cannot delete tour with upcoming bookings" position="top">
-									<button 
-										type="button" 
-										class="button-secondary button-small w-full sm:w-auto cursor-not-allowed opacity-50" 
-										disabled
-									>
-										<Calendar class="w-4 h-4 mr-2" />
-										Has Upcoming Bookings
-									</button>
-								</Tooltip>
-							{:else}
-								<button 
-									type="button" 
-									onclick={onDelete} 
-									class="button-danger button-small w-full sm:w-auto" 
-									disabled={isDeleting}
-									title="Delete this tour permanently"
-								>
-									{#if isDeleting}
-										<div class="w-4 h-4 rounded-full animate-spin mr-2" style="border: 2px solid currentColor; border-top-color: transparent;"></div>
-										Deleting...
-									{:else}
-										Delete Tour
-									{/if}
-								</button>
-							{/if}
-						</div>
-					</div>
-				</div>
-			</div>
+		{#if isEdit}
+			<DangerZoneSection
+				{tourId}
+				{hasFutureBookings}
+				{isDeleting}
+				{onDelete}
+			/>
 		{/if}
 		</div>
 
@@ -1853,137 +1602,8 @@ Key extracted components:
 			<!-- COMBINED STATUS & VISIBILITY SECTION (Edit Mode Only)       -->
 			<!-- ============================================================ -->
 			{#if isEdit}
-				<!-- Mobile: Combined compact view -->
-				<div class="sm:hidden px-4">
-					<div class="space-y-3">
-					<!-- Status display -->
-					{#if !hideStatusField}
-						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-							<div class="flex items-center gap-2">
-								{#if formData.status === 'active'}
-									<CheckCircle class="w-4 h-4" style="color: var(--color-success-600);" />
-								{:else}
-									<FileText class="w-4 h-4" style="color: var(--color-warning-600);" />
-								{/if}
-								<div>
-									<p class="text-sm font-semibold" style="color: var(--text-primary);">
-										{formData.status === 'active' ? 'Active' : 'Draft'}
-									</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{formData.status === 'active' ? 'Live & accepting bookings' : 'Not visible to customers'}
-									</p>
-								</div>
-							</div>
-							<!-- Hidden input -->
-							<input type="hidden" name="status" bind:value={formData.status} />
-						</div>
-					{/if}
-					
-					<!-- Show in Search toggle (only when Active) -->
-					{#if formData.status === 'active'}
-						<div class="flex items-center justify-between p-3 rounded-lg" style="background: var(--bg-secondary);">
-							<div class="flex items-center gap-2">
-								<Globe class="w-4 h-4" style="color: var(--text-accent);" />
-								<div>
-									<p class="text-sm font-semibold" style="color: var(--text-primary);">Show in Search</p>
-									<p class="text-xs" style="color: var(--text-secondary);">
-										{formData.publicListing ? 'Listed' : 'Unlisted'}
-									</p>
-								</div>
-							</div>
-							<div>
-								<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
-								<label class="relative inline-flex items-center cursor-pointer">
-									<input
-										type="checkbox"
-										bind:checked={formData.publicListing}
-										class="sr-only peer"
-									/>
-									<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-								</label>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
-			
-			<!-- Desktop: Separate cards -->
-			<div class="hidden sm:block space-y-6">
-				<!-- Current Status -->
-				{#if !hideStatusField}
-					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="px-4 py-4 sm:p-4 border-b" style="border-color: var(--border-primary);">
-							<h3 class="font-semibold" style="color: var(--text-primary);">Current Status</h3>
-						</div>
-						<div class="px-4 py-4 sm:p-4">
-							<div class="flex items-center gap-3 p-4 rounded-lg" style="background: var(--bg-secondary);">
-								<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" 
-									style="background: {formData.status === 'active' ? 'var(--color-success-100)' : 'var(--color-warning-100)'};"
-								>
-									{#if formData.status === 'active'}
-										<CheckCircle class="w-5 h-5 flex-shrink-0" style="color: var(--color-success-600);" />
-									{:else}
-										<FileText class="w-5 h-5 flex-shrink-0" style="color: var(--color-warning-600);" />
-									{/if}
-								</div>
-								<div class="flex-1">
-									<h3 class="font-medium" style="color: var(--text-primary);">
-										{formData.status === 'active' ? 'Active' : 'Draft'}
-									</h3>
-									<p class="text-sm" style="color: var(--text-secondary);">
-										{formData.status === 'active' 
-											? 'Tour is live and accepting bookings'
-											: 'Not visible to customers'}
-									</p>
-								</div>
-							</div>
-							<!-- Hidden input to send the actual status value -->
-							<input type="hidden" name="status" bind:value={formData.status} />
-						</div>
-					</div>
-				{/if}
-
-				<!-- Search Visibility (only shown when Active) -->
-				{#if formData.status === 'active'}
-					<div class="rounded-xl" style="background: var(--bg-primary); border: 1px solid var(--border-primary);">
-						<div class="px-4 py-4 sm:p-4">
-							<div class="flex items-center justify-between gap-4">
-								<div class="flex-1">
-									<div class="flex items-center gap-2 mb-1">
-										<Globe class="h-5 w-5" style="color: var(--text-accent);" />
-										<h3 class="font-semibold" style="color: var(--text-primary);">Show in Search</h3>
-									</div>
-									<p class="text-sm" style="color: var(--text-secondary);">
-										{formData.publicListing 
-											? 'Listed - visible in public browse & search'
-											: 'Unlisted - accessible only via QR code or direct link'}
-									</p>
-								</div>
-								
-								<div class="flex items-center gap-3 flex-shrink-0">
-									<!-- Hidden input to send the actual publicListing value -->
-									<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
-									<label class="relative inline-flex items-center cursor-pointer">
-										<input
-											type="checkbox"
-											bind:checked={formData.publicListing}
-											class="sr-only peer"
-										/>
-										<div class="toggle-switch w-11 h-6 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-										<span class="ml-3 text-sm font-medium whitespace-nowrap" style="color: var(--text-primary);">
-											{formData.publicListing ? 'Listed' : 'Unlisted'}
-										</span>
-									</label>
-								</div>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<!-- Hidden input for draft tours - preserve current publicListing setting -->
-					<input type="hidden" name="publicListing" value={formData.publicListing ? 'true' : 'false'} />
-				{/if}
-			</div>
-		{/if}
+				<StatusVisibilitySection bind:formData {hideStatusField} />
+			{/if}
 
 		<!-- ============================================================ -->
 		<!-- ACTION BUTTONS SECTION                                       -->
