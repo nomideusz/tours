@@ -23,10 +23,10 @@ export function useTourSubmission(options: SubmissionOptions) {
 
 	const queryClient = useQueryClient();
 
-	// Initialize the appropriate mutation based on mode
-	const mutation = isEdit && tourId
+	// Initialize the appropriate mutation based on mode (reactive)
+	let mutation = $derived(isEdit && tourId
 		? updateTourWithFormDataMutation(tourId)
-		: createTourWithFormDataMutation();
+		: createTourWithFormDataMutation());
 
 	/**
 	 * Prepare form data for submission
@@ -119,7 +119,7 @@ export function useTourSubmission(options: SubmissionOptions) {
 			// Prepare form data
 			const formDataToSubmit = prepareFormData(formData, uploadedImages, imagesToRemove, scheduleData);
 
-			// Submit using mutation
+			// Submit using mutation (access reactive value with $)
 			const result = await mutation.mutateAsync(formDataToSubmit);
 
 			console.log('✅ Tour submitted successfully:', result);
