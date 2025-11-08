@@ -6,7 +6,7 @@ Comprehensive cleanup of unused components and duplicate styles across the codeb
 
 ## Final Results
 
-**Total Lines Removed: 1,669**
+**Total Lines Removed: 2,665**
 
 ### ✅ Completed
 
@@ -25,6 +25,11 @@ Comprehensive cleanup of unused components and duplicate styles across the codeb
 
 **Phase 3: Duplicate Toggle Switch (22 lines removed)**
 - StatusVisibilitySection.svelte - Removed duplicate, now uses global .toggle-switch
+
+**Phase 4: Unused Sliders (996 lines removed)**
+- PriceSlider.svelte (495 lines) - 0 imports
+- DurationSlider.svelte (501 lines) - 0 imports
+- Note: CapacitySlider.svelte kept (used in SimpleTimeSlotForm and QuickAddModal)
 
 ### ❌ Not Duplicates (Kept - Component-Specific)
 
@@ -295,13 +300,14 @@ src/lib/components/StyledQRCode.svelte
 - Phase 1: Unused components deleted (1,561 lines)
 - Phase 2: Duplicate button/form styles (ChipInput + CategorySelector) (86 lines)
 - Phase 3: Duplicate toggle switch (StatusVisibilitySection) (22 lines)
-- **Component Total:** 1,669 lines
+- Phase 4: Unused sliders deleted (996 lines)
+- **Component Total:** 2,665 lines
 
 ### Grand Total
-**2,575 lines removed** from CSS and components
+**3,571 lines removed** from CSS and components
 
 **Breakdown:**
-- Unused/dead code: 2,021 lines (unused components + color-utilities)
+- Unused/dead code: 3,017 lines (unused components + sliders + color-utilities)
 - True duplicate styles: 554 lines (badges, marketing-utils, buttons, ChipInput, CategorySelector, toggle)
 
 ### What Was NOT Removed (And Why)
@@ -316,7 +322,7 @@ src/lib/components/StyledQRCode.svelte
 ### Impact
 
 **Code Quality:**
-- 2,575 lines of dead/duplicate code removed
+- 3,571 lines of dead/duplicate code removed
 - Consistent use of global utility classes
 - Clear separation: global styles vs. component-specific
 
@@ -328,4 +334,4 @@ src/lib/components/StyledQRCode.svelte
 
 **Status:** ✅ Complete
 **Last updated:** 2025-11-08
-**Total impact:** 2,575 lines removed (906 CSS + 1,669 components)
+**Total impact:** 3,571 lines removed (906 CSS + 2,665 components)
