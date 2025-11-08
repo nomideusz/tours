@@ -55,7 +55,7 @@ Key extracted components:
 	import { isValidLocationLength } from '$lib/utils/location.js';
 	
 	// Import new pricing components
-	import SimplifiedPricingSection from './pricing/SimplifiedPricingSection.svelte';
+	import SimplifiedPricingSection from '../pricing/SimplifiedPricingSection.svelte';
 	import type { PricingModel, GroupPricingTier, GroupDiscountTier, OptionalAddon, ParticipantCategory } from '$lib/types.js';
 	
 	// Import tour form section components
